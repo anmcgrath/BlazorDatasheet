@@ -2,5 +2,5 @@ namespace BlazorDatasheet.Model;
 
 public class Cell
 {
-    public string RawData { get; set; }
+    public string? RawData { get; set; }
 }
