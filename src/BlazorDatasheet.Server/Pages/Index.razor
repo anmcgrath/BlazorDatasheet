@@ -1,0 +1,33 @@
+﻿@page "/"
+@using BlazorDatasheet.Model
+
+<PageTitle>Index</PageTitle>
+
+<h1>Hello, world!</h1>
+
+Welcome to your new app.
+
+<SurveyPrompt Title="How is Blazor working for you?"/>
+
+<Datasheet Sheet="Sheet"></Datasheet>
+
+@code{
+
+    private Sheet Sheet;
+
+    protected override void OnInitialized()
+    {
+        var rows = 6;
+        var cols = 6;
+        Cell[,] cells = new Cell[rows, cols];
+        for (int r = 0; r < rows; r++)
+            for (int c = 0; c < cols; c++)
+                cells[r, c] = new Cell()
+                {
+                    RawData = $"[{r},{c}]"
+                };
+
+        Sheet = new Sheet(rows, cols, cells);
+    }
+
+}

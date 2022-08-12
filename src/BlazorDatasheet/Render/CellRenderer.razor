@@ -1,0 +1,21 @@
+@using BlazorDatasheet.Model
+
+<div 
+    style="
+    width: 100%;
+    user-select: none;
+    height: 100%;
+    overflow:hidden;
+    background: @(IsSelected ? "#e6eeff" : "white")">
+    @Cell?.RawData
+</div>
+
+@code {
+
+    [Parameter]
+    public Cell Cell { get; set; }
+
+    [Parameter]
+    public bool IsSelected { get; set; }
+
+}

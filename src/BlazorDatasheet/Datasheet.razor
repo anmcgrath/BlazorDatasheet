@@ -1,0 +1,250 @@
+@using BlazorDatasheet.Model
+@using System.Text.Encodings.Web
+@using BlazorDatasheet.Interfaces
+@using Microsoft.JSInterop;
+@inject IJSRuntime JS
+@using BlazorDatasheet.Render;
+@implements IDisposable;
+@inject IWindowEventService _WindowEventService;
+
+<table style="
+    border: @(IsActive ? "2px solid gray" : "2px solid lightgray");
+    font-size: 0.9rem;
+    box-sizing: border-box;
+    border-spacing: 0;
+overflow-x: scroll"
+       @onmouseover="() => MouseIn = true"
+       @onmouseout="() => MouseIn = false">
+    @for (int i = 0; i < Sheet.Rows; i++)
+    {
+        <tr>
+            @for (int j = 0; j < Sheet.Cols; j++)
+            {
+                var row = i;
+                var col = j;
+
+                var cell = Sheet.GetCell(row, col);
+
+                <td
+                    style="width:7.2rem; height: 1.6rem; border: 1px solid lightgray; padding: 0"
+                    @onmousedown="e => HandleCellMouseDown(row, col, e)"
+                    @onmouseover="e => HandleCellMouseOver(row, col)"
+                    @ondblclick="e => HandleDoubleClick(row, col)"
+                    @onmouseup="e => HandleCellMouseUp(row, col)">
+                    @if (ActiveCell == cell)
+                    {
+                        <input
+                            @ref="ActiveCellInputReference"
+                            @onclick="() => IsSoftEdit = false"
+                            @bind="EditString"
+                            @bind:event="oninput"
+                            style="width:calc(100% - 4px); border: 2px solid black; padding:0px; height: calc(100%)"/>
+                    }
+                    else
+                    {
+                        <CellRenderer
+                            isSelected="@(IsActive && Sheet.IsSelected(row, col))"
+                            cell="@cell">
+                        </CellRenderer>
+                    }
+
+                </td>
+            }
+        </tr>
+    }
+</table>
+
+
+@code{
+
+    [Parameter]
+    public Sheet Sheet { get; set; }
+
+    private bool IsActive { get; set; }
+    private Cell ActiveCell { get; set; }
+    private string EditString { get; set; }
+    private bool IsSoftEdit { get; set; }
+    private bool IsEditing => ActiveCell != null;
+    private bool MouseIn { get; set; }
+    private ElementReference ActiveCellInputReference;
+
+    protected override async Task OnInitializedAsync()
+    {
+    }
+
+    private void HandleCellMouseUp(int row, int col)
+    {
+        Sheet.EndSelecting();
+    }
+
+    private void HandleCellMouseDown(int row, int col, MouseEventArgs e)
+    {
+        if (Sheet.GetCell(row, col) != ActiveCell)
+            AcceptEdit();
+
+        if (e.ShiftKey)
+            Sheet.ExtendSelection(row, col);
+        else
+            Sheet.BeginSelecting(row, col, !e.MetaKey);
+    }
+
+    private async void HandleDoubleClick(int row, int col)
+    {
+        BeginEdit(row, col, softEdit: false, clear: false);
+    }
+
+    private void BeginEdit(int row, int col, bool softEdit, bool clear, string entryChar = "")
+    {
+        var cell = Sheet.GetCell(row, col);
+        EditString = clear ? entryChar : cell.RawData + entryChar;
+        IsSoftEdit = softEdit;
+        ActiveCell = cell;
+    }
+
+    private void AcceptEdit()
+    {
+        if (!IsEditing)
+            return;
+        ActiveCell.RawData = EditString;
+        CancelEdit();
+    }
+
+    private void CancelEdit()
+    {
+        ActiveCell = null;
+        StateHasChanged();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await _WindowEventService.Init();
+            _WindowEventService.OnKeyDown += (KeyboardEventArgs args) => { return HandleKeyDown(args); };
+            _WindowEventService.OnMouseDown += (MouseEventArgs args) =>
+            {
+                bool changed = IsActive != MouseIn;
+                IsActive = MouseIn;
+
+                if (!IsActive) // if it is outside
+                {
+                    AcceptEdit();
+                    changed = true;
+                }
+
+                if (changed)
+                    StateHasChanged();
+
+                return false;
+            };
+        }
+
+        if (ActiveCell != null)
+            await ActiveCellInputReference.FocusAsync();
+    }
+
+    private void HandleCellMouseOver(int row, int col)
+    {
+        if (Sheet.IsSelecting)
+        {
+            Sheet.UpdateSelecting(row, col);
+        }
+    }
+
+    private bool HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (!IsActive)
+            return false;
+        if (e.Key == "Enter")
+        {
+            AcceptEdit();
+            Sheet.MoveSelection(1, 0);
+            StateHasChanged();
+        }
+        else if (e.Key == "Escape")
+        {
+            CancelEdit();
+        }
+        else if (e.Key == "ArrowRight")
+        {
+            if (!IsEditing)
+            {
+                Sheet.MoveSelection(0, 1);
+                StateHasChanged();
+            }
+            else if (IsSoftEdit)
+            {
+                AcceptEdit();
+                Sheet.MoveSelection(0, 1);
+                StateHasChanged();
+            }
+            return true;
+        }
+        else if (e.Key == "ArrowLeft")
+        {
+            if (!IsEditing)
+            {
+                Sheet.MoveSelection(0, -1);
+                StateHasChanged();
+            }
+            else if (IsSoftEdit)
+            {
+                AcceptEdit();
+                Sheet.MoveSelection(0, -1);
+                StateHasChanged();
+            }
+            return true;
+        }
+        else if (e.Key == "ArrowUp")
+        {
+            if (!IsEditing)
+            {
+                Sheet.MoveSelection(-1, 0);
+                StateHasChanged();
+            }
+            else if (IsSoftEdit)
+            {
+                AcceptEdit();
+                Sheet.MoveSelection(-1, 0);
+                StateHasChanged();
+            }
+            return true;
+        }
+        else if (e.Key == "ArrowDown")
+        {
+            if (!IsEditing)
+            {
+                Sheet.MoveSelection(1, 0);
+                StateHasChanged();
+            }
+            else if (IsSoftEdit)
+            {
+                AcceptEdit();
+                Sheet.MoveSelection(1, 0);
+                StateHasChanged();
+            }
+            return true;
+        }
+
+        if (e.Key.Length == 1 && !IsEditing && IsActive)
+        {
+            char c = e.Key[0];
+            if (char.IsLetterOrDigit(c) || char.IsPunctuation(c) || char.IsSymbol(c))
+            {
+                var posn = Sheet.GetInputForSelection();
+                if (posn == null)
+                    return false;
+                BeginEdit(posn.Row, posn.Col, softEdit: true, clear: true, e.Key);
+                StateHasChanged();
+            }
+            return true;
+        }
+        return false;
+    }
+
+    public async void Dispose()
+    {
+        _WindowEventService.Dispose();
+    }
+
+}
