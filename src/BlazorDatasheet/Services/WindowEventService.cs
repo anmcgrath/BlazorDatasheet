@@ -59,6 +59,7 @@ public class WindowEventService : IWindowEventService
         }
         catch (Exception e)
         {
+            Console.WriteLine(e.Message);
         }
 
         _dotNetHelper?.Dispose();
