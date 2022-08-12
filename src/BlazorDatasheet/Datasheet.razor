@@ -7,14 +7,10 @@
 @implements IDisposable;
 @inject IWindowEventService _WindowEventService;
 
-<table style="
-    border: @(IsActive ? "2px solid gray" : "2px solid lightgray");
-    font-size: 0.9rem;
-    box-sizing: border-box;
-    border-spacing: 0;
-overflow-x: scroll"
-       @onmouseover="() => MouseIn = true"
-       @onmouseout="() => MouseIn = false">
+<table
+    class="sheet @(IsActive ? "active-sheet" : "inactive-sheet")"
+    @onmouseover="() => MouseIn = true"
+    @onmouseout="() => MouseIn = false">
     @for (int i = 0; i < Sheet.Rows; i++)
     {
         <tr>
@@ -26,7 +22,7 @@ overflow-x: scroll"
                 var cell = Sheet.GetCell(row, col);
 
                 <td
-                    style="width:7.2rem; height: 1.6rem; border: 1px solid lightgray; padding: 0"
+                    class="sheet-cell"
                     @onmousedown="e => HandleCellMouseDown(row, col, e)"
                     @onmouseover="e => HandleCellMouseOver(row, col)"
                     @ondblclick="e => HandleDoubleClick(row, col)"
@@ -38,7 +34,7 @@ overflow-x: scroll"
                             @onclick="() => IsSoftEdit = false"
                             @bind="EditString"
                             @bind:event="oninput"
-                            style="width:calc(100% - 4px); border: 2px solid black; padding:0px; height: calc(100%)"/>
+                            class="cell-input"/>
                     }
                     else
                     {

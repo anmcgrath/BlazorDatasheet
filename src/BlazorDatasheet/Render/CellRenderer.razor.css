@@ -1,0 +1,12 @@
+.cell-renderer{
+    width: 100%;
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    height: 100%;
+    overflow:hidden;
+}
+
+.selected{
+    background: #e6eeff;
+}

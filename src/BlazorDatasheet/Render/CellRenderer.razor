@@ -1,12 +1,7 @@
 @using BlazorDatasheet.Model
 
-<div 
-    style="
-    width: 100%;
-    user-select: none;
-    height: 100%;
-    overflow:hidden;
-    background: @(IsSelected ? "#e6eeff" : "white")">
+<div
+    class="cell-renderer @(IsSelected ? "selected" : "")">
     @Cell?.RawData
 </div>
 
