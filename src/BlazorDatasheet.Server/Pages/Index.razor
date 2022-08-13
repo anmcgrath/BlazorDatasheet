@@ -24,7 +24,8 @@ Welcome to your new app.
             for (int c = 0; c < cols; c++)
                 cells[r, c] = new Cell()
                 {
-                    RawData = $"[{r},{c}]"
+                    RawValue = $"[{r},{c}]",
+                    Type = "number"
                 };
 
         Sheet = new Sheet(rows, cols, cells);
