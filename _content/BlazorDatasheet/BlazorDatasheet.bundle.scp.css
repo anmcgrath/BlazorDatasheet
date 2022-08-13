@@ -33,16 +33,19 @@
 .cell-input:focus[b-zet5yo0qob] {
     outline: none;
 }
-/* _content/BlazorDatasheet/Render/CellRenderer.razor.rz.scp.css */
-.cell-renderer[b-qg32xjuyp3]{
+
+.cell-selected[b-zet5yo0qob] {
+    background: #c7d8f1;
+}
+
+.cell[b-zet5yo0qob] {
     width: 100%;
+    height: 100%;
     user-select: none;
     -moz-user-select: none;
     -webkit-user-select: none;
-    height: 100%;
-    overflow:hidden;
 }
-
-.selected[b-qg32xjuyp3]{
-    background: #e6eeff;
+/* _content/BlazorDatasheet/Render/TextRenderer.razor.rz.scp.css */
+.cell-renderer[b-j355bk6nc9]{
+    overflow:hidden;
 }
