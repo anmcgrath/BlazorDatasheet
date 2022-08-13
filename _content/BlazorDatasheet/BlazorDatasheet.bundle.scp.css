@@ -1,0 +1,48 @@
+/* _content/BlazorDatasheet/Datasheet.razor.rz.scp.css */
+.active-sheet[b-zet5yo0qob] {
+    border: 2px solid gray;
+}
+
+.inactive-sheet[b-zet5yo0qob] {
+    border: 2px solid lightgray;
+}
+
+.sheet[b-zet5yo0qob] {
+    font-size: 0.9rem;
+    box-sizing: border-box;
+    border-spacing: 0;
+    overflow-x: scroll
+}
+
+.sheet-cell[b-zet5yo0qob] {
+    width: 7.2rem;
+    height: 1.6rem;
+    border: 1px solid lightgray;
+    box-sizing: border-box;
+    padding: 0
+}
+
+.cell-input[b-zet5yo0qob] {
+    width: calc(100% - 4px);
+    border: 1px solid black;
+    padding: 0px;
+    height: calc(100%);
+    box-sizing: border-box;
+}
+
+.cell-input:focus[b-zet5yo0qob] {
+    outline: none;
+}
+/* _content/BlazorDatasheet/Render/CellRenderer.razor.rz.scp.css */
+.cell-renderer[b-qg32xjuyp3]{
+    width: 100%;
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    height: 100%;
+    overflow:hidden;
+}
+
+.selected[b-qg32xjuyp3]{
+    background: #e6eeff;
+}
