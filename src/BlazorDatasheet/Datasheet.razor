@@ -38,10 +38,13 @@
                     }
                     else
                     {
-                        <CellRenderer
-                            isSelected="@(IsDataSheetActive && Sheet.IsSelected(row, col))"
-                            cell="@cell">
-                        </CellRenderer>
+                        <div
+                            class="@(IsDataSheetActive && Sheet.IsSelected(row, col) ? "cell-selected" : "") cell">
+                            <DynamicComponent
+                                Type="@getCellRendererType(cell.Type)"
+                                Parameters="@getCellRendererParameters(cell)">
+                            </DynamicComponent>
+                        </div>
                     }
 
                 </td>
@@ -55,6 +58,7 @@
 
     [Parameter]
     public Sheet? Sheet { get; set; }
+
     private bool IsDataSheetActive { get; set; }
     private Cell? ActiveCell { get; set; }
     private string? ActiveEditValue { get; set; }
@@ -62,6 +66,32 @@
     private bool IsEditing => ActiveCell != null;
     private bool IsMouseInsideSheet { get; set; }
     private ElementReference ActiveCellInputReference;
+
+    private Dictionary<string, Type> RenderComponentTypes { get; set; }
+
+    protected override void OnInitialized()
+    {
+        RenderComponentTypes = new Dictionary<string, Type>();
+        RenderComponentTypes.Add("text", typeof(TextRenderer));
+        RenderComponentTypes.Add("number", typeof(NumberRenderer));
+        base.OnInitialized();
+    }
+
+    private Type getCellRendererType(string type)
+    {
+        if (RenderComponentTypes.ContainsKey(type))
+            return RenderComponentTypes[type];
+
+        return typeof(TextRenderer);
+    }
+
+    private Dictionary<string, object> getCellRendererParameters(Cell cell)
+    {
+        return new Dictionary<string, object>()
+        {
+            { "Value", cell.RawValue }
+        };
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -105,7 +135,7 @@
     private void BeginEdit(int row, int col, bool softEdit, bool clear, string entryChar = "")
     {
         var cell = Sheet?.GetCell(row, col);
-        ActiveEditValue = clear ? entryChar : cell?.RawData + entryChar;
+        ActiveEditValue = clear ? entryChar : cell?.RawValue + entryChar;
         IsSoftEdit = softEdit;
         ActiveCell = cell;
     }
@@ -116,7 +146,7 @@
             return;
         if (ActiveCell != null)
         {
-            ActiveCell.RawData = ActiveEditValue;
+            ActiveCell.RawValue = ActiveEditValue;
         }
 
         CancelEdit();

@@ -32,3 +32,15 @@
 .cell-input:focus {
     outline: none;
 }
+
+.cell-selected {
+    background: #c7d8f1;
+}
+
+.cell {
+    width: 100%;
+    height: 100%;
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+}
