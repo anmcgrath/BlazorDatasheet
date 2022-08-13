@@ -1,0 +1,21 @@
+@inherits BaseRenderer
+
+<div style="color: @(ValidationError ? "red" : "black")">@FormattedNumber</div>
+
+@code {
+    private bool ValidationError => !Double.TryParse(this.Value, out double res);
+
+    private string FormattedNumber
+    {
+        get
+        {
+            if (Double.TryParse(this.Value, out double res))
+            {
+                return res.ToString("N3");
+            }
+            
+            return this.Value;
+        }
+    }
+
+}

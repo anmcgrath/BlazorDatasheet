@@ -1,14 +1,12 @@
 @using BlazorDatasheet.Model
+@inherits BaseRenderer
 
 <div
     class="cell-renderer @(IsSelected ? "selected" : "")">
-    @Cell?.RawData
+    @Value
 </div>
 
 @code {
-
-    [Parameter]
-    public Cell Cell { get; set; }
 
     [Parameter]
     public bool IsSelected { get; set; }
