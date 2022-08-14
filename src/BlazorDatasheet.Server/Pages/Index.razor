@@ -1,6 +1,7 @@
 ﻿@page "/"
 @using BlazorDatasheet.Model
 @using BlazorDatasheet.Server.Data
+@using Range = BlazorDatasheet.Model.Range
 
 <PageTitle>Index</PageTitle>
 
@@ -44,6 +45,23 @@ Welcome to your new app.
                 };
         }
         Sheet = new Sheet(rows, cols, cells);
+
+        var valFormat = new ConditionalFormat(((cell, cells) =>
+        {
+            Console.WriteLine("cF");
+            var parseVal = double.TryParse(cell.Value, out double val);
+            if (!parseVal)
+                return false;
+            if (val > 10)
+                return true;
+            return false;
+        }), new Format()
+        {
+            BackgroundColor = "#ff0000"
+        });
+        
+        Sheet.RegisterConditionalFormat("g10",valFormat);
+        Sheet.ApplyConditionalFormat("g10", new Range(0,0));
     }
 
 }

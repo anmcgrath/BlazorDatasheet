@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Components.Web;
 
 namespace BlazorDatasheet;
 
-public partial class Datasheet
+public partial class Datasheet : IHandleEvent
 {
         [Parameter]
     public Sheet? Sheet { get; set; }
@@ -65,6 +65,7 @@ public partial class Datasheet
     private void HandleCellMouseUp(int row, int col, MouseEventArgs e)
     {
         Sheet?.EndSelecting();
+        StateHasChanged();
     }
 
     private void HandleCellMouseDown(int row, int col, MouseEventArgs e)
@@ -76,11 +77,14 @@ public partial class Datasheet
             Sheet?.ExtendSelection(row, col);
         else
             Sheet?.BeginSelecting(row, col, !e.MetaKey);
+        
+        StateHasChanged();
     }
 
     private void HandleCellDoubleClick(int row, int col, MouseEventArgs e)
     {
         BeginEdit(row, col, softEdit: false, clear: false);
+        StateHasChanged();
     }
 
     private void BeginEdit(int row, int col, bool softEdit, bool clear, string entryChar = "")
@@ -101,6 +105,7 @@ public partial class Datasheet
         }
 
         CancelEdit();
+        StateHasChanged();
     }
 
     private void CancelEdit()
@@ -114,6 +119,7 @@ public partial class Datasheet
         if (Sheet?.IsSelecting == true)
         {
             Sheet.UpdateSelecting(row, col);
+            StateHasChanged();
         }
     }
 
@@ -224,6 +230,9 @@ public partial class Datasheet
         }
         return false;
     }
+    
+    Task IHandleEvent.HandleEventAsync(
+        EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
 
     public void Dispose()
     {

@@ -20,6 +20,7 @@
                 var col = j;
 
                 var cell = Sheet.GetCell(row, col);
+                var format = Sheet.GetFormat(cell);
 
                 <td
                     class="sheet-cell"
@@ -39,7 +40,12 @@
                     else
                     {
                         <div
-                            class="@(IsDataSheetActive && Sheet.IsSelected(row, col) ? "cell-selected" : "") cell">
+                            class="@(IsDataSheetActive && Sheet.IsSelected(row, col) ? "cell-selected" : "") cell"
+                            style="
+                            background: @format.BackgroundColor; 
+                            color: @format.ForegroundColor;
+                            font-weight: @format.FontWeight;
+                            ">
                             <DynamicComponent
                                 Type="@getCellRendererType(cell.Type)"
                                 Parameters="@getCellRendererParameters(cell)">

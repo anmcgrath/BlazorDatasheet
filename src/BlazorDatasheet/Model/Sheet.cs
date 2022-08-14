@@ -5,6 +5,8 @@ public class Sheet
     public int Rows { get; private set; }
     public int Cols { get; private set; }
     public Cell[,] Cells { get; set; }
+
+    public Dictionary<string, ConditionalFormat> ConditionalFormats { get; set; }
     public Stack<Range> Selection { get; private set; }
 
     /// <summary>
@@ -19,7 +21,40 @@ public class Sheet
         Rows = rows;
         Cols = cols;
         Selection = new Stack<Range>();
+        ConditionalFormats = new Dictionary<string, ConditionalFormat>();
         Cells = cells;
+    }
+
+    private Cell[] GetCellsInRange(Range range)
+    {
+        List<Cell> cells = new List<Cell>();
+        var rowStart = Math.Max(0, range.RowStart);
+        var rowEnd = Math.Min(Rows - 1, range.RowEnd);
+        var colStart = Math.Max(0, range.ColStart);
+        var colEnd = Math.Min(Cols - 1, range.ColEnd);
+        for (int row = rowStart; row <= rowEnd; row++)
+        {
+            for (int col = colStart; col <= colEnd; col++)
+            {
+                if (range.Contains(row, col))
+                    cells.Add(Cells[row, col]);
+            }
+        }
+
+        return cells.ToArray();
+    }
+
+    public void RegisterConditionalFormat(string key, ConditionalFormat conditionalFormat)
+    {
+        this.ConditionalFormats.Add(key, conditionalFormat);
+    }
+
+    public Cell[] GetCellsInRanges(List<Range> ranges)
+    {
+        var cells = new List<Cell>();
+        foreach (var range in ranges)
+            cells.AddRange(GetCellsInRange(range));
+        return cells.ToArray();
     }
 
     public Cell GetCell(int row, int col)
@@ -43,13 +78,7 @@ public class Sheet
     public void SetSelectionSingle(int row, int col)
     {
         this.Selection.Clear();
-        var range = new Range()
-        {
-            ColEnd = col,
-            ColStart = col,
-            RowEnd = row,
-            RowStart = row
-        };
+        var range = new Range(row, col);
         range.Constrain(Rows, Cols);
         this.Selection.Push(range);
     }
@@ -100,13 +129,7 @@ public class Sheet
     {
         if (clearSelection)
             ClearSelection();
-        ActiveSelecting = new Range()
-        {
-            RowStart = row,
-            RowEnd = row,
-            ColStart = col,
-            ColEnd = col
-        };
+        ActiveSelecting = new Range(row, col);
         IsSelecting = true;
     }
 
@@ -130,5 +153,37 @@ public class Sheet
         ActiveSelecting = Selection.Pop();
         IsSelecting = true;
         UpdateSelecting(row, col);
+    }
+
+    public void ApplyConditionalFormat(string key, Range range)
+    {
+        if (!ConditionalFormats.ContainsKey(key))
+            return;
+        var cf = ConditionalFormats[key];
+        cf.AddRange(range);
+        Console.WriteLine("Applying");
+        var cells = this.GetCellsInRanges(cf.Ranges.ToList());
+        Console.WriteLine(cells.Length);
+        foreach (var cell in cells)
+            cell.AddConditionalFormat(key);
+    }
+
+    public Format GetFormat(Cell cell)
+    {
+        if (!cell.ConditionalFormattingIds.Any())
+            return cell.Formatting;
+
+        var format = cell.Formatting.Clone();
+        foreach (var id in cell.ConditionalFormattingIds)
+        {
+            if (!ConditionalFormats.ContainsKey(id))
+                continue;
+            var cf = this.ConditionalFormats[id];
+            var apply = cf.Rule.Invoke(cell, this.GetCellsInRanges(cf.Ranges.ToList()));
+            if (apply)
+                format.Merge(cf.Formatting);
+        }
+
+        return format;
     }
 }
