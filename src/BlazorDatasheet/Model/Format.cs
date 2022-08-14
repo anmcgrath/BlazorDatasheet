@@ -9,6 +9,7 @@ public class Format
     public string ForegroundColor { get; set; }
     public string? StringFormat { get; set; }
     public RenderFragment? Icon { get; set; }
+    public string IconColor { get; set; }
 
     public Format Clone()
     {
@@ -18,7 +19,8 @@ public class Format
             BackgroundColor = BackgroundColor,
             ForegroundColor = ForegroundColor,
             Icon = Icon,
-            StringFormat = StringFormat
+            StringFormat = StringFormat,
+            IconColor = IconColor
         };
     }
 
@@ -39,6 +41,8 @@ public class Format
             this.Icon = format.Icon;
         if (!String.IsNullOrEmpty(format.StringFormat))
             this.StringFormat = format.StringFormat;
+        if (!String.IsNullOrEmpty(format.IconColor))
+            this.IconColor = format.IconColor;
     }
 
     public static Format Default =>
@@ -47,5 +51,6 @@ public class Format
             FontWeight = "normal",
             BackgroundColor = "#ffffff",
             ForegroundColor = "#000000",
+            IconColor = "#000000"
         };
 }

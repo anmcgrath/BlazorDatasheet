@@ -49,7 +49,7 @@
                             ">
                             @if (format.Icon != null)
                             {
-                                <div style="margin-right:2px">@format.Icon</div>
+                                <div style="margin-right:2px; color: @format.IconColor">@format.Icon</div>
                             }
                             <DynamicComponent
                                 Type="@getCellRendererType(cell.Type)"
