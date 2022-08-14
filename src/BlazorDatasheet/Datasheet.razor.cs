@@ -7,8 +7,7 @@ namespace BlazorDatasheet;
 
 public partial class Datasheet : IHandleEvent
 {
-        [Parameter]
-    public Sheet? Sheet { get; set; }
+    [Parameter] public Sheet? Sheet { get; set; }
 
     private bool IsDataSheetActive { get; set; }
     private Cell? ActiveCell { get; set; }
@@ -40,7 +39,8 @@ public partial class Datasheet : IHandleEvent
     {
         return new Dictionary<string, object>()
         {
-            { "Value", cell.Value }
+            { "Value", cell.Value },
+            { "StringFormat", cell.Formatting.StringFormat }
         };
     }
 
@@ -77,7 +77,7 @@ public partial class Datasheet : IHandleEvent
             Sheet?.ExtendSelection(row, col);
         else
             Sheet?.BeginSelecting(row, col, !e.MetaKey);
-        
+
         StateHasChanged();
     }
 
@@ -167,6 +167,7 @@ public partial class Datasheet : IHandleEvent
                 Sheet?.MoveSelection(0, 1);
                 StateHasChanged();
             }
+
             return true;
         }
         else if (e.Key == "ArrowLeft")
@@ -182,6 +183,7 @@ public partial class Datasheet : IHandleEvent
                 Sheet?.MoveSelection(0, -1);
                 StateHasChanged();
             }
+
             return true;
         }
         else if (e.Key == "ArrowUp")
@@ -197,6 +199,7 @@ public partial class Datasheet : IHandleEvent
                 Sheet?.MoveSelection(-1, 0);
                 StateHasChanged();
             }
+
             return true;
         }
         else if (e.Key == "ArrowDown")
@@ -212,6 +215,7 @@ public partial class Datasheet : IHandleEvent
                 Sheet?.MoveSelection(1, 0);
                 StateHasChanged();
             }
+
             return true;
         }
 
@@ -226,11 +230,13 @@ public partial class Datasheet : IHandleEvent
                 BeginEdit(inputPosition.Row, inputPosition.Col, softEdit: true, clear: true, e.Key);
                 StateHasChanged();
             }
+
             return true;
         }
+
         return false;
     }
-    
+
     Task IHandleEvent.HandleEventAsync(
         EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
 

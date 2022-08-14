@@ -58,10 +58,13 @@ Welcome to your new app.
             return false;
         }), new Format()
         {
-            BackgroundColor = "#ff0000",
-            Icon = Icons.CheckIcon
+            BackgroundColor = "#ffffff",
+            Icon = Icons.CheckIcon,
+            IconColor = "#7ddc85"
         });
 
+        Sheet.Cells[1, 1].Formatting.StringFormat = "N3";
+        Sheet.Cells[1, 1].Type = "number";
         Sheet.RegisterConditionalFormat("g10", valFormat);
         Sheet.ApplyConditionalFormat("g10", new Range(0, 0));
     }
