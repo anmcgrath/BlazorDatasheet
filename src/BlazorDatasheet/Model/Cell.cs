@@ -73,7 +73,6 @@ public class Cell
     public string? Key { get; set; }
 
     public object? Data { get; set; }
-    public string Format { get; set; } = "";
 
     public Cell()
     {

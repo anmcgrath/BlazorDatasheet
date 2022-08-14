@@ -62,6 +62,8 @@ Welcome to your new app.
             Icon = Icons.CheckIcon
         });
 
+        Sheet.Cells[1, 1].Formatting.StringFormat = "N3";
+        Sheet.Cells[1, 1].Type = "number";
         Sheet.RegisterConditionalFormat("g10", valFormat);
         Sheet.ApplyConditionalFormat("g10", new Range(0, 0));
     }

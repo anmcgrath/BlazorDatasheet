@@ -1,3 +1,4 @@
+@using System.Globalization
 @inherits BaseRenderer
 
 <div style="color: @(ValidationError ? "red" : "black")">@FormattedNumber</div>
@@ -11,9 +12,12 @@
         {
             if (Double.TryParse(this.Value, out double res))
             {
-                return res.ToString("N3");
+                if (String.IsNullOrEmpty(StringFormat))
+                    return res.ToString(CultureInfo.CurrentCulture);
+                else
+                    return res.ToString(StringFormat, CultureInfo.CurrentCulture);
             }
-            
+
             return this.Value;
         }
     }
