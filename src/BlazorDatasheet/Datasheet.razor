@@ -89,7 +89,7 @@
     {
         return new Dictionary<string, object>()
         {
-            { "Value", cell.RawValue }
+            { "Value", cell.Value }
         };
     }
 
@@ -135,7 +135,7 @@
     private void BeginEdit(int row, int col, bool softEdit, bool clear, string entryChar = "")
     {
         var cell = Sheet?.GetCell(row, col);
-        ActiveEditValue = clear ? entryChar : cell?.RawValue + entryChar;
+        ActiveEditValue = clear ? entryChar : cell?.Value + entryChar;
         IsSoftEdit = softEdit;
         ActiveCell = cell;
     }
@@ -146,7 +146,7 @@
             return;
         if (ActiveCell != null)
         {
-            ActiveCell.RawValue = ActiveEditValue;
+            ActiveCell.Value = ActiveEditValue;
         }
 
         CancelEdit();
