@@ -1,5 +1,6 @@
 ﻿@page "/"
 @using BlazorDatasheet.Model
+@using BlazorDatasheet.Server.Data
 
 <PageTitle>Index</PageTitle>
 
@@ -14,20 +15,34 @@ Welcome to your new app.
 @code{
 
     private Sheet Sheet;
+    private List<Person> People { get; set; }
 
     protected override void OnInitialized()
     {
-        var rows = 6;
-        var cols = 6;
+        People = new List<Person>()
+        {
+            new Person() { Id = 0, Age = 32, FirstName = "John", LastName = "Citizen" },
+            new Person() { Id = 1, Age = 49, FirstName = "Albert", LastName = "Rogers" },
+            new Person() { Id = 2, Age = 106, FirstName = "Wendall", LastName = "Palmer" },
+        };
+
+        string[] keys = new string[4] { "Id", "Age", "FirstName", "LastName" };
+
+
+        var rows = People.Count;
+        var cols = keys.Length;
         Cell[,] cells = new Cell[rows, cols];
         for (int r = 0; r < rows; r++)
+        {
+            var person = People[r];
             for (int c = 0; c < cols; c++)
                 cells[r, c] = new Cell()
                 {
-                    Value = $"[{r},{c}]",
-                    Type = "number"
+                    Data = person,
+                    Key = keys[c],
+                    Type = "text"
                 };
-
+        }
         Sheet = new Sheet(rows, cols, cells);
     }
 
