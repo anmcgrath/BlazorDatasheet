@@ -2,6 +2,7 @@
 @using BlazorDatasheet.Model
 @using BlazorDatasheet.Server.Data
 @using Range = BlazorDatasheet.Model.Range
+@using BlazorDatasheet.Icons
 
 <PageTitle>Index</PageTitle>
 
@@ -57,11 +58,12 @@ Welcome to your new app.
             return false;
         }), new Format()
         {
-            BackgroundColor = "#ff0000"
+            BackgroundColor = "#ff0000",
+            Icon = Icons.CheckIcon
         });
-        
-        Sheet.RegisterConditionalFormat("g10",valFormat);
-        Sheet.ApplyConditionalFormat("g10", new Range(0,0));
+
+        Sheet.RegisterConditionalFormat("g10", valFormat);
+        Sheet.ApplyConditionalFormat("g10", new Range(0, 0));
     }
 
 }

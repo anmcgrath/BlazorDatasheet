@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Components;
+
 namespace BlazorDatasheet.Model;
 
 public class Format
@@ -5,6 +7,7 @@ public class Format
     public string FontWeight { get; set; }
     public string BackgroundColor { get; set; }
     public string ForegroundColor { get; set; }
+    public RenderFragment? Icon { get; set; }
 
     public Format Clone()
     {
@@ -12,7 +15,8 @@ public class Format
         {
             FontWeight = FontWeight,
             BackgroundColor = BackgroundColor,
-            ForegroundColor = ForegroundColor
+            ForegroundColor = ForegroundColor,
+            Icon = Icon
         };
     }
 
@@ -24,6 +28,8 @@ public class Format
             this.ForegroundColor = format.ForegroundColor;
         if (!String.IsNullOrEmpty(format.BackgroundColor))
             this.FontWeight = format.FontWeight;
+        if (format.Icon != null)
+            this.Icon = format.Icon;
     }
 
     public static Format Default =>

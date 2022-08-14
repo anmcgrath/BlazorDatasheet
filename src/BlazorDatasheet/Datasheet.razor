@@ -45,7 +45,12 @@
                             background: @format.BackgroundColor; 
                             color: @format.ForegroundColor;
                             font-weight: @format.FontWeight;
+                            display: flex;
                             ">
+                            @if (format.Icon != null)
+                            {
+                                <div style="margin-right:2px">@format.Icon</div>
+                            }
                             <DynamicComponent
                                 Type="@getCellRendererType(cell.Type)"
                                 Parameters="@getCellRendererParameters(cell)">
