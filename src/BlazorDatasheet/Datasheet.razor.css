@@ -34,7 +34,7 @@
 }
 
 .cell-selected {
-    background: #c7d8f1;
+    background: rgba(199, 225, 255, 0.95) !important;
 }
 
 .cell {

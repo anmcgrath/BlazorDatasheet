@@ -5,6 +5,7 @@ namespace BlazorDatasheet.Model;
 public class Cell
 {
     public string Type { get; set; } = "text";
+    public Format Formatting = Model.Format.Default;
 
     public string? Value
     {
@@ -16,6 +17,8 @@ public class Cell
         }
         set
         {
+            if (value == Value)
+                return;
             if (String.IsNullOrEmpty(Key))
             {
                 if (Setter == null)
@@ -48,7 +51,7 @@ public class Cell
 
                         propType = System.Nullable.GetUnderlyingType(propType);
                     }
-                    
+
                     object convertedValue = Convert.ChangeType(value, propType);
                     prop.SetValue(Data, convertedValue);
                 }
@@ -63,10 +66,22 @@ public class Cell
         }
     }
 
+    internal List<string> ConditionalFormattingIds { get; set; }
+
     public Action<object, string>? Setter { get; set; }
 
     public string? Key { get; set; }
 
-    public object Data { get; set; }
+    public object? Data { get; set; }
     public string Format { get; set; } = "";
+
+    public Cell()
+    {
+        ConditionalFormattingIds = new List<string>();
+    }
+
+    internal void AddConditionalFormat(string key)
+    {
+        ConditionalFormattingIds.Add(key);
+    }
 }

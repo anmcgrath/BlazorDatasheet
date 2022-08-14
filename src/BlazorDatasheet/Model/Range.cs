@@ -7,6 +7,18 @@ public class Range
     public int RowEnd { get; set; }
     public int ColEnd { get; set; }
 
+    public Range(int row, int col) : this(row, row, col, col)
+    {
+    }
+
+    public Range(int rowStart, int rowEnd, int colStart, int colEnd)
+    {
+        RowStart = rowStart;
+        RowEnd = rowEnd;
+        ColStart = colStart;
+        ColEnd = colEnd;
+    }
+
     public bool Contains(int row, int col)
     {
         var r0 = Math.Min(RowStart, RowEnd);
