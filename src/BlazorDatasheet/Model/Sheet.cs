@@ -6,7 +6,8 @@ public class Sheet
     public int Cols { get; private set; }
     public Cell[,] Cells { get; set; }
 
-    public List<Heading> ColumnDefinitions { get; set; }
+    public List<Heading> ColumnHeadings { get; private set; }
+    public List<Heading> RowHeadings { get; private set; }
 
     public Dictionary<string, ConditionalFormat> ConditionalFormats { get; set; }
     public Stack<Range> Selection { get; private set; }
@@ -25,7 +26,8 @@ public class Sheet
         Cols = cols;
         Selection = new Stack<Range>();
         ConditionalFormats = new Dictionary<string, ConditionalFormat>();
-        ColumnDefinitions = new List<Heading>();
+        ColumnHeadings = new List<Heading>();
+        RowHeadings = new List<Heading>();
         Cells = cells;
     }
 

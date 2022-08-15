@@ -90,15 +90,15 @@ public class ObjectEditorBuilder<T>
 
         for (int i = 0; i < propertyDefinitions.Count; i++)
         {
-            if (_direction == GridDirection.PropertiesAcrossColumns)
+            var headings = _direction == GridDirection.PropertiesAcrossColumns
+                ? sheet.ColumnHeadings
+                : sheet.RowHeadings;
+            headings.Add(new Heading()
             {
-                sheet.ColumnDefinitions.Add(new Heading()
-                {
-                    Header = String.IsNullOrEmpty(propertyDefinitions[i].Heading)
-                        ? propertyDefinitions[i].Key
-                        : propertyDefinitions[i].Heading,
-                });
-            }
+                Header = String.IsNullOrEmpty(propertyDefinitions[i].Heading)
+                    ? propertyDefinitions[i].Key
+                    : propertyDefinitions[i].Heading,
+            });
         }
 
         var objectEditor = new ObjectEditor<T>(sheet, this);

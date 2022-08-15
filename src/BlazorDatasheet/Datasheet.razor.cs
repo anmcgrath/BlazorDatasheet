@@ -74,7 +74,7 @@ public partial class Datasheet : IHandleEvent
     private void HandleCellMouseDown(int row, int col, MouseEventArgs e)
     {
         if (Sheet?.GetCell(row, col) != ActiveCell)
-            AcceptEdit();
+            AcceptEdit(true);
 
         if (e.ShiftKey)
             Sheet?.ExtendSelection(row, col);
@@ -86,7 +86,7 @@ public partial class Datasheet : IHandleEvent
 
     private void HandleColumnMouseDown(int col, MouseEventArgs e)
     {
-        AcceptEdit();
+        AcceptEdit(false);
 
         if (e.ShiftKey)
             Sheet?.ExtendSelection(Sheet.Rows, col);
@@ -101,7 +101,7 @@ public partial class Datasheet : IHandleEvent
 
     private void HandleRowMouseDown(int row, MouseEventArgs e)
     {
-        AcceptEdit();
+        AcceptEdit(false);
 
         if (e.ShiftKey)
             Sheet?.ExtendSelection(row, Sheet.Cols);
@@ -123,28 +123,31 @@ public partial class Datasheet : IHandleEvent
     private void BeginEdit(int row, int col, bool softEdit, bool clear, string entryChar = "")
     {
         var cell = Sheet?.GetCell(row, col);
-        ActiveEditValue = clear ? entryChar : cell?.Value + entryChar;
+        ActiveEditValue = clear ? entryChar : cell?.Value + entryChar; 
         IsSoftEdit = softEdit;
         ActiveCell = cell;
     }
 
-    private void AcceptEdit()
+    private void AcceptEdit(bool stateChanged = true)
     {
         if (!IsEditing)
             return;
+
         if (ActiveCell != null)
         {
             ActiveCell.Value = ActiveEditValue;
         }
 
-        CancelEdit();
-        StateHasChanged();
+        CancelEdit(true);
+        if(stateChanged)
+            StateHasChanged();
     }
 
-    private void CancelEdit()
+    private void CancelEdit(bool stateChanged = true)
     {
         ActiveCell = null;
-        StateHasChanged();
+        if(stateChanged)
+            StateHasChanged();
     }
 
     private void HandleCellMouseOver(int row, int col, MouseEventArgs e)
