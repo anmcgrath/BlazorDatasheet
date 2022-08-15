@@ -6,6 +6,8 @@ public class Sheet
     public int Cols { get; private set; }
     public Cell[,] Cells { get; set; }
 
+    public List<ColumnDefinition> ColumnDefinitions { get; set; }
+
     public Dictionary<string, ConditionalFormat> ConditionalFormats { get; set; }
     public Stack<Range> Selection { get; private set; }
 
@@ -15,6 +17,7 @@ public class Sheet
     public Range ActiveSelecting { get; set; }
 
     public bool IsSelecting { get; set; }
+    public SelectionMode SelectionMode { get; set; }
 
     public Sheet(int rows, int cols, Cell[,] cells)
     {
@@ -22,6 +25,7 @@ public class Sheet
         Cols = cols;
         Selection = new Stack<Range>();
         ConditionalFormats = new Dictionary<string, ConditionalFormat>();
+        ColumnDefinitions = new List<ColumnDefinition>();
         Cells = cells;
     }
 
@@ -125,12 +129,13 @@ public class Sheet
             .Any(x => x.Contains(row, col));
     }
 
-    public void BeginSelecting(int row, int col, bool clearSelection)
+    public void BeginSelecting(int row, int col, bool clearSelection, SelectionMode mode)
     {
         if (clearSelection)
             ClearSelection();
         ActiveSelecting = new Range(row, col);
         IsSelecting = true;
+        SelectionMode = mode;
     }
 
     public void EndSelecting()
@@ -155,15 +160,27 @@ public class Sheet
         UpdateSelecting(row, col);
     }
 
+    public bool IsColumnActive(int col)
+    {
+        if (IsSelecting && ActiveSelecting.ContainsCol(col))
+            return true;
+        return Selection.Any(x => x.ContainsCol(col));
+    }
+
+    public bool IsRowActive(int row)
+    {
+        if (IsSelecting && ActiveSelecting.ContainsRow(row))
+            return true;
+        return Selection.Any(x => x.ContainsRow(row));
+    }
+
     public void ApplyConditionalFormat(string key, Range range)
     {
         if (!ConditionalFormats.ContainsKey(key))
             return;
         var cf = ConditionalFormats[key];
         cf.AddRange(range);
-        Console.WriteLine("Applying");
         var cells = this.GetCellsInRanges(cf.Ranges.ToList());
-        Console.WriteLine(cells.Length);
         foreach (var cell in cells)
             cell.AddConditionalFormat(key);
     }

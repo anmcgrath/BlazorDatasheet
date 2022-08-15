@@ -46,10 +46,13 @@ Welcome to your new app.
                 };
         }
         Sheet = new Sheet(rows, cols, cells);
+        Sheet.ColumnDefinitions.Add(new ColumnDefinition()
+        {
+            Header = "ID"
+        });
 
         var valFormat = new ConditionalFormat(((cell, cells) =>
         {
-            Console.WriteLine("cF");
             var parseVal = double.TryParse(cell.Value, out double val);
             if (!parseVal)
                 return false;

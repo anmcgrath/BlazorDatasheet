@@ -49,7 +49,6 @@ Welcome to your new app.
 
         var valFormat = new ConditionalFormat(((cell, cells) =>
         {
-            Console.WriteLine("cF");
             var parseVal = double.TryParse(cell.Value, out double val);
             if (!parseVal)
                 return false;

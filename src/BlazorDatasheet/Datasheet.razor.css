@@ -18,7 +18,7 @@
     height: 1.6rem;
     border: 1px solid lightgray;
     box-sizing: border-box;
-    padding: 0
+    padding: 0;
 }
 
 .cell-input {
@@ -43,4 +43,22 @@
     user-select: none;
     -moz-user-select: none;
     -webkit-user-select: none;
+}
+
+.column-head {
+    background: #fafafa !important;
+}
+
+.column-active {
+    background: #f4f4f4 !important;
+    border-bottom: 1px solid #3d87f1 !important;
+}
+
+.row-head {
+    background: #fafafa !important;
+}
+
+.row-active {
+    background: #f4f4f4 !important;
+    border-right: 1px solid #3d87f1 !important;
 }
