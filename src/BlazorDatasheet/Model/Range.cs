@@ -31,6 +31,23 @@ public class Range
                col <= c1;
     }
 
+    public bool ContainsCol(int col)
+    {
+        var c0 = Math.Min(ColStart, ColEnd);
+        var c1 = Math.Max(ColStart, ColEnd);
+        return col >= c0 && col <= c1;
+    }
+    
+    public bool ContainsRow(int row)
+    {
+        var r0 = Math.Min(RowStart, RowEnd);
+        var r1 = Math.Max(RowStart, RowEnd);
+        return row >= r0 &&
+               row <= r1;
+    }
+    
+    
+
     public void Constrain(int rows, int cols)
     {
         RowStart = Constrain(0, rows - 1, RowStart);
@@ -46,5 +63,10 @@ public class Range
         if (val > max)
             return max;
         return val;
+    }
+
+    public override string ToString()
+    {
+        return $"Range from ({RowStart}, {ColStart}) to ({RowEnd}, {ColEnd})";
     }
 }

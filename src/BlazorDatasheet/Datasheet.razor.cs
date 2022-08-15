@@ -64,8 +64,11 @@ public partial class Datasheet : IHandleEvent
 
     private void HandleCellMouseUp(int row, int col, MouseEventArgs e)
     {
-        Sheet?.EndSelecting();
-        StateHasChanged();
+        if (Sheet.IsSelecting)
+        {
+            Sheet?.EndSelecting();
+            StateHasChanged();
+        }
     }
 
     private void HandleCellMouseDown(int row, int col, MouseEventArgs e)
@@ -76,7 +79,37 @@ public partial class Datasheet : IHandleEvent
         if (e.ShiftKey)
             Sheet?.ExtendSelection(row, col);
         else
-            Sheet?.BeginSelecting(row, col, !e.MetaKey);
+            Sheet?.BeginSelecting(row, col, !e.MetaKey, SelectionMode.Cell);
+
+        StateHasChanged();
+    }
+
+    private void HandleColumnMouseDown(int col, MouseEventArgs e)
+    {
+        AcceptEdit();
+
+        if (e.ShiftKey)
+            Sheet?.ExtendSelection(Sheet.Rows, col);
+        else
+        {
+            Sheet?.BeginSelecting(0, col, !e.MetaKey, SelectionMode.Column);
+            Sheet?.UpdateSelecting(Sheet.Rows, col);
+        }
+
+        StateHasChanged();
+    }
+
+    private void HandleRowMouseDown(int row, MouseEventArgs e)
+    {
+        AcceptEdit();
+
+        if (e.ShiftKey)
+            Sheet?.ExtendSelection(row, Sheet.Cols);
+        else
+        {
+            Sheet?.BeginSelecting(row, 0, !e.MetaKey, SelectionMode.Row);
+            Sheet?.UpdateSelecting(row, Sheet.Cols);
+        }
 
         StateHasChanged();
     }
@@ -118,7 +151,12 @@ public partial class Datasheet : IHandleEvent
     {
         if (Sheet?.IsSelecting == true)
         {
-            Sheet.UpdateSelecting(row, col);
+            if (Sheet.SelectionMode == SelectionMode.Cell)
+                Sheet.UpdateSelecting(row, col);
+            else if (Sheet.SelectionMode == SelectionMode.Column)
+                Sheet.UpdateSelecting(Sheet.Rows, col);
+            else if (Sheet.SelectionMode == SelectionMode.Row)
+                Sheet.UpdateSelecting(row, Sheet.Cols);
             StateHasChanged();
         }
     }

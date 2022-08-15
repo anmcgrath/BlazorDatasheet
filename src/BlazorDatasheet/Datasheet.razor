@@ -11,9 +11,34 @@
     class="sheet @(IsDataSheetActive ? "active-sheet" : "inactive-sheet")"
     @onmouseover="() => IsMouseInsideSheet = true"
     @onmouseout="() => IsMouseInsideSheet = false">
+    <!-- Column headers -->
+    <tr>
+        <td style="background: #fafafa; border: 1px solid lightgray"></td>
+        @for (var i = 0; i < Sheet?.Cols; i++)
+        {
+            var col = i;
+            var colDefn = Sheet.ColumnDefinitions.Count > i ? Sheet.ColumnDefinitions[i] : null;
+            <th
+                class="sheet-cell column-head @(IsDataSheetActive && Sheet.IsColumnActive(col) ? "column-active":"")"
+                @onmouseup="e => HandleCellMouseUp(-1, col, e)"
+                @onmouseover="e => HandleCellMouseOver(-1, col, e)"
+                @onmousedown="e => HandleColumnMouseDown(col, e)">
+                @colDefn?.Header
+            </th>
+        }
+    </tr>
+
     @for (var i = 0; i < Sheet?.Rows; i++)
     {
+        var rowHead = i;
         <tr>
+            <td
+                class="sheet-cell row-head @(IsDataSheetActive && Sheet.IsRowActive(rowHead) ? "row-active":"")"
+                @onmousedown="e => HandleRowMouseDown(rowHead, e)"
+                @onmouseover="e => HandleCellMouseOver(rowHead, -1, e)"
+                @onmouseup="e => HandleCellMouseUp(rowHead, -1, e)">
+
+            </td>
             @for (int j = 0; j < Sheet?.Cols; j++)
             {
                 var row = i;
