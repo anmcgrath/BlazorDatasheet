@@ -25,7 +25,7 @@
 .cell-input[b-zet5yo0qob] {
     width: calc(100% - 4px);
     border: 1px solid black;
-    padding: 0px;
+    padding: 0;
     height: calc(100%);
     box-sizing: border-box;
 }
