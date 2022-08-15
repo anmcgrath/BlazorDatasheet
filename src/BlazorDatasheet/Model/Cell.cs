@@ -1,11 +1,9 @@
-using System.Reflection;
-
 namespace BlazorDatasheet.Model;
 
 public class Cell
 {
     public string Type { get; set; } = "text";
-    public Format Formatting = Model.Format.Default;
+    public Format Formatting = Format.Default;
 
     public string? Value
     {

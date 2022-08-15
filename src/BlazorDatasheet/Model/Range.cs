@@ -19,6 +19,12 @@ public class Range
         ColEnd = colEnd;
     }
 
+    /// <summary>
+    /// Determines whether a point is inside the range
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <returns></returns>
     public bool Contains(int row, int col)
     {
         var r0 = Math.Min(RowStart, RowEnd);
@@ -31,6 +37,11 @@ public class Range
                col <= c1;
     }
 
+    /// <summary>
+    /// Determines whether the column is spanned by the range
+    /// </summary>
+    /// <param name="col"></param>
+    /// <returns></returns>
     public bool ContainsCol(int col)
     {
         var c0 = Math.Min(ColStart, ColEnd);
@@ -38,6 +49,11 @@ public class Range
         return col >= c0 && col <= c1;
     }
     
+    /// <summary>
+    /// Determines whether the row is spanned by the range
+    /// </summary>
+    /// <param name="row"></param>
+    /// <returns></returns>
     public bool ContainsRow(int row)
     {
         var r0 = Math.Min(RowStart, RowEnd);
@@ -46,8 +62,11 @@ public class Range
                row <= r1;
     }
     
-    
-
+    /// <summary>
+    /// Updates the size of the range so that it is no larger than a range starting from (0, 0) to (rows, cols)
+    /// </summary>
+    /// <param name="rows"></param>
+    /// <param name="cols"></param>
     public void Constrain(int rows, int cols)
     {
         RowStart = Constrain(0, rows - 1, RowStart);
@@ -56,6 +75,13 @@ public class Range
         ColEnd = Constrain(0, cols - 1, ColEnd);
     }
 
+    /// <summary>
+    /// Constrains a single value to be inside max/min (aka clamp)
+    /// </summary>
+    /// <param name="min"></param>
+    /// <param name="max"></param>
+    /// <param name="val"></param>
+    /// <returns></returns>
     private int Constrain(int min, int max, int val)
     {
         if (val < min)

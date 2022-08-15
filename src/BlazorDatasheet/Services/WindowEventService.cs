@@ -4,6 +4,9 @@ using Microsoft.JSInterop;
 
 namespace BlazorDatasheet.Services;
 
+/// <summary>
+/// Assigns keyboard & mouse events to the browser "window" and allows us to respond to the events
+/// </summary>
 public class WindowEventService : IWindowEventService
 {
     private readonly IJSRuntime _js;

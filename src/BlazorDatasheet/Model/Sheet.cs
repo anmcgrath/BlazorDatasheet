@@ -7,16 +7,18 @@ public class Sheet
     public Cell[,] Cells { get; set; }
 
     public List<ColumnDefinition> ColumnDefinitions { get; set; }
+    
+    private Dictionary<string, ConditionalFormat> _conditionalFormats;
+    internal IReadOnlyDictionary<string, ConditionalFormat> ConditionalFormats => _conditionalFormats;
 
-    public Dictionary<string, ConditionalFormat> ConditionalFormats { get; set; }
-    public Stack<Range> Selection { get; private set; }
+    private Stack<Range> Selection { get; set; }
 
     /// <summary>
     /// The actively selecting range
     /// </summary>
-    public Range ActiveSelecting { get; set; }
+    public Range ActiveSelecting { get; private set; }
 
-    public bool IsSelecting { get; set; }
+    public bool IsSelecting { get; private set; }
     public SelectionMode SelectionMode { get; set; }
 
     public Sheet(int rows, int cols, Cell[,] cells)
@@ -24,7 +26,7 @@ public class Sheet
         Rows = rows;
         Cols = cols;
         Selection = new Stack<Range>();
-        ConditionalFormats = new Dictionary<string, ConditionalFormat>();
+        _conditionalFormats = new Dictionary<string, ConditionalFormat>();
         ColumnDefinitions = new List<ColumnDefinition>();
         Cells = cells;
     }
@@ -48,9 +50,14 @@ public class Sheet
         return cells.ToArray();
     }
 
+    /// <summary>
+    /// Adds a conditional formatting object to the sheet. Must be applied by setting ApplyConditionalFormat
+    /// </summary>
+    /// <param name="key">A unique ID identifying the conditional format</param>
+    /// <param name="conditionalFormat"></param>
     public void RegisterConditionalFormat(string key, ConditionalFormat conditionalFormat)
     {
-        this.ConditionalFormats.Add(key, conditionalFormat);
+        this._conditionalFormats.Add(key, conditionalFormat);
     }
 
     public Cell[] GetCellsInRanges(List<Range> ranges)
@@ -79,6 +86,11 @@ public class Sheet
         Cells[row, col] = value;
     }
 
+    /// <summary>
+    /// Set the selection to a single cell & clear all current selections
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
     public void SetSelectionSingle(int row, int col)
     {
         this.Selection.Clear();
@@ -86,6 +98,10 @@ public class Sheet
         range.Constrain(Rows, Cols);
         this.Selection.Push(range);
     }
+    /// <summary>
+    /// Determines the most appropriate position for inputting new data, based on the current selections
+    /// </summary>
+    /// <returns>The most appropriate position for inputting new data</returns>
 
     public CellPosition GetInputForSelection()
     {
@@ -100,7 +116,7 @@ public class Sheet
             Col = selection.ColStart
         };
     }
-
+    
     public void MoveSelection(int drow, int dcol)
     {
         if (IsSelecting)
@@ -113,12 +129,21 @@ public class Sheet
         SetSelectionSingle(recentSel.RowStart + drow, recentSel.ColStart + dcol);
     }
 
+    /// <summary>
+    /// Clears all current selections
+    /// </summary>
     public void ClearSelection()
     {
         EndSelecting();
         Selection.Clear();
     }
-
+    
+    /// <summary>
+    /// Returns true if the position is inside any of the active selections
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <returns></returns>
     public bool IsSelected(int row, int col)
     {
         if (IsSelecting && ActiveSelecting.Contains(row, col))
@@ -129,6 +154,13 @@ public class Sheet
             .Any(x => x.Contains(row, col));
     }
 
+    /// <summary>
+    /// Starts a new "Selecting" process
+    /// </summary>
+    /// <param name="row">The row to start selecting at</param>
+    /// <param name="col">The col to start selecting at</param>
+    /// <param name="clearSelection">Whether to clear all current selections</param>
+    /// <param name="mode">The way the selection is triggered</param>
     public void BeginSelecting(int row, int col, bool clearSelection, SelectionMode mode)
     {
         if (clearSelection)
@@ -137,29 +169,48 @@ public class Sheet
         IsSelecting = true;
         SelectionMode = mode;
     }
-
+    
+    /// <summary>
+    /// Ends the current "Selecting" process and adds the new selection to the stack
+    /// </summary>
     public void EndSelecting()
     {
         IsSelecting = false;
         Selection.Push(ActiveSelecting);
         ActiveSelecting = null;
     }
-
-    public void UpdateSelecting(int row, int col)
+    
+    /// <summary>
+    /// Updates the current "Selecting" process by extending it to row, col
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    public void UpdateSelectingEndPosition(int row, int col)
     {
         if (!IsSelecting)
             return;
         ActiveSelecting.ColEnd = col;
         ActiveSelecting.RowEnd = row;
     }
+    
+    /// <summary>
+    /// Extends the most recently added selection to the row, col position
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
 
     public void ExtendSelection(int row, int col)
     {
         ActiveSelecting = Selection.Pop();
         IsSelecting = true;
-        UpdateSelecting(row, col);
+        UpdateSelectingEndPosition(row, col);
     }
 
+    /// <summary>
+    /// Determines whether a column contains any cells that are selected or being selected
+    /// </summary>
+    /// <param name="col"></param>
+    /// <returns></returns>
     public bool IsColumnActive(int col)
     {
         if (IsSelecting && ActiveSelecting.ContainsCol(col))
@@ -167,6 +218,11 @@ public class Sheet
         return Selection.Any(x => x.ContainsCol(col));
     }
 
+    /// <summary>
+    /// Determines whether a row contains any cells that are selected or being selected
+    /// </summary>
+    /// <param name="row"></param>
+    /// <returns></returns>
     public bool IsRowActive(int row)
     {
         if (IsSelecting && ActiveSelecting.ContainsRow(row))
@@ -174,6 +230,11 @@ public class Sheet
         return Selection.Any(x => x.ContainsRow(row));
     }
 
+    /// <summary>
+    /// Applies the conditional format specified by "key" to all cells in a range, if the conditional formatting exists.
+    /// </summary>
+    /// <param name="key"></param>
+    /// <param name="range"></param>
     public void ApplyConditionalFormat(string key, Range range)
     {
         if (!ConditionalFormats.ContainsKey(key))
@@ -185,6 +246,11 @@ public class Sheet
             cell.AddConditionalFormat(key);
     }
 
+    /// <summary>
+    /// Determines the "final" formatting of a cell by applying any conditional formatting
+    /// </summary>
+    /// <param name="cell"></param>
+    /// <returns></returns>
     public Format GetFormat(Cell cell)
     {
         if (!cell.ConditionalFormattingIds.Any())

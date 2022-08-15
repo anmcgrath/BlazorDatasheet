@@ -1,6 +1,4 @@
 using BlazorDatasheet.Interfaces;
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
 using BlazorDatasheet.Server.Data;
 using BlazorDatasheet.Services;
 
