@@ -24,6 +24,7 @@ public partial class Datasheet : IHandleEvent
         RenderComponentTypes = new Dictionary<string, Type>();
         RenderComponentTypes.Add("text", typeof(TextRenderer));
         RenderComponentTypes.Add("number", typeof(NumberRenderer));
+        RenderComponentTypes.Add("boolean", typeof(BoolRenderer));
         base.OnInitialized();
     }
 
@@ -39,8 +40,7 @@ public partial class Datasheet : IHandleEvent
     {
         return new Dictionary<string, object>()
         {
-            { "Value", cell.Value },
-            { "StringFormat", cell.Formatting.StringFormat }
+            { "Cell", cell },
         };
     }
 
@@ -123,7 +123,7 @@ public partial class Datasheet : IHandleEvent
     private void BeginEdit(int row, int col, bool softEdit, bool clear, string entryChar = "")
     {
         var cell = Sheet?.GetCell(row, col);
-        ActiveEditValue = clear ? entryChar : cell?.Value + entryChar; 
+        ActiveEditValue = clear ? entryChar : cell?.Value + entryChar;
         IsSoftEdit = softEdit;
         ActiveCell = cell;
     }
@@ -139,14 +139,14 @@ public partial class Datasheet : IHandleEvent
         }
 
         CancelEdit(true);
-        if(stateChanged)
+        if (stateChanged)
             StateHasChanged();
     }
 
     private void CancelEdit(bool stateChanged = true)
     {
         ActiveCell = null;
-        if(stateChanged)
+        if (stateChanged)
             StateHasChanged();
     }
 
