@@ -82,6 +82,7 @@ public class ObjectEditorBuilder<T>
 
                 cell.Setter = propDefn.SetterObj;
                 cell.Formatting = propDefn.Format;
+                cell.Type = propDefn.Type;
                 cells[row, col] = cell;
             }
         }
@@ -123,10 +124,20 @@ public class ObjectEditorBuilder<T>
             objProperties.Add(new ObjectPropertyDefinition<T>()
             {
                 Key = propInfo.Name,
-                Type = propInfo.PropertyType
+                Type = getCellType(propInfo.PropertyType)
             });
         }
 
         return objProperties;
+    }
+
+    private string getCellType(Type type)
+    {
+        if (type.IsNullable())
+            type = Nullable.GetUnderlyingType(type);
+
+        if (type.IsNumeric())
+            return "number";
+        return "text";
     }
 }

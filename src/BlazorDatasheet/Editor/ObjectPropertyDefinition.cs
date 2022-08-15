@@ -6,7 +6,7 @@ public class ObjectPropertyDefinition<T>
 {
     public string Key { get; set; }
     public string Heading { get; set; }
-    public Type Type { get; set; }
+    public string Type { get; set; }
     public Format Format { get; set; } = Format.Default;
 
     private Action<T, string>? _setter;
