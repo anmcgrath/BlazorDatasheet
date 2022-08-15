@@ -138,6 +138,10 @@ public class ObjectEditorBuilder<T>
 
         if (type.IsNumeric())
             return "number";
+
+        if (type == typeof(bool))
+            return "boolean";
+        
         return "text";
     }
 }

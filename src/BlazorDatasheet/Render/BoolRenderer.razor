@@ -1,0 +1,13 @@
+@inherits BaseRenderer
+
+<input type="checkbox" @bind="Checked"/>
+
+@code {
+
+    public bool Checked
+    {
+        get { return bool.Parse(Cell.Value); }
+        set { Cell.Value = value.ToString(); }
+    }
+
+}
