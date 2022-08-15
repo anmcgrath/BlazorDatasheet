@@ -60,7 +60,8 @@ Welcome to your new app.
                         BackgroundColor = "#f292ff"
                     };
                 })
-                .WithProperty(x => x.Id, pd => { pd.Heading = "Person ID"; });
+                .WithProperty(x => x.Id, pd => { pd.Heading = "Person ID"; })
+                .WithProperty(x => x.Age, pd => { pd.Format.StringFormat = "N1"; });
 
         var editor1 = builder1.Build();
         var editor2 = builder2.Build();
