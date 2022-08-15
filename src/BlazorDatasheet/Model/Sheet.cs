@@ -26,7 +26,7 @@ public class Sheet
         Rows = rows;
         Cols = cols;
         Selection = new Stack<Range>();
-        ConditionalFormats = new Dictionary<string, ConditionalFormat>();
+        _conditionalFormats = new Dictionary<string, ConditionalFormat>();
         ColumnHeadings = new List<Heading>();
         RowHeadings = new List<Heading>();
         _conditionalFormats = new Dictionary<string, ConditionalFormat>();
