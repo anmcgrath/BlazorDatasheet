@@ -46,21 +46,28 @@ Welcome to your new app.
                 };
         }
         Sheet = new Sheet(rows, cols, cells);
+        Sheet.ColumnDefinitions.Add(new ColumnDefinition()
+        {
+            Header = "ID"
+        });
 
         var valFormat = new ConditionalFormat(((cell, cells) =>
         {
             var parseVal = double.TryParse(cell.Value, out double val);
             if (!parseVal)
                 return false;
-            if (val <= 0)
+            if (val > 10)
                 return true;
             return false;
         }), new Format()
         {
-            BackgroundColor = "#00ff00",
-            Icon = Icons.CheckIcon
+            BackgroundColor = "#ffffff",
+            Icon = Icons.CheckIcon,
+            IconColor = "#7ddc85"
         });
 
+        Sheet.Cells[1, 1].Formatting.StringFormat = "N3";
+        Sheet.Cells[1, 1].Type = "number";
         Sheet.RegisterConditionalFormat("g10", valFormat);
         Sheet.ApplyConditionalFormat("g10", new Range(0, 0));
     }
