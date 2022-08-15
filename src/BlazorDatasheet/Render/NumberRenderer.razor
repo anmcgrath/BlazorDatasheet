@@ -4,21 +4,21 @@
 <div style="color: @(ValidationError ? "red" : "black")">@FormattedNumber</div>
 
 @code {
-    private bool ValidationError => !Double.TryParse(this.Value, out double res);
+    private bool ValidationError => !Double.TryParse(Cell.Value, out double res);
 
     private string FormattedNumber
     {
         get
         {
-            if (Double.TryParse(this.Value, out double res))
+            if (Double.TryParse(Cell.Value, out double res))
             {
-                if (String.IsNullOrEmpty(StringFormat))
+                if (String.IsNullOrEmpty(Cell.Formatting.StringFormat))
                     return res.ToString(CultureInfo.CurrentCulture);
                 else
-                    return res.ToString(StringFormat, CultureInfo.CurrentCulture);
+                    return res.ToString(Cell.Formatting.StringFormat, CultureInfo.CurrentCulture);
             }
 
-            return this.Value;
+            return Cell.Value;
         }
     }
 
