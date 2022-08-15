@@ -64,8 +64,11 @@ public partial class Datasheet : IHandleEvent
 
     private void HandleCellMouseUp(int row, int col, MouseEventArgs e)
     {
-        Sheet?.EndSelecting();
-        StateHasChanged();
+        if (Sheet.IsSelecting)
+        {
+            Sheet?.EndSelecting();
+            StateHasChanged();
+        }
     }
 
     private void HandleCellMouseDown(int row, int col, MouseEventArgs e)
