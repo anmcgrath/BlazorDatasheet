@@ -14,13 +14,13 @@ public class ConditionalFormat
         Rule = rule;
         Formatting = formatting;
     }
-
+    
     public void AddRange(Range range)
     {
         _ranges.Add(range);
     }
 
-    public bool Contains(int row, int col)
+    public bool IsActiveForCell(int row, int col)
     {
         return _ranges.Any(x => x.Contains(row, col));
     }

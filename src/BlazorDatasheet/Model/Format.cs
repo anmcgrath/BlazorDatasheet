@@ -11,6 +11,10 @@ public class Format
     public RenderFragment? Icon { get; set; }
     public string IconColor { get; set; }
 
+    /// <summary>
+    /// Returns a new Format object with cloned properties
+    /// </summary>
+    /// <returns></returns>
     public Format Clone()
     {
         return new Format()
