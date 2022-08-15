@@ -6,8 +6,8 @@ public class Sheet
     public int Cols { get; private set; }
     public Cell[,] Cells { get; set; }
 
-    public List<ColumnDefinition> ColumnDefinitions { get; set; }
-    
+    public List<Heading> ColumnHeadings { get; private set; }
+    public List<Heading> RowHeadings { get; private set; }
     private Dictionary<string, ConditionalFormat> _conditionalFormats;
     internal IReadOnlyDictionary<string, ConditionalFormat> ConditionalFormats => _conditionalFormats;
 
@@ -26,8 +26,10 @@ public class Sheet
         Rows = rows;
         Cols = cols;
         Selection = new Stack<Range>();
+        ConditionalFormats = new Dictionary<string, ConditionalFormat>();
+        ColumnHeadings = new List<Heading>();
+        RowHeadings = new List<Heading>();
         _conditionalFormats = new Dictionary<string, ConditionalFormat>();
-        ColumnDefinitions = new List<ColumnDefinition>();
         Cells = cells;
     }
 

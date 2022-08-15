@@ -3,6 +3,7 @@
 @using BlazorDatasheet.Server.Data
 @using Range = BlazorDatasheet.Model.Range
 @using BlazorDatasheet.Icons
+@using BlazorDatasheet.Editor
 
 <PageTitle>Index</PageTitle>
 
@@ -12,11 +13,16 @@ Welcome to your new app.
 
 <SurveyPrompt Title="How is Blazor working for you?"/>
 
+<p>Here is out ObjectEditor with properties across the columns</p>
 <Datasheet Sheet="Sheet"></Datasheet>
+
+<p>Here is the same editor with properties across the rows and the formatting changed on the LastName property</p>
+<Datasheet Sheet="Sheet2"></Datasheet>
 
 @code{
 
     private Sheet Sheet;
+    private Sheet Sheet2;
     private List<Person> People { get; set; }
 
     protected override void OnInitialized()
@@ -28,48 +34,41 @@ Welcome to your new app.
             new Person() { Id = 2, Age = 106, FirstName = "Wendall", LastName = "Palmer" },
         };
 
-        string[] keys = new string[4] { "Id", "Age", "FirstName", "LastName" };
-
-
-        var rows = People.Count;
-        var cols = keys.Length;
-        Cell[,] cells = new Cell[rows, cols];
-        for (int r = 0; r < rows; r++)
-        {
-            var person = People[r];
-            for (int c = 0; c < cols; c++)
-                cells[r, c] = new Cell()
+        var builder1 = new ObjectEditorBuilder<Person>(People, GridDirection.PropertiesAcrossColumns);
+        builder1.AutogenerateProperties(true)
+                .WithProperty(x => x.FirstName, pd =>
                 {
-                    Data = person,
-                    Key = keys[c],
-                    Type = "text"
-                };
-        }
-        Sheet = new Sheet(rows, cols, cells);
-        Sheet.ColumnDefinitions.Add(new ColumnDefinition()
-        {
-            Header = "ID"
-        });
+                    pd.Heading = "First Name";
+                    pd.Setter = (person, s) => { person.FirstName = s; };
+                    pd.Format = new Format()
+                    {
+                        FontWeight = "bold",
+                        ForegroundColor = "#006600",
+                        BackgroundColor = "#fafafa"
+                    };
+                })
+                .WithProperty(x => x.Id, pd => { pd.Heading = "Person ID"; });
 
-        var valFormat = new ConditionalFormat(((cell, cells) =>
-        {
-            var parseVal = double.TryParse(cell.Value, out double val);
-            if (!parseVal)
-                return false;
-            if (val > 10)
-                return true;
-            return false;
-        }), new Format()
-        {
-            BackgroundColor = "#ffffff",
-            Icon = Icons.CheckIcon,
-            IconColor = "#7ddc85"
-        });
+        var builder2 = new ObjectEditorBuilder<Person>(People, GridDirection.PropertiesAcrossRows);
+        builder2.AutogenerateProperties(true)
+                .WithProperty(x => x.LastName, pd =>
+                {
+                    pd.Heading = "Last Name";
+                    pd.Setter = (person, s) => { person.LastName = s; };
+                    pd.Format = new Format()
+                    {
+                        BackgroundColor = "#f292ff"
+                    };
+                })
+                .WithProperty(x => x.Id, pd => { pd.Heading = "Person ID"; })
+                .WithProperty(x => x.Age, pd => { pd.Format.StringFormat = "N1"; });
 
-        Sheet.Cells[1, 1].Formatting.StringFormat = "N3";
-        Sheet.Cells[1, 1].Type = "number";
-        Sheet.RegisterConditionalFormat("g10", valFormat);
-        Sheet.ApplyConditionalFormat("g10", new Range(0, 0));
+        var editor1 = builder1.Build();
+        var editor2 = builder2.Build();
+
+
+        Sheet = editor1.Sheet;
+        Sheet2 = editor2.Sheet;
     }
 
 }

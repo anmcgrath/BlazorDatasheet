@@ -1,6 +1,6 @@
 namespace BlazorDatasheet.Model;
 
-public class RowDefinition
+public class Heading
 {
     public string Header { get; set; }
 }
