@@ -1,4 +1,4 @@
-namespace BlazorDatasheet.Editor;
+namespace BlazorDatasheet.ObjectEditor;
 
 public enum GridDirection
 {
