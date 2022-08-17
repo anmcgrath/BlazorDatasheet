@@ -1,6 +1,8 @@
 using BlazorDatasheet.Edit;
+using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Model;
 using BlazorDatasheet.Render;
+using BlazorDatasheet.Services;
 using BlazorDatasheet.Util;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
@@ -20,8 +22,11 @@ public partial class Datasheet : IHandleEvent
     private Queue<Action> QueuedActions { get; set; } = new Queue<Action>();
     private Dictionary<string, Type> RenderComponentTypes { get; set; }
 
+    private IWindowEventService _windowEventService;
+
     protected override void OnInitialized()
     {
+        _windowEventService = new WindowEventService(JS);
         RenderComponentTypes = new Dictionary<string, Type>();
         RenderComponentTypes.Add("text", typeof(TextRenderer));
         RenderComponentTypes.Add("number", typeof(NumberRenderer));
@@ -61,9 +66,9 @@ public partial class Datasheet : IHandleEvent
 
     private async Task AddWindowEventsAsync()
     {
-        await _WindowEventService.Init();
-        _WindowEventService.OnKeyDown += HandleWindowKeyDown;
-        _WindowEventService.OnMouseDown += HandleWindowMouseDown;
+        await _windowEventService.Init();
+        _windowEventService.OnKeyDown += HandleWindowKeyDown;
+        _windowEventService.OnMouseDown += HandleWindowMouseDown;
     }
 
     private void HandleCellMouseUp(int row, int col, MouseEventArgs e)
@@ -236,7 +241,7 @@ public partial class Datasheet : IHandleEvent
             if (handled)
                 return true;
         }
-        
+
         if (e.Key == "Escape")
         {
             return CancelEdit();
@@ -295,6 +300,6 @@ public partial class Datasheet : IHandleEvent
 
     public void Dispose()
     {
-        _WindowEventService.Dispose();
+        _windowEventService.Dispose();
     }
 }
