@@ -9,12 +9,31 @@
         if (!canPass)
             this.OnCancelEdit.Invoke();
 
+        EditString = cell.Value;
+
         if (entryMode == EditEntryMode.Mouse)
         {
             var newValue = !parsedValue;
             EditString = newValue.ToString();
-            this.OnAcceptEdit.Invoke();
         }
+
+        if (entryMode == EditEntryMode.Key)
+        {
+            if (key.ToLower() == "y")
+            {
+                EditString = true.ToString();
+            }
+            else if (key.ToLower() == "n")
+            {
+                EditString = false.ToString();
+            }
+            else if (key == "Space")
+            {
+                EditString = (!parsedValue).ToString();
+            }
+        }
+
+        this.OnAcceptEdit.Invoke();
     }
 
     public bool HandleKey(string key)
