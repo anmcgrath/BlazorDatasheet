@@ -15,26 +15,18 @@
 }
 
 .sheet-cell[b-zet5yo0qob] {
-    width: 7.2rem;
+    width: 6.6rem;
+    max-width: 6.6rem;
+    min-width: 6.6rem;
     height: 1.6rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
     border: 1px solid lightgray;
     box-sizing: border-box;
-    padding: 0;
+    padding: 1px;
     user-select: none;
     -moz-user-select: none;
     -webkit-user-select: none;
-}
-
-.cell-input[b-zet5yo0qob] {
-    width: calc(100% - 4px);
-    border: 1px solid black;
-    padding: 0;
-    height: calc(100%);
-    box-sizing: border-box;
-}
-
-.cell-input:focus[b-zet5yo0qob] {
-    outline: none;
 }
 
 .cell-selected[b-zet5yo0qob] {
@@ -65,6 +57,37 @@
 .row-active[b-zet5yo0qob] {
     background: #f4f4f4 !important;
     border-right: 2px solid #3d87f1 !important;
+}
+
+table[b-zet5yo0qob] {
+    display: block;
+    max-width: fit-content;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+/* _content/BlazorDatasheet/Edit/DateTimeEditorComponent.razor.rz.scp.css */
+.date-input[b-0msua3ip9w] {
+    width: calc(100% - 4px);
+    border: 1px solid black;
+    padding: 0;
+    height: calc(100%);
+    box-sizing: border-box;
+}
+
+.date-input:focus[b-0msua3ip9w] {
+    outline: none;
+}
+/* _content/BlazorDatasheet/Edit/TextEditorComponent.razor.rz.scp.css */
+.text-input[b-ikurjpe3qv] {
+    width: calc(100% - 4px);
+    border: 1px solid black;
+    padding: 0;
+    height: calc(100%);
+    box-sizing: border-box;
+}
+
+.text-input:focus[b-ikurjpe3qv] {
+    outline: none;
 }
 /* _content/BlazorDatasheet/Render/TextRenderer.razor.rz.scp.css */
 .cell-renderer[b-j355bk6nc9]{
