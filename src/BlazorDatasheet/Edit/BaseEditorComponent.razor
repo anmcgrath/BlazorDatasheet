@@ -1,0 +1,43 @@
+@using BlazorDatasheet.Model
+@implements ICellEditor
+
+@code {
+
+    public string EditString { get; protected set; }
+    protected Cell Cell { get; set; }
+    public virtual bool CanCancelEdit => true;
+    public virtual bool CanAcceptEdit => true;
+    public virtual bool IsSoftEdit { get; protected set; }
+
+    public virtual void BeginEdit(EditEntryMode entryMode, Cell cell, string key)
+    {
+        Cell = cell;
+        EditString = Cell.Value;
+        if (entryMode == EditEntryMode.Key)
+        {
+            EditString = key;
+            IsSoftEdit = true;
+        }
+
+        StateHasChanged();
+    }
+
+    protected void RequestAcceptEdit()
+    {
+        OnAcceptEdit.Invoke();
+    }
+
+    protected void RequestCancelEdit()
+    {
+        OnCancelEdit.Invoke();
+    }
+
+    public Func<bool> OnAcceptEdit { get; set; }
+    public Func<bool> OnCancelEdit { get; set; }
+
+    public bool HandleKey(string key)
+    {
+        return false;
+    }
+
+}

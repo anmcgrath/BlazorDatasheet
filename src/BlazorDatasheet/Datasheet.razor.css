@@ -14,26 +14,18 @@
 }
 
 .sheet-cell {
-    width: 7.2rem;
+    width: 6.6rem;
+    max-width: 6.6rem;
+    min-width: 6.6rem;
     height: 1.6rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
     border: 1px solid lightgray;
     box-sizing: border-box;
-    padding: 0;
+    padding: 1px;
     user-select: none;
     -moz-user-select: none;
     -webkit-user-select: none;
-}
-
-.cell-input {
-    width: calc(100% - 4px);
-    border: 1px solid black;
-    padding: 0;
-    height: calc(100%);
-    box-sizing: border-box;
-}
-
-.cell-input:focus {
-    outline: none;
 }
 
 .cell-selected {
@@ -64,4 +56,11 @@
 .row-active {
     background: #f4f4f4 !important;
     border-right: 2px solid #3d87f1 !important;
+}
+
+table {
+    display: block;
+    max-width: fit-content;
+    overflow-x: auto;
+    white-space: nowrap;
 }

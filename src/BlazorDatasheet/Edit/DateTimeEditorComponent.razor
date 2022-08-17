@@ -1,0 +1,30 @@
+@inherits BaseEditorComponent
+
+<input
+    type="date"
+    class="date-input"
+    @bind="EditDate"
+    @onclick="() => IsSoftEdit = false"
+    @bind:event="oninput"
+    @ref="InputRef"/>
+
+@code {
+
+    private ElementReference InputRef;
+
+    private DateTime? EditDate
+    {
+        set { EditString = value.ToString(); }
+        get { return String.IsNullOrEmpty(EditString) ? null : DateTime.Parse(EditString); }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await InputRef.FocusAsync();
+            await base.OnAfterRenderAsync(firstRender);
+        }
+    }
+
+}

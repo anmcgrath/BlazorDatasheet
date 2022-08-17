@@ -1,0 +1,31 @@
+@using BlazorDatasheet.Model
+@implements ICellEditor
+
+@code {
+
+    public void BeginEdit(EditEntryMode entryMode, Cell cell, string key)
+    {
+        var canPass = bool.TryParse(cell.Value, out bool parsedValue);
+        if (!canPass)
+            this.OnCancelEdit.Invoke();
+
+        if (entryMode == EditEntryMode.Mouse)
+        {
+            var newValue = !parsedValue;
+            EditString = newValue.ToString();
+            this.OnAcceptEdit.Invoke();
+        }
+    }
+
+    public bool HandleKey(string key)
+    {
+        return false;
+    }
+
+    public Func<bool> OnAcceptEdit { get; set; }
+    public Func<bool> OnCancelEdit { get; set; }
+    public bool CanCancelEdit => true;
+    public bool CanAcceptEdit => true;
+    public bool IsSoftEdit => true;
+    public string EditString { get; protected set; }
+}

@@ -19,8 +19,4 @@
       <Content Include="wwwroot\blazor-datasheet.js" Condition="!Exists('wwwroot/blazor-datasheet.js')" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Edit" />
-    </ItemGroup>
-
 </Project>

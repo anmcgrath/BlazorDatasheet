@@ -135,7 +135,10 @@ public class ObjectEditorBuilder<T>
 
         if (type == typeof(bool))
             return "boolean";
-        
+
+        if (type == typeof(DateTime))
+            return "datetime";
+
         return "text";
     }
 }

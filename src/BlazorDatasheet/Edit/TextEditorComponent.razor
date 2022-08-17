@@ -1,0 +1,26 @@
+@inherits BaseEditorComponent
+@using BlazorDatasheet.Model
+@implements ICellEditor
+
+<input
+    type="text"
+    class="text-input"
+    @bind="EditString"
+    @onclick="() => IsSoftEdit = false"
+    @bind:event="oninput"
+    @ref="InputRef"/>
+
+@code {
+
+    private ElementReference InputRef;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await InputRef.FocusAsync();
+            await base.OnAfterRenderAsync(firstRender);
+        }
+    }
+
+}
