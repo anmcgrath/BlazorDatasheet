@@ -5,16 +5,18 @@
 @inject IJSRuntime JS
 @using BlazorDatasheet.Render;
 @implements IDisposable;
+@using Microsoft.AspNetCore.Components.Web.Virtualization;
 @inject IWindowEventService _WindowEventService;
 
 <table
+    style="max-height: 350px"
     class="sheet @(IsDataSheetActive ? "active-sheet" : "inactive-sheet")"
     @onmouseover="() => IsMouseInsideSheet = true"
     @onmouseout="() => IsMouseInsideSheet = false">
     <!-- Column headers -->
     <tr>
         <td style="background: #fafafa; border: 1px solid lightgray"></td>
-        @for (var i = 0; i < Sheet?.Cols; i++)
+        @for (var i = 0; i < Sheet?.NumCols; i++)
         {
             var col = i;
             var colDefn = Sheet.ColumnHeadings.Count > i ? Sheet.ColumnHeadings[i] : null;
@@ -28,21 +30,18 @@
         }
     </tr>
 
-    @for (var i = 0; i < Sheet?.Rows; i++)
-    {
-        var rowHead = i;
-        var rowDefn = Sheet.RowHeadings.Count > rowHead ? Sheet.RowHeadings[rowHead] : null;
+    <Virtualize Items="@Sheet?.Rows" Context="sheetRow">
         <tr>
             <td
-                class="sheet-cell row-head @(IsDataSheetActive && Sheet.IsRowActive(rowHead) ? "row-active" : "")"
-                @onmousedown="e => HandleRowHeaderMouseDown(rowHead, e)"
-                @onmouseover="e => HandleCellMouseOver(rowHead, -1, e)"
-                @onmouseup="e => HandleCellMouseUp(rowHead, -1, e)">
-                @rowDefn?.Header
+                class="sheet-cell row-head @(IsDataSheetActive && Sheet.IsRowActive(sheetRow.RowNumber) ? "row-active" : "")"
+                @onmousedown="e => HandleRowHeaderMouseDown(sheetRow.RowNumber, e)"
+                @onmouseover="e => HandleCellMouseOver(sheetRow.RowNumber, -1, e)"
+                @onmouseup="e => HandleCellMouseUp(sheetRow.RowNumber, -1, e)">
+                @(Sheet.RowHeadings.Count > sheetRow.RowNumber ? Sheet.RowHeadings[sheetRow.RowNumber] : null)
             </td>
-            @for (int j = 0; j < Sheet?.Cols; j++)
+            @for (int j = 0; j < Sheet?.NumCols; j++)
             {
-                var row = i;
+                var row = sheetRow.RowNumber;
                 var col = j;
 
                 var cell = Sheet.GetCell(row, col);
@@ -101,5 +100,5 @@
                 </td>
             }
         </tr>
-    }
+    </Virtualize>
 </table>
