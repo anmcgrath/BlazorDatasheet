@@ -1,5 +1,7 @@
+using BlazorDatasheet.Edit;
 using BlazorDatasheet.Model;
 using BlazorDatasheet.Render;
+using BlazorDatasheet.Util;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 
@@ -9,14 +11,13 @@ public partial class Datasheet : IHandleEvent
 {
     [Parameter] public Sheet? Sheet { get; set; }
 
+    private ICellEditor ActiveEditorReference { get; set; }
     private bool IsDataSheetActive { get; set; }
-    private Cell? ActiveCell { get; set; }
-    private string? ActiveEditValue { get; set; }
-    private bool IsSoftEdit { get; set; }
-    private bool IsEditing => ActiveCell != null;
+    private CellPosition? EditPosition { get; set; }
+    private bool IsEditing => EditPosition != null;
     private bool IsMouseInsideSheet { get; set; }
     private ElementReference ActiveCellInputReference;
-
+    private Queue<Action> QueuedActions { get; set; } = new Queue<Action>();
     private Dictionary<string, Type> RenderComponentTypes { get; set; }
 
     protected override void OnInitialized()
@@ -51,8 +52,11 @@ public partial class Datasheet : IHandleEvent
             await AddWindowEventsAsync();
         }
 
-        if (ActiveCell != null)
-            await ActiveCellInputReference.FocusAsync();
+        while (QueuedActions.Any())
+        {
+            var action = QueuedActions.Dequeue();
+            action.Invoke();
+        }
     }
 
     private async Task AddWindowEventsAsync()
@@ -73,8 +77,8 @@ public partial class Datasheet : IHandleEvent
 
     private void HandleCellMouseDown(int row, int col, MouseEventArgs e)
     {
-        if (Sheet?.GetCell(row, col) != ActiveCell)
-            AcceptEdit(true);
+        if (IsEditing && !EditPosition.Equals(row, col))
+            AcceptEdit();
 
         if (e.ShiftKey)
             Sheet?.ExtendSelection(row, col);
@@ -84,9 +88,9 @@ public partial class Datasheet : IHandleEvent
         StateHasChanged();
     }
 
-    private void HandleColumnMouseDown(int col, MouseEventArgs e)
+    private void HandleColumnHeaderMouseDown(int col, MouseEventArgs e)
     {
-        AcceptEdit(false);
+        AcceptEdit();
 
         if (e.ShiftKey)
             Sheet?.ExtendSelection(Sheet.Rows, col);
@@ -99,9 +103,9 @@ public partial class Datasheet : IHandleEvent
         StateHasChanged();
     }
 
-    private void HandleRowMouseDown(int row, MouseEventArgs e)
+    private void HandleRowHeaderMouseDown(int row, MouseEventArgs e)
     {
-        AcceptEdit(false);
+        AcceptEdit();
 
         if (e.ShiftKey)
             Sheet?.ExtendSelection(row, Sheet.Cols);
@@ -116,38 +120,78 @@ public partial class Datasheet : IHandleEvent
 
     private void HandleCellDoubleClick(int row, int col, MouseEventArgs e)
     {
-        BeginEdit(row, col, softEdit: false, clear: false);
+        BeginEdit(row, col, softEdit: false, EditEntryMode.Mouse);
         StateHasChanged();
     }
 
-    private void BeginEdit(int row, int col, bool softEdit, bool clear, string entryChar = "")
+    private void BeginEdit(int row, int col, bool softEdit, EditEntryMode mode, string entryChar = "")
     {
         var cell = Sheet?.GetCell(row, col);
-        ActiveEditValue = clear ? entryChar : cell?.Value + entryChar;
-        IsSoftEdit = softEdit;
-        ActiveCell = cell;
-    }
-
-    private void AcceptEdit(bool stateChanged = true)
-    {
-        if (!IsEditing)
+        if (cell == null)
             return;
 
-        if (ActiveCell != null)
-        {
-            ActiveCell.Value = ActiveEditValue;
-        }
+        EditPosition = new CellPosition() { Row = row, Col = col };
 
-        CancelEdit(true);
-        if (stateChanged)
-            StateHasChanged();
+        // Do this after the next render because the EditComponent doesn't exist until then
+        NextTick(() =>
+        {
+            ActiveEditorReference.OnAcceptEdit = AcceptEdit;
+            ActiveEditorReference.OnCancelEdit = CancelEdit;
+            ActiveEditorReference?.BeginEdit(mode, cell, entryChar);
+        });
     }
 
-    private void CancelEdit(bool stateChanged = true)
+    private bool AcceptEdit()
     {
-        ActiveCell = null;
-        if (stateChanged)
+        return AcceptEdit(0, 0);
+    }
+
+    /// <summary>
+    /// Accepts the current edit, returning whether the edit was successful
+    /// </summary>
+    /// <param name="dRow"></param>
+    /// <param name="dCol"></param>
+    /// <returns></returns>
+    private bool AcceptEdit(int dRow, int dCol)
+    {
+        if (!IsEditing)
+            return false;
+
+        if (ActiveEditorReference.CanAcceptEdit)
+        {
+            var cell = Sheet.GetCell(EditPosition.Row, EditPosition.Col);
+            cell.Value = ActiveEditorReference.EditString;
+
+            // Finish the edit
+            EditPosition = null;
+
+            Sheet.MoveSelection(dRow, dCol);
             StateHasChanged();
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Cancels the current edit, returning whether the edit was successful
+    /// </summary>
+    /// <returns></returns>
+    private bool CancelEdit()
+    {
+        if (!IsEditing)
+            return false;
+
+        if (ActiveEditorReference.CanCancelEdit)
+        {
+            // Finish the edit
+            EditPosition = null;
+            StateHasChanged();
+            return true;
+        }
+
+        return false;
     }
 
     private void HandleCellMouseOver(int row, int col, MouseEventArgs e)
@@ -185,79 +229,42 @@ public partial class Datasheet : IHandleEvent
     {
         if (!IsDataSheetActive)
             return false;
+
+        if (IsEditing)
+        {
+            var handled = ActiveEditorReference.HandleKey(e.Key);
+            if (handled)
+                return true;
+        }
+        
+        if (e.Key == "Escape")
+        {
+            return CancelEdit();
+        }
+
         if (e.Key == "Enter")
         {
-            AcceptEdit();
-            Sheet?.MoveSelection(1, 0);
-            StateHasChanged();
-        }
-        else if (e.Key == "Escape")
-        {
-            CancelEdit();
-        }
-        else if (e.Key == "ArrowRight")
-        {
-            if (!IsEditing)
-            {
-                Sheet?.MoveSelection(0, 1);
-                StateHasChanged();
-            }
-            else if (IsSoftEdit)
-            {
-                AcceptEdit();
-                Sheet?.MoveSelection(0, 1);
-                StateHasChanged();
-            }
-
-            return true;
-        }
-        else if (e.Key == "ArrowLeft")
-        {
-            if (!IsEditing)
-            {
-                Sheet?.MoveSelection(0, -1);
-                StateHasChanged();
-            }
-            else if (IsSoftEdit)
-            {
-                AcceptEdit();
-                Sheet?.MoveSelection(0, -1);
-                StateHasChanged();
-            }
-
-            return true;
-        }
-        else if (e.Key == "ArrowUp")
-        {
-            if (!IsEditing)
-            {
-                Sheet?.MoveSelection(-1, 0);
-                StateHasChanged();
-            }
-            else if (IsSoftEdit)
-            {
-                AcceptEdit();
-                Sheet?.MoveSelection(-1, 0);
-                StateHasChanged();
-            }
-
-            return true;
-        }
-        else if (e.Key == "ArrowDown")
-        {
-            if (!IsEditing)
+            if (AcceptEdit())
             {
                 Sheet?.MoveSelection(1, 0);
                 StateHasChanged();
+                return true;
             }
-            else if (IsSoftEdit)
-            {
-                AcceptEdit();
-                Sheet?.MoveSelection(1, 0);
-                StateHasChanged();
-            }
+        }
 
-            return true;
+        if (KeyUtil.IsArrowKey(e.Key))
+        {
+            var direction = KeyUtil.GetKeyMovementDirection(e.Key);
+            if (!IsEditing)
+            {
+                Sheet?.MoveSelection(direction.Item1, direction.Item2);
+                StateHasChanged();
+                return true;
+            }
+            else if (ActiveEditorReference.IsSoftEdit && AcceptEdit(direction.Item1, direction.Item2))
+            {
+                return true;
+            }
         }
 
         if (e.Key.Length == 1 && !IsEditing && IsDataSheetActive)
@@ -268,7 +275,7 @@ public partial class Datasheet : IHandleEvent
                 var inputPosition = Sheet?.GetInputForSelection();
                 if (inputPosition == null)
                     return false;
-                BeginEdit(inputPosition.Row, inputPosition.Col, softEdit: true, clear: true, e.Key);
+                BeginEdit(inputPosition.Row, inputPosition.Col, softEdit: true, EditEntryMode.Key, e.Key);
                 StateHasChanged();
             }
 
@@ -276,6 +283,11 @@ public partial class Datasheet : IHandleEvent
         }
 
         return false;
+    }
+
+    private void NextTick(Action action)
+    {
+        QueuedActions.Enqueue(action);
     }
 
     Task IHandleEvent.HandleEventAsync(

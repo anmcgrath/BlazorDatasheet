@@ -1,6 +1,6 @@
 using BlazorDatasheet.Model;
 
-namespace BlazorDatasheet.Editor;
+namespace BlazorDatasheet.ObjectEditor;
 
 public class ObjectPropertyDefinition<T>
 {

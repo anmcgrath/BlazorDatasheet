@@ -22,7 +22,7 @@
                 class="sheet-cell column-head @(IsDataSheetActive && Sheet.IsColumnActive(col) ? "column-active" : "")"
                 @onmouseup="e => HandleCellMouseUp(-1, col, e)"
                 @onmouseover="e => HandleCellMouseOver(-1, col, e)"
-                @onmousedown="e => HandleColumnMouseDown(col, e)">
+                @onmousedown="e => HandleColumnHeaderMouseDown(col, e)">
                 @colDefn?.Header
             </th>
         }
@@ -35,7 +35,7 @@
         <tr>
             <td
                 class="sheet-cell row-head @(IsDataSheetActive && Sheet.IsRowActive(rowHead) ? "row-active" : "")"
-                @onmousedown="e => HandleRowMouseDown(rowHead, e)"
+                @onmousedown="e => HandleRowHeaderMouseDown(rowHead, e)"
                 @onmouseover="e => HandleCellMouseOver(rowHead, -1, e)"
                 @onmouseup="e => HandleCellMouseUp(rowHead, -1, e)">
                 @rowDefn?.Header
@@ -54,14 +54,23 @@
                     @onmouseover="e => HandleCellMouseOver(row, col, e)"
                     @ondblclick="e => HandleCellDoubleClick(row, col, e)"
                     @onmouseup="e => HandleCellMouseUp(row, col, e)">
-                    @if (ActiveCell == cell)
+                    @if (EditPosition?.Col == col && EditPosition?.Row == row)
                     {
-                        <input
-                            @ref="ActiveCellInputReference"
-                            @onclick="() => IsSoftEdit = false"
-                            @bind="ActiveEditValue"
-                            @bind:event="oninput"
-                            class="cell-input"/>
+                        @if (cell.Type == "text" || cell.Type == "number")
+                        {
+                            <TextEditorComponent
+                                @ref="ActiveEditorReference"/>
+                        }
+                        else if (cell.Type == "boolean")
+                        {
+                            <BoolEditorComponent
+                                @ref="ActiveEditorReference"/>
+                        }
+                        else if (cell.Type == "datetime")
+                        {
+                            <DateTimeEditorComponent
+                                @ref="ActiveEditorReference"/>
+                        }
                     }
                     else
                     {

@@ -79,6 +79,11 @@ public class Sheet
         return Cells[row, col];
     }
 
+    public Cell GetCell(CellPosition position)
+    {
+        return GetCell(position.Row, position.Col);
+    }
+
     public void SetCell(int row, int col, Cell value)
     {
         if (row < 0 || row >= Rows)
@@ -100,11 +105,11 @@ public class Sheet
         range.Constrain(Rows, Cols);
         this.Selection.Push(range);
     }
+
     /// <summary>
     /// Determines the most appropriate position for inputting new data, based on the current selections
     /// </summary>
     /// <returns>The most appropriate position for inputting new data</returns>
-
     public CellPosition GetInputForSelection()
     {
         if (IsSelecting)
@@ -118,7 +123,7 @@ public class Sheet
             Col = selection.ColStart
         };
     }
-    
+
     public void MoveSelection(int drow, int dcol)
     {
         if (IsSelecting)
@@ -139,7 +144,7 @@ public class Sheet
         EndSelecting();
         Selection.Clear();
     }
-    
+
     /// <summary>
     /// Returns true if the position is inside any of the active selections
     /// </summary>
@@ -171,7 +176,7 @@ public class Sheet
         IsSelecting = true;
         SelectionMode = mode;
     }
-    
+
     /// <summary>
     /// Ends the current "Selecting" process and adds the new selection to the stack
     /// </summary>
@@ -181,7 +186,7 @@ public class Sheet
         Selection.Push(ActiveSelecting);
         ActiveSelecting = null;
     }
-    
+
     /// <summary>
     /// Updates the current "Selecting" process by extending it to row, col
     /// </summary>
@@ -194,13 +199,12 @@ public class Sheet
         ActiveSelecting.ColEnd = col;
         ActiveSelecting.RowEnd = row;
     }
-    
+
     /// <summary>
     /// Extends the most recently added selection to the row, col position
     /// </summary>
     /// <param name="row"></param>
     /// <param name="col"></param>
-
     public void ExtendSelection(int row, int col)
     {
         ActiveSelecting = Selection.Pop();

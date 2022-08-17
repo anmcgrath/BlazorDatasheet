@@ -1,0 +1,11 @@
+.date-input {
+    width: calc(100% - 4px);
+    border: 1px solid black;
+    padding: 0;
+    height: calc(100%);
+    box-sizing: border-box;
+}
+
+.date-input:focus {
+    outline: none;
+}

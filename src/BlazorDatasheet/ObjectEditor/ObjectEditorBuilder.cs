@@ -1,15 +1,11 @@
-using System.Collections.ObjectModel;
 using System.Linq.Expressions;
-using System.Reflection.Metadata;
 using BlazorDatasheet.Model;
 using BlazorDatasheet.Util;
 
-namespace BlazorDatasheet.Editor;
+namespace BlazorDatasheet.ObjectEditor;
 
 public class ObjectEditorBuilder<T>
 {
-    private List<ColumnDefinition> _columnDefinitions;
-    private List<RowDefinition> _rowDefinitions;
     private List<T> _items;
     private readonly GridDirection _direction;
     private bool _autoGenerateProperties;
@@ -19,8 +15,6 @@ public class ObjectEditorBuilder<T>
     {
         _items = Items.ToList();
         _direction = direction;
-        _columnDefinitions = new List<ColumnDefinition>();
-        _rowDefinitions = new List<RowDefinition>();
         _propertyActions = new List<Tuple<string, Action<ObjectPropertyDefinition<T>>>>();
     }
 
@@ -141,7 +135,10 @@ public class ObjectEditorBuilder<T>
 
         if (type == typeof(bool))
             return "boolean";
-        
+
+        if (type == typeof(DateTime))
+            return "datetime";
+
         return "text";
     }
 }
