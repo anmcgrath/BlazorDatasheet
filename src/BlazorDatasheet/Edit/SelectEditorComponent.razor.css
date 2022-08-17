@@ -1,0 +1,33 @@
+.text-input {
+    width: calc(100% - 4px);
+    border: 1px solid black;
+    padding: 0;
+    height: calc(100%);
+    box-sizing: border-box;
+}
+
+.text-input:focus {
+    outline: none;
+}
+
+.select-list {
+    min-width: 10rem;
+    z-index: 10;
+    border: 1px solid lightgray;
+    position: absolute;
+    background: white;
+    display: block;
+    max-height: 7rem;
+    overflow-y: scroll;
+    border-radius: 4px;
+}
+
+.select-item {
+    cursor: pointer;
+    padding: 0.1rem;
+    padding-left: 0.2rem;
+}
+
+.select-item:hover {
+    background: #adc4ef;
+}

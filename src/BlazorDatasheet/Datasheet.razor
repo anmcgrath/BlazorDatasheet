@@ -58,7 +58,7 @@
                     {
                         @if (cell.Type == "text" || cell.Type == "number")
                         {
-                            <TextEditorComponent
+                            <TextEditorCOmponent
                                 @ref="ActiveEditorReference"/>
                         }
                         else if (cell.Type == "boolean")
@@ -69,6 +69,11 @@
                         else if (cell.Type == "datetime")
                         {
                             <DateTimeEditorComponent
+                                @ref="ActiveEditorReference"/>
+                        }
+                        else if (cell.Type == "select")
+                        {
+                            <SelectEditorComponent
                                 @ref="ActiveEditorReference"/>
                         }
                     }
