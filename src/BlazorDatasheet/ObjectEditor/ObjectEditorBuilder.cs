@@ -1,6 +1,8 @@
 using System.Linq.Expressions;
+using System.Reflection.Metadata;
 using BlazorDatasheet.Model;
 using BlazorDatasheet.Util;
+using Range = BlazorDatasheet.Model.Range;
 
 namespace BlazorDatasheet.ObjectEditor;
 
@@ -10,12 +12,16 @@ public class ObjectEditorBuilder<T>
     private readonly GridDirection _direction;
     private bool _autoGenerateProperties;
     private List<Tuple<string, Action<ObjectPropertyDefinition<T>>>> _propertyActions;
+    private Dictionary<string, ConditionalFormat> _conditionalFormats;
+    private List<string> _suppliedPropertyNames { get; set; }
 
     public ObjectEditorBuilder(IEnumerable<T> Items, GridDirection direction = GridDirection.PropertiesAcrossColumns)
     {
         _items = Items.ToList();
         _direction = direction;
         _propertyActions = new List<Tuple<string, Action<ObjectPropertyDefinition<T>>>>();
+        _conditionalFormats = new Dictionary<string, ConditionalFormat>();
+        _suppliedPropertyNames = new List<string>();
     }
 
     public ObjectEditorBuilder<T> AutogenerateProperties(bool autoGenerateProperties)
@@ -24,11 +30,27 @@ public class ObjectEditorBuilder<T>
         return this;
     }
 
+    public ObjectEditorBuilder<T> WithConditionalFormat(string key, ConditionalFormat format)
+    {
+        _conditionalFormats[key] = format;
+        return this;
+    }
+
     public ObjectEditor<T> Build()
     {
-        List<ObjectPropertyDefinition<T>> propertyDefinitions = new List<ObjectPropertyDefinition<T>>();
+        List<string> propertyNames = new List<string>();
         if (_autoGenerateProperties)
-            propertyDefinitions.AddRange(autoGenerateProperties());
+            propertyNames.AddRange(autoGenerateProperties());
+        
+        propertyNames.AddRange(_suppliedPropertyNames);
+        var distinctPropNames = propertyNames.Distinct();
+
+        List<ObjectPropertyDefinition<T>> propertyDefinitions = new List<ObjectPropertyDefinition<T>>();
+        foreach (var propName in distinctPropNames)
+        {
+            var propType = typeof(T).GetProperty(propName).PropertyType;
+            propertyDefinitions.Add(new ObjectPropertyDefinition<T>(propName, getCellType(propType)));
+        }
 
         var nRows = 0;
         var nCols = 0;
@@ -47,7 +69,7 @@ public class ObjectEditorBuilder<T>
         // Run any custom settings on the property definitions
         foreach (var actionPair in _propertyActions)
         {
-            var propDefinition = propertyDefinitions.FirstOrDefault(x => x.Key == actionPair.Item1);
+            var propDefinition = propertyDefinitions.FirstOrDefault(x => x.PropertyName == actionPair.Item1);
             if (propDefinition == null)
                 continue;
 
@@ -72,7 +94,7 @@ public class ObjectEditorBuilder<T>
                     cell.Data = _items[col];
                 }
 
-                cell.Key = propDefn.Key;
+                cell.Key = propDefn.PropertyName;
 
                 cell.Setter = propDefn.SetterObj;
                 cell.Formatting = propDefn.Format;
@@ -83,17 +105,32 @@ public class ObjectEditorBuilder<T>
 
         var sheet = new Sheet(nRows, nCols, cells);
 
+        // Add conditional formats
+        foreach (var cf in _conditionalFormats)
+            sheet.RegisterConditionalFormat(cf.Key, cf.Value);
+
         for (int i = 0; i < propertyDefinitions.Count; i++)
         {
+            var propDefn = propertyDefinitions[i];
             var headings = _direction == GridDirection.PropertiesAcrossColumns
                 ? sheet.ColumnHeadings
                 : sheet.RowHeadings;
             headings.Add(new Heading()
             {
-                Header = String.IsNullOrEmpty(propertyDefinitions[i].Heading)
-                    ? propertyDefinitions[i].Key
-                    : propertyDefinitions[i].Heading,
+                Header = String.IsNullOrEmpty(propDefn.Heading)
+                    ? propDefn.PropertyName
+                    : propDefn.Heading,
             });
+
+            // Apply conditional format to property (whole row or column)
+            var cfs = propDefn.ConditionalFormatKeys;
+            foreach (var cf in cfs)
+            {
+                if (_direction == GridDirection.PropertiesAcrossColumns)
+                    sheet.ApplyConditionalFormat(cf, new Range(0, nRows, i, i));
+                else if (_direction == GridDirection.PropertiesAcrossRows)
+                    sheet.ApplyConditionalFormat(cf, new Range(i, i, 0, nCols));
+            }
         }
 
         var objectEditor = new ObjectEditor<T>(sheet, this);
@@ -105,24 +142,15 @@ public class ObjectEditorBuilder<T>
     {
         var propName = Properties.GetPropertyInfo(propertySelector).Name;
         _propertyActions.Add(new Tuple<string, Action<ObjectPropertyDefinition<T>>>(propName, action));
+        _suppliedPropertyNames.Add(propName);
 
         return this;
     }
 
-    private IEnumerable<ObjectPropertyDefinition<T>> autoGenerateProperties()
+    private IEnumerable<string> autoGenerateProperties()
     {
-        var objProperties = new List<ObjectPropertyDefinition<T>>();
         var propInfos = typeof(T).GetProperties();
-        foreach (var propInfo in propInfos)
-        {
-            objProperties.Add(new ObjectPropertyDefinition<T>()
-            {
-                Key = propInfo.Name,
-                Type = getCellType(propInfo.PropertyType)
-            });
-        }
-
-        return objProperties;
+        return propInfos.Select(x => x.Name);
     }
 
     private string getCellType(Type type)
