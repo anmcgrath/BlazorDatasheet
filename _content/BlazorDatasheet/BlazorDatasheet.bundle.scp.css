@@ -77,6 +77,40 @@ table[b-zet5yo0qob] {
 .date-input:focus[b-0msua3ip9w] {
     outline: none;
 }
+/* _content/BlazorDatasheet/Edit/SelectEditorComponent.razor.rz.scp.css */
+.text-input[b-q49quji9xf] {
+    width: calc(100% - 4px);
+    border: 1px solid black;
+    padding: 0;
+    height: calc(100%);
+    box-sizing: border-box;
+}
+
+.text-input:focus[b-q49quji9xf] {
+    outline: none;
+}
+
+.select-list[b-q49quji9xf] {
+    min-width: 10rem;
+    z-index: 10;
+    border: 1px solid lightgray;
+    position: absolute;
+    background: white;
+    display: block;
+    max-height: 7rem;
+    overflow-y: scroll;
+    border-radius: 4px;
+}
+
+.select-item[b-q49quji9xf] {
+    cursor: pointer;
+    padding: 0.1rem;
+    padding-left: 0.2rem;
+}
+
+.select-item:hover[b-q49quji9xf] {
+    background: #adc4ef;
+}
 /* _content/BlazorDatasheet/Edit/TextEditorComponent.razor.rz.scp.css */
 .text-input[b-ikurjpe3qv] {
     width: calc(100% - 4px);
