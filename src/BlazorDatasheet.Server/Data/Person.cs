@@ -7,6 +7,5 @@ public class Person
     public string? FirstName { get; set; }
     public string? LastName { get; set; }
     public double? Age { get; set; }
-    public DateTime EntryDate { get; set; }
     public bool Checked { get; set; }
 }

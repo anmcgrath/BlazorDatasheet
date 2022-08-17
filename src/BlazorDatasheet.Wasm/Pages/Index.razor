@@ -16,13 +16,9 @@ Welcome to your new app.
 <p>Here is out ObjectEditor with properties across the columns</p>
 <Datasheet Sheet="Sheet"></Datasheet>
 
-<p>Here is the same editor with properties across the rows and the formatting changed on the LastName property</p>
-<Datasheet Sheet="Sheet2"></Datasheet>
-
 @code{
 
     private Sheet Sheet;
-    private Sheet Sheet2;
     private List<Person> People { get; set; }
 
     protected override void OnInitialized()
@@ -33,6 +29,12 @@ Welcome to your new app.
             new Person() { Id = 1, Age = 49, FirstName = "Albert", LastName = "Rogers" },
             new Person() { Id = 2, Age = 106, FirstName = "Wendall", LastName = "Palmer" },
         };
+        
+        var random = new Random();
+        for (int i = 0; i < 10000; i++)
+        {
+            People.Add(new Person() { Id = i, Age = random.NextInt64(100), FirstName = "Person", LastName = "Person" });
+        }
 
         var builder1 = new ObjectEditorBuilder<Person>(People, GridDirection.PropertiesAcrossColumns);
         builder1.AutogenerateProperties(true)
@@ -48,27 +50,11 @@ Welcome to your new app.
                     };
                 })
                 .WithProperty(x => x.Id, pd => { pd.Heading = "Person ID"; });
-
-        var builder2 = new ObjectEditorBuilder<Person>(People, GridDirection.PropertiesAcrossRows);
-        builder2.AutogenerateProperties(true)
-                .WithProperty(x => x.LastName, pd =>
-                {
-                    pd.Heading = "Last Name";
-                    pd.Setter = (person, s) => { person.LastName = s; };
-                    pd.Format = new Format()
-                    {
-                        BackgroundColor = "#f292ff"
-                    };
-                })
-                .WithProperty(x => x.Id, pd => { pd.Heading = "Person ID"; })
-                .WithProperty(x => x.Age, pd => { pd.Format.StringFormat = "N1"; });
-
+        
         var editor1 = builder1.Build();
-        var editor2 = builder2.Build();
 
 
         Sheet = editor1.Sheet;
-        Sheet2 = editor2.Sheet;
     }
 
 }

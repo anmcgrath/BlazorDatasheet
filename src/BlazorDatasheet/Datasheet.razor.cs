@@ -93,11 +93,11 @@ public partial class Datasheet : IHandleEvent
         AcceptEdit();
 
         if (e.ShiftKey)
-            Sheet?.ExtendSelection(Sheet.Rows, col);
+            Sheet?.ExtendSelection(Sheet.NumRows, col);
         else
         {
             Sheet?.BeginSelecting(0, col, !e.MetaKey, SelectionMode.Column);
-            Sheet?.UpdateSelectingEndPosition(Sheet.Rows, col);
+            Sheet?.UpdateSelectingEndPosition(Sheet.NumRows, col);
         }
 
         StateHasChanged();
@@ -108,11 +108,11 @@ public partial class Datasheet : IHandleEvent
         AcceptEdit();
 
         if (e.ShiftKey)
-            Sheet?.ExtendSelection(row, Sheet.Cols);
+            Sheet?.ExtendSelection(row, Sheet.NumCols);
         else
         {
             Sheet?.BeginSelecting(row, 0, !e.MetaKey, SelectionMode.Row);
-            Sheet?.UpdateSelectingEndPosition(row, Sheet.Cols);
+            Sheet?.UpdateSelectingEndPosition(row, Sheet.NumCols);
         }
 
         StateHasChanged();
@@ -201,9 +201,9 @@ public partial class Datasheet : IHandleEvent
             if (Sheet.SelectionMode == SelectionMode.Cell)
                 Sheet.UpdateSelectingEndPosition(row, col);
             else if (Sheet.SelectionMode == SelectionMode.Column)
-                Sheet.UpdateSelectingEndPosition(Sheet.Rows, col);
+                Sheet.UpdateSelectingEndPosition(Sheet.NumRows, col);
             else if (Sheet.SelectionMode == SelectionMode.Row)
-                Sheet.UpdateSelectingEndPosition(row, Sheet.Cols);
+                Sheet.UpdateSelectingEndPosition(row, Sheet.NumCols);
             StateHasChanged();
         }
     }

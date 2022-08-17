@@ -2,13 +2,12 @@ namespace BlazorDatasheet.Model;
 
 public class Sheet
 {
-    public int Rows { get; private set; }
-    public int Cols { get; private set; }
-    public Cell[,] Cells { get; set; }
-
+    public int NumRows { get; private set; }
+    public int NumCols { get; private set; }
+    public List<Row> Rows { get; set; }
     public List<Heading> ColumnHeadings { get; private set; }
     public List<Heading> RowHeadings { get; private set; }
-    private Dictionary<string, ConditionalFormat> _conditionalFormats;
+    private readonly Dictionary<string, ConditionalFormat> _conditionalFormats;
     internal IReadOnlyDictionary<string, ConditionalFormat> ConditionalFormats => _conditionalFormats;
 
     private Stack<Range> Selection { get; set; }
@@ -21,31 +20,43 @@ public class Sheet
     public bool IsSelecting { get; private set; }
     public SelectionMode SelectionMode { get; set; }
 
-    public Sheet(int rows, int cols, Cell[,] cells)
+    public Sheet(int numRows, int numCols, Cell[,] cells)
     {
-        Rows = rows;
-        Cols = cols;
+        NumRows = numRows;
+        NumCols = numCols;
         Selection = new Stack<Range>();
         _conditionalFormats = new Dictionary<string, ConditionalFormat>();
         ColumnHeadings = new List<Heading>();
         RowHeadings = new List<Heading>();
         _conditionalFormats = new Dictionary<string, ConditionalFormat>();
-        Cells = cells;
+
+        Rows = new List<Row>();
+        for (var i = 0; i < NumRows; i++)
+        {
+            var rowCells = new List<Cell>();
+            for (int j = 0; j < NumCols; j++)
+            {
+                rowCells.Add(cells[i, j]);
+            }
+
+            var newRow = new Row(rowCells, i);
+            Rows.Add(newRow);
+        }
     }
 
     private Cell[] GetCellsInRange(Range range)
     {
         List<Cell> cells = new List<Cell>();
         var rowStart = Math.Max(0, range.RowStart);
-        var rowEnd = Math.Min(Rows - 1, range.RowEnd);
+        var rowEnd = Math.Min(NumRows - 1, range.RowEnd);
         var colStart = Math.Max(0, range.ColStart);
-        var colEnd = Math.Min(Cols - 1, range.ColEnd);
+        var colEnd = Math.Min(NumCols - 1, range.ColEnd);
         for (int row = rowStart; row <= rowEnd; row++)
         {
             for (int col = colStart; col <= colEnd; col++)
             {
                 if (range.Contains(row, col))
-                    cells.Add(Cells[row, col]);
+                    cells.Add(GetCell(row, col));
             }
         }
 
@@ -72,11 +83,11 @@ public class Sheet
 
     public Cell GetCell(int row, int col)
     {
-        if (row < 0 || row >= Rows)
+        if (row < 0 || row >= NumRows)
             return null;
-        if (col < 0 || col >= Cols)
+        if (col < 0 || col >= NumCols)
             return null;
-        return Cells[row, col];
+        return Rows[row].Cells[col];
     }
 
     public Cell GetCell(CellPosition position)
@@ -86,11 +97,11 @@ public class Sheet
 
     public void SetCell(int row, int col, Cell value)
     {
-        if (row < 0 || row >= Rows)
+        if (row < 0 || row >= NumRows)
             return;
-        if (col < 0 || col >= Cols)
+        if (col < 0 || col >= NumCols)
             return;
-        Cells[row, col] = value;
+        Rows[row].Cells[col] = value;
     }
 
     /// <summary>
@@ -102,7 +113,7 @@ public class Sheet
     {
         this.Selection.Clear();
         var range = new Range(row, col);
-        range.Constrain(Rows, Cols);
+        range.Constrain(NumRows, NumCols);
         this.Selection.Push(range);
     }
 
