@@ -1,0 +1,29 @@
+@inherits BaseEditorComponent
+
+<input @bind="EditString" class="text-input" @ref="InputTextComponent"/>
+<div class="select-list">
+    @foreach (var val in values)
+    {
+        <div class="select-item" @onmousedown="() => { EditString = val; OnAcceptEdit.Invoke(); }">@val</div>
+    }
+</div>
+
+@code {
+
+    private ElementReference InputTextComponent;
+
+    private string[] values = new string[5]
+    {
+        "A", "B", "C", "D", "E"
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await InputTextComponent.FocusAsync();
+            await base.OnInitializedAsync();
+        }
+    }
+
+}
