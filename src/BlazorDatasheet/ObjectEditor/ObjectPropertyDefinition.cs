@@ -4,10 +4,11 @@ namespace BlazorDatasheet.ObjectEditor;
 
 public class ObjectPropertyDefinition<T>
 {
-    public string Key { get; set; }
+    public string PropertyName { get; set; }
     public string Heading { get; set; }
-    public string Type { get; set; }
+    public string Type { get; set; } = "text";
     public Format Format { get; set; } = Format.Default;
+    internal List<string> ConditionalFormatKeys { get; set; }
 
     private Action<T, string>? _setter;
 
@@ -22,4 +23,16 @@ public class ObjectPropertyDefinition<T>
     }
 
     internal Action<object, string>? SetterObj;
+
+    public ObjectPropertyDefinition(string propName, string type)
+    {
+        PropertyName = propName;
+        Type = type;
+        ConditionalFormatKeys = new List<string>();
+    }
+
+    public void UseConditionalFormat(string key)
+    {
+        ConditionalFormatKeys.Add(key);
+    }
 }
