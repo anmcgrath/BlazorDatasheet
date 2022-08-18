@@ -54,26 +54,7 @@
                     @onmouseup="e => HandleCellMouseUp(row, col, e)">
                     @if (EditPosition?.Col == col && EditPosition?.Row == row)
                     {
-                        @if (cell.Type == "text" || cell.Type == "number")
-                        {
-                            <TextEditorComponent
-                                @ref="ActiveEditorReference"/>
-                        }
-                        else if (cell.Type == "boolean")
-                        {
-                            <BoolEditorComponent
-                                @ref="ActiveEditorReference"/>
-                        }
-                        else if (cell.Type == "datetime")
-                        {
-                            <DateTimeEditorComponent
-                                @ref="ActiveEditorReference"/>
-                        }
-                        else if (cell.Type == "select")
-                        {
-                            <SelectEditorComponent
-                                @ref="ActiveEditorReference"/>
-                        }
+                        @RenderEditor(cell.Type)
                     }
                     else
                     {
@@ -101,3 +82,16 @@
         </tr>
     </Virtualize>
 </table>
+
+@code{
+
+    private RenderFragment RenderEditor(string type) => builder =>
+    {
+        var componentType = getEditorComponentType(type);
+        builder.OpenComponent(0, componentType);
+        builder.AddComponentReferenceCapture(1, componentRef => 
+                                                    ActiveEditorReference = (ICellEditor)componentRef);
+        builder.CloseComponent();
+    };
+
+}

@@ -12,7 +12,6 @@ namespace BlazorDatasheet;
 public partial class Datasheet : IHandleEvent
 {
     [Parameter] public Sheet? Sheet { get; set; }
-
     private ICellEditor ActiveEditorReference { get; set; }
     private bool IsDataSheetActive { get; set; }
     private CellPosition? EditPosition { get; set; }
@@ -21,6 +20,7 @@ public partial class Datasheet : IHandleEvent
     private ElementReference ActiveCellInputReference;
     private Queue<Action> QueuedActions { get; set; } = new Queue<Action>();
     private Dictionary<string, Type> RenderComponentTypes { get; set; }
+    private Dictionary<string, Type> EditorComponentTypes { get; set; }
 
     private IWindowEventService _windowEventService;
 
@@ -28,9 +28,17 @@ public partial class Datasheet : IHandleEvent
     {
         _windowEventService = new WindowEventService(JS);
         RenderComponentTypes = new Dictionary<string, Type>();
+        EditorComponentTypes = new Dictionary<string, Type>();
+
         RenderComponentTypes.Add("text", typeof(TextRenderer));
         RenderComponentTypes.Add("number", typeof(NumberRenderer));
         RenderComponentTypes.Add("boolean", typeof(BoolRenderer));
+
+        EditorComponentTypes.Add("text", typeof(TextEditorComponent));
+        EditorComponentTypes.Add("datetime", typeof(DateTimeEditorComponent));
+        EditorComponentTypes.Add("boolean", typeof(BoolEditorComponent));
+        EditorComponentTypes.Add("select", typeof(SelectEditorComponent));
+
         base.OnInitialized();
     }
 
@@ -40,6 +48,13 @@ public partial class Datasheet : IHandleEvent
             return RenderComponentTypes[type];
 
         return typeof(TextRenderer);
+    }
+
+    private Type getEditorComponentType(string type)
+    {
+        if (EditorComponentTypes.ContainsKey(type))
+            return EditorComponentTypes[type];
+        return typeof(TextEditorComponent);
     }
 
     private Dictionary<string, object> getCellRendererParameters(Cell cell)
