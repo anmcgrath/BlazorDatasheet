@@ -13,6 +13,7 @@ public partial class Datasheet : IHandleEvent
 {
     [Parameter] public Sheet? Sheet { get; set; }
     private DynamicComponent? _activeEditorRefernce;
+    [Parameter] public bool IsReadOnly { get; set; }
     private ICellEditor? ActiveEditorReference => (ICellEditor)(_activeEditorRefernce.Instance);
     private bool IsDataSheetActive { get; set; }
     private CellPosition? EditPosition { get; set; }
@@ -156,8 +157,11 @@ public partial class Datasheet : IHandleEvent
 
     private void BeginEdit(int row, int col, bool softEdit, EditEntryMode mode, string entryChar = "")
     {
+        if (this.IsReadOnly)
+            return;
+        
         var cell = Sheet?.GetCell(row, col);
-        if (cell == null)
+        if (cell == null || cell.IsReadOnly)
             return;
 
         EditPosition = new CellPosition() { Row = row, Col = col };

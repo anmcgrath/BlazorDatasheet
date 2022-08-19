@@ -41,7 +41,7 @@ public class ObjectEditorBuilder<T>
         List<string> propertyNames = new List<string>();
         if (_autoGenerateProperties)
             propertyNames.AddRange(autoGenerateProperties());
-        
+
         propertyNames.AddRange(_suppliedPropertyNames);
         var distinctPropNames = propertyNames.Distinct();
 
@@ -99,6 +99,7 @@ public class ObjectEditorBuilder<T>
                 cell.Setter = propDefn.SetterObj;
                 cell.Formatting = propDefn.Format;
                 cell.Type = propDefn.Type;
+                cell.IsReadOnly = propDefn.IsReadOnly;
                 cells[row, col] = cell;
             }
         }

@@ -14,12 +14,19 @@ Welcome to your new app.
 <SurveyPrompt Title="How is Blazor working for you?"/>
 
 <p>Here is out ObjectEditor with properties across the columns</p>
-<Datasheet Sheet="Sheet"></Datasheet>
+
+<p>
+    <input id="readonly" type="checkbox" @bind="IsSheetReadOnly"/>
+    <label for="readonly">Sheet readonly</label>
+</p>
+
+<Datasheet Sheet="Sheet" IsReadOnly="IsSheetReadOnly"></Datasheet>
 
 @code{
 
     private Sheet Sheet;
     private List<Person> People { get; set; }
+    private bool IsSheetReadOnly { get; set; }
 
     protected override void OnInitialized()
     {
@@ -60,6 +67,7 @@ Welcome to your new app.
                     };
                     pd.UseConditionalFormat("ageCf");
                     pd.UseConditionalFormat("check");
+                    pd.IsReadOnly = true;
                 })
                 .WithProperty(x => x.Id, pd => { pd.Heading = "Person ID"; })
                 .WithConditionalFormat("check", checkCf)

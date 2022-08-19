@@ -8,6 +8,7 @@ public class ObjectPropertyDefinition<T>
     public string Heading { get; set; }
     public string Type { get; set; } = "text";
     public Format Format { get; set; } = Format.Default;
+    public bool IsReadOnly { get; set; }
     internal List<string> ConditionalFormatKeys { get; set; }
 
     private Action<T, string>? _setter;

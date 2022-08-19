@@ -4,6 +4,7 @@ public class Cell
 {
     public string Type { get; set; } = "text";
     public Format Formatting = Format.Default;
+    public bool IsReadOnly { get; set; }
 
     public string? Value
     {
