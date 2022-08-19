@@ -22,20 +22,7 @@
         StateHasChanged();
     }
 
-    protected void RequestAcceptEdit()
-    {
-        OnAcceptEdit.Invoke();
-    }
-
-    protected void RequestCancelEdit()
-    {
-        OnCancelEdit.Invoke();
-    }
-
-    public Func<bool> OnAcceptEdit { get; set; }
-    public Func<bool> OnCancelEdit { get; set; }
-
-    public bool HandleKey(string key)
+    public virtual bool HandleKey(string key)
     {
         return false;
     }
