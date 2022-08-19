@@ -1,4 +1,5 @@
 using BlazorDatasheet.Model;
+using Microsoft.AspNetCore.Components;
 
 namespace BlazorDatasheet.Edit;
 
@@ -13,10 +14,6 @@ public interface ICellEditor
     /// <returns>Whether the event should be cancelled</returns>
     public bool HandleKey(string key);
 
-    public Func<bool> OnAcceptEdit { get; set; }
-    public Func<bool> OnCancelEdit { get; set; }
-    public bool CanCancelEdit { get; }
-    public bool CanAcceptEdit { get; }
-    public bool IsSoftEdit { get; }
-    public string EditString { get; }
+    [Parameter]
+    public EditState EditState { get; set; }
 }

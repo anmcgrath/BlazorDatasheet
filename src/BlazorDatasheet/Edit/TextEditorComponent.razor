@@ -5,8 +5,8 @@
 <input
     type="text"
     class="text-input"
-    @bind="EditString"
-    @onclick="() => IsSoftEdit = false"
+    @bind="EditState.EditString"
+    @onclick="() => EditState.IsSoftEdit = false"
     @bind:event="oninput"
     @ref="InputRef"/>
 

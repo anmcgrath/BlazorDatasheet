@@ -3,21 +3,21 @@
 
 @code {
 
-    public string EditString { get; protected set; }
-    protected Cell Cell { get; set; }
-    public virtual bool CanCancelEdit => true;
-    public virtual bool CanAcceptEdit => true;
-    public virtual bool IsSoftEdit { get; protected set; }
+    [Parameter]
+    public EditState EditState { get; set; }
 
     public virtual void BeginEdit(EditEntryMode entryMode, Cell cell, string key)
     {
-        Cell = cell;
-        EditString = Cell.Value;
+        EditState.Cell = cell;
+        EditState.EditString = cell.Value;
         if (entryMode == EditEntryMode.Key)
         {
-            EditString = key;
-            IsSoftEdit = true;
+            EditState.EditString = key;
+            EditState.IsSoftEdit = true;
         }
+
+        EditState.CanAcceptEdit = true;
+        EditState.CanCancelEdit = true;
 
         StateHasChanged();
     }
