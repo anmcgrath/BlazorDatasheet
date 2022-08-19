@@ -12,9 +12,11 @@ namespace BlazorDatasheet;
 public partial class Datasheet : IHandleEvent
 {
     [Parameter] public Sheet? Sheet { get; set; }
-    private ICellEditor ActiveEditorReference { get; set; }
+    private DynamicComponent? _activeEditorRefernce;
+    private ICellEditor? ActiveEditorReference => (ICellEditor)(_activeEditorRefernce.Instance);
     private bool IsDataSheetActive { get; set; }
     private CellPosition? EditPosition { get; set; }
+    private EditState? EditState { get; set; }
     private bool IsEditing => EditPosition != null;
     private bool IsMouseInsideSheet { get; set; }
     private ElementReference ActiveCellInputReference;
@@ -62,6 +64,14 @@ public partial class Datasheet : IHandleEvent
         return new Dictionary<string, object>()
         {
             { "Cell", cell },
+        };
+    }
+
+    private Dictionary<string, object> getEditorParameters()
+    {
+        return new Dictionary<string, object>()
+        {
+            { "EditState", EditState },
         };
     }
 
@@ -151,14 +161,15 @@ public partial class Datasheet : IHandleEvent
             return;
 
         EditPosition = new CellPosition() { Row = row, Col = col };
+        EditState = new EditState()
+        {
+            Cell = cell,
+            OnAcceptEdit = AcceptEdit,
+            OnCancelEdit = CancelEdit
+        };
 
         // Do this after the next render because the EditComponent doesn't exist until then
-        NextTick(() =>
-        {
-            ActiveEditorReference.OnAcceptEdit = AcceptEdit;
-            ActiveEditorReference.OnCancelEdit = CancelEdit;
-            ActiveEditorReference?.BeginEdit(mode, cell, entryChar);
-        });
+        NextTick(() => { ActiveEditorReference?.BeginEdit(mode, cell, entryChar); });
     }
 
     private bool AcceptEdit()
@@ -177,10 +188,13 @@ public partial class Datasheet : IHandleEvent
         if (!IsEditing)
             return false;
 
-        if (ActiveEditorReference.CanAcceptEdit)
+        if (ActiveEditorReference == null)
+            return false;
+
+        if (EditState.CanAcceptEdit)
         {
             var cell = Sheet.GetCell(EditPosition.Row, EditPosition.Col);
-            cell.Value = ActiveEditorReference.EditString;
+            cell.Value = EditState.EditString;
 
             // Finish the edit
             EditPosition = null;
@@ -203,7 +217,7 @@ public partial class Datasheet : IHandleEvent
         if (!IsEditing)
             return false;
 
-        if (ActiveEditorReference.CanCancelEdit)
+        if (EditState.CanCancelEdit)
         {
             // Finish the edit
             EditPosition = null;
@@ -281,7 +295,7 @@ public partial class Datasheet : IHandleEvent
                 StateHasChanged();
                 return true;
             }
-            else if (ActiveEditorReference.IsSoftEdit && AcceptEdit(direction.Item1, direction.Item2))
+            else if (EditState.IsSoftEdit && AcceptEdit(direction.Item1, direction.Item2))
             {
                 return true;
             }

@@ -30,7 +30,7 @@
     </tr>
 
     <Virtualize Items="@Sheet?.Rows" Context="sheetRow">
-        <tr>
+        <tr @key="sheetRow.RowNumber">
             <td
                 class="sheet-cell row-head @(IsDataSheetActive && Sheet.IsRowActive(sheetRow.RowNumber) ? "row-active" : "")"
                 @onmousedown="e => HandleRowHeaderMouseDown(sheetRow.RowNumber, e)"
@@ -54,7 +54,14 @@
                     @onmouseup="e => HandleCellMouseUp(row, col, e)">
                     @if (EditPosition?.Col == col && EditPosition?.Row == row)
                     {
-                        @RenderEditor(cell.Type)
+                        // @RenderEditor(cell.Type)
+                        //<DynamicComponent
+                        //    Type="getEditorComponentType(cell.Type)"
+                        //    @ref="_activeEditorRefernce"/>
+                        <DynamicComponent
+                            Type="getEditorComponentType(cell.Type)"
+                            Parameters="@getEditorParameters()"
+                            @ref="_activeEditorRefernce"/>
                     }
                     else
                     {
@@ -82,16 +89,3 @@
         </tr>
     </Virtualize>
 </table>
-
-@code{
-
-    private RenderFragment RenderEditor(string type) => builder =>
-    {
-        var componentType = getEditorComponentType(type);
-        builder.OpenComponent(0, componentType);
-        builder.AddComponentReferenceCapture(1, componentRef => 
-                                                    ActiveEditorReference = (ICellEditor)componentRef);
-        builder.CloseComponent();
-    };
-
-}

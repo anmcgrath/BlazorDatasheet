@@ -5,7 +5,7 @@
     type="date"
     class="date-input"
     @bind="EditDate"
-    @onclick="() => IsSoftEdit = false"
+    @onclick="() => EditState.IsSoftEdit = false"
     @bind:event="oninput"
     @ref="InputRef"/>
 
@@ -13,31 +13,31 @@
 
     public override void BeginEdit(EditEntryMode entryMode, Cell cell, string key)
     {
-        Cell = cell;
+        EditState.Cell = cell;
 
         var canParse = DateTime.TryParse(cell.Value, out DateTime parsedDateTime);
         if (!canParse)
-            EditString = DateTime.Now.ToString();
+            EditState.EditString = DateTime.Now.ToString();
         else
-            EditString = Cell.Value;
+            EditState.EditString = cell.Value;
 
         if (entryMode == EditEntryMode.Key)
         {
     // If we are typing a number, set it to the first char in the date string, (e.g first part of day or month)
             if (char.IsNumber((char)key.First()))
             {
-                var newDateString = key + EditString?.Substring(1, EditString.Length - 1);
+                var newDateString = key + EditState.EditString?.Substring(1, EditState.EditString.Length - 1);
                 if (DateTime.TryParse(newDateString, out var newDate))
-                    EditString = newDateString;
+                    EditState.EditString = newDateString;
                 else
-                    EditString = DateTime.Now.ToString();
+                    EditState.EditString = DateTime.Now.ToString();
             }
             else
             {
-                EditString = DateTime.Now.ToString();
+                EditState.EditString = DateTime.Now.ToString();
             }
 
-            IsSoftEdit = true;
+            EditState.IsSoftEdit = true;
         }
 
         StateHasChanged();
@@ -47,8 +47,8 @@
 
     private DateTime? EditDate
     {
-        set { EditString = value.ToString(); }
-        get { return String.IsNullOrEmpty(EditString) ? null : DateTime.Parse(EditString); }
+        set { EditState.EditString = value.ToString(); }
+        get { return String.IsNullOrEmpty(EditState.EditString) ? null : DateTime.Parse(EditState.EditString); }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
