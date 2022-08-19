@@ -8,4 +8,5 @@ public class Person
     public string? LastName { get; set; }
     public double? Age { get; set; }
     public bool Checked { get; set; }
+    public DateTime StartDate { get; set; } = DateTime.Now;
 }
