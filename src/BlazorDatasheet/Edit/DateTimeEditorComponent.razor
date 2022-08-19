@@ -14,6 +14,8 @@
     public override void BeginEdit(EditEntryMode entryMode, Cell cell, string key)
     {
         EditState.Cell = cell;
+        EditState.CanAcceptEdit = true;
+        EditState.CanCancelEdit = true;
 
         var canParse = DateTime.TryParse(cell.Value, out DateTime parsedDateTime);
         if (!canParse)
