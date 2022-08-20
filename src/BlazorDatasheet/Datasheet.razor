@@ -58,10 +58,6 @@
                     @onmouseup="e => HandleCellMouseUp(row, col, e)">
                     @if (EditPosition?.Col == col && EditPosition?.Row == row)
                     {
-                        // @RenderEditor(cell.Type)
-                        //<DynamicComponent
-                        //    Type="getEditorComponentType(cell.Type)"
-                        //    @ref="_activeEditorRefernce"/>
                         <DynamicComponent
                             Type="getEditorComponentType(cell.Type)"
                             Parameters="@getEditorParameters()"
