@@ -1,50 +1,47 @@
 @using BlazorDatasheet.Model
-@implements ICellEditor
+@inherits BaseEditorComponent
 
 @code {
 
-    [Parameter]
-    public EditState EditState { get; set; }
-
-    public void BeginEdit(EditEntryMode entryMode, Cell cell, string key)
+    public override void BeginEdit(EditEntryMode entryMode, Cell cell, string key)
     {
-        EditState.CanAcceptEdit = true;
-        EditState.CanCancelEdit = true;
+        var canParse = bool.TryParse(cell.Value, out bool parsedValue);
+        if (!canParse)
+            this.CancelEdit();
 
-        var canPass = bool.TryParse(cell.Value, out bool parsedValue);
-        if (!canPass)
-            EditState.OnCancelEdit.Invoke();
-
-        EditState.EditString = cell.Value;
+        EditString = cell.Value;
 
         if (entryMode == EditEntryMode.Mouse)
         {
             var newValue = !parsedValue;
-            EditState.EditString = newValue.ToString();
+            EditString = newValue.ToString();
         }
 
         if (entryMode == EditEntryMode.Key)
         {
             if (key.ToLower() == "y")
             {
-                EditState.EditString = true.ToString();
+                EditString = true.ToString();
             }
             else if (key.ToLower() == "n")
             {
-                EditState.EditString = false.ToString();
+                EditString = false.ToString();
             }
             else if (key == "Space")
             {
-                EditState.EditString = (!parsedValue).ToString();
+                EditString = (!parsedValue).ToString();
             }
         }
 
-        EditState.OnAcceptEdit.Invoke();
+        this.AcceptEdit();
     }
 
     public bool HandleKey(string key)
     {
         return false;
     }
+
+    public override bool CanAcceptEdit() => true;
+    public override bool CanCancelEdit() => true;
 
 }
