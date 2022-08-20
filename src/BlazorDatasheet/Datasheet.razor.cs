@@ -14,6 +14,7 @@ public partial class Datasheet : IHandleEvent
     [Parameter] public Sheet? Sheet { get; set; }
     private DynamicComponent? _activeEditorReference;
     [Parameter] public bool IsReadOnly { get; set; }
+    [Parameter] public Action<Cell> OnCellEdit { get; set; }
     private BaseEditorComponent? ActiveEditorReference => (BaseEditorComponent)(_activeEditorReference.Instance);
     private bool IsDataSheetActive { get; set; }
     private CellPosition? EditPosition { get; set; }
@@ -33,16 +34,28 @@ public partial class Datasheet : IHandleEvent
         RenderComponentTypes = new Dictionary<string, Type>();
         EditorComponentTypes = new Dictionary<string, Type>();
 
-        RenderComponentTypes.Add("text", typeof(TextRenderer));
-        RenderComponentTypes.Add("number", typeof(NumberRenderer));
-        RenderComponentTypes.Add("boolean", typeof(BoolRenderer));
+        RegisterRenderer<TextRenderer>("text");
+        RegisterRenderer<NumberRenderer>("number");
+        RegisterRenderer<BoolRenderer>("boolean");
 
-        EditorComponentTypes.Add("text", typeof(TextEditorComponent));
-        EditorComponentTypes.Add("datetime", typeof(DateTimeEditorComponent));
-        EditorComponentTypes.Add("boolean", typeof(BoolEditorComponent));
-        EditorComponentTypes.Add("select", typeof(SelectEditorComponent));
+        this.RegisterEditor<TextEditorComponent>("text");
+        this.RegisterEditor<DateTimeEditorComponent>("datetime");
+        this.RegisterEditor<BoolEditorComponent>("boolean");
+        this.RegisterEditor<SelectEditorComponent>("select");
 
         base.OnInitialized();
+    }
+
+    public void RegisterRenderer<T>(string name) where T:BaseRenderer
+    {
+        if (!RenderComponentTypes.TryAdd(name, typeof(T)))
+            RenderComponentTypes[name] = typeof(T);
+    }
+    
+    public void RegisterEditor<T>(string name) where T:BaseEditorComponent
+    {
+        if (!EditorComponentTypes.TryAdd(name, typeof(T)))
+            EditorComponentTypes[name] = typeof(T);
     }
 
     private Type getCellRendererType(string type)
@@ -194,6 +207,8 @@ public partial class Datasheet : IHandleEvent
         {
             var cell = Sheet.GetCell(EditPosition.Row, EditPosition.Col);
             cell.Value = EditState.EditString;
+
+            OnCellEdit?.Invoke(cell);
 
             // Finish the edit
             EditPosition = null;
