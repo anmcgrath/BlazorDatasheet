@@ -12,9 +12,9 @@ namespace BlazorDatasheet;
 public partial class Datasheet : IHandleEvent
 {
     [Parameter] public Sheet? Sheet { get; set; }
-    private DynamicComponent? _activeEditorRefernce;
+    private DynamicComponent? _activeEditorReference;
     [Parameter] public bool IsReadOnly { get; set; }
-    private ICellEditor? ActiveEditorReference => (ICellEditor)(_activeEditorRefernce.Instance);
+    private BaseEditorComponent? ActiveEditorReference => (BaseEditorComponent)(_activeEditorReference.Instance);
     private bool IsDataSheetActive { get; set; }
     private CellPosition? EditPosition { get; set; }
     private EditState? EditState { get; set; }
@@ -159,18 +159,13 @@ public partial class Datasheet : IHandleEvent
     {
         if (this.IsReadOnly)
             return;
-        
+
         var cell = Sheet?.GetCell(row, col);
         if (cell == null || cell.IsReadOnly)
             return;
 
         EditPosition = new CellPosition() { Row = row, Col = col };
-        EditState = new EditState()
-        {
-            Cell = cell,
-            OnAcceptEdit = AcceptEdit,
-            OnCancelEdit = CancelEdit
-        };
+        EditState = new EditState(AcceptEdit, CancelEdit, cell);
 
         // Do this after the next render because the EditComponent doesn't exist until then
         NextTick(() => { ActiveEditorReference?.BeginEdit(mode, cell, entryChar); });
@@ -192,10 +187,10 @@ public partial class Datasheet : IHandleEvent
         if (!IsEditing)
             return false;
 
-        if (ActiveEditorReference == null)
+        if (ActiveEditorReference == null || EditPosition == null)
             return false;
 
-        if (EditState.CanAcceptEdit)
+        if (ActiveEditorReference.CanAcceptEdit())
         {
             var cell = Sheet.GetCell(EditPosition.Row, EditPosition.Col);
             cell.Value = EditState.EditString;
@@ -221,7 +216,7 @@ public partial class Datasheet : IHandleEvent
         if (!IsEditing)
             return false;
 
-        if (EditState.CanCancelEdit)
+        if (ActiveEditorReference != null && ActiveEditorReference.CanCancelEdit())
         {
             // Finish the edit
             EditPosition = null;

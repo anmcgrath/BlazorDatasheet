@@ -6,11 +6,16 @@ namespace BlazorDatasheet.Model;
 /// </summary>
 public class EditState
 {
-    public Func<bool>? OnAcceptEdit { get; set; }
-    public Func<bool>? OnCancelEdit { get; set; }
-    public bool CanCancelEdit { get; set; }
-    public bool CanAcceptEdit { get; set; }
+    public EditState(Func<bool>? onAcceptEdit, Func<bool>? onCancelEdit, Cell cell)
+    {
+        OnAcceptEdit = onAcceptEdit;
+        OnCancelEdit = onCancelEdit;
+        Cell = cell;
+    }
+
+    public readonly Func<bool>? OnAcceptEdit;
+    public readonly Func<bool>? OnCancelEdit;
     public bool IsSoftEdit { get; set; }
     public string? EditString { get; set; }
-    public Cell Cell { get; set; }
+    public readonly Cell Cell;
 }

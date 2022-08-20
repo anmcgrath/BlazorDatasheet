@@ -7,6 +7,10 @@
 @implements IDisposable;
 @using Microsoft.AspNetCore.Components.Web.Virtualization;
 
+<EditorContainer
+    EditorComponent="TextEditor">
+</EditorContainer>
+
 <table
     style="max-height: 350px"
     class="sheet @(IsDataSheetActive ? "active-sheet" : "inactive-sheet")"
@@ -61,7 +65,7 @@
                         <DynamicComponent
                             Type="getEditorComponentType(cell.Type)"
                             Parameters="@getEditorParameters()"
-                            @ref="_activeEditorRefernce"/>
+                            @ref="_activeEditorReference"/>
                     }
                     else
                     {

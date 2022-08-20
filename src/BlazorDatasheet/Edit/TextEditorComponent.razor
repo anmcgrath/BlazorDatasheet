@@ -1,12 +1,11 @@
 @inherits BaseEditorComponent
 @using BlazorDatasheet.Model
-@implements ICellEditor
 
 <input
     type="text"
     class="text-input"
-    @bind="EditState.EditString"
-    @onclick="() => EditState.IsSoftEdit = false"
+    @bind="EditString"
+    @onclick="() => IsSoftEdit = false"
     @bind:event="oninput"
     @ref="InputRef"/>
 
@@ -22,5 +21,21 @@
             await base.OnAfterRenderAsync(firstRender);
         }
     }
+
+    public override void BeginEdit(EditEntryMode entryMode, Cell cell, string key)
+    {
+        EditString = cell.Value;
+        if (entryMode == EditEntryMode.Key && !String.IsNullOrEmpty(key) && key.Length == 1)
+        {
+            EditString = key;
+            IsSoftEdit = true;
+        }
+        
+        StateHasChanged();
+    }
+
+    public override bool CanAcceptEdit() => true;
+
+    public override bool CanCancelEdit() => true;
 
 }

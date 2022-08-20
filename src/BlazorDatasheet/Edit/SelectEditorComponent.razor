@@ -1,10 +1,11 @@
+@using BlazorDatasheet.Model
 @inherits BaseEditorComponent
 
-<input @bind="EditState.EditString" class="text-input" @ref="InputTextComponent"/>
+<input @bind="EditString" class="text-input" @ref="InputTextComponent"/>
 <div class="select-list">
     @foreach (var val in values)
     {
-        <div class="select-item" @onmousedown="() => { EditState.EditString = val; EditState.OnAcceptEdit.Invoke(); }">@val</div>
+        <div class="select-item" @onmousedown="() => { EditString = val; this.AcceptEdit(); }">@val</div>
     }
 </div>
 
@@ -17,6 +18,14 @@
         "A", "B", "C", "D", "E"
     };
 
+    public override void BeginEdit(EditEntryMode entryMode, Cell cell, string key)
+    {
+        EditString = cell.Value;
+        this.IsSoftEdit = true;
+        
+        StateHasChanged();
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -25,5 +34,10 @@
             await base.OnInitializedAsync();
         }
     }
+
+    public override bool CanAcceptEdit() => true;
+
+    public override bool CanCancelEdit() => true;
+
 
 }
