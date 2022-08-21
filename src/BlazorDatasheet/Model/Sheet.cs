@@ -197,6 +197,15 @@ public class Sheet
         Selection.Push(ActiveSelecting);
         ActiveSelecting = null;
     }
+    
+    /// <summary>
+    /// Cancels the current "Selecting" process and does not add the new selection to the stack
+    /// </summary>
+    public void CancelSelecting()
+    {
+        IsSelecting = false;
+        ActiveSelecting = null;
+    }
 
     /// <summary>
     /// Updates the current "Selecting" process by extending it to row, col
