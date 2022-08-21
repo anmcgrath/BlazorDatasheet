@@ -5,7 +5,7 @@
 <div class="select-list">
     @foreach (var val in values)
     {
-        <div class="select-item" @onmousedown="() => { EditString = val; this.AcceptEdit(); }">@val</div>
+        <div class="select-item" @onmouseup="() => { EditString = val; this.AcceptEdit(); }">@val</div>
     }
 </div>
 
@@ -22,7 +22,7 @@
     {
         EditString = cell.Value;
         this.IsSoftEdit = true;
-        
+
         StateHasChanged();
     }
 
