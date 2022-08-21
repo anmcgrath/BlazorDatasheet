@@ -43,13 +43,12 @@
 }
 
 .column-active {
-    background: #f4f4f4 !important;
+    background: rgba(199, 225, 255, 0.95) !important;
     border-bottom: 2px solid #3d87f1 !important;
 }
 
 .row-head {
     background: #fafafa !important;
-    font-weight: bold;
     border-right: 2px solid lightgray;
 }
 
