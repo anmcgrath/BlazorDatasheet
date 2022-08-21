@@ -7,29 +7,25 @@
 @implements IDisposable;
 @using Microsoft.AspNetCore.Components.Web.Virtualization;
 
-<EditorContainer
-    EditorComponent="TextEditor">
-</EditorContainer>
-
 <table
-    style="max-height: 350px"
+    style="max-height: 350px; position: relative"
     class="sheet @(IsDataSheetActive ? "active-sheet" : "inactive-sheet")"
     @onmouseover="() => IsMouseInsideSheet = true"
     @onmouseout="() => IsMouseInsideSheet = false">
     <!-- Column headers -->
     <tr>
-        <td style="background: #fafafa; border: 1px solid lightgray"></td>
+        <td style="background: #fafafa; border: 1px solid lightgray;"></td>
         @for (var i = 0; i < Sheet?.NumCols; i++)
         {
             var col = i;
             var colDefn = Sheet.ColumnHeadings.Count > i ? Sheet.ColumnHeadings[i] : null;
-            <th
+            <td
                 class="sheet-cell column-head @(IsDataSheetActive && Sheet.IsColumnActive(col) ? "column-active" : "")"
                 @onmouseup="e => HandleCellMouseUp(-1, col, e)"
                 @onmouseover="e => HandleCellMouseOver(-1, col, e)"
                 @onmousedown="e => HandleColumnHeaderMouseDown(col, e)">
                 @colDefn?.Header
-            </th>
+            </td>
         }
     </tr>
 
