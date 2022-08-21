@@ -15,6 +15,7 @@ public partial class Datasheet : IHandleEvent
     private DynamicComponent? _activeEditorReference;
     [Parameter] public bool IsReadOnly { get; set; }
     [Parameter] public Action<Cell> OnCellEdit { get; set; }
+    [Parameter] public EventCallback<CellChangedEventArgs> OnCellChanged { get; set; }
     private BaseEditorComponent? ActiveEditorReference => (BaseEditorComponent)(_activeEditorReference.Instance);
     private bool IsDataSheetActive { get; set; }
     private CellPosition? EditPosition { get; set; }
@@ -46,13 +47,13 @@ public partial class Datasheet : IHandleEvent
         base.OnInitialized();
     }
 
-    public void RegisterRenderer<T>(string name) where T:BaseRenderer
+    public void RegisterRenderer<T>(string name) where T : BaseRenderer
     {
         if (!RenderComponentTypes.TryAdd(name, typeof(T)))
             RenderComponentTypes[name] = typeof(T);
     }
-    
-    public void RegisterEditor<T>(string name) where T:BaseEditorComponent
+
+    public void RegisterEditor<T>(string name) where T : BaseEditorComponent
     {
         if (!EditorComponentTypes.TryAdd(name, typeof(T)))
             EditorComponentTypes[name] = typeof(T);
@@ -173,6 +174,8 @@ public partial class Datasheet : IHandleEvent
         if (this.IsReadOnly)
             return;
 
+        this.Sheet.CancelSelecting();
+
         var cell = Sheet?.GetCell(row, col);
         if (cell == null || cell.IsReadOnly)
             return;
@@ -210,16 +213,22 @@ public partial class Datasheet : IHandleEvent
 
             OnCellEdit?.Invoke(cell);
 
+            Sheet.MoveSelection(dRow, dCol);
+            emitCellChanged(cell, EditPosition.Row, EditPosition.Col);
             // Finish the edit
             EditPosition = null;
 
-            Sheet.MoveSelection(dRow, dCol);
             StateHasChanged();
 
             return true;
         }
 
         return false;
+    }
+
+    private async void emitCellChanged(Cell cell, int row, int col)
+    {
+        await OnCellChanged.InvokeAsync(new CellChangedEventArgs(cell, EditPosition.Row, EditPosition.Col));
     }
 
     /// <summary>
@@ -292,7 +301,15 @@ public partial class Datasheet : IHandleEvent
 
         if (e.Key == "Enter")
         {
-            if (AcceptEdit())
+            if (!IsEditing)
+            {
+                Sheet?.EndSelecting();
+                Sheet?.MoveSelection(1, 0);
+                StateHasChanged();
+                return true;
+            }
+
+            if (IsEditing && AcceptEdit())
             {
                 Sheet?.MoveSelection(1, 0);
                 StateHasChanged();
@@ -315,10 +332,18 @@ public partial class Datasheet : IHandleEvent
             }
         }
 
-        if (e.Key.Length == 1 && !IsEditing && IsDataSheetActive)
+        if (e.Key == "Tab")
         {
-            char c = e.Key[0];
-            if (char.IsLetterOrDigit(c) || char.IsPunctuation(c) || char.IsSymbol(c))
+            AcceptEdit();
+            Sheet.MoveSelection(0, 1);
+            StateHasChanged();
+            return true;
+        }
+
+        if ((e.Key.Length == 1) && !IsEditing && IsDataSheetActive)
+        {
+            char c = e.Key == "Space" ? ' ' : e.Key[0];
+            if (char.IsLetterOrDigit(c) || char.IsPunctuation(c) || char.IsSymbol(c) || char.IsSeparator(c))
             {
                 var inputPosition = Sheet?.GetInputForSelection();
                 if (inputPosition == null)
