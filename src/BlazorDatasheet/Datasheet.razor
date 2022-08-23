@@ -75,7 +75,7 @@
                             }
                             <DynamicComponent
                                 Type="@getCellRendererType(cell.Type)"
-                                Parameters="@getCellRendererParameters(cell)">
+                                Parameters="@getCellRendererParameters(cell, row, col)">
                             </DynamicComponent>
                         </div>
                     }

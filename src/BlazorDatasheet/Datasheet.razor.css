@@ -43,7 +43,7 @@
 }
 
 .column-active {
-    background: rgba(199, 225, 255, 0.95) !important;
+    background: #f4f4f4 !important;
     border-bottom: 2px solid #3d87f1 !important;
 }
 

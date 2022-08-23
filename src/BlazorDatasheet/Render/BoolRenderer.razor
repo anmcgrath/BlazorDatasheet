@@ -4,10 +4,25 @@
 
 @code {
 
+    private bool _checked;
+
     public bool Checked
     {
-        get { return bool.Parse(Cell.Value); }
-        set { Cell.Value = value.ToString(); }
+        get { return _checked; }
+        set
+        {
+            _checked = value;
+            this.RequestChangeCellValue(_checked.ToString());
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        var canPass = bool.TryParse(this.Cell.Value, out bool isChecked);
+        if (!canPass)
+            _checked = false;
+        _checked = isChecked;
+        base.OnParametersSet();
     }
 
 }

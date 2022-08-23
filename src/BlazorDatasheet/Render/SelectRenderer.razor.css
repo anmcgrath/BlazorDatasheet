@@ -1,0 +1,10 @@
+.dropper {
+    background: #fafafa;
+    margin: 0;
+    padding: 0 4px 0 4px;
+    border: none;
+}
+
+.dropper:hover{
+    background: #e1ebff;
+}
