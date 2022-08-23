@@ -20,7 +20,13 @@ Welcome to your new app.
     <label for="readonly">Sheet readonly</label>
 </p>
 
-<Datasheet Sheet="Sheet" IsReadOnly="IsSheetReadOnly" OnCellChanged="HandleCellChanged"></Datasheet>
+<Datasheet
+    Sheet="Sheet"
+    IsFixedHeight="false"
+    IsReadOnly="IsSheetReadOnly"
+    OnCellChanged="HandleCellChanged">
+
+</Datasheet>
 
 @code{
 

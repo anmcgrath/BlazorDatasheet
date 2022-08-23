@@ -8,7 +8,7 @@
 @using Microsoft.AspNetCore.Components.Web.Virtualization;
 
 <table
-    style="max-height: 350px; position: relative"
+    style="@(IsFixedHeight ? $"max-height: {FixedHeightInPx}px; position:relative" : "")"
     class="sheet @(IsDataSheetActive ? "active-sheet" : "inactive-sheet")"
     @onmouseover="() => IsMouseInsideSheet = true"
     @onmouseout="() => IsMouseInsideSheet = false">

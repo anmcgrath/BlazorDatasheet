@@ -15,6 +15,8 @@ public partial class Datasheet : IHandleEvent
     private DynamicComponent? _activeEditorReference;
     [Parameter] public bool IsReadOnly { get; set; }
     [Parameter] public EventCallback<CellChangedEventArgs> OnCellChanged { get; set; }
+    [Parameter] public double FixedHeightInPx { get; set; } = 350;
+    [Parameter] public bool IsFixedHeight { get; set; }
     private BaseEditorComponent? ActiveEditorReference => (BaseEditorComponent)(_activeEditorReference.Instance);
     private bool IsDataSheetActive { get; set; }
     private CellPosition? EditPosition { get; set; }
