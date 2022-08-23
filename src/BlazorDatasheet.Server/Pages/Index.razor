@@ -20,7 +20,7 @@ Welcome to your new app.
     <label for="readonly">Sheet readonly</label>
 </p>
 
-<Datasheet Sheet="Sheet" IsReadOnly="IsSheetReadOnly"></Datasheet>
+<Datasheet Sheet="Sheet" IsReadOnly="IsSheetReadOnly" OnCellChanged="HandleCellChanged"></Datasheet>
 
 @code{
 
@@ -38,14 +38,15 @@ Welcome to your new app.
         };
 
         var random = new Random();
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 5; i++)
         {
             People.Add(new Person() { Id = i, Age = random.NextInt64(100), FirstName = "Person", LastName = "Person" });
         }
 
         var checkCf = new ConditionalFormat((cell, cells) => { return ((Person)cell.Data).Checked == true; }, new Format()
         {
-            BackgroundColor = "#D9F8C4"
+            BackgroundColor = "#D9F8C4",
+            Icon = Icons.CheckIcon
         });
 
         var ageCf = new ConditionalFormat((cell, cells) => { return ((Person)cell.Data).Age > 50; }, new Format()
@@ -69,6 +70,11 @@ Welcome to your new app.
                     pd.UseConditionalFormat("check");
                     pd.IsReadOnly = true;
                 })
+                .WithProperty(x => x.LastName, pd =>
+                {
+                    pd.Heading = "Last Name";
+                    pd.Type = "select";
+                })
                 .WithProperty(x => x.Id, pd => { pd.Heading = "Person ID"; })
                 .WithConditionalFormat("check", checkCf)
                 .WithConditionalFormat("ageCf", ageCf)
@@ -78,6 +84,11 @@ Welcome to your new app.
 
 
         Sheet = editor1.Sheet;
+    }
+
+    private void HandleCellChanged(CellChangedEventArgs e)
+    {
+        StateHasChanged();
     }
 
 }

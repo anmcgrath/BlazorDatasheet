@@ -14,7 +14,6 @@ public partial class Datasheet : IHandleEvent
     [Parameter] public Sheet? Sheet { get; set; }
     private DynamicComponent? _activeEditorReference;
     [Parameter] public bool IsReadOnly { get; set; }
-    [Parameter] public Action<Cell> OnCellEdit { get; set; }
     [Parameter] public EventCallback<CellChangedEventArgs> OnCellChanged { get; set; }
     private BaseEditorComponent? ActiveEditorReference => (BaseEditorComponent)(_activeEditorReference.Instance);
     private bool IsDataSheetActive { get; set; }
@@ -36,6 +35,7 @@ public partial class Datasheet : IHandleEvent
         EditorComponentTypes = new Dictionary<string, Type>();
 
         RegisterRenderer<TextRenderer>("text");
+        RegisterRenderer<SelectRenderer>("select");
         RegisterRenderer<NumberRenderer>("number");
         RegisterRenderer<BoolRenderer>("boolean");
 
@@ -74,11 +74,15 @@ public partial class Datasheet : IHandleEvent
         return typeof(TextEditorComponent);
     }
 
-    private Dictionary<string, object> getCellRendererParameters(Cell cell)
+    private Dictionary<string, object> getCellRendererParameters(Cell cell, int row, int col)
     {
         return new Dictionary<string, object>()
         {
             { "Cell", cell },
+            { "Row", row },
+            { "Col", col },
+            { "OnChangeCellValueRequest", HandleCellRendererRequestChangeValue },
+            { "OnBeginEditRequest", HandleCellRequestBeginEdit }
         };
     }
 
@@ -211,8 +215,6 @@ public partial class Datasheet : IHandleEvent
             var cell = Sheet.GetCell(EditPosition.Row, EditPosition.Col);
             cell.Value = EditState.EditString;
 
-            OnCellEdit?.Invoke(cell);
-
             Sheet.MoveSelection(dRow, dCol);
             emitCellChanged(cell, EditPosition.Row, EditPosition.Col);
             // Finish the edit
@@ -228,7 +230,9 @@ public partial class Datasheet : IHandleEvent
 
     private async void emitCellChanged(Cell cell, int row, int col)
     {
-        await OnCellChanged.InvokeAsync(new CellChangedEventArgs(cell, EditPosition.Row, EditPosition.Col));
+        if (!OnCellChanged.HasDelegate)
+            return;
+        await OnCellChanged.InvokeAsync(new CellChangedEventArgs(cell, row, col));
     }
 
     /// <summary>
@@ -369,5 +373,27 @@ public partial class Datasheet : IHandleEvent
     public void Dispose()
     {
         _windowEventService.Dispose();
+    }
+
+    /// <summary>
+    /// Handles when a cell renderer requests to start editing the cell
+    /// </summary>
+    /// <param name="args"></param>
+    private void HandleCellRequestBeginEdit(EditRequestArgs args)
+    {
+        BeginEdit(args.Row, args.Col, args.IsSoftEdit, args.EntryMode);
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Handles when a cell renderer requests that a cell's value be changed
+    /// </summary>
+    /// <param name="args"></param>
+    private void HandleCellRendererRequestChangeValue(ChangeCellRequestEventArgs args)
+    {
+        var cell = Sheet?.GetCell(args.Row, args.Col);
+        cell.Value = args.NewValue;
+        StateHasChanged();
+        emitCellChanged(cell, args.Row, args.Col);
     }
 }
