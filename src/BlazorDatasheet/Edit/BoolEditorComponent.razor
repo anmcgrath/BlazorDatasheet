@@ -5,11 +5,11 @@
 
     public override void BeginEdit(EditEntryMode entryMode, Cell cell, string key)
     {
-        var canParse = bool.TryParse(cell.Value, out bool parsedValue);
+        var canParse = bool.TryParse(cell.GetValue<string>(), out bool parsedValue);
         if (!canParse)
             this.CancelEdit();
 
-        EditString = cell.Value;
+        EditString = cell.GetValue<string>();
 
         if (entryMode == EditEntryMode.Mouse)
         {

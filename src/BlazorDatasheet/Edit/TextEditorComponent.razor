@@ -24,7 +24,7 @@
 
     public override void BeginEdit(EditEntryMode entryMode, Cell cell, string key)
     {
-        EditString = cell.Value;
+        EditString = cell.GetValue<string>();
         if (entryMode == EditEntryMode.Key && !String.IsNullOrEmpty(key) && key.Length == 1)
         {
             EditString = key;

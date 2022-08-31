@@ -13,11 +13,11 @@
 
     public override void BeginEdit(EditEntryMode entryMode, Cell cell, string key)
     {
-        var canParse = DateTime.TryParse(cell.Value, out DateTime parsedDateTime);
+        var canParse = DateTime.TryParse(cell.GetValue<string>(), out DateTime parsedDateTime);
         if (!canParse)
             EditString = DateTime.Now.ToString();
         else
-            EditString = cell.Value;
+            EditString = cell.GetValue<string>();
 
         if (entryMode == EditEntryMode.Key)
         {

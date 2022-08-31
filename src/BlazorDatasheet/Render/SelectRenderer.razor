@@ -3,7 +3,7 @@
 
 <div style="display: flex; flex-direction: row; justify-content: space-between; width:100%;">
     <div style="overflow: hidden;">
-        @Cell.Value
+        @(Cell.GetValue<string>())
     </div>
     <button class="dropper" @onclick="() => this.RequestEdit(true, EditEntryMode.Mouse)">
         @Icons.CaretIcon

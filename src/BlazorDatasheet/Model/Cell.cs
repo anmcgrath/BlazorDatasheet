@@ -1,67 +1,127 @@
+using BlazorDatasheet.Interfaces;
+
 namespace BlazorDatasheet.Model;
 
-public class Cell
+public class Cell : IReadOnlyCell, IWriteableCell
 {
     public string Type { get; set; } = "text";
-    public Format Formatting = Format.Default;
+    public Format Formatting { get; set; } = Format.Default;
     public bool IsReadOnly { get; set; }
 
-    public string? Value
+    /// <summary>
+    /// Returns the Cell's Value and attempts to cast it to T
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    public T GetValue<T>()
     {
-        get
+        return (T)GetValue(typeof(T));
+    }
+
+    /// <summary>
+    /// Returns a cell's Value and converts to the type if possible
+    /// </summary>
+    /// <param name="type"></param>
+    /// <returns></returns>
+    public object? GetValue(Type type)
+    {
+        try
         {
-            if (String.IsNullOrEmpty(Key))
-                return Data?.ToString();
-            return Data?.GetType().GetProperty(Key)?.GetValue(Data, null)?.ToString();
-        }
-        set
-        {
-            if (value == Value)
-                return;
-            if (String.IsNullOrEmpty(Key))
+            if (string.IsNullOrEmpty(Key))
             {
-                if (Setter == null)
+                if (this.Data.GetType() == type)
+                    return Data;
+                else
                 {
-                    Data = value;
-                    return;
-                }
-
-                Setter.Invoke(Data, value);
-                return;
-            }
-
-            var prop = Data.GetType().GetProperty(Key);
-            if (prop == null)
-                return;
-
-            if (Setter == null)
-            {
-                var propType = prop.PropertyType;
-                try
-                {
-                    // Convert.ChangeType won't convert string to nullable type
-                    if (System.Nullable.GetUnderlyingType(propType) != null)
+                    var conversionType = type;
+                    if (System.Nullable.GetUnderlyingType(type) != null)
                     {
-                        if (String.IsNullOrEmpty(value))
-                        {
-                            prop.SetValue(Data, null);
-                            return;
-                        }
-
-                        propType = System.Nullable.GetUnderlyingType(propType);
+                        conversionType = System.Nullable.GetUnderlyingType(type);
                     }
 
-                    object convertedValue = Convert.ChangeType(value, propType);
-                    prop.SetValue(Data, convertedValue);
-                }
-                catch (Exception e)
-                {
-                    return;
+                    return Convert.ChangeType(Data, conversionType);
                 }
             }
 
+            // Use the Key!
+
+            var val = Data?.GetType().GetProperty(Key)?.GetValue(Data, null);
+            if (val.GetType() == type || System.Nullable.GetUnderlyingType(type) == val.GetType())
+                return val;
             else
-                Setter.Invoke(Data, value);
+            {
+                var conversionType = type;
+                if (System.Nullable.GetUnderlyingType(type) != null)
+                {
+                    conversionType = System.Nullable.GetUnderlyingType(type);
+                }
+
+                return Convert.ChangeType(val, conversionType);
+            }
+        }
+        catch (Exception e)
+        {
+            return null;
+        }
+    }
+
+    public bool SetValue<T>(T val)
+    {
+        return SetValue(val, typeof(T));
+    }
+
+    /// <summary>
+    /// Sets the Cell's value and returns whether it was successful
+    /// </summary>
+    /// <param name="val"></param>
+    /// <param name="type"></param>
+    /// <returns>Whether setting the value was successful</returns>
+    public bool SetValue(object? val, Type type)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(Key))
+            {
+                if (Data.GetType() == type)
+                    Data = val;
+                else
+                    Data = Convert.ChangeType(val, type);
+                return true;
+            }
+
+            // Set with the key
+            var prop = Data.GetType().GetProperty(Key);
+            if (prop == null)
+                return false;
+
+            var propType = prop.PropertyType;
+
+            // If it's a nullable type, set propType to the underlying type
+            // If the value is not null
+            if (System.Nullable.GetUnderlyingType(propType) != null)
+            {
+                if (val == null)
+                {
+                    prop.SetValue(Data, null);
+                    return true;
+                }
+
+                propType = System.Nullable.GetUnderlyingType(propType);
+            }
+
+            if (propType == type)
+            {
+                prop.SetValue(Data, val);
+                return true;
+            }
+
+            object convertedValue = Convert.ChangeType(val, propType);
+            prop.SetValue(Data, convertedValue);
+            return true;
+        }
+        catch (Exception e)
+        {
+            return false;
         }
     }
 
@@ -71,10 +131,11 @@ public class Cell
 
     public string? Key { get; set; }
 
-    public object? Data { get; set; }
+    public object? Data { get; private set; }
 
-    public Cell()
+    public Cell(object? data = null)
     {
+        Data = data;
         ConditionalFormattingIds = new List<string>();
     }
 

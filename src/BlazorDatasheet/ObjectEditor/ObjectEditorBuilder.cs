@@ -81,21 +81,20 @@ public class ObjectEditorBuilder<T>
         {
             for (int col = 0; col < nCols; col++)
             {
-                var cell = new Cell();
+                Cell cell;
                 ObjectPropertyDefinition<T> propDefn;
                 if (_direction == GridDirection.PropertiesAcrossColumns)
                 {
                     propDefn = propertyDefinitions[col];
-                    cell.Data = _items[row];
+                    cell = new Cell(_items[row]);
                 }
                 else
                 {
                     propDefn = propertyDefinitions[row];
-                    cell.Data = _items[col];
+                    cell = new Cell(_items[col]);
                 }
 
                 cell.Key = propDefn.PropertyName;
-
                 cell.Setter = propDefn.SetterObj;
                 cell.Formatting = propDefn.Format;
                 cell.Type = propDefn.Type;
