@@ -1,4 +1,5 @@
 @using BlazorDatasheet.Model
+@using BlazorDatasheet.Interfaces
 @inherits BaseEditorComponent
 
 <input @bind="EditString" class="text-input" @ref="InputTextComponent"/>
@@ -18,7 +19,7 @@
         "A", "B", "C", "D", "E"
     };
 
-    public override void BeginEdit(EditEntryMode entryMode, Cell cell, string key)
+    public override void BeginEdit(EditEntryMode entryMode, IWriteableCell cell, string key)
     {
         EditString = cell.GetValue<string>();
         this.IsSoftEdit = true;

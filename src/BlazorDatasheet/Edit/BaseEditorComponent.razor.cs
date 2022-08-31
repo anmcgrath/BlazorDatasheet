@@ -1,3 +1,4 @@
+using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Model;
 using Microsoft.AspNetCore.Components;
 
@@ -22,7 +23,7 @@ public abstract partial class BaseEditorComponent
         set { EditState.IsSoftEdit = value; }
     }
 
-    public abstract void BeginEdit(EditEntryMode entryMode, Cell cell, string key);
+    public abstract void BeginEdit(EditEntryMode entryMode, IWriteableCell cell, string key);
 
     public virtual bool HandleKey(string key)
     {

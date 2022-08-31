@@ -1,9 +1,10 @@
 @using BlazorDatasheet.Model
+@using BlazorDatasheet.Interfaces
 @inherits BaseEditorComponent
 
 @code {
 
-    public override void BeginEdit(EditEntryMode entryMode, Cell cell, string key)
+    public override void BeginEdit(EditEntryMode entryMode, IWriteableCell cell, string key)
     {
         var canParse = bool.TryParse(cell.GetValue<string>(), out bool parsedValue);
         if (!canParse)
