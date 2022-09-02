@@ -1,4 +1,5 @@
 using BlazorDatasheet.Interfaces;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace BlazorDatasheet.Model;
 
@@ -16,6 +17,11 @@ public class Cell : IReadOnlyCell, IWriteableCell
     public T GetValue<T>()
     {
         return (T)GetValue(typeof(T));
+    }
+
+    public object? GetValue()
+    {
+        return GetValue<object?>();
     }
 
     /// <summary>
@@ -133,10 +139,11 @@ public class Cell : IReadOnlyCell, IWriteableCell
 
     public object? Data { get; private set; }
 
-    public Cell(object? data = null)
+    public Cell(object? data = null, string key = null)
     {
         Data = data;
         ConditionalFormattingIds = new List<string>();
+        Key = key;
     }
 
     internal void AddConditionalFormat(string key)
