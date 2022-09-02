@@ -1,5 +1,6 @@
 @inherits BaseEditorComponent
 @using BlazorDatasheet.Model
+@using BlazorDatasheet.Interfaces
 
 <input
     type="text"
@@ -22,9 +23,9 @@
         }
     }
 
-    public override void BeginEdit(EditEntryMode entryMode, Cell cell, string key)
+    public override void BeginEdit(EditEntryMode entryMode, IWriteableCell cell, string key)
     {
-        EditString = cell.Value;
+        EditString = cell.GetValue<string>();
         if (entryMode == EditEntryMode.Key && !String.IsNullOrEmpty(key) && key.Length == 1)
         {
             EditString = key;

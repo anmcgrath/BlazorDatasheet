@@ -215,7 +215,9 @@ public partial class Datasheet : IHandleEvent
         if (ActiveEditorReference.CanAcceptEdit())
         {
             var cell = Sheet.GetCell(EditPosition.Row, EditPosition.Col);
-            cell.Value = EditState.EditString;
+            var setValue = cell.SetValue(EditState.EditString);
+            if (!setValue)
+                return false;
 
             Sheet.MoveSelection(dRow, dCol);
             emitCellChanged(cell, EditPosition.Row, EditPosition.Col);
@@ -394,7 +396,9 @@ public partial class Datasheet : IHandleEvent
     private void HandleCellRendererRequestChangeValue(ChangeCellRequestEventArgs args)
     {
         var cell = Sheet?.GetCell(args.Row, args.Col);
-        cell.Value = args.NewValue;
+        var setValue = cell.SetValue(args.NewValue);
+        if (!setValue)
+            return;
         StateHasChanged();
         emitCellChanged(cell, args.Row, args.Col);
     }

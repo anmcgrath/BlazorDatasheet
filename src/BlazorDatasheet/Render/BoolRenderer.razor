@@ -18,10 +18,13 @@
 
     protected override void OnParametersSet()
     {
-        var canPass = bool.TryParse(this.Cell.Value, out bool isChecked);
-        if (!canPass)
+        var val = this.Cell.GetValue<bool?>();
+        if (!val.HasValue)
             _checked = false;
-        _checked = isChecked;
+        else
+        {
+            _checked = val.Value;
+        }
         base.OnParametersSet();
     }
 

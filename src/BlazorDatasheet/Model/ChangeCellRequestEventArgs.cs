@@ -2,7 +2,7 @@ namespace BlazorDatasheet.Model;
 
 public class ChangeCellRequestEventArgs
 {
-    public ChangeCellRequestEventArgs(int row, int col, string newValue)
+    public ChangeCellRequestEventArgs(int row, int col, object newValue)
     {
         Row = row;
         Col = col;
@@ -11,5 +11,5 @@ public class ChangeCellRequestEventArgs
 
     public int Row { get; }
     public int Col { get; }
-    public string NewValue { get; set; }
+    public object NewValue { get; set; }
 }

@@ -2,7 +2,7 @@
 
 <div
     class="cell-renderer @(IsSelected ? "selected" : "")">
-    @Cell.Value
+    @(Cell.GetValue<string>())
 </div>
 
 @code {
