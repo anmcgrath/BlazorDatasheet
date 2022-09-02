@@ -6,6 +6,7 @@ namespace BlazorDatasheet.Edit;
 
 public abstract partial class BaseEditorComponent
 {
+    [Parameter] public EditState EditState { get; set; }
 
     public abstract bool CanAcceptEdit();
     public abstract bool CanCancelEdit();
