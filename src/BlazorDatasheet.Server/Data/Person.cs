@@ -6,7 +6,7 @@ public class Person
     private string _firstName;
     public string? FirstName { get; set; }
     public string? LastName { get; set; }
-    public double? Age { get; set; }
+    public string? Age { get; set; }
     public bool Checked { get; set; }
     public DateTime StartDate { get; set; } = DateTime.Now;
 }
