@@ -99,6 +99,8 @@ public class ObjectEditorBuilder<T>
                 cell.Formatting = propDefn.Format;
                 cell.Type = propDefn.Type;
                 cell.IsReadOnly = propDefn.IsReadOnly;
+                foreach (var validator in propDefn.Validators)
+                    cell.Validators.Add(validator);
                 cells[row, col] = cell;
             }
         }

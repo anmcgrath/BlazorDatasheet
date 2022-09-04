@@ -1,3 +1,4 @@
+using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Model;
 
 namespace BlazorDatasheet.ObjectEditor;
@@ -10,6 +11,7 @@ public class ObjectPropertyDefinition<T>
     public Format Format { get; set; } = Format.Default;
     public bool IsReadOnly { get; set; }
     internal List<string> ConditionalFormatKeys { get; set; }
+    internal List<IDataValidator> Validators { get; set; }
 
     private Action<T, string>? _setter;
 
@@ -30,10 +32,16 @@ public class ObjectPropertyDefinition<T>
         PropertyName = propName;
         Type = type;
         ConditionalFormatKeys = new List<string>();
+        Validators = new List<IDataValidator>();
     }
 
     public void UseConditionalFormat(string key)
     {
         ConditionalFormatKeys.Add(key);
+    }
+
+    public void UseDataValidator(IDataValidator validator)
+    {
+        Validators.Add(validator);
     }
 }

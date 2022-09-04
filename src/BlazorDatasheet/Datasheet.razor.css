@@ -28,6 +28,11 @@
     -webkit-user-select: none;
 }
 
+.invalid-cell {
+    color: red !important;
+    background: red;
+}
+
 .cell-selected {
     background: rgba(199, 225, 255, 0.95) !important;
 }
