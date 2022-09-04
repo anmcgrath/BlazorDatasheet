@@ -4,6 +4,7 @@
 @using Range = BlazorDatasheet.Model.Range
 @using BlazorDatasheet.Icons
 @using BlazorDatasheet.ObjectEditor
+@using BlazorDatasheet.Validation
 
 <PageTitle>Index</PageTitle>
 
@@ -22,7 +23,7 @@ Welcome to your new app.
 
 <Datasheet
     Sheet="Sheet"
-    IsFixedHeight="false"
+    IsFixedHeight="true"
     IsReadOnly="IsSheetReadOnly"
     OnCellChanged="HandleCellChanged">
 
@@ -38,26 +39,21 @@ Welcome to your new app.
     {
         People = new List<Person>()
         {
-            new Person() { Id = 0, Age = 32, FirstName = "John", LastName = "Citizen" },
-            new Person() { Id = 1, Age = 49, FirstName = "Albert", LastName = "Rogers" },
-            new Person() { Id = 2, Age = 106, FirstName = "Wendall", LastName = "Palmer" },
+            new Person() { Id = 0, Age = "32", FirstName = "John", LastName = "Citizen" },
+            new Person() { Id = 1, Age = "49", FirstName = "Albert", LastName = "Rogers" },
+            new Person() { Id = 2, Age = "106", FirstName = "Wendall", LastName = "Palmer" },
         };
 
         var random = new Random();
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < 100; i++)
         {
-            People.Add(new Person() { Id = i, Age = random.NextInt64(100), FirstName = "Person", LastName = "Person" });
+            People.Add(new Person() { Id = i, Age = random.NextInt64(100).ToString(), FirstName = "Person", LastName = "Person" });
         }
 
         var checkCf = new ConditionalFormat((cell, cells) => { return ((Person)cell.Data).Checked == true; }, new Format()
         {
             BackgroundColor = "#D9F8C4",
             Icon = Icons.CheckIcon
-        });
-
-        var ageCf = new ConditionalFormat((cell, cells) => { return ((Person)cell.Data).Age > 50; }, new Format()
-        {
-            ForegroundColor = "#F37878"
         });
 
         var builder1 = new ObjectEditorBuilder<Person>(People, GridDirection.PropertiesAcrossColumns);
@@ -76,14 +72,15 @@ Welcome to your new app.
                     pd.UseConditionalFormat("check");
                     pd.IsReadOnly = true;
                 })
+                .WithProperty(x => x.Age, pd => { pd.UseDataValidator(new NumberValidator(false)); })
                 .WithProperty(x => x.LastName, pd =>
                 {
                     pd.Heading = "Last Name";
                     pd.Type = "select";
+                    pd.UseDataValidator(new SourceValidator(new List<string>() { "A", "B", "C" }, true));
                 })
                 .WithProperty(x => x.Id, pd => { pd.Heading = "Person ID"; })
                 .WithConditionalFormat("check", checkCf)
-                .WithConditionalFormat("ageCf", ageCf)
                 .WithProperty(x => x.Checked, pd => { pd.UseConditionalFormat("check"); });
 
         var editor1 = builder1.Build();

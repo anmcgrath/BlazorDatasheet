@@ -8,6 +8,8 @@ public class Cell : IReadOnlyCell, IWriteableCell
     public string Type { get; set; } = "text";
     public Format Formatting { get; set; } = Format.Default;
     public bool IsReadOnly { get; set; }
+    public List<IDataValidator> Validators { get; set; }
+    public bool IsValid { get; set; } = true;
 
     /// <summary>
     /// Returns the Cell's Value and attempts to cast it to T
@@ -144,6 +146,7 @@ public class Cell : IReadOnlyCell, IWriteableCell
         Data = data;
         ConditionalFormattingIds = new List<string>();
         Key = key;
+        Validators = new List<IDataValidator>();
     }
 
     internal void AddConditionalFormat(string key)

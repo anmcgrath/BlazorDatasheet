@@ -2,23 +2,23 @@ using BlazorDatasheet.Interfaces;
 
 namespace BlazorDatasheet.Validation;
 
-public class SourceValidator<T> : IDataValidator where T : IComparable
+public class SourceValidator : IDataValidator
 {
-    public List<T> ValidationSource { get; }
+    public List<string> ValidationSource { get; }
     public bool IsStrict { get; private set; }
 
-    public SourceValidator(List<T> validationSource, bool isStrict)
+    public SourceValidator(List<string> validationSource, bool isStrict)
     {
         ValidationSource = validationSource;
         IsStrict = isStrict;
     }
 
-    public bool IsValid(IReadOnlyCell cell)
+    public bool IsValid(object val)
     {
         try
         {
-            var val = cell.GetValue<T>();
-            return ValidationSource.Any(x => x.CompareTo(val) == 0);
+            var valStr = val.ToString();
+            return ValidationSource.Any(x => x.CompareTo(valStr) == 0);
         }
         catch (Exception e)
         {

@@ -9,9 +9,9 @@ public class NumberValidator : IDataValidator
         IsStrict = isStrict;
     }
 
-    public bool IsValid(IReadOnlyCell cell)
+    public bool IsValid(object value)
     {
-        var val = cell.GetValue<string>();
+        var val = value.ToString();
         return double.TryParse(val, out double res);
     }
 
