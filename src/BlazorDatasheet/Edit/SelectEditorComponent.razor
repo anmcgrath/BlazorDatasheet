@@ -1,30 +1,44 @@
 @using BlazorDatasheet.Model
 @using BlazorDatasheet.Interfaces
-@inherits BaseEditorComponent
+@using BlazorDatasheet.Validation
+@implements ICellEditor
 
-<input @bind="EditString" class="text-input" @ref="InputTextComponent"/>
+<input @bind="EditedValue" class="text-input" @ref="InputTextComponent"/>
 <div class="select-list">
     @foreach (var val in values)
     {
-        <div class="select-item" @onmouseup="() => { EditString = val; this.AcceptEdit(); }">@val</div>
+        <div class="select-item" @onmouseup="() => { EditedValue = val; EditorManager.AcceptEdit(); }">@val</div>
     }
 </div>
 
 @code {
 
+    [Parameter]
+    public EditorManager EditorManager { get; set; }
+
     private ElementReference InputTextComponent;
 
-    private string[] values = new string[5]
+    public string EditedValue
     {
-        "A", "B", "C", "D", "E"
-    };
+        get => EditorManager.GetEditedValue<string>();
+        set => EditorManager.SetEditedValue(value);
+    }
 
-    public override void BeginEdit(EditEntryMode entryMode, IWriteableCell cell, string key)
+    private string[] values;
+
+    public void BeginEdit(EditEntryMode entryMode, IWriteableCell cell, string key)
     {
-        EditString = cell.GetValue<string>();
-        this.IsSoftEdit = true;
-
+        EditedValue = cell.GetValue<string>();
         StateHasChanged();
+    }
+
+    protected override void OnParametersSet()
+    {
+        Console.WriteLine("OnParameterSet Select");
+        foreach (var validator in EditorManager.CurrentEditedCell.Validators)
+            if (validator is SourceValidator)
+                values = ((SourceValidator)validator).ValidationSource.ToArray();
+        base.OnParametersSet();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -36,9 +50,13 @@
         }
     }
 
-    public override bool CanAcceptEdit() => true;
+    public bool CanAcceptEdit() => true;
 
-    public override bool CanCancelEdit() => true;
+    public bool CanCancelEdit() => true;
 
+    public bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
+    {
+        return false;
+    }
 
 }

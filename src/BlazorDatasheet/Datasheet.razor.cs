@@ -12,21 +12,16 @@ namespace BlazorDatasheet;
 public partial class Datasheet : IHandleEvent
 {
     [Parameter] public Sheet? Sheet { get; set; }
-    private DynamicComponent? _activeEditorReference;
     [Parameter] public bool IsReadOnly { get; set; }
     [Parameter] public EventCallback<CellChangedEventArgs> OnCellChanged { get; set; }
     [Parameter] public double FixedHeightInPx { get; set; } = 350;
     [Parameter] public bool IsFixedHeight { get; set; }
-    private BaseEditorComponent? ActiveEditorReference => (BaseEditorComponent)(_activeEditorReference.Instance);
+    public EditorManager EditorManager { get; private set; }
     private bool IsDataSheetActive { get; set; }
-    private CellPosition? EditPosition { get; set; }
-    private EditState? EditState { get; set; }
-    private bool IsEditing => EditPosition != null;
     private bool IsMouseInsideSheet { get; set; }
     private ElementReference ActiveCellInputReference;
     private Queue<Action> QueuedActions { get; set; } = new Queue<Action>();
     private Dictionary<string, Type> RenderComponentTypes { get; set; }
-    private Dictionary<string, Type> EditorComponentTypes { get; set; }
 
     private IWindowEventService _windowEventService;
 
@@ -34,17 +29,17 @@ public partial class Datasheet : IHandleEvent
     {
         _windowEventService = new WindowEventService(JS);
         RenderComponentTypes = new Dictionary<string, Type>();
-        EditorComponentTypes = new Dictionary<string, Type>();
+        EditorManager = new EditorManager();
 
         RegisterRenderer<TextRenderer>("text");
         RegisterRenderer<SelectRenderer>("select");
         RegisterRenderer<NumberRenderer>("number");
         RegisterRenderer<BoolRenderer>("boolean");
 
-        this.RegisterEditor<TextEditorComponent>("text");
-        this.RegisterEditor<DateTimeEditorComponent>("datetime");
-        this.RegisterEditor<BoolEditorComponent>("boolean");
-        this.RegisterEditor<SelectEditorComponent>("select");
+        EditorManager.RegisterEditor<TextEditorComponent>("text");
+        EditorManager.RegisterEditor<DateTimeEditorComponent>("datetime");
+        EditorManager.RegisterEditor<BoolEditorComponent>("boolean");
+        EditorManager.RegisterEditor<SelectEditorComponent>("select");
 
         base.OnInitialized();
     }
@@ -55,25 +50,12 @@ public partial class Datasheet : IHandleEvent
             RenderComponentTypes[name] = typeof(T);
     }
 
-    public void RegisterEditor<T>(string name) where T : BaseEditorComponent
-    {
-        if (!EditorComponentTypes.TryAdd(name, typeof(T)))
-            EditorComponentTypes[name] = typeof(T);
-    }
-
     private Type getCellRendererType(string type)
     {
         if (RenderComponentTypes.ContainsKey(type))
             return RenderComponentTypes[type];
 
         return typeof(TextRenderer);
-    }
-
-    private Type getEditorComponentType(string type)
-    {
-        if (EditorComponentTypes.ContainsKey(type))
-            return EditorComponentTypes[type];
-        return typeof(TextEditorComponent);
     }
 
     private Dictionary<string, object> getCellRendererParameters(Cell cell, int row, int col)
@@ -92,7 +74,7 @@ public partial class Datasheet : IHandleEvent
     {
         return new Dictionary<string, object>()
         {
-            { "EditState", EditState },
+            { "EditorManager", EditorManager },
         };
     }
 
@@ -128,8 +110,11 @@ public partial class Datasheet : IHandleEvent
 
     private void HandleCellMouseDown(int row, int col, MouseEventArgs e)
     {
-        if (IsEditing && !EditPosition.Equals(row, col))
+        if (EditorManager.IsEditing && !EditorManager.CurrentEditPosition.Equals(row, col))
+        {
             AcceptEdit();
+        }
+
 
         if (e.ShiftKey)
             Sheet?.ExtendSelection(row, col);
@@ -186,11 +171,10 @@ public partial class Datasheet : IHandleEvent
         if (cell == null || cell.IsReadOnly)
             return;
 
-        EditPosition = new CellPosition() { Row = row, Col = col };
-        EditState = new EditState(AcceptEdit, CancelEdit, cell);
+        EditorManager.BeginEdit(row, col, cell, softEdit, mode, entryChar, NextTick);
 
-        // Do this after the next render because the EditComponent doesn't exist until then
-        NextTick(() => { ActiveEditorReference?.BeginEdit(mode, cell, entryChar); });
+        // Required to re-render after any edit component reference has changed
+        NextTick(StateHasChanged);
     }
 
     private bool AcceptEdit()
@@ -199,37 +183,22 @@ public partial class Datasheet : IHandleEvent
     }
 
     /// <summary>
-    /// Accepts the current edit, returning whether the edit was successful
+    /// Accepts the current edit and moves the selection by dRow/dCol, returning whether the edit was successful
     /// </summary>
     /// <param name="dRow"></param>
     /// <param name="dCol"></param>
     /// <returns></returns>
     private bool AcceptEdit(int dRow, int dCol)
     {
-        if (!IsEditing)
-            return false;
-
-        if (ActiveEditorReference == null || EditPosition == null)
-            return false;
-
-        if (ActiveEditorReference.CanAcceptEdit())
+        var result = EditorManager.AcceptEdit();
+        if (result.Accepted)
         {
-            var cell = Sheet.GetCell(EditPosition.Row, EditPosition.Col);
-            var setValue = cell.SetValue(EditState.EditString);
-            if (!setValue)
-                return false;
-
             Sheet.MoveSelection(dRow, dCol);
-            emitCellChanged(cell, EditPosition.Row, EditPosition.Col);
-            // Finish the edit
-            EditPosition = null;
-
+            emitCellChanged(result.Cell, result.Row, result.Col);
             StateHasChanged();
-
-            return true;
         }
 
-        return false;
+        return result.Accepted;
     }
 
     private async void emitCellChanged(Cell cell, int row, int col)
@@ -245,18 +214,11 @@ public partial class Datasheet : IHandleEvent
     /// <returns></returns>
     private bool CancelEdit()
     {
-        if (!IsEditing)
-            return false;
-
-        if (ActiveEditorReference != null && ActiveEditorReference.CanCancelEdit())
-        {
-            // Finish the edit
-            EditPosition = null;
+        var result = EditorManager.CancelEdit();
+        if (result.Cancelled)
             StateHasChanged();
-            return true;
-        }
 
-        return false;
+        return result.Cancelled;
     }
 
     private void HandleCellMouseOver(int row, int col, MouseEventArgs e)
@@ -278,9 +240,8 @@ public partial class Datasheet : IHandleEvent
         bool changed = IsDataSheetActive != IsMouseInsideSheet;
         IsDataSheetActive = IsMouseInsideSheet;
 
-        if (!IsDataSheetActive) // if it is outside
+        if (!IsDataSheetActive && AcceptEdit()) // if it is outside
         {
-            AcceptEdit();
             changed = true;
         }
 
@@ -295,12 +256,9 @@ public partial class Datasheet : IHandleEvent
         if (!IsDataSheetActive)
             return false;
 
-        if (IsEditing)
-        {
-            var handled = ActiveEditorReference.HandleKey(e.Key);
-            if (handled)
-                return true;
-        }
+        var editorHandled = EditorManager.HandleKeyDown(e.Key, e.CtrlKey, e.ShiftKey, e.AltKey, e.MetaKey);
+        if (editorHandled)
+            return true;
 
         if (e.Key == "Escape")
         {
@@ -309,7 +267,7 @@ public partial class Datasheet : IHandleEvent
 
         if (e.Key == "Enter")
         {
-            if (!IsEditing)
+            if (!EditorManager.IsEditing)
             {
                 Sheet?.EndSelecting();
                 Sheet?.MoveSelection(1, 0);
@@ -317,7 +275,7 @@ public partial class Datasheet : IHandleEvent
                 return true;
             }
 
-            if (IsEditing && AcceptEdit())
+            else if (EditorManager.AcceptEdit().Accepted)
             {
                 Sheet?.MoveSelection(1, 0);
                 StateHasChanged();
@@ -328,13 +286,13 @@ public partial class Datasheet : IHandleEvent
         if (KeyUtil.IsArrowKey(e.Key))
         {
             var direction = KeyUtil.GetKeyMovementDirection(e.Key);
-            if (!IsEditing)
+            if (!EditorManager.IsEditing)
             {
                 Sheet?.MoveSelection(direction.Item1, direction.Item2);
                 StateHasChanged();
                 return true;
             }
-            else if (EditState.IsSoftEdit && AcceptEdit(direction.Item1, direction.Item2))
+            else if (EditorManager.IsSoftEdit && AcceptEdit(direction.Item1, direction.Item2))
             {
                 return true;
             }
@@ -348,7 +306,7 @@ public partial class Datasheet : IHandleEvent
             return true;
         }
 
-        if ((e.Key.Length == 1) && !IsEditing && IsDataSheetActive)
+        if ((e.Key.Length == 1) && !EditorManager.IsEditing && IsDataSheetActive)
         {
             char c = e.Key == "Space" ? ' ' : e.Key[0];
             if (char.IsLetterOrDigit(c) || char.IsPunctuation(c) || char.IsSymbol(c) || char.IsSeparator(c))

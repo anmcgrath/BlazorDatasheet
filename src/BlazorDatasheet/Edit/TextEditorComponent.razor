@@ -1,16 +1,24 @@
-@inherits BaseEditorComponent
+@implements ICellEditor
 @using BlazorDatasheet.Model
 @using BlazorDatasheet.Interfaces
 
 <input
     type="text"
     class="text-input"
-    @bind="EditString"
-    @onclick="() => IsSoftEdit = false"
+    @bind="EditedValue"
     @bind:event="oninput"
     @ref="InputRef"/>
 
 @code {
+
+    [Parameter]
+    public EditorManager EditorManager { get; set; }
+
+    public string EditedValue
+    {
+        get => EditorManager.GetEditedValue<string>();
+        set => EditorManager.SetEditedValue(value);
+    }
 
     private ElementReference InputRef;
 
@@ -23,20 +31,24 @@
         }
     }
 
-    public override void BeginEdit(EditEntryMode entryMode, IWriteableCell cell, string key)
+    public void BeginEdit(EditEntryMode entryMode, IWriteableCell cell, string key)
     {
-        EditString = cell.GetValue<string>();
+        EditedValue = cell.GetValue<string>();
+
         if (entryMode == EditEntryMode.Key && !String.IsNullOrEmpty(key) && key.Length == 1)
         {
-            EditString = key;
-            IsSoftEdit = true;
+            EditedValue = key;
         }
-        
+
         StateHasChanged();
     }
 
-    public override bool CanAcceptEdit() => true;
+    public bool CanAcceptEdit() => true;
+    public bool CanCancelEdit() => true;
 
-    public override bool CanCancelEdit() => true;
+    public bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
+    {
+        return false;
+    }
 
 }

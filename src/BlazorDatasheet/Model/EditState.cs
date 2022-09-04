@@ -2,20 +2,20 @@ namespace BlazorDatasheet.Model;
 
 /// <summary>
 /// Stores the current edit state
-/// Required because if the control is virtualised we lose info when it moves out of scope
+/// Required because if the control is virtualized we lose the state when it moves out of scope
 /// </summary>
 public class EditState
 {
-    public EditState(Func<bool>? onAcceptEdit, Func<bool>? onCancelEdit, Cell cell)
+    public EditState(Func<bool>? onAcceptEdit, Func<bool>? onCancelEdit, object initialValue)
     {
         OnAcceptEdit = onAcceptEdit;
         OnCancelEdit = onCancelEdit;
-        Cell = cell;
+        InitialValue = initialValue;
     }
 
     public readonly Func<bool>? OnAcceptEdit;
     public readonly Func<bool>? OnCancelEdit;
     public bool IsSoftEdit { get; set; }
-    public string? EditString { get; set; }
-    public readonly Cell Cell;
+    public object? InitialValue { get; }
+    public object? NewValue { get; set; }
 }

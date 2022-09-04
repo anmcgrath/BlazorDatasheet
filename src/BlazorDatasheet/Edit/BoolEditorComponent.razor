@@ -1,40 +1,52 @@
 @using BlazorDatasheet.Model
 @using BlazorDatasheet.Interfaces
-@inherits BaseEditorComponent
+@implements ICellEditor
 
 @code {
 
-    public override void BeginEdit(EditEntryMode entryMode, IWriteableCell cell, string key)
+    [Parameter]
+    public EditorManager EditorManager { get; set; }
+
+    public bool EditedValue
+    {
+        get => EditorManager.GetEditedValue<bool>();
+        set => EditorManager.SetEditedValue<bool>(value);
+    }
+
+    public void BeginEdit(EditEntryMode entryMode, IWriteableCell cell, string key)
     {
         var canParse = bool.TryParse(cell.GetValue<string>(), out bool parsedValue);
         if (!canParse)
-            this.CancelEdit();
+        {
+            this.EditorManager.CancelEdit();
+            return;
+        }
 
-        EditString = cell.GetValue<string>();
+        EditedValue = parsedValue;
 
         if (entryMode == EditEntryMode.Mouse)
         {
             var newValue = !parsedValue;
-            EditString = newValue.ToString();
+            EditedValue = newValue;
         }
 
         if (entryMode == EditEntryMode.Key)
         {
             if (key.ToLower() == "y")
             {
-                EditString = true.ToString();
+                EditedValue = true;
             }
             else if (key.ToLower() == "n")
             {
-                EditString = false.ToString();
+                EditedValue = false;
             }
             else if (key == "Space")
             {
-                EditString = (!parsedValue).ToString();
+                EditedValue = !parsedValue;
             }
         }
 
-        this.AcceptEdit();
+        EditorManager.AcceptEdit();
     }
 
     public bool HandleKey(string key)
@@ -42,7 +54,12 @@
         return false;
     }
 
-    public override bool CanAcceptEdit() => true;
-    public override bool CanCancelEdit() => true;
+    public bool CanAcceptEdit() => true;
+    public bool CanCancelEdit() => true;
+
+    public bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
+    {
+        return false;
+    }
 
 }

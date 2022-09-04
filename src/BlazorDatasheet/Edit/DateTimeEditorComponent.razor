@@ -1,53 +1,31 @@
 @using BlazorDatasheet.Model
 @using BlazorDatasheet.Interfaces
-@inherits BaseEditorComponent
+@implements ICellEditor
 
 <input
     type="date"
     class="date-input"
-    @bind="EditDate"
-    @onclick="() => IsSoftEdit = false"
+    @bind="EditedValue"
     @bind:event="oninput"
     @ref="InputRef"/>
 
 @code {
 
-    public override void BeginEdit(EditEntryMode entryMode, IWriteableCell cell, string key)
-    {
-        var canParse = DateTime.TryParse(cell.GetValue<string>(), out DateTime parsedDateTime);
-        if (!canParse)
-            EditString = DateTime.Now.ToString();
-        else
-            EditString = cell.GetValue<string>();
-
-        if (entryMode == EditEntryMode.Key)
-        {
-    // If we are typing a number, set it to the first char in the date string, (e.g first part of day or month)
-            if (char.IsNumber((char)key.First()))
-            {
-                var newDateString = key + EditString?.Substring(1, EditString.Length - 1);
-                if (DateTime.TryParse(newDateString, out var newDate))
-                    EditString = newDateString;
-                else
-                    EditString = DateTime.Now.ToString();
-            }
-            else
-            {
-                EditString = DateTime.Now.ToString();
-            }
-
-            IsSoftEdit = true;
-        }
-
-        StateHasChanged();
-    }
-
+    [Parameter]
+    public EditorManager EditorManager { get; set; }
     private ElementReference InputRef;
 
-    private DateTime? EditDate
+    public DateTime EditedValue
     {
-        set { EditString = value.ToString(); }
-        get { return String.IsNullOrEmpty(EditString) ? null : DateTime.Parse(EditString); }
+        get => EditorManager.GetEditedValue<DateTime>();
+        set => EditorManager.SetEditedValue(value);
+    }
+
+    public void BeginEdit(EditEntryMode entryMode, IWriteableCell cell, string key)
+    {
+        var canParse = DateTime.TryParse(cell.GetValue<string>(), out DateTime parsedDateTime);
+        EditedValue = canParse ? parsedDateTime : DateTime.Now;
+        StateHasChanged();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -59,7 +37,12 @@
         }
     }
 
-    public override bool CanAcceptEdit() => true;
-    public override bool CanCancelEdit() => true;
+    public bool CanAcceptEdit() => true;
+    public bool CanCancelEdit() => true;
+
+    public bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
+    {
+        return false;
+    }
 
 }
