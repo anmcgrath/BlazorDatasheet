@@ -5,10 +5,29 @@ namespace BlazorDatasheet.Model;
 
 public class Cell : IReadOnlyCell, IWriteableCell
 {
+    /// <summary>
+    /// The cell type, affects the renderer and editor used for the cell
+    /// </summary>
     public string Type { get; set; } = "text";
+
+    /// <summary>
+    /// The formatting to be applied to the cell on render
+    /// </summary>
     public Format Formatting { get; set; } = Format.Default;
+
+    /// <summary>
+    /// If IsReadOnly = true, the cell's value cannot be edited via the datasheet
+    /// </summary>
     public bool IsReadOnly { get; set; }
+
+    /// <summary>
+    /// The Data Validators to apply to a cell after editing
+    /// </summary>
     public List<IDataValidator> Validators { get; set; }
+
+    /// <summary>
+    /// Whether the Cell is in a Valid state after Data Validation
+    /// </summary>
     public bool IsValid { get; set; } = true;
 
     /// <summary>
@@ -21,6 +40,10 @@ public class Cell : IReadOnlyCell, IWriteableCell
         return (T)GetValue(typeof(T));
     }
 
+    /// <summary>
+    /// Returns the Cell's Value
+    /// </summary>
+    /// <returns></returns>
     public object? GetValue()
     {
         return GetValue<object?>();
@@ -73,13 +96,19 @@ public class Cell : IReadOnlyCell, IWriteableCell
         }
     }
 
+    /// <summary>
+    /// Attempts to set the cell's value and returns whether it was successful
+    /// </summary>
+    /// <param name="val"></param>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
     public bool SetValue<T>(T val)
     {
         return SetValue(val, typeof(T));
     }
 
     /// <summary>
-    /// Sets the Cell's value and returns whether it was successful
+    /// Attempts to the Cell's value and returns whether it was successful
     /// </summary>
     /// <param name="val"></param>
     /// <param name="type"></param>
@@ -135,10 +164,14 @@ public class Cell : IReadOnlyCell, IWriteableCell
 
     internal List<string> ConditionalFormattingIds { get; set; }
 
-    public Action<object, string>? Setter { get; set; }
-
+    /// <summary>
+    /// The property name that determines the cell's value from the Data
+    /// </summary>
     public string? Key { get; set; }
 
+    /// <summary>
+    /// The cell's data, which may be a primitive or a complex object.
+    /// </summary>
     public object? Data { get; private set; }
 
     public Cell(object? data = null, string key = null)
