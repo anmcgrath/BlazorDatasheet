@@ -47,7 +47,7 @@ public class EditorManager : IEditorManager
         if (IsEditing && CurrentEditPosition.Equals(row, col))
             return;
 
-        this.CurrentEditPosition = new CellPosition { Row = row, Col = col };
+        this.CurrentEditPosition = new CellPosition(row, col);
         this.CurrentEditedCell = cell;
         this.IsSoftEdit = isSoftEdit;
 

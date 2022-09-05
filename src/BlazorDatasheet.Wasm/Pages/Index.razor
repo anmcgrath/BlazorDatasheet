@@ -41,7 +41,6 @@ Welcome to your new app.
                 .WithProperty(x => x.FirstName, pd =>
                 {
                     pd.Heading = "First Name";
-                    pd.Setter = (person, s) => { person.FirstName = s; };
                     pd.Format = new Format()
                     {
                         FontWeight = "bold",

@@ -13,20 +13,6 @@ public class ObjectPropertyDefinition<T>
     internal List<string> ConditionalFormatKeys { get; set; }
     internal List<IDataValidator> Validators { get; set; }
 
-    private Action<T, string>? _setter;
-
-    public Action<T, string>? Setter
-    {
-        get => _setter;
-        set
-        {
-            _setter = value;
-            SetterObj = (o, s) => value.Invoke((T)o, s);
-        }
-    }
-
-    internal Action<object, string>? SetterObj;
-
     public ObjectPropertyDefinition(string propName, string type)
     {
         PropertyName = propName;
