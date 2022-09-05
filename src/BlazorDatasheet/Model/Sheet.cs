@@ -128,11 +128,7 @@ public class Sheet
         if (Selection.Count == 0)
             return null;
         var selection = Selection.Last();
-        return new CellPosition()
-        {
-            Row = selection.RowStart,
-            Col = selection.ColStart
-        };
+        return new CellPosition(selection.RowStart, selection.ColStart);
     }
 
     public void MoveSelection(int drow, int dcol)
@@ -197,7 +193,7 @@ public class Sheet
         Selection.Push(ActiveSelecting);
         ActiveSelecting = null;
     }
-    
+
     /// <summary>
     /// Cancels the current "Selecting" process and does not add the new selection to the stack
     /// </summary>
