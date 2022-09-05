@@ -3,7 +3,7 @@
 @using BlazorDatasheet.Validation
 @implements ICellEditor
 
-<input @bind="EditedValue" class="text-input" @ref="InputTextComponent"/>
+<input @bind="EditedValue" @bind:event="oninput" class="text-input" @ref="InputTextComponent"/>
 <div class="select-list">
     @foreach (var val in values)
     {
@@ -28,13 +28,20 @@
 
     public void BeginEdit(EditEntryMode entryMode, IWriteableCell cell, string key)
     {
-        EditedValue = cell.GetValue<string>();
+        if (entryMode == EditEntryMode.Mouse)
+        {
+            EditedValue = cell.GetValue<string>();
+        }
+        else if (entryMode == EditEntryMode.Key)
+        {
+            EditedValue = key;
+        }
+
         StateHasChanged();
     }
 
     protected override void OnParametersSet()
     {
-        Console.WriteLine("OnParameterSet Select");
         foreach (var validator in EditorManager.CurrentEditedCell.Validators)
             if (validator is SourceValidator)
                 values = ((SourceValidator)validator).ValidationSource.ToArray();
