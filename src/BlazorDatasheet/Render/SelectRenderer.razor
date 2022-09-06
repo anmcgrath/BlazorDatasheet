@@ -5,7 +5,7 @@
     <div style="overflow: hidden;">
         @(Cell.GetValue<string>())
     </div>
-    <button class="dropper" @onclick="() => this.RequestEdit(true, EditEntryMode.Mouse)">
+    <button tabindex="-1" class="dropper" @onclick="() => this.RequestEdit(true, EditEntryMode.Mouse)">
         @Icons.CaretIcon
     </button>
 </div>
