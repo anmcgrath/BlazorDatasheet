@@ -1,16 +1,16 @@
 .active-sheet {
-    border: 2px solid gray;
+    border: 1px solid gray;
 }
 
 .inactive-sheet {
-    border: 2px solid lightgray;
+    border: 1px solid lightgray;
 }
 
 .sheet {
     font-size: 0.9rem;
     box-sizing: border-box;
     border-spacing: 0;
-    overflow-x: scroll
+    overflow-x: auto;
 }
 
 .sheet-cell {
@@ -44,22 +44,22 @@
 
 .column-head {
     background: #fafafa !important;
-    border-bottom: 2px solid lightgray;
+    border-bottom: 1px solid lightgray;
 }
 
 .column-active {
     background: #f4f4f4 !important;
-    border-bottom: 2px solid #3d87f1 !important;
+    border-bottom: 1px solid #3d87f1 !important;
 }
 
 .row-head {
     background: #fafafa !important;
-    border-right: 2px solid lightgray;
+    border-right: 1px solid lightgray;
 }
 
 .row-active {
     background: #f4f4f4 !important;
-    border-right: 2px solid #3d87f1 !important;
+    border-right: 1px solid #3d87f1 !important;
 }
 
 table {
