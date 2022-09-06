@@ -1,6 +1,6 @@
 @inherits BaseRenderer
 
-<input type="checkbox" @bind="Checked"/>
+<input type="checkbox" disabled="@Cell.IsReadOnly" @bind="Checked"/>
 
 @code {
 

@@ -9,4 +9,5 @@ public interface IReadOnlyCell
     object? GetValue(Type t);
     object? GetValue();
     public Format Formatting { get; }
+    public bool IsReadOnly { get; }
 }
