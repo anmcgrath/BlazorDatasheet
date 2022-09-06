@@ -23,11 +23,11 @@ public interface IEditorManager
     /// Applies data validation when setting the value.
     /// </summary>
     /// <returns>Whether the accepted edit was successful</returns>
-    AcceptEditResult AcceptEdit();
+    bool AcceptEdit();
 
     /// <summary>
     /// Cancels the current edit (without setting the active cell's value).
     /// </summary>
     /// <returns>Whether the edit has been cancelled</returns>
-    CancelEditResult CancelEdit();
+    bool CancelEdit();
 }
