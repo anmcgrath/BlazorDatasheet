@@ -1,0 +1,59 @@
+@page "/ConditionalFormatting"
+@using BlazorDatasheet.Model
+<PageTitle>Conditional Formatting</PageTitle>
+
+<h1>Conditional Formatting</h1>
+
+<p>
+    This example shows two conditional formats applied to the cells in the sheet
+
+    <ol>
+        <li>Colored numbers: less than zero and the cell background is blue, greater than zero and the cell background is red</li>
+        <li>Secret: If the cell's value contains the text secret, the cell's format uses a green check icon</li>
+    </ol>
+</p>
+
+<Datasheet Sheet="sheet"></Datasheet>
+
+@code {
+
+    private Sheet sheet;
+
+    protected override void OnInitialized()
+    {
+        var cells = new Cell[4, 1] { { new Cell(0) }, { new Cell(-100) }, { new Cell(20) }, { new Cell("secret") } };
+        var formatTick = new ConditionalFormat(
+            (c, cells) => c.GetValue() != null && c.GetValue<string>().Contains("secret"),
+            (cell, cells) => new Format()
+            {
+                Icon = Icons.Icons.CheckIcon,
+                IconColor = "#428739"
+            });
+        var coloredNums = new ConditionalFormat(
+            (c, cells) => c.GetValue() != null && c.GetValue<double?>() != null,
+            (c, cells) =>
+            {
+                var f = Format.Default;
+                var val = c.GetValue<double?>();
+                if (val.HasValue)
+                {
+                    if (val == 0)
+                        f.BackgroundColor = "#ffffff";
+                    else if (val > 0)
+                        f.BackgroundColor = "#f5adab";
+                    else
+                        f.BackgroundColor = "#abecf5";
+                }
+                return f;
+            });
+
+        sheet = new Sheet(4, 1, cells);
+        sheet.RegisterConditionalFormat("tick", formatTick);
+        sheet.RegisterConditionalFormat("numbers", coloredNums);
+        sheet.ApplyConditionalFormat("tick", sheet.Range);
+        sheet.ApplyConditionalFormat("numbers", sheet.Range);
+
+        base.OnInitialized();
+    }
+
+}

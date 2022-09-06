@@ -1,0 +1,73 @@
+@page "/DataValidation"
+@using BlazorDatasheet.Model
+@using BlazorDatasheet.Validation
+@using BlazorDatasheet.Interfaces
+
+<PageTitle>Data validation</PageTitle>
+
+<h1>Data validation</h1>
+
+<p>
+    Below data validation is used on the cells.
+</p>
+<p>Column 1 uses a NumberValidator with IsStrict = true.</p>
+<p>Column 2 uses a Number validator with IsStrict = false.</p>
+<p>Column 3 uses a SourceValidator with IsStrict = false.</p>
+<p>Column 4 uses a custom validator that ensures the string contains the word foo, with IsStrict = false</p>
+
+<Datasheet Sheet="sheet" OnCellChanged="e => StateHasChanged()"></Datasheet>
+
+<h3>Cells</h3>
+
+@foreach (var cell in cells)
+{
+    <div>@cell.Data IsValid = @cell.IsValid</div>
+}
+
+@code {
+
+    private Sheet sheet;
+    private Cell[,] cells;
+
+    protected override void OnInitialized()
+    {
+        cells = new Cell[1, 4]
+        {
+            {
+                new Cell(),
+                new Cell(),
+                new Cell(),
+                new Cell()
+            }
+        };
+
+        cells[0, 0].Validators.Add(new NumberValidator(true));
+        cells[0, 1].Validators.Add(new NumberValidator(false));
+        cells[0, 2].Type = "select";
+        cells[0, 2].Validators.Add(new SourceValidator(new List<string>() { "Item 1", "Item 2", "Item 3" }, false));
+        cells[0, 3].Validators.Add(new CustomValidator("foo", false));
+        sheet = new Sheet(1, 4, cells);
+        base.OnInitialized();
+    }
+
+    private class CustomValidator : IDataValidator
+    {
+        private readonly string _word;
+        public bool IsStrict { get; }
+
+        public CustomValidator(string word, bool isStrict)
+        {
+            IsStrict = isStrict;
+            _word = word;
+        }
+
+        public bool IsValid(object value)
+        {
+            if (value == null)
+                return false;
+            var str = value.ToString();
+            return str.Contains(_word);
+        }
+    }
+
+}
