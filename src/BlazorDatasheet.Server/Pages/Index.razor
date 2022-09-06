@@ -37,12 +37,7 @@ Welcome to your new app.
 
     protected override void OnInitialized()
     {
-        People = new List<Person>()
-        {
-            new Person() { Id = 0, Age = "32", FirstName = "John", LastName = "Citizen" },
-            new Person() { Id = 1, Age = "49", FirstName = "Albert", LastName = "Rogers" },
-            new Person() { Id = 2, Age = "106", FirstName = "Wendall", LastName = "Palmer" },
-        };
+        People = new List<Person>();
 
         var random = new Random();
         for (int i = 0; i < 100; i++)
@@ -50,7 +45,7 @@ Welcome to your new app.
             People.Add(new Person() { Id = i, Age = random.NextInt64(100).ToString(), FirstName = "Person", LastName = "Person" });
         }
 
-        var checkCf = new ConditionalFormat((cell, cells) => { return ((Person)cell.Data).Checked == true; }, new Format()
+        var checkCf = new ConditionalFormat((cell, cells) => { return ((Person)cell.Data).IsFriendly == true; }, (c, cs) => new Format()
         {
             BackgroundColor = "#D9F8C4",
             Icon = Icons.CheckIcon
@@ -61,26 +56,19 @@ Welcome to your new app.
                 .WithProperty(x => x.FirstName, pd =>
                 {
                     pd.Heading = "First Name";
-                    pd.Format = new Format()
-                    {
-                        FontWeight = "bold",
-                        ForegroundColor = "#006600",
-                        BackgroundColor = "#fafafa",
-                    };
                     pd.UseConditionalFormat("ageCf");
                     pd.UseConditionalFormat("check");
-                    pd.IsReadOnly = true;
                 })
                 .WithProperty(x => x.Age, pd => { pd.UseDataValidator(new NumberValidator(true)); })
-                .WithProperty(x => x.LastName, pd =>
+                .WithProperty(x => x.Category, pd =>
                 {
-                    pd.Heading = "Last Name";
+                    pd.Heading = "Category";
                     pd.Type = "select";
-                    pd.UseDataValidator(new SourceValidator(new List<string>() { "A", "B", "C" }, true));
+                    pd.UseDataValidator(new SourceValidator(new List<string>() { "", "Manager", "Employee" }, true));
                 })
                 .WithProperty(x => x.Id, pd => { pd.Heading = "Person ID"; })
                 .WithConditionalFormat("check", checkCf)
-                .WithProperty(x => x.Checked, pd => { pd.UseConditionalFormat("check"); });
+                .WithProperty(x => x.IsFriendly, pd => { pd.UseConditionalFormat("check"); });
 
         var editor1 = builder1.Build();
 
