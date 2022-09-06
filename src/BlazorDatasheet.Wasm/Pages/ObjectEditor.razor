@@ -1,0 +1,63 @@
+@page "/ObjectEditor"
+@using BlazorDatasheet.Model
+@using BlazorDatasheet.ObjectEditor
+@using BlazorDatasheet.Wasm.Data
+@using BlazorDatasheet.Validation
+
+<PageTitle>Object editor</PageTitle>
+
+<h1>Object Editor Builder</h1>
+
+<p>We can build an editor that will edit properties of a list of objects.</p>
+
+<p>With properties across columns:</p>
+
+<Datasheet Sheet="editor1.Sheet" OnCellChanged="StateHasChanged"></Datasheet>
+
+<p>With properties across rows:</p>
+
+<Datasheet Sheet="editor2.Sheet" OnCellChanged="StateHasChanged"></Datasheet>
+
+@code {
+
+    private Sheet sheet;
+    private List<Person> People;
+    private ObjectEditor<Person> editor1;
+    private ObjectEditor<Person> editor2;
+
+    protected override void OnInitialized()
+    {
+        People = new List<Person>()
+        {
+            new Person() { Id = 0, FirstName = "John", LastName = "Citizen", Age = "76", IsFriendly = false, StartDate = DateTime.Now.Subtract(TimeSpan.FromDays(1000)) },
+            new Person() { Id = 1, FirstName = "Bob", LastName = "Bobbers", Age = "39", IsFriendly = true, StartDate = DateTime.Now.Subtract(TimeSpan.FromDays(300)) },
+            new Person() { Id = 2, FirstName = "Julia", LastName = "Stevens", Age = "19", IsFriendly = true, StartDate = DateTime.Now.Subtract(TimeSpan.FromDays(12)) }
+        };
+
+        var builderCols = new ObjectEditorBuilder<Person>(People, GridDirection.PropertiesAcrossColumns);
+        var builderRows = new ObjectEditorBuilder<Person>(People, GridDirection.PropertiesAcrossRows);
+
+        var validCategories = new List<string>() { "", "Employer", "Manager" };
+        var categoryValidator = new SourceValidator(validCategories, true);
+
+        editor1 = builderCols
+            .AutogenerateProperties(true)
+            .WithProperty(x => x.Category, pd =>
+            {
+                pd.UseDataValidator(categoryValidator);
+                pd.Type = "select";
+            })
+            .Build();
+        editor2 = builderRows
+            .AutogenerateProperties(true)
+            .WithProperty(x => x.Category, pd =>
+            {
+                pd.UseDataValidator(categoryValidator);
+                pd.Type = "select";
+            })
+            .Build();
+
+        base.OnInitialized();
+    }
+
+}

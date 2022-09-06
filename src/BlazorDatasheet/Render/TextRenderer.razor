@@ -1,13 +1,6 @@
 @inherits BaseRenderer
 
 <div
-    class="cell-renderer @(IsSelected ? "selected" : "")">
+    class="cell-renderer">
     @(Cell.GetValue<string>())
 </div>
-
-@code {
-
-    [Parameter]
-    public bool IsSelected { get; set; }
-
-}

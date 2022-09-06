@@ -4,17 +4,22 @@
 @using Range = BlazorDatasheet.Model.Range
 @using BlazorDatasheet.Icons
 @using BlazorDatasheet.ObjectEditor
+@using BlazorDatasheet.Validation
 
 <PageTitle>Index</PageTitle>
 
-<h1>Hello, world!</h1>
+<h1>Blazor DataSheet examples</h1>
 
-Welcome to your new app.
+<p>
+    Blazor DataSheet is an excel-like editor for cellular values. Below shows some of the features of the data sheet. Sample code is available on <a href="https://github.com/anmcgrath/BlazorDatasheet">GitHub</a>
+</p>
 
-<SurveyPrompt Title="How is Blazor working for you?"/>
+<Datasheet
+    Sheet="Sheet"
+    IsFixedHeight="true"
+    OnCellChanged="HandleCellChanged">
 
-<p>Here is out ObjectEditor with properties across the columns</p>
-<Datasheet Sheet="Sheet"></Datasheet>
+</Datasheet>
 
 @code{
 
@@ -23,39 +28,48 @@ Welcome to your new app.
 
     protected override void OnInitialized()
     {
-        People = new List<Person>()
-        {
-            new Person() { Id = 0, Age = 32, FirstName = "John", LastName = "Citizen" },
-            new Person() { Id = 1, Age = 49, FirstName = "Albert", LastName = "Rogers" },
-            new Person() { Id = 2, Age = 106, FirstName = "Wendall", LastName = "Palmer" },
-        };
+        People = new List<Person>();
 
         var random = new Random();
-        for (int i = 0; i < 250; i++)
+        for (int i = 0; i < 100; i++)
         {
-            People.Add(new Person() { Id = i, Age = random.NextInt64(100), FirstName = "Person", LastName = "Person" });
+            People.Add(new Person() { Id = i, Age = random.NextInt64(100).ToString(), FirstName = "Person", LastName = "Person" });
         }
+
+        var checkCf = new ConditionalFormat((cell, cells) => { return ((Person)cell.Data).IsFriendly == true; }, (c, cs) => new Format()
+        {
+            BackgroundColor = "#D9F8C4",
+            Icon = Icons.CheckIcon
+        });
 
         var builder1 = new ObjectEditorBuilder<Person>(People, GridDirection.PropertiesAcrossColumns);
         builder1.AutogenerateProperties(true)
                 .WithProperty(x => x.FirstName, pd =>
                 {
                     pd.Heading = "First Name";
-                    pd.Format = new Format()
-                    {
-                        FontWeight = "bold",
-                        ForegroundColor = "#006600",
-                        BackgroundColor = "#fafafa"
-                    };
-                    pd.IsReadOnly = true;
+                    pd.UseConditionalFormat("ageCf");
+                    pd.UseConditionalFormat("check");
                 })
-                .WithProperty(x => x.LastName, pd => { pd.Type = "select"; })
-                .WithProperty(x => x.Id, pd => { pd.Heading = "Person ID"; });
+                .WithProperty(x => x.Age, pd => { pd.UseDataValidator(new NumberValidator(true)); })
+                .WithProperty(x => x.Category, pd =>
+                {
+                    pd.Heading = "Category";
+                    pd.Type = "select";
+                    pd.UseDataValidator(new SourceValidator(new List<string>() { "", "Manager", "Employee" }, true));
+                })
+                .WithProperty(x => x.Id, pd => { pd.Heading = "Person ID"; })
+                .WithConditionalFormat("check", checkCf)
+                .WithProperty(x => x.IsFriendly, pd => { pd.UseConditionalFormat("check"); });
 
         var editor1 = builder1.Build();
 
 
         Sheet = editor1.Sheet;
+    }
+
+    private void HandleCellChanged(CellChangedEventArgs e)
+    {
+        StateHasChanged();
     }
 
 }

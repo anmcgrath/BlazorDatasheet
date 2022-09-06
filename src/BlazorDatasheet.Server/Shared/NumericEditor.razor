@@ -1,0 +1,56 @@
+@using BlazorDatasheet.Edit
+@using BlazorDatasheet.Interfaces
+@using BlazorDatasheet.Util
+@implements BlazorDatasheet.Interfaces.ICellEditor
+<input type="number"
+       @bind="EditedNumber"
+       style="width: 100%; height: 100%"
+       @ref="InputRef"
+       @bind:event="oninput"/>
+
+@code {
+
+    [Parameter]
+    public EditorManager EditorManager { get; set; }
+
+    private ElementReference InputRef { get; set; }
+    public bool CanAcceptEdit() => true;
+    public bool CanCancelEdit() => true;
+
+    public double? EditedNumber
+    {
+        get => EditorManager.GetEditedValue<double?>();
+        set => EditorManager.SetEditedValue(value);
+    }
+
+    public void BeginEdit(EditEntryMode entryMode, IWriteableCell cell, string key)
+    {
+        try
+        {
+            var cellValue = cell.GetValue<double?>();
+            EditedNumber = cellValue;
+            if (entryMode == EditEntryMode.Key && char.IsNumber(key[0]))
+                EditedNumber = int.Parse(key[0].ToString());
+        }
+        catch (Exception e)
+        {
+            EditedNumber = 0;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await InputRef.FocusAsync();
+            await base.OnAfterRenderAsync(firstRender);
+        }
+    }
+
+    public bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
+    {
+    // Return whether the editor handles the event
+        return false;
+    }
+
+}

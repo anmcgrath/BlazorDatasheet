@@ -1,0 +1,29 @@
+﻿@page "/simple"
+@using BlazorDatasheet.Model
+
+<PageTitle>Simple example</PageTitle>
+
+<h1>Simple example</h1>
+
+<p>Below is a 3 x 3 sheet with empty strings. There is no data validation or formatting and the default editors are used.</p>
+
+<Datasheet
+    Sheet="sheet"/>
+
+@code{
+
+    private Cell[,] cells = new Cell[3, 3]
+    {
+        { new Cell(""), new Cell(""), new Cell("") },
+        { new Cell(""), new Cell(""), new Cell("") },
+        { new Cell(""), new Cell(""), new Cell("") },
+    };
+
+    private Sheet sheet;
+
+    protected override void OnInitialized()
+    {
+        sheet = new Sheet(numRows: 3, numCols: 3, cells: cells);
+    }
+
+}
