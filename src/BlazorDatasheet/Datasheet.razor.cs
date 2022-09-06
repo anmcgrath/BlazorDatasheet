@@ -191,12 +191,12 @@ public partial class Datasheet : IHandleEvent
     private bool AcceptEdit(int dRow, int dCol)
     {
         var result = EditorManager.AcceptEdit();
-        if (result.Accepted)
-        {
-            Sheet.MoveSelection(dRow, dCol);
-            emitCellChanged(result.Cell, result.Row, result.Col);
-            StateHasChanged();
-        }
+        if (!result.Accepted)
+            return false;
+
+        Sheet.MoveSelection(dRow, dCol);
+        emitCellChanged(result.Cell, result.Row, result.Col);
+        StateHasChanged();
 
         return result.Accepted;
     }
@@ -275,10 +275,9 @@ public partial class Datasheet : IHandleEvent
                 return true;
             }
 
-            else if (EditorManager.AcceptEdit().Accepted)
+            // Accept the edit
+            else if (AcceptEdit(1, 0))
             {
-                Sheet?.MoveSelection(1, 0);
-                StateHasChanged();
                 return true;
             }
         }
@@ -292,6 +291,7 @@ public partial class Datasheet : IHandleEvent
                 StateHasChanged();
                 return true;
             }
+            // Accept the edit
             else if (EditorManager.IsSoftEdit && AcceptEdit(direction.Item1, direction.Item2))
             {
                 return true;
