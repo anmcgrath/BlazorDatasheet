@@ -11,6 +11,8 @@ public class NumberValidator : IDataValidator
 
     public bool IsValid(object value)
     {
+        if (value == null)
+            return true;
         var val = value.ToString();
         return double.TryParse(val, out double res);
     }
