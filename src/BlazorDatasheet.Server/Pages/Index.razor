@@ -71,7 +71,7 @@ Welcome to your new app.
                     pd.UseConditionalFormat("check");
                     pd.IsReadOnly = true;
                 })
-                .WithProperty(x => x.Age, pd => { pd.UseDataValidator(new NumberValidator(false)); })
+                .WithProperty(x => x.Age, pd => { pd.UseDataValidator(new NumberValidator(true)); })
                 .WithProperty(x => x.LastName, pd =>
                 {
                     pd.Heading = "Last Name";
