@@ -44,7 +44,7 @@
         cells[0, 0].Validators.Add(new NumberValidator(true));
         cells[0, 1].Validators.Add(new NumberValidator(false));
         cells[0, 2].Type = "select";
-        cells[0, 2].Validators.Add(new SourceValidator(new List<string>() { "Item 1", "Item 2", "Item 3" }, true));
+        cells[0, 2].Validators.Add(new SourceValidator(new List<string>() { "Item 1", "Item 2", "Item 3" }, false));
         cells[0, 3].Validators.Add(new CustomValidator("foo", false));
         sheet = new Sheet(1, 4, cells);
         base.OnInitialized();
