@@ -6,6 +6,9 @@ namespace BlazorDatasheet.Edit;
 
 public class EditorManager : IEditorManager
 {
+    private readonly Sheet _sheet;
+    private readonly Action<Action> _queueForNextRender;
+
     /// <summary>
     /// Stores the actively edited value
     /// </summary>
@@ -18,10 +21,8 @@ public class EditorManager : IEditorManager
     public Cell CurrentEditedCell { get; private set; }
     internal ICellEditor ActiveEditorComponent => (ICellEditor)ActiveEditorContainer?.Instance;
     internal Type? ActiveEditorType { get; private set; }
-    private Dictionary<string, Type> _editorTypes;
     public bool IsEditing => CurrentEditPosition != null;
     public bool IsSoftEdit { get; private set; }
-
     public delegate void AcceptEditHandler(AcceptEditEventArgs e);
 
     public event AcceptEditHandler OnAcceptEdit;
@@ -34,9 +35,11 @@ public class EditorManager : IEditorManager
 
     public event CancelEditHandler OnCancelEdit;
 
-    public EditorManager()
+    public EditorManager(Sheet sheet, Action<Action> queueForNextRender)
     {
-        _editorTypes = new Dictionary<string, Type>();
+        _sheet = sheet;
+        // When called, runs the function next render cycle.
+        _queueForNextRender = queueForNextRender;
     }
 
     public T GetEditedValue<T>()
@@ -53,8 +56,7 @@ public class EditorManager : IEditorManager
 
     public void SetEditedValue<T>(T value) => _editedValue = value;
 
-    public void BeginEdit(int row, int col, Cell cell, bool isSoftEdit, EditEntryMode mode, string key,
-        Action<Action> queueForNextRender)
+    public void BeginEdit(int row, int col, Cell cell, bool isSoftEdit, EditEntryMode mode, string key)
     {
         if (IsEditing && CurrentEditPosition.Equals(row, col))
             return;
@@ -64,14 +66,14 @@ public class EditorManager : IEditorManager
         this.IsSoftEdit = isSoftEdit;
 
         // Set the ActiveEditorType based on the cell's type - default to Text Editor
-        if (this._editorTypes.ContainsKey(cell.Type))
-            ActiveEditorType = _editorTypes[cell.Type];
+        if (this._sheet.EditorTypes.ContainsKey(cell.Type))
+            ActiveEditorType = _sheet.EditorTypes[cell.Type];
         else
             ActiveEditorType = typeof(TextEditorComponent);
 
         // Because the ActiveEditor is null until the next re-render (unfortunately)
         // we need to queue the begin edit function until then
-        queueForNextRender(() => { ActiveEditorComponent?.BeginEdit(mode, cell, key); });
+        _queueForNextRender(() => { ActiveEditorComponent?.BeginEdit(mode, cell, key); });
     }
 
     public bool AcceptEdit()
@@ -149,13 +151,6 @@ public class EditorManager : IEditorManager
         OnCancelEdit?.Invoke(new CancelEditEventArgs(""));
 
         return true;
-    }
-
-    public void RegisterEditor<T>(string name) where T : ICellEditor
-    {
-        if (!_editorTypes.ContainsKey(name))
-            _editorTypes.Add(name, typeof(T));
-        _editorTypes[name] = typeof(T);
     }
 
     private void clearCurrentEdit()
