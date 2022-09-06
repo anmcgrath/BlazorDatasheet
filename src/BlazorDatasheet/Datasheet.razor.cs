@@ -21,26 +21,14 @@ public partial class Datasheet : IHandleEvent
     private bool IsMouseInsideSheet { get; set; }
     private ElementReference ActiveCellInputReference;
     private Queue<Action> QueuedActions { get; set; } = new Queue<Action>();
-    private Dictionary<string, Type> RenderComponentTypes { get; set; }
 
     private IWindowEventService _windowEventService;
 
     protected override void OnInitialized()
     {
         _windowEventService = new WindowEventService(JS);
-        RenderComponentTypes = new Dictionary<string, Type>();
-        EditorManager = new EditorManager();
+        EditorManager = new EditorManager(this.Sheet, NextTick);
         EditorManager.OnAcceptEdit += EditorManagerOnOnAcceptEdit;
-
-        RegisterRenderer<TextRenderer>("text");
-        RegisterRenderer<SelectRenderer>("select");
-        RegisterRenderer<NumberRenderer>("number");
-        RegisterRenderer<BoolRenderer>("boolean");
-
-        EditorManager.RegisterEditor<TextEditorComponent>("text");
-        EditorManager.RegisterEditor<DateTimeEditorComponent>("datetime");
-        EditorManager.RegisterEditor<BoolEditorComponent>("boolean");
-        EditorManager.RegisterEditor<SelectEditorComponent>("select");
 
         base.OnInitialized();
     }
@@ -51,16 +39,10 @@ public partial class Datasheet : IHandleEvent
         this.emitCellChanged(cell, e.Row, e.Col);
     }
 
-    public void RegisterRenderer<T>(string name) where T : BaseRenderer
-    {
-        if (!RenderComponentTypes.TryAdd(name, typeof(T)))
-            RenderComponentTypes[name] = typeof(T);
-    }
-
     private Type getCellRendererType(string type)
     {
-        if (RenderComponentTypes.ContainsKey(type))
-            return RenderComponentTypes[type];
+        if (Sheet?.RenderComponentTypes.ContainsKey(type) == true)
+            return Sheet.RenderComponentTypes[type];
 
         return typeof(TextRenderer);
     }
@@ -178,7 +160,7 @@ public partial class Datasheet : IHandleEvent
         if (cell == null || cell.IsReadOnly)
             return;
 
-        EditorManager.BeginEdit(row, col, cell, softEdit, mode, entryChar, NextTick);
+        EditorManager.BeginEdit(row, col, cell, softEdit, mode, entryChar);
 
         // Required to re-render after any edit component reference has changed
         NextTick(StateHasChanged);

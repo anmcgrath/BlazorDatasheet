@@ -1,3 +1,7 @@
+using BlazorDatasheet.Edit;
+using BlazorDatasheet.Interfaces;
+using BlazorDatasheet.Render;
+
 namespace BlazorDatasheet.Model;
 
 public class Sheet
@@ -19,6 +23,10 @@ public class Sheet
 
     public bool IsSelecting { get; private set; }
     public SelectionMode SelectionMode { get; set; }
+    private Dictionary<string, Type> _editorTypes;
+    public IReadOnlyDictionary<string, Type> EditorTypes => _editorTypes;
+    private Dictionary<string, Type> _renderComponentTypes { get; set; }
+    public IReadOnlyDictionary<string, Type> RenderComponentTypes => _renderComponentTypes;
 
     public Sheet(int numRows, int numCols, Cell[,] cells)
     {
@@ -29,6 +37,11 @@ public class Sheet
         ColumnHeadings = new List<Heading>();
         RowHeadings = new List<Heading>();
         _conditionalFormats = new Dictionary<string, ConditionalFormat>();
+        _editorTypes = new Dictionary<string, Type>();
+        _renderComponentTypes = new Dictionary<string, Type>();
+
+        registerDefaultEditors();
+        registerDefaultRenderers();
 
         Rows = new List<Row>();
         for (var i = 0; i < NumRows; i++)
@@ -43,6 +56,22 @@ public class Sheet
             var newRow = new Row(rowCells, i);
             Rows.Add(newRow);
         }
+    }
+
+    private void registerDefaultEditors()
+    {
+        RegisterEditor<TextEditorComponent>("text");
+        RegisterEditor<DateTimeEditorComponent>("datetime");
+        RegisterEditor<BoolEditorComponent>("boolean");
+        RegisterEditor<SelectEditorComponent>("select");
+    }
+
+    private void registerDefaultRenderers()
+    {
+        RegisterRenderer<TextRenderer>("text");
+        RegisterRenderer<SelectRenderer>("select");
+        RegisterRenderer<NumberRenderer>("number");
+        RegisterRenderer<BoolRenderer>("boolean");
     }
 
     private Cell[] GetCellsInRange(Range range)
@@ -305,5 +334,18 @@ public class Sheet
         }
 
         return format;
+    }
+
+    public void RegisterEditor<T>(string name) where T : ICellEditor
+    {
+        if (!_editorTypes.ContainsKey(name))
+            _editorTypes.Add(name, typeof(T));
+        _editorTypes[name] = typeof(T);
+    }
+
+    public void RegisterRenderer<T>(string name) where T : BaseRenderer
+    {
+        if (!_renderComponentTypes.TryAdd(name, typeof(T)))
+            _renderComponentTypes[name] = typeof(T);
     }
 }
