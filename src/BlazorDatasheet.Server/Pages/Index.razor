@@ -8,23 +8,15 @@
 
 <PageTitle>Index</PageTitle>
 
-<h1>Hello, world!</h1>
-
-Welcome to your new app.
-
-<SurveyPrompt Title="How is Blazor working for you?"/>
-
-<p>Here is out ObjectEditor with properties across the columns</p>
+<h1>Blazor DataSheet examples</h1>
 
 <p>
-    <input id="readonly" type="checkbox" @bind="IsSheetReadOnly"/>
-    <label for="readonly">Sheet readonly</label>
+    Blazor DataSheet is an excel-like editor for cellular values. Below shows some of the features of the data sheet. Sample code is available on <a href="https://github.com/anmcgrath/BlazorDatasheet">GitHub</a>
 </p>
 
 <Datasheet
     Sheet="Sheet"
     IsFixedHeight="true"
-    IsReadOnly="IsSheetReadOnly"
     OnCellChanged="HandleCellChanged">
 
 </Datasheet>
@@ -33,7 +25,6 @@ Welcome to your new app.
 
     private Sheet Sheet;
     private List<Person> People { get; set; }
-    private bool IsSheetReadOnly { get; set; }
 
     protected override void OnInitialized()
     {
