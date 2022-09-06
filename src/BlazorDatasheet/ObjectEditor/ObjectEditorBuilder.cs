@@ -144,7 +144,7 @@ public class ObjectEditorBuilder<T>
                 : sheet.RowHeadings;
             headings.Add(new Heading()
             {
-                Header = String.IsNullOrEmpty(propDefn.Heading)
+                Header = string.IsNullOrEmpty(propDefn.Heading)
                     ? propDefn.PropertyName
                     : propDefn.Heading,
             });
