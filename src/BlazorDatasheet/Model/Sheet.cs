@@ -13,6 +13,7 @@ public class Sheet
     public List<Heading> RowHeadings { get; private set; }
     private readonly Dictionary<string, ConditionalFormat> _conditionalFormats;
     internal IReadOnlyDictionary<string, ConditionalFormat> ConditionalFormats => _conditionalFormats;
+    private Dictionary<string, Cell[]> _cellsInConditionalFormatCache = new Dictionary<string, Cell[]>();
     public Range Range => new Range(0, NumRows, 0, NumCols);
     private Stack<Range> Selection { get; set; }
 
@@ -298,6 +299,8 @@ public class Sheet
         {
             cell.AddConditionalFormat(key);
         }
+
+        _cellsInConditionalFormatCache[key] = GetCellsInRanges(cf.Ranges.ToList());
     }
 
     /// <summary>
@@ -327,7 +330,7 @@ public class Sheet
             if (!ConditionalFormats.ContainsKey(id))
                 continue;
             var conditionalFormat = this.ConditionalFormats[id];
-            var cellsWithConditionalFormat = this.GetCellsInRanges(conditionalFormat.Ranges.ToList());
+            var cellsWithConditionalFormat = _cellsInConditionalFormatCache[id];
             var apply = conditionalFormat.Rule.Invoke(cell, cellsWithConditionalFormat);
             if (apply)
                 format.Merge(conditionalFormat.FormatFunc.Invoke(cell, cellsWithConditionalFormat));
