@@ -37,6 +37,9 @@
             EditedValue = key;
         }
 
+        if (EditedValue == null)
+            EditedValue = string.Empty;
+
         StateHasChanged();
     }
 

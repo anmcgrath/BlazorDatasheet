@@ -34,6 +34,8 @@
     public void BeginEdit(EditEntryMode entryMode, IWriteableCell cell, string key)
     {
         EditedValue = cell.GetValue<string>();
+        if (EditedValue == null)
+            EditedValue = string.Empty;
 
         if (entryMode == EditEntryMode.Key && !String.IsNullOrEmpty(key) && key.Length == 1)
         {

@@ -30,6 +30,7 @@ public partial class Datasheet : IHandleEvent
         _windowEventService = new WindowEventService(JS);
         RenderComponentTypes = new Dictionary<string, Type>();
         EditorManager = new EditorManager();
+        EditorManager.OnAcceptEdit += EditorManagerOnOnAcceptEdit;
 
         RegisterRenderer<TextRenderer>("text");
         RegisterRenderer<SelectRenderer>("select");
@@ -42,6 +43,12 @@ public partial class Datasheet : IHandleEvent
         EditorManager.RegisterEditor<SelectEditorComponent>("select");
 
         base.OnInitialized();
+    }
+
+    private void EditorManagerOnOnAcceptEdit(AcceptEditEventArgs e)
+    {
+        var cell = Sheet.GetCell(e.Row, e.Col);
+        this.emitCellChanged(cell, e.Row, e.Col);
     }
 
     public void RegisterRenderer<T>(string name) where T : BaseRenderer
@@ -191,14 +198,13 @@ public partial class Datasheet : IHandleEvent
     private bool AcceptEdit(int dRow, int dCol)
     {
         var result = EditorManager.AcceptEdit();
-        if (result.Accepted)
-        {
-            Sheet.MoveSelection(dRow, dCol);
-            emitCellChanged(result.Cell, result.Row, result.Col);
-            StateHasChanged();
-        }
+        if (!result)
+            return false;
 
-        return result.Accepted;
+        Sheet.MoveSelection(dRow, dCol);
+        StateHasChanged();
+
+        return result;
     }
 
     private async void emitCellChanged(Cell cell, int row, int col)
@@ -215,10 +221,10 @@ public partial class Datasheet : IHandleEvent
     private bool CancelEdit()
     {
         var result = EditorManager.CancelEdit();
-        if (result.Cancelled)
+        if (result)
             StateHasChanged();
 
-        return result.Cancelled;
+        return result;
     }
 
     private void HandleCellMouseOver(int row, int col, MouseEventArgs e)
@@ -275,10 +281,9 @@ public partial class Datasheet : IHandleEvent
                 return true;
             }
 
-            else if (EditorManager.AcceptEdit().Accepted)
+            // Accept the edit
+            else if (AcceptEdit(1, 0))
             {
-                Sheet?.MoveSelection(1, 0);
-                StateHasChanged();
                 return true;
             }
         }
@@ -292,6 +297,7 @@ public partial class Datasheet : IHandleEvent
                 StateHasChanged();
                 return true;
             }
+            // Accept the edit
             else if (EditorManager.IsSoftEdit && AcceptEdit(direction.Item1, direction.Item2))
             {
                 return true;

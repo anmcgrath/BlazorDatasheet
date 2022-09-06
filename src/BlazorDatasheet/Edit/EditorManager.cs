@@ -22,6 +22,18 @@ public class EditorManager : IEditorManager
     public bool IsEditing => CurrentEditPosition != null;
     public bool IsSoftEdit { get; private set; }
 
+    public delegate void AcceptEditHandler(AcceptEditEventArgs e);
+
+    public event AcceptEditHandler OnAcceptEdit;
+
+    public delegate void RejectEditHandler(RejectEditEventArgs e);
+
+    public event RejectEditHandler OnRejectEdit;
+
+    public delegate void CancelEditHandler(CancelEditEventArgs e);
+
+    public event CancelEditHandler OnCancelEdit;
+
     public EditorManager()
     {
         _editorTypes = new Dictionary<string, Type>();
@@ -62,10 +74,10 @@ public class EditorManager : IEditorManager
         queueForNextRender(() => { ActiveEditorComponent?.BeginEdit(mode, cell, key); });
     }
 
-    public AcceptEditResult AcceptEdit()
+    public bool AcceptEdit()
     {
         if (!IsEditing || ActiveEditorComponent == null)
-            return new AcceptEditResult(false, -1, -1, null, null, null);
+            return false;
 
         var activeCell = CurrentEditedCell;
         var currentRow = CurrentEditPosition.Row;
@@ -73,8 +85,10 @@ public class EditorManager : IEditorManager
         var editedValue = _editedValue;
 
         if (!ActiveEditorComponent.CanAcceptEdit())
-            return new AcceptEditResult(false, currentRow, currentCol, activeCell,
-                                        _initialValue, _initialValue);
+        {
+            this.onRejectEdit(currentRow, currentCol, _initialValue, editedValue);
+            return false;
+        }
 
         // Perform data validation
         var isValid = true;
@@ -82,7 +96,10 @@ public class EditorManager : IEditorManager
         {
             if (validator.IsValid(editedValue)) continue;
             if (validator.IsStrict)
-                return AcceptEditResult.Reject(currentRow, currentCol);
+            {
+                this.onRejectEdit(currentRow, currentCol, _initialValue, editedValue);
+                return false;
+            }
 
             isValid = false;
         }
@@ -94,13 +111,22 @@ public class EditorManager : IEditorManager
         if (setCell == true)
         {
             this.clearCurrentEdit();
-            return new AcceptEditResult(true, currentRow, currentCol, activeCell,
-                                        _initialValue,
-                                        editedValue);
+            this.onAcceptEdit(currentRow, currentCol, _initialValue, editedValue);
+            return true;
         }
 
-        return new AcceptEditResult(false, currentRow, currentCol, activeCell, _initialValue,
-                                    _initialValue);
+        this.onRejectEdit(currentRow, currentCol, _initialValue, editedValue);
+        return false;
+    }
+
+    private void onAcceptEdit(int row, int col, object initialValue, object editedValue)
+    {
+        OnAcceptEdit?.Invoke(new AcceptEditEventArgs(row, col, initialValue, editedValue));
+    }
+
+    private void onRejectEdit(int row, int col, object initialValue, object editedValue)
+    {
+        OnRejectEdit?.Invoke(new RejectEditEventArgs(row, col, initialValue, editedValue));
     }
 
     public bool HandleKeyDown(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
@@ -114,14 +140,15 @@ public class EditorManager : IEditorManager
         return ActiveEditorComponent.HandleKey(key, ctrlKey, shiftKey, altKey, metaKey);
     }
 
-    public CancelEditResult CancelEdit()
+    public bool CancelEdit()
     {
         if (!ActiveEditorComponent.CanCancelEdit())
-            return new CancelEditResult(false, "");
+            return false;
 
         this.clearCurrentEdit();
+        OnCancelEdit?.Invoke(new CancelEditEventArgs(""));
 
-        return new CancelEditResult(true, "");
+        return true;
     }
 
     public void RegisterEditor<T>(string name) where T : ICellEditor

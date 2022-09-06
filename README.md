@@ -24,7 +24,7 @@ The following code displays a 3 x 3 data sheet of empty strings.
 
 ```csharp
 <Datasheet
-    Sheet="sheet">
+    Sheet="sheet"/>
 
 @code{
 
@@ -34,7 +34,13 @@ The following code displays a 3 x 3 data sheet of empty strings.
         { new Cell(""), new Cell(""), new Cell("") },
         { new Cell(""), new Cell(""), new Cell("") },
     };
-    private Sheet sheet = new Sheet(numRows: 3, numCols: 3, cells: cells);
+
+    private Sheet sheet;
+
+    protected override void OnInitialized()
+    {
+        sheet = new Sheet(numRows: 3, numCols: 3, cells: cells);
+    }
 
 }
 ```

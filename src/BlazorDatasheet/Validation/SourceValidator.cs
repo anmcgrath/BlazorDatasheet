@@ -18,7 +18,8 @@ public class SourceValidator : IDataValidator
         try
         {
             var valStr = val.ToString();
-            return ValidationSource.Any(x => x.CompareTo(valStr) == 0);
+            var isValid = ValidationSource.Any(x => x.CompareTo(valStr) == 0);
+            return isValid;
         }
         catch (Exception e)
         {

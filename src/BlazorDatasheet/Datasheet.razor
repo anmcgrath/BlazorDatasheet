@@ -16,11 +16,11 @@
     @onmouseout="() => IsMouseInsideSheet = false">
     <!-- Column headers -->
     <tr>
-        <td class="sheet-cell column-head"></td>
+        <td class="sheet-cell column-head row-head"></td>
         @for (var i = 0; i < Sheet?.NumCols; i++)
         {
             var col = i;
-            var colDefn = Sheet.ColumnHeadings.Count > i ? Sheet.ColumnHeadings[i] : null;
+            var colDefn = Sheet?.ColumnHeadings.Count > i ? Sheet?.ColumnHeadings[i] : null;
             <td
                 class="sheet-cell column-head @(IsDataSheetActive && Sheet.IsColumnActive(col) ? "column-active" : "")"
                 @onmouseup="e => HandleCellMouseUp(-1, col, e)"
@@ -31,61 +31,64 @@
         }
     </tr>
 
-    <Virtualize Items="@Sheet?.Rows" Context="sheetRow">
-        <ItemContent>
-            <tr @key="sheetRow.RowNumber">
-                <td
-                    class="sheet-cell row-head @(IsDataSheetActive && Sheet.IsRowActive(sheetRow.RowNumber) ? "row-active" : "")"
-                    @onmousedown="e => HandleRowHeaderMouseDown(sheetRow.RowNumber, e)"
-                    @onmouseover="e => HandleCellMouseOver(sheetRow.RowNumber, -1, e)"
-                    @onmouseup="e => HandleCellMouseUp(sheetRow.RowNumber, -1, e)">
-                    @(Sheet.RowHeadings.Count > sheetRow.RowNumber ? Sheet.RowHeadings[sheetRow.RowNumber] : null)
-                </td>
-                @for (int j = 0; j < Sheet?.NumCols; j++)
-                {
-                    var row = sheetRow.RowNumber;
-                    var col = j;
-
-                    var cell = Sheet.GetCell(row, col);
-                    var format = Sheet.GetFormat(cell);
-
+    @if (Sheet != null)
+    {
+        <Virtualize Items="@Sheet?.Rows" Context="sheetRow">
+            <ItemContent>
+                <tr @key="sheetRow.RowNumber">
                     <td
-                        class="sheet-cell"
-                        @onmousedown="e => HandleCellMouseDown(row, col, e)"
-                        @onmouseover="e => HandleCellMouseOver(row, col, e)"
-                        @ondblclick="e => HandleCellDoubleClick(row, col, e)"
-                        @onmouseup="e => HandleCellMouseUp(row, col, e)">
-                        @if (EditorManager.IsEditing && EditorManager.CurrentEditPosition.Equals(row, col))
-                        {
-                            <DynamicComponent
-                                Type="EditorManager.ActiveEditorType"
-                                Parameters="@getEditorParameters()"
-                                @ref="EditorManager.ActiveEditorContainer"/>
-                        }
-                        else
-                        {
-                            <div
-                                class="@(IsDataSheetActive && Sheet.IsSelected(row, col) ? "cell-selected" : "") cell"
-                                style="
+                        class="sheet-cell row-head @(IsDataSheetActive && Sheet.IsRowActive(sheetRow.RowNumber) ? "row-active" : "")"
+                        @onmousedown="e => HandleRowHeaderMouseDown(sheetRow.RowNumber, e)"
+                        @onmouseover="e => HandleCellMouseOver(sheetRow.RowNumber, -1, e)"
+                        @onmouseup="e => HandleCellMouseUp(sheetRow.RowNumber, -1, e)">
+                        @(Sheet.RowHeadings.Count > sheetRow.RowNumber ? Sheet.RowHeadings[sheetRow.RowNumber].Header : null)
+                    </td>
+                    @for (int j = 0; j < Sheet?.NumCols; j++)
+                    {
+                        var row = sheetRow.RowNumber;
+                        var col = j;
+
+                        var cell = Sheet.GetCell(row, col);
+                        var format = Sheet.GetFormat(cell);
+
+                        <td
+                            class="sheet-cell"
+                            @onmousedown="e => HandleCellMouseDown(row, col, e)"
+                            @onmouseover="e => HandleCellMouseOver(row, col, e)"
+                            @ondblclick="e => HandleCellDoubleClick(row, col, e)"
+                            @onmouseup="e => HandleCellMouseUp(row, col, e)">
+                            @if (EditorManager.IsEditing && EditorManager.CurrentEditPosition.Equals(row, col))
+                            {
+                                <DynamicComponent
+                                    Type="EditorManager.ActiveEditorType"
+                                    Parameters="@getEditorParameters()"
+                                    @ref="EditorManager.ActiveEditorContainer"/>
+                            }
+                            else
+                            {
+                                <div
+                                    class="@(IsDataSheetActive && Sheet.IsSelected(row, col) ? "cell-selected" : "") cell"
+                                    style="
                             background: @format.BackgroundColor; 
                             color: @(cell.IsValid ? format.ForegroundColor : "red");
                             font-weight: @format.FontWeight;
                             display: flex;
                             ">
-                                @if (format.Icon != null)
-                                {
-                                    <div style="margin-right:2px; color: @format.IconColor">@format.Icon</div>
-                                }
-                                <DynamicComponent
-                                    Type="@getCellRendererType(cell.Type)"
-                                    Parameters="@getCellRendererParameters(cell, row, col)">
-                                </DynamicComponent>
-                            </div>
-                        }
+                                    @if (format.Icon != null)
+                                    {
+                                        <div style="margin-right:2px; color: @format.IconColor">@format.Icon</div>
+                                    }
+                                    <DynamicComponent
+                                        Type="@getCellRendererType(cell.Type)"
+                                        Parameters="@getCellRendererParameters(cell, row, col)">
+                                    </DynamicComponent>
+                                </div>
+                            }
 
-                    </td>
-                }
-            </tr>
-        </ItemContent>
-    </Virtualize>
+                        </td>
+                    }
+                </tr>
+            </ItemContent>
+        </Virtualize>
+    }
 </table>
