@@ -119,7 +119,9 @@ public class Cell : IReadOnlyCell, IWriteableCell
         {
             if (string.IsNullOrEmpty(Key))
             {
-                if (Data.GetType() == type)
+                if (Data == null)
+                    Data = val;
+                else if (Data.GetType() == type)
                     Data = val;
                 else
                     Data = Convert.ChangeType(val, type);
