@@ -9,7 +9,7 @@ public class Sheet
     public List<Heading> RowHeadings { get; private set; }
     private readonly Dictionary<string, ConditionalFormat> _conditionalFormats;
     internal IReadOnlyDictionary<string, ConditionalFormat> ConditionalFormats => _conditionalFormats;
-
+    public Range Range => new Range(0, NumRows, 0, NumCols);
     private Stack<Range> Selection { get; set; }
 
     /// <summary>
@@ -36,6 +36,7 @@ public class Sheet
             var rowCells = new List<Cell>();
             for (int j = 0; j < NumCols; j++)
             {
+                // Perform conditional formatting when setting these cells initially
                 rowCells.Add(cells[i, j]);
             }
 
@@ -265,7 +266,20 @@ public class Sheet
         cf.AddRange(range);
         var cells = this.GetCellsInRanges(cf.Ranges.ToList());
         foreach (var cell in cells)
+        {
             cell.AddConditionalFormat(key);
+        }
+    }
+
+    /// <summary>
+    /// Applies the conditional format specified by "key" to a particular cell. If setting the format to a number of cells,
+    /// prefer setting via a range.
+    /// </summary>
+    /// <param name="key"></param>
+    /// <param name="range"></param>
+    public void ApplyConditionalFormat(string key, int row, int col)
+    {
+        ApplyConditionalFormat(key, new Range(row, col));
     }
 
     /// <summary>
@@ -283,10 +297,11 @@ public class Sheet
         {
             if (!ConditionalFormats.ContainsKey(id))
                 continue;
-            var cf = this.ConditionalFormats[id];
-            var apply = cf.Rule.Invoke(cell, this.GetCellsInRanges(cf.Ranges.ToList()));
+            var conditionalFormat = this.ConditionalFormats[id];
+            var cellsWithConditionalFormat = this.GetCellsInRanges(conditionalFormat.Ranges.ToList());
+            var apply = conditionalFormat.Rule.Invoke(cell, cellsWithConditionalFormat);
             if (apply)
-                format.Merge(cf.Formatting);
+                format.Merge(conditionalFormat.FormatFunc.Invoke(cell, cellsWithConditionalFormat));
         }
 
         return format;
