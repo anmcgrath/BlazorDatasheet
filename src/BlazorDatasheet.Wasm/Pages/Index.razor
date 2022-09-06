@@ -36,11 +36,10 @@
             People.Add(new Person() { Id = i, Age = random.NextInt64(100).ToString(), FirstName = "Person", LastName = "Person" });
         }
 
-        var checkCf = new ConditionalFormat((cell, cells) => { return ((Person)cell.Data).IsFriendly == true; }, (c, cs) => new Format()
-        {
-            BackgroundColor = "#D9F8C4",
-            Icon = Icons.CheckIcon
-        });
+        var f = new Format() { BackgroundColor = "D9F8C4", Icon = Icons.CheckIcon };
+        var c = (Cell c, Cell[] cells) => f;
+
+        var checkCf = new ConditionalFormat((cell, cells) => { return ((Person)cell.Data).IsFriendly == true; }, c);
 
         var builder1 = new ObjectEditorBuilder<Person>(People, GridDirection.PropertiesAcrossColumns);
         builder1.AutogenerateProperties(true)
