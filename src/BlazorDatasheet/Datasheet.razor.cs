@@ -93,30 +93,27 @@ public partial class Datasheet : IHandleEvent
         if (Sheet.IsSelecting)
         {
             Sheet?.EndSelecting();
-            StateHasChanged();
         }
     }
 
     private void HandleCellMouseDown(int row, int col, MouseEventArgs e)
     {
-        if (EditorManager.IsEditing && !EditorManager.CurrentEditPosition.Equals(row, col))
-        {
-            AcceptEdit();
-        }
-
-
         if (e.ShiftKey)
             Sheet?.ExtendSelection(row, col);
         else
             Sheet?.BeginSelecting(row, col, !e.MetaKey, SelectionMode.Cell);
+
+        if (EditorManager.IsEditing && !EditorManager.CurrentEditPosition.Equals(row, col))
+        {
+            if (AcceptEdit())
+                return;
+        }
 
         StateHasChanged();
     }
 
     private void HandleColumnHeaderMouseDown(int col, MouseEventArgs e)
     {
-        AcceptEdit();
-
         if (e.ShiftKey)
             Sheet?.ExtendSelection(Sheet.NumRows, col);
         else
@@ -125,13 +122,14 @@ public partial class Datasheet : IHandleEvent
             Sheet?.UpdateSelectingEndPosition(Sheet.NumRows, col);
         }
 
+        if (AcceptEdit())
+            return;
+
         StateHasChanged();
     }
 
     private void HandleRowHeaderMouseDown(int row, MouseEventArgs e)
     {
-        AcceptEdit();
-
         if (e.ShiftKey)
             Sheet?.ExtendSelection(row, Sheet.NumCols);
         else
@@ -139,6 +137,9 @@ public partial class Datasheet : IHandleEvent
             Sheet?.BeginSelecting(row, 0, !e.MetaKey, SelectionMode.Row);
             Sheet?.UpdateSelectingEndPosition(row, Sheet.NumCols);
         }
+
+        if (AcceptEdit())
+            return;
 
         StateHasChanged();
     }
@@ -345,7 +346,6 @@ public partial class Datasheet : IHandleEvent
         var setValue = cell.SetValue(args.NewValue);
         if (!setValue)
             return;
-        StateHasChanged();
         emitCellChanged(cell, args.Row, args.Col);
     }
 }
