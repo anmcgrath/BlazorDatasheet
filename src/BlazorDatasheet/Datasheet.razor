@@ -69,11 +69,11 @@
                                 <div
                                     class="@(IsDataSheetActive && Sheet.IsSelected(row, col) ? "cell-selected" : "") cell"
                                     style="
-                            background: @format.BackgroundColor; 
-                            color: @(cell.IsValid ? format.ForegroundColor : "red");
-                            font-weight: @format.FontWeight;
-                            display: flex;
-                            ">
+                                        background: @format.BackgroundColor; 
+                                        color: @(cell.IsValid ? format.ForegroundColor : "red");
+                                        font-weight: @format.FontWeight;
+                                        display: flex;
+                                    ">
                                     @if (format.Icon != null)
                                     {
                                         <div style="margin-right:2px; color: @format.IconColor">@format.Icon</div>
@@ -84,7 +84,6 @@
                                     </DynamicComponent>
                                 </div>
                             }
-
                         </td>
                     }
                 </tr>

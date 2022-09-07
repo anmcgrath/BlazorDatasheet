@@ -13,6 +13,7 @@
 
     [Parameter]
     public EditorManager EditorManager { get; set; }
+
     private ElementReference InputRef;
 
     public DateTime EditedValue
@@ -25,7 +26,6 @@
     {
         var canParse = DateTime.TryParse(cell.GetValue<string>(), out DateTime parsedDateTime);
         EditedValue = canParse ? parsedDateTime : DateTime.Now;
-        StateHasChanged();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
