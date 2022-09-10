@@ -16,6 +16,8 @@ public partial class Datasheet : IHandleEvent
     [Parameter] public EventCallback<CellChangedEventArgs> OnCellChanged { get; set; }
     [Parameter] public double FixedHeightInPx { get; set; } = 350;
     [Parameter] public bool IsFixedHeight { get; set; }
+    [Parameter] public bool ShowRowHeaders { get; set; } = true;
+    [Parameter] public bool ShowColumnHeaders { get; set; } = true;
     public EditorManager EditorManager { get; private set; }
     private bool IsDataSheetActive { get; set; }
     private bool IsMouseInsideSheet { get; set; }
