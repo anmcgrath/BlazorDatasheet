@@ -64,3 +64,8 @@ window.setupBlazorWindowEvent = async function (dotNetHelper, evType, handlerNam
 window.removeBlazorWindowEvent = function (evType, fnId) {
     window.removeEventListener(evType, fnDict[fnId])
 }
+
+window.readTextAsync = async function () {
+    const text = await navigator.clipboard.readText()
+    return text
+}

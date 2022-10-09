@@ -25,10 +25,12 @@ public partial class Datasheet : IHandleEvent
     private Queue<Action> QueuedActions { get; set; } = new Queue<Action>();
 
     private IWindowEventService _windowEventService;
+    private IClipboard _clipboard;
 
     protected override void OnInitialized()
     {
         _windowEventService = new WindowEventService(JS);
+        _clipboard = new Clipboard(JS);
         EditorManager = new EditorManager(this.Sheet, NextTick);
         EditorManager.OnAcceptEdit += EditorManagerOnOnAcceptEdit;
 
@@ -242,7 +244,7 @@ public partial class Datasheet : IHandleEvent
         return false;
     }
 
-    private bool HandleWindowKeyDown(KeyboardEventArgs e)
+    private async Task<bool?> HandleWindowKeyDown(KeyboardEventArgs e)
     {
         if (!IsDataSheetActive)
             return false;

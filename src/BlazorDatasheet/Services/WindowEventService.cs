@@ -12,7 +12,7 @@ public class WindowEventService : IWindowEventService
     private readonly IJSRuntime _js;
     private DotNetObjectReference<WindowEventService> _dotNetHelper;
     private List<Tuple<string, string>> _fnStore = new List<Tuple<string, string>>();
-    public event Func<KeyboardEventArgs, bool>? OnKeyDown;
+    public event Func<KeyboardEventArgs, Task<bool?>> OnKeyDown;
     public event Func<MouseEventArgs, bool>? OnMouseDown;
 
     public WindowEventService(IJSRuntime js)
@@ -34,9 +34,9 @@ public class WindowEventService : IWindowEventService
     }
 
     [JSInvokable]
-    public bool HandleWindowKeyDown(KeyboardEventArgs e)
+    public async Task<bool> HandleWindowKeyDown(KeyboardEventArgs e)
     {
-        var result = OnKeyDown?.Invoke(e);
+        var result = await OnKeyDown?.Invoke(e);
         if (!result.HasValue)
             return false;
         return result.Value;
