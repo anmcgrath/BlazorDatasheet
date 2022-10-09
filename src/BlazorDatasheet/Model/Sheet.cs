@@ -339,6 +339,12 @@ public class Sheet
         return format;
     }
 
+    /// <summary>
+    /// Registers a cell editor component with a unique name.
+    /// If the editor already exists, it will override the existing.
+    /// </summary>
+    /// <param name="name">A unique name for the editor</param>
+    /// <typeparam name="T"></typeparam>
     public void RegisterEditor<T>(string name) where T : ICellEditor
     {
         if (!_editorTypes.ContainsKey(name))
@@ -346,32 +352,51 @@ public class Sheet
         _editorTypes[name] = typeof(T);
     }
 
+    /// <summary>
+    /// Registers a cell renderer component with a unique name.
+    /// If the renderer already exists, it will override the existing.
+    /// </summary>
+    /// <param name="name">A unique name for the renderer</param>
+    /// <typeparam name="T"></typeparam>
     public void RegisterRenderer<T>(string name) where T : BaseRenderer
     {
         if (!_renderComponentTypes.TryAdd(name, typeof(T)))
             _renderComponentTypes[name] = typeof(T);
     }
 
+    /// <summary>
+    /// Inserts delimited text from cell input position (position of first selection)
+    /// And assigns cell's values based on the delimited text (tabs and newlines)
+    /// </summary>
+    /// <param name="text">The text to insert</param>
     public void InsertDelimitedText(string text)
     {
-        if (!Selection.Any())
+        this.InsertDelimitedText(text, this.GetInputForSelection());
+    }
+
+    /// <summary>
+    /// Inserts delimited text from the given position
+    /// And assigns cell's values based on the delimited text (tabs and newlines)
+    /// </summary>
+    /// <param name="text">The text to insert</param>
+    /// <param name="inputPosition">The position where the insertion starts</param>
+    public void InsertDelimitedText(string text, CellPosition inputPosition)
+    {
+        if (inputPosition == null)
             return;
-        var inputPosn = this.GetInputForSelection();
 
         var lines = text.Split(Environment.NewLine);
 
         // We may reach the end of the sheet, so we only need to paste the rows up until the end.
-        // In the future it may be good to move to the next column of a selection once the end
-        // has been reached.
-        var endRow = Math.Min(inputPosn.Row + lines.Length, NumRows - 1);
+        var endRow = Math.Min(inputPosition.Row + lines.Length, NumRows - 1);
         int lineNo = 0;
-        for (int row = inputPosn.Row; row < endRow; row++)
+        for (int row = inputPosition.Row; row < endRow; row++)
         {
             var lineSplit = lines[lineNo].Split('\t');
             // Same thing as above with the number of columns
-            var endCol = Math.Min(inputPosn.Col + lineSplit.Length, NumCols - 1);
+            var endCol = Math.Min(inputPosition.Col + lineSplit.Length, NumCols - 1);
             int cellIndex = 0;
-            for (int col = inputPosn.Col; col < endCol; col++)
+            for (int col = inputPosition.Col; col < endCol; col++)
             {
                 var cell = this.GetCell(row, col);
                 cell.SetValue(lineSplit[cellIndex]);
