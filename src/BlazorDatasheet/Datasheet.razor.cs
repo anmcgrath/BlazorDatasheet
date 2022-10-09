@@ -1,6 +1,7 @@
 using BlazorDatasheet.Edit;
 using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Model;
+using BlazorDatasheet.Model.Events;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Services;
 using BlazorDatasheet.Util;
@@ -25,10 +26,12 @@ public partial class Datasheet : IHandleEvent
     private Queue<Action> QueuedActions { get; set; } = new Queue<Action>();
 
     private IWindowEventService _windowEventService;
+    private IClipboard _clipboard;
 
     protected override void OnInitialized()
     {
         _windowEventService = new WindowEventService(JS);
+        _clipboard = new Clipboard(JS);
         EditorManager = new EditorManager(this.Sheet, NextTick);
         EditorManager.OnAcceptEdit += EditorManagerOnOnAcceptEdit;
 
@@ -88,6 +91,7 @@ public partial class Datasheet : IHandleEvent
         await _windowEventService.Init();
         _windowEventService.OnKeyDown += HandleWindowKeyDown;
         _windowEventService.OnMouseDown += HandleWindowMouseDown;
+        _windowEventService.OnPaste += HandleWindowPaste;
     }
 
     private void HandleCellMouseUp(int row, int col, MouseEventArgs e)
@@ -242,7 +246,7 @@ public partial class Datasheet : IHandleEvent
         return false;
     }
 
-    private bool HandleWindowKeyDown(KeyboardEventArgs e)
+    private async Task<bool?> HandleWindowKeyDown(KeyboardEventArgs e)
     {
         if (!IsDataSheetActive)
             return false;
@@ -296,6 +300,12 @@ public partial class Datasheet : IHandleEvent
             StateHasChanged();
             return true;
         }
+        
+        // Capture Ctrl+V paste 
+        if (e.Key.ToLower() == "v" && (e.CtrlKey || e.MetaKey))
+        {
+            return true;
+        }
 
         if ((e.Key.Length == 1) && !EditorManager.IsEditing && IsDataSheetActive)
         {
@@ -313,6 +323,14 @@ public partial class Datasheet : IHandleEvent
         }
 
         return false;
+    }
+
+    private async Task HandleWindowPaste(PasteEventArgs arg)
+    {
+        if (!IsDataSheetActive)
+            return;
+        Sheet.InsertDelimitedText(arg.Text);
+        StateHasChanged();
     }
 
     private void NextTick(Action action)
