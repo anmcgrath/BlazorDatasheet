@@ -1,4 +1,5 @@
 using BlazorDatasheet.Interfaces;
+using BlazorDatasheet.Model.Events;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 
@@ -14,6 +15,7 @@ public class WindowEventService : IWindowEventService
     private List<Tuple<string, string>> _fnStore = new List<Tuple<string, string>>();
     public event Func<KeyboardEventArgs, Task<bool?>> OnKeyDown;
     public event Func<MouseEventArgs, bool>? OnMouseDown;
+    public event Func<PasteEventArgs, Task>? OnPaste;
 
     public WindowEventService(IJSRuntime js)
     {
@@ -23,8 +25,9 @@ public class WindowEventService : IWindowEventService
     public async Task Init()
     {
         _dotNetHelper = DotNetObjectReference.Create(this);
-        _fnStore.Add(await addWindowEvent("keydown", "HandleWindowKeyDown"));
-        _fnStore.Add(await addWindowEvent("mousedown", "HandleWindowMouseDown"));
+        _fnStore.Add(await addWindowEvent("keydown", nameof(HandleWindowKeyDown)));
+        _fnStore.Add(await addWindowEvent("mousedown", nameof(HandleWindowMouseDown)));
+        _fnStore.Add(await addWindowEvent("paste", nameof(HandleWindowPaste)));
     }
 
     private async Task<Tuple<string, string>> addWindowEvent(string evType, string jsInvokableName)
@@ -49,6 +52,12 @@ public class WindowEventService : IWindowEventService
         if (!result.HasValue)
             return false;
         return result.Value;
+    }
+
+    [JSInvokable]
+    public async Task HandleWindowPaste(PasteEventArgs e)
+    {
+        await OnPaste?.Invoke(e);
     }
 
     public async Task DisposeAsync()

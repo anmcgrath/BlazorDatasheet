@@ -10,6 +10,8 @@ function serialize(eventType, e) {
         return serializeKeyboardEvent(e)
     else if (eventType.includes('mouse'))
         return serializeMouseEvent(e)
+    else if (eventType.includes('paste'))
+        return serializeClipboardEvent(e)
 }
 
 function serializeKeyboardEvent(e) {
@@ -47,6 +49,25 @@ function serializeMouseEvent(e) {
     }
 }
 
+function serializeClipboardEvent(e) {
+    if (e) {
+        if (e.clipboardData && e.clipboardData.getData) {
+            let pasteText = ""
+            try {
+                pasteText = e.clipboardData.getData('text/plain')
+            } catch (ex) {
+                pasteText = ""
+            }
+            return {
+                text: pasteText
+            }
+        }
+    }
+    return {
+        text: "",
+    }
+}
+
 window.setupBlazorWindowEvent = async function (dotNetHelper, evType, handlerName) {
     let fn = async (ev) => {
         let response = await dotNetHelper.invokeMethodAsync(handlerName, serialize(evType, ev))
@@ -63,9 +84,4 @@ window.setupBlazorWindowEvent = async function (dotNetHelper, evType, handlerNam
 
 window.removeBlazorWindowEvent = function (evType, fnId) {
     window.removeEventListener(evType, fnDict[fnId])
-}
-
-window.readTextAsync = async function () {
-    const text = await navigator.clipboard.readText()
-    return text
 }

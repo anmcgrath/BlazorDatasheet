@@ -351,4 +351,34 @@ public class Sheet
         if (!_renderComponentTypes.TryAdd(name, typeof(T)))
             _renderComponentTypes[name] = typeof(T);
     }
+
+    public void InsertDelimitedText(string text)
+    {
+        if (!Selection.Any())
+            return;
+        var inputPosn = this.GetInputForSelection();
+
+        var lines = text.Split(Environment.NewLine);
+
+        // We may reach the end of the sheet, so we only need to paste the rows up until the end.
+        // In the future it may be good to move to the next column of a selection once the end
+        // has been reached.
+        var endRow = Math.Min(inputPosn.Row + lines.Length, NumRows - 1);
+        int lineNo = 0;
+        for (int row = inputPosn.Row; row < endRow; row++)
+        {
+            var lineSplit = lines[lineNo].Split('\t');
+            // Same thing as above with the number of columns
+            var endCol = Math.Min(inputPosn.Col + lineSplit.Length, NumCols - 1);
+            int cellIndex = 0;
+            for (int col = inputPosn.Col; col < endCol; col++)
+            {
+                var cell = this.GetCell(row, col);
+                cell.SetValue(lineSplit[cellIndex]);
+                cellIndex++;
+            }
+
+            lineNo++;
+        }
+    }
 }

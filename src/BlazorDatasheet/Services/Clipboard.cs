@@ -14,6 +14,7 @@ public class Clipboard : IClipboard
 
     public async Task<string> ReadTextAsync()
     {
+        Console.WriteLine("Attempting to read text async");
         return await JS.InvokeAsync<string>("readTextAsync");
     }
 
