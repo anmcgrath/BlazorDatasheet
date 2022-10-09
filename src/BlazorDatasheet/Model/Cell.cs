@@ -176,6 +176,11 @@ public class Cell : IReadOnlyCell, IWriteableCell
     /// </summary>
     public object? Data { get; private set; }
 
+    /// <summary>
+    /// Represents an individual datasheet cell
+    /// </summary>
+    /// <param name="data">The cell's data, which may be an object or a primitive</param>
+    /// <param name="key">If data is an object, the key is an optional parameter that specifies the value property name</param>
     public Cell(object? data = null, string key = null)
     {
         Data = data;
