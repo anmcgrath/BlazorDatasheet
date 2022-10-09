@@ -369,7 +369,7 @@ public class Sheet
     /// And assigns cell's values based on the delimited text (tabs and newlines)
     /// </summary>
     /// <param name="text">The text to insert</param>
-    public void InsertDelimitedText(string text)
+    internal void InsertDelimitedText(string text)
     {
         this.InsertDelimitedText(text, this.GetInputForSelection());
     }
@@ -380,7 +380,7 @@ public class Sheet
     /// </summary>
     /// <param name="text">The text to insert</param>
     /// <param name="inputPosition">The position where the insertion starts</param>
-    public void InsertDelimitedText(string text, CellPosition inputPosition)
+    internal void InsertDelimitedText(string text, CellPosition inputPosition)
     {
         if (inputPosition == null)
             return;
