@@ -10,6 +10,8 @@ function serialize(eventType, e) {
         return serializeKeyboardEvent(e)
     else if (eventType.includes('mouse'))
         return serializeMouseEvent(e)
+    else if (eventType.includes('paste'))
+        return serializeClipboardEvent(e)
 }
 
 function serializeKeyboardEvent(e) {
@@ -44,6 +46,25 @@ function serializeMouseEvent(e) {
             screenX: e.screenX,
             screenTop: e.screenY
         }
+    }
+}
+
+function serializeClipboardEvent(e) {
+    if (e) {
+        if (e.clipboardData && e.clipboardData.getData) {
+            let pasteText = ""
+            try {
+                pasteText = e.clipboardData.getData('text/plain')
+            } catch (ex) {
+                pasteText = ""
+            }
+            return {
+                text: pasteText
+            }
+        }
+    }
+    return {
+        text: "",
     }
 }
 
