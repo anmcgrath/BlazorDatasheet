@@ -13,7 +13,7 @@ public class ObjectPropertyDefinition<T>
     internal List<string> ConditionalFormatKeys { get; set; }
     internal List<IDataValidator> Validators { get; set; }
 
-    public ObjectPropertyDefinition(string propName, string type)
+    internal ObjectPropertyDefinition(string propName, string type)
     {
         PropertyName = propName;
         Type = type;
