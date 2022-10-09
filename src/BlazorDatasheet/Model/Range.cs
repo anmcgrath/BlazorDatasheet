@@ -7,10 +7,22 @@ public class Range
     public int RowEnd { get; set; }
     public int ColEnd { get; set; }
 
+    /// <summary>
+    /// A single (width/height = 1) range with position row, col
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
     public Range(int row, int col) : this(row, row, col, col)
     {
     }
 
+    /// <summary>
+    /// A rectangular range specified by start/end rows & cols
+    /// </summary>
+    /// <param name="rowStart"></param>
+    /// <param name="rowEnd"></param>
+    /// <param name="colStart"></param>
+    /// <param name="colEnd"></param>
     public Range(int rowStart, int rowEnd, int colStart, int colEnd)
     {
         RowStart = rowStart;
