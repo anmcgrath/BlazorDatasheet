@@ -8,6 +8,9 @@ public class Range : IEnumerable<CellPosition>
     public int ColStart { get; set; }
     public int RowEnd { get; set; }
     public int ColEnd { get; set; }
+    public int Height => RowEnd - RowStart + 1;
+    public int Width => ColEnd - ColStart + 1;
+    public int Area => Height * Width;
 
     /// <summary>
     /// A single (width/height = 1) range with position row, col
@@ -77,13 +80,13 @@ public class Range : IEnumerable<CellPosition>
     }
 
     /// <summary>
-    /// Updates the size of the range so that it is no larger than a range starting from (0, 0) to (rows, cols)
+    /// Updates the size of the range so that it is no larger than a range starting from (0, 0) with height/width =  (rows, cols)
     /// </summary>
-    /// <param name="rows"></param>
-    /// <param name="cols"></param>
-    public void Constrain(int rows, int cols)
+    /// <param name="nRows"></param>
+    /// <param name="nCols"></param>
+    public void Constrain(int nRows, int nCols)
     {
-        Constrain(0, rows - 1, 0, cols - 1);
+        Constrain(0, nRows - 1, 0, nCols - 1);
     }
 
     public void Constrain(Range range)
