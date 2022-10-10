@@ -83,10 +83,20 @@ public class Range : IEnumerable<CellPosition>
     /// <param name="cols"></param>
     public void Constrain(int rows, int cols)
     {
-        RowStart = Constrain(0, rows - 1, RowStart);
-        RowEnd = Constrain(0, rows - 1, RowEnd);
-        ColStart = Constrain(0, cols - 1, ColStart);
-        ColEnd = Constrain(0, cols - 1, ColEnd);
+        Constrain(0, rows - 1, 0, cols - 1);
+    }
+
+    public void Constrain(Range range)
+    {
+        Constrain(range.RowStart, range.RowEnd, range.ColStart, range.ColEnd);
+    }
+
+    public void Constrain(int otherRowStart, int otherRowEnd, int otherColStart, int otherColEnd)
+    {
+        RowStart = Constrain(otherRowStart, otherRowEnd, RowStart);
+        RowEnd = Constrain(otherRowStart, otherRowEnd, RowEnd);
+        ColStart = Constrain(otherColStart, otherColEnd, ColStart);
+        ColEnd = Constrain(otherColStart, otherColEnd - 1, ColEnd);
     }
 
     /// <summary>
@@ -103,6 +113,11 @@ public class Range : IEnumerable<CellPosition>
         if (val > max)
             return max;
         return val;
+    }
+
+    public Range Copy()
+    {
+        return new Range(RowStart, RowEnd, ColStart, ColEnd);
     }
 
     public IEnumerator<CellPosition> GetEnumerator()
