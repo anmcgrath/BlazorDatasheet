@@ -30,11 +30,11 @@ public class ObjectEditorBuilder<T>
     }
 
     /// <summary>
-    /// Set true if the object editor builder should automatically create rows or columns for all public properties.
+    /// Set true if the object editor builder should automatically create rows or columns for all public properties. Default is false.
     /// </summary>
     /// <param name="autoGenerateProperties"></param>
     /// <returns></returns>
-    public ObjectEditorBuilder<T> AutogenerateProperties(bool autoGenerateProperties)
+    public ObjectEditorBuilder<T> AutogenerateProperties(bool autoGenerateProperties = true)
     {
         _autoGenerateProperties = autoGenerateProperties;
         return this;
