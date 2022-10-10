@@ -81,7 +81,6 @@ public class EditorManager : IEditorManager
         if (!IsEditing || ActiveEditorComponent == null)
             return false;
 
-        var activeCell = CurrentEditedCell;
         var currentRow = CurrentEditPosition.Row;
         var currentCol = CurrentEditPosition.Col;
         var editedValue = _editedValue;
@@ -92,25 +91,9 @@ public class EditorManager : IEditorManager
             return false;
         }
 
-        // Perform data validation
-        var isValid = true;
-        foreach (var validator in activeCell.Validators)
-        {
-            if (validator.IsValid(editedValue)) continue;
-            if (validator.IsStrict)
-            {
-                this.onRejectEdit(currentRow, currentCol, _initialValue, editedValue);
-                return false;
-            }
+        var setCell = _sheet.TrySetCellValue(currentRow, currentCol, editedValue);
 
-            isValid = false;
-        }
-
-        activeCell.IsValid = isValid;
-
-        // Try to set the cell's value to the new (edited) value
-        var setCell = CurrentEditedCell?.SetValue(editedValue);
-        if (setCell == true)
+        if (setCell)
         {
             this.clearCurrentEdit();
             this.onAcceptEdit(currentRow, currentCol, _initialValue, editedValue);

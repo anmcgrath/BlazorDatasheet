@@ -49,6 +49,9 @@ public class Format
             this.IconColor = format.IconColor;
     }
 
+    /// <summary>
+    /// Returns the default format for the datasheet cells
+    /// </summary>
     public static Format Default =>
         new Format()
         {

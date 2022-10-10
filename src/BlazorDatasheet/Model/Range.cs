@@ -1,16 +1,30 @@
+using System.Collections;
+
 namespace BlazorDatasheet.Model;
 
-public class Range
+public class Range : IEnumerable<CellPosition>
 {
     public int RowStart { get; set; }
     public int ColStart { get; set; }
     public int RowEnd { get; set; }
     public int ColEnd { get; set; }
 
+    /// <summary>
+    /// A single (width/height = 1) range with position row, col
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
     public Range(int row, int col) : this(row, row, col, col)
     {
     }
 
+    /// <summary>
+    /// A rectangular range specified by start/end rows & cols
+    /// </summary>
+    /// <param name="rowStart"></param>
+    /// <param name="rowEnd"></param>
+    /// <param name="colStart"></param>
+    /// <param name="colEnd"></param>
     public Range(int rowStart, int rowEnd, int colStart, int colEnd)
     {
         RowStart = rowStart;
@@ -48,7 +62,7 @@ public class Range
         var c1 = Math.Max(ColStart, ColEnd);
         return col >= c0 && col <= c1;
     }
-    
+
     /// <summary>
     /// Determines whether the row is spanned by the range
     /// </summary>
@@ -61,7 +75,7 @@ public class Range
         return row >= r0 &&
                row <= r1;
     }
-    
+
     /// <summary>
     /// Updates the size of the range so that it is no larger than a range starting from (0, 0) to (rows, cols)
     /// </summary>
@@ -69,10 +83,20 @@ public class Range
     /// <param name="cols"></param>
     public void Constrain(int rows, int cols)
     {
-        RowStart = Constrain(0, rows - 1, RowStart);
-        RowEnd = Constrain(0, rows - 1, RowEnd);
-        ColStart = Constrain(0, cols - 1, ColStart);
-        ColEnd = Constrain(0, cols - 1, ColEnd);
+        Constrain(0, rows - 1, 0, cols - 1);
+    }
+
+    public void Constrain(Range range)
+    {
+        Constrain(range.RowStart, range.RowEnd, range.ColStart, range.ColEnd);
+    }
+
+    public void Constrain(int otherRowStart, int otherRowEnd, int otherColStart, int otherColEnd)
+    {
+        RowStart = Constrain(otherRowStart, otherRowEnd, RowStart);
+        RowEnd = Constrain(otherRowStart, otherRowEnd, RowEnd);
+        ColStart = Constrain(otherColStart, otherColEnd, ColStart);
+        ColEnd = Constrain(otherColStart, otherColEnd - 1, ColEnd);
     }
 
     /// <summary>
@@ -91,8 +115,29 @@ public class Range
         return val;
     }
 
+    public Range Copy()
+    {
+        return new Range(RowStart, RowEnd, ColStart, ColEnd);
+    }
+
+    public IEnumerator<CellPosition> GetEnumerator()
+    {
+        for (var row = RowStart; row <= RowEnd; row++)
+        {
+            for (var col = ColStart; col <= ColEnd; col++)
+            {
+                yield return new CellPosition(row, col);
+            }
+        }
+    }
+
     public override string ToString()
     {
         return $"Range from ({RowStart}, {ColStart}) to ({RowEnd}, {ColEnd})";
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
     }
 }

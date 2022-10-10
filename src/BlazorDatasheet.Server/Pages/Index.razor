@@ -3,6 +3,7 @@
 @using BlazorDatasheet.Server.Data
 @using Range = BlazorDatasheet.Model.Range
 @using BlazorDatasheet.Icons
+@using BlazorDatasheet.Model.Events
 @using BlazorDatasheet.ObjectEditor
 @using BlazorDatasheet.Validation
 
@@ -17,7 +18,7 @@
 <Datasheet
     Sheet="Sheet"
     IsFixedHeight="true"
-    OnCellChanged="HandleCellChanged">
+    OnCellsChanged="HandleCellChanged">
 
 </Datasheet>
 
@@ -67,7 +68,7 @@
         Sheet = editor1.Sheet;
     }
 
-    private void HandleCellChanged(CellChangedEventArgs e)
+    private void HandleCellChanged(CellsChangedEventArgs e)
     {
         StateHasChanged();
     }
