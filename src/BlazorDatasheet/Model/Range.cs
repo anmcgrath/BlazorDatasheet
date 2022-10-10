@@ -93,10 +93,10 @@ public class Range : IEnumerable<CellPosition>
 
     public void Constrain(int otherRowStart, int otherRowEnd, int otherColStart, int otherColEnd)
     {
-        RowStart = Constrain(otherRowStart, otherRowEnd, RowStart);
-        RowEnd = Constrain(otherRowStart, otherRowEnd, RowEnd);
-        ColStart = Constrain(otherColStart, otherColEnd, ColStart);
-        ColEnd = Constrain(otherColStart, otherColEnd - 1, ColEnd);
+        RowStart = Constrain(otherRowStart, otherRowEnd, this.RowStart);
+        RowEnd = Constrain(otherRowStart, otherRowEnd, this.RowEnd);
+        ColStart = Constrain(otherColStart, otherColEnd, this.ColStart);
+        ColEnd = Constrain(otherColStart, otherColEnd, this.ColEnd);
     }
 
     /// <summary>

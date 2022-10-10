@@ -16,7 +16,7 @@ public class Sheet
     private readonly Dictionary<string, ConditionalFormat> _conditionalFormats;
     internal IReadOnlyDictionary<string, ConditionalFormat> ConditionalFormats => _conditionalFormats;
     private Dictionary<string, Cell[]> _cellsInConditionalFormatCache = new Dictionary<string, Cell[]>();
-    public Range Range => new Range(0, NumRows, 0, NumCols);
+    public Range Range => new Range(0, NumRows - 1, 0, NumCols - 1);
     private Stack<Range> Selection { get; set; }
 
     /// <summary>
