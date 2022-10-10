@@ -122,11 +122,11 @@ public partial class Datasheet : IHandleEvent
     private void HandleColumnHeaderMouseDown(int col, MouseEventArgs e)
     {
         if (e.ShiftKey)
-            Sheet?.ExtendSelection(Sheet.NumRows, col);
+            Sheet?.ExtendSelection(Sheet.NumRows - 1, col);
         else
         {
             Sheet?.BeginSelecting(0, col, !e.MetaKey, SelectionMode.Column);
-            Sheet?.UpdateSelectingEndPosition(Sheet.NumRows, col);
+            Sheet?.UpdateSelectingEndPosition(Sheet.NumRows - 1, col);
         }
 
         if (AcceptEdit())
@@ -138,11 +138,11 @@ public partial class Datasheet : IHandleEvent
     private void HandleRowHeaderMouseDown(int row, MouseEventArgs e)
     {
         if (e.ShiftKey)
-            Sheet?.ExtendSelection(row, Sheet.NumCols);
+            Sheet?.ExtendSelection(row, Sheet.NumCols - 1);
         else
         {
             Sheet?.BeginSelecting(row, 0, !e.MetaKey, SelectionMode.Row);
-            Sheet?.UpdateSelectingEndPosition(row, Sheet.NumCols);
+            Sheet?.UpdateSelectingEndPosition(row, Sheet.NumCols - 1);
         }
 
         if (AcceptEdit())
