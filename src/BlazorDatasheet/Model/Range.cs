@@ -1,6 +1,8 @@
+using System.Collections;
+
 namespace BlazorDatasheet.Model;
 
-public class Range
+public class Range : IEnumerable<CellPosition>
 {
     public int RowStart { get; set; }
     public int ColStart { get; set; }
@@ -60,7 +62,7 @@ public class Range
         var c1 = Math.Max(ColStart, ColEnd);
         return col >= c0 && col <= c1;
     }
-    
+
     /// <summary>
     /// Determines whether the row is spanned by the range
     /// </summary>
@@ -73,7 +75,7 @@ public class Range
         return row >= r0 &&
                row <= r1;
     }
-    
+
     /// <summary>
     /// Updates the size of the range so that it is no larger than a range starting from (0, 0) to (rows, cols)
     /// </summary>
@@ -103,8 +105,24 @@ public class Range
         return val;
     }
 
+    public IEnumerator<CellPosition> GetEnumerator()
+    {
+        for (var row = RowStart; row <= RowEnd; row++)
+        {
+            for (var col = ColStart; col <= ColEnd; col++)
+            {
+                yield return new CellPosition(row, col);
+            }
+        }
+    }
+
     public override string ToString()
     {
         return $"Range from ({RowStart}, {ColStart}) to ({RowEnd}, {ColEnd})";
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
     }
 }

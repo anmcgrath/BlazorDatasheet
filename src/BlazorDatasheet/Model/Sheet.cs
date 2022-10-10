@@ -142,8 +142,17 @@ public class Sheet
     /// <param name="col"></param>
     public void SetSelectionSingle(int row, int col)
     {
-        this.Selection.Clear();
         var range = new Range(row, col);
+        this.SetSelection(range);
+    }
+
+    /// <summary>
+    /// Clears the current selection and sets it to the range specified
+    /// </summary>
+    /// <param name="range"></param>
+    public void SetSelection(Range range)
+    {
+        this.ClearSelection();
         range.Constrain(NumRows, NumCols);
         this.Selection.Push(range);
     }
@@ -366,37 +375,47 @@ public class Sheet
 
     /// <summary>
     /// Inserts delimited text from cell input position (position of first selection)
-    /// And assigns cell's values based on the delimited text (tabs and newlines)
+    /// And assigns cell's values based on the delimited text (tabs and newlines).
+    /// Returns the range of cells that surrounds all cells that are affected
     /// </summary>
     /// <param name="text">The text to insert</param>
-    internal void InsertDelimitedText(string text)
+    internal Range InsertDelimitedText(string text)
     {
-        this.InsertDelimitedText(text, this.GetInputForSelection());
+        return this.InsertDelimitedText(text, this.GetInputForSelection());
     }
 
     /// <summary>
     /// Inserts delimited text from the given position
     /// And assigns cell's values based on the delimited text (tabs and newlines)
+    /// Returns the range of cells that surrounds all cells that are affected
     /// </summary>
     /// <param name="text">The text to insert</param>
     /// <param name="inputPosition">The position where the insertion starts</param>
-    internal void InsertDelimitedText(string text, CellPosition inputPosition)
+    internal Range InsertDelimitedText(string text, CellPosition inputPosition)
     {
         if (inputPosition == null)
-            return;
+            return null;
 
         var lines = text.Split(Environment.NewLine);
 
         // We may reach the end of the sheet, so we only need to paste the rows up until the end.
-        var endRow = Math.Min(inputPosition.Row + lines.Length, NumRows - 1);
+        var endRow = Math.Min(inputPosition.Row + lines.Length - 1, NumRows - 1);
+        // Keep track of the maximum end column that we are inserting into
+        // This is used to determine the range to return.
+        // It is possible that each line is of different cell lengths, so we return the max for all lines
+        var maxEndCol = -1;
+
         int lineNo = 0;
-        for (int row = inputPosition.Row; row < endRow; row++)
+        for (int row = inputPosition.Row; row <= endRow; row++)
         {
             var lineSplit = lines[lineNo].Split('\t');
             // Same thing as above with the number of columns
-            var endCol = Math.Min(inputPosition.Col + lineSplit.Length, NumCols - 1);
+            var endCol = Math.Min(inputPosition.Col + lineSplit.Length - 1, NumCols - 1);
+
+            maxEndCol = Math.Max(endCol, maxEndCol);
+
             int cellIndex = 0;
-            for (int col = inputPosition.Col; col < endCol; col++)
+            for (int col = inputPosition.Col; col <= endCol; col++)
             {
                 var cell = this.GetCell(row, col);
                 cell.SetValue(lineSplit[cellIndex]);
@@ -405,5 +424,7 @@ public class Sheet
 
             lineNo++;
         }
+
+        return new Range(inputPosition.Row, endRow, inputPosition.Col, maxEndCol);
     }
 }

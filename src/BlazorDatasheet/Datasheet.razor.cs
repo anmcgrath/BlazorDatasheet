@@ -7,6 +7,7 @@ using BlazorDatasheet.Services;
 using BlazorDatasheet.Util;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Range = BlazorDatasheet.Model.Range;
 
 namespace BlazorDatasheet;
 
@@ -14,7 +15,7 @@ public partial class Datasheet : IHandleEvent
 {
     [Parameter] public Sheet? Sheet { get; set; }
     [Parameter] public bool IsReadOnly { get; set; }
-    [Parameter] public EventCallback<CellChangedEventArgs> OnCellChanged { get; set; }
+    [Parameter] public EventCallback<CellsChangedEventArgs> OnCellsChanged { get; set; }
     [Parameter] public double FixedHeightInPx { get; set; } = 350;
     [Parameter] public bool IsFixedHeight { get; set; }
     [Parameter] public bool ShowRowHeaders { get; set; } = true;
@@ -41,7 +42,7 @@ public partial class Datasheet : IHandleEvent
     private void EditorManagerOnOnAcceptEdit(AcceptEditEventArgs e)
     {
         var cell = Sheet.GetCell(e.Row, e.Col);
-        this.emitCellChanged(cell, e.Row, e.Col);
+        this.emitCellsChanged(cell, e.Row, e.Col);
     }
 
     private Type getCellRendererType(string type)
@@ -196,11 +197,45 @@ public partial class Datasheet : IHandleEvent
         return result;
     }
 
-    private async void emitCellChanged(Cell cell, int row, int col)
+    /// <summary>
+    /// Emit an event for a single cell change
+    /// </summary>
+    /// <param name="cell"></param>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    private async void emitCellsChanged(Cell cell, int row, int col)
     {
-        if (!OnCellChanged.HasDelegate)
+        if (!OnCellsChanged.HasDelegate)
             return;
-        await OnCellChanged.InvokeAsync(new CellChangedEventArgs(cell, row, col));
+        await OnCellsChanged.InvokeAsync(new CellsChangedEventArgs(cell, row, col));
+    }
+
+    /// <summary>
+    /// Emit event for all cells in ranges changed
+    /// </summary>
+    private async void emitCellsChanged(IEnumerable<Range> ranges)
+    {
+        if (!OnCellsChanged.HasDelegate)
+            return;
+
+        var infos = new List<CellChangedInfo>();
+        foreach (var range in ranges)
+        {
+            foreach (var posn in range)
+            {
+                infos.Add(new CellChangedInfo(Sheet.GetCell(posn), posn.Row, posn.Col));
+            }
+        }
+
+        await OnCellsChanged.InvokeAsync(new CellsChangedEventArgs(infos));
+    }
+
+    /// <summary>
+    /// Emit event for all cells in the range
+    /// </summary>
+    private async void emitCellsChanged(Range range)
+    {
+        this.emitCellsChanged(new List<Range>() { range });
     }
 
     /// <summary>
@@ -300,7 +335,7 @@ public partial class Datasheet : IHandleEvent
             StateHasChanged();
             return true;
         }
-        
+
         // Capture Ctrl+V paste 
         if (e.Key.ToLower() == "v" && (e.CtrlKey || e.MetaKey))
         {
@@ -329,8 +364,13 @@ public partial class Datasheet : IHandleEvent
     {
         if (!IsDataSheetActive)
             return;
-        Sheet.InsertDelimitedText(arg.Text);
-        StateHasChanged();
+        var range = Sheet.InsertDelimitedText(arg.Text);
+        if (range == null)
+            return;
+
+        this.emitCellsChanged(range);
+        Sheet.SetSelection(range);
+        this.StateHasChanged();
     }
 
     private void NextTick(Action action)
@@ -366,6 +406,6 @@ public partial class Datasheet : IHandleEvent
         var setValue = cell.SetValue(args.NewValue);
         if (!setValue)
             return;
-        emitCellChanged(cell, args.Row, args.Col);
+        emitCellsChanged(cell, args.Row, args.Col);
     }
 }
