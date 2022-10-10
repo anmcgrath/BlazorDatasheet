@@ -68,10 +68,14 @@ function serializeClipboardEvent(e) {
     }
 }
 
-window.setupBlazorWindowEvent = async function (dotNetHelper, evType, handlerName) {
+// Adds a window event and stores the function as a unique ID
+// The reason we do this rather than adding one window event is so that
+// we can remove the events later
+window.setupBlazorWindowEvent = async function (dotNetHelper, evType, dotnetHandlerName) {
     let fn = async (ev) => {
-        let response = await dotNetHelper.invokeMethodAsync(handlerName, serialize(evType, ev))
-        if (response == true) {
+        // The response from calling the .net function
+        let isHandledResponse = await dotNetHelper.invokeMethodAsync(dotnetHandlerName, serialize(evType, ev))
+        if (isHandledResponse == true) {
             ev.preventDefault()
             ev.stopImmediatePropagation()
         }
