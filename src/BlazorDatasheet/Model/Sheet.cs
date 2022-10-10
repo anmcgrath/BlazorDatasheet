@@ -462,7 +462,7 @@ public class Sheet
         if (inputRange == null)
             return string.Empty;
 
-        var range = inputRange.Copy();
+        var range = inputRange.CopyOrdered();
         range.Constrain(this.Range);
 
         var strBuilder = new StringBuilder();
