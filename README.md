@@ -10,6 +10,7 @@ A simple datasheet component for editing tabular data.
 - Data validation
 - Build datasheet from an object definition
 - Keyboard navigation
+- Copy and paste from tabulated data
 - Virtualization via Blazor Virtualization - handles many cells at once.
 
 Demo: https://anmcgrath.github.io/BlazorDatasheet/
