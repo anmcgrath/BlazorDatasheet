@@ -336,14 +336,16 @@ public partial class Datasheet : IHandleEvent
             return true;
         }
 
-        // Capture Ctrl+V paste 
-        if (e.Key.ToLower() == "v" && (e.CtrlKey || e.MetaKey))
-        {
-            return true;
-        }
+        if (e.Key.ToLower() == "c" && (e.CtrlKey || e.MetaKey))
+            CopySelectionToClipboard();
 
+        // Single characters or numbers or symbols
         if ((e.Key.Length == 1) && !EditorManager.IsEditing && IsDataSheetActive)
         {
+            // Capture commands and return early (mainly for paste)
+            if (e.CtrlKey || e.MetaKey)
+                return false;
+
             char c = e.Key == "Space" ? ' ' : e.Key[0];
             if (char.IsLetterOrDigit(c) || char.IsPunctuation(c) || char.IsSymbol(c) || char.IsSeparator(c))
             {
@@ -407,5 +409,18 @@ public partial class Datasheet : IHandleEvent
         if (!setValue)
             return;
         emitCellsChanged(cell, args.Row, args.Col);
+    }
+
+    /// <summary>
+    /// Copies current selection to clipboard
+    /// </summary>
+    public async Task CopySelectionToClipboard()
+    {
+        // Can only handle single selections for now
+        var selection = Sheet.GetSelection().FirstOrDefault();
+        if (selection == null)
+            return;
+        var text = Sheet.GetRangeAsDelimitedText(selection);
+        await _clipboard.WriteTextAsync(text);
     }
 }

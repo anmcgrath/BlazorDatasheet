@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+using System.Text;
 using BlazorDatasheet.Edit;
 using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Render;
@@ -124,15 +126,6 @@ public class Sheet
     public Cell GetCell(CellPosition position)
     {
         return GetCell(position.Row, position.Col);
-    }
-
-    public void SetCell(int row, int col, Cell value)
-    {
-        if (row < 0 || row >= NumRows)
-            return;
-        if (col < 0 || col >= NumCols)
-            return;
-        Rows[row].Cells[col] = value;
     }
 
     /// <summary>
@@ -418,7 +411,7 @@ public class Sheet
             for (int col = inputPosition.Col; col <= endCol; col++)
             {
                 var cell = this.GetCell(row, col);
-                cell.SetValue(lineSplit[cellIndex]);
+                TrySetCellValue(row, col, lineSplit[cellIndex]);
                 cellIndex++;
             }
 
@@ -426,5 +419,72 @@ public class Sheet
         }
 
         return new Range(inputPosition.Row, endRow, inputPosition.Col, maxEndCol);
+    }
+
+    public bool TrySetCellValue(int row, int col, object value)
+    {
+        var cell = this.GetCell(row, col);
+        if (cell == null)
+            return false;
+
+        return TrySetCellValue(cell, value);
+    }
+
+    public bool TrySetCellValue(Cell cell, object value)
+    {
+        // Perform data validation
+        var isValid = true;
+        foreach (var validator in cell.Validators)
+        {
+            if (validator.IsValid(value)) continue;
+            if (validator.IsStrict)
+                return false;
+            isValid = false;
+        }
+
+        cell.IsValid = isValid;
+
+        // Try to set the cell's value to the new value
+        return cell.SetValue(value);
+    }
+
+    /// <summary>
+    /// Returns the ranges selected, in order of when they were selected.
+    /// </summary>
+    /// <returns></returns>
+    public IEnumerable<Range> GetSelection()
+    {
+        return this.Selection.AsEnumerable().Reverse();
+    }
+
+    public string GetRangeAsDelimitedText(Range inputRange, char tabDelimiter = '\t')
+    {
+        if (inputRange == null)
+            return string.Empty;
+
+        var range = inputRange.Copy();
+        range.Constrain(this.Range);
+
+        var strBuilder = new StringBuilder();
+
+        for (int row = range.RowStart; row <= range.RowEnd; row++)
+        {
+            for (int col = range.ColStart; col <= range.ColEnd; col++)
+            {
+                var cell = this.GetCell(row, col);
+                var value = cell.GetValue();
+                if (value == null)
+                    strBuilder.Append("");
+                else
+                    strBuilder.Append(value.ToString());
+                if (col != range.ColEnd)
+                    strBuilder.Append(tabDelimiter);
+            }
+
+            if (row != range.RowEnd)
+                strBuilder.AppendLine();
+        }
+
+        return strBuilder.ToString();
     }
 }
