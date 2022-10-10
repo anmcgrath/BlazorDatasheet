@@ -115,9 +115,28 @@ public class Range : IEnumerable<CellPosition>
         return val;
     }
 
+    /// <summary>
+    /// Returns a new copy of the range.
+    /// </summary>
+    /// <returns></returns>
     public Range Copy()
     {
         return new Range(RowStart, RowEnd, ColStart, ColEnd);
+    }
+
+    /// <summary>
+    /// Returns a new copy of the range with the row, col starting point
+    /// at the top left (minimum points).
+    /// </summary>
+    /// <returns></returns>
+    public Range CopyOrdered()
+    {
+        return new Range(
+            Math.Min(RowStart, RowEnd),
+            Math.Max(RowStart, RowEnd),
+            Math.Min(ColStart, ColEnd),
+            Math.Max(ColStart, ColEnd)
+        );
     }
 
     public IEnumerator<CellPosition> GetEnumerator()
