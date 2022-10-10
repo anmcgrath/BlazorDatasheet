@@ -85,3 +85,7 @@ window.setupBlazorWindowEvent = async function (dotNetHelper, evType, handlerNam
 window.removeBlazorWindowEvent = function (evType, fnId) {
     window.removeEventListener(evType, fnDict[fnId])
 }
+
+window.writeTextToClipboard = async function (text) {
+    await window.navigator.clipboard.writeText(text)
+}
