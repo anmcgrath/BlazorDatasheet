@@ -12,14 +12,8 @@ public class Clipboard : IClipboard
         JS = jsRuntime;
     }
 
-    public async Task<string> ReadTextAsync()
-    {
-        Console.WriteLine("Attempting to read text async");
-        return await JS.InvokeAsync<string>("readTextAsync");
-    }
-
     public async Task WriteTextAsync(string text)
     {
-        throw new NotImplementedException();
+        await JS.InvokeVoidAsync("writeTextToClipboard", text);
     }
 }
