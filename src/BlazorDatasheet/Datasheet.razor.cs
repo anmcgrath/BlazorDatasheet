@@ -281,7 +281,7 @@ public partial class Datasheet : IHandleEvent
         return false;
     }
 
-    private async Task<bool?> HandleWindowKeyDown(KeyboardEventArgs e)
+    private bool? HandleWindowKeyDown(KeyboardEventArgs e)
     {
         if (!IsDataSheetActive)
             return false;
