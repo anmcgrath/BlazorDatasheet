@@ -61,15 +61,26 @@ public class SelectionManagerTests
     public void Set_Selection_Sets_Selection_Correctly()
     {
         var sm = new SelectionManager(_sheet);
-        sm.SetSelection(1,1);
+        sm.SetSelection(1, 1);
         Assert.AreEqual(1, sm.Selections.Count);
         Assert.AreEqual(1, sm.Selections.First().Range.RowStart);
         Assert.AreEqual(1, sm.Selections.First().Range.ColStart);
-        
+
         sm.SetSelection(2, 2);
         Assert.AreEqual(1, sm.Selections.Count);
         Assert.AreEqual(2, sm.Selections.First().Range.RowStart);
         Assert.AreEqual(2, sm.Selections.First().Range.ColStart);
         Assert.AreEqual(1, sm.Selections.First().Range.Area);
+    }
+
+    [Test]
+    public void Update_Selection_After_Column_Selection_Updates_Correctly()
+    {
+        var sm = new SelectionManager(_sheet);
+        sm.BeginSelectingCol(0);
+        Assert.AreEqual(1, sm.ActiveSelection.Range.Width);
+        Assert.AreEqual(3, sm.ActiveSelection.Range.Height);
+        sm.UpdateSelectingEndPosition(0, 1);
+        Assert.AreEqual(2, sm.ActiveSelection.Range.Width);
     }
 }
