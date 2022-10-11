@@ -57,7 +57,7 @@ public class Format
         {
             FontWeight = "normal",
             BackgroundColor = "#ffffff",
-            ForegroundColor = "#000000",
+            ForegroundColor = "#5c5c5c",
             IconColor = "#000000"
         };
 }
