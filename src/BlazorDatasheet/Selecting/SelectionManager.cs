@@ -137,7 +137,7 @@ public class SelectionManager
         var selectionRange = range.Copy();
         selectionRange.Constrain(_sheet.Range);
         this._selections.Clear();
-        this._selections.Add(new Selection(range, _sheet, SelectionMode.Cell));
+        this._selections.Add(new Selection(selectionRange, _sheet, SelectionMode.Cell));
         emitSelectionChange();
     }
 
@@ -152,7 +152,7 @@ public class SelectionManager
     }
 
     /// <summary>
-    /// Collapses the latest selection to a single cell and moves it by dRow and dCol
+    /// Collapses the latest selection to a single cell and moves it by dRow and dCol, clearing all other selections.
     /// </summary>
     /// <param name="dRow"></param>
     /// <param name="dCol"></param>

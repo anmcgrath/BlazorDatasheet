@@ -1,5 +1,6 @@
 ﻿using System.Linq;
-using BlazorDatasheet.Model;
+using BlazorDatasheet.Data;
+using BlazorDatasheet.Selecting;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test;
@@ -106,5 +107,15 @@ public class SelectionManagerTests
         Assert.AreEqual(3, sm.Selections.First().Range.Height);
         Assert.AreEqual(2, sm.Selections.First().Range.Width);
         Assert.AreEqual(1, sm.Selections.Count);
+    }
+
+    [Test]
+    public void Move_Selection_Outside_Of_Sheet_Constrains_To_Sheet()
+    {
+        var sm = new SelectionManager(_sheet);
+        sm.SetSelection(0, 0);
+        sm.MoveSelection(-1, -1);
+        Assert.AreEqual(0, sm.Selections.First().Range.RowStart);
+        Assert.AreEqual(0, sm.Selections.First().Range.ColStart);
     }
 }
