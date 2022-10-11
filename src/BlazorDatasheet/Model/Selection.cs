@@ -21,7 +21,7 @@ public class Selection
     internal void Extend(int row, int col)
     {
         this.Range.RowEnd = row;
-        this.Range.RowStart = col;
+        this.Range.ColEnd = col;
         this.Range.Constrain(Sheet.Range);
     }
 }

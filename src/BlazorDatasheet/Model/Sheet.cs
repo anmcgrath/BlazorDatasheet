@@ -17,15 +17,7 @@ public class Sheet
     internal IReadOnlyDictionary<string, ConditionalFormat> ConditionalFormats => _conditionalFormats;
     private Dictionary<string, Cell[]> _cellsInConditionalFormatCache = new Dictionary<string, Cell[]>();
     public Range Range => new Range(0, NumRows - 1, 0, NumCols - 1);
-    private Stack<Range> Selection { get; set; }
-
-    /// <summary>
-    /// The actively selecting range
-    /// </summary>
-    public Range ActiveSelecting { get; private set; }
-
-    public bool IsSelecting { get; private set; }
-    public SelectionMode SelectionMode { get; set; }
+    
     private Dictionary<string, Type> _editorTypes;
     public IReadOnlyDictionary<string, Type> EditorTypes => _editorTypes;
     private Dictionary<string, Type> _renderComponentTypes { get; set; }
@@ -35,7 +27,6 @@ public class Sheet
     {
         NumRows = numRows;
         NumCols = numCols;
-        Selection = new Stack<Range>();
         _conditionalFormats = new Dictionary<string, ConditionalFormat>();
         ColumnHeadings = new List<Heading>();
         RowHeadings = new List<Heading>();
@@ -128,113 +119,6 @@ public class Sheet
         return GetCell(position.Row, position.Col);
     }
 
-    /// <summary>
-    /// Set the selection to a single cell & clear all current selections
-    /// </summary>
-    /// <param name="row"></param>
-    /// <param name="col"></param>
-    public void SetSelectionSingle(int row, int col)
-    {
-        var range = new Range(row, col);
-        this.SetSelection(range);
-    }
-
-    /// <summary>
-    /// Clears the current selection and sets it to the range specified
-    /// </summary>
-    /// <param name="range"></param>
-    public void SetSelection(Range range)
-    {
-        this.ClearSelection();
-        range.Constrain(NumRows, NumCols);
-        this.Selection.Push(range);
-    }
-
-    /// <summary>
-    /// Determines the most appropriate position for inputting new data, based on the current selections
-    /// </summary>
-    /// <returns>The most appropriate position for inputting new data</returns>
-    public CellPosition GetInputForSelection()
-    {
-        if (IsSelecting)
-            return null;
-        if (Selection.Count == 0)
-            return null;
-        var selection = Selection.Last();
-        return new CellPosition(selection.RowStart, selection.ColStart);
-    }
-
-    public void MoveSelection(int drow, int dcol)
-    {
-        if (IsSelecting)
-            return;
-
-        var recentSel = Selection.LastOrDefault();
-        if (recentSel == null)
-            return;
-
-        SetSelectionSingle(recentSel.RowStart + drow, recentSel.ColStart + dcol);
-    }
-
-    /// <summary>
-    /// Clears all current selections
-    /// </summary>
-    public void ClearSelection()
-    {
-        EndSelecting();
-        Selection.Clear();
-    }
-
-    /// <summary>
-    /// Returns true if the position is inside any of the active selections
-    /// </summary>
-    /// <param name="row"></param>
-    /// <param name="col"></param>
-    /// <returns></returns>
-    public bool IsSelected(int row, int col)
-    {
-        if (IsSelecting && ActiveSelecting.Contains(row, col))
-            return true;
-        if (!Selection.Any())
-            return false;
-        return Selection
-            .Any(x => x.Contains(row, col));
-    }
-
-    /// <summary>
-    /// Starts a new "Selecting" process
-    /// </summary>
-    /// <param name="row">The row to start selecting at</param>
-    /// <param name="col">The col to start selecting at</param>
-    /// <param name="clearSelection">Whether to clear all current selections</param>
-    /// <param name="mode">The way the selection is triggered</param>
-    public void BeginSelecting(int row, int col, bool clearSelection, SelectionMode mode)
-    {
-        if (clearSelection)
-            ClearSelection();
-        ActiveSelecting = new Range(row, col);
-        IsSelecting = true;
-        SelectionMode = mode;
-    }
-
-    /// <summary>
-    /// Ends the current "Selecting" process and adds the new selection to the stack
-    /// </summary>
-    public void EndSelecting()
-    {
-        IsSelecting = false;
-        Selection.Push(ActiveSelecting);
-        ActiveSelecting = null;
-    }
-
-    /// <summary>
-    /// Cancels the current "Selecting" process and does not add the new selection to the stack
-    /// </summary>
-    public void CancelSelecting()
-    {
-        IsSelecting = false;
-        ActiveSelecting = null;
-    }
 
     /// <summary>
     /// Applies the conditional format specified by "key" to all cells in a range, if the conditional formatting exists.
@@ -318,17 +202,6 @@ public class Sheet
     }
 
     /// <summary>
-    /// Inserts delimited text from cell input position (position of first selection)
-    /// And assigns cell's values based on the delimited text (tabs and newlines).
-    /// Returns the range of cells that surrounds all cells that are affected
-    /// </summary>
-    /// <param name="text">The text to insert</param>
-    internal Range InsertDelimitedText(string text)
-    {
-        return this.InsertDelimitedText(text, this.GetInputForSelection());
-    }
-
-    /// <summary>
     /// Inserts delimited text from the given position
     /// And assigns cell's values based on the delimited text (tabs and newlines)
     /// Returns the range of cells that surrounds all cells that are affected
@@ -397,15 +270,6 @@ public class Sheet
 
         // Try to set the cell's value to the new value
         return cell.SetValue(value);
-    }
-
-    /// <summary>
-    /// Returns the ranges selected, in order of when they were selected.
-    /// </summary>
-    /// <returns></returns>
-    public IEnumerable<Range> GetSelection()
-    {
-        return this.Selection.AsEnumerable().Reverse();
     }
 
     public string GetRangeAsDelimitedText(Range inputRange, char tabDelimiter = '\t')

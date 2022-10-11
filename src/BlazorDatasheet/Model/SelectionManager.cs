@@ -21,12 +21,12 @@ public class SelectionManager
     public SelectionManager(Sheet sheet)
     {
         _sheet = sheet;
+        _selections = new List<Selection>();
     }
 
     /// <summary>
     /// Start selecting at a position (row, col). This selection is not finalised until EndSelecting() is called.
     /// </summary>
-    /// <param name="sheet">The sheet it applies to</param>
     /// <param name="row">The row where the selection should start</param>
     /// <param name="col">The col where the selection should start</param>
     public void BeginSelectingCell(int row, int col)
@@ -53,6 +53,12 @@ public class SelectionManager
         emitSelectingChange();
     }
 
+    public void ClearSelections()
+    {
+        _selections.Clear();
+        emitSelectionChange();
+    }
+
     /// <summary>
     /// Updates the current selecting selection by extending it to row, col
     /// </summary>
@@ -63,7 +69,19 @@ public class SelectionManager
         if (!IsSelecting)
             return;
 
-        ActiveSelection.Extend(row, col);
+        switch (ActiveSelection?.Mode)
+        {
+            case SelectionMode.Cell:
+                ActiveSelection?.Extend(row, col);
+                break;
+            case SelectionMode.Column:
+                ActiveSelection?.Extend(_sheet.NumRows, col);
+                break;
+            case SelectionMode.Row:
+                ActiveSelection?.Extend(row, _sheet.NumCols);
+                break;
+        }
+
         emitSelectingChange();
     }
 
@@ -72,6 +90,8 @@ public class SelectionManager
     /// </summary>
     public void EndSelecting()
     {
+        if (!IsSelecting)
+            return;
         _selections.Add(ActiveSelection);
         ActiveSelection = null;
         emitSelectingChange();
@@ -105,12 +125,69 @@ public class SelectionManager
     }
 
     /// <summary>
+    /// Clears any selections or active selections and sets to the range specified
+    /// </summary>
+    /// <param name="range"></param>
+    public void SetSelection(Range range)
+    {
+        this.CancelSelecting();
+        var selectionRange = range.Copy();
+        selectionRange.Constrain(_sheet.Range);
+        this._selections.Clear();
+        this._selections.Add(new Selection(range, _sheet, SelectionMode.Cell));
+        emitSelectionChange();
+    }
+
+    /// <summary>
+    /// Sets selection to a single cell and clears any current selections
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    public void SetSelection(int row, int col)
+    {
+        SetSelection(new Range(row, col));
+    }
+
+    /// <summary>
+    /// Collapses the latest selection to a single cell and moves it by dRow and dCol
+    /// </summary>
+    /// <param name="dRow"></param>
+    /// <param name="dCol"></param>
+    public void MoveSelection(int dRow, int dCol)
+    {
+        if(IsSelecting)
+            return;
+
+        var recentSel = Selections.LastOrDefault();
+        if (recentSel == null)
+            return;
+        
+        SetSelection(recentSel.Range.RowStart+dRow, recentSel.Range.ColStart + dCol);
+    }
+
+    /// <summary>
     /// Returns all selections
     /// </summary>
     /// <returns></returns>
     public IEnumerable<Selection> GetSelections()
     {
         return Selections;
+    }
+
+    /// <summary>
+    /// Returns true if the position is inside any of the active selections
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <returns></returns>
+    public bool IsSelected(int row, int col)
+    {
+        if (IsSelecting && ActiveSelection.Range.Contains(row, col))
+            return true;
+        if (!Selections.Any())
+            return false;
+        return Selections
+            .Any(x => x.Range.Contains(row, col));
     }
 
     /// <summary>
@@ -138,6 +215,19 @@ public class SelectionManager
     }
 
     /// <summary>
+    /// Returns the position of the first cell that was selected in list of selections
+    /// </summary>
+    /// <returns></returns>
+    public CellPosition? GetPositionOfFirstCell()
+    {
+        if (!_selections.Any())
+            return null;
+
+        var selection = _selections.First();
+        return new CellPosition(selection.Range.RowStart, selection.Range.ColStart);
+    }
+
+    /// <summary>
     /// Fired when the active selection (currently being selected) changes
     /// </summary>
     public event Action<Selection?> OnSelectingChange;
@@ -145,6 +235,11 @@ public class SelectionManager
     private void emitSelectingChange()
     {
         OnSelectingChange?.Invoke(this.ActiveSelection);
+    }
+
+    public void SetSheet(Sheet sheet)
+    {
+        _sheet = sheet;
     }
 
     /// <summary>

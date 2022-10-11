@@ -6,7 +6,7 @@ namespace BlazorDatasheet.Edit;
 
 public class EditorManager : IEditorManager
 {
-    private readonly Sheet _sheet;
+    private Sheet _sheet;
     private readonly Action<Action> _queueForNextRender;
 
     /// <summary>
@@ -134,6 +134,11 @@ public class EditorManager : IEditorManager
         OnCancelEdit?.Invoke(new CancelEditEventArgs(""));
 
         return true;
+    }
+
+    public void SetSheet(Sheet sheet)
+    {
+        _sheet = sheet;
     }
 
     private void clearCurrentEdit()
