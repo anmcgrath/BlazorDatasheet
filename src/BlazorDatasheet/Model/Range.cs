@@ -1,8 +1,9 @@
 using System.Collections;
+using BlazorDatasheet.Interfaces;
 
 namespace BlazorDatasheet.Model;
 
-public class Range : IEnumerable<CellPosition>
+public class Range : IEnumerable<CellPosition>, IReadOnlyRange
 {
     public int RowStart { get; set; }
     public int ColStart { get; set; }

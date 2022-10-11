@@ -272,7 +272,7 @@ public class Sheet
         return cell.SetValue(value);
     }
 
-    public string GetRangeAsDelimitedText(Range inputRange, char tabDelimiter = '\t')
+    public string GetRangeAsDelimitedText(IReadOnlyRange inputRange, char tabDelimiter = '\t')
     {
         if (inputRange == null)
             return string.Empty;

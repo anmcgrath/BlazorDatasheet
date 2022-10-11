@@ -1,8 +1,10 @@
+using BlazorDatasheet.Interfaces;
+
 namespace BlazorDatasheet.Model;
 
 public class Selection
 {
-    public Range Range { get; }
+    public IReadOnlyRange Range { get; }
     public Sheet Sheet { get; }
     public SelectionMode Mode { get; }
 
