@@ -18,7 +18,7 @@ public class Selection
     /// </summary>
     /// <param name="row"></param>
     /// <param name="col"></param>
-    internal void Extend(int row, int col)
+    internal void ExtendTo(int row, int col)
     {
         this.Range.RowEnd = row;
         this.Range.ColEnd = col;

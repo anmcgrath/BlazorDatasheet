@@ -72,13 +72,13 @@ public class SelectionManager
         switch (ActiveSelection?.Mode)
         {
             case SelectionMode.Cell:
-                ActiveSelection?.Extend(row, col);
+                ActiveSelection?.ExtendTo(row, col);
                 break;
             case SelectionMode.Column:
-                ActiveSelection?.Extend(_sheet.NumRows, col);
+                ActiveSelection?.ExtendTo(_sheet.NumRows, col);
                 break;
             case SelectionMode.Row:
-                ActiveSelection?.Extend(row, _sheet.NumCols);
+                ActiveSelection?.ExtendTo(row, _sheet.NumCols);
                 break;
         }
 
@@ -119,7 +119,7 @@ public class SelectionManager
         ActiveSelection = _selections.Last();
         _selections.RemoveAt(_selections.Count - 1);
 
-        ActiveSelection.Extend(row, col);
+        ActiveSelection.ExtendTo(row, col);
         this.emitSelectionChange();
         this.emitSelectingChange();
     }
