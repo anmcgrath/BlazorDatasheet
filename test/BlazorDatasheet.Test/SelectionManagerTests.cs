@@ -83,4 +83,28 @@ public class SelectionManagerTests
         sm.UpdateSelectingEndPosition(0, 1);
         Assert.AreEqual(2, sm.ActiveSelection.Range.Width);
     }
+
+    [Test]
+    public void Update_Selection_After_Row_Selection_Selects_Correctly()
+    {
+        var sm = new SelectionManager(_sheet);
+        sm.BeginSelectingRow(0);
+        Assert.AreEqual(1, sm.ActiveSelection.Range.Height);
+        Assert.AreEqual(3, sm.ActiveSelection.Range.Width);
+        sm.UpdateSelectingEndPosition(1, 0);
+        Assert.AreEqual(2, sm.ActiveSelection.Range.Height);
+        Assert.AreEqual(3, sm.ActiveSelection.Range.Width);
+    }
+
+    [Test]
+    public void Extend_Selection_Correctly_Extends_Selection()
+    {
+        var sm = new SelectionManager(_sheet);
+        sm.SetSelection(0, 1);
+        sm.ExtendSelection(2, 2);
+        sm.EndSelecting();
+        Assert.AreEqual(3, sm.Selections.First().Range.Height);
+        Assert.AreEqual(2, sm.Selections.First().Range.Width);
+        Assert.AreEqual(1, sm.Selections.Count);
+    }
 }
