@@ -1,0 +1,32 @@
+@namespace BlazorDatasheet.Render.DefaultComponents
+@using BlazorDatasheet.Interfaces
+@using BlazorDatasheet.Edit.Events
+
+@code {
+
+    [Parameter]
+    public IReadOnlyCell Cell { get; set; }
+
+    [Parameter]
+    public int Row { get; set; }
+
+    [Parameter]
+    public int Col { get; set; }
+
+    [Parameter]
+    public Action<ChangeCellRequestEventArgs> OnChangeCellValueRequest { get; set; }
+
+    [Parameter]
+    public Action<EditRequestArgs> OnBeginEditRequest { get; set; }
+
+    public void RequestChangeCellValue(string value)
+    {
+        OnChangeCellValueRequest.Invoke(new ChangeCellRequestEventArgs(Row, Col, value));
+    }
+
+    protected void RequestEdit(bool isSoftEdit, EditEntryMode mode)
+    {
+        OnBeginEditRequest.Invoke(new EditRequestArgs(Row, Col, isSoftEdit, mode));
+    }
+
+}

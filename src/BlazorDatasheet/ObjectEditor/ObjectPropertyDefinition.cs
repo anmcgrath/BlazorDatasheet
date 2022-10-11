@@ -1,5 +1,5 @@
 using BlazorDatasheet.Interfaces;
-using BlazorDatasheet.Model;
+using BlazorDatasheet.Render;
 
 namespace BlazorDatasheet.ObjectEditor;
 

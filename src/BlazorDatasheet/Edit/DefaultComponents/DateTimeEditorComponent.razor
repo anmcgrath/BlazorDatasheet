@@ -1,0 +1,54 @@
+@using BlazorDatasheet.Interfaces
+@implements BlazorDatasheet.Interfaces.ICellEditor
+
+<input
+    type="date"
+    class="date-input"
+    @bind="EditedValue"
+    @bind:event="oninput"
+    @ref="InputRef"/>
+
+@code {
+
+    [Parameter]
+    public EditorManager EditorManager { get; set; }
+
+    private ElementReference InputRef;
+
+    public DateTime EditedValue
+    {
+        get => EditorManager.GetEditedValue<DateTime>();
+        set => EditorManager.SetEditedValue(value);
+    }
+
+    public void BeginEdit(EditEntryMode entryMode, IWriteableCell cell, string key)
+    {
+        var canParse = DateTime.TryParse(cell.GetValue<string>(), out var parsedDateTime);
+        EditedValue = canParse ? parsedDateTime : DateTime.Now;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await InputRef.FocusAsync();
+            await base.OnAfterRenderAsync(firstRender);
+        }
+    }
+
+    public bool CanAcceptEdit()
+    {
+        return true;
+    }
+
+    public bool CanCancelEdit()
+    {
+        return true;
+    }
+
+    public bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
+    {
+        return false;
+    }
+
+}

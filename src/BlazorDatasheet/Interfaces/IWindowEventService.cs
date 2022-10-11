@@ -1,4 +1,4 @@
-using BlazorDatasheet.Model.Events;
+using BlazorDatasheet.Data.Events;
 using Microsoft.AspNetCore.Components.Web;
 
 namespace BlazorDatasheet.Interfaces;

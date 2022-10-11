@@ -1,5 +1,5 @@
 using System;
-using BlazorDatasheet.Model;
+using BlazorDatasheet.Data;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test;

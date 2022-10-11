@@ -1,5 +1,5 @@
-using BlazorDatasheet.Model;
-using Range = BlazorDatasheet.Model.Range;
+using BlazorDatasheet.Data;
+using Range = BlazorDatasheet.Data.Range;
 
 namespace BlazorDatasheet.Interfaces;
 

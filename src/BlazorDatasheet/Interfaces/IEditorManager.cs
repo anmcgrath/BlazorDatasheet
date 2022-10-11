@@ -1,5 +1,3 @@
-using BlazorDatasheet.Edit;
-
 namespace BlazorDatasheet.Interfaces;
 
 public interface IEditorManager

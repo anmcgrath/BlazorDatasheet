@@ -1,5 +1,5 @@
+using BlazorDatasheet.Data.Events;
 using BlazorDatasheet.Interfaces;
-using BlazorDatasheet.Model.Events;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 

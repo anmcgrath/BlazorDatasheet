@@ -1,0 +1,69 @@
+@using BlazorDatasheet.Interfaces
+@using BlazorDatasheet.Validation
+@implements ICellEditor
+
+<input @bind="EditedValue" @bind:event="oninput" class="text-input" @ref="InputTextComponent"/>
+<div class="select-list">
+    @foreach (var val in values)
+    {
+        <div class="select-item" @onmouseup="() => { EditedValue = val; EditorManager.AcceptEdit(); }">@val</div>
+    }
+</div>
+
+@code {
+
+    [Parameter]
+    public EditorManager EditorManager { get; set; }
+
+    private ElementReference InputTextComponent;
+
+    public string EditedValue
+    {
+        get => EditorManager.GetEditedValue<string>();
+        set => EditorManager.SetEditedValue(value);
+    }
+
+    private string[] values;
+
+    public void BeginEdit(EditEntryMode entryMode, IWriteableCell cell, string key)
+    {
+        if (entryMode == EditEntryMode.Mouse)
+        {
+            EditedValue = cell.GetValue<string>();
+        }
+        else if (entryMode == EditEntryMode.Key)
+        {
+            EditedValue = key;
+        }
+
+        if (EditedValue == null)
+            EditedValue = string.Empty;
+    }
+
+    protected override void OnParametersSet()
+    {
+        foreach (var validator in EditorManager.CurrentEditedCell.Validators)
+            if (validator is SourceValidator)
+                values = ((SourceValidator)validator).ValidationSource.ToArray();
+        base.OnParametersSet();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await InputTextComponent.FocusAsync();
+            await base.OnInitializedAsync();
+        }
+    }
+
+    public bool CanAcceptEdit() => true;
+
+    public bool CanCancelEdit() => true;
+
+    public bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
+    {
+        return false;
+    }
+
+}

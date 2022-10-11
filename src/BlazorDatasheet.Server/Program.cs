@@ -1,7 +1,3 @@
-using BlazorDatasheet.Interfaces;
-using BlazorDatasheet.Server.Data;
-using BlazorDatasheet.Services;
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.

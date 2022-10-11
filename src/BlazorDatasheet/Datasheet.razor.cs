@@ -1,14 +1,17 @@
 using BlazorDatasheet.Commands;
+using BlazorDatasheet.Data;
+using BlazorDatasheet.Data.Events;
 using BlazorDatasheet.Edit;
+using BlazorDatasheet.Edit.Events;
 using BlazorDatasheet.Interfaces;
-using BlazorDatasheet.Model;
-using BlazorDatasheet.Model.Events;
 using BlazorDatasheet.Render;
+using BlazorDatasheet.Render.DefaultComponents;
+using BlazorDatasheet.Selecting;
 using BlazorDatasheet.Services;
 using BlazorDatasheet.Util;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using Range = BlazorDatasheet.Model.Range;
+using Range = BlazorDatasheet.Data.Range;
 
 namespace BlazorDatasheet;
 

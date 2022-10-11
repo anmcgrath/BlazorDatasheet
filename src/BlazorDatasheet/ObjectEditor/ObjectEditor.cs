@@ -1,4 +1,4 @@
-using BlazorDatasheet.Model;
+using BlazorDatasheet.Data;
 
 namespace BlazorDatasheet.ObjectEditor;
 

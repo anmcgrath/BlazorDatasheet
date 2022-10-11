@@ -1,5 +1,7 @@
+using BlazorDatasheet.Data;
+using BlazorDatasheet.Edit.DefaultComponents;
+using BlazorDatasheet.Edit.Events;
 using BlazorDatasheet.Interfaces;
-using BlazorDatasheet.Model;
 using Microsoft.AspNetCore.Components;
 
 namespace BlazorDatasheet.Edit;

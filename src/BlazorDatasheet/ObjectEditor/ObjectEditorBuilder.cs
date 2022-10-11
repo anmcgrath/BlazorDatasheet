@@ -1,8 +1,8 @@
 using System.Linq.Expressions;
-using System.Reflection.Metadata;
-using BlazorDatasheet.Model;
+using BlazorDatasheet.Data;
+using BlazorDatasheet.Render;
 using BlazorDatasheet.Util;
-using Range = BlazorDatasheet.Model.Range;
+using Range = BlazorDatasheet.Data.Range;
 
 namespace BlazorDatasheet.ObjectEditor;
 

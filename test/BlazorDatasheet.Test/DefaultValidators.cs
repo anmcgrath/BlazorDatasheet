@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using BlazorDatasheet.Model;
+using BlazorDatasheet.Data;
 using BlazorDatasheet.Validation;
 using NUnit.Framework;
 
