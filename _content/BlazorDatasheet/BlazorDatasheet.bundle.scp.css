@@ -69,8 +69,8 @@ table[b-zet5yo0qob] {
     overflow-x: auto;
     white-space: nowrap;
 }
-/* _content/BlazorDatasheet/Edit/DateTimeEditorComponent.razor.rz.scp.css */
-.date-input[b-0msua3ip9w] {
+/* _content/BlazorDatasheet/Edit/DefaultComponents/DateTimeEditorComponent.razor.rz.scp.css */
+.date-input[b-0nxgffd6dp] {
     width: calc(100% - 4px);
     border: 1px solid black;
     padding: 0;
@@ -78,11 +78,11 @@ table[b-zet5yo0qob] {
     box-sizing: border-box;
 }
 
-.date-input:focus[b-0msua3ip9w] {
+.date-input:focus[b-0nxgffd6dp] {
     outline: none;
 }
-/* _content/BlazorDatasheet/Edit/SelectEditorComponent.razor.rz.scp.css */
-.text-input[b-q49quji9xf] {
+/* _content/BlazorDatasheet/Edit/DefaultComponents/SelectEditorComponent.razor.rz.scp.css */
+.text-input[b-k71ijntl8x] {
     width: calc(100% - 4px);
     border: 1px solid black;
     padding: 0;
@@ -90,11 +90,11 @@ table[b-zet5yo0qob] {
     box-sizing: border-box;
 }
 
-.text-input:focus[b-q49quji9xf] {
+.text-input:focus[b-k71ijntl8x] {
     outline: none;
 }
 
-.select-list[b-q49quji9xf] {
+.select-list[b-k71ijntl8x] {
     min-width: 10rem;
     z-index: 10;
     border: 1px solid lightgray;
@@ -106,17 +106,17 @@ table[b-zet5yo0qob] {
     border-radius: 4px;
 }
 
-.select-item[b-q49quji9xf] {
+.select-item[b-k71ijntl8x] {
     cursor: pointer;
     padding: 0.1rem;
     padding-left: 0.2rem;
 }
 
-.select-item:hover[b-q49quji9xf] {
+.select-item:hover[b-k71ijntl8x] {
     background: #adc4ef;
 }
-/* _content/BlazorDatasheet/Edit/TextEditorComponent.razor.rz.scp.css */
-.text-input[b-ikurjpe3qv] {
+/* _content/BlazorDatasheet/Edit/DefaultComponents/TextEditorComponent.razor.rz.scp.css */
+.text-input[b-ogyzqrxhj5] {
     width: calc(100% - 4px);
     border: 1px solid black;
     padding: 0;
@@ -124,21 +124,21 @@ table[b-zet5yo0qob] {
     box-sizing: border-box;
 }
 
-.text-input:focus[b-ikurjpe3qv] {
+.text-input:focus[b-ogyzqrxhj5] {
     outline: none;
 }
-/* _content/BlazorDatasheet/Render/SelectRenderer.razor.rz.scp.css */
-.dropper[b-v40v1vnlmy] {
+/* _content/BlazorDatasheet/Render/DefaultComponents/SelectRenderer.razor.rz.scp.css */
+.dropper[b-fldepj96gs] {
     background: #fafafa;
     margin: 0;
     padding: 0 4px 0 4px;
     border: none;
 }
 
-.dropper:hover[b-v40v1vnlmy]{
+.dropper:hover[b-fldepj96gs]{
     background: #e1ebff;
 }
-/* _content/BlazorDatasheet/Render/TextRenderer.razor.rz.scp.css */
-.cell-renderer[b-j355bk6nc9]{
+/* _content/BlazorDatasheet/Render/DefaultComponents/TextRenderer.razor.rz.scp.css */
+.cell-renderer[b-7xkejoswml]{
     overflow:hidden;
 }
