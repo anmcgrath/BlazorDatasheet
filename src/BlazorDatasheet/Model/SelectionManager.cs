@@ -31,7 +31,7 @@ public class SelectionManager
     /// <param name="col">The col where the selection should start</param>
     public void BeginSelectingCell(int row, int col)
     {
-        ActiveSelection = new Selection(new Range(row, col), _sheet);
+        ActiveSelection = new Selection(new Range(row, col), _sheet, SelectionMode.Cell);
         emitSelectingChange();
     }
 
@@ -41,12 +41,16 @@ public class SelectionManager
     /// <param name="row"></param>
     public void BeginSelectingRow(int row)
     {
-        
+        var range = new Range(row, row, 0, _sheet.NumCols - 1);
+        ActiveSelection = new Selection(range, _sheet, SelectionMode.Row);
+        emitSelectingChange();
     }
 
     public void BeginSelectingCol(int col)
     {
-        
+        var range = new Range(0, _sheet.NumRows - 1, col, col);
+        ActiveSelection = new Selection(range, _sheet, SelectionMode.Row);
+        emitSelectingChange();
     }
 
     /// <summary>
@@ -120,7 +124,7 @@ public class SelectionManager
             return true;
         return Selections.Any(x => x.Range.ContainsCol(col));
     }
-    
+
     /// <summary>
     /// Determines whether a row contains any cells that are selected or being selected
     /// </summary>
