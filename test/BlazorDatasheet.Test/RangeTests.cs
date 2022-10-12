@@ -90,11 +90,37 @@ public class RangeTests
         Assert.AreEqual(1, posns[3].Row);
         Assert.AreEqual(0, posns[3].Col);
     }
+    
+    [Test]
+    public void Enumerate_Backwards_Range_Moves_In_Reverse_Dir()
+    {
+        var range = new Range(2, 0, 2, 0);
+        var posns = range.ToList();
+        Assert.AreEqual(range.Area, posns.Count);
+        // Check first cell (top left)
+        Assert.AreEqual(2, posns[0].Row);
+        Assert.AreEqual(2, posns[0].Col);
+        // Check end of first row
+        Assert.AreEqual(2, posns[2].Row);
+        Assert.AreEqual(0, posns[2].Col);
+        // Check first cell in second row
+        Assert.AreEqual(1, posns[3].Row);
+        Assert.AreEqual(2, posns[3].Col);
+    }
 
     [Test]
     public void Width_Height_Area_Ok()
     {
         var range = new Range(1, 4, 2, 7);
+        Assert.AreEqual(4, range.Height);
+        Assert.AreEqual(6, range.Width);
+        Assert.AreEqual(24, range.Area);
+    }
+
+    [Test]
+    public void Backwards_Range_Height_Width_Ok()
+    {
+        var range = new Range(4, 1, 7, 2);
         Assert.AreEqual(4, range.Height);
         Assert.AreEqual(6, range.Width);
         Assert.AreEqual(24, range.Area);
