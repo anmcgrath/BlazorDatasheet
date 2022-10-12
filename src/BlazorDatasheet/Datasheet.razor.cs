@@ -47,9 +47,9 @@ public partial class Datasheet : IHandleEvent
     {
         _windowEventService = new WindowEventService(JS);
         _clipboard = new Clipboard(JS);
-        _editorManager = new EditorManager(Sheet, NextTick);
-        _editorManager.OnAcceptEdit += EditorManagerOnOnAcceptEdit;
         _commandManager = new CommandManager(Sheet);
+        _editorManager = new EditorManager(Sheet, _commandManager, NextTick);
+        _editorManager.OnAcceptEdit += EditorManagerOnOnAcceptEdit;
         _selectionManager = new SelectionManager(Sheet);
 
         base.OnInitialized();
@@ -62,8 +62,8 @@ public partial class Datasheet : IHandleEvent
         if (_sheetLocal != Sheet)
         {
             _sheetLocal = Sheet;
-            _editorManager?.SetSheet(Sheet);
             _commandManager?.SetSheet(Sheet);
+            _commandManager?.ClearHistory();
             _selectionManager?.SetSheet(Sheet);
         }
 
@@ -372,8 +372,26 @@ public partial class Datasheet : IHandleEvent
             return true;
         }
 
-        if (e.Key.ToLower() == "c" && (e.CtrlKey || e.MetaKey))
+        if (e.Key.ToLower() == "c" && (e.CtrlKey || e.MetaKey) && !_editorManager.IsEditing)
+        {
             CopySelectionToClipboard();
+            return true;
+        }
+        
+        if (e.Key.ToLower() == "y" && (e.CtrlKey || e.MetaKey) && !_editorManager.IsEditing)
+        {
+            if(_commandManager.Redo())
+                StateHasChanged();
+            return true;
+        }
+
+
+        if (e.Key.ToLower() == "z" && (e.CtrlKey || e.MetaKey) && !_editorManager.IsEditing)
+        {
+            if(_commandManager.Undo())
+                StateHasChanged();
+            return true;
+        }
 
         // Single characters or numbers or symbols
         if ((e.Key.Length == 1) && !_editorManager.IsEditing && IsDataSheetActive)

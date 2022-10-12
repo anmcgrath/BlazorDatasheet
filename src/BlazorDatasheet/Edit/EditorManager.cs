@@ -1,3 +1,4 @@
+using BlazorDatasheet.Commands;
 using BlazorDatasheet.Data;
 using BlazorDatasheet.Edit.DefaultComponents;
 using BlazorDatasheet.Edit.Events;
@@ -9,6 +10,7 @@ namespace BlazorDatasheet.Edit;
 public class EditorManager : IEditorManager
 {
     private Sheet _sheet;
+    private readonly CommandManager _commandManager;
     private readonly Action<Action> _queueForNextRender;
 
     /// <summary>
@@ -25,6 +27,7 @@ public class EditorManager : IEditorManager
     internal Type? ActiveEditorType { get; private set; }
     public bool IsEditing => CurrentEditPosition != null;
     public bool IsSoftEdit { get; private set; }
+
     public delegate void AcceptEditHandler(AcceptEditEventArgs e);
 
     public event AcceptEditHandler OnAcceptEdit;
@@ -37,9 +40,10 @@ public class EditorManager : IEditorManager
 
     public event CancelEditHandler OnCancelEdit;
 
-    public EditorManager(Sheet sheet, Action<Action> queueForNextRender)
+    public EditorManager(Sheet sheet, CommandManager commandManager, Action<Action> queueForNextRender)
     {
         _sheet = sheet;
+        _commandManager = commandManager;
         // When called, runs the function next render cycle.
         _queueForNextRender = queueForNextRender;
     }
@@ -93,7 +97,7 @@ public class EditorManager : IEditorManager
             return false;
         }
 
-        var setCell = _sheet.TrySetCellValue(currentRow, currentCol, editedValue);
+        var setCell = _commandManager.ExecuteCommand(new ChangeCellValueCommand(currentRow, currentCol, editedValue));
 
         if (setCell)
         {
