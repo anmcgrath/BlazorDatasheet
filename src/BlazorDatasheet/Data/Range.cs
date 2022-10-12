@@ -9,8 +9,8 @@ public class Range : IEnumerable<CellPosition>, IReadOnlyRange
     public int ColStart { get; set; }
     public int RowEnd { get; set; }
     public int ColEnd { get; set; }
-    public int Height => RowEnd - RowStart + 1;
-    public int Width => ColEnd - ColStart + 1;
+    public int Height => Math.Max(RowStart, RowEnd) - Math.Min(RowStart, RowEnd) + 1;
+    public int Width => Math.Max(ColStart, ColEnd) - Math.Min(ColStart, ColEnd) + 1;
     public int Area => Height * Width;
 
     /// <summary>
@@ -145,12 +145,23 @@ public class Range : IEnumerable<CellPosition>, IReadOnlyRange
 
     public IEnumerator<CellPosition> GetEnumerator()
     {
-        for (var row = RowStart; row <= RowEnd; row++)
+        var rowDir = RowEnd >= RowStart ? 1 : -1;
+        var colDir = ColEnd >= ColStart ? 1 : -1;
+        var row = RowStart;
+        var col = ColStart;
+
+        for (var i = 0; i < Height; i++)
         {
-            for (var col = ColStart; col <= ColEnd; col++)
+            // Reset column at start of each row
+            col = ColStart;
+
+            for (var j = 0; j < Width; j++)
             {
                 yield return new CellPosition(row, col);
+                col += colDir;
             }
+
+            row += rowDir;
         }
     }
 
