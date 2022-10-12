@@ -1,7 +1,8 @@
 .dropper {
-    background: #fafafa;
+    background: none;
+    color:#999999;
     margin: 0;
-    padding: 0 4px 0 4px;
+    padding: 0 2px 0 2px;
     border: none;
 }
 
