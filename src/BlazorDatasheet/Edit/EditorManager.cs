@@ -25,7 +25,7 @@ public class EditorManager : IEditorManager
     public Cell CurrentEditedCell { get; private set; }
     internal ICellEditor ActiveEditorComponent => (ICellEditor)ActiveEditorContainer?.Instance;
     internal Type? ActiveEditorType { get; private set; }
-    public bool IsEditing => CurrentEditPosition != null;
+    public bool IsEditing => !CurrentEditPosition.InvalidPosition;
     public bool IsSoftEdit { get; private set; }
 
     public delegate void AcceptEditHandler(AcceptEditEventArgs e);
@@ -46,6 +46,7 @@ public class EditorManager : IEditorManager
         _commandManager = commandManager;
         // When called, runs the function next render cycle.
         _queueForNextRender = queueForNextRender;
+        CurrentEditPosition = new CellPosition(-1, -1);
     }
 
     public T GetEditedValue<T>()
@@ -149,7 +150,7 @@ public class EditorManager : IEditorManager
 
     private void clearCurrentEdit()
     {
-        this.CurrentEditPosition = null;
+        this.CurrentEditPosition = new CellPosition(-1, -1);
         this.CurrentEditedCell = null;
         this.ActiveEditorType = null;
         this._editedValue = null;

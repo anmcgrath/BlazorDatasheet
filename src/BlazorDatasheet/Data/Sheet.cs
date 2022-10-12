@@ -17,7 +17,7 @@ public class Sheet
     internal IReadOnlyDictionary<string, ConditionalFormat> ConditionalFormats => _conditionalFormats;
     private Dictionary<string, Cell[]> _cellsInConditionalFormatCache = new Dictionary<string, Cell[]>();
     public Range Range => new Range(0, NumRows - 1, 0, NumCols - 1);
-    
+
     private Dictionary<string, Type> _editorTypes;
     public IReadOnlyDictionary<string, Type> EditorTypes => _editorTypes;
     private Dictionary<string, Type> _renderComponentTypes { get; set; }
@@ -68,8 +68,9 @@ public class Sheet
         RegisterRenderer<BoolRenderer>("boolean");
     }
 
-    private Cell[] GetCellsInRange(Range range)
+    private Cell[] GetCellsInRange(IReadOnlyRange inputRange)
     {
+        var range = inputRange.CopyOrdered();
         List<Cell> cells = new List<Cell>();
         var rowStart = Math.Max(0, range.RowStart);
         var rowEnd = Math.Min(NumRows - 1, range.RowEnd);
@@ -97,7 +98,7 @@ public class Sheet
         this._conditionalFormats.Add(key, conditionalFormat);
     }
 
-    public Cell[] GetCellsInRanges(List<Range> ranges)
+    public Cell[] GetCellsInRanges(IEnumerable<IReadOnlyRange> ranges)
     {
         var cells = new List<Cell>();
         foreach (var range in ranges)
@@ -210,7 +211,7 @@ public class Sheet
     /// <param name="inputPosition">The position where the insertion starts</param>
     internal Range InsertDelimitedText(string text, CellPosition inputPosition)
     {
-        if (inputPosition == null)
+        if (inputPosition.InvalidPosition)
             return null;
 
         var lines = text.Split(Environment.NewLine);
@@ -270,6 +271,19 @@ public class Sheet
 
         // Try to set the cell's value to the new value
         return cell.SetValue(value);
+    }
+
+    /// <summary>
+    /// Clears all cell values in the range
+    /// </summary>
+    /// <param name="range"></param>
+    public void ClearCells(IEnumerable<IReadOnlyRange> ranges)
+    {
+        var cells = this.GetCellsInRanges(ranges);
+        foreach (var cell in cells)
+        {
+            cell.Clear();
+        }
     }
 
     public string GetRangeAsDelimitedText(IReadOnlyRange inputRange, char tabDelimiter = '\t')

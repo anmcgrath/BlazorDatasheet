@@ -393,6 +393,16 @@ public partial class Datasheet : IHandleEvent
             return true;
         }
 
+        if ((e.Key == "Delete" || e.Key == "Backspace") && !_editorManager.IsEditing)
+        {
+            if (!_selectionManager.Selections.Any())
+                return true;
+            var cmd = new ClearCellsCommand(_selectionManager.Selections.Select(x => x.Range));
+            _commandManager.ExecuteCommand(cmd);
+            StateHasChanged();
+            return true;
+        }
+
         // Single characters or numbers or symbols
         if ((e.Key.Length == 1) && !_editorManager.IsEditing && IsDataSheetActive)
         {
@@ -408,7 +418,7 @@ public partial class Datasheet : IHandleEvent
             if (char.IsLetterOrDigit(c) || char.IsPunctuation(c) || char.IsSymbol(c) || char.IsSeparator(c))
             {
                 var inputPosition = _selectionManager.GetPositionOfFirstCell();
-                if (inputPosition == null)
+                if (inputPosition.InvalidPosition)
                     return false;
                 BeginEdit(inputPosition.Row, inputPosition.Col, softEdit: true, EditEntryMode.Key, e.Key);
                 StateHasChanged();
@@ -426,7 +436,7 @@ public partial class Datasheet : IHandleEvent
             return;
 
         var posnToInput = _selectionManager.GetPositionOfFirstCell();
-        if (posnToInput == null)
+        if (posnToInput.InvalidPosition)
             return;
 
         var range = Sheet.InsertDelimitedText(arg.Text, posnToInput);
