@@ -18,7 +18,7 @@
     width: 6.6rem;
     max-width: 6.6rem;
     min-width: 6.6rem;
-    height: 1.5rem;
+    height: calc(1.5rem + 4px);
     overflow: hidden;
     text-overflow: ellipsis;
     border: 1px solid lightgray;
@@ -47,6 +47,7 @@
 .column-head[b-zet5yo0qob] {
     background: #fafafa !important;
     border-bottom: 1px solid lightgray;
+    padding: 2px 2px 2px 3px;
 }
 
 .column-active[b-zet5yo0qob] {
@@ -130,9 +131,10 @@ table[b-zet5yo0qob] {
 }
 /* _content/BlazorDatasheet/Render/DefaultComponents/SelectRenderer.razor.rz.scp.css */
 .dropper[b-fldepj96gs] {
-    background: #fafafa;
+    background: none;
+    color:#999999;
     margin: 0;
-    padding: 0 4px 0 4px;
+    padding: 0 2px 0 2px;
     border: none;
 }
 
