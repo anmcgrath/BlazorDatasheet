@@ -39,12 +39,12 @@ public class CellTests
     {
         var cell = new Cell("init");
         Assert.AreEqual("init", cell.GetValue());
-        cell.SetValue(100);
+        cell.TrySetValue(100);
         Assert.AreEqual(100, cell.GetValue<int>());
         Assert.AreEqual("100", cell.GetValue<string>());
         Assert.AreEqual(100, cell.GetValue());
 
-        cell.SetValue(false);
+        cell.TrySetValue(false);
         Assert.AreEqual(false, cell.GetValue<bool>());
     }
 
@@ -54,11 +54,11 @@ public class CellTests
         var testObject = new TestObject() { Value = "init" };
         var cell = new Cell(testObject, nameof(testObject.Value));
         Assert.AreEqual("init", cell.GetValue());
-        cell.SetValue(100);
+        cell.TrySetValue(100);
         Assert.AreEqual(100, cell.GetValue<int>());
         Assert.AreEqual("100", cell.GetValue<string>());
         Assert.AreEqual("100", cell.GetValue());
-        cell.SetValue(false);
+        cell.TrySetValue(false);
         Assert.AreEqual(false, cell.GetValue<bool>());
         Assert.AreEqual(false.ToString(), testObject.Value);
     }
@@ -68,7 +68,7 @@ public class CellTests
     {
         var testObject = new TestObject2() { Value = 100 };
         var cell = new Cell(testObject, nameof(testObject.Value));
-        var hasSetValue = cell.SetValue("abc");
+        var hasSetValue = cell.TrySetValue("abc");
         Assert.IsFalse(hasSetValue);
         Assert.AreEqual(100, testObject.Value);
     }

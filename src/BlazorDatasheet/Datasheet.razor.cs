@@ -450,7 +450,7 @@ public partial class Datasheet : IHandleEvent
     private void HandleCellRendererRequestChangeValue(ChangeCellRequestEventArgs args)
     {
         var cell = Sheet?.GetCell(args.Row, args.Col);
-        var setValue = cell.SetValue(args.NewValue);
+        var setValue = cell.TrySetValue(args.NewValue);
         if (!setValue)
             return;
         emitCellsChanged(cell, args.Row, args.Col);

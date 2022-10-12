@@ -39,7 +39,7 @@
 
     @if (Sheet != null)
     {
-        <Virtualize Items="@Sheet?.Rows" Context="sheetRow">
+        <Virtualize Items="@Sheet?.RowCollection" TItem="Row" Context="sheetRow">
             <ItemContent>
                 <tr @key="sheetRow.RowNumber">
                     @if (ShowRowHeaders)

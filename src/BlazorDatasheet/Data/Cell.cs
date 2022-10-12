@@ -23,14 +23,39 @@ public class Cell : IReadOnlyCell, IWriteableCell
     /// <summary>
     /// The Data Validators to apply to a cell after editing
     /// </summary>
-    public List<IDataValidator> Validators { get; set; }
+    public List<IDataValidator> Validators { get; private set; }
 
     /// <summary>
     /// Whether the Cell is in a Valid state after Data Validation
     /// </summary>
-    public bool IsValid { get; set; } = true;
+    public bool IsValid { get; internal set; } = true;
+
+    internal List<string> ConditionalFormattingIds { get; set; }
 
     /// <summary>
+    /// The property name that determines the cell's value from the Data, if the Data is an object
+    /// </summary>
+    public string? Key { get; set; }
+
+    /// <summary>
+    /// The cell's data, which may be a primitive or a complex object.
+    /// </summary>
+    public object? Data { get; private set; }
+
+    /// <summary>
+    /// Represents an individual datasheet cell
+    /// </summary>
+    /// <param name="data">The cell's data, which may be an object or a primitive</param>
+    /// <param name="key">If data is an object, the key is an optional parameter that specifies the value property name</param>
+    public Cell(object? data = null, string key = null)
+    {
+        Data = data;
+        ConditionalFormattingIds = new List<string>();
+        Key = key;
+        Validators = new List<IDataValidator>();
+    }
+    
+        /// <summary>
     /// Returns the Cell's Value and attempts to cast it to T
     /// </summary>
     /// <typeparam name="T"></typeparam>
@@ -97,23 +122,25 @@ public class Cell : IReadOnlyCell, IWriteableCell
     }
 
     /// <summary>
-    /// Attempts to set the cell's value and returns whether it was successful
+    /// Attempts to set the cell's value and returns whether it was successful.
+    /// When this method is called directly, no events are raised by the sheet.
     /// </summary>
     /// <param name="val"></param>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    public bool SetValue<T>(T val)
+    public bool TrySetValue<T>(T val)
     {
-        return SetValue(val, typeof(T));
+        return TrySetValue(val, typeof(T));
     }
 
     /// <summary>
     /// Attempts to the Cell's value and returns whether it was successful
+    /// When this method is called directly, no events are raised by the sheet.
     /// </summary>
     /// <param name="val"></param>
     /// <param name="type"></param>
     /// <returns>Whether setting the value was successful</returns>
-    public bool SetValue(object? val, Type type)
+    public bool TrySetValue(object? val, Type type)
     {
         try
         {
@@ -164,31 +191,10 @@ public class Cell : IReadOnlyCell, IWriteableCell
         }
     }
 
-    internal List<string> ConditionalFormattingIds { get; set; }
-
     /// <summary>
-    /// The property name that determines the cell's value from the Data
+    /// Associate the cell with a conditional format.
     /// </summary>
-    public string? Key { get; set; }
-
-    /// <summary>
-    /// The cell's data, which may be a primitive or a complex object.
-    /// </summary>
-    public object? Data { get; private set; }
-
-    /// <summary>
-    /// Represents an individual datasheet cell
-    /// </summary>
-    /// <param name="data">The cell's data, which may be an object or a primitive</param>
-    /// <param name="key">If data is an object, the key is an optional parameter that specifies the value property name</param>
-    public Cell(object? data = null, string key = null)
-    {
-        Data = data;
-        ConditionalFormattingIds = new List<string>();
-        Key = key;
-        Validators = new List<IDataValidator>();
-    }
-
+    /// <param name="key"></param>
     internal void AddConditionalFormat(string key)
     {
         ConditionalFormattingIds.Add(key);

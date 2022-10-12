@@ -65,12 +65,12 @@ public class DefaultValidators
         var validator = new SourceValidator(items, false);
         var cell = new Cell("Item1");
         Assert.IsTrue(validator.IsValid(cell.GetValue()));
-        cell.SetValue("Item3");
+        cell.TrySetValue("Item3");
         Assert.IsFalse(validator.IsValid(cell.GetValue()));
-        cell.SetValue("Item2");
+        cell.TrySetValue("Item2");
         Assert.IsTrue(validator.IsValid(cell.GetValue()));
 
-        cell.SetValue(100);
+        cell.TrySetValue(100);
         Assert.IsFalse(validator.IsValid(cell.GetValue()));
     }
 
@@ -81,7 +81,7 @@ public class DefaultValidators
         var validator = new SourceValidator(items, false);
         var cell = new Cell("a");
         Assert.IsFalse(validator.IsValid(cell.GetValue()));
-        cell.SetValue(100.2);
+        cell.TrySetValue(100.2);
         Assert.IsTrue(validator.IsValid(cell.GetValue()));
     }
 }

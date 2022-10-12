@@ -8,14 +8,48 @@ namespace BlazorDatasheet.Data;
 
 public class Sheet
 {
-    public int NumRows { get; private set; }
+    /// <summary>
+    /// The number of rows in the sheet
+    /// </summary>
+    public int NumRows => _rows.Count;
+
+    /// <summary>
+    /// The number of columns in the sheet
+    /// </summary>
     public int NumCols { get; private set; }
-    public List<Row> Rows { get; set; }
+
+    /// <summary>
+    /// The sheet's rows. Private so that the sheet manages when rows are added or subtracted.
+    /// </summary>
+    private readonly List<Row> _rows = new();
+
+    /// <summary>
+    /// The sheet's rows
+    /// </summary>
+    public IReadOnlyList<Row> Rows => _rows;
+
+    /// <summary>
+    /// Using blazor virtualisation requires an ICollection to render so here it is.
+    /// </summary>
+    internal ICollection<Row> RowCollection => _rows;
+
+    /// <summary>
+    /// The sheet's headings
+    /// </summary>
     public List<Heading> ColumnHeadings { get; private set; }
+
+    /// <summary>
+    /// The sheet's row headings
+    /// </summary>
     public List<Heading> RowHeadings { get; private set; }
-    private readonly Dictionary<string, ConditionalFormat> _conditionalFormats;
+
+    private readonly Dictionary<string, ConditionalFormat> _conditionalFormats = new();
     internal IReadOnlyDictionary<string, ConditionalFormat> ConditionalFormats => _conditionalFormats;
-    private readonly Dictionary<string, Cell[]> _cellsInConditionalFormatCache;
+    private readonly Dictionary<string, Cell[]> _cellsInConditionalFormatCache = new();
+
+    /// <summary>
+    /// The range associated with the sheet. Note that a range includes the end and start row/columns and starts at (0,0)
+    /// </summary>
     public Range Range => new Range(0, NumRows - 1, 0, NumCols - 1);
 
     private readonly Dictionary<string, Type> _editorTypes;
@@ -23,23 +57,24 @@ public class Sheet
     private Dictionary<string, Type> _renderComponentTypes { get; set; }
     public IReadOnlyDictionary<string, Type> RenderComponentTypes => _renderComponentTypes;
 
-    public Sheet(int numRows, int numCols, Cell[,] cells)
+    private Sheet()
     {
-        NumRows = numRows;
-        NumCols = numCols;
-        _conditionalFormats = new Dictionary<string, ConditionalFormat>();
         ColumnHeadings = new List<Heading>();
         RowHeadings = new List<Heading>();
-        _conditionalFormats = new Dictionary<string, ConditionalFormat>();
-        _cellsInConditionalFormatCache = new Dictionary<string, Cell[]>();
+
         _editorTypes = new Dictionary<string, Type>();
         _renderComponentTypes = new Dictionary<string, Type>();
 
         registerDefaultEditors();
         registerDefaultRenderers();
+    }
 
-        Rows = new List<Row>();
-        for (var i = 0; i < NumRows; i++)
+    [Obsolete]
+    public Sheet(int numRows, int numCols, Cell[,] cells) : this()
+    {
+        NumCols = numCols;
+
+        for (var i = 0; i < numRows; i++)
         {
             var rowCells = new List<Cell>();
             for (int j = 0; j < NumCols; j++)
@@ -49,8 +84,38 @@ public class Sheet
             }
 
             var newRow = new Row(rowCells, i);
-            Rows.Add(newRow);
+            _rows.Add(newRow);
         }
+    }
+
+    public Sheet(int numRows, int numCols) : this()
+    {
+        NumCols = numCols;
+        for (int i = 0; i < numRows; i++)
+        {
+            var cells = new List<Cell>();
+            for (int j = 0; j < numCols; j++)
+            {
+                cells.Add(new Cell());
+            }
+
+            var row = new Row(cells, i);
+            _rows.Add(row);
+        }
+    }
+
+    public void AddRow()
+    {
+    }
+
+    /// <summary>
+    /// Adds a row at an index specified.
+    /// </summary>
+    /// <param name="rowIndex">The index that the new row will be at. If the index is outside of the range of rows,
+    /// a row will be either inserted at the start or appended at the end</param>
+    public void AddRowAt(int rowIndex)
+    {
+        int addIndex;
     }
 
     private void registerDefaultEditors()
@@ -112,6 +177,7 @@ public class Sheet
             return null;
         if (col < 0 || col >= NumCols)
             return null;
+
         return Rows[row].Cells[col];
     }
 
@@ -270,7 +336,7 @@ public class Sheet
         cell.IsValid = isValid;
 
         // Try to set the cell's value to the new value
-        return cell.SetValue(value);
+        return cell.TrySetValue(value);
     }
 
     public string GetRangeAsDelimitedText(IReadOnlyRange inputRange, char tabDelimiter = '\t')

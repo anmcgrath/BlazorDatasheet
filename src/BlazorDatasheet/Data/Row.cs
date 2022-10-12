@@ -1,3 +1,5 @@
+using BlazorDatasheet.Interfaces;
+
 namespace BlazorDatasheet.Data;
 
 public class Row

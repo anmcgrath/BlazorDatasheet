@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using BlazorDatasheet.Data;
 using NUnit.Framework;
@@ -16,7 +17,6 @@ public class RangeTests
         Assert.AreEqual(11, range.ColStart);
         Assert.AreEqual(11, range.ColEnd);
     }
-
     [Test]
     public void Create_Range_With_Specific_Starts_And_Ends_Creates_With_Correct_Row_Cols()
     {

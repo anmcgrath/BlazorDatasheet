@@ -22,13 +22,22 @@
 
 </Datasheet>
 
+<Datasheet
+    IsFixedHeight="true"
+    Sheet="Sheet2">
+</Datasheet>
+
 @code{
 
     private Sheet Sheet;
+    private Sheet Sheet2;
     private List<Person> People { get; set; }
 
     protected override void OnInitialized()
     {
+        Sheet2 = new Sheet(100, 5);
+
+
         People = new List<Person>();
 
         var random = new Random();
