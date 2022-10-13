@@ -377,10 +377,10 @@ public partial class Datasheet : IHandleEvent
             CopySelectionToClipboard();
             return true;
         }
-        
+
         if (e.Key.ToLower() == "y" && (e.CtrlKey || e.MetaKey) && !_editorManager.IsEditing)
         {
-            if(_commandManager.Redo())
+            if (_commandManager.Redo())
                 StateHasChanged();
             return true;
         }
@@ -388,7 +388,7 @@ public partial class Datasheet : IHandleEvent
 
         if (e.Key.ToLower() == "z" && (e.CtrlKey || e.MetaKey) && !_editorManager.IsEditing)
         {
-            if(_commandManager.Undo())
+            if (_commandManager.Undo())
                 StateHasChanged();
             return true;
         }
@@ -397,7 +397,8 @@ public partial class Datasheet : IHandleEvent
         {
             if (!_selectionManager.Selections.Any())
                 return true;
-            var cmd = new ClearCellsCommand(_selectionManager.Selections.Select(x => x.Range));
+            var rangesToClear = _selectionManager.Selections.Select(x => x.Range);
+            var cmd = new ClearCellsCommand(rangesToClear);
             _commandManager.ExecuteCommand(cmd);
             StateHasChanged();
             return true;

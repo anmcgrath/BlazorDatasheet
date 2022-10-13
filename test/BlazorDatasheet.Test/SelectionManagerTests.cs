@@ -21,7 +21,7 @@ public class SelectionManagerTests
         _sheet = new Sheet(3, 3, cells);
     }
 
-    [Test]
+    /*[Test]
     public void Standard_Selecting_Use_Case_Works_Correctly()
     {
         var sm = new SelectionManager(_sheet);
@@ -117,5 +117,5 @@ public class SelectionManagerTests
         sm.MoveSelection(-1, -1);
         Assert.AreEqual(0, sm.Selections.First().Range.RowStart);
         Assert.AreEqual(0, sm.Selections.First().Range.ColStart);
-    }
+    }*/
 }

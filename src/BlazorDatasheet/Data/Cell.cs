@@ -56,8 +56,8 @@ public class Cell : IReadOnlyCell, IWriteableCell
         Key = key;
         Validators = new List<IDataValidator>();
     }
-    
-        /// <summary>
+
+    /// <summary>
     /// Returns the Cell's Value and attempts to cast it to T
     /// </summary>
     /// <typeparam name="T"></typeparam>
@@ -142,7 +142,7 @@ public class Cell : IReadOnlyCell, IWriteableCell
             return;
         var type = currentVal.GetType();
         var defaultVal = type.GetDefault();
-        this.SetValue(defaultVal);
+        this.TrySetValue(defaultVal);
     }
 
     /// <summary>

@@ -43,10 +43,10 @@ public class Sheet
     /// The sheet's row headings
     /// </summary>
     public List<Heading> RowHeadings { get; private set; }
-    private readonly Dictionary<string, ConditionalFormat> _conditionalFormats;
-    internal IReadOnlyDictionary<string, ConditionalFormat> ConditionalFormats => _conditionalFormats;
-    private readonly Dictionary<string, Cell[]> _cellsInConditionalFormatCache;
+
     public Range Range => new Range(0, NumRows - 1, 0, NumCols - 1);
+
+    public ConditionalFormatManager ConditionalFormatting { get; } = new();
 
     private readonly Dictionary<string, Type> _editorTypes;
     public IReadOnlyDictionary<string, Type> EditorTypes => _editorTypes;
@@ -57,8 +57,6 @@ public class Sheet
     {
         ColumnHeadings = new List<Heading>();
         RowHeadings = new List<Heading>();
-        _conditionalFormats = new Dictionary<string, ConditionalFormat>();
-        _cellsInConditionalFormatCache = new Dictionary<string, Cell[]>();
         _editorTypes = new Dictionary<string, Type>();
         _renderComponentTypes = new Dictionary<string, Type>();
 
@@ -130,41 +128,19 @@ public class Sheet
         RegisterRenderer<BoolRenderer>("boolean");
     }
 
-    private Cell[] GetCellsInRange(Range range)
+    private Cell[] GetCellsInRange(IRange range)
     {
+        var fixedRange = range.GetIntersection(this.Range);
         List<Cell> cells = new List<Cell>();
-        foreach (var posn in range)
+        foreach (var position in fixedRange)
         {
-            cells.Add(GetCell(row, col));
-        }
-        
-        var rowStart = Math.Max(0, range.RowStart);
-        var rowEnd = Math.Min(NumRows - 1, range.RowEnd);
-        var colStart = Math.Max(0, range.ColStart);
-        var colEnd = Math.Min(NumCols - 1, range.ColEnd);
-        for (int row = rowStart; row <= rowEnd; row++)
-        {
-            for (int col = colStart; col <= colEnd; col++)
-            {
-                if (range.Contains(row, col))
-                    cells.Add(GetCell(row, col));
-            }
+            cells.Add(this.GetCell(position.Row, position.Col));
         }
 
         return cells.ToArray();
     }
 
-    /// <summary>
-    /// Adds a conditional formatting object to the sheet. Must be applied by setting ApplyConditionalFormat
-    /// </summary>
-    /// <param name="key">A unique ID identifying the conditional format</param>
-    /// <param name="conditionalFormat"></param>
-    public void RegisterConditionalFormat(string key, ConditionalFormat conditionalFormat)
-    {
-        this._conditionalFormats.Add(key, conditionalFormat);
-    }
-
-    public Cell[] GetCellsInRanges(List<Range> ranges)
+    public Cell[] GetCellsInRanges(IEnumerable<IRange> ranges)
     {
         var cells = new List<Cell>();
         foreach (var range in ranges)
@@ -185,63 +161,6 @@ public class Sheet
     public Cell GetCell(CellPosition position)
     {
         return GetCell(position.Row, position.Col);
-    }
-
-
-    /// <summary>
-    /// Applies the conditional format specified by "key" to all cells in a range, if the conditional formatting exists.
-    /// </summary>
-    /// <param name="key"></param>
-    /// <param name="range"></param>
-    public void ApplyConditionalFormat(string key, Range range)
-    {
-        if (!ConditionalFormats.ContainsKey(key))
-            return;
-        var cf = ConditionalFormats[key];
-        cf.AddRange(range);
-        var cells = this.GetCellsInRanges(cf.Ranges.ToList());
-        foreach (var cell in cells)
-        {
-            cell.AddConditionalFormat(key);
-        }
-
-        _cellsInConditionalFormatCache[key] = GetCellsInRanges(cf.Ranges.ToList());
-    }
-
-    /// <summary>
-    /// Applies the conditional format specified by "key" to a particular cell. If setting the format to a number of cells,
-    /// prefer setting via a range.
-    /// </summary>
-    /// <param name="key"></param>
-    /// <param name="range"></param>
-    public void ApplyConditionalFormat(string key, int row, int col)
-    {
-        ApplyConditionalFormat(key, new Range(row, col));
-    }
-
-    /// <summary>
-    /// Determines the "final" formatting of a cell by applying any conditional formatting
-    /// </summary>
-    /// <param name="cell"></param>
-    /// <returns></returns>
-    internal Format GetFormat(Cell cell)
-    {
-        if (!cell.ConditionalFormattingIds.Any())
-            return cell.Formatting;
-
-        var format = cell.Formatting.Clone();
-        foreach (var id in cell.ConditionalFormattingIds)
-        {
-            if (!ConditionalFormats.ContainsKey(id))
-                continue;
-            var conditionalFormat = this.ConditionalFormats[id];
-            var cellsWithConditionalFormat = _cellsInConditionalFormatCache[id];
-            var apply = conditionalFormat.Rule.Invoke(cell, cellsWithConditionalFormat);
-            if (apply)
-                format.Merge(conditionalFormat.FormatFunc.Invoke(cell, cellsWithConditionalFormat));
-        }
-
-        return format;
     }
 
     /// <summary>
@@ -278,7 +197,7 @@ public class Sheet
     /// <param name="inputPosition">The position where the insertion starts</param>
     internal Range InsertDelimitedText(string text, CellPosition inputPosition)
     {
-        if (inputPosition == null)
+        if (inputPosition.InvalidPosition)
             return null;
 
         var lines = text.Split(Environment.NewLine);
@@ -340,19 +259,38 @@ public class Sheet
         return cell.TrySetValue(value);
     }
 
-    public string GetRangeAsDelimitedText(IReadOnlyRange inputRange, char tabDelimiter = '\t')
+    /// <summary>
+    /// Clears all cell values in the range
+    /// </summary>
+    /// <param name="range"></param>
+    public void ClearCells(IEnumerable<IRange> ranges)
+    {
+        var cells = this.GetCellsInRanges(ranges);
+        foreach (var cell in cells)
+        {
+            cell.Clear();
+        }
+    }
+
+    public string GetRangeAsDelimitedText(IRange inputRange, char tabDelimiter = '\t')
     {
         if (inputRange == null)
             return string.Empty;
 
-        var range = inputRange.CopyOrdered();
-        range.Constrain(this.Range);
+        var range = inputRange
+                    .GetIntersection(this.Range)
+                    .CopyOrdered();
 
         var strBuilder = new StringBuilder();
 
-        for (int row = range.RowStart; row <= range.RowEnd; row++)
+        var r0 = range.StartPosition.Row;
+        var r1 = range.EndPosition.Row;
+        var c0 = range.StartPosition.Col;
+        var c1 = range.EndPosition.Col;
+
+        for (int row = r0; row <= r1; row++)
         {
-            for (int col = range.ColStart; col <= range.ColEnd; col++)
+            for (int col = c0; col <= c1; col++)
             {
                 var cell = this.GetCell(row, col);
                 var value = cell.GetValue();
@@ -360,11 +298,11 @@ public class Sheet
                     strBuilder.Append("");
                 else
                     strBuilder.Append(value.ToString());
-                if (col != range.ColEnd)
+                if (col != c1)
                     strBuilder.Append(tabDelimiter);
             }
 
-            if (row != range.RowEnd)
+            if (row != r1)
                 strBuilder.AppendLine();
         }
 

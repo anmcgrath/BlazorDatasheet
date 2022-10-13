@@ -9,7 +9,7 @@ public class ConditionalFormat
     public Func<Cell, Cell[], Format> FormatFunc { get; private set; }
     public bool StopIfTrue { get; set; } = true;
     private readonly List<Range> _ranges;
-    public IReadOnlyCollection<Range> Ranges => _ranges;
+    public IReadOnlyCollection<IRange> Ranges => _ranges;
 
     /// <summary>
     /// Creates a conditional format that can be applied to cells in the sheet.

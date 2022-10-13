@@ -75,13 +75,13 @@ public class SelectionManager
         switch (ActiveSelection?.Mode)
         {
             case SelectionMode.Cell:
-                ActiveSelection?.ExtendTo(row, col);
+                ActiveSelection?.Range.ExtendTo(row, col);
                 break;
             case SelectionMode.Column:
-                ActiveSelection?.ExtendTo(_sheet.NumRows, col);
+                ActiveSelection?.Range.ExtendTo(_sheet.NumRows, col);
                 break;
             case SelectionMode.Row:
-                ActiveSelection?.ExtendTo(row, _sheet.NumCols);
+                ActiveSelection?.Range.ExtendTo(row, _sheet.NumCols);
                 break;
         }
 
@@ -122,7 +122,7 @@ public class SelectionManager
         ActiveSelection = _selections.Last();
         _selections.RemoveAt(_selections.Count - 1);
 
-        ActiveSelection.ExtendTo(row, col);
+        ActiveSelection.Range.ExtendTo(row, col);
         this.emitSelectionChange();
         this.emitSelectingChange();
     }
@@ -131,11 +131,12 @@ public class SelectionManager
     /// Clears any selections or active selections and sets to the range specified
     /// </summary>
     /// <param name="range"></param>
-    public void SetSelection(Range range)
+    public void SetSelection(IRange range)
     {
         this.CancelSelecting();
         var selectionRange = range.Copy();
-        selectionRange.Constrain(_sheet.Range);
+        if (range is IFixedSizeRange)
+            selectionRange = range.GetIntersection(_sheet.Range);
         this._selections.Clear();
         this._selections.Add(new Selection(selectionRange, _sheet, SelectionMode.Cell));
         emitSelectionChange();
@@ -158,14 +159,20 @@ public class SelectionManager
     /// <param name="dCol"></param>
     public void MoveSelection(int dRow, int dCol)
     {
-        if(IsSelecting)
+        if (IsSelecting)
             return;
 
         var recentSel = Selections.LastOrDefault();
         if (recentSel == null)
             return;
-        
-        SetSelection(recentSel.Range.RowStart+dRow, recentSel.Range.ColStart + dCol);
+
+        var newRange = recentSel
+                       .Range
+                       .Collapse();
+
+        newRange.Move(dRow, dCol, _sheet.Range);
+
+        SetSelection(newRange.StartPosition.Row, newRange.StartPosition.Col);
     }
 
     /// <summary>
@@ -227,7 +234,7 @@ public class SelectionManager
             return new CellPosition(-1, -1);
 
         var selection = _selections.First();
-        return new CellPosition(selection.Range.RowStart, selection.Range.ColStart);
+        return selection.Range.StartPosition;
     }
 
     /// <summary>

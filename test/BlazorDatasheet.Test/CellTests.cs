@@ -72,6 +72,13 @@ public class CellTests
         Assert.IsFalse(hasSetValue);
         Assert.AreEqual(100, testObject.Value);
     }
+
+    [Test]
+    public void Empty_Cell_Has_Null_Value()
+    {
+        var cell = new Cell();
+        Assert.IsNull(cell.GetValue());
+    }
 }
 
 internal class TestObject

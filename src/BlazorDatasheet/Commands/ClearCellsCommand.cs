@@ -6,16 +6,16 @@ namespace BlazorDatasheet.Commands;
 
 public class ClearCellsCommand : IUndoableCommand
 {
-    private readonly IEnumerable<IReadOnlyRange> _ranges;
+    private readonly IEnumerable<IRange> _ranges;
     private readonly List<CellClearCommandOccurence> _clearCommandOccurences;
 
-    public ClearCellsCommand(IEnumerable<IReadOnlyRange> ranges)
+    public ClearCellsCommand(IEnumerable<IRange> ranges)
     {
         _ranges = ranges;
         _clearCommandOccurences = new List<CellClearCommandOccurence>();
     }
 
-    public ClearCellsCommand(Range range) : this(new List<IReadOnlyRange>() { range })
+    public ClearCellsCommand(Range range) : this(new List<IRange>() { range })
     {
     }
 
@@ -23,14 +23,17 @@ public class ClearCellsCommand : IUndoableCommand
     {
         foreach (var range in _ranges)
         {
-            foreach (var posn in range)
+            var rangeInSheet = range
+                .GetIntersection(sheet.Range);
+            foreach (var cellPosition in rangeInSheet)
             {
-                if (posn.InvalidPosition)
+                if (cellPosition.InvalidPosition)
                     continue;
-                var cell = sheet.GetCell(posn);
+                var cell = sheet.GetCell(cellPosition);
                 var oldValue = cell.GetValue();
 
-                _clearCommandOccurences.Add(new CellClearCommandOccurence(posn.Row, posn.Col, oldValue));
+                _clearCommandOccurences.Add(
+                    new CellClearCommandOccurence(cellPosition.Row, cellPosition.Col, oldValue));
             }
         }
 
