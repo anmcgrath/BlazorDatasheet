@@ -64,7 +64,12 @@
             BackgroundColor = "#d9fce2"
         });
 
-        var ageCf = new ConditionalFormat((cell, cells) => (cell.GetValue<int>()) > 85, (cell, cells) => new Format() { ForegroundColor = "#ff0000" });
+        var ageCf = 
+            new ConditionalFormat(
+                (cell, cells) =>
+                {
+                    return (cell.GetValue<int?>()) > 85;
+                }, (cell, cells) => new Format() { ForegroundColor = "#ff0000" });
 
         var builder1 = new ObjectEditorBuilder<Person>(People, GridDirection.PropertiesAcrossColumns);
         builder1.AutogenerateProperties(false)

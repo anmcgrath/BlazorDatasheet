@@ -1,5 +1,7 @@
+using System.Reflection;
 using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Render;
+using BlazorDatasheet.Util;
 
 namespace BlazorDatasheet.Data;
 
@@ -131,6 +133,16 @@ public class Cell : IReadOnlyCell, IWriteableCell
     public bool TrySetValue<T>(T val)
     {
         return TrySetValue(val, typeof(T));
+    }
+
+    public void Clear()
+    {
+        var currentVal = GetValue();
+        if (currentVal == null)
+            return;
+        var type = currentVal.GetType();
+        var defaultVal = type.GetDefault();
+        this.SetValue(defaultVal);
     }
 
     /// <summary>

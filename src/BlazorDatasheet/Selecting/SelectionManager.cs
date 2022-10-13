@@ -221,10 +221,10 @@ public class SelectionManager
     /// Returns the position of the first cell that was selected in list of selections
     /// </summary>
     /// <returns></returns>
-    public CellPosition? GetPositionOfFirstCell()
+    public CellPosition GetPositionOfFirstCell()
     {
         if (!_selections.Any())
-            return null;
+            return new CellPosition(-1, -1);
 
         var selection = _selections.First();
         return new CellPosition(selection.Range.RowStart, selection.Range.ColStart);

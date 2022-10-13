@@ -144,16 +144,23 @@ public class Range : IEnumerable<CellPosition>, IRange
 
     public IEnumerator<CellPosition> GetEnumerator()
     {
-        var r0 = StartPosition.Row;
-        var r1 = EndPosition.Row;
-        var c0 = StartPosition.Col;
-        var c1 = EndPosition.Col;
-        for (var row = r0; row <= r1; row++)
+        var rowDir = RowEnd >= RowStart ? 1 : -1;
+        var colDir = ColEnd >= ColStart ? 1 : -1;
+        var row = RowStart;
+        var col = ColStart;
+
+        for (var i = 0; i < Height; i++)
         {
-            for (var col = ColStart; col <= ColEnd; col++)
+            // Reset column at start of each row
+            col = ColStart;
+
+            for (var j = 0; j < Width; j++)
             {
                 yield return new CellPosition(row, col);
+                col += colDir;
             }
+
+            row += rowDir;
         }
     }
 
