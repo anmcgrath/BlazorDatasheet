@@ -200,9 +200,9 @@ public class SelectionManager
     /// <returns></returns>
     public bool IsColumnActive(int col)
     {
-        if (IsSelecting && ActiveSelection.Range.ContainsCol(col))
+        if (IsSelecting && ActiveSelection.Range.SpansCol(col))
             return true;
-        return Selections.Any(x => x.Range.ContainsCol(col));
+        return Selections.Any(x => x.Range.SpansCol(col));
     }
 
     /// <summary>
@@ -212,9 +212,9 @@ public class SelectionManager
     /// <returns></returns>
     public bool IsRowActive(int row)
     {
-        if (IsSelecting && ActiveSelection.Range.ContainsRow(row))
+        if (IsSelecting && ActiveSelection.Range.SpansRow(row))
             return true;
-        return Selections.Any(x => x.Range.ContainsRow(row));
+        return Selections.Any(x => x.Range.SpansRow(row));
     }
 
     /// <summary>

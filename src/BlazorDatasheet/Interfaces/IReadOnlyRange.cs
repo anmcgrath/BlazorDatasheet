@@ -7,8 +7,6 @@ public interface IReadOnlyRange : IEnumerable<CellPosition>
 {
     int RowStart { get; set; }
     int ColStart { get; set; }
-    int RowEnd { get; set; }
-    int ColEnd { get; set; }
     int Height { get; }
     int Width { get; }
     int Area { get; }
@@ -26,14 +24,14 @@ public interface IReadOnlyRange : IEnumerable<CellPosition>
     /// </summary>
     /// <param name="col"></param>
     /// <returns></returns>
-    bool ContainsCol(int col);
+    bool SpansCol(int col);
 
     /// <summary>
     /// Determines whether the row is spanned by the range
     /// </summary>
     /// <param name="row"></param>
     /// <returns></returns>
-    bool ContainsRow(int row);
+    bool SpansRow(int row);
 
     /// <summary>
     /// Updates the size of the range so that it is no larger than a range starting from (0, 0) with height/width =  (rows, cols)

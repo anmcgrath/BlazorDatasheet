@@ -1,5 +1,6 @@
 using System.Text;
 using BlazorDatasheet.Edit.DefaultComponents;
+using BlazorDatasheet.Formats;
 using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Render.DefaultComponents;
@@ -42,15 +43,14 @@ public class Sheet
     /// The sheet's row headings
     /// </summary>
     public List<Heading> RowHeadings { get; private set; }
-
-    private readonly Dictionary<string, ConditionalFormat> _conditionalFormats = new();
-    internal IReadOnlyDictionary<string, ConditionalFormat> ConditionalFormats => _conditionalFormats;
-    private readonly Dictionary<string, Cell[]> _cellsInConditionalFormatCache = new();
-
     /// <summary>
     /// The range associated with the sheet. Note that a range includes the end and start row/columns and starts at (0,0)
     /// </summary>
     public Range Range => new Range(0, NumRows - 1, 0, NumCols - 1);
+    /// <summary>
+    /// Apply and manage conditional formats
+    /// </summary>
+    public ConditionalFormatManager ConditionalFormatting { get; private set; } = new();
 
     private readonly Dictionary<string, Type> _editorTypes;
     public IReadOnlyDictionary<string, Type> EditorTypes => _editorTypes;
@@ -79,7 +79,6 @@ public class Sheet
             var rowCells = new List<Cell>();
             for (int j = 0; j < NumCols; j++)
             {
-                // Perform conditional formatting when setting these cells initially
                 rowCells.Add(cells[i, j]);
             }
 
@@ -137,6 +136,11 @@ public class Sheet
     private Cell[] GetCellsInRange(Range range)
     {
         List<Cell> cells = new List<Cell>();
+        foreach (var posn in range)
+        {
+            cells.Add(GetCell(row, col));
+        }
+        
         var rowStart = Math.Max(0, range.RowStart);
         var rowEnd = Math.Min(NumRows - 1, range.RowEnd);
         var colStart = Math.Max(0, range.ColStart);
@@ -151,16 +155,6 @@ public class Sheet
         }
 
         return cells.ToArray();
-    }
-
-    /// <summary>
-    /// Adds a conditional formatting object to the sheet. Must be applied by setting ApplyConditionalFormat
-    /// </summary>
-    /// <param name="key">A unique ID identifying the conditional format</param>
-    /// <param name="conditionalFormat"></param>
-    public void RegisterConditionalFormat(string key, ConditionalFormat conditionalFormat)
-    {
-        this._conditionalFormats.Add(key, conditionalFormat);
     }
 
     public Cell[] GetCellsInRanges(List<Range> ranges)
@@ -184,63 +178,6 @@ public class Sheet
     public Cell GetCell(CellPosition position)
     {
         return GetCell(position.Row, position.Col);
-    }
-
-
-    /// <summary>
-    /// Applies the conditional format specified by "key" to all cells in a range, if the conditional formatting exists.
-    /// </summary>
-    /// <param name="key"></param>
-    /// <param name="range"></param>
-    public void ApplyConditionalFormat(string key, Range range)
-    {
-        if (!ConditionalFormats.ContainsKey(key))
-            return;
-        var cf = ConditionalFormats[key];
-        cf.AddRange(range);
-        var cells = this.GetCellsInRanges(cf.Ranges.ToList());
-        foreach (var cell in cells)
-        {
-            cell.AddConditionalFormat(key);
-        }
-
-        _cellsInConditionalFormatCache[key] = GetCellsInRanges(cf.Ranges.ToList());
-    }
-
-    /// <summary>
-    /// Applies the conditional format specified by "key" to a particular cell. If setting the format to a number of cells,
-    /// prefer setting via a range.
-    /// </summary>
-    /// <param name="key"></param>
-    /// <param name="range"></param>
-    public void ApplyConditionalFormat(string key, int row, int col)
-    {
-        ApplyConditionalFormat(key, new Range(row, col));
-    }
-
-    /// <summary>
-    /// Determines the "final" formatting of a cell by applying any conditional formatting
-    /// </summary>
-    /// <param name="cell"></param>
-    /// <returns></returns>
-    internal Format GetFormat(Cell cell)
-    {
-        if (!cell.ConditionalFormattingIds.Any())
-            return cell.Formatting;
-
-        var format = cell.Formatting.Clone();
-        foreach (var id in cell.ConditionalFormattingIds)
-        {
-            if (!ConditionalFormats.ContainsKey(id))
-                continue;
-            var conditionalFormat = this.ConditionalFormats[id];
-            var cellsWithConditionalFormat = _cellsInConditionalFormatCache[id];
-            var apply = conditionalFormat.Rule.Invoke(cell, cellsWithConditionalFormat);
-            if (apply)
-                format.Merge(conditionalFormat.FormatFunc.Invoke(cell, cellsWithConditionalFormat));
-        }
-
-        return format;
     }
 
     /// <summary>

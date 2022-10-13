@@ -58,7 +58,7 @@
                         var col = j;
 
                         var cell = Sheet.GetCell(row, col);
-                        var format = Sheet.GetFormat(cell);
+                        var format = Sheet.ConditionalFormatting.GetFormat(cell);
 
                         <td
                             class="sheet-cell"

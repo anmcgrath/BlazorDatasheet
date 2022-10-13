@@ -122,10 +122,10 @@ public class RangeTests
     public void Contains_Row_Col_Returns_Correctly()
     {
         var range = new Range(1, 5, 7, 12);
-        Assert.True(range.ContainsRow(3));
-        Assert.False(range.ContainsRow(8));
-        Assert.True(range.ContainsCol(8));
-        Assert.False(range.ContainsCol(3));
+        Assert.True(range.SpansRow(3));
+        Assert.False(range.SpansRow(8));
+        Assert.True(range.SpansCol(8));
+        Assert.False(range.SpansCol(3));
     }
 
     [Test]

@@ -3,14 +3,15 @@ using BlazorDatasheet.Interfaces;
 
 namespace BlazorDatasheet.Data;
 
-public class Range : IEnumerable<CellPosition>, IReadOnlyRange
+/// <summary>
+/// A range that has a specific start/stop position
+/// </summary>
+public class Range : IEnumerable<CellPosition>, IRange
 {
-    public int RowStart { get; set; }
-    public int ColStart { get; set; }
-    public int RowEnd { get; set; }
-    public int ColEnd { get; set; }
-    public int Height => RowEnd - RowStart + 1;
-    public int Width => ColEnd - ColStart + 1;
+    public CellPosition StartPosition { get; private set; }
+    public CellPosition EndPosition { get; private set; }
+    public int Height => Math.Abs(EndPosition.Row - StartPosition.Row) + 1;
+    public int Width => Math.Abs(EndPosition.Row - StartPosition.Row) + 1;
     public int Area => Height * Width;
 
     /// <summary>
@@ -31,10 +32,8 @@ public class Range : IEnumerable<CellPosition>, IReadOnlyRange
     /// <param name="colEnd"></param>
     public Range(int rowStart, int rowEnd, int colStart, int colEnd)
     {
-        RowStart = rowStart;
-        RowEnd = rowEnd;
-        ColStart = colStart;
-        ColEnd = colEnd;
+        StartPosition = new CellPosition(rowStart, colStart);
+        EndPosition = new CellPosition(rowEnd, colEnd);
     }
 
     /// <summary>
@@ -45,10 +44,10 @@ public class Range : IEnumerable<CellPosition>, IReadOnlyRange
     /// <returns></returns>
     public bool Contains(int row, int col)
     {
-        var r0 = Math.Min(RowStart, RowEnd);
-        var r1 = Math.Max(RowStart, RowEnd);
-        var c0 = Math.Min(ColStart, ColEnd);
-        var c1 = Math.Max(ColStart, ColEnd);
+        var r0 = Math.Min(StartPosition.Row, EndPosition.Row);
+        var r1 = Math.Max(StartPosition.Row, EndPosition.Row);
+        var c0 = Math.Min(StartPosition.Col, EndPosition.Col);
+        var c1 = Math.Max(StartPosition.Col, EndPosition.Col);
         return row >= r0 &&
                row <= r1 &&
                col >= c0 &&
@@ -60,10 +59,10 @@ public class Range : IEnumerable<CellPosition>, IReadOnlyRange
     /// </summary>
     /// <param name="col"></param>
     /// <returns></returns>
-    public bool ContainsCol(int col)
+    public bool SpansCol(int col)
     {
-        var c0 = Math.Min(ColStart, ColEnd);
-        var c1 = Math.Max(ColStart, ColEnd);
+        var c0 = Math.Min(StartPosition.Col, EndPosition.Col);
+        var c1 = Math.Max(StartPosition.Col, EndPosition.Col);
         return col >= c0 && col <= c1;
     }
 
@@ -72,10 +71,10 @@ public class Range : IEnumerable<CellPosition>, IReadOnlyRange
     /// </summary>
     /// <param name="row"></param>
     /// <returns></returns>
-    public bool ContainsRow(int row)
+    public bool SpansRow(int row)
     {
-        var r0 = Math.Min(RowStart, RowEnd);
-        var r1 = Math.Max(RowStart, RowEnd);
+        var r0 = Math.Min(StartPosition.Row, EndPosition.Row);
+        var r1 = Math.Max(StartPosition.Row, EndPosition.Row);
         return row >= r0 &&
                row <= r1;
     }
@@ -92,15 +91,15 @@ public class Range : IEnumerable<CellPosition>, IReadOnlyRange
 
     public void Constrain(Range range)
     {
-        Constrain(range.RowStart, range.RowEnd, range.ColStart, range.ColEnd);
+        Constrain(range.StartPosition.Row, range.EndPosition.Row, range.StartPosition.Col, range.EndPosition.Col);
     }
 
     public void Constrain(int otherRowStart, int otherRowEnd, int otherColStart, int otherColEnd)
     {
-        RowStart = Constrain(otherRowStart, otherRowEnd, this.RowStart);
-        RowEnd = Constrain(otherRowStart, otherRowEnd, this.RowEnd);
-        ColStart = Constrain(otherColStart, otherColEnd, this.ColStart);
-        ColEnd = Constrain(otherColStart, otherColEnd, this.ColEnd);
+        var r0 = Constrain(otherRowStart, otherRowEnd, this.StartPosition.Row);
+        var r1 = Constrain(otherRowStart, otherRowEnd, this.EndPosition.Row);
+        var c0 = Constrain(otherColStart, otherColEnd, this.StartPosition.Col);
+        var c1 = Constrain(otherColStart, otherColEnd, this.StartPosition.Col);
     }
 
     /// <summary>
@@ -123,9 +122,9 @@ public class Range : IEnumerable<CellPosition>, IReadOnlyRange
     /// Returns a new copy of the range.
     /// </summary>
     /// <returns></returns>
-    public Range Copy()
+    public IRange Copy()
     {
-        return new Range(RowStart, RowEnd, ColStart, ColEnd);
+        return new Range(StartPosition.Row, EndPosition.Row, StartPosition.Col, EndPosition.Col);
     }
 
     /// <summary>
@@ -133,19 +132,23 @@ public class Range : IEnumerable<CellPosition>, IReadOnlyRange
     /// at the top left (minimum points).
     /// </summary>
     /// <returns></returns>
-    public Range CopyOrdered()
+    public IRange CopyOrdered()
     {
         return new Range(
-            Math.Min(RowStart, RowEnd),
-            Math.Max(RowStart, RowEnd),
-            Math.Min(ColStart, ColEnd),
-            Math.Max(ColStart, ColEnd)
+            Math.Min(StartPosition.Row, EndPosition.Row),
+            Math.Max(StartPosition.Row, EndPosition.Row),
+            Math.Min(StartPosition.Col, EndPosition.Col),
+            Math.Max(StartPosition.Col, EndPosition.Col)
         );
     }
 
     public IEnumerator<CellPosition> GetEnumerator()
     {
-        for (var row = RowStart; row <= RowEnd; row++)
+        var r0 = StartPosition.Row;
+        var r1 = EndPosition.Row;
+        var c0 = StartPosition.Col;
+        var c1 = EndPosition.Col;
+        for (var row = r0; row <= r1; row++)
         {
             for (var col = ColStart; col <= ColEnd; col++)
             {
