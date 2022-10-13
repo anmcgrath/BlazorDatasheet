@@ -15,10 +15,10 @@ public class Sheet
     public List<Heading> RowHeadings { get; private set; }
     private readonly Dictionary<string, ConditionalFormat> _conditionalFormats;
     internal IReadOnlyDictionary<string, ConditionalFormat> ConditionalFormats => _conditionalFormats;
-    private readonly Dictionary<string, Cell[]> _cellsInConditionalFormatCache;
+    private Dictionary<string, Cell[]> _cellsInConditionalFormatCache = new Dictionary<string, Cell[]>();
     public Range Range => new Range(0, NumRows - 1, 0, NumCols - 1);
-
-    private readonly Dictionary<string, Type> _editorTypes;
+    
+    private Dictionary<string, Type> _editorTypes;
     public IReadOnlyDictionary<string, Type> EditorTypes => _editorTypes;
     private Dictionary<string, Type> _renderComponentTypes { get; set; }
     public IReadOnlyDictionary<string, Type> RenderComponentTypes => _renderComponentTypes;
@@ -31,7 +31,6 @@ public class Sheet
         ColumnHeadings = new List<Heading>();
         RowHeadings = new List<Heading>();
         _conditionalFormats = new Dictionary<string, ConditionalFormat>();
-        _cellsInConditionalFormatCache = new Dictionary<string, Cell[]>();
         _editorTypes = new Dictionary<string, Type>();
         _renderComponentTypes = new Dictionary<string, Type>();
 
@@ -69,8 +68,9 @@ public class Sheet
         RegisterRenderer<BoolRenderer>("boolean");
     }
 
-    private Cell[] GetCellsInRange(Range range)
+    private Cell[] GetCellsInRange(IReadOnlyRange inputRange)
     {
+        var range = inputRange.CopyOrdered();
         List<Cell> cells = new List<Cell>();
         var rowStart = Math.Max(0, range.RowStart);
         var rowEnd = Math.Min(NumRows - 1, range.RowEnd);
@@ -98,7 +98,7 @@ public class Sheet
         this._conditionalFormats.Add(key, conditionalFormat);
     }
 
-    public Cell[] GetCellsInRanges(List<Range> ranges)
+    public Cell[] GetCellsInRanges(IEnumerable<IReadOnlyRange> ranges)
     {
         var cells = new List<Cell>();
         foreach (var range in ranges)
@@ -157,7 +157,7 @@ public class Sheet
     /// </summary>
     /// <param name="cell"></param>
     /// <returns></returns>
-    internal Format GetFormat(Cell cell)
+    public Format GetFormat(Cell cell)
     {
         if (!cell.ConditionalFormattingIds.Any())
             return cell.Formatting;
@@ -211,7 +211,7 @@ public class Sheet
     /// <param name="inputPosition">The position where the insertion starts</param>
     internal Range InsertDelimitedText(string text, CellPosition inputPosition)
     {
-        if (inputPosition == null)
+        if (inputPosition.InvalidPosition)
             return null;
 
         var lines = text.Split(Environment.NewLine);
@@ -246,7 +246,7 @@ public class Sheet
         return new Range(inputPosition.Row, endRow, inputPosition.Col, maxEndCol);
     }
 
-    internal bool TrySetCellValue(int row, int col, object value)
+    public bool TrySetCellValue(int row, int col, object value)
     {
         var cell = this.GetCell(row, col);
         if (cell == null)
@@ -255,7 +255,7 @@ public class Sheet
         return TrySetCellValue(cell, value);
     }
 
-    internal bool TrySetCellValue(Cell cell, object value)
+    public bool TrySetCellValue(Cell cell, object value)
     {
         // Perform data validation
         var isValid = true;
@@ -271,6 +271,19 @@ public class Sheet
 
         // Try to set the cell's value to the new value
         return cell.SetValue(value);
+    }
+
+    /// <summary>
+    /// Clears all cell values in the range
+    /// </summary>
+    /// <param name="range"></param>
+    public void ClearCells(IEnumerable<IReadOnlyRange> ranges)
+    {
+        var cells = this.GetCellsInRanges(ranges);
+        foreach (var cell in cells)
+        {
+            cell.Clear();
+        }
     }
 
     public string GetRangeAsDelimitedText(IReadOnlyRange inputRange, char tabDelimiter = '\t')
