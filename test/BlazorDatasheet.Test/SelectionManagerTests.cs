@@ -12,13 +12,7 @@ public class SelectionManagerTests
     [SetUp]
     public void Setup()
     {
-        var cells = new Cell[3, 3]
-        {
-            { new Cell(""), new Cell(""), new Cell("") },
-            { new Cell(""), new Cell(""), new Cell("") },
-            { new Cell(""), new Cell(""), new Cell("") },
-        };
-        _sheet = new Sheet(3, 3, cells);
+        _sheet = new Sheet(3, 3);
     }
 
     [Test]
