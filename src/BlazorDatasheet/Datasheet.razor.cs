@@ -32,6 +32,8 @@ public partial class Datasheet : IHandleEvent
     [Parameter] public bool ShowRowHeaders { get; set; } = true;
     [Parameter] public bool ShowColumnHeaders { get; set; } = true;
 
+    private Dictionary<int, ElementReference> _columHeaders = new();
+
     private EditorManager _editorManager;
     private CommandManager _commandManager;
     private bool IsDataSheetActive { get; set; }

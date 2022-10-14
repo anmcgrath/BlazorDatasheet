@@ -10,7 +10,7 @@
 @using System.Reflection
 
 <table
-    style="@(IsFixedHeight ? $"max-height: {FixedHeightInPx}px; position:relative" : "")"
+    style="@(IsFixedHeight ? $"max-height: {FixedHeightInPx}px;" : "")"
     class="sheet @(IsDataSheetActive ? "active-sheet" : "inactive-sheet")"
     @onmouseover="() => IsMouseInsideSheet = true"
     @onmouseout="() => IsMouseInsideSheet = false">
@@ -78,7 +78,7 @@
                             else
                             {
                                 <div
-                                    class="@(IsDataSheetActive && (Sheet.Selection.IsSelected(row, col) || Sheet.Selection.IsSelectingCell(row, col)) ? "cell-selected" : "") cell"
+                                    class="cell"
                                     style="
                                         background: @format.BackgroundColor; 
                                         color: @(cell.IsValid ? format.ForegroundColor : "red");
@@ -100,5 +100,29 @@
                 </tr>
             </ItemContent>
         </Virtualize>
+
+        //TODO get rid of these hard-coded width and heights
+        <SelectionRenderer
+            ColumnWidth="105.6"
+            RowHeight="28"
+            Hidden="@(!IsDataSheetActive)"
+            HasColumnHeaders="ShowColumnHeaders"
+            HasRowHeaders="ShowRowHeaders"
+            SelectionRange="@Sheet.Selection.ActiveSelection?.Range.GetIntersection(Sheet.Range)"/>
+
+        @foreach (var selection in Sheet.Selection.Selections)
+        {
+            <SelectionRenderer
+                ColumnWidth="105.6"
+                RowHeight="28"
+                Hidden="@(!IsDataSheetActive)"
+                HasColumnHeaders="ShowColumnHeaders"
+                HasRowHeaders="ShowRowHeaders"
+                SelectionRange="selection?.Range.GetIntersection(Sheet.Range)"/>
+        }
     }
 </table>
+
+<style>
+
+</style>

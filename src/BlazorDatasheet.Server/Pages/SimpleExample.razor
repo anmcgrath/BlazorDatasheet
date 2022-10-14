@@ -7,16 +7,30 @@
 
 <p>Below is a 3 x 3 sheet with empty strings. There is no data validation or formatting and the default editors are used.</p>
 
-<Datasheet
-    Sheet="sheet"/>
+<!-- new table test -->
+
+<table style="max-height: 500px; overflow-y: scroll; overflow-x: hidden; display: inline-block">
+    <tr>
+        <th>One</th>
+        <th>Two</th>
+    </tr>
+    <Virtualize TItem="Row" Items="rows" Context="row">
+        <tr @key="@row.RowNumber">
+            <td>Test</td>
+            <td>Test</td>
+        </tr>
+    </Virtualize>
+</table>
 
 @code{
 
     private Sheet sheet;
+    private ICollection<Row> rows;
 
     protected override void OnInitialized()
     {
         sheet = new Sheet(numRows: 3, numCols: 3);
+        rows = sheet.Rows as ICollection<Row>;
     }
 
 }
