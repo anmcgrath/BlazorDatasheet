@@ -34,7 +34,6 @@ public partial class Datasheet : IHandleEvent
 
     private EditorManager _editorManager;
     private CommandManager _commandManager;
-    private SelectionManager _selectionManager;
     private bool IsDataSheetActive { get; set; }
     private bool IsMouseInsideSheet { get; set; }
     private ElementReference ActiveCellInputReference;
@@ -50,7 +49,6 @@ public partial class Datasheet : IHandleEvent
         _commandManager = new CommandManager(Sheet);
         _editorManager = new EditorManager(Sheet, _commandManager, NextTick);
         _editorManager.OnAcceptEdit += EditorManagerOnOnAcceptEdit;
-        _selectionManager = new SelectionManager(Sheet);
 
         base.OnInitialized();
     }
@@ -64,7 +62,6 @@ public partial class Datasheet : IHandleEvent
             _sheetLocal = Sheet;
             _commandManager?.SetSheet(Sheet);
             _commandManager?.ClearHistory();
-            _selectionManager?.SetSheet(Sheet);
         }
 
         base.OnParametersSet();
@@ -128,21 +125,21 @@ public partial class Datasheet : IHandleEvent
 
     private void HandleCellMouseUp(int row, int col, MouseEventArgs e)
     {
-        _selectionManager?.EndSelecting();
+        Sheet?.Selection?.EndSelecting();
     }
 
     private void HandleCellMouseDown(int row, int col, MouseEventArgs e)
     {
         if (e.ShiftKey)
-            _selectionManager?.ExtendSelection(row, col);
+            Sheet?.Selection?.ExtendSelection(row, col);
         else
         {
             if (!e.MetaKey && !e.CtrlKey)
             {
-                _selectionManager?.ClearSelections();
+                Sheet?.Selection?.ClearSelections();
             }
 
-            _selectionManager?.BeginSelectingCell(row, col);
+            Sheet?.Selection?.BeginSelectingCell(row, col);
         }
 
 
@@ -158,15 +155,15 @@ public partial class Datasheet : IHandleEvent
     private void HandleColumnHeaderMouseDown(int col, MouseEventArgs e)
     {
         if (e.ShiftKey)
-            _selectionManager?.ExtendSelection(Sheet.NumRows - 1, col);
+            Sheet?.Selection?.ExtendSelection(Sheet.NumRows - 1, col);
         else
         {
             if (!e.MetaKey && !e.CtrlKey)
             {
-                _selectionManager?.ClearSelections();
+                Sheet?.Selection?.ClearSelections();
             }
 
-            _selectionManager?.BeginSelectingCol(col);
+            Sheet?.Selection?.BeginSelectingCol(col);
         }
 
         if (AcceptEdit())
@@ -178,15 +175,15 @@ public partial class Datasheet : IHandleEvent
     private void HandleRowHeaderMouseDown(int row, MouseEventArgs e)
     {
         if (e.ShiftKey)
-            _selectionManager?.ExtendSelection(row, Sheet.NumCols - 1);
+            Sheet?.Selection?.ExtendSelection(row, Sheet.NumCols - 1);
         else
         {
             if (!e.MetaKey && !e.CtrlKey)
             {
-                _selectionManager?.ClearSelections();
+                Sheet?.Selection?.ClearSelections();
             }
 
-            _selectionManager?.BeginSelectingRow(row);
+            Sheet?.Selection?.BeginSelectingRow(row);
         }
 
         if (AcceptEdit())
@@ -206,7 +203,7 @@ public partial class Datasheet : IHandleEvent
         if (this.IsReadOnly)
             return;
 
-        _selectionManager.CancelSelecting();
+        Sheet.Selection.CancelSelecting();
 
         var cell = Sheet?.GetCell(row, col);
         if (cell == null || cell.IsReadOnly)
@@ -235,7 +232,7 @@ public partial class Datasheet : IHandleEvent
         if (!result)
             return false;
 
-        _selectionManager.MoveSelection(dRow, dCol);
+        Sheet.Selection.MoveSelection(dRow, dCol);
         StateHasChanged();
 
         return result;
@@ -297,7 +294,7 @@ public partial class Datasheet : IHandleEvent
 
     private void HandleCellMouseOver(int row, int col, MouseEventArgs e)
     {
-        _selectionManager.UpdateSelectingEndPosition(row, col);
+        Sheet.Selection.UpdateSelectingEndPosition(row, col);
         StateHasChanged();
     }
 
@@ -335,8 +332,8 @@ public partial class Datasheet : IHandleEvent
         {
             if (!_editorManager.IsEditing)
             {
-                _selectionManager?.EndSelecting();
-                _selectionManager?.MoveSelection(1, 0);
+                Sheet?.Selection?.EndSelecting();
+                Sheet?.Selection?.MoveSelection(1, 0);
                 StateHasChanged();
                 return true;
             }
@@ -353,7 +350,7 @@ public partial class Datasheet : IHandleEvent
             var direction = KeyUtil.GetKeyMovementDirection(e.Key);
             if (!_editorManager.IsEditing)
             {
-                _selectionManager?.MoveSelection(direction.Item1, direction.Item2);
+                Sheet?.Selection?.MoveSelection(direction.Item1, direction.Item2);
                 StateHasChanged();
                 return true;
             }
@@ -367,7 +364,7 @@ public partial class Datasheet : IHandleEvent
         if (e.Key == "Tab")
         {
             AcceptEdit();
-            _selectionManager.MoveSelection(0, 1);
+            Sheet.Selection.MoveSelection(0, 1);
             StateHasChanged();
             return true;
         }
@@ -395,9 +392,9 @@ public partial class Datasheet : IHandleEvent
 
         if ((e.Key == "Delete" || e.Key == "Backspace") && !_editorManager.IsEditing)
         {
-            if (!_selectionManager.Selections.Any())
+            if (!Sheet.Selection.Selections.Any())
                 return true;
-            var rangesToClear = _selectionManager.Selections.Select(x => x.Range);
+            var rangesToClear = Sheet.Selection.Selections.Select(x => x.Range);
             var cmd = new ClearCellsCommand(rangesToClear);
             _commandManager.ExecuteCommand(cmd);
             StateHasChanged();
@@ -408,7 +405,7 @@ public partial class Datasheet : IHandleEvent
         if ((e.Key.Length == 1) && !_editorManager.IsEditing && IsDataSheetActive)
         {
             // Don't input anything if we are currently selecting
-            if (_selectionManager.IsSelecting)
+            if (Sheet.Selection.IsSelecting)
                 return false;
 
             // Capture commands and return early (mainly for paste)
@@ -418,7 +415,7 @@ public partial class Datasheet : IHandleEvent
             char c = e.Key == "Space" ? ' ' : e.Key[0];
             if (char.IsLetterOrDigit(c) || char.IsPunctuation(c) || char.IsSymbol(c) || char.IsSeparator(c))
             {
-                var inputPosition = _selectionManager.GetPositionOfFirstCell();
+                var inputPosition = Sheet.Selection.GetPositionOfFirstCell();
                 if (inputPosition.InvalidPosition)
                     return false;
                 BeginEdit(inputPosition.Row, inputPosition.Col, softEdit: true, EditEntryMode.Key, e.Key);
@@ -436,7 +433,7 @@ public partial class Datasheet : IHandleEvent
         if (!IsDataSheetActive)
             return;
 
-        var posnToInput = _selectionManager.GetPositionOfFirstCell();
+        var posnToInput = Sheet.Selection.GetPositionOfFirstCell();
         if (posnToInput.InvalidPosition)
             return;
 
@@ -445,7 +442,7 @@ public partial class Datasheet : IHandleEvent
             return;
 
         this.emitCellsChanged(range);
-        _selectionManager.SetSelection(range);
+        Sheet.Selection.SetSelection(range);
         this.StateHasChanged();
     }
 
@@ -490,11 +487,11 @@ public partial class Datasheet : IHandleEvent
     /// </summary>
     public async Task CopySelectionToClipboard()
     {
-        if (_selectionManager.IsSelecting)
+        if (Sheet.Selection.IsSelecting)
             return;
 
         // Can only handle single selections for now
-        var selection = _selectionManager.GetSelections().FirstOrDefault();
+        var selection = Sheet.Selection.GetSelections().FirstOrDefault();
         if (selection == null)
             return;
         var text = Sheet.GetRangeAsDelimitedText(selection.Range);

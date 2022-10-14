@@ -4,6 +4,7 @@ using BlazorDatasheet.Formats;
 using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Render.DefaultComponents;
+using BlazorDatasheet.Selecting;
 
 namespace BlazorDatasheet.Data;
 
@@ -47,6 +48,7 @@ public class Sheet
     public Range? Range => new Range(0, NumRows - 1, 0, NumCols - 1);
 
     public ConditionalFormatManager ConditionalFormatting { get; }
+    public SelectionManager Selection { get; }
 
     private readonly Dictionary<string, Type> _editorTypes;
     public IReadOnlyDictionary<string, Type> EditorTypes => _editorTypes;
@@ -57,6 +59,7 @@ public class Sheet
     {
         ColumnHeadings = new List<Heading>();
         RowHeadings = new List<Heading>();
+        Selection = new SelectionManager(this);
         ConditionalFormatting = new ConditionalFormatManager(this);
         _editorTypes = new Dictionary<string, Type>();
         _renderComponentTypes = new Dictionary<string, Type>();

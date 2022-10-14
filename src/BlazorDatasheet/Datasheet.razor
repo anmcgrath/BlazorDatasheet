@@ -27,7 +27,7 @@
                 var col = i;
                 var colDefn = Sheet?.ColumnHeadings.Count > i ? Sheet?.ColumnHeadings[i] : null;
                 <td
-                    class="sheet-cell column-head @(IsDataSheetActive && _selectionManager.IsColumnActive(col) ? "column-active" : "")"
+                    class="sheet-cell column-head @(IsDataSheetActive && Sheet.Selection.IsColumnActive(col) ? "column-active" : "")"
                     @onmouseup="e => HandleCellMouseUp(-1, col, e)"
                     @onmouseover="e => HandleCellMouseOver(-1, col, e)"
                     @onmousedown="e => HandleColumnHeaderMouseDown(col, e)">
@@ -45,7 +45,7 @@
                     @if (ShowRowHeaders)
                     {
                         <td
-                            class="sheet-cell row-head @(IsDataSheetActive && _selectionManager.IsRowActive(sheetRow.RowNumber) ? "row-active" : "")"
+                            class="sheet-cell row-head @(IsDataSheetActive && Sheet.Selection.IsRowActive(sheetRow.RowNumber) ? "row-active" : "")"
                             @onmousedown="e => HandleRowHeaderMouseDown(sheetRow.RowNumber, e)"
                             @onmouseover="e => HandleCellMouseOver(sheetRow.RowNumber, -1, e)"
                             @onmouseup="e => HandleCellMouseUp(sheetRow.RowNumber, -1, e)">
@@ -78,7 +78,7 @@
                             else
                             {
                                 <div
-                                    class="@(IsDataSheetActive && _selectionManager.IsSelected(row, col) ? "cell-selected" : "") cell"
+                                    class="@(IsDataSheetActive && Sheet.Selection.IsSelected(row, col) ? "cell-selected" : "") cell"
                                     style="
                                         background: @format.BackgroundColor; 
                                         color: @(cell.IsValid ? format.ForegroundColor : "red");
