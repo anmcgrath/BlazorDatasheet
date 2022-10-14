@@ -154,7 +154,7 @@ public class ObjectEditorBuilder<T>
             foreach (var key in conditionalFormatKeys)
             {
                 if (_direction == GridDirection.PropertiesAcrossColumns)
-                    sheet.ConditionalFormatting.Apply(key, new Range(0, nRows, i, i));
+                    sheet.ConditionalFormatting.Apply(key, new ColumnRange(i, i));
                 else if (_direction == GridDirection.PropertiesAcrossRows)
                     sheet.ConditionalFormatting.Apply(key, new Range(i, i, 0, nCols));
             }
