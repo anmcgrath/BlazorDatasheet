@@ -34,13 +34,13 @@ public class ConditionalFormatTests
     [Test]
     public void Set_Cf_To_Whole_Sheet_Applies_Correctly()
     {
-        cm.RegisterConditionalFormat("g0", greaterThanEqualToZeroRedBgCf);
-        cm.ApplyConditionalFormat("g0");
+        cm.Register("g0", greaterThanEqualToZeroRedBgCf);
+        cm.Apply("g0");
         sheet.TrySetCellValue(0, 0, -1);
-        var format = cm.GetFormat(0, 0);
+        var format = cm.CalculateFormat(0, 0);
         Assert.IsNull(format);
         sheet.TrySetCellValue(0, 0, 1);
-        format = cm.GetFormat(0, 0);
+        format = cm.CalculateFormat(0, 0);
         Assert.AreEqual(format.BackgroundColor, redBgColor);
     }
 
@@ -52,9 +52,9 @@ public class ConditionalFormatTests
         // format registered
         var cf = new ConditionalFormat(
             c => true, (cell, cells) => new Format() { BackgroundColor = cells.Count().ToString() });
-        cm.RegisterConditionalFormat("cf", cf);
-        cm.ApplyConditionalFormat("cf");
-        var formatApplied = cm.GetFormat(0, 0);
+        cm.Register("cf", cf);
+        cm.Apply("cf");
+        var formatApplied = cm.CalculateFormat(0, 0);
         Assert.NotNull(formatApplied);
         Assert.AreEqual(sheet.Range.Area.ToString(), formatApplied!.BackgroundColor);
     }

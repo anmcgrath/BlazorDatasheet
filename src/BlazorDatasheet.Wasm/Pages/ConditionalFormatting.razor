@@ -49,10 +49,10 @@
             });
 
         sheet = new Sheet(4, 1, cells);
-        sheet.ConditionalFormatting.RegisterConditionalFormat("tick", formatTick);
-        sheet.ConditionalFormatting.RegisterConditionalFormat("numbers", coloredNums);
-        sheet.ConditionalFormatting.ApplyConditionalFormat("tick", sheet.Range);
-        sheet.ConditionalFormatting.ApplyConditionalFormat("numbers", sheet.Range);
+        sheet.ConditionalFormatting.Register("tick", formatTick);
+        sheet.ConditionalFormatting.Register("numbers", coloredNums);
+        sheet.ConditionalFormatting.Apply("tick", sheet.Range);
+        sheet.ConditionalFormatting.Apply("numbers", sheet.Range);
 
         base.OnInitialized();
     }

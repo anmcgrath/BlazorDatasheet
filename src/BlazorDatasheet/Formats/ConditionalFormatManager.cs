@@ -25,7 +25,7 @@ public class ConditionalFormatManager
     /// </summary>
     /// <param name="key">A unique ID identifying the conditional format</param>
     /// <param name="conditionalFormat"></param>
-    public void RegisterConditionalFormat(string key, ConditionalFormat conditionalFormat)
+    public void Register(string key, ConditionalFormat conditionalFormat)
     {
         this._conditionalFormats.Add(key, conditionalFormat);
     }
@@ -35,7 +35,7 @@ public class ConditionalFormatManager
     /// </summary>
     /// <param name="key"></param>
     /// <param name="range"></param>
-    public void ApplyConditionalFormat(string key, IRange range)
+    public void Apply(string key, IRange range)
     {
         if (!ConditionalFormats.ContainsKey(key))
             return;
@@ -49,9 +49,9 @@ public class ConditionalFormatManager
     /// Applies conditional format to the whole sheet
     /// </summary>
     /// <param name="key"></param>
-    public void ApplyConditionalFormat(string key)
+    public void Apply(string key)
     {
-        ApplyConditionalFormat(key, new AllRange());
+        Apply(key, new AllRange());
     }
 
     /// <summary>
@@ -60,9 +60,9 @@ public class ConditionalFormatManager
     /// </summary>
     /// <param name="key"></param>
     /// <param name="range"></param>
-    public void ApplyConditionalFormat(string key, int row, int col)
+    public void Apply(string key, int row, int col)
     {
-        ApplyConditionalFormat(key, new Range(row, col));
+        Apply(key, new Range(row, col));
     }
 
     private IEnumerable<Cell> getCellsWithConditionalFormatApplied(ConditionalFormat conditionalFormat)
@@ -77,11 +77,11 @@ public class ConditionalFormatManager
     }
 
     /// <summary>
-    /// Determines the "final" formatting of a cell by applying any conditional formatting
+    /// Determines the formatting after applying any conditional formats that exist for the cell
     /// </summary>
     /// <param name="cell"></param>
     /// <returns></returns>
-    public Format? GetFormat(int row, int col)
+    public Format? CalculateFormat(int row, int col)
     {
         // Somehow we need to inform the cells of the other cells that the conditional format
         // applies to.... gah!

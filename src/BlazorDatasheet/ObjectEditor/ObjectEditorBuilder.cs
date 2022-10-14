@@ -134,7 +134,7 @@ public class ObjectEditorBuilder<T>
 
         // Add conditional formats (1. Register conditional format 2. apply it to the correct cells)
         foreach (var cf in _conditionalFormats)
-            sheet.ConditionalFormatting.RegisterConditionalFormat(cf.Key, cf.Value);
+            sheet.ConditionalFormatting.Register(cf.Key, cf.Value);
 
         for (int i = 0; i < propertyDefinitions.Count; i++)
         {
@@ -154,9 +154,9 @@ public class ObjectEditorBuilder<T>
             foreach (var key in conditionalFormatKeys)
             {
                 if (_direction == GridDirection.PropertiesAcrossColumns)
-                    sheet.ConditionalFormatting.ApplyConditionalFormat(key, new Range(0, nRows, i, i));
+                    sheet.ConditionalFormatting.Apply(key, new Range(0, nRows, i, i));
                 else if (_direction == GridDirection.PropertiesAcrossRows)
-                    sheet.ConditionalFormatting.ApplyConditionalFormat(key, new Range(i, i, 0, nCols));
+                    sheet.ConditionalFormatting.Apply(key, new Range(i, i, 0, nCols));
             }
         }
 

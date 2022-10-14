@@ -58,7 +58,7 @@
                         var col = j;
 
                         var cell = Sheet.GetCell(row, col);
-                        var conditionalFormatting = Sheet.ConditionalFormatting.GetFormat(row, col);
+                        var conditionalFormatting = Sheet.ConditionalFormatting.CalculateFormat(row, col);
                         var format = cell.Formatting.Clone();
                         format.Merge(conditionalFormatting);
 
