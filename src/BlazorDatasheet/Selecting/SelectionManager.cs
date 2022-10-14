@@ -51,7 +51,7 @@ public class SelectionManager
 
     public void BeginSelectingCol(int col)
     {
-        var range = new Range(0, _sheet.NumRows - 1, col, col);
+        var range = new ColumnRange(col, col);
         ActiveSelection = new Selection(range, _sheet, SelectionMode.Column);
         emitSelectingChange();
     }

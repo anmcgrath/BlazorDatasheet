@@ -175,7 +175,7 @@ public class RangeTests
         Assert.AreEqual(small, intersection);
         Assert.AreEqual(intersection, intersection2);
     }
-    
+
     [Test]
     public void Get_Intersection_With_Backwards_Range_Inside_Is_Same_As_Range_Inside()
     {
@@ -203,5 +203,36 @@ public class RangeTests
         var r2 = new Range(1, 1, 2, 3);
         var i = r1.GetIntersection(r2);
         Assert.AreEqual(new Range(1, 1, 2, 2), i);
+    }
+
+    [Test]
+    public void Column_Creation_Contains_Col_Correctly()
+    {
+        var range = new ColumnRange(1, 3);
+        Assert.True(range.Contains(100, 1));
+        Assert.True(range.Contains(100, 2));
+        Assert.True(range.Contains(100, 3));
+    }
+    
+    [Test]
+    public void Column_Creation_Backwards_Contains_Col_Correctly()
+    {
+        var range = new ColumnRange(3, 1);
+        Assert.True(range.Contains(100, 1));
+        Assert.True(range.Contains(100, 2));
+        Assert.True(range.Contains(100, 3));
+    }
+
+    [Test]
+    public void Column_Intersection_With_Fixed_Range_Returns_Fixed_Range()
+    {
+        var fixedRange = new Range(0, 2, 0, 2);
+        var fixedRange2 = new Range(0, 2, -1, 11);
+        var colRange = new ColumnRange(0, 10);
+        var intersection = colRange.GetIntersection(fixedRange);
+        var intersection2 = colRange.GetIntersection(fixedRange2);
+        Assert.AreEqual(fixedRange, intersection);
+        Assert.AreEqual(0, intersection2.StartPosition.Col);
+        Assert.AreEqual(10, intersection2.EndPosition.Col);
     }
 }
