@@ -35,7 +35,7 @@ public class ConditionalFormatManager
     /// </summary>
     /// <param name="key"></param>
     /// <param name="range"></param>
-    public void Apply(string key, IRange range)
+    public void Apply(string key, IRange? range)
     {
         if (!ConditionalFormats.ContainsKey(key))
             return;

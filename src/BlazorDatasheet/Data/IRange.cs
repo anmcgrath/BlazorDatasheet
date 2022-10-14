@@ -41,7 +41,7 @@ public interface IRange
     /// <param name="dRow"></param>
     /// <param name="dCol"></param>
     /// <param name="rangeLimit">The limiting range that the range cannot move outside of</param>
-    public void Move(int dRow, int dCol, IFixedSizeRange rangeLimit = null);
+    public void Move(int dRow, int dCol, IFixedSizeRange? rangeLimit = null);
 
     /// <summary>
     /// Returns a copy of the range
@@ -54,7 +54,7 @@ public interface IRange
     /// </summary>
     /// <param name="range"></param>
     /// <returns></returns>
-    public IFixedSizeRange GetIntersection(IFixedSizeRange range);
+    public IFixedSizeRange GetIntersection(IFixedSizeRange? range);
 
     /// <summary>
     /// Extends this range TO the row and col specified
@@ -62,5 +62,5 @@ public interface IRange
     /// <param name="row">The row to extend the range to</param>
     /// <param name="col">The column to extend the range to</param>
     /// <param name="rangeLimit">The limiting range that the range cannot extend outside of</param>
-    public void ExtendTo(int row, int col, IFixedSizeRange rangeLimit = null);
+    public void ExtendTo(int row, int col, IFixedSizeRange? rangeLimit = null);
 }

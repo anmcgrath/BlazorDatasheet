@@ -12,18 +12,11 @@
 
 @code{
 
-    private Cell[,] cells = new Cell[3, 3]
-    {
-        { new Cell(""), new Cell(""), new Cell("") },
-        { new Cell(""), new Cell(""), new Cell("") },
-        { new Cell(""), new Cell(""), new Cell("") },
-    };
-
     private Sheet sheet;
 
     protected override void OnInitialized()
     {
-        sheet = new Sheet(numRows: 3, numCols: 3, cells: cells);
+        sheet = new Sheet(numRows: 3, numCols: 3);
     }
 
 }

@@ -27,12 +27,12 @@ public class ConditionalFormat
     public Func<Cell, Format>? FormatFunc { get; }
 
     public bool StopIfTrue { get; set; } = true;
-    private readonly List<IRange> _ranges;
-    public IReadOnlyCollection<IRange> Ranges => _ranges;
+    private readonly List<IRange?> _ranges;
+    public IReadOnlyCollection<IRange?> Ranges => _ranges;
 
     private ConditionalFormat()
     {
-        _ranges = new List<IRange>();
+        _ranges = new List<IRange?>();
     }
 
     /// <summary>
@@ -67,7 +67,7 @@ public class ConditionalFormat
     /// Apply the conditional format to the cells in the range specified
     /// </summary>
     /// <param name="range"></param>
-    public void AddRange(IRange range)
+    public void AddRange(IRange? range)
     {
         _ranges.Add(range);
     }

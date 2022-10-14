@@ -85,7 +85,7 @@ public class Range : IFixedSizeRange
         return new Range(StartPosition.Row, StartPosition.Col);
     }
 
-    public void Move(int dRow, int dCol, IFixedSizeRange limitingRange = null)
+    public void Move(int dRow, int dCol, IFixedSizeRange? limitingRange = null)
     {
         this.StartPosition = new CellPosition(StartPosition.Row + dRow, StartPosition.Col + dCol);
         this.EndPosition = new CellPosition(EndPosition.Row + dRow, EndPosition.Col + dCol);
@@ -97,7 +97,7 @@ public class Range : IFixedSizeRange
     /// Updates range so that it falls inside the range
     /// </summary>
     /// <param name="range"></param>
-    public void Constrain(IFixedSizeRange range)
+    public void Constrain(IFixedSizeRange? range)
     {
         Constrain(range.StartPosition.Row, range.EndPosition.Row, range.StartPosition.Col, range.EndPosition.Col);
     }
@@ -128,7 +128,7 @@ public class Range : IFixedSizeRange
         return new Range(StartPosition.Row, EndPosition.Row, StartPosition.Col, EndPosition.Col);
     }
 
-    public IFixedSizeRange GetIntersection(IFixedSizeRange range)
+    public IFixedSizeRange GetIntersection(IFixedSizeRange? range)
     {
         var thisRange = this.CopyOrdered();
         var otherRange = range.CopyOrdered();
@@ -152,7 +152,7 @@ public class Range : IFixedSizeRange
         }
     }
 
-    public void ExtendTo(int row, int col, IFixedSizeRange rangeLimit = null)
+    public void ExtendTo(int row, int col, IFixedSizeRange? rangeLimit = null)
     {
         EndPosition = new CellPosition(row, col);
         if (rangeLimit != null)

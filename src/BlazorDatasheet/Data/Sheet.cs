@@ -44,7 +44,7 @@ public class Sheet
     /// </summary>
     public List<Heading> RowHeadings { get; private set; }
 
-    public Range Range => new Range(0, NumRows - 1, 0, NumCols - 1);
+    public Range? Range => new Range(0, NumRows - 1, 0, NumCols - 1);
 
     public ConditionalFormatManager ConditionalFormatting { get; }
 

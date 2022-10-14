@@ -22,20 +22,20 @@ public class AllRange : IRange
         return new Range(0, 0);
     }
 
-    public void Move(int dRow, int dCol, IFixedSizeRange rangeLimit = null)
+    public void Move(int dRow, int dCol, IFixedSizeRange? rangeLimit = null)
     {
         // Can't move all range
     }
 
     public IRange Copy() => new AllRange();
 
-    public IFixedSizeRange GetIntersection(IFixedSizeRange range)
+    public IFixedSizeRange GetIntersection(IFixedSizeRange? range)
     {
         // Since this range is all-encompassing, return a copy of the fixed range
         return range.Copy() as IFixedSizeRange;
     }
 
-    public void ExtendTo(int row, int col, IFixedSizeRange rangeLimit = null)
+    public void ExtendTo(int row, int col, IFixedSizeRange? rangeLimit = null)
     {
         // Cannot extend all-encompassing range
     }

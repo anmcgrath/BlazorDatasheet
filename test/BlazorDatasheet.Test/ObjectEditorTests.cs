@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using BlazorDatasheet.ObjectEditor;
+using BlazorDatasheet.Render;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test;
@@ -31,6 +32,32 @@ public class ObjectEditorTests
 
         Assert.AreEqual(_items.Count, sheet.Rows.Count);
         Assert.AreEqual(propNames.Count(), sheet.ColumnHeadings.Count);
+    }
+
+    [Test]
+    public void Apply_Conditional_Format_On_Col_Based_Is_Applied_Correctly()
+    {
+        var builder = new ObjectEditorBuilder<TesterObject>(_items, GridDirection.PropertiesAcrossColumns);
+        // Create a conditional format that sets bg color to green when true
+        var cf = new ConditionalFormat(
+            c => c.GetValue<bool>() == true,
+            c => new Format() { BackgroundColor = "green" });
+
+        builder.AutogenerateProperties(false);
+        builder.WithConditionalFormat("cf", cf);
+        // Define first column as PropString
+        builder.WithProperty(x => x.PropString, pd => { });
+        //Define second column as PropBool
+        builder.WithProperty(x => x.PropBool, pd => { pd.UseConditionalFormat("cf"); });
+
+        var sheet = builder.Build().Sheet;
+        // Format is not applied to the first column which is not PropBool
+        Assert.Null(sheet.ConditionalFormatting.CalculateFormat(0, 0));
+
+        // Should be null the first time because the propBool = false
+        Assert.Null(sheet.ConditionalFormatting.CalculateFormat(0, 1));
+        sheet.TrySetCellValue(0, 1, false);
+        Assert.Null(sheet.ConditionalFormatting.CalculateFormat(0, 1));
     }
 }
 
