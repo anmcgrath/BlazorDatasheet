@@ -35,7 +35,7 @@ public class ObjectEditorTests
     }
 
     [Test]
-    public void Apply_Conditional_Format_On_Col_Based_Is_Applied_Correctly()
+    public void Apply_Conditional_Format_On_Span_Properties_Across_Cols_Is_Applied_Correctly()
     {
         var builder = new ObjectEditorBuilder<TesterObject>(_items, GridDirection.PropertiesAcrossColumns);
         // Create a conditional format that sets bg color to green when true
@@ -58,6 +58,32 @@ public class ObjectEditorTests
         Assert.Null(sheet.ConditionalFormatting.CalculateFormat(0, 1));
         sheet.TrySetCellValue(0, 1, false);
         Assert.Null(sheet.ConditionalFormatting.CalculateFormat(0, 1));
+    }
+
+    [Test]
+    public void Apply_Conditional_Format_On_Span_Properties_Across_Rows_Is_Applied_Correctly()
+    {
+        var builder = new ObjectEditorBuilder<TesterObject>(_items, GridDirection.PropertiesAcrossRows);
+        // Create a conditional format that sets bg color to green when true
+        var cf = new ConditionalFormat(
+            c => c.GetValue<bool>() == true,
+            c => new Format() { BackgroundColor = "green" });
+
+        builder.AutogenerateProperties(false);
+        builder.WithConditionalFormat("cf", cf);
+        // Define first row as PropString
+        builder.WithProperty(x => x.PropString, pd => { });
+        //Define second row as PropBool
+        builder.WithProperty(x => x.PropBool, pd => { pd.UseConditionalFormat("cf"); });
+
+        var sheet = builder.Build().Sheet;
+        // Format is not applied to the first row which is not PropBool
+        Assert.Null(sheet.ConditionalFormatting.CalculateFormat(0, 0));
+
+        // Should be null the first time because the propBool = false
+        Assert.Null(sheet.ConditionalFormatting.CalculateFormat(1, 0));
+        sheet.TrySetCellValue(0, 1, false);
+        Assert.Null(sheet.ConditionalFormatting.CalculateFormat(1, 0));
     }
 }
 

@@ -83,8 +83,6 @@ public class ConditionalFormatManager
     /// <returns></returns>
     public Format? CalculateFormat(int row, int col)
     {
-        // Somehow we need to inform the cells of the other cells that the conditional format
-        // applies to.... gah!
         if (!_appliedFormats.Any())
             return null;
 

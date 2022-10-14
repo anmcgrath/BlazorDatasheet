@@ -63,7 +63,7 @@ public class ColumnRange : IRange
 
     public IFixedSizeRange GetIntersection(IFixedSizeRange? range)
     {
-        var columnFixed = new Range(0, int.MaxValue, StartPosition.Col, ColumnEnd);
+        var columnFixed = new Range(-int.MaxValue, int.MaxValue, StartPosition.Col, ColumnEnd);
         return columnFixed.GetIntersection(range);
     }
 

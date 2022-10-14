@@ -44,7 +44,7 @@ public class SelectionManager
     /// <param name="row"></param>
     public void BeginSelectingRow(int row)
     {
-        var range = new Range(row, row, 0, _sheet.NumCols - 1);
+        var range = new RowRange(row, row);
         ActiveSelection = new Selection(range, _sheet, SelectionMode.Row);
         emitSelectingChange();
     }
