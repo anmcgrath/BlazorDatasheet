@@ -69,56 +69,50 @@
                             @onmouseover="e => HandleCellMouseOver(row, col, e)"
                             @ondblclick="e => HandleCellDoubleClick(row, col, e)"
                             @onmouseup="e => HandleCellMouseUp(row, col, e)">
-                            @if (_editorManager.IsEditing && _editorManager.CurrentEditPosition.Equals(row, col))
-                            {
-                                <DynamicComponent
-                                    Type="_editorManager.ActiveEditorType"
-                                    Parameters="@getEditorParameters()"
-                                    @ref="_editorManager.ActiveEditorContainer"/>
-                            }
-                            else
-                            {
-                                <div
-                                    class="cell"
-                                    style="
+                            <div
+                                class="cell"
+                                style="
                                         background: @format.BackgroundColor; 
                                         color: @(cell.IsValid ? format.ForegroundColor : "red");
                                         font-weight: @format.FontWeight;
                                         display: flex;
                                     ">
-                                    @if (format.Icon != null)
-                                    {
-                                        <div style="margin-right:2px; color: @format.IconColor">@format.Icon</div>
-                                    }
-                                    <DynamicComponent
-                                        Type="@getCellRendererType(cell.Type)"
-                                        Parameters="@getCellRendererParameters(cell, row, col)">
-                                    </DynamicComponent>
-                                </div>
-                            }
+                                @if (format.Icon != null)
+                                {
+                                    <div style="margin-right:2px; color: @format.IconColor">@format.Icon</div>
+                                }
+                                <DynamicComponent
+                                    Type="@getCellRendererType(cell.Type)"
+                                    Parameters="@getCellRendererParameters(cell, row, col)">
+                                </DynamicComponent>
+                            </div>
                         </td>
                     }
                 </tr>
             </ItemContent>
         </Virtualize>
 
+        @if (_editorManager.IsEditing)
+        {
+            <div style="position:absolute; @GetEditorSizeStyling()">
+                <DynamicComponent
+                    Type="_editorManager.ActiveEditorType"
+                    Parameters="@getEditorParameters()"
+                    @ref="_editorManager.ActiveEditorContainer"/>
+            </div>
+        }
+
         //TODO get rid of these hard-coded width and heights
         <SelectionRenderer
-            ColumnWidth="105.6"
-            RowHeight="28"
+            CellLayoutProvider="_cellLayoutProvider"
             Hidden="@(!IsDataSheetActive)"
-            HasColumnHeaders="ShowColumnHeaders"
-            HasRowHeaders="ShowRowHeaders"
             SelectionRange="@Sheet.Selection.ActiveSelection?.Range.GetIntersection(Sheet.Range)"/>
 
         @foreach (var selection in Sheet.Selection.Selections)
         {
             <SelectionRenderer
-                ColumnWidth="105.6"
-                RowHeight="28"
+                CellLayoutProvider="_cellLayoutProvider"
                 Hidden="@(!IsDataSheetActive)"
-                HasColumnHeaders="ShowColumnHeaders"
-                HasRowHeaders="ShowRowHeaders"
                 SelectionRange="selection?.Range.GetIntersection(Sheet.Range)"/>
         }
     }

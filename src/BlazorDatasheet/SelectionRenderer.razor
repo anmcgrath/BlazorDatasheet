@@ -1,5 +1,6 @@
 @using System.Text
 @using BlazorDatasheet.Data
+@using BlazorDatasheet.Render
 
 @if (SelectionRange != null && !Hidden)
 {
@@ -19,19 +20,10 @@
 @code {
 
     [Parameter, EditorRequired]
-    public double ColumnWidth { get; set; }
-
-    [Parameter, EditorRequired]
-    public double RowHeight { get; set; }
+    public CellLayoutProvider CellLayoutProvider { get; set; }
 
     [Parameter, EditorRequired]
     public IFixedSizeRange SelectionRange { get; set; }
-
-    [Parameter, EditorRequired]
-    public bool HasColumnHeaders { get; set; }
-
-    [Parameter, EditorRequired]
-    public bool HasRowHeaders { get; set; }
 
     [Parameter, EditorRequired]
     public bool Hidden { get; set; }
@@ -42,17 +34,17 @@
             return "";
         var strBuilder = new StringBuilder();
 
-        var extraCols = HasRowHeaders ? 1 : 0;
-        var extraRows = HasColumnHeaders ? 1 : 0;
+        var left = CellLayoutProvider.ComputeLeftPosition(SelectionRange.StartPosition);
+        var top = CellLayoutProvider.ComputeTopPosition(SelectionRange.StartPosition);
+        var w = CellLayoutProvider.ComputeWidth(SelectionRange);
+        var h = CellLayoutProvider.ComputeHeight(SelectionRange);
 
-        var left = (ColumnWidth) * (SelectionRange.StartPosition.Col + extraCols) - 1;
-        var top = (RowHeight) * (SelectionRange.StartPosition.Row + extraRows) - 1;
-
-        strBuilder.Append($"left:{left}px;");
-        strBuilder.Append($"top:{top}px;");
-        strBuilder.Append($"width:{SelectionRange.Width * ColumnWidth + 3}px;");
-        strBuilder.Append($"height:{SelectionRange.Height * RowHeight + 3}px;");
-        return strBuilder.ToString();
+        strBuilder.Append($"left:{left - 1}px;");
+        strBuilder.Append($"top:{top - 1}px;");
+        strBuilder.Append($"width:{w + 3}px;");
+        strBuilder.Append($"height:{h + 3}px;");
+        var style = strBuilder.ToString();
+        return style;
     }
 
 }

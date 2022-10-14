@@ -1,3 +1,4 @@
+using System.Text;
 using BlazorDatasheet.Commands;
 using BlazorDatasheet.Data;
 using BlazorDatasheet.Data.Events;
@@ -33,6 +34,7 @@ public partial class Datasheet : IHandleEvent
     [Parameter] public bool ShowColumnHeaders { get; set; } = true;
 
     private Dictionary<int, ElementReference> _columHeaders = new();
+    private CellLayoutProvider _cellLayoutProvider;
 
     private EditorManager _editorManager;
     private CommandManager _commandManager;
@@ -64,6 +66,7 @@ public partial class Datasheet : IHandleEvent
             _sheetLocal = Sheet;
             _commandManager?.SetSheet(Sheet);
             _commandManager?.ClearHistory();
+            _cellLayoutProvider = new CellLayoutProvider(Sheet, 105.6, 28, ShowColumnHeaders, ShowRowHeaders);
         }
 
         base.OnParametersSet();
@@ -498,5 +501,29 @@ public partial class Datasheet : IHandleEvent
             return;
         var text = Sheet.GetRangeAsDelimitedText(selection.Range);
         await _clipboard.WriteTextAsync(text);
+    }
+    
+    /// <summary>
+    /// Calculates the top/left/width/height styles of the editor container
+    /// </summary>
+    /// <returns></returns>
+    private string GetEditorSizeStyling()
+    {
+        var strBuilder = new StringBuilder();
+
+        var Position = _editorManager.CurrentEditPosition;
+        var editorRange = new Range(Position.Row, Position.Col);
+
+        var left = _cellLayoutProvider.ComputeLeftPosition(Position);
+        var top = _cellLayoutProvider.ComputeTopPosition(Position);
+        var w = _cellLayoutProvider.ComputeWidth(editorRange);
+        var h = _cellLayoutProvider.ComputeHeight(editorRange);
+
+        strBuilder.Append($"left:{left}px;");
+        strBuilder.Append($"top:{top}px;");
+        strBuilder.Append($"width:{w}px;");
+        strBuilder.Append($"height:{h}px;");
+        var style = strBuilder.ToString();
+        return style;
     }
 }

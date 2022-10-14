@@ -1,0 +1,55 @@
+@using BlazorDatasheet.Render
+@using BlazorDatasheet.Data
+@using System.Text
+@using Range = BlazorDatasheet.Data.Range
+
+<div class="editor-container" style="@GetSizeStyleString()">
+    <DynamicComponent
+        Type="EditorType"
+        Parameters="@EditorParameters"
+        @ref="EditorRef"/>
+</div>
+
+<style>
+    .editor-container{
+        position: absolute;
+    }
+</style>
+
+@code {
+
+    [Parameter, EditorRequired]
+    public Type? EditorType { get; set; }
+
+    [Parameter, EditorRequired]
+    public CellPosition Position { get; set; }
+
+    [Parameter, EditorRequired]
+    public Dictionary<string, object>? EditorParameters { get; set; }
+
+    [Parameter, EditorRequired]
+    public DynamicComponent? EditorRef { get; set; }
+
+    [Parameter, EditorRequired]
+    public CellLayoutProvider CellLayoutProvider { get; set; }
+
+    private string GetSizeStyleString()
+    {
+        var strBuilder = new StringBuilder();
+
+        var editorRange = new Range(Position.Row, Position.Col);
+
+        var left = CellLayoutProvider.ComputeLeftPosition(Position);
+        var top = CellLayoutProvider.ComputeTopPosition(Position);
+        var w = CellLayoutProvider.ComputeWidth(editorRange);
+        var h = CellLayoutProvider.ComputeHeight(editorRange);
+
+        strBuilder.Append($"left:{left}px;");
+        strBuilder.Append($"top:{top}px;");
+        strBuilder.Append($"width:{w}px;");
+        strBuilder.Append($"height:{h}px;");
+        var style = strBuilder.ToString();
+        return style;
+    }
+
+}

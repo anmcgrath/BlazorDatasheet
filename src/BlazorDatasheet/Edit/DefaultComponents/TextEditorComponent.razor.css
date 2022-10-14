@@ -1,6 +1,6 @@
 .text-input {
-    width: calc(100% - 4px);
-    border: 1px solid dodgerblue;
+    width: 100%;
+    border: none;
     padding: 2px;
     height: calc(100%);
     box-sizing: border-box;
