@@ -78,7 +78,7 @@
                             else
                             {
                                 <div
-                                    class="@(IsDataSheetActive && Sheet.Selection.IsSelected(row, col) ? "cell-selected" : "") cell"
+                                    class="@(IsDataSheetActive && (Sheet.Selection.IsSelected(row, col) || Sheet.Selection.IsSelectingCell(row, col)) ? "cell-selected" : "") cell"
                                     style="
                                         background: @format.BackgroundColor; 
                                         color: @(cell.IsValid ? format.ForegroundColor : "red");

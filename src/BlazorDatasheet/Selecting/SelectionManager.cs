@@ -200,6 +200,11 @@ public class SelectionManager
             .Any(x => x.Range.Contains(row, col));
     }
 
+    public bool IsSelectingCell(int row, int col)
+    {
+        return IsSelecting && ActiveSelection!.Range.Contains(row, col);
+    }
+
     /// <summary>
     /// Determines whether a column contains any cells that are selected or being selected
     /// </summary>

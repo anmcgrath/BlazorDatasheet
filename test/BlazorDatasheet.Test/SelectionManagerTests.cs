@@ -21,15 +21,19 @@ public class SelectionManagerTests
         _sheet = new Sheet(3, 3, cells);
     }
 
-    /*[Test]
+    [Test]
     public void Standard_Selecting_Use_Case_Works_Correctly()
     {
         var sm = new SelectionManager(_sheet);
 
         // Begin selecting at row = 1, col = 1
         sm.BeginSelectingCell(1, 1);
+
         Assert.NotNull(sm.ActiveSelection);
-        Assert.AreEqual(1, sm.ActiveSelection.Range.Area);
+
+        var activeSelectionRange = (IFixedSizeRange)sm.ActiveSelection!.Range;
+
+        Assert.AreEqual(1, activeSelectionRange.Area);
         Assert.IsEmpty(sm.Selections);
         Assert.AreEqual(SelectionMode.Cell, sm.ActiveSelection.Mode);
 
@@ -38,9 +42,12 @@ public class SelectionManagerTests
         // should still be selecting
         sm.UpdateSelectingEndPosition(2, 2);
         Assert.NotNull(sm.ActiveSelection);
-        Assert.AreEqual(4, sm.ActiveSelection.Range.Area);
-        Assert.AreEqual(2, sm.ActiveSelection.Range.RowEnd);
-        Assert.AreEqual(2, sm.ActiveSelection.Range.ColEnd);
+
+        activeSelectionRange = (IFixedSizeRange)sm.ActiveSelection!.Range;
+
+        Assert.AreEqual(4, activeSelectionRange.Area);
+        Assert.AreEqual(2, activeSelectionRange.EndPosition.Row);
+        Assert.AreEqual(2, activeSelectionRange.EndPosition.Col);
     }
 
     [Test]
@@ -52,10 +59,13 @@ public class SelectionManagerTests
 
         sm.MoveSelection(1, 1);
         Assert.Null(sm.ActiveSelection);
+
+        var firstSelection = (IFixedSizeRange)(sm.Selections.First().Range);
+
         Assert.AreEqual(1, sm.Selections.Count);
-        Assert.AreEqual(1, sm.Selections.First().Range.Area);
-        Assert.AreEqual(1, sm.Selections.First().Range.RowStart);
-        Assert.AreEqual(1, sm.Selections.First().Range.ColStart);
+        Assert.AreEqual(1, firstSelection.Area);
+        Assert.AreEqual(1, firstSelection.StartPosition.Row);
+        Assert.AreEqual(1, firstSelection.StartPosition.Col);
     }
 
     [Test]
@@ -64,14 +74,17 @@ public class SelectionManagerTests
         var sm = new SelectionManager(_sheet);
         sm.SetSelection(1, 1);
         Assert.AreEqual(1, sm.Selections.Count);
-        Assert.AreEqual(1, sm.Selections.First().Range.RowStart);
-        Assert.AreEqual(1, sm.Selections.First().Range.ColStart);
+
+        var firstSelection = (IFixedSizeRange)(sm.Selections.First().Range);
+        Assert.AreEqual(1, firstSelection.StartPosition.Row);
+        Assert.AreEqual(1, firstSelection.StartPosition.Col);
 
         sm.SetSelection(2, 2);
+        firstSelection = (IFixedSizeRange)(sm.Selections.First().Range);
         Assert.AreEqual(1, sm.Selections.Count);
-        Assert.AreEqual(2, sm.Selections.First().Range.RowStart);
-        Assert.AreEqual(2, sm.Selections.First().Range.ColStart);
-        Assert.AreEqual(1, sm.Selections.First().Range.Area);
+        Assert.AreEqual(2, firstSelection.StartPosition.Row);
+        Assert.AreEqual(2, firstSelection.StartPosition.Col);
+        Assert.AreEqual(1, firstSelection.Area);
     }
 
     [Test]
@@ -79,10 +92,16 @@ public class SelectionManagerTests
     {
         var sm = new SelectionManager(_sheet);
         sm.BeginSelectingCol(0);
-        Assert.AreEqual(1, sm.ActiveSelection.Range.Width);
-        Assert.AreEqual(3, sm.ActiveSelection.Range.Height);
+
+        var activeRange = sm.ActiveSelection!.Range;
+        var constrainedCol = activeRange.GetIntersection(_sheet.Range);
+
+
+        Assert.AreEqual(1, constrainedCol.Width);
+        Assert.AreEqual(3, constrainedCol.Height);
         sm.UpdateSelectingEndPosition(0, 1);
-        Assert.AreEqual(2, sm.ActiveSelection.Range.Width);
+        constrainedCol = activeRange.GetIntersection(_sheet.Range);
+        Assert.AreEqual(2, constrainedCol.Width);
     }
 
     [Test]
@@ -90,11 +109,13 @@ public class SelectionManagerTests
     {
         var sm = new SelectionManager(_sheet);
         sm.BeginSelectingRow(0);
-        Assert.AreEqual(1, sm.ActiveSelection.Range.Height);
-        Assert.AreEqual(3, sm.ActiveSelection.Range.Width);
+        var constrainedRow = sm.ActiveSelection!.Range.GetIntersection(_sheet.Range);
+        Assert.AreEqual(1, constrainedRow.Height);
+        Assert.AreEqual(3, constrainedRow.Width);
         sm.UpdateSelectingEndPosition(1, 0);
-        Assert.AreEqual(2, sm.ActiveSelection.Range.Height);
-        Assert.AreEqual(3, sm.ActiveSelection.Range.Width);
+        constrainedRow = sm.ActiveSelection!.Range.GetIntersection(_sheet.Range);
+        Assert.AreEqual(2, constrainedRow.Height);
+        Assert.AreEqual(3, constrainedRow.Width);
     }
 
     [Test]
@@ -104,8 +125,9 @@ public class SelectionManagerTests
         sm.SetSelection(0, 1);
         sm.ExtendSelection(2, 2);
         sm.EndSelecting();
-        Assert.AreEqual(3, sm.Selections.First().Range.Height);
-        Assert.AreEqual(2, sm.Selections.First().Range.Width);
+        var firstSelectionRange = (IFixedSizeRange)sm.Selections.First().Range;
+        Assert.AreEqual(3, firstSelectionRange.Height);
+        Assert.AreEqual(2, firstSelectionRange.Width);
         Assert.AreEqual(1, sm.Selections.Count);
     }
 
@@ -115,7 +137,8 @@ public class SelectionManagerTests
         var sm = new SelectionManager(_sheet);
         sm.SetSelection(0, 0);
         sm.MoveSelection(-1, -1);
-        Assert.AreEqual(0, sm.Selections.First().Range.RowStart);
-        Assert.AreEqual(0, sm.Selections.First().Range.ColStart);
-    }*/
+        var selectionRange = (IFixedSizeRange)sm.Selections.First().Range;
+        Assert.AreEqual(0, selectionRange.StartPosition.Row);
+        Assert.AreEqual(0, selectionRange.StartPosition.Col);
+    }
 }
