@@ -202,13 +202,4 @@ public class Cell : IReadOnlyCell, IWriteableCell
             return false;
         }
     }
-
-    /// <summary>
-    /// Associate the cell with a conditional format.
-    /// </summary>
-    /// <param name="key"></param>
-    internal void AddConditionalFormat(string key)
-    {
-        ConditionalFormattingIds.Add(key);
-    }
 }

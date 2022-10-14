@@ -33,8 +33,10 @@ public class Format
     /// the overriding format object.
     /// </summary>
     /// <param name="format">The format object that will override properties of this object, if they exist.</param>
-    public void Merge(Format format)
+    public void Merge(Format? format)
     {
+        if (format == null)
+            return;
         if (!String.IsNullOrEmpty(format.BackgroundColor))
             this.BackgroundColor = format.BackgroundColor;
         if (!String.IsNullOrEmpty(format.ForegroundColor))

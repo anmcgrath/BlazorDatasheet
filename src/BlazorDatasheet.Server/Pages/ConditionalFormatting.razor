@@ -24,15 +24,15 @@
     {
         var cells = new Cell[4, 1] { { new Cell(0) }, { new Cell(-100) }, { new Cell(20) }, { new Cell("secret") } };
         var formatTick = new ConditionalFormat(
-            (c, cells) => c.GetValue() != null && c.GetValue<string>().Contains("secret"),
-            (cell, cells) => new Format()
+            c => c.GetValue() != null && c.GetValue<string>().Contains("secret"),
+            cell => new Format()
             {
                 Icon = Icons.Icons.CheckIcon,
                 IconColor = "#428739"
             });
         var coloredNums = new ConditionalFormat(
-            (c, cells) => c.GetValue() != null && c.GetValue<double?>() != null,
-            (c, cells) =>
+            c => c.GetValue() != null && c.GetValue<double?>() != null,
+            c =>
             {
                 var f = Format.Default;
                 var val = c.GetValue<double?>();

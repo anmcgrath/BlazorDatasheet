@@ -5,11 +5,21 @@ using Range = BlazorDatasheet.Data.Range;
 namespace BlazorDatasheet.Formats;
 
 public class ConditionalFormatManager
-{ 
+{
+    private readonly Sheet _sheet;
     private readonly Dictionary<string, ConditionalFormat> _conditionalFormats = new();
     internal IReadOnlyDictionary<string, ConditionalFormat> ConditionalFormats => _conditionalFormats;
-    private readonly Dictionary<string, Cell[]> _cellsInConditionalFormatCache = new();
-    
+
+    /// <summary>
+    /// The list of formats that have been applied to the sheet (not just registered)
+    /// </summary>
+    private List<ConditionalFormat> _appliedFormats = new();
+
+    public ConditionalFormatManager(Sheet sheet)
+    {
+        _sheet = sheet;
+    }
+
     /// <summary>
     /// Adds a conditional formatting object to the sheet. Must be applied by setting ApplyConditionalFormat
     /// </summary>
@@ -19,18 +29,29 @@ public class ConditionalFormatManager
     {
         this._conditionalFormats.Add(key, conditionalFormat);
     }
-    
+
     /// <summary>
     /// Applies the conditional format specified by "key" to all cells in a range, if the conditional formatting exists.
     /// </summary>
     /// <param name="key"></param>
     /// <param name="range"></param>
-    public void ApplyConditionalFormat(string key, Range range)
+    public void ApplyConditionalFormat(string key, IRange range)
     {
         if (!ConditionalFormats.ContainsKey(key))
             return;
         var cf = ConditionalFormats[key];
+        if (!_appliedFormats.Contains(cf))
+            _appliedFormats.Add(cf);
         cf.AddRange(range);
+    }
+
+    /// <summary>
+    /// Applies conditional format to the whole sheet
+    /// </summary>
+    /// <param name="key"></param>
+    public void ApplyConditionalFormat(string key)
+    {
+        ApplyConditionalFormat(key, new AllRange());
     }
 
     /// <summary>
@@ -44,28 +65,62 @@ public class ConditionalFormatManager
         ApplyConditionalFormat(key, new Range(row, col));
     }
 
+    private IEnumerable<Cell> getCellsWithConditionalFormatApplied(ConditionalFormat conditionalFormat)
+    {
+        var cellsWithConditionalFormat = conditionalFormat
+                                         .Ranges
+                                         .Select(x => x.GetIntersection(_sheet.Range))
+                                         .SelectMany(x => x.AsEnumerable())
+                                         .Select(x => _sheet.GetCell(x));
+
+        return cellsWithConditionalFormat;
+    }
+
     /// <summary>
     /// Determines the "final" formatting of a cell by applying any conditional formatting
     /// </summary>
     /// <param name="cell"></param>
     /// <returns></returns>
-    internal Format GetFormat(Cell cell)
+    public Format? GetFormat(int row, int col)
     {
-        if (!cell.ConditionalFormattingIds.Any())
-            return cell.Formatting;
+        // Somehow we need to inform the cells of the other cells that the conditional format
+        // applies to.... gah!
+        if (!_appliedFormats.Any())
+            return null;
 
-        var format = cell.Formatting.Clone();
-        foreach (var id in cell.ConditionalFormattingIds)
+        // Would be good to cache this somewhere
+        var appliedConditionalFormats =
+            _appliedFormats.Where(x => x.IsAppliedTo(row, col));
+
+
+        var cell = _sheet.GetCell(row, col);
+
+        Format? initialFormat = null;
+
+        foreach (var conditionalFormat in appliedConditionalFormats)
         {
-            if (!ConditionalFormats.ContainsKey(id))
+            var apply = conditionalFormat.Rule.Invoke(cell);
+            if (!apply)
                 continue;
-            var conditionalFormat = this.ConditionalFormats[id];
-            var cellsWithConditionalFormat = _cellsInConditionalFormatCache[id];
-            var apply = conditionalFormat.Rule.Invoke(cell, cellsWithConditionalFormat);
-            if (apply)
-                format.Merge(conditionalFormat.FormatFunc.Invoke(cell, cellsWithConditionalFormat));
+
+            Format? calculatedFormat;
+            if (conditionalFormat.FormattingDependentOnCells)
+            {
+                calculatedFormat =
+                    conditionalFormat.FormatFuncDependent.Invoke(
+                        cell, getCellsWithConditionalFormatApplied(conditionalFormat));
+            }
+            else
+            {
+                calculatedFormat = conditionalFormat.FormatFunc.Invoke(cell);
+            }
+
+            if (initialFormat == null)
+                initialFormat = calculatedFormat;
+            else
+                initialFormat.Merge(calculatedFormat);
         }
 
-        return format;
+        return initialFormat;
     }
 }

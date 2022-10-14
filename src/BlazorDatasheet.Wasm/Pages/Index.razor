@@ -50,17 +50,15 @@
             });
         }
 
-        var checkCf = new ConditionalFormat((cell, cells) => { return ((Person)cell.Data).IsFriendly == true; }, (c, cs) => new Format()
-        {
-            BackgroundColor = "#d9fce2"
-        });
+        var checkCf = new ConditionalFormat(cell => { return ((Person)cell.Data).IsFriendly == true; },
+                                            c => new Format()
+                                            {
+                                                BackgroundColor = "#d9fce2"
+                                            });
 
-        var ageCf = 
+        var ageCf =
             new ConditionalFormat(
-                (cell, cells) =>
-                {
-                    return (cell.GetValue<int?>()) > 85;
-                }, (cell, cells) => new Format() { ForegroundColor = "#ff0000" });
+                cell => { return (cell.GetValue<int?>()) > 85; }, cell => new Format() { ForegroundColor = "#ff0000" });
 
         var builder1 = new ObjectEditorBuilder<Person>(People, GridDirection.PropertiesAcrossColumns);
         builder1.AutogenerateProperties(false)

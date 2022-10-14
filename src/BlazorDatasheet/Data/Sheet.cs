@@ -46,7 +46,7 @@ public class Sheet
 
     public Range Range => new Range(0, NumRows - 1, 0, NumCols - 1);
 
-    public ConditionalFormatManager ConditionalFormatting { get; } = new();
+    public ConditionalFormatManager ConditionalFormatting { get; }
 
     private readonly Dictionary<string, Type> _editorTypes;
     public IReadOnlyDictionary<string, Type> EditorTypes => _editorTypes;
@@ -57,6 +57,7 @@ public class Sheet
     {
         ColumnHeadings = new List<Heading>();
         RowHeadings = new List<Heading>();
+        ConditionalFormatting = new ConditionalFormatManager(this);
         _editorTypes = new Dictionary<string, Type>();
         _renderComponentTypes = new Dictionary<string, Type>();
 
@@ -232,7 +233,7 @@ public class Sheet
         return new Range(inputPosition.Row, endRow, inputPosition.Col, maxEndCol);
     }
 
-    internal bool TrySetCellValue(int row, int col, object value)
+    public bool TrySetCellValue(int row, int col, object value)
     {
         var cell = this.GetCell(row, col);
         if (cell == null)
