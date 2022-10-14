@@ -11,7 +11,15 @@
     font-size: .8rem;
     box-sizing: border-box;
     border-spacing: 0;
-    overflow-x: auto;
+    position:relative;
+    white-space: nowrap;
+    display: inline-block;
+}
+
+table[b-zet5yo0qob] {
+
+    max-width: fit-content;
+    overflow-x: hidden;
 }
 
 .sheet-cell[b-zet5yo0qob] {
@@ -65,12 +73,6 @@
     border-right: 1px solid #3d87f1 !important;
 }
 
-table[b-zet5yo0qob] {
-    display: block;
-    max-width: fit-content;
-    overflow-x: auto;
-    white-space: nowrap;
-}
 /* _content/BlazorDatasheet/Edit/DefaultComponents/DateTimeEditorComponent.razor.rz.scp.css */
 .date-input[b-0nxgffd6dp] {
     width: calc(100% - 4px);
