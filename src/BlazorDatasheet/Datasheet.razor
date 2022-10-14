@@ -11,7 +11,8 @@
 
 <table
     style="@(IsFixedHeight ? $"max-height: {FixedHeightInPx}px;" : "")"
-    class="sheet @(IsDataSheetActive ? "active-sheet" : "inactive-sheet")"
+    class="sheet @(IsDataSheetActive ? "active-sheet" : "inactive-sheet")
+     @(IsFixedHeight ? $" sheet-fixed-height" : "sheet-dynamic-height") "
     @onmouseover="() => IsMouseInsideSheet = true"
     @onmouseout="() => IsMouseInsideSheet = false">
     <!-- Column headers -->

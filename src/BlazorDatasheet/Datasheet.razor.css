@@ -15,10 +15,13 @@
     display: inline-block;
 }
 
-table {
-
-    max-width: fit-content;
+.sheet-fixed-height{
     overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.sheet-dynamic-height{
+
 }
 
 .sheet-cell {
