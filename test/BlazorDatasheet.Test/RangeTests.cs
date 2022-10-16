@@ -213,7 +213,7 @@ public class RangeTests
         Assert.True(range.Contains(100, 2));
         Assert.True(range.Contains(100, 3));
     }
-    
+
     [Test]
     public void Column_Creation_Backwards_Contains_Col_Correctly()
     {
@@ -234,5 +234,33 @@ public class RangeTests
         Assert.AreEqual(fixedRange, intersection);
         Assert.AreEqual(0, intersection2.StartPosition.Col);
         Assert.AreEqual(10, intersection2.EndPosition.Col);
+    }
+
+    [Test]
+    // Cell on edge
+    [TestCase(0, 0, 0, 0, 2)]
+    // Cell in middle
+    [TestCase(1, 1, 1, 1, 4)]
+    //Cell across range
+    [TestCase(1, 1, -5, 5, 2)]
+    [TestCase(-1, 1, -5, 5, 1)]
+    [TestCase(10, 2, -5, 5, 1)]
+    [TestCase(-10, 10, 1, 5, 1)]
+    [TestCase(1, 1, 1, 5, 3)]
+    public void Break_Range_Around_Single_Cell_On_Edge_Correct(int r0, int r1, int c0, int c1, int nExpected)
+    {
+        var range = new Range(0, 2, 0, 2);
+        var rangeToBreakAround = new Range(r0, r1, c0, c1);
+
+        var breaks = range.Break(rangeToBreakAround);
+        Assert.AreEqual(nExpected, breaks.Count());
+        var totalArea = breaks.Sum(c => c.Area);
+        Assert.AreEqual(range.Area - range.GetIntersection(rangeToBreakAround).Area, totalArea);
+
+        foreach (var breakRange in breaks)
+        {
+            // None of the new ranges should be overlapping with the break cell
+            Assert.Null(breakRange.GetIntersection(rangeToBreakAround));
+        }
     }
 }

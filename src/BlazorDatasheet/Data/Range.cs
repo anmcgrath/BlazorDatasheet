@@ -13,6 +13,8 @@ public class Range : IFixedSizeRange
     public CellPosition EndPosition { get; private set; }
     public int Height => Math.Abs(EndPosition.Row - StartPosition.Row) + 1;
     public int Width => Math.Abs(EndPosition.Col - StartPosition.Col) + 1;
+    public int RowDir => Math.Abs(Height) / Height;
+    public int ColDir => Math.Abs(Width) / Width;
     public int Area => Height * Width;
 
     /// <summary>
@@ -159,9 +161,93 @@ public class Range : IFixedSizeRange
             this.Constrain(rangeLimit);
     }
 
-    public List<IFixedSizeRange> Break(IFixedSizeRange range)
+    public List<IFixedSizeRange> Break(IFixedSizeRange inputRange, bool preserveOrder = false)
     {
-        throw new NotImplementedException();
+        var range = inputRange.CopyOrdered().GetIntersection(this);
+        if (range == null)
+            return new List<IFixedSizeRange>() { this.Copy() as IFixedSizeRange };
+
+        var thisOrdered = this.CopyOrdered();
+
+        // The range can split into at most 4 ranges
+        // We attempt to create all the ranges and don't use any that are empty
+        // Start from top to bottom. For example, consider the below case where we
+        // break the larger range by the cell shown as \\
+        // This is a case where we end up with 4 ranges shown as 1, 2, 3, 4
+
+        // | 1  |  1 |  1 |
+        // | 2  | \\ |  3 |
+        // | 4  |  4 |  4 |
+        
+        // the case below shows ,for example, when we would end up with only range 3 and 4
+        
+        // | \\ | \\ |  3 |
+        // | \\ | \\ |  3 |
+        // | 4  |  4 |  4 |
+
+        var r1IsEmpty = thisOrdered.StartPosition.Row == range.StartPosition.Row;
+        var r2IsEmpty = thisOrdered.StartPosition.Col == range.StartPosition.Col;
+        var r3IsEmpty = thisOrdered.EndPosition.Col == range.EndPosition.Col;
+        var r4IsEmpty = thisOrdered.EndPosition.Row == range.EndPosition.Row;
+
+        var ranges = new List<IFixedSizeRange>();
+
+        if (!r1IsEmpty)
+        {
+            var r1 = new Range(this.StartPosition.Row, range.StartPosition.Row - 1, this.StartPosition.Col,
+                               this.EndPosition.Col);
+            ranges.Add(r1);
+        }
+
+        if (!r2IsEmpty)
+        {
+            var r2 = new Range(range.StartPosition.Row, range.EndPosition.Row, thisOrdered.StartPosition.Col,
+                               range.StartPosition.Col - 1);
+            ranges.Add(r2);
+        }
+
+        if (!r3IsEmpty)
+        {
+            var r3 = new Range(range.StartPosition.Row, range.EndPosition.Row, range.StartPosition.Col + 1,
+                               thisOrdered.EndPosition.Col);
+            ranges.Add(r3);
+        }
+
+        if (!r4IsEmpty)
+        {
+            var r4 = new Range(range.EndPosition.Row + 1, thisOrdered.EndPosition.Row, thisOrdered.StartPosition.Col,
+                               thisOrdered.EndPosition.Col);
+            ranges.Add(r4);
+        }
+
+        if (preserveOrder)
+        {
+            foreach(var newRange in ranges)
+                newRange.SetOrder(this.RowDir, this.ColDir);
+        }
+
+        return ranges;
+    }
+
+    /// <summary>
+    /// Change start/end positions so that the range is ordered in the direction specified
+    /// </summary>
+    /// <param name="rowDir"></param>
+    /// <param name="colDir"></param>
+    public void SetOrder(int rowDir, int colDir)
+    {
+        var sRow = StartPosition.Row;
+        var sCol = StartPosition.Col;
+        var eRow = EndPosition.Row;
+        var eCol = EndPosition.Col;
+
+        var newSRow = rowDir == 1 ? sRow : eRow;
+        var newSCol = colDir == 1 ? sCol : eCol;
+        var newERow = rowDir == 1 ? eRow : sRow;
+        var newECol = rowDir == 1 ? eCol : sCol;
+
+        StartPosition = new CellPosition(newSRow, newSCol);
+        EndPosition = new CellPosition(newERow, newECol);
     }
 
     /// <summary>
