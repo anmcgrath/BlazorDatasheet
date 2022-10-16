@@ -18,4 +18,9 @@ public struct CellPosition
     {
         return Row == row && Col == col;
     }
+
+    public override string ToString()
+    {
+        return $"({Col}, {Row})";
+    }
 }

@@ -55,7 +55,7 @@
                 FirstName = firstNames[random.Next(0, firstNames.Count)],
                 LastName = lastNames[random.Next(0, lastNames.Count)],
                 Category = cats[random.Next(0, cats.Count)],
-                IsFriendly = random.NextDouble() >= 0.8
+                IsFriendly = i%2 == 0
             });
         }
 

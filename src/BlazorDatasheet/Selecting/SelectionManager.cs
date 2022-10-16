@@ -19,7 +19,7 @@ public class SelectionManager
     /// <summary>
     /// The list of current selections
     /// </summary>
-    public IReadOnlyCollection<Selection> Selections => _selections;
+    public IReadOnlyList<Selection> Selections => _selections;
 
     public SelectionManager(Sheet sheet)
     {
@@ -71,19 +71,8 @@ public class SelectionManager
     {
         if (!IsSelecting)
             return;
-
-        switch (ActiveSelection?.Mode)
-        {
-            case SelectionMode.Cell:
-                ActiveSelection?.Range.ExtendTo(row, col);
-                break;
-            case SelectionMode.Column:
-                ActiveSelection?.Range.ExtendTo(_sheet.NumRows, col);
-                break;
-            case SelectionMode.Row:
-                ActiveSelection?.Range.ExtendTo(row, _sheet.NumCols);
-                break;
-        }
+        
+        ActiveSelection?.Range.ExtendTo(row, col);
 
         emitSelectingChange();
     }
@@ -135,8 +124,6 @@ public class SelectionManager
     {
         this.CancelSelecting();
         var selectionRange = range.Copy();
-        if (range is IFixedSizeRange)
-            selectionRange = range.GetIntersection(_sheet.Range);
         this._selections.Clear();
         this._selections.Add(new Selection(selectionRange, _sheet, SelectionMode.Cell));
         emitSelectionChange();

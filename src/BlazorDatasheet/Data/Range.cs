@@ -13,8 +13,8 @@ public class Range : IFixedSizeRange
     public CellPosition EndPosition { get; private set; }
     public int Height => Math.Abs(EndPosition.Row - StartPosition.Row) + 1;
     public int Width => Math.Abs(EndPosition.Col - StartPosition.Col) + 1;
-    public int RowDir => Math.Abs(Height) / Height;
-    public int ColDir => Math.Abs(Width) / Width;
+    public int RowDir => EndPosition.Row >= StartPosition.Row ? 1 : -1;
+    public int ColDir => EndPosition.Col >= StartPosition.Col ? 1 : -1;
     public int Area => Height * Width;
 
     /// <summary>
@@ -139,19 +139,26 @@ public class Range : IFixedSizeRange
         var y1 = thisRange.EndPosition.Row;
         var y2 = otherRange.EndPosition.Row;
 
+        IFixedSizeRange? intersection = null;
+
         var xL = Math.Max(thisRange.StartPosition.Col, otherRange.StartPosition.Col);
         var xR = Math.Min(x1, x2);
         if (xR < xL)
-            return null;
+            intersection = null;
         else
         {
             var yB = Math.Min(y1, y2);
             var yT = Math.Max(thisRange.StartPosition.Row, otherRange.StartPosition.Row);
             if (yB < yT)
-                return null;
+                intersection = null;
             else
-                return new Range(yT, yB, xL, xR);
+                intersection = new Range(yT, yB, xL, xR);
         }
+
+        if (intersection != null)
+            intersection.SetOrder(this.RowDir, this.ColDir);
+
+        return intersection;
     }
 
     public void ExtendTo(int row, int col, IFixedSizeRange? rangeLimit = null)
@@ -159,6 +166,11 @@ public class Range : IFixedSizeRange
         EndPosition = new CellPosition(row, col);
         if (rangeLimit != null)
             this.Constrain(rangeLimit);
+    }
+
+    public List<IFixedSizeRange> Break(CellPosition position, bool preserveOrder = false)
+    {
+        return Break(new Range(position.Row, position.Col), preserveOrder);
     }
 
     public List<IFixedSizeRange> Break(IFixedSizeRange inputRange, bool preserveOrder = false)
@@ -178,9 +190,9 @@ public class Range : IFixedSizeRange
         // | 1  |  1 |  1 |
         // | 2  | \\ |  3 |
         // | 4  |  4 |  4 |
-        
+
         // the case below shows ,for example, when we would end up with only range 3 and 4
-        
+
         // | \\ | \\ |  3 |
         // | \\ | \\ |  3 |
         // | 4  |  4 |  4 |
@@ -194,8 +206,9 @@ public class Range : IFixedSizeRange
 
         if (!r1IsEmpty)
         {
-            var r1 = new Range(this.StartPosition.Row, range.StartPosition.Row - 1, this.StartPosition.Col,
-                               this.EndPosition.Col);
+            var r1 = new Range(thisOrdered.StartPosition.Row, range.StartPosition.Row - 1,
+                               thisOrdered.StartPosition.Col,
+                               thisOrdered.EndPosition.Col);
             ranges.Add(r1);
         }
 
@@ -222,7 +235,7 @@ public class Range : IFixedSizeRange
 
         if (preserveOrder)
         {
-            foreach(var newRange in ranges)
+            foreach (var newRange in ranges)
                 newRange.SetOrder(this.RowDir, this.ColDir);
         }
 
@@ -236,18 +249,13 @@ public class Range : IFixedSizeRange
     /// <param name="colDir"></param>
     public void SetOrder(int rowDir, int colDir)
     {
-        var sRow = StartPosition.Row;
-        var sCol = StartPosition.Col;
-        var eRow = EndPosition.Row;
-        var eCol = EndPosition.Col;
-
-        var newSRow = rowDir == 1 ? sRow : eRow;
-        var newSCol = colDir == 1 ? sCol : eCol;
-        var newERow = rowDir == 1 ? eRow : sRow;
-        var newECol = rowDir == 1 ? eCol : sCol;
-
-        StartPosition = new CellPosition(newSRow, newSCol);
-        EndPosition = new CellPosition(newERow, newECol);
+        var r0 = Math.Min(StartPosition.Row, EndPosition.Row);
+        var r1 = Math.Max(StartPosition.Row, EndPosition.Row);
+        var c0 = Math.Min(StartPosition.Col, EndPosition.Col);
+        var c1 = Math.Max(StartPosition.Col, EndPosition.Col);
+        
+        StartPosition = new CellPosition(rowDir == 1 ? r0 : r1, colDir == 1 ? c0 : c1);
+        EndPosition = new CellPosition(rowDir == 1 ? r1 : r0, colDir == 1 ? c1 : c0);
     }
 
     /// <summary>

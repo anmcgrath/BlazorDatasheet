@@ -14,6 +14,12 @@ public interface IFixedSizeRange : IRange, IEnumerable<CellPosition>
     /// <param name="range">The range to break around</param>
     /// <returns></returns>
     public List<IFixedSizeRange> Break(IFixedSizeRange range, bool preserveOrder = false);
+    /// <summary>
+    /// Break into a number of ranges that do not include the given position.
+    /// </summary>
+    /// <param name="position">The position to break around</param>
+    /// <returns></returns>
+    public List<IFixedSizeRange> Break(CellPosition position, bool preserveOrder = false);
 
     /// <summary>
     /// Returns an ordered copy of the range (Left-to-right, Up-to-down direction)

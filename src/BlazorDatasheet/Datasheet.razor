@@ -101,18 +101,23 @@
                     @ref="_editorManager.ActiveEditorContainer"/>
             </div>
         }
-
-        //TODO get rid of these hard-coded width and heights
+        
+        <!-- render active selection -->
         <SelectionRenderer
             CellLayoutProvider="_cellLayoutProvider"
             Hidden="@(!IsDataSheetActive)"
+            HighlightStartPosition="@(!Sheet.Selection.Selections.Any())"
             SelectionRange="@Sheet.Selection.ActiveSelection?.Range.GetIntersection(Sheet.Range)"/>
 
-        @foreach (var selection in Sheet.Selection.Selections)
+        <!-- render selections -->
+        @for (int i = 0; i < Sheet.Selection.Selections.Count; i++)
         {
+            var n = i;
+            var selection = Sheet.Selection.Selections[n];
             <SelectionRenderer
                 CellLayoutProvider="_cellLayoutProvider"
                 Hidden="@(!IsDataSheetActive)"
+                HighlightStartPosition="@(n==0)"
                 SelectionRange="selection?.Range.GetIntersection(Sheet.Range)"/>
         }
     }

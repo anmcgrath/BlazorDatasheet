@@ -238,7 +238,9 @@ public class RangeTests
 
     [Test]
     // Cell on edge
-    [TestCase(0, 0, 0, 0, 2)]
+    [TestCase(0, 0, 0, 0, 2, TestName = "String on top edge")]
+    // Cell on bottom edge
+    [TestCase(2, 2, 2, 2, 2, TestName = "String on bottom edge")]
     // Cell in middle
     [TestCase(1, 1, 1, 1, 4)]
     //Cell across range
@@ -247,7 +249,7 @@ public class RangeTests
     [TestCase(10, 2, -5, 5, 1)]
     [TestCase(-10, 10, 1, 5, 1)]
     [TestCase(1, 1, 1, 5, 3)]
-    public void Break_Range_Around_Single_Cell_On_Edge_Correct(int r0, int r1, int c0, int c1, int nExpected)
+    public void Break_Range_Around_Ranges_Correct(int r0, int r1, int c0, int c1, int nExpected)
     {
         var range = new Range(0, 2, 0, 2);
         var rangeToBreakAround = new Range(r0, r1, c0, c1);
@@ -262,5 +264,95 @@ public class RangeTests
             // None of the new ranges should be overlapping with the break cell
             Assert.Null(breakRange.GetIntersection(rangeToBreakAround));
         }
+    }
+
+    [Test]
+    // Cell on edge
+    [TestCase(0, 0, 0, 0, 2, TestName = "String on top edge")]
+    // Cell on bottom edge
+    [TestCase(2, 2, 2, 2, 2, TestName = "String on bottom edge")]
+    // Cell in middle
+    [TestCase(1, 1, 1, 1, 4)]
+    //Cell across range
+    [TestCase(1, 1, -5, 5, 2)]
+    [TestCase(-1, 1, -5, 5, 1)]
+    [TestCase(10, 2, -5, 5, 1)]
+    [TestCase(-10, 10, 1, 5, 1)]
+    [TestCase(1, 1, 1, 5, 3)]
+    public void Break_Backwards_Range_Around_Ranges_Correct(int r0, int r1, int c0, int c1, int nExpected)
+    {
+        var range = new Range(2, 0, 2, 0);
+        var rangeToBreakAround = new Range(r0, r1, c0, c1);
+
+        var breaks = range.Break(rangeToBreakAround);
+        Assert.AreEqual(nExpected, breaks.Count());
+        var totalArea = breaks.Sum(c => c.Area);
+        Assert.AreEqual(range.Area - range.GetIntersection(rangeToBreakAround).Area, totalArea);
+
+        foreach (var breakRange in breaks)
+        {
+            // None of the new ranges should be overlapping with the break cell
+            Assert.Null(breakRange.GetIntersection(rangeToBreakAround));
+        }
+    }
+
+    [Test]
+    public void Extend_Range_That_Changes_Dir_Works_Ok()
+    {
+        var range = new Range(1, 2, 1, 2);
+        range.ExtendTo(0, 0);
+        Assert.AreEqual(new CellPosition(0, 0), range.EndPosition);
+        Assert.AreEqual(new CellPosition(1, 1), range.StartPosition);
+    }
+
+    [Test]
+    public void Get_Intersection_Preserves_Start_Posn_Of_Range_Acted_on()
+    {
+        var range1 = new Range(2, 0, 2, 0);
+        var range2 = new Range(0, 10, 0, 10);
+        var intersect1 = range1.GetIntersection(range2);
+        var intersect2 = range2.GetIntersection(range1);
+        Assert.AreEqual(range1.StartPosition, intersect1.StartPosition);
+        Assert.AreEqual(range2.StartPosition, intersect2.StartPosition);
+    }
+
+    [Test]
+    public void Set_Reverse_Order_Updates_Positions()
+    {
+        var range = new Range(0, 1, 0, 1);
+        range.SetOrder(-1, -1);
+        Assert.AreEqual(new CellPosition(1, 1), range.StartPosition);
+        Assert.AreEqual(new CellPosition(0, 0), range.EndPosition);
+    }
+
+    [Test]
+    public void Set_Same_Order_For_Reversed_Range_Keeps_Order()
+    {
+        var range = new Range(5, 1, 1, 1);
+        var copy = range.Copy() as Range;
+        copy.SetOrder(range.RowDir, range.ColDir);
+        Assert.AreEqual(copy, range);
+    }
+    
+    [Test]
+    public void Set_Same_Order_For_Range_Keeps_Order()
+    {
+        var range = new Range(1, 5, 1, 1);
+        var copy = range.Copy() as Range;
+        copy.SetOrder(range.RowDir, range.ColDir);
+        Assert.AreEqual(copy, range);
+    }
+
+    [Test]
+    public void Set_Order_Then_Extend_Extends_Correctly()
+    {
+        var range = new Range(1,1,1,1);
+        var rangeLarger = new Range(0, 10, 0, 10);
+        var intersect = range.GetIntersection(rangeLarger);
+        Assert.AreEqual(range, intersect);
+        intersect.ExtendTo(1, 2);
+        intersect = rangeLarger.GetIntersection(intersect);
+        Assert.AreEqual(range.StartPosition, intersect.StartPosition);
+        Assert.AreEqual(new CellPosition(1, 2), intersect.EndPosition);
     }
 }

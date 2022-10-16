@@ -502,7 +502,7 @@ public partial class Datasheet : IHandleEvent
         var text = Sheet.GetRangeAsDelimitedText(selection.Range);
         await _clipboard.WriteTextAsync(text);
     }
-    
+
     /// <summary>
     /// Calculates the top/left/width/height styles of the editor container
     /// </summary>
@@ -514,15 +514,16 @@ public partial class Datasheet : IHandleEvent
         var Position = _editorManager.CurrentEditPosition;
         var editorRange = new Range(Position.Row, Position.Col);
 
-        var left = _cellLayoutProvider.ComputeLeftPosition(Position);
-        var top = _cellLayoutProvider.ComputeTopPosition(Position);
+        var left = _cellLayoutProvider.ComputeLeftPosition(editorRange);
+        var top = _cellLayoutProvider.ComputeTopPosition(editorRange);
         var w = _cellLayoutProvider.ComputeWidth(editorRange);
         var h = _cellLayoutProvider.ComputeHeight(editorRange);
 
-        strBuilder.Append($"left:{left}px;");
-        strBuilder.Append($"top:{top}px;");
-        strBuilder.Append($"width:{w}px;");
-        strBuilder.Append($"height:{h}px;");
+        strBuilder.Append($"left:{left + 1}px;");
+        strBuilder.Append($"top:{top + 1}px;");
+        strBuilder.Append($"width:{w - 1}px;");
+        strBuilder.Append($"height:{h - 1}px;");
+        strBuilder.Append($"box-shadow: 0px 0px 5px grey");
         var style = strBuilder.ToString();
         return style;
     }
