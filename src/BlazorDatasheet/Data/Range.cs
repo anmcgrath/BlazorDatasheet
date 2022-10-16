@@ -159,6 +159,11 @@ public class Range : IFixedSizeRange
             this.Constrain(rangeLimit);
     }
 
+    public List<IFixedSizeRange> Break(IFixedSizeRange range)
+    {
+        throw new NotImplementedException();
+    }
+
     /// <summary>
     /// Returns a new copy of the range with the row, col starting point
     /// at the top left (minimum points).
