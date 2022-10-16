@@ -31,16 +31,16 @@ public class CellLayoutProvider
         _sheet = sheet;
     }
 
-    public double ComputeLeftPosition(CellPosition cellPosition)
+    public double ComputeLeftPosition(IFixedSizeRange range)
     {
         var extra = ShowRowHeaders ? 1 : 0;
-        return (cellPosition.Col + extra) * _columnWidth;
+        return (Math.Min(range.StartPosition.Col, range.EndPosition.Col) + extra) * _columnWidth;
     }
 
-    public double ComputeTopPosition(CellPosition cellPosition)
+    public double ComputeTopPosition(IFixedSizeRange range)
     {
         var extra = _showColHeaders ? 1 : 0;
-        return (cellPosition.Row + extra) * _rowHeight;
+        return (Math.Min(range.StartPosition.Row, range.EndPosition.Row) + extra) * _rowHeight;
     }
 
     public double ComputeWidth(IFixedSizeRange range)
