@@ -14,7 +14,7 @@ public class ChangeCellValueCommandTests
     {
         //Create a sheet with only one cell, with a value 1
         _sheet = new Sheet(1, 1);
-        _sheet.TrySetCellValue(1, 1, 1);
+        _sheet.TrySetCellValue(0, 0, 1);
         _commandManager = new CommandManager(_sheet);
     }
 

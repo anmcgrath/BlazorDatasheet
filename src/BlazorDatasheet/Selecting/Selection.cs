@@ -69,6 +69,7 @@ public class Selection
             ActiveRange = newActiveRange;
             ActiveCellPosition = newActiveRange.Start;
         }
+
         emitSelectionChange();
     }
 
@@ -134,7 +135,7 @@ public class Selection
 
         // Fix the active range to surrounds of the sheet
         var activeRangeFixed = ActiveRange.GetIntersection(_sheet.Range);
-        
+
         // If the active range is only one cell and there are no other ranges,
         // clear the ranges and move the whole thing down
         if (_ranges.Count == 1 && activeRangeFixed.Area == 1)
@@ -146,7 +147,7 @@ public class Selection
             emitSelectionChange();
             return;
         }
-        
+
         // Move the posn and attempt to bring into either the next range
         // or the next cell in the range
         var newRow = ActiveCellPosition.Row + rowDir;
@@ -173,8 +174,8 @@ public class Selection
                 newRow = ActiveRange.BottomRight.Row;
             }
         }
+
         ActiveCellPosition = new CellPosition(newRow, newCol);
-        
     }
 
     /// <summary>
@@ -184,7 +185,9 @@ public class Selection
     /// <param name="col"></param>
     public void SetActivePosition(int row, int col)
     {
-        if(!ActiveRange.Contains(row, col))
+        if (IsEmpty())
+            return;
+        if (!ActiveRange.Contains(row, col))
             SetSingle(row, col);
         else // position within active selection
             ActiveCellPosition = new CellPosition(row, col);
@@ -208,7 +211,7 @@ public class Selection
             throw new Exception("No range is active?");
         activeRangeIndex--;
         if (activeRangeIndex < 0)
-            activeRangeIndex = _ranges.Count-1;
+            activeRangeIndex = _ranges.Count - 1;
         return _ranges[activeRangeIndex];
     }
 
