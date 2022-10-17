@@ -23,11 +23,13 @@ public class ChangeCellValueCommand : IUndoableCommand
         else
             _oldValue = cell.GetValue();
         
+        sheet.Selection.SetActivePosition(_row, _col);
         return sheet.TrySetCellValue(_row, _col, _newValue);
     }
 
     public bool Undo(Sheet sheet)
     {
+        sheet.Selection.SetActivePosition(_row, _col);
         return sheet.TrySetCellValue(_row, _col, _oldValue);
     }
 }

@@ -177,6 +177,19 @@ public class Selection
         
     }
 
+    /// <summary>
+    /// Sets the active cell position to the position specified.
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    public void SetActivePosition(int row, int col)
+    {
+        if(!ActiveRange.Contains(row, col))
+            SetSingle(row, col);
+        else // position within active selection
+            ActiveCellPosition = new CellPosition(row, col);
+    }
+
     private IFixedSizeRange getRangeAfterActive()
     {
         var activeRangeIndex = _ranges.IndexOf(ActiveRange!);
