@@ -18,6 +18,9 @@ namespace BlazorDatasheet;
 
 public partial class Datasheet : IHandleEvent
 {
+    /// <summary>
+    /// The Sheet holding the data for the datasheet.
+    /// </summary>
     [Parameter] public Sheet? Sheet { get; set; }
 
     /// <summary>
@@ -47,13 +50,25 @@ public partial class Datasheet : IHandleEvent
     /// Whether to show column headings. Default is true.
     /// </summary>
     [Parameter] public bool ShowColumnHeaders { get; set; } = true;
-    
+    /// <summary>
+    /// Whether the user is focused on the datasheet.
+    /// </summary>
+    private bool IsDataSheetActive { get; set; }
+    /// <summary>
+    /// Whether the mouse is located inside/over the sheet.
+    /// </summary>
+    private bool IsMouseInsideSheet { get; set; }
+    /// <summary>
+    /// The range that is in the process of being selected via user input.
+    /// </summary>
+    private IRange RangeSelecting { get; set; }
+    /// <summary>
+    /// The current list of actions that should be performed on the next render.
+    /// </summary>
+    private Queue<Action> QueuedActions { get; set; } = new Queue<Action>();
     private CellLayoutProvider _cellLayoutProvider;
     private EditorManager _editorManager;
     private CommandManager _commandManager;
-    private bool IsDataSheetActive { get; set; }
-    private bool IsMouseInsideSheet { get; set; }
-    private Queue<Action> QueuedActions { get; set; } = new Queue<Action>();
     private IWindowEventService _windowEventService;
     private IClipboard _clipboard;
     
