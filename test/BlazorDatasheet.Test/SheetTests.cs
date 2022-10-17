@@ -37,7 +37,9 @@ public class SheetTests
     [Test]
     public void Add_Row_To_End_Adds_Row_And_Updates_Numbers()
     {
+        bool eventFired = false;
         var sheet = new Sheet(3, 1);
+        sheet.RowInserted += args => eventFired = true;
         sheet.InsertRow();
         Assert.AreEqual(4, sheet.NumRows);
         Assert.AreEqual(4, sheet.Rows.Count);
@@ -49,5 +51,6 @@ public class SheetTests
                 Assert.AreEqual(i, cell.Row);
             }
         }
+        Assert.IsTrue(eventFired);
     }
 }

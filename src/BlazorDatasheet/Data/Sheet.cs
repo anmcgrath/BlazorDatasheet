@@ -1,5 +1,6 @@
 using System.Text;
 using BlazorDatasheet.Commands;
+using BlazorDatasheet.Data.Events;
 using BlazorDatasheet.Edit.DefaultComponents;
 using BlazorDatasheet.Formats;
 using BlazorDatasheet.Interfaces;
@@ -60,6 +61,14 @@ public class Sheet
     public IReadOnlyDictionary<string, Type> EditorTypes => _editorTypes;
     private Dictionary<string, Type> _renderComponentTypes { get; set; }
     public IReadOnlyDictionary<string, Type> RenderComponentTypes => _renderComponentTypes;
+    /// <summary>
+    /// Fired when a row is inserted into the sheet
+    /// </summary>
+    public event Action<RowInsertedEventArgs> RowInserted;
+    /// <summary>
+    /// Fired when a row is removed from the sheet.
+    /// </summary>
+    public event Action<RowRemovedEventArgs> RowRemoved;
 
     private Sheet()
     {
@@ -149,6 +158,7 @@ public class Sheet
 
         _rows.Insert(rowIndex, row);
         updateRowIndices(rowIndex);
+        RowInserted?.Invoke(new RowInsertedEventArgs(rowIndex));
         return true;
     }
 
@@ -158,6 +168,7 @@ public class Sheet
         {
             _rows.RemoveAt(index);
             updateRowIndices(index);
+            RowRemoved?.Invoke(new RowRemovedEventArgs(index));
             return true;
         }
 
