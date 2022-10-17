@@ -30,22 +30,34 @@ public partial class Datasheet : IHandleEvent
     /// Set to true when the datasheet should not be edited
     /// </summary>
     [Parameter] public bool IsReadOnly { get; set; }
-    [Parameter] public EventCallback<CellsChangedEventArgs> OnCellsChanged { get; set; }
+    /// <summary>
+    /// Fixed height in pixels of the datasheet, if IsFixedHeight = true. Default is 350 px.
+    /// </summary>
     [Parameter] public double FixedHeightInPx { get; set; } = 350;
+    /// <summary>
+    /// Whether the datasheet should be a fixed height. If it's true, a scrollbar will be used to
+    /// scroll through the rolls that are outside of the view.
+    /// </summary>
     [Parameter] public bool IsFixedHeight { get; set; }
+    /// <summary>
+    /// Whether to show the row headings. Default is true.
+    /// </summary>
     [Parameter] public bool ShowRowHeaders { get; set; } = true;
+    /// <summary>
+    /// Whether to show column headings. Default is true.
+    /// </summary>
     [Parameter] public bool ShowColumnHeaders { get; set; } = true;
+    
     private CellLayoutProvider _cellLayoutProvider;
-
     private EditorManager _editorManager;
     private CommandManager _commandManager;
     private bool IsDataSheetActive { get; set; }
     private bool IsMouseInsideSheet { get; set; }
     private Queue<Action> QueuedActions { get; set; } = new Queue<Action>();
-
     private IWindowEventService _windowEventService;
-    
     private IClipboard _clipboard;
+    
+    [Parameter] public EventCallback<CellsChangedEventArgs> OnCellsChanged { get; set; }
 
     protected override void OnInitialized()
     {
