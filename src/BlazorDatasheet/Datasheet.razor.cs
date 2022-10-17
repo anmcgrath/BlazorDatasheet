@@ -35,8 +35,6 @@ public partial class Datasheet : IHandleEvent
     [Parameter] public bool IsFixedHeight { get; set; }
     [Parameter] public bool ShowRowHeaders { get; set; } = true;
     [Parameter] public bool ShowColumnHeaders { get; set; } = true;
-
-    private Dictionary<int, ElementReference> _columHeaders = new();
     private CellLayoutProvider _cellLayoutProvider;
 
     private EditorManager _editorManager;
