@@ -130,7 +130,6 @@ public class Sheet
     /// a row will be either inserted at the start or appended at the end</param>
     public void InsertRowAt(int rowIndex, Row? row = null)
     {
-        Console.WriteLine("Inserting row");
         var cmd = new InsertRowAtCommand(rowIndex, row);
         Commands.ExecuteCommand(cmd);
     }
