@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using System.Reflection.Metadata;
 using BlazorDatasheet.Data;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Util;
@@ -13,6 +14,7 @@ public class ObjectEditorBuilder<T>
     private bool _autoGenerateProperties;
     private List<Tuple<string, Action<ObjectPropertyDefinition<T>>>> _propertyActions;
     private Dictionary<string, ConditionalFormat> _conditionalFormats;
+    private List<ObjectPropertyDefinition<T>> _propertyDefinitions;
     private List<string> _suppliedPropertyNames { get; set; }
 
     /// <summary>
@@ -53,6 +55,35 @@ public class ObjectEditorBuilder<T>
     }
 
     /// <summary>
+    /// Creates a cell based on the property definition
+    /// </summary>
+    /// <param name="propDefn"></param>
+    /// <returns></returns>
+    private Cell GetCell(T item, ObjectPropertyDefinition<T> propDefn)
+    {
+        var cell = new Cell(item);
+        cell.Key = propDefn.PropertyName;
+        cell.Formatting = propDefn.Format;
+        cell.Type = propDefn.Type;
+        cell.IsReadOnly = propDefn.IsReadOnly;
+        foreach (var validator in propDefn.Validators)
+            cell.Validators.Add(validator);
+
+        return cell;
+    }
+
+    public List<Cell> GetCells(T item)
+    {
+        var cells = new List<Cell>();
+        foreach (var defn in _propertyDefinitions)
+        {
+            cells.Add(GetCell(item, defn));
+        }
+
+        return cells;
+    }
+
+    /// <summary>
     /// Create the ObjectEditor
     /// </summary>
     /// <returns></returns>
@@ -70,11 +101,11 @@ public class ObjectEditorBuilder<T>
 
         // Create default property definitions for each property
         // we override the defaults later with user-defined options
-        List<ObjectPropertyDefinition<T>> propertyDefinitions = new List<ObjectPropertyDefinition<T>>();
+        _propertyDefinitions = new List<ObjectPropertyDefinition<T>>();
         foreach (var propName in distinctPropNames)
         {
             var propType = typeof(T).GetProperty(propName).PropertyType;
-            propertyDefinitions.Add(new ObjectPropertyDefinition<T>(propName, getCellType(propType)));
+            _propertyDefinitions.Add(new ObjectPropertyDefinition<T>(propName, getCellType(propType)));
         }
 
         var nRows = 0;
@@ -82,20 +113,20 @@ public class ObjectEditorBuilder<T>
 
         if (_direction == GridDirection.PropertiesAcrossRows)
         {
-            nRows = propertyDefinitions.Count;
+            nRows = _propertyDefinitions.Count;
             nCols = _items.Count();
         }
         else if (_direction == GridDirection.PropertiesAcrossColumns)
         {
             nRows = _items.Count();
-            nCols = propertyDefinitions.Count;
+            nCols = _propertyDefinitions.Count;
         }
 
         // Run any custom settings on the property definitions
         // I.e those that are defined via WithProperty
         foreach (var actionPair in _propertyActions)
         {
-            var propDefinition = propertyDefinitions.FirstOrDefault(x => x.PropertyName == actionPair.Item1);
+            var propDefinition = _propertyDefinitions.FirstOrDefault(x => x.PropertyName == actionPair.Item1);
             if (propDefinition == null)
                 continue;
 
@@ -109,23 +140,21 @@ public class ObjectEditorBuilder<T>
             {
                 Cell cell;
                 ObjectPropertyDefinition<T> propDefn;
+                T item;
+                // Select the correct property definition based on the property direction
                 if (_direction == GridDirection.PropertiesAcrossColumns)
                 {
-                    propDefn = propertyDefinitions[col];
-                    cell = new Cell(_items[row]);
+                    propDefn = _propertyDefinitions[col];
+                    item = _items[row];
                 }
                 else
                 {
-                    propDefn = propertyDefinitions[row];
-                    cell = new Cell(_items[col]);
+                    propDefn = _propertyDefinitions[row];
+                    item = _items[col];
                 }
 
-                cell.Key = propDefn.PropertyName;
-                cell.Formatting = propDefn.Format;
-                cell.Type = propDefn.Type;
-                cell.IsReadOnly = propDefn.IsReadOnly;
-                foreach (var validator in propDefn.Validators)
-                    cell.Validators.Add(validator);
+
+                cell = GetCell(item, propDefn);
                 cells[row, col] = cell;
             }
         }
@@ -136,9 +165,9 @@ public class ObjectEditorBuilder<T>
         foreach (var cf in _conditionalFormats)
             sheet.ConditionalFormatting.Register(cf.Key, cf.Value);
 
-        for (int i = 0; i < propertyDefinitions.Count; i++)
+        for (int i = 0; i < _propertyDefinitions.Count; i++)
         {
-            var propDefn = propertyDefinitions[i];
+            var propDefn = _propertyDefinitions[i];
             var headings = _direction == GridDirection.PropertiesAcrossColumns
                 ? sheet.ColumnHeadings
                 : sheet.RowHeadings;

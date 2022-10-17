@@ -85,7 +85,6 @@ public partial class Datasheet : IHandleEvent
 
     private CellLayoutProvider _cellLayoutProvider;
     private EditorManager _editorManager;
-    private CommandManager _commandManager;
     private IWindowEventService _windowEventService;
     private IClipboard _clipboard;
 
@@ -95,8 +94,7 @@ public partial class Datasheet : IHandleEvent
     {
         _windowEventService = new WindowEventService(JS);
         _clipboard = new Clipboard(JS);
-        _commandManager = new CommandManager(Sheet);
-        _editorManager = new EditorManager(Sheet, _commandManager, NextTick);
+        _editorManager = new EditorManager(Sheet, NextTick);
         _editorManager.OnAcceptEdit += EditorManagerOnOnAcceptEdit;
 
         base.OnInitialized();
@@ -109,8 +107,7 @@ public partial class Datasheet : IHandleEvent
         if (_sheetLocal != Sheet)
         {
             _sheetLocal = Sheet;
-            _commandManager?.SetSheet(Sheet);
-            _commandManager?.ClearHistory();
+            _editorManager.SetSheet(Sheet);
             _cellLayoutProvider = new CellLayoutProvider(Sheet, 105.6, 28, ShowColumnHeaders, ShowRowHeaders);
         }
 
@@ -404,7 +401,7 @@ public partial class Datasheet : IHandleEvent
 
         if (e.Key.ToLower() == "y" && (e.CtrlKey || e.MetaKey) && !_editorManager.IsEditing)
         {
-            if (_commandManager.Redo())
+            if (Sheet.Commands.Redo())
                 StateHasChanged();
             return true;
         }
@@ -412,7 +409,7 @@ public partial class Datasheet : IHandleEvent
 
         if (e.Key.ToLower() == "z" && (e.CtrlKey || e.MetaKey) && !_editorManager.IsEditing)
         {
-            if (_commandManager.Undo())
+            if (Sheet.Commands.Undo())
                 StateHasChanged();
             return true;
         }
@@ -423,7 +420,7 @@ public partial class Datasheet : IHandleEvent
                 return true;
             var rangesToClear = Sheet.Selection.Ranges;
             var cmd = new ClearCellsCommand(rangesToClear);
-            _commandManager.ExecuteCommand(cmd);
+            Sheet.Commands.ExecuteCommand(cmd);
             StateHasChanged();
             return true;
         }

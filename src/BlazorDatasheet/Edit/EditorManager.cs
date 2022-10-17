@@ -10,7 +10,6 @@ namespace BlazorDatasheet.Edit;
 public class EditorManager : IEditorManager
 {
     private Sheet _sheet;
-    private readonly CommandManager _commandManager;
     private readonly Action<Action> _queueForNextRender;
 
     /// <summary>
@@ -40,10 +39,9 @@ public class EditorManager : IEditorManager
 
     public event CancelEditHandler OnCancelEdit;
 
-    public EditorManager(Sheet sheet, CommandManager commandManager, Action<Action> queueForNextRender)
+    public EditorManager(Sheet sheet, Action<Action> queueForNextRender)
     {
         _sheet = sheet;
-        _commandManager = commandManager;
         // When called, runs the function next render cycle.
         _queueForNextRender = queueForNextRender;
         CurrentEditPosition = new CellPosition(-1, -1);
@@ -98,7 +96,7 @@ public class EditorManager : IEditorManager
             return false;
         }
 
-        var setCell = _commandManager.ExecuteCommand(new ChangeCellValueCommand(currentRow, currentCol, editedValue));
+        var setCell = _sheet.Commands.ExecuteCommand(new ChangeCellValueCommand(currentRow, currentCol, editedValue));
 
         if (setCell)
         {

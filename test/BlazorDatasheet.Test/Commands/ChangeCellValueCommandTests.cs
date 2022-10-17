@@ -13,8 +13,8 @@ public class ChangeCellValueCommandTests
     public void Setup()
     {
         //Create a sheet with only one cell, with a value 1
-        var cells = new Cell[1, 1] { { new Cell(1) } };
-        _sheet = new Sheet(1, 1, cells);
+        _sheet = new Sheet(1, 1);
+        _sheet.TrySetCellValue(1, 1, 1);
         _commandManager = new CommandManager(_sheet);
     }
 

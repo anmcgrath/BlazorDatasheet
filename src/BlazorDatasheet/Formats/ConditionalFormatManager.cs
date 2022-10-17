@@ -97,8 +97,8 @@ public class ConditionalFormatManager
 
         foreach (var conditionalFormat in appliedConditionalFormats)
         {
-            var apply = conditionalFormat.Rule.Invoke(cell);
-            if (!apply)
+            var apply = conditionalFormat.Rule?.Invoke(cell);
+            if (apply != true)
                 continue;
 
             Format? calculatedFormat;
@@ -110,7 +110,7 @@ public class ConditionalFormatManager
             }
             else
             {
-                calculatedFormat = conditionalFormat.FormatFunc.Invoke(cell);
+                calculatedFormat = conditionalFormat.FormatFunc?.Invoke(cell);
             }
 
             if (initialFormat == null)

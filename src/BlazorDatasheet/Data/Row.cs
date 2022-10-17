@@ -5,7 +5,7 @@ namespace BlazorDatasheet.Data;
 public class Row
 {
     public List<Cell> Cells { get; private set; }
-    public int RowNumber { get; private set; }
+    public int RowNumber { get; internal set; }
 
     /// <summary>
     /// A row of cells

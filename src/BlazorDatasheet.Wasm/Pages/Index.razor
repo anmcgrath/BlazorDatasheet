@@ -18,9 +18,7 @@
 <Datasheet
     Sheet="Sheet"
     IsFixedHeight="true"
-    OnCellsChanged="HandleCellChanged">
-
-</Datasheet>
+    OnCellsChanged="HandleCellChanged"/>
 
 @code{
 
@@ -50,11 +48,16 @@
             });
         }
 
-        var checkCf = new ConditionalFormat(cell => { return ((Person)cell.Data).IsFriendly == true; },
-                                            c => new Format()
-                                            {
-                                                BackgroundColor = "#d9fce2"
-                                            });
+        var checkCf = new ConditionalFormat(cell =>
+        {
+            var person = ((Person)cell.Data);
+            if (person == null)
+                return false;
+            return person.IsFriendly;
+        }, c => new Format()
+        {
+            BackgroundColor = "#d9fce2"
+        });
 
         var ageCf =
             new ConditionalFormat(

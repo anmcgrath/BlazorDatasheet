@@ -16,12 +16,14 @@
 
     protected override void OnInitialized()
     {
+        sheet = new Sheet(1, 3);
+        
         cells = new Cell[1, 3]
         {
             { new Cell(0) { Type = "progress" }, new Cell(100) { Type = "progress" }, new Cell(200) { Type = "progress" } }
         };
 
-        sheet = new Sheet(1, 3, cells);
+        
         sheet.RegisterRenderer<ProgressRenderer>("progress");
 
 

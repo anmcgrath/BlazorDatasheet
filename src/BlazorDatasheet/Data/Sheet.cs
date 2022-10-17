@@ -1,4 +1,5 @@
 using System.Text;
+using BlazorDatasheet.Commands;
 using BlazorDatasheet.Edit.DefaultComponents;
 using BlazorDatasheet.Formats;
 using BlazorDatasheet.Interfaces;
@@ -45,6 +46,11 @@ public class Sheet
     /// </summary>
     public List<Heading> RowHeadings { get; private set; }
 
+    /// <summary>
+    /// Managers commands & undo/redo
+    /// </summary>
+    public CommandManager Commands { get; private set; }
+
     public Range? Range => new Range(0, NumRows - 1, 0, NumCols - 1);
 
     public ConditionalFormatManager ConditionalFormatting { get; }
@@ -59,6 +65,7 @@ public class Sheet
     {
         ColumnHeadings = new List<Heading>();
         RowHeadings = new List<Heading>();
+        Commands = new CommandManager(this);
         Selection = new Selection(this);
         ConditionalFormatting = new ConditionalFormatManager(this);
         _editorTypes = new Dictionary<string, Type>();
@@ -68,7 +75,6 @@ public class Sheet
         registerDefaultRenderers();
     }
 
-    [Obsolete]
     public Sheet(int numRows, int numCols, Cell[,] cells) : this()
     {
         NumCols = numCols;
@@ -79,6 +85,8 @@ public class Sheet
             for (int j = 0; j < NumCols; j++)
             {
                 rowCells.Add(cells[i, j]);
+                cells[i, j].Row = i;
+                cells[i, j].Col = j;
             }
 
             var newRow = new Row(rowCells, i);
@@ -94,7 +102,12 @@ public class Sheet
             var cells = new List<Cell>();
             for (int j = 0; j < numCols; j++)
             {
-                cells.Add(new Cell());
+                var cell = new Cell()
+                {
+                    Col = j,
+                    Row = i
+                };
+                cells.Add(cell);
             }
 
             var row = new Row(cells, i);
@@ -102,18 +115,54 @@ public class Sheet
         }
     }
 
-    public void AddRow()
+    /// <summary>
+    /// Inserts a row to the end of the sheet
+    /// </summary>
+    public void InsertRow(Row? row = null)
     {
+        InsertRowAt(_rows.Count, row);
     }
 
     /// <summary>
-    /// Adds a row at an index specified.
+    /// Inserts a row at an index specified.
     /// </summary>
     /// <param name="rowIndex">The index that the new row will be at. If the index is outside of the range of rows,
     /// a row will be either inserted at the start or appended at the end</param>
-    public void AddRowAt(int rowIndex)
+    public void InsertRowAt(int rowIndex, Row? row = null)
     {
-        int addIndex;
+        Console.WriteLine("Inserting row");
+        var cmd = new InsertRowAtCommand(rowIndex, row);
+        Commands.ExecuteCommand(cmd);
+    }
+
+    internal bool InsertRowAtImpl(int rowIndex, Row? row = null)
+    {
+        if (row == null)
+        {
+            var cells = new List<Cell>();
+            for (int i = 0; i < NumCols; i++)
+            {
+                cells.Add(new Cell() { Col = i, Row = rowIndex });
+            }
+
+            row = new Row(cells, rowIndex);
+        }
+
+        _rows.Insert(rowIndex, row);
+        updateRowIndices(rowIndex);
+        return true;
+    }
+
+    internal bool RemoveRowAtImpl(int index)
+    {
+        if (index >= 0 && index < _rows.Count)
+        {
+            _rows.RemoveAt(index);
+            updateRowIndices(index);
+            return true;
+        }
+
+        return false;
     }
 
     private void registerDefaultEditors()
@@ -283,8 +332,8 @@ public class Sheet
             return string.Empty;
 
         var range = inputRange
-                    .GetIntersection(this.Range)
-                    .CopyOrdered();
+            .GetIntersection(this.Range)
+            .CopyOrdered();
 
         var strBuilder = new StringBuilder();
 
@@ -312,5 +361,22 @@ public class Sheet
         }
 
         return strBuilder.ToString();
+    }
+
+    /// <summary>
+    /// Updates the row values of all rows & cells starting from the index specified
+    /// </summary>
+    /// <param name="startRow"></param>
+    private void updateRowIndices(int startRow)
+    {
+        // Update row numbers for rows and cells below this row
+        for (int i = startRow; i < _rows.Count; i++)
+        {
+            _rows[i].RowNumber = i;
+            foreach (var cell in _rows[i].Cells)
+            {
+                cell.Row = i;
+            }
+        }
     }
 }

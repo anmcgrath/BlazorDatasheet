@@ -8,6 +8,14 @@ namespace BlazorDatasheet.Data;
 public class Cell : IReadOnlyCell, IWriteableCell
 {
     /// <summary>
+    /// The cell's row
+    /// </summary>
+    public int Row { get; internal set; }
+    /// <summary>
+    /// The cell's column
+    /// </summary>
+    public int Col { get; internal set; }
+    /// <summary>
     /// The cell type, affects the renderer and editor used for the cell
     /// </summary>
     public string Type { get; set; } = "text";
