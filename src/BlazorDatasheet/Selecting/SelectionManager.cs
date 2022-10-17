@@ -32,7 +32,7 @@ public class SelectionManager
     /// </summary>
     /// <param name="row">The row where the selection should start</param>
     /// <param name="col">The col where the selection should start</param>
-    public void BeginSelectingCell(int row, int col)
+    private void BeginSelectingCell(int row, int col)
     {
         ActiveSelection = new Selection(new Range(row, col), _sheet, SelectionMode.Cell);
         emitSelectingChange();
@@ -42,14 +42,14 @@ public class SelectionManager
     /// 
     /// </summary>
     /// <param name="row"></param>
-    public void BeginSelectingRow(int row)
+    private void BeginSelectingRow(int row)
     {
         var range = new RowRange(row, row);
         ActiveSelection = new Selection(range, _sheet, SelectionMode.Row);
         emitSelectingChange();
     }
 
-    public void BeginSelectingCol(int col)
+    private void BeginSelectingCol(int col)
     {
         var range = new ColumnRange(col, col);
         ActiveSelection = new Selection(range, _sheet, SelectionMode.Column);
@@ -67,7 +67,7 @@ public class SelectionManager
     /// </summary>
     /// <param name="row"></param>
     /// <param name="col"></param>
-    public void UpdateSelectingEndPosition(int row, int col)
+    private void UpdateSelectingEndPosition(int row, int col)
     {
         if (!IsSelecting)
             return;
@@ -80,7 +80,7 @@ public class SelectionManager
     /// <summary>
     /// Ends the selecting process and adds the selection to the stack
     /// </summary>
-    public void EndSelecting()
+    private void EndSelecting()
     {
         if (!IsSelecting)
             return;
@@ -92,7 +92,7 @@ public class SelectionManager
     /// <summary>
     /// Clears the selecting process and discards the active selecting object
     /// </summary>
-    public void CancelSelecting()
+    private void CancelSelecting()
     {
         ActiveSelection = null;
         emitSelectingChange();

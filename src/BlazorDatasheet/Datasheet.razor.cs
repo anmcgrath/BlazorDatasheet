@@ -26,6 +26,9 @@ public partial class Datasheet : IHandleEvent
     /// </summary>
     private Sheet? _sheetLocal;
 
+    /// <summary>
+    /// Set to true when the datasheet should not be edited
+    /// </summary>
     [Parameter] public bool IsReadOnly { get; set; }
     [Parameter] public EventCallback<CellsChangedEventArgs> OnCellsChanged { get; set; }
     [Parameter] public double FixedHeightInPx { get; set; } = 350;
@@ -40,10 +43,10 @@ public partial class Datasheet : IHandleEvent
     private CommandManager _commandManager;
     private bool IsDataSheetActive { get; set; }
     private bool IsMouseInsideSheet { get; set; }
-    private ElementReference ActiveCellInputReference;
     private Queue<Action> QueuedActions { get; set; } = new Queue<Action>();
 
     private IWindowEventService _windowEventService;
+    
     private IClipboard _clipboard;
 
     protected override void OnInitialized()
