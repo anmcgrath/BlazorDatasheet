@@ -1,0 +1,8 @@
+﻿.vars{
+    --sheet-foreground-color:#5c5c5c;
+    --sheet-bg-color:#ffffff;
+    --sheet-border-style: 1px solid lightgray;
+    --row-header-bg-color: #fafafa;
+    --col-header-bg-color: #fafafa;
+    --active-header-bg-color: #ececec;
+}

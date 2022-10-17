@@ -31,7 +31,7 @@
     height: calc(1.5rem + 4px);
     overflow: hidden;
     text-overflow: ellipsis;
-    border: 1px solid lightgray;
+    border: var(--sheet-border-style);
     box-sizing: border-box;
     padding: 1px;
     user-select: none;
@@ -44,10 +44,6 @@
     background: red;
 }
 
-.cell-selected {
-    background: rgba(199, 225, 255, 0.95) !important;
-}
-
 .cell {
     width: 100%;
     height: 100%;
@@ -55,23 +51,23 @@
 }
 
 .column-head {
-    background: #fafafa !important;
+    background: var(--col-header-bg-color) !important;
     border-bottom: 1px solid lightgray;
     padding: 2px 2px 2px 3px;
 }
 
 .column-active {
-    background: #f4f4f4 !important;
+    background: var(--active-header-bg-color) !important;
     border-bottom: 1px solid #3d87f1 !important;
 }
 
 .row-head {
-    background: #fafafa !important;
+    background: var(--row-header-bg-color) !important;
     border-right: 1px solid lightgray;
 }
 
 .row-active {
-    background: #f4f4f4 !important;
+    background: var(--active-header-bg-color) !important;
     border-right: 1px solid #3d87f1 !important;
 }
 
