@@ -20,13 +20,33 @@
     IsFixedHeight="true"
     OnCellsChanged="HandleCellChanged"/>
 
+
+<div>
+    <button @onclick="InsertAtSelection">Insert row at selection</button>
+    <button @onclick="() => Sheet.Commands.Undo()">Undo</button>
+    <button @onclick="() => Sheet.Commands.Redo()">Redo</button>
+</div>
+
 @code{
 
     private Sheet Sheet;
+    private Sheet Sheet2;
     private List<Person> People { get; set; }
+    private ObjectEditor<Person> _editor;
+
+    private void InsertAtSelection()
+    {
+        if (Sheet.Selection.ActiveRange == null)
+        {
+            return;
+        }
+        _editor.InsertAt(new Person(), Sheet.Selection.ActiveRange.Start.Row);
+        //Sheet.InsertRowAt(Sheet2.Selection.ActiveRange.Start.Row);
+    }
 
     protected override void OnInitialized()
     {
+        Sheet2 = new Sheet(3, 3);
         People = new List<Person>();
 
         var random = new Random();
@@ -44,7 +64,7 @@
                 FirstName = firstNames[random.Next(0, firstNames.Count)],
                 LastName = lastNames[random.Next(0, lastNames.Count)],
                 Category = cats[random.Next(0, cats.Count)],
-                IsFriendly = random.NextDouble() >= 0.8
+                IsFriendly = i % 2 == 0
             });
         }
 
@@ -61,37 +81,36 @@
 
         var ageCf =
             new ConditionalFormat(
-                cell => { return (cell.GetValue<int?>()) > 85; }, cell => new Format() { ForegroundColor = "#ff0000" });
+                cell => (cell.GetValue<int?>()) > 85, cell => new Format() { ForegroundColor = "#ff0000" });
 
         var builder1 = new ObjectEditorBuilder<Person>(People, GridDirection.PropertiesAcrossColumns);
         builder1.AutogenerateProperties(false)
-                .WithConditionalFormat("ageCf", ageCf)
-                .WithConditionalFormat("checkCf", checkCf)
-                .WithProperty(x => x.Id, pd => { pd.Heading = "Person ID"; })
-                .WithProperty(x => x.FirstName, pd => { pd.Heading = "First Name"; })
-                .WithProperty(x => x.LastName, pd => { pd.Heading = "Last Name"; })
-                .WithProperty(x => x.Age, pd =>
-                {
-                    pd.UseConditionalFormat("ageCf");
-                    pd.UseDataValidator(new NumberValidator(true));
-                })
-                .WithProperty(x => x.Category, pd =>
-                {
-                    pd.Heading = "Category";
-                    pd.Type = "select";
-                    pd.UseDataValidator(new SourceValidator(new List<string>() { "", "Manager", "Employee" }, true));
-                })
-                .WithProperty(x => x.IsFriendly, pd =>
-                {
-                    pd.UseConditionalFormat("check");
-                    pd.Heading = "Is Friendly?";
-                });
+            .WithConditionalFormat("ageCf", ageCf)
+            .WithConditionalFormat("checkCf", checkCf)
+            .WithProperty(x => x.Id, pd => { pd.Heading = "Person ID"; })
+            .WithProperty(x => x.FirstName, pd => { pd.Heading = "First Name"; })
+            .WithProperty(x => x.LastName, pd => { pd.Heading = "Last Name"; })
+            .WithProperty(x => x.Age, pd =>
+            {
+                pd.UseConditionalFormat("ageCf");
+                pd.UseDataValidator(new NumberValidator(true));
+            })
+            .WithProperty(x => x.Category, pd =>
+            {
+                pd.Heading = "Category";
+                pd.Type = "select";
+                pd.UseDataValidator(new SourceValidator(new List<string>() { "", "Manager", "Employee" }, true));
+            })
+            .WithProperty(x => x.IsFriendly, pd =>
+            {
+                pd.UseConditionalFormat("check");
+                pd.Heading = "Is Friendly?";
+            });
 
-        var editor1 = builder1.Build();
-        editor1.Sheet.ConditionalFormatting.Apply("checkCf", editor1.Sheet.Range);
+        _editor = builder1.Build();
+        _editor.Sheet.ConditionalFormatting.Apply("checkCf", _editor.Sheet.Range);
 
-
-        Sheet = editor1.Sheet;
+        Sheet = _editor.Sheet;
     }
 
     private void HandleCellChanged(CellsChangedEventArgs e)
