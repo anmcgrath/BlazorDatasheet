@@ -40,8 +40,6 @@ public class Cell : IReadOnlyCell, IWriteableCell
     /// </summary>
     public bool IsValid { get; internal set; } = true;
 
-    internal List<string> ConditionalFormattingIds { get; set; }
-
     /// <summary>
     /// The property name that determines the cell's value from the Data, if the Data is an object
     /// </summary>
@@ -60,7 +58,6 @@ public class Cell : IReadOnlyCell, IWriteableCell
     public Cell(object? data = null, string key = null)
     {
         Data = data;
-        ConditionalFormattingIds = new List<string>();
         Key = key;
         Validators = new List<IDataValidator>();
     }
