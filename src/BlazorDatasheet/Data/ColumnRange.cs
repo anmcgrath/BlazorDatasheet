@@ -7,7 +7,7 @@ namespace BlazorDatasheet.Data;
 /// </summary>
 public class ColumnRange : IRange
 {
-    public CellPosition StartPosition { get; private set; }
+    public CellPosition Start { get; private set; }
     public int ColumnEnd { get; private set; }
 
     /// <summary>
@@ -18,14 +18,14 @@ public class ColumnRange : IRange
     public ColumnRange(int columnStart, int columnEnd)
     {
         // The start position is always at row = 0
-        StartPosition = new CellPosition(0, columnStart);
+        Start = new CellPosition(0, columnStart);
         ColumnEnd = columnEnd;
     }
 
     public bool Contains(int row, int col)
     {
-        var c0 = Math.Min(StartPosition.Col, ColumnEnd);
-        var c1 = Math.Max(StartPosition.Col, ColumnEnd);
+        var c0 = Math.Min(Start.Col, ColumnEnd);
+        var c1 = Math.Max(Start.Col, ColumnEnd);
         return col >= c0 && col <= c1;
     }
 
@@ -35,35 +35,35 @@ public class ColumnRange : IRange
 
     public IRange Collapse()
     {
-        return new Range(StartPosition.Row, StartPosition.Col);
+        return new Range(Start.Row, Start.Col);
     }
 
     public void Move(int dRow, int dCol, IFixedSizeRange? rangeLimit = null)
     {
         if (rangeLimit != null)
         {
-            var newColStart = SheetMath.ClampInt(rangeLimit.StartPosition.Col, rangeLimit.EndPosition.Col,
-                                                 StartPosition.Col + dCol);
-            var newColEnd = SheetMath.ClampInt(rangeLimit.StartPosition.Col, rangeLimit.EndPosition.Col,
+            var newColStart = SheetMath.ClampInt(rangeLimit.Start.Col, rangeLimit.End.Col,
+                                                 Start.Col + dCol);
+            var newColEnd = SheetMath.ClampInt(rangeLimit.Start.Col, rangeLimit.End.Col,
                                                ColumnEnd);
-            this.StartPosition = new CellPosition(0, newColStart);
+            this.Start = new CellPosition(0, newColStart);
             this.ColumnEnd = newColEnd;
             return;
         }
 
         ColumnEnd += dCol;
-        StartPosition = new CellPosition(0, StartPosition.Col + dCol);
+        Start = new CellPosition(0, Start.Col + dCol);
         return;
     }
 
     public IRange Copy()
     {
-        return new ColumnRange(StartPosition.Col, ColumnEnd);
+        return new ColumnRange(Start.Col, ColumnEnd);
     }
 
     public IFixedSizeRange GetIntersection(IFixedSizeRange? range)
     {
-        var columnFixed = new Range(-int.MaxValue, int.MaxValue, StartPosition.Col, ColumnEnd);
+        var columnFixed = new Range(-int.MaxValue, int.MaxValue, Start.Col, ColumnEnd);
         return columnFixed.GetIntersection(range);
     }
 
@@ -76,7 +76,7 @@ public class ColumnRange : IRange
         }
 
         var newColumnEnd = SheetMath
-            .ClampInt(rangeLimit.StartPosition.Col, rangeLimit.EndPosition.Col, col);
+            .ClampInt(rangeLimit.Start.Col, rangeLimit.End.Col, col);
 
         ColumnEnd = col;
     }

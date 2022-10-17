@@ -5,11 +5,11 @@ namespace BlazorDatasheet.Data;
 /// </summary>
 public class AllRange : IRange
 {
-    public CellPosition StartPosition { get; }
+    public CellPosition Start { get; }
 
     public AllRange()
     {
-        StartPosition = new CellPosition(0, 0);
+        Start = new CellPosition(0, 0);
     }
 
     public bool Contains(int row, int col) => true;

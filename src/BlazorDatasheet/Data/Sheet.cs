@@ -48,7 +48,7 @@ public class Sheet
     public Range? Range => new Range(0, NumRows - 1, 0, NumCols - 1);
 
     public ConditionalFormatManager ConditionalFormatting { get; }
-    public SelectionManager Selection { get; }
+    public Selection Selection { get; }
 
     private readonly Dictionary<string, Type> _editorTypes;
     public IReadOnlyDictionary<string, Type> EditorTypes => _editorTypes;
@@ -59,7 +59,7 @@ public class Sheet
     {
         ColumnHeadings = new List<Heading>();
         RowHeadings = new List<Heading>();
-        Selection = new SelectionManager(this);
+        Selection = new Selection(this);
         ConditionalFormatting = new ConditionalFormatManager(this);
         _editorTypes = new Dictionary<string, Type>();
         _renderComponentTypes = new Dictionary<string, Type>();
@@ -132,7 +132,7 @@ public class Sheet
         RegisterRenderer<BoolRenderer>("boolean");
     }
 
-    private Cell[] GetCellsInRange(IRange range)
+    private IEnumerable<Cell> GetCellsInRange(IRange range)
     {
         var fixedRange = range.GetIntersection(this.Range);
         List<Cell> cells = new List<Cell>();
@@ -144,7 +144,7 @@ public class Sheet
         return cells.ToArray();
     }
 
-    public Cell[] GetCellsInRanges(IEnumerable<IRange> ranges)
+    public IEnumerable<Cell> GetCellsInRanges(IEnumerable<IRange> ranges)
     {
         var cells = new List<Cell>();
         foreach (var range in ranges)
@@ -199,6 +199,7 @@ public class Sheet
     /// </summary>
     /// <param name="text">The text to insert</param>
     /// <param name="inputPosition">The position where the insertion starts</param>
+    /// <returns>The range of cells that were affected</returns>
     internal Range InsertDelimitedText(string text, CellPosition inputPosition)
     {
         if (inputPosition.InvalidPosition)
@@ -287,10 +288,10 @@ public class Sheet
 
         var strBuilder = new StringBuilder();
 
-        var r0 = range.StartPosition.Row;
-        var r1 = range.EndPosition.Row;
-        var c0 = range.StartPosition.Col;
-        var c1 = range.EndPosition.Col;
+        var r0 = range.Start.Row;
+        var r1 = range.End.Row;
+        var c0 = range.Start.Col;
+        var c1 = range.End.Col;
 
         for (int row = r0; row <= r1; row++)
         {

@@ -28,7 +28,7 @@
                 var col = i;
                 var colDefn = Sheet?.ColumnHeadings.Count > i ? Sheet?.ColumnHeadings[i] : null;
                 <td
-                    class="sheet-cell column-head @(IsDataSheetActive && Sheet.Selection.IsColumnActive(col) ? "column-active" : "")"
+                    class="sheet-cell column-head @(IsDataSheetActive && IsColumnActive(col) ? "column-active" : "")"
                     @onmouseup="e => HandleCellMouseUp(-1, col, e)"
                     @onmouseover="e => HandleCellMouseOver(-1, col, e)"
                     @onmousedown="e => HandleColumnHeaderMouseDown(col, e)">
@@ -46,7 +46,7 @@
                     @if (ShowRowHeaders)
                     {
                         <td
-                            class="sheet-cell row-head @(IsDataSheetActive && Sheet.Selection.IsRowActive(sheetRow.RowNumber) ? "row-active" : "")"
+                            class="sheet-cell row-head @(IsDataSheetActive && IsRowActive(sheetRow.RowNumber) ? "row-active" : "")"
                             @onmousedown="e => HandleRowHeaderMouseDown(sheetRow.RowNumber, e)"
                             @onmouseover="e => HandleCellMouseOver(sheetRow.RowNumber, -1, e)"
                             @onmouseup="e => HandleCellMouseUp(sheetRow.RowNumber, -1, e)">
@@ -103,22 +103,26 @@
         }
         
         <!-- render active selection -->
-        <SelectionRenderer
-            CellLayoutProvider="_cellLayoutProvider"
-            Hidden="@(!IsDataSheetActive)"
-            HighlightStartPosition="@(!Sheet.Selection.Selections.Any())"
-            SelectionRange="@Sheet.Selection.ActiveSelection?.Range.GetIntersection(Sheet.Range)"/>
-
-        <!-- render selections -->
-        @for (int i = 0; i < Sheet.Selection.Selections.Count; i++)
+        @if (IsSelecting)
         {
-            var n = i;
-            var selection = Sheet.Selection.Selections[n];
+            var activeSel = RangeSelecting!.GetIntersection(Sheet.Range);
             <SelectionRenderer
                 CellLayoutProvider="_cellLayoutProvider"
                 Hidden="@(!IsDataSheetActive)"
-                HighlightStartPosition="@(n==0)"
-                SelectionRange="selection?.Range.GetIntersection(Sheet.Range)"/>
+                HighlightCell="true"
+                HighlightedCell="@activeSel.Start"
+                SelectionRange="@activeSel"/>
+        }
+
+        <!-- render selections -->
+        @foreach(var selectionRange in Sheet.Selection.Ranges)
+        {
+            <SelectionRenderer
+                CellLayoutProvider="_cellLayoutProvider"
+                Hidden="@(!IsDataSheetActive)"
+                HighlightCell="@(selectionRange == Sheet.Selection.ActiveRange && !IsSelecting)"
+                HighlightedCell="Sheet.Selection.ActiveCellPosition"
+                SelectionRange="selectionRange"/>
         }
     }
 </table>

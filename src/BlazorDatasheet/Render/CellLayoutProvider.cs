@@ -34,13 +34,13 @@ public class CellLayoutProvider
     public double ComputeLeftPosition(IFixedSizeRange range)
     {
         var extra = ShowRowHeaders ? 1 : 0;
-        return (Math.Min(range.StartPosition.Col, range.EndPosition.Col) + extra) * _columnWidth;
+        return (Math.Min(range.Start.Col, range.End.Col) + extra) * _columnWidth;
     }
 
     public double ComputeTopPosition(IFixedSizeRange range)
     {
         var extra = _showColHeaders ? 1 : 0;
-        return (Math.Min(range.StartPosition.Row, range.EndPosition.Row) + extra) * _rowHeight;
+        return (Math.Min(range.Start.Row, range.End.Row) + extra) * _rowHeight;
     }
 
     public double ComputeWidth(IFixedSizeRange range)

@@ -5,8 +5,15 @@ public interface IFixedSizeRange : IRange, IEnumerable<CellPosition>
     public int Width { get; }
     public int Height { get; }
     public int Area { get; }
-    public CellPosition StartPosition { get; }
-    public CellPosition EndPosition { get; }
+    public CellPosition End { get; }
+
+    public CellPosition TopLeft => new CellPosition(
+        Math.Min(Start.Row, End.Row),
+        Math.Min(Start.Col, End.Col));
+    
+    public CellPosition BottomRight => new CellPosition(
+        Math.Max(Start.Row, End.Row),
+        Math.Max(Start.Col, End.Col));
 
     /// <summary>
     /// Break into a number of ranges that do not include the given range.

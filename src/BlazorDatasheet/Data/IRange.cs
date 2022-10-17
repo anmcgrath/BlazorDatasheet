@@ -5,7 +5,7 @@ public interface IRange
     /// <summary>
     /// The start position (first cell position) in the range
     /// </summary>
-    public CellPosition StartPosition { get; }
+    public CellPosition Start { get; }
 
     /// <summary>
     /// Determines whether a point is inside the range

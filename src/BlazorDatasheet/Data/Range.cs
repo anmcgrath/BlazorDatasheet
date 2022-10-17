@@ -9,12 +9,12 @@ namespace BlazorDatasheet.Data;
 /// </summary>
 public class Range : IFixedSizeRange
 {
-    public CellPosition StartPosition { get; private set; }
-    public CellPosition EndPosition { get; private set; }
-    public int Height => Math.Abs(EndPosition.Row - StartPosition.Row) + 1;
-    public int Width => Math.Abs(EndPosition.Col - StartPosition.Col) + 1;
-    public int RowDir => EndPosition.Row >= StartPosition.Row ? 1 : -1;
-    public int ColDir => EndPosition.Col >= StartPosition.Col ? 1 : -1;
+    public CellPosition Start { get; private set; }
+    public CellPosition End { get; private set; }
+    public int Height => Math.Abs(End.Row - Start.Row) + 1;
+    public int Width => Math.Abs(End.Col - Start.Col) + 1;
+    public int RowDir => End.Row >= Start.Row ? 1 : -1;
+    public int ColDir => End.Col >= Start.Col ? 1 : -1;
     public int Area => Height * Width;
 
     /// <summary>
@@ -35,8 +35,8 @@ public class Range : IFixedSizeRange
     /// <param name="colEnd"></param>
     public Range(int rowStart, int rowEnd, int colStart, int colEnd)
     {
-        StartPosition = new CellPosition(rowStart, colStart);
-        EndPosition = new CellPosition(rowEnd, colEnd);
+        Start = new CellPosition(rowStart, colStart);
+        End = new CellPosition(rowEnd, colEnd);
     }
 
     /// <summary>
@@ -47,10 +47,10 @@ public class Range : IFixedSizeRange
     /// <returns></returns>
     public bool Contains(int row, int col)
     {
-        var r0 = Math.Min(StartPosition.Row, EndPosition.Row);
-        var r1 = Math.Max(StartPosition.Row, EndPosition.Row);
-        var c0 = Math.Min(StartPosition.Col, EndPosition.Col);
-        var c1 = Math.Max(StartPosition.Col, EndPosition.Col);
+        var r0 = Math.Min(Start.Row, End.Row);
+        var r1 = Math.Max(Start.Row, End.Row);
+        var c0 = Math.Min(Start.Col, End.Col);
+        var c1 = Math.Max(Start.Col, End.Col);
         return row >= r0 &&
                row <= r1 &&
                col >= c0 &&
@@ -64,8 +64,8 @@ public class Range : IFixedSizeRange
     /// <returns></returns>
     public bool SpansCol(int col)
     {
-        var c0 = Math.Min(StartPosition.Col, EndPosition.Col);
-        var c1 = Math.Max(StartPosition.Col, EndPosition.Col);
+        var c0 = Math.Min(Start.Col, End.Col);
+        var c1 = Math.Max(Start.Col, End.Col);
         return col >= c0 && col <= c1;
     }
 
@@ -76,21 +76,21 @@ public class Range : IFixedSizeRange
     /// <returns></returns>
     public bool SpansRow(int row)
     {
-        var r0 = Math.Min(StartPosition.Row, EndPosition.Row);
-        var r1 = Math.Max(StartPosition.Row, EndPosition.Row);
+        var r0 = Math.Min(Start.Row, End.Row);
+        var r1 = Math.Max(Start.Row, End.Row);
         return row >= r0 &&
                row <= r1;
     }
 
     public IRange Collapse()
     {
-        return new Range(StartPosition.Row, StartPosition.Col);
+        return new Range(Start.Row, Start.Col);
     }
 
     public void Move(int dRow, int dCol, IFixedSizeRange? limitingRange = null)
     {
-        this.StartPosition = new CellPosition(StartPosition.Row + dRow, StartPosition.Col + dCol);
-        this.EndPosition = new CellPosition(EndPosition.Row + dRow, EndPosition.Col + dCol);
+        this.Start = new CellPosition(Start.Row + dRow, Start.Col + dCol);
+        this.End = new CellPosition(End.Row + dRow, End.Col + dCol);
         if (limitingRange != null)
             this.Constrain(limitingRange);
     }
@@ -101,7 +101,7 @@ public class Range : IFixedSizeRange
     /// <param name="range"></param>
     public void Constrain(IFixedSizeRange? range)
     {
-        Constrain(range.StartPosition.Row, range.EndPosition.Row, range.StartPosition.Col, range.EndPosition.Col);
+        Constrain(range.Start.Row, range.End.Row, range.Start.Col, range.End.Col);
     }
 
     /// <summary>
@@ -113,12 +113,12 @@ public class Range : IFixedSizeRange
     /// <param name="otherColEnd"></param>
     public void Constrain(int otherRowStart, int otherRowEnd, int otherColStart, int otherColEnd)
     {
-        var r0 = SheetMath.ClampInt(otherRowStart, otherRowEnd, this.StartPosition.Row);
-        var r1 = SheetMath.ClampInt(otherRowStart, otherRowEnd, this.EndPosition.Row);
-        var c0 = SheetMath.ClampInt(otherColStart, otherColEnd, this.StartPosition.Col);
-        var c1 = SheetMath.ClampInt(otherColStart, otherColEnd, this.EndPosition.Col);
-        this.StartPosition = new CellPosition(r0, c0);
-        this.EndPosition = new CellPosition(r1, c1);
+        var r0 = SheetMath.ClampInt(otherRowStart, otherRowEnd, this.Start.Row);
+        var r1 = SheetMath.ClampInt(otherRowStart, otherRowEnd, this.End.Row);
+        var c0 = SheetMath.ClampInt(otherColStart, otherColEnd, this.Start.Col);
+        var c1 = SheetMath.ClampInt(otherColStart, otherColEnd, this.End.Col);
+        this.Start = new CellPosition(r0, c0);
+        this.End = new CellPosition(r1, c1);
     }
 
     /// <summary>
@@ -127,28 +127,28 @@ public class Range : IFixedSizeRange
     /// <returns></returns>
     public IRange Copy()
     {
-        return new Range(StartPosition.Row, EndPosition.Row, StartPosition.Col, EndPosition.Col);
+        return new Range(Start.Row, End.Row, Start.Col, End.Col);
     }
 
     public IFixedSizeRange GetIntersection(IFixedSizeRange? range)
     {
         var thisRange = this.CopyOrdered();
         var otherRange = range.CopyOrdered();
-        var x1 = thisRange.EndPosition.Col;
-        var x2 = otherRange.EndPosition.Col;
-        var y1 = thisRange.EndPosition.Row;
-        var y2 = otherRange.EndPosition.Row;
+        var x1 = thisRange.End.Col;
+        var x2 = otherRange.End.Col;
+        var y1 = thisRange.End.Row;
+        var y2 = otherRange.End.Row;
 
         IFixedSizeRange? intersection = null;
 
-        var xL = Math.Max(thisRange.StartPosition.Col, otherRange.StartPosition.Col);
+        var xL = Math.Max(thisRange.Start.Col, otherRange.Start.Col);
         var xR = Math.Min(x1, x2);
         if (xR < xL)
             intersection = null;
         else
         {
             var yB = Math.Min(y1, y2);
-            var yT = Math.Max(thisRange.StartPosition.Row, otherRange.StartPosition.Row);
+            var yT = Math.Max(thisRange.Start.Row, otherRange.Start.Row);
             if (yB < yT)
                 intersection = null;
             else
@@ -163,7 +163,7 @@ public class Range : IFixedSizeRange
 
     public void ExtendTo(int row, int col, IFixedSizeRange? rangeLimit = null)
     {
-        EndPosition = new CellPosition(row, col);
+        End = new CellPosition(row, col);
         if (rangeLimit != null)
             this.Constrain(rangeLimit);
     }
@@ -197,39 +197,39 @@ public class Range : IFixedSizeRange
         // | \\ | \\ |  3 |
         // | 4  |  4 |  4 |
 
-        var r1IsEmpty = thisOrdered.StartPosition.Row == range.StartPosition.Row;
-        var r2IsEmpty = thisOrdered.StartPosition.Col == range.StartPosition.Col;
-        var r3IsEmpty = thisOrdered.EndPosition.Col == range.EndPosition.Col;
-        var r4IsEmpty = thisOrdered.EndPosition.Row == range.EndPosition.Row;
+        var r1IsEmpty = thisOrdered.Start.Row == range.Start.Row;
+        var r2IsEmpty = thisOrdered.Start.Col == range.Start.Col;
+        var r3IsEmpty = thisOrdered.End.Col == range.End.Col;
+        var r4IsEmpty = thisOrdered.End.Row == range.End.Row;
 
         var ranges = new List<IFixedSizeRange>();
 
         if (!r1IsEmpty)
         {
-            var r1 = new Range(thisOrdered.StartPosition.Row, range.StartPosition.Row - 1,
-                               thisOrdered.StartPosition.Col,
-                               thisOrdered.EndPosition.Col);
+            var r1 = new Range(thisOrdered.Start.Row, range.Start.Row - 1,
+                               thisOrdered.Start.Col,
+                               thisOrdered.End.Col);
             ranges.Add(r1);
         }
 
         if (!r2IsEmpty)
         {
-            var r2 = new Range(range.StartPosition.Row, range.EndPosition.Row, thisOrdered.StartPosition.Col,
-                               range.StartPosition.Col - 1);
+            var r2 = new Range(range.Start.Row, range.End.Row, thisOrdered.Start.Col,
+                               range.Start.Col - 1);
             ranges.Add(r2);
         }
 
         if (!r3IsEmpty)
         {
-            var r3 = new Range(range.StartPosition.Row, range.EndPosition.Row, range.StartPosition.Col + 1,
-                               thisOrdered.EndPosition.Col);
+            var r3 = new Range(range.Start.Row, range.End.Row, range.Start.Col + 1,
+                               thisOrdered.End.Col);
             ranges.Add(r3);
         }
 
         if (!r4IsEmpty)
         {
-            var r4 = new Range(range.EndPosition.Row + 1, thisOrdered.EndPosition.Row, thisOrdered.StartPosition.Col,
-                               thisOrdered.EndPosition.Col);
+            var r4 = new Range(range.End.Row + 1, thisOrdered.End.Row, thisOrdered.Start.Col,
+                               thisOrdered.End.Col);
             ranges.Add(r4);
         }
 
@@ -249,13 +249,13 @@ public class Range : IFixedSizeRange
     /// <param name="colDir"></param>
     public void SetOrder(int rowDir, int colDir)
     {
-        var r0 = Math.Min(StartPosition.Row, EndPosition.Row);
-        var r1 = Math.Max(StartPosition.Row, EndPosition.Row);
-        var c0 = Math.Min(StartPosition.Col, EndPosition.Col);
-        var c1 = Math.Max(StartPosition.Col, EndPosition.Col);
+        var r0 = Math.Min(Start.Row, End.Row);
+        var r1 = Math.Max(Start.Row, End.Row);
+        var c0 = Math.Min(Start.Col, End.Col);
+        var c1 = Math.Max(Start.Col, End.Col);
         
-        StartPosition = new CellPosition(rowDir == 1 ? r0 : r1, colDir == 1 ? c0 : c1);
-        EndPosition = new CellPosition(rowDir == 1 ? r1 : r0, colDir == 1 ? c1 : c0);
+        Start = new CellPosition(rowDir == 1 ? r0 : r1, colDir == 1 ? c0 : c1);
+        End = new CellPosition(rowDir == 1 ? r1 : r0, colDir == 1 ? c1 : c0);
     }
 
     /// <summary>
@@ -266,24 +266,24 @@ public class Range : IFixedSizeRange
     public IFixedSizeRange CopyOrdered()
     {
         return new Range(
-            Math.Min(StartPosition.Row, EndPosition.Row),
-            Math.Max(StartPosition.Row, EndPosition.Row),
-            Math.Min(StartPosition.Col, EndPosition.Col),
-            Math.Max(StartPosition.Col, EndPosition.Col)
+            Math.Min(Start.Row, End.Row),
+            Math.Max(Start.Row, End.Row),
+            Math.Min(Start.Col, End.Col),
+            Math.Max(Start.Col, End.Col)
         );
     }
 
     public IEnumerator<CellPosition> GetEnumerator()
     {
-        var rowDir = EndPosition.Row >= StartPosition.Row ? 1 : -1;
-        var colDir = EndPosition.Col >= StartPosition.Col ? 1 : -1;
-        var row = StartPosition.Row;
-        var col = StartPosition.Col;
+        var rowDir = End.Row >= Start.Row ? 1 : -1;
+        var colDir = End.Col >= Start.Col ? 1 : -1;
+        var row = Start.Row;
+        var col = Start.Col;
 
         for (var i = 0; i < Height; i++)
         {
             // Reset column at start of each row
-            col = StartPosition.Col;
+            col = Start.Col;
 
             for (var j = 0; j < Width; j++)
             {
@@ -297,7 +297,7 @@ public class Range : IFixedSizeRange
 
     public override string ToString()
     {
-        return $"Range from ({StartPosition.Row}, {StartPosition.Col}) to ({EndPosition.Row}, {EndPosition.Col})";
+        return $"Range from ({Start.Row}, {Start.Col}) to ({End.Row}, {End.Col})";
     }
 
     IEnumerator IEnumerable.GetEnumerator()
@@ -308,10 +308,10 @@ public class Range : IFixedSizeRange
     public override bool Equals(object? obj)
     {
         if (obj is IFixedSizeRange fr)
-            return fr.StartPosition.Row == StartPosition.Row
-                   && fr.StartPosition.Col == StartPosition.Col
-                   && fr.EndPosition.Row == EndPosition.Row
-                   && fr.EndPosition.Col == EndPosition.Col;
+            return fr.Start.Row == Start.Row
+                   && fr.Start.Col == Start.Col
+                   && fr.End.Row == End.Row
+                   && fr.End.Col == End.Col;
 
         return false;
     }

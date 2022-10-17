@@ -21,7 +21,8 @@ public partial class Datasheet : IHandleEvent
     /// <summary>
     /// The Sheet holding the data for the datasheet.
     /// </summary>
-    [Parameter] public Sheet? Sheet { get; set; }
+    [Parameter]
+    public Sheet? Sheet { get; set; }
 
     /// <summary>
     /// Exists so that we can determine whether the sheet has changed
@@ -32,46 +33,62 @@ public partial class Datasheet : IHandleEvent
     /// <summary>
     /// Set to true when the datasheet should not be edited
     /// </summary>
-    [Parameter] public bool IsReadOnly { get; set; }
+    [Parameter]
+    public bool IsReadOnly { get; set; }
+
     /// <summary>
     /// Fixed height in pixels of the datasheet, if IsFixedHeight = true. Default is 350 px.
     /// </summary>
-    [Parameter] public double FixedHeightInPx { get; set; } = 350;
+    [Parameter]
+    public double FixedHeightInPx { get; set; } = 350;
+
     /// <summary>
     /// Whether the datasheet should be a fixed height. If it's true, a scrollbar will be used to
     /// scroll through the rolls that are outside of the view.
     /// </summary>
-    [Parameter] public bool IsFixedHeight { get; set; }
+    [Parameter]
+    public bool IsFixedHeight { get; set; }
+
     /// <summary>
     /// Whether to show the row headings. Default is true.
     /// </summary>
-    [Parameter] public bool ShowRowHeaders { get; set; } = true;
+    [Parameter]
+    public bool ShowRowHeaders { get; set; } = true;
+
     /// <summary>
     /// Whether to show column headings. Default is true.
     /// </summary>
-    [Parameter] public bool ShowColumnHeaders { get; set; } = true;
+    [Parameter]
+    public bool ShowColumnHeaders { get; set; } = true;
+
     /// <summary>
     /// Whether the user is focused on the datasheet.
     /// </summary>
     private bool IsDataSheetActive { get; set; }
+
     /// <summary>
     /// Whether the mouse is located inside/over the sheet.
     /// </summary>
     private bool IsMouseInsideSheet { get; set; }
+
     /// <summary>
     /// The range that is in the process of being selected via user input.
     /// </summary>
-    private IRange RangeSelecting { get; set; }
+    private IRange? RangeSelecting { get; set; }
+
+    private bool IsSelecting => RangeSelecting != null;
+
     /// <summary>
     /// The current list of actions that should be performed on the next render.
     /// </summary>
     private Queue<Action> QueuedActions { get; set; } = new Queue<Action>();
+
     private CellLayoutProvider _cellLayoutProvider;
     private EditorManager _editorManager;
     private CommandManager _commandManager;
     private IWindowEventService _windowEventService;
     private IClipboard _clipboard;
-    
+
     [Parameter] public EventCallback<CellsChangedEventArgs> OnCellsChanged { get; set; }
 
     protected override void OnInitialized()
@@ -158,21 +175,21 @@ public partial class Datasheet : IHandleEvent
 
     private void HandleCellMouseUp(int row, int col, MouseEventArgs e)
     {
-        Sheet?.Selection?.EndSelecting();
+        this.EndSelecting();
     }
 
     private void HandleCellMouseDown(int row, int col, MouseEventArgs e)
     {
-        if (e.ShiftKey)
-            Sheet?.Selection?.ExtendSelection(row, col);
+        if (e.ShiftKey && Sheet?.Selection?.ActiveRange != null)
+            Sheet?.Selection?.ActiveRange.ExtendTo(row, col);
         else
         {
             if (!e.MetaKey && !e.CtrlKey)
             {
-                Sheet?.Selection?.ClearSelections();
+                Sheet?.Selection?.Clear();
             }
 
-            Sheet?.Selection?.BeginSelectingCell(row, col);
+            this.BeginSelectingCell(row, col);
         }
 
 
@@ -187,16 +204,16 @@ public partial class Datasheet : IHandleEvent
 
     private void HandleColumnHeaderMouseDown(int col, MouseEventArgs e)
     {
-        if (e.ShiftKey)
-            Sheet?.Selection?.ExtendSelection(Sheet.NumRows - 1, col);
+        if (e.ShiftKey && Sheet?.Selection?.ActiveRange != null)
+            Sheet?.Selection?.ActiveRange.ExtendTo(0, col);
         else
         {
             if (!e.MetaKey && !e.CtrlKey)
             {
-                Sheet?.Selection?.ClearSelections();
+                Sheet?.Selection?.Clear();
             }
 
-            Sheet?.Selection?.BeginSelectingCol(col);
+            this.BeginSelectingCol(col);
         }
 
         if (AcceptEdit())
@@ -207,16 +224,16 @@ public partial class Datasheet : IHandleEvent
 
     private void HandleRowHeaderMouseDown(int row, MouseEventArgs e)
     {
-        if (e.ShiftKey)
-            Sheet?.Selection?.ExtendSelection(row, Sheet.NumCols - 1);
+        if (e.ShiftKey && Sheet?.Selection?.ActiveRange != null)
+            Sheet?.Selection?.ActiveRange.ExtendTo(row, 0);
         else
         {
             if (!e.MetaKey && !e.CtrlKey)
             {
-                Sheet?.Selection?.ClearSelections();
+                Sheet?.Selection?.Clear();
             }
 
-            Sheet?.Selection?.BeginSelectingRow(row);
+            this.BeginSelectingRow(row);
         }
 
         if (AcceptEdit())
@@ -236,7 +253,7 @@ public partial class Datasheet : IHandleEvent
         if (this.IsReadOnly)
             return;
 
-        Sheet.Selection.CancelSelecting();
+        this.CancelSelecting();
 
         var cell = Sheet?.GetCell(row, col);
         if (cell == null || cell.IsReadOnly)
@@ -248,26 +265,14 @@ public partial class Datasheet : IHandleEvent
         NextTick(StateHasChanged);
     }
 
-    private bool AcceptEdit()
-    {
-        return AcceptEdit(0, 0);
-    }
-
     /// <summary>
-    /// Accepts the current edit and moves the selection by dRow/dCol, returning whether the edit was successful
+    /// Accepts the current edit returning whether the edit was successful
     /// </summary>
     /// <param name="dRow"></param>
-    /// <param name="dCol"></param>
     /// <returns></returns>
-    private bool AcceptEdit(int dRow, int dCol)
+    private bool AcceptEdit()
     {
         var result = _editorManager.AcceptEdit();
-        if (!result)
-            return false;
-
-        Sheet.Selection.MoveSelection(dRow, dCol);
-        StateHasChanged();
-
         return result;
     }
 
@@ -327,7 +332,7 @@ public partial class Datasheet : IHandleEvent
 
     private void HandleCellMouseOver(int row, int col, MouseEventArgs e)
     {
-        Sheet.Selection.UpdateSelectingEndPosition(row, col);
+        this.UpdateSelectingEndPosition(row, col);
         StateHasChanged();
     }
 
@@ -363,17 +368,11 @@ public partial class Datasheet : IHandleEvent
 
         if (e.Key == "Enter")
         {
-            if (!_editorManager.IsEditing)
+            if (!_editorManager.IsEditing || this.AcceptEdit())
             {
-                Sheet?.Selection?.EndSelecting();
-                Sheet?.Selection?.MoveSelection(1, 0);
+                var movementDir = e.ShiftKey ? -1 : 1;
+                Sheet?.Selection?.MoveActivePosition(movementDir);
                 StateHasChanged();
-                return true;
-            }
-
-            // Accept the edit
-            else if (AcceptEdit(1, 0))
-            {
                 return true;
             }
         }
@@ -381,15 +380,10 @@ public partial class Datasheet : IHandleEvent
         if (KeyUtil.IsArrowKey(e.Key))
         {
             var direction = KeyUtil.GetKeyMovementDirection(e.Key);
-            if (!_editorManager.IsEditing)
+            if (!_editorManager.IsEditing || (_editorManager.IsSoftEdit && AcceptEdit()))
             {
-                Sheet?.Selection?.MoveSelection(direction.Item1, direction.Item2);
+                this.collapseAndMoveSelection(direction.Item1, direction.Item2);
                 StateHasChanged();
-                return true;
-            }
-            // Accept the edit
-            else if (_editorManager.IsSoftEdit && AcceptEdit(direction.Item1, direction.Item2))
-            {
                 return true;
             }
         }
@@ -397,7 +391,7 @@ public partial class Datasheet : IHandleEvent
         if (e.Key == "Tab")
         {
             AcceptEdit();
-            Sheet.Selection.MoveSelection(0, 1);
+            this.collapseAndMoveSelection(0, 1);
             StateHasChanged();
             return true;
         }
@@ -425,9 +419,9 @@ public partial class Datasheet : IHandleEvent
 
         if ((e.Key == "Delete" || e.Key == "Backspace") && !_editorManager.IsEditing)
         {
-            if (!Sheet.Selection.Selections.Any())
+            if (!Sheet.Selection.Ranges.Any())
                 return true;
-            var rangesToClear = Sheet.Selection.Selections.Select(x => x.Range);
+            var rangesToClear = Sheet.Selection.Ranges;
             var cmd = new ClearCellsCommand(rangesToClear);
             _commandManager.ExecuteCommand(cmd);
             StateHasChanged();
@@ -438,7 +432,7 @@ public partial class Datasheet : IHandleEvent
         if ((e.Key.Length == 1) && !_editorManager.IsEditing && IsDataSheetActive)
         {
             // Don't input anything if we are currently selecting
-            if (Sheet.Selection.IsSelecting)
+            if (this.IsSelecting)
                 return false;
 
             // Capture commands and return early (mainly for paste)
@@ -448,7 +442,9 @@ public partial class Datasheet : IHandleEvent
             char c = e.Key == "Space" ? ' ' : e.Key[0];
             if (char.IsLetterOrDigit(c) || char.IsPunctuation(c) || char.IsSymbol(c) || char.IsSeparator(c))
             {
-                var inputPosition = Sheet.Selection.GetPositionOfFirstCell();
+                if (Sheet == null || !Sheet.Selection.Ranges.Any())
+                    return false;
+                var inputPosition = Sheet.Selection.ActiveCellPosition;
                 if (inputPosition.InvalidPosition)
                     return false;
                 BeginEdit(inputPosition.Row, inputPosition.Col, softEdit: true, EditEntryMode.Key, e.Key);
@@ -461,12 +457,25 @@ public partial class Datasheet : IHandleEvent
         return false;
     }
 
+    private void collapseAndMoveSelection(int drow, int dcol)
+    {
+        if (Sheet == null)
+            return;
+
+        var activeRange = Sheet.Selection.ActiveRange.Collapse();
+        activeRange.Move(drow, dcol, Sheet.Range);
+        Sheet.Selection.SetSingle(activeRange);
+    }
+
     private async Task HandleWindowPaste(PasteEventArgs arg)
     {
         if (!IsDataSheetActive)
             return;
+        
+        if (Sheet == null || !Sheet.Selection.Ranges.Any())
+            return;
 
-        var posnToInput = Sheet.Selection.GetPositionOfFirstCell();
+        var posnToInput = Sheet.Selection.ActiveCellPosition;
         if (posnToInput.InvalidPosition)
             return;
 
@@ -475,7 +484,7 @@ public partial class Datasheet : IHandleEvent
             return;
 
         this.emitCellsChanged(range);
-        Sheet.Selection.SetSelection(range);
+        Sheet.Selection.SetSingle(range);
         this.StateHasChanged();
     }
 
@@ -520,14 +529,14 @@ public partial class Datasheet : IHandleEvent
     /// </summary>
     public async Task CopySelectionToClipboard()
     {
-        if (Sheet.Selection.IsSelecting)
+        if (this.IsSelecting || Sheet == null)
             return;
 
         // Can only handle single selections for now
-        var selection = Sheet.Selection.GetSelections().FirstOrDefault();
-        if (selection == null)
+        var range = Sheet.Selection.ActiveRange;
+        if (range == null)
             return;
-        var text = Sheet.GetRangeAsDelimitedText(selection.Range);
+        var text = Sheet.GetRangeAsDelimitedText(range);
         await _clipboard.WriteTextAsync(text);
     }
 
@@ -554,5 +563,84 @@ public partial class Datasheet : IHandleEvent
         strBuilder.Append($"box-shadow: 0px 0px 5px grey");
         var style = strBuilder.ToString();
         return style;
+    }
+
+
+    /// <summary>
+    /// Start selecting at a position (row, col). This selection is not finalised until EndSelecting() is called.
+    /// </summary>
+    /// <param name="row">The row where the selection should start</param>
+    /// <param name="col">The col where the selection should start</param>
+    private void BeginSelectingCell(int row, int col)
+    {
+        RangeSelecting = new Range(row, col);
+    }
+
+    private void CancelSelecting()
+    {
+        RangeSelecting = null;
+    }
+
+    private void BeginSelectingRow(int row)
+    {
+        RangeSelecting = new RowRange(row, row);
+    }
+
+    private void BeginSelectingCol(int col)
+    {
+        RangeSelecting = new ColumnRange(col, col);
+    }
+
+    /// <summary>
+    /// Updates the current selecting selection by extending it to row, col
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    private void UpdateSelectingEndPosition(int row, int col)
+    {
+        if (!IsSelecting)
+            return;
+
+        RangeSelecting?.ExtendTo(row, col);
+    }
+
+    /// <summary>
+    /// Ends the selecting process and adds the selection to the stack
+    /// </summary>
+    private void EndSelecting()
+    {
+        if (!IsSelecting)
+            return;
+
+        Sheet?.Selection.Add(RangeSelecting!);
+        this.RangeSelecting = null;
+    }
+
+    /// <summary>
+    /// Determines whether a column contains any cells that are selected or being selected
+    /// </summary>
+    /// <param name="col"></param>
+    /// <returns></returns>
+    private bool IsColumnActive(int col)
+    {
+        if (IsSelecting && RangeSelecting!.SpansCol(col))
+            return true;
+        if (Sheet?.Selection.Ranges.Any(x => x.SpansCol(col)) == true)
+            return true;
+        return false;
+    }
+
+    /// <summary>
+    /// Determines whether a row contains any cells that are selected or being selected
+    /// </summary>
+    /// <param name="row"></param>
+    /// <returns></returns>
+    private bool IsRowActive(int row)
+    {
+        if (IsSelecting && RangeSelecting!.SpansRow(row))
+            return true;
+        if (Sheet?.Selection.Ranges.Any(x => x.SpansRow(row)) == true)
+            return true;
+        return false;
     }
 }

@@ -2,21 +2,22 @@
 @using BlazorDatasheet.Data
 @using BlazorDatasheet.Render
 @using Range = BlazorDatasheet.Data.Range
+@using System.ComponentModel
 
 @if (SelectionRange != null && !Hidden)
 {
-    if (HighlightStartPosition)
+    if (HighlightCell)
     {
-        var ranges = SelectionRange.Break(SelectionRange.StartPosition);
+        var ranges = SelectionRange.Break(HighlightedCell);
         foreach (var range in ranges)
         {
-            <div class="selection-base" style="@GetSizeStyleString(range, 0, .13)">
-            </div>
+            <div class="selection-base"
+                 style="@GetSizeStyleString(range, 0, .13)"/>
         }
     }
-    <div class="selection-base" style="@GetSizeStyleString(SelectionRange, 2, HighlightStartPosition ? 0 : .13)">
-    </div>
-}
+    <div class="selection-base"
+         style="@GetSizeStyleString(SelectionRange, 2, HighlightCell ? 0 : .13)"/>
+    }
 
 
 <style>
@@ -38,7 +39,10 @@
     public bool Hidden { get; set; }
 
     [Parameter]
-    public bool HighlightStartPosition { get; set; }
+    public CellPosition HighlightedCell { get; set; }
+    
+    [Parameter, EditorRequired]
+    public bool HighlightCell { get; set; }
 
     private string GetSizeStyleString(IFixedSizeRange? range, int borderThickness, double opacity)
     {
