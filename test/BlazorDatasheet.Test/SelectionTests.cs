@@ -79,4 +79,20 @@ public class SelectionManagerTests
         Assert.AreEqual(r1, selection.ActiveRange);
         Assert.AreEqual(r1.Start, selection.ActiveCellPosition);
     }
+
+    [Test]
+    public void Selection_Event_Changed_Fires_Correctly()
+    {
+        var nTimesChanged = 0;
+        var selection = new Selection(_sheet);
+        selection.Changed += ranges =>
+        {
+            nTimesChanged++;
+        };
+        
+        selection.SetSingle(new Range(1,1));
+        selection.Add(new Range(2,2));
+        selection.Clear();
+        Assert.AreEqual(3, nTimesChanged);
+    }
 }
