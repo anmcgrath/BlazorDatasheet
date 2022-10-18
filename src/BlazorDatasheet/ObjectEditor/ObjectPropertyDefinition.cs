@@ -8,7 +8,7 @@ public class ObjectPropertyDefinition<T>
     public string PropertyName { get; set; }
     public string Heading { get; set; }
     public string Type { get; set; } = "text";
-    public Format Format { get; set; } = Format.Default;
+    public Format? Format { get; set; }
     public bool IsReadOnly { get; set; }
     internal List<string> ConditionalFormatKeys { get; set; }
     internal List<IDataValidator> Validators { get; set; }

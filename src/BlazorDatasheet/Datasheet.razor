@@ -8,6 +8,7 @@
 @using Microsoft.AspNetCore.Components.Web.Virtualization;
 @using System.Collections.Immutable
 @using System.Reflection
+@using System.Text
 
 <table
     style="@(IsFixedHeight ? $"max-height: {FixedHeightInPx}px;" : "")"
@@ -60,8 +61,18 @@
 
                         var cell = Sheet.GetCell(row, col);
                         var conditionalFormatting = Sheet.ConditionalFormatting.CalculateFormat(row, col);
-                        var format = cell.Formatting.Clone();
-                        format.Merge(conditionalFormatting);
+
+                        Format format;
+                        if (cell.Formatting != null)
+                        {
+                            format = cell.Formatting;
+                            format.Merge(conditionalFormatting);
+                        }
+                        else
+                        {
+                            format = conditionalFormatting;
+                        }
+
 
                         <td
                             class="sheet-cell"
@@ -71,15 +82,12 @@
                             @onmouseup="e => HandleCellMouseUp(row, col, e)">
                             <div
                                 class="cell"
-                                style="
-                                        background: @format.BackgroundColor; 
-                                        color: @(cell.IsValid ? format.ForegroundColor : "red");
-                                        font-weight: @format.FontWeight;
+                                style="@GetCellStyleFromFormat(format, cell.IsValid)
                                         display: flex;
                                     ">
-                                @if (format.Icon != null)
+                                @if (format?.Icon != null)
                                 {
-                                    <div style="margin-right:2px; color: @format.IconColor">@format.Icon</div>
+                                    <div style="margin-right:2px; color: @(format.IconColor ?? "var(--icon-color)");">@format.Icon</div>
                                 }
                                 <DynamicComponent
                                     Type="@getCellRendererType(cell.Type)"
@@ -101,7 +109,7 @@
                     @ref="_editorManager.ActiveEditorContainer"/>
             </div>
         }
-        
+
         <!-- render active selection -->
         @if (IsSelecting)
         {
@@ -115,7 +123,7 @@
         }
 
         <!-- render selections -->
-        @foreach(var selectionRange in Sheet.Selection.Ranges)
+        @foreach (var selectionRange in Sheet.Selection.Ranges)
         {
             <SelectionRenderer
                 CellLayoutProvider="_cellLayoutProvider"
@@ -127,6 +135,16 @@
     }
 </table>
 
-<style>
+@code{
 
-</style>
+    private string GetCellStyleFromFormat(Format? cellFormat, bool isValid)
+    {
+        var foreGroundVar = isValid ? "--sheet-foreground-color" : "--invalid-cell-foreground-color";
+        var sb = new StringBuilder();
+        sb.Append($"background-color:{cellFormat?.BackgroundColor ?? "var(--sheet-bg-color)"};");
+        sb.Append($"color:{cellFormat?.ForegroundColor ?? $"var({foreGroundVar})"};");
+        sb.Append($"font-weight:{cellFormat?.FontWeight ?? "var(--sheet-font-weight)"};");
+        return sb.ToString();
+    }
+
+}

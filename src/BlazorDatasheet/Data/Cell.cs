@@ -23,7 +23,7 @@ public class Cell : IReadOnlyCell, IWriteableCell
     /// <summary>
     /// The formatting to be applied to the cell on render
     /// </summary>
-    public Format Formatting { get; set; } = Format.Default;
+    public Format? Formatting { get; set; }
 
     /// <summary>
     /// If IsReadOnly = true, the cell's value cannot be edited via the datasheet

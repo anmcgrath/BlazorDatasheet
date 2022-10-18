@@ -4,12 +4,12 @@ namespace BlazorDatasheet.Render;
 
 public class Format
 {
-    public string FontWeight { get; set; }
-    public string BackgroundColor { get; set; }
-    public string ForegroundColor { get; set; }
+    public string? FontWeight { get; set; }
+    public string? BackgroundColor { get; set; }
+    public string? ForegroundColor { get; set; }
     public string? StringFormat { get; set; }
     public RenderFragment? Icon { get; set; }
-    public string IconColor { get; set; }
+    public string? IconColor { get; set; }
 
     /// <summary>
     /// Returns a new Format object with cloned properties
@@ -50,16 +50,4 @@ public class Format
         if (!String.IsNullOrEmpty(format.IconColor))
             this.IconColor = format.IconColor;
     }
-
-    /// <summary>
-    /// Returns the default format for the datasheet cells
-    /// </summary>
-    public static Format Default =>
-        new Format()
-        {
-            FontWeight = "normal",
-            BackgroundColor = "#ffffff",
-            ForegroundColor = "#5c5c5c",
-            IconColor = "#000000"
-        };
 }

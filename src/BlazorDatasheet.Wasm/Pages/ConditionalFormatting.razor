@@ -34,7 +34,7 @@
             c => c.GetValue() != null && c.GetValue<double?>() != null,
             c =>
             {
-                var f = Format.Default;
+                var f = new Format();
                 var val = c.GetValue<double?>();
                 if (val.HasValue)
                 {

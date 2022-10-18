@@ -15,7 +15,7 @@
             if (num == null || double.IsNaN(num.Value))
                 return "";
             
-            if (string.IsNullOrEmpty(Cell.Formatting.StringFormat))
+            if (Cell?.Formatting == null || string.IsNullOrEmpty(Cell.Formatting.StringFormat))
                 return num.Value.ToString(CultureInfo.CurrentCulture);
             else
                 return num.Value.ToString(Cell.Formatting.StringFormat, CultureInfo.CurrentCulture);
