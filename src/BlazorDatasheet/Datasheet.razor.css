@@ -61,12 +61,10 @@
 
 .column-head {
     background: var(--col-header-bg-color) !important;
-    border-bottom: 1px solid lightgray;
 }
 
 .column-active {
     background: var(--active-header-bg-color) !important;
-    border-bottom: 1px solid #3d87f1 !important;
 }
 
 .row-head {
