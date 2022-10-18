@@ -48,7 +48,16 @@ public class Sheet
     public List<Heading> RowHeadings { get; private set; }
 
     /// <summary>
-    /// Managers commands & undo/redo
+    /// Whether to show the row headings
+    /// </summary>
+    public bool ShowRowHeadings { get; set; } = true;
+
+    /// <summary>
+    /// Whether to show the column headings. Default is true.
+    /// </summary>
+    public bool ShowColumnHeadings { get; set; } = true;
+    /// <summary>
+    /// Managers commands & undo/redo. Default is true.
     /// </summary>
     public CommandManager Commands { get; private set; }
 
@@ -61,10 +70,12 @@ public class Sheet
     public IReadOnlyDictionary<string, Type> EditorTypes => _editorTypes;
     private Dictionary<string, Type> _renderComponentTypes { get; set; }
     public IReadOnlyDictionary<string, Type> RenderComponentTypes => _renderComponentTypes;
+
     /// <summary>
     /// Fired when a row is inserted into the sheet
     /// </summary>
     public event Action<RowInsertedEventArgs> RowInserted;
+
     /// <summary>
     /// Fired when a row is removed from the sheet.
     /// </summary>
@@ -298,15 +309,16 @@ public class Sheet
 
     public bool TrySetCellValue(int row, int col, object value)
     {
+        var cmd = new SetCellValueCommand(row, col, value);
+        return Commands.ExecuteCommand(cmd);
+    }
+
+    internal bool TrySetCellValueImpl(int row, int col, object value)
+    {
         var cell = this.GetCell(row, col);
         if (cell == null)
             return false;
 
-        return TrySetCellValue(cell, value);
-    }
-
-    internal bool TrySetCellValue(Cell cell, object value)
-    {
         // Perform data validation
         var isValid = true;
         foreach (var validator in cell.Validators)

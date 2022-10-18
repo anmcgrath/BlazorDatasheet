@@ -9,21 +9,17 @@ namespace BlazorDatasheet.Render;
 /// </summary>
 public class CellLayoutProvider
 {
-    private bool ShowRowHeaders { get; }
     private Sheet _sheet;
     private readonly double _columnWidth;
     private readonly double _rowHeight;
-    private readonly bool _showColHeaders;
 
-    internal CellLayoutProvider(Sheet sheet, double columnWidth, double rowHeight, bool showColHeaders, bool showRowHeaders)
+    internal CellLayoutProvider(Sheet sheet, double columnWidth, double rowHeight)
     {
-        ShowRowHeaders = showRowHeaders;
         //TODO: Remove columnWidth and height in future to calculate dynamically
         //TODO: Remove bools for show headers and rows and determine from sheet.
         _sheet = sheet;
         _columnWidth = columnWidth;
         _rowHeight = rowHeight;
-        _showColHeaders = showColHeaders;
     }
 
     public void SetSheet(Sheet sheet)
@@ -33,19 +29,19 @@ public class CellLayoutProvider
 
     public double ComputeLeftPosition(IFixedSizeRange range)
     {
-        var extra = ShowRowHeaders ? 1 : 0;
-        return (Math.Min(range.Start.Col, range.End.Col) + extra) * _columnWidth;
+        var extra = _sheet.ShowRowHeadings ? 1 : 0;
+        return (Math.Min(range.Start.Col, range.End.Col) + extra) * _columnWidth -1;
     }
 
     public double ComputeTopPosition(IFixedSizeRange range)
     {
-        var extra = _showColHeaders ? 1 : 0;
-        return (Math.Min(range.Start.Row, range.End.Row) + extra) * _rowHeight;
+        var extra = _sheet.ShowColumnHeadings ? 1 : 0;
+        return (Math.Min(range.Start.Row, range.End.Row) + extra) * _rowHeight - 1;
     }
 
     public double ComputeWidth(IFixedSizeRange range)
     {
-        return range.Width * _columnWidth;
+        return range.Width * _columnWidth - 1;
     }
 
     public double ComputeHeight(IFixedSizeRange range)

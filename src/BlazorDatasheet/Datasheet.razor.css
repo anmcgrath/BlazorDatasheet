@@ -1,59 +1,67 @@
 .active-sheet {
-    border: 1px solid gray;
+    border: none;
 }
 
 .inactive-sheet {
-    border: 1px solid lightgray;
+    border: none;
 }
 
 .sheet {
     font-size: .8rem;
     box-sizing: border-box;
-    border-spacing: 0;
-    position:relative;
-    white-space: nowrap;
+    position: relative;
     display: inline-block;
+    border-left: var(--sheet-border-style);
+    border-top: var(--sheet-border-style);
+    white-space: nowrap;
 }
 
-.sheet-fixed-height{
-    overflow-x: hidden;
-    overflow-y: auto;
+.sheet-fixed-height {
+    overflow-y:scroll;
+    overflow-x: auto;
 }
 
-.sheet-dynamic-height{
+.sheet-dynamic-height {
 
 }
 
 .sheet-cell {
-    width: 6.6rem;
-    max-width: 6.6rem;
-    min-width: 6.6rem;
-    height: calc(1.5rem + 4px);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    border: var(--sheet-border-style);
-    box-sizing: border-box;
-    padding: 1px;
+    display: inline-block;
+    width: 105px;
+    max-width: 105px;
+    min-width: 105px;
+    height: 100%;
     user-select: none;
     -moz-user-select: none;
+    border-right: var(--sheet-border-style);
+    border-bottom: var(--sheet-border-style);
     -webkit-user-select: none;
 }
 
+.sheet-row {
+    padding: 0;
+    height: 25px;
+}
+
 .invalid-cell {
-    color: red !important;
+    color: var(--invalid-cell-foreground-color) !important;
     background: red;
 }
 
 .cell {
+    display: inline-block;
     width: 100%;
     height: 100%;
-    padding: 2px 2px 2px 3px;
+    padding: 2px;
+    overflow: hidden;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
 }
 
 .column-head {
     background: var(--col-header-bg-color) !important;
     border-bottom: 1px solid lightgray;
-    padding: 2px 2px 2px 3px;
 }
 
 .column-active {
@@ -63,11 +71,12 @@
 
 .row-head {
     background: var(--row-header-bg-color) !important;
-    border-right: 1px solid lightgray;
+    border-right: var(--sheet-border-style);
+    padding-right: 5px;
+    padding-left: 5px;
 }
 
 .row-active {
     background: var(--active-header-bg-color) !important;
-    border-right: 1px solid #3d87f1 !important;
 }
 

@@ -48,19 +48,6 @@ public partial class Datasheet : IHandleEvent
     /// </summary>
     [Parameter]
     public bool IsFixedHeight { get; set; }
-
-    /// <summary>
-    /// Whether to show the row headings. Default is true.
-    /// </summary>
-    [Parameter]
-    public bool ShowRowHeaders { get; set; } = true;
-
-    /// <summary>
-    /// Whether to show column headings. Default is true.
-    /// </summary>
-    [Parameter]
-    public bool ShowColumnHeaders { get; set; } = true;
-
     /// <summary>
     /// Whether the user is focused on the datasheet.
     /// </summary>
@@ -88,14 +75,11 @@ public partial class Datasheet : IHandleEvent
     private IWindowEventService _windowEventService;
     private IClipboard _clipboard;
 
-    [Parameter] public EventCallback<CellsChangedEventArgs> OnCellsChanged { get; set; }
-
     protected override void OnInitialized()
     {
         _windowEventService = new WindowEventService(JS);
         _clipboard = new Clipboard(JS);
         _editorManager = new EditorManager(Sheet, NextTick);
-        _editorManager.OnAcceptEdit += EditorManagerOnOnAcceptEdit;
 
         base.OnInitialized();
     }
@@ -108,16 +92,10 @@ public partial class Datasheet : IHandleEvent
         {
             _sheetLocal = Sheet;
             _editorManager.SetSheet(Sheet);
-            _cellLayoutProvider = new CellLayoutProvider(Sheet, 105.6, 28, ShowColumnHeaders, ShowRowHeaders);
+            _cellLayoutProvider = new CellLayoutProvider(Sheet, 105, 25);
         }
 
         base.OnParametersSet();
-    }
-
-    private void EditorManagerOnOnAcceptEdit(AcceptEditEventArgs e)
-    {
-        var cell = Sheet?.GetCell(e.Row, e.Col);
-        this.emitCellsChanged(cell, e.Row, e.Col);
     }
 
     private Type getCellRendererType(string type)
@@ -272,48 +250,6 @@ public partial class Datasheet : IHandleEvent
         var result = _editorManager.AcceptEdit();
         return result;
     }
-
-    /// <summary>
-    /// Emit an event for a single cell change
-    /// </summary>
-    /// <param name="cell"></param>
-    /// <param name="row"></param>
-    /// <param name="col"></param>
-    private async void emitCellsChanged(Cell cell, int row, int col)
-    {
-        if (!OnCellsChanged.HasDelegate)
-            return;
-        await OnCellsChanged.InvokeAsync(new CellsChangedEventArgs(cell, row, col));
-    }
-
-    /// <summary>
-    /// Emit event for all cells in ranges changed
-    /// </summary>
-    private async void emitCellsChanged(IEnumerable<Range> ranges)
-    {
-        if (!OnCellsChanged.HasDelegate)
-            return;
-
-        var infos = new List<CellChangedInfo>();
-        foreach (var range in ranges)
-        {
-            foreach (var posn in range)
-            {
-                infos.Add(new CellChangedInfo(Sheet.GetCell(posn), posn.Row, posn.Col));
-            }
-        }
-
-        await OnCellsChanged.InvokeAsync(new CellsChangedEventArgs(infos));
-    }
-
-    /// <summary>
-    /// Emit event for all cells in the range
-    /// </summary>
-    private async void emitCellsChanged(Range range)
-    {
-        this.emitCellsChanged(new List<Range>() { range });
-    }
-
     /// <summary>
     /// Cancels the current edit, returning whether the edit was successful
     /// </summary>
@@ -479,8 +415,7 @@ public partial class Datasheet : IHandleEvent
         var range = Sheet.InsertDelimitedText(arg.Text, posnToInput);
         if (range == null)
             return;
-
-        this.emitCellsChanged(range);
+        
         Sheet.Selection.SetSingle(range);
         this.StateHasChanged();
     }
@@ -515,10 +450,7 @@ public partial class Datasheet : IHandleEvent
     private void HandleCellRendererRequestChangeValue(ChangeCellRequestEventArgs args)
     {
         var cell = Sheet?.GetCell(args.Row, args.Col);
-        var setValue = cell.TrySetValue(args.NewValue);
-        if (!setValue)
-            return;
-        emitCellsChanged(cell, args.Row, args.Col);
+        Sheet.TrySetCellValue(args.Row, args.Col, args.NewValue);
     }
 
     /// <summary>
