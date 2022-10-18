@@ -1,0 +1,13 @@
+﻿.vars {
+    --sheet-foreground-color: #5c5c5c;
+    --sheet-bg-color: #ffffff;
+    --sheet-border-style: 1px solid lightgray;
+    --row-header-bg-color: #fafafa;
+    --col-header-bg-color: #fafafa;
+    --active-header-bg-color: #ececec;
+    --sheet-font-weight: normal;
+    --icon-color: #000000;
+    --invalid-cell-foreground-color: #ff0000;
+    --selection-bg-color: rgba(163, 188, 213, 0.34);
+    --selection-border-color:#0998e5;
+}
