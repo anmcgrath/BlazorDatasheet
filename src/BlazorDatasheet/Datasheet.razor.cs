@@ -75,6 +75,10 @@ public partial class Datasheet : IHandleEvent
     private EditorManager _editorManager;
     private IWindowEventService _windowEventService;
     private IClipboard _clipboard;
+    
+    // This ensures that the sheet is not re-rendered when mouse events are handled inside the sheet.
+    // Performance is improved dramatically when this is used.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
 
     protected override void OnInitialized()
     {
@@ -144,6 +148,7 @@ public partial class Datasheet : IHandleEvent
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        Console.WriteLine("Render");
         if (firstRender)
         {
             await AddWindowEventsAsync();
