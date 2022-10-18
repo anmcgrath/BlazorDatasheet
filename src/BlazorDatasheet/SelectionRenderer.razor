@@ -16,7 +16,7 @@
         }
     }
     <div class="selection-base"
-         style="@GetSizeStyleString(SelectionRange, 2, !HighlightCell)"/>
+         style="@GetSizeStyleString(SelectionRange, 1, !HighlightCell)"/>
 }
 
 
@@ -44,17 +44,17 @@
     [Parameter, EditorRequired]
     public bool HighlightCell { get; set; }
 
-    private string GetSizeStyleString(IFixedSizeRange? range, int borderThickness, bool bgVisible)
+    private string GetSizeStyleString(IFixedSizeRange? range, double borderThickness, bool bgVisible)
     {
         if (range == null)
             return "";
 
         var strBuilder = new StringBuilder();
 
-        var left = CellLayoutProvider.ComputeLeftPosition(range) - borderThickness;
-        var top = CellLayoutProvider.ComputeTopPosition(range) - borderThickness;
-        var w = CellLayoutProvider.ComputeWidth(range) + borderThickness * 2 - borderThickness;
-        var h = CellLayoutProvider.ComputeHeight(range) + borderThickness * 2 - borderThickness;
+        var left = CellLayoutProvider.ComputeLeftPosition(range);
+        var top = CellLayoutProvider.ComputeTopPosition(range);
+        var w = CellLayoutProvider.ComputeWidth(range);
+        var h = CellLayoutProvider.ComputeHeight(range);
 
         strBuilder.Append($"left:{left + 1}px;");
         strBuilder.Append($"top:{top + 1}px;");

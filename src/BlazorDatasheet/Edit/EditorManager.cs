@@ -96,7 +96,7 @@ public class EditorManager : IEditorManager
             return false;
         }
 
-        var setCell = _sheet.Commands.ExecuteCommand(new ChangeCellValueCommand(currentRow, currentCol, editedValue));
+        var setCell = _sheet.TrySetCellValue(currentRow, currentCol, editedValue);
 
         if (setCell)
         {

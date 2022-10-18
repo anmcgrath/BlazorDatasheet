@@ -44,7 +44,11 @@
     {
         foreach (var validator in EditorManager.CurrentEditedCell.Validators)
             if (validator is SourceValidator)
+            {
                 values = ((SourceValidator)validator).ValidationSource.ToArray();
+                break;
+            }
+
         base.OnParametersSet();
     }
 

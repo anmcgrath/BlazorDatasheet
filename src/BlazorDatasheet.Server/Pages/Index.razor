@@ -17,8 +17,7 @@
 
 <Datasheet
     Sheet="Sheet"
-    IsFixedHeight="true"
-    OnCellsChanged="HandleCellChanged">
+    IsFixedHeight="true">
 
 </Datasheet>
 
@@ -112,11 +111,6 @@
         _editor.Sheet.ConditionalFormatting.Apply("checkCf", _editor.Sheet.Range);
 
         Sheet = _editor.Sheet;
-    }
-
-    private void HandleCellChanged(CellsChangedEventArgs e)
-    {
-        StateHasChanged();
     }
 
 }

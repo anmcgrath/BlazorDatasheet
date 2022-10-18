@@ -2,14 +2,14 @@
 
 namespace BlazorDatasheet.Commands;
 
-public class ChangeCellValueCommand : IUndoableCommand
+public class SetCellValueCommand : IUndoableCommand
 {
     private readonly int _row;
     private readonly int _col;
     private readonly object? _newValue;
     private object? _oldValue;
     
-    public ChangeCellValueCommand(int row, int col, object value)
+    public SetCellValueCommand(int row, int col, object value)
     {
         _row = row;
         _col = col;
@@ -24,12 +24,12 @@ public class ChangeCellValueCommand : IUndoableCommand
             _oldValue = cell.GetValue();
         
         sheet.Selection.SetActivePosition(_row, _col);
-        return sheet.TrySetCellValue(_row, _col, _newValue);
+        return sheet.TrySetCellValueImpl(_row, _col, _newValue);
     }
 
     public bool Undo(Sheet sheet)
     {
         sheet.Selection.SetActivePosition(_row, _col);
-        return sheet.TrySetCellValue(_row, _col, _oldValue);
+        return sheet.TrySetCellValueImpl(_row, _col, _oldValue);
     }
 }

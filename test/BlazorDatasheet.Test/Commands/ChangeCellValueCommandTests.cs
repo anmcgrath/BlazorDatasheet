@@ -21,7 +21,7 @@ public class ChangeCellValueCommandTests
     [Test]
     public void Execute_Change_Cell_Command_Correctly_Changes_Value_On_Sheet()
     {
-        var changeCmd = new ChangeCellValueCommand(0, 0, 10);
+        var changeCmd = new SetCellValueCommand(0, 0, 10);
         _commandManager.ExecuteCommand(changeCmd);
         Assert.AreEqual(10, _sheet.GetCell(0,0).GetValue<int>());
         _commandManager.Undo();
