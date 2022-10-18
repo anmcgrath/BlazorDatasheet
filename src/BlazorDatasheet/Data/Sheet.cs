@@ -56,14 +56,25 @@ public class Sheet
     /// Whether to show the column headings. Default is true.
     /// </summary>
     public bool ShowColumnHeadings { get; set; } = true;
+
     /// <summary>
     /// Managers commands & undo/redo. Default is true.
     /// </summary>
     public CommandManager Commands { get; private set; }
 
+    /// <summary>
+    /// The bounds of the sheet
+    /// </summary>
     public Range? Range => new Range(0, NumRows - 1, 0, NumCols - 1);
 
+    /// <summary>
+    /// Provides functions for managing the sheet's conditional formatting
+    /// </summary>
     public ConditionalFormatManager ConditionalFormatting { get; }
+
+    /// <summary>
+    /// The sheet's active selection
+    /// </summary>
     public Selection Selection { get; }
 
     private readonly Dictionary<string, Type> _editorTypes;
@@ -74,12 +85,17 @@ public class Sheet
     /// <summary>
     /// Fired when a row is inserted into the sheet
     /// </summary>
-    public event Action<RowInsertedEventArgs> RowInserted;
+    public event EventHandler<RowInsertedEventArgs> RowInserted;
 
     /// <summary>
     /// Fired when a row is removed from the sheet.
     /// </summary>
-    public event Action<RowRemovedEventArgs> RowRemoved;
+    public event EventHandler<RowRemovedEventArgs> RowRemoved;
+
+    /// <summary>
+    /// Fired when one or more cells are changed
+    /// </summary>
+    public event EventHandler<IEnumerable<ChangeEventArgs>> CellsChanged;
 
     private Sheet()
     {
@@ -154,6 +170,13 @@ public class Sheet
         Commands.ExecuteCommand(cmd);
     }
 
+    /// <summary>
+    /// The internal insert function that does all the work of adding a row.
+    /// This function does not add a command that is able to be undone.
+    /// </summary>
+    /// <param name="rowIndex"></param>
+    /// <param name="row"></param>
+    /// <returns></returns>
     internal bool InsertRowAtImpl(int rowIndex, Row? row = null)
     {
         if (row == null)
@@ -169,7 +192,7 @@ public class Sheet
 
         _rows.Insert(rowIndex, row);
         updateRowIndices(rowIndex);
-        RowInserted?.Invoke(new RowInsertedEventArgs(rowIndex));
+        RowInserted?.Invoke(this, new RowInsertedEventArgs(rowIndex));
         return true;
     }
 
@@ -179,27 +202,11 @@ public class Sheet
         {
             _rows.RemoveAt(index);
             updateRowIndices(index);
-            RowRemoved?.Invoke(new RowRemovedEventArgs(index));
+            RowRemoved?.Invoke(this, new RowRemovedEventArgs(index));
             return true;
         }
 
         return false;
-    }
-
-    private void registerDefaultEditors()
-    {
-        RegisterEditor<TextEditorComponent>("text");
-        RegisterEditor<DateTimeEditorComponent>("datetime");
-        RegisterEditor<BoolEditorComponent>("boolean");
-        RegisterEditor<SelectEditorComponent>("select");
-    }
-
-    private void registerDefaultRenderers()
-    {
-        RegisterRenderer<TextRenderer>("text");
-        RegisterRenderer<SelectRenderer>("select");
-        RegisterRenderer<NumberRenderer>("number");
-        RegisterRenderer<BoolRenderer>("boolean");
     }
 
     private IEnumerable<Cell> GetCellsInRange(IRange range)
@@ -214,6 +221,11 @@ public class Sheet
         return cells.ToArray();
     }
 
+    /// <summary>
+    /// Returns all cells that are present in the ranges given.
+    /// </summary>
+    /// <param name="ranges"></param>
+    /// <returns></returns>
     public IEnumerable<Cell> GetCellsInRanges(IEnumerable<IRange> ranges)
     {
         var cells = new List<Cell>();
@@ -222,6 +234,12 @@ public class Sheet
         return cells.ToArray();
     }
 
+    /// <summary>
+    /// Returns the cell at the specified position.
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <returns></returns>
     public Cell GetCell(int row, int col)
     {
         if (row < 0 || row >= NumRows)
@@ -232,6 +250,11 @@ public class Sheet
         return Rows[row].Cells[col];
     }
 
+    /// <summary>
+    /// Returns the cell at the specified position
+    /// </summary>
+    /// <param name="position"></param>
+    /// <returns></returns>
     public Cell GetCell(CellPosition position)
     {
         return GetCell(position.Row, position.Col);
@@ -260,6 +283,22 @@ public class Sheet
     {
         if (!_renderComponentTypes.TryAdd(name, typeof(T)))
             _renderComponentTypes[name] = typeof(T);
+    }
+
+    private void registerDefaultEditors()
+    {
+        RegisterEditor<TextEditorComponent>("text");
+        RegisterEditor<DateTimeEditorComponent>("datetime");
+        RegisterEditor<BoolEditorComponent>("boolean");
+        RegisterEditor<SelectEditorComponent>("select");
+    }
+
+    private void registerDefaultRenderers()
+    {
+        RegisterRenderer<TextRenderer>("text");
+        RegisterRenderer<SelectRenderer>("select");
+        RegisterRenderer<NumberRenderer>("number");
+        RegisterRenderer<BoolRenderer>("boolean");
     }
 
     /// <summary>
@@ -332,7 +371,18 @@ public class Sheet
         cell.IsValid = isValid;
 
         // Try to set the cell's value to the new value
-        return cell.TrySetValue(value);
+        var oldValue = cell.GetValue();
+        var setValue = cell.TrySetValue(value);
+        if (setValue)
+        {
+            var args = new ChangeEventArgs[1]
+            {
+                new ChangeEventArgs(row, col, oldValue, value)
+            };
+            CellsChanged?.Invoke(this, args);
+        }
+
+        return setValue;
     }
 
     /// <summary>
@@ -354,8 +404,8 @@ public class Sheet
             return string.Empty;
 
         var range = inputRange
-            .GetIntersection(this.Range)
-            .CopyOrdered();
+                    .GetIntersection(this.Range)
+                    .CopyOrdered();
 
         var strBuilder = new StringBuilder();
 

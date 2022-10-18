@@ -48,6 +48,7 @@ public partial class Datasheet : IHandleEvent
     /// </summary>
     [Parameter]
     public bool IsFixedHeight { get; set; }
+
     /// <summary>
     /// Whether the user is focused on the datasheet.
     /// </summary>
@@ -79,7 +80,20 @@ public partial class Datasheet : IHandleEvent
     {
         _windowEventService = new WindowEventService(JS);
         _clipboard = new Clipboard(JS);
-        _editorManager = new EditorManager(Sheet, NextTick);
+        _editorManager = new EditorManager(Sheet);
+        _editorManager.EditBegin += (sender, args) =>
+        {
+            // Because the ActiveEditor is null until the next re-render (unfortunately)
+            // we need to queue the begin edit function until then
+            NextTick(() =>
+            {
+                ((EditorManager)sender)
+                    .ActiveEditorComponent?
+                    .BeginEdit(args.Mode, Sheet.GetCell(args.Row, args.Col), args.EntryChar);
+            });
+        };
+        _editorManager.EditCancelled += (sender, args) => StateHasChanged();
+        _editorManager.EditAccepted += (sender, args) => StateHasChanged();
 
         base.OnInitialized();
     }
@@ -91,6 +105,8 @@ public partial class Datasheet : IHandleEvent
         if (_sheetLocal != Sheet)
         {
             _sheetLocal = Sheet;
+            Sheet.Selection.Changed += (sender, ranges) => StateHasChanged();
+            Sheet.CellsChanged += (sender, enumerable) => StateHasChanged();
             _editorManager.SetSheet(Sheet);
             _cellLayoutProvider = new CellLayoutProvider(Sheet, 105, 25);
         }
@@ -170,11 +186,8 @@ public partial class Datasheet : IHandleEvent
 
         if (_editorManager.IsEditing && !_editorManager.CurrentEditPosition.Equals(row, col))
         {
-            if (AcceptEdit())
-                return;
+            AcceptEdit();
         }
-
-        StateHasChanged();
     }
 
     private void HandleColumnHeaderMouseDown(int col, MouseEventArgs e)
@@ -191,10 +204,7 @@ public partial class Datasheet : IHandleEvent
             this.BeginSelectingCol(col);
         }
 
-        if (AcceptEdit())
-            return;
-
-        StateHasChanged();
+        AcceptEdit();
     }
 
     private void HandleRowHeaderMouseDown(int row, MouseEventArgs e)
@@ -211,10 +221,7 @@ public partial class Datasheet : IHandleEvent
             this.BeginSelectingRow(row);
         }
 
-        if (AcceptEdit())
-            return;
-
-        StateHasChanged();
+        AcceptEdit();
     }
 
     private void HandleCellDoubleClick(int row, int col, MouseEventArgs e)
@@ -234,7 +241,7 @@ public partial class Datasheet : IHandleEvent
         if (cell == null || cell.IsReadOnly)
             return;
 
-        _editorManager.BeginEdit(row, col, cell, softEdit, mode, entryChar);
+        _editorManager.BeginEdit(row, col, softEdit, mode, entryChar);
 
         // Required to re-render after any edit component reference has changed
         NextTick(StateHasChanged);
@@ -250,34 +257,25 @@ public partial class Datasheet : IHandleEvent
         var result = _editorManager.AcceptEdit();
         return result;
     }
+
     /// <summary>
     /// Cancels the current edit, returning whether the edit was successful
     /// </summary>
     /// <returns></returns>
     private bool CancelEdit()
     {
-        var result = _editorManager.CancelEdit();
-        if (result)
-            StateHasChanged();
-
-        return result;
+        return _editorManager.CancelEdit();
     }
 
     private void HandleCellMouseOver(int row, int col, MouseEventArgs e)
     {
         this.UpdateSelectingEndPosition(row, col);
-        StateHasChanged();
     }
 
     private bool HandleWindowMouseDown(MouseEventArgs e)
     {
         bool changed = IsDataSheetActive != IsMouseInsideSheet;
         IsDataSheetActive = IsMouseInsideSheet;
-
-        if (!IsDataSheetActive && AcceptEdit()) // if it is outside
-        {
-            changed = true;
-        }
 
         if (changed)
             StateHasChanged();
@@ -316,7 +314,6 @@ public partial class Datasheet : IHandleEvent
             if (!_editorManager.IsEditing || (_editorManager.IsSoftEdit && AcceptEdit()))
             {
                 this.collapseAndMoveSelection(direction.Item1, direction.Item2);
-                StateHasChanged();
                 return true;
             }
         }
@@ -325,7 +322,6 @@ public partial class Datasheet : IHandleEvent
         {
             AcceptEdit();
             this.collapseAndMoveSelection(0, 1);
-            StateHasChanged();
             return true;
         }
 
@@ -404,7 +400,7 @@ public partial class Datasheet : IHandleEvent
     {
         if (!IsDataSheetActive)
             return;
-        
+
         if (Sheet == null || !Sheet.Selection.Ranges.Any())
             return;
 
@@ -415,18 +411,14 @@ public partial class Datasheet : IHandleEvent
         var range = Sheet.InsertDelimitedText(arg.Text, posnToInput);
         if (range == null)
             return;
-        
+
         Sheet.Selection.SetSingle(range);
-        this.StateHasChanged();
     }
 
     private void NextTick(Action action)
     {
         QueuedActions.Enqueue(action);
     }
-
-    Task IHandleEvent.HandleEventAsync(
-        EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
 
     public void Dispose()
     {
@@ -531,6 +523,7 @@ public partial class Datasheet : IHandleEvent
             return;
 
         RangeSelecting?.ExtendTo(row, col);
+        StateHasChanged();
     }
 
     /// <summary>

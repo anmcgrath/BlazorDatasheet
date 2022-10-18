@@ -18,32 +18,23 @@ public class EditorManager : IEditorManager
     private object? _editedValue { get; set; }
 
     private object? _initialValue { get; set; }
-
+    internal ICellEditor ActiveEditorComponent => (ICellEditor)ActiveEditorContainer?.Instance;
     internal DynamicComponent? ActiveEditorContainer { get; set; }
     public CellPosition CurrentEditPosition { get; private set; }
     public Cell CurrentEditedCell { get; private set; }
-    internal ICellEditor ActiveEditorComponent => (ICellEditor)ActiveEditorContainer?.Instance;
     internal Type? ActiveEditorType { get; private set; }
     public bool IsEditing => !CurrentEditPosition.InvalidPosition;
     public bool IsSoftEdit { get; private set; }
 
-    public delegate void AcceptEditHandler(AcceptEditEventArgs e);
+    public event EventHandler<AcceptEditEventArgs> EditAccepted;
+    public event EventHandler<RejectEditEventArgs> EditRejected;
+    public event EventHandler<CancelEditEventArgs> EditCancelled;
+    public event EventHandler<BeginEditEventArgs> EditBegin; 
 
-    public event AcceptEditHandler OnAcceptEdit;
-
-    public delegate void RejectEditHandler(RejectEditEventArgs e);
-
-    public event RejectEditHandler OnRejectEdit;
-
-    public delegate void CancelEditHandler(CancelEditEventArgs e);
-
-    public event CancelEditHandler OnCancelEdit;
-
-    public EditorManager(Sheet sheet, Action<Action> queueForNextRender)
+    public EditorManager(Sheet sheet)
     {
         _sheet = sheet;
         // When called, runs the function next render cycle.
-        _queueForNextRender = queueForNextRender;
         CurrentEditPosition = new CellPosition(-1, -1);
     }
 
@@ -61,10 +52,21 @@ public class EditorManager : IEditorManager
 
     public void SetEditedValue<T>(T value) => _editedValue = value;
 
-    public void BeginEdit(int row, int col, Cell cell, bool isSoftEdit, EditEntryMode mode, string key)
+    /// <summary>
+    /// Begin the editing process for the cell
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <param name="cell"></param>
+    /// <param name="isSoftEdit"></param>
+    /// <param name="mode"></param>
+    /// <param name="key"></param>
+    public void BeginEdit(int row, int col, bool isSoftEdit, EditEntryMode mode, string key)
     {
         if (IsEditing && CurrentEditPosition.Equals(row, col))
             return;
+
+        var cell = _sheet.GetCell(row, col);
 
         this.CurrentEditPosition = new CellPosition(row, col);
         this.CurrentEditedCell = cell;
@@ -75,12 +77,15 @@ public class EditorManager : IEditorManager
             ActiveEditorType = _sheet.EditorTypes[cell.Type];
         else
             ActiveEditorType = typeof(TextEditorComponent);
-
-        // Because the ActiveEditor is null until the next re-render (unfortunately)
-        // we need to queue the begin edit function until then
-        _queueForNextRender(() => { ActiveEditorComponent?.BeginEdit(mode, cell, key); });
+        
+        EditBegin?.Invoke(this, new BeginEditEventArgs(row, col, isSoftEdit, mode, key));
     }
 
+    /// <summary>
+    /// Attempts to accept edit.
+    /// Returns whether the edit was successful, e.g due to a data validation failure
+    /// </summary>
+    /// <returns></returns>
     public bool AcceptEdit()
     {
         if (!IsEditing || ActiveEditorComponent == null)
@@ -88,35 +93,34 @@ public class EditorManager : IEditorManager
 
         var currentRow = CurrentEditPosition.Row;
         var currentCol = CurrentEditPosition.Col;
-        var editedValue = _editedValue;
 
         if (!ActiveEditorComponent.CanAcceptEdit())
         {
-            this.onRejectEdit(currentRow, currentCol, _initialValue, editedValue);
+            this.emitRejectEdit(currentRow, currentCol, _initialValue, _editedValue);
             return false;
         }
 
-        var setCell = _sheet.TrySetCellValue(currentRow, currentCol, editedValue);
+        var setCell = _sheet.TrySetCellValue(currentRow, currentCol, _editedValue);
 
         if (setCell)
         {
             this.clearCurrentEdit();
-            this.onAcceptEdit(currentRow, currentCol, _initialValue, editedValue);
+            this.emitAcceptEdit(currentRow, currentCol, _initialValue, _editedValue);
             return true;
         }
 
-        this.onRejectEdit(currentRow, currentCol, _initialValue, editedValue);
+        this.emitRejectEdit(currentRow, currentCol, _initialValue, _editedValue);
         return false;
     }
 
-    private void onAcceptEdit(int row, int col, object initialValue, object editedValue)
+    private void emitAcceptEdit(int row, int col, object initialValue, object editedValue)
     {
-        OnAcceptEdit?.Invoke(new AcceptEditEventArgs(row, col, initialValue, editedValue));
+        EditAccepted?.Invoke(this, new AcceptEditEventArgs(row, col, initialValue, editedValue));
     }
 
-    private void onRejectEdit(int row, int col, object initialValue, object editedValue)
+    private void emitRejectEdit(int row, int col, object initialValue, object editedValue)
     {
-        OnRejectEdit?.Invoke(new RejectEditEventArgs(row, col, initialValue, editedValue));
+        EditRejected?.Invoke(this, new RejectEditEventArgs(row, col, initialValue, editedValue));
     }
 
     public bool HandleKeyDown(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
@@ -136,7 +140,7 @@ public class EditorManager : IEditorManager
             return false;
 
         this.clearCurrentEdit();
-        OnCancelEdit?.Invoke(new CancelEditEventArgs(""));
+        EditCancelled?.Invoke(this, new CancelEditEventArgs(""));
 
         return true;
     }

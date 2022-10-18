@@ -10,8 +10,9 @@ public interface IDataValidator
     public bool IsValid(object value);
 
     /// <summary>
-    /// If IsStrict, the cell's value won't be changed if the validation fails. If IsStrict=false, the cell value
-    /// will be changed, but the cell will be marked as invalid.
+    /// If IsStrict, the cell's value won't be changed if the validation fails during editing.
+    /// If IsStrict=false, the cell value will be changed, but the cell will be marked as invalid.
+    /// Note that setting a cell value programatically doesn't check IsStrict.
     /// </summary>
     public bool IsStrict { get; }
 }

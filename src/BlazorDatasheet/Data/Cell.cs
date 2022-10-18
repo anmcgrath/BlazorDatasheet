@@ -148,8 +148,8 @@ public class Cell : IReadOnlyCell, IWriteableCell
         var currentVal = GetValue();
         if (currentVal == null)
             return;
-        var type = currentVal.GetType();
-        var defaultVal = type.GetDefault();
+        var valueType = currentVal.GetType();
+        var defaultVal = valueType.GetDefault();
         this.TrySetValue(defaultVal);
     }
 

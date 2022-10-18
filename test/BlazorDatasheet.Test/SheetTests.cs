@@ -39,7 +39,7 @@ public class SheetTests
     {
         bool eventFired = false;
         var sheet = new Sheet(3, 1);
-        sheet.RowInserted += args => eventFired = true;
+        sheet.RowInserted += (sender, args) => eventFired = true;
         sheet.InsertRow();
         Assert.AreEqual(4, sheet.NumRows);
         Assert.AreEqual(4, sheet.Rows.Count);

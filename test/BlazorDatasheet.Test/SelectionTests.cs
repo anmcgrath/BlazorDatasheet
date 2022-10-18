@@ -85,7 +85,7 @@ public class SelectionManagerTests
     {
         var nTimesChanged = 0;
         var selection = new Selection(_sheet);
-        selection.Changed += ranges =>
+        selection.Changed += (sender, ranges) =>
         {
             nTimesChanged++;
         };

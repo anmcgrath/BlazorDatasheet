@@ -27,7 +27,7 @@ public class Selection
     /// <summary>
     /// Fired when the current selection changes
     /// </summary>
-    public event Action<IEnumerable<IRange>> Changed;
+    public event EventHandler<IEnumerable<IRange>> Changed;
 
     public Selection(Sheet sheet)
     {
@@ -217,7 +217,7 @@ public class Selection
 
     private void emitSelectionChange()
     {
-        Changed?.Invoke(_ranges);
+        Changed?.Invoke(this, _ranges);
     }
 
     public IEnumerable<Cell> GetCells()
