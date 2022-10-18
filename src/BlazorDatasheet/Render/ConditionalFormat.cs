@@ -1,20 +1,10 @@
 using BlazorDatasheet.Data;
-using Range = BlazorDatasheet.Data.Range;
+using BlazorDatasheet.Formats;
 
 namespace BlazorDatasheet.Render;
 
-public class ConditionalFormat
+public class ConditionalFormat : ConditionalFormatAbstractBase
 {
-    /// <summary>
-    /// Whether the formatting is dependent on other cells.
-    /// This is set by the constructor and can potentially speed things up
-    /// for the CF evaluation as the manager doesn't have to gather the other cells
-    /// that the CF applies to.
-    /// </summary>
-    internal bool FormattingDependentOnCells => FormatFuncDependent != null;
-
-    public Func<Cell, bool> Rule { get; private set; }
-
     /// <summary>
     /// The function that returns the conditional format, based on the cell's value
     /// and all other cell values in the sheet
@@ -26,13 +16,8 @@ public class ConditionalFormat
     /// </summary>
     public Func<Cell, Format>? FormatFunc { get; }
 
-    public bool StopIfTrue { get; set; } = true;
-    private readonly List<IRange?> _ranges;
-    public IReadOnlyCollection<IRange?> Ranges => _ranges;
-
     private ConditionalFormat()
     {
-        _ranges = new List<IRange?>();
     }
 
     /// <summary>
@@ -43,10 +28,13 @@ public class ConditionalFormat
     /// <param name="rule">The rule determining whether the conditional format is applied</param>
     /// <param name="formatFuncDependent">The function determining the actual format to apply, based on both the single cell's
     /// value and all cells that the conditional format applies to.</param>
-    public ConditionalFormat(Func<Cell, bool> rule, Func<Cell, IEnumerable<Cell>, Format> formatFuncDependent) : this()
+    public ConditionalFormat(Func<CellPosition, Sheet, bool> rule,
+        Func<Cell, IEnumerable<Cell>, Format> formatFuncDependent)
+        : this()
     {
-        Rule = rule;
+        IsTrue = rule;
         FormatFuncDependent = formatFuncDependent;
+        IsShared = true;
     }
 
     /// <summary>
@@ -57,29 +45,30 @@ public class ConditionalFormat
     /// <param name="rule">The rule determining whether the conditional format is applied</param>
     /// <param name="formatFunc">The function determining the actual format to apply, based on both the single cell's
     /// value and all cells that the conditional format applies to.</param>
-    public ConditionalFormat(Func<Cell, bool> rule, Func<Cell, Format> formatFunc) : this()
+    public ConditionalFormat(Func<CellPosition, Sheet, bool> rule, Func<Cell, Format> formatFunc) : this()
     {
-        Rule = rule;
+        this.IsTrue = rule;
         FormatFunc = formatFunc;
     }
 
-    /// <summary>
-    /// Apply the conditional format to the cells in the range specified
-    /// </summary>
-    /// <param name="range"></param>
-    public void AddRange(IRange? range)
+    private IEnumerable<Cell> cellCache;
+
+    public override void Prepare(Sheet sheet)
     {
-        _ranges.Add(range);
+        cellCache = this.GetCells(sheet);
     }
 
-    /// <summary>
-    /// Determines whether a cell is linked to this conditional format.
-    /// </summary>
-    /// <param name="row"></param>
-    /// <param name="col"></param>
-    /// <returns></returns>
-    public bool IsAppliedTo(int row, int col)
+    public override Format? CalculateFormat(int row, int col, Sheet sheet)
     {
-        return _ranges.Any(x => x.Contains(row, col));
+        var cell = sheet.GetCell(row, col);
+        if (IsShared)
+        {
+            var cells = cellCache;
+            return FormatFuncDependent?.Invoke(cell, cells);
+        }
+        else
+        {
+            return FormatFunc?.Invoke(cell);
+        }
     }
 }
