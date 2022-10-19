@@ -30,22 +30,22 @@ public class CellLayoutProvider
     public double ComputeLeftPosition(IFixedSizeRange range)
     {
         var extra = _sheet.ShowRowHeadings ? 1 : 0;
-        return (Math.Min(range.Start.Col, range.End.Col) + extra) * _columnWidth -1;
+        return (Math.Min(range.Start.Col, range.End.Col) + extra) * _columnWidth;
     }
 
     public double ComputeTopPosition(IFixedSizeRange range)
     {
         var extra = _sheet.ShowColumnHeadings ? 1 : 0;
-        return (Math.Min(range.Start.Row, range.End.Row) + extra) * _rowHeight - 1;
+        return (Math.Min(range.Start.Row, range.End.Row) + extra) * _rowHeight;
     }
 
     public double ComputeWidth(IFixedSizeRange range)
     {
-        return range.Width * _columnWidth - 1;
+        return range.Width * _columnWidth - 1; // -1 accounts for borders
     }
 
     public double ComputeHeight(IFixedSizeRange range)
     {
-        return range.Height * _rowHeight;
+        return range.Height * _rowHeight - 1; // -1 accounts for borders
     }
 }

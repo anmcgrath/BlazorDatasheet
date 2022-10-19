@@ -3,20 +3,41 @@
 @using BlazorDatasheet.Render
 @using Range = BlazorDatasheet.Data.Range
 @using System.ComponentModel
+@using BlazorDatasheet.Selecting
 
-@if (SelectionRange != null && !Hidden)
+<!-- Render the temp selection (currently selected range) -->
+@if (TempSelection.ActiveRange != null && FixedTempSelection.Area > 0)
 {
-    if (HighlightCell)
+    <!-- We split into ranges around the cell's start position, so that the cell's 
+    start position shows the renderer underneath it -->
+    var brokenRanges = FixedTempSelection.Break(TempSelection.ActiveRange.Start);
+    foreach (var range in brokenRanges)
     {
-        var ranges = SelectionRange.Break(HighlightedCell);
-        foreach (var range in ranges)
-        {
-            <div class="selection-base"
-                 style="@GetSizeStyleString(range, 0, true)"/>
-        }
+        <div class="selection-base" style="@GetSizeStyleString(range, 0, true)"/>
     }
-    <div class="selection-base"
-         style="@GetSizeStyleString(SelectionRange, 1, !HighlightCell)"/>
+    <!-- now render the border around the whole thing -->
+    <div class="selection-base" style="@GetSizeStyleString(FixedTempSelection, 1, false)"/>
+}
+
+<!-- render the selections that exist in the sheet -->
+@if (Sheet?.Selection != null && !Sheet.Selection.IsEmpty())
+{
+    foreach (var range in Sheet.Selection.Ranges)
+    {
+        var isActiveRange = range == Sheet.Selection.ActiveRange;
+        <!-- if it's the active range, render around the active position -->
+        if (isActiveRange)
+        {
+            var brokenRanges = range.Break(Sheet.Selection.ActiveCellPosition);
+            foreach (var brokenRange in brokenRanges)
+            {
+                <div class="selection-base" style="@GetSizeStyleString(brokenRange, 0, true)"/>
+            }
+        }
+
+        <!-- now render the border around the whole range. No fill on active range because we've filled it already -->
+        <div class="selection-base" style="@GetSizeStyleString(range, 1, !isActiveRange)"/>
+    }
 }
 
 
@@ -33,16 +54,18 @@
     public CellLayoutProvider CellLayoutProvider { get; set; }
 
     [Parameter, EditorRequired]
-    public IFixedSizeRange SelectionRange { get; set; }
+    public Sheet? Sheet { get; set; }
 
     [Parameter, EditorRequired]
-    public bool Hidden { get; set; }
+    // The range that is currently being selected.
+    public Selection? TempSelection { get; set; }
 
-    [Parameter]
-    public CellPosition HighlightedCell { get; set; }
-
-    [Parameter, EditorRequired]
-    public bool HighlightCell { get; set; }
+    private IFixedSizeRange? FixedTempSelection => TempSelection?.ActiveRange?.GetIntersection(Sheet?.Range);
+    
+    private void OnSelectionChanged(object? sender, IEnumerable<IRange> ranges)
+    {
+        StateHasChanged();
+    }
 
     private string GetSizeStyleString(IFixedSizeRange? range, double borderThickness, bool bgVisible)
     {
@@ -56,10 +79,10 @@
         var w = CellLayoutProvider.ComputeWidth(range);
         var h = CellLayoutProvider.ComputeHeight(range);
 
-        strBuilder.Append($"left:{left + 1}px;");
-        strBuilder.Append($"top:{top + 1}px;");
-        strBuilder.Append($"width:{w}px;");
-        strBuilder.Append($"height:{h}px;");
+        strBuilder.Append($"left:{left-1}px;");
+        strBuilder.Append($"top:{top-1}px;");
+        strBuilder.Append($"width:{w+2}px;");
+        strBuilder.Append($"height:{h+2}px;");
 
         if (borderThickness != 0)
         {

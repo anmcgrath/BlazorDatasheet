@@ -118,29 +118,11 @@
                     @ref="_editorManager.ActiveEditorContainer"/>
             </div>
         }
-
-        <!-- render active selection -->
-        @if (IsSelecting)
-        {
-            var activeSel = RangeSelecting!.GetIntersection(Sheet.Range);
-            <SelectionRenderer
-                CellLayoutProvider="_cellLayoutProvider"
-                Hidden="@(!IsDataSheetActive)"
-                HighlightCell="true"
-                HighlightedCell="@activeSel.Start"
-                SelectionRange="@activeSel"/>
-        }
-
-        <!-- render selections -->
-        @foreach (var selectionRange in Sheet.Selection.Ranges)
-        {
-            <SelectionRenderer
-                CellLayoutProvider="_cellLayoutProvider"
-                Hidden="@(!IsDataSheetActive)"
-                HighlightCell="@(selectionRange == Sheet.Selection.ActiveRange && !IsSelecting)"
-                HighlightedCell="Sheet.Selection.ActiveCellPosition"
-                SelectionRange="selectionRange"/>
-        }
+        
+        <SelectionRenderer
+            TempSelection="TempSelection"
+            Sheet="Sheet"
+            CellLayoutProvider="_cellLayoutProvider"/>
     }
 </div>
 

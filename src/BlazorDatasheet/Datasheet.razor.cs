@@ -12,6 +12,7 @@ using BlazorDatasheet.Services;
 using BlazorDatasheet.Util;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using ChangeEventArgs = Microsoft.AspNetCore.Components.ChangeEventArgs;
 using Range = BlazorDatasheet.Data.Range;
 
 namespace BlazorDatasheet;
@@ -60,11 +61,11 @@ public partial class Datasheet : IHandleEvent
     private bool IsMouseInsideSheet { get; set; }
 
     /// <summary>
-    /// The range that is in the process of being selected via user input.
+    /// The selection that is in the process of being selected by the user
     /// </summary>
-    private IRange? RangeSelecting { get; set; }
+    private Selection? TempSelection { get; set; }
 
-    private bool IsSelecting => RangeSelecting != null;
+    private bool IsSelecting => TempSelection != null && !TempSelection.IsEmpty();
 
     /// <summary>
     /// The current list of actions that should be performed on the next render.
@@ -75,7 +76,7 @@ public partial class Datasheet : IHandleEvent
     private EditorManager _editorManager;
     private IWindowEventService _windowEventService;
     private IClipboard _clipboard;
-    
+
     // This ensures that the sheet is not re-rendered when mouse events are handled inside the sheet.
     // Performance is improved dramatically when this is used.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
@@ -85,6 +86,8 @@ public partial class Datasheet : IHandleEvent
         _windowEventService = new WindowEventService(JS);
         _clipboard = new Clipboard(JS);
         _editorManager = new EditorManager(Sheet);
+        TempSelection = new Selection(Sheet);
+        TempSelection.Changed += (sender, ranges) => StateHasChanged();
         _editorManager.EditBegin += (sender, args) =>
         {
             // Because the ActiveEditor is null until the next re-render (unfortunately)
@@ -108,14 +111,25 @@ public partial class Datasheet : IHandleEvent
         // to the sheet in all the managers
         if (_sheetLocal != Sheet)
         {
+            if (_sheetLocal != null)
+            {
+                _sheetLocal.CellsChanged -= SheetOnCellsChanged;
+            }
+
             _sheetLocal = Sheet;
+            Sheet.CellsChanged += SheetOnCellsChanged;
             Sheet.Selection.Changed += (sender, ranges) => StateHasChanged();
-            Sheet.CellsChanged += (sender, enumerable) => StateHasChanged();
+            TempSelection.SetSheet(Sheet);
             _editorManager.SetSheet(Sheet);
             _cellLayoutProvider = new CellLayoutProvider(Sheet, 105, 25);
         }
 
         base.OnParametersSet();
+    }
+
+    private void SheetOnCellsChanged(object? sender, IEnumerable<Data.Events.ChangeEventArgs> e)
+    {
+        StateHasChanged();
     }
 
     private Type getCellRendererType(string type)
@@ -499,22 +513,22 @@ public partial class Datasheet : IHandleEvent
     /// <param name="col">The col where the selection should start</param>
     private void BeginSelectingCell(int row, int col)
     {
-        RangeSelecting = new Range(row, col);
+        TempSelection.SetSingle(row, col);
     }
 
     private void CancelSelecting()
     {
-        RangeSelecting = null;
+        TempSelection.Clear();
     }
 
     private void BeginSelectingRow(int row)
     {
-        RangeSelecting = new RowRange(row, row);
+        TempSelection.SetSingle(new RowRange(row, row));
     }
 
     private void BeginSelectingCol(int col)
     {
-        RangeSelecting = new ColumnRange(col, col);
+        TempSelection.SetSingle(new ColumnRange(col, col));
     }
 
     /// <summary>
@@ -527,8 +541,7 @@ public partial class Datasheet : IHandleEvent
         if (!IsSelecting)
             return;
 
-        RangeSelecting?.ExtendTo(row, col);
-        StateHasChanged();
+        TempSelection?.ExtendActiveRange(row, col);
     }
 
     /// <summary>
@@ -539,8 +552,8 @@ public partial class Datasheet : IHandleEvent
         if (!IsSelecting)
             return;
 
-        Sheet?.Selection.Add(RangeSelecting!);
-        this.RangeSelecting = null;
+        Sheet?.Selection.Add(TempSelection!.ActiveRange!);
+        TempSelection!.Clear();
     }
 
     /// <summary>
@@ -550,7 +563,7 @@ public partial class Datasheet : IHandleEvent
     /// <returns></returns>
     private bool IsColumnActive(int col)
     {
-        if (IsSelecting && RangeSelecting!.SpansCol(col))
+        if (IsSelecting && TempSelection!.ActiveRange!.SpansCol(col))
             return true;
         if (Sheet?.Selection.Ranges.Any(x => x.SpansCol(col)) == true)
             return true;
@@ -564,7 +577,7 @@ public partial class Datasheet : IHandleEvent
     /// <returns></returns>
     private bool IsRowActive(int row)
     {
-        if (IsSelecting && RangeSelecting!.SpansRow(row))
+        if (IsSelecting && TempSelection!.ActiveRange!.SpansRow(row))
             return true;
         if (Sheet?.Selection.Ranges.Any(x => x.SpansRow(row)) == true)
             return true;

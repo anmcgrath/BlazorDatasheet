@@ -40,6 +40,7 @@ public class Selection
     public void Clear()
     {
         _ranges.Clear();
+        ActiveRange = null;
         emitSelectionChange();
     }
 
@@ -191,6 +192,20 @@ public class Selection
             SetSingle(row, col);
         else // position within active selection
             ActiveCellPosition = new CellPosition(row, col);
+    }
+
+    /// <summary>
+    /// Extends the active selection to the position specified
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    public void ExtendActiveRange(int row, int col)
+    {
+        if (ActiveRange != null)
+        {
+            ActiveRange.ExtendTo(row, col);
+            emitSelectionChange();
+        }
     }
 
     private IFixedSizeRange getRangeAfterActive()
