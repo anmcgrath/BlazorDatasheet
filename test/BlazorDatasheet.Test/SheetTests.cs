@@ -1,5 +1,7 @@
+using System;
 using BlazorDatasheet.Data;
 using NUnit.Framework;
+using Range = BlazorDatasheet.Data.Range;
 
 namespace BlazorDatasheet.Test;
 
@@ -12,7 +14,7 @@ public class SheetTests
         Assert.AreEqual(2, sheet.Rows.Count);
         Assert.AreEqual(1, sheet.Rows[0].Cells.Count);
         Assert.AreEqual(1, sheet.Rows[1].Cells.Count);
-        
+
         Assert.AreEqual(null, sheet.GetCell(0, 0).GetValue());
         Assert.AreEqual(null, sheet.GetCell(1, 0).GetValue());
     }
@@ -51,6 +53,40 @@ public class SheetTests
                 Assert.AreEqual(i, cell.Row);
             }
         }
+
         Assert.IsTrue(eventFired);
+    }
+
+    [Test]
+    [TestCase(0,1,0,1)]
+    [TestCase(0,1,0,0)]
+    [TestCase(1,2,1,1)]
+    public void Get_delim_Data_from_Sheet(int copyPasteRangeR0, int copyPasteRangeR1, int copyPasteRangeC0, int copyPasteRangeC1)
+    {
+        var sheet = new Sheet(5, 5);
+        var copyPasteRange = new Range(copyPasteRangeR0, copyPasteRangeR1, copyPasteRangeC0, copyPasteRangeC1);
+
+        foreach (var posn in copyPasteRange)
+            sheet.TrySetCellValue(posn.Row, posn.Col, getCellPosnString(posn.Row, posn.Col));
+
+        var copy = sheet.GetRangeAsDelimitedText(copyPasteRange);
+        Assert.NotNull(copy);
+        Assert.AreNotEqual(String.Empty, copy);
+
+        // Clear the sheet so we are pasting over empty data
+        sheet.ClearCells(new[] { copyPasteRange });
+
+        var insertedRanges = sheet.InsertDelimitedText(copy, copyPasteRange.TopLeft);
+        
+        Assert.True(insertedRanges.Equals(copyPasteRange));
+        
+        foreach (var posn in copyPasteRange)
+            Assert.AreEqual(getCellPosnString(posn.Row, posn.Col),
+                sheet.GetCell(posn.Row, posn.Col).GetValue<string>());
+    }
+
+    private string getCellPosnString(int row, int col)
+    {
+        return $"({row},{col})";
     }
 }

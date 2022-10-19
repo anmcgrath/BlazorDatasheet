@@ -11,6 +11,7 @@ public class Range : IFixedSizeRange
 {
     public CellPosition Start { get; private set; }
     public CellPosition End { get; private set; }
+    public CellPosition TopLeft => new CellPosition(Math.Min(Start.Row, End.Row), Math.Min(Start.Col, End.Col));
     public int Height => Math.Abs(End.Row - Start.Row) + 1;
     public int Width => Math.Abs(End.Col - Start.Col) + 1;
     public int RowDir => End.Row >= Start.Row ? 1 : -1;
@@ -207,29 +208,29 @@ public class Range : IFixedSizeRange
         if (!r1IsEmpty)
         {
             var r1 = new Range(thisOrdered.Start.Row, range.Start.Row - 1,
-                               thisOrdered.Start.Col,
-                               thisOrdered.End.Col);
+                thisOrdered.Start.Col,
+                thisOrdered.End.Col);
             ranges.Add(r1);
         }
 
         if (!r2IsEmpty)
         {
             var r2 = new Range(range.Start.Row, range.End.Row, thisOrdered.Start.Col,
-                               range.Start.Col - 1);
+                range.Start.Col - 1);
             ranges.Add(r2);
         }
 
         if (!r3IsEmpty)
         {
             var r3 = new Range(range.Start.Row, range.End.Row, range.Start.Col + 1,
-                               thisOrdered.End.Col);
+                thisOrdered.End.Col);
             ranges.Add(r3);
         }
 
         if (!r4IsEmpty)
         {
             var r4 = new Range(range.End.Row + 1, thisOrdered.End.Row, thisOrdered.Start.Col,
-                               thisOrdered.End.Col);
+                thisOrdered.End.Col);
             ranges.Add(r4);
         }
 
@@ -253,7 +254,7 @@ public class Range : IFixedSizeRange
         var r1 = Math.Max(Start.Row, End.Row);
         var c0 = Math.Min(Start.Col, End.Col);
         var c1 = Math.Max(Start.Col, End.Col);
-        
+
         Start = new CellPosition(rowDir == 1 ? r0 : r1, colDir == 1 ? c0 : c1);
         End = new CellPosition(rowDir == 1 ? r1 : r0, colDir == 1 ? c1 : c0);
     }

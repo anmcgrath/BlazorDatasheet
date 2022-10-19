@@ -309,12 +309,13 @@ public class Sheet
     /// <param name="text">The text to insert</param>
     /// <param name="inputPosition">The position where the insertion starts</param>
     /// <returns>The range of cells that were affected</returns>
-    internal Range InsertDelimitedText(string text, CellPosition inputPosition)
+    public Range InsertDelimitedText(string text, CellPosition inputPosition)
     {
         if (inputPosition.InvalidPosition)
             return null;
 
-        var lines = text.Split(Environment.NewLine);
+        var lines = text.Split('\n');
+        Console.WriteLine(lines.Length);
 
         // We may reach the end of the sheet, so we only need to paste the rows up until the end.
         var endRow = Math.Min(inputPosition.Row + lines.Length - 1, NumRows - 1);
@@ -403,9 +404,12 @@ public class Sheet
         if (inputRange == null)
             return string.Empty;
 
-        var range = inputRange
-                    .GetIntersection(this.Range)
-                    .CopyOrdered();
+        var intersection = inputRange.GetIntersection(this.Range);
+        if (intersection == null)
+            return null;
+
+        var range = intersection
+            .CopyOrdered();
 
         var strBuilder = new StringBuilder();
 

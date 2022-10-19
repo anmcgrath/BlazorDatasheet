@@ -162,7 +162,6 @@ public partial class Datasheet : IHandleEvent
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        Console.WriteLine("Render");
         if (firstRender)
         {
             await AddWindowEventsAsync();
