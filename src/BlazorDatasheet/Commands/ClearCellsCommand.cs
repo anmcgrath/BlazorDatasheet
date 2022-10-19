@@ -46,7 +46,7 @@ public class ClearCellsCommand : IUndoableCommand
         // TODO batch the cell resets so that cell changed events are only raised once
         foreach (var o in _clearCommandOccurences)
         {
-            sheet.TrySetCellValue(o.Row, o.Col, o.OldValue);
+            sheet.TrySetCellValueImpl(o.Row, o.Col, o.OldValue);
         }
 
         return true;

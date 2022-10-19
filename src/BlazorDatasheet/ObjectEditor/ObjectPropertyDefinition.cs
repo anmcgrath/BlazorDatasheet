@@ -10,20 +10,20 @@ public class ObjectPropertyDefinition<T>
     public string Type { get; set; } = "text";
     public Format? Format { get; set; }
     public bool IsReadOnly { get; set; }
-    internal List<string> ConditionalFormatKeys { get; set; }
+    internal List<ConditionalFormat> ConditionalFormats { get; set; }
     internal List<IDataValidator> Validators { get; set; }
 
     internal ObjectPropertyDefinition(string propName, string type)
     {
         PropertyName = propName;
         Type = type;
-        ConditionalFormatKeys = new List<string>();
+        ConditionalFormats = new List<ConditionalFormat>();
         Validators = new List<IDataValidator>();
     }
 
-    public void UseConditionalFormat(string key)
+    public void ApplyConditionalFormat(ConditionalFormat conditionalFormat)
     {
-        ConditionalFormatKeys.Add(key);
+        ConditionalFormats.Add(conditionalFormat);
     }
 
     public void UseDataValidator(IDataValidator validator)

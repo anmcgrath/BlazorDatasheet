@@ -13,7 +13,6 @@ public class ObjectEditorBuilder<T>
     private readonly GridDirection _direction;
     private bool _autoGenerateProperties;
     private List<Tuple<string, Action<ObjectPropertyDefinition<T>>>> _propertyActions;
-    private Dictionary<string, ConditionalFormat> _conditionalFormats;
     private List<ObjectPropertyDefinition<T>> _propertyDefinitions;
     private List<string> _suppliedPropertyNames { get; set; }
 
@@ -27,7 +26,6 @@ public class ObjectEditorBuilder<T>
         _items = Items.ToList();
         _direction = direction;
         _propertyActions = new List<Tuple<string, Action<ObjectPropertyDefinition<T>>>>();
-        _conditionalFormats = new Dictionary<string, ConditionalFormat>();
         _suppliedPropertyNames = new List<string>();
     }
 
@@ -39,18 +37,6 @@ public class ObjectEditorBuilder<T>
     public ObjectEditorBuilder<T> AutogenerateProperties(bool autoGenerateProperties = true)
     {
         _autoGenerateProperties = autoGenerateProperties;
-        return this;
-    }
-
-    /// <summary>
-    /// Register a conditional format with the the Datasheet
-    /// </summary>
-    /// <param name="key">The unique key of the conditional format</param>
-    /// <param name="format">The conditional format to apply</param>
-    /// <returns></returns>
-    public ObjectEditorBuilder<T> WithConditionalFormat(string key, ConditionalFormat format)
-    {
-        _conditionalFormats[key] = format;
         return this;
     }
 
@@ -161,10 +147,6 @@ public class ObjectEditorBuilder<T>
 
         var sheet = new Sheet(nRows, nCols, cells);
 
-        // Add conditional formats (1. Register conditional format 2. apply it to the correct cells)
-        foreach (var cf in _conditionalFormats)
-            sheet.ConditionalFormatting.Register(cf.Key, cf.Value);
-
         for (int i = 0; i < _propertyDefinitions.Count; i++)
         {
             var propDefn = _propertyDefinitions[i];
@@ -179,13 +161,13 @@ public class ObjectEditorBuilder<T>
             });
 
             // Apply conditional format to property (whole row or column)
-            var conditionalFormatKeys = propDefn.ConditionalFormatKeys;
-            foreach (var key in conditionalFormatKeys)
+            var conditionalFormats = propDefn.ConditionalFormats;
+            foreach (var conditionalFormat in conditionalFormats)
             {
                 if (_direction == GridDirection.PropertiesAcrossColumns)
-                    sheet.ConditionalFormatting.Apply(key, new ColumnRange(i, i));
+                    sheet.ConditionalFormatting.Apply(conditionalFormat, new Range(0, nRows, i, i));
                 else if (_direction == GridDirection.PropertiesAcrossRows)
-                    sheet.ConditionalFormatting.Apply(key, new Range(i, i, 0, nCols));
+                    sheet.ConditionalFormatting.Apply(conditionalFormat, new Range(i, i, 0, nCols));
             }
         }
 

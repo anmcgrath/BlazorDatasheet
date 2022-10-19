@@ -44,20 +44,19 @@ public class ObjectEditorTests
             c => new Format() { BackgroundColor = "green" });
 
         builder.AutogenerateProperties(false);
-        builder.WithConditionalFormat("cf", cf);
         // Define first column as PropString
         builder.WithProperty(x => x.PropString, pd => { });
         //Define second column as PropBool
-        builder.WithProperty(x => x.PropBool, pd => { pd.UseConditionalFormat("cf"); });
+        builder.WithProperty(x => x.PropBool, pd => { pd.ApplyConditionalFormat(cf); });
 
         var sheet = builder.Build().Sheet;
         // Format is not applied to the first column which is not PropBool
-        Assert.Null(sheet.ConditionalFormatting.CalculateFormat(0, 0));
+        Assert.Null(sheet.ConditionalFormatting.GetFormat(0, 0));
 
         // Should be null the first time because the propBool = false
-        Assert.Null(sheet.ConditionalFormatting.CalculateFormat(0, 1));
+        Assert.Null(sheet.ConditionalFormatting.GetFormat(0, 1));
         sheet.TrySetCellValue(0, 1, false);
-        Assert.Null(sheet.ConditionalFormatting.CalculateFormat(0, 1));
+        Assert.Null(sheet.ConditionalFormatting.GetFormat(0, 1));
     }
 
     [Test]
@@ -70,20 +69,19 @@ public class ObjectEditorTests
             c => new Format() { BackgroundColor = "green" });
 
         builder.AutogenerateProperties(false);
-        builder.WithConditionalFormat("cf", cf);
         // Define first row as PropString
         builder.WithProperty(x => x.PropString, pd => { });
         //Define second row as PropBool
-        builder.WithProperty(x => x.PropBool, pd => { pd.UseConditionalFormat("cf"); });
+        builder.WithProperty(x => x.PropBool, pd => { pd.ApplyConditionalFormat(cf); });
 
         var sheet = builder.Build().Sheet;
         // Format is not applied to the first row which is not PropBool
-        Assert.Null(sheet.ConditionalFormatting.CalculateFormat(0, 0));
+        Assert.Null(sheet.ConditionalFormatting.GetFormat(0, 0));
 
         // Should be null the first time because the propBool = false
-        Assert.Null(sheet.ConditionalFormatting.CalculateFormat(1, 0));
+        Assert.Null(sheet.ConditionalFormatting.GetFormat(1, 0));
         sheet.TrySetCellValue(0, 1, false);
-        Assert.Null(sheet.ConditionalFormatting.CalculateFormat(1, 0));
+        Assert.Null(sheet.ConditionalFormatting.GetFormat(1, 0));
     }
 }
 

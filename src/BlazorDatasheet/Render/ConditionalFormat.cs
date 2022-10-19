@@ -14,6 +14,7 @@ public class ConditionalFormat
     internal bool FormattingDependentOnCells => FormatFuncDependent != null;
 
     public Func<Cell, bool> Rule { get; private set; }
+    public bool StopIfTrue { get; set; }
 
     /// <summary>
     /// The function that returns the conditional format, based on the cell's value
@@ -25,14 +26,13 @@ public class ConditionalFormat
     /// The function that returns the conditional format, based only on one cell's value
     /// </summary>
     public Func<Cell, Format>? FormatFunc { get; }
-
-    public bool StopIfTrue { get; set; } = true;
-    private readonly List<IRange?> _ranges;
-    public IReadOnlyCollection<IRange?> Ranges => _ranges;
+    
+    private readonly List<IFixedSizeRange?> _ranges;
+    public IReadOnlyCollection<IFixedSizeRange?> Ranges => _ranges;
 
     private ConditionalFormat()
     {
-        _ranges = new List<IRange?>();
+        _ranges = new List<IFixedSizeRange?>();
     }
 
     /// <summary>
@@ -67,9 +67,19 @@ public class ConditionalFormat
     /// Apply the conditional format to the cells in the range specified
     /// </summary>
     /// <param name="range"></param>
-    public void AddRange(IRange? range)
+    public void AddRange(IFixedSizeRange? range)
     {
         _ranges.Add(range);
+    }
+
+    /// <summary>
+    /// Determine whether the format should be applied to the cell
+    /// </summary>
+    /// <param name="cell"></param>
+    /// <returns></returns>
+    public bool RuleSucceed(Cell cell)
+    {
+        return Rule.Invoke(cell);
     }
 
     /// <summary>

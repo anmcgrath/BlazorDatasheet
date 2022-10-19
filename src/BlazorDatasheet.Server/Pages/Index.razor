@@ -84,30 +84,28 @@
 
         var builder1 = new ObjectEditorBuilder<Person>(People, GridDirection.PropertiesAcrossColumns);
         builder1.AutogenerateProperties(false)
-                .WithConditionalFormat("ageCf", ageCf)
-                .WithConditionalFormat("checkCf", checkCf)
-                .WithProperty(x => x.Id, pd => { pd.Heading = "Person ID"; })
-                .WithProperty(x => x.FirstName, pd => { pd.Heading = "First Name"; })
-                .WithProperty(x => x.LastName, pd => { pd.Heading = "Last Name"; })
-                .WithProperty(x => x.Age, pd =>
-                {
-                    pd.UseConditionalFormat("ageCf");
-                    pd.UseDataValidator(new NumberValidator(true));
-                })
-                .WithProperty(x => x.Category, pd =>
-                {
-                    pd.Heading = "Category";
-                    pd.Type = "select";
-                    pd.UseDataValidator(new SourceValidator(new List<string>() { "", "Manager", "Employee" }, true));
-                })
-                .WithProperty(x => x.IsFriendly, pd =>
-                {
-                    pd.UseConditionalFormat("check");
-                    pd.Heading = "Is Friendly?";
-                });
+            .WithProperty(x => x.Id, pd => { pd.Heading = "Person ID"; })
+            .WithProperty(x => x.FirstName, pd => { pd.Heading = "First Name"; })
+            .WithProperty(x => x.LastName, pd => { pd.Heading = "Last Name"; })
+            .WithProperty(x => x.Age, pd =>
+            {
+                pd.ApplyConditionalFormat(ageCf);
+                pd.UseDataValidator(new NumberValidator(true));
+            })
+            .WithProperty(x => x.Category, pd =>
+            {
+                pd.Heading = "Category";
+                pd.Type = "select";
+                pd.UseDataValidator(new SourceValidator(new List<string>() { "", "Manager", "Employee" }, true));
+            })
+            .WithProperty(x => x.IsFriendly, pd =>
+            {
+                pd.ApplyConditionalFormat(checkCf);
+                pd.Heading = "Is Friendly?";
+            });
 
         _editor = builder1.Build();
-        _editor.Sheet.ConditionalFormatting.Apply("checkCf", _editor.Sheet.Range);
+        _editor.Sheet.ConditionalFormatting.Apply(checkCf);
 
         Sheet = _editor.Sheet;
     }

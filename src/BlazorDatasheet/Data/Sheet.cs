@@ -200,9 +200,10 @@ public class Sheet
     {
         if (index >= 0 && index < _rows.Count)
         {
+            var row = _rows[index];
             _rows.RemoveAt(index);
             updateRowIndices(index);
-            RowRemoved?.Invoke(this, new RowRemovedEventArgs(index));
+            RowRemoved?.Invoke(this, new RowRemovedEventArgs(index, row));
             return true;
         }
 

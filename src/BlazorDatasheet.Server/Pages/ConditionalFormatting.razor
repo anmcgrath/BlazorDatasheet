@@ -22,7 +22,6 @@
 
     protected override void OnInitialized()
     {
-        var cells = new Cell[4, 1] { { new Cell(0) }, { new Cell(-100) }, { new Cell(20) }, { new Cell("secret") } };
         sheet = new Sheet(4,1);
         sheet.TrySetCellValue(0, 0, 0);
         sheet.TrySetCellValue(0, 1, -100);
@@ -55,10 +54,8 @@
             });
 
         
-        sheet.ConditionalFormatting.Register("tick", formatTick);
-        sheet.ConditionalFormatting.Register("numbers", coloredNums);
-        sheet.ConditionalFormatting.Apply("tick", sheet.Range);
-        sheet.ConditionalFormatting.Apply("numbers", sheet.Range);
+        sheet.ConditionalFormatting.Apply(formatTick);
+        sheet.ConditionalFormatting.Apply(coloredNums);
 
         base.OnInitialized();
     }
