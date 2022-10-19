@@ -24,8 +24,8 @@ public class ConditionalFormatTests
         sheet = new Sheet(2, 2);
         cm = new ConditionalFormatManager(sheet);
         greaterThanEqualToZeroRedBgCf = new ConditionalFormat(
-            cell => cell.GetValue<int>() >= 0,
-            (cell => new Format
+            (posn, s) => s.GetCell(posn.row, posn.col).GetValue<int?>() >= 0
+            , (cell => new Format
             {
                 BackgroundColor = redBgColor
             }));
@@ -34,14 +34,14 @@ public class ConditionalFormatTests
     [Test]
     public void Set_Cf_To_Whole_Sheet_Applies_Correctly()
     {
-        cm.Apply(greaterThanEqualToZeroRedBgCf);
         sheet.TrySetCellValue(0, 0, -1);
+        cm.Apply(greaterThanEqualToZeroRedBgCf);
         var format = cm.GetFormat(0, 0);
         Assert.IsNull(format);
         sheet.TrySetCellValue(0, 0, 1);
-        
+
         cm.ComputeAllAndCache();
-        
+
         format = cm.GetFormat(0, 0);
         Assert.AreEqual(format.BackgroundColor, redBgColor);
     }
@@ -53,7 +53,7 @@ public class ConditionalFormatTests
         // a string which is equal to the number of cells that have the conditional
         // format registered
         var cf = new ConditionalFormat(
-            c => true, (cell, cells) => new Format() { BackgroundColor = cells.Count().ToString() });
+            (posn, sheet) => true, (cell, cells) => new Format() { BackgroundColor = cells.Count().ToString() });
         cm.Apply(cf);
         var formatApplied = cm.GetFormat(0, 0);
         Assert.NotNull(formatApplied);

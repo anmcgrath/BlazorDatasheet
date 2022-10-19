@@ -164,10 +164,11 @@ public class ObjectEditorBuilder<T>
             var conditionalFormats = propDefn.ConditionalFormats;
             foreach (var conditionalFormat in conditionalFormats)
             {
+                conditionalFormat.IsShared = true;
                 if (_direction == GridDirection.PropertiesAcrossColumns)
-                    sheet.ConditionalFormatting.Apply(conditionalFormat, new Range(0, nRows, i, i));
+                    sheet.ConditionalFormatting.Apply(conditionalFormat, new Range(0, nRows - 1, i, i));
                 else if (_direction == GridDirection.PropertiesAcrossRows)
-                    sheet.ConditionalFormatting.Apply(conditionalFormat, new Range(i, i, 0, nCols));
+                    sheet.ConditionalFormatting.Apply(conditionalFormat, new Range(i, i, 0, nCols - 1));
             }
         }
 

@@ -24,14 +24,22 @@
     {
         var cells = new Cell[4, 1] { { new Cell(0) }, { new Cell(-100) }, { new Cell(20) }, { new Cell("secret") } };
         var formatTick = new ConditionalFormat(
-            c => c.GetValue() != null && c.GetValue<string>().Contains("secret"),
+            (posn, sheet) =>
+            {
+                var c = sheet.GetCell(posn.row, posn.col);
+                return c.GetValue() != null && c.GetValue<string>().Contains("secret");
+            },
             c => new Format()
             {
                 Icon = Icons.Icons.CheckIcon,
                 IconColor = "#428739"
             });
         var coloredNums = new ConditionalFormat(
-            c => c.GetValue() != null && c.GetValue<double?>() != null,
+            (posn, sheet) =>
+            {
+                var c = sheet.GetCell(posn.row, posn.col);
+                return c.GetValue() != null && c.GetValue<double?>() != null;
+            },
             c =>
             {
                 var f = new Format();

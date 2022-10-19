@@ -54,7 +54,7 @@
         var lastNames = new List<string>() { "Walters", "Hall", "Smith", "Parker", "Velasquez", "Mccall", "Farmer", "Boone", "Fitzpatrick", "Mcclain", "Mccoy", "Baker" };
         var cats = new List<string>() { "Manager", "Employee" };
 
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 1000; i++)
         {
             People.Add(new Person()
             {
@@ -63,12 +63,13 @@
                 FirstName = firstNames[random.Next(0, firstNames.Count)],
                 LastName = lastNames[random.Next(0, lastNames.Count)],
                 Category = cats[random.Next(0, cats.Count)],
-                IsFriendly = i % 2 == 0
+                IsFriendly = false
             });
         }
 
-        var checkCf = new ConditionalFormat(cell =>
+        var checkCf = new ConditionalFormat((posn, sheet) =>
         {
+            var cell = sheet.GetCell(posn.row, posn.col);
             var person = ((Person)cell.Data);
             if (person == null)
                 return false;
@@ -80,28 +81,29 @@
 
         var ageCf =
             new ConditionalFormat(
-                cell => (cell.GetValue<int?>()) > 85, cell => new Format() { ForegroundColor = "#ff0000" });
+                (posn, sheet) => (sheet.GetCell(posn.row, posn.col).GetValue<int?>()) > 85, cell => new Format() { ForegroundColor = "#ff0000" });
 
         var builder1 = new ObjectEditorBuilder<Person>(People, GridDirection.PropertiesAcrossColumns);
         builder1.AutogenerateProperties(false)
-            .WithProperty(x => x.Id, pd => { pd.Heading = "Person ID"; })
-            .WithProperty(x => x.FirstName, pd => { pd.Heading = "First Name"; })
-            .WithProperty(x => x.LastName, pd => { pd.Heading = "Last Name"; })
-            .WithProperty(x => x.Age, pd =>
-            {
-                pd.ApplyConditionalFormat(ageCf);
-                pd.UseDataValidator(new NumberValidator(true));
-            })
-            .WithProperty(x => x.Category, pd =>
-            {
-                pd.Heading = "Category";
-                pd.Type = "select";
-                pd.UseDataValidator(new SourceValidator(new List<string>() { "", "Manager", "Employee" }, true));
-            })
-            .WithProperty(x => x.IsFriendly, pd =>
-            {
-                pd.Heading = "Is Friendly?";
-            });
+                .WithProperty(x => x.Id, pd => { pd.Heading = "Person ID"; })
+                .WithProperty(x => x.FirstName, pd => { pd.Heading = "First Name"; })
+                .WithProperty(x => x.LastName, pd => { pd.Heading = "Last Name"; })
+                .WithProperty(x => x.Age, pd =>
+                {
+                    pd.ApplyConditionalFormat(ageCf);
+                    pd.UseDataValidator(new NumberValidator(true));
+                })
+                .WithProperty(x => x.Category, pd =>
+                {
+                    pd.Heading = "Category";
+                    pd.Type = "select";
+                    pd.UseDataValidator(new SourceValidator(new List<string>() { "", "Manager", "Employee" }, true));
+                })
+                .WithProperty(x => x.IsFriendly, pd =>
+                {
+                    pd.ApplyConditionalFormat(checkCf);
+                    pd.Heading = "Is Friendly?";
+                });
 
         _editor = builder1.Build();
         _editor.Sheet.ConditionalFormatting.Apply(checkCf);

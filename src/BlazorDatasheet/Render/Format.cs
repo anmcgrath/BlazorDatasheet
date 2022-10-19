@@ -50,26 +50,4 @@ public class Format
         if (!String.IsNullOrEmpty(format.IconColor))
             this.IconColor = format.IconColor;
     }
-
-    /// <summary>
-    /// Create a new format merged onto the existing format
-    /// the overriding format object.
-    /// </summary>
-    /// <param name="format">The format object that will override properties of this object, if they exist.</param>
-    public Format? MergeOnto(Format? format)
-    {
-        var newFormat = (format == null) ? new Format() : format;
-        if (!String.IsNullOrEmpty(format.BackgroundColor))
-            this.BackgroundColor = format.BackgroundColor;
-        if (!String.IsNullOrEmpty(format.ForegroundColor))
-            this.ForegroundColor = format.ForegroundColor;
-        if (!String.IsNullOrEmpty(format.BackgroundColor))
-            this.FontWeight = format.FontWeight;
-        if (format.Icon != null)
-            this.Icon = format.Icon;
-        if (!String.IsNullOrEmpty(format.StringFormat))
-            this.StringFormat = format.StringFormat;
-        if (!String.IsNullOrEmpty(format.IconColor))
-            this.IconColor = format.IconColor;
-    }
 }

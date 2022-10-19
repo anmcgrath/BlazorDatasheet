@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using System.Security.AccessControl;
 using BlazorDatasheet.Data;
 using BlazorDatasheet.Data.Events;
 using BlazorDatasheet.Render;
@@ -10,8 +11,8 @@ public class ConditionalFormatManager
 {
     private readonly Sheet _sheet;
 
-    private List<ConditionalFormat> _registered = new();
-    public Dictionary<(int row, int id), Format?> _cachedFormats = new();
+    private List<ConditionalFormatAbstractBase> _registered = new();
+    private Dictionary<(int row, int id), CellConditionalFormatContainer?> _cache = new();
 
     public ConditionalFormatManager(Sheet sheet)
     {
@@ -24,13 +25,17 @@ public class ConditionalFormatManager
     /// </summary>
     /// <param name="key"></param>
     /// <param name="range"></param>
-    public void Apply(ConditionalFormat conditionalFormat, IFixedSizeRange? range)
+    public void Apply(ConditionalFormatAbstractBase conditionalFormat, IFixedSizeRange? range)
     {
         if (range == null)
             return;
         if (!_registered.Contains(conditionalFormat))
+        {
             _registered.Add(conditionalFormat);
-        conditionalFormat.AddRange(range);
+            conditionalFormat.Order = _registered.Count - 1;
+        }
+
+        conditionalFormat.Add(range);
         ComputeAllAndCache();
     }
 
@@ -45,29 +50,24 @@ public class ConditionalFormatManager
 
     private void HandleCellsChanged(object? sender, IEnumerable<ChangeEventArgs> args)
     {
-    }
-
-    public void ComputeAndCache(int row, int col)
-    {
-        var conditionalFormatsApplied = GetFormatsAppliedToPosition(row, col);
-        var cell = _sheet.GetCell(row, col);
-        foreach (var cf in conditionalFormatsApplied)
+        // collect the cell positions that are affected by the change and update them
+        var set = new HashSet<(int row, int col)>();
+        foreach (var changeEvent in args)
         {
-            if (!cf.FormattingDependentOnCells)
+            var formats = GetFormatsAppliedToPosition(changeEvent.Row, changeEvent.Col);
+            foreach (var format in formats)
             {
-                // only apply to itself
-                var format = this.computeResultOfCf(cell, cf, null);
-                this.CacheFormat();
-                // Apply to self and then all other cells attached to format
+                
+                // Add the cell itself to the set we want to calc for
+                set.Add((changeEvent.Row, changeEvent.Col));
+                // Determine whether any cells are affected
+                if (format.IsShared)
+                    set.UnionWith(format.Positions);
             }
-            else
-            {
-                var cellsInCf = GetCellsInFormat(cf);
-                t
-            }
-
-            
         }
+        
+        Console.WriteLine("Handling cells changed "+set.Count);
+        ComputeAllAndCache(set);
     }
 
     private IEnumerable<Cell> GetCellsInFormat(ConditionalFormat format)
@@ -75,61 +75,42 @@ public class ConditionalFormatManager
         return _sheet.GetCellsInRanges(format.Ranges);
     }
 
-    public void ComputeAllAndCache()
+    /// <summary>
+    /// Compute and store the cache. If restrictedPositions is set, limit updating the cache to those positions
+    /// </summary>
+    /// <param name="restrictedPositions"></param>
+    public void ComputeAllAndCache(HashSet<(int row, int col)> restrictedPositions = null)
     {
-        _cachedFormats.Clear();
-        // Gather the cells that are applied to each conditional format, if appropriate
-        var cfDependentCellCache = new Dictionary<ConditionalFormat, List<Cell>>();
-
-        foreach (var conditionalFormat in _registered)
+        for (int i = 0; i < _registered.Count; i++)
         {
-            if (conditionalFormat.FormattingDependentOnCells)
-                cfDependentCellCache.Add(conditionalFormat, _sheet.GetCellsInRanges(conditionalFormat.Ranges).ToList());
+            ComputeAllAndCache(_registered[i], restrictedPositions);
         }
+    }
 
-        foreach (var posn in _sheet.Range)
+    public void ComputeAllAndCache(ConditionalFormatAbstractBase conditionalFormat,
+        HashSet<(int row, int col)> restrictedPositions = null)
+    {
+        // Prepare each format (useful for caching inside formats)
+        conditionalFormat.Prepare(_sheet);
+
+        var positionsInFormat = conditionalFormat.GetPositions(restrictedPositions);
+        foreach (var posn in positionsInFormat)
         {
-            Format? initialFormat = null;
-            var conditionalFormatsAppliedToCell = GetFormatsAppliedToPosition(posn.Row, posn.Col);
-            var cell = _sheet.GetCell(posn);
-            foreach (var conditionalFormat in conditionalFormatsAppliedToCell)
+            bool apply = true;
+            if (conditionalFormat.Predicate != null)
+                apply = conditionalFormat.Predicate.Invoke(posn, _sheet);
+            Format? formatResult = null;
+            if (apply)
             {
-                var apply = conditionalFormat.RuleSucceed(cell);
-                if (!apply)
-                    continue;
-
-                cfDependentCellCache.TryGetValue(conditionalFormat, out var cells);
-                var result = computeResultOfCf(cell, conditionalFormat, cells);
-                if (result != null)
-                {
-                    if (initialFormat == null)
-                        initialFormat = result;
-                    else
-                        initialFormat.Merge(result);
-                }
-
-                if (apply && conditionalFormat.StopIfTrue)
-                    break;
+                formatResult = conditionalFormat.CalculateFormat(posn.row, posn.col, _sheet);
             }
 
-            if (initialFormat != null)
-                CacheFormat(posn.Row, posn.Col, initialFormat);
+            CacheFormat(posn.row, posn.col, conditionalFormat.Order, formatResult, apply,
+                        conditionalFormat.StopIfTrue);
         }
     }
 
-    private Format? computeResultOfCf(Cell cell, ConditionalFormat conditionalFormat, List<Cell>? cells)
-    {
-        if (conditionalFormat.FormattingDependentOnCells)
-        {
-            return conditionalFormat.FormatFuncDependent.Invoke(cell, cells);
-        }
-        else
-        {
-            return conditionalFormat.FormatFunc.Invoke(cell);
-        }
-    }
-
-    private IEnumerable<ConditionalFormat> GetFormatsAppliedToPosition(int row, int col)
+    private IEnumerable<ConditionalFormatAbstractBase> GetFormatsAppliedToPosition(int row, int col)
     {
         return _registered
             .Where(x => x.Ranges.Any(x => x.Contains(row, col)));
@@ -154,18 +135,24 @@ public class ConditionalFormatManager
         Apply(format, new Range(row, col));
     }
 
-    private void CacheFormat(int row, int col, Format? format)
+    private void CacheFormat(int row, int col, int cfIndex, Format? format, bool isTrue, bool stopIfTrue)
     {
-        if (!_cachedFormats.ContainsKey((row, col)))
-            _cachedFormats.Add((row, col), format);
-        _cachedFormats[(row, col)] = format;
+        var result = new ConditionalFormatResult(cfIndex, format, isTrue, stopIfTrue);
+        var exists = _cache.TryGetValue((row, col), out var container);
+        if (!exists)
+        {
+            container = new CellConditionalFormatContainer();
+            _cache.Add((row, col), container);
+        }
+
+        container.SetResult(result);
     }
 
     public Format? GetFormat(int row, int col)
     {
         var tuple = (row, col);
-        if (!_cachedFormats.ContainsKey(tuple))
+        if (!_cache.ContainsKey(tuple))
             return null;
-        return _cachedFormats[(row, col)];
+        return _cache[tuple]?.GetMergedFormat();
     }
 }

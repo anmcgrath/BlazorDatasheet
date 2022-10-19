@@ -24,7 +24,7 @@ public abstract class ConditionalFormatAbstractBase
     /// <summary>
     /// Whether the conditional format is True and should be run/applied.
     /// </summary>
-    public Func<CellPosition, Sheet, bool> IsTrue { get; protected set; }
+    public Func<(int row, int col), Sheet, bool>? Predicate { get; protected set; }
 
     /// <summary>
     /// Whether the conditional formats after this should not be applied if this is true.
@@ -34,7 +34,22 @@ public abstract class ConditionalFormatAbstractBase
     /// <summary>
     /// Set of cell positions in this format
     /// </summary>
-    private HashSet<(int row, int col)> Positions { get; set; } = new();
+    internal HashSet<(int row, int col)> Positions { get; private set; } = new();
+
+    /// <summary>
+    /// Get positions that only exist in both sets
+    /// </summary>
+    /// <param name="???"></param>
+    /// <returns></returns>
+    public IEnumerable<(int row, int col)> GetPositions(HashSet<(int row, int col)>? restrictedTo = null)
+    {
+        if (restrictedTo == null)
+            return Positions.AsEnumerable();
+        else
+        {
+            return Positions.Intersect(restrictedTo);
+        }
+    }
 
     internal void Add(IFixedSizeRange range)
     {

@@ -40,7 +40,7 @@ public class ObjectEditorTests
         var builder = new ObjectEditorBuilder<TesterObject>(_items, GridDirection.PropertiesAcrossColumns);
         // Create a conditional format that sets bg color to green when true
         var cf = new ConditionalFormat(
-            c => c.GetValue<bool>() == true,
+            (posn, sheet) => sheet.GetCell(posn.row, posn.col).GetValue<bool?>() == true,
             c => new Format() { BackgroundColor = "green" });
 
         builder.AutogenerateProperties(false);
@@ -65,7 +65,7 @@ public class ObjectEditorTests
         var builder = new ObjectEditorBuilder<TesterObject>(_items, GridDirection.PropertiesAcrossRows);
         // Create a conditional format that sets bg color to green when true
         var cf = new ConditionalFormat(
-            c => c.GetValue<bool>() == true,
+            (posn, sheet) => sheet.GetCell(posn.row, posn.col).GetValue<bool>() == true,
             c => new Format() { BackgroundColor = "green" });
 
         builder.AutogenerateProperties(false);

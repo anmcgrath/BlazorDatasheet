@@ -28,11 +28,11 @@ public class ConditionalFormat : ConditionalFormatAbstractBase
     /// <param name="rule">The rule determining whether the conditional format is applied</param>
     /// <param name="formatFuncDependent">The function determining the actual format to apply, based on both the single cell's
     /// value and all cells that the conditional format applies to.</param>
-    public ConditionalFormat(Func<CellPosition, Sheet, bool> rule,
+    public ConditionalFormat(Func<(int row, int col), Sheet, bool> rule,
         Func<Cell, IEnumerable<Cell>, Format> formatFuncDependent)
         : this()
     {
-        IsTrue = rule;
+        Predicate = rule;
         FormatFuncDependent = formatFuncDependent;
         IsShared = true;
     }
@@ -45,9 +45,9 @@ public class ConditionalFormat : ConditionalFormatAbstractBase
     /// <param name="rule">The rule determining whether the conditional format is applied</param>
     /// <param name="formatFunc">The function determining the actual format to apply, based on both the single cell's
     /// value and all cells that the conditional format applies to.</param>
-    public ConditionalFormat(Func<CellPosition, Sheet, bool> rule, Func<Cell, Format> formatFunc) : this()
+    public ConditionalFormat(Func<(int row, int col), Sheet, bool> rule, Func<Cell, Format> formatFunc) : this()
     {
-        this.IsTrue = rule;
+        this.Predicate = rule;
         FormatFunc = formatFunc;
     }
 
@@ -64,7 +64,9 @@ public class ConditionalFormat : ConditionalFormatAbstractBase
         if (IsShared)
         {
             var cells = cellCache;
-            return FormatFuncDependent?.Invoke(cell, cells);
+            if (FormatFuncDependent != null)
+                return FormatFuncDependent?.Invoke(cell, cells);
+            return FormatFunc?.Invoke(cell);
         }
         else
         {
