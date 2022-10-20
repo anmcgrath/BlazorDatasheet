@@ -1,6 +1,8 @@
 @page "/ConditionalFormatting"
 @using BlazorDatasheet.Data
+@using BlazorDatasheet.Formats.DefaultConditionalFormats
 @using BlazorDatasheet.Render
+@using Range = BlazorDatasheet.Data.Range
 <PageTitle>Conditional Formatting</PageTitle>
 
 <h1>Conditional Formatting</h1>
@@ -14,7 +16,7 @@
     </ol>
 </p>
 
-<Datasheet Sheet="sheet"></Datasheet>
+<Datasheet Sheet="sheet" IsFixedHeight="true"></Datasheet>
 
 @code {
 
@@ -22,44 +24,12 @@
 
     protected override void OnInitialized()
     {
-        var cells = new Cell[4, 1] { { new Cell(0) }, { new Cell(-100) }, { new Cell(20) }, { new Cell("secret") } };
-        var formatTick = new ConditionalFormat(
-            (posn, sheet) =>
-            {
-                var c = sheet.GetCell(posn.row, posn.col);
-                return c.GetValue() != null && c.GetValue<string>().Contains("secret");
-            },
-            c => new Format()
-            {
-                Icon = Icons.Icons.CheckIcon,
-                IconColor = "#428739"
-            });
-        var coloredNums = new ConditionalFormat(
-            (posn, sheet) =>
-            {
-                var c = sheet.GetCell(posn.row, posn.col);
-                return c.GetValue() != null && c.GetValue<double?>() != null;
-            },
-            c =>
-            {
-                var f = new Format();
-                var val = c.GetValue<double?>();
-                if (val.HasValue)
-                {
-                    if (val == 0)
-                        f.BackgroundColor = "#ffffff";
-                    else if (val > 0)
-                        f.BackgroundColor = "#f5adab";
-                    else
-                        f.BackgroundColor = "#abecf5";
-                }
-                return f;
-            });
+        sheet = new Sheet(100, 5);
+        var cf = new NumberScaleConditionalFormat();
 
-        sheet = new Sheet(4, 1, cells);
-        sheet.ConditionalFormatting.Apply(formatTick);
-        sheet.ConditionalFormatting.Apply(coloredNums);
 
+        sheet.ConditionalFormatting.Apply(cf, new Range(0, 99, 4, 4));
+        
         base.OnInitialized();
     }
 

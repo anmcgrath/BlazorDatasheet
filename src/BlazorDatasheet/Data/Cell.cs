@@ -92,7 +92,7 @@ public class Cell : IReadOnlyCell, IWriteableCell
         {
             if (Data == null && type == typeof(string))
                 return string.Empty;
-            
+
             if (string.IsNullOrEmpty(Key))
             {
                 if (this.Data.GetType() == type)

@@ -43,7 +43,7 @@ public class ConditionalFormatManager
     /// Applies conditional format to the whole sheet
     /// </summary>
     /// <param name="key"></param>
-    public void Apply(ConditionalFormat format)
+    public void Apply(ConditionalFormatAbstractBase format)
     {
         Apply(format, _sheet.Range);
     }
@@ -130,7 +130,7 @@ public class ConditionalFormatManager
     /// </summary>
     /// <param name="key"></param>
     /// <param name="range"></param>
-    public void Apply(ConditionalFormat format, int row, int col)
+    public void Apply(ConditionalFormatAbstractBase format, int row, int col)
     {
         Apply(format, new Range(row, col));
     }

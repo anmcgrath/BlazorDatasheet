@@ -1,5 +1,6 @@
 @page "/ConditionalFormatting"
 @using BlazorDatasheet.Data
+@using BlazorDatasheet.Formats.DefaultConditionalFormats
 @using BlazorDatasheet.Render
 <PageTitle>Conditional Formatting</PageTitle>
 
@@ -22,49 +23,12 @@
 
     protected override void OnInitialized()
     {
-        sheet = new Sheet(4, 1);
-        sheet.TrySetCellValue(0, 0, 0);
-        sheet.TrySetCellValue(0, 1, -100);
-        sheet.TrySetCellValue(0, 2, 20);
-        sheet.TrySetCellValue(0, 3, "secret");
-
-        var formatTick = new ConditionalFormat(
-            (posn, sheet) =>
-            {
-                var c = sheet.GetCell(posn.row, posn.col);
-                return c.GetValue() != null && c.GetValue<string>().Contains("secret");
-            },
-            cell => new Format()
-            {
-                Icon = Icons.Icons.CheckIcon,
-                IconColor = "#428739"
-            });
-        var coloredNums = new ConditionalFormat(
-            (posn, sheet) =>
-            {
-                var c = sheet.GetCell(posn.row, posn.col);
-                return c.GetValue() != null && c.GetValue<double?>() != null;
-            },
-            c =>
-            {
-                var f = new Format();
-                var val = c.GetValue<double?>();
-                if (val.HasValue)
-                {
-                    if (val == 0)
-                        f.BackgroundColor = "#ffffff";
-                    else if (val > 0)
-                        f.BackgroundColor = "#f5adab";
-                    else
-                        f.BackgroundColor = "#abecf5";
-                }
-                return f;
-            });
+        sheet = new Sheet(100, 5);
+        var cf = new NumberScaleConditionalFormat();
 
 
-        sheet.ConditionalFormatting.Apply(formatTick);
-        sheet.ConditionalFormatting.Apply(coloredNums);
-
+        sheet.ConditionalFormatting.Apply(cf);
+        
         base.OnInitialized();
     }
 
