@@ -24,6 +24,8 @@ public class CommandManager
         if (command is IUndoableCommand undoCommand && result == true)
         {
             _history.Push(undoCommand);
+            // Clear redos if there was a successful undoable command
+            _redos.Clear();
         }
 
         return result;

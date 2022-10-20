@@ -7,20 +7,21 @@ namespace BlazorDatasheet.Commands;
 public class ClearCellsCommand : IUndoableCommand
 {
     private readonly IEnumerable<IRange> _ranges;
-    private readonly List<CellClearCommandOccurence> _clearCommandOccurences;
+    private readonly List<ValueChange> _clearCommandOccurences;
 
     public ClearCellsCommand(IEnumerable<IRange> ranges)
     {
-        _ranges = ranges;
-        _clearCommandOccurences = new List<CellClearCommandOccurence>();
+        _ranges = ranges.Select(x => x.Copy());
+        _clearCommandOccurences = new List<ValueChange>();
     }
 
-    public ClearCellsCommand(Range range) : this(new List<IRange>() { range })
+    public ClearCellsCommand(IRange range) : this(new List<IRange>() { range })
     {
     }
 
     public bool Execute(Sheet sheet)
     {
+        Console.WriteLine("Executing ClearShellsCOmmand...." + _ranges.First().ToString());
         foreach (var range in _ranges)
         {
             var rangeInSheet = range
@@ -32,8 +33,9 @@ public class ClearCellsCommand : IUndoableCommand
                 var cell = sheet.GetCell(cellPosition);
                 var oldValue = cell.GetValue();
 
+                // When this is redone it'll update the new value to the old value.
                 _clearCommandOccurences.Add(
-                    new CellClearCommandOccurence(cellPosition.Row, cellPosition.Col, oldValue));
+                    new ValueChange(cellPosition.Row, cellPosition.Col, oldValue));
             }
         }
 
@@ -43,26 +45,7 @@ public class ClearCellsCommand : IUndoableCommand
 
     public bool Undo(Sheet sheet)
     {
-        // TODO batch the cell resets so that cell changed events are only raised once
-        foreach (var o in _clearCommandOccurences)
-        {
-            sheet.TrySetCellValueImpl(o.Row, o.Col, o.OldValue);
-        }
-
+        sheet.SetCellValuesImpl(_clearCommandOccurences);
         return true;
     }
-}
-
-internal struct CellClearCommandOccurence
-{
-    public CellClearCommandOccurence(int row, int col, object oldValue)
-    {
-        Row = row;
-        Col = col;
-        OldValue = oldValue;
-    }
-
-    public int Row { get; }
-    public int Col { get; }
-    public object OldValue { get; }
 }

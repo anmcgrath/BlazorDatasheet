@@ -354,7 +354,7 @@ public class Sheet
         return Commands.ExecuteCommand(cmd);
     }
 
-    internal bool TrySetCellValueImpl(int row, int col, object value)
+    internal bool TrySetCellValueImpl(int row, int col, object value, bool raiseEvent = true)
     {
         var cell = this.GetCell(row, col);
         if (cell == null)
@@ -375,7 +375,7 @@ public class Sheet
         // Try to set the cell's value to the new value
         var oldValue = cell.GetValue();
         var setValue = cell.TrySetValue(value);
-        if (setValue)
+        if (setValue && raiseEvent)
         {
             var args = new ChangeEventArgs[1]
             {
@@ -385,6 +385,33 @@ public class Sheet
         }
 
         return setValue;
+    }
+
+    /// <summary>
+    /// Gets the cell's value at row, col
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <returns></returns>
+    public object? GetValue(int row, int col)
+    {
+        return GetCell(row, col)?.GetValue();
+    }
+
+    internal bool SetCellValuesImpl(IEnumerable<ValueChange> changes)
+    {
+        var changeEvents = new List<ChangeEventArgs>();
+        foreach (var change in changes)
+        {
+            var oldValue = GetValue(change.Row, change.Col);
+            TrySetCellValueImpl(change.Row, change.Col, change.Value, false);
+            var newValue = GetValue(change.Row, change.Col);
+            if (oldValue != newValue)
+                changeEvents.Add(new ChangeEventArgs(change.Row, change.Col, oldValue, newValue));
+        }
+
+        CellsChanged?.Invoke(this, changeEvents);
+        return changeEvents.Any();
     }
 
     /// <summary>

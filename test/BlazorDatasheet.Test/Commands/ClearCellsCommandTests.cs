@@ -13,7 +13,7 @@ public class ClearCellsCommandTests
     public void Setup()
     {
         //Create a sheet with only one cell, with a value 1
-        _sheet = new Sheet(1, 2);
+        _sheet = new Sheet(2, 2);
         _sheet.TrySetCellValue(0, 0, "1");
         _sheet.TrySetCellValue(0, 1, "2");
         _commandManager = new CommandManager(_sheet);
@@ -22,12 +22,17 @@ public class ClearCellsCommandTests
     [Test]
     public void Test_Clear_Then_Undo_Then_Redo()
     {
-        var cmd = new ClearCellsCommand(new Range(0, 0, 0, 1));
+        _sheet.Selection.Add(new Range(0, 1, 0, 1));
+        var cmd = new ClearCellsCommand(_sheet.Selection.Ranges);
         _commandManager.ExecuteCommand(cmd);
-        Assert.Null(_sheet.GetCell(0,0).Data);
-        Assert.Null(_sheet.GetCell(0,1).Data);
-        _commandManager.Undo();
-        Assert.AreEqual("1",_sheet.GetCell(0,0).GetValue());
-        Assert.AreEqual("2",_sheet.GetCell(0,1).GetValue());
+        for (int i = 0; i < 3; i++)
+        {
+            Assert.Null(_sheet.GetValue(0, 0));
+            Assert.Null(_sheet.GetValue(0, 0));
+            _commandManager.Undo();
+            Assert.AreEqual("1", _sheet.GetValue(0, 0));
+            Assert.AreEqual("2", _sheet.GetValue(0, 1));
+            _commandManager.Redo();
+        }
     }
 }
