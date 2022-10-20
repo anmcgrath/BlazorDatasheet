@@ -394,10 +394,18 @@ public class Sheet
     public void ClearCells(IEnumerable<IRange> ranges)
     {
         var cells = this.GetCellsInRanges(ranges);
+        var changedArgs = new List<ChangeEventArgs>();
         foreach (var cell in cells)
         {
+            var row = cell.Row;
+            var col = cell.Col;
+            var oldVal = cell.GetValue();
             cell.Clear();
+            var newVal = cell.GetValue();
+            changedArgs.Add(new ChangeEventArgs(row, col, oldVal, newVal));
         }
+
+        this.CellsChanged?.Invoke(this, changedArgs);
     }
 
     public string GetRangeAsDelimitedText(IRange inputRange, char tabDelimiter = '\t')

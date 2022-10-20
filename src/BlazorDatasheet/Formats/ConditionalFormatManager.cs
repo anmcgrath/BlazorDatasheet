@@ -65,8 +65,6 @@ public class ConditionalFormatManager
                     set.UnionWith(format.Positions);
             }
         }
-        
-        Console.WriteLine("Handling cells changed "+set.Count);
         ComputeAllAndCache(set);
     }
 
