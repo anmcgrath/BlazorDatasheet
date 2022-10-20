@@ -27,7 +27,7 @@ public class ClearCellsCommand : IUndoableCommand
                 .GetIntersection(sheet.Range);
             foreach (var cellPosition in rangeInSheet)
             {
-                if (cellPosition.InvalidPosition)
+                if (cellPosition.IsInvalid)
                     continue;
                 var cell = sheet.GetCell(cellPosition);
                 var oldValue = cell.GetValue();

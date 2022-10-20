@@ -392,7 +392,7 @@ public partial class Datasheet : IHandleEvent
                 if (Sheet == null || !Sheet.Selection.Ranges.Any())
                     return false;
                 var inputPosition = Sheet.Selection.ActiveCellPosition;
-                if (inputPosition.InvalidPosition)
+                if (inputPosition.IsInvalid)
                     return false;
                 BeginEdit(inputPosition.Row, inputPosition.Col, softEdit: true, EditEntryMode.Key, e.Key);
                 StateHasChanged();
@@ -423,7 +423,7 @@ public partial class Datasheet : IHandleEvent
             return;
 
         var posnToInput = Sheet.Selection.ActiveCellPosition;
-        if (posnToInput.InvalidPosition)
+        if (posnToInput.IsInvalid)
             return;
 
         var range = Sheet.InsertDelimitedText(arg.Text, posnToInput);

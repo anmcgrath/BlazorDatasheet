@@ -23,7 +23,7 @@ public class EditorManager : IEditorManager
     public CellPosition CurrentEditPosition { get; private set; }
     public Cell CurrentEditedCell { get; private set; }
     internal Type? ActiveEditorType { get; private set; }
-    public bool IsEditing => !CurrentEditPosition.InvalidPosition;
+    public bool IsEditing => !CurrentEditPosition.IsInvalid;
     public bool IsSoftEdit { get; private set; }
 
     public event EventHandler<AcceptEditEventArgs> EditAccepted;

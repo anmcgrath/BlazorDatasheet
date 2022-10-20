@@ -312,7 +312,7 @@ public class Sheet
     /// <returns>The range of cells that were affected</returns>
     public Range InsertDelimitedText(string text, CellPosition inputPosition)
     {
-        if (inputPosition.InvalidPosition)
+        if (inputPosition.IsInvalid)
             return null;
 
         var lines = text.Split('\n');

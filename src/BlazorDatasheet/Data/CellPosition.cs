@@ -1,22 +1,37 @@
 namespace BlazorDatasheet.Data;
 
-public struct CellPosition
+public struct CellPosition : IEquatable<CellPosition>
 {
     public int Row { get; set; }
     public int Col { get; set; }
-    public bool InvalidPosition { get; } = false;
+    public bool IsInvalid { get; } = false;
 
     public CellPosition(int row, int col)
     {
         Row = row;
         Col = col;
         if (row < 0 || col < 0)
-            InvalidPosition = true;
+            IsInvalid = true;
     }
 
     public bool Equals(int row, int col)
     {
         return Row == row && Col == col;
+    }
+
+    public bool Equals(CellPosition other)
+    {
+        return Row == other.Row && Col == other.Col;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is CellPosition other && Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(Row, Col);
     }
 
     public override string ToString()
