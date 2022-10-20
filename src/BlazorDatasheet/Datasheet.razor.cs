@@ -369,8 +369,7 @@ public partial class Datasheet : IHandleEvent
             if (!Sheet.Selection.Ranges.Any())
                 return true;
             var rangesToClear = Sheet.Selection.Ranges;
-            var cmd = new ClearCellsCommand(rangesToClear);
-            Sheet.Commands.ExecuteCommand(cmd);
+            Sheet.ClearCells(rangesToClear);
             StateHasChanged();
             return true;
         }

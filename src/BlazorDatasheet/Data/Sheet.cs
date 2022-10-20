@@ -325,6 +325,8 @@ public class Sheet
         // It is possible that each line is of different cell lengths, so we return the max for all lines
         var maxEndCol = -1;
 
+        var valChanges = new List<ValueChange>();
+
         int lineNo = 0;
         for (int row = inputPosition.Row; row <= endRow; row++)
         {
@@ -338,12 +340,14 @@ public class Sheet
             for (int col = inputPosition.Col; col <= endCol; col++)
             {
                 var cell = this.GetCell(row, col);
-                TrySetCellValue(row, col, lineSplit[cellIndex]);
+                valChanges.Add(new ValueChange(row, col, lineSplit[cellIndex]));
                 cellIndex++;
             }
 
             lineNo++;
         }
+
+        this.SetCellValues(valChanges);
 
         return new Range(inputPosition.Row, endRow, inputPosition.Col, maxEndCol);
     }
@@ -398,6 +402,12 @@ public class Sheet
         return GetCell(row, col)?.GetValue();
     }
 
+    public bool SetCellValues(IEnumerable<ValueChange> changes)
+    {
+        var cmd = new SetCellValuesCommand(changes);
+        return Commands.ExecuteCommand(cmd);
+    }
+
     internal bool SetCellValuesImpl(IEnumerable<ValueChange> changes)
     {
         var changeEvents = new List<ChangeEventArgs>();
@@ -419,6 +429,12 @@ public class Sheet
     /// </summary>
     /// <param name="range"></param>
     public void ClearCells(IEnumerable<IRange> ranges)
+    {
+        var cmd = new ClearCellsCommand(ranges);
+        Commands.ExecuteCommand(cmd);
+    }
+
+    internal void ClearCelllsImpl(IEnumerable<IRange> ranges)
     {
         var cells = this.GetCellsInRanges(ranges);
         var changedArgs = new List<ChangeEventArgs>();

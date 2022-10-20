@@ -11,7 +11,7 @@ public class ClearCellsCommand : IUndoableCommand
 
     public ClearCellsCommand(IEnumerable<IRange> ranges)
     {
-        _ranges = ranges.Select(x => x.Copy());
+        _ranges = ranges.Select(x => x.Copy()).ToList();
         _clearCommandOccurences = new List<ValueChange>();
     }
 
@@ -21,7 +21,6 @@ public class ClearCellsCommand : IUndoableCommand
 
     public bool Execute(Sheet sheet)
     {
-        Console.WriteLine("Executing ClearShellsCOmmand...." + _ranges.First().ToString());
         foreach (var range in _ranges)
         {
             var rangeInSheet = range
@@ -39,7 +38,7 @@ public class ClearCellsCommand : IUndoableCommand
             }
         }
 
-        sheet.ClearCells(_ranges);
+        sheet.ClearCelllsImpl(_ranges);
         return true;
     }
 
