@@ -316,7 +316,6 @@ public class Sheet
             return null;
 
         var lines = text.Split('\n');
-        Console.WriteLine(lines.Length);
 
         // We may reach the end of the sheet, so we only need to paste the rows up until the end.
         var endRow = Math.Min(inputPosition.Row + lines.Length - 1, NumRows - 1);
