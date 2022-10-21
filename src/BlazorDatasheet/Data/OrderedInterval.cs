@@ -1,0 +1,100 @@
+﻿namespace BlazorDatasheet.Data;
+
+/// <summary>
+/// An ordered interval between its start and end position (inclusive)
+/// Because the interval is ordered, the start position will always be less than the end position
+/// </summary>
+public class OrderedInterval
+{
+    private int _start;
+
+    public int Start
+    {
+        get => _start;
+        set
+        {
+            _start = Math.Min(value, _end);
+            _end = Math.Max(value, _end);
+        }
+    }
+
+    private int _end;
+
+    public int End
+    {
+        get => _end;
+        set
+        {
+            _start = Math.Min(value, _start);
+            _end = Math.Max(value, _start);
+        }
+    }
+
+    public int Length => End - Start + 1;
+
+    public OrderedInterval(int start, int end)
+    {
+        _start = Math.Min(start, end);
+        _end = Math.Max(start, end);
+    }
+
+    public bool Contains(int value)
+    {
+        return value >= _start && value <= _end;
+    }
+
+    public bool Overlaps(OrderedInterval interval)
+    {
+        return this.Contains(interval.Start)
+               || this.Contains(interval.End)
+               || interval.Contains(this.End)
+               || interval.Contains(this.Start);
+    }
+
+    /// <summary>
+    /// Finds the smallest number of intervals that covers all the intervals.
+    /// Essentially it removes and combines any overlapping intervals
+    /// </summary>
+    /// <param name="intervals"></param>
+    /// <returns></returns>
+    public static List<OrderedInterval> Merge(IEnumerable<OrderedInterval> intervals)
+    {
+        var sortedIntervals =
+            intervals.Select(x => x.Copy())
+                .OrderBy(x => x.Start)
+                .ToList();
+        var mergedIntervals = new List<OrderedInterval>();
+
+        if (!sortedIntervals.Any())
+            return mergedIntervals;
+
+        if (sortedIntervals.Count == 1)
+        {
+            mergedIntervals.Add(sortedIntervals.First());
+            return mergedIntervals;
+        }
+
+        var stack = new Stack<OrderedInterval>();
+        stack.Push(sortedIntervals.First());
+
+        for (int i = 1; i < sortedIntervals.Count; i++)
+        {
+            if (stack.Peek().Overlaps(sortedIntervals[i]))
+                stack.Peek().End = Math.Max(stack.Peek().End, sortedIntervals[i].End);
+            else 
+                stack.Push(sortedIntervals[i]);
+        }
+
+        return stack.ToList();
+    }
+
+    public OrderedInterval Copy()
+    {
+        return new OrderedInterval(Start, End);
+    }
+
+    public static List<OrderedInterval> Merge(params OrderedInterval[] intervals)
+    {
+        return Merge(intervals.AsEnumerable());
+    }
+}
