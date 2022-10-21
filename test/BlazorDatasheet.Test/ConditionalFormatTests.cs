@@ -54,9 +54,15 @@ public class ConditionalFormatTests
         // format registered
         var cf = new ConditionalFormat(
             (posn, sheet) => true, (cell, cells) => new Format() { BackgroundColor = cells.Count().ToString() });
+        cf.IsShared = true;
         cm.Apply(cf);
         var formatApplied = cm.GetFormat(0, 0);
         Assert.NotNull(formatApplied);
         Assert.AreEqual(sheet.Range.Area.ToString(), formatApplied!.BackgroundColor);
+    }
+
+    [Test]
+    public void Large_Conditional_Format()
+    {
     }
 }

@@ -13,6 +13,18 @@ public class ConditionalFormatManager
 
     private List<ConditionalFormatAbstractBase> _registered = new();
     private Dictionary<(int row, int id), CellConditionalFormatContainer?> _cache = new();
+    private bool _useCache;
+
+    public bool UseCache
+    {
+        get => _useCache;
+        set
+        {
+            _useCache = value;
+            if (!_useCache)
+                _cache.Clear();
+        }
+    }
 
     public ConditionalFormatManager(Sheet sheet)
     {
@@ -36,7 +48,12 @@ public class ConditionalFormatManager
         }
 
         conditionalFormat.Add(range);
-        ComputeAllAndCache();
+        if (UseCache)
+            ComputeAllAndCache();
+        else
+        {
+            conditionalFormat.Prepare(_sheet);
+        }
     }
 
     /// <summary>
@@ -50,6 +67,27 @@ public class ConditionalFormatManager
 
     private void HandleCellsChanged(object? sender, IEnumerable<ChangeEventArgs> args)
     {
+        if (!UseCache)
+        {
+            // Simply prepare all cells that the conditional format belongs to (if shared)
+            var handled = new HashSet<int>();
+            foreach (var changeEvent in args)
+            {
+                var cfs = GetFormatsAppliedToPosition(changeEvent.Row, changeEvent.Col);
+                foreach (var format in cfs)
+                {
+                    if (handled.Contains(format.Order))
+                        continue;
+                    // prepare format (re-compute shared format cache etch.)
+                    if (format.IsShared)
+                        format.Prepare(_sheet);
+                    handled.Add(format.Order);
+                }
+            }
+
+            return;
+        }
+
         // collect the cell positions that are affected by the change and update them
         var set = new HashSet<(int row, int col)>();
         foreach (var changeEvent in args)
@@ -57,7 +95,6 @@ public class ConditionalFormatManager
             var formats = GetFormatsAppliedToPosition(changeEvent.Row, changeEvent.Col);
             foreach (var format in formats)
             {
-                
                 // Add the cell itself to the set we want to calc for
                 set.Add((changeEvent.Row, changeEvent.Col));
                 // Determine whether any cells are affected
@@ -65,6 +102,7 @@ public class ConditionalFormatManager
                     set.UnionWith(format.Positions);
             }
         }
+
         ComputeAllAndCache(set);
     }
 
@@ -104,7 +142,7 @@ public class ConditionalFormatManager
             }
 
             CacheFormat(posn.row, posn.col, conditionalFormat.Order, formatResult, apply,
-                        conditionalFormat.StopIfTrue);
+                conditionalFormat.StopIfTrue);
         }
     }
 
@@ -148,6 +186,27 @@ public class ConditionalFormatManager
 
     public Format? GetFormat(int row, int col)
     {
+        if (!UseCache)
+        {
+            var cfs = GetFormatsAppliedToPosition(row, col);
+            Format? initialFormat = null;
+            foreach (var format in cfs)
+            {
+                var apply = format.Predicate?.Invoke((row, col), _sheet);
+                if (apply == false)
+                    continue;
+                var calced = format.CalculateFormat(row, col, _sheet);
+                if (initialFormat == null)
+                    initialFormat = calced;
+                else
+                    initialFormat.Merge(calced);
+                if (apply == true && format.StopIfTrue)
+                    break;
+            }
+
+            return initialFormat;
+        }
+
         var tuple = (row, col);
         if (!_cache.ContainsKey(tuple))
             return null;
