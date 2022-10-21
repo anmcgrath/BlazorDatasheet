@@ -24,11 +24,12 @@
 {
     foreach (var range in Sheet.Selection.Ranges)
     {
+        var fixedRange = range.GetIntersection(Sheet.Range);
         var isActiveRange = range == Sheet.Selection.ActiveRange;
         <!-- if it's the active range, render around the active position -->
         if (isActiveRange)
         {
-            var brokenRanges = range.Break(Sheet.Selection.ActiveCellPosition);
+            var brokenRanges = fixedRange.Break(Sheet.Selection.ActiveCellPosition);
             foreach (var brokenRange in brokenRanges)
             {
                 <div class="selection-base" style="@GetSizeStyleString(brokenRange, 0, true)"/>
@@ -36,7 +37,7 @@
         }
 
         <!-- now render the border around the whole range. No fill on active range because we've filled it already -->
-        <div class="selection-base" style="@GetSizeStyleString(range, 1, !isActiveRange)"/>
+        <div class="selection-base" style="@GetSizeStyleString(fixedRange, 1, !isActiveRange)"/>
     }
 }
 
@@ -61,7 +62,7 @@
     public Selection? TempSelection { get; set; }
 
     private IFixedSizeRange? FixedTempSelection => TempSelection?.ActiveRange?.GetIntersection(Sheet?.Range);
-    
+
     private void OnSelectionChanged(object? sender, IEnumerable<IRange> ranges)
     {
         StateHasChanged();
@@ -79,10 +80,10 @@
         var w = CellLayoutProvider.ComputeWidth(range);
         var h = CellLayoutProvider.ComputeHeight(range);
 
-        strBuilder.Append($"left:{left-1}px;");
-        strBuilder.Append($"top:{top-1}px;");
-        strBuilder.Append($"width:{w+2}px;");
-        strBuilder.Append($"height:{h+2}px;");
+        strBuilder.Append($"left:{left - 1}px;");
+        strBuilder.Append($"top:{top - 1}px;");
+        strBuilder.Append($"width:{w + 2}px;");
+        strBuilder.Append($"height:{h + 2}px;");
 
         if (borderThickness != 0)
         {

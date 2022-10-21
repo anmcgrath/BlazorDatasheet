@@ -42,7 +42,7 @@ public class SelectionManagerTests
     {
         var selection = new Selection(_sheet);
         selection.Add(new Range(-1000, 1000, -1000, 1000));
-        Assert.AreEqual(_sheet.Range.Area, selection.ActiveRange.Area);
+        Assert.AreEqual(_sheet.Range.Area, selection.ActiveRange.GetIntersection(_sheet.Range).Area);
     }
 
     [Test]

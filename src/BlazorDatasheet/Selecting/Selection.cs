@@ -10,14 +10,14 @@ public class Selection
     /// <summary>
     /// The ranges in the current selection
     /// </summary>
-    public IReadOnlyList<IFixedSizeRange> Ranges => _ranges;
+    public IReadOnlyList<IRange> Ranges => _ranges;
 
-    private List<IFixedSizeRange> _ranges = new();
+    private List<IRange> _ranges = new();
 
     /// <summary>
     /// The range that is active for accepting user input, usually the most recent range added
     /// </summary>
-    public IFixedSizeRange? ActiveRange { get; private set; }
+    public IRange? ActiveRange { get; private set; }
 
     /// <summary>
     /// The position of the cell that should take user input. Usually the start position of ActiveRange
@@ -50,9 +50,8 @@ public class Selection
     /// <param name="range"></param>
     public void Add(IRange range)
     {
-        var fixedRange = range.GetIntersection(_sheet.Range);
-        _ranges.Add(fixedRange);
-        ActiveRange = fixedRange;
+        _ranges.Add(range);
+        ActiveRange = range;
         ActiveCellPosition = ActiveRange.Start;
         emitSelectionChange();
     }
@@ -61,7 +60,7 @@ public class Selection
     /// Removes the range from the selection
     /// </summary>
     /// <param name="range"></param>
-    public void Remove(IFixedSizeRange range)
+    public void Remove(IRange range)
     {
         _ranges.Remove(range);
         var newActiveRange = _ranges.LastOrDefault();
@@ -159,9 +158,11 @@ public class Selection
             newRow = activeRangeFixed.TopLeft.Row;
             if (newCol > activeRangeFixed.BottomRight.Col)
             {
-                ActiveRange = getRangeAfterActive();
-                newCol = ActiveRange.TopLeft.Col;
-                newRow = ActiveRange.TopLeft.Row;
+                var newActiveRange = getRangeAfterActive();
+                var newActiveRangeFixed = newActiveRange.GetIntersection(_sheet.Range);
+                newCol = newActiveRangeFixed.TopLeft.Col;
+                newRow = newActiveRangeFixed.TopLeft.Row;
+                ActiveRange = newActiveRange;
             }
         }
         else if (newRow < activeRangeFixed.TopLeft.Row)
@@ -170,9 +171,11 @@ public class Selection
             newRow = activeRangeFixed.BottomRight.Row;
             if (newCol < activeRangeFixed.TopLeft.Col)
             {
-                ActiveRange = getRangeBeforeActive();
-                newCol = ActiveRange.BottomRight.Col;
-                newRow = ActiveRange.BottomRight.Row;
+                var newActiveRange = getRangeAfterActive();
+                var newActiveRangeFixed = newActiveRange.GetIntersection(_sheet.Range);
+                newCol = newActiveRangeFixed.BottomRight.Col;
+                newRow = newActiveRangeFixed.BottomRight.Row;
+                ActiveRange = newActiveRange;
             }
         }
 
@@ -208,7 +211,7 @@ public class Selection
         }
     }
 
-    private IFixedSizeRange getRangeAfterActive()
+    private IRange getRangeAfterActive()
     {
         var activeRangeIndex = _ranges.IndexOf(ActiveRange!);
         if (activeRangeIndex == -1)
@@ -219,7 +222,7 @@ public class Selection
         return _ranges[activeRangeIndex];
     }
 
-    private IFixedSizeRange getRangeBeforeActive()
+    private IRange getRangeBeforeActive()
     {
         var activeRangeIndex = _ranges.IndexOf(ActiveRange!);
         if (activeRangeIndex == -1)
