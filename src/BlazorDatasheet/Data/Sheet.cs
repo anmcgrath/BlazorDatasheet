@@ -310,12 +310,12 @@ public class Sheet
     /// <param name="text">The text to insert</param>
     /// <param name="inputPosition">The position where the insertion starts</param>
     /// <returns>The range of cells that were affected</returns>
-    public Range InsertDelimitedText(string text, CellPosition inputPosition)
+    public Range InsertDelimitedText(string text, CellPosition inputPosition, string newLineDelim = "\n")
     {
         if (inputPosition.IsInvalid)
             return null;
 
-        var lines = text.Split('\n');
+        var lines = text.TrimEnd('\n').Split(newLineDelim);
 
         // We may reach the end of the sheet, so we only need to paste the rows up until the end.
         var endRow = Math.Min(inputPosition.Row + lines.Length - 1, NumRows - 1);
@@ -450,7 +450,7 @@ public class Sheet
         this.CellsChanged?.Invoke(this, changedArgs);
     }
 
-    public string GetRangeAsDelimitedText(IRange inputRange, char tabDelimiter = '\t')
+    public string GetRangeAsDelimitedText(IRange inputRange, char tabDelimiter = '\t', string newLineDelim = "\n")
     {
         if (inputRange == null)
             return string.Empty;
@@ -483,8 +483,7 @@ public class Sheet
                     strBuilder.Append(tabDelimiter);
             }
 
-            if (row != r1)
-                strBuilder.AppendLine();
+            strBuilder.Append(newLineDelim);
         }
 
         return strBuilder.ToString();
