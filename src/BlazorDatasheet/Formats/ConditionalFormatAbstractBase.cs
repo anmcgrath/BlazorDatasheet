@@ -13,7 +13,7 @@ public abstract class ConditionalFormatAbstractBase
     /// <summary>
     /// List of ranges that the format covers
     /// </summary>
-    internal List<IFixedSizeRange> Ranges { get; private set; } = new();
+    internal readonly List<IFixedSizeRange> Ranges = new();
 
     /// <summary>
     /// Set true if, when one cell value is recalculated, the conditional format should be re-evaluated for all cells
@@ -92,5 +92,10 @@ public abstract class ConditionalFormatAbstractBase
     /// </summary>
     public virtual void Prepare(Sheet sheet)
     {
+    }
+
+    public virtual ConditionalFormatAbstractBase Clone()
+    {
+        return (ConditionalFormatAbstractBase)this.MemberwiseClone();
     }
 }

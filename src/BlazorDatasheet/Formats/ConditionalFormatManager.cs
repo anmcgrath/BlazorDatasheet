@@ -2,6 +2,7 @@
 using System.Security.AccessControl;
 using BlazorDatasheet.Data;
 using BlazorDatasheet.Data.Events;
+using BlazorDatasheet.Data.SpatialDataStructures;
 using BlazorDatasheet.Render;
 using Range = BlazorDatasheet.Data.Range;
 
@@ -14,6 +15,8 @@ public class ConditionalFormatManager
     private List<ConditionalFormatAbstractBase> _registered = new();
     private Dictionary<(int row, int id), CellConditionalFormatContainer?> _cache = new();
     private bool _useCache;
+
+    private RTree<ConditonalFormatSpatialData> _cfTree = new();
 
     public bool UseCache
     {
@@ -48,6 +51,8 @@ public class ConditionalFormatManager
         }
 
         conditionalFormat.Add(range);
+        _cfTree.Insert(new ConditonalFormatSpatialData(conditionalFormat, range));
+
         if (UseCache)
             ComputeAllAndCache();
         else
@@ -142,22 +147,15 @@ public class ConditionalFormatManager
             }
 
             CacheFormat(posn.row, posn.col, conditionalFormat.Order, formatResult, apply,
-                conditionalFormat.StopIfTrue);
+                        conditionalFormat.StopIfTrue);
         }
     }
 
     private IEnumerable<ConditionalFormatAbstractBase> GetFormatsAppliedToPosition(int row, int col)
     {
-        return _registered
-            .Where(x => x.Ranges.Any(x => x.Contains(row, col)));
-    }
-
-    private void OnRowInserted(int rowIndex)
-    {
-    }
-
-    private void OnCellChanged(int row, int col)
-    {
+        //return _registered.Where(x => x.Ranges.Any(x => x.Contains(row, col)));
+        return _cfTree.Search(new Envelope(col, row, col, row))
+                      .Select(x => x.ConditionalFormat);
     }
 
     /// <summary>
@@ -211,5 +209,20 @@ public class ConditionalFormatManager
         if (!_cache.ContainsKey(tuple))
             return null;
         return _cache[tuple]?.GetMergedFormat();
+    }
+
+    internal class ConditonalFormatSpatialData : ISpatialData
+    {
+        internal ConditionalFormatAbstractBase _conditionalFormat;
+        public ref readonly ConditionalFormatAbstractBase ConditionalFormat => ref _conditionalFormat;
+        private readonly Envelope _envelope;
+        public ref readonly Envelope Envelope => ref _envelope;
+
+        internal ConditonalFormatSpatialData(ConditionalFormatAbstractBase cf, IFixedSizeRange range)
+        {
+            _envelope = new Envelope(range.TopLeft.Col, range.TopLeft.Row, range.BottomRight.Col,
+                                     range.BottomRight.Row);
+            _conditionalFormat = cf;
+        }
     }
 }
