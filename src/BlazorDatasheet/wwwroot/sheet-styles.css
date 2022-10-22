@@ -8,7 +8,7 @@
     --sheet-font-weight: normal;
     --icon-color: #000000;
     --invalid-cell-foreground-color: #ff0000;
-    --selection-bg-color: rgba(163, 188, 213, 0.34);
+    --selection-bg-color: rgba(163, 188, 213, 0.18);
     --selection-border-color:#0998e5;
 }
 

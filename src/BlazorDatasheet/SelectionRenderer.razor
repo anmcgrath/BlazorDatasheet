@@ -6,7 +6,7 @@
 @using BlazorDatasheet.Selecting
 
 <!-- Render the temp selection (currently selected range) -->
-@if (TempSelection.ActiveRange != null && FixedTempSelection.Area > 0)
+@if (TempSelection.ActiveRange != null && FixedTempSelection?.Area > 0)
 {
     <!-- We split into ranges around the cell's start position, so that the cell's 
     start position shows the renderer underneath it -->
@@ -17,20 +17,20 @@
             BackgroundVisible="@true"
             BackgroundStyle="@bgStyle"
             BorderThickness="0"
-            X="@CellLayoutProvider.ComputeLeftPosition(range)"
-            Y="@CellLayoutProvider.ComputeTopPosition(range)"
-            Width="@CellLayoutProvider.ComputeWidth(range)"
-            Height="@CellLayoutProvider.ComputeHeight(range)"/>
+            X="getLeft(range)"
+            Y="getTop(range)"
+            Width="getWidth(range)"
+            Height="getHeight(range)"/>
     }
     <!-- now render the border around the whole thing -->
     <BoxOverlayRenderer
         BackgroundVisible="@false"
-        BackgroundStyle="@bgStyle"
         BorderThickness="1"
-        X="@CellLayoutProvider.ComputeLeftPosition(FixedTempSelection)"
-        Y="@CellLayoutProvider.ComputeTopPosition(FixedTempSelection)"
-        Width="@CellLayoutProvider.ComputeWidth(FixedTempSelection)"
-        Height="@CellLayoutProvider.ComputeHeight(FixedTempSelection)"/>
+        BackgroundStyle="@bgStyle"
+        X="getLeft(FixedTempSelection)"
+        Y="getTop(FixedTempSelection)"
+        Width="getWidth(FixedTempSelection)"
+        Height="getHeight(FixedTempSelection)"/>
 }
 
 <!-- render the selections that exist in the sheet -->
@@ -50,10 +50,10 @@
                     BackgroundStyle="@bgStyle"
                     BackgroundVisible="true"
                     BorderThickness="0"
-                    X="CellLayoutProvider.ComputeLeftPosition(brokenRange)"
-                    Y="CellLayoutProvider.ComputeTopPosition(brokenRange)"
-                    Width="CellLayoutProvider.ComputeWidth(brokenRange)"
-                    Height="CellLayoutProvider.ComputeHeight(brokenRange)"/>
+                    X="getLeft(brokenRange)"
+                    Y="getTop(brokenRange)"
+                    Width="getWidth(brokenRange)"
+                    Height="getHeight(brokenRange)"/>
             }
         }
 
@@ -62,16 +62,12 @@
             BackgroundVisible="@(!isActiveRange)"
             BorderThickness="1"
             BackgroundStyle="@bgStyle"
-            X="CellLayoutProvider.ComputeLeftPosition(fixedRange)"
-            Y="CellLayoutProvider.ComputeTopPosition(fixedRange)"
-            Width="CellLayoutProvider.ComputeWidth(fixedRange)"
-            Height="CellLayoutProvider.ComputeHeight(fixedRange)"/>
+            X="getLeft(fixedRange)"
+            Y="getTop(fixedRange)"
+            Width="getWidth(fixedRange)"
+            Height="getHeight(fixedRange)"/>
     }
 }
-
-<style>
-
-</style>
 
 @code {
 
@@ -93,6 +89,12 @@
 
     private IFixedSizeRange? FixedTempSelection => TempSelection?.ActiveRange?.GetIntersection(Sheet?.Range);
 
+    private double getLeft(IFixedSizeRange range) => CellLayoutProvider.ComputeLeftPosition(range) - 1;
+    private double getTop(IFixedSizeRange range) => CellLayoutProvider.ComputeTopPosition(range) - 1;
+    private double getWidth(IFixedSizeRange range) => CellLayoutProvider.ComputeWidth(range) + 2;
+    private double getHeight(IFixedSizeRange range) => CellLayoutProvider.ComputeHeight(range) + 2;
+
+
     protected override void OnParametersSet()
     {
         if (_tempSelection != TempSelection)
@@ -103,7 +105,7 @@
             }
             _tempSelection = TempSelection;
             _tempSelection.Changed += OnSelectionChanged;
-        }
+        }{}
 
         if (_sheet != Sheet)
         {
@@ -120,39 +122,5 @@
     {
         StateHasChanged();
     }
-
-    /*private string GetSizeStyleString(IFixedSizeRange? range, double borderThickness, bool bgVisible)
-    {
-        if (range == null)
-            return "";
-
-        var strBuilder = new StringBuilder();
-
-        var left = CellLayoutProvider.ComputeLeftPosition(range);
-        var top = CellLayoutProvider.ComputeTopPosition(range);
-        var w = CellLayoutProvider.ComputeWidth(range);
-        var h = CellLayoutProvider.ComputeHeight(range);
-
-        strBuilder.Append($"left:{left - 1}px;");
-        strBuilder.Append($"top:{top - 1}px;");
-        strBuilder.Append($"width:{w + 2}px;");
-        strBuilder.Append($"height:{h + 2}px;");
-
-        if (borderThickness != 0)
-        {
-            strBuilder.Append($"border-width: {borderThickness}px;");
-            strBuilder.Append($"border-color:var(--selection-border-color);");
-            strBuilder.Append($"border-style:solid;");
-        }
-
-        if (bgVisible)
-        {
-            strBuilder.Append($"background:var(--selection-bg-color);");
-        }
-
-
-        var style = strBuilder.ToString();
-        return style;
-    }*/
 
 }

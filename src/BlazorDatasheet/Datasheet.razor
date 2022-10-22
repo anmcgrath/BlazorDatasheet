@@ -28,6 +28,11 @@
                 </div>
             }
             <ColumnHeadingsRenderer
+                OnMouseUp="@(e => HandleCellMouseUp(-1, e.Column, e.Args))"
+                OnMouseOver="@(e => HandleCellMouseOver(-1, e.Column, e.Args))"
+                OnMouseDown="@(e => HandleColumnHeaderMouseDown(e.Column, e.Args))"
+                TempSelection="TempSelection"
+                CellLayoutProvider="_cellLayoutProvider"
                 Sheet="Sheet"/>
         </div>
     }

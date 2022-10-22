@@ -51,6 +51,11 @@ public class OrderedInterval
                || interval.Contains(this.Start);
     }
 
+    public bool NextTo(OrderedInterval interval)
+    {
+        return (interval.Start - this.End) == 1 || (this.Start - interval.End) == 1;
+    }
+
     /// <summary>
     /// Finds the smallest number of intervals that covers all the intervals.
     /// Essentially it removes and combines any overlapping intervals
@@ -61,8 +66,8 @@ public class OrderedInterval
     {
         var sortedIntervals =
             intervals.Select(x => x.Copy())
-                .OrderBy(x => x.Start)
-                .ToList();
+                     .OrderBy(x => x.Start)
+                     .ToList();
         var mergedIntervals = new List<OrderedInterval>();
 
         if (!sortedIntervals.Any())
@@ -79,9 +84,9 @@ public class OrderedInterval
 
         for (int i = 1; i < sortedIntervals.Count; i++)
         {
-            if (stack.Peek().Overlaps(sortedIntervals[i]))
+            if (stack.Peek().Overlaps(sortedIntervals[i]) || stack.Peek().NextTo(sortedIntervals[i]))
                 stack.Peek().End = Math.Max(stack.Peek().End, sortedIntervals[i].End);
-            else 
+            else
                 stack.Push(sortedIntervals[i]);
         }
 

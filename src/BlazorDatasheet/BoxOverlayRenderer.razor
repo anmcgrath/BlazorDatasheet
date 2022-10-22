@@ -1,9 +1,9 @@
 @using System.ComponentModel
 @using System.Text
 @using BlazorDatasheet.Render
-// Renders a box at a particular row/column with a width & height
+<!--Renders a box at a particular row/column with a width & height -->
 
-<div class="overlay-base" style="@GetSizeStyleString(); position: absolute; pointer-events: none"/>
+<div style="@GetSizeStyleString(); position: absolute; pointer-events: none"/>
 
 @code {
 
@@ -53,7 +53,6 @@
         }
 
         var style = strBuilder.ToString();
-        Console.WriteLine(style);
         return style;
     }
 
