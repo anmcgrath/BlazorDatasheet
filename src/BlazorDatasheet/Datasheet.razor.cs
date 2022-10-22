@@ -24,6 +24,12 @@ public partial class Datasheet : IHandleEvent
     /// </summary>
     [Parameter]
     public Sheet? Sheet { get; set; }
+    
+    /// <summary>
+    /// Whether the row headings are sticky (only applied if the container is of fixed height)
+    /// </summary>
+    [Parameter]
+    public bool StickyHeadings { get; set; }
 
     /// <summary>
     /// Exists so that we can determine whether the sheet has changed
@@ -87,7 +93,6 @@ public partial class Datasheet : IHandleEvent
         _clipboard = new Clipboard(JS);
         _editorManager = new EditorManager(Sheet);
         TempSelection = new Selection(Sheet);
-        TempSelection.Changed += (sender, ranges) => StateHasChanged();
         _editorManager.EditBegin += (sender, args) =>
         {
             // Because the ActiveEditor is null until the next re-render (unfortunately)
@@ -118,7 +123,6 @@ public partial class Datasheet : IHandleEvent
 
             _sheetLocal = Sheet;
             Sheet.CellsChanged += SheetOnCellsChanged;
-            Sheet.Selection.Changed += (sender, ranges) => StateHasChanged();
             TempSelection.SetSheet(Sheet);
             _editorManager.SetSheet(Sheet);
             _cellLayoutProvider = new CellLayoutProvider(Sheet, 105, 25);
@@ -498,7 +502,7 @@ public partial class Datasheet : IHandleEvent
         strBuilder.Append($"top:{top + 1}px;");
         strBuilder.Append($"width:{w - 1}px;");
         strBuilder.Append($"height:{h - 1}px;");
-        strBuilder.Append($"box-shadow: 0px 0px 5px grey");
+        strBuilder.Append($"box-shadow: 0px 0px 4px grey");
         var style = strBuilder.ToString();
         return style;
     }

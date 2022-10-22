@@ -29,23 +29,43 @@ public class CellLayoutProvider
 
     public double ComputeLeftPosition(IFixedSizeRange range)
     {
+        return ComputeLeftPosition(range.TopLeft.Col);
+    }
+
+    public double ComputeLeftPosition(int col)
+    {
         var extra = _sheet.ShowRowHeadings ? 1 : 0;
-        return (Math.Min(range.Start.Col, range.End.Col) + extra) * _columnWidth;
+        return (col + extra) * _columnWidth;
     }
 
     public double ComputeTopPosition(IFixedSizeRange range)
     {
+        return ComputeTopPosition(range.TopLeft.Row);
+    }
+
+    public double ComputeTopPosition(int row)
+    {
         var extra = _sheet.ShowColumnHeadings ? 1 : 0;
-        return (Math.Min(range.Start.Row, range.End.Row) + extra) * _rowHeight;
+        return (row + extra) * _rowHeight;
+    }
+
+    public double ComputeWidth(int colSpan)
+    {
+        return colSpan * _columnWidth - 1; // -1 accounts for borders
+    }
+
+    public double ComputeHeight(int rowSpan)
+    {
+        return rowSpan * _rowHeight - 1; // -1 accounts for borders
     }
 
     public double ComputeWidth(IFixedSizeRange range)
     {
-        return range.Width * _columnWidth - 1; // -1 accounts for borders
+        return ComputeWidth(range.Width);
     }
 
     public double ComputeHeight(IFixedSizeRange range)
     {
-        return range.Height * _rowHeight - 1; // -1 accounts for borders
+        return ComputeHeight(range.Height);
     }
 }

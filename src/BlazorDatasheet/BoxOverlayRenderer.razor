@@ -1,0 +1,60 @@
+@using System.ComponentModel
+@using System.Text
+@using BlazorDatasheet.Render
+// Renders a box at a particular row/column with a width & height
+
+<div class="overlay-base" style="@GetSizeStyleString(); position: absolute; pointer-events: none"/>
+
+@code {
+
+    [Parameter]
+    public double X { get; set; }
+
+    [Parameter]
+    public double Y { get; set; }
+
+    [Parameter]
+    public double Width { get; set; }
+
+    [Parameter]
+    public double Height { get; set; }
+
+    [Parameter]
+    public double BorderThickness { get; set; }
+
+    [Parameter]
+    public string BackgroundStyle { get; set; }
+
+    [Parameter]
+    public string BorderColorStyle { get; set; } = "border-color:var(--selection-border-color);";
+
+    [Parameter]
+    public bool BackgroundVisible { get; set; }
+
+    private string GetSizeStyleString()
+    {
+        var strBuilder = new StringBuilder();
+
+        strBuilder.Append($"left:{X}px;");
+        strBuilder.Append($"top:{Y}px;");
+        strBuilder.Append($"width:{Width}px;");
+        strBuilder.Append($"height:{Height}px;");
+
+        if (BorderThickness != 0)
+        {
+            strBuilder.Append($"border-width: {BorderThickness}px;");
+            strBuilder.Append($"border-style:solid;");
+            strBuilder.Append(BorderColorStyle);
+        }
+
+        if (BackgroundVisible)
+        {
+            strBuilder.Append(BackgroundStyle);
+        }
+
+        var style = strBuilder.ToString();
+        Console.WriteLine(style);
+        return style;
+    }
+
+}

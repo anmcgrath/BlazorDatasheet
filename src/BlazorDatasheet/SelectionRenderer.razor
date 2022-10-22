@@ -13,10 +13,24 @@
     var brokenRanges = FixedTempSelection.Break(TempSelection.ActiveRange.Start);
     foreach (var range in brokenRanges)
     {
-        <div class="selection-base" style="@GetSizeStyleString(range, 0, true)"/>
+        <BoxOverlayRenderer
+            BackgroundVisible="@true"
+            BackgroundStyle="@bgStyle"
+            BorderThickness="0"
+            X="@CellLayoutProvider.ComputeLeftPosition(range)"
+            Y="@CellLayoutProvider.ComputeTopPosition(range)"
+            Width="@CellLayoutProvider.ComputeWidth(range)"
+            Height="@CellLayoutProvider.ComputeHeight(range)"/>
     }
     <!-- now render the border around the whole thing -->
-    <div class="selection-base" style="@GetSizeStyleString(FixedTempSelection, 1, false)"/>
+    <BoxOverlayRenderer
+        BackgroundVisible="@false"
+        BackgroundStyle="@bgStyle"
+        BorderThickness="1"
+        X="@CellLayoutProvider.ComputeLeftPosition(FixedTempSelection)"
+        Y="@CellLayoutProvider.ComputeTopPosition(FixedTempSelection)"
+        Width="@CellLayoutProvider.ComputeWidth(FixedTempSelection)"
+        Height="@CellLayoutProvider.ComputeHeight(FixedTempSelection)"/>
 }
 
 <!-- render the selections that exist in the sheet -->
@@ -32,20 +46,31 @@
             var brokenRanges = fixedRange.Break(Sheet.Selection.ActiveCellPosition);
             foreach (var brokenRange in brokenRanges)
             {
-                <div class="selection-base" style="@GetSizeStyleString(brokenRange, 0, true)"/>
+                <BoxOverlayRenderer
+                    BackgroundStyle="@bgStyle"
+                    BackgroundVisible="true"
+                    BorderThickness="0"
+                    X="CellLayoutProvider.ComputeLeftPosition(brokenRange)"
+                    Y="CellLayoutProvider.ComputeTopPosition(brokenRange)"
+                    Width="CellLayoutProvider.ComputeWidth(brokenRange)"
+                    Height="CellLayoutProvider.ComputeHeight(brokenRange)"/>
             }
         }
 
         <!-- now render the border around the whole range. No fill on active range because we've filled it already -->
-        <div class="selection-base" style="@GetSizeStyleString(fixedRange, 1, !isActiveRange)"/>
+        <BoxOverlayRenderer
+            BackgroundVisible="@(!isActiveRange)"
+            BorderThickness="1"
+            BackgroundStyle="@bgStyle"
+            X="CellLayoutProvider.ComputeLeftPosition(fixedRange)"
+            Y="CellLayoutProvider.ComputeTopPosition(fixedRange)"
+            Width="CellLayoutProvider.ComputeWidth(fixedRange)"
+            Height="CellLayoutProvider.ComputeHeight(fixedRange)"/>
     }
 }
 
 <style>
-    .selection-base{
-        position: absolute;
-        pointer-events: none;
-    }
+
 </style>
 
 @code {
@@ -53,21 +78,50 @@
     [Parameter, EditorRequired]
     public CellLayoutProvider CellLayoutProvider { get; set; }
 
+    private Sheet? _sheet;
+
     [Parameter, EditorRequired]
     public Sheet? Sheet { get; set; }
+
+    private Selection? _tempSelection { get; set; }
 
     [Parameter, EditorRequired]
     // The range that is currently being selected.
     public Selection? TempSelection { get; set; }
 
+    private string bgStyle = "background:var(--selection-bg-color);";
+
     private IFixedSizeRange? FixedTempSelection => TempSelection?.ActiveRange?.GetIntersection(Sheet?.Range);
+
+    protected override void OnParametersSet()
+    {
+        if (_tempSelection != TempSelection)
+        {
+            if (_tempSelection != null)
+            {
+                _tempSelection.Changed -= OnSelectionChanged;
+            }
+            _tempSelection = TempSelection;
+            _tempSelection.Changed += OnSelectionChanged;
+        }
+
+        if (_sheet != Sheet)
+        {
+            if (_sheet != null)
+            {
+                _sheet.Selection.Changed -= OnSelectionChanged;
+            }
+            _sheet = Sheet;
+            _sheet.Selection.Changed += OnSelectionChanged;
+        }
+    }
 
     private void OnSelectionChanged(object? sender, IEnumerable<IRange> ranges)
     {
         StateHasChanged();
     }
 
-    private string GetSizeStyleString(IFixedSizeRange? range, double borderThickness, bool bgVisible)
+    /*private string GetSizeStyleString(IFixedSizeRange? range, double borderThickness, bool bgVisible)
     {
         if (range == null)
             return "";
@@ -99,6 +153,6 @@
 
         var style = strBuilder.ToString();
         return style;
-    }
+    }*/
 
 }

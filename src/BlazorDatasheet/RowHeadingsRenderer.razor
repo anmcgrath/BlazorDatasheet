@@ -1,0 +1,16 @@
+@using BlazorDatasheet.Data
+
+@foreach (var item in Items)
+{
+    
+}
+
+@code {
+
+    [Parameter, EditorRequired]
+    public Sheet Sheet { get; set; }
+
+    [Parameter, EditorRequired]
+    public List<Row> Items { get; set; }
+
+}

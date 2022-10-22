@@ -1,0 +1,75 @@
+@using BlazorDatasheet.Data
+@using BlazorDatasheet.Render
+@using BlazorDatasheet.Selecting
+
+
+@for (var i = 0; i < Sheet?.NumCols; i++)
+{
+    var col = i;
+    var colDefn = Sheet?.ColumnHeadings.Count > i ? Sheet?.ColumnHeadings[i] : null;
+    
+    <div
+        class="sheet-cell @(IsColumnActive(col) ? "column-active" : "")"
+        @onmouseup="() => OnMouseUp(col)">
+        <div class="cell">
+            @colDefn?.Header
+        </div>
+
+    </div>
+}
+
+
+@code {
+
+    private Sheet? _sheet;
+    [Parameter, EditorRequired]
+    public Sheet? Sheet { get; set; }
+
+    [Parameter]
+    public CellLayoutProvider CellLayoutProvider { get; set; }
+    
+    private Selection? _tempSelection { get; set; }
+    [Parameter, EditorRequired]
+    // The range that is currently being selected.
+    public Selection? TempSelection { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (_tempSelection != TempSelection)
+        {
+            if (_tempSelection != null)
+            {
+                _tempSelection.Changed -= OnSelectionChanged;
+            }
+            _tempSelection = TempSelection;
+            _tempSelection.Changed += OnSelectionChanged;
+        }
+        
+        if (_sheet != Sheet)
+        {
+            if (_sheet != null)
+            {
+                _sheet.Selection.Changed -= OnSelectionChanged;
+            }
+            _sheet = Sheet;
+            _sheet.Selection.Changed += OnSelectionChanged;
+        }
+        base.OnParametersSet();
+    }
+
+    private void OnSelectionChanged(object? sender, IEnumerable<IRange> e)
+    {
+        
+    }
+
+    public bool IsColumnActive(int col)
+    {
+        return Sheet.Selection.Ranges.Any(x => x.SpansCol(col));
+    }
+
+    private void OnMouseUp(int col)
+    {
+        Console.WriteLine(col);
+    }
+
+}
