@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using System.Reflection.Metadata;
 using BlazorDatasheet.Data;
+using BlazorDatasheet.Formats.DefaultConditionalFormats;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Util;
 using Range = BlazorDatasheet.Data.Range;
@@ -12,9 +13,10 @@ public class ObjectEditorBuilder<T>
     private List<T> _items;
     private readonly GridDirection _direction;
     private bool _autoGenerateProperties;
-    private List<Tuple<string, Action<ObjectPropertyDefinition<T>>>> _propertyActions;
-    private List<ObjectPropertyDefinition<T>> _propertyDefinitions;
-    private List<string> _suppliedPropertyNames { get; set; }
+    private List<Tuple<string, Action<ObjectPropertyDefinition<T>>>> _propertyActions = new();
+    private List<ObjectPropertyDefinition<T>> _propertyDefinitions = new();
+    private List<(Predicate<T> pred, Func<T, Format?> formatFunc)> _expressionFormats = new();
+    private List<string> _suppliedPropertyNames { get; set; } = new();
 
     /// <summary>
     /// An ObjectEditorBuilder creates an ObjectEditor & Sheet consisting of the Items
@@ -25,8 +27,6 @@ public class ObjectEditorBuilder<T>
     {
         _items = Items.ToList();
         _direction = direction;
-        _propertyActions = new List<Tuple<string, Action<ObjectPropertyDefinition<T>>>>();
-        _suppliedPropertyNames = new List<string>();
     }
 
     /// <summary>
@@ -37,6 +37,18 @@ public class ObjectEditorBuilder<T>
     public ObjectEditorBuilder<T> AutogenerateProperties(bool autoGenerateProperties = true)
     {
         _autoGenerateProperties = autoGenerateProperties;
+        return this;
+    }
+
+    /// <summary>
+    /// Applies a conditional format to the whole row or column that assesses the T Data object's properties.
+    /// </summary>
+    /// <param name="predicate">Whether the format is run</param>
+    /// <param name="formatFunc">The function returning the formula, given the T Data </param>
+    /// <returns></returns>
+    public ObjectEditorBuilder<T> WithExpressionFormat(Predicate<T> predicate, Func<T, Format?> formatFunc)
+    {
+        _expressionFormats.Add((predicate, formatFunc));
         return this;
     }
 
@@ -169,6 +181,19 @@ public class ObjectEditorBuilder<T>
                     sheet.ConditionalFormatting.Apply(conditionalFormat, new Range(0, nRows - 1, i, i));
                 else if (_direction == GridDirection.PropertiesAcrossRows)
                     sheet.ConditionalFormatting.Apply(conditionalFormat, new Range(i, i, 0, nCols - 1));
+            }
+        }
+
+        //Apply expression formats
+        for (int i = 0; i < _items.Count; i++)
+        {
+            foreach (var pair in _expressionFormats)
+            {
+                var format = new DataExpressionConditionalFormat<T>(_items[i], pair.pred, pair.formatFunc);
+                if (_direction == GridDirection.PropertiesAcrossColumns)
+                    sheet.ConditionalFormatting.Apply(format, new Range(i, i, 0, _propertyDefinitions.Count));
+                else if (_direction == GridDirection.PropertiesAcrossRows)
+                    sheet.ConditionalFormatting.Apply(format, new Range(0, _propertyDefinitions.Count, i, i));
             }
         }
 

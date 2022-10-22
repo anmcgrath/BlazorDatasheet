@@ -43,6 +43,8 @@
     //Sheet.InsertRowAt(Sheet2.Selection.ActiveRange.Start.Row);
     }
 
+    private Format GreenBg = new Format() { BackgroundColor = "#d9fce2" };
+
     protected override void OnInitialized()
     {
         Sheet2 = new Sheet(3, 3);
@@ -67,24 +69,13 @@
             });
         }
 
-        var checkCf = new ConditionalFormat((posn, sheet) =>
-        {
-            var cell = sheet.GetCell(posn.row, posn.col);
-            var person = ((Person)cell.Data);
-            if (person == null)
-                return false;
-            return person.IsFriendly;
-        }, c => new Format()
-        {
-            BackgroundColor = "#d9fce2"
-        });
-
         var ageCf =
             new ConditionalFormat(
                 (posn, sheet) => (sheet.GetCell(posn.row, posn.col).GetValue<int?>()) > 85, cell => new Format() { ForegroundColor = "#ff0000" });
 
         var builder1 = new ObjectEditorBuilder<Person>(People, GridDirection.PropertiesAcrossColumns);
         builder1.AutogenerateProperties(false)
+                .WithExpressionFormat(x=>x.IsFriendly, x=>GreenBg)
                 .WithProperty(x => x.Id, pd => { pd.Heading = "Person ID"; })
                 .WithProperty(x => x.FirstName, pd => { pd.Heading = "First Name"; })
                 .WithProperty(x => x.LastName, pd => { pd.Heading = "Last Name"; })
@@ -101,7 +92,6 @@
                 })
                 .WithProperty(x => x.IsFriendly, pd =>
                 {
-                    pd.ApplyConditionalFormat(checkCf);
                     pd.Heading = "Is Friendly?";
                 });
 
