@@ -1,16 +1,132 @@
 @using BlazorDatasheet.Data
+@using BlazorDatasheet.Data.Events
+@using BlazorDatasheet.Render
+@using BlazorDatasheet.Selecting
+@using Microsoft.AspNetCore.Components.Web.Virtualization;
 
-@foreach (var item in Items)
-{
-    
-}
+<div style="position: absolute; top: 0; left: 0;">
+
+    @foreach (var interval in _selectionIntervals)
+    {
+        <BoxOverlayRenderer
+            BackgroundVisible="@true"
+            BorderThickness="0"
+            BackgroundStyle="background:var(--selection-bg-color);"
+            Width="CellLayoutProvider.ComputeWidth(1) + 2"
+            Height="CellLayoutProvider.ComputeHeight(interval.Length) + 1"
+            X="CellLayoutProvider.ComputeLeftPosition(-1) - 1"
+            Y="CellLayoutProvider.ComputeTopPosition(interval.Start)"/>
+    }
+
+</div>
+
+<Virtualize Items="@Sheet?.RowCollection" TItem="Row" Context="sheetRow">
+    <div class="sheet-row">
+        <div
+            @key="sheetRow.RowNumber"
+            class="sheet-cell row-head @(IsActive(sheetRow.RowNumber) ? "row-active" : "")"
+            style="display: block !important;"
+            @onmousedown="e => HandleMouseDown(sheetRow.RowNumber, e)"
+            @onmouseover="e => HandleMouseOver(sheetRow.RowNumber,  e)"
+            @onmouseup="e => HandleMouseUp(sheetRow.RowNumber,  e)">
+            @(Sheet.RowHeadings.Count > sheetRow.RowNumber ? Sheet.RowHeadings[sheetRow.RowNumber].Header : null)
+            <div class="cell" style="text-align: right">
+                @sheetRow.RowNumber
+            </div>
+        </div>
+    </div>
+</Virtualize>
 
 @code {
 
-    [Parameter, EditorRequired]
-    public Sheet Sheet { get; set; }
+    private Sheet? _sheet;
 
     [Parameter, EditorRequired]
-    public List<Row> Items { get; set; }
+    public Sheet? Sheet { get; set; }
+
+    [Parameter]
+    public CellLayoutProvider CellLayoutProvider { get; set; }
+
+    [Parameter]
+    public EventCallback<RowMouseEvent> OnMouseUp { get; set; }
+
+    [Parameter]
+    public EventCallback<RowMouseEvent> OnMouseOver { get; set; }
+
+    [Parameter]
+    public EventCallback<RowMouseEvent> OnMouseDown { get; set; }
+
+    private Selection? _tempSelection { get; set; }
+
+    [Parameter, EditorRequired]
+    // The range that is currently being selected.
+    public Selection? TempSelection { get; set; }
+
+    public List<OrderedInterval> _selectionIntervals { get; set; } = new();
+    
+    private bool IsActive(int row)
+    {
+        return (TempSelection?.ActiveRange?.SpansRow(row) == true)
+               || Sheet.Selection.Ranges.Any(x => x.SpansRow(row));
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (_tempSelection != TempSelection)
+        {
+            if (_tempSelection != null)
+            {
+                _tempSelection.Changed -= OnSelectionChanged;
+            }
+            _tempSelection = TempSelection;
+            _tempSelection.Changed += OnSelectionChanged;
+        }
+
+        if (_sheet != Sheet)
+        {
+            if (_sheet != null)
+            {
+                _sheet.Selection.Changed -= OnSelectionChanged;
+            }
+            _sheet = Sheet;
+            _sheet.Selection.Changed += OnSelectionChanged;
+        }
+        base.OnParametersSet();
+    }
+    
+    private void OnSelectionChanged(object? sender, IEnumerable<IRange> ranges)
+    {
+        var intervals = new List<OrderedInterval>();
+        if (!TempSelection.IsEmpty() && TempSelection.ActiveRange is RowRange)
+        {
+            var fixedTempSelection = TempSelection.ActiveRange.GetIntersection(Sheet.Range);
+            intervals.Add(new OrderedInterval(fixedTempSelection.Start.Row, fixedTempSelection.End.Row));
+        }
+        foreach (var range in Sheet.Selection.Ranges)
+        {
+            if (range is RowRange)
+            {
+                var fixedRange = range.GetIntersection(Sheet.Range);
+                intervals.Add(new OrderedInterval(fixedRange.Start.Row, fixedRange.End.Row));
+            }
+        }
+        _selectionIntervals = OrderedInterval.Merge(intervals);
+        StateHasChanged();
+    }
+    
+    private void HandleMouseUp(int row, MouseEventArgs args)
+    {
+        OnMouseUp.InvokeAsync(new RowMouseEvent(row, args));
+    }
+
+    private void HandleMouseDown(int row, MouseEventArgs args)
+    {
+        OnMouseDown.InvokeAsync(new RowMouseEvent(row, args));
+    }
+
+    private void HandleMouseOver(int row, MouseEventArgs args)
+    {
+        OnMouseOver.InvokeAsync(new RowMouseEvent(row, args));
+    }
 
 }

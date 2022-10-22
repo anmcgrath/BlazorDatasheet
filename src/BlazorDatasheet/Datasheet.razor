@@ -11,7 +11,7 @@
 @using System.Text
 
 <div
-    style="@(IsFixedHeight ? $"max-height: {FixedHeightInPx}px;" : "")"
+    style="@(IsFixedHeight ? $"max-height: {FixedHeightInPx}px;" : "");"
     class="vars sheet @(IsDataSheetActive ? "active-sheet" : "inactive-sheet")
      @(IsFixedHeight ? $" sheet-fixed-height" : "sheet-dynamic-height") "
     @onmouseover="() => IsMouseInsideSheet = true"
@@ -39,22 +39,21 @@
 
     @if (Sheet != null)
     {
+        @if (Sheet.ShowRowHeadings)
+        {
+            <div style="display: inline-block; float:left;;">
+                <RowHeadingsRenderer
+                    OnMouseDown="e => HandleRowHeaderMouseDown(e.RowIndex, e.MouseEventArgs)"
+                    OnMouseOver="e => HandleCellMouseOver(e.RowIndex, -1, e.MouseEventArgs)"
+                    OnMouseUp="e => HandleCellMouseUp(e.RowIndex, -1, e.MouseEventArgs)"
+                    Sheet="Sheet"
+                    CellLayoutProvider="_cellLayoutProvider"
+                    TempSelection="TempSelection"/>
+            </div>
+        }
         <Virtualize Items="@Sheet?.RowCollection" TItem="Row" Context="sheetRow">
             <ItemContent>
                 <div class="sheet-row" @key="sheetRow.RowNumber">
-                    @if (Sheet.ShowRowHeadings)
-                    {
-                        <div
-                            class="sheet-cell row-head @(IsDataSheetActive && IsRowActive(sheetRow.RowNumber) ? "row-active" : "")"
-                            @onmousedown="e => HandleRowHeaderMouseDown(sheetRow.RowNumber, e)"
-                            @onmouseover="e => HandleCellMouseOver(sheetRow.RowNumber, -1, e)"
-                            @onmouseup="e => HandleCellMouseUp(sheetRow.RowNumber, -1, e)">
-                            @(Sheet.RowHeadings.Count > sheetRow.RowNumber ? Sheet.RowHeadings[sheetRow.RowNumber].Header : null)
-                            <div class="cell" style="text-align: right">
-                                @sheetRow.RowNumber
-                            </div>
-                        </div>
-                    }
                     @for (int j = 0; j < Sheet?.NumCols; j++)
                     {
                         var row = sheetRow.RowNumber;

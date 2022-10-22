@@ -9,7 +9,7 @@
     --icon-color: #000000;
     --invalid-cell-foreground-color: #ff0000;
     --selection-bg-color: rgba(163, 188, 213, 0.18);
-    --selection-border-color:#0998e5;
+    --selection-border-color: #0998e5;
 }
 
 .active-sheet {
@@ -43,7 +43,6 @@
     display: inline-block;
     width: 105px;
     max-width: 105px;
-    min-width: 105px;
     height: 100%;
     user-select: none;
     -moz-user-select: none;
@@ -55,6 +54,7 @@
 .sheet-row {
     padding: 0;
     height: 25px;
+    width: 100%;
 }
 
 .header-sticky {
@@ -66,7 +66,6 @@
 
 .invalid-cell {
     color: var(--invalid-cell-foreground-color) !important;
-    background: red;
 }
 
 .cell {
@@ -86,6 +85,9 @@
 
 .column-active {
     background: var(--active-header-bg-color) !important;
+    border-bottom-width: 1px;
+    border-bottom-color: var(--selection-border-color);
+    border-bottom-style: solid;
 }
 
 .row-head {
@@ -93,9 +95,14 @@
     border-right: var(--sheet-border-style);
     padding-right: 5px;
     padding-left: 5px;
+   align-content: center;
+    
 }
 
 .row-active {
     background: var(--active-header-bg-color) !important;
+    border-right-width: 1px;
+    border-right-color: var(--selection-border-color);
+    border-right-style: solid;
 }
 

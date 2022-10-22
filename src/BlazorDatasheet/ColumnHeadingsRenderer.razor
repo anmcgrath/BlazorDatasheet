@@ -10,7 +10,7 @@
     {
         <BoxOverlayRenderer
             BackgroundVisible="@true"
-            BorderThickness="1"
+            BorderThickness="0"
             BackgroundStyle="background:var(--selection-bg-color);"
             Width="CellLayoutProvider.ComputeWidth(interval.Length) + 2"
             Height="CellLayoutProvider.ComputeHeight(1) + 1"
@@ -121,13 +121,11 @@
 
     private void HandleMouseUp(int col, MouseEventArgs args)
     {
-        Console.WriteLine("Mouse UP" + col);
         OnMouseUp.InvokeAsync(new ColumnMouseEvent(col, args));
     }
 
     private void HandleMouseDown(int col, MouseEventArgs args)
     {
-        Console.WriteLine("Mouse DOWN" + col);
         OnMouseDown.InvokeAsync(new ColumnMouseEvent(col, args));
     }
 
