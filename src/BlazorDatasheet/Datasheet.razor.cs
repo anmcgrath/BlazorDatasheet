@@ -97,7 +97,6 @@ public partial class Datasheet : IHandleEvent
         TempSelection = new Selection(Sheet);
         _editorManager.EditBegin += (sender, args) =>
         {
-            StateHasChanged();
             // Because the ActiveEditor is null until the next re-render (unfortunately)
             // we need to queue the begin edit function until then
             NextTick(() =>
@@ -253,6 +252,7 @@ public partial class Datasheet : IHandleEvent
     private void HandleCellDoubleClick(int row, int col, MouseEventArgs e)
     {
         BeginEdit(row, col, softEdit: false, EditEntryMode.Mouse);
+        StateHasChanged();
     }
 
     private void BeginEdit(int row, int col, bool softEdit, EditEntryMode mode, string entryChar = "")
@@ -303,7 +303,7 @@ public partial class Datasheet : IHandleEvent
         IsDataSheetActive = IsMouseInsideSheet;
 
         if (changed)
-            AcceptEdit();
+            StateHasChanged();
 
         return false;
     }
@@ -399,6 +399,7 @@ public partial class Datasheet : IHandleEvent
                 if (inputPosition.IsInvalid)
                     return false;
                 BeginEdit(inputPosition.Row, inputPosition.Col, softEdit: true, EditEntryMode.Key, e.Key);
+                StateHasChanged();
             }
 
             return true;
@@ -453,6 +454,7 @@ public partial class Datasheet : IHandleEvent
     private void HandleCellRequestBeginEdit(EditRequestArgs args)
     {
         BeginEdit(args.Row, args.Col, args.IsSoftEdit, args.EntryMode);
+        StateHasChanged();
     }
 
     /// <summary>
