@@ -4,7 +4,6 @@ using BlazorDatasheet.Data;
 using BlazorDatasheet.Data.Events;
 using BlazorDatasheet.Data.SpatialDataStructures;
 using BlazorDatasheet.Render;
-using Range = BlazorDatasheet.Data.Range;
 
 namespace BlazorDatasheet.Formats;
 
@@ -36,13 +35,13 @@ public class ConditionalFormatManager
     }
 
     /// <summary>
-    /// Applies the conditional format specified by "key" to all cells in a range, if the conditional formatting exists.
+    /// Applies the conditional format specified by "key" to all cells in a region, if the conditional formatting exists.
     /// </summary>
     /// <param name="key"></param>
-    /// <param name="range"></param>
-    public void Apply(ConditionalFormatAbstractBase conditionalFormat, IFixedSizeRange? range)
+    /// <param name="region"></param>
+    public void Apply(ConditionalFormatAbstractBase conditionalFormat, IFixedSizeRegion? region)
     {
-        if (range == null)
+        if (region == null)
             return;
         if (!_registered.Contains(conditionalFormat))
         {
@@ -50,8 +49,8 @@ public class ConditionalFormatManager
             conditionalFormat.Order = _registered.Count - 1;
         }
 
-        conditionalFormat.Add(range, _sheet);
-        _cfTree.Insert(new ConditonalFormatSpatialData(conditionalFormat, range));
+        conditionalFormat.Add(region, _sheet);
+        _cfTree.Insert(new ConditonalFormatSpatialData(conditionalFormat, region));
 
         if (UseCache)
             ComputeAllAndCache();
@@ -67,7 +66,7 @@ public class ConditionalFormatManager
     /// <param name="key"></param>
     public void Apply(ConditionalFormatAbstractBase format)
     {
-        Apply(format, _sheet.Range);
+        Apply(format, _sheet.Region);
     }
 
     private void HandleCellsChanged(object? sender, IEnumerable<ChangeEventArgs> args)
@@ -113,7 +112,7 @@ public class ConditionalFormatManager
 
     private IEnumerable<Cell> GetCellsInFormat(ConditionalFormat format)
     {
-        return _sheet.GetCellsInRanges(format.Ranges);
+        return _sheet.GetCellsInRegions(format.Regions);
     }
 
     /// <summary>
@@ -153,20 +152,20 @@ public class ConditionalFormatManager
 
     private IEnumerable<ConditionalFormatAbstractBase> GetFormatsAppliedToPosition(int row, int col)
     {
-        //return _registered.Where(x => x.Ranges.Any(x => x.Contains(row, col)));
+        //return _registered.Where(x => x.Regions.Any(x => x.Contains(row, col)));
         return _cfTree.Search(new Envelope(col, row, col, row))
                       .Select(x => x.ConditionalFormat);
     }
 
     /// <summary>
     /// Applies the conditional format specified by "key" to a particular cell. If setting the format to a number of cells,
-    /// prefer setting via a range.
+    /// prefer setting via a region.
     /// </summary>
     /// <param name="key"></param>
-    /// <param name="range"></param>
+    /// <param name="region"></param>
     public void Apply(ConditionalFormatAbstractBase format, int row, int col)
     {
-        Apply(format, new Range(row, col));
+        Apply(format, new Region(row, col));
     }
 
     private void CacheFormat(int row, int col, int cfIndex, Format? format, bool isTrue, bool stopIfTrue)
@@ -184,7 +183,7 @@ public class ConditionalFormatManager
 
     public Format? GetFormat(int row, int col)
     {
-        if (!_sheet.Range.Contains(row, col))
+        if (!_sheet.Region.Contains(row, col))
             return null;
         if (!UseCache)
         {
@@ -220,10 +219,10 @@ public class ConditionalFormatManager
         private readonly Envelope _envelope;
         public ref readonly Envelope Envelope => ref _envelope;
 
-        internal ConditonalFormatSpatialData(ConditionalFormatAbstractBase cf, IFixedSizeRange range)
+        internal ConditonalFormatSpatialData(ConditionalFormatAbstractBase cf, IFixedSizeRegion region)
         {
-            _envelope = new Envelope(range.TopLeft.Col, range.TopLeft.Row, range.BottomRight.Col,
-                                     range.BottomRight.Row);
+            _envelope = new Envelope(region.TopLeft.Col, region.TopLeft.Row, region.BottomRight.Col,
+                                     region.BottomRight.Row);
             _conditionalFormat = cf;
         }
     }

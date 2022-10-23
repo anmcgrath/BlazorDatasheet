@@ -41,11 +41,11 @@
 
     private void InsertAtSelection()
     {
-        if (Sheet.Selection.ActiveRange == null)
+        if (Sheet.Selection.ActiveRegion == null)
         {
             return;
         }
-        _editor.InsertAt(new Person(), Sheet.Selection.ActiveRange.Start.Row);
+        _editor.InsertAt(new Person(), Sheet.Selection.ActiveRegion.TopLeft.Row);
     }
 
     private Format GreenBg = new Format() { BackgroundColor = "var(--cell-highlight-bg-color)" };

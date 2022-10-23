@@ -13,7 +13,6 @@ using BlazorDatasheet.Util;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using ChangeEventArgs = Microsoft.AspNetCore.Components.ChangeEventArgs;
-using Range = BlazorDatasheet.Data.Range;
 
 namespace BlazorDatasheet;
 
@@ -196,8 +195,8 @@ public partial class Datasheet : IHandleEvent
 
     private void HandleCellMouseDown(int row, int col, MouseEventArgs e)
     {
-        if (e.ShiftKey && Sheet?.Selection?.ActiveRange != null)
-            Sheet?.Selection?.ActiveRange.ExtendTo(row, col);
+        if (e.ShiftKey && Sheet?.Selection?.ActiveRegion != null)
+            Sheet?.Selection?.ActiveRegion.ExtendTo(row, col);
         else
         {
             if (!e.MetaKey && !e.CtrlKey)
@@ -217,8 +216,8 @@ public partial class Datasheet : IHandleEvent
 
     private void HandleColumnHeaderMouseDown(int col, MouseEventArgs e)
     {
-        if (e.ShiftKey && Sheet?.Selection?.ActiveRange != null)
-            Sheet?.Selection?.ActiveRange.ExtendTo(0, col);
+        if (e.ShiftKey && Sheet?.Selection?.ActiveRegion != null)
+            Sheet?.Selection?.ActiveRegion.ExtendTo(0, col);
         else
         {
             if (!e.MetaKey && !e.CtrlKey)
@@ -234,8 +233,8 @@ public partial class Datasheet : IHandleEvent
 
     private void HandleRowHeaderMouseDown(int row, MouseEventArgs e)
     {
-        if (e.ShiftKey && Sheet?.Selection?.ActiveRange != null)
-            Sheet?.Selection?.ActiveRange.ExtendTo(row, 0);
+        if (e.ShiftKey && Sheet?.Selection?.ActiveRegion != null)
+            Sheet?.Selection?.ActiveRegion.ExtendTo(row, 0);
         else
         {
             if (!e.MetaKey && !e.CtrlKey)
@@ -372,9 +371,9 @@ public partial class Datasheet : IHandleEvent
 
         if ((e.Key == "Delete" || e.Key == "Backspace") && !_editorManager.IsEditing)
         {
-            if (!Sheet.Selection.Ranges.Any())
+            if (!Sheet.Selection.Regions.Any())
                 return true;
-            var rangesToClear = Sheet.Selection.Ranges;
+            var rangesToClear = Sheet.Selection.Regions;
             Sheet.ClearCells(rangesToClear);
             return true;
         }
@@ -393,7 +392,7 @@ public partial class Datasheet : IHandleEvent
             char c = e.Key == "Space" ? ' ' : e.Key[0];
             if (char.IsLetterOrDigit(c) || char.IsPunctuation(c) || char.IsSymbol(c) || char.IsSeparator(c))
             {
-                if (Sheet == null || !Sheet.Selection.Ranges.Any())
+                if (Sheet == null || !Sheet.Selection.Regions.Any())
                     return false;
                 var inputPosition = Sheet.Selection.ActiveCellPosition;
                 if (inputPosition.IsInvalid)
@@ -413,9 +412,9 @@ public partial class Datasheet : IHandleEvent
         if (Sheet == null)
             return;
 
-        var activeRange = Sheet.Selection.ActiveRange.Collapse();
-        activeRange.Move(drow, dcol, Sheet.Range);
-        Sheet.Selection.SetSingle(activeRange);
+        var activeRegion = Sheet.Selection.ActiveRegion.Collapse();
+        activeRegion.Move(drow, dcol, Sheet.Region);
+        Sheet.Selection.SetSingle(activeRegion);
     }
 
     private async Task HandleWindowPaste(PasteEventArgs arg)
@@ -423,7 +422,7 @@ public partial class Datasheet : IHandleEvent
         if (!IsDataSheetActive)
             return;
 
-        if (Sheet == null || !Sheet.Selection.Ranges.Any())
+        if (Sheet == null || !Sheet.Selection.Regions.Any())
             return;
 
         var posnToInput = Sheet.Selection.ActiveCellPosition;
@@ -475,10 +474,10 @@ public partial class Datasheet : IHandleEvent
             return;
 
         // Can only handle single selections for now
-        var range = Sheet.Selection.ActiveRange;
+        var range = Sheet.Selection.ActiveRegion;
         if (range == null)
             return;
-        var text = Sheet.GetRangeAsDelimitedText(range);
+        var text = Sheet.GetRegionAsDelimitedText(range);
         await _clipboard.WriteTextAsync(text);
     }
 
@@ -491,12 +490,12 @@ public partial class Datasheet : IHandleEvent
         var strBuilder = new StringBuilder();
 
         var Position = _editorManager.CurrentEditPosition;
-        var editorRange = new Range(Position.Row, Position.Col);
+        var editorRegion = new Region(Position.Row, Position.Col);
 
-        var left = _cellLayoutProvider.ComputeLeftPosition(editorRange);
-        var top = _cellLayoutProvider.ComputeTopPosition(editorRange);
-        var w = _cellLayoutProvider.ComputeWidth(editorRange);
-        var h = _cellLayoutProvider.ComputeHeight(editorRange);
+        var left = _cellLayoutProvider.ComputeLeftPosition(editorRegion);
+        var top = _cellLayoutProvider.ComputeTopPosition(editorRegion);
+        var w = _cellLayoutProvider.ComputeWidth(editorRegion);
+        var h = _cellLayoutProvider.ComputeHeight(editorRegion);
 
         strBuilder.Append($"left:{left}px;");
         strBuilder.Append($"top:{top}px;");
@@ -525,12 +524,12 @@ public partial class Datasheet : IHandleEvent
 
     private void BeginSelectingRow(int row)
     {
-        TempSelection.SetSingle(new RowRange(row, row));
+        TempSelection.SetSingle(new RowRegion(row, row));
     }
 
     private void BeginSelectingCol(int col)
     {
-        TempSelection.SetSingle(new ColumnRange(col, col));
+        TempSelection.SetSingle(new ColumnRegion(col, col));
     }
 
     /// <summary>
@@ -543,7 +542,7 @@ public partial class Datasheet : IHandleEvent
         if (!IsSelecting)
             return;
 
-        TempSelection?.ExtendActiveRange(row, col);
+        TempSelection?.ExtendActiveRegion(row, col);
     }
 
     /// <summary>
@@ -554,7 +553,7 @@ public partial class Datasheet : IHandleEvent
         if (!IsSelecting)
             return;
 
-        Sheet?.Selection.Add(TempSelection!.ActiveRange!);
+        Sheet?.Selection.Add(TempSelection!.ActiveRegion!);
         TempSelection!.Clear();
     }
 
@@ -565,9 +564,9 @@ public partial class Datasheet : IHandleEvent
     /// <returns></returns>
     private bool IsColumnActive(int col)
     {
-        if (IsSelecting && TempSelection!.ActiveRange!.SpansCol(col))
+        if (IsSelecting && TempSelection!.ActiveRegion!.SpansCol(col))
             return true;
-        if (Sheet?.Selection.Ranges.Any(x => x.SpansCol(col)) == true)
+        if (Sheet?.Selection.Regions.Any(x => x.SpansCol(col)) == true)
             return true;
         return false;
     }
@@ -579,9 +578,9 @@ public partial class Datasheet : IHandleEvent
     /// <returns></returns>
     private bool IsRowActive(int row)
     {
-        if (IsSelecting && TempSelection!.ActiveRange!.SpansRow(row))
+        if (IsSelecting && TempSelection!.ActiveRegion!.SpansRow(row))
             return true;
-        if (Sheet?.Selection.Ranges.Any(x => x.SpansRow(row)) == true)
+        if (Sheet?.Selection.Regions.Any(x => x.SpansRow(row)) == true)
             return true;
         return false;
     }

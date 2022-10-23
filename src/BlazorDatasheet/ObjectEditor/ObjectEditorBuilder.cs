@@ -4,7 +4,6 @@ using BlazorDatasheet.Data;
 using BlazorDatasheet.Formats.DefaultConditionalFormats;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Util;
-using Range = BlazorDatasheet.Data.Range;
 
 namespace BlazorDatasheet.ObjectEditor;
 
@@ -178,9 +177,9 @@ public class ObjectEditorBuilder<T>
             {
                 conditionalFormat.IsShared = true;
                 if (_direction == GridDirection.PropertiesAcrossColumns)
-                    sheet.ConditionalFormatting.Apply(conditionalFormat, new Range(0, nRows - 1, i, i));
+                    sheet.ConditionalFormatting.Apply(conditionalFormat, new Region(0, nRows - 1, i, i));
                 else if (_direction == GridDirection.PropertiesAcrossRows)
-                    sheet.ConditionalFormatting.Apply(conditionalFormat, new Range(i, i, 0, nCols - 1));
+                    sheet.ConditionalFormatting.Apply(conditionalFormat, new Region(i, i, 0, nCols - 1));
             }
         }
 
@@ -191,9 +190,9 @@ public class ObjectEditorBuilder<T>
             {
                 var format = new DataExpressionConditionalFormat<T>(_items[i], pair.pred, pair.formatFunc);
                 if (_direction == GridDirection.PropertiesAcrossColumns)
-                    sheet.ConditionalFormatting.Apply(format, new Range(i, i, 0, _propertyDefinitions.Count));
+                    sheet.ConditionalFormatting.Apply(format, new Region(i, i, 0, _propertyDefinitions.Count));
                 else if (_direction == GridDirection.PropertiesAcrossRows)
-                    sheet.ConditionalFormatting.Apply(format, new Range(0, _propertyDefinitions.Count, i, i));
+                    sheet.ConditionalFormatting.Apply(format, new Region(0, _propertyDefinitions.Count, i, i));
             }
         }
 

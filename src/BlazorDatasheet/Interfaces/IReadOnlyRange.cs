@@ -1,9 +1,8 @@
 using BlazorDatasheet.Data;
-using Range = BlazorDatasheet.Data.Range;
 
 namespace BlazorDatasheet.Interfaces;
 
-public interface IReadOnlyRange : IEnumerable<CellPosition>
+public interface IReadOnlyRegion : IEnumerable<CellPosition>
 {
     int RowStart { get; set; }
     int ColStart { get; set; }
@@ -12,7 +11,7 @@ public interface IReadOnlyRange : IEnumerable<CellPosition>
     int Area { get; }
 
     /// <summary>
-    /// Determines whether a point is inside the range
+    /// Determines whether a point is inside the region
     /// </summary>
     /// <param name="row"></param>
     /// <param name="col"></param>
@@ -40,18 +39,18 @@ public interface IReadOnlyRange : IEnumerable<CellPosition>
     /// <param name="nCols"></param>
     void Constrain(int nRows, int nCols);
 
-    void Constrain(Range range);
+    void Constrain(Region region);
 
     /// <summary>
     /// Returns a new copy of the range.
     /// </summary>
     /// <returns></returns>
-    Range Copy();
+    Region Copy();
 
     /// <summary>
     /// Returns a new copy of the range with the row, col starting point
     /// at the top left (minimum points).
     /// </summary>
     /// <returns></returns>
-    Range CopyOrdered();
+    Region CopyOrdered();
 }

@@ -4,7 +4,7 @@
 @using BlazorDatasheet.Formats.DefaultConditionalFormats
 @using BlazorDatasheet.Icons
 @using BlazorDatasheet.Render
-@using Range = BlazorDatasheet.Data.Range
+@using Region = BlazorDatasheet.Data.Region
 <PageTitle>Conditional Formatting</PageTitle>
 
 <h1>Conditional Formatting</h1>
@@ -35,17 +35,17 @@
 
         var values = new List<ValueChange>();
 
-        var rangeOfNumberScaleFormat = new Range(0, 99, 1, 4);
+        var regionOfNumberScaleFormat = new Region(0, 99, 1, 4);
         var rand = new Random();
-        foreach (var posn in rangeOfNumberScaleFormat)
+        foreach (var posn in regionOfNumberScaleFormat)
         {
             values.Add(new ValueChange(posn.Row, posn.Col, rand.Next(100)));
         }
 
         sheet.SetCellValues(values);
 
-        sheet.ConditionalFormatting.Apply(numberScaleConditionalFormat, new Range(0, 99, 1, 4));
-        sheet.ConditionalFormatting.Apply(checkConditionalFormat, new Range(0, 99, 0, 0));
+        sheet.ConditionalFormatting.Apply(numberScaleConditionalFormat, new Region(0, 99, 1, 4));
+        sheet.ConditionalFormatting.Apply(checkConditionalFormat, new Region(0, 99, 0, 0));
 
         base.OnInitialized();
     }

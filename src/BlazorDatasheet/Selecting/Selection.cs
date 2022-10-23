@@ -1,5 +1,4 @@
 using BlazorDatasheet.Data;
-using Range = BlazorDatasheet.Data.Range;
 
 namespace BlazorDatasheet.Selecting;
 
@@ -8,26 +7,26 @@ public class Selection
     private Sheet _sheet;
 
     /// <summary>
-    /// The ranges in the current selection
+    /// The regions in the current selection
     /// </summary>
-    public IReadOnlyList<IRange> Ranges => _ranges;
+    public IReadOnlyList<IRegion> Regions => _regions;
 
-    private List<IRange> _ranges = new();
+    private List<IRegion> _regions = new();
 
     /// <summary>
-    /// The range that is active for accepting user input, usually the most recent range added
+    /// The region that is active for accepting user input, usually the most recent region added
     /// </summary>
-    public IRange? ActiveRange { get; private set; }
+    public IRegion? ActiveRegion { get; private set; }
 
     /// <summary>
-    /// The position of the cell that should take user input. Usually the start position of ActiveRange
+    /// The position of the cell that should take user input. Usually the start position of ActiveRegion
     /// </summary>
     public CellPosition ActiveCellPosition { get; private set; }
 
     /// <summary>
     /// Fired when the current selection changes
     /// </summary>
-    public event EventHandler<IEnumerable<IRange>> Changed;
+    public event EventHandler<IEnumerable<IRegion>> Changed;
 
     public Selection(Sheet sheet)
     {
@@ -39,48 +38,48 @@ public class Selection
     /// </summary>
     public void Clear()
     {
-        _ranges.Clear();
-        ActiveRange = null;
+        _regions.Clear();
+        ActiveRegion = null;
         emitSelectionChange();
     }
 
     /// <summary>
-    /// Adds the range to the selection
+    /// Adds the region to the selection
     /// </summary>
-    /// <param name="range"></param>
-    public void Add(IRange range)
+    /// <param name="region"></param>
+    public void Add(IRegion region)
     {
-        _ranges.Add(range);
-        ActiveRange = range;
-        ActiveCellPosition = ActiveRange.Start;
+        _regions.Add(region);
+        ActiveRegion = region;
+        ActiveCellPosition = ActiveRegion.TopLeft;
         emitSelectionChange();
     }
 
     /// <summary>
-    /// Removes the range from the selection
+    /// Removes the region from the selection
     /// </summary>
-    /// <param name="range"></param>
-    public void Remove(IRange range)
+    /// <param name="region"></param>
+    public void Remove(IRegion region)
     {
-        _ranges.Remove(range);
-        var newActiveRange = _ranges.LastOrDefault();
-        if (newActiveRange != null)
+        _regions.Remove(region);
+        var newActiveRegion = _regions.LastOrDefault();
+        if (newActiveRegion != null)
         {
-            ActiveRange = newActiveRange;
-            ActiveCellPosition = newActiveRange.Start;
+            ActiveRegion = newActiveRegion;
+            ActiveCellPosition = newActiveRegion.TopLeft;
         }
 
         emitSelectionChange();
     }
 
     /// <summary>
-    /// Clears any selections or active selections and sets the selection to the range specified
+    /// Clears any selections or active selections and sets the selection to the region specified
     /// </summary>
-    /// <param name="range"></param>
-    public void SetSingle(IRange range)
+    /// <param name="region"></param>
+    public void SetSingle(IRegion region)
     {
-        _ranges.Clear();
-        this.Add(range);
+        _regions.Clear();
+        this.Add(region);
     }
 
     /// <summary>
@@ -90,7 +89,7 @@ public class Selection
     /// <param name="col"></param>
     public void SetSingle(int row, int col)
     {
-        SetSingle(new Range(row, col));
+        SetSingle(new Region(row, col));
     }
 
     /// <summary>
@@ -101,9 +100,9 @@ public class Selection
     /// <returns></returns>
     public bool IsSelected(int row, int col)
     {
-        if (!_ranges.Any())
+        if (!_regions.Any())
             return false;
-        return _ranges
+        return _regions
             .Any(x => x.Contains(row, col));
     }
 
@@ -113,69 +112,69 @@ public class Selection
     }
 
     /// <summary>
-    /// Returns whether there are no ranges in the selection
+    /// Returns whether there are no regions in the selection
     /// </summary>
     /// <returns></returns>
     public bool IsEmpty()
     {
-        return !_ranges.Any();
+        return !_regions.Any();
     }
 
     /// <summary>
     /// Move the active cell position to the next most relevant position
-    /// If there's nowhere to go, collapse and move down. Otherwise, move through all ranges,
+    /// If there's nowhere to go, collapse and move down. Otherwise, move through all regions,
     /// setting them as active where appropriate.
     /// </summary>
     /// <param name="rowDir"></param>
     public void MoveActivePosition(int rowDir)
     {
         // if 
-        if (ActiveRange == null)
+        if (ActiveRegion == null)
             return;
 
-        // Fix the active range to surrounds of the sheet
-        var activeRangeFixed = ActiveRange.GetIntersection(_sheet.Range);
+        // Fix the active region to surrounds of the sheet
+        var activeRegionFixed = ActiveRegion.GetIntersection(_sheet.Region);
 
-        // If the active range is only one cell and there are no other ranges,
-        // clear the ranges and move the whole thing down
-        if (_ranges.Count == 1 && activeRangeFixed.Area == 1)
+        // If the active region is only one cell and there are no other regions,
+        // clear the regions and move the whole thing down
+        if (_regions.Count == 1 && activeRegionFixed.Area == 1)
         {
-            _ranges.Clear();
-            var newRange = new Range(ActiveCellPosition.Row + rowDir, ActiveCellPosition.Col);
-            newRange.Constrain(_sheet.Range);
-            this.Add(newRange);
+            _regions.Clear();
+            var newRegion = new Region(ActiveCellPosition.Row + rowDir, ActiveCellPosition.Col);
+            newRegion.Constrain(_sheet.Region);
+            this.Add(newRegion);
             emitSelectionChange();
             return;
         }
 
-        // Move the posn and attempt to bring into either the next range
-        // or the next cell in the range
+        // Move the posn and attempt to bring into either the next region
+        // or the next cell in the region
         var newRow = ActiveCellPosition.Row + rowDir;
         var newCol = ActiveCellPosition.Col;
-        if (newRow > activeRangeFixed.BottomRight.Row)
+        if (newRow > activeRegionFixed.BottomRight.Row)
         {
             newCol++;
-            newRow = activeRangeFixed.TopLeft.Row;
-            if (newCol > activeRangeFixed.BottomRight.Col)
+            newRow = activeRegionFixed.TopLeft.Row;
+            if (newCol > activeRegionFixed.BottomRight.Col)
             {
-                var newActiveRange = getRangeAfterActive();
-                var newActiveRangeFixed = newActiveRange.GetIntersection(_sheet.Range);
-                newCol = newActiveRangeFixed.TopLeft.Col;
-                newRow = newActiveRangeFixed.TopLeft.Row;
-                ActiveRange = newActiveRange;
+                var newActiveRegion = getRegionAfterActive();
+                var newActiveRegionFixed = newActiveRegion.GetIntersection(_sheet.Region);
+                newCol = newActiveRegionFixed.TopLeft.Col;
+                newRow = newActiveRegionFixed.TopLeft.Row;
+                ActiveRegion = newActiveRegion;
             }
         }
-        else if (newRow < activeRangeFixed.TopLeft.Row)
+        else if (newRow < activeRegionFixed.TopLeft.Row)
         {
             newCol--;
-            newRow = activeRangeFixed.BottomRight.Row;
-            if (newCol < activeRangeFixed.TopLeft.Col)
+            newRow = activeRegionFixed.BottomRight.Row;
+            if (newCol < activeRegionFixed.TopLeft.Col)
             {
-                var newActiveRange = getRangeAfterActive();
-                var newActiveRangeFixed = newActiveRange.GetIntersection(_sheet.Range);
-                newCol = newActiveRangeFixed.BottomRight.Col;
-                newRow = newActiveRangeFixed.BottomRight.Row;
-                ActiveRange = newActiveRange;
+                var newActiveRegion = getRegionAfterActive();
+                var newActiveRegionFixed = newActiveRegion.GetIntersection(_sheet.Region);
+                newCol = newActiveRegionFixed.BottomRight.Col;
+                newRow = newActiveRegionFixed.BottomRight.Row;
+                ActiveRegion = newActiveRegion;
             }
         }
 
@@ -191,7 +190,7 @@ public class Selection
     {
         if (IsEmpty())
             return;
-        if (!ActiveRange.Contains(row, col))
+        if (!ActiveRegion.Contains(row, col))
             SetSingle(row, col);
         else // position within active selection
             ActiveCellPosition = new CellPosition(row, col);
@@ -202,44 +201,44 @@ public class Selection
     /// </summary>
     /// <param name="row"></param>
     /// <param name="col"></param>
-    public void ExtendActiveRange(int row, int col)
+    public void ExtendActiveRegion(int row, int col)
     {
-        if (ActiveRange != null)
+        if (ActiveRegion != null)
         {
-            ActiveRange.ExtendTo(row, col);
+            ActiveRegion.ExtendTo(row, col);
             emitSelectionChange();
         }
     }
 
-    private IRange getRangeAfterActive()
+    private IRegion getRegionAfterActive()
     {
-        var activeRangeIndex = _ranges.IndexOf(ActiveRange!);
-        if (activeRangeIndex == -1)
+        var activeRegionIndex = _regions.IndexOf(ActiveRegion!);
+        if (activeRegionIndex == -1)
             throw new Exception("No range is active?");
-        activeRangeIndex++;
-        if (activeRangeIndex >= _ranges.Count)
-            activeRangeIndex = 0;
-        return _ranges[activeRangeIndex];
+        activeRegionIndex++;
+        if (activeRegionIndex >= _regions.Count)
+            activeRegionIndex = 0;
+        return _regions[activeRegionIndex];
     }
 
-    private IRange getRangeBeforeActive()
+    private IRegion getRegionBeforeActive()
     {
-        var activeRangeIndex = _ranges.IndexOf(ActiveRange!);
-        if (activeRangeIndex == -1)
+        var activeRegionIndex = _regions.IndexOf(ActiveRegion!);
+        if (activeRegionIndex == -1)
             throw new Exception("No range is active?");
-        activeRangeIndex--;
-        if (activeRangeIndex < 0)
-            activeRangeIndex = _ranges.Count - 1;
-        return _ranges[activeRangeIndex];
+        activeRegionIndex--;
+        if (activeRegionIndex < 0)
+            activeRegionIndex = _regions.Count - 1;
+        return _regions[activeRegionIndex];
     }
 
     private void emitSelectionChange()
     {
-        Changed?.Invoke(this, _ranges);
+        Changed?.Invoke(this, _regions);
     }
 
     public IEnumerable<Cell> GetCells()
     {
-        return _sheet.GetCellsInRanges(_ranges);
+        return _sheet.GetCellsInRegions(_regions);
     }
 }

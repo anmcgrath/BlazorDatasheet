@@ -20,36 +20,36 @@ public class SelectionManagerTests
     {
         var selection = new Selection(_sheet);
         //Select all
-        selection.SetSingle(_sheet.Range);
+        selection.SetSingle(_sheet.Region);
         var cells = selection.GetCells().ToList();
-        Assert.AreEqual(_sheet.Range.Area, cells.Count);
+        Assert.AreEqual(_sheet.Region.Area, cells.Count);
         Assert.AreEqual(_sheet.GetCell(0, 0), cells[0]);
     }
 
     public void Add_Selection_Changes_Active_Selection()
     {
         var selection = new Selection(_sheet);
-        var r = new Range(0, 0);
+        var r = new Region(0, 0);
         selection.Add(r);
-        Assert.AreEqual(r, selection.ActiveRange);
-        Assert.AreEqual(r.Start, selection.ActiveCellPosition);
-        var r2 = new Range(1, 1);
-        Assert.AreEqual(r2, selection.ActiveRange);
-        Assert.AreEqual(r2.Start, selection.ActiveCellPosition);
+        Assert.AreEqual(r, selection.ActiveRegion);
+        Assert.AreEqual(r.TopLeft, selection.ActiveCellPosition);
+        var r2 = new Region(1, 1);
+        Assert.AreEqual(r2, selection.ActiveRegion);
+        Assert.AreEqual(r2.TopLeft, selection.ActiveCellPosition);
     }
 
-    public void Add_Selection_Outside_Range_Constrains_Inside()
+    public void Add_Selection_Outside_Region_Constrains_Inside()
     {
         var selection = new Selection(_sheet);
-        selection.Add(new Range(-1000, 1000, -1000, 1000));
-        Assert.AreEqual(_sheet.Range.Area, selection.ActiveRange.GetIntersection(_sheet.Range).Area);
+        selection.Add(new Region(-1000, 1000, -1000, 1000));
+        Assert.AreEqual(_sheet.Region.Area, selection.ActiveRegion.GetIntersection(_sheet.Region).Area);
     }
 
     [Test]
     public void Cycle_Active_position_through_range()
     {
         var selection = new Selection(_sheet);
-        selection.Add(new Range(0,1,0,1));
+        selection.Add(new Region(0,1,0,1));
         Assert.AreEqual(new CellPosition(0,0), selection.ActiveCellPosition);
         selection.MoveActivePosition(1);
         Assert.AreEqual(new CellPosition(1,0), selection.ActiveCellPosition);
@@ -65,19 +65,19 @@ public class SelectionManagerTests
     public void Cycle_Active_position_through_ranges()
     {
         var selection = new Selection(_sheet);
-        var r1 = new Range(0, 0, 0, 0);
-        var r2 = new Range(1, 1, 1, 1);
+        var r1 = new Region(0, 0, 0, 0);
+        var r2 = new Region(1, 1, 1, 1);
         
         selection.Add(r1);
         selection.Add(r2);
         
-        Assert.AreEqual(r2, selection.ActiveRange);
-        Assert.AreEqual(r2.Start, selection.ActiveCellPosition);
+        Assert.AreEqual(r2, selection.ActiveRegion);
+        Assert.AreEqual(r2.TopLeft, selection.ActiveCellPosition);
         
         selection.MoveActivePosition(1);
         
-        Assert.AreEqual(r1, selection.ActiveRange);
-        Assert.AreEqual(r1.Start, selection.ActiveCellPosition);
+        Assert.AreEqual(r1, selection.ActiveRegion);
+        Assert.AreEqual(r1.TopLeft, selection.ActiveCellPosition);
     }
 
     [Test]
@@ -90,8 +90,8 @@ public class SelectionManagerTests
             nTimesChanged++;
         };
         
-        selection.SetSingle(new Range(1,1));
-        selection.Add(new Range(2,2));
+        selection.SetSingle(new Region(1,1));
+        selection.Add(new Region(2,2));
         selection.Clear();
         Assert.AreEqual(3, nTimesChanged);
     }

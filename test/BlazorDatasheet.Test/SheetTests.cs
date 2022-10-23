@@ -1,7 +1,6 @@
 using System;
 using BlazorDatasheet.Data;
 using NUnit.Framework;
-using Range = BlazorDatasheet.Data.Range;
 
 namespace BlazorDatasheet.Test;
 
@@ -61,26 +60,26 @@ public class SheetTests
     [TestCase(0,1,0,1)]
     [TestCase(0,1,0,0)]
     [TestCase(1,2,1,1)]
-    public void Get_delim_Data_from_Sheet(int copyPasteRangeR0, int copyPasteRangeR1, int copyPasteRangeC0, int copyPasteRangeC1)
+    public void Get_delim_Data_from_Sheet(int copyPasteRegionR0, int copyPasteRegionR1, int copyPasteRegionC0, int copyPasteRegionC1)
     {
         var sheet = new Sheet(5, 5);
-        var copyPasteRange = new Range(copyPasteRangeR0, copyPasteRangeR1, copyPasteRangeC0, copyPasteRangeC1);
+        var copyPasteRegion = new Region(copyPasteRegionR0, copyPasteRegionR1, copyPasteRegionC0, copyPasteRegionC1);
 
-        foreach (var posn in copyPasteRange)
+        foreach (var posn in copyPasteRegion)
             sheet.TrySetCellValue(posn.Row, posn.Col, getCellPosnString(posn.Row, posn.Col));
 
-        var copy = sheet.GetRangeAsDelimitedText(copyPasteRange);
+        var copy = sheet.GetRegionAsDelimitedText(copyPasteRegion);
         Assert.NotNull(copy);
         Assert.AreNotEqual(String.Empty, copy);
 
         // Clear the sheet so we are pasting over empty data
-        sheet.ClearCells(new[] { copyPasteRange });
+        sheet.ClearCells(new[] { copyPasteRegion });
 
-        var insertedRanges = sheet.InsertDelimitedText(copy, copyPasteRange.TopLeft);
+        var insertedRegions = sheet.InsertDelimitedText(copy, copyPasteRegion.TopLeft);
         
-        Assert.True(insertedRanges.Equals(copyPasteRange));
+        Assert.True(insertedRegions.Equals(copyPasteRegion));
         
-        foreach (var posn in copyPasteRange)
+        foreach (var posn in copyPasteRegion)
             Assert.AreEqual(getCellPosnString(posn.Row, posn.Col),
                 sheet.GetCell(posn.Row, posn.Col).GetValue<string>());
     }

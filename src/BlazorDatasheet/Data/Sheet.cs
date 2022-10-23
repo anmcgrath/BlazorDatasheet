@@ -4,7 +4,6 @@ using BlazorDatasheet.Data.Events;
 using BlazorDatasheet.Edit.DefaultComponents;
 using BlazorDatasheet.Formats;
 using BlazorDatasheet.Interfaces;
-using BlazorDatasheet.Render;
 using BlazorDatasheet.Render.DefaultComponents;
 using BlazorDatasheet.Selecting;
 
@@ -65,7 +64,7 @@ public class Sheet
     /// <summary>
     /// The bounds of the sheet
     /// </summary>
-    public Range? Range => new Range(0, NumRows - 1, 0, NumCols - 1);
+    public Region? Region => new Region(0, NumRows - 1, 0, NumCols - 1);
 
     /// <summary>
     /// Provides functions for managing the sheet's conditional formatting
@@ -162,7 +161,7 @@ public class Sheet
     /// <summary>
     /// Inserts a row at an index specified.
     /// </summary>
-    /// <param name="rowIndex">The index that the new row will be at. If the index is outside of the range of rows,
+    /// <param name="rowIndex">The index that the new row will be at. If the index is outside of the region of rows,
     /// a row will be either inserted at the start or appended at the end</param>
     public void InsertRowAt(int rowIndex, Row? row = null)
     {
@@ -210,11 +209,11 @@ public class Sheet
         return false;
     }
 
-    private IEnumerable<Cell> GetCellsInRange(IRange range)
+    private IEnumerable<Cell> GetCellsInRegion(IRegion region)
     {
-        var fixedRange = range.GetIntersection(this.Range);
+        var fixedRegion = region.GetIntersection(this.Region);
         List<Cell> cells = new List<Cell>();
-        foreach (var position in fixedRange)
+        foreach (var position in fixedRegion)
         {
             cells.Add(this.GetCell(position.Row, position.Col));
         }
@@ -223,15 +222,15 @@ public class Sheet
     }
 
     /// <summary>
-    /// Returns all cells that are present in the ranges given.
+    /// Returns all cells that are present in the regions given.
     /// </summary>
-    /// <param name="ranges"></param>
+    /// <param name="regions"></param>
     /// <returns></returns>
-    public IEnumerable<Cell> GetCellsInRanges(IEnumerable<IRange> ranges)
+    public IEnumerable<Cell> GetCellsInRegions(IEnumerable<IRegion> regions)
     {
         var cells = new List<Cell>();
-        foreach (var range in ranges)
-            cells.AddRange(GetCellsInRange(range));
+        foreach (var region in regions)
+            cells.AddRange(GetCellsInRegion(region));
         return cells.ToArray();
     }
 
@@ -305,12 +304,12 @@ public class Sheet
     /// <summary>
     /// Inserts delimited text from the given position
     /// And assigns cell's values based on the delimited text (tabs and newlines)
-    /// Returns the range of cells that surrounds all cells that are affected
+    /// Returns the region of cells that surrounds all cells that are affected
     /// </summary>
     /// <param name="text">The text to insert</param>
     /// <param name="inputPosition">The position where the insertion starts</param>
-    /// <returns>The range of cells that were affected</returns>
-    public Range InsertDelimitedText(string text, CellPosition inputPosition, string newLineDelim = "\n")
+    /// <returns>The region of cells that were affected</returns>
+    public Region InsertDelimitedText(string text, CellPosition inputPosition, string newLineDelim = "\n")
     {
         if (inputPosition.IsInvalid)
             return null;
@@ -320,7 +319,7 @@ public class Sheet
         // We may reach the end of the sheet, so we only need to paste the rows up until the end.
         var endRow = Math.Min(inputPosition.Row + lines.Length - 1, NumRows - 1);
         // Keep track of the maximum end column that we are inserting into
-        // This is used to determine the range to return.
+        // This is used to determine the region to return.
         // It is possible that each line is of different cell lengths, so we return the max for all lines
         var maxEndCol = -1;
 
@@ -348,7 +347,7 @@ public class Sheet
 
         this.SetCellValues(valChanges);
 
-        return new Range(inputPosition.Row, endRow, inputPosition.Col, maxEndCol);
+        return new Region(inputPosition.Row, endRow, inputPosition.Col, maxEndCol);
     }
 
     public bool TrySetCellValue(int row, int col, object value)
@@ -424,18 +423,18 @@ public class Sheet
     }
 
     /// <summary>
-    /// Clears all cell values in the range
+    /// Clears all cell values in the region
     /// </summary>
-    /// <param name="range"></param>
-    public void ClearCells(IEnumerable<IRange> ranges)
+    /// <param name="region"></param>
+    public void ClearCells(IEnumerable<IRegion> regions)
     {
-        var cmd = new ClearCellsCommand(ranges);
+        var cmd = new ClearCellsCommand(regions);
         Commands.ExecuteCommand(cmd);
     }
 
-    internal void ClearCelllsImpl(IEnumerable<IRange> ranges)
+    internal void ClearCelllsImpl(IEnumerable<IRegion> ranges)
     {
-        var cells = this.GetCellsInRanges(ranges);
+        var cells = this.GetCellsInRegions(ranges);
         var changedArgs = new List<ChangeEventArgs>();
         foreach (var cell in cells)
         {
@@ -450,24 +449,23 @@ public class Sheet
         this.CellsChanged?.Invoke(this, changedArgs);
     }
 
-    public string GetRangeAsDelimitedText(IRange inputRange, char tabDelimiter = '\t', string newLineDelim = "\n")
+    public string GetRegionAsDelimitedText(IRegion inputRegion, char tabDelimiter = '\t', string newLineDelim = "\n")
     {
-        if (inputRange == null)
+        if (inputRegion == null)
             return string.Empty;
 
-        var intersection = inputRange.GetIntersection(this.Range);
+        var intersection = inputRegion.GetIntersection(this.Region);
         if (intersection == null)
             return null;
 
-        var range = intersection
-            .CopyOrdered();
+        var range = intersection.Copy();
 
         var strBuilder = new StringBuilder();
 
-        var r0 = range.Start.Row;
-        var r1 = range.End.Row;
-        var c0 = range.Start.Col;
-        var c1 = range.End.Col;
+        var r0 = range.TopLeft.Row;
+        var r1 = range.BottomRight.Row;
+        var c0 = range.TopLeft.Col;
+        var c1 = range.BottomRight.Col;
 
         for (int row = r0; row <= r1; row++)
         {

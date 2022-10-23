@@ -58,15 +58,15 @@
     private Selection? _tempSelection { get; set; }
 
     [Parameter, EditorRequired]
-    // The range that is currently being selected.
+    // The region that is currently being selected.
     public Selection? TempSelection { get; set; }
 
     public List<OrderedInterval> _selectionIntervals { get; set; } = new();
 
     private bool IsActive(int row)
     {
-        return (TempSelection?.ActiveRange?.SpansRow(row) == true)
-               || Sheet.Selection.Ranges.Any(x => x.SpansRow(row));
+        return (TempSelection?.ActiveRegion?.SpansRow(row) == true)
+               || Sheet.Selection.Regions.Any(x => x.SpansRow(row));
     }
 
     protected override void OnParametersSet()
@@ -93,20 +93,20 @@
         base.OnParametersSet();
     }
 
-    private void OnSelectionChanged(object? sender, IEnumerable<IRange> ranges)
+    private void OnSelectionChanged(object? sender, IEnumerable<IRegion> regions)
     {
         var intervals = new List<OrderedInterval>();
-        if (!TempSelection.IsEmpty() && TempSelection.ActiveRange is RowRange)
+        if (!TempSelection.IsEmpty() && TempSelection.ActiveRegion is RowRegion)
         {
-            var fixedTempSelection = TempSelection.ActiveRange.GetIntersection(Sheet.Range);
-            intervals.Add(new OrderedInterval(fixedTempSelection.Start.Row, fixedTempSelection.End.Row));
+            var fixedTempSelection = TempSelection.ActiveRegion.GetIntersection(Sheet.Region);
+            intervals.Add(new OrderedInterval(fixedTempSelection.TopLeft.Row, fixedTempSelection.BottomRight.Row));
         }
-        foreach (var range in Sheet.Selection.Ranges)
+        foreach (var region in Sheet.Selection.Regions)
         {
-            if (range is RowRange)
+            if (region is RowRegion)
             {
-                var fixedRange = range.GetIntersection(Sheet.Range);
-                intervals.Add(new OrderedInterval(fixedRange.Start.Row, fixedRange.End.Row));
+                var fixedRegion = region.GetIntersection(Sheet.Region);
+                intervals.Add(new OrderedInterval(fixedRegion.TopLeft.Row, fixedRegion.BottomRight.Row));
             }
         }
         _selectionIntervals = OrderedInterval.Merge(intervals);

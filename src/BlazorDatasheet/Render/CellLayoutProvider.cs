@@ -1,11 +1,10 @@
 using BlazorDatasheet.Data;
-using Range = BlazorDatasheet.Data.Range;
 
 namespace BlazorDatasheet.Render;
 
 /// <summary>
 /// Provides useful functions for computing actual pixel widths of
-/// cells in the sheet based on the range.
+/// cells in the sheet based on the region.
 /// </summary>
 public class CellLayoutProvider
 {
@@ -27,9 +26,9 @@ public class CellLayoutProvider
         _sheet = sheet;
     }
 
-    public double ComputeLeftPosition(IFixedSizeRange range)
+    public double ComputeLeftPosition(IRegion region)
     {
-        return ComputeLeftPosition(range.TopLeft.Col);
+        return ComputeLeftPosition(region.TopLeft.Col);
     }
 
     public double ComputeLeftPosition(int col)
@@ -38,9 +37,9 @@ public class CellLayoutProvider
         return (col + extra) * _columnWidth;
     }
 
-    public double ComputeTopPosition(IFixedSizeRange range)
+    public double ComputeTopPosition(IRegion region)
     {
-        return ComputeTopPosition(range.TopLeft.Row);
+        return ComputeTopPosition(region.TopLeft.Row);
     }
 
     public double ComputeTopPosition(int row)
@@ -59,13 +58,13 @@ public class CellLayoutProvider
         return rowSpan * _rowHeight - 1; // -1 accounts for borders
     }
 
-    public double ComputeWidth(IFixedSizeRange range)
+    public double ComputeWidth(IRegion region)
     {
-        return ComputeWidth(range.Width);
+        return ComputeWidth(region.Width);
     }
 
-    public double ComputeHeight(IFixedSizeRange range)
+    public double ComputeHeight(IRegion region)
     {
-        return ComputeHeight(range.Height);
+        return ComputeHeight(region.Height);
     }
 }

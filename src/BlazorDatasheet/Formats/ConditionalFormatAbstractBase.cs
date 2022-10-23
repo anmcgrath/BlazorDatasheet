@@ -11,9 +11,9 @@ public abstract class ConditionalFormatAbstractBase
     internal int Order { get; set; }
 
     /// <summary>
-    /// List of ranges that the format covers
+    /// List of regions that the format covers
     /// </summary>
-    internal readonly List<IFixedSizeRange> Ranges = new();
+    internal readonly List<IFixedSizeRegion> Regions = new();
 
     /// <summary>
     /// Set true if, when one cell value is recalculated, the conditional format should be re-evaluated for all cells
@@ -51,11 +51,11 @@ public abstract class ConditionalFormatAbstractBase
         }
     }
 
-    internal void Add(IFixedSizeRange range, Sheet sheet)
+    internal void Add(IFixedSizeRegion region, Sheet sheet)
     {
-        Ranges.Add(range);
-        var rangeInsideSheet = range.GetIntersection(sheet.Range);
-        foreach (var position in rangeInsideSheet)
+        Regions.Add(region);
+        var regionInsideSheet = region.GetIntersection(sheet.Region);
+        foreach (var position in regionInsideSheet)
         {
             Positions.Add((position.Row, position.Col));
         }
@@ -67,12 +67,12 @@ public abstract class ConditionalFormatAbstractBase
     }
 
 
-    internal void Remove(IFixedSizeRange range)
+    internal void Remove(IFixedSizeRegion region)
     {
         // Easiest way for now is to remove all positions and recalculate
-        Ranges.Remove(range);
+        Regions.Remove(region);
         Positions.Clear();
-        foreach (var r in Ranges)
+        foreach (var r in Regions)
         {
             foreach (var posn in r)
                 Positions.Add((posn.Row, posn.Col));

@@ -58,7 +58,7 @@ public class ConditionalFormatTests
         cm.Apply(cf);
         var formatApplied = cm.GetFormat(0, 0);
         Assert.NotNull(formatApplied);
-        Assert.AreEqual(sheet.Range.Area.ToString(), formatApplied!.BackgroundColor);
+        Assert.AreEqual(sheet.Region.Area.ToString(), formatApplied!.BackgroundColor);
     }
 
     [Test]

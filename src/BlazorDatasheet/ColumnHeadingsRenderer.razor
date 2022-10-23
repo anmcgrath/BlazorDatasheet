@@ -59,15 +59,15 @@
     private Selection? _tempSelection { get; set; }
 
     [Parameter, EditorRequired]
-    // The range that is currently being selected.
+    // The region that is currently being selected.
     public Selection? TempSelection { get; set; }
 
     public List<OrderedInterval> _selectionIntervals { get; set; } = new();
 
     private bool IsActive(int col)
     {
-        return (TempSelection?.ActiveRange?.SpansCol(col) == true)
-               || Sheet.Selection.Ranges.Any(x => x.SpansCol(col));
+        return (TempSelection?.ActiveRegion?.SpansCol(col) == true)
+               || Sheet.Selection.Regions.Any(x => x.SpansCol(col));
     }
 
     protected override void OnParametersSet()
@@ -94,20 +94,20 @@
         base.OnParametersSet();
     }
 
-    private void OnSelectionChanged(object? sender, IEnumerable<IRange> ranges)
+    private void OnSelectionChanged(object? sender, IEnumerable<IRegion> regions)
     {
         var intervals = new List<OrderedInterval>();
-        if (!TempSelection.IsEmpty() && TempSelection.ActiveRange is ColumnRange)
+        if (!TempSelection.IsEmpty() && TempSelection.ActiveRegion is ColumnRegion)
         {
-            var fixedTempSelection = TempSelection.ActiveRange.GetIntersection(Sheet.Range);
-            intervals.Add(new OrderedInterval(fixedTempSelection.Start.Col, fixedTempSelection.End.Col));
+            var fixedTempSelection = TempSelection.ActiveRegion.GetIntersection(Sheet.Region);
+            intervals.Add(new OrderedInterval(fixedTempSelection.TopLeft.Col, fixedTempSelection.BottomRight.Col));
         }
-        foreach (var range in Sheet.Selection.Ranges)
+        foreach (var region in Sheet.Selection.Regions)
         {
-            if (range is ColumnRange)
+            if (region is ColumnRegion)
             {
-                var fixedRange = range.GetIntersection(Sheet.Range);
-                intervals.Add(new OrderedInterval(fixedRange.Start.Col, fixedRange.End.Col));
+                var fixedRegion = region.GetIntersection(Sheet.Region);
+                intervals.Add(new OrderedInterval(fixedRegion.TopLeft.Col, fixedRegion.BottomRight.Col));
             }
         }
         _selectionIntervals = OrderedInterval.Merge(intervals);
@@ -116,7 +116,7 @@
 
     public bool IsColumnActive(int col)
     {
-        return Sheet.Selection.Ranges.Any(x => x.SpansCol(col));
+        return Sheet.Selection.Regions.Any(x => x.SpansCol(col));
     }
 
     private void HandleMouseUp(int col, MouseEventArgs args)

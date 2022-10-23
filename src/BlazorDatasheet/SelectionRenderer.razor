@@ -1,26 +1,26 @@
 @using System.Text
 @using BlazorDatasheet.Data
 @using BlazorDatasheet.Render
-@using Range = BlazorDatasheet.Data.Range
+@using Region = BlazorDatasheet.Data.Region
 @using System.ComponentModel
 @using BlazorDatasheet.Selecting
 
-<!-- Render the temp selection (currently selected range) -->
-@if (TempSelection.ActiveRange != null && FixedTempSelection?.Area > 0)
+<!-- Render the temp selection (currently selected region) -->
+@if (TempSelection.ActiveRegion != null && FixedTempSelection?.Area > 0)
 {
-    <!-- We split into ranges around the cell's start position, so that the cell's 
+    <!-- We split into regions around the cell's start position, so that the cell's 
     start position shows the renderer underneath it -->
-    var brokenRanges = FixedTempSelection.Break(TempSelection.ActiveRange.Start);
-    foreach (var range in brokenRanges)
+    var brokenRegions = FixedTempSelection.Break(TempSelection.ActiveRegion.TopLeft);
+    foreach (var region in brokenRegions)
     {
         <BoxOverlayRenderer
             BackgroundVisible="@true"
             BackgroundStyle="@bgStyle"
             BorderThickness="0"
-            X="getLeft(range)"
-            Y="getTop(range)"
-            Width="getWidth(range)"
-            Height="getHeight(range)"/>
+            X="getLeft(region)"
+            Y="getTop(region)"
+            Width="getWidth(region)"
+            Height="getHeight(region)"/>
     }
     <!-- now render the border around the whole thing -->
     <BoxOverlayRenderer
@@ -36,36 +36,37 @@
 <!-- render the selections that exist in the sheet -->
 @if (Sheet?.Selection != null && !Sheet.Selection.IsEmpty())
 {
-    foreach (var range in Sheet.Selection.Ranges)
+    foreach (var region in Sheet.Selection.Regions)
     {
-        var fixedRange = range.GetIntersection(Sheet.Range);
-        var isActiveRange = range == Sheet.Selection.ActiveRange;
-        <!-- if it's the active range, render around the active position -->
-        if (isActiveRange)
+        var fixedRegion = region.GetIntersection(Sheet.Region);
+        var isActiveRegion = region == Sheet.Selection.ActiveRegion;
+        <!-- if it's the active region, render around the active position -->
+        if (isActiveRegion)
         {
-            var brokenRanges = fixedRange.Break(Sheet.Selection.ActiveCellPosition);
-            foreach (var brokenRange in brokenRanges)
+            var brokenRegions = fixedRegion
+                .Break(Sheet.Selection.ActiveCellPosition);
+            foreach (var brokenRegion in brokenRegions)
             {
                 <BoxOverlayRenderer
                     BackgroundStyle="@bgStyle"
                     BackgroundVisible="true"
                     BorderThickness="0"
-                    X="getLeft(brokenRange)"
-                    Y="getTop(brokenRange)"
-                    Width="getWidth(brokenRange)"
-                    Height="getHeight(brokenRange)"/>
+                    X="getLeft(brokenRegion)"
+                    Y="getTop(brokenRegion)"
+                    Width="getWidth(brokenRegion)"
+                    Height="getHeight(brokenRegion)"/>
             }
         }
 
-        <!-- now render the border around the whole range. No fill on active range because we've filled it already -->
+        <!-- now render the border around the whole region. No fill on active region because we've filled it already -->
         <BoxOverlayRenderer
-            BackgroundVisible="@(!isActiveRange)"
+            BackgroundVisible="@(!isActiveRegion)"
             BorderThickness="1"
             BackgroundStyle="@bgStyle"
-            X="getLeft(fixedRange)"
-            Y="getTop(fixedRange)"
-            Width="getWidth(fixedRange)"
-            Height="getHeight(fixedRange)"/>
+            X="getLeft(fixedRegion)"
+            Y="getTop(fixedRegion)"
+            Width="getWidth(fixedRegion)"
+            Height="getHeight(fixedRegion)"/>
     }
 }
 
@@ -82,17 +83,17 @@
     private Selection? _tempSelection { get; set; }
 
     [Parameter, EditorRequired]
-    // The range that is currently being selected.
+    // The region that is currently being selected.
     public Selection? TempSelection { get; set; }
 
     private string bgStyle = "background:var(--selection-bg-color);";
 
-    private IFixedSizeRange? FixedTempSelection => TempSelection?.ActiveRange?.GetIntersection(Sheet?.Range);
+    private IFixedSizeRegion? FixedTempSelection => TempSelection?.ActiveRegion?.GetIntersection(Sheet?.Region);
 
-    private double getLeft(IFixedSizeRange range) => CellLayoutProvider.ComputeLeftPosition(range) - 1;
-    private double getTop(IFixedSizeRange range) => CellLayoutProvider.ComputeTopPosition(range) - 1;
-    private double getWidth(IFixedSizeRange range) => CellLayoutProvider.ComputeWidth(range) + 2;
-    private double getHeight(IFixedSizeRange range) => CellLayoutProvider.ComputeHeight(range) + 2;
+    private double getLeft(IRegion region) => CellLayoutProvider.ComputeLeftPosition(region) - 1;
+    private double getTop(IRegion region) => CellLayoutProvider.ComputeTopPosition(region) - 1;
+    private double getWidth(IRegion region) => CellLayoutProvider.ComputeWidth(region) + 2;
+    private double getHeight(IRegion region) => CellLayoutProvider.ComputeHeight(region) + 2;
 
 
     protected override void OnParametersSet()
@@ -118,7 +119,7 @@
         }
     }
 
-    private void OnSelectionChanged(object? sender, IEnumerable<IRange> ranges)
+    private void OnSelectionChanged(object? sender, IEnumerable<IRegion> regions)
     {
         StateHasChanged();
     }

@@ -1,21 +1,20 @@
 ﻿using BlazorDatasheet.Data;
 using BlazorDatasheet.Interfaces;
-using Range = BlazorDatasheet.Data.Range;
 
 namespace BlazorDatasheet.Commands;
 
 public class ClearCellsCommand : IUndoableCommand
 {
-    private readonly IEnumerable<IRange> _ranges;
+    private readonly IEnumerable<IRegion> _ranges;
     private readonly List<ValueChange> _clearCommandOccurences;
 
-    public ClearCellsCommand(IEnumerable<IRange> ranges)
+    public ClearCellsCommand(IEnumerable<IRegion> ranges)
     {
         _ranges = ranges.Select(x => x.Copy()).ToList();
         _clearCommandOccurences = new List<ValueChange>();
     }
 
-    public ClearCellsCommand(IRange range) : this(new List<IRange>() { range })
+    public ClearCellsCommand(IRegion region) : this(new List<IRegion>() { region })
     {
     }
 
@@ -24,7 +23,7 @@ public class ClearCellsCommand : IUndoableCommand
         foreach (var range in _ranges)
         {
             var rangeInSheet = range
-                .GetIntersection(sheet.Range);
+                .GetIntersection(sheet.Region);
             foreach (var cellPosition in rangeInSheet)
             {
                 if (cellPosition.IsInvalid)
