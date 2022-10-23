@@ -27,11 +27,10 @@
             class="sheet-cell row-head @(IsActive(sheetRow.RowNumber) ? "row-active" : "")"
             style="display: block !important;"
             @onmousedown="e => HandleMouseDown(sheetRow.RowNumber, e)"
-            @onmouseover="e => HandleMouseOver(sheetRow.RowNumber,  e)"
-            @onmouseup="e => HandleMouseUp(sheetRow.RowNumber,  e)">
-            @(Sheet.RowHeadings.Count > sheetRow.RowNumber ? Sheet.RowHeadings[sheetRow.RowNumber].Header : null)
+            @onmouseover="e => HandleMouseOver(sheetRow.RowNumber, e)"
+            @onmouseup="e => HandleMouseUp(sheetRow.RowNumber, e)">
             <div class="cell" style="text-align: right">
-                @sheetRow.RowNumber
+                @(Sheet.RowHeadings.Count > sheetRow.RowNumber ? Sheet.RowHeadings[sheetRow.RowNumber].Header : null)
             </div>
         </div>
     </div>
@@ -63,7 +62,7 @@
     public Selection? TempSelection { get; set; }
 
     public List<OrderedInterval> _selectionIntervals { get; set; } = new();
-    
+
     private bool IsActive(int row)
     {
         return (TempSelection?.ActiveRange?.SpansRow(row) == true)
@@ -93,7 +92,7 @@
         }
         base.OnParametersSet();
     }
-    
+
     private void OnSelectionChanged(object? sender, IEnumerable<IRange> ranges)
     {
         var intervals = new List<OrderedInterval>();
@@ -113,7 +112,7 @@
         _selectionIntervals = OrderedInterval.Merge(intervals);
         StateHasChanged();
     }
-    
+
     private void HandleMouseUp(int row, MouseEventArgs args)
     {
         OnMouseUp.InvokeAsync(new RowMouseEvent(row, args));
