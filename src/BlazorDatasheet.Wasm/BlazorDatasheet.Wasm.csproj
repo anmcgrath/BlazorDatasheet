@@ -12,7 +12,13 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\BlazorDatasheet.SharedPages\BlazorDatasheet.SharedPages.csproj" />
       <ProjectReference Include="..\BlazorDatasheet\BlazorDatasheet.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Data" />
+      <Folder Include="Pages" />
     </ItemGroup>
 
 </Project>
