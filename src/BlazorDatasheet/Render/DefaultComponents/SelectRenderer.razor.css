@@ -7,5 +7,5 @@
 }
 
 .dropper:hover{
-    background: #e1ebff;
+    background: var(--selection-bg-color);
 }

@@ -1,8 +1,8 @@
 .text-input {
     width: 100%;
     border: none;
-    padding: 2px 2px 2px 1px;
-    height: calc(100% - 2px);
+    padding: 2px;
+    height: calc(100%);
     box-sizing: border-box;
 }
 

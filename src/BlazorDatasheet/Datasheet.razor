@@ -12,6 +12,7 @@
 
 <div
     style="@(IsFixedHeight ? $"max-height: {FixedHeightInPx}px;" : "");"
+    theme="@Theme"
     class="vars sheet @(IsDataSheetActive ? "active-sheet" : "inactive-sheet")
      @(IsFixedHeight ? $" sheet-fixed-height" : "sheet-dynamic-height") "
     @onmouseover="() => IsMouseInsideSheet = true"
@@ -19,7 +20,7 @@
     <!-- Column headers -->
     @if (Sheet?.ShowColumnHeadings == true)
     {
-        <div class="sheet-row column-head @(StickyHeadings ? "header-sticky" : "")">
+        <div class="sheet-row column-head @(StickyHeadings ? "col-sticky" : "")">
             @if (Sheet.ShowRowHeadings)
             {
                 <!-- the little bit outside to the left of first col header -->
@@ -41,14 +42,16 @@
     {
         @if (Sheet.ShowRowHeadings)
         {
-            <div style="display: inline-block; float:left;;">
-                <RowHeadingsRenderer
-                    OnMouseDown="e => HandleRowHeaderMouseDown(e.RowIndex, e.MouseEventArgs)"
-                    OnMouseOver="e => HandleCellMouseOver(e.RowIndex, -1, e.MouseEventArgs)"
-                    OnMouseUp="e => HandleCellMouseUp(e.RowIndex, -1, e.MouseEventArgs)"
-                    Sheet="Sheet"
-                    CellLayoutProvider="_cellLayoutProvider"
-                    TempSelection="TempSelection"/>
+            <div>
+                <div style="display: inline-block; float:left;">
+                    <RowHeadingsRenderer
+                        OnMouseDown="e => HandleRowHeaderMouseDown(e.RowIndex, e.MouseEventArgs)"
+                        OnMouseOver="e => HandleCellMouseOver(e.RowIndex, -1, e.MouseEventArgs)"
+                        OnMouseUp="e => HandleCellMouseUp(e.RowIndex, -1, e.MouseEventArgs)"
+                        Sheet="Sheet"
+                        CellLayoutProvider="_cellLayoutProvider"
+                        TempSelection="TempSelection"/>
+                </div>
             </div>
         }
         <Virtualize Items="@Sheet?.RowCollection" TItem="Row" Context="sheetRow">

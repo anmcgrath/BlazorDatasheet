@@ -12,11 +12,12 @@
 
 .select-list {
     min-width: 10rem;
-    z-index: 10;
-    border: 1px solid lightgray;
+    z-index: 3;
+    border: var(--sheet-border-style);
     background: var(--sheet-bg-color);
     position: absolute;
     overflow-y: auto;
+    color: var(--sheet-foreground-color);
     display: block;
     max-height: 7rem;
     border-radius: 4px;
@@ -29,5 +30,5 @@
 }
 
 .select-item:hover {
-    background: #adc4ef;
+    background: var(--selection-bg-color)
 }

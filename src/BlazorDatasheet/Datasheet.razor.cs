@@ -24,7 +24,7 @@ public partial class Datasheet : IHandleEvent
     /// </summary>
     [Parameter]
     public Sheet? Sheet { get; set; }
-    
+
     /// <summary>
     /// Whether the row headings are sticky (only applied if the container is of fixed height)
     /// </summary>
@@ -55,6 +55,8 @@ public partial class Datasheet : IHandleEvent
     /// </summary>
     [Parameter]
     public bool IsFixedHeight { get; set; }
+
+    [Parameter] public string Theme { get; set; } = "default";
 
     /// <summary>
     /// Whether the user is focused on the datasheet.
@@ -498,11 +500,11 @@ public partial class Datasheet : IHandleEvent
         var w = _cellLayoutProvider.ComputeWidth(editorRange);
         var h = _cellLayoutProvider.ComputeHeight(editorRange);
 
-        strBuilder.Append($"left:{left + 1}px;");
-        strBuilder.Append($"top:{top + 1}px;");
-        strBuilder.Append($"width:{w - 1}px;");
-        strBuilder.Append($"height:{h - 1}px;");
-        strBuilder.Append($"box-shadow: 0px 0px 4px grey");
+        strBuilder.Append($"left:{left}px;");
+        strBuilder.Append($"top:{top}px;");
+        strBuilder.Append($"width:{w}px;");
+        strBuilder.Append($"height:{h}px;");
+        strBuilder.Append($"box-shadow: 0px 0px 4px var(--shadow-overlay-color)");
         var style = strBuilder.ToString();
         return style;
     }

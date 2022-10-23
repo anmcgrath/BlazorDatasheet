@@ -14,6 +14,7 @@
 </p>
 
 <Datasheet
+    Theme="@Theme"
     Sheet="Sheet"
     StickyHeadings="true"
     IsFixedHeight="true">
@@ -27,12 +28,18 @@
     <button @onclick="@(() => Sheet.TrySetCellValue(Sheet.Selection.ActiveCellPosition.Row, Sheet.Selection.ActiveCellPosition.Col, "Bob"))">Set to Bob</button>
 </div>
 
+<div>
+    <input id="darkmode-toggle" type="checkbox" @bind="IsDarkMode"/>
+    <label for="darkmode-toggle">Darkmode</label>
+</div>
+
 @code{
 
     private Sheet Sheet;
-    private Sheet Sheet2;
     private List<Person> People { get; set; }
     private ObjectEditor<Person> _editor;
+    private string Theme => IsDarkMode ? "dark" : "default";
+    private bool IsDarkMode { get; set; }
 
     private void InsertAtSelection()
     {
@@ -41,14 +48,12 @@
             return;
         }
         _editor.InsertAt(new Person(), Sheet.Selection.ActiveRange.Start.Row);
-    //Sheet.InsertRowAt(Sheet2.Selection.ActiveRange.Start.Row);
     }
 
-    private Format GreenBg = new Format() { BackgroundColor = "#d9fce2" };
+    private Format GreenBg = new Format() { BackgroundColor = "var(--cell-highlight-bg-color)" };
 
     protected override void OnInitialized()
     {
-        Sheet2 = new Sheet(3, 3);
         People = new List<Person>();
 
         var random = new Random();
@@ -72,11 +77,11 @@
 
         var ageCf =
             new ConditionalFormat(
-                (posn, sheet) => (sheet.GetCell(posn.row, posn.col).GetValue<int?>()) > 85, cell => new Format() { ForegroundColor = "#ff0000" });
+                (posn, sheet) => (sheet.GetCell(posn.row, posn.col).GetValue<int?>()) > 85, cell => new Format() { ForegroundColor = "var(--invalid-cell-foreground-color)" });
 
         var builder1 = new ObjectEditorBuilder<Person>(People, GridDirection.PropertiesAcrossColumns);
         builder1.AutogenerateProperties(false)
-                .WithExpressionFormat(x=>x.IsFriendly, x=>GreenBg)
+                .WithExpressionFormat(x => x.IsFriendly, x => GreenBg)
                 .WithProperty(x => x.Id, pd => { pd.Heading = "Person ID"; })
                 .WithProperty(x => x.FirstName, pd => { pd.Heading = "First Name"; })
                 .WithProperty(x => x.LastName, pd => { pd.Heading = "Last Name"; })
@@ -91,15 +96,11 @@
                     pd.Type = "select";
                     pd.UseDataValidator(new SourceValidator(new List<string>() { "", "Manager", "Employee" }, true));
                 })
-                .WithProperty(x => x.IsFriendly, pd =>
-                {
-                    pd.Heading = "Is Friendly?";
-                });
+                .WithProperty(x => x.IsFriendly, pd => { pd.Heading = "Is Friendly?"; });
 
         _editor = builder1.Build();
 
         Sheet = _editor.Sheet;
-
     }
 
 }

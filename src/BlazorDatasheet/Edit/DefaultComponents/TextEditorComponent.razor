@@ -1,11 +1,15 @@
 @implements ICellEditor
 @using BlazorDatasheet.Interfaces
+@using System.Text
+@using BlazorDatasheet.Data
+@using BlazorDatasheet.Util
 
 <input
     type="text"
     class="text-input"
     @bind="EditedValue"
     @bind:event="oninput"
+    style="@CssUtil.GetStyledInput(EditorManager.CurrentEditedCell)"
     @ref="InputRef"/>
 
 @code {

@@ -2,7 +2,9 @@
 @using System.Globalization
 @inherits BaseRenderer
 
-<div style="color: @(ValidationError ? "red" : "black")">@FormattedNumber</div>
+<div style="color: @(ValidationError ? "var(--invalid-cell-foreground-color)" : "var(--sheet-foreground-color)")">
+    @FormattedNumber
+</div>
 
 @code {
     private bool ValidationError => !Double.TryParse(Cell.GetValue<string>(), out double res);

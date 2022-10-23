@@ -1,7 +1,12 @@
 @namespace BlazorDatasheet.Render.DefaultComponents
+@using System.Text
 @inherits BaseRenderer
 
 <div
     class="cell-renderer">
     @(Cell.GetValue<string>())
 </div>
+
+@code{
+
+}

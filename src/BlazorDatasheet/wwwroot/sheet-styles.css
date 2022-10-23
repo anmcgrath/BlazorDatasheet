@@ -1,15 +1,35 @@
-﻿.vars {
+﻿.vars[theme='default'] {
     --sheet-foreground-color: #5c5c5c;
     --sheet-bg-color: #ffffff;
     --sheet-border-style: 1px solid lightgray;
     --row-header-bg-color: #fafafa;
     --col-header-bg-color: #fafafa;
+    --headers-foreground-color: #000000;
     --active-header-bg-color: #ececec;
     --sheet-font-weight: normal;
     --icon-color: #000000;
+    --shadow-overlay-color: grey;
     --invalid-cell-foreground-color: #ff0000;
     --selection-bg-color: rgba(163, 188, 213, 0.18);
     --selection-border-color: #0998e5;
+    --cell-highlight-bg-color: #a9e5b6;
+}
+
+.vars[theme='dark'] {
+    --sheet-foreground-color: #a9a9a9;
+    --sheet-bg-color: #262626;
+    --sheet-border-style: 1px solid #3f3f3f;
+    --row-header-bg-color: #2d2d2d;
+    --col-header-bg-color: #2d2d2d;
+    --headers-foreground-color: #a4a4a4;
+    --active-header-bg-color: #343434;
+    --sheet-font-weight: normal;
+    --icon-color: #000000;
+    --shadow-overlay-color: #000000;
+    --invalid-cell-foreground-color: #d71b1b;
+    --selection-bg-color: rgba(83, 101, 121, 0.18);
+    --selection-border-color: #1c6f9a;
+    --cell-highlight-bg-color: #456b4d;
 }
 
 .active-sheet {
@@ -21,6 +41,7 @@
 }
 
 .sheet {
+    background: var(--sheet-bg-color);
     font-size: .8rem;
     box-sizing: border-box;
     position: relative;
@@ -54,14 +75,19 @@
 .sheet-row {
     padding: 0;
     height: 25px;
-    width: 100%;
 }
 
-.header-sticky {
-    box-shadow: 0 4px 6px -6px grey;
+.col-sticky {
+    box-shadow: 0 4px 6px -6px var(--shadow-overlay-color);
     position: sticky;
     top: 0;
-    z-index: 1
+    z-index: 2;
+}
+
+.row-sticky {
+    position: sticky;
+    left: 0;
+    z-index: 1;
 }
 
 .invalid-cell {
@@ -81,6 +107,7 @@
 
 .column-head {
     background: var(--col-header-bg-color) !important;
+    color: var(--headers-foreground-color);
 }
 
 .column-active {
@@ -95,8 +122,8 @@
     border-right: var(--sheet-border-style);
     padding-right: 5px;
     padding-left: 5px;
-   align-content: center;
-    
+    align-content: center;
+    color: var(--headers-foreground-color);
 }
 
 .row-active {
