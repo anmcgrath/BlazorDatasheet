@@ -1,38 +1,43 @@
-﻿@page "/"
+@page "/"
 @using BlazorDatasheet.Data
-@using BlazorDatasheet.Wasm.Data
-@using BlazorDatasheet.Icons
 @using BlazorDatasheet.ObjectEditor
 @using BlazorDatasheet.Validation
-@using BlazorDatasheet.Data.Events
 @using BlazorDatasheet.Render
+@using BlazorDatasheet.SharedPages.Data
 
 <PageTitle>Index</PageTitle>
-
-<h1>Blazor DataSheet examples</h1>
 
 <p>
     Blazor DataSheet is an excel-like editor for cellular values. Below shows some of the features of the data sheet. Sample code is available on <a href="https://github.com/anmcgrath/BlazorDatasheet">GitHub</a>
 </p>
 
 <Datasheet
+    Theme="@Theme"
     Sheet="Sheet"
-    StickyHeadings="@true"
-    IsFixedHeight="true"/>
+    StickyHeadings="true"
+    IsFixedHeight="true">
 
+</Datasheet>
 
 <div>
     <button @onclick="InsertAtSelection">Insert row at selection</button>
     <button @onclick="() => Sheet.Commands.Undo()">Undo</button>
     <button @onclick="() => Sheet.Commands.Redo()">Redo</button>
+    <button @onclick="@(() => Sheet.TrySetCellValue(Sheet.Selection.ActiveCellPosition.Row, Sheet.Selection.ActiveCellPosition.Col, "Bob"))">Set to Bob</button>
+</div>
+
+<div>
+    <input id="darkmode-toggle" type="checkbox" @bind="IsDarkMode"/>
+    <label for="darkmode-toggle">Darkmode</label>
 </div>
 
 @code{
 
     private Sheet Sheet;
-    private Sheet Sheet2;
     private List<Person> People { get; set; }
     private ObjectEditor<Person> _editor;
+    private string Theme => IsDarkMode ? "dark" : "default";
+    private bool IsDarkMode { get; set; }
 
     private void InsertAtSelection()
     {
@@ -43,9 +48,10 @@
         _editor.InsertAt(new Person(), Sheet.Selection.ActiveRange.Start.Row);
     }
 
+    private Format GreenBg = new Format() { BackgroundColor = "var(--cell-highlight-bg-color)" };
+
     protected override void OnInitialized()
     {
-        Sheet2 = new Sheet(3, 3);
         People = new List<Person>();
 
         var random = new Random();
@@ -67,24 +73,13 @@
             });
         }
 
-        var checkCf = new ConditionalFormat((posn, sheet) =>
-        {
-            var cell = sheet.GetCell(posn.row, posn.col);
-            var person = ((Person)cell.Data);
-            if (person == null)
-                return false;
-            return person.IsFriendly;
-        }, c => new Format()
-        {
-            BackgroundColor = "#d9fce2"
-        });
-
         var ageCf =
             new ConditionalFormat(
-                (posn, sheet) => (sheet.GetCell(posn.row, posn.col).GetValue<int?>()) > 85, cell => new Format() { ForegroundColor = "#ff0000" });
+                (posn, sheet) => (sheet.GetCell(posn.row, posn.col).GetValue<int?>()) > 85, cell => new Format() { ForegroundColor = "var(--invalid-cell-foreground-color)" });
 
         var builder1 = new ObjectEditorBuilder<Person>(People, GridDirection.PropertiesAcrossColumns);
         builder1.AutogenerateProperties(false)
+                .WithExpressionFormat(x => x.IsFriendly, x => GreenBg)
                 .WithProperty(x => x.Id, pd => { pd.Heading = "Person ID"; })
                 .WithProperty(x => x.FirstName, pd => { pd.Heading = "First Name"; })
                 .WithProperty(x => x.LastName, pd => { pd.Heading = "Last Name"; })
@@ -99,11 +94,7 @@
                     pd.Type = "select";
                     pd.UseDataValidator(new SourceValidator(new List<string>() { "", "Manager", "Employee" }, true));
                 })
-                .WithProperty(x => x.IsFriendly, pd =>
-                {
-                    pd.ApplyConditionalFormat(checkCf);
-                    pd.Heading = "Is Friendly?";
-                });
+                .WithProperty(x => x.IsFriendly, pd => { pd.Heading = "Is Friendly?"; });
 
         _editor = builder1.Build();
 
