@@ -56,6 +56,9 @@
                 pd.Type = "select";
             })
             .Build();
+        
+        editor1.Sheet.CellsChanged += (sender, enumerable) => StateHasChanged();
+        editor2.Sheet.CellsChanged += (sender, enumerable) => StateHasChanged();
 
         base.OnInitialized();
     }

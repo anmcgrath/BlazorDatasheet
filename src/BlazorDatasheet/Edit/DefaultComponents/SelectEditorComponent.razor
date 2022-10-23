@@ -1,8 +1,14 @@
 @using BlazorDatasheet.Interfaces
+@using BlazorDatasheet.Util
 @using BlazorDatasheet.Validation
 @implements ICellEditor
 
-<input @bind="EditedValue" @bind:event="oninput" class="text-input" @ref="InputTextComponent"/>
+<input
+    @bind="EditedValue"
+    @bind:event="oninput"
+    class="text-input" 
+    style="@CssUtil.GetStyledInput(EditorManager.CurrentEditedCell)"
+    @ref="InputTextComponent"/>
 <div class="select-list">
     @foreach (var val in values)
     {

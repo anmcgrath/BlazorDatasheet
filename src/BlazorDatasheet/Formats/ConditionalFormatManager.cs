@@ -50,7 +50,7 @@ public class ConditionalFormatManager
             conditionalFormat.Order = _registered.Count - 1;
         }
 
-        conditionalFormat.Add(range);
+        conditionalFormat.Add(range, _sheet);
         _cfTree.Insert(new ConditonalFormatSpatialData(conditionalFormat, range));
 
         if (UseCache)
@@ -184,6 +184,8 @@ public class ConditionalFormatManager
 
     public Format? GetFormat(int row, int col)
     {
+        if (!_sheet.Range.Contains(row, col))
+            return null;
         if (!UseCache)
         {
             var cfs = GetFormatsAppliedToPosition(row, col);

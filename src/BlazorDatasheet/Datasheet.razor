@@ -91,14 +91,14 @@
                                 style="@GetCellStyleFromFormat(format, cell.IsValid)
                                                                 ">
                                 @if (format?.Icon != null)
-                                {
-                                    <div style="margin-right:2px; color: @(format.IconColor ?? "var(--icon-color)");">@format.Icon</div>
-                                }
-                                <DynamicComponent
-                                    Type="@getCellRendererType(cell.Type)"
-                                    Parameters="@getCellRendererParameters(cell, row, col)">
-                                </DynamicComponent>
-                            </div>
+                                    {
+                                        <div style="margin-right:2px; float:left; color: @(format.IconColor ?? "var(--icon-color)");">@format.Icon</div>
+                                    }
+                                    <DynamicComponent
+                                        Type="@getCellRendererType(cell.Type)"
+                                        Parameters="@getCellRendererParameters(cell, row, col)">
+                                    </DynamicComponent>
+                                </div>
 
                         </div>
                     }

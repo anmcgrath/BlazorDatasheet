@@ -1,7 +1,10 @@
 @page "/ConditionalFormatting"
 @using BlazorDatasheet.Data
+@using BlazorDatasheet.Formats
 @using BlazorDatasheet.Formats.DefaultConditionalFormats
+@using BlazorDatasheet.Icons
 @using BlazorDatasheet.Render
+@using Range = BlazorDatasheet.Data.Range
 <PageTitle>Conditional Formatting</PageTitle>
 
 <h1>Conditional Formatting</h1>
@@ -10,12 +13,15 @@
     This example shows two conditional formats applied to the cells in the sheet
 
     <ol>
-        <li>Colored numbers: less than zero and the cell background is blue, greater than zero and the cell background is red</li>
-        <li>Secret: If the cell's value contains the text secret, the cell's format uses a green check icon</li>
+        <li>Column 1: Shows a "check" icon if the cell contains the word check.</li>
+        <li>Columns 2 - 6: Shows a black and white colour gradient that depends on the cell's value in relation to all others with the conditional format applied.</li>
     </ol>
 </p>
 
-<Datasheet Sheet="sheet"></Datasheet>
+<Datasheet
+    IsFixedHeight="true"
+    Sheet="sheet">
+</Datasheet>
 
 @code {
 
@@ -23,13 +29,55 @@
 
     protected override void OnInitialized()
     {
-        sheet = new Sheet(100, 5);
-        var cf = new NumberScaleConditionalFormat();
+        sheet = new Sheet(30, 5);
+        var numberScaleConditionalFormat = new NumberScaleConditionalFormat();
+        var checkConditionalFormat = new CustomCheckConditionalFormat("check");
 
+        var values = new List<ValueChange>();
 
-        sheet.ConditionalFormatting.Apply(cf);
-        
+        var rangeOfNumberScaleFormat = new Range(0, 99, 1, 4);
+        var rand = new Random();
+        foreach (var posn in rangeOfNumberScaleFormat)
+        {
+            values.Add(new ValueChange(posn.Row, posn.Col, rand.Next(100)));
+        }
+
+        sheet.SetCellValues(values);
+
+        sheet.ConditionalFormatting.Apply(numberScaleConditionalFormat, new Range(0, 99, 1, 4));
+        sheet.ConditionalFormatting.Apply(checkConditionalFormat, new Range(0, 99, 0, 0));
+
         base.OnInitialized();
+    }
+
+    public class CustomCheckConditionalFormat : ConditionalFormatAbstractBase
+    {
+        private readonly string _secretText;
+
+        public CustomCheckConditionalFormat(string secretText)
+        {
+            _secretText = secretText;
+        }
+
+        public Format Check = new Format()
+        {
+            Icon = Icons.CheckIcon,
+            IconColor = "green",
+        };
+
+        public override Format? CalculateFormat(int row, int col, Sheet sheet)
+        {
+            var cell = sheet.GetCell(row, col);
+            var value = cell.GetValue<string>();
+
+            if (value == null)
+                return null;
+
+            if (value.ToLower().Contains(_secretText))
+                return Check;
+            else
+                return null;
+        }
     }
 
 }

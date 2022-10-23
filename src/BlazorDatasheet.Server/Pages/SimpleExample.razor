@@ -5,21 +5,18 @@
 
 <h1>Simple example</h1>
 
-<p>Below is a 3 x 3 sheet with empty strings. There is no data validation or formatting and the default editors are used.</p>
+<p>Below is a 6 x 6 sheet with empty strings. There is no data validation or formatting and the default editors are used.</p>
 
-<!-- new table test -->
 <Datasheet
     Sheet="sheet"/>
 
 @code{
 
     private Sheet sheet;
-    private ICollection<Row> rows;
 
     protected override void OnInitialized()
     {
-        sheet = new Sheet(numRows: 3, numCols: 3);
-        rows = sheet.Rows as ICollection<Row>;
+        sheet = new Sheet(numRows: 6, numCols: 6);
     }
 
 }

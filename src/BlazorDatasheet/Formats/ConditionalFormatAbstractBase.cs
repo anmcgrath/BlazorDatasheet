@@ -51,10 +51,11 @@ public abstract class ConditionalFormatAbstractBase
         }
     }
 
-    internal void Add(IFixedSizeRange range)
+    internal void Add(IFixedSizeRange range, Sheet sheet)
     {
         Ranges.Add(range);
-        foreach (var position in range)
+        var rangeInsideSheet = range.GetIntersection(sheet.Range);
+        foreach (var position in rangeInsideSheet)
         {
             Positions.Add((position.Row, position.Col));
         }

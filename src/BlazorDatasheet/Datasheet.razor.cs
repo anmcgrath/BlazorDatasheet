@@ -303,7 +303,7 @@ public partial class Datasheet : IHandleEvent
         IsDataSheetActive = IsMouseInsideSheet;
 
         if (changed)
-            StateHasChanged();
+            AcceptEdit();
 
         return false;
     }
@@ -461,7 +461,6 @@ public partial class Datasheet : IHandleEvent
     /// <param name="args"></param>
     private void HandleCellRendererRequestChangeValue(ChangeCellRequestEventArgs args)
     {
-        var cell = Sheet?.GetCell(args.Row, args.Col);
         Sheet.TrySetCellValue(args.Row, args.Col, args.NewValue);
     }
 
