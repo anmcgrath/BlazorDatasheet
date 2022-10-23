@@ -1,84 +1,4 @@
 /* _content/BlazorDatasheet/Datasheet.razor.rz.scp.css */
-.active-sheet[b-zet5yo0qob] {
-    border: none;
-}
-
-.inactive-sheet[b-zet5yo0qob] {
-    border: none;
-}
-
-.sheet[b-zet5yo0qob] {
-    font-size: .8rem;
-    box-sizing: border-box;
-    position: relative;
-    display: inline-block;
-    border-left: var(--sheet-border-style);
-    border-top: var(--sheet-border-style);
-    white-space: nowrap;
-}
-
-.sheet-fixed-height[b-zet5yo0qob] {
-    overflow-y:scroll;
-    overflow-x: auto;
-}
-
-.sheet-dynamic-height[b-zet5yo0qob] {
-
-}
-
-.sheet-cell[b-zet5yo0qob] {
-    display: inline-block;
-    width: 105px;
-    max-width: 105px;
-    min-width: 105px;
-    height: 100%;
-    user-select: none;
-    -moz-user-select: none;
-    border-right: var(--sheet-border-style);
-    border-bottom: var(--sheet-border-style);
-    -webkit-user-select: none;
-}
-
-.sheet-row[b-zet5yo0qob] {
-    padding: 0;
-    height: 25px;
-}
-
-.invalid-cell[b-zet5yo0qob] {
-    color: var(--invalid-cell-foreground-color) !important;
-    background: red;
-}
-
-.cell[b-zet5yo0qob] {
-    display: inline-block;
-    width: 100%;
-    height: 100%;
-    padding: 2px;
-    overflow: hidden;
-    box-sizing: border-box;
-    -moz-box-sizing: border-box;
-    -webkit-box-sizing: border-box;
-}
-
-.column-head[b-zet5yo0qob] {
-    background: var(--col-header-bg-color) !important;
-}
-
-.column-active[b-zet5yo0qob] {
-    background: var(--active-header-bg-color) !important;
-}
-
-.row-head[b-zet5yo0qob] {
-    background: var(--row-header-bg-color) !important;
-    border-right: var(--sheet-border-style);
-    padding-right: 5px;
-    padding-left: 5px;
-}
-
-.row-active[b-zet5yo0qob] {
-    background: var(--active-header-bg-color) !important;
-}
-
 /* _content/BlazorDatasheet/Edit/DefaultComponents/DateTimeEditorComponent.razor.rz.scp.css */
 .date-input[b-0nxgffd6dp] {
     width: calc(100% - 4px);
@@ -106,11 +26,12 @@
 
 .select-list[b-k71ijntl8x] {
     min-width: 10rem;
-    z-index: 10;
-    border: 1px solid lightgray;
+    z-index: 3;
+    border: var(--sheet-border-style);
     background: var(--sheet-bg-color);
     position: absolute;
     overflow-y: auto;
+    color: var(--sheet-foreground-color);
     display: block;
     max-height: 7rem;
     border-radius: 4px;
@@ -123,7 +44,7 @@
 }
 
 .select-item:hover[b-k71ijntl8x] {
-    background: #adc4ef;
+    background: var(--selection-bg-color)
 }
 /* _content/BlazorDatasheet/Edit/DefaultComponents/TextEditorComponent.razor.rz.scp.css */
 .text-input[b-ogyzqrxhj5] {
@@ -147,7 +68,7 @@
 }
 
 .dropper:hover[b-fldepj96gs]{
-    background: #e1ebff;
+    background: var(--selection-bg-color);
 }
 /* _content/BlazorDatasheet/Render/DefaultComponents/TextRenderer.razor.rz.scp.css */
 .cell-renderer[b-7xkejoswml]{
