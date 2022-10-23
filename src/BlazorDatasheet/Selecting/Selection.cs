@@ -179,6 +179,7 @@ public class Selection
         }
 
         ActiveCellPosition = new CellPosition(newRow, newCol);
+        emitSelectionChange();
     }
 
     /// <summary>
