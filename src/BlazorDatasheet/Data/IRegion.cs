@@ -3,6 +3,16 @@
 public interface IRegion
 {
     /// <summary>
+    /// Where the region was started
+    /// </summary>
+    public CellPosition Start { get; }
+
+    /// <summary>
+    /// Where the region ends
+    /// </summary>
+    public CellPosition End { get; }
+
+    /// <summary>
     /// The top left (min) in the region
     /// </summary>
     public CellPosition TopLeft { get; }

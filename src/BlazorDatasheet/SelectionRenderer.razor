@@ -10,7 +10,7 @@
 {
     <!-- We split into regions around the cell's start position, so that the cell's 
     start position shows the renderer underneath it -->
-    var brokenRegions = FixedTempSelection.Break(TempSelection.ActiveRegion.TopLeft);
+    var brokenRegions = FixedTempSelection.Break(TempSelection.ActiveRegion.Start);
     foreach (var region in brokenRegions)
     {
         <BoxOverlayRenderer

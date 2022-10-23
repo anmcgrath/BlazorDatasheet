@@ -12,17 +12,15 @@ public class Region : IFixedSizeRegion
     public CellPosition TopLeft { get; private set; }
     public CellPosition BottomRight { get; private set; }
 
-    private CellPosition _start;
-
     /// <summary>
     /// Where the region was started
     /// </summary>
-    protected CellPosition Start { get; set; }
+    public CellPosition Start { get; protected set; }
 
     /// <summary>
     /// Where the region ends
     /// </summary>
-    protected CellPosition End { get; set; }
+    public CellPosition End { get; protected set; }
 
     public int Height => BottomRight.Row - TopLeft.Row + 1;
     public int Width => BottomRight.Col - TopLeft.Col + 1;

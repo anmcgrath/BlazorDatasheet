@@ -51,7 +51,7 @@ public class Selection
     {
         _regions.Add(region);
         ActiveRegion = region;
-        ActiveCellPosition = ActiveRegion.TopLeft;
+        ActiveCellPosition = ActiveRegion.Start;
         emitSelectionChange();
     }
 
@@ -66,7 +66,7 @@ public class Selection
         if (newActiveRegion != null)
         {
             ActiveRegion = newActiveRegion;
-            ActiveCellPosition = newActiveRegion.TopLeft;
+            ActiveCellPosition = newActiveRegion.Start;
         }
 
         emitSelectionChange();
@@ -85,7 +85,7 @@ public class Selection
     /// <summary>
     /// Sets selection to a single cell and clears any current selections
     /// </summary>
-    /// <param name="row"></param>
+    /// <param name="row"></param> 
     /// <param name="col"></param>
     public void SetSingle(int row, int col)
     {
