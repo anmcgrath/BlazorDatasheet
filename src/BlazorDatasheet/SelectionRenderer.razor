@@ -6,11 +6,11 @@
 @using BlazorDatasheet.Selecting
 
 <!-- Render the temp selection (currently selected region) -->
-@if (TempSelection.ActiveRegion != null && FixedTempSelection?.Area > 0)
+@if (TempSelection.ActiveRegion != null && BoundedTempSelection?.Area > 0)
 {
     <!-- We split into regions around the cell's start position, so that the cell's 
     start position shows the renderer underneath it -->
-    var brokenRegions = FixedTempSelection.Break(TempSelection.ActiveRegion.Start);
+    var brokenRegions = BoundedTempSelection.Break(TempSelection.ActiveRegion.Start);
     foreach (var region in brokenRegions)
     {
         <BoxOverlayRenderer
@@ -27,10 +27,10 @@
         BackgroundVisible="@false"
         BorderThickness="1"
         BackgroundStyle="@bgStyle"
-        X="getLeft(FixedTempSelection)"
-        Y="getTop(FixedTempSelection)"
-        Width="getWidth(FixedTempSelection)"
-        Height="getHeight(FixedTempSelection)"/>
+        X="getLeft(BoundedTempSelection)"
+        Y="getTop(BoundedTempSelection)"
+        Width="getWidth(BoundedTempSelection)"
+        Height="getHeight(BoundedTempSelection)"/>
 }
 
 <!-- render the selections that exist in the sheet -->
@@ -38,12 +38,12 @@
 {
     foreach (var region in Sheet.Selection.Regions)
     {
-        var fixedRegion = region.GetIntersection(Sheet.Region);
+        var boundedRegion = region.GetIntersection(Sheet.Region);
         var isActiveRegion = region == Sheet.Selection.ActiveRegion;
         <!-- if it's the active region, render around the active position -->
         if (isActiveRegion)
         {
-            var brokenRegions = fixedRegion
+            var brokenRegions = boundedRegion
                 .Break(Sheet.Selection.ActiveCellPosition);
             foreach (var brokenRegion in brokenRegions)
             {
@@ -63,10 +63,10 @@
             BackgroundVisible="@(!isActiveRegion)"
             BorderThickness="1"
             BackgroundStyle="@bgStyle"
-            X="getLeft(fixedRegion)"
-            Y="getTop(fixedRegion)"
-            Width="getWidth(fixedRegion)"
-            Height="getHeight(fixedRegion)"/>
+            X="getLeft(boundedRegion)"
+            Y="getTop(boundedRegion)"
+            Width="getWidth(boundedRegion)"
+            Height="getHeight(boundedRegion)"/>
     }
 }
 
@@ -88,7 +88,7 @@
 
     private string bgStyle = "background:var(--selection-bg-color);";
 
-    private IFixedSizeRegion? FixedTempSelection => TempSelection?.ActiveRegion?.GetIntersection(Sheet?.Region);
+    private IRegion? BoundedTempSelection => TempSelection?.ActiveRegion?.GetIntersection(Sheet?.Region);
 
     private double getLeft(IRegion region) => CellLayoutProvider.ComputeLeftPosition(region) - 1;
     private double getTop(IRegion region) => CellLayoutProvider.ComputeTopPosition(region) - 1;

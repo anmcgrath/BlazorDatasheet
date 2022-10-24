@@ -22,7 +22,8 @@ public class SetCellValuesCommand : IUndoableCommand
             _undoValues.Add(new ValueChange(valChange.Row, valChange.Col, oldCellValue));
         }
 
-        return sheet.SetCellValuesImpl(_values);
+        var setValues = sheet.SetCellValuesImpl(_values);
+        return setValues;
     }
 
     public bool Undo(Sheet sheet)

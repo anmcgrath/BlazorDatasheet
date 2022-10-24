@@ -24,16 +24,18 @@ public class ClearCellsCommand : IUndoableCommand
         {
             var rangeInSheet = range
                 .GetIntersection(sheet.Region);
-            foreach (var cellPosition in rangeInSheet)
+            var cells = sheet.GetCellsInRegion(rangeInSheet);
+
+            foreach (var cell in cells)
             {
-                if (cellPosition.IsInvalid)
-                    continue;
-                var cell = sheet.GetCell(cellPosition);
                 var oldValue = cell.GetValue();
 
                 // When this is redone it'll update the new value to the old value.
-                _clearCommandOccurences.Add(
-                    new ValueChange(cellPosition.Row, cellPosition.Col, oldValue));
+                if (oldValue != null && !String.IsNullOrEmpty(oldValue.ToString()))
+                {
+                    _clearCommandOccurences.Add(
+                        new ValueChange(cell.Row, cell.Col, oldValue));
+                }
             }
         }
 

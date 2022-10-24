@@ -53,23 +53,6 @@ public class RegionTests
     }
 
     [Test]
-    public void Enumerate_Region_Moves_In_Row_Dir()
-    {
-        var region = new Region(0, 2, 0, 2);
-        var posns = region.ToList();
-        Assert.AreEqual(region.Area, posns.Count);
-        // Check first cell (top left)
-        Assert.AreEqual(0, posns[0].Row);
-        Assert.AreEqual(0, posns[0].Col);
-        // Check end of first row
-        Assert.AreEqual(0, posns[2].Row);
-        Assert.AreEqual(2, posns[2].Col);
-        // Check first cell in second row
-        Assert.AreEqual(1, posns[3].Row);
-        Assert.AreEqual(0, posns[3].Col);
-    }
-
-    [Test]
     public void Width_Height_Area_Ok()
     {
         var region = new Region(1, 4, 2, 7);

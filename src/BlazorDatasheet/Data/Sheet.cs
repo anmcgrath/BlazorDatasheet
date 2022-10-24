@@ -209,16 +209,37 @@ public class Sheet
         return false;
     }
 
-    private IEnumerable<Cell> GetCellsInRegion(IRegion region)
+    public BRange Range(int row, int col)
     {
-        var fixedRegion = region.GetIntersection(this.Region);
-        List<Cell> cells = new List<Cell>();
-        foreach (var position in fixedRegion)
-        {
-            cells.Add(this.GetCell(position.Row, position.Col));
-        }
+        return Range(new Region(row, col));
+    }
 
-        return cells.ToArray();
+    public BRange Range(int rowStart, int rowEnd, int colStart, int colEnd)
+    {
+        return Range(new Region(rowStart, rowEnd, colStart, colEnd));
+    }
+
+    public BRange Range(IRegion region)
+    {
+        return Range(new List<IRegion>() { region });
+    }
+
+    public BRange Range(IEnumerable<IRegion> regions)
+    {
+        return new BRange(this, regions);
+    }
+
+
+    /// <summary>
+    /// Returns all cells in the specified region
+    /// </summary>
+    /// <param name="region"></param>
+    /// <returns></returns>
+    public IEnumerable<Cell> GetCellsInRegion(IRegion region)
+    {
+        return (new BRange(this, region))
+               .Positions
+               .Select(x => this.GetCell(x.row, x.col));
     }
 
     /// <summary>

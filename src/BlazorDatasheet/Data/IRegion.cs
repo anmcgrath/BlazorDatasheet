@@ -60,7 +60,7 @@ public interface IRegion
     /// Returns a new, collapsed region at the start position of this region.
     /// </summary>
     /// <returns></returns>
-    public IFixedSizeRegion Collapse();
+    public IRegion Collapse();
 
     /// <summary>
     /// Returns a copy of the region
@@ -73,7 +73,7 @@ public interface IRegion
     /// </summary>
     /// <param name="region"></param>
     /// <returns></returns>
-    public IFixedSizeRegion? GetIntersection(IRegion? region);
+    public IRegion? GetIntersection(IRegion? region);
 
 
     /// <summary>
@@ -97,4 +97,12 @@ public interface IRegion
     /// <param name="position">The position to break around</param>
     /// <returns></returns>
     public List<IRegion> Break(CellPosition position);
+    
+    /// <summary>
+    /// Moves the entire region by the specified amount
+    /// </summary>
+    /// <param name="dRow"></param>
+    /// <param name="dCol"></param>
+    /// <param name="regionLimit">The limiting region that the region cannot move outside of</param>
+    public void Move(int dRow, int dCol, IRegion? regionLimit = null);
 }
