@@ -2,7 +2,7 @@
 
 A simple datasheet component for editing tabular data.
 
-<img width="756" alt="image" src="https://user-images.githubusercontent.com/34253568/195835966-903993e9-7a45-490c-b8e9-56e9fbcb0c10.png">
+![image](https://user-images.githubusercontent.com/34253568/197425287-690a747a-24f5-4e0d-afcf-e2a09efbaba2.png)
 
 #### Features
 - Data editing
