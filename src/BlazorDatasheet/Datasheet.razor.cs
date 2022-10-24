@@ -201,7 +201,7 @@ public partial class Datasheet : IHandleEvent
         {
             if (!e.MetaKey && !e.CtrlKey)
             {
-                Sheet?.Selection?.Clear();
+                Sheet?.Selection?.ClearSelections();
             }
 
             this.BeginSelectingCell(row, col);
@@ -222,7 +222,7 @@ public partial class Datasheet : IHandleEvent
         {
             if (!e.MetaKey && !e.CtrlKey)
             {
-                Sheet?.Selection?.Clear();
+                Sheet?.Selection?.ClearSelections();
             }
 
             this.BeginSelectingCol(col);
@@ -239,7 +239,7 @@ public partial class Datasheet : IHandleEvent
         {
             if (!e.MetaKey && !e.CtrlKey)
             {
-                Sheet?.Selection?.Clear();
+                Sheet?.Selection?.ClearSelections();
             }
 
             this.BeginSelectingRow(row);
@@ -519,7 +519,7 @@ public partial class Datasheet : IHandleEvent
 
     private void CancelSelecting()
     {
-        TempSelection.Clear();
+        TempSelection.ClearSelections();
     }
 
     private void BeginSelectingRow(int row)
@@ -554,7 +554,7 @@ public partial class Datasheet : IHandleEvent
             return;
 
         Sheet?.Selection.Add(TempSelection!.ActiveRegion!);
-        TempSelection!.Clear();
+        TempSelection!.ClearSelections();
     }
 
     /// <summary>

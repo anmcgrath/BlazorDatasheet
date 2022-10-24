@@ -209,9 +209,9 @@ public class Sheet
         return false;
     }
 
-    public BRange Range(int row, int col)
+    public BRangeCell Range(int row, int col)
     {
-        return Range(new Region(row, col));
+        return new BRangeCell(this, row, col);
     }
 
     public BRange Range(int rowStart, int rowEnd, int colStart, int colEnd)

@@ -23,7 +23,7 @@
     <button @onclick="InsertAtSelection">Insert row at selection</button>
     <button @onclick="() => Sheet.Commands.Undo()">Undo</button>
     <button @onclick="() => Sheet.Commands.Redo()">Redo</button>
-    <button @onclick="@(() => Sheet.TrySetCellValue(Sheet.Selection.ActiveCellPosition.Row, Sheet.Selection.ActiveCellPosition.Col, "Bob"))">Set to Bob</button>
+    <button @onclick="@(() => Sheet.Selection.Value = "Bob")">Set to Bob</button>
 </div>
 
 <div>

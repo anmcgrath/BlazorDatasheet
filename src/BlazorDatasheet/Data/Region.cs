@@ -50,6 +50,12 @@ public class Region : IRegion
         SetOrderedBounds();
     }
 
+    public Region(CellPosition start, CellPosition end)
+    {
+        Start = start;
+        End = end;
+    }
+
     protected void SetOrderedBounds()
     {
         var r0 = Math.Min(Start.Row, End.Row);

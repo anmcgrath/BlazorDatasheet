@@ -1,3 +1,5 @@
+using BlazorDatasheet.Data;
+
 namespace BlazorDatasheet.Util;
 
 public static class SheetMath

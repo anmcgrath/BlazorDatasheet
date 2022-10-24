@@ -6,7 +6,13 @@ namespace BlazorDatasheet.Data;
 public class BRange
 {
     public readonly Sheet Sheet;
-    public IEnumerable<IRegion> Regions { get; }
+    protected List<IRegion> _regions;
+
+    public IEnumerable<IRegion> Regions
+    {
+        get => _regions;
+        set => _regions = value.ToList();
+    }
 
     /// <summary>
     /// Return the positions present in the range. May be non-unique & include empty position
@@ -31,7 +37,8 @@ public class BRange
         _rangePositionEnumerator = new RangePositionEnumerator(this);
     }
 
-    internal BRange(Sheet sheet, IRegion region) : this(sheet, new List<IRegion>() { region })
+    internal BRange(Sheet sheet, IRegion region) :
+        this(sheet, new List<IRegion>() { region })
     {
     }
 
@@ -47,5 +54,15 @@ public class BRange
     private void doSetValues(object value)
     {
         Sheet.SetCellValues(Positions.Select(x => new ValueChange(x.row, x.col, value)));
+    }
+
+    protected void AddRegion(IRegion region)
+    {
+        _regions.Add(region);
+    }
+
+    protected void RemoveRegion(IRegion region)
+    {
+        _regions.Remove(region);
     }
 }

@@ -92,7 +92,7 @@ public class SelectionManagerTests
         
         selection.SetSingle(new Region(1,1));
         selection.Add(new Region(2,2));
-        selection.Clear();
+        selection.ClearSelections();
         Assert.AreEqual(3, nTimesChanged);
     }
 }

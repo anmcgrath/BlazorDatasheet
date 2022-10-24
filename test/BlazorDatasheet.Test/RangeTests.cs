@@ -40,4 +40,14 @@ public class RangeTests
             }
         }
     }
+
+    [Test]
+    public void BRange_Cell_Sets_Value_Correctly()
+    {
+        var sheet = new Sheet(2, 2);
+        var cell = sheet.Range(0, 0);
+        cell.Value = "Test";
+        Assert.AreEqual(cell.Value, "Test");
+        Assert.AreEqual(sheet.GetValue(0, 0), "Test");
+    }
 }
