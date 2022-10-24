@@ -105,6 +105,7 @@ public class Region : IFixedSizeRegion
     {
         this.Start = new CellPosition(Start.Row + dRow, Start.Col + dCol);
         this.End = new CellPosition(End.Row + dRow, End.Col + dCol);
+        this.SetOrderedBounds();
         if (limitingregion != null)
             this.Constrain(limitingregion);
     }
