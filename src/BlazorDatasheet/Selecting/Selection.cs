@@ -1,4 +1,5 @@
 using BlazorDatasheet.Data;
+using BlazorDatasheet.Interfaces;
 
 namespace BlazorDatasheet.Selecting;
 
@@ -27,13 +28,21 @@ public class Selection : BRange
     }
 
     /// <summary>
-    /// Clears 
+    /// Clears any selection regions
     /// </summary>
     public void ClearSelections()
     {
         _regions.Clear();
         ActiveRegion = null;
         emitSelectionChange();
+    }
+
+    /// <summary>
+    /// Clears the cells in the range
+    /// </summary>
+    public void Clear()
+    {
+        _sheet.ClearCells(this);
     }
 
     /// <summary>
@@ -231,7 +240,7 @@ public class Selection : BRange
         Changed?.Invoke(this, _regions);
     }
 
-    public IEnumerable<Cell> GetCells()
+    public IEnumerable<IReadOnlyCell> GetCells()
     {
         return _sheet.GetCellsInRegions(_regions);
     }

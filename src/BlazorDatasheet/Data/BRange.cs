@@ -1,3 +1,5 @@
+using BlazorDatasheet.Interfaces;
+
 namespace BlazorDatasheet.Data;
 
 /// <summary>
@@ -42,7 +44,7 @@ public class BRange
     {
     }
 
-    public IEnumerable<Cell> GetCells()
+    public IEnumerable<IReadOnlyCell> GetCells()
     {
         return Positions.Select(x => Sheet.GetCell(x.row, x.col));
     }

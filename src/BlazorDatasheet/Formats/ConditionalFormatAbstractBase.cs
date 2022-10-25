@@ -1,4 +1,5 @@
 using BlazorDatasheet.Data;
+using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Render;
 
 namespace BlazorDatasheet.Formats;
@@ -60,7 +61,7 @@ public abstract class ConditionalFormatAbstractBase
         }
     }
 
-    public IEnumerable<Cell> GetCells(Sheet sheet)
+    public IEnumerable<IReadOnlyCell> GetCells(Sheet sheet)
     {
         return Positions.Select(x => sheet.GetCell(x.row, x.col));
     }

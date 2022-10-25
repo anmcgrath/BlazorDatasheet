@@ -12,6 +12,7 @@ using BlazorDatasheet.Services;
 using BlazorDatasheet.Util;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Components.Web.Virtualization;
 using ChangeEventArgs = Microsoft.AspNetCore.Components.ChangeEventArgs;
 
 namespace BlazorDatasheet;
@@ -74,11 +75,6 @@ public partial class Datasheet : IHandleEvent
 
     private bool IsSelecting => TempSelection != null && !TempSelection.IsEmpty();
 
-    /// <summary>
-    /// The current list of actions that should be performed on the next render.
-    /// </summary>
-    private Queue<Action> QueuedActions { get; set; } = new Queue<Action>();
-
     private CellLayoutProvider _cellLayoutProvider;
     private EditorManager _editorManager;
     private IWindowEventService _windowEventService;
@@ -94,20 +90,6 @@ public partial class Datasheet : IHandleEvent
         _clipboard = new Clipboard(JS);
         _editorManager = new EditorManager(Sheet);
         TempSelection = new Selection(Sheet);
-        _editorManager.EditBegin += (sender, args) =>
-        {
-            // Because the ActiveEditor is null until the next re-render (unfortunately)
-            // we need to queue the begin edit function until then
-            NextTick(() =>
-            {
-                ((EditorManager)sender)
-                    .ActiveEditorComponent?
-                    .BeginEdit(args.Mode, Sheet.GetCell(args.Row, args.Col), args.EntryChar);
-            });
-        };
-        _editorManager.EditCancelled += (sender, args) => StateHasChanged();
-        _editorManager.EditAccepted += (sender, args) => StateHasChanged();
-
         base.OnInitialized();
     }
 
@@ -134,7 +116,7 @@ public partial class Datasheet : IHandleEvent
 
     private void SheetOnCellsChanged(object? sender, IEnumerable<Data.Events.ChangeEventArgs> e)
     {
-        if(e.Any())
+        if (e.Any())
             StateHasChanged();
     }
 
@@ -146,7 +128,7 @@ public partial class Datasheet : IHandleEvent
         return typeof(TextRenderer);
     }
 
-    private Dictionary<string, object> getCellRendererParameters(Cell cell, int row, int col)
+    private Dictionary<string, object> getCellRendererParameters(IReadOnlyCell cell, int row, int col)
     {
         return new Dictionary<string, object>()
         {
@@ -158,25 +140,12 @@ public partial class Datasheet : IHandleEvent
         };
     }
 
-    private Dictionary<string, object> getEditorParameters()
-    {
-        return new Dictionary<string, object>()
-        {
-            { "EditorManager", _editorManager },
-        };
-    }
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        Console.WriteLine("Datasheet render");
         if (firstRender)
         {
             await AddWindowEventsAsync();
-        }
-
-        while (QueuedActions.Any())
-        {
-            var action = QueuedActions.Dequeue();
-            action.Invoke();
         }
     }
 
@@ -266,9 +235,6 @@ public partial class Datasheet : IHandleEvent
             return;
 
         _editorManager.BeginEdit(row, col, softEdit, mode, entryChar);
-
-        // Required to re-render after any edit component reference has changed
-        NextTick(StateHasChanged);
     }
 
     /// <summary>
@@ -373,8 +339,7 @@ public partial class Datasheet : IHandleEvent
         {
             if (!Sheet.Selection.Regions.Any())
                 return true;
-            var rangesToClear = Sheet.Selection.Regions;
-            Sheet.ClearCells(rangesToClear);
+            Sheet.Selection.Clear();
             return true;
         }
 
@@ -398,7 +363,6 @@ public partial class Datasheet : IHandleEvent
                 if (inputPosition.IsInvalid)
                     return false;
                 BeginEdit(inputPosition.Row, inputPosition.Col, softEdit: true, EditEntryMode.Key, e.Key);
-                StateHasChanged();
             }
 
             return true;
@@ -434,11 +398,6 @@ public partial class Datasheet : IHandleEvent
             return;
 
         Sheet.Selection.SetSingle(range);
-    }
-
-    private void NextTick(Action action)
-    {
-        QueuedActions.Enqueue(action);
     }
 
     public void Dispose()
@@ -479,31 +438,6 @@ public partial class Datasheet : IHandleEvent
             return;
         var text = Sheet.GetRegionAsDelimitedText(range);
         await _clipboard.WriteTextAsync(text);
-    }
-
-    /// <summary>
-    /// Calculates the top/left/width/height styles of the editor container
-    /// </summary>
-    /// <returns></returns>
-    private string GetEditorSizeStyling()
-    {
-        var strBuilder = new StringBuilder();
-
-        var Position = _editorManager.CurrentEditPosition;
-        var editorRegion = new Region(Position.Row, Position.Col);
-
-        var left = _cellLayoutProvider.ComputeLeftPosition(editorRegion);
-        var top = _cellLayoutProvider.ComputeTopPosition(editorRegion);
-        var w = _cellLayoutProvider.ComputeWidth(editorRegion);
-        var h = _cellLayoutProvider.ComputeHeight(editorRegion);
-
-        strBuilder.Append($"left:{left}px;");
-        strBuilder.Append($"top:{top}px;");
-        strBuilder.Append($"width:{w}px;");
-        strBuilder.Append($"height:{h}px;");
-        strBuilder.Append($"box-shadow: 0px 0px 4px var(--shadow-overlay-color)");
-        var style = strBuilder.ToString();
-        return style;
     }
 
 
@@ -583,5 +517,19 @@ public partial class Datasheet : IHandleEvent
         if (Sheet?.Selection.Regions.Any(x => x.SpansRow(row)) == true)
             return true;
         return false;
+    }
+
+    /// <summary>
+    /// Provides rows to the virtualised renderer
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    public async ValueTask<ItemsProviderResult<int>> LoadRows(
+        ItemsProviderRequest request)
+    {
+        Console.WriteLine("Requesting rows...");
+        var numRows = request.Count;
+        var startIndex = request.StartIndex;
+        return new ItemsProviderResult<int>(Enumerable.Range(startIndex, numRows), Sheet.NumRows);
     }
 }

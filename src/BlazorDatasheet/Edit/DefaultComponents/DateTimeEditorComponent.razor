@@ -23,7 +23,7 @@
         set => EditorManager.SetEditedValue(value);
     }
 
-    public void BeginEdit(EditEntryMode entryMode, IWriteableCell cell, string key)
+    public void BeginEdit(EditEntryMode entryMode, IReadOnlyCell cell, string key)
     {
         var canParse = DateTime.TryParse(cell.GetValue<string>(), out var parsedDateTime);
         EditedValue = canParse ? parsedDateTime : DateTime.Now;

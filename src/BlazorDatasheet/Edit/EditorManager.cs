@@ -17,19 +17,20 @@ public class EditorManager : IEditorManager
     /// </summary>
     private object? _editedValue { get; set; }
 
+    /// The Active Editor Component Instance - set by the edit renderer when editing starts
+    internal ICellEditor ActiveEditorComponent;
     private object? _initialValue { get; set; }
-    internal ICellEditor ActiveEditorComponent => (ICellEditor)ActiveEditorContainer?.Instance;
-    internal DynamicComponent? ActiveEditorContainer { get; set; }
     public CellPosition CurrentEditPosition { get; private set; }
-    public Cell CurrentEditedCell { get; private set; }
-    internal Type? ActiveEditorType { get; private set; }
+    public IReadOnlyCell CurrentEditedCell { get; private set; }
     public bool IsEditing => !CurrentEditPosition.IsInvalid;
     public bool IsSoftEdit { get; private set; }
 
     public event EventHandler<AcceptEditEventArgs> EditAccepted;
     public event EventHandler<RejectEditEventArgs> EditRejected;
     public event EventHandler<CancelEditEventArgs> EditCancelled;
-    public event EventHandler<BeginEditEventArgs> EditBegin; 
+    public event EventHandler<BeginEditEventArgs> EditBegin;
+
+    public event EventHandler<BeforeEditBeginEventArg> BeforeEditBegin;
 
     public EditorManager(Sheet sheet)
     {
@@ -63,6 +64,8 @@ public class EditorManager : IEditorManager
     /// <param name="key"></param>
     public void BeginEdit(int row, int col, bool isSoftEdit, EditEntryMode mode, string key)
     {
+        BeforeEditBegin?.Invoke(this, new BeforeEditBeginEventArg(row, col, isSoftEdit, mode, key));
+        
         if (IsEditing && CurrentEditPosition.Equals(row, col))
             return;
 
@@ -72,12 +75,6 @@ public class EditorManager : IEditorManager
         this.CurrentEditedCell = cell;
         this.IsSoftEdit = isSoftEdit;
 
-        // Set the ActiveEditorType based on the cell's type - default to Text Editor
-        if (this._sheet.EditorTypes.ContainsKey(cell.Type))
-            ActiveEditorType = _sheet.EditorTypes[cell.Type];
-        else
-            ActiveEditorType = typeof(TextEditorComponent);
-        
         EditBegin?.Invoke(this, new BeginEditEventArgs(row, col, isSoftEdit, mode, key));
     }
 
@@ -154,7 +151,6 @@ public class EditorManager : IEditorManager
     {
         this.CurrentEditPosition = new CellPosition(-1, -1);
         this.CurrentEditedCell = null;
-        this.ActiveEditorType = null;
         this._editedValue = null;
     }
 }

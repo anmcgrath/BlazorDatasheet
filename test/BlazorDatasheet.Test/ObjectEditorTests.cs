@@ -30,7 +30,7 @@ public class ObjectEditorTests
 
         var propNames = typeof(TesterObject).GetProperties().Select(x => x.Name);
 
-        Assert.AreEqual(_items.Count, sheet.Rows.Count);
+        Assert.AreEqual(_items.Count, sheet.NumRows);
         Assert.AreEqual(propNames.Count(), sheet.ColumnHeadings.Count);
     }
 

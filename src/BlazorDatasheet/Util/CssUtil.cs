@@ -1,5 +1,6 @@
 using System.Text;
 using BlazorDatasheet.Data;
+using BlazorDatasheet.Interfaces;
 
 namespace BlazorDatasheet.Util;
 
@@ -10,7 +11,7 @@ public class CssUtil
     /// </summary>
     /// <param name="cell"></param>
     /// <returns></returns>
-    public static string GetStyledInput(Cell cell)
+    public static string GetStyledInput(IReadOnlyCell cell)
     {
         var str = new StringBuilder();
         if (cell == null || cell.Formatting == null)

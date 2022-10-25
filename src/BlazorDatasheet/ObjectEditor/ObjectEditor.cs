@@ -13,10 +13,13 @@ public class ObjectEditor<T>
         _builder = builder;
     }
 
-    public void InsertAt(T item, int index)
+    public void InsertAt(T item, int rowIndex)
     {
         var cells = _builder.GetCells(item);
-        var row = new Row(cells, -1);
-        Sheet.InsertRowAt(index, row);
+        Sheet.InsertRowAt(rowIndex);
+        for (int i = 0; i < cells.Count; i++)
+        {
+            Sheet.SetCell(rowIndex, i, cells[i]);
+        }
     }
 }

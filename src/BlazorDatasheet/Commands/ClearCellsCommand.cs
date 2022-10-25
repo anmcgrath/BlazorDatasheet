@@ -5,41 +5,30 @@ namespace BlazorDatasheet.Commands;
 
 public class ClearCellsCommand : IUndoableCommand
 {
-    private readonly IEnumerable<IRegion> _ranges;
+    private readonly BRange _range;
     private readonly List<ValueChange> _clearCommandOccurences;
 
-    public ClearCellsCommand(IEnumerable<IRegion> ranges)
+    public ClearCellsCommand(BRange range)
     {
-        _ranges = ranges.Select(x => x.Copy()).ToList();
         _clearCommandOccurences = new List<ValueChange>();
-    }
-
-    public ClearCellsCommand(IRegion region) : this(new List<IRegion>() { region })
-    {
+        _range = range;
     }
 
     public bool Execute(Sheet sheet)
     {
-        foreach (var range in _ranges)
+        foreach (var cell in _range.GetCells())
         {
-            var rangeInSheet = range
-                .GetIntersection(sheet.Region);
-            var cells = sheet.GetCellsInRegion(rangeInSheet);
+            var oldValue = cell.GetValue();
 
-            foreach (var cell in cells)
+            // When this is redone it'll update the new value to the old value.
+            if (oldValue != null && !String.IsNullOrEmpty(oldValue.ToString()))
             {
-                var oldValue = cell.GetValue();
-
-                // When this is redone it'll update the new value to the old value.
-                if (oldValue != null && !String.IsNullOrEmpty(oldValue.ToString()))
-                {
-                    _clearCommandOccurences.Add(
-                        new ValueChange(cell.Row, cell.Col, oldValue));
-                }
+                _clearCommandOccurences.Add(
+                    new ValueChange(cell.Row, cell.Col, oldValue));
             }
         }
 
-        sheet.ClearCelllsImpl(_ranges);
+        sheet.ClearCelllsImpl(_range);
         return true;
     }
 

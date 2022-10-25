@@ -8,6 +8,7 @@
 <p>Below is a 6 x 6 sheet with empty strings. There is no data validation or formatting and the default editors are used.</p>
 
 <Datasheet
+    IsFixedHeight="true"
     Sheet="sheet"/>
 
 @code{
@@ -16,7 +17,7 @@
 
     protected override void OnInitialized()
     {
-        sheet = new Sheet(numRows: 6, numCols: 6);
+        sheet = new Sheet(numRows: 100000, numCols: 3);
     }
 
 }

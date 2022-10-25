@@ -3,6 +3,7 @@ using System.Security.AccessControl;
 using BlazorDatasheet.Data;
 using BlazorDatasheet.Data.Events;
 using BlazorDatasheet.Data.SpatialDataStructures;
+using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Render;
 
 namespace BlazorDatasheet.Formats;
@@ -82,7 +83,7 @@ public class ConditionalFormatManager
         }
     }
 
-    private IEnumerable<Cell> GetCellsInFormat(ConditionalFormat format)
+    private IEnumerable<IReadOnlyCell> GetCellsInFormat(ConditionalFormat format)
     {
         return format.Ranges.SelectMany(x => x.GetCells());
     }
