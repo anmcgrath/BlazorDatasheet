@@ -70,6 +70,7 @@
                         var conditionalFormatting = Sheet.ConditionalFormatting.GetFormat(row, col);
 
                         Format format;
+                        // If the cell contains its own format, merge with the conditional formatting
                         if (cell.Formatting != null)
                         {
                             format = cell.Formatting;
@@ -109,7 +110,7 @@
                 </div>
             </ItemContent>
         </Virtualize>
-        
+
         <EditorOverlayRenderer
             @ref="_editorManager"
             Sheet="Sheet"

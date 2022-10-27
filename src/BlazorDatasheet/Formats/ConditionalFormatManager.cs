@@ -105,6 +105,12 @@ public class ConditionalFormatManager
         Apply(format, new Region(row, col));
     }
 
+    /// <summary>
+    /// Returns the format that results from applying all conditional formats to this cell
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <returns></returns>
     public Format? GetFormat(int row, int col)
     {
         if (!_sheet.Region.Contains(row, col))

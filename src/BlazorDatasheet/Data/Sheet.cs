@@ -455,7 +455,8 @@ public class Sheet
             var oldVal = cell.GetValue();
             cell.Clear();
             var newVal = cell.GetValue();
-            changedArgs.Add(new ChangeEventArgs(row, col, oldVal, newVal));
+            if (oldVal != newVal)
+                changedArgs.Add(new ChangeEventArgs(row, col, oldVal, newVal));
         }
 
         this.CellsChanged?.Invoke(this, changedArgs);

@@ -53,10 +53,9 @@ public class Cell : IReadOnlyCell, IWriteableCell
     public object? Data { get; private set; }
 
     /// <summary>
-    /// Specifies whether the cell is blank & is set as true after the cell is cleared, and set to false when a value is set
-    /// IsBlank may be true even if the Data is not null, because Data may be set to the default data when the cell is cleared.
+    /// The best choice for the underlying data type of Data.
     /// </summary>
-    public bool IsBlank { get; private set; }
+    public Type DataType { get; set; }
 
     /// <summary>
     /// Represents an individual datasheet cell
@@ -156,11 +155,22 @@ public class Cell : IReadOnlyCell, IWriteableCell
         var currentVal = GetValue();
         if (currentVal == null)
             return;
-        var valueType = currentVal.GetType();
-        var defaultVal = valueType.GetDefault();
-        var cleared = this.TrySetValue(defaultVal);
-        if (cleared)
-            IsBlank = true;
+
+        if (Data is IClearable clearable)
+        {
+            clearable.Clear(Key);
+            return;
+        }
+
+        // If Data is an object set to default value of the property
+        if (Key != null)
+        {
+            var valueType = currentVal.GetType();
+            this.TrySetValue(valueType.GetDefault());
+            return;
+        }
+
+        Data = null;
     }
 
     public bool DoTrySetValue(object? val, Type type)
@@ -171,7 +181,7 @@ public class Cell : IReadOnlyCell, IWriteableCell
             {
                 if (Data == null)
                     Data = val;
-                else if (Data.GetType() == type)
+                else if (Data.GetType() == type) // data already of the same type
                     Data = val;
                 else
                     Data = Convert.ChangeType(val, type);
@@ -224,8 +234,6 @@ public class Cell : IReadOnlyCell, IWriteableCell
     public bool TrySetValue(object? val, Type type)
     {
         var valueSet = DoTrySetValue(val, type);
-        if (valueSet && Data != null && !String.IsNullOrEmpty(Data.ToString()))
-            IsBlank = false;
         return valueSet;
     }
 }
