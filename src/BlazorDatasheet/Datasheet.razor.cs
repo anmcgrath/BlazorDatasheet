@@ -140,7 +140,6 @@ public partial class Datasheet : IHandleEvent
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        Console.WriteLine("Datasheet render");
         if (firstRender)
         {
             await AddWindowEventsAsync();
@@ -523,7 +522,6 @@ public partial class Datasheet : IHandleEvent
     public async ValueTask<ItemsProviderResult<int>> LoadRows(
         ItemsProviderRequest request)
     {
-        Console.WriteLine("Requesting rows...");
         var numRows = request.Count;
         var startIndex = request.StartIndex;
         return new ItemsProviderResult<int>(Enumerable.Range(startIndex, numRows), Sheet.NumRows);
