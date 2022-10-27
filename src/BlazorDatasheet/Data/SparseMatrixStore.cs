@@ -35,7 +35,7 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
         }
     }
 
-    public int GetNextNonEmptyRow(int col, int row)
+    public int GetNextNonBlankRow(int col, int row)
     {
         if (!Columns.ContainsKey(col))
             return -1;

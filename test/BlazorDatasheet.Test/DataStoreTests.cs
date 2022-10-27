@@ -88,8 +88,9 @@ public class DataStoreTests
         IMatrixDataStore<string> store = new SparseMatrixStore<string>();
         store.Set(5, 10, "A");
         store.Set(100, 10, "B");
-        var nextRow = store.GetNextNonEmptyRow(10, 5);
+        var nextRow = store.GetNextNonBlankRow(10, 5);
         Assert.AreEqual(100, nextRow);
         Assert.AreEqual("B", store.Get(nextRow, 10));
     }
+    
 }

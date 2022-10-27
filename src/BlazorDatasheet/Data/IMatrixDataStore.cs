@@ -11,7 +11,7 @@ public interface IMatrixDataStore<T>
     /// <param name="col"></param>
     /// <param name="row"></param>
     /// <returns></returns>
-    public int GetNextNonEmptyRow(int col, int row);
+    public int GetNextNonBlankRow(int col, int row);
     void RemoveRowAt(int row);
     
 }

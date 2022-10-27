@@ -11,10 +11,12 @@ public class Cell : IReadOnlyCell, IWriteableCell
     /// The cell's row
     /// </summary>
     public int Row { get; internal set; }
+
     /// <summary>
     /// The cell's column
     /// </summary>
     public int Col { get; internal set; }
+
     /// <summary>
     /// The cell type, affects the renderer and editor used for the cell
     /// </summary>
@@ -49,6 +51,12 @@ public class Cell : IReadOnlyCell, IWriteableCell
     /// The cell's data, which may be a primitive or a complex object.
     /// </summary>
     public object? Data { get; private set; }
+
+    /// <summary>
+    /// Specifies whether the cell is blank & is set as true after the cell is cleared, and set to false when a value is set
+    /// IsBlank may be true even if the Data is not null, because Data may be set to the default data when the cell is cleared.
+    /// </summary>
+    public bool IsBlank { get; private set; }
 
     /// <summary>
     /// Represents an individual datasheet cell
@@ -150,17 +158,12 @@ public class Cell : IReadOnlyCell, IWriteableCell
             return;
         var valueType = currentVal.GetType();
         var defaultVal = valueType.GetDefault();
-        this.TrySetValue(defaultVal);
+        var cleared = this.TrySetValue(defaultVal);
+        if (cleared)
+            IsBlank = true;
     }
 
-    /// <summary>
-    /// Attempts to the Cell's value and returns whether it was successful
-    /// When this method is called directly, no events are raised by the sheet.
-    /// </summary>
-    /// <param name="val"></param>
-    /// <param name="type"></param>
-    /// <returns>Whether setting the value was successful</returns>
-    public bool TrySetValue(object? val, Type type)
+    public bool DoTrySetValue(object? val, Type type)
     {
         try
         {
@@ -209,5 +212,20 @@ public class Cell : IReadOnlyCell, IWriteableCell
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// Attempts to the Cell's value and returns whether it was successful
+    /// When this method is called directly, no events are raised by the sheet.
+    /// </summary>
+    /// <param name="val"></param>
+    /// <param name="type"></param>
+    /// <returns>Whether setting the value was successful</returns>
+    public bool TrySetValue(object? val, Type type)
+    {
+        var valueSet = DoTrySetValue(val, type);
+        if (valueSet && Data != null && !String.IsNullOrEmpty(Data.ToString()))
+            IsBlank = false;
+        return valueSet;
     }
 }
