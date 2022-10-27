@@ -1,24 +1,15 @@
 @namespace BlazorDatasheet.Edit.DefaultComponents
 @using BlazorDatasheet.Interfaces
-@implements ICellEditor
+@inherits BaseEditor<bool>
 
 @code {
 
-    [Parameter]
-    public EditorManager EditorManager { get; set; }
-
-    public bool EditedValue
-    {
-        get => EditorManager.GetEditedValue<bool>();
-        set => EditorManager.SetEditedValue<bool>(value);
-    }
-
-    public void BeginEdit(EditEntryMode entryMode, IReadOnlyCell cell, string key)
+    public override void BeginEdit(EditEntryMode entryMode, IReadOnlyCell cell, string key)
     {
         var canParse = bool.TryParse(cell.GetValue<string>(), out bool parsedValue);
         if (!canParse)
         {
-            this.EditorManager.CancelEdit();
+            this.CancelEdit();
             return;
         }
 
@@ -46,20 +37,7 @@
             }
         }
 
-        EditorManager.AcceptEdit();
-    }
-
-    public bool HandleKey(string key)
-    {
-        return false;
-    }
-
-    public bool CanAcceptEdit() => true;
-    public bool CanCancelEdit() => true;
-
-    public bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
-    {
-        return false;
+        this.AcceptEdit();
     }
 
 }

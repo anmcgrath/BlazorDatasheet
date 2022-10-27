@@ -3,117 +3,181 @@
 @using BlazorDatasheet.Edit.DefaultComponents
 @using BlazorDatasheet.Interfaces
 @using BlazorDatasheet.Render
-@if (EditorManager.IsEditing)
+@using System.Reflection.Metadata
+
+@if (IsEditing)
 {
     <div style="position:absolute; @GetEditorSizeStyling()">
         <DynamicComponent
-            Type="ActiveEditorType"
-            Parameters="@getEditorParameters()"
+            Type="@ActiveEditorType"
             @ref="ActiveEditorContainer"/>
     </div>
 }
 
+
 @code {
-
-    /// <summary>
-    /// The current list of actions that should be performed on the next render.
-    /// </summary>
-    private Queue<Action> QueuedActions { get; set; } = new Queue<Action>();
-
-    private void NextTick(Action action)
-    {
-        QueuedActions.Enqueue(action);
-    }
-
-    /// The Dynamic component holding the Active Editor component
-    internal DynamicComponent? ActiveEditorContainer { get; set; }
-
-    private EditorManager _editorManager;
-
-    [Parameter]
-    public EditorManager EditorManager { get; set; }
-
-    [Parameter]
-    public CellLayoutProvider CellLayoutProvider { get; set; }
 
     [Parameter]
     public Sheet Sheet { get; set; }
 
-    private Type? ActiveEditorType { get; set; }
+    [Parameter]
+    public CellLayoutProvider CellLayoutProvider { get; set; }
 
-    private Dictionary<string, object> getEditorParameters()
-    {
-        return new Dictionary<string, object>()
-        {
-            { "EditorManager", EditorManager },
-        };
-    }
+    /// The type of the active editor, which is an ICellEditor
+    private Type? ActiveEditorType { get; set; } = typeof(TextEditorComponent);
 
-    protected override Task OnAfterRenderAsync(bool firstRender)
+    /// Whether the Editor is currently editing
+    public bool IsEditing { get; set; }
+
+    /// The Row where we are currently editing
+    public int EditRow { get; set; }
+
+    /// The column where we are currently editing
+    public int EditCol { get; set; }
+
+    /// Whether the edit is "soft" which means that it can be finished with arrow navigation
+    public bool IsSoftEdit { get; set; }
+
+    /// The current edit entry mode
+    private EditEntryMode EditEntryMode { get; set; }
+    
+    /// The key that was pressed to enter the edit
+    private string EditEntryKey { get; set; }
+
+    /// The current cell editor component
+    private BaseEditor ActiveCellEditor;
+    
+    private bool BeginningEdit { get; set; }
+
+    /// The Dynamic component holding the Active Editor component
+    internal DynamicComponent? ActiveEditorContainer { get; set; }
+
+    public Queue<Action> QueuedForAfterRender { get; set; } = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        while (QueuedActions.Any())
+        if (BeginningEdit)
         {
-            var action = QueuedActions.Dequeue();
+            ActiveCellEditor = (BaseEditor)(ActiveEditorContainer.Instance);
+            var cell = Sheet.GetCell(EditRow, EditCol);
+            ActiveCellEditor.BeforeEdit(cell);
+            ActiveCellEditor.RequestCancelEdit += HandleEditorRequestCancelEdit;
+            ActiveCellEditor.RequestAcceptEdit += HandleEditorRequestAcceptEdit;
+            ActiveCellEditor.BeginEdit(EditEntryMode, cell , EditEntryKey);
+            await ActiveCellEditor.Focus();
+            ActiveCellEditor.Render();
+            BeginningEdit = false;
+        }
+        while (QueuedForAfterRender.Any())
+        {
+            var action = QueuedForAfterRender.Dequeue();
             action.Invoke();
         }
-        return base.OnAfterRenderAsync(firstRender);
+        await base.OnAfterRenderAsync(firstRender);
     }
 
-    protected override void OnParametersSet()
+    public void NextTick(Action action)
     {
-        if (EditorManager != _editorManager)
+        QueuedForAfterRender.Enqueue(action);
+    }
+
+    /// <summary>
+    /// Begin the editing process for the cell
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <param name="cell"></param>
+    /// <param name="isSoftEdit"></param>
+    /// <param name="mode"></param>
+    /// <param name="key"></param>
+    public async Task BeginEditAsync(int row, int col, bool isSoftEdit, EditEntryMode mode, string key)
+    {
+        if (IsEditing && row == EditRow && col == EditCol)
+            return;
+
+        var cell = Sheet.GetCell(row, col);
+        if (Sheet.EditorTypes.ContainsKey(cell.Type))
+            ActiveEditorType = Sheet.EditorTypes[cell.Type];
+        else
+            ActiveEditorType = typeof(TextEditorComponent);
+
+        IsEditing = true;
+        IsSoftEdit = isSoftEdit;
+        EditEntryMode = mode;
+        EditRow = row;
+        EditCol = col;
+        EditEntryKey = key;
+        BeginningEdit = true;
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Attempts to accept edit.
+    /// Returns whether the edit was successful, e.g due to a data validation failure
+    /// </summary>
+    /// <returns></returns>
+    public bool AcceptEdit()
+    {
+        if (!IsEditing || ActiveCellEditor == null)
+            return false;
+
+        if (!ActiveCellEditor.CanAcceptEdit())
         {
-    // Just before edit begins, find and set the correct editor type
-            EditorManager.BeforeEditBegin += (sender, arg) =>
-            {
-                var cell = Sheet.GetCell(arg.Row, arg.Col);
-    // Set the ActiveEditorType based on the cell's type - default to Text Editor
-                if (this.Sheet.EditorTypes.ContainsKey(cell.Type))
-                    ActiveEditorType = Sheet.EditorTypes[cell.Type];
-                else
-                    ActiveEditorType = typeof(TextEditorComponent);
-                
-                StateHasChanged();
-            };
-
-    // When edit begins, re-render to update the reference to dynamic component
-    // and set the ICellEditor component as the instance of it
-            EditorManager.EditBegin += (sender, args) =>
-            {
-    // Required to re-render after any edit component reference has changed
-                StateHasChanged();
-    // Because the ActiveEditor is null until the next re-render (unfortunately)
-    // we need to queue the begin edit function until then
-                NextTick(() =>
-                {
-                    var manager = (EditorManager)sender;
-                    manager.ActiveEditorComponent = (ICellEditor)ActiveEditorContainer?.Instance;
-
-                    manager
-                        .ActiveEditorComponent?
-                        .BeginEdit(args.Mode, Sheet.GetCell(args.Row, args.Col), args.EntryChar);
-
-
-                    StateHasChanged();
-                });
-            };
-
-    // When edit is cancelled, re-render which will remove overlay
-            EditorManager.EditCancelled += (sender, args) =>
-            {
-                Console.WriteLine("Edit Cancelled");
-                StateHasChanged();
-            };
-
-            EditorManager.EditAccepted += (sender, args) =>
-            {
-                Console.WriteLine("Edit acceptted");
-                StateHasChanged();
-            };
-            _editorManager = EditorManager;
+            return false;
         }
 
-        base.OnParametersSet();
+        var editorValue = ActiveCellEditor.GetValue();
+        var setCell = Sheet.TrySetCellValue(EditRow, EditCol, editorValue);
+
+        if (setCell)
+        {
+            this.clearCurrentEdit();
+            return true;
+        }
+        return false;
+    }
+
+    /// Cancel the edit without saving values.
+    public bool CancelEdit()
+    {
+        if (ActiveCellEditor?.CanCancelEdit() == false)
+            return false;
+
+        clearCurrentEdit();
+        return true;
+    }
+
+    public bool HandleKeyDown(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
+    {
+        if (!IsEditing)
+            return false;
+
+        if (ActiveCellEditor == null)
+            return false;
+
+        return ActiveCellEditor.HandleKey(key, ctrlKey, shiftKey, altKey, metaKey);
+    }
+
+    private void HandleEditorRequestCancelEdit(object? sender, EventArgs args)
+    {
+        CancelEdit();
+    }
+
+    private void HandleEditorRequestAcceptEdit(object? sender, EventArgs args)
+    {
+        AcceptEdit();
+    }
+
+    private void clearCurrentEdit()
+    {
+        if (ActiveCellEditor != null)
+        {
+            ActiveCellEditor.RequestCancelEdit -= HandleEditorRequestCancelEdit;
+            ActiveCellEditor.RequestAcceptEdit -= HandleEditorRequestAcceptEdit;
+        }
+
+        this.IsEditing = false;
+        StateHasChanged();
     }
 
     /// <summary>
@@ -122,15 +186,14 @@
     /// <returns></returns>
     private string GetEditorSizeStyling()
     {
+        //if (!IsEditing)
+        //    return "display:none;";
+
         var strBuilder = new StringBuilder();
-
-        var Position = EditorManager.CurrentEditPosition;
-        var editorRegion = new Region(Position.Row, Position.Col);
-
-        var left = CellLayoutProvider.ComputeLeftPosition(editorRegion);
-        var top = CellLayoutProvider.ComputeTopPosition(editorRegion);
-        var w = CellLayoutProvider.ComputeWidth(editorRegion);
-        var h = CellLayoutProvider.ComputeHeight(editorRegion);
+        var left = CellLayoutProvider.ComputeLeftPosition(EditCol);
+        var top = CellLayoutProvider.ComputeTopPosition(EditRow);
+        var w = CellLayoutProvider.ComputeWidth(1);
+        var h = CellLayoutProvider.ComputeHeight(1);
 
         strBuilder.Append($"left:{left}px;");
         strBuilder.Append($"top:{top}px;");

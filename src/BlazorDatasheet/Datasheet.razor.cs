@@ -76,7 +76,7 @@ public partial class Datasheet : IHandleEvent
     private bool IsSelecting => TempSelection != null && !TempSelection.IsEmpty();
 
     private CellLayoutProvider _cellLayoutProvider;
-    private EditorManager _editorManager;
+    private EditorOverlayRenderer _editorManager;
     private IWindowEventService _windowEventService;
     private IClipboard _clipboard;
 
@@ -88,7 +88,6 @@ public partial class Datasheet : IHandleEvent
     {
         _windowEventService = new WindowEventService(JS);
         _clipboard = new Clipboard(JS);
-        _editorManager = new EditorManager(Sheet);
         TempSelection = new Selection(Sheet);
         base.OnInitialized();
     }
@@ -107,7 +106,6 @@ public partial class Datasheet : IHandleEvent
             _sheetLocal = Sheet;
             Sheet.CellsChanged += SheetOnCellsChanged;
             TempSelection.SetSheet(Sheet);
-            _editorManager.SetSheet(Sheet);
             _cellLayoutProvider = new CellLayoutProvider(Sheet, 105, 25);
         }
 
@@ -177,7 +175,7 @@ public partial class Datasheet : IHandleEvent
         }
 
 
-        if (_editorManager.IsEditing && !_editorManager.CurrentEditPosition.Equals(row, col))
+        if (_editorManager.IsEditing && !(_editorManager.EditRow == row && _editorManager.EditCol == col))
         {
             AcceptEdit();
         }
@@ -217,13 +215,12 @@ public partial class Datasheet : IHandleEvent
         AcceptEdit();
     }
 
-    private void HandleCellDoubleClick(int row, int col, MouseEventArgs e)
+    private async void HandleCellDoubleClick(int row, int col, MouseEventArgs e)
     {
-        BeginEdit(row, col, softEdit: false, EditEntryMode.Mouse);
-        StateHasChanged();
+        await BeginEdit(row, col, softEdit: false, EditEntryMode.Mouse);
     }
 
-    private void BeginEdit(int row, int col, bool softEdit, EditEntryMode mode, string entryChar = "")
+    private async Task BeginEdit(int row, int col, bool softEdit, EditEntryMode mode, string entryChar = "")
     {
         if (this.IsReadOnly)
             return;
@@ -234,7 +231,7 @@ public partial class Datasheet : IHandleEvent
         if (cell == null || cell.IsReadOnly)
             return;
 
-        _editorManager.BeginEdit(row, col, softEdit, mode, entryChar);
+        await _editorManager.BeginEditAsync(row, col, softEdit, mode, entryChar);
     }
 
     /// <summary>
@@ -409,10 +406,9 @@ public partial class Datasheet : IHandleEvent
     /// Handles when a cell renderer requests to start editing the cell
     /// </summary>
     /// <param name="args"></param>
-    private void HandleCellRequestBeginEdit(EditRequestArgs args)
+    private async void HandleCellRequestBeginEdit(EditRequestArgs args)
     {
-        BeginEdit(args.Row, args.Col, args.IsSoftEdit, args.EntryMode);
-        StateHasChanged();
+        await BeginEdit(args.Row, args.Col, args.IsSoftEdit, args.EntryMode);
     }
 
     /// <summary>
