@@ -11,10 +11,12 @@ public class Cell : IReadOnlyCell, IWriteableCell
     /// The cell's row
     /// </summary>
     public int Row { get; internal set; }
+
     /// <summary>
     /// The cell's column
     /// </summary>
     public int Col { get; internal set; }
+
     /// <summary>
     /// The cell type, affects the renderer and editor used for the cell
     /// </summary>
@@ -49,6 +51,11 @@ public class Cell : IReadOnlyCell, IWriteableCell
     /// The cell's data, which may be a primitive or a complex object.
     /// </summary>
     public object? Data { get; private set; }
+
+    /// <summary>
+    /// The best choice for the underlying data type of Data.
+    /// </summary>
+    public Type DataType { get; set; }
 
     /// <summary>
     /// Represents an individual datasheet cell
@@ -148,19 +155,25 @@ public class Cell : IReadOnlyCell, IWriteableCell
         var currentVal = GetValue();
         if (currentVal == null)
             return;
-        var valueType = currentVal.GetType();
-        var defaultVal = valueType.GetDefault();
-        this.TrySetValue(defaultVal);
+
+        if (Data is IClearable clearable)
+        {
+            clearable.Clear(Key);
+            return;
+        }
+
+        // If Data is an object set to default value of the property
+        if (Key != null)
+        {
+            var valueType = currentVal.GetType();
+            this.TrySetValue(valueType.GetDefault());
+            return;
+        }
+
+        Data = null;
     }
 
-    /// <summary>
-    /// Attempts to the Cell's value and returns whether it was successful
-    /// When this method is called directly, no events are raised by the sheet.
-    /// </summary>
-    /// <param name="val"></param>
-    /// <param name="type"></param>
-    /// <returns>Whether setting the value was successful</returns>
-    public bool TrySetValue(object? val, Type type)
+    public bool DoTrySetValue(object? val, Type type)
     {
         try
         {
@@ -168,7 +181,7 @@ public class Cell : IReadOnlyCell, IWriteableCell
             {
                 if (Data == null)
                     Data = val;
-                else if (Data.GetType() == type)
+                else if (Data.GetType() == type) // data already of the same type
                     Data = val;
                 else
                     Data = Convert.ChangeType(val, type);
@@ -209,5 +222,18 @@ public class Cell : IReadOnlyCell, IWriteableCell
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// Attempts to the Cell's value and returns whether it was successful
+    /// When this method is called directly, no events are raised by the sheet.
+    /// </summary>
+    /// <param name="val"></param>
+    /// <param name="type"></param>
+    /// <returns>Whether setting the value was successful</returns>
+    public bool TrySetValue(object? val, Type type)
+    {
+        var valueSet = DoTrySetValue(val, type);
+        return valueSet;
     }
 }

@@ -1,0 +1,208 @@
+@using System.Text
+@using BlazorDatasheet.Data
+@using BlazorDatasheet.Edit.DefaultComponents
+@using BlazorDatasheet.Interfaces
+@using BlazorDatasheet.Render
+@using System.Reflection.Metadata
+
+@if (IsEditing)
+{
+    <div style="position:absolute; @GetEditorSizeStyling()">
+        <DynamicComponent
+            Type="@ActiveEditorType"
+            @ref="ActiveEditorContainer"/>
+    </div>
+}
+
+
+@code {
+
+    [Parameter]
+    public Sheet Sheet { get; set; }
+
+    [Parameter]
+    public CellLayoutProvider CellLayoutProvider { get; set; }
+
+    /// The type of the active editor, which is an ICellEditor
+    private Type? ActiveEditorType { get; set; } = typeof(TextEditorComponent);
+
+    /// Whether the Editor is currently editing
+    public bool IsEditing { get; set; }
+
+    /// The Row where we are currently editing
+    public int EditRow { get; set; }
+
+    /// The column where we are currently editing
+    public int EditCol { get; set; }
+
+    /// Whether the edit is "soft" which means that it can be finished with arrow navigation
+    public bool IsSoftEdit { get; set; }
+
+    /// The current edit entry mode
+    private EditEntryMode EditEntryMode { get; set; }
+    
+    /// The key that was pressed to enter the edit
+    private string EditEntryKey { get; set; }
+
+    /// The current cell editor component
+    private BaseEditor ActiveCellEditor;
+    
+    private bool BeginningEdit { get; set; }
+
+    /// The Dynamic component holding the Active Editor component
+    internal DynamicComponent? ActiveEditorContainer { get; set; }
+
+    public Queue<Action> QueuedForAfterRender { get; set; } = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (BeginningEdit)
+        {
+            ActiveCellEditor = (BaseEditor)(ActiveEditorContainer.Instance);
+            var cell = Sheet.GetCell(EditRow, EditCol);
+            ActiveCellEditor.BeforeEdit(cell);
+            ActiveCellEditor.RequestCancelEdit += HandleEditorRequestCancelEdit;
+            ActiveCellEditor.RequestAcceptEdit += HandleEditorRequestAcceptEdit;
+            ActiveCellEditor.BeginEdit(EditEntryMode, cell , EditEntryKey);
+            await ActiveCellEditor.Focus();
+            ActiveCellEditor.Render();
+            BeginningEdit = false;
+        }
+        while (QueuedForAfterRender.Any())
+        {
+            var action = QueuedForAfterRender.Dequeue();
+            action.Invoke();
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    public void NextTick(Action action)
+    {
+        QueuedForAfterRender.Enqueue(action);
+    }
+
+    /// <summary>
+    /// Begin the editing process for the cell
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <param name="cell"></param>
+    /// <param name="isSoftEdit"></param>
+    /// <param name="mode"></param>
+    /// <param name="key"></param>
+    public async Task BeginEditAsync(int row, int col, bool isSoftEdit, EditEntryMode mode, string key)
+    {
+        if (IsEditing && row == EditRow && col == EditCol)
+            return;
+
+        var cell = Sheet.GetCell(row, col);
+        if (Sheet.EditorTypes.ContainsKey(cell.Type))
+            ActiveEditorType = Sheet.EditorTypes[cell.Type];
+        else
+            ActiveEditorType = typeof(TextEditorComponent);
+
+        IsEditing = true;
+        IsSoftEdit = isSoftEdit;
+        EditEntryMode = mode;
+        EditRow = row;
+        EditCol = col;
+        EditEntryKey = key;
+        BeginningEdit = true;
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Attempts to accept edit.
+    /// Returns whether the edit was successful, e.g due to a data validation failure
+    /// </summary>
+    /// <returns></returns>
+    public bool AcceptEdit()
+    {
+        if (!IsEditing || ActiveCellEditor == null)
+            return false;
+
+        if (!ActiveCellEditor.CanAcceptEdit())
+        {
+            return false;
+        }
+
+        var editorValue = ActiveCellEditor.GetValue();
+        var setCell = Sheet.TrySetCellValue(EditRow, EditCol, editorValue);
+
+        if (setCell)
+        {
+            this.clearCurrentEdit();
+            return true;
+        }
+        return false;
+    }
+
+    /// Cancel the edit without saving values.
+    public bool CancelEdit()
+    {
+        if (ActiveCellEditor?.CanCancelEdit() == false)
+            return false;
+
+        clearCurrentEdit();
+        return true;
+    }
+
+    public bool HandleKeyDown(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
+    {
+        if (!IsEditing)
+            return false;
+
+        if (ActiveCellEditor == null)
+            return false;
+
+        return ActiveCellEditor.HandleKey(key, ctrlKey, shiftKey, altKey, metaKey);
+    }
+
+    private void HandleEditorRequestCancelEdit(object? sender, EventArgs args)
+    {
+        CancelEdit();
+    }
+
+    private void HandleEditorRequestAcceptEdit(object? sender, EventArgs args)
+    {
+        AcceptEdit();
+    }
+
+    private void clearCurrentEdit()
+    {
+        if (ActiveCellEditor != null)
+        {
+            ActiveCellEditor.RequestCancelEdit -= HandleEditorRequestCancelEdit;
+            ActiveCellEditor.RequestAcceptEdit -= HandleEditorRequestAcceptEdit;
+        }
+
+        this.IsEditing = false;
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Calculates the top/left/width/height styles of the editor container
+    /// </summary>
+    /// <returns></returns>
+    private string GetEditorSizeStyling()
+    {
+        //if (!IsEditing)
+        //    return "display:none;";
+
+        var strBuilder = new StringBuilder();
+        var left = CellLayoutProvider.ComputeLeftPosition(EditCol);
+        var top = CellLayoutProvider.ComputeTopPosition(EditRow);
+        var w = CellLayoutProvider.ComputeWidth(1);
+        var h = CellLayoutProvider.ComputeHeight(1);
+
+        strBuilder.Append($"left:{left}px;");
+        strBuilder.Append($"top:{top}px;");
+        strBuilder.Append($"width:{w}px;");
+        strBuilder.Append($"height:{h}px;");
+        strBuilder.Append($"box-shadow: 0px 0px 4px var(--shadow-overlay-color)");
+        var style = strBuilder.ToString();
+        return style;
+    }
+
+
+}

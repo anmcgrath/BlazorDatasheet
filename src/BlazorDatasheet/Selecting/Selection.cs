@@ -1,17 +1,11 @@
 using BlazorDatasheet.Data;
+using BlazorDatasheet.Interfaces;
 
 namespace BlazorDatasheet.Selecting;
 
-public class Selection
+public class Selection : BRange
 {
     private Sheet _sheet;
-
-    /// <summary>
-    /// The regions in the current selection
-    /// </summary>
-    public IReadOnlyList<IRegion> Regions => _regions;
-
-    private List<IRegion> _regions = new();
 
     /// <summary>
     /// The region that is active for accepting user input, usually the most recent region added
@@ -28,19 +22,27 @@ public class Selection
     /// </summary>
     public event EventHandler<IEnumerable<IRegion>> Changed;
 
-    public Selection(Sheet sheet)
+    public Selection(Sheet sheet) : base(sheet, new List<IRegion>())
     {
         _sheet = sheet;
     }
 
     /// <summary>
-    /// Clears 
+    /// Clears any selection regions
     /// </summary>
-    public void Clear()
+    public void ClearSelections()
     {
         _regions.Clear();
         ActiveRegion = null;
         emitSelectionChange();
+    }
+
+    /// <summary>
+    /// Clears the cells in the range
+    /// </summary>
+    public void Clear()
+    {
+        _sheet.ClearCells(this);
     }
 
     /// <summary>
@@ -238,7 +240,7 @@ public class Selection
         Changed?.Invoke(this, _regions);
     }
 
-    public IEnumerable<Cell> GetCells()
+    public IEnumerable<IReadOnlyCell> GetCells()
     {
         return _sheet.GetCellsInRegions(_regions);
     }

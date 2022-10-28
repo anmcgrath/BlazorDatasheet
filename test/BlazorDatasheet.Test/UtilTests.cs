@@ -1,4 +1,5 @@
-﻿using BlazorDatasheet.Util;
+﻿using System.Collections.Generic;
+using BlazorDatasheet.Util;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test;
@@ -35,5 +36,18 @@ public class UtilTests
         Assert.AreEqual("2", maxStack.Pop());
         // Default integer because the first value was replaced
         Assert.AreEqual(null, maxStack.Pop());
+    }
+
+    [Test]
+    [TestCase(1, 0)]
+    [TestCase(2, 1)]
+    [TestCase(3, 1)]
+    [TestCase(4, 2)]
+    [TestCase(6, 3)]
+    [TestCase(0, 0)]
+    public void BinarySearchTests(int val, int indexExpected)
+    {
+        var list = new List<int>() { 1, 3, 5 };
+        Assert.AreEqual(indexExpected, list.BinarySearchClosest(val));
     }
 }

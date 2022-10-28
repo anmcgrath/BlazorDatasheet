@@ -7,7 +7,7 @@ namespace BlazorDatasheet.Data;
 /// <summary>
 /// A region that has a specific start/end position
 /// </summary>
-public class Region : IFixedSizeRegion
+public class Region : IRegion
 {
     public CellPosition TopLeft { get; private set; }
     public CellPosition BottomRight { get; private set; }
@@ -48,6 +48,12 @@ public class Region : IFixedSizeRegion
         Start = new CellPosition(rowStart, colStart);
         End = new CellPosition(rowEnd, colEnd);
         SetOrderedBounds();
+    }
+
+    public Region(CellPosition start, CellPosition end)
+    {
+        Start = start;
+        End = end;
     }
 
     protected void SetOrderedBounds()
@@ -96,7 +102,7 @@ public class Region : IFixedSizeRegion
                row <= BottomRight.Row;
     }
 
-    public IFixedSizeRegion Collapse()
+    public IRegion Collapse()
     {
         return new Region(TopLeft.Row, TopLeft.Col);
     }
@@ -146,14 +152,14 @@ public class Region : IFixedSizeRegion
         return new Region(TopLeft.Row, BottomRight.Row, TopLeft.Col, BottomRight.Col);
     }
 
-    public IFixedSizeRegion? GetIntersection(IRegion? region)
+    public IRegion? GetIntersection(IRegion? region)
     {
         var x1 = this.BottomRight.Col;
         var x2 = region.BottomRight.Col;
         var y1 = this.BottomRight.Row;
         var y2 = region.BottomRight.Row;
 
-        IFixedSizeRegion? intersection = null;
+        IRegion? intersection = null;
 
         var xL = Math.Max(this.TopLeft.Col, region.TopLeft.Col);
         var xR = Math.Min(x1, x2);
@@ -246,12 +252,13 @@ public class Region : IFixedSizeRegion
         return regions;
     }
 
+    [Obsolete]
     /// <summary>
     /// Returns a new copy of the region with the row, col starting point
     /// at the top left (minimum points).
     /// </summary>
     /// <returns></returns>
-    public IFixedSizeRegion CopyOrdered()
+    public IRegion CopyOrdered()
     {
         return new Region(
             Math.Min(TopLeft.Row, BottomRight.Row),
@@ -288,18 +295,13 @@ public class Region : IFixedSizeRegion
         return $"region from ({TopLeft.Row}, {TopLeft.Col}) to ({BottomRight.Row}, {BottomRight.Col})";
     }
 
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return GetEnumerator();
-    }
-
     public override bool Equals(object? obj)
     {
-        if (obj is IFixedSizeRegion fr)
-            return fr.TopLeft.Row == TopLeft.Row
-                   && fr.TopLeft.Col == TopLeft.Col
-                   && fr.BottomRight.Row == BottomRight.Row
-                   && fr.BottomRight.Col == BottomRight.Col;
+        if (obj is IRegion region)
+            return region.TopLeft.Row == TopLeft.Row
+                   && region.TopLeft.Col == TopLeft.Col
+                   && region.BottomRight.Row == BottomRight.Row
+                   && region.BottomRight.Col == BottomRight.Col;
 
         return false;
     }

@@ -12,6 +12,7 @@ using BlazorDatasheet.Services;
 using BlazorDatasheet.Util;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Components.Web.Virtualization;
 using ChangeEventArgs = Microsoft.AspNetCore.Components.ChangeEventArgs;
 
 namespace BlazorDatasheet;
@@ -74,15 +75,12 @@ public partial class Datasheet : IHandleEvent
 
     private bool IsSelecting => TempSelection != null && !TempSelection.IsEmpty();
 
-    /// <summary>
-    /// The current list of actions that should be performed on the next render.
-    /// </summary>
-    private Queue<Action> QueuedActions { get; set; } = new Queue<Action>();
-
     private CellLayoutProvider _cellLayoutProvider;
-    private EditorManager _editorManager;
+    private EditorOverlayRenderer _editorManager;
     private IWindowEventService _windowEventService;
     private IClipboard _clipboard;
+
+    private Virtualize<int> _virtualizer;
 
     // This ensures that the sheet is not re-rendered when mouse events are handled inside the sheet.
     // Performance is improved dramatically when this is used.
@@ -92,22 +90,7 @@ public partial class Datasheet : IHandleEvent
     {
         _windowEventService = new WindowEventService(JS);
         _clipboard = new Clipboard(JS);
-        _editorManager = new EditorManager(Sheet);
         TempSelection = new Selection(Sheet);
-        _editorManager.EditBegin += (sender, args) =>
-        {
-            // Because the ActiveEditor is null until the next re-render (unfortunately)
-            // we need to queue the begin edit function until then
-            NextTick(() =>
-            {
-                ((EditorManager)sender)
-                    .ActiveEditorComponent?
-                    .BeginEdit(args.Mode, Sheet.GetCell(args.Row, args.Col), args.EntryChar);
-            });
-        };
-        _editorManager.EditCancelled += (sender, args) => StateHasChanged();
-        _editorManager.EditAccepted += (sender, args) => StateHasChanged();
-
         base.OnInitialized();
     }
 
@@ -120,21 +103,34 @@ public partial class Datasheet : IHandleEvent
             if (_sheetLocal != null)
             {
                 _sheetLocal.CellsChanged -= SheetOnCellsChanged;
+                _sheetLocal.RowInserted -= SheetOnRowInserted;
+                _sheetLocal.RowRemoved -= SheetOnRowRemoved;
             }
 
             _sheetLocal = Sheet;
             Sheet.CellsChanged += SheetOnCellsChanged;
+            Sheet.RowInserted += SheetOnRowInserted;
+            Sheet.RowRemoved += SheetOnRowRemoved;
             TempSelection.SetSheet(Sheet);
-            _editorManager.SetSheet(Sheet);
             _cellLayoutProvider = new CellLayoutProvider(Sheet, 105, 25);
         }
 
         base.OnParametersSet();
     }
 
+    private async void SheetOnRowRemoved(object? sender, RowRemovedEventArgs e)
+    {
+        await _virtualizer.RefreshDataAsync();
+    }
+
+    private async void SheetOnRowInserted(object? sender, RowInsertedEventArgs e)
+    {
+        await _virtualizer.RefreshDataAsync();
+    }
+
     private void SheetOnCellsChanged(object? sender, IEnumerable<Data.Events.ChangeEventArgs> e)
     {
-        if(e.Any())
+        if (e.Any())
             StateHasChanged();
     }
 
@@ -146,7 +142,7 @@ public partial class Datasheet : IHandleEvent
         return typeof(TextRenderer);
     }
 
-    private Dictionary<string, object> getCellRendererParameters(Cell cell, int row, int col)
+    private Dictionary<string, object> getCellRendererParameters(IReadOnlyCell cell, int row, int col)
     {
         return new Dictionary<string, object>()
         {
@@ -158,25 +154,11 @@ public partial class Datasheet : IHandleEvent
         };
     }
 
-    private Dictionary<string, object> getEditorParameters()
-    {
-        return new Dictionary<string, object>()
-        {
-            { "EditorManager", _editorManager },
-        };
-    }
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             await AddWindowEventsAsync();
-        }
-
-        while (QueuedActions.Any())
-        {
-            var action = QueuedActions.Dequeue();
-            action.Invoke();
         }
     }
 
@@ -201,14 +183,14 @@ public partial class Datasheet : IHandleEvent
         {
             if (!e.MetaKey && !e.CtrlKey)
             {
-                Sheet?.Selection?.Clear();
+                Sheet?.Selection?.ClearSelections();
             }
 
             this.BeginSelectingCell(row, col);
         }
 
 
-        if (_editorManager.IsEditing && !_editorManager.CurrentEditPosition.Equals(row, col))
+        if (_editorManager.IsEditing && !(_editorManager.EditRow == row && _editorManager.EditCol == col))
         {
             AcceptEdit();
         }
@@ -222,7 +204,7 @@ public partial class Datasheet : IHandleEvent
         {
             if (!e.MetaKey && !e.CtrlKey)
             {
-                Sheet?.Selection?.Clear();
+                Sheet?.Selection?.ClearSelections();
             }
 
             this.BeginSelectingCol(col);
@@ -239,7 +221,7 @@ public partial class Datasheet : IHandleEvent
         {
             if (!e.MetaKey && !e.CtrlKey)
             {
-                Sheet?.Selection?.Clear();
+                Sheet?.Selection?.ClearSelections();
             }
 
             this.BeginSelectingRow(row);
@@ -248,13 +230,12 @@ public partial class Datasheet : IHandleEvent
         AcceptEdit();
     }
 
-    private void HandleCellDoubleClick(int row, int col, MouseEventArgs e)
+    private async void HandleCellDoubleClick(int row, int col, MouseEventArgs e)
     {
-        BeginEdit(row, col, softEdit: false, EditEntryMode.Mouse);
-        StateHasChanged();
+        await BeginEdit(row, col, softEdit: false, EditEntryMode.Mouse);
     }
 
-    private void BeginEdit(int row, int col, bool softEdit, EditEntryMode mode, string entryChar = "")
+    private async Task BeginEdit(int row, int col, bool softEdit, EditEntryMode mode, string entryChar = "")
     {
         if (this.IsReadOnly)
             return;
@@ -265,10 +246,7 @@ public partial class Datasheet : IHandleEvent
         if (cell == null || cell.IsReadOnly)
             return;
 
-        _editorManager.BeginEdit(row, col, softEdit, mode, entryChar);
-
-        // Required to re-render after any edit component reference has changed
-        NextTick(StateHasChanged);
+        await _editorManager.BeginEditAsync(row, col, softEdit, mode, entryChar);
     }
 
     /// <summary>
@@ -373,8 +351,7 @@ public partial class Datasheet : IHandleEvent
         {
             if (!Sheet.Selection.Regions.Any())
                 return true;
-            var rangesToClear = Sheet.Selection.Regions;
-            Sheet.ClearCells(rangesToClear);
+            Sheet.Selection.Clear();
             return true;
         }
 
@@ -398,7 +375,6 @@ public partial class Datasheet : IHandleEvent
                 if (inputPosition.IsInvalid)
                     return false;
                 BeginEdit(inputPosition.Row, inputPosition.Col, softEdit: true, EditEntryMode.Key, e.Key);
-                StateHasChanged();
             }
 
             return true;
@@ -436,11 +412,6 @@ public partial class Datasheet : IHandleEvent
         Sheet.Selection.SetSingle(range);
     }
 
-    private void NextTick(Action action)
-    {
-        QueuedActions.Enqueue(action);
-    }
-
     public void Dispose()
     {
         _windowEventService.Dispose();
@@ -450,10 +421,9 @@ public partial class Datasheet : IHandleEvent
     /// Handles when a cell renderer requests to start editing the cell
     /// </summary>
     /// <param name="args"></param>
-    private void HandleCellRequestBeginEdit(EditRequestArgs args)
+    private async void HandleCellRequestBeginEdit(EditRequestArgs args)
     {
-        BeginEdit(args.Row, args.Col, args.IsSoftEdit, args.EntryMode);
-        StateHasChanged();
+        await BeginEdit(args.Row, args.Col, args.IsSoftEdit, args.EntryMode);
     }
 
     /// <summary>
@@ -474,36 +444,9 @@ public partial class Datasheet : IHandleEvent
             return;
 
         // Can only handle single selections for now
-        var range = Sheet.Selection.ActiveRegion;
-        if (range == null)
-            return;
-        var text = Sheet.GetRegionAsDelimitedText(range);
-        await _clipboard.WriteTextAsync(text);
-    }
-
-    /// <summary>
-    /// Calculates the top/left/width/height styles of the editor container
-    /// </summary>
-    /// <returns></returns>
-    private string GetEditorSizeStyling()
-    {
-        var strBuilder = new StringBuilder();
-
-        var Position = _editorManager.CurrentEditPosition;
-        var editorRegion = new Region(Position.Row, Position.Col);
-
-        var left = _cellLayoutProvider.ComputeLeftPosition(editorRegion);
-        var top = _cellLayoutProvider.ComputeTopPosition(editorRegion);
-        var w = _cellLayoutProvider.ComputeWidth(editorRegion);
-        var h = _cellLayoutProvider.ComputeHeight(editorRegion);
-
-        strBuilder.Append($"left:{left}px;");
-        strBuilder.Append($"top:{top}px;");
-        strBuilder.Append($"width:{w}px;");
-        strBuilder.Append($"height:{h}px;");
-        strBuilder.Append($"box-shadow: 0px 0px 4px var(--shadow-overlay-color)");
-        var style = strBuilder.ToString();
-        return style;
+        var region = Sheet.Selection.ActiveRegion;
+        var text = Sheet.GetRegionAsDelimitedText(region);
+        await _clipboard.Copy(region, Sheet);
     }
 
 
@@ -519,7 +462,7 @@ public partial class Datasheet : IHandleEvent
 
     private void CancelSelecting()
     {
-        TempSelection.Clear();
+        TempSelection.ClearSelections();
     }
 
     private void BeginSelectingRow(int row)
@@ -554,7 +497,7 @@ public partial class Datasheet : IHandleEvent
             return;
 
         Sheet?.Selection.Add(TempSelection!.ActiveRegion!);
-        TempSelection!.Clear();
+        TempSelection!.ClearSelections();
     }
 
     /// <summary>
@@ -583,5 +526,18 @@ public partial class Datasheet : IHandleEvent
         if (Sheet?.Selection.Regions.Any(x => x.SpansRow(row)) == true)
             return true;
         return false;
+    }
+
+    /// <summary>
+    /// Provides rows to the virtualised renderer
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    public async ValueTask<ItemsProviderResult<int>> LoadRows(
+        ItemsProviderRequest request)
+    {
+        var numRows = request.Count;
+        var startIndex = request.StartIndex;
+        return new ItemsProviderResult<int>(Enumerable.Range(startIndex, numRows), Sheet.NumRows);
     }
 }

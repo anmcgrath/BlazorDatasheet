@@ -5,25 +5,22 @@ namespace BlazorDatasheet.Commands;
 internal class InsertRowAtCommand : IUndoableCommand
 {
     private readonly int _index;
-    private Row _rowToInsert;
 
-    public InsertRowAtCommand(int index, Row? row)
+    public InsertRowAtCommand(int index)
     {
         _index = index;
-        _rowToInsert = row;
     }
 
     public bool Execute(Sheet sheet)
     {
-        sheet.InsertRowAtImpl(_index, _rowToInsert);
+        sheet.InsertRowAtImpl(_index);
         return true;
     }
 
     public bool Undo(Sheet sheet)
     {
         // Update for redo
-        _rowToInsert = sheet.Rows[_index];
-        sheet.RemoveRowAtImpl(_index);
+        sheet.RemoveRowAtImpl(_index + 1);
         return true;
     }
 }

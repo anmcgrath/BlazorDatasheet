@@ -23,7 +23,6 @@ public class SelectionManagerTests
         selection.SetSingle(_sheet.Region);
         var cells = selection.GetCells().ToList();
         Assert.AreEqual(_sheet.Region.Area, cells.Count);
-        Assert.AreEqual(_sheet.GetCell(0, 0), cells[0]);
     }
 
     public void Add_Selection_Changes_Active_Selection()
@@ -92,7 +91,7 @@ public class SelectionManagerTests
         
         selection.SetSingle(new Region(1,1));
         selection.Add(new Region(2,2));
-        selection.Clear();
+        selection.ClearSelections();
         Assert.AreEqual(3, nTimesChanged);
     }
 }

@@ -40,8 +40,6 @@ public class ConditionalFormatTests
         Assert.IsNull(format);
         sheet.TrySetCellValue(0, 0, 1);
 
-        cm.ComputeAllAndCache();
-
         format = cm.GetFormat(0, 0);
         Assert.AreEqual(format.BackgroundColor, redBgColor);
     }

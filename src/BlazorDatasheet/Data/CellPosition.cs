@@ -4,12 +4,14 @@ public struct CellPosition : IEquatable<CellPosition>
 {
     public int Row { get; set; }
     public int Col { get; set; }
+    public bool Sticky { get; }
     public bool IsInvalid { get; } = false;
 
-    public CellPosition(int row, int col)
+    public CellPosition(int row, int col, bool sticky = false)
     {
         Row = row;
         Col = col;
+        Sticky = sticky;
         if (row < 0 || col < 0)
             IsInvalid = true;
     }

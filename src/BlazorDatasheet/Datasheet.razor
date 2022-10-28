@@ -54,18 +54,24 @@
                 </div>
             </div>
         }
-        <Virtualize Items="@Sheet?.RowCollection" TItem="Row" Context="sheetRow">
+        <Virtualize
+            @ref="_virtualizer"
+            ItemsProvider="@LoadRows"
+            OverscanCount="20"
+            TItem="int"
+            Context="rowIndex">
             <ItemContent>
-                <div class="sheet-row" @key="sheetRow.RowNumber">
+                <div class="sheet-row" @key="rowIndex">
                     @for (int j = 0; j < Sheet?.NumCols; j++)
                     {
-                        var row = sheetRow.RowNumber;
+                        var row = rowIndex;
                         var col = j;
 
                         var cell = Sheet.GetCell(row, col);
                         var conditionalFormatting = Sheet.ConditionalFormatting.GetFormat(row, col);
 
                         Format format;
+                        // If the cell contains its own format, merge with the conditional formatting
                         if (cell.Formatting != null)
                         {
                             format = cell.Formatting;
@@ -91,14 +97,14 @@
                                 style="@GetCellStyleFromFormat(format, cell.IsValid)
                                                                 ">
                                 @if (format?.Icon != null)
-                                    {
-                                        <div style="margin-right:2px; float:left; color: @(format.IconColor ?? "var(--icon-color)");">@format.Icon</div>
-                                    }
-                                    <DynamicComponent
-                                        Type="@getCellRendererType(cell.Type)"
-                                        Parameters="@getCellRendererParameters(cell, row, col)">
-                                    </DynamicComponent>
-                                </div>
+                                {
+                                    <div style="margin-right:2px; float:left; color: @(format.IconColor ?? "var(--icon-color)");">@format.Icon</div>
+                                }
+                                <DynamicComponent
+                                    Type="@getCellRendererType(cell.Type)"
+                                    Parameters="@getCellRendererParameters(cell, row, col)">
+                                </DynamicComponent>
+                            </div>
 
                         </div>
                     }
@@ -106,15 +112,10 @@
             </ItemContent>
         </Virtualize>
 
-        @if (_editorManager.IsEditing)
-        {
-            <div style="position:absolute; @GetEditorSizeStyling()">
-                <DynamicComponent
-                    Type="_editorManager.ActiveEditorType"
-                    Parameters="@getEditorParameters()"
-                    @ref="_editorManager.ActiveEditorContainer"/>
-            </div>
-        }
+        <EditorOverlayRenderer
+            @ref="_editorManager"
+            Sheet="Sheet"
+            CellLayoutProvider="_cellLayoutProvider"/>
 
         <SelectionRenderer
             TempSelection="TempSelection"

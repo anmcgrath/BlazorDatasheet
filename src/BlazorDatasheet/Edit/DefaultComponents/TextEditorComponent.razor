@@ -1,7 +1,5 @@
-@implements ICellEditor
+@inherits BaseEditor<string>
 @using BlazorDatasheet.Interfaces
-@using System.Text
-@using BlazorDatasheet.Data
 @using BlazorDatasheet.Util
 
 <input
@@ -9,32 +7,14 @@
     class="text-input"
     @bind="EditedValue"
     @bind:event="oninput"
-    style="@CssUtil.GetStyledInput(EditorManager.CurrentEditedCell)"
+    style="@CssUtil.GetStyledInput(Cell)"
     @ref="InputRef"/>
 
 @code {
-
-    [Parameter]
-    public EditorManager EditorManager { get; set; }
-
-    public string EditedValue
-    {
-        get => EditorManager.GetEditedValue<string>();
-        set => EditorManager.SetEditedValue(value);
-    }
-
-    private ElementReference InputRef;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await InputRef.FocusAsync();
-            await base.OnAfterRenderAsync(firstRender);
-        }
-    }
-
-    public void BeginEdit(EditEntryMode entryMode, IWriteableCell cell, string key)
+    
+    private IReadOnlyCell Cell;
+    
+    public override void BeginEdit(EditEntryMode entryMode, IReadOnlyCell cell, string key)
     {
         EditedValue = cell.GetValue<string>();
         if (EditedValue == null)
@@ -44,14 +24,7 @@
         {
             EditedValue = key;
         }
-    }
-
-    public bool CanAcceptEdit() => true;
-    public bool CanCancelEdit() => true;
-
-    public bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
-    {
-        return false;
+        EditedValue = EditedValue;
     }
 
 }

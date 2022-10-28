@@ -20,17 +20,20 @@
 
 </div>
 
-<Virtualize Items="@Sheet?.RowCollection" TItem="Row" Context="sheetRow">
+<Virtualize
+    @ref="_virtualizer"
+    ItemsProvider="LoadRows"
+    Context="rowNumber">
     <div class="sheet-row">
         <div
-            @key="sheetRow.RowNumber"
-            class="sheet-cell row-head @(IsActive(sheetRow.RowNumber) ? "row-active" : "")"
+            @key="rowNumber"
+            class="sheet-cell row-head @(IsActive(rowNumber) ? "row-active" : "")"
             style="display: block !important;"
-            @onmousedown="e => HandleMouseDown(sheetRow.RowNumber, e)"
-            @onmouseover="e => HandleMouseOver(sheetRow.RowNumber, e)"
-            @onmouseup="e => HandleMouseUp(sheetRow.RowNumber, e)">
+            @onmousedown="e => HandleMouseDown(rowNumber, e)"
+            @onmouseover="e => HandleMouseOver(rowNumber, e)"
+            @onmouseup="e => HandleMouseUp(rowNumber, e)">
             <div class="cell" style="text-align: right">
-                @(Sheet.RowHeadings.Count > sheetRow.RowNumber ? Sheet.RowHeadings[sheetRow.RowNumber].Header : null)
+                @(Sheet.RowHeadings.Count > rowNumber ? Sheet.RowHeadings[rowNumber].Header : rowNumber)
             </div>
         </div>
     </div>
@@ -63,6 +66,8 @@
 
     public List<OrderedInterval> _selectionIntervals { get; set; } = new();
 
+    private Virtualize<int> _virtualizer;
+
     private bool IsActive(int row)
     {
         return (TempSelection?.ActiveRegion?.SpansRow(row) == true)
@@ -86,11 +91,25 @@
             if (_sheet != null)
             {
                 _sheet.Selection.Changed -= OnSelectionChanged;
+                _sheet.RowInserted -= SheetOnRowInserted;
+                _sheet.RowRemoved -= SheetOnRowRemoved;
             }
             _sheet = Sheet;
             _sheet.Selection.Changed += OnSelectionChanged;
+            _sheet.RowInserted += SheetOnRowInserted;
+            _sheet.RowRemoved += SheetOnRowRemoved;
         }
         base.OnParametersSet();
+    }
+
+    private async void SheetOnRowRemoved(object? sender, RowRemovedEventArgs e)
+    {
+        await _virtualizer.RefreshDataAsync();
+    }
+
+    private async void SheetOnRowInserted(object? sender, RowInsertedEventArgs e)
+    {
+        await _virtualizer.RefreshDataAsync();
     }
 
     private void OnSelectionChanged(object? sender, IEnumerable<IRegion> regions)
@@ -126,6 +145,20 @@
     private void HandleMouseOver(int row, MouseEventArgs args)
     {
         OnMouseOver.InvokeAsync(new RowMouseEvent(row, args));
+    }
+
+    /// <summary>
+    /// Provides rows to the virtualised renderer
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    public async ValueTask<ItemsProviderResult<int>> LoadRows(
+        ItemsProviderRequest request)
+    {
+        var numRows = request.Count;
+        var startIndex = request.StartIndex;
+        var rows = Enumerable.Range(startIndex, numRows);
+        return new ItemsProviderResult<int>(rows, Sheet.NumRows);
     }
 
 }

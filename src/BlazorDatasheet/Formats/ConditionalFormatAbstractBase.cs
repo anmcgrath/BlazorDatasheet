@@ -1,4 +1,5 @@
 using BlazorDatasheet.Data;
+using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Render;
 
 namespace BlazorDatasheet.Formats;
@@ -11,9 +12,9 @@ public abstract class ConditionalFormatAbstractBase
     internal int Order { get; set; }
 
     /// <summary>
-    /// List of regions that the format covers
+    /// List of ranges that the format includes
     /// </summary>
-    internal readonly List<IFixedSizeRegion> Regions = new();
+    internal readonly List<BRange> Ranges = new();
 
     /// <summary>
     /// Set true if, when one cell value is recalculated, the conditional format should be re-evaluated for all cells
@@ -51,31 +52,30 @@ public abstract class ConditionalFormatAbstractBase
         }
     }
 
-    internal void Add(IFixedSizeRegion region, Sheet sheet)
+    internal void Add(BRange range, Sheet sheet)
     {
-        Regions.Add(region);
-        var regionInsideSheet = region.GetIntersection(sheet.Region);
-        foreach (var position in regionInsideSheet)
+        Ranges.Add(range);
+        foreach (var position in range.Positions)
         {
-            Positions.Add((position.Row, position.Col));
+            Positions.Add(position);
         }
     }
 
-    public IEnumerable<Cell> GetCells(Sheet sheet)
+    public IEnumerable<IReadOnlyCell> GetCells(Sheet sheet)
     {
         return Positions.Select(x => sheet.GetCell(x.row, x.col));
     }
 
 
-    internal void Remove(IFixedSizeRegion region)
+    internal void Remove(BRange range)
     {
         // Easiest way for now is to remove all positions and recalculate
-        Regions.Remove(region);
+        Ranges.Remove(range);
         Positions.Clear();
-        foreach (var r in Regions)
+        foreach (var r in Ranges)
         {
-            foreach (var posn in r)
-                Positions.Add((posn.Row, posn.Col));
+            foreach (var posn in r.Positions)
+                Positions.Add(posn);
         }
     }
 

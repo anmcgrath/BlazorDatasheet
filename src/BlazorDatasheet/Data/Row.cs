@@ -4,7 +4,7 @@ namespace BlazorDatasheet.Data;
 
 public class Row
 {
-    public List<Cell> Cells { get; private set; }
+    public List<IReadOnlyCell> Cells { get; private set; } = new();
     public int RowNumber { get; internal set; }
 
     /// <summary>
@@ -12,9 +12,8 @@ public class Row
     /// </summary>
     /// <param name="cells"></param>
     /// <param name="rowNumber"></param>
-    public Row(List<Cell> cells, int rowNumber)
+    public Row(int rowNumber)
     {
-        Cells = cells;
         RowNumber = rowNumber;
     }
 }

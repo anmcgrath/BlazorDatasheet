@@ -1,6 +1,8 @@
+using BlazorDatasheet.Data;
+
 namespace BlazorDatasheet.Interfaces;
 
 public interface IClipboard
 {
-    public Task WriteTextAsync(string text);
+    public Task Copy(IRegion region, Sheet sheet);
 }

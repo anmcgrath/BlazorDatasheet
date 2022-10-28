@@ -12,29 +12,14 @@ namespace BlazorDatasheet.Data;
 public class Sheet
 {
     /// <summary>
-    /// The number of rows in the sheet
+    /// The displayed number of rows in the sheet
     /// </summary>
-    public int NumRows => _rows.Count;
+    public int NumRows { get; private set; }
 
     /// <summary>
     /// The number of columns in the sheet
     /// </summary>
     public int NumCols { get; private set; }
-
-    /// <summary>
-    /// The sheet's rows. Private so that the sheet manages when rows are added or subtracted.
-    /// </summary>
-    private readonly List<Row> _rows = new();
-
-    /// <summary>
-    /// The sheet's rows
-    /// </summary>
-    public IReadOnlyList<Row> Rows => _rows;
-
-    /// <summary>
-    /// Using blazor virtualisation requires an ICollection to render so here it is.
-    /// </summary>
-    internal ICollection<Row> RowCollection => _rows;
 
     /// <summary>
     /// The sheet's headings
@@ -96,6 +81,8 @@ public class Sheet
     /// </summary>
     public event EventHandler<IEnumerable<ChangeEventArgs>> CellsChanged;
 
+    private IMatrixDataStore<Cell> _cellDataStore { get; set; } = new SparseMatrixStore<Cell>();
+
     private Sheet()
     {
         ColumnHeadings = new List<Heading>();
@@ -113,49 +100,24 @@ public class Sheet
     public Sheet(int numRows, int numCols, Cell[,] cells) : this()
     {
         NumCols = numCols;
+        NumRows = numRows;
 
         for (var i = 0; i < numRows; i++)
         {
-            var rowCells = new List<Cell>();
             for (int j = 0; j < NumCols; j++)
             {
-                rowCells.Add(cells[i, j]);
-                cells[i, j].Row = i;
-                cells[i, j].Col = j;
+                var cell = cells[i, j];
+                cell.Row = i;
+                cell.Col = j;
+                _cellDataStore.Set(i, j, cell);
             }
-
-            var newRow = new Row(rowCells, i);
-            _rows.Add(newRow);
         }
     }
 
     public Sheet(int numRows, int numCols) : this()
     {
         NumCols = numCols;
-        for (int i = 0; i < numRows; i++)
-        {
-            var cells = new List<Cell>();
-            for (int j = 0; j < numCols; j++)
-            {
-                var cell = new Cell()
-                {
-                    Col = j,
-                    Row = i
-                };
-                cells.Add(cell);
-            }
-
-            var row = new Row(cells, i);
-            _rows.Add(row);
-        }
-    }
-
-    /// <summary>
-    /// Inserts a row to the end of the sheet
-    /// </summary>
-    public void InsertRow(Row? row = null)
-    {
-        InsertRowAt(_rows.Count, row);
+        NumRows = numRows;
     }
 
     /// <summary>
@@ -163,9 +125,9 @@ public class Sheet
     /// </summary>
     /// <param name="rowIndex">The index that the new row will be at. If the index is outside of the region of rows,
     /// a row will be either inserted at the start or appended at the end</param>
-    public void InsertRowAt(int rowIndex, Row? row = null)
+    public void InsertRowAt(int rowIndex)
     {
-        var cmd = new InsertRowAtCommand(rowIndex, row);
+        var cmd = new InsertRowAtCommand(rowIndex);
         Commands.ExecuteCommand(cmd);
     }
 
@@ -176,49 +138,82 @@ public class Sheet
     /// <param name="rowIndex"></param>
     /// <param name="row"></param>
     /// <returns></returns>
-    internal bool InsertRowAtImpl(int rowIndex, Row? row = null)
+    internal bool InsertRowAtImpl(int rowIndex)
     {
-        if (row == null)
-        {
-            var cells = new List<Cell>();
-            for (int i = 0; i < NumCols; i++)
-            {
-                cells.Add(new Cell() { Col = i, Row = rowIndex });
-            }
-
-            row = new Row(cells, rowIndex);
-        }
-
-        _rows.Insert(rowIndex, row);
-        updateRowIndices(rowIndex);
-        RowInserted?.Invoke(this, new RowInsertedEventArgs(rowIndex));
+        _cellDataStore.InsertRowAt(rowIndex);
+        NumRows++;
+        RowInserted?.Invoke(this, new RowInsertedEventArgs(rowIndex + 1));
         return true;
     }
 
     internal bool RemoveRowAtImpl(int index)
     {
-        if (index >= 0 && index < _rows.Count)
+        if (index >= 0 && index < NumRows)
         {
-            var row = _rows[index];
-            _rows.RemoveAt(index);
-            updateRowIndices(index);
-            RowRemoved?.Invoke(this, new RowRemovedEventArgs(index, row));
+            _cellDataStore.RemoveRowAt(index);
+            NumRows--;
+            RowRemoved?.Invoke(this, new RowRemovedEventArgs(index));
             return true;
         }
 
         return false;
     }
 
-    private IEnumerable<Cell> GetCellsInRegion(IRegion region)
+    /// <summary>
+    /// Returns a single cell range at the position row, col
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <returns></returns>
+    public BRangeCell Range(int row, int col)
     {
-        var fixedRegion = region.GetIntersection(this.Region);
-        List<Cell> cells = new List<Cell>();
-        foreach (var position in fixedRegion)
-        {
-            cells.Add(this.GetCell(position.Row, position.Col));
-        }
+        return new BRangeCell(this, row, col);
+    }
 
-        return cells.ToArray();
+    /// <summary>
+    /// Returns a range with the positions specified
+    /// </summary>
+    /// <param name="rowStart"></param>
+    /// <param name="rowEnd"></param>
+    /// <param name="colStart"></param>
+    /// <param name="colEnd"></param>
+    /// <returns></returns>
+    public BRange Range(int rowStart, int rowEnd, int colStart, int colEnd)
+    {
+        return Range(new Region(rowStart, rowEnd, colStart, colEnd));
+    }
+
+    /// <summary>
+    /// Returns a new range that contains the region specified
+    /// </summary>
+    /// <param name="region"></param>
+    /// <returns></returns>
+    public BRange Range(IRegion region)
+    {
+        return Range(new List<IRegion>() { region });
+    }
+
+    /// <summary>
+    /// Returns a new range that contains all the regions specified
+    /// </summary>
+    /// <param name="regions"></param>
+    /// <returns></returns>
+    public BRange Range(IEnumerable<IRegion> regions)
+    {
+        return new BRange(this, regions);
+    }
+
+
+    /// <summary>
+    /// Returns all cells in the specified region
+    /// </summary>
+    /// <param name="region"></param>
+    /// <returns></returns>
+    public IEnumerable<IReadOnlyCell> GetCellsInRegion(IRegion region)
+    {
+        return (new BRange(this, region))
+               .Positions
+               .Select(x => this.GetCell(x.row, x.col));
     }
 
     /// <summary>
@@ -226,9 +221,9 @@ public class Sheet
     /// </summary>
     /// <param name="regions"></param>
     /// <returns></returns>
-    public IEnumerable<Cell> GetCellsInRegions(IEnumerable<IRegion> regions)
+    public IEnumerable<IReadOnlyCell> GetCellsInRegions(IEnumerable<IRegion> regions)
     {
-        var cells = new List<Cell>();
+        var cells = new List<IReadOnlyCell>();
         foreach (var region in regions)
             cells.AddRange(GetCellsInRegion(region));
         return cells.ToArray();
@@ -240,14 +235,20 @@ public class Sheet
     /// <param name="row"></param>
     /// <param name="col"></param>
     /// <returns></returns>
-    public Cell GetCell(int row, int col)
+    public IReadOnlyCell GetCell(int row, int col)
     {
-        if (row < 0 || row >= NumRows)
-            return null;
-        if (col < 0 || col >= NumCols)
-            return null;
+        var cell = _cellDataStore.Get(row, col);
 
-        return Rows[row].Cells[col];
+        if (cell == null)
+            return new Cell(null)
+            {
+                Row = row,
+                Col = col
+            };
+
+        cell.Row = row;
+        cell.Col = col;
+        return cell;
     }
 
     /// <summary>
@@ -255,9 +256,17 @@ public class Sheet
     /// </summary>
     /// <param name="position"></param>
     /// <returns></returns>
-    public Cell GetCell(CellPosition position)
+    public IReadOnlyCell GetCell(CellPosition position)
     {
         return GetCell(position.Row, position.Col);
+    }
+
+    internal IEnumerable<(int row, int col)> GetNonEmptyCellPositions(IRegion region)
+    {
+        return _cellDataStore.GetNonEmptyPositions(region.TopLeft.Row,
+                                                   region.BottomRight.Row,
+                                                   region.TopLeft.Col,
+                                                   region.BottomRight.Col);
     }
 
     /// <summary>
@@ -314,7 +323,9 @@ public class Sheet
         if (inputPosition.IsInvalid)
             return null;
 
-        var lines = text.TrimEnd('\n').Split(newLineDelim);
+        if (text.EndsWith('\n'))
+            text = text.Substring(0, text.Length - 1);
+        var lines = text.Split(newLineDelim, StringSplitOptions.None);
 
         // We may reach the end of the sheet, so we only need to paste the rows up until the end.
         var endRow = Math.Min(inputPosition.Row + lines.Length - 1, NumRows - 1);
@@ -358,9 +369,15 @@ public class Sheet
 
     internal bool TrySetCellValueImpl(int row, int col, object value, bool raiseEvent = true)
     {
-        var cell = this.GetCell(row, col);
+        var cell = _cellDataStore.Get(row, col);
         if (cell == null)
-            return false;
+        {
+            cell = new Cell(value);
+            _cellDataStore.Set(row, col, cell);
+            if (raiseEvent)
+                CellsChanged?.Invoke(this, new List<ChangeEventArgs>() { new(row, col, null, value) });
+            return true;
+        }
 
         // Perform data validation
         var isValid = true;
@@ -389,6 +406,11 @@ public class Sheet
         return setValue;
     }
 
+    internal void SetCell(int row, int col, Cell cell)
+    {
+        _cellDataStore.Set(row, col, cell);
+    }
+
     /// <summary>
     /// Gets the cell's value at row, col
     /// </summary>
@@ -411,11 +433,11 @@ public class Sheet
         var changeEvents = new List<ChangeEventArgs>();
         foreach (var change in changes)
         {
-            var oldValue = GetValue(change.Row, change.Col);
-            TrySetCellValueImpl(change.Row, change.Col, change.Value, false);
+            var currValue = GetValue(change.Row, change.Col);
+            var set = TrySetCellValueImpl(change.Row, change.Col, change.Value, false);
             var newValue = GetValue(change.Row, change.Col);
-            if (oldValue != newValue)
-                changeEvents.Add(new ChangeEventArgs(change.Row, change.Col, oldValue, newValue));
+            if (set && currValue != newValue)
+                changeEvents.Add(new ChangeEventArgs(change.Row, change.Col, currValue, newValue));
         }
 
         CellsChanged?.Invoke(this, changeEvents);
@@ -426,15 +448,15 @@ public class Sheet
     /// Clears all cell values in the region
     /// </summary>
     /// <param name="region"></param>
-    public void ClearCells(IEnumerable<IRegion> regions)
+    public void ClearCells(BRange range)
     {
-        var cmd = new ClearCellsCommand(regions);
+        var cmd = new ClearCellsCommand(range);
         Commands.ExecuteCommand(cmd);
     }
 
-    internal void ClearCelllsImpl(IEnumerable<IRegion> ranges)
+    internal void ClearCelllsImpl(BRange range)
     {
-        var cells = this.GetCellsInRegions(ranges);
+        var cells = range.GetNonEmptyCells().Cast<Cell>();
         var changedArgs = new List<ChangeEventArgs>();
         foreach (var cell in cells)
         {
@@ -443,7 +465,8 @@ public class Sheet
             var oldVal = cell.GetValue();
             cell.Clear();
             var newVal = cell.GetValue();
-            changedArgs.Add(new ChangeEventArgs(row, col, oldVal, newVal));
+            if (oldVal != newVal)
+                changedArgs.Add(new ChangeEventArgs(row, col, oldVal, newVal));
         }
 
         this.CellsChanged?.Invoke(this, changedArgs);
@@ -485,22 +508,5 @@ public class Sheet
         }
 
         return strBuilder.ToString();
-    }
-
-    /// <summary>
-    /// Updates the row values of all rows & cells starting from the index specified
-    /// </summary>
-    /// <param name="startRow"></param>
-    private void updateRowIndices(int startRow)
-    {
-        // Update row numbers for rows and cells below this row
-        for (int i = startRow; i < _rows.Count; i++)
-        {
-            _rows[i].RowNumber = i;
-            foreach (var cell in _rows[i].Cells)
-            {
-                cell.Row = i;
-            }
-        }
     }
 }
