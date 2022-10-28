@@ -323,7 +323,9 @@ public class Sheet
         if (inputPosition.IsInvalid)
             return null;
 
-        var lines = text.TrimEnd('\n').Split(newLineDelim);
+        if (text.EndsWith('\n'))
+            text = text.Substring(0, text.Length - 1);
+        var lines = text.Split(newLineDelim, StringSplitOptions.None);
 
         // We may reach the end of the sheet, so we only need to paste the rows up until the end.
         var endRow = Math.Min(inputPosition.Row + lines.Length - 1, NumRows - 1);

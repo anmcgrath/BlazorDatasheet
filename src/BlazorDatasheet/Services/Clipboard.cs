@@ -1,3 +1,4 @@
+using BlazorDatasheet.Data;
 using BlazorDatasheet.Interfaces;
 using Microsoft.JSInterop;
 
@@ -7,13 +8,25 @@ public class Clipboard : IClipboard
 {
     public IJSRuntime JS;
 
+    private string lastCopiedText;
+    private IRegion lastCopiedRegion;
+
     public Clipboard(IJSRuntime jsRuntime)
     {
         JS = jsRuntime;
     }
 
-    public async Task WriteTextAsync(string text)
+    public async Task Copy(IRegion region, Sheet sheet)
     {
+        if (region == null)
+            return;
+        
+        var text = sheet.GetRegionAsDelimitedText(region);
+        
         await JS.InvokeVoidAsync("writeTextToClipboard", text);
+        
+        lastCopiedRegion = region;
+        lastCopiedText = text;
+
     }
 }

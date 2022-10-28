@@ -444,11 +444,9 @@ public partial class Datasheet : IHandleEvent
             return;
 
         // Can only handle single selections for now
-        var range = Sheet.Selection.ActiveRegion;
-        if (range == null)
-            return;
-        var text = Sheet.GetRegionAsDelimitedText(range);
-        await _clipboard.WriteTextAsync(text);
+        var region = Sheet.Selection.ActiveRegion;
+        var text = Sheet.GetRegionAsDelimitedText(region);
+        await _clipboard.Copy(region, Sheet);
     }
 
 
