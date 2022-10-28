@@ -142,7 +142,7 @@ public class Sheet
     {
         _cellDataStore.InsertRowAt(rowIndex);
         NumRows++;
-        RowInserted?.Invoke(this, new RowInsertedEventArgs(rowIndex));
+        RowInserted?.Invoke(this, new RowInsertedEventArgs(rowIndex + 1));
         return true;
     }
 
@@ -259,6 +259,14 @@ public class Sheet
     public IReadOnlyCell GetCell(CellPosition position)
     {
         return GetCell(position.Row, position.Col);
+    }
+
+    internal IEnumerable<(int row, int col)> GetNonEmptyCellPositions(IRegion region)
+    {
+        return _cellDataStore.GetNonEmptyPositions(region.TopLeft.Row,
+                                                   region.BottomRight.Row,
+                                                   region.TopLeft.Col,
+                                                   region.BottomRight.Col);
     }
 
     /// <summary>
@@ -446,7 +454,7 @@ public class Sheet
 
     internal void ClearCelllsImpl(BRange range)
     {
-        var cells = range.GetCells().Cast<Cell>();
+        var cells = range.GetNonEmptyCells().Cast<Cell>();
         var changedArgs = new List<ChangeEventArgs>();
         foreach (var cell in cells)
         {

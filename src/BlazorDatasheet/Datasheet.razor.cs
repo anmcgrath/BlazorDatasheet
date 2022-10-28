@@ -80,6 +80,8 @@ public partial class Datasheet : IHandleEvent
     private IWindowEventService _windowEventService;
     private IClipboard _clipboard;
 
+    private Virtualize<int> _virtualizer;
+
     // This ensures that the sheet is not re-rendered when mouse events are handled inside the sheet.
     // Performance is improved dramatically when this is used.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
@@ -101,15 +103,29 @@ public partial class Datasheet : IHandleEvent
             if (_sheetLocal != null)
             {
                 _sheetLocal.CellsChanged -= SheetOnCellsChanged;
+                _sheetLocal.RowInserted -= SheetOnRowInserted;
+                _sheetLocal.RowRemoved -= SheetOnRowRemoved;
             }
 
             _sheetLocal = Sheet;
             Sheet.CellsChanged += SheetOnCellsChanged;
+            Sheet.RowInserted += SheetOnRowInserted;
+            Sheet.RowRemoved += SheetOnRowRemoved;
             TempSelection.SetSheet(Sheet);
             _cellLayoutProvider = new CellLayoutProvider(Sheet, 105, 25);
         }
 
         base.OnParametersSet();
+    }
+
+    private async void SheetOnRowRemoved(object? sender, RowRemovedEventArgs e)
+    {
+        await _virtualizer.RefreshDataAsync();
+    }
+
+    private async void SheetOnRowInserted(object? sender, RowInsertedEventArgs e)
+    {
+        await _virtualizer.RefreshDataAsync();
     }
 
     private void SheetOnCellsChanged(object? sender, IEnumerable<Data.Events.ChangeEventArgs> e)

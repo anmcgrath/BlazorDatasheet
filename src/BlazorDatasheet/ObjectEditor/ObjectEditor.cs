@@ -19,7 +19,7 @@ public class ObjectEditor<T>
         Sheet.InsertRowAt(rowIndex);
         for (int i = 0; i < cells.Count; i++)
         {
-            Sheet.SetCell(rowIndex, i, cells[i]);
+            Sheet.SetCell(rowIndex + 1, i, cells[i]);
         }
     }
 }

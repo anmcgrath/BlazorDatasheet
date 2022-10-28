@@ -13,5 +13,14 @@ public interface IMatrixDataStore<T>
     /// <returns></returns>
     public int GetNextNonBlankRow(int col, int row);
     void RemoveRowAt(int row);
-    
+
+    /// <summary>
+    /// Get non empty cells that exist in the bounds given
+    /// </summary>
+    /// <param name="r0">The lower row bound</param>
+    /// <param name="r1">The upper row bound</param>
+    /// <param name="c0">The lower col bound</param>
+    /// <param name="c1">The upper col bound</param>
+    /// <returns></returns>
+    IEnumerable<(int row, int col)> GetNonEmptyPositions(int r0, int r1, int c0, int c1);
 }

@@ -49,6 +49,18 @@ public class BRange
         return Positions.Select(x => Sheet.GetCell(x.row, x.col));
     }
 
+    public IEnumerable<IReadOnlyCell> GetNonEmptyCells()
+    {
+        var nonEmptyCells = new List<IReadOnlyCell>();
+        foreach (var region in Regions)
+        {
+            nonEmptyCells.AddRange(Sheet.GetNonEmptyCellPositions(region)
+                                      .Select(x => Sheet.GetCell(x.row, x.col)));
+        }
+
+        return nonEmptyCells;
+    }
+
     /// <summary>
     /// Sets all the cells in the range to the value specified.
     /// </summary>

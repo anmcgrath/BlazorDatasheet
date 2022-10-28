@@ -16,7 +16,7 @@ public class ClearCellsCommand : IUndoableCommand
 
     public bool Execute(Sheet sheet)
     {
-        foreach (var cell in _range.GetCells())
+        foreach (var cell in _range.GetNonEmptyCells())
         {
             var oldValue = cell.GetValue();
 
@@ -27,6 +27,10 @@ public class ClearCellsCommand : IUndoableCommand
                     new ValueChange(cell.Row, cell.Col, oldValue));
             }
         }
+
+        // There were no empty cells in range so we can't clear anything
+        if (!_clearCommandOccurences.Any())
+            return false;
 
         sheet.ClearCelllsImpl(_range);
         return true;

@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using BlazorDatasheet.Util;
 
 namespace BlazorDatasheet.Data;
@@ -50,12 +51,34 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
         }
     }
 
+    /// <summary>
+    /// Get non empty cells that exist in the bounds given
+    /// </summary>
+    /// <param name="r0">The lower row bound</param>
+    /// <param name="r1">The upper row bound</param>
+    /// <param name="c0">The lower col bound</param>
+    /// <param name="c1">The upper col bound</param>
+    /// <returns></returns>
+    public IEnumerable<(int row, int col)> GetNonEmptyPositions(int r0, int r1, int c0, int c1)
+    {
+        List<(int row, int col)> nonEmptyPositions = new List<(int row, int col)>();
+        foreach (var kp in Columns)
+        {
+            if (kp.Key < c0 || kp.Key > c1)
+                continue;
+            var nonEmptyInRow = kp.Value.GetNonEmptyCellsBetween(r0, r1);
+            nonEmptyPositions.AddRange(nonEmptyInRow.Select(x => (x, kp.Key)));
+        }
+
+        return nonEmptyPositions;
+    }
+
     private class SColumn<T>
     {
         /// <summary>
         /// The values stored in the column. Keys = row Index
         /// </summary>
-        private SortedList<int, T> Values { get; set; } = new();
+        public SortedList<int, T> Values { get; set; } = new();
 
         public T? Get(int row)
         {
@@ -85,6 +108,9 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
                 return;
 
             var nValues = Values.Keys.Count;
+            // Work backwards from the end of the data to where we have
+            // inserted the row and increase the row values by 1
+            // (when we insert a row we don't add any new rows to Values)
             for (int i = nValues - 1; i >= index; i--)
             {
                 // Shuffle up the values
@@ -93,6 +119,24 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
                 Values.RemoveAt(i);
                 Values.Add(newRowNum, val);
             }
+        }
+
+        /// <summary>
+        /// Returns the nonempty row numbers between & including rows r0 to r1
+        /// </summary>
+        /// <param name="r0"></param>
+        /// <param name="r1"></param>
+        /// <returns></returns>
+        public List<int> GetNonEmptyCellsBetween(int r0, int r1)
+        {
+            var rows = new List<int>();
+            if (!Values.Any())
+                return rows;
+            var indexStart = Values.Keys.BinarySearchClosest(r0);
+            var indexEnd = Values.Keys.BinarySearchClosest(r1);
+
+            rows.AddRange(Values.Keys.Take(new Range(indexStart, indexEnd + 1)));
+            return rows;
         }
 
         /// <summary>

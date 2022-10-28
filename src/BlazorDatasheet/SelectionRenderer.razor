@@ -40,6 +40,8 @@
     {
         var boundedRegion = region.GetIntersection(Sheet.Region);
         var isActiveRegion = region == Sheet.Selection.ActiveRegion;
+        if (boundedRegion == null)
+            continue;
         <!-- if it's the active region, render around the active position -->
         if (isActiveRegion)
         {
@@ -106,7 +108,9 @@
             }
             _tempSelection = TempSelection;
             _tempSelection.Changed += OnSelectionChanged;
-        }{}
+        }
+        {
+        }
 
         if (_sheet != Sheet)
         {

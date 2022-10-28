@@ -21,6 +21,7 @@
 </div>
 
 <Virtualize
+    @ref="_virtualizer"
     ItemsProvider="LoadRows"
     Context="rowNumber">
     <div class="sheet-row">
@@ -65,6 +66,8 @@
 
     public List<OrderedInterval> _selectionIntervals { get; set; } = new();
 
+    private Virtualize<int> _virtualizer;
+
     private bool IsActive(int row)
     {
         return (TempSelection?.ActiveRegion?.SpansRow(row) == true)
@@ -88,11 +91,25 @@
             if (_sheet != null)
             {
                 _sheet.Selection.Changed -= OnSelectionChanged;
+                _sheet.RowInserted -= SheetOnRowInserted;
+                _sheet.RowRemoved -= SheetOnRowRemoved;
             }
             _sheet = Sheet;
             _sheet.Selection.Changed += OnSelectionChanged;
+            _sheet.RowInserted += SheetOnRowInserted;
+            _sheet.RowRemoved += SheetOnRowRemoved;
         }
         base.OnParametersSet();
+    }
+
+    private async void SheetOnRowRemoved(object? sender, RowRemovedEventArgs e)
+    {
+        await _virtualizer.RefreshDataAsync();
+    }
+
+    private async void SheetOnRowInserted(object? sender, RowInsertedEventArgs e)
+    {
+        await _virtualizer.RefreshDataAsync();
     }
 
     private void OnSelectionChanged(object? sender, IEnumerable<IRegion> regions)
@@ -129,7 +146,7 @@
     {
         OnMouseOver.InvokeAsync(new RowMouseEvent(row, args));
     }
-    
+
     /// <summary>
     /// Provides rows to the virtualised renderer
     /// </summary>

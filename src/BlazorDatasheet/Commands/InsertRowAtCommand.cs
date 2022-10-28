@@ -20,7 +20,7 @@ internal class InsertRowAtCommand : IUndoableCommand
     public bool Undo(Sheet sheet)
     {
         // Update for redo
-        sheet.RemoveRowAtImpl(_index);
+        sheet.RemoveRowAtImpl(_index + 1);
         return true;
     }
 }
