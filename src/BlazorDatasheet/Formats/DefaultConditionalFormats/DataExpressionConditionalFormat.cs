@@ -18,7 +18,7 @@ internal class DataExpressionConditionalFormat<T> : ConditionalFormatAbstractBas
         Data = data;
         _conditionalFormatFunc = conditionalFormatFunc;
         this.Predicate = (posn, sheet) => { return Data != null && dataPredicate.Invoke(Data); };
-        this.IsShared = false;
+        this.IsShared = true;
     }
 
     public override Format? CalculateFormat(int row, int col, Sheet sheet)

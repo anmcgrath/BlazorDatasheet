@@ -4,6 +4,7 @@ using BlazorDatasheet.Data;
 using BlazorDatasheet.Data.Events;
 using BlazorDatasheet.Edit;
 using BlazorDatasheet.Edit.Events;
+using BlazorDatasheet.Formats;
 using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Render.DefaultComponents;
@@ -59,6 +60,12 @@ public partial class Datasheet : IHandleEvent
     [Parameter] public string Theme { get; set; } = "default";
 
     /// <summary>
+    /// The extent of the region that is rendered on the screen
+    /// </summary>
+    [Parameter]
+    public IRegion VisualRegion { get; set; }
+
+    /// <summary>
     /// Whether the user is focused on the datasheet.
     /// </summary>
     private bool IsDataSheetActive { get; set; }
@@ -72,6 +79,16 @@ public partial class Datasheet : IHandleEvent
     /// The selection that is in the process of being selected by the user
     /// </summary>
     private Selection? TempSelection { get; set; }
+
+    /// <summary>
+    /// Store any cells that are dirty here
+    /// </summary>
+    private HashSet<(int row, int col)> DirtyCells { get; set; } = new();
+
+    /// <summary>
+    /// Whether the entire sheet is dirty
+    /// </summary>
+    public bool SheetIsDirty { get; set; } = true;
 
     private bool IsSelecting => TempSelection != null && !TempSelection.IsEmpty();
 
@@ -105,12 +122,15 @@ public partial class Datasheet : IHandleEvent
                 _sheetLocal.CellsChanged -= SheetOnCellsChanged;
                 _sheetLocal.RowInserted -= SheetOnRowInserted;
                 _sheetLocal.RowRemoved -= SheetOnRowRemoved;
+                Sheet.ConditionalFormatting.ConditionalFormatPrepared -=
+                    ConditionalFormattingOnConditionalFormatPrepared;
             }
 
             _sheetLocal = Sheet;
             Sheet.CellsChanged += SheetOnCellsChanged;
             Sheet.RowInserted += SheetOnRowInserted;
             Sheet.RowRemoved += SheetOnRowRemoved;
+            Sheet.ConditionalFormatting.ConditionalFormatPrepared += ConditionalFormattingOnConditionalFormatPrepared;
             TempSelection.SetSheet(Sheet);
             _cellLayoutProvider = new CellLayoutProvider(Sheet, 105, 25);
         }
@@ -118,20 +138,36 @@ public partial class Datasheet : IHandleEvent
         base.OnParametersSet();
     }
 
+    private void ConditionalFormattingOnConditionalFormatPrepared(object? sender, ConditionalFormatPreparedEventArgs e)
+    {
+        var cells = e.ConditionalFormat.GetCells(_sheetLocal);
+        foreach (var cell in cells)
+            DirtyCells.Add((cell.Row, cell.Col));
+    }
+
     private async void SheetOnRowRemoved(object? sender, RowRemovedEventArgs e)
     {
+        SheetIsDirty = true;
         await _virtualizer.RefreshDataAsync();
     }
 
     private async void SheetOnRowInserted(object? sender, RowInsertedEventArgs e)
     {
+        SheetIsDirty = true;
         await _virtualizer.RefreshDataAsync();
     }
 
     private void SheetOnCellsChanged(object? sender, IEnumerable<Data.Events.ChangeEventArgs> e)
     {
         if (e.Any())
+        {
+            foreach (var cell in e)
+            {
+                DirtyCells.Add((cell.Row, cell.Col));
+            }
+
             StateHasChanged();
+        }
     }
 
     private Type getCellRendererType(string type)
@@ -160,6 +196,9 @@ public partial class Datasheet : IHandleEvent
         {
             await AddWindowEventsAsync();
         }
+
+        SheetIsDirty = false;
+        DirtyCells.Clear();
     }
 
     private async Task AddWindowEventsAsync()
@@ -539,5 +578,14 @@ public partial class Datasheet : IHandleEvent
         var numRows = request.Count;
         var startIndex = request.StartIndex;
         return new ItemsProviderResult<int>(Enumerable.Range(startIndex, numRows), Sheet.NumRows);
+    }
+
+    /// <summary>
+    /// Re-render all cells, regardless of whether they are dirty
+    /// </summary>
+    public void ForceReRender()
+    {
+        SheetIsDirty = true;
+        StateHasChanged();
     }
 }

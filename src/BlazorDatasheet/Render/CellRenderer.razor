@@ -1,0 +1,77 @@
+@using BlazorDatasheet.Interfaces
+@using System.Text
+@using BlazorDatasheet.Data
+
+<!-- The cell content -->
+
+@if (true)
+{
+    var conditionalFormatting = Sheet.ConditionalFormatting.GetFormat(Cell.Row, Cell.Col);
+
+    Format format;
+    // If the cell contains its own format, merge with the conditional formatting
+    if (Cell.Formatting != null)
+    {
+        format = Cell.Formatting;
+        format.Merge(conditionalFormatting);
+    }
+    else
+    {
+        format = conditionalFormatting;
+    }
+    <div
+        class="sheet-cell">
+
+        <div
+            @ondblclick="ondblclick"
+            @onmousedown="onmousedown"
+            @onmouseup="onmouseup"
+            @onmouseover="onmouseover"
+            class="cell"
+            style="@CalculateCellStyle(format, Cell.IsValid)
+                                                                ">
+            @if (format?.Icon != null)
+            {
+                <div style="margin-right:2px; float:left; color: @(format.IconColor ?? "var(--icon-color)");">@format.Icon</div>
+            }
+            
+            @ItemTemplate
+        </div>
+    </div>
+}
+
+@code {
+
+    [Parameter] public EventCallback<MouseEventArgs> onmousedown { get; set; }
+    [Parameter] public EventCallback<MouseEventArgs> onmouseup { get; set; }
+    [Parameter] public EventCallback<MouseEventArgs> ondblclick { get; set; }
+    [Parameter] public EventCallback<MouseEventArgs> onmouseover { get; set; }
+
+    [Parameter]
+    public RenderFragment ItemTemplate { get; set; }
+
+    [Parameter, EditorRequired]
+    public bool IsDirty { get; set; }
+    
+    [Parameter]
+    public IReadOnlyCell Cell { get; set; }
+
+    [Parameter]
+    public Sheet Sheet { get; set; }
+
+    private string CalculateCellStyle(Format? format, bool isCellValid)
+    {
+        var foreGroundVar = isCellValid ? "--sheet-foreground-color" : "--invalid-cell-foreground-color";
+        var sb = new StringBuilder();
+        sb.Append($"background-color:{format?.BackgroundColor ?? "var(--sheet-bg-color)"};");
+        sb.Append($"color:{format?.ForegroundColor ?? $"var({foreGroundVar})"};");
+        sb.Append($"font-weight:{format?.FontWeight ?? "var(--sheet-font-weight)"};");
+        return sb.ToString();
+    }
+
+    protected override bool ShouldRender()
+    {
+        return IsDirty;
+    }
+
+}

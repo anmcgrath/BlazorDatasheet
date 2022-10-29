@@ -17,6 +17,8 @@ public class ConditionalFormatManager
 
     private RTree<ConditonalFormatSpatialData> _cfTree = new();
 
+    public event EventHandler<ConditionalFormatPreparedEventArgs> ConditionalFormatPrepared;
+
     public ConditionalFormatManager(Sheet sheet)
     {
         _sheet = sheet;
@@ -77,7 +79,12 @@ public class ConditionalFormatManager
                     continue;
                 // prepare format (re-compute shared format cache etch.)
                 if (format.IsShared)
+                {
                     format.Prepare(_sheet);
+                    ConditionalFormatPrepared.Invoke(this, 
+                                                     new ConditionalFormatPreparedEventArgs(format));
+                }
+
                 handled.Add(format.Order);
             }
         }

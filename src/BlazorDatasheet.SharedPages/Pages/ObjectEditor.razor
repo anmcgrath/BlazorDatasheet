@@ -12,11 +12,11 @@
 
 <p>With properties across columns:</p>
 
-<Datasheet Sheet="editor1.Sheet"></Datasheet>
+<Datasheet @ref="dataSheet1" Sheet="editor1.Sheet"></Datasheet>
 
 <p>With properties across rows:</p>
 
-<Datasheet Sheet="editor2.Sheet"></Datasheet>
+<Datasheet @ref="dataSheet2" Sheet="editor2.Sheet"></Datasheet>
 
 @code {
 
@@ -24,6 +24,8 @@
     private List<Person> People;
     private ObjectEditor<Person> editor1;
     private ObjectEditor<Person> editor2;
+    private Datasheet dataSheet1;
+    private Datasheet dataSheet2;
 
     protected override void OnInitialized()
     {
@@ -56,9 +58,9 @@
                 pd.Type = "select";
             })
             .Build();
-        
-        editor1.Sheet.CellsChanged += (sender, enumerable) => StateHasChanged();
-        editor2.Sheet.CellsChanged += (sender, enumerable) => StateHasChanged();
+
+        editor1.Sheet.CellsChanged += (sender, enumerable) => dataSheet2.ForceReRender();
+        editor2.Sheet.CellsChanged += (sender, enumerable) => dataSheet1.ForceReRender();
 
         base.OnInitialized();
     }

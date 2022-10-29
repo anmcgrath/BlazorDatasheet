@@ -54,10 +54,11 @@
                 </div>
             </div>
         }
+
         <Virtualize
             @ref="_virtualizer"
             ItemsProvider="@LoadRows"
-            OverscanCount="20"
+            OverscanCount="3"
             TItem="int"
             Context="rowIndex">
             <ItemContent>
@@ -66,47 +67,23 @@
                     {
                         var row = rowIndex;
                         var col = j;
-
                         var cell = Sheet.GetCell(row, col);
-                        var conditionalFormatting = Sheet.ConditionalFormatting.GetFormat(row, col);
 
-                        Format format;
-                        // If the cell contains its own format, merge with the conditional formatting
-                        if (cell.Formatting != null)
-                        {
-                            format = cell.Formatting;
-                            format.Merge(conditionalFormatting);
-                        }
-                        else
-                        {
-                            format = conditionalFormatting;
-                        }
-
-
-                        <!-- The cell content -->
-
-                        <div
-                            class="sheet-cell"
+                        <CellRenderer
                             @onmousedown="e => HandleCellMouseDown(row, col, e)"
                             @onmouseover="e => HandleCellMouseOver(row, col, e)"
                             @ondblclick="e => HandleCellDoubleClick(row, col, e)"
-                            @onmouseup="e => HandleCellMouseUp(row, col, e)">
-
-                            <div
-                                class="cell"
-                                style="@GetCellStyleFromFormat(format, cell.IsValid)
-                                                                ">
-                                @if (format?.Icon != null)
-                                {
-                                    <div style="margin-right:2px; float:left; color: @(format.IconColor ?? "var(--icon-color)");">@format.Icon</div>
-                                }
+                            @onmouseup="e => HandleCellMouseUp(row, col, e)"
+                            Cell="cell"
+                            Sheet="Sheet"
+                            IsDirty="SheetIsDirty || DirtyCells.Contains((row, col))">
+                            <ItemTemplate>
                                 <DynamicComponent
                                     Type="@getCellRendererType(cell.Type)"
                                     Parameters="@getCellRendererParameters(cell, row, col)">
                                 </DynamicComponent>
-                            </div>
-
-                        </div>
+                            </ItemTemplate>
+                        </CellRenderer>
                     }
                 </div>
             </ItemContent>
@@ -126,14 +103,6 @@
 
 @code{
 
-    private string GetCellStyleFromFormat(Format? cellFormat, bool isValid)
-    {
-        var foreGroundVar = isValid ? "--sheet-foreground-color" : "--invalid-cell-foreground-color";
-        var sb = new StringBuilder();
-        sb.Append($"background-color:{cellFormat?.BackgroundColor ?? "var(--sheet-bg-color)"};");
-        sb.Append($"color:{cellFormat?.ForegroundColor ?? $"var({foreGroundVar})"};");
-        sb.Append($"font-weight:{cellFormat?.FontWeight ?? "var(--sheet-font-weight)"};");
-        return sb.ToString();
-    }
+
 
 }
