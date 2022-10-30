@@ -122,20 +122,28 @@ public partial class Datasheet : IHandleEvent
                 _sheetLocal.CellsChanged -= SheetOnCellsChanged;
                 _sheetLocal.RowInserted -= SheetOnRowInserted;
                 _sheetLocal.RowRemoved -= SheetOnRowRemoved;
-                Sheet.ConditionalFormatting.ConditionalFormatPrepared -=
+                _sheetLocal.ConditionalFormatting.ConditionalFormatPrepared -=
                     ConditionalFormattingOnConditionalFormatPrepared;
+                _sheetLocal.FormatsChanged -= SheetLocalOnFormatsChanged;
             }
 
             _sheetLocal = Sheet;
-            Sheet.CellsChanged += SheetOnCellsChanged;
-            Sheet.RowInserted += SheetOnRowInserted;
-            Sheet.RowRemoved += SheetOnRowRemoved;
-            Sheet.ConditionalFormatting.ConditionalFormatPrepared += ConditionalFormattingOnConditionalFormatPrepared;
+            _sheetLocal.CellsChanged += SheetOnCellsChanged;
+            _sheetLocal.RowInserted += SheetOnRowInserted;
+            _sheetLocal.RowRemoved += SheetOnRowRemoved;
+            _sheetLocal.ConditionalFormatting.ConditionalFormatPrepared +=
+                ConditionalFormattingOnConditionalFormatPrepared;
             TempSelection.SetSheet(Sheet);
+            _sheetLocal.FormatsChanged += SheetLocalOnFormatsChanged;
             _cellLayoutProvider = new CellLayoutProvider(Sheet, 105, 25);
         }
 
         base.OnParametersSet();
+    }
+
+    private void SheetLocalOnFormatsChanged(object? sender, FormatChangedEventArgs e)
+    {
+        this.SheetIsDirty = true;
     }
 
     private void ConditionalFormattingOnConditionalFormatPrepared(object? sender, ConditionalFormatPreparedEventArgs e)
@@ -577,6 +585,7 @@ public partial class Datasheet : IHandleEvent
     {
         var numRows = request.Count;
         var startIndex = request.StartIndex;
+        Console.WriteLine($"{startIndex} - {numRows + startIndex}");
         return new ItemsProviderResult<int>(Enumerable.Range(startIndex, numRows), Sheet.NumRows);
     }
 

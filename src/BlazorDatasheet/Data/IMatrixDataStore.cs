@@ -2,6 +2,7 @@ namespace BlazorDatasheet.Data;
 
 public interface IMatrixDataStore<T>
 {
+    public bool Contains(int row, int col);
     public T? Get(int row, int col);
     public void Set(int row, int col, T value);
     public void InsertRowAt(int row);

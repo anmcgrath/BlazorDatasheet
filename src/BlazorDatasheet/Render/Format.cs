@@ -1,8 +1,9 @@
+using BlazorDatasheet.Data.SpatialDataStructures;
 using Microsoft.AspNetCore.Components;
 
 namespace BlazorDatasheet.Render;
 
-public class Format
+public class Format : IMergeable<Format>
 {
     public string? FontWeight { get; set; }
     public string? BackgroundColor { get; set; }

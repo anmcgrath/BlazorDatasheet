@@ -35,7 +35,7 @@ public class ObjectEditorTests
     }
 
     [Test]
-    public void Apply_Conditional_Format_On_Span_Properties_Across_Cols_Is_Applied_Correctly()
+    public void Apply_Conditional_Format_On_Obj_Editor_Span_Properties_Across_Cols_Is_Applied_Correctly()
     {
         var builder = new ObjectEditorBuilder<TesterObject>(_items, GridDirection.PropertiesAcrossColumns);
         // Create a conditional format that sets bg color to green when true

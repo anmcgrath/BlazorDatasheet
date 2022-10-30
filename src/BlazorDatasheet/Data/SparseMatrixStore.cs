@@ -7,6 +7,13 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
 {
     private Dictionary<int, SColumn<T>> Columns { get; set; } = new();
 
+    public bool Contains(int row, int col)
+    {
+        if (!Columns.ContainsKey(col))
+            return false;
+        return Columns[col].Values.ContainsKey(row);
+    }
+
     public T? Get(int row, int col)
     {
         var colExists = Columns.TryGetValue(col, out var column);

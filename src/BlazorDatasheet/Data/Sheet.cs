@@ -1,9 +1,11 @@
 using System.Text;
 using BlazorDatasheet.Commands;
 using BlazorDatasheet.Data.Events;
+using BlazorDatasheet.Data.SpatialDataStructures;
 using BlazorDatasheet.Edit.DefaultComponents;
 using BlazorDatasheet.Formats;
 using BlazorDatasheet.Interfaces;
+using BlazorDatasheet.Render;
 using BlazorDatasheet.Render.DefaultComponents;
 using BlazorDatasheet.Selecting;
 
@@ -67,6 +69,16 @@ public class Sheet
     public IReadOnlyDictionary<string, Type> RenderComponentTypes => _renderComponentTypes;
 
     /// <summary>
+    /// Formats applied to any rows
+    /// </summary>
+    private NonOverlappingIntervals<Format> _rowFormats = new();
+
+    /// <summary>
+    /// Formats applied to any cols
+    /// </summary>
+    private NonOverlappingIntervals<Format> _colFormats = new();
+
+    /// <summary>
     /// Fired when a row is inserted into the sheet
     /// </summary>
     public event EventHandler<RowInsertedEventArgs> RowInserted;
@@ -80,6 +92,11 @@ public class Sheet
     /// Fired when one or more cells are changed
     /// </summary>
     public event EventHandler<IEnumerable<ChangeEventArgs>> CellsChanged;
+
+    /// <summary>
+    /// Fired when cell formats change
+    /// </summary>
+    public event EventHandler<FormatChangedEventArgs> FormatsChanged;
 
     private IMatrixDataStore<Cell> _cellDataStore { get; set; } = new SparseMatrixStore<Cell>();
 
@@ -214,6 +231,19 @@ public class Sheet
         return (new BRange(this, region))
                .Positions
                .Select(x => this.GetCell(x.row, x.col));
+    }
+
+    public Format? GetFormat(int row, int col)
+    {
+        var cell = GetCell(row, col);
+        var rowFormat = _rowFormats.Get(row);
+        var colFormat = _colFormats.Get(col);
+        if (cell.Formatting != null)
+            return cell.Formatting;
+        if (colFormat != null)
+            return colFormat;
+        else
+            return rowFormat;
     }
 
     /// <summary>
@@ -404,6 +434,99 @@ public class Sheet
         }
 
         return setValue;
+    }
+
+    public void SetFormatImpl(Format format, BRange range)
+    {
+        foreach (var region in range.Regions)
+        {
+            SetFormatImpl(format, region);
+        }
+    }
+
+    public void SetFormatImpl(Format format, IRegion region)
+    {
+        if (region is ColumnRegion)
+        {
+            _colFormats.Add(new OrderedInterval<Format>(region.Start.Col, region.End.Col, format));
+            // Set the specific format of any non-empty cells in the column range (empty cells are covered by the range format).
+            var nonEmpty = this.GetNonEmptyCellPositions(region);
+            foreach (var posn in nonEmpty)
+            {
+                var cell = _cellDataStore.Get(posn.row, posn.col);
+                if (cell.Formatting == null)
+                    cell.Formatting = format.Clone();
+                else
+                    cell.Formatting.Merge(format);
+            }
+
+            // Look at the region(s) of overlap with row formats - must make these cells exist and assign formats
+            var overlappingRegions = new List<IRegion>();
+            foreach (var rowInterval in _rowFormats.GetAllIntervals())
+            {
+                overlappingRegions.Add(new Region(rowInterval.Start, rowInterval.End, region.Start.Col,
+                                                  region.End.Col));
+            }
+
+            foreach (var overlapRegion in overlappingRegions)
+            {
+                var sheetRegion = overlapRegion.GetIntersection(this.Region);
+                var posns = new BRange(this, sheetRegion).Positions;
+                foreach (var posn in posns)
+                {
+                    if (!_cellDataStore.Contains(posn.row, posn.col))
+                        _cellDataStore.Set(posn.row, posn.col, new Cell() { Formatting = new Format() });
+                    _cellDataStore.Get(posn.row, posn.col)!.MergeFormat(format);
+                }
+            }
+        }
+
+        else if (region is RowRegion)
+        {
+            _colFormats.Add(new OrderedInterval<Format>(region.Start.Col, region.End.Col, format));
+            var nonEmpty = this.GetNonEmptyCellPositions(region);
+            foreach (var posn in nonEmpty)
+            {
+                var cell = _cellDataStore.Get(posn.row, posn.col);
+                if (cell.Formatting == null)
+                    cell.Formatting = format.Clone();
+                else
+                    cell.Formatting.Merge(format);
+            }
+
+            // Look at the region(s) of overlap with col formats - must make these cells exist and assign formats
+            var overlappingRegions = new List<IRegion>();
+            foreach (var colInterval in _colFormats.GetAllIntervals())
+            {
+                overlappingRegions.Add(new Region(region.Start.Row, region.End.Row, colInterval.Start,
+                                                  colInterval.End));
+            }
+
+            foreach (var overlapRegion in overlappingRegions)
+            {
+                var sheetRegion = overlapRegion.GetIntersection(this.Region);
+                var posns = new BRange(this, sheetRegion).Positions;
+                foreach (var posn in posns)
+                {
+                    if (!_cellDataStore.Contains(posn.row, posn.col))
+                        _cellDataStore.Set(posn.row, posn.col, new Cell() { Formatting = new Format() });
+                    _cellDataStore.Get(posn.row, posn.col)!.MergeFormat(format);
+                }
+            }
+        }
+        else
+        {
+            var sheetRegion = region.GetIntersection(this.Region);
+            var posns = new BRange(this, sheetRegion).Positions;
+            foreach (var posn in posns)
+            {
+                if (!_cellDataStore.Contains(posn.row, posn.col))
+                    _cellDataStore.Set(posn.row, posn.col, new Cell() { Formatting = new Format() });
+                _cellDataStore.Get(posn.row, posn.col)!.MergeFormat(format);
+            }
+        }
+        
+        FormatsChanged?.Invoke(this, new FormatChangedEventArgs());
     }
 
     internal void SetCell(int row, int col, Cell cell)

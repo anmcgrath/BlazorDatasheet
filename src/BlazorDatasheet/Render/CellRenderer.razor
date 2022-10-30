@@ -8,12 +8,13 @@
 {
     var conditionalFormatting = Sheet.ConditionalFormatting.GetFormat(Cell.Row, Cell.Col);
 
-    Format format;
+    Format? format;
     // If the cell contains its own format, merge with the conditional formatting
     if (Cell.Formatting != null)
     {
-        format = Cell.Formatting;
-        format.Merge(conditionalFormatting);
+        format = Sheet!.GetFormat(Cell.Row, Cell.Col)?.Clone();
+        if(format != null)
+            format.Merge(conditionalFormatting);
     }
     else
     {

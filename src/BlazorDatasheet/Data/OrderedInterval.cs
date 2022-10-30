@@ -43,6 +43,16 @@ public class OrderedInterval
         return value >= _start && value <= _end;
     }
 
+    /// <summary>
+    /// Whether this interval fully contains the other interval
+    /// </summary>
+    /// <param name="interval"></param>
+    /// <returns></returns>
+    public bool Contains(OrderedInterval interval)
+    {
+        return Start <= interval.Start && End >= interval.End;
+    }
+
     public bool Overlaps(OrderedInterval interval)
     {
         return this.Contains(interval.Start)
@@ -101,5 +111,15 @@ public class OrderedInterval
     public static List<OrderedInterval> Merge(params OrderedInterval[] intervals)
     {
         return Merge(intervals.AsEnumerable());
+    }
+}
+
+public class OrderedInterval<T> : OrderedInterval
+{
+    public T Data { get; set; }
+
+    public OrderedInterval(int start, int end, T data) : base(start, end)
+    {
+        Data = data;
     }
 }

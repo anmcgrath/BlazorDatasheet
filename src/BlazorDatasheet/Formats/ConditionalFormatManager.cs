@@ -81,7 +81,7 @@ public class ConditionalFormatManager
                 if (format.IsShared)
                 {
                     format.Prepare(_sheet);
-                    ConditionalFormatPrepared.Invoke(this, 
+                    ConditionalFormatPrepared?.Invoke(this, 
                                                      new ConditionalFormatPreparedEventArgs(format));
                 }
 

@@ -25,7 +25,7 @@ public class Cell : IReadOnlyCell, IWriteableCell
     /// <summary>
     /// The formatting to be applied to the cell on render
     /// </summary>
-    public Format? Formatting { get; set; }
+    public Format? Formatting { get; set; } = new();
 
     /// <summary>
     /// If IsReadOnly = true, the cell's value cannot be edited via the datasheet
@@ -221,6 +221,17 @@ public class Cell : IReadOnlyCell, IWriteableCell
         catch (Exception e)
         {
             return false;
+        }
+    }
+
+    public void MergeFormat(Format? format)
+    {
+        if (this.Formatting == null)
+            Formatting = format.Clone();
+        else
+        {
+            Formatting = Formatting.Clone();
+            Formatting.Merge(format);
         }
     }
 
