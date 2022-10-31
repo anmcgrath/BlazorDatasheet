@@ -11,7 +11,7 @@ public class ClearCellsCommand : IUndoableCommand
     public ClearCellsCommand(BRange range)
     {
         _clearCommandOccurences = new List<ValueChange>();
-        _range = range;
+        _range = range.Clone();
     }
 
     public bool Execute(Sheet sheet)

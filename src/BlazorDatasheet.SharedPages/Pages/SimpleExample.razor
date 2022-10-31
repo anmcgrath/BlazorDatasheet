@@ -1,5 +1,6 @@
 @page "/simple"
 @using BlazorDatasheet.Data
+@using BlazorDatasheet.Render
 
 <PageTitle>Simple example</PageTitle>
 
@@ -8,9 +9,11 @@
 <p>Below is an sheet with 100,000 rows. There is no data validation or formatting and the default editors are used.</p>
 
 <Datasheet
-    IsFixedHeight="true"
-    FixedHeightInPx="700"
     Sheet="sheet"/>
+
+    <button @onclick="@(() => sheet.SetFormat(new Format() { BackgroundColor = "red" }, sheet.Selection))">Set format to red</button>
+    <button @onclick="@(() => sheet.SetFormat(new Format() { BackgroundColor = "blue" }, sheet.Selection))">Set format to blue</button>
+
 
 @code{
 
@@ -18,7 +21,7 @@
 
     protected override void OnInitialized()
     {
-        sheet = new Sheet(numRows: 100000, numCols: 8);
+        sheet = new Sheet(numRows: 10, numCols: 5);
     }
 
 }

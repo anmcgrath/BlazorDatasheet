@@ -65,7 +65,7 @@ public class NonOverlappingIntervals<T> where T : IMergeable<T>
     {
         Start = Math.Min(interval.Start, Start);
         End = Math.Max(interval.End, End);
-        
+
         var overlapping = GetOverlappingIntervals(interval);
         if (!overlapping.Any())
         {
@@ -216,7 +216,7 @@ public class NonOverlappingIntervals<T> where T : IMergeable<T>
 
         if (splitLeft != null)
         {
-            if(splitLeft != splitRight)
+            if (splitLeft != splitRight)
                 _Intervals.Remove(splitLeft.Start);
             _Intervals.Add(interval.End + 1, new OrderedInterval<T>(interval.End + 1, splitLeft.End, splitLeft.Data));
         }
@@ -227,5 +227,32 @@ public class NonOverlappingIntervals<T> where T : IMergeable<T>
             Start = _Intervals.First().Value.Start;
             End = _Intervals.Last().Value.End;
         }
+    }
+
+    /// <summary>
+    /// Clones all intervals (including data) and returns the list of cloned intervals
+    /// </summary>
+    /// <returns></returns>
+    public IEnumerable<OrderedInterval<T>> CloneAllIntervals()
+    {
+        var clones =
+            _Intervals
+                .Values
+                .Select(x => new OrderedInterval<T>(x.Start, x.End, x.Data.Clone()));
+        return clones.ToList();
+    }
+
+    public void AddRange(IEnumerable<OrderedInterval<T>> intervals)
+    {
+        foreach (var interval in intervals)
+            Add(interval);
+    }
+
+    /// <summary>
+    /// Clears all intervals
+    /// </summary>
+    public void Clear()
+    {
+        _Intervals.Clear();
     }
 }

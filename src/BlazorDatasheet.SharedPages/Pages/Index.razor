@@ -24,8 +24,8 @@
     <button @onclick="() => Sheet.Commands.Undo()">Undo</button>
     <button @onclick="() => Sheet.Commands.Redo()">Redo</button>
     <button @onclick="@(() => Sheet.Selection.Value = "Bob")">Set to Bob</button>
-    <button @onclick="@(() => Sheet.SetFormatImpl(new Format() { BackgroundColor = "red" }, Sheet.Selection))">Set format to red</button>
-    <button @onclick="@(() => Sheet.SetFormatImpl(new Format() { BackgroundColor = "blue" }, Sheet.Selection))">Set format to blue</button>
+    <button @onclick="@(() => Sheet.SetFormat(new Format() { BackgroundColor = "red" }, Sheet.Selection))">Set format to red</button>
+    <button @onclick="@(() => Sheet.SetFormat(new Format() { BackgroundColor = "blue" }, Sheet.Selection))">Set format to blue</button>
 </div>
 
 <div>

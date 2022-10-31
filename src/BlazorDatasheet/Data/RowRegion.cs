@@ -30,4 +30,9 @@ public class RowRegion : Region
         End = new CellPosition(newRowEnd, int.MaxValue);
         SetOrderedBounds();
     }
+    
+    public override IRegion Clone()
+    {
+        return new RowRegion(this.Start.Row, this.End.Row);
+    }
 }

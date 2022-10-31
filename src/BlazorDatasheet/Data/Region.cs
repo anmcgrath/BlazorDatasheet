@@ -268,6 +268,11 @@ public class Region : IRegion
         );
     }
 
+    public virtual IRegion Clone()
+    {
+        return new Region(this.Start.Row, this.End.Row, this.Start.Col, this.End.Col);
+    }
+
     public IEnumerator<CellPosition> GetEnumerator()
     {
         var rowDir = BottomRight.Row >= TopLeft.Row ? 1 : -1;

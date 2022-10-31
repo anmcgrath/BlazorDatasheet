@@ -79,4 +79,9 @@ public class BRange
     {
         _regions.Remove(region);
     }
+
+    public BRange Clone()
+    {
+        return new BRange(this.Sheet, _regions.Select(x => x.Clone()));
+    }
 }

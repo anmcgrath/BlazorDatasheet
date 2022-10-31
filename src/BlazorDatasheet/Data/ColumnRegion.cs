@@ -37,4 +37,9 @@ public class ColumnRegion : Region
         End = new CellPosition(int.MaxValue, newColumnEnd);
         SetOrderedBounds();
     }
+
+    public override IRegion Clone()
+    {
+        return new ColumnRegion(this.Start.Col, this.End.Col);
+    }
 }

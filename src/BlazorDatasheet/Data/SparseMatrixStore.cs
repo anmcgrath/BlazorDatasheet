@@ -140,9 +140,16 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
             if (!Values.Any())
                 return rows;
             var indexStart = Values.Keys.BinarySearchClosest(r0);
-            var indexEnd = Values.Keys.BinarySearchClosest(r1);
+            var index = indexStart;
 
-            rows.AddRange(Values.Keys.Take(new Range(indexStart, indexEnd + 1)));
+            for (int i = index; i < Values.Keys.Count; i++)
+            {
+                var rowAtI = Values.Keys[i];
+                if (rowAtI < r0 || rowAtI > r1)
+                    break;
+                rows.Add(rowAtI);
+            }
+
             return rows;
         }
 

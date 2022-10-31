@@ -585,7 +585,6 @@ public partial class Datasheet : IHandleEvent
     {
         var numRows = request.Count;
         var startIndex = request.StartIndex;
-        Console.WriteLine($"{startIndex} - {numRows + startIndex}");
         return new ItemsProviderResult<int>(Enumerable.Range(startIndex, numRows), Sheet.NumRows);
     }
 

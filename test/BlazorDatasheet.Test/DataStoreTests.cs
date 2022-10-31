@@ -1,3 +1,4 @@
+using System.Linq;
 using BlazorDatasheet.Data;
 using NUnit.Framework;
 
@@ -91,6 +92,16 @@ public class DataStoreTests
         var nextRow = store.GetNextNonBlankRow(10, 5);
         Assert.AreEqual(100, nextRow);
         Assert.AreEqual("B", store.Get(nextRow, 10));
+    }
+
+    [Test]
+    public void Get_Non_Empty_Rows_Correct()
+    {
+        IMatrixDataStore<string> store = new SparseMatrixStore<string>();
+        store.Set(0,0,"0,0");
+        store.Set(2,0,"0,0");
+        var nonEmpty = store.GetNonEmptyPositions(0, 2, 0, 0);
+        Assert.AreEqual(2, nonEmpty.Count());
     }
     
 }

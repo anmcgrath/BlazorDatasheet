@@ -71,12 +71,12 @@ public class Sheet
     /// <summary>
     /// Formats applied to any rows
     /// </summary>
-    private NonOverlappingIntervals<Format> _rowFormats = new();
+    internal NonOverlappingIntervals<Format> RowFormats = new();
 
     /// <summary>
     /// Formats applied to any cols
     /// </summary>
-    private NonOverlappingIntervals<Format> _colFormats = new();
+    internal NonOverlappingIntervals<Format> ColFormats = new();
 
     /// <summary>
     /// Fired when a row is inserted into the sheet
@@ -236,8 +236,8 @@ public class Sheet
     public Format? GetFormat(int row, int col)
     {
         var cell = GetCell(row, col);
-        var rowFormat = _rowFormats.Get(row);
-        var colFormat = _colFormats.Get(col);
+        var rowFormat = RowFormats.Get(row);
+        var colFormat = ColFormats.Get(col);
         if (cell.Formatting != null)
             return cell.Formatting;
         if (colFormat != null)
@@ -436,83 +436,53 @@ public class Sheet
         return setValue;
     }
 
-    public void SetFormatImpl(Format format, BRange range)
+    public void SetFormat(Format format, BRange range)
     {
-        foreach (var region in range.Regions)
-        {
-            SetFormatImpl(format, region);
-        }
+        var cmd = new SetRangeFormatCommand(format, range);
+        Commands.ExecuteCommand(cmd);
     }
 
-    public void SetFormatImpl(Format format, IRegion region)
+
+    /// <summary>
+    /// Performs the setting of formats to the range given, returning the individual cells that were affected.
+    /// </summary>
+    /// <param name="format"></param>
+    /// <param name="range"></param>
+    internal IEnumerable<CellChangedFormat> SetFormatImpl(Format format, BRange range)
     {
-        if (region is ColumnRegion)
+        var changes = new List<CellChangedFormat>();
+        foreach (var region in range.Regions)
         {
-            _colFormats.Add(new OrderedInterval<Format>(region.Start.Col, region.End.Col, format));
-            // Set the specific format of any non-empty cells in the column range (empty cells are covered by the range format).
-            var nonEmpty = this.GetNonEmptyCellPositions(region);
-            foreach (var posn in nonEmpty)
-            {
-                var cell = _cellDataStore.Get(posn.row, posn.col);
-                if (cell.Formatting == null)
-                    cell.Formatting = format.Clone();
-                else
-                    cell.Formatting.Merge(format);
-            }
-
-            // Look at the region(s) of overlap with row formats - must make these cells exist and assign formats
-            var overlappingRegions = new List<IRegion>();
-            foreach (var rowInterval in _rowFormats.GetAllIntervals())
-            {
-                overlappingRegions.Add(new Region(rowInterval.Start, rowInterval.End, region.Start.Col,
-                                                  region.End.Col));
-            }
-
-            foreach (var overlapRegion in overlappingRegions)
-            {
-                var sheetRegion = overlapRegion.GetIntersection(this.Region);
-                var posns = new BRange(this, sheetRegion).Positions;
-                foreach (var posn in posns)
-                {
-                    if (!_cellDataStore.Contains(posn.row, posn.col))
-                        _cellDataStore.Set(posn.row, posn.col, new Cell() { Formatting = new Format() });
-                    _cellDataStore.Get(posn.row, posn.col)!.MergeFormat(format);
-                }
-            }
+            changes.AddRange(SetFormatImpl(format, region));
         }
 
-        else if (region is RowRegion)
+        return changes;
+    }
+
+    /// <summary>
+    /// Performs the setting of formats to the region and returns the individual cells that were affected.
+    /// </summary>
+    /// <param name="format"></param>
+    /// <param name="region"></param>
+    /// <returns></returns>
+    internal List<CellChangedFormat> SetFormatImpl(Format format, IRegion region)
+    {
+        // Keep track of all changes to individual cells
+        var changes = new List<CellChangedFormat>();
+        var colRegions = new List<ColumnRegion>();
+        var rowRegions = new List<RowRegion>();
+
+        if (region is ColumnRegion columnRegion)
         {
-            _colFormats.Add(new OrderedInterval<Format>(region.Start.Col, region.End.Col, format));
-            var nonEmpty = this.GetNonEmptyCellPositions(region);
-            foreach (var posn in nonEmpty)
-            {
-                var cell = _cellDataStore.Get(posn.row, posn.col);
-                if (cell.Formatting == null)
-                    cell.Formatting = format.Clone();
-                else
-                    cell.Formatting.Merge(format);
-            }
+            changes.AddRange(SetColumnFormat(format, columnRegion));
+            colRegions.Add(columnRegion);
+        }
 
-            // Look at the region(s) of overlap with col formats - must make these cells exist and assign formats
-            var overlappingRegions = new List<IRegion>();
-            foreach (var colInterval in _colFormats.GetAllIntervals())
-            {
-                overlappingRegions.Add(new Region(region.Start.Row, region.End.Row, colInterval.Start,
-                                                  colInterval.End));
-            }
 
-            foreach (var overlapRegion in overlappingRegions)
-            {
-                var sheetRegion = overlapRegion.GetIntersection(this.Region);
-                var posns = new BRange(this, sheetRegion).Positions;
-                foreach (var posn in posns)
-                {
-                    if (!_cellDataStore.Contains(posn.row, posn.col))
-                        _cellDataStore.Set(posn.row, posn.col, new Cell() { Formatting = new Format() });
-                    _cellDataStore.Get(posn.row, posn.col)!.MergeFormat(format);
-                }
-            }
+        else if (region is RowRegion rowRegion)
+        {
+            changes.AddRange(SetRowFormat(format, rowRegion));
+            rowRegions.Add(rowRegion);
         }
         else
         {
@@ -521,12 +491,143 @@ public class Sheet
             foreach (var posn in posns)
             {
                 if (!_cellDataStore.Contains(posn.row, posn.col))
-                    _cellDataStore.Set(posn.row, posn.col, new Cell() { Formatting = new Format() });
-                _cellDataStore.Get(posn.row, posn.col)!.MergeFormat(format);
+                    _cellDataStore.Set(posn.row, posn.col, new Cell());
+                var cell = _cellDataStore.Get(posn.row, posn.col);
+                var oldFormat = cell!.Formatting?.Clone();
+                cell!.MergeFormat(format);
+                changes.Add(new CellChangedFormat(posn.row, posn.col, oldFormat, format));
             }
         }
-        
-        FormatsChanged?.Invoke(this, new FormatChangedEventArgs());
+
+        var args = new FormatChangedEventArgs(changes, colRegions, rowRegions);
+        EmitFormatChanged(args);
+
+        return changes;
+    }
+
+    internal void EmitFormatChanged(FormatChangedEventArgs args)
+    {
+        FormatsChanged?.Invoke(this, args);
+    }
+
+    private IEnumerable<CellChangedFormat> SetColumnFormat(Format format, ColumnRegion region)
+    {
+        // Keep track of individual cell changes
+        var changes = new List<CellChangedFormat>();
+
+        ColFormats.Add(new OrderedInterval<Format>(region.Start.Col, region.End.Col, format));
+        // Set the specific format of any non-empty cells in the column range (empty cells are covered by the range format).
+        // We do this because cell formatting takes precedence in rendering over col & range formats.
+        // So if the cell already has a format, it should be merged.
+        var nonEmpty = this.GetNonEmptyCellPositions(region);
+        foreach (var posn in nonEmpty)
+        {
+            var cell = _cellDataStore.Get(posn.row, posn.col);
+            var oldFormat = cell!.Formatting?.Clone();
+            if (cell.Formatting == null)
+                cell.Formatting = format.Clone();
+            else
+                cell.Formatting.Merge(format);
+
+            changes.Add(new CellChangedFormat(posn.row, posn.col, oldFormat, cell.Formatting));
+        }
+
+        // Look at the region(s) of overlap with row formats - must make these cells exist and assign formats
+        var overlappingRegions = new List<IRegion>();
+        foreach (var rowInterval in RowFormats.GetAllIntervals())
+        {
+            overlappingRegions.Add(new Region(rowInterval.Start, rowInterval.End, region.Start.Col,
+                                              region.End.Col));
+        }
+
+        foreach (var overlapRegion in overlappingRegions)
+        {
+            var sheetRegion = overlapRegion.GetIntersection(this.Region);
+            var posns = new BRange(this, sheetRegion).Positions;
+            foreach (var posn in posns)
+            {
+                if (!_cellDataStore.Contains(posn.row, posn.col))
+                    _cellDataStore.Set(posn.row, posn.col, new Cell());
+                var cell = _cellDataStore.Get(posn.row, posn.col);
+                var oldFormat = cell!.Formatting?.Clone();
+                _cellDataStore.Get(posn.row, posn.col)!.MergeFormat(format);
+                changes.Add(new CellChangedFormat(posn.row, posn.col, oldFormat, format));
+            }
+        }
+
+        return changes;
+    }
+
+    private IEnumerable<CellChangedFormat> SetRowFormat(Format format, RowRegion region)
+    {
+        // Keep track of individual cell changes
+        var changes = new List<CellChangedFormat>();
+
+        RowFormats.Add(new OrderedInterval<Format>(region.Start.Row, region.End.Row, format));
+        // Set the specific format of any non-empty cells in the column range (empty cells are covered by the range format).
+        // We do this because cell formatting takes precedence in rendering over col & range formats.
+        // So if the cell already has a format, it should be merged.
+        var nonEmpty = this.GetNonEmptyCellPositions(region);
+        foreach (var posn in nonEmpty)
+        {
+            var cell = _cellDataStore.Get(posn.row, posn.col);
+            var oldFormat = cell!.Formatting?.Clone();
+            if (cell.Formatting == null)
+                cell.Formatting = format.Clone();
+            else
+                cell.Formatting.Merge(format);
+
+            changes.Add(new CellChangedFormat(posn.row, posn.col, oldFormat, cell.Formatting));
+        }
+
+        // Look at the region(s) of overlap with row formats - must make these cells exist and assign formats
+        var overlappingRegions = new List<IRegion>();
+        foreach (var colInterval in ColFormats.GetAllIntervals())
+        {
+            overlappingRegions.Add(new Region(region.Start.Row, region.End.Row, colInterval.Start,
+                                              colInterval.End));
+        }
+
+        foreach (var overlapRegion in overlappingRegions)
+        {
+            var sheetRegion = overlapRegion.GetIntersection(this.Region);
+            var posns = new BRange(this, sheetRegion).Positions;
+            foreach (var posn in posns)
+            {
+                if (!_cellDataStore.Contains(posn.row, posn.col))
+                    _cellDataStore.Set(posn.row, posn.col, new Cell());
+                var cell = _cellDataStore.Get(posn.row, posn.col);
+                var oldFormat = cell!.Formatting?.Clone();
+                _cellDataStore.Get(posn.row, posn.col)!.MergeFormat(format);
+                changes.Add(new CellChangedFormat(posn.row, posn.col, oldFormat, format));
+            }
+        }
+
+        return changes;
+    }
+
+
+    /// <summary>
+    /// Sets the cell format to the format specified. Note the format is set to the format
+    /// and is not merged. If the cell is not in our data store it is created.
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <param name="format"></param>
+    /// <returns>A record of what change occured.</returns>
+    public CellChangedFormat SetCellFormat(int row, int col, Format format)
+    {
+        Format? oldFormat = null;
+        if (!_cellDataStore.Contains(row, col))
+            _cellDataStore.Set(row, col, new Cell() { Formatting = format });
+        else
+        {
+            var cell = _cellDataStore.Get(row, col);
+            oldFormat = cell!.Formatting;
+            cell!.Formatting = format;
+        }
+
+        return new CellChangedFormat(row, col, oldFormat, format);
     }
 
     internal void SetCell(int row, int col, Cell cell)

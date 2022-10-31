@@ -8,18 +8,11 @@
 {
     var conditionalFormatting = Sheet.ConditionalFormatting.GetFormat(Cell.Row, Cell.Col);
 
-    Format? format;
-    // If the cell contains its own format, merge with the conditional formatting
-    if (Cell.Formatting != null)
-    {
-        format = Sheet!.GetFormat(Cell.Row, Cell.Col)?.Clone();
-        if(format != null)
-            format.Merge(conditionalFormatting);
-    }
-    else
-    {
+    Format? format = Sheet!.GetFormat(Cell.Row, Cell.Col)?.Clone();
+    if (format != null)
+        format.Merge(conditionalFormatting);
+    else if (conditionalFormatting != null)
         format = conditionalFormatting;
-    }
     <div
         class="sheet-cell">
 
@@ -31,11 +24,13 @@
             class="cell"
             style="@CalculateCellStyle(format, Cell.IsValid)
                                                                 ">
+
+            @format?.BackgroundColor
             @if (format?.Icon != null)
             {
                 <div style="margin-right:2px; float:left; color: @(format.IconColor ?? "var(--icon-color)");">@format.Icon</div>
             }
-            
+
             @ItemTemplate
         </div>
     </div>
@@ -43,17 +38,24 @@
 
 @code {
 
-    [Parameter] public EventCallback<MouseEventArgs> onmousedown { get; set; }
-    [Parameter] public EventCallback<MouseEventArgs> onmouseup { get; set; }
-    [Parameter] public EventCallback<MouseEventArgs> ondblclick { get; set; }
-    [Parameter] public EventCallback<MouseEventArgs> onmouseover { get; set; }
+    [Parameter]
+    public EventCallback<MouseEventArgs> onmousedown { get; set; }
+
+    [Parameter]
+    public EventCallback<MouseEventArgs> onmouseup { get; set; }
+
+    [Parameter]
+    public EventCallback<MouseEventArgs> ondblclick { get; set; }
+
+    [Parameter]
+    public EventCallback<MouseEventArgs> onmouseover { get; set; }
 
     [Parameter]
     public RenderFragment ItemTemplate { get; set; }
 
     [Parameter, EditorRequired]
     public bool IsDirty { get; set; }
-    
+
     [Parameter]
     public IReadOnlyCell Cell { get; set; }
 
