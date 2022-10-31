@@ -1,6 +1,7 @@
 @using BlazorDatasheet.Interfaces
 @using System.Text
 @using BlazorDatasheet.Data
+@implements IHandleEvent
 
 <!-- The cell content -->
 
@@ -14,17 +15,17 @@
     else if (conditionalFormatting != null)
         format = conditionalFormatting;
     <div
-        class="sheet-cell">
+        class="sheet-cell"
+        @ondblclick="ondblclick"
+        @onmousedown="onmousedown"
+        @onmouseup="onmouseup"
+        @onmouseover="onmouseover">
 
         <div
-            @ondblclick="ondblclick"
-            @onmousedown="onmousedown"
-            @onmouseup="onmouseup"
-            @onmouseover="onmouseover"
             class="cell"
             style="@CalculateCellStyle(format, Cell.IsValid)
                                                                 ">
-            
+
             @if (format?.Icon != null)
             {
                 <div style="margin-right:2px; float:left; color: @(format.IconColor ?? "var(--icon-color)");">@format.Icon</div>
@@ -75,5 +76,7 @@
     {
         return IsDirty;
     }
+    
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
 
 }

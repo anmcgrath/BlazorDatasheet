@@ -9,9 +9,11 @@
 <p>Below is an sheet with 100,000 rows. There is no data validation or formatting and the default editors are used.</p>
 
 <Datasheet
-    Sheet="sheet"/>
-
-    <button @onclick="@(() => sheet.SetFormat(new Format() { BackgroundColor = "red" }, sheet.Selection))">Set format to red</button>
+    Sheet="sheet"
+    IsFixedHeight="true"
+    FixedHeightInPx="600"
+    />
+<button @onclick="@(() => sheet.SetFormat(new Format() { BackgroundColor = "red" }, sheet.Selection))">Set format to red</button>
     <button @onclick="@(() => sheet.SetFormat(new Format() { BackgroundColor = "blue" }, sheet.Selection))">Set format to blue</button>
 
 
@@ -21,7 +23,7 @@
 
     protected override void OnInitialized()
     {
-        sheet = new Sheet(numRows: 10, numCols: 5);
+        sheet = new Sheet(numRows: 100000, numCols: 5);
     }
 
 }
