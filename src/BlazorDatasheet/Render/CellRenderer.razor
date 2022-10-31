@@ -24,8 +24,7 @@
             class="cell"
             style="@CalculateCellStyle(format, Cell.IsValid)
                                                                 ">
-
-            @format?.BackgroundColor
+            
             @if (format?.Icon != null)
             {
                 <div style="margin-right:2px; float:left; color: @(format.IconColor ?? "var(--icon-color)");">@format.Icon</div>
