@@ -15,6 +15,7 @@ public class WindowEventService : IWindowEventService
     private List<Tuple<string, string>> _fnStore = new List<Tuple<string, string>>();
     public event Func<KeyboardEventArgs, bool?> OnKeyDown;
     public event Func<MouseEventArgs, bool>? OnMouseDown;
+    public event Func<MouseEventArgs, bool>? OnMouseUp;
     public event Func<PasteEventArgs, Task>? OnPaste;
 
     public WindowEventService(IJSRuntime js)
@@ -27,6 +28,7 @@ public class WindowEventService : IWindowEventService
         _dotNetHelper = DotNetObjectReference.Create(this);
         _fnStore.Add(await addWindowEvent("keydown", nameof(HandleWindowKeyDown)));
         _fnStore.Add(await addWindowEvent("mousedown", nameof(HandleWindowMouseDown)));
+        _fnStore.Add(await addWindowEvent("mouseup", nameof(HandleWindowMouseUp)));
         _fnStore.Add(await addWindowEvent("paste", nameof(HandleWindowPaste)));
     }
 
@@ -49,6 +51,15 @@ public class WindowEventService : IWindowEventService
     public bool HandleWindowMouseDown(MouseEventArgs e)
     {
         var result = OnMouseDown?.Invoke(e);
+        if (!result.HasValue)
+            return false;
+        return result.Value;
+    }
+    
+    [JSInvokable]
+    public bool HandleWindowMouseUp(MouseEventArgs e)
+    {
+        var result = OnMouseUp?.Invoke(e);
         if (!result.HasValue)
             return false;
         return result.Value;

@@ -192,7 +192,7 @@
         var strBuilder = new StringBuilder();
         var left = CellLayoutProvider.ComputeLeftPosition(EditCol);
         var top = CellLayoutProvider.ComputeTopPosition(EditRow);
-        var w = CellLayoutProvider.ComputeWidth(1);
+        var w = CellLayoutProvider.ComputeWidth(EditCol, 1);
         var h = CellLayoutProvider.ComputeHeight(1);
 
         strBuilder.Append($"left:{left}px;");

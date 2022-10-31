@@ -1,6 +1,7 @@
 using System.Text;
 using BlazorDatasheet.Data;
 using BlazorDatasheet.Interfaces;
+using BlazorDatasheet.Render;
 
 namespace BlazorDatasheet.Util;
 
@@ -24,6 +25,22 @@ public class CssUtil
             str.Append($"background:{cell.Formatting.BackgroundColor};");
             str.Append($"color:{cell.Formatting.ForegroundColor};");
         }
+        return str.ToString();
+    }
+
+    /// <summary>
+    /// Returns the css strings for producing width & max width of a cell given its location and spon
+    /// </summary>
+    /// <param name="col"></param>
+    /// <param name="colSpan"></param>
+    /// <param name="provider"></param>
+    /// <returns></returns>
+    public static string GetCellWidthStyles(int col, int colSpan, CellLayoutProvider provider)
+    {
+        var str = new StringBuilder();
+        str.Append($"width:{provider.ComputeWidth(col, colSpan)}px;");
+        str.Append($"max-width:{provider.ComputeWidth(col, colSpan)}px;");
+        str.Append($"min-width:{provider.ComputeWidth(col, colSpan)}px;");
         return str.ToString();
     }
 }

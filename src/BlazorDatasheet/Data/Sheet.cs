@@ -94,9 +94,16 @@ public class Sheet
     public event EventHandler<IEnumerable<ChangeEventArgs>> CellsChanged;
 
     /// <summary>
+    /// Fired when a column width is changed
+    /// </summary>
+    public event EventHandler<ColumnWidthChangedArgs> ColumnWidthChanged;
+
+    /// <summary>
     /// Fired when cell formats change
     /// </summary>
     public event EventHandler<FormatChangedEventArgs> FormatsChanged;
+
+    internal CellLayoutProvider LayoutProvider { get; }
 
     private IMatrixDataStore<Cell> _cellDataStore { get; set; } = new SparseMatrixStore<Cell>();
 
@@ -129,12 +136,15 @@ public class Sheet
                 _cellDataStore.Set(i, j, cell);
             }
         }
+
+        LayoutProvider = new CellLayoutProvider(this, 105, 25);
     }
 
     public Sheet(int numRows, int numCols) : this()
     {
         NumCols = numCols;
         NumRows = numRows;
+        LayoutProvider = new CellLayoutProvider(this, 105, 25);
     }
 
     /// <summary>
@@ -732,5 +742,18 @@ public class Sheet
         }
 
         return strBuilder.ToString();
+    }
+
+    public void SetColumnWidth(int col, double width)
+    {
+        var cmd = new SetColumnWidthCommand(col, width);
+        Commands.ExecuteCommand(cmd);
+    }
+
+    internal void SetColumnWidthImpl(int col, double width)
+    {
+        var oldWidth = this.LayoutProvider.ComputeWidth(col, 1);
+        this.LayoutProvider.SetColumnWidth(col, width);
+        ColumnWidthChanged?.Invoke(this, new ColumnWidthChangedArgs(col, width, oldWidth));
     }
 }

@@ -9,6 +9,7 @@
 @using System.Collections.Immutable
 @using System.Reflection
 @using System.Text
+@using BlazorDatasheet.Util
 
 <div
     style="@(IsFixedHeight ? $"max-height: {FixedHeightInPx}px;" : "");"
@@ -24,7 +25,7 @@
             @if (Sheet.ShowRowHeadings)
             {
                 <!-- the little bit outside to the left of first col header -->
-                <div class="sheet-cell row-head">
+                <div class="sheet-cell row-head" style="@CssUtil.GetCellWidthStyles(-1, 1, Sheet.LayoutProvider)">
                     <div class="cell"/>
                 </div>
             }
@@ -33,7 +34,7 @@
                 OnMouseOver="@(e => HandleCellMouseOver(-1, e.Column, e.Args))"
                 OnMouseDown="@(e => HandleColumnHeaderMouseDown(e.Column, e.Args))"
                 TempSelection="TempSelection"
-                CellLayoutProvider="_cellLayoutProvider"
+                CellLayoutProvider="Sheet.LayoutProvider"
                 Sheet="Sheet"/>
         </div>
     }
@@ -49,7 +50,7 @@
                         OnMouseOver="e => HandleCellMouseOver(e.RowIndex, -1, e.MouseEventArgs)"
                         OnMouseUp="e => HandleCellMouseUp(e.RowIndex, -1, e.MouseEventArgs)"
                         Sheet="Sheet"
-                        CellLayoutProvider="_cellLayoutProvider"
+                        CellLayoutProvider="Sheet.LayoutProvider"
                         TempSelection="TempSelection"/>
                 </div>
             </div>
@@ -92,12 +93,12 @@
         <EditorOverlayRenderer
             @ref="_editorManager"
             Sheet="Sheet"
-            CellLayoutProvider="_cellLayoutProvider"/>
+            CellLayoutProvider="Sheet.LayoutProvider"/>
 
         <SelectionRenderer
             TempSelection="TempSelection"
             Sheet="Sheet"
-            CellLayoutProvider="_cellLayoutProvider"/>
+            CellLayoutProvider="Sheet.LayoutProvider"/>
     }
 </div>
 

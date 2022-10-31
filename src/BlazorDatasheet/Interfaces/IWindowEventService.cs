@@ -8,5 +8,6 @@ public interface IWindowEventService : IDisposable
     Task Init();
     event Func<KeyboardEventArgs, bool?> OnKeyDown;
     event Func<MouseEventArgs, bool>? OnMouseDown;
+    event Func<MouseEventArgs, bool>? OnMouseUp;
     event Func<PasteEventArgs, Task>? OnPaste;
 }

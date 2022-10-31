@@ -9,16 +9,40 @@ namespace BlazorDatasheet.Render;
 public class CellLayoutProvider
 {
     private Sheet _sheet;
-    private readonly double _columnWidth;
-    private readonly double _rowHeight;
+    private readonly double _defaultColumnWidth;
+    private readonly double _defaultRowHeight;
 
-    internal CellLayoutProvider(Sheet sheet, double columnWidth, double rowHeight)
+    // as long as the number of columns are small (which we will restrict) 
+    // then we can store the column widths & x positions in arrays
+    private List<double> _columnWidths { get; } = new();
+    private List<double> _columnStartPositions { get; } = new();
+
+    internal CellLayoutProvider(Sheet sheet, double defaultColumnWidth, double defaultRowHeight)
     {
-        //TODO: Remove columnWidth and height in future to calculate dynamically
-        //TODO: Remove bools for show headers and rows and determine from sheet.
         _sheet = sheet;
-        _columnWidth = columnWidth;
-        _rowHeight = rowHeight;
+        _defaultColumnWidth = defaultColumnWidth;
+        _defaultRowHeight = defaultRowHeight;
+
+        // Create default array of column widths
+        _columnWidths = Enumerable.Repeat(defaultColumnWidth, sheet.NumCols).ToList();
+        updateXPositions();
+    }
+
+    public void SetColumnWidth(int col, double width)
+    {
+        _columnWidths[col] = width;
+        updateXPositions();
+    }
+
+    private void updateXPositions()
+    {
+        _columnStartPositions.Clear();
+        double cumX = 0;
+        for (int i = 0; i < _columnWidths.Count; i++)
+        {
+            _columnStartPositions.Add(cumX);
+            cumX += _columnWidths[i];
+        }
     }
 
     public void SetSheet(Sheet sheet)
@@ -34,7 +58,12 @@ public class CellLayoutProvider
     public double ComputeLeftPosition(int col)
     {
         var extra = _sheet.ShowRowHeadings ? 1 : 0;
-        return (col + extra) * _columnWidth;
+        if (col < 0)
+            return 0;
+        if (col > _columnWidths.Count - 1)
+            return _columnWidths.Last() + _columnStartPositions.Last() +
+                   ((col - _columnWidths.Count) + extra) * _defaultColumnWidth;
+        return extra * _defaultColumnWidth + _columnStartPositions[col];
     }
 
     public double ComputeTopPosition(IRegion region)
@@ -45,22 +74,31 @@ public class CellLayoutProvider
     public double ComputeTopPosition(int row)
     {
         var extra = _sheet.ShowColumnHeadings ? 1 : 0;
-        return (row + extra) * _rowHeight;
+        return (row + extra) * _defaultRowHeight;
     }
 
-    public double ComputeWidth(int colSpan)
+    public double ComputeWidth(int startCol, int colSpan)
     {
-        return colSpan * _columnWidth - 1; // -1 accounts for borders
+        if (startCol < 0 || startCol >= _columnWidths.Count)
+            return _defaultColumnWidth;
+
+        var end = Math.Min(startCol + colSpan - 1, _columnWidths.Count - 1);
+
+        var colXStart = _columnStartPositions[startCol];
+        var colXEnd = _columnStartPositions[end];
+
+        var w = colXEnd - colXStart + _columnWidths[end] - 1;
+        return w;
     }
 
     public double ComputeHeight(int rowSpan)
     {
-        return rowSpan * _rowHeight - 1; // -1 accounts for borders
+        return rowSpan * _defaultRowHeight - 1; // -1 accounts for borders
     }
 
     public double ComputeWidth(IRegion region)
     {
-        return ComputeWidth(region.Width);
+        return ComputeWidth(region.TopLeft.Col, region.Width);
     }
 
     public double ComputeHeight(IRegion region)

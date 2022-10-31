@@ -62,8 +62,6 @@
 
 .sheet-cell {
     display: inline-block;
-    width: 105px;
-    max-width: 105px;
     height: 100%;
     user-select: none;
     -moz-user-select: none;

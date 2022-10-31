@@ -92,7 +92,6 @@ public partial class Datasheet : IHandleEvent
 
     private bool IsSelecting => TempSelection != null && !TempSelection.IsEmpty();
 
-    private CellLayoutProvider _cellLayoutProvider;
     private EditorOverlayRenderer _editorManager;
     private IWindowEventService _windowEventService;
     private IClipboard _clipboard;
@@ -125,6 +124,7 @@ public partial class Datasheet : IHandleEvent
                 _sheetLocal.ConditionalFormatting.ConditionalFormatPrepared -=
                     ConditionalFormattingOnConditionalFormatPrepared;
                 _sheetLocal.FormatsChanged -= SheetLocalOnFormatsChanged;
+                _sheetLocal.ColumnWidthChanged -= SheetLocalOnColumnWidthChanged;
             }
 
             _sheetLocal = Sheet;
@@ -135,10 +135,15 @@ public partial class Datasheet : IHandleEvent
                 ConditionalFormattingOnConditionalFormatPrepared;
             TempSelection.SetSheet(Sheet);
             _sheetLocal.FormatsChanged += SheetLocalOnFormatsChanged;
-            _cellLayoutProvider = new CellLayoutProvider(Sheet, 105, 25);
+            _sheetLocal.ColumnWidthChanged += SheetLocalOnColumnWidthChanged;
         }
 
         base.OnParametersSet();
+    }
+
+    private void SheetLocalOnColumnWidthChanged(object? sender, ColumnWidthChangedArgs e)
+    {
+        this.ForceReRender();
     }
 
     private void SheetLocalOnFormatsChanged(object? sender, FormatChangedEventArgs e)

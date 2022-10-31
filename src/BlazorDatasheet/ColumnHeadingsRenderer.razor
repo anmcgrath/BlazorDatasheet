@@ -1,7 +1,13 @@
 @using BlazorDatasheet.Data
 @using BlazorDatasheet.Data.Events
+@using BlazorDatasheet.Interfaces
 @using BlazorDatasheet.Render
 @using BlazorDatasheet.Selecting
+@using BlazorDatasheet.Services
+@using BlazorDatasheet.Util
+@using Microsoft.JSInterop
+@inject IJSRuntime JS;
+@implements IDisposable
 
 
 <div style="position: absolute; top: 0; left: 0;">
@@ -12,10 +18,30 @@
             BackgroundVisible="@true"
             BorderThickness="0"
             BackgroundStyle="background:var(--selection-bg-color);"
-            Width="CellLayoutProvider.ComputeWidth(interval.Length) + 2"
+            Width="CellLayoutProvider.ComputeWidth(interval.Start, interval.Length) + 2"
             Height="CellLayoutProvider.ComputeHeight(1) + 1"
             X="CellLayoutProvider.ComputeLeftPosition(interval.Start) - 1"
             Y="CellLayoutProvider.ComputeTopPosition(-1)"/>
+    }
+
+    @for (int i = 0; i < Sheet.NumCols; i++)
+    {
+        var col = i;
+        <div
+            @onmousedown="e => HandleMouseDownOnAdorner(col)"
+            style="position:absolute; top: 0; left: @(CellLayoutProvider.ComputeLeftPosition(col + 1) - 5)px; width: 10px; background: none; height: 25px; cursor: col-resize; display: block">
+        </div>
+    }
+    
+    @if (IsDragging)
+    {
+        var resizeWidth = Math.Max(MinResizeWidth, Sheet.LayoutProvider.ComputeWidth(ActiveAdorner, 1) + CurrentColResizeAmount);
+        <BoxOverlayRenderer
+            Y="0"
+            Width="3"
+            BorderThickness="1"
+            X="@(CellLayoutProvider.ComputeLeftPosition(ActiveAdorner) + resizeWidth)"
+            Height="CellLayoutProvider.ComputeHeight(Sheet.NumRows)"/>
     }
 
 </div>
@@ -27,11 +53,11 @@
 
     <div
         class="sheet-cell @(IsActive(col) ? "column-active" : "")"
-        style="z-index: 1000"
+        style="z-index: 1;"
         @onmouseup="e => HandleMouseUp(col, e)"
         @onmouseover="e => HandleMouseOver(col, e)"
         @onmousedown="e => HandleMouseDown(col, e)">
-        <div class="cell">
+        <div class="cell" style="@CssUtil.GetCellWidthStyles(i, 1, CellLayoutProvider)">
             @colDefn?.Header
         </div>
     </div>
@@ -58,18 +84,23 @@
 
     private Selection? _tempSelection { get; set; }
 
+    private IWindowEventService _windowEventService;
+
     [Parameter, EditorRequired]
     // The region that is currently being selected.
     public Selection? TempSelection { get; set; }
 
+    private double MouseX { get; set; }
+    private double MouseXStart { get; set; }
+    public int ActiveAdorner { get; set; }
+    public bool IsDragging { get; set; }
+    public double CurrentColResizeAmount { get; set; }
+    private int MinResizeWidth = 15;
+
     public List<OrderedInterval> _selectionIntervals { get; set; } = new();
 
-    private bool IsActive(int col)
-    {
-        return (TempSelection?.ActiveRegion?.SpansCol(col) == true)
-               || Sheet.Selection.Regions.Any(x => x.SpansCol(col));
-    }
-
+    private DotNetObjectReference<ColumnHeadingsRenderer>? selfReference;
+    
     protected override void OnParametersSet()
     {
         if (_tempSelection != TempSelection)
@@ -92,6 +123,61 @@
             _sheet.Selection.Changed += OnSelectionChanged;
         }
         base.OnParametersSet();
+    }
+    
+    [JSInvokable]
+    public void HandleMouseMove(int x, int y)
+    {
+        MouseX = x;
+        if (IsDragging)
+        {
+            CurrentColResizeAmount = MouseX - MouseXStart; // 10 being the minimum width we can resize to
+            StateHasChanged();
+        }
+    }
+
+    private void HandleMouseDownOnAdorner(int col)
+    {
+        MouseXStart = MouseX;
+        ActiveAdorner = col;
+        CurrentColResizeAmount = 0;
+        IsDragging = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            selfReference = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("onThrottledMouseMove", selfReference, 200);
+            _windowEventService = new WindowEventService(JS);
+            await _windowEventService.Init();
+            _windowEventService.OnMouseUp += WindowEventServiceOnOnMouseUp;
+        }
+    }
+
+    private bool WindowEventServiceOnOnMouseUp(MouseEventArgs arg)
+    {
+        if (IsDragging)
+        {
+            IsDragging = false;
+            var resizeWidth = Math.Max(MinResizeWidth, Sheet.LayoutProvider.ComputeWidth(ActiveAdorner, 1) + CurrentColResizeAmount);
+            Sheet.SetColumnWidth(ActiveAdorner, resizeWidth);
+            return true;
+        }
+
+        return false;
+    }
+
+    public void Dispose()
+    {
+        selfReference?.Dispose();
+    }
+
+    private bool IsActive(int col)
+    {
+        return (TempSelection?.ActiveRegion?.SpansCol(col) == true)
+               || Sheet.Selection.Regions.Any(x => x.SpansCol(col));
     }
 
     private void OnSelectionChanged(object? sender, IEnumerable<IRegion> regions)

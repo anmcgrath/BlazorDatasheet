@@ -1,6 +1,7 @@
 @using BlazorDatasheet.Interfaces
 @using System.Text
 @using BlazorDatasheet.Data
+@using BlazorDatasheet.Util
 @implements IHandleEvent
 
 <!-- The cell content -->
@@ -23,8 +24,7 @@
 
         <div
             class="cell"
-            style="@CalculateCellStyle(format, Cell.IsValid)
-                                                                ">
+            style="@CalculateCellFormattingStyle(format, Cell.IsValid) @CssUtil.GetCellWidthStyles(Cell.Col, 1, Sheet.LayoutProvider)">
 
             @if (format?.Icon != null)
             {
@@ -62,7 +62,7 @@
     [Parameter]
     public Sheet Sheet { get; set; }
 
-    private string CalculateCellStyle(Format? format, bool isCellValid)
+    private string CalculateCellFormattingStyle(Format? format, bool isCellValid)
     {
         var foreGroundVar = isCellValid ? "--sheet-foreground-color" : "--invalid-cell-foreground-color";
         var sb = new StringBuilder();
@@ -76,7 +76,7 @@
     {
         return IsDirty;
     }
-    
+
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
 
 }
