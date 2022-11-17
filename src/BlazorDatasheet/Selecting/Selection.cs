@@ -57,6 +57,11 @@ public class Selection : BRange
         emitSelectionChange();
     }
 
+    private void expandToMergs()
+    {
+        
+    }
+
     /// <summary>
     /// Removes the region from the selection
     /// </summary>

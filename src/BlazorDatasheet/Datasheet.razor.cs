@@ -81,6 +81,11 @@ public partial class Datasheet : IHandleEvent
     private Selection? TempSelection { get; set; }
 
     /// <summary>
+    /// The current (or close to) region in view.
+    /// </summary>
+    public IRegion ViewportRegion { get; private set; }
+
+    /// <summary>
     /// Store any cells that are dirty here
     /// </summary>
     private HashSet<(int row, int col)> DirtyCells { get; set; } = new();
@@ -238,6 +243,7 @@ public partial class Datasheet : IHandleEvent
                 Sheet?.Selection?.ClearSelections();
             }
 
+            var mergeRangeAtPosition = _sheetLocal.GetMergedRegionAtPosition(row, col);
             this.BeginSelectingCell(row, col);
         }
 
@@ -527,6 +533,11 @@ public partial class Datasheet : IHandleEvent
         TempSelection.SetSingle(new ColumnRegion(col, col));
     }
 
+    private void BeginSelectingRegion(IRegion region)
+    {
+        TempSelection.SetSingle(region.Copy());
+    }
+
     /// <summary>
     /// Updates the current selecting selection by extending it to row, col
     /// </summary>
@@ -590,6 +601,8 @@ public partial class Datasheet : IHandleEvent
     {
         var numRows = request.Count;
         var startIndex = request.StartIndex;
+
+        this.ViewportRegion = new Region(startIndex, startIndex + numRows, 0, _sheetLocal.NumCols);
         return new ItemsProviderResult<int>(Enumerable.Range(startIndex, numRows), Sheet.NumRows);
     }
 

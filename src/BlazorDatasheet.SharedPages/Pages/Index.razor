@@ -27,6 +27,7 @@
     <button @onclick="@(() => Sheet.SetFormat(new Format() { BackgroundColor = "red" }, Sheet.Selection))">Set bg to red</button>
     <button @onclick="@(() => Sheet.SetFormat(new Format() { BackgroundColor = "blue" }, Sheet.Selection))">Set bg to blue</button>
     <button @onclick="@(() => Sheet.SetFormat(new Format() { ForegroundColor = "green" }, Sheet.Selection))">Set font colour to green</button>
+    <button @onclick="@(() => Sheet.MergeCellsImpl(Sheet.Selection))">Merge cells</button>
 </div>
 
 <div>

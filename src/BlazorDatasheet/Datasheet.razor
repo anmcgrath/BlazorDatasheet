@@ -90,6 +90,37 @@
             </ItemContent>
         </Virtualize>
 
+        <!-- Merged cells -->
+        @if (Sheet.MergedCells.Count > 0)
+        {
+            var mergesInView = Sheet.MergedCells.Search(this.ViewportRegion.ToEnvelope());
+            @foreach (var merge in mergesInView)
+            {
+                var row = merge.Region.Start.Row;
+                var col = merge.Region.Start.Col;
+                var cell = Sheet.GetCell(row, col);
+
+                <CellRenderer
+                    @onmousedown="e => HandleCellMouseDown(row, col, e)"
+                    @onmouseover="e => HandleCellMouseOver(row, col, e)"
+                    @ondblclick="e => HandleCellDoubleClick(row, col, e)"
+                    @onmouseup="e => HandleCellMouseUp(row, col, e)"
+                    ColSpan="merge.Region.Width"
+                    RowSpan="merge.Region.Height"
+                    IsAbsolutePositioning="true"
+                    Cell="cell"
+                    Sheet="Sheet"
+                    IsDirty="true">
+                    <ItemTemplate>
+                        <DynamicComponent
+                            Type="@getCellRendererType(cell.Type)"
+                            Parameters="@getCellRendererParameters(cell, row, col)">
+                        </DynamicComponent>
+                    </ItemTemplate>
+                </CellRenderer>
+            }
+        }
+
         <EditorOverlayRenderer
             @ref="_editorManager"
             Sheet="Sheet"

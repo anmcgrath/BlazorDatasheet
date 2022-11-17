@@ -8,6 +8,7 @@ using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Render.DefaultComponents;
 using BlazorDatasheet.Selecting;
+using BlazorDatasheet.Util;
 
 namespace BlazorDatasheet.Data;
 
@@ -78,6 +79,8 @@ public class Sheet
     /// </summary>
     internal NonOverlappingIntervals<Format> ColFormats = new();
 
+    internal RTree<CellMerge> MergedCells { get; } = new();
+
     /// <summary>
     /// Fired when a row is inserted into the sheet
     /// </summary>
@@ -97,6 +100,11 @@ public class Sheet
     /// Fired when a column width is changed
     /// </summary>
     public event EventHandler<ColumnWidthChangedArgs> ColumnWidthChanged;
+
+    /// <summary>
+    /// Fired when cells are merged
+    /// </summary>
+    public event EventHandler<IRegion> RegionMerged;
 
     /// <summary>
     /// Fired when cell formats change
@@ -755,5 +763,48 @@ public class Sheet
         var oldWidth = this.LayoutProvider.ComputeWidth(col, 1);
         this.LayoutProvider.SetColumnWidth(col, width);
         ColumnWidthChanged?.Invoke(this, new ColumnWidthChangedArgs(col, width, oldWidth));
+    }
+
+    public void MergeCellsImpl(BRange range)
+    {
+        foreach (var region in range.Regions)
+        {
+            MergeCellsImpl(region);
+        }
+    }
+
+    public void MergeCellsImpl(IRegion region)
+    {
+        var cellMerge = new CellMerge(region);
+        var isOverlapping = MergedCells.Search(cellMerge.Envelope).Any();
+        if (isOverlapping)
+            return;
+        MergedCells.Insert(cellMerge);
+    }
+
+    /// <summary>
+    /// Un-merge all cells that overlap the range
+    /// </summary>
+    /// <param name="region"></param>
+    internal void UnMergeCellsImpl(IRegion region)
+    {
+        var envelope = new Envelope(region.TopLeft.Col,
+                                    region.TopLeft.Row,
+                                    region.BottomRight.Col,
+                                    region.BottomRight.Row);
+
+        var mergedCellsInRange = MergedCells.Search(envelope);
+        foreach (var merge in mergedCellsInRange)
+        {
+            MergedCells.Delete(merge);
+        }
+    }
+
+    internal IRegion? GetMergedRegionAtPosition(int row, int col)
+    {
+        var cellRegion = new Region(row, col);
+        var merges = MergedCells.Search(cellRegion.ToEnvelope());
+        // There will only be one merge because we don't allow overlapping
+        return merges.FirstOrDefault()?.Region;
     }
 }

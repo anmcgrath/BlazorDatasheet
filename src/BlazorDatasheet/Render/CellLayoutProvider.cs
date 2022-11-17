@@ -93,7 +93,7 @@ public class CellLayoutProvider
 
     public double ComputeHeight(int rowSpan)
     {
-        return rowSpan * _defaultRowHeight - 1; // -1 accounts for borders
+        return rowSpan * _defaultRowHeight;
     }
 
     public double ComputeWidth(IRegion region)

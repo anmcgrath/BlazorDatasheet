@@ -17,6 +17,7 @@
         format = conditionalFormatting;
     <div
         class="sheet-cell"
+        style="@GetAbsolutePositionStyles() @($"height:{Sheet.LayoutProvider.ComputeHeight(RowSpan)}px")"
         @ondblclick="ondblclick"
         @onmousedown="onmousedown"
         @onmouseup="onmouseup"
@@ -24,7 +25,9 @@
 
         <div
             class="cell"
-            style="@CalculateCellFormattingStyle(format, Cell.IsValid) @CssUtil.GetCellWidthStyles(Cell.Col, 1, Sheet.LayoutProvider)">
+            style="
+            @CalculateCellFormattingStyle(format, Cell.IsValid)
+            @CssUtil.GetCellWidthStyles(Cell.Col, ColSpan, Sheet.LayoutProvider)">
 
             @if (format?.Icon != null)
             {
@@ -51,6 +54,15 @@
     public EventCallback<MouseEventArgs> onmouseover { get; set; }
 
     [Parameter]
+    public int ColSpan { get; set; } = 1;
+
+    [Parameter]
+    public int RowSpan { get; set; } = 1;
+
+    [Parameter]
+    public bool IsAbsolutePositioning { get; set; }
+
+    [Parameter]
     public RenderFragment ItemTemplate { get; set; }
 
     [Parameter, EditorRequired]
@@ -61,6 +73,19 @@
 
     [Parameter]
     public Sheet Sheet { get; set; }
+
+    private string GetAbsolutePositionStyles()
+    {
+        if (IsAbsolutePositioning)
+        {
+            var sb = new StringBuilder();
+            sb.Append("position:absolute;");
+            sb.Append($"top:{Sheet.LayoutProvider.ComputeTopPosition(Cell.Row)}px;");
+            sb.Append($"left:{Sheet.LayoutProvider.ComputeLeftPosition(Cell.Col)}px;");
+            return sb.ToString();
+        }
+        return string.Empty;
+    }
 
     private string CalculateCellFormattingStyle(Format? format, bool isCellValid)
     {

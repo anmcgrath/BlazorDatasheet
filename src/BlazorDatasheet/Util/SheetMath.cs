@@ -1,4 +1,5 @@
 using BlazorDatasheet.Data;
+using BlazorDatasheet.Data.SpatialDataStructures;
 
 namespace BlazorDatasheet.Util;
 
@@ -60,5 +61,13 @@ public static class SheetMath
         }
 
         return ~lower;
+    }
+
+    public static Envelope ToEnvelope(this IRegion region)
+    {
+        return new Envelope(region.TopLeft.Col, 
+                                 region.TopLeft.Row, 
+                                 region.BottomRight.Col,
+                                 region.BottomRight.Row);
     }
 }
