@@ -55,7 +55,7 @@ public class BRange
         foreach (var region in Regions)
         {
             nonEmptyCells.AddRange(Sheet.GetNonEmptyCellPositions(region)
-                                      .Select(x => Sheet.GetCell(x.row, x.col)));
+                .Select(x => Sheet.GetCell(x.row, x.col)));
         }
 
         return nonEmptyCells;
@@ -68,6 +68,11 @@ public class BRange
     private void doSetValues(object value)
     {
         Sheet.SetCellValues(Positions.Select(x => new ValueChange(x.row, x.col, value)));
+    }
+
+    public void ClearCells()
+    {
+        Sheet.ClearCells(this);
     }
 
     protected void AddRegion(IRegion region)

@@ -29,7 +29,7 @@ public class SelectionManagerTests
     {
         var selection = new Selection(_sheet);
         var r = new Region(0, 0);
-        selection.Add(r);
+        selection.AddRegionToSelections(r);
         Assert.AreEqual(r, selection.ActiveRegion);
         Assert.AreEqual(r.TopLeft, selection.ActiveCellPosition);
         var r2 = new Region(1, 1);
@@ -40,7 +40,7 @@ public class SelectionManagerTests
     public void Add_Selection_Outside_Region_Constrains_Inside()
     {
         var selection = new Selection(_sheet);
-        selection.Add(new Region(-1000, 1000, -1000, 1000));
+        selection.AddRegionToSelections(new Region(-1000, 1000, -1000, 1000));
         Assert.AreEqual(_sheet.Region.Area, selection.ActiveRegion.GetIntersection(_sheet.Region).Area);
     }
 
@@ -48,7 +48,7 @@ public class SelectionManagerTests
     public void Cycle_Active_position_through_range()
     {
         var selection = new Selection(_sheet);
-        selection.Add(new Region(0,1,0,1));
+        selection.AddRegionToSelections(new Region(0,1,0,1));
         Assert.AreEqual(new CellPosition(0,0), selection.ActiveCellPosition);
         selection.MoveActivePosition(1);
         Assert.AreEqual(new CellPosition(1,0), selection.ActiveCellPosition);
@@ -67,8 +67,8 @@ public class SelectionManagerTests
         var r1 = new Region(0, 0, 0, 0);
         var r2 = new Region(1, 1, 1, 1);
         
-        selection.Add(r1);
-        selection.Add(r2);
+        selection.AddRegionToSelections(r1);
+        selection.AddRegionToSelections(r2);
         
         Assert.AreEqual(r2, selection.ActiveRegion);
         Assert.AreEqual(r2.TopLeft, selection.ActiveCellPosition);
@@ -84,13 +84,13 @@ public class SelectionManagerTests
     {
         var nTimesChanged = 0;
         var selection = new Selection(_sheet);
-        selection.Changed += (sender, ranges) =>
+        selection.SelectionChanged += (sender, ranges) =>
         {
             nTimesChanged++;
         };
         
         selection.SetSingle(new Region(1,1));
-        selection.Add(new Region(2,2));
+        selection.AddRegionToSelections(new Region(2,2));
         selection.ClearSelections();
         Assert.AreEqual(3, nTimesChanged);
     }

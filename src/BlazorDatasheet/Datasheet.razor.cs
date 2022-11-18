@@ -76,11 +76,6 @@ public partial class Datasheet : IHandleEvent
     private bool IsMouseInsideSheet { get; set; }
 
     /// <summary>
-    /// The selection that is in the process of being selected by the user
-    /// </summary>
-    private Selection? TempSelection { get; set; }
-
-    /// <summary>
     /// The current (or close to) region in view.
     /// </summary>
     public IRegion ViewportRegion { get; private set; }
@@ -95,7 +90,7 @@ public partial class Datasheet : IHandleEvent
     /// </summary>
     public bool SheetIsDirty { get; set; } = true;
 
-    private bool IsSelecting => TempSelection != null && !TempSelection.IsEmpty();
+    internal bool IsSelecting => Sheet != null && Sheet.Selection.IsSelecting;
 
     private EditorOverlayRenderer _editorManager;
     private IWindowEventService _windowEventService;
@@ -111,7 +106,6 @@ public partial class Datasheet : IHandleEvent
     {
         _windowEventService = new WindowEventService(JS);
         _clipboard = new Clipboard(JS);
-        TempSelection = new Selection(Sheet);
         base.OnInitialized();
     }
 
@@ -138,7 +132,6 @@ public partial class Datasheet : IHandleEvent
             _sheetLocal.RowRemoved += SheetOnRowRemoved;
             _sheetLocal.ConditionalFormatting.ConditionalFormatPrepared +=
                 ConditionalFormattingOnConditionalFormatPrepared;
-            TempSelection.SetSheet(Sheet);
             _sheetLocal.FormatsChanged += SheetLocalOnFormatsChanged;
             _sheetLocal.ColumnWidthChanged += SheetLocalOnColumnWidthChanged;
         }
@@ -409,7 +402,7 @@ public partial class Datasheet : IHandleEvent
         {
             if (!Sheet.Selection.Regions.Any())
                 return true;
-            Sheet.Selection.Clear();
+            Sheet.Selection.ClearCells();
             return true;
         }
 
@@ -429,7 +422,7 @@ public partial class Datasheet : IHandleEvent
             {
                 if (Sheet == null || !Sheet.Selection.Regions.Any())
                     return false;
-                var inputPosition = Sheet.Selection.ActiveCellPosition;
+                var inputPosition = Sheet.Selection.GetInputPosition();
                 if (inputPosition.IsInvalid)
                     return false;
                 BeginEdit(inputPosition.Row, inputPosition.Col, softEdit: true, EditEntryMode.Key, e.Key);
@@ -459,7 +452,7 @@ public partial class Datasheet : IHandleEvent
         if (Sheet == null || !Sheet.Selection.Regions.Any())
             return;
 
-        var posnToInput = Sheet.Selection.ActiveCellPosition;
+        var posnToInput = Sheet.Selection.GetInputPosition();
         if (posnToInput.IsInvalid)
             return;
 
@@ -515,27 +508,22 @@ public partial class Datasheet : IHandleEvent
     /// <param name="col">The col where the selection should start</param>
     private void BeginSelectingCell(int row, int col)
     {
-        TempSelection.SetSingle(row, col);
+        Sheet?.Selection.BeginSelectingCell(row, col);
     }
 
     private void CancelSelecting()
     {
-        TempSelection.ClearSelections();
+        Sheet?.Selection.CancelSelecting();
     }
 
     private void BeginSelectingRow(int row)
     {
-        TempSelection.SetSingle(new RowRegion(row, row));
+        Sheet?.Selection.BeginSelectingRow(row);
     }
 
     private void BeginSelectingCol(int col)
     {
-        TempSelection.SetSingle(new ColumnRegion(col, col));
-    }
-
-    private void BeginSelectingRegion(IRegion region)
-    {
-        TempSelection.SetSingle(region.Copy());
+        Sheet?.Selection.BeginSelectingCol(col);
     }
 
     /// <summary>
@@ -548,7 +536,7 @@ public partial class Datasheet : IHandleEvent
         if (!IsSelecting)
             return;
 
-        TempSelection?.ExtendActiveRegion(row, col);
+        Sheet?.Selection.UpdateSelectingEndPosition(row, col);
     }
 
     /// <summary>
@@ -559,8 +547,7 @@ public partial class Datasheet : IHandleEvent
         if (!IsSelecting)
             return;
 
-        Sheet?.Selection.Add(TempSelection!.ActiveRegion!);
-        TempSelection!.ClearSelections();
+        Sheet?.Selection.EndSelecting();
     }
 
     /// <summary>
@@ -570,8 +557,6 @@ public partial class Datasheet : IHandleEvent
     /// <returns></returns>
     private bool IsColumnActive(int col)
     {
-        if (IsSelecting && TempSelection!.ActiveRegion!.SpansCol(col))
-            return true;
         if (Sheet?.Selection.Regions.Any(x => x.SpansCol(col)) == true)
             return true;
         return false;
@@ -584,8 +569,6 @@ public partial class Datasheet : IHandleEvent
     /// <returns></returns>
     private bool IsRowActive(int row)
     {
-        if (IsSelecting && TempSelection!.ActiveRegion!.SpansRow(row))
-            return true;
         if (Sheet?.Selection.Regions.Any(x => x.SpansRow(row)) == true)
             return true;
         return false;

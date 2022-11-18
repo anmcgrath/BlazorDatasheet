@@ -7,7 +7,6 @@ namespace BlazorDatasheet.Data;
 /// </summary>
 public class ColumnRegion : Region
 {
-
     /// <summary>
     /// Create a column region that spans the start and end columns
     /// </summary>
@@ -16,7 +15,7 @@ public class ColumnRegion : Region
     public ColumnRegion(int columnStart, int columnEnd) : base(0, int.MaxValue, columnStart, columnEnd)
     {
     }
-    
+
     public override IRegion Copy()
     {
         return new ColumnRegion(TopLeft.Col, BottomRight.Col);
@@ -36,6 +35,12 @@ public class ColumnRegion : Region
 
         End = new CellPosition(int.MaxValue, newColumnEnd);
         SetOrderedBounds();
+    }
+
+    public override IRegion GetBoundingRegion(IRegion otherRegion)
+    {
+        return new ColumnRegion(Math.Min(otherRegion.TopLeft.Col, this.TopLeft.Col),
+            Math.Max(otherRegion.BottomRight.Col, this.BottomRight.Col));
     }
 
     public override IRegion Clone()

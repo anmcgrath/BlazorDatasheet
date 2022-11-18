@@ -45,6 +45,13 @@ public interface IRegion
     public bool Contains(int row, int col);
 
     /// <summary>
+    /// Determines whether a region is fully inside this region
+    /// </summary>
+    /// <param name="region"></param>
+    /// <returns></returns>
+    public bool Contains(IRegion region);
+
+    /// <summary>
     /// Determines whether the column is spanned by the region
     /// </summary>
     /// <param name="col"></param>
@@ -65,10 +72,17 @@ public interface IRegion
     public IRegion Collapse();
 
     /// <summary>
-    /// Returns a copy of the region
+    /// Returns a copy of the region that doesn't keep the order
     /// </summary>
     /// <returns></returns>
     public IRegion Copy();
+
+    /// <summary>
+    /// Returns a new region that covers both this region and the region given
+    /// </summary>
+    /// <param name="otherRegion"></param>
+    /// <returns></returns>
+    public IRegion GetBoundingRegion(IRegion otherRegion);
 
     /// <summary>
     /// Returns a new region that is the intersection of this region and region
@@ -99,7 +113,7 @@ public interface IRegion
     /// <param name="position">The position to break around</param>
     /// <returns></returns>
     public List<IRegion> Break(CellPosition position);
-    
+
     /// <summary>
     /// Moves the entire region by the specified amount
     /// </summary>
@@ -108,5 +122,16 @@ public interface IRegion
     /// <param name="regionLimit">The limiting region that the region cannot move outside of</param>
     public void Move(int dRow, int dCol, IRegion? regionLimit = null);
 
+    /// <summary>
+    /// Returns the region (which will be one cell wide/high) that runs along the specified edge of this region
+    /// </summary>
+    /// <param name="edge"></param>
+    /// <returns></returns>
+    public IRegion GetEdge(Edge edge);
+
+    /// <summary>
+    /// Returns a copy of the region that does keep the order
+    /// </summary>
+    /// <returns></returns>
     public IRegion Clone();
 }

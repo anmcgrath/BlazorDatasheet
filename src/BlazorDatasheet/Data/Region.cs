@@ -83,6 +83,19 @@ public class Region : IRegion
     }
 
     /// <summary>
+    /// Determines whether a region is fully inside this region
+    /// </summary>
+    /// <param name="region"></param>
+    /// <returns></returns>
+    public bool Contains(IRegion region)
+    {
+        return region.Start.Col >= Start.Col &&
+               region.End.Col <= End.Col &&
+               region.Start.Row >= Start.Row &&
+               region.End.Row <= End.Row;
+    }
+
+    /// <summary>
     /// Determines whether the column is spanned by the region
     /// </summary>
     /// <param name="col"></param>
@@ -118,6 +131,28 @@ public class Region : IRegion
     }
 
     /// <summary>
+    /// Returns the region (which will be one cell wide/high) that runs along the specified edge of this region
+    /// </summary>
+    /// <param name="edge"></param>
+    /// <returns></returns>
+    public IRegion GetEdge(Edge edge)
+    {
+        switch (edge)
+        {
+            case Edge.Top:
+                return new Region(this.Start.Row, this.Start.Row, this.Start.Col, this.End.Col);
+            case Edge.Bottom:
+                return new Region(this.End.Row, this.End.Row, this.Start.Col, this.End.Col);
+            case Edge.Left:
+                return new Region(this.Start.Row, this.End.Row, this.Start.Col, this.Start.Col);
+            case Edge.Right:
+                return new Region(this.Start.Row, this.End.Row, this.End.Col, this.End.Col);
+        }
+
+        return default;
+    }
+
+    /// <summary>
     /// Updates region so that it falls inside the region
     /// </summary>
     /// <param name="region"></param>
@@ -145,12 +180,36 @@ public class Region : IRegion
     }
 
     /// <summary>
-    /// Returns a new copy of the region.
+    /// Returns a new copy of the region that doesn't keep the order
     /// </summary>
     /// <returns></returns>
     public virtual IRegion Copy()
     {
         return new Region(TopLeft.Row, BottomRight.Row, TopLeft.Col, BottomRight.Col);
+    }
+    
+    /// <summary>
+    /// Returns a new copy of the region that does keep the order
+    /// </summary>
+    /// <returns></returns>
+    public virtual IRegion Clone()
+    {
+        return new Region(this.Start.Row, this.End.Row, this.Start.Col, this.End.Col);
+    }
+
+    /// <summary>
+    /// Returns a new region that covers both this region and the region given
+    /// </summary>
+    /// <param name="otherRegion"></param>
+    /// <returns></returns>
+    public virtual IRegion GetBoundingRegion(IRegion otherRegion)
+    {
+        return new Region(
+            Math.Min(this.TopLeft.Row, otherRegion.TopLeft.Row),
+            Math.Max(this.BottomRight.Row, otherRegion.BottomRight.Row),
+            Math.Min(this.TopLeft.Col, otherRegion.TopLeft.Col),
+            Math.Max(this.BottomRight.Col, otherRegion.BottomRight.Col)
+        );
     }
 
     public IRegion? GetIntersection(IRegion? region)
@@ -224,29 +283,29 @@ public class Region : IRegion
         if (!r1IsEmpty)
         {
             var r1 = new Region(this.TopLeft.Row, region.TopLeft.Row - 1,
-                                this.TopLeft.Col,
-                                this.BottomRight.Col);
+                this.TopLeft.Col,
+                this.BottomRight.Col);
             regions.Add(r1);
         }
 
         if (!r2IsEmpty)
         {
             var r2 = new Region(region.TopLeft.Row, region.BottomRight.Row, this.TopLeft.Col,
-                                region.TopLeft.Col - 1);
+                region.TopLeft.Col - 1);
             regions.Add(r2);
         }
 
         if (!r3IsEmpty)
         {
             var r3 = new Region(region.TopLeft.Row, region.BottomRight.Row, region.TopLeft.Col + 1,
-                                this.BottomRight.Col);
+                this.BottomRight.Col);
             regions.Add(r3);
         }
 
         if (!r4IsEmpty)
         {
             var r4 = new Region(region.BottomRight.Row + 1, this.BottomRight.Row, this.TopLeft.Col,
-                                this.BottomRight.Col);
+                this.BottomRight.Col);
             regions.Add(r4);
         }
 
@@ -269,10 +328,7 @@ public class Region : IRegion
         );
     }
 
-    public virtual IRegion Clone()
-    {
-        return new Region(this.Start.Row, this.End.Row, this.Start.Col, this.End.Col);
-    }
+
 
     public IEnumerator<CellPosition> GetEnumerator()
     {

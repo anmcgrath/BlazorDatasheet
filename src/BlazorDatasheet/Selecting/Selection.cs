@@ -1,5 +1,6 @@
 using BlazorDatasheet.Data;
 using BlazorDatasheet.Interfaces;
+using BlazorDatasheet.Util;
 
 namespace BlazorDatasheet.Selecting;
 
@@ -13,19 +14,119 @@ public class Selection : BRange
     public IRegion? ActiveRegion { get; private set; }
 
     /// <summary>
-    /// The position of the cell that should take user input. Usually the start position of ActiveRegion
+    /// The region that is currently being selected
+    /// </summary>
+    internal IRegion? SelectingRegion { get; private set; }
+
+    /// <summary>
+    /// The current mode of selecting
+    /// </summary>
+    private SelectionMode SelectingMode { get; set; }
+
+    /// <summary>
+    /// The position that the selecting process was started at
+    /// </summary>
+    internal CellPosition SelectingStartPosition { get; private set; }
+
+    internal bool IsSelecting => SelectingRegion != null;
+
+    /// <summary>
+    /// The position of the cell that is "active" in the selection.
+    /// It is sometimes but not always the same as the input position.
     /// </summary>
     public CellPosition ActiveCellPosition { get; private set; }
 
     /// <summary>
     /// Fired when the current selection changes
     /// </summary>
-    public event EventHandler<IEnumerable<IRegion>> Changed;
+    public event EventHandler<IEnumerable<IRegion>> SelectionChanged;
+
+    /// <summary>
+    /// Fired when the current selecting region changes
+    /// </summary>
+    public event EventHandler<IRegion> SelectingChanged;
 
     public Selection(Sheet sheet) : base(sheet, new List<IRegion>())
     {
         _sheet = sheet;
     }
+
+    #region SELECTING
+
+    public void BeginSelectingCell(int row, int col)
+    {
+        this.SelectingRegion = new Region(row, col);
+        this.SelectingStartPosition = new CellPosition(row, col);
+        this.SelectingMode = SelectionMode.Cell;
+        this.SelectingRegion = ExpendRegionOverMerged(SelectingRegion);
+        emitSelectingChanged();
+    }
+
+    public void BeginSelectingCol(int col)
+    {
+        this.SelectingRegion = new ColumnRegion(col, col);
+        this.SelectingStartPosition = new CellPosition(0, col);
+        this.SelectingMode = SelectionMode.Column;
+        this.SelectingRegion = ExpendRegionOverMerged(SelectingRegion);
+        emitSelectingChanged();
+    }
+
+    public void BeginSelectingRow(int row)
+    {
+        this.SelectingRegion = new RowRegion(row, row);
+        this.SelectingStartPosition = new CellPosition(row, 0);
+        this.SelectingMode = SelectionMode.Row;
+        this.SelectingRegion = ExpendRegionOverMerged(SelectingRegion);
+        emitSelectingChanged();
+    }
+
+    public void UpdateSelectingEndPosition(int row, int col)
+    {
+        if (SelectingRegion == null)
+            return;
+
+        switch (SelectingMode)
+        {
+            case SelectionMode.Column:
+                SelectingRegion = new ColumnRegion(SelectingStartPosition.Col, col);
+                break;
+            case SelectionMode.Row:
+                SelectingRegion = new RowRegion(SelectingStartPosition.Row, row);
+                break;
+            case SelectionMode.Cell:
+                SelectingRegion = new Region(SelectingStartPosition.Row, row, SelectingStartPosition.Col, col);
+                break;
+        }
+
+        SelectingRegion = ExpendRegionOverMerged(SelectingRegion);
+        emitSelectingChanged();
+    }
+
+    public void CancelSelecting()
+    {
+        SelectingRegion = null;
+        emitSelectingChanged();
+    }
+
+    public void EndSelecting()
+    {
+        if (SelectingRegion == null)
+            return;
+        this.ActiveCellPosition = new CellPosition(SelectingStartPosition.Row, SelectingStartPosition.Col);
+        this.AddRegionToSelections(SelectingRegion);
+        SelectingStartPosition = new CellPosition(-1, -1);
+        SelectingRegion = null;
+        emitSelectingChanged();
+    }
+
+    private void emitSelectingChanged()
+    {
+        SelectingChanged?.Invoke(this, SelectingRegion);
+    }
+
+    #endregion
+
+    #region SELECTION
 
     /// <summary>
     /// Clears any selection regions
@@ -38,28 +139,52 @@ public class Selection : BRange
     }
 
     /// <summary>
-    /// Clears the cells in the range
-    /// </summary>
-    public void Clear()
-    {
-        _sheet.ClearCells(this);
-    }
-
-    /// <summary>
     /// Adds the region to the selection
     /// </summary>
     /// <param name="region"></param>
-    public void Add(IRegion region)
+    public void AddRegionToSelections(IRegion region)
     {
         _regions.Add(region);
         ActiveRegion = region;
-        ActiveCellPosition = ActiveRegion.Start;
         emitSelectionChange();
     }
 
-    private void expandToMergs()
+    /// <summary>
+    /// Expands the active selection so that it covers any merged cells
+    /// </summary>
+    private IRegion? ExpendRegionOverMerged(IRegion? region)
     {
-        
+        // Look at the four sides of the active region
+        // If any of the sides are touching active regions, we check whether the selection
+        // covers the region entirely. If not, expand the sides so that they cover.
+        // Continue until there are no more merge intersections that we don't fully cover.
+        var boundedRegion = region.Copy();
+
+        if (boundedRegion == null)
+            return null;
+
+        List<CellMerge> mergeOverlaps;
+        do
+        {
+            var top = boundedRegion.GetEdge(Edge.Top).ToEnvelope();
+            var right = boundedRegion.GetEdge(Edge.Right).ToEnvelope();
+            var left = boundedRegion.GetEdge(Edge.Left).ToEnvelope();
+            var bottom = boundedRegion.GetEdge(Edge.Bottom).ToEnvelope();
+
+            mergeOverlaps =
+                Sheet.MergedCells
+                    .Search(top, right, left, bottom)
+                    .Where(x => !boundedRegion.Contains(x.Region))
+                    .ToList();
+
+            // Expand bounded selection to cover all the merges
+            foreach (var merge in mergeOverlaps)
+            {
+                boundedRegion = boundedRegion.GetBoundingRegion(merge.Region);
+            }
+        } while (mergeOverlaps.Any());
+
+        return boundedRegion;
     }
 
     /// <summary>
@@ -86,7 +211,7 @@ public class Selection : BRange
     public void SetSingle(IRegion region)
     {
         _regions.Clear();
-        this.Add(region);
+        this.AddRegionToSelections(region);
     }
 
     /// <summary>
@@ -113,11 +238,6 @@ public class Selection : BRange
             .Any(x => x.Contains(row, col));
     }
 
-    internal void SetSheet(Sheet sheet)
-    {
-        _sheet = sheet;
-    }
-
     /// <summary>
     /// Returns whether there are no regions in the selection
     /// </summary>
@@ -135,21 +255,28 @@ public class Selection : BRange
     /// <param name="rowDir"></param>
     public void MoveActivePosition(int rowDir)
     {
-        // if 
         if (ActiveRegion == null)
             return;
+
+        // If it's currently inside a merged cell, find where it should next move to
+        var merge = Sheet.GetMergedRegionAtPosition(ActiveCellPosition.Row, ActiveCellPosition.Col);
+        if (merge != null)
+            rowDir *= merge.Height;
 
         // Fix the active region to surrounds of the sheet
         var activeRegionFixed = ActiveRegion.GetIntersection(_sheet.Region);
 
         // If the active region is only one cell and there are no other regions,
         // clear the regions and move the whole thing down
-        if (_regions.Count == 1 && activeRegionFixed.Area == 1)
+        if (_regions.Count == 1 && (activeRegionFixed == merge))
         {
             _regions.Clear();
             var newRegion = new Region(ActiveCellPosition.Row + rowDir, ActiveCellPosition.Col);
             newRegion.Constrain(_sheet.Region);
-            this.Add(newRegion);
+            newRegion = ExpendRegionOverMerged(newRegion) as Region;
+            this.ActiveCellPosition = new CellPosition(ActiveCellPosition.Row + rowDir, ActiveCellPosition.Col);
+            this.AddRegionToSelections(newRegion);
+
             emitSelectionChange();
             return;
         }
@@ -182,6 +309,7 @@ public class Selection : BRange
                 newCol = newActiveRegionFixed.BottomRight.Col;
                 newRow = newActiveRegionFixed.BottomRight.Row;
                 ActiveRegion = newActiveRegion;
+                ActiveRegion = newActiveRegion;
             }
         }
 
@@ -202,20 +330,6 @@ public class Selection : BRange
             SetSingle(row, col);
         else // position within active selection
             ActiveCellPosition = new CellPosition(row, col);
-    }
-
-    /// <summary>
-    /// Extends the active selection to the position specified
-    /// </summary>
-    /// <param name="row"></param>
-    /// <param name="col"></param>
-    public void ExtendActiveRegion(int row, int col)
-    {
-        if (ActiveRegion != null)
-        {
-            ActiveRegion.ExtendTo(row, col);
-            emitSelectionChange();
-        }
     }
 
     private IRegion getRegionAfterActive()
@@ -242,11 +356,29 @@ public class Selection : BRange
 
     private void emitSelectionChange()
     {
-        Changed?.Invoke(this, _regions);
+        SelectionChanged?.Invoke(this, _regions);
     }
 
     public IEnumerable<IReadOnlyCell> GetCells()
     {
         return _sheet.GetCellsInRegions(_regions);
     }
+
+    /// <summary>
+    /// Returns the position that should receive input
+    /// </summary>
+    /// <returns></returns>
+    public CellPosition GetInputPosition()
+    {
+        if (ActiveCellPosition.IsInvalid)
+            throw new Exception("Invalid cell position");
+
+        var merged = Sheet.GetMergedRegionAtPosition(ActiveCellPosition.Row, ActiveCellPosition.Col);
+        if (merged == null)
+            return ActiveCellPosition;
+        else
+            return new CellPosition(merged.TopLeft.Row, merged.TopLeft.Col);
+    }
+
+    #endregion
 }

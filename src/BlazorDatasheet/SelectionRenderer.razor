@@ -6,11 +6,11 @@
 @using BlazorDatasheet.Selecting
 
 <!-- Render the temp selection (currently selected region) -->
-@if (TempSelection.ActiveRegion != null && BoundedTempSelection?.Area > 0)
+@if (Sheet != null && BoundedSelectingRegion != null && BoundedSelectingRegion?.Area > 0)
 {
     <!-- We split into regions around the cell's start position, so that the cell's 
     start position shows the renderer underneath it -->
-    var brokenRegions = BoundedTempSelection.Break(TempSelection.ActiveRegion.Start);
+    var brokenRegions = BoundedSelectingRegion.Break(getRegion(Sheet.Selection.SelectingStartPosition));
     foreach (var region in brokenRegions)
     {
         <BoxOverlayRenderer
@@ -27,10 +27,10 @@
         BackgroundVisible="@false"
         BorderThickness="1"
         BackgroundStyle="@bgStyle"
-        X="getLeft(BoundedTempSelection)"
-        Y="getTop(BoundedTempSelection)"
-        Width="getWidth(BoundedTempSelection)"
-        Height="getHeight(BoundedTempSelection)"/>
+        X="getLeft(BoundedSelectingRegion)"
+        Y="getTop(BoundedSelectingRegion)"
+        Width="getWidth(BoundedSelectingRegion)"
+        Height="getHeight(BoundedSelectingRegion)"/>
 }
 
 <!-- render the selections that exist in the sheet -->
@@ -46,7 +46,7 @@
         if (isActiveRegion)
         {
             var brokenRegions = boundedRegion
-                .Break(Sheet.Selection.ActiveCellPosition);
+                .Break(getRegion(Sheet.Selection.GetInputPosition()));
             foreach (var brokenRegion in brokenRegions)
             {
                 <BoxOverlayRenderer
@@ -82,48 +82,52 @@
     [Parameter, EditorRequired]
     public Sheet? Sheet { get; set; }
 
-    private Selection? _tempSelection { get; set; }
-
-    [Parameter, EditorRequired]
-    // The region that is currently being selected.
-    public Selection? TempSelection { get; set; }
-
     private string bgStyle = "background:var(--selection-bg-color);";
 
-    private IRegion? BoundedTempSelection => TempSelection?.ActiveRegion?.GetIntersection(Sheet?.Region);
+    private IRegion? BoundedSelectingRegion => Sheet?.Selection?.SelectingRegion?.GetIntersection(Sheet?.Region);
 
     private double getLeft(IRegion region) => CellLayoutProvider.ComputeLeftPosition(region) - 1;
     private double getTop(IRegion region) => CellLayoutProvider.ComputeTopPosition(region) - 1;
     private double getWidth(IRegion region) => CellLayoutProvider.ComputeWidth(region) + 2;
     private double getHeight(IRegion region) => CellLayoutProvider.ComputeHeight(region) + 1;
 
+    // Returns the region that the position covers (may be > 1 because of merged cells)
+    private IRegion getRegion(CellPosition position)
+    {
+        var merge = Sheet.GetMergedRegionAtPosition(position.Row, position.Col);
+        if (merge != null)
+            return merge;
+        else
+            return new Region(position.Row, position.Col);
+    }
 
     protected override void OnParametersSet()
     {
-        if (_tempSelection != TempSelection)
-        {
-            if (_tempSelection != null)
-            {
-                _tempSelection.Changed -= OnSelectionChanged;
-            }
-            _tempSelection = TempSelection;
-            _tempSelection.Changed += OnSelectionChanged;
-        }
-        {
-        }
-
         if (_sheet != Sheet)
         {
             if (_sheet != null)
             {
-                _sheet.Selection.Changed -= OnSelectionChanged;
+                _sheet.Selection.SelectionChanged -= OnSelectionChanged;
+                _sheet.Selection.SelectingChanged -= OnSelectingChanged;
             }
             _sheet = Sheet;
-            _sheet.Selection.Changed += OnSelectionChanged;
+
+            if (_sheet == null) return;
+
+            _sheet.Selection.SelectionChanged += OnSelectionChanged;
+            _sheet.Selection.SelectingChanged += OnSelectingChanged;
         }
     }
 
     private void OnSelectionChanged(object? sender, IEnumerable<IRegion> regions)
+    {
+        Console.WriteLine("Active region: " + Sheet.Selection.ActiveRegion);
+        Console.WriteLine("input posn: " + Sheet.Selection.GetInputPosition());
+
+        StateHasChanged();
+    }
+
+    private void OnSelectingChanged(object? sender, IRegion region)
     {
         StateHasChanged();
     }

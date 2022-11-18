@@ -33,7 +33,6 @@
                 OnMouseUp="@(e => HandleCellMouseUp(-1, e.Column, e.Args))"
                 OnMouseOver="@(e => HandleCellMouseOver(-1, e.Column, e.Args))"
                 OnMouseDown="@(e => HandleColumnHeaderMouseDown(e.Column, e.Args))"
-                TempSelection="TempSelection"
                 CellLayoutProvider="Sheet.LayoutProvider"
                 Sheet="Sheet"/>
         </div>
@@ -50,8 +49,7 @@
                         OnMouseOver="e => HandleCellMouseOver(e.RowIndex, -1, e.MouseEventArgs)"
                         OnMouseUp="e => HandleCellMouseUp(e.RowIndex, -1, e.MouseEventArgs)"
                         Sheet="Sheet"
-                        CellLayoutProvider="Sheet.LayoutProvider"
-                        TempSelection="TempSelection"/>
+                        CellLayoutProvider="Sheet.LayoutProvider"/>
                 </div>
             </div>
         }
@@ -127,7 +125,6 @@
             CellLayoutProvider="Sheet.LayoutProvider"/>
 
         <SelectionRenderer
-            TempSelection="TempSelection"
             Sheet="Sheet"
             CellLayoutProvider="Sheet.LayoutProvider"/>
     }

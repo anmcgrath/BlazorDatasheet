@@ -31,6 +31,12 @@ public class RowRegion : Region
         SetOrderedBounds();
     }
     
+    public override IRegion GetBoundingRegion(IRegion otherRegion)
+    {
+        return new ColumnRegion(Math.Min(otherRegion.TopLeft.Row, this.TopLeft.Row),
+            Math.Max(otherRegion.BottomRight.Row, this.BottomRight.Row));
+    }
+    
     public override IRegion Clone()
     {
         return new RowRegion(this.Start.Row, this.End.Row);

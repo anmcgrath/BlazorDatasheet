@@ -59,44 +59,32 @@
     [Parameter]
     public EventCallback<RowMouseEvent> OnMouseDown { get; set; }
 
-    private Selection? _tempSelection { get; set; }
-
-    [Parameter, EditorRequired]
-    // The region that is currently being selected.
-    public Selection? TempSelection { get; set; }
-
     public List<OrderedInterval> _selectionIntervals { get; set; } = new();
 
     private Virtualize<int> _virtualizer;
 
     private bool IsActive(int row)
     {
-        return (TempSelection?.ActiveRegion?.SpansRow(row) == true)
-               || Sheet.Selection.Regions.Any(x => x.SpansRow(row));
+        if (Sheet?.Selection?.SelectingRegion == null)
+            return false;
+        return (Sheet!.Selection!.SelectingRegion!.SpansRow(row))
+               || Sheet!.Selection!.Regions.Any(x => x.SpansRow(row));
     }
 
     protected override void OnParametersSet()
     {
-        if (_tempSelection != TempSelection)
-        {
-            if (_tempSelection != null)
-            {
-                _tempSelection.Changed -= OnSelectionChanged;
-            }
-            _tempSelection = TempSelection;
-            _tempSelection.Changed += OnSelectionChanged;
-        }
-
         if (_sheet != Sheet)
         {
             if (_sheet != null)
             {
-                _sheet.Selection.Changed -= OnSelectionChanged;
+                _sheet.Selection.SelectionChanged -= OnSelectionChanged;
+                _sheet.Selection.SelectingChanged -= OnSelectingChanged;
                 _sheet.RowInserted -= SheetOnRowInserted;
                 _sheet.RowRemoved -= SheetOnRowRemoved;
             }
             _sheet = Sheet;
-            _sheet.Selection.Changed += OnSelectionChanged;
+            _sheet.Selection.SelectionChanged += OnSelectionChanged;
+            _sheet.Selection.SelectingChanged += OnSelectingChanged;
             _sheet.RowInserted += SheetOnRowInserted;
             _sheet.RowRemoved += SheetOnRowRemoved;
         }
@@ -113,12 +101,18 @@
         await _virtualizer.RefreshDataAsync();
     }
 
-    private void OnSelectionChanged(object? sender, IEnumerable<IRegion> regions)
+    private void OnSelectionChanged(object? sender, IEnumerable<IRegion> regions) => updateIntervals();
+    private void OnSelectingChanged(object? sender, IRegion region) => updateIntervals();
+
+    private void updateIntervals()
     {
+        if (Sheet?.Selection == null)
+            return;
+
         var intervals = new List<OrderedInterval>();
-        if (!TempSelection.IsEmpty() && TempSelection.ActiveRegion is RowRegion)
+        if (Sheet.Selection.SelectingRegion != null && Sheet.Selection.SelectingRegion is RowRegion)
         {
-            var fixedTempSelection = TempSelection.ActiveRegion.GetIntersection(Sheet.Region);
+            var fixedTempSelection = Sheet.Selection.SelectingRegion.GetIntersection(Sheet.Region);
             intervals.Add(new OrderedInterval(fixedTempSelection.TopLeft.Row, fixedTempSelection.BottomRight.Row));
         }
         foreach (var region in Sheet.Selection.Regions)

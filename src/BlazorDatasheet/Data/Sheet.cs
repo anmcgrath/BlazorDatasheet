@@ -247,8 +247,8 @@ public class Sheet
     public IEnumerable<IReadOnlyCell> GetCellsInRegion(IRegion region)
     {
         return (new BRange(this, region))
-               .Positions
-               .Select(x => this.GetCell(x.row, x.col));
+            .Positions
+            .Select(x => this.GetCell(x.row, x.col));
     }
 
     public Format? GetFormat(int row, int col)
@@ -312,9 +312,9 @@ public class Sheet
     internal IEnumerable<(int row, int col)> GetNonEmptyCellPositions(IRegion region)
     {
         return _cellDataStore.GetNonEmptyPositions(region.TopLeft.Row,
-                                                   region.BottomRight.Row,
-                                                   region.TopLeft.Col,
-                                                   region.BottomRight.Col);
+            region.BottomRight.Row,
+            region.TopLeft.Col,
+            region.BottomRight.Col);
     }
 
     /// <summary>
@@ -555,7 +555,7 @@ public class Sheet
         foreach (var rowInterval in RowFormats.GetAllIntervals())
         {
             overlappingRegions.Add(new Region(rowInterval.Start, rowInterval.End, region.Start.Col,
-                                              region.End.Col));
+                region.End.Col));
         }
 
         foreach (var overlapRegion in overlappingRegions)
@@ -603,7 +603,7 @@ public class Sheet
         foreach (var colInterval in ColFormats.GetAllIntervals())
         {
             overlappingRegions.Add(new Region(region.Start.Row, region.End.Row, colInterval.Start,
-                                              colInterval.End));
+                colInterval.End));
         }
 
         foreach (var overlapRegion in overlappingRegions)
@@ -789,15 +789,26 @@ public class Sheet
     internal void UnMergeCellsImpl(IRegion region)
     {
         var envelope = new Envelope(region.TopLeft.Col,
-                                    region.TopLeft.Row,
-                                    region.BottomRight.Col,
-                                    region.BottomRight.Row);
+            region.TopLeft.Row,
+            region.BottomRight.Col,
+            region.BottomRight.Row);
 
         var mergedCellsInRange = MergedCells.Search(envelope);
         foreach (var merge in mergedCellsInRange)
         {
             MergedCells.Delete(merge);
         }
+    }
+
+    /// <summary>
+    /// Returns whether the position is inside a merged cell
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <returns></returns>
+    internal bool IsPositionMerged(int row, int col)
+    {
+        return GetMergedRegionAtPosition(row, col) != null;
     }
 
     internal IRegion? GetMergedRegionAtPosition(int row, int col)
