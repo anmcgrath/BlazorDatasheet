@@ -12,6 +12,10 @@ public class Region : IRegion
 {
     public CellPosition TopLeft { get; private set; }
     public CellPosition BottomRight { get; private set; }
+    public int Top => TopLeft.Row;
+    public int Left => TopLeft.Col;
+    public int Bottom => BottomRight.Row;
+    public int Right => BottomRight.Col;
 
     /// <summary>
     /// Where the region was started
@@ -55,6 +59,7 @@ public class Region : IRegion
     {
         Start = start;
         End = end;
+        SetOrderedBounds();
     }
 
     protected void SetOrderedBounds()
@@ -186,6 +191,40 @@ public class Region : IRegion
     public virtual IRegion Clone()
     {
         return new Region(this.Start.Row, this.End.Row, this.Start.Col, this.End.Col);
+    }
+
+    public int GetSize(Axis axis)
+    {
+        return axis == Axis.Col ? Width : Height;
+    }
+
+    public int GetLeadingEdgeOffset(Axis axis)
+    {
+        return axis == Axis.Col ? this.GetEdge(Edge.Left).Left : this.GetEdge(Edge.Top).Top;
+    }
+
+    public int GetTrailingEdgeOffset(Axis axis)
+    {
+        return axis == Axis.Col ? this.GetEdge(Edge.Right).Right : this.GetEdge(Edge.Bottom).Bottom;
+    }
+
+    public CellPosition GetConstrained(CellPosition cellPosition)
+    {
+        var r = cellPosition.Row;
+        var c = cellPosition.Col;
+        var r0 = GetLeadingEdgeOffset(Axis.Row);
+        var r1 = GetTrailingEdgeOffset(Axis.Row);
+        var c0 = GetLeadingEdgeOffset(Axis.Col);
+        var c1 = GetTrailingEdgeOffset(Axis.Col);
+        if (r < r0)
+            r = r0;
+        else if (r > r1)
+            r = r1;
+        if (c < c0)
+            c = c0;
+        else if (c > c1)
+            c = c1;
+        return new CellPosition(r, c);
     }
 
     /// <summary>

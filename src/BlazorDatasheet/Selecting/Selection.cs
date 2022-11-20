@@ -255,9 +255,9 @@ public class Selection : BRange
     /// setting them as active where appropriate.
     /// </summary>
     /// <param name="rowDir"></param>
-    public void MoveActivePosition(int rowDir)
+    public void MoveActivePositionByRow(int rowDir)
     {
-        if (ActiveRegion == null)
+        if (ActiveRegion == null || rowDir == 0)
             return;
 
         // If it's currently inside a merged cell, find where it should next move to
@@ -266,8 +266,8 @@ public class Selection : BRange
         {
             // Move multiple rows if the current position is on the edge away
             // from the movement direction.
-            if (rowDir == 1 && merge.TopLeft.Row == ActiveCellPosition.Row ||
-                rowDir == -1 && merge.BottomRight.Row == ActiveCellPosition.Row)
+            if (rowDir == 1 && merge.Top == ActiveCellPosition.Row ||
+                rowDir == -1 && merge.Bottom == ActiveCellPosition.Row)
             {
                 rowDir *= merge.Height;
             }
@@ -283,11 +283,11 @@ public class Selection : BRange
             // We end up with a new region of area 1 (or the size of the merged cell it is not on)
             _regions.Clear();
 
-            var newRowPosn = Math.Max(_sheet.Region.TopLeft.Row,
-                                      Math.Min(_sheet.Region.BottomRight.Row, ActiveCellPosition.Row + rowDir));
-            var newRegion = new Region(newRowPosn, ActiveCellPosition.Col);
+            var offsetPosn = new CellPosition(ActiveCellPosition.Row + rowDir, ActiveCellPosition.Col);
+            offsetPosn = _sheet.Region.GetConstrained(offsetPosn);
+            var newRegion = new Region(offsetPosn.Row, offsetPosn.Col);
             newRegion = ExpandRegionOverMerged(newRegion) as Region;
-            this.ActiveCellPosition = new CellPosition(newRowPosn, ActiveCellPosition.Col);
+            this.ActiveCellPosition = new CellPosition(offsetPosn.Row, offsetPosn.Col);
             this.AddRegionToSelections(newRegion);
 
             emitSelectionChange();
@@ -298,29 +298,110 @@ public class Selection : BRange
         // or the next cell in the region
         var newRow = ActiveCellPosition.Row + rowDir;
         var newCol = ActiveCellPosition.Col;
-        if (newRow > activeRegionFixed.BottomRight.Row)
+        if (newRow > activeRegionFixed.Bottom)
         {
             newCol++;
-            newRow = activeRegionFixed.TopLeft.Row;
-            if (newCol > activeRegionFixed.BottomRight.Col)
+            newRow = activeRegionFixed.Top;
+            if (newCol > activeRegionFixed.Right)
             {
                 var newActiveRegion = getRegionAfterActive();
                 var newActiveRegionFixed = newActiveRegion.GetIntersection(_sheet.Region);
-                newCol = newActiveRegionFixed.TopLeft.Col;
-                newRow = newActiveRegionFixed.TopLeft.Row;
+                newCol = newActiveRegionFixed.Left;
+                newRow = newActiveRegionFixed.Top;
                 ActiveRegion = newActiveRegion;
             }
         }
-        else if (newRow < activeRegionFixed.TopLeft.Row)
+        else if (newRow < activeRegionFixed.Top)
         {
             newCol--;
-            newRow = activeRegionFixed.BottomRight.Row;
-            if (newCol < activeRegionFixed.TopLeft.Col)
+            newRow = activeRegionFixed.Bottom;
+            if (newCol < activeRegionFixed.Left)
             {
                 var newActiveRegion = getRegionAfterActive();
                 var newActiveRegionFixed = newActiveRegion.GetIntersection(_sheet.Region);
-                newCol = newActiveRegionFixed.BottomRight.Col;
-                newRow = newActiveRegionFixed.BottomRight.Row;
+                newCol = newActiveRegionFixed.Right;
+                newRow = newActiveRegionFixed.Bottom;
+                ActiveRegion = newActiveRegion;
+                ActiveRegion = newActiveRegion;
+            }
+        }
+
+        ActiveCellPosition = new CellPosition(newRow, newCol);
+        emitSelectionChange();
+    }
+
+    /// <summary>
+    /// Move the active cell position to the next most relevant position
+    /// If there's nowhere to go, collapse and move down. Otherwise, move through all regions,
+    /// setting them as active where appropriate.
+    /// </summary>
+    /// <param name="rowDir"></param>
+    public void MoveActivePositionByCol(int colDir)
+    {
+        if (ActiveRegion == null || colDir == 0)
+            return;
+
+        // If it's currently inside a merged cell, find where it should next move to
+        var merge = Sheet.GetMergedRegionAtPosition(ActiveCellPosition.Row, ActiveCellPosition.Col);
+        if (merge != null)
+        {
+            // Move multiple rows if the current position is on the edge away
+            // from the movement direction.
+            if (colDir == 1 && merge.Left == ActiveCellPosition.Col ||
+                colDir == -1 && merge.Right == ActiveCellPosition.Col)
+            {
+                colDir *= merge.Width;
+            }
+        }
+
+        // Fix the active region to surrounds of the sheet
+        var activeRegionFixed = ActiveRegion.GetIntersection(_sheet.Region);
+
+        // If the active region is only one cell and there are no other regions,
+        // clear the regions and move the whole thing down
+        if (_regions.Count == 1 && (activeRegionFixed.Area == 1 || activeRegionFixed.Equals(merge)))
+        {
+            // We end up with a new region of area 1 (or the size of the merged cell it is not on)
+            _regions.Clear();
+
+            var offsetPosn = new CellPosition(ActiveCellPosition.Row, ActiveCellPosition.Col + colDir);
+            offsetPosn = _sheet.Region.GetConstrained(offsetPosn);
+            var newRegion = new Region(offsetPosn.Row, offsetPosn.Col);
+            newRegion = ExpandRegionOverMerged(newRegion) as Region;
+            this.ActiveCellPosition = new CellPosition(offsetPosn.Row, offsetPosn.Col);
+            this.AddRegionToSelections(newRegion);
+
+            emitSelectionChange();
+            return;
+        }
+
+        // Move the posn and attempt to bring into either the next region
+        // or the next cell in the region
+        var newRow = ActiveCellPosition.Row;
+        var newCol = ActiveCellPosition.Col + colDir;
+        if (newCol > activeRegionFixed.Right)
+        {
+            newCol = activeRegionFixed.Left;
+            newRow++;
+            if (newRow > activeRegionFixed.Bottom)
+            {
+                var newActiveRegion = getRegionAfterActive();
+                var newActiveRegionFixed = newActiveRegion.GetIntersection(_sheet.Region);
+                newCol = newActiveRegionFixed.Left;
+                newRow = newActiveRegionFixed.Top;
+                ActiveRegion = newActiveRegion;
+            }
+        }
+        else if (newCol < activeRegionFixed.Left)
+        {
+            newCol = activeRegionFixed.Right;
+            newRow--;
+            if (newRow < activeRegionFixed.Top)
+            {
+                var newActiveRegion = getRegionAfterActive();
+                var newActiveRegionFixed = newActiveRegion.GetIntersection(_sheet.Region);
+                newCol = newActiveRegionFixed.Right;
+                newRow = newActiveRegionFixed.Bottom;
                 ActiveRegion = newActiveRegion;
                 ActiveRegion = newActiveRegion;
             }

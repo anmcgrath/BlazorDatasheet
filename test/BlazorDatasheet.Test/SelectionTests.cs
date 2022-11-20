@@ -52,13 +52,13 @@ public class SelectionManagerTests
 
 
         Assert.AreEqual(new CellPosition(0, 0), selection.ActiveCellPosition);
-        selection.MoveActivePosition(1);
+        selection.MoveActivePositionByRow(1);
         Assert.AreEqual(new CellPosition(1, 0), selection.ActiveCellPosition);
-        selection.MoveActivePosition(1);
+        selection.MoveActivePositionByRow(1);
         Assert.AreEqual(new CellPosition(0, 1), selection.ActiveCellPosition);
-        selection.MoveActivePosition(1);
+        selection.MoveActivePositionByRow(1);
         Assert.AreEqual(new CellPosition(1, 1), selection.ActiveCellPosition);
-        selection.MoveActivePosition(1);
+        selection.MoveActivePositionByRow(1);
         Assert.AreEqual(new CellPosition(0, 0), selection.ActiveCellPosition);
     }
 
@@ -76,7 +76,7 @@ public class SelectionManagerTests
         Assert.AreEqual(r2, selection.ActiveRegion);
         Assert.AreEqual(r2.TopLeft, selection.ActiveCellPosition);
 
-        selection.MoveActivePosition(1);
+        selection.MoveActivePositionByRow(1);
 
         Assert.AreEqual(r1, selection.ActiveRegion);
         Assert.AreEqual(r1.TopLeft, selection.ActiveCellPosition);
@@ -99,7 +99,7 @@ public class SelectionManagerTests
     public void Moves_Input_Position_When_Selecting_Region_Is_One_Cell()
     {
         _sheet.Selection.SetSingle(0, 0);
-        _sheet.Selection.MoveActivePosition(1);
+        _sheet.Selection.MoveActivePositionByRow(1);
         Assert.AreEqual(new CellPosition(1, 0), _sheet.Selection.GetInputPosition());
         Assert.AreEqual(new CellPosition(1, 0), _sheet.Selection.ActiveCellPosition);
     }
@@ -110,7 +110,7 @@ public class SelectionManagerTests
         _sheet.MergeCellsImpl(new Region(0, 1, 0, 1));
         _sheet.Selection.SetSingle(0, 0);
         Assert.AreEqual(4, _sheet.Selection.ActiveRegion.Area);
-        _sheet.Selection.MoveActivePosition(1);
+        _sheet.Selection.MoveActivePositionByRow(1);
         Assert.AreEqual(new CellPosition(2, 0), _sheet.Selection.ActiveCellPosition);
     }
 }

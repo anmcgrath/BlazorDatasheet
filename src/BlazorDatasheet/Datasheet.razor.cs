@@ -355,7 +355,7 @@ public partial class Datasheet : IHandleEvent
             if (!_editorManager.IsEditing || this.AcceptEdit())
             {
                 var movementDir = e.ShiftKey ? -1 : 1;
-                Sheet?.Selection?.MoveActivePosition(movementDir);
+                Sheet?.Selection?.MoveActivePositionByRow(movementDir);
                 return true;
             }
         }
@@ -370,10 +370,10 @@ public partial class Datasheet : IHandleEvent
             }
         }
 
-        if (e.Key == "Tab")
+        if (e.Key == "Tab" && (!_editorManager.IsEditing || AcceptEdit()))
         {
-            AcceptEdit();
-            this.collapseAndMoveSelection(0, 1);
+            var movementDir = e.ShiftKey ? -1 : 1;
+            Sheet?.Selection?.MoveActivePositionByCol(movementDir);
             return true;
         }
 
@@ -445,7 +445,8 @@ public partial class Datasheet : IHandleEvent
         var posn = Sheet.Selection.ActiveCellPosition;
         Sheet.Selection.ClearSelections();
         Sheet.Selection.SetSingle(posn.Row, posn.Col);
-        Sheet.Selection.MoveActivePosition(drow);
+        Sheet.Selection.MoveActivePositionByRow(drow);
+        Sheet.Selection.MoveActivePositionByCol(dcol);
     }
 
     private async Task HandleWindowPaste(PasteEventArgs arg)
@@ -590,9 +591,9 @@ public partial class Datasheet : IHandleEvent
         var startIndex = request.StartIndex;
 
         this.ViewportRegion = new Region(startIndex, startIndex + numRows, 0, _sheetLocal.NumCols);
-        
+
         ForceReRender();
-        
+
         return new ItemsProviderResult<int>(Enumerable.Range(startIndex, numRows), Sheet.NumRows);
     }
 

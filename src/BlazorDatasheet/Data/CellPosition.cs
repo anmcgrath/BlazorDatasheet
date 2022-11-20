@@ -36,6 +36,16 @@ public struct CellPosition : IEquatable<CellPosition>
         return HashCode.Combine(Row, Col);
     }
 
+    /// <summary>
+    /// Returns either the row or the column, depending on the axis
+    /// </summary>
+    /// <param name="axis"></param>
+    /// <returns></returns>
+    public int Get(Axis axis)
+    {
+        return axis == Axis.Col ? Col : Row;
+    }
+
     public override string ToString()
     {
         return $"({Col}, {Row})";

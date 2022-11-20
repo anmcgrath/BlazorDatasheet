@@ -25,6 +25,26 @@ public interface IRegion
     public CellPosition BottomRight { get; }
 
     /// <summary>
+    /// The first row in the region
+    /// </summary>
+    public int Top { get; }
+
+    /// <summary>
+    /// The first column in the region
+    /// </summary>
+    public int Left { get; }
+
+    /// <summary>
+    /// The last row in the region
+    /// </summary>
+    public int Bottom { get; }
+
+    /// <summary>
+    /// The last column in the region
+    /// </summary>
+    public int Right { get; }
+
+    /// <summary>
     /// The width of the region, always greater than 0
     /// </summary>
     public int Width { get; }
@@ -126,4 +146,36 @@ public interface IRegion
     /// </summary>
     /// <returns></returns>
     public IRegion Clone();
+
+    /// <summary>
+    /// Returns the width or height, depending on the axis given
+    /// </summary>
+    /// <param name="axis"></param>
+    /// <returns></returns>
+    public int GetSize(Axis axis);
+
+    /// <summary>
+    /// Returns the position of the leading edge.
+    /// The leading edge is the first edge for the particular reading order
+    /// The position is either row or col depending on the axis
+    /// </summary>
+    /// <param name="axis"></param>
+    /// <returns></returns>
+    public int GetLeadingEdgeOffset(Axis axis);
+
+    /// <summary>
+    /// Returns the position of the trailing edge.
+    /// The trailing edge is the first edge for the particular reading order
+    /// The position is either row or col depending on the axis
+    /// </summary>
+    /// <param name="axis"></param>
+    /// <returns></returns>
+    public int GetTrailingEdgeOffset(Axis axis);
+
+    /// <summary>
+    /// Returns a cell position that is constrained inside the region
+    /// </summary>
+    /// <param name="cellPosition"></param>
+    /// <returns></returns>
+    public CellPosition GetConstrained(CellPosition cellPosition);
 }
