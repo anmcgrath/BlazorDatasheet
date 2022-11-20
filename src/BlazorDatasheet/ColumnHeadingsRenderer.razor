@@ -162,10 +162,7 @@
 
     private bool IsActive(int col)
     {
-        if (Sheet?.Selection.SelectingRegion == null)
-            return false;
-
-        return (Sheet!.Selection!.SelectingRegion!.SpansCol(col))
+        return (Sheet!.Selection!.SelectingRegion?.SpansCol(col) == true)
                || Sheet!.Selection!.Regions.Any(x => x.SpansCol(col));
     }
 

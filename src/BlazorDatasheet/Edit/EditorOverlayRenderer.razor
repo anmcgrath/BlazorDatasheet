@@ -40,13 +40,13 @@
 
     /// The current edit entry mode
     private EditEntryMode EditEntryMode { get; set; }
-    
+
     /// The key that was pressed to enter the edit
     private string EditEntryKey { get; set; }
 
     /// The current cell editor component
     private BaseEditor ActiveCellEditor;
-    
+
     private bool BeginningEdit { get; set; }
 
     /// The Dynamic component holding the Active Editor component
@@ -63,7 +63,7 @@
             ActiveCellEditor.BeforeEdit(cell);
             ActiveCellEditor.RequestCancelEdit += HandleEditorRequestCancelEdit;
             ActiveCellEditor.RequestAcceptEdit += HandleEditorRequestAcceptEdit;
-            ActiveCellEditor.BeginEdit(EditEntryMode, cell , EditEntryKey);
+            ActiveCellEditor.BeginEdit(EditEntryMode, cell, EditEntryKey);
             await ActiveCellEditor.Focus();
             ActiveCellEditor.Render();
             BeginningEdit = false;
@@ -186,14 +186,25 @@
     /// <returns></returns>
     private string GetEditorSizeStyling()
     {
-        //if (!IsEditing)
-        //    return "display:none;";
+    //if (!IsEditing)
+    //    return "display:none;";
 
         var strBuilder = new StringBuilder();
         var left = CellLayoutProvider.ComputeLeftPosition(EditCol);
         var top = CellLayoutProvider.ComputeTopPosition(EditRow);
-        var w = CellLayoutProvider.ComputeWidth(EditCol, 1);
-        var h = CellLayoutProvider.ComputeHeight(1);
+
+        var mergedPosn = Sheet.GetMergedRegionAtPosition(EditRow, EditCol);
+        int colSpan = 1;
+        int rowSpan = 1;
+
+        if (mergedPosn != null)
+        {
+            colSpan = mergedPosn.Width;
+            rowSpan = mergedPosn.Height;
+        }
+
+        var w = CellLayoutProvider.ComputeWidth(EditCol, colSpan);
+        var h = CellLayoutProvider.ComputeHeight(rowSpan);
 
         strBuilder.Append($"left:{left}px;");
         strBuilder.Append($"top:{top}px;");

@@ -10,6 +10,7 @@ public class RowRegion : Region
     public RowRegion(int rowStart, int rowEnd) : base(rowStart, rowEnd, 0, int.MaxValue)
     {
     }
+
     public override IRegion Copy()
     {
         return new RowRegion(TopLeft.Row, BottomRight.Row);
@@ -30,13 +31,13 @@ public class RowRegion : Region
         End = new CellPosition(newRowEnd, int.MaxValue);
         SetOrderedBounds();
     }
-    
+
     public override IRegion GetBoundingRegion(IRegion otherRegion)
     {
-        return new ColumnRegion(Math.Min(otherRegion.TopLeft.Row, this.TopLeft.Row),
-            Math.Max(otherRegion.BottomRight.Row, this.BottomRight.Row));
+        return new RowRegion(Math.Min(otherRegion.TopLeft.Row, this.TopLeft.Row),
+                             Math.Max(otherRegion.BottomRight.Row, this.BottomRight.Row));
     }
-    
+
     public override IRegion Clone()
     {
         return new RowRegion(this.Start.Row, this.End.Row);

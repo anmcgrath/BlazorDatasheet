@@ -115,14 +115,6 @@ public interface IRegion
     public List<IRegion> Break(CellPosition position);
 
     /// <summary>
-    /// Moves the entire region by the specified amount
-    /// </summary>
-    /// <param name="dRow"></param>
-    /// <param name="dCol"></param>
-    /// <param name="regionLimit">The limiting region that the region cannot move outside of</param>
-    public void Move(int dRow, int dCol, IRegion? regionLimit = null);
-
-    /// <summary>
     /// Returns the region (which will be one cell wide/high) that runs along the specified edge of this region
     /// </summary>
     /// <param name="edge"></param>

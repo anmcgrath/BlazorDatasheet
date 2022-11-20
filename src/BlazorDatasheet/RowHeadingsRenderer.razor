@@ -65,9 +65,7 @@
 
     private bool IsActive(int row)
     {
-        if (Sheet?.Selection?.SelectingRegion == null)
-            return false;
-        return (Sheet!.Selection!.SelectingRegion!.SpansRow(row))
+        return (Sheet!.Selection.SelectingRegion?.SpansRow(row) == true)
                || Sheet!.Selection!.Regions.Any(x => x.SpansRow(row));
     }
 

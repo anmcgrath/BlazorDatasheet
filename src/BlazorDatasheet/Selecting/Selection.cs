@@ -58,7 +58,7 @@ public class Selection : BRange
         this.SelectingRegion = new Region(row, col);
         this.SelectingStartPosition = new CellPosition(row, col);
         this.SelectingMode = SelectionMode.Cell;
-        this.SelectingRegion = ExpendRegionOverMerged(SelectingRegion);
+        this.SelectingRegion = ExpandRegionOverMerged(SelectingRegion);
         emitSelectingChanged();
     }
 
@@ -67,7 +67,7 @@ public class Selection : BRange
         this.SelectingRegion = new ColumnRegion(col, col);
         this.SelectingStartPosition = new CellPosition(0, col);
         this.SelectingMode = SelectionMode.Column;
-        this.SelectingRegion = ExpendRegionOverMerged(SelectingRegion);
+        this.SelectingRegion = ExpandRegionOverMerged(SelectingRegion);
         emitSelectingChanged();
     }
 
@@ -76,7 +76,7 @@ public class Selection : BRange
         this.SelectingRegion = new RowRegion(row, row);
         this.SelectingStartPosition = new CellPosition(row, 0);
         this.SelectingMode = SelectionMode.Row;
-        this.SelectingRegion = ExpendRegionOverMerged(SelectingRegion);
+        this.SelectingRegion = ExpandRegionOverMerged(SelectingRegion);
         emitSelectingChanged();
     }
 
@@ -98,7 +98,7 @@ public class Selection : BRange
                 break;
         }
 
-        SelectingRegion = ExpendRegionOverMerged(SelectingRegion);
+        SelectingRegion = ExpandRegionOverMerged(SelectingRegion);
         emitSelectingChanged();
     }
 
@@ -142,17 +142,17 @@ public class Selection : BRange
     /// Adds the region to the selection
     /// </summary>
     /// <param name="region"></param>
-    public void AddRegionToSelections(IRegion region)
+    internal void AddRegionToSelections(IRegion region)
     {
         _regions.Add(region);
-        ActiveRegion = region;
+        ActiveRegion = ExpandRegionOverMerged(region);
         emitSelectionChange();
     }
 
     /// <summary>
     /// Expands the active selection so that it covers any merged cells
     /// </summary>
-    private IRegion? ExpendRegionOverMerged(IRegion? region)
+    private IRegion? ExpandRegionOverMerged(IRegion? region)
     {
         // Look at the four sides of the active region
         // If any of the sides are touching active regions, we check whether the selection
@@ -173,9 +173,9 @@ public class Selection : BRange
 
             mergeOverlaps =
                 Sheet.MergedCells
-                    .Search(top, right, left, bottom)
-                    .Where(x => !boundedRegion.Contains(x.Region))
-                    .ToList();
+                     .Search(top, right, left, bottom)
+                     .Where(x => !boundedRegion.Contains(x.Region))
+                     .ToList();
 
             // Expand bounded selection to cover all the merges
             foreach (var merge in mergeOverlaps)
@@ -211,6 +211,8 @@ public class Selection : BRange
     public void SetSingle(IRegion region)
     {
         _regions.Clear();
+        this.EndSelecting();
+        this.ActiveCellPosition = region.Start;
         this.AddRegionToSelections(region);
     }
 
@@ -261,20 +263,31 @@ public class Selection : BRange
         // If it's currently inside a merged cell, find where it should next move to
         var merge = Sheet.GetMergedRegionAtPosition(ActiveCellPosition.Row, ActiveCellPosition.Col);
         if (merge != null)
-            rowDir *= merge.Height;
+        {
+            // Move multiple rows if the current position is on the edge away
+            // from the movement direction.
+            if (rowDir == 1 && merge.TopLeft.Row == ActiveCellPosition.Row ||
+                rowDir == -1 && merge.BottomRight.Row == ActiveCellPosition.Row)
+            {
+                rowDir *= merge.Height;
+            }
+        }
 
         // Fix the active region to surrounds of the sheet
         var activeRegionFixed = ActiveRegion.GetIntersection(_sheet.Region);
 
         // If the active region is only one cell and there are no other regions,
         // clear the regions and move the whole thing down
-        if (_regions.Count == 1 && (activeRegionFixed == merge))
+        if (_regions.Count == 1 && (activeRegionFixed.Area == 1 || activeRegionFixed.Equals(merge)))
         {
+            // We end up with a new region of area 1 (or the size of the merged cell it is not on)
             _regions.Clear();
-            var newRegion = new Region(ActiveCellPosition.Row + rowDir, ActiveCellPosition.Col);
-            newRegion.Constrain(_sheet.Region);
-            newRegion = ExpendRegionOverMerged(newRegion) as Region;
-            this.ActiveCellPosition = new CellPosition(ActiveCellPosition.Row + rowDir, ActiveCellPosition.Col);
+
+            var newRowPosn = Math.Max(_sheet.Region.TopLeft.Row,
+                                      Math.Min(_sheet.Region.BottomRight.Row, ActiveCellPosition.Row + rowDir));
+            var newRegion = new Region(newRowPosn, ActiveCellPosition.Col);
+            newRegion = ExpandRegionOverMerged(newRegion) as Region;
+            this.ActiveCellPosition = new CellPosition(newRowPosn, ActiveCellPosition.Col);
             this.AddRegionToSelections(newRegion);
 
             emitSelectionChange();
@@ -373,6 +386,9 @@ public class Selection : BRange
         if (ActiveCellPosition.IsInvalid)
             throw new Exception("Invalid cell position");
 
+        // Check whether there are any merged regions at the ActiveCellPosition.
+        // If there are, the input position is the top left of the merged,
+        // Otherwise it corresponds to the active cell position.
         var merged = Sheet.GetMergedRegionAtPosition(ActiveCellPosition.Row, ActiveCellPosition.Col);
         if (merged == null)
             return ActiveCellPosition;

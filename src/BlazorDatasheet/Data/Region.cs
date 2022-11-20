@@ -121,15 +121,6 @@ public class Region : IRegion
         return new Region(TopLeft.Row, TopLeft.Col);
     }
 
-    public void Move(int dRow, int dCol, IRegion? limitingregion = null)
-    {
-        this.Start = new CellPosition(Start.Row + dRow, Start.Col + dCol);
-        this.End = new CellPosition(End.Row + dRow, End.Col + dCol);
-        this.SetOrderedBounds();
-        if (limitingregion != null)
-            this.Constrain(limitingregion);
-    }
-
     /// <summary>
     /// Returns the region (which will be one cell wide/high) that runs along the specified edge of this region
     /// </summary>
@@ -187,7 +178,7 @@ public class Region : IRegion
     {
         return new Region(TopLeft.Row, BottomRight.Row, TopLeft.Col, BottomRight.Col);
     }
-    
+
     /// <summary>
     /// Returns a new copy of the region that does keep the order
     /// </summary>
@@ -283,29 +274,29 @@ public class Region : IRegion
         if (!r1IsEmpty)
         {
             var r1 = new Region(this.TopLeft.Row, region.TopLeft.Row - 1,
-                this.TopLeft.Col,
-                this.BottomRight.Col);
+                                this.TopLeft.Col,
+                                this.BottomRight.Col);
             regions.Add(r1);
         }
 
         if (!r2IsEmpty)
         {
             var r2 = new Region(region.TopLeft.Row, region.BottomRight.Row, this.TopLeft.Col,
-                region.TopLeft.Col - 1);
+                                region.TopLeft.Col - 1);
             regions.Add(r2);
         }
 
         if (!r3IsEmpty)
         {
-            var r3 = new Region(region.TopLeft.Row, region.BottomRight.Row, region.TopLeft.Col + 1,
-                this.BottomRight.Col);
+            var r3 = new Region(region.TopLeft.Row, region.BottomRight.Row, region.BottomRight.Col + 1,
+                                this.BottomRight.Col);
             regions.Add(r3);
         }
 
         if (!r4IsEmpty)
         {
             var r4 = new Region(region.BottomRight.Row + 1, this.BottomRight.Row, this.TopLeft.Col,
-                this.BottomRight.Col);
+                                this.BottomRight.Col);
             regions.Add(r4);
         }
 
@@ -327,7 +318,6 @@ public class Region : IRegion
             Math.Max(TopLeft.Col, BottomRight.Col)
         );
     }
-
 
 
     public IEnumerator<CellPosition> GetEnumerator()
@@ -354,7 +344,7 @@ public class Region : IRegion
 
     public override string ToString()
     {
-        return $"region from ({TopLeft.Row}, {TopLeft.Col}) to ({BottomRight.Row}, {BottomRight.Col})";
+        return $"region from (r{TopLeft.Row}, c{TopLeft.Col}) to (r{BottomRight.Row}, c{BottomRight.Col})";
     }
 
     public override bool Equals(object? obj)

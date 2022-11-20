@@ -223,6 +223,16 @@ public class RegionTests
     }
 
     [Test]
+    public void Break_Around_Region_On_Left_Edge_Correct()
+    {
+        var region = new Region(1, 3, 1, 5);
+        var breakRegion = new Region(1, 3, 1, 3);
+        var expected = new Region(1, 3, 4, 5);
+        Assert.AreEqual(expected, (region.Break(breakRegion)).First());
+        //Assert.IsTrue(expected.Equals(region.Break(breakRegion)));
+    }
+
+    [Test]
     // Cell on edge
     [TestCase(0, 0, 0, 0, 2, TestName = "String on top edge")]
     // Cell on bottom edge
@@ -265,7 +275,7 @@ public class RegionTests
     public void Extend_To_Shrinks_To_New_Position()
     {
         var region = new Region(0, 5, 0, 5);
-        region.ExtendTo(1,2);
+        region.ExtendTo(1, 2);
         Assert.AreEqual(1, region.BottomRight.Row);
         Assert.AreEqual(2, region.BottomRight.Col);
         Assert.AreEqual(0, region.TopLeft.Col);
@@ -294,7 +304,7 @@ public class RegionTests
         Assert.AreEqual(1, r1.BottomRight.Col);
         Assert.AreEqual(0, r1.TopLeft.Col);
     }
-    
+
     [Test]
     public void Extend_Row_Extends_To_Row()
     {

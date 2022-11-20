@@ -39,14 +39,14 @@
     foreach (var region in Sheet.Selection.Regions)
     {
         var boundedRegion = region.GetIntersection(Sheet.Region);
-        var isActiveRegion = region == Sheet.Selection.ActiveRegion;
+        var isActiveRegion = region.Equals(Sheet.Selection.ActiveRegion);
         if (boundedRegion == null)
             continue;
         <!-- if it's the active region, render around the active position -->
         if (isActiveRegion)
         {
             var brokenRegions = boundedRegion
-                .Break(getRegion(Sheet.Selection.GetInputPosition()));
+                .Break(getRegion(Sheet.Selection.ActiveCellPosition));
             foreach (var brokenRegion in brokenRegions)
             {
                 <BoxOverlayRenderer
@@ -121,9 +121,6 @@
 
     private void OnSelectionChanged(object? sender, IEnumerable<IRegion> regions)
     {
-        Console.WriteLine("Active region: " + Sheet.Selection.ActiveRegion);
-        Console.WriteLine("input posn: " + Sheet.Selection.GetInputPosition());
-
         StateHasChanged();
     }
 

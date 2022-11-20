@@ -436,12 +436,16 @@ public partial class Datasheet : IHandleEvent
 
     private void collapseAndMoveSelection(int drow, int dcol)
     {
-        if (Sheet == null)
+        if (Sheet?.Selection?.ActiveRegion == null)
             return;
 
-        var activeRegion = Sheet.Selection.ActiveRegion.Collapse();
-        activeRegion.Move(drow, dcol, Sheet.Region);
-        Sheet.Selection.SetSingle(activeRegion);
+        if (Sheet?.Selection.IsSelecting == true)
+            return;
+
+        var posn = Sheet.Selection.ActiveCellPosition;
+        Sheet.Selection.ClearSelections();
+        Sheet.Selection.SetSingle(posn.Row, posn.Col);
+        Sheet.Selection.MoveActivePosition(drow);
     }
 
     private async Task HandleWindowPaste(PasteEventArgs arg)
@@ -586,6 +590,9 @@ public partial class Datasheet : IHandleEvent
         var startIndex = request.StartIndex;
 
         this.ViewportRegion = new Region(startIndex, startIndex + numRows, 0, _sheetLocal.NumCols);
+        
+        ForceReRender();
+        
         return new ItemsProviderResult<int>(Enumerable.Range(startIndex, numRows), Sheet.NumRows);
     }
 
