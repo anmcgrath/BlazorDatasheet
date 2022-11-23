@@ -23,11 +23,11 @@ public class ChangeCellValueCommandTests
     {
         var changeCmd = new SetCellValueCommand(0, 0, 10);
         _commandManager.ExecuteCommand(changeCmd);
-        Assert.AreEqual(10, _sheet.GetCell(0,0).GetValue<int>());
+        Assert.AreEqual(10, _sheet.GetCell(0, 0).GetValue<int>());
         _commandManager.Undo();
-        Assert.AreEqual(1, _sheet.GetCell(0,0).GetValue<int>());
+        Assert.AreEqual(1, _sheet.GetCell(0, 0).GetValue<int>());
         //Try to undo again but nothing changed because there's no more undo commands
         _commandManager.Undo();
-        Assert.AreEqual(1, _sheet.GetCell(0,0).GetValue<int>());
+        Assert.AreEqual(1, _sheet.GetCell(0, 0).GetValue<int>());
     }
 }

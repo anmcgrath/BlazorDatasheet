@@ -98,10 +98,9 @@ public class DataStoreTests
     public void Get_Non_Empty_Rows_Correct()
     {
         IMatrixDataStore<string> store = new SparseMatrixStore<string>();
-        store.Set(0,0,"0,0");
-        store.Set(2,0,"0,0");
+        store.Set(0, 0, "0,0");
+        store.Set(2, 0, "0,0");
         var nonEmpty = store.GetNonEmptyPositions(0, 2, 0, 0);
         Assert.AreEqual(2, nonEmpty.Count());
     }
-    
 }

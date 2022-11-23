@@ -12,7 +12,7 @@ public class SetFormatCommandTests
         var f1 = new Format() { BackgroundColor = "f1" };
         var f2 = new Format() { BackgroundColor = "f2" };
         var sheet = new Sheet(3, 3);
-        
+
         //sheet.SetFormat(f1, sheet.Range());
     }
 }
