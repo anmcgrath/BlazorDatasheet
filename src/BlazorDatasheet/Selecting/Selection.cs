@@ -154,6 +154,9 @@ public class Selection : BRange
     /// </summary>
     private IRegion? ExpandRegionOverMerged(IRegion? region)
     {
+        if (region is ColumnRegion || region is RowRegion)
+            return region;
+
         // Look at the four sides of the active region
         // If any of the sides are touching active regions, we check whether the selection
         // covers the region entirely. If not, expand the sides so that they cover.

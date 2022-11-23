@@ -21,7 +21,7 @@ public class ClearCellsCommand : IUndoableCommand
             var oldValue = cell.GetValue();
 
             // When this is redone it'll update the new value to the old value.
-            if (oldValue != null && !String.IsNullOrEmpty(oldValue.ToString()))
+            if (oldValue != null && !string.IsNullOrEmpty(oldValue.ToString()))
             {
                 _clearCommandOccurences.Add(
                     new ValueChange(cell.Row, cell.Col, oldValue));
@@ -32,7 +32,7 @@ public class ClearCellsCommand : IUndoableCommand
         if (!_clearCommandOccurences.Any())
             return false;
 
-        sheet.ClearCelllsImpl(_range);
+        sheet.ClearCellsImpl(_range);
         return true;
     }
 

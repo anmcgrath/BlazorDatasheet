@@ -51,14 +51,12 @@ public class BRange
 
     public IEnumerable<IReadOnlyCell> GetNonEmptyCells()
     {
-        var nonEmptyCells = new List<IReadOnlyCell>();
-        foreach (var region in Regions)
-        {
-            nonEmptyCells.AddRange(Sheet.GetNonEmptyCellPositions(region)
-                .Select(x => Sheet.GetCell(x.row, x.col)));
-        }
+        return this.GetNonEmptyPositions().Select(x => Sheet.GetCell(x.row, x.col));
+    }
 
-        return nonEmptyCells;
+    public IEnumerable<(int row, int col)> GetNonEmptyPositions()
+    {
+        return Regions.SelectMany(Sheet.GetNonEmptyCellPositions);
     }
 
     /// <summary>

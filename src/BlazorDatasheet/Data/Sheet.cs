@@ -247,8 +247,8 @@ public class Sheet
     public IEnumerable<IReadOnlyCell> GetCellsInRegion(IRegion region)
     {
         return (new BRange(this, region))
-            .Positions
-            .Select(x => this.GetCell(x.row, x.col));
+               .Positions
+               .Select(x => this.GetCell(x.row, x.col));
     }
 
     public Format? GetFormat(int row, int col)
@@ -312,9 +312,9 @@ public class Sheet
     internal IEnumerable<(int row, int col)> GetNonEmptyCellPositions(IRegion region)
     {
         return _cellDataStore.GetNonEmptyPositions(region.TopLeft.Row,
-            region.BottomRight.Row,
-            region.TopLeft.Col,
-            region.BottomRight.Col);
+                                                   region.BottomRight.Row,
+                                                   region.TopLeft.Col,
+                                                   region.BottomRight.Col);
     }
 
     /// <summary>
@@ -555,7 +555,7 @@ public class Sheet
         foreach (var rowInterval in RowFormats.GetAllIntervals())
         {
             overlappingRegions.Add(new Region(rowInterval.Start, rowInterval.End, region.Start.Col,
-                region.End.Col));
+                                              region.End.Col));
         }
 
         foreach (var overlapRegion in overlappingRegions)
@@ -603,7 +603,7 @@ public class Sheet
         foreach (var colInterval in ColFormats.GetAllIntervals())
         {
             overlappingRegions.Add(new Region(region.Start.Row, region.End.Row, colInterval.Start,
-                colInterval.End));
+                                              colInterval.End));
         }
 
         foreach (var overlapRegion in overlappingRegions)
@@ -696,22 +696,25 @@ public class Sheet
         Commands.ExecuteCommand(cmd);
     }
 
-    internal void ClearCelllsImpl(BRange range)
+    internal void ClearCellsImpl(BRange range)
     {
-        var cells = range.GetNonEmptyCells().Cast<Cell>();
-        var changedArgs = new List<ChangeEventArgs>();
-        foreach (var cell in cells)
+        ClearCellsImpl(range.GetNonEmptyPositions());
+    }
+
+    internal void ClearCellsImpl(IEnumerable<(int row, int col)> positions)
+    {
+        var changeArgs = new List<ChangeEventArgs>();
+        foreach (var posn in positions)
         {
-            var row = cell.Row;
-            var col = cell.Col;
-            var oldVal = cell.GetValue();
+            var cell = this.GetCell(posn.row, posn.col) as Cell;
+            var oldValue = cell.GetValue();
             cell.Clear();
             var newVal = cell.GetValue();
-            if (oldVal != newVal)
-                changedArgs.Add(new ChangeEventArgs(row, col, oldVal, newVal));
+            if (oldValue != newVal)
+                changeArgs.Add(new ChangeEventArgs(posn.row, posn.col, oldValue, newVal));
         }
 
-        this.CellsChanged?.Invoke(this, changedArgs);
+        this.CellsChanged?.Invoke(this, changeArgs);
     }
 
     public string GetRegionAsDelimitedText(IRegion inputRegion, char tabDelimiter = '\t', string newLineDelim = "\n")
@@ -765,21 +768,30 @@ public class Sheet
         ColumnWidthChanged?.Invoke(this, new ColumnWidthChangedArgs(col, width, oldWidth));
     }
 
-    public void MergeCellsImpl(BRange range)
+    internal bool MergeCellsImpl(BRange range)
     {
+        var isSuccess = true;
         foreach (var region in range.Regions)
         {
-            MergeCellsImpl(region);
+            isSuccess &= MergeCellsImpl(region);
         }
+
+        return isSuccess;
     }
 
-    public void MergeCellsImpl(IRegion region)
+    public void MergeCells(BRange range)
+    {
+        var merge = new MergeCellsCommand(range);
+        Commands.ExecuteCommand(merge);
+    }
+
+    public void MergeCells(IRegion region) => MergeCells(new BRange(this, region));
+
+    internal bool MergeCellsImpl(IRegion region)
     {
         var cellMerge = new CellMerge(region);
-        var isOverlapping = MergedCells.Search(cellMerge.Envelope).Any();
-        if (isOverlapping)
-            return;
         MergedCells.Insert(cellMerge);
+        return true;
     }
 
     /// <summary>
@@ -788,16 +800,23 @@ public class Sheet
     /// <param name="region"></param>
     internal void UnMergeCellsImpl(IRegion region)
     {
-        var envelope = new Envelope(region.TopLeft.Col,
-            region.TopLeft.Row,
-            region.BottomRight.Col,
-            region.BottomRight.Row);
+        var envelope = region.ToEnvelope();
 
         var mergedCellsInRange = MergedCells.Search(envelope);
         foreach (var merge in mergedCellsInRange)
         {
             MergedCells.Delete(merge);
         }
+    }
+
+    /// <summary>
+    /// Un-merge all cells that overlap the range
+    /// </summary>
+    /// <param name="region"></param>
+    internal void UnMergeCellsImpl(BRange range)
+    {
+        foreach (var region in range.Regions)
+            UnMergeCellsImpl(region);
     }
 
     /// <summary>

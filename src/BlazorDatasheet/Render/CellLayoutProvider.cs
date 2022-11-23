@@ -93,6 +93,8 @@ public class CellLayoutProvider
 
     public double ComputeHeight(int rowSpan)
     {
+        if (rowSpan > _sheet.NumRows)
+            return (_sheet.NumRows * _defaultRowHeight);
         return rowSpan * _defaultRowHeight;
     }
 

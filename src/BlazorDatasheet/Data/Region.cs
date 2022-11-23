@@ -27,8 +27,8 @@ public class Region : IRegion
     /// </summary>
     public CellPosition End { get; protected set; }
 
-    public int Height => BottomRight.Row - TopLeft.Row + 1;
-    public int Width => BottomRight.Col - TopLeft.Col + 1;
+    public int Height => Bottom >= int.MaxValue ? int.MaxValue : Bottom - Top + 1;
+    public int Width => Right >= int.MaxValue ? int.MaxValue : Right - Left + 1;
     public int Area => Height * Width;
 
 
