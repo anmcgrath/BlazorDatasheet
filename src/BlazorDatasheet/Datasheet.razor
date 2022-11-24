@@ -11,123 +11,125 @@
 @using System.Text
 @using BlazorDatasheet.Util
 
-<div
-    style="@(IsFixedHeight ? $"max-height: {FixedHeightInPx}px;" : "");"
-    theme="@Theme"
-    class="vars sheet @(IsDataSheetActive ? "active-sheet" : "inactive-sheet")
+<div>
+    <div
+        style="@(IsFixedHeight ? $"max-height: {FixedHeightInPx}px;" : "");"
+        theme="@Theme"
+        class="vars sheet @(IsDataSheetActive ? "active-sheet" : "inactive-sheet")
      @(IsFixedHeight ? $" sheet-fixed-height" : "sheet-dynamic-height") "
-    @onmouseover="() => IsMouseInsideSheet = true"
-    @onmouseout="() => IsMouseInsideSheet = false">
-    <!-- Column headers -->
-    @if (Sheet?.ShowColumnHeadings == true)
-    {
-        <div class="sheet-row column-head @(StickyHeadings ? "col-sticky" : "")">
-            @if (Sheet.ShowRowHeadings)
-            {
-                <!-- the little bit outside to the left of first col header -->
-                <div class="sheet-cell row-head" style="@CssUtil.GetCellWidthStyles(-1, 1, Sheet.LayoutProvider)">
-                    <div class="cell"/>
-                </div>
-            }
-            <ColumnHeadingsRenderer
-                OnMouseUp="@(e => HandleCellMouseUp(-1, e.Column, e.Args))"
-                OnMouseOver="@(e => HandleCellMouseOver(-1, e.Column, e.Args))"
-                OnMouseDown="@(e => HandleColumnHeaderMouseDown(e.Column, e.Args))"
-                CellLayoutProvider="Sheet.LayoutProvider"
-                Sheet="Sheet"/>
-        </div>
-    }
-
-    @if (Sheet != null)
-    {
-        @if (Sheet.ShowRowHeadings)
+        @onmouseover="() => IsMouseInsideSheet = true"
+        @onmouseout="() => IsMouseInsideSheet = false">
+        <!-- Column headers -->
+        @if (Sheet?.ShowColumnHeadings == true)
         {
-            <div>
-                <div style="display: inline-block; float:left;">
-                    <RowHeadingsRenderer
-                        OnMouseDown="e => HandleRowHeaderMouseDown(e.RowIndex, e.MouseEventArgs)"
-                        OnMouseOver="e => HandleCellMouseOver(e.RowIndex, -1, e.MouseEventArgs)"
-                        OnMouseUp="e => HandleCellMouseUp(e.RowIndex, -1, e.MouseEventArgs)"
-                        Sheet="Sheet"
-                        CellLayoutProvider="Sheet.LayoutProvider"/>
-                </div>
+            <div class="sheet-row column-head @(StickyHeadings ? "col-sticky" : "")">
+                @if (Sheet.ShowRowHeadings)
+                {
+                    <!-- the little bit outside to the left of first col header -->
+                    <div class="sheet-cell row-head" style="@CssUtil.GetCellWidthStyles(-1, 1, Sheet.LayoutProvider)">
+                        <div class="cell"/>
+                    </div>
+                }
+                <ColumnHeadingsRenderer
+                    OnMouseUp="@(e => HandleCellMouseUp(-1, e.Column, e.Args))"
+                    OnMouseOver="@(e => HandleCellMouseOver(-1, e.Column, e.Args))"
+                    OnMouseDown="@(e => HandleColumnHeaderMouseDown(e.Column, e.Args))"
+                    CellLayoutProvider="Sheet.LayoutProvider"
+                    Sheet="Sheet"/>
             </div>
         }
 
-        <Virtualize
-            @ref="_virtualizer"
-            ItemsProvider="@LoadRows"
-            OverscanCount="3"
-            TItem="int"
-            Context="rowIndex">
-            <ItemContent>
-                <div class="sheet-row" @key="rowIndex">
-                    @for (int j = 0; j < Sheet?.NumCols; j++)
-                    {
-                        var row = rowIndex;
-                        var col = j;
-                        var cell = Sheet.GetCell(row, col);
-
-                        <CellRenderer
-                            @onmousedown="e => HandleCellMouseDown(row, col, e)"
-                            @onmouseover="e => HandleCellMouseOver(row, col, e)"
-                            @ondblclick="e => HandleCellDoubleClick(row, col, e)"
-                            @onmouseup="e => HandleCellMouseUp(row, col, e)"
-                            Cell="cell"
-                            Sheet="Sheet"
-                            IsDirty="SheetIsDirty || DirtyCells.Contains((row, col))">
-                            <ItemTemplate>
-                                <DynamicComponent
-                                    Type="@getCellRendererType(cell.Type)"
-                                    Parameters="@getCellRendererParameters(cell, row, col)">
-                                </DynamicComponent>
-                            </ItemTemplate>
-                        </CellRenderer>
-                    }
-                </div>
-            </ItemContent>
-        </Virtualize>
-
-        <!-- Merged cells -->
-        @if (Sheet.MergedCells.Count > 0)
+        @if (Sheet != null)
         {
-            var mergesInView = Sheet.MergedCells.Search(this.ViewportRegion.ToEnvelope());
-            @foreach (var merge in mergesInView)
+            @if (Sheet.ShowRowHeadings)
             {
-                var row = merge.Region.Start.Row;
-                var col = merge.Region.Start.Col;
-                var cell = Sheet.GetCell(row, col);
-
-                <CellRenderer
-                    @onmousedown="e => HandleCellMouseDown(row, col, e)"
-                    @onmouseover="e => HandleCellMouseOver(row, col, e)"
-                    @ondblclick="e => HandleCellDoubleClick(row, col, e)"
-                    @onmouseup="e => HandleCellMouseUp(row, col, e)"
-                    ColSpan="merge.Region.Width"
-                    RowSpan="merge.Region.Height"
-                    IsAbsolutePositioning="true"
-                    Cell="cell"
-                    Sheet="Sheet"
-                    IsDirty="SheetIsDirty || DirtyCells.Contains((row, col))">
-                    <ItemTemplate>
-                        <DynamicComponent
-                            Type="@getCellRendererType(cell.Type)"
-                            Parameters="@getCellRendererParameters(cell, row, col)">
-                        </DynamicComponent>
-                    </ItemTemplate>
-                </CellRenderer>
+                <div>
+                    <div style="display: inline-block; float:left;">
+                        <RowHeadingsRenderer
+                            OnMouseDown="e => HandleRowHeaderMouseDown(e.RowIndex, e.MouseEventArgs)"
+                            OnMouseOver="e => HandleCellMouseOver(e.RowIndex, -1, e.MouseEventArgs)"
+                            OnMouseUp="e => HandleCellMouseUp(e.RowIndex, -1, e.MouseEventArgs)"
+                            Sheet="Sheet"
+                            CellLayoutProvider="Sheet.LayoutProvider"/>
+                    </div>
+                </div>
             }
+
+            <Virtualize
+                @ref="_virtualizer"
+                ItemsProvider="@LoadRows"
+                OverscanCount="3"
+                TItem="int"
+                Context="rowIndex">
+                <ItemContent>
+                    <div class="sheet-row" @key="rowIndex">
+                        @for (int j = 0; j < Sheet?.NumCols; j++)
+                        {
+                            var row = rowIndex;
+                            var col = j;
+                            var cell = Sheet.GetCell(row, col);
+
+                            <CellRenderer
+                                @onmousedown="e => HandleCellMouseDown(row, col, e)"
+                                @onmouseover="e => HandleCellMouseOver(row, col, e)"
+                                @ondblclick="e => HandleCellDoubleClick(row, col, e)"
+                                @onmouseup="e => HandleCellMouseUp(row, col, e)"
+                                Cell="cell"
+                                Sheet="Sheet"
+                                IsDirty="SheetIsDirty || DirtyCells.Contains((row, col))">
+                                <ItemTemplate>
+                                    <DynamicComponent
+                                        Type="@getCellRendererType(cell.Type)"
+                                        Parameters="@getCellRendererParameters(cell, row, col)">
+                                    </DynamicComponent>
+                                </ItemTemplate>
+                            </CellRenderer>
+                        }
+                    </div>
+                </ItemContent>
+            </Virtualize>
+
+            <!-- Merged cells -->
+            @if (Sheet.MergedCells.Count > 0)
+            {
+                var mergesInView = Sheet.MergedCells.Search(this.ViewportRegion.ToEnvelope());
+                @foreach (var merge in mergesInView)
+                {
+                    var row = merge.Region.Start.Row;
+                    var col = merge.Region.Start.Col;
+                    var cell = Sheet.GetCell(row, col);
+
+                    <CellRenderer
+                        @onmousedown="e => HandleCellMouseDown(row, col, e)"
+                        @onmouseover="e => HandleCellMouseOver(row, col, e)"
+                        @ondblclick="e => HandleCellDoubleClick(row, col, e)"
+                        @onmouseup="e => HandleCellMouseUp(row, col, e)"
+                        ColSpan="merge.Region.Width"
+                        RowSpan="merge.Region.Height"
+                        IsAbsolutePositioning="true"
+                        Cell="cell"
+                        Sheet="Sheet"
+                        IsDirty="SheetIsDirty || DirtyCells.Contains((row, col))">
+                        <ItemTemplate>
+                            <DynamicComponent
+                                Type="@getCellRendererType(cell.Type)"
+                                Parameters="@getCellRendererParameters(cell, row, col)">
+                            </DynamicComponent>
+                        </ItemTemplate>
+                    </CellRenderer>
+                }
+            }
+
+            <EditorOverlayRenderer
+                @ref="_editorManager"
+                Sheet="Sheet"
+                CellLayoutProvider="Sheet.LayoutProvider"/>
+
+            <SelectionRenderer
+                Sheet="Sheet"
+                CellLayoutProvider="Sheet.LayoutProvider"/>
         }
-
-        <EditorOverlayRenderer
-            @ref="_editorManager"
-            Sheet="Sheet"
-            CellLayoutProvider="Sheet.LayoutProvider"/>
-
-        <SelectionRenderer
-            Sheet="Sheet"
-            CellLayoutProvider="Sheet.LayoutProvider"/>
-    }
+    </div>
 </div>
 
 @code{

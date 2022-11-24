@@ -5,6 +5,7 @@ using BlazorDatasheet.Data.Events;
 using BlazorDatasheet.Data.SpatialDataStructures;
 using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Render;
+using BlazorDatasheet.Util;
 
 namespace BlazorDatasheet.Formats;
 
@@ -13,7 +14,6 @@ public class ConditionalFormatManager
     private readonly Sheet _sheet;
 
     private List<ConditionalFormatAbstractBase> _registered = new();
-    private Dictionary<(int row, int id), CellConditionalFormatContainer?> _cache = new();
 
     private RTree<ConditonalFormatSpatialData> _cfTree = new();
 
@@ -23,6 +23,24 @@ public class ConditionalFormatManager
     {
         _sheet = sheet;
         _sheet.CellsChanged += HandleCellsChanged;
+        _sheet.RowInserted += HandleRowInserted;
+        _sheet.RowRemoved += HandleRowRemoved;
+    }
+
+    private void HandleRowRemoved(object? sender, RowRemovedEventArgs e)
+    {
+        foreach (var cf in _registered)
+        {
+            cf.HandleRowRemoved(e.Index);
+        }
+    }
+
+    private void HandleRowInserted(object? sender, RowInsertedEventArgs e)
+    {
+        foreach (var cf in _registered)
+        {
+            cf.HandleRowInsertedAfter(e.IndexAfter);
+        }
     }
 
     /// <summary>
@@ -35,7 +53,7 @@ public class ConditionalFormatManager
     }
 
     /// <summary>
-    /// Applies the conditional format specified by "key" to all cells in a range
+    /// Applies the conditional format to all cells in a range
     /// </summary>
     /// <param name="region"></param>
     public void Apply(ConditionalFormatAbstractBase conditionalFormat, BRange? range)
@@ -46,15 +64,29 @@ public class ConditionalFormatManager
         {
             _registered.Add(conditionalFormat);
             conditionalFormat.Order = _registered.Count - 1;
+            conditionalFormat.RegionsChanged += ConditionalFormatOnRegionsChanged;
         }
 
-        conditionalFormat.Add(range, _sheet);
-        foreach (var region in range.Regions)
-        {
-            _cfTree.Insert(new ConditonalFormatSpatialData(conditionalFormat, region));
-        }
-
+        conditionalFormat.Add(range);
         conditionalFormat.Prepare(_sheet);
+    }
+
+    private void ConditionalFormatOnRegionsChanged(object? sender, ConditionalFormatRegionsChangedEventArgs e)
+    {
+        if (sender == null)
+            return;
+        var cf = (ConditionalFormatAbstractBase)sender;
+        // Update the cf tree with the new regions & remove old regions
+        foreach (var region in e.RegionsRemoved)
+        {
+            var env = region.ToEnvelope();
+            var spatialData = _cfTree.Search(env)
+                                     .FirstOrDefault(x => x.ConditionalFormat == cf && x.Envelope.IsSameAs(env));
+            if (spatialData != null)
+                _cfTree.Delete(spatialData);
+        }
+
+        _cfTree.BulkLoad(e.RegionsAdded.Select(x => new ConditonalFormatSpatialData(cf, x)));
     }
 
     /// <summary>
@@ -81,8 +113,8 @@ public class ConditionalFormatManager
                 if (format.IsShared)
                 {
                     format.Prepare(_sheet);
-                    ConditionalFormatPrepared?.Invoke(this, 
-                                                     new ConditionalFormatPreparedEventArgs(format));
+                    ConditionalFormatPrepared?.Invoke(this,
+                                                      new ConditionalFormatPreparedEventArgs(format));
                 }
 
                 handled.Add(format.Order);
@@ -150,8 +182,8 @@ public class ConditionalFormatManager
 
         internal ConditonalFormatSpatialData(ConditionalFormatAbstractBase cf, IRegion region)
         {
-            _envelope = new Envelope(region.TopLeft.Col, region.TopLeft.Row, region.BottomRight.Col,
-                                     region.BottomRight.Row);
+            _envelope = new Envelope(region.Left, region.Top, region.Right,
+                                     region.Bottom);
             _conditionalFormat = cf;
         }
     }

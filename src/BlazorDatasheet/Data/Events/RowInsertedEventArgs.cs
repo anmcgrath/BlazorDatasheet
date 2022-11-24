@@ -2,10 +2,13 @@
 
 public class RowInsertedEventArgs
 {
-    public int Index { get; }
+    /// <summary>
+    /// The index that the row was inserted after
+    /// </summary>
+    public int IndexAfter { get; }
 
-    public RowInsertedEventArgs(int index)
+    public RowInsertedEventArgs(int indexAfter)
     {
-        Index = index;
+        IndexAfter = indexAfter;
     }
 }

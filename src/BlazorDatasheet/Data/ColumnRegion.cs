@@ -41,6 +41,11 @@ public class ColumnRegion : Region
         SetOrderedBounds();
     }
 
+    public override void Shift(int dRow, int dCol)
+    {
+        base.Shift(0, dCol);
+    }
+
     public override IRegion GetBoundingRegion(IRegion otherRegion)
     {
         return new ColumnRegion(Math.Min(otherRegion.TopLeft.Col, this.TopLeft.Col),

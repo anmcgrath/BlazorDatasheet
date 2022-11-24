@@ -4,7 +4,7 @@ using BlazorDatasheet.Render;
 namespace BlazorDatasheet.Formats.DefaultConditionalFormats;
 
 /// <summary>
-/// Designed to be used with the Object Editor, affects the whole row or column
+/// Designed to only be used with the Object Editor, affects the whole row or column
 /// Of the object editor when any of the properties change.
 /// </summary>
 internal class DataExpressionConditionalFormat<T> : ConditionalFormatAbstractBase

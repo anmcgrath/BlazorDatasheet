@@ -42,6 +42,11 @@ public class RowRegion : Region
                              Math.Max(otherRegion.BottomRight.Row, this.BottomRight.Row));
     }
 
+    public override void Shift(int dRow, int dCol)
+    {
+        base.Shift(dRow, 0);
+    }
+
     public override IRegion Clone()
     {
         return new RowRegion(this.Start.Row, this.End.Row);

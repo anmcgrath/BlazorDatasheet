@@ -73,12 +73,12 @@ public class BRange
         Sheet.ClearCells(this);
     }
 
-    protected void AddRegion(IRegion region)
+    public void AddRegion(IRegion region)
     {
         _regions.Add(region);
     }
 
-    protected void RemoveRegion(IRegion region)
+    public void RemoveRegion(IRegion region)
     {
         _regions.Remove(region);
     }

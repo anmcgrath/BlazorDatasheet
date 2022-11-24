@@ -162,12 +162,12 @@ public class Sheet
     /// a row will be either inserted at the start or appended at the end</param>
     public void InsertRowAt(int rowIndex)
     {
-        var cmd = new InsertRowAtCommand(rowIndex);
+        var cmd = new InsertRowAfterCommand(rowIndex);
         Commands.ExecuteCommand(cmd);
     }
 
     /// <summary>
-    /// The internal insert function that does all the work of adding a row.
+    /// The internal insert function that implements adding a row
     /// This function does not add a command that is able to be undone.
     /// </summary>
     /// <param name="rowIndex"></param>
@@ -580,8 +580,7 @@ public class Sheet
     {
         // Keep track of individual cell changes
         var changes = new List<CellChangedFormat>();
-
-        Console.WriteLine("Setting row format " + region.ToString());
+        
         RowFormats.Add(new OrderedInterval<Format>(region.Start.Row, region.End.Row, format));
         // Set the specific format of any non-empty cells in the column range (empty cells are covered by the range format).
         // We do this because cell formatting takes precedence in rendering over col & range formats.
@@ -603,14 +602,12 @@ public class Sheet
         var overlappingRegions = new List<IRegion>();
         foreach (var colInterval in ColFormats.GetAllIntervals())
         {
-            Console.WriteLine("Handling interval " + colInterval.ToString());
             overlappingRegions.Add(new Region(region.Start.Row, region.End.Row, colInterval.Start,
                                               colInterval.End));
         }
 
         foreach (var overlapRegion in overlappingRegions)
         {
-            Console.WriteLine("setting overlap at " + overlapRegion.ToString());
             var sheetRegion = overlapRegion.GetIntersection(this.Region);
             var posns = new BRange(this, sheetRegion).Positions;
             foreach (var posn in posns)

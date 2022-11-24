@@ -2,11 +2,11 @@
 
 namespace BlazorDatasheet.Commands;
 
-internal class InsertRowAtCommand : IUndoableCommand
+internal class InsertRowAfterCommand : IUndoableCommand
 {
     private readonly int _index;
 
-    public InsertRowAtCommand(int index)
+    public InsertRowAfterCommand(int index)
     {
         _index = index;
     }

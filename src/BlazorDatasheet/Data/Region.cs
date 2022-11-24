@@ -228,6 +228,18 @@ public class Region : IRegion
     }
 
     /// <summary>
+    /// Shift the entire region by the amount specified
+    /// </summary>
+    /// <param name="dRow"></param>
+    /// <param name="dCol"></param>
+    public virtual void Shift(int dRow, int dCol)
+    {
+        this.Start = new CellPosition(this.Start.Row + dRow, this.Start.Col + dCol);
+        this.End = new CellPosition(this.End.Row + dRow, this.End.Col + dCol);
+        this.SetOrderedBounds();
+    }
+
+    /// <summary>
     /// Returns a new region that covers both this region and the region given
     /// </summary>
     /// <param name="otherRegion"></param>

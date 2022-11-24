@@ -36,99 +36,105 @@ namespace BlazorDatasheet.Data.SpatialDataStructures;
 /// <param name="MaxY">The maximum Y value of the bounding box.</param>
 [StructLayout(LayoutKind.Sequential)]
 public readonly record struct Envelope(
-	double MinX,
-	double MinY,
-	double MaxX,
-	double MaxY)
+    double MinX,
+    double MinY,
+    double MaxX,
+    double MaxY)
 {
-	/// <summary>
-	/// The calculated area of the bounding box.
-	/// </summary>
-	public double Area =>
-		Math.Max(MaxX - MinX, 0) * Math.Max(MaxY - MinY, 0);
+    /// <summary>
+    /// The calculated area of the bounding box.
+    /// </summary>
+    public double Area =>
+        Math.Max(MaxX - MinX, 0) * Math.Max(MaxY - MinY, 0);
 
-	/// <summary>
-	/// Half of the linear perimeter of the bounding box
-	/// </summary>
-	public double Margin =>
-		Math.Max(MaxX - MinX, 0) + Math.Max(MaxY - MinY, 0);
+    /// <summary>
+    /// Half of the linear perimeter of the bounding box
+    /// </summary>
+    public double Margin =>
+        Math.Max(MaxX - MinX, 0) + Math.Max(MaxY - MinY, 0);
 
-	/// <summary>
-	/// Extends a bounding box to include another bounding box
-	/// </summary>
-	/// <param name="other">The other bounding box</param>
-	/// <returns>A new bounding box that encloses both bounding boxes.</returns>
-	/// <remarks>Does not affect the current bounding box.</remarks>
-	public Envelope Extend(in Envelope other) =>
-		new(
-			MinX: Math.Min(this.MinX, other.MinX),
-			MinY: Math.Min(this.MinY, other.MinY),
-			MaxX: Math.Max(this.MaxX, other.MaxX),
-			MaxY: Math.Max(this.MaxY, other.MaxY));
+    /// <summary>
+    /// Extends a bounding box to include another bounding box
+    /// </summary>
+    /// <param name="other">The other bounding box</param>
+    /// <returns>A new bounding box that encloses both bounding boxes.</returns>
+    /// <remarks>Does not affect the current bounding box.</remarks>
+    public Envelope Extend(in Envelope other) =>
+        new(
+            MinX: Math.Min(this.MinX, other.MinX),
+            MinY: Math.Min(this.MinY, other.MinY),
+            MaxX: Math.Max(this.MaxX, other.MaxX),
+            MaxY: Math.Max(this.MaxY, other.MaxY));
 
-	/// <summary>
-	/// Intersects a bounding box to only include the common area
-	/// of both bounding boxes
-	/// </summary>
-	/// <param name="other">The other bounding box</param>
-	/// <returns>A new bounding box that is the intersection of both bounding boxes.</returns>
-	/// <remarks>Does not affect the current bounding box.</remarks>
-	public Envelope Intersection(in Envelope other) =>
-		new(
-			MinX: Math.Max(this.MinX, other.MinX),
-			MinY: Math.Max(this.MinY, other.MinY),
-			MaxX: Math.Min(this.MaxX, other.MaxX),
-			MaxY: Math.Min(this.MaxY, other.MaxY));
+    /// <summary>
+    /// Intersects a bounding box to only include the common area
+    /// of both bounding boxes
+    /// </summary>
+    /// <param name="other">The other bounding box</param>
+    /// <returns>A new bounding box that is the intersection of both bounding boxes.</returns>
+    /// <remarks>Does not affect the current bounding box.</remarks>
+    public Envelope Intersection(in Envelope other) =>
+        new(
+            MinX: Math.Max(this.MinX, other.MinX),
+            MinY: Math.Max(this.MinY, other.MinY),
+            MaxX: Math.Min(this.MaxX, other.MaxX),
+            MaxY: Math.Min(this.MaxY, other.MaxY));
 
-	/// <summary>
-	/// Determines whether <paramref name="other"/> is contained
-	/// within this bounding box.
-	/// </summary>
-	/// <param name="other">The other bounding box</param>
-	/// <returns>
-	/// <see langword="true" /> if <paramref name="other"/> is
-	/// completely contained within this bounding box; 
-	/// <see langword="false" /> otherwise.
-	/// </returns>
-	public bool Contains(in Envelope other) =>
-		this.MinX <= other.MinX &&
-		this.MinY <= other.MinY &&
-		this.MaxX >= other.MaxX &&
-		this.MaxY >= other.MaxY;
+    /// <summary>
+    /// Determines whether <paramref name="other"/> is contained
+    /// within this bounding box.
+    /// </summary>
+    /// <param name="other">The other bounding box</param>
+    /// <returns>
+    /// <see langword="true" /> if <paramref name="other"/> is
+    /// completely contained within this bounding box; 
+    /// <see langword="false" /> otherwise.
+    /// </returns>
+    public bool Contains(in Envelope other) =>
+        this.MinX <= other.MinX &&
+        this.MinY <= other.MinY &&
+        this.MaxX >= other.MaxX &&
+        this.MaxY >= other.MaxY;
 
-	/// <summary>
-	/// Determines whether <paramref name="other"/> intersects
-	/// this bounding box.
-	/// </summary>
-	/// <param name="other">The other bounding box</param>
-	/// <returns>
-	/// <see langword="true" /> if <paramref name="other"/> is
-	/// intersects this bounding box in any way; 
-	/// <see langword="false" /> otherwise.
-	/// </returns>
-	public bool Intersects(in Envelope other) =>
-		this.MinX <= other.MaxX &&
-		this.MinY <= other.MaxY &&
-		this.MaxX >= other.MinX &&
-		this.MaxY >= other.MinY;
+    /// <summary>
+    /// Determines whether <paramref name="other"/> intersects
+    /// this bounding box.
+    /// </summary>
+    /// <param name="other">The other bounding box</param>
+    /// <returns>
+    /// <see langword="true" /> if <paramref name="other"/> is
+    /// intersects this bounding box in any way; 
+    /// <see langword="false" /> otherwise.
+    /// </returns>
+    public bool Intersects(in Envelope other) =>
+        this.MinX <= other.MaxX &&
+        this.MinY <= other.MaxY &&
+        this.MaxX >= other.MinX &&
+        this.MaxY >= other.MinY;
 
-	/// <summary>
-	/// A bounding box that contains the entire 2-d plane.
-	/// </summary>
-	public static Envelope InfiniteBounds { get; } =
-		new(
-			MinX: double.NegativeInfinity,
-			MinY: double.NegativeInfinity,
-			MaxX: double.PositiveInfinity,
-			MaxY: double.PositiveInfinity);
+    /// <summary>
+    /// A bounding box that contains the entire 2-d plane.
+    /// </summary>
+    public static Envelope InfiniteBounds { get; } =
+        new(
+            MinX: double.NegativeInfinity,
+            MinY: double.NegativeInfinity,
+            MaxX: double.PositiveInfinity,
+            MaxY: double.PositiveInfinity);
 
-	/// <summary>
-	/// An empty bounding box.
-	/// </summary>
-	public static Envelope EmptyBounds { get; } =
-		new(
-			MinX: double.PositiveInfinity,
-			MinY: double.PositiveInfinity,
-			MaxX: double.NegativeInfinity,
-			MaxY: double.NegativeInfinity);
+    /// <summary>
+    /// An empty bounding box.
+    /// </summary>
+    public static Envelope EmptyBounds { get; } =
+        new(
+            MinX: double.PositiveInfinity,
+            MinY: double.PositiveInfinity,
+            MaxX: double.NegativeInfinity,
+            MaxY: double.NegativeInfinity);
+
+    public bool IsSameAs(in Envelope other) =>
+        this.MinX == other.MinX &&
+        this.MinY == other.MinY &&
+        this.MaxX == other.MaxX &&
+        this.MaxY == other.MaxY;
 }

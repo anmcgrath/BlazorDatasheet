@@ -178,4 +178,11 @@ public interface IRegion
     /// <param name="cellPosition"></param>
     /// <returns></returns>
     public CellPosition GetConstrained(CellPosition cellPosition);
+
+    /// <summary>
+    /// Shift the entire region by the amount specified
+    /// </summary>
+    /// <param name="dRow"></param>
+    /// <param name="dCol"></param>
+    public void Shift(int dRow, int dCol);
 }

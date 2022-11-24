@@ -37,6 +37,8 @@ public abstract class ConditionalFormatAbstractBase
     /// </summary>
     internal HashSet<(int row, int col)> Positions { get; private set; } = new();
 
+    public event EventHandler<ConditionalFormatRegionsChangedEventArgs> RegionsChanged;
+
     /// <summary>
     /// Get positions that only exist in both sets
     /// </summary>
@@ -52,13 +54,75 @@ public abstract class ConditionalFormatAbstractBase
         }
     }
 
-    internal void Add(BRange range, Sheet sheet)
+    internal void Add(BRange range)
     {
         Ranges.Add(range);
         foreach (var position in range.Positions)
         {
             Positions.Add(position);
         }
+
+        emitRangeChanged(new List<IRegion>(), range.Regions.ToList());
+    }
+
+    /// <summary>
+    /// Shift regions based on the position of the row inserted
+    /// </summary>
+    /// <param name="index"></param>
+    public void HandleRowInsertedAfter(int index)
+    {
+        var regionsRemoved = new List<IRegion>();
+        var regionsAdded = new List<IRegion>();
+
+        foreach (var range in Ranges)
+        {
+            foreach (var region in range.Regions.ToArray())
+            {
+                if (!(region.Top >= index))
+                    continue;
+
+                // Add and remove the region after shifting
+                range.RemoveRegion(region);
+                var shiftedRegion = region.Copy();
+                shiftedRegion.Shift(1, 0);
+                range.AddRegion(shiftedRegion);
+                regionsRemoved.Add(region);
+                regionsAdded.Add(shiftedRegion);
+            }
+        }
+
+        this.updatePositions();
+        emitRangeChanged(regionsRemoved, regionsAdded);
+    }
+
+    /// <summary>
+    /// Shift regions based on the position of the row removed
+    /// </summary>
+    /// <param name="index"></param>
+    public void HandleRowRemoved(int index)
+    {
+        var regionsRemoved = new List<IRegion>();
+        var regionsAdded = new List<IRegion>();
+
+        foreach (var range in Ranges)
+        {
+            foreach (var region in range.Regions.ToArray())
+            {
+                if (!(region.Top > index))
+                    continue;
+
+                // Add and remove the region after shifting
+                range.RemoveRegion(region);
+                var shiftedRegion = region.Copy();
+                shiftedRegion.Shift(-1, 0);
+                regionsRemoved.Add(region);
+                range.AddRegion(shiftedRegion);
+                regionsAdded.Add(shiftedRegion);
+            }
+        }
+
+        this.updatePositions();
+        emitRangeChanged(regionsRemoved, regionsAdded);
     }
 
     public IEnumerable<IReadOnlyCell> GetCells(Sheet sheet)
@@ -69,8 +133,13 @@ public abstract class ConditionalFormatAbstractBase
 
     internal void Remove(BRange range)
     {
-        // Easiest way for now is to remove all positions and recalculate
         Ranges.Remove(range);
+        updatePositions();
+        emitRangeChanged(range.Regions.ToList(), new List<IRegion>());
+    }
+
+    private void updatePositions()
+    {
         Positions.Clear();
         foreach (var r in Ranges)
         {
@@ -93,6 +162,12 @@ public abstract class ConditionalFormatAbstractBase
     /// </summary>
     public virtual void Prepare(Sheet sheet)
     {
+    }
+
+    private void emitRangeChanged(IEnumerable<IRegion> regionsRemoved, IEnumerable<IRegion> regionsAdded)
+    {
+        var args = new ConditionalFormatRegionsChangedEventArgs(regionsRemoved, regionsAdded);
+        RegionsChanged?.Invoke(this, args);
     }
 
     public virtual ConditionalFormatAbstractBase Clone()
