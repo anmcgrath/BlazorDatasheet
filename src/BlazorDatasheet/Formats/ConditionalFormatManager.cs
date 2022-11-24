@@ -13,9 +13,9 @@ public class ConditionalFormatManager
 {
     private readonly Sheet _sheet;
 
-    private List<ConditionalFormatAbstractBase> _registered = new();
+    private readonly List<ConditionalFormatAbstractBase> _registered = new();
 
-    private RTree<ConditonalFormatSpatialData> _cfTree = new();
+    private readonly RTree<ConditionalFormatSpatialData> _cfTree = new();
 
     public event EventHandler<ConditionalFormatPreparedEventArgs> ConditionalFormatPrepared;
 
@@ -86,7 +86,7 @@ public class ConditionalFormatManager
                 _cfTree.Delete(spatialData);
         }
 
-        _cfTree.BulkLoad(e.RegionsAdded.Select(x => new ConditonalFormatSpatialData(cf, x)));
+        _cfTree.BulkLoad(e.RegionsAdded.Select(x => new ConditionalFormatSpatialData(cf, x)));
     }
 
     /// <summary>
@@ -173,14 +173,14 @@ public class ConditionalFormatManager
         return initialFormat;
     }
 
-    internal class ConditonalFormatSpatialData : ISpatialData
+    internal class ConditionalFormatSpatialData : ISpatialData
     {
-        internal ConditionalFormatAbstractBase _conditionalFormat;
+        internal readonly ConditionalFormatAbstractBase _conditionalFormat;
         public ref readonly ConditionalFormatAbstractBase ConditionalFormat => ref _conditionalFormat;
         private readonly Envelope _envelope;
         public ref readonly Envelope Envelope => ref _envelope;
 
-        internal ConditonalFormatSpatialData(ConditionalFormatAbstractBase cf, IRegion region)
+        internal ConditionalFormatSpatialData(ConditionalFormatAbstractBase cf, IRegion region)
         {
             _envelope = new Envelope(region.Left, region.Top, region.Right,
                                      region.Bottom);
