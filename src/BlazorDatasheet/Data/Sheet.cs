@@ -828,12 +828,12 @@ public class Sheet
     /// <param name="row"></param>
     /// <param name="col"></param>
     /// <returns></returns>
-    internal bool IsPositionMerged(int row, int col)
+    public bool IsPositionMerged(int row, int col)
     {
         return GetMergedRegionAtPosition(row, col) != null;
     }
 
-    internal IRegion? GetMergedRegionAtPosition(int row, int col)
+    public IRegion? GetMergedRegionAtPosition(int row, int col)
     {
         var cellRegion = new Region(row, col);
         var merges = MergedCells.Search(cellRegion.ToEnvelope());
