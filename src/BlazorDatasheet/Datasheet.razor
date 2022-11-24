@@ -108,7 +108,7 @@
                     IsAbsolutePositioning="true"
                     Cell="cell"
                     Sheet="Sheet"
-                    IsDirty="@SheetIsDirty">
+                    IsDirty="SheetIsDirty || DirtyCells.Contains((row, col))">
                     <ItemTemplate>
                         <DynamicComponent
                             Type="@getCellRendererType(cell.Type)"
