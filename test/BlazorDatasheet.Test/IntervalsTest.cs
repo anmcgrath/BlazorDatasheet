@@ -116,4 +116,17 @@ public class IntervalsTest
         Assert.Null(store.Get(9));
         Assert.AreEqual(format, store.Get(10));
     }
+
+    [Test]
+    public void Add_Interval_Between_Sets_Correctly()
+    {
+        var format1 = new Format() { BackgroundColor = "f1" };
+        var format2 = new Format() { BackgroundColor = "f2" };
+        var store = new NonOverlappingIntervals<Format>();
+        store.Add(new OrderedInterval<Format>(0, 2, format1));
+        store.Add(new OrderedInterval<Format>(1, 1, format2));
+        Assert.AreEqual(format1.BackgroundColor, store.Get(0)?.BackgroundColor);
+        Assert.AreEqual(format2.BackgroundColor, store.Get(1)?.BackgroundColor);
+        Assert.AreEqual(format1.BackgroundColor, store.Get(2)?.BackgroundColor);
+    }
 }

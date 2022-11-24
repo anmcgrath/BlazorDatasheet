@@ -492,14 +492,14 @@ public class Sheet
 
         if (region is ColumnRegion columnRegion)
         {
-            changes.AddRange(SetColumnFormat(format, columnRegion));
+            changes.AddRange(SetColumnFormatImpl(format, columnRegion));
             colRegions.Add(columnRegion);
         }
 
 
         else if (region is RowRegion rowRegion)
         {
-            changes.AddRange(SetRowFormat(format, rowRegion));
+            changes.AddRange(SetRowFormatImpl(format, rowRegion));
             rowRegions.Add(rowRegion);
         }
         else
@@ -528,7 +528,7 @@ public class Sheet
         FormatsChanged?.Invoke(this, args);
     }
 
-    private IEnumerable<CellChangedFormat> SetColumnFormat(Format format, ColumnRegion region)
+    private IEnumerable<CellChangedFormat> SetColumnFormatImpl(Format format, ColumnRegion region)
     {
         // Keep track of individual cell changes
         var changes = new List<CellChangedFormat>();
@@ -576,11 +576,12 @@ public class Sheet
         return changes;
     }
 
-    private IEnumerable<CellChangedFormat> SetRowFormat(Format format, RowRegion region)
+    private IEnumerable<CellChangedFormat> SetRowFormatImpl(Format format, RowRegion region)
     {
         // Keep track of individual cell changes
         var changes = new List<CellChangedFormat>();
 
+        Console.WriteLine("Setting row format " + region.ToString());
         RowFormats.Add(new OrderedInterval<Format>(region.Start.Row, region.End.Row, format));
         // Set the specific format of any non-empty cells in the column range (empty cells are covered by the range format).
         // We do this because cell formatting takes precedence in rendering over col & range formats.
@@ -598,16 +599,18 @@ public class Sheet
             changes.Add(new CellChangedFormat(posn.row, posn.col, oldFormat, cell.Formatting));
         }
 
-        // Look at the region(s) of overlap with row formats - must make these cells exist and assign formats
+        // Look at the region(s) of overlap with col formats - must make these cells exist and assign formats
         var overlappingRegions = new List<IRegion>();
         foreach (var colInterval in ColFormats.GetAllIntervals())
         {
+            Console.WriteLine("Handling interval " + colInterval.ToString());
             overlappingRegions.Add(new Region(region.Start.Row, region.End.Row, colInterval.Start,
                                               colInterval.End));
         }
 
         foreach (var overlapRegion in overlappingRegions)
         {
+            Console.WriteLine("setting overlap at " + overlapRegion.ToString());
             var sheetRegion = overlapRegion.GetIntersection(this.Region);
             var posns = new BRange(this, sheetRegion).Positions;
             foreach (var posn in posns)
@@ -633,7 +636,7 @@ public class Sheet
     /// <param name="col"></param>
     /// <param name="format"></param>
     /// <returns>A record of what change occured.</returns>
-    public CellChangedFormat SetCellFormat(int row, int col, Format format)
+    internal CellChangedFormat SetCellFormat(int row, int col, Format format)
     {
         Format? oldFormat = null;
         if (!_cellDataStore.Contains(row, col))

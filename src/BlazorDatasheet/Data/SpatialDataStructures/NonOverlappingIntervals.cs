@@ -91,6 +91,22 @@ public class NonOverlappingIntervals<T> where T : IMergeable<T>
                 oi.Data.Merge(interval.Data);
             }
 
+            else if (oi.Contains(interval))
+            {
+                // We have [o, o, i, i, o, o] where o = overlapping interval
+                // and i = interval we are adding
+                // we remove o and add o0, and o1 so that we now have
+                // [o0, o0, i, i, o1, o1]
+                _Intervals.Remove(oi.Start);
+                if (oi.Start != interval.Start)
+                    _Intervals.Add(oi.Start, new OrderedInterval<T>(oi.Start, interval.Start - 1, oi.Data));
+                var merged = new OrderedInterval<T>(interval.Start, interval.End, oi.Data.Clone());
+                merged.Data.Merge(interval.Data);
+                _Intervals.Add(merged.Start, merged);
+                if (oi.End != interval.End)
+                    _Intervals.Add(interval.End + 1, new OrderedInterval<T>(interval.End + 1, oi.End, oi.Data));
+            }
+
             else if (interval.Start > oi.Start)
             {
                 _Intervals.Remove(oi.Start);

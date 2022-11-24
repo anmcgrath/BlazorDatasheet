@@ -16,6 +16,10 @@ public class ColumnRegion : Region
     {
     }
 
+    public ColumnRegion(int column) : this(column, column)
+    {
+    }
+
     public override IRegion Copy()
     {
         return new ColumnRegion(TopLeft.Col, BottomRight.Col);
@@ -40,7 +44,7 @@ public class ColumnRegion : Region
     public override IRegion GetBoundingRegion(IRegion otherRegion)
     {
         return new ColumnRegion(Math.Min(otherRegion.TopLeft.Col, this.TopLeft.Col),
-            Math.Max(otherRegion.BottomRight.Col, this.BottomRight.Col));
+                                Math.Max(otherRegion.BottomRight.Col, this.BottomRight.Col));
     }
 
     public override IRegion Clone()

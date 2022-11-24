@@ -11,6 +11,10 @@ public class RowRegion : Region
     {
     }
 
+    public RowRegion(int row) : this(row, row)
+    {
+    }
+
     public override IRegion Copy()
     {
         return new RowRegion(TopLeft.Row, BottomRight.Row);
