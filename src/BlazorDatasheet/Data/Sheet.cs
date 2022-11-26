@@ -175,7 +175,7 @@ public class Sheet
     /// <returns></returns>
     internal bool InsertRowAtImpl(int rowIndex)
     {
-        _cellDataStore.InsertRowAt(rowIndex);
+        _cellDataStore.InsertRowAfter(rowIndex);
         NumRows++;
         RowInserted?.Invoke(this, new RowInsertedEventArgs(rowIndex + 1));
         return true;

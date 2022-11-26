@@ -5,6 +5,9 @@ namespace BlazorDatasheet.Data;
 
 public class SparseMatrixStore<T> : IMatrixDataStore<T>
 {
+    /// <summary>
+    /// Matrix columns, with the key being the column index
+    /// </summary>
     private Dictionary<int, SColumn<T>> Columns { get; set; } = new();
 
     public bool Contains(int row, int col)
@@ -35,12 +38,33 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
         column.Set(row, value);
     }
 
-    public void InsertRowAt(int row)
+    public void InsertRowAfter(int row)
     {
         foreach (var column in Columns.Values)
         {
             column.InsertRowAt(row);
         }
+    }
+
+    public void InsertColAfter(int col)
+    {
+        var currentColumns = Columns.ToList();
+        foreach (var kp in currentColumns)
+        {
+            if (kp.Key > col)
+            {
+                Columns.Remove(kp.Key);
+                Columns.Add(kp.Key + 1, kp.Value);
+            }
+        }
+
+        Columns.Add(col, new SColumn<T>());
+    }
+
+    public void RemoveColAt(int col)
+    {
+        if (Columns.ContainsKey(col))
+            Columns.Remove(col);
     }
 
     public int GetNextNonBlankRow(int col, int row)

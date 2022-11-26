@@ -28,7 +28,7 @@ public class DataStoreTests
         store.Set(2, 0, "C");
         store.Set(3, 0, "D");
 
-        store.InsertRowAt(0);
+        store.InsertRowAfter(0);
         Assert.AreEqual("A", store.Get(0, 0));
         Assert.AreEqual(default(string), store.Get(1, 0));
         Assert.AreEqual("B", store.Get(2, 0));
@@ -45,7 +45,7 @@ public class DataStoreTests
         store.Set(2, 0, "B");
         store.Set(3, 0, "C");
 
-        store.InsertRowAt(1);
+        store.InsertRowAfter(1);
         Assert.AreEqual("A", store.Get(0, 0));
         Assert.AreEqual(default(string), store.Get(1, 0));
         Assert.AreEqual(default(string), store.Get(2, 0));

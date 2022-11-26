@@ -5,7 +5,10 @@ public interface IMatrixDataStore<T>
     public bool Contains(int row, int col);
     public T? Get(int row, int col);
     public void Set(int row, int col, T value);
-    public void InsertRowAt(int row);
+    public void InsertRowAfter(int row);
+    public void InsertColAfter(int col);
+    public void RemoveColAt(int col);
+
     /// <summary>
     /// Finds the next non-empty row number in the column. Returns -1 if no non-empty rows exist after the row
     /// </summary>
@@ -13,6 +16,7 @@ public interface IMatrixDataStore<T>
     /// <param name="row"></param>
     /// <returns></returns>
     public int GetNextNonBlankRow(int col, int row);
+
     void RemoveRowAt(int row);
 
     /// <summary>
