@@ -90,7 +90,7 @@ public class Sheet
     /// Fired when a row is removed from the sheet.
     /// </summary>
     public event EventHandler<RowRemovedEventArgs> RowRemoved;
-    
+
     /// <summary>
     /// Fired when a column is inserted into the sheet
     /// </summary>
@@ -180,9 +180,9 @@ public class Sheet
     internal void InsertColAfterImpl(int colIndex)
     {
         _cellDataStore.InsertColAfter(colIndex);
+        ColumnHeadings.Insert(colIndex + 1, new Heading());
         NumCols++;
         ColumnInserted?.Invoke(this, new ColumnInsertedEventArgs(colIndex));
-        
     }
 
     /// <summary>
@@ -200,13 +200,14 @@ public class Sheet
         if (colIndex >= 0 && colIndex <= NumCols - 1)
         {
             _cellDataStore.RemoveColAt(colIndex);
+            if (colIndex < ColumnHeadings.Count)
+                ColumnHeadings.RemoveAt(colIndex);
             NumCols--;
             ColumnRemoved?.Invoke(this, new ColumnRemovedEventArgs(colIndex));
             return true;
         }
 
         return false;
-
     }
 
     /// <summary>
