@@ -25,6 +25,8 @@ public class ConditionalFormatManager
         _sheet.CellsChanged += HandleCellsChanged;
         _sheet.RowInserted += HandleRowInserted;
         _sheet.RowRemoved += HandleRowRemoved;
+        _sheet.ColumnRemoved += HandleColRemoved;
+        _sheet.ColumnInserted += HandleColInserted;
     }
 
     private void HandleRowRemoved(object? sender, RowRemovedEventArgs e)
@@ -39,7 +41,23 @@ public class ConditionalFormatManager
     {
         foreach (var cf in _registered)
         {
-            cf.HandleRowInsertedAfter(e.IndexAfter);
+            cf.HandleRowInserted(e.IndexAfter);
+        }
+    }
+
+    private void HandleColRemoved(object? sender, ColumnRemovedEventArgs e)
+    {
+        foreach (var cf in _registered)
+        {
+            cf.HandleColRemoved(e.ColumnIndex);
+        }
+    }
+
+    private void HandleColInserted(object? sender, ColumnInsertedEventArgs e)
+    {
+        foreach (var cf in _registered)
+        {
+            cf.HandleColInserted(e.ColAfter);
         }
     }
 

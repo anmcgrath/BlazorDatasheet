@@ -1,9 +1,11 @@
 ﻿namespace BlazorDatasheet.Data;
 
-public enum Edge
+[Flags]
+public enum Edge : short
 {
-    Top,
-    Right,
-    Left,
-    Bottom
+    None = 0,
+    Top = 1,
+    Right = 2,
+    Left = 4,
+    Bottom = 8
 }

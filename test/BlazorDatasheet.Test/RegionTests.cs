@@ -316,4 +316,70 @@ public class RegionTests
         Assert.AreEqual(1, r1.BottomRight.Row);
         Assert.AreEqual(0, r1.TopLeft.Row);
     }
+
+    [Test]
+    [TestCase(Edge.Left, 2, 2, 0, 0, 0)]
+    [TestCase(Edge.Right, 2, 0, 2, 0, 0)]
+    [TestCase(Edge.Top, 2, 0, 0, 2, 0)]
+    [TestCase(Edge.Bottom, 2, 0, 0, 0, 2)]
+    [TestCase(Edge.Left | Edge.Right, 2, 2, 2, 0, 0)]
+    [TestCase(Edge.Top | Edge.Bottom, 2, 0, 0, 2, 2)]
+    [TestCase(Edge.Top | Edge.Right | Edge.Bottom | Edge.Left, 2, 2, 2, 2, 2)]
+    public void Expand_General_Region_Expands(Edge edges, int amount, int expectedDLeft, int expectedDRight,
+        int expectedDTop, int expectedDBottom)
+    {
+        var l = 1;
+        var r = 2;
+        var t = 1;
+        var b = 2;
+        var region = new Region(t, b, l, r);
+        region.Expand(edges, amount);
+        Assert.AreEqual(expectedDLeft, l - region.Left);
+        Assert.AreEqual(expectedDRight, region.Right - r);
+        Assert.AreEqual(expectedDTop, t - region.Top);
+        Assert.AreEqual(expectedDBottom, region.Bottom - b);
+    }
+
+    [Test]
+    public void Expand_Single_Cell_Top_And_Left_Moves_Start_not_End()
+    {
+        var r = new Region(1, 1);
+        r.Expand(Edge.Left | Edge.Top, 1);
+        Assert.AreEqual(0, r.Start.Col);
+        Assert.AreEqual(0, r.Start.Row);
+        Assert.AreEqual(1, r.End.Col);
+        Assert.AreEqual(1, r.End.Row);
+    }
+
+    [Test]
+    public void Expand_Single_Cell_Right_And_Bottom_Moves_End_Not_Start()
+    {
+        var r = new Region(1, 1);
+        r.Expand(Edge.Right | Edge.Bottom, 1);
+        Assert.AreEqual(1, r.Start.Col);
+        Assert.AreEqual(1, r.Start.Row);
+        Assert.AreEqual(2, r.End.Col);
+        Assert.AreEqual(2, r.End.Row);
+    }
+
+    [Test]
+    public void Expand_Col_Region_By_All_Edges_Ok()
+    {
+        var c = new ColumnRegion(2);
+        c.Expand(Edge.Bottom | Edge.Left | Edge.Right | Edge.Top, 2);
+        Assert.AreEqual(c.Left, 0);
+        Assert.AreEqual(c.Right, 4);
+        Assert.AreEqual(c.Top, 0);
+    }
+
+
+    [Test]
+    public void Expand_Row_Region_By_All_Edges_Ok()
+    {
+        var c = new RowRegion(2);
+        c.Expand(Edge.Bottom | Edge.Left | Edge.Right | Edge.Top, 2);
+        Assert.AreEqual(c.Top, 0);
+        Assert.AreEqual(c.Bottom, 4);
+        Assert.AreEqual(c.Left, 0);
+    }
 }

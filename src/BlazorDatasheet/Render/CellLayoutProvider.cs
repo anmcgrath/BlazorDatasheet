@@ -1,4 +1,5 @@
 using BlazorDatasheet.Data;
+using BlazorDatasheet.Data.Events;
 
 namespace BlazorDatasheet.Render;
 
@@ -20,6 +21,7 @@ public class CellLayoutProvider
     internal CellLayoutProvider(Sheet sheet, double defaultColumnWidth, double defaultRowHeight)
     {
         _sheet = sheet;
+        _sheet.ColumnInserted += SheetOnColumnInserted;
         _defaultColumnWidth = defaultColumnWidth;
         _defaultRowHeight = defaultRowHeight;
 
@@ -28,7 +30,13 @@ public class CellLayoutProvider
         updateXPositions();
     }
 
-    public void SetColumnWidth(int col, double width)
+    private void SheetOnColumnInserted(object? sender, ColumnInsertedEventArgs e)
+    {
+        _columnWidths.Insert(e.ColAfter + 1, _defaultColumnWidth);
+        updateXPositions();
+    }
+
+    internal void SetColumnWidth(int col, double width)
     {
         _columnWidths[col] = width;
         updateXPositions();

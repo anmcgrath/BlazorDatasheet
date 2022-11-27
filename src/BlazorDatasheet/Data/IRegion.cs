@@ -86,6 +86,13 @@ public interface IRegion
     public bool SpansRow(int row);
 
     /// <summary>
+    /// Determines whether the axis at position is spanned by region
+    /// </summary>
+    /// <param name="row"></param>
+    /// <returns></returns>
+    public bool Spans(int index, Axis axis);
+
+    /// <summary>
     /// Returns a new, collapsed region at the start position of this region.
     /// </summary>
     /// <returns></returns>
@@ -185,4 +192,18 @@ public interface IRegion
     /// <param name="dRow"></param>
     /// <param name="dCol"></param>
     public void Shift(int dRow, int dCol);
+
+    /// <summary>
+    /// Grows the edges provided by the amount given
+    /// </summary>
+    /// <param name="edges"></param>
+    /// <param name="amount"></param>
+    public void Expand(Edge edges, int amount);
+
+    /// <summary>
+    /// Shrinks the edges provided by the amount given
+    /// </summary>
+    /// <param name="edges"></param>
+    /// <param name="amount"></param>
+    public void Contract(Edge edges, int amount);
 }

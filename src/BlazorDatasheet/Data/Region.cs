@@ -121,6 +121,15 @@ public class Region : IRegion
                row <= BottomRight.Row;
     }
 
+    public bool Spans(int index, Axis axis)
+    {
+        switch (axis)
+        {
+            case Axis.Col: return SpansCol(index);
+            default: return SpansRow(index);
+        }
+    }
+
     public IRegion Collapse()
     {
         return new Region(TopLeft.Row, TopLeft.Col);
@@ -238,6 +247,65 @@ public class Region : IRegion
         this.End = new CellPosition(this.End.Row + dRow, this.End.Col + dCol);
         this.SetOrderedBounds();
     }
+
+    /// <summary>
+    /// Grows the edges provided by the amount given
+    /// </summary>
+    /// <param name="edges"></param>
+    /// <param name="amount"></param>
+    public virtual void Expand(Edge edges, int amount)
+    {
+        var endCol = this.End.Col;
+        var endRow = this.End.Row;
+        var startCol = this.Start.Col;
+        var startRow = this.Start.Row;
+        if ((edges & Edge.Bottom) == Edge.Bottom)
+        {
+            // The order here is deliberate.
+            // If endRow = startRow then we will push the endRow down so here we move the end row first if required
+            // and the start row up. Similar logic for the right with the col.
+            // The order reverses for left and top, where we prefer to move the start row first if required
+            if (endRow == Bottom)
+                endRow += amount;
+            else if (startRow == Bottom)
+                startRow += amount;
+        }
+
+        if ((edges & Edge.Right) == Edge.Right)
+        {
+            if (endCol == Right)
+                endCol += amount;
+            else if (startCol == Right)
+                startCol += amount;
+        }
+
+        if ((edges & Edge.Top) == Edge.Top)
+        {
+            if (startRow == Top)
+                startRow -= amount;
+            else if (endRow == Top)
+                endRow -= amount;
+        }
+
+        if ((edges & Edge.Left) == Edge.Left)
+        {
+            if (startCol == Left)
+                startCol -= amount;
+            else if (endCol == Left)
+                endCol -= amount;
+        }
+
+        this.Start = new CellPosition(startRow, startCol);
+        this.End = new CellPosition(endRow, endCol);
+        this.SetOrderedBounds();
+    }
+
+    /// <summary>
+    /// Shrinks the edges provided by the amount given
+    /// </summary>
+    /// <param name="edges"></param>
+    /// <param name="amount"></param>
+    public void Contract(Edge edges, int amount) => Expand(edges, -amount);
 
     /// <summary>
     /// Returns a new region that covers both this region and the region given

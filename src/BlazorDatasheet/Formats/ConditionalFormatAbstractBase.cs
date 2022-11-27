@@ -68,8 +68,33 @@ public abstract class ConditionalFormatAbstractBase
     /// <summary>
     /// Shift regions based on the position of the row inserted
     /// </summary>
+    /// <param name="indexAfter"></param>
+    public void HandleRowInserted(int indexAfter) => HandleInsert(indexAfter, Axis.Row);
+
+    /// <summary>
+    /// Shift regions based on the position of the row removed
+    /// </summary>
     /// <param name="index"></param>
-    public void HandleRowInsertedAfter(int index)
+    public void HandleRowRemoved(int index) => HandleRemove(index, Axis.Row);
+
+    /// <summary>
+    /// Shift regions based on the position of the col inserted
+    /// </summary>
+    /// <param name="indexAfter"></param>
+    public void HandleColInserted(int indexAfter) => HandleInsert(indexAfter, Axis.Col);
+
+    /// <summary>
+    /// Shift regions based on the position of the col removed
+    /// </summary>
+    /// <param name="index"></param>
+    public void HandleColRemoved(int index) => HandleRemove(index, Axis.Col);
+
+    /// <summary>
+    /// Handles the insertion of a row or column at a particular index
+    /// </summary>
+    /// <param name="indexAfter">The index that the row/column was inserted directly after</param>
+    /// <param name="axis"></param>
+    private void HandleInsert(int indexAfter, Axis axis)
     {
         var regionsRemoved = new List<IRegion>();
         var regionsAdded = new List<IRegion>();
@@ -78,16 +103,35 @@ public abstract class ConditionalFormatAbstractBase
         {
             foreach (var region in range.Regions.ToArray())
             {
-                if (!(region.Top >= index))
-                    continue;
+                // If the region is located after the row/col being added
+                if (region.GetLeadingEdgeOffset(axis) >= indexAfter + 1)
+                {
+                    // Add and remove the region after shifting
+                    range.RemoveRegion(region);
+                    var shiftedRegion = region.Copy();
+                    if (axis == Axis.Col)
+                        shiftedRegion.Shift(0, 1);
+                    else
+                        shiftedRegion.Shift(1, 0);
+                    range.AddRegion(shiftedRegion);
+                    regionsRemoved.Add(region);
+                    regionsAdded.Add(shiftedRegion);
+                }
+                // If the new row/col being added is inside the region or the one directly after
+                else if (region.Spans(indexAfter + 1, axis) && region.GetSize(axis) > 1)
+                {
+                    range.RemoveRegion(region);
+                    var expandedRegion = region.Copy();
 
-                // Add and remove the region after shifting
-                range.RemoveRegion(region);
-                var shiftedRegion = region.Copy();
-                shiftedRegion.Shift(1, 0);
-                range.AddRegion(shiftedRegion);
-                regionsRemoved.Add(region);
-                regionsAdded.Add(shiftedRegion);
+                    if (axis == Axis.Col)
+                        expandedRegion.Expand(Edge.Right, 1);
+                    else if (axis == Axis.Row)
+                        expandedRegion.Expand(Edge.Bottom, 1);
+
+                    range.AddRegion(expandedRegion);
+                    regionsRemoved.Add(region);
+                    regionsAdded.Add(expandedRegion);
+                }
             }
         }
 
@@ -96,10 +140,11 @@ public abstract class ConditionalFormatAbstractBase
     }
 
     /// <summary>
-    /// Shift regions based on the position of the row removed
+    /// Handles the removal of a row or column at a particular index
     /// </summary>
-    /// <param name="index"></param>
-    public void HandleRowRemoved(int index)
+    /// <param name="index">The index that the row/column was removed at</param>
+    /// <param name="axis"></param>
+    public void HandleRemove(int index, Axis axis)
     {
         var regionsRemoved = new List<IRegion>();
         var regionsAdded = new List<IRegion>();
@@ -108,16 +153,33 @@ public abstract class ConditionalFormatAbstractBase
         {
             foreach (var region in range.Regions.ToArray())
             {
-                if (!(region.Top > index))
-                    continue;
+                if (region.GetLeadingEdgeOffset(axis) > index)
+                {
+                    // Add and remove the region after shifting
+                    range.RemoveRegion(region);
+                    var shiftedRegion = region.Copy();
+                    if (axis == Axis.Col)
+                        shiftedRegion.Shift(0, -1);
+                    else if (axis == Axis.Row)
+                        shiftedRegion.Shift(-1, 0);
+                    regionsRemoved.Add(region);
+                    range.AddRegion(shiftedRegion);
+                    regionsAdded.Add(shiftedRegion);
+                } // If the new row/col being added is inside the region or the one directly after
+                else if (region.Spans(index, axis))
+                {
+                    range.RemoveRegion(region);
+                    var expandedRegion = region.Copy();
 
-                // Add and remove the region after shifting
-                range.RemoveRegion(region);
-                var shiftedRegion = region.Copy();
-                shiftedRegion.Shift(-1, 0);
-                regionsRemoved.Add(region);
-                range.AddRegion(shiftedRegion);
-                regionsAdded.Add(shiftedRegion);
+                    if (axis == Axis.Col)
+                        expandedRegion.Expand(Edge.Right, -1);
+                    else if (axis == Axis.Row)
+                        expandedRegion.Expand(Edge.Bottom, -1);
+
+                    range.AddRegion(expandedRegion);
+                    regionsRemoved.Add(region);
+                    regionsAdded.Add(expandedRegion);
+                }
             }
         }
 

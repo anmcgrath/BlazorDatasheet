@@ -46,6 +46,16 @@ public class ColumnRegion : Region
         base.Shift(0, dCol);
     }
 
+    public override void Expand(Edge edges, int amount)
+    {
+        // Expand left & right sides bot not top and bottom
+        if ((edges & Edge.Bottom) == Edge.Bottom)
+            edges &= ~Edge.Bottom;
+        if ((edges & Edge.Top) == Edge.Top)
+            edges &= ~Edge.Top;
+        base.Expand(edges, amount);
+    }
+
     public override IRegion GetBoundingRegion(IRegion otherRegion)
     {
         return new ColumnRegion(Math.Min(otherRegion.TopLeft.Col, this.TopLeft.Col),

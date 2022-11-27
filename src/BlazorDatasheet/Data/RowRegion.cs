@@ -36,6 +36,16 @@ public class RowRegion : Region
         SetOrderedBounds();
     }
 
+    public override void Expand(Edge edges, int amount)
+    {
+        // Expand top and bottom sides bot not right or left
+        if ((edges & Edge.Right) == Edge.Right)
+            edges &= ~Edge.Right;
+        if ((edges & Edge.Left) == Edge.Left)
+            edges &= ~Edge.Left;
+        base.Expand(edges, amount);
+    }
+
     public override IRegion GetBoundingRegion(IRegion otherRegion)
     {
         return new RowRegion(Math.Min(otherRegion.TopLeft.Row, this.TopLeft.Row),

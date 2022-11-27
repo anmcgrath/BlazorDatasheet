@@ -232,7 +232,7 @@ public class Sheet
     {
         _cellDataStore.InsertRowAfter(rowIndex);
         NumRows++;
-        RowInserted?.Invoke(this, new RowInsertedEventArgs(rowIndex + 1));
+        RowInserted?.Invoke(this, new RowInsertedEventArgs(rowIndex));
         return true;
     }
 
