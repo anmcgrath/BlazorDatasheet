@@ -90,6 +90,16 @@ public class Sheet
     /// Fired when a row is removed from the sheet.
     /// </summary>
     public event EventHandler<RowRemovedEventArgs> RowRemoved;
+    
+    /// <summary>
+    /// Fired when a column is inserted into the sheet
+    /// </summary>
+    public event EventHandler<ColumnInsertedEventArgs> ColumnInserted;
+
+    /// <summary>
+    /// Fired when a column is removed from the sheet.
+    /// </summary>
+    public event EventHandler<ColumnRemovedEventArgs> ColumnRemoved;
 
     /// <summary>
     /// Fired when one or more cells are changed
@@ -156,13 +166,58 @@ public class Sheet
     }
 
     /// <summary>
+    /// Inserts a column after the index specified. If the index is outside of the range of -1 to NumCols-1,
+    /// A column is added either at the beginning or end of the columns.
+    /// </summary>
+    /// <param name="colIndex"></param>
+    public void InsertColAfter(int colIndex)
+    {
+        var indexToAddAfter = Math.Min(NumCols - 1, Math.Max(colIndex, -1));
+        var cmd = new InsertColAfterCommand(indexToAddAfter);
+        Commands.ExecuteCommand(cmd);
+    }
+
+    internal void InsertColAfterImpl(int colIndex)
+    {
+        _cellDataStore.InsertColAfter(colIndex);
+        NumCols++;
+        ColumnInserted?.Invoke(this, new ColumnInsertedEventArgs(colIndex));
+        
+    }
+
+    /// <summary>
+    /// Removes the column at the specified index
+    /// </summary>
+    /// <param name="colIndex"></param>
+    public bool RemoveCol(int colIndex)
+    {
+        var cmd = new RemoveColumnCommand(colIndex);
+        return Commands.ExecuteCommand(cmd);
+    }
+
+    internal bool RemoveColImpl(int colIndex)
+    {
+        if (colIndex >= 0 && colIndex <= NumCols - 1)
+        {
+            _cellDataStore.RemoveColAt(colIndex);
+            NumCols--;
+            ColumnRemoved?.Invoke(this, new ColumnRemovedEventArgs(colIndex));
+            return true;
+        }
+
+        return false;
+
+    }
+
+    /// <summary>
     /// Inserts a row at an index specified.
     /// </summary>
     /// <param name="rowIndex">The index that the new row will be at. If the index is outside of the region of rows,
     /// a row will be either inserted at the start or appended at the end</param>
-    public void InsertRowAt(int rowIndex)
+    public void InsertRowAfter(int rowIndex)
     {
-        var cmd = new InsertRowAfterCommand(rowIndex);
+        var indexToAddAfter = Math.Min(NumRows - 1, Math.Max(rowIndex, -1));
+        var cmd = new InsertRowAfterCommand(indexToAddAfter);
         Commands.ExecuteCommand(cmd);
     }
 
@@ -173,12 +228,18 @@ public class Sheet
     /// <param name="rowIndex"></param>
     /// <param name="row"></param>
     /// <returns></returns>
-    internal bool InsertRowAtImpl(int rowIndex)
+    internal bool InsertRowAfterImpl(int rowIndex)
     {
         _cellDataStore.InsertRowAfter(rowIndex);
         NumRows++;
         RowInserted?.Invoke(this, new RowInsertedEventArgs(rowIndex + 1));
         return true;
+    }
+
+    public bool RemoveRow(int index)
+    {
+        var cmd = new RemoveRowCommand(index);
+        return Commands.ExecuteCommand(cmd);
     }
 
     internal bool RemoveRowAtImpl(int index)
@@ -580,7 +641,7 @@ public class Sheet
     {
         // Keep track of individual cell changes
         var changes = new List<CellChangedFormat>();
-        
+
         RowFormats.Add(new OrderedInterval<Format>(region.Start.Row, region.End.Row, format));
         // Set the specific format of any non-empty cells in the column range (empty cells are covered by the range format).
         // We do this because cell formatting takes precedence in rendering over col & range formats.

@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using BlazorDatasheet.Data.Events;
 using BlazorDatasheet.Util;
 
 namespace BlazorDatasheet.Data;
@@ -49,22 +50,39 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
     public void InsertColAfter(int col)
     {
         var currentColumns = Columns.ToList();
+        List<(int col, SColumn<T> column)> columnsToAdd = new List<(int col, SColumn<T> column)>();
         foreach (var kp in currentColumns)
         {
             if (kp.Key > col)
             {
                 Columns.Remove(kp.Key);
-                Columns.Add(kp.Key + 1, kp.Value);
+                columnsToAdd.Add((kp.Key + 1, kp.Value));
             }
         }
 
-        Columns.Add(col, new SColumn<T>());
+        foreach (var c in columnsToAdd)
+            Columns.Add(c.col, c.column);
+
+        Columns.Add(col + 1, new SColumn<T>());
     }
 
     public void RemoveColAt(int col)
     {
         if (Columns.ContainsKey(col))
             Columns.Remove(col);
+        List<(int col, SColumn<T> column)> columnsToAdd = new List<(int col, SColumn<T> column)>();
+        var currentColumns = Columns.ToList();
+        foreach (var kp in currentColumns)
+        {
+            if (kp.Key > col)
+            {
+                Columns.Remove(kp.Key);
+                columnsToAdd.Add((kp.Key - 1, kp.Value));
+            }
+        }
+
+        foreach (var c in columnsToAdd)
+            Columns.Add(c.col, c.column);
     }
 
     public int GetNextNonBlankRow(int col, int row)

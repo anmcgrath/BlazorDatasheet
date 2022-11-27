@@ -13,7 +13,7 @@ internal class InsertRowAfterCommand : IUndoableCommand
 
     public bool Execute(Sheet sheet)
     {
-        sheet.InsertRowAtImpl(_index);
+        sheet.InsertRowAfterImpl(_index);
         return true;
     }
 

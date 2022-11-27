@@ -120,6 +120,8 @@ public partial class Datasheet : IHandleEvent
                 _sheetLocal.CellsChanged -= SheetOnCellsChanged;
                 _sheetLocal.RowInserted -= SheetOnRowInserted;
                 _sheetLocal.RowRemoved -= SheetOnRowRemoved;
+                _sheetLocal.ColumnRemoved -= SheetOnColRemoved;
+                _sheetLocal.ColumnInserted -= SheetOnColInserted;
                 _sheetLocal.ConditionalFormatting.ConditionalFormatPrepared -=
                     ConditionalFormattingOnConditionalFormatPrepared;
                 _sheetLocal.FormatsChanged -= SheetLocalOnFormatsChanged;
@@ -130,6 +132,8 @@ public partial class Datasheet : IHandleEvent
             _sheetLocal.CellsChanged += SheetOnCellsChanged;
             _sheetLocal.RowInserted += SheetOnRowInserted;
             _sheetLocal.RowRemoved += SheetOnRowRemoved;
+            _sheetLocal.ColumnRemoved += SheetOnColRemoved;
+            _sheetLocal.ColumnInserted += SheetOnColInserted;
             _sheetLocal.ConditionalFormatting.ConditionalFormatPrepared +=
                 ConditionalFormattingOnConditionalFormatPrepared;
             _sheetLocal.FormatsChanged += SheetLocalOnFormatsChanged;
@@ -166,6 +170,16 @@ public partial class Datasheet : IHandleEvent
     {
         SheetIsDirty = true;
         await _virtualizer.RefreshDataAsync();
+    }
+
+    private void SheetOnColRemoved(object? sender, ColumnRemovedEventArgs e)
+    {
+        SheetIsDirty = true;
+    }
+
+    private void SheetOnColInserted(object? sender, ColumnInsertedEventArgs e)
+    {
+        SheetIsDirty = true;
     }
 
     private void SheetOnCellsChanged(object? sender, IEnumerable<Data.Events.ChangeEventArgs> e)
