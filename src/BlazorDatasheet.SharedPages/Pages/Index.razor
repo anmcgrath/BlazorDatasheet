@@ -22,6 +22,7 @@
 <div>
     <button @onclick="InsertRowAfterSelection">Insert row after selection</button>
     <button @onclick="InsertColAfterSelection">Insert col after selection</button>
+    <button @onclick="RemoveCol">RemoveCol</button>
     <button @onclick="() => Sheet.Commands.Undo()">Undo</button>
     <button @onclick="() => Sheet.Commands.Redo()">Redo</button>
     <button @onclick="@(() => Sheet.Selection.Value = "Bob")">Set to Bob</button>
@@ -60,6 +61,15 @@
             return;
         }
         _editor.Sheet.InsertColAfter(Sheet.Selection.ActiveRegion.Left);
+    }
+    
+    private void RemoveCol()
+    {
+        if (Sheet.Selection.ActiveRegion == null)
+        {
+            return;
+        }
+        _editor.Sheet.RemoveCol(Sheet.Selection.ActiveRegion.Left);
     }
 
     private Format GreenBg = new Format() { BackgroundColor = "var(--cell-highlight-bg-color)" };
