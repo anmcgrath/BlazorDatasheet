@@ -456,11 +456,6 @@ public class Selection : BRange
         SelectionChanged?.Invoke(this, _regions);
     }
 
-    public IEnumerable<IReadOnlyCell> GetCells()
-    {
-        return _sheet.GetCellsInRegions(_regions);
-    }
-
     /// <summary>
     /// Returns the position that should receive input
     /// </summary>

@@ -180,7 +180,8 @@ public class Sheet
     internal void InsertColAfterImpl(int colIndex)
     {
         _cellDataStore.InsertColAfter(colIndex);
-        ColumnHeadings.Insert(colIndex + 1, new Heading());
+        if (ColumnHeadings.Count > colIndex)
+            ColumnHeadings.Insert(colIndex + 1, new Heading());
         NumCols++;
         ColumnInserted?.Invoke(this, new ColumnInsertedEventArgs(colIndex));
     }

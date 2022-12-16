@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using BlazorDatasheet.Interfaces;
 using Microsoft.AspNetCore.Components;
 
@@ -10,13 +11,13 @@ public abstract class BaseEditor : ComponentBase, ICellEditor
 
     protected void CancelEdit() => RequestCancelEdit?.Invoke(this, EventArgs.Empty);
     protected void AcceptEdit() => RequestAcceptEdit?.Invoke(this, EventArgs.Empty);
-    
+
     private bool FocusRequested { get; set; }
 
     /// <summary>
     /// If this is linked to the editor's input reference then the base editor will handle focusing.
     /// </summary>
-    protected ElementReference? InputRef;
+    protected ElementReference InputRef = new ElementReference();
 
     public virtual void BeforeEdit(IReadOnlyCell cell)
     {
@@ -24,9 +25,9 @@ public abstract class BaseEditor : ComponentBase, ICellEditor
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (FocusRequested && InputRef != null)
+        if (FocusRequested)
         {
-            await InputRef.Value.FocusAsync();
+            await InputRef.FocusAsync();
             FocusRequested = false;
         }
 
