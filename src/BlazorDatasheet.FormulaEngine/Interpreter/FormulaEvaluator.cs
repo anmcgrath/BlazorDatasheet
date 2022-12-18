@@ -21,6 +21,11 @@ public class FormulaEvaluator
         return Evaluate(tree.Root);
     }
 
+    public object Evaluate(Formula formula)
+    {
+        return Evaluate(formula.ExpressionTree);
+    }
+
     private object Evaluate(SyntaxNode node)
     {
         switch (node.Kind)
@@ -207,7 +212,8 @@ public class FormulaEvaluator
                     return left.GetType() == right.GetType() &&
                            ((IComparable)left).Equals(right);
                 case SyntaxKind.NotEqualsToken:
-                    return left != right;
+                    return left.GetType() != right.GetType() ||
+                           !((IComparable)left).Equals(right);
                 case SyntaxKind.LessThanToken:
                     return ((IComparable)left).CompareTo(right) < 0;
                 case SyntaxKind.GreaterThanToken:
@@ -243,6 +249,7 @@ public class FormulaEvaluator
                        (right as IComparable) != null &&
                        left.GetType() == right.GetType();
             case SyntaxKind.EqualsToken:
+            case SyntaxKind.NotEqualsToken:
                 return (left as IComparable) != null &&
                        (right as IComparable) != null;
             default:
