@@ -1,4 +1,5 @@
 using BlazorDatasheet.Data;
+using BlazorDatasheet.DataStructures.Intervals;
 using BlazorDatasheet.Formats;
 using BlazorDatasheet.Render;
 

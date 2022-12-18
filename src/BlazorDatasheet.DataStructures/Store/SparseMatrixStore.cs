@@ -1,6 +1,4 @@
-using System.Collections.Immutable;
-using BlazorDatasheet.Data.Events;
-using BlazorDatasheet.Util;
+using BlazorDatasheet.DataStructures.Search;
 
 namespace BlazorDatasheet.Data;
 

@@ -19,4 +19,12 @@
       <Content Include="wwwroot\blazor-datasheet.js" Condition="!Exists('wwwroot/blazor-datasheet.js')" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\BlazorDatasheet.DataStructures\BlazorDatasheet.DataStructures.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Data\SpatialDataStructures" />
+    </ItemGroup>
+
 </Project>
