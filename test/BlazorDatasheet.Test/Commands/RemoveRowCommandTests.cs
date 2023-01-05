@@ -14,11 +14,11 @@ public class RemoveRowCommandTests
         sheet.RemoveRow(2);
 
         Assert.AreEqual(2, sheet.NumRows);
-        Assert.AreEqual("3,0", sheet.GetValue(2, 0));
+        Assert.AreEqual("3,0", sheet.GetCellValue(2, 0));
 
         sheet.Commands.Undo();
         Assert.AreEqual(3, sheet.NumRows);
-        Assert.AreEqual("2,0", sheet.GetValue(2, 0));
-        Assert.AreEqual("3,0", sheet.GetValue(3, 0));
+        Assert.AreEqual("2,0", sheet.GetCellValue(2, 0));
+        Assert.AreEqual("3,0", sheet.GetCellValue(3, 0));
     }
 }

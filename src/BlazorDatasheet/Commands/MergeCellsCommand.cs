@@ -54,7 +54,7 @@ public class MergeCellsCommand : IUndoableCommand
 
     private ValueChange getValueChangeOnClear(int row, int col, Sheet sheet)
     {
-        return new ValueChange(row, col, sheet.GetValue(row, col));
+        return new ValueChange(row, col, sheet.GetCellValue(row, col));
     }
 
     public bool Undo(Sheet sheet)

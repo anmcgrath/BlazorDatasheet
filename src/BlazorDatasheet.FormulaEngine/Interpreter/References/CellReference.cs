@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using BlazorDatasheet.DataStructures.RTree;
 using ExpressionEvaluator.CodeAnalysis.Types;
 
 namespace BlazorDatasheet.FormulaEngine.Interpreter.References;
@@ -12,16 +13,19 @@ public class CellReference : Reference
     public ColReference Col => _col;
     public RowReference Row => _row;
 
-    public CellReference(int row, int col, bool absoluteCol = false, bool absoluteRow = false)
+    private Envelope _envelope;
+
+    public CellReference(int row, int col, bool absoluteCol = false, bool absoluteRow = false) : this(
+        new RowReference(row, absoluteRow), new ColReference(col, absoluteCol))
     {
-        _col = new ColReference(col, absoluteCol);
-        _row = new RowReference(row, absoluteRow);
     }
 
     public CellReference(RowReference row, ColReference col)
     {
         _row = row;
         _col = col;
+
+        _envelope = new Envelope(_col.ColNumber, _row.RowNumber, _col.ColNumber, _row.RowNumber);
     }
 
     public static bool IsValid(string text)

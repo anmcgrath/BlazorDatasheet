@@ -16,7 +16,7 @@ public class RemoveRowCommand : IUndoableCommand
     {
         // Keep track of values that we have removed
         var nonEmptyPosns = sheet.GetNonEmptyCellPositions(new RowRegion(_rowIndex));
-        _valuesRemoved = nonEmptyPosns.Select(x => new ValueChange(x.row, x.col, sheet.GetValue(x.row, x.col)))
+        _valuesRemoved = nonEmptyPosns.Select(x => new ValueChange(x.row, x.col, sheet.GetCellValue(x.row, x.col)))
                                       .ToList();
         return sheet.RemoveRowAtImpl(_rowIndex);
     }

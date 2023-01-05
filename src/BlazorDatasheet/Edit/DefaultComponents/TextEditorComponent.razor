@@ -11,12 +11,16 @@
     @ref="InputRef"/>
 
 @code {
-    
+
     private IReadOnlyCell Cell;
-    
+
     public override void BeginEdit(EditEntryMode entryMode, IReadOnlyCell cell, string key)
     {
-        EditedValue = cell.GetValue<string>();
+        if (cell.HasFormula())
+            EditedValue = cell.FormulaString;
+        else
+            EditedValue = cell.GetValue<string>();
+        
         if (EditedValue == null)
             EditedValue = string.Empty;
 

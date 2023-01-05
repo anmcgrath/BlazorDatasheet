@@ -21,6 +21,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\BlazorDatasheet.DataStructures\BlazorDatasheet.DataStructures.csproj" />
+      <ProjectReference Include="..\BlazorDatasheet.FormulaEngine\BlazorDatasheet.FormulaEngine.csproj" />
     </ItemGroup>
 
     <ItemGroup>

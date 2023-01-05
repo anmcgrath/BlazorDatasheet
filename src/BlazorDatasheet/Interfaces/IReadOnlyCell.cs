@@ -1,8 +1,9 @@
+using BlazorDatasheet.DataStructures.Sheet;
 using BlazorDatasheet.Render;
 
 namespace BlazorDatasheet.Interfaces;
 
-public interface IReadOnlyCell
+public interface IReadOnlyCell : ICell
 {
     T GetValue<T>();
     object? GetValue(Type t);
@@ -14,4 +15,6 @@ public interface IReadOnlyCell
     public int Row { get; }
     public int Col { get; }
     public bool IsValid { get; }
+    public string? FormulaString { get; }
+    public bool HasFormula();
 }

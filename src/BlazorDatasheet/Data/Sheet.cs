@@ -3,6 +3,7 @@ using BlazorDatasheet.Commands;
 using BlazorDatasheet.Data.Events;
 using BlazorDatasheet.DataStructures.Intervals;
 using BlazorDatasheet.DataStructures.RTree;
+using BlazorDatasheet.DataStructures.Sheet;
 using BlazorDatasheet.Edit.DefaultComponents;
 using BlazorDatasheet.Formats;
 using BlazorDatasheet.Interfaces;
@@ -13,7 +14,7 @@ using BlazorDatasheet.Util;
 
 namespace BlazorDatasheet.Data;
 
-public class Sheet
+public class Sheet : ISheet
 {
     /// <summary>
     /// The displayed number of rows in the sheet
@@ -117,6 +118,8 @@ public class Sheet
     /// </summary>
     public event EventHandler<FormatChangedEventArgs> FormatsChanged;
 
+    public FormulaEngine.FormulaEngine _engine;
+
     internal CellLayoutProvider LayoutProvider { get; }
 
     private IMatrixDataStore<Cell> _cellDataStore { get; set; } = new SparseMatrixStore<Cell>();
@@ -130,6 +133,7 @@ public class Sheet
         ConditionalFormatting = new ConditionalFormatManager(this);
         _editorTypes = new Dictionary<string, Type>();
         _renderComponentTypes = new Dictionary<string, Type>();
+        _engine = new FormulaEngine.FormulaEngine(this);
 
         registerDefaultEditors();
         registerDefaultRenderers();
@@ -468,6 +472,11 @@ public class Sheet
         return new Region(inputPosition.Row, endRow, inputPosition.Col, maxEndCol);
     }
 
+    public IRange GetRowRange(int rowStart, int rowStop)
+    {
+        throw new NotImplementedException();
+    }
+
     public bool TrySetCellValue(int row, int col, object value)
     {
         var cmd = new SetCellValueCommand(row, col, value);
@@ -476,6 +485,13 @@ public class Sheet
 
     internal bool TrySetCellValueImpl(int row, int col, object value, bool raiseEvent = true)
     {
+        if(!string.IsNullOrEmpty(value as string))
+            if (isFormula((string)value))
+            {
+                SetCellFormula((string)value, row, col);
+                return true;
+            }
+        
         var cell = _cellDataStore.Get(row, col);
         if (cell == null)
         {
@@ -483,6 +499,7 @@ public class Sheet
             _cellDataStore.Set(row, col, cell);
             if (raiseEvent)
                 CellsChanged?.Invoke(this, new List<ChangeEventArgs>() { new(row, col, null, value) });
+            _engine.CalculateSheet();
             return true;
         }
 
@@ -511,6 +528,27 @@ public class Sheet
         }
 
         return setValue;
+    }
+
+    internal void SetCellFormula(string formulaString, int row, int col)
+    {
+        if (_cellDataStore.Contains(row, col))
+            _cellDataStore.Get(row, col)!.FormulaString = formulaString;
+        else
+        {
+            var cell = new Cell
+            {
+                FormulaString = formulaString
+            };
+            _cellDataStore.Set(row, col, cell);
+        }
+        
+        _engine.SetFormula(row, col, formulaString);
+    }
+
+    private bool isFormula(string str)
+    {
+        return str.StartsWith('=');
     }
 
     public void SetFormat(Format format, BRange range)
@@ -718,9 +756,19 @@ public class Sheet
     /// <param name="row"></param>
     /// <param name="col"></param>
     /// <returns></returns>
-    public object? GetValue(int row, int col)
+    public object? GetCellValue(int row, int col)
     {
         return GetCell(row, col)?.GetValue();
+    }
+
+    public IRange GetRange(int rowStart, int rowStop, int colStart, int colStop)
+    {
+        throw new NotImplementedException();
+    }
+
+    public IRange GetColumnRange(int colStart, int colStop)
+    {
+        throw new NotImplementedException();
     }
 
     public bool SetCellValues(IEnumerable<ValueChange> changes)
@@ -734,9 +782,9 @@ public class Sheet
         var changeEvents = new List<ChangeEventArgs>();
         foreach (var change in changes)
         {
-            var currValue = GetValue(change.Row, change.Col);
+            var currValue = GetCellValue(change.Row, change.Col);
             var set = TrySetCellValueImpl(change.Row, change.Col, change.Value, false);
-            var newValue = GetValue(change.Row, change.Col);
+            var newValue = GetCellValue(change.Row, change.Col);
             if (set && currValue != newValue)
                 changeEvents.Add(new ChangeEventArgs(change.Row, change.Col, currValue, newValue));
         }

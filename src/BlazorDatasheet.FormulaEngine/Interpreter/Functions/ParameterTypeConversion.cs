@@ -1,4 +1,4 @@
-using BlazorDatasheet.FormulaEngine.Interfaces;
+using BlazorDatasheet.DataStructures.Sheet;
 using BlazorDatasheet.FormulaEngine.Interpreter.Syntax;
 
 namespace BlazorDatasheet.FormulaEngine.Interpreter.Functions;
@@ -43,7 +43,7 @@ public class ParameterTypeConversion
             return t;
 
         if (val is ICell cell)
-            return ToText(cell.Value);
+            return ToText(cell.GetValue());
 
         if (val is IRange range)
             return new FormulaError(ErrorType.Value);
@@ -76,7 +76,7 @@ public class ParameterTypeConversion
 
         if (arg is ICell cell)
         {
-            if (cell.Value is double value)
+            if (cell.GetValue() is double value)
                 return new[] { value };
         }
 
@@ -99,7 +99,7 @@ public class ParameterTypeConversion
 
         if (arg is ICell cell)
         {
-            return ToLogical(cell.Value);
+            return ToLogical(cell.GetValue());
         }
 
         return new FormulaError(ErrorType.Value);

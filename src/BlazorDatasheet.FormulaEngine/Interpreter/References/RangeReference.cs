@@ -1,9 +1,14 @@
+using BlazorDatasheet.DataStructures.RTree;
 using ExpressionEvaluator.CodeAnalysis.Types;
 
 namespace BlazorDatasheet.FormulaEngine.Interpreter.References;
 
 public class RangeReference : Reference
 {
+    public Reference Start { get; }
+    public Reference End { get; }
+    public override ReferenceKind Kind => ReferenceKind.Range;
+
     public RangeReference(Reference start, Reference end)
     {
         if (start.Kind == ReferenceKind.Cell && end.Kind == ReferenceKind.Cell)
@@ -22,10 +27,6 @@ public class RangeReference : Reference
         Start = start;
         End = end;
     }
-
-    public Reference Start { get; }
-    public Reference End { get; }
-    public override ReferenceKind Kind => ReferenceKind.Range;
 
     public override string ToRefText()
     {

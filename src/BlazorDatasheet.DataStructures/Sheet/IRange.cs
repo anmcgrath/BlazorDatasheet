@@ -1,4 +1,4 @@
-namespace BlazorDatasheet.FormulaEngine.Interfaces;
+namespace BlazorDatasheet.DataStructures.Sheet;
 
 public interface IRange
 {

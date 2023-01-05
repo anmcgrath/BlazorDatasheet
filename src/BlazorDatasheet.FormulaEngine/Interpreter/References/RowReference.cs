@@ -1,3 +1,4 @@
+using BlazorDatasheet.DataStructures.RTree;
 using ExpressionEvaluator.CodeAnalysis.Types;
 
 namespace BlazorDatasheet.FormulaEngine.Interpreter.References;

@@ -1,4 +1,4 @@
-using BlazorDatasheet.FormulaEngine.Interfaces;
+using BlazorDatasheet.DataStructures.Sheet;
 
 namespace ExpressionEvaluator;
 

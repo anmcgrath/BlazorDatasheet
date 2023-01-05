@@ -19,14 +19,14 @@ public class MergeCellsCommandTests
         Assert.True(sheet.IsPositionMerged(2, 2));
         Assert.False(sheet.IsPositionMerged(3, 3));
 
-        Assert.AreEqual("00", sheet.GetValue(0, 0));
-        Assert.AreEqual(null, sheet.GetValue(2, 2));
+        Assert.AreEqual("00", sheet.GetCellValue(0, 0));
+        Assert.AreEqual(null, sheet.GetCellValue(2, 2));
 
         sheet.Commands.Undo();
 
         Assert.False(sheet.IsPositionMerged(0, 0));
 
-        Assert.AreEqual("00", sheet.GetValue(0, 0));
-        Assert.AreEqual("22", sheet.GetValue(2, 2));
+        Assert.AreEqual("00", sheet.GetCellValue(0, 0));
+        Assert.AreEqual("22", sheet.GetCellValue(2, 2));
     }
 }

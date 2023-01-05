@@ -1,4 +1,5 @@
 using System.Reflection;
+using BlazorDatasheet.DataStructures.Sheet;
 using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Util;
@@ -56,6 +57,13 @@ public class Cell : IReadOnlyCell, IWriteableCell
     /// The best choice for the underlying data type of Data.
     /// </summary>
     public Type DataType { get; set; }
+
+    /// <summary>
+    /// The formula string of the cell, if it has one
+    /// </summary>
+    public string? FormulaString { get; set; }
+
+    public bool HasFormula() => !string.IsNullOrEmpty(FormulaString);
 
     /// <summary>
     /// Represents an individual datasheet cell
@@ -138,18 +146,6 @@ public class Cell : IReadOnlyCell, IWriteableCell
         }
     }
 
-    /// <summary>
-    /// Attempts to set the cell's value and returns whether it was successful.
-    /// When this method is called directly, no events are raised by the sheet.
-    /// </summary>
-    /// <param name="val"></param>
-    /// <typeparam name="T"></typeparam>
-    /// <returns></returns>
-    public bool TrySetValue<T>(T val)
-    {
-        return TrySetValue(val, typeof(T));
-    }
-
     public void Clear()
     {
         var currentVal = GetValue();
@@ -171,6 +167,31 @@ public class Cell : IReadOnlyCell, IWriteableCell
         }
 
         Data = null;
+    }
+
+    /// <summary>
+    /// Attempts to the Cell's value and returns whether it was successful
+    /// When this method is called directly, no events are raised by the sheet.
+    /// </summary>
+    /// <param name="val"></param>
+    /// <param name="type"></param>
+    /// <returns>Whether setting the value was successful</returns>
+    public bool TrySetValue(object? val, Type type)
+    {
+        var valueSet = DoTrySetValue(val, type);
+        return valueSet;
+    }
+
+    /// <summary>
+    /// Attempts to set the cell's value and returns whether it was successful.
+    /// When this method is called directly, no events are raised by the sheet.
+    /// </summary>
+    /// <param name="val"></param>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    public bool TrySetValue<T>(T val)
+    {
+        return TrySetValue(val, typeof(T));
     }
 
     public bool DoTrySetValue(object? val, Type type)
@@ -233,18 +254,5 @@ public class Cell : IReadOnlyCell, IWriteableCell
             Formatting = Formatting.Clone();
             Formatting.Merge(format);
         }
-    }
-
-    /// <summary>
-    /// Attempts to the Cell's value and returns whether it was successful
-    /// When this method is called directly, no events are raised by the sheet.
-    /// </summary>
-    /// <param name="val"></param>
-    /// <param name="type"></param>
-    /// <returns>Whether setting the value was successful</returns>
-    public bool TrySetValue(object? val, Type type)
-    {
-        var valueSet = DoTrySetValue(val, type);
-        return valueSet;
     }
 }

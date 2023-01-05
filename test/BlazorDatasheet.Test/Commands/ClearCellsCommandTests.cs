@@ -27,11 +27,11 @@ public class ClearCellsCommandTests
         _commandManager.ExecuteCommand(cmd);
         for (int i = 0; i < 3; i++)
         {
-            Assert.Null(_sheet.GetValue(0, 0));
-            Assert.Null(_sheet.GetValue(0, 0));
+            Assert.Null(_sheet.GetCellValue(0, 0));
+            Assert.Null(_sheet.GetCellValue(0, 0));
             _commandManager.Undo();
-            Assert.AreEqual("1", _sheet.GetValue(0, 0));
-            Assert.AreEqual("2", _sheet.GetValue(0, 1));
+            Assert.AreEqual("1", _sheet.GetCellValue(0, 0));
+            Assert.AreEqual("2", _sheet.GetCellValue(0, 1));
             _commandManager.Redo();
         }
     }

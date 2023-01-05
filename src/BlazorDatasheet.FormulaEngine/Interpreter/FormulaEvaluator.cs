@@ -1,4 +1,5 @@
-using BlazorDatasheet.FormulaEngine.Interfaces;
+using System.Numerics;
+using BlazorDatasheet.DataStructures.Sheet;
 using BlazorDatasheet.FormulaEngine.Interpreter.Functions;
 using BlazorDatasheet.FormulaEngine.Interpreter.References;
 using BlazorDatasheet.FormulaEngine.Interpreter.Syntax;
@@ -140,8 +141,8 @@ public class FormulaEvaluator
 
     private object EvaluateCellReference(CellExpressionSyntax node)
     {
-        var cell = _environment.GetCell(node.CellReference.Row.RowNumber, node.CellReference.Col.ColNumber);
-        return cell;
+        var cellValue = _environment.GetCellValue(node.CellReference.Row.RowNumber, node.CellReference.Col.ColNumber);
+        return cellValue;
     }
 
     private object EvaluateLiteralExpression(LiteralExpressionSyntax syntax)
@@ -191,23 +192,18 @@ public class FormulaEvaluator
         if (right is FormulaError)
             return right;
 
-        if (left is ICell l)
-            left = l.Value;
-        if (right is ICell r)
-            right = r.Value;
-
         if (IsValid(left, right, syntax.OperatorToken))
         {
             switch (syntax.OperatorToken.Kind)
             {
                 case SyntaxKind.PlusToken:
-                    return (double)left + (double)right;
+                    return Convert.ToDouble(left) + Convert.ToDouble(right);
                 case SyntaxKind.MinusToken:
-                    return (double)left - (double)right;
+                    return Convert.ToDouble(left) - Convert.ToDouble(right);
                 case SyntaxKind.StarToken:
-                    return (double)left * (double)right;
+                    return Convert.ToDouble(left) * Convert.ToDouble(right);
                 case SyntaxKind.SlashToken:
-                    return (double)left / (double)right;
+                    return Convert.ToDouble(left) / Convert.ToDouble(right);
                 case SyntaxKind.EqualsToken:
                     return left.GetType() == right.GetType() &&
                            ((IComparable)left).Equals(right);
@@ -240,7 +236,7 @@ public class FormulaEvaluator
             case SyntaxKind.StarToken:
             case SyntaxKind.SlashToken:
             case SyntaxKind.MinusToken:
-                return (left as double?) != null && (right as double?) != null;
+                return true;
             case SyntaxKind.GreaterThanToken:
             case SyntaxKind.GreaterThanEqualToToken:
             case SyntaxKind.LessThanToken:

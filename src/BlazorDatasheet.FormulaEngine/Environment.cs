@@ -1,4 +1,4 @@
-using BlazorDatasheet.FormulaEngine.Interfaces;
+using BlazorDatasheet.DataStructures.Sheet;
 using BlazorDatasheet.FormulaEngine.Interpreter.Functions;
 using BlazorDatasheet.FormulaEngine.Interpreter.References;
 
@@ -52,13 +52,13 @@ public class Environment
             _functions.Add(name, value);
     }
 
-    public ICell GetCell(int row, int col) => _sheet.GetCell(row, col);
+    public object GetCellValue(int row, int col) => _sheet.GetCellValue(row, col);
 
     public IRange GetRange(int rowStart, int rowEnd, int colStart, int colEnd) =>
         _sheet.GetRange(rowStart, rowEnd, colStart, colEnd);
 
     public IRange GetColRange(ColReference start, ColReference end) =>
-        _sheet.GetColumn(start.ColNumber, end.ColNumber);
+        _sheet.GetColumnRange(start.ColNumber, end.ColNumber);
 
     public IRange GetRowRange(RowReference start, RowReference end) =>
         _sheet.GetRowRange(start.RowNumber, end.RowNumber);
