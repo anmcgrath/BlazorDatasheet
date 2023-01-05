@@ -47,7 +47,6 @@ public class FormulaEngine
             _formula.Add((row, col), formula);
         else
         {
-            _dependencyGraph.RemoveVertex(new CellVertex(row, col));
             _formula[(row, col)] = formula;
         }
 

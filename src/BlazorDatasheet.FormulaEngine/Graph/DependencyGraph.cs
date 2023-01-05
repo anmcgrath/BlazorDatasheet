@@ -108,6 +108,8 @@ public class DependencyGraph
         }
 
         _symbolTable.Remove(v.Key);
+        _adj.Remove(v.Key);
+        _prec.Remove(v.Key);
         _numVertices--;
     }
 
