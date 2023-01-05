@@ -113,11 +113,6 @@ public class Sheet
     public event EventHandler<ColumnWidthChangedArgs> ColumnWidthChanged;
 
     /// <summary>
-    /// Fired when cells are merged
-    /// </summary>
-    public event EventHandler<IRegion> RegionMerged;
-
-    /// <summary>
     /// Fired when cell formats change
     /// </summary>
     public event EventHandler<FormatChangedEventArgs> FormatsChanged;
