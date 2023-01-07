@@ -19,6 +19,8 @@ public class FormulaEvaluator
 
     public object Evaluate(SyntaxTree tree)
     {
+        if (tree.Diagnostics.Any())
+            return new FormulaError(ErrorType.Na);
         return Evaluate(tree.Root);
     }
 
@@ -192,8 +194,10 @@ public class FormulaEvaluator
         if (right is FormulaError)
             return right;
 
+        Console.WriteLine("Checking");
         if (IsValid(left, right, syntax.OperatorToken))
         {
+            Console.WriteLine("Is Valid");
             switch (syntax.OperatorToken.Kind)
             {
                 case SyntaxKind.PlusToken:
@@ -236,7 +240,7 @@ public class FormulaEvaluator
             case SyntaxKind.StarToken:
             case SyntaxKind.SlashToken:
             case SyntaxKind.MinusToken:
-                return true;
+                return convertsToDouble(left) && convertsToDouble(right);
             case SyntaxKind.GreaterThanToken:
             case SyntaxKind.GreaterThanEqualToToken:
             case SyntaxKind.LessThanToken:
@@ -251,5 +255,19 @@ public class FormulaEvaluator
             default:
                 return false;
         }
+    }
+
+    private bool convertsToDouble(object? value)
+    {
+        if (value == null)
+            return false;
+
+        if (value is double or decimal or int or float)
+            return true;
+
+        if (double.TryParse(value.ToString(), out var temp))
+            return true;
+
+        return false;
     }
 }

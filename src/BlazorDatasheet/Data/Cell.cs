@@ -1,5 +1,6 @@
 using System.Reflection;
 using BlazorDatasheet.DataStructures.Sheet;
+using BlazorDatasheet.FormulaEngine.Interpreter.Syntax;
 using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Util;
@@ -62,6 +63,11 @@ public class Cell : IReadOnlyCell, IWriteableCell
     /// The formula string of the cell, if it has one
     /// </summary>
     public string? FormulaString { get; set; }
+    
+    /// <summary>
+    /// The formula error (if 
+    /// </summary>
+    public FormulaError FormulaError { get; set; }
 
     public bool HasFormula() => !string.IsNullOrEmpty(FormulaString);
 
@@ -120,7 +126,13 @@ public class Cell : IReadOnlyCell, IWriteableCell
                         conversionType = System.Nullable.GetUnderlyingType(type);
                     }
 
-                    return Convert.ChangeType(Data, conversionType);
+                    if (conversionType == typeof(string))
+                        return Data.ToString();
+
+                    if (Data is IConvertible)
+                        return Convert.ChangeType(Data, conversionType);
+
+                    return Data;
                 }
             }
 
@@ -137,7 +149,13 @@ public class Cell : IReadOnlyCell, IWriteableCell
                     conversionType = System.Nullable.GetUnderlyingType(type);
                 }
 
-                return Convert.ChangeType(val, conversionType);
+                if (conversionType == typeof(string))
+                    return val.ToString();
+
+                if (val is IConvertible)
+                    return Convert.ChangeType(val, conversionType);
+
+                return val;
             }
         }
         catch (Exception e)
@@ -204,8 +222,10 @@ public class Cell : IReadOnlyCell, IWriteableCell
                     Data = val;
                 else if (Data.GetType() == type) // data already of the same type
                     Data = val;
-                else
+                else if (val is IConvertible)
                     Data = Convert.ChangeType(val, type);
+                else
+                    Data = val;
                 return true;
             }
 
@@ -235,9 +255,14 @@ public class Cell : IReadOnlyCell, IWriteableCell
                 return true;
             }
 
-            object convertedValue = Convert.ChangeType(val, propType);
-            prop.SetValue(Data, convertedValue);
-            return true;
+            if (val is IConvertible)
+            {
+                object convertedValue = Convert.ChangeType(val, propType);
+                prop.SetValue(Data, convertedValue);
+                return true;
+            }
+
+            return false;
         }
         catch (Exception e)
         {

@@ -5,7 +5,7 @@ namespace BlazorDatasheet.FormulaEngine;
 
 public class Formula
 {
-    internal SyntaxTree ExpressionTree;
+    internal readonly SyntaxTree ExpressionTree;
     public IEnumerable<Reference> References => ExpressionTree?.References;
 
     internal Formula(SyntaxTree expressionTree)

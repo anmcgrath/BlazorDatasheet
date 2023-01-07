@@ -1,4 +1,5 @@
 using BlazorDatasheet.FormulaEngine.Interpreter;
+using BlazorDatasheet.FormulaEngine.Interpreter.Syntax;
 using ExpressionEvaluator;
 using NUnit.Framework;
 
@@ -8,13 +9,44 @@ public class InterpreterTests
 {
     private FormulaEngine _engine;
     private FormulaEvaluator _evaluator;
+    private TestSheet _sheet;
 
     [SetUp]
     public void Setup()
     {
-        var sheet = new TestSheet();
-        _engine = new FormulaEngine(sheet);
-        _evaluator = new FormulaEvaluator(new Environment(sheet));
+        _sheet = new TestSheet();
+        _engine = new FormulaEngine(_sheet);
+        _evaluator = new FormulaEvaluator(new Environment(_sheet));
+    }
+
+    [Test]
+    public void Cell_Reference_Gets_Cell_Value()
+    {
+        var formula = _engine.Parse("A1");
+        _sheet.TrySetCellValue(0, 0, 100);
+        Assert.AreEqual(100, _evaluator.Evaluate(formula));
+    }
+
+    [Test]
+    public void Garbage_Cell_Ref_Formula_Returns_Error()
+    {
+        var formula = _engine.Parse("A1..");
+        _sheet.TrySetCellValue(0, 0, 100);
+        Assert.True(_evaluator.Evaluate(formula).GetType() == typeof(FormulaError));
+    }
+    
+    [Test]
+    public void Invalid_Str_Returns_Error()
+    {
+        var formula = _engine.Parse("\"ABC");
+        Assert.True(_evaluator.Evaluate(formula).GetType() == typeof(FormulaError));
+    }
+    
+    [Test]
+    public void Invalid_Binary_Op_Returns_Error()
+    {
+        var formula = _engine.Parse("\"A\"*\"B\"");
+        Assert.True(_evaluator.Evaluate(formula).GetType() == typeof(FormulaError));
     }
 
     [Test]

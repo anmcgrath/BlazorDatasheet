@@ -13,6 +13,6 @@ public class FormulaError
 
     public override string ToString()
     {
-        return $"{ErrorType.ToString()}: {Message}";
+        return $"#{ErrorType.ToString().ToUpper()}";
     }
 }
