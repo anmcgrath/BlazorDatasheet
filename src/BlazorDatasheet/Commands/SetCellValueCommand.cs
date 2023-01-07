@@ -23,7 +23,6 @@ public class SetCellValueCommand : IUndoableCommand
         else
             _oldValue = cell.GetValue();
         
-        sheet.Selection.SetActivePosition(_row, _col);
         return sheet.TrySetCellValueImpl(_row, _col, _newValue);
     }
 

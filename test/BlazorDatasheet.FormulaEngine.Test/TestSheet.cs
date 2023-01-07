@@ -37,4 +37,14 @@ public class TestSheet : ISheet
 
         return true;
     }
+
+    public void Pause()
+    {
+        
+    }
+
+    public void Resume()
+    {
+        
+    }
 }

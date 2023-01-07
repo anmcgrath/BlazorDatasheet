@@ -65,6 +65,8 @@ public class FormulaEngine
         // Sheet.Resume(); should do a bulk event dispatch
         // So that the renderer can handle the updated cells...
 
+        _sheet.Pause();
+
         var order =
             _dependencyGraph
                 .TopologicalSort();
@@ -76,13 +78,12 @@ public class FormulaEngine
                 if (_formula.ContainsKey((cellVertex.Row, cellVertex.Col)))
                 {
                     var value = this.Evaluate(cellVertex.Row, cellVertex.Col);
-                    if (value is FormulaError formulaError)
-                        value = formulaError.Message;
-
                     _sheet.TrySetCellValue(cellVertex.Row, cellVertex.Col, value);
-                }
+                } 
             }
         }
+
+        _sheet.Resume();
     }
 
     private Vertex GetVertex(Reference reference)

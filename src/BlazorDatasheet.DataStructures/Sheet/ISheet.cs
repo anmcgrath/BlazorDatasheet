@@ -7,4 +7,6 @@ public interface ISheet
     public IRange GetColumnRange(int colStart, int colStop);
     public IRange GetRowRange(int rowStart, int rowStop);
     public bool TrySetCellValue(int row, int col, object value);
+    public void Pause();
+    public void Resume();
 }
