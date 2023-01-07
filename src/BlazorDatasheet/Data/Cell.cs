@@ -119,7 +119,7 @@ public class Cell : IReadOnlyCell, IWriteableCell
             // Use the Key!
 
             var val = Data?.GetType().GetProperty(Key)?.GetValue(Data, null);
-            if (val.GetType() == type || System.Nullable.GetUnderlyingType(type) == val.GetType())
+            if (val==null || val.GetType() == type || System.Nullable.GetUnderlyingType(type) == val.GetType())
                 return val;
             else
             {
