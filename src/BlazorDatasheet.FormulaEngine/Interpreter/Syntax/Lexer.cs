@@ -5,10 +5,10 @@ namespace BlazorDatasheet.FormulaEngine.Interpreter.Syntax;
 public class Lexer
 {
     private string _text;
-    private readonly List<string> _diagnostics = new();
+    private readonly List<string> _errors = new();
     private int _position;
 
-    public IEnumerable<string> Diagnostics => _diagnostics;
+    public IEnumerable<string> Errors => _errors;
 
     private char Current => Peek(0);
 
@@ -30,7 +30,7 @@ public class Lexer
     public void Begin(string text)
     {
         _text = text;
-        _diagnostics.Clear();
+        _errors.Clear();
         _position = 0;
     }
 
@@ -55,7 +55,7 @@ public class Lexer
             var text = _text.Substring(start, length);
 
             if (!double.TryParse(text, out var value))
-                _diagnostics.Add($"The number {_text} cannot be represented by a double");
+                _errors.Add($"The number {_text} cannot be represented by a double");
             return new SyntaxToken(SyntaxKind.NumberToken, start, text, value);
         }
 
@@ -153,7 +153,7 @@ public class Lexer
                 return readString();
         }
 
-        _diagnostics.Add($"ERROR: bad character input: {Current} at position {_position + 1}");
+        _errors.Add($"ERROR: bad character input: {Current} at position {_position + 1}");
         return new SyntaxToken(SyntaxKind.BadToken, _position++, _text.Substring(_position - 1), 1);
     }
 
@@ -169,7 +169,7 @@ public class Lexer
             {
                 case '\0':
                 {
-                    _diagnostics.Add($"Unterminated string at position {start}");
+                    _errors.Add($"Unterminated string at position {start}");
                     done = true;
                     break;
                 }

@@ -41,7 +41,7 @@ public class FormulaEngine
     public void SetFormula(int row, int col, string formulaString)
     {
         // get the formula & remove the equals at the beginning
-        var formula = Parse(formulaString.Substring(1, formulaString.Length - 1));
+        var formula = Parse(formulaString);
         var exists = _formula.ContainsKey((row, col));
         if (!exists)
             _formula.Add((row, col), formula);

@@ -9,6 +9,9 @@ public class TopologicalSort
     {
         _order = new Stack<Vertex>();
         _marked = new();
+        
+        // TODO graph must be DAG so handle cycles
+        
         foreach (var v in g.GetAll())
             if (!Marked(v))
                 dfs(g, v);

@@ -12,7 +12,7 @@ internal class Parser
     {
     }
 
-    public List<string> Diagnostics;
+    public List<string> Errors;
 
     /// <summary>
     /// Keep track of cell & variable references
@@ -23,7 +23,7 @@ internal class Parser
 
     public SyntaxTree Parse(Lexer lexer, string text)
     {
-        Diagnostics = new List<string>();
+        Errors = new List<string>();
         _references = new List<Reference>();
         _position = 0;
 
@@ -39,11 +39,13 @@ internal class Parser
         } while (token.Kind != SyntaxKind.EndOfFileToken);
 
         _tokens = tokens.ToArray();
-        Diagnostics.AddRange(lexer.Diagnostics);
+        Errors.AddRange(lexer.Errors);
 
+        // Formula must start with an equals token
+        MatchToken(SyntaxKind.EqualsToken);
         var expression = ParseExpression();
         var eof = MatchToken(SyntaxKind.EndOfFileToken);
-        return new SyntaxTree(Diagnostics, _references, expression, eof);
+        return new SyntaxTree(Errors, _references, expression, eof);
     }
 
     private ExpressionSyntax ParseExpression()
@@ -290,7 +292,7 @@ internal class Parser
         if (Current.Kind == kind)
             return NextToken();
 
-        Diagnostics.Add($"ERROR: Unexpected token: <{Current.Kind}>. Expected {kind}");
+        Errors.Add($"ERROR: Unexpected token: <{Current.Kind}>. Expected {kind}");
         return new SyntaxToken(kind, Current.Position, null, null);
     }
 }
