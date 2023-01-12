@@ -58,6 +58,12 @@ public class FormulaEngine
         CalculateSheet();
     }
 
+    public void ClearFormula(int row, int col)
+    {
+        _formula.Remove((row, col));
+        _dependencyGraph.RemoveVertex(new CellVertex(row, col));
+    }
+
     public void CalculateSheet()
     {
         // Sheet.Pause();
@@ -79,7 +85,7 @@ public class FormulaEngine
                 {
                     var value = this.Evaluate(cellVertex.Row, cellVertex.Col);
                     _sheet.TrySetCellValue(cellVertex.Row, cellVertex.Col, value);
-                } 
+                }
             }
         }
 

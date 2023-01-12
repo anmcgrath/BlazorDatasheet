@@ -7,6 +7,7 @@ public class RemoveColumnCommand : IUndoableCommand
     private int _columnIndex;
     private Heading _removedHeading;
     private List<ValueChange> _removedValues;
+    private ClearCellsCommand _clearCellsCommand;
 
     public RemoveColumnCommand(int columnIndex)
     {
@@ -15,10 +16,11 @@ public class RemoveColumnCommand : IUndoableCommand
 
     public bool Execute(Sheet sheet)
     {
-        // Keep track of the values we have removed
-        var nonEmptyInCol = sheet.GetNonEmptyCellPositions(new ColumnRegion(_columnIndex));
-        _removedValues = nonEmptyInCol.Select(x => new ValueChange(x.row, x.col, sheet.GetCellValue(x.row, x.col)))
-                                      .ToList();
+        // 1. Clear the cells using the clear cells command
+        // So that we can easily undo
+        _clearCellsCommand = new ClearCellsCommand(new BRange(sheet, new ColumnRegion(_columnIndex)));
+        _clearCellsCommand.Execute(sheet);
+        
         if (sheet.ColumnHeadings.Any() && _columnIndex >= 0 && _columnIndex < sheet.ColumnHeadings.Count)
             _removedHeading = sheet.ColumnHeadings[_columnIndex];
 
@@ -32,7 +34,7 @@ public class RemoveColumnCommand : IUndoableCommand
         sheet.InsertColAfterImpl(_columnIndex - 1);
         if (_columnIndex >= 0 && _columnIndex < sheet.ColumnHeadings.Count)
             sheet.ColumnHeadings[_columnIndex] = _removedHeading;
-        sheet.SetCellValuesImpl(_removedValues);
+        _clearCellsCommand.Undo(sheet);
         return true;
     }
 }

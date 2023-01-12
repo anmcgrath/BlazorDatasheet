@@ -36,7 +36,7 @@ public class MergeCellsCommand : IUndoableCommand
                                .SelectMany(sheet.GetNonEmptyCellPositions)
                                .ToList();
 
-            _changes.AddRange(cellsToClear.Select(x => getValueChangeOnClear(x.row, x.col, sheet)));
+            _changes.AddRange(cellsToClear.Select(x => getValueChangeBeforeClear(x.row, x.col, sheet)));
             sheet.ClearCellsImpl(cellsToClear);
 
             // Store the merges that we will have to re-instate on undo
@@ -52,9 +52,10 @@ public class MergeCellsCommand : IUndoableCommand
         return true;
     }
 
-    private ValueChange getValueChangeOnClear(int row, int col, Sheet sheet)
+    private ValueChange getValueChangeBeforeClear(int row, int col, Sheet sheet)
     {
-        return new ValueChange(row, col, sheet.GetCellValue(row, col));
+        var cell = sheet.GetCell(row, col);
+        return new ValueChange(row, col, cell?.GetValue(), cell?.FormulaString);
     }
 
     public bool Undo(Sheet sheet)

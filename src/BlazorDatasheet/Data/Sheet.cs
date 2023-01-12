@@ -554,7 +554,8 @@ public class Sheet : ISheet
             OnCellChanged(row, col, oldValue, value);
             if (!Paused)
                 _engine.CalculateSheet();
-        }else if (!setValue)
+        }
+        else if (!setValue)
             cell.IsValid = false;
 
         return setValue;
@@ -807,7 +808,7 @@ public class Sheet : ISheet
     {
         return GetCell(row, col)?.GetValue();
     }
-
+    
     public IRange GetRange(int rowStart, int rowStop, int colStart, int colStop)
     {
         throw new NotImplementedException();
@@ -865,7 +866,10 @@ public class Sheet : ISheet
         {
             var cell = this.GetCell(posn.row, posn.col) as Cell;
             var oldValue = cell.GetValue();
-            cell.Clear();
+            cell.ClearValue();
+            cell.ClearFormula();
+            _engine.ClearFormula(posn.row, posn.col);
+
             var newVal = cell.GetValue();
             if (oldValue != newVal)
                 changeArgs.Add(new ChangeEventArgs(posn.row, posn.col, oldValue, newVal));

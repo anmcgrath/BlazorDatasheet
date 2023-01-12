@@ -63,7 +63,7 @@ public class Cell : IReadOnlyCell, IWriteableCell
     /// The formula string of the cell, if it has one
     /// </summary>
     public string? FormulaString { get; set; }
-    
+
     /// <summary>
     /// The formula error (if 
     /// </summary>
@@ -164,7 +164,13 @@ public class Cell : IReadOnlyCell, IWriteableCell
         }
     }
 
-    public void Clear()
+    public void ClearFormula()
+    {
+        FormulaError = null;
+        FormulaString = null;
+    }
+
+    public void ClearValue()
     {
         var currentVal = GetValue();
         if (currentVal == null)
@@ -261,6 +267,8 @@ public class Cell : IReadOnlyCell, IWriteableCell
                 prop.SetValue(Data, convertedValue);
                 return true;
             }
+
+            prop.SetValue(Data, val);
 
             return false;
         }
