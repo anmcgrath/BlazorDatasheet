@@ -1,4 +1,4 @@
-namespace BlazorDatasheet.Data.SpatialDataStructures;
+namespace BlazorDatasheet.DataStructures.Intervals;
 
 public interface IMergeable<T>
 {

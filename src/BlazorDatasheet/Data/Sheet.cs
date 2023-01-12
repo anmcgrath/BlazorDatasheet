@@ -1,7 +1,9 @@
 using System.Text;
 using BlazorDatasheet.Commands;
 using BlazorDatasheet.Data.Events;
-using BlazorDatasheet.Data.SpatialDataStructures;
+using BlazorDatasheet.DataStructures.Intervals;
+using BlazorDatasheet.DataStructures.RTree;
+using BlazorDatasheet.DataStructures.Sheet;
 using BlazorDatasheet.Edit.DefaultComponents;
 using BlazorDatasheet.Formats;
 using BlazorDatasheet.Interfaces;
@@ -12,7 +14,7 @@ using BlazorDatasheet.Util;
 
 namespace BlazorDatasheet.Data;
 
-public class Sheet
+public class Sheet : ISheet
 {
     /// <summary>
     /// The displayed number of rows in the sheet
@@ -112,14 +114,19 @@ public class Sheet
     public event EventHandler<ColumnWidthChangedArgs> ColumnWidthChanged;
 
     /// <summary>
-    /// Fired when cells are merged
-    /// </summary>
-    public event EventHandler<IRegion> RegionMerged;
-
-    /// <summary>
     /// Fired when cell formats change
     /// </summary>
     public event EventHandler<FormatChangedEventArgs> FormatsChanged;
+
+    public FormulaEngine.FormulaEngine _engine;
+
+    /// <summary>
+    /// Whether the sheet is in the paused state. When paused, the sheet does not emit
+    /// events and does not automatically re-calculate cell values
+    /// </summary>
+    public bool Paused { get; private set; }
+
+    private List<ChangeEventArgs> _changesDuringPause;
 
     internal CellLayoutProvider LayoutProvider { get; }
 
@@ -134,6 +141,8 @@ public class Sheet
         ConditionalFormatting = new ConditionalFormatManager(this);
         _editorTypes = new Dictionary<string, Type>();
         _renderComponentTypes = new Dictionary<string, Type>();
+        _engine = new FormulaEngine.FormulaEngine(this);
+        _changesDuringPause = new List<ChangeEventArgs>();
 
         registerDefaultEditors();
         registerDefaultRenderers();
@@ -381,6 +390,26 @@ public class Sheet
     }
 
     /// <summary>
+    /// Stops the sheet from emitting events & automatically re-calculating the sheet
+    /// Change events will be cached during paused and emitted upon resume
+    /// </summary>
+    public void Pause()
+    {
+        Paused = true;
+        _changesDuringPause.Clear();
+    }
+
+    /// <summary>
+    /// Un-pauses the sheet, allowing events to be emitted & automatic re-calculating of cells
+    /// to be performed. Emits any change events that occured during the pause
+    /// </summary>
+    public void Resume()
+    {
+        Paused = false;
+        CellsChanged?.Invoke(this, _changesDuringPause);
+    }
+
+    /// <summary>
     /// Registers a cell editor component with a unique name.
     /// If the editor already exists, it will override the existing.
     /// </summary>
@@ -472,6 +501,11 @@ public class Sheet
         return new Region(inputPosition.Row, endRow, inputPosition.Col, maxEndCol);
     }
 
+    public IRange GetRowRange(int rowStart, int rowStop)
+    {
+        throw new NotImplementedException();
+    }
+
     public bool TrySetCellValue(int row, int col, object value)
     {
         var cmd = new SetCellValueCommand(row, col, value);
@@ -480,13 +514,23 @@ public class Sheet
 
     internal bool TrySetCellValueImpl(int row, int col, object value, bool raiseEvent = true)
     {
+        if (!string.IsNullOrEmpty(value as string))
+            if (isFormula((string)value))
+            {
+                SetCellFormula((string)value, row, col);
+                return true;
+            }
+
         var cell = _cellDataStore.Get(row, col);
         if (cell == null)
         {
             cell = new Cell(value);
             _cellDataStore.Set(row, col, cell);
             if (raiseEvent)
-                CellsChanged?.Invoke(this, new List<ChangeEventArgs>() { new(row, col, null, value) });
+                OnCellChanged(row, col, null, value);
+
+            if (!Paused)
+                _engine.CalculateSheet();
             return true;
         }
 
@@ -505,16 +549,54 @@ public class Sheet
         // Try to set the cell's value to the new value
         var oldValue = cell.GetValue();
         var setValue = cell.TrySetValue(value);
-        if (setValue && raiseEvent)
+        if (setValue && value != oldValue && raiseEvent)
         {
-            var args = new ChangeEventArgs[1]
-            {
-                new ChangeEventArgs(row, col, oldValue, value)
-            };
-            CellsChanged?.Invoke(this, args);
+            OnCellChanged(row, col, oldValue, value);
+            if (!Paused)
+                _engine.CalculateSheet();
         }
+        else if (!setValue)
+            cell.IsValid = false;
 
         return setValue;
+    }
+
+    internal void SetCellFormula(string formulaString, int row, int col)
+    {
+        if (_cellDataStore.Contains(row, col))
+            _cellDataStore.Get(row, col)!.FormulaString = formulaString;
+        else
+        {
+            var cell = new Cell
+            {
+                FormulaString = formulaString
+            };
+            _cellDataStore.Set(row, col, cell);
+        }
+
+        _engine.SetFormula(row, col, formulaString);
+    }
+
+    private void OnCellChanged(int row, int col, object newValue, object oldValue)
+    {
+        var arg = new ChangeEventArgs(row, col, oldValue, newValue);
+        if (Paused)
+            _changesDuringPause.Add(arg);
+        else
+            CellsChanged?.Invoke(this, new List<ChangeEventArgs>() { arg });
+    }
+
+    private void OnCellsChanged(IEnumerable<ChangeEventArgs> args)
+    {
+        if (Paused)
+            _changesDuringPause.AddRange(args);
+        else
+            CellsChanged?.Invoke(this, args);
+    }
+
+    private bool isFormula(string str)
+    {
+        return str.StartsWith('=');
     }
 
     public void SetFormat(Format format, BRange range)
@@ -722,9 +804,19 @@ public class Sheet
     /// <param name="row"></param>
     /// <param name="col"></param>
     /// <returns></returns>
-    public object? GetValue(int row, int col)
+    public object? GetCellValue(int row, int col)
     {
         return GetCell(row, col)?.GetValue();
+    }
+    
+    public IRange GetRange(int rowStart, int rowStop, int colStart, int colStop)
+    {
+        throw new NotImplementedException();
+    }
+
+    public IRange GetColumnRange(int colStart, int colStop)
+    {
+        throw new NotImplementedException();
     }
 
     public bool SetCellValues(IEnumerable<ValueChange> changes)
@@ -738,14 +830,17 @@ public class Sheet
         var changeEvents = new List<ChangeEventArgs>();
         foreach (var change in changes)
         {
-            var currValue = GetValue(change.Row, change.Col);
+            var currValue = GetCellValue(change.Row, change.Col);
             var set = TrySetCellValueImpl(change.Row, change.Col, change.Value, false);
-            var newValue = GetValue(change.Row, change.Col);
+            var newValue = GetCellValue(change.Row, change.Col);
             if (set && currValue != newValue)
                 changeEvents.Add(new ChangeEventArgs(change.Row, change.Col, currValue, newValue));
         }
 
-        CellsChanged?.Invoke(this, changeEvents);
+        OnCellsChanged(changeEvents);
+        if (!Paused)
+            _engine.CalculateSheet();
+
         return changeEvents.Any();
     }
 
@@ -771,13 +866,18 @@ public class Sheet
         {
             var cell = this.GetCell(posn.row, posn.col) as Cell;
             var oldValue = cell.GetValue();
-            cell.Clear();
+            cell.ClearValue();
+            cell.ClearFormula();
+            _engine.ClearFormula(posn.row, posn.col);
+
             var newVal = cell.GetValue();
             if (oldValue != newVal)
                 changeArgs.Add(new ChangeEventArgs(posn.row, posn.col, oldValue, newVal));
         }
 
-        this.CellsChanged?.Invoke(this, changeArgs);
+        OnCellsChanged(changeArgs);
+        if (!Paused)
+            _engine.CalculateSheet();
     }
 
     public string GetRegionAsDelimitedText(IRegion inputRegion, char tabDelimiter = '\t', string newLineDelim = "\n")

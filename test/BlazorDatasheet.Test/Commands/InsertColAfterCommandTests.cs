@@ -14,12 +14,12 @@ public class InsertColAfterCommandTests
         sheet.InsertColAfter(0);
 
         Assert.AreEqual(4, sheet.NumCols);
-        Assert.AreEqual("0,0", sheet.GetValue(0, 0));
-        Assert.AreEqual("0,2", sheet.GetValue(0, 3));
+        Assert.AreEqual("0,0", sheet.GetCellValue(0, 0));
+        Assert.AreEqual("0,2", sheet.GetCellValue(0, 3));
 
         sheet.Commands.Undo();
         Assert.AreEqual(3, sheet.NumCols);
-        Assert.AreEqual("0,0", sheet.GetValue(0, 0));
-        Assert.AreEqual("0,2", sheet.GetValue(0, 2));
+        Assert.AreEqual("0,0", sheet.GetCellValue(0, 0));
+        Assert.AreEqual("0,2", sheet.GetCellValue(0, 2));
     }
 }

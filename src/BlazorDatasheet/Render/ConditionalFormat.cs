@@ -1,5 +1,4 @@
 using BlazorDatasheet.Data;
-using BlazorDatasheet.Data.SpatialDataStructures;
 using BlazorDatasheet.Formats;
 using BlazorDatasheet.Interfaces;
 

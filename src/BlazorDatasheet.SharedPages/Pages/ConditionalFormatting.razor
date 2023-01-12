@@ -32,17 +32,14 @@
         sheet = new Sheet(30, 5);
         var numberScaleConditionalFormat = new NumberScaleConditionalFormat();
         var checkConditionalFormat = new CustomCheckConditionalFormat("check");
-
-        var values = new List<ValueChange>();
-
-        var regionOfNumberScaleFormat = new Region(0, 99, 1, 4);
+        
         var rand = new Random();
-        foreach (var posn in regionOfNumberScaleFormat)
-        {
-            values.Add(new ValueChange(posn.Row, posn.Col, (int?)rand.Next(100)));
-        }
 
-        sheet.SetCellValues(values);
+        sheet.Pause();
+        for(int r = 0; r < 30; r++)
+            for (int c = 0; c < 5; c++)
+                sheet.TrySetCellValue(r, c, (int?)rand.Next(100));
+        sheet.Resume();
 
         sheet.ConditionalFormatting.Apply(numberScaleConditionalFormat, new Region(0, 99, 1, 4));
         sheet.ConditionalFormatting.Apply(checkConditionalFormat, new Region(0, 99, 0, 0));

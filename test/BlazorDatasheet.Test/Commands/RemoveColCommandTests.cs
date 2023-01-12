@@ -14,11 +14,11 @@ public class RemoveColCommandTests
         sheet.RemoveCol(2);
 
         Assert.AreEqual(2, sheet.NumCols);
-        Assert.AreEqual("0,3", sheet.GetValue(0,2));
+        Assert.AreEqual("0,3", sheet.GetCellValue(0,2));
 
         sheet.Commands.Undo();
         Assert.AreEqual(3, sheet.NumCols);
-        Assert.AreEqual("0,2", sheet.GetValue(0,2));
-        Assert.AreEqual("0,3", sheet.GetValue(0,3));
+        Assert.AreEqual("0,2", sheet.GetCellValue(0,2));
+        Assert.AreEqual("0,3", sheet.GetCellValue(0,3));
     }
 }

@@ -2,7 +2,7 @@
 using System.Security.AccessControl;
 using BlazorDatasheet.Data;
 using BlazorDatasheet.Data.Events;
-using BlazorDatasheet.Data.SpatialDataStructures;
+using BlazorDatasheet.DataStructures.RTree;
 using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Util;

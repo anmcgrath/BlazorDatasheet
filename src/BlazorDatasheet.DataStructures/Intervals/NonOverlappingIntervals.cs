@@ -1,6 +1,6 @@
-namespace BlazorDatasheet.Data.SpatialDataStructures;
+using BlazorDatasheet.DataStructures.Search;
 
-using BlazorDatasheet.Util;
+namespace BlazorDatasheet.DataStructures.Intervals;
 
 /// <summary>
 /// A set of non-overlapping intervals containing some mergeable data.

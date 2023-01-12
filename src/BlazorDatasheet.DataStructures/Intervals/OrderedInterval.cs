@@ -1,4 +1,4 @@
-﻿namespace BlazorDatasheet.Data;
+﻿namespace BlazorDatasheet.DataStructures.Intervals;
 
 /// <summary>
 /// An ordered interval between its start and end position (inclusive)

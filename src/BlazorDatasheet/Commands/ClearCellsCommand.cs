@@ -24,7 +24,7 @@ public class ClearCellsCommand : IUndoableCommand
             if (oldValue != null && !string.IsNullOrEmpty(oldValue.ToString()))
             {
                 _clearCommandOccurences.Add(
-                    new ValueChange(cell.Row, cell.Col, oldValue));
+                    new ValueChange(cell.Row, cell.Col, oldValue, cell.FormulaString));
             }
         }
 

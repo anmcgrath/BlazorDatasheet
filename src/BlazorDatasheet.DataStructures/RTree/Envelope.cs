@@ -24,7 +24,7 @@
 
 using System.Runtime.InteropServices;
 
-namespace BlazorDatasheet.Data.SpatialDataStructures;
+namespace BlazorDatasheet.DataStructures.RTree;
 
 /// <summary>
 /// A bounding envelope, used to identify the bounds of of the points within

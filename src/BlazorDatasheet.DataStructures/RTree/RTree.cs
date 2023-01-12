@@ -25,7 +25,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace BlazorDatasheet.Data.SpatialDataStructures;
+namespace BlazorDatasheet.DataStructures.RTree;
 
 /// <summary>
 /// An implementation of the R-tree data structure for 2-d spatial indexing.

@@ -1,6 +1,6 @@
 ﻿using System.Linq;
 using BlazorDatasheet.Data;
-using BlazorDatasheet.Data.SpatialDataStructures;
+using BlazorDatasheet.DataStructures.Intervals;
 using BlazorDatasheet.Render;
 using NUnit.Framework;
 

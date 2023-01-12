@@ -22,7 +22,7 @@
 
 // This file contains code from https://github.com/viceroypenguin/RBush
 
-namespace BlazorDatasheet.Data.SpatialDataStructures;
+namespace BlazorDatasheet.DataStructures.RTree;
 
 /// <summary>
 /// Exposes an <see cref="Envelope"/> that describes the

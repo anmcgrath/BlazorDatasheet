@@ -18,7 +18,7 @@ public class SetCellValuesCommand : IUndoableCommand
         _undoValues = new List<ValueChange>();
         foreach (var valChange in _values)
         {
-            var oldCellValue = sheet.GetValue(valChange.Row, valChange.Col);
+            var oldCellValue = sheet.GetCellValue(valChange.Row, valChange.Col);
             _undoValues.Add(new ValueChange(valChange.Row, valChange.Col, oldCellValue));
         }
 
