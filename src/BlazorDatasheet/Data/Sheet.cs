@@ -15,12 +15,12 @@ namespace BlazorDatasheet.Data;
 public class Sheet
 {
     /// <summary>
-    /// The displayed number of rows in the sheet
+    /// The total number of rows in the sheet
     /// </summary>
     public int NumRows { get; private set; }
 
     /// <summary>
-    /// The number of columns in the sheet
+    /// The total of columns in the sheet
     /// </summary>
     public int NumCols { get; private set; }
 
@@ -79,7 +79,12 @@ public class Sheet
     /// </summary>
     internal NonOverlappingIntervals<Format> ColFormats = new();
 
+    /// <summary>
+    /// The merged cells in the sheet.
+    /// </summary>
     internal RTree<CellMerge> MergedCells { get; } = new();
+
+    #region EVENTS
 
     /// <summary>
     /// Fired when a row is inserted into the sheet
@@ -120,6 +125,8 @@ public class Sheet
     /// Fired when cell formats change
     /// </summary>
     public event EventHandler<FormatChangedEventArgs> FormatsChanged;
+
+    #endregion
 
     internal CellLayoutProvider LayoutProvider { get; }
 
@@ -165,6 +172,8 @@ public class Sheet
         LayoutProvider = new CellLayoutProvider(this, 105, 25);
     }
 
+    #region COLS
+
     /// <summary>
     /// Inserts a column after the index specified. If the index is outside of the range of -1 to NumCols-1,
     /// A column is added either at the beginning or end of the columns.
@@ -190,12 +199,18 @@ public class Sheet
     /// Removes the column at the specified index
     /// </summary>
     /// <param name="colIndex"></param>
+    /// <returns>Whether the column removal was successful</returns>
     public bool RemoveCol(int colIndex)
     {
         var cmd = new RemoveColumnCommand(colIndex);
         return Commands.ExecuteCommand(cmd);
     }
 
+    /// <summary>
+    /// Internal implementation that removes the column
+    /// </summary>
+    /// <param name="colIndex"></param>
+    /// <returns>Whether the column at index colIndex was removed</returns>
     internal bool RemoveColImpl(int colIndex)
     {
         if (colIndex >= 0 && colIndex <= NumCols - 1)
@@ -210,6 +225,10 @@ public class Sheet
 
         return false;
     }
+
+    #endregion
+
+    #region ROWS
 
     /// <summary>
     /// Inserts a row at an index specified.
@@ -257,6 +276,8 @@ public class Sheet
         return false;
     }
 
+    #endregion
+
     /// <summary>
     /// Returns a single cell range at the position row, col
     /// </summary>
@@ -302,6 +323,7 @@ public class Sheet
     }
 
 
+    #region CELLS
     /// <summary>
     /// Returns all cells in the specified region
     /// </summary>
@@ -310,21 +332,8 @@ public class Sheet
     public IEnumerable<IReadOnlyCell> GetCellsInRegion(IRegion region)
     {
         return (new BRange(this, region))
-               .Positions
-               .Select(x => this.GetCell(x.row, x.col));
-    }
-
-    public Format? GetFormat(int row, int col)
-    {
-        var cell = GetCell(row, col);
-        var rowFormat = RowFormats.Get(row);
-        var colFormat = ColFormats.Get(col);
-        if (cell.Formatting != null)
-            return cell.Formatting;
-        if (colFormat != null)
-            return colFormat;
-        else
-            return rowFormat;
+            .Positions
+            .Select(x => this.GetCell(x.row, x.col));
     }
 
     /// <summary>
@@ -375,10 +384,61 @@ public class Sheet
     internal IEnumerable<(int row, int col)> GetNonEmptyCellPositions(IRegion region)
     {
         return _cellDataStore.GetNonEmptyPositions(region.TopLeft.Row,
-                                                   region.BottomRight.Row,
-                                                   region.TopLeft.Col,
-                                                   region.BottomRight.Col);
+            region.BottomRight.Row,
+            region.TopLeft.Col,
+            region.BottomRight.Col);
     }
+    
+    #endregion
+    
+    #region DATA
+    
+    public bool TrySetCellValue(int row, int col, object value)
+    {
+        var cmd = new SetCellValueCommand(row, col, value);
+        return Commands.ExecuteCommand(cmd);
+    }
+
+    internal bool TrySetCellValueImpl(int row, int col, object value, bool raiseEvent = true)
+    {
+        var cell = _cellDataStore.Get(row, col);
+        if (cell == null)
+        {
+            cell = new Cell(value);
+            _cellDataStore.Set(row, col, cell);
+            if (raiseEvent)
+                CellsChanged?.Invoke(this, new List<ChangeEventArgs>() { new(row, col, null, value) });
+            return true;
+        }
+
+        // Perform data validation
+        var isValid = true;
+        foreach (var validator in cell.Validators)
+        {
+            if (validator.IsValid(value)) continue;
+            if (validator.IsStrict)
+                return false;
+            isValid = false;
+        }
+
+        cell.IsValid = isValid;
+
+        // Try to set the cell's value to the new value
+        var oldValue = cell.GetValue();
+        var setValue = cell.TrySetValue(value);
+        if (setValue && raiseEvent)
+        {
+            var args = new ChangeEventArgs[1]
+            {
+                new ChangeEventArgs(row, col, oldValue, value)
+            };
+            CellsChanged?.Invoke(this, args);
+        }
+
+        return setValue;
+    }
+    
+    #endregion
 
     /// <summary>
     /// Registers a cell editor component with a unique name.
@@ -472,51 +532,36 @@ public class Sheet
         return new Region(inputPosition.Row, endRow, inputPosition.Col, maxEndCol);
     }
 
-    public bool TrySetCellValue(int row, int col, object value)
+    #region FORMAT
+
+    /// <summary>
+    /// Returns the format that is visible at the cell position row, col.
+    /// The order to determine which format is visible is
+    /// 1. Cell format (if it exists)
+    /// 2. Column format
+    /// 3. Row format
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <returns></returns>
+    public Format? GetFormat(int row, int col)
     {
-        var cmd = new SetCellValueCommand(row, col, value);
-        return Commands.ExecuteCommand(cmd);
+        var cell = GetCell(row, col);
+        var rowFormat = RowFormats.Get(row);
+        var colFormat = ColFormats.Get(col);
+        if (cell.Formatting != null)
+            return cell.Formatting;
+        if (colFormat != null)
+            return colFormat;
+        else
+            return rowFormat;
     }
 
-    internal bool TrySetCellValueImpl(int row, int col, object value, bool raiseEvent = true)
-    {
-        var cell = _cellDataStore.Get(row, col);
-        if (cell == null)
-        {
-            cell = new Cell(value);
-            _cellDataStore.Set(row, col, cell);
-            if (raiseEvent)
-                CellsChanged?.Invoke(this, new List<ChangeEventArgs>() { new(row, col, null, value) });
-            return true;
-        }
-
-        // Perform data validation
-        var isValid = true;
-        foreach (var validator in cell.Validators)
-        {
-            if (validator.IsValid(value)) continue;
-            if (validator.IsStrict)
-                return false;
-            isValid = false;
-        }
-
-        cell.IsValid = isValid;
-
-        // Try to set the cell's value to the new value
-        var oldValue = cell.GetValue();
-        var setValue = cell.TrySetValue(value);
-        if (setValue && raiseEvent)
-        {
-            var args = new ChangeEventArgs[1]
-            {
-                new ChangeEventArgs(row, col, oldValue, value)
-            };
-            CellsChanged?.Invoke(this, args);
-        }
-
-        return setValue;
-    }
-
+    /// <summary>
+    /// Sets the format for a particular range
+    /// </summary>
+    /// <param name="format"></param>
+    /// <param name="range"></param>
     public void SetFormat(Format format, BRange range)
     {
         var cmd = new SetRangeFormatCommand(format, range);
@@ -618,7 +663,7 @@ public class Sheet
         foreach (var rowInterval in RowFormats.GetAllIntervals())
         {
             overlappingRegions.Add(new Region(rowInterval.Start, rowInterval.End, region.Start.Col,
-                                              region.End.Col));
+                region.End.Col));
         }
 
         foreach (var overlapRegion in overlappingRegions)
@@ -666,7 +711,7 @@ public class Sheet
         foreach (var colInterval in ColFormats.GetAllIntervals())
         {
             overlappingRegions.Add(new Region(region.Start.Row, region.End.Row, colInterval.Start,
-                                              colInterval.End));
+                colInterval.End));
         }
 
         foreach (var overlapRegion in overlappingRegions)
@@ -710,6 +755,8 @@ public class Sheet
 
         return new CellChangedFormat(row, col, oldFormat, format);
     }
+    
+    #endregion
 
     internal void SetCell(int row, int col, Cell cell)
     {
