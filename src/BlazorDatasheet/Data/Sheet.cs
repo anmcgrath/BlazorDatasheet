@@ -771,7 +771,7 @@ public class Sheet
         {
             var cell = this.GetCell(posn.row, posn.col) as Cell;
             var oldValue = cell.GetValue();
-            cell.Clear();
+            cell.ClearValue();
             var newVal = cell.GetValue();
             if (oldValue != newVal)
                 changeArgs.Add(new ChangeEventArgs(posn.row, posn.col, oldValue, newVal));

@@ -112,14 +112,20 @@ public class Cell : IReadOnlyCell, IWriteableCell
                         conversionType = System.Nullable.GetUnderlyingType(type);
                     }
 
-                    return Convert.ChangeType(Data, conversionType);
+                    if (conversionType == typeof(string))
+                        return Data.ToString();
+
+                    if (Data is IConvertible)
+                        return Convert.ChangeType(Data, conversionType);
+
+                    return Data;
                 }
             }
 
             // Use the Key!
 
             var val = Data?.GetType().GetProperty(Key)?.GetValue(Data, null);
-            if (val==null || val.GetType() == type || System.Nullable.GetUnderlyingType(type) == val.GetType())
+            if (val == null || val.GetType() == type || System.Nullable.GetUnderlyingType(type) == val.GetType())
                 return val;
             else
             {
@@ -129,7 +135,13 @@ public class Cell : IReadOnlyCell, IWriteableCell
                     conversionType = System.Nullable.GetUnderlyingType(type);
                 }
 
-                return Convert.ChangeType(val, conversionType);
+                if (conversionType == typeof(string))
+                    return val.ToString();
+
+                if (val is IConvertible)
+                    return Convert.ChangeType(val, conversionType);
+
+                return val;
             }
         }
         catch (Exception e)
@@ -138,19 +150,7 @@ public class Cell : IReadOnlyCell, IWriteableCell
         }
     }
 
-    /// <summary>
-    /// Attempts to set the cell's value and returns whether it was successful.
-    /// When this method is called directly, no events are raised by the sheet.
-    /// </summary>
-    /// <param name="val"></param>
-    /// <typeparam name="T"></typeparam>
-    /// <returns></returns>
-    public bool TrySetValue<T>(T val)
-    {
-        return TrySetValue(val, typeof(T));
-    }
-
-    public void Clear()
+    public void ClearValue()
     {
         var currentVal = GetValue();
         if (currentVal == null)
@@ -173,6 +173,31 @@ public class Cell : IReadOnlyCell, IWriteableCell
         Data = null;
     }
 
+    /// <summary>
+    /// Attempts to the Cell's value and returns whether it was successful
+    /// When this method is called directly, no events are raised by the sheet.
+    /// </summary>
+    /// <param name="val"></param>
+    /// <param name="type"></param>
+    /// <returns>Whether setting the value was successful</returns>
+    public bool TrySetValue(object? val, Type type)
+    {
+        var valueSet = DoTrySetValue(val, type);
+        return valueSet;
+    }
+
+    /// <summary>
+    /// Attempts to set the cell's value and returns whether it was successful.
+    /// When this method is called directly, no events are raised by the sheet.
+    /// </summary>
+    /// <param name="val"></param>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    public bool TrySetValue<T>(T val)
+    {
+        return TrySetValue(val, typeof(T));
+    }
+
     public bool DoTrySetValue(object? val, Type type)
     {
         try
@@ -183,8 +208,10 @@ public class Cell : IReadOnlyCell, IWriteableCell
                     Data = val;
                 else if (Data.GetType() == type) // data already of the same type
                     Data = val;
-                else
+                else if (val is IConvertible)
                     Data = Convert.ChangeType(val, type);
+                else
+                    Data = val;
                 return true;
             }
 
@@ -214,9 +241,16 @@ public class Cell : IReadOnlyCell, IWriteableCell
                 return true;
             }
 
-            object convertedValue = Convert.ChangeType(val, propType);
-            prop.SetValue(Data, convertedValue);
-            return true;
+            if (val is IConvertible)
+            {
+                object convertedValue = Convert.ChangeType(val, propType);
+                prop.SetValue(Data, convertedValue);
+                return true;
+            }
+
+            prop.SetValue(Data, val);
+
+            return false;
         }
         catch (Exception e)
         {
@@ -233,18 +267,5 @@ public class Cell : IReadOnlyCell, IWriteableCell
             Formatting = Formatting.Clone();
             Formatting.Merge(format);
         }
-    }
-
-    /// <summary>
-    /// Attempts to the Cell's value and returns whether it was successful
-    /// When this method is called directly, no events are raised by the sheet.
-    /// </summary>
-    /// <param name="val"></param>
-    /// <param name="type"></param>
-    /// <returns>Whether setting the value was successful</returns>
-    public bool TrySetValue(object? val, Type type)
-    {
-        var valueSet = DoTrySetValue(val, type);
-        return valueSet;
     }
 }
