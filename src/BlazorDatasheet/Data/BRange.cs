@@ -27,7 +27,7 @@ public class BRange
     /// <summary>
     /// Sets the value of all cells in the range.
     /// </summary>
-    public object Value
+    public object? Value
     {
         set => doSetValues(value);
     }
@@ -63,7 +63,7 @@ public class BRange
     /// Sets all the cells in the range to the value specified.
     /// </summary>
     /// <param name="value"></param>
-    private void doSetValues(object value)
+    private void doSetValues(object? value)
     {
         Sheet.SetCellValues(Positions.Select(x => new ValueChange(x.row, x.col, value)));
     }

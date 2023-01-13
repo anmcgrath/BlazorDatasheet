@@ -2,7 +2,7 @@ namespace BlazorDatasheet.Data;
 
 public class BRangeCell : BRange
 {
-    public new object Value
+    public new object? Value
     {
         set => base.Value = value;
         get => base.GetCells().First().GetValue();
