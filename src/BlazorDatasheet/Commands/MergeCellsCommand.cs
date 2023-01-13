@@ -7,20 +7,22 @@ namespace BlazorDatasheet.Commands;
 public class MergeCellsCommand : IUndoableCommand
 {
     private readonly BRange _range;
-    private List<IRegion> _overridenMergedRegions = new();
-    private List<IRegion> _mergesPerformed = new();
-    private List<ValueChange> _changes = new();
+    private readonly List<IRegion> _overridenMergedRegions = new();
+    private readonly List<IRegion> _mergesPerformed = new();
+    private readonly List<ValueChange> _changes = new();
 
     public MergeCellsCommand(BRange range)
     {
-        _range = range;
+        _range = range.Clone();
     }
 
 
     public bool Execute(Sheet sheet)
     {
-        _overridenMergedRegions = new List<IRegion>();
-        _changes = new List<ValueChange>();
+        Console.WriteLine("Executing merge");
+        _overridenMergedRegions.Clear();
+        _changes.Clear();
+        _mergesPerformed.Clear();
 
         foreach (var region in _range.Regions)
         {
@@ -33,9 +35,9 @@ public class MergeCellsCommand : IUndoableCommand
 
             // Clear all the cells that are not the top-left posn of merge and store their values for undo
             var cellsToClear = region
-                               .Break(region.TopLeft)
-                               .SelectMany(sheet.GetNonEmptyCellPositions)
-                               .ToList();
+                .Break(region.TopLeft)
+                .SelectMany(sheet.GetNonEmptyCellPositions)
+                .ToList();
 
             _changes.AddRange(cellsToClear.Select(x => getValueChangeOnClear(x.row, x.col, sheet)));
             sheet.ClearCellsImpl(cellsToClear);
@@ -67,6 +69,7 @@ public class MergeCellsCommand : IUndoableCommand
         foreach (var removedMerge in _overridenMergedRegions)
             sheet.MergeCellsImpl(removedMerge);
 
+        sheet.Selection.Set(_range);
         // Restore all the cell values that were lost when merging
         sheet.SetCellValuesImpl(_changes);
 

@@ -6,6 +6,10 @@ public class SetCellValuesCommand : IUndoableCommand
 {
     private IEnumerable<ValueChange> _values;
     private List<ValueChange> _undoValues;
+    private int _minrow = int.MaxValue;
+    private int _maxrow = int.MinValue;
+    private int _minCol = int.MaxValue;
+    private int _maxCol = int.MinValue;
 
     public SetCellValuesCommand(IEnumerable<ValueChange> values)
     {
@@ -20,6 +24,10 @@ public class SetCellValuesCommand : IUndoableCommand
         {
             var oldCellValue = sheet.GetValue(valChange.Row, valChange.Col);
             _undoValues.Add(new ValueChange(valChange.Row, valChange.Col, oldCellValue));
+            _minrow = Math.Min(_minrow, valChange.Row);
+            _maxrow = Math.Max(_maxrow, valChange.Row);
+            _minCol = Math.Min(_minCol, valChange.Col);
+            _maxCol = Math.Max(_maxCol, valChange.Col);
         }
 
         var setValues = sheet.SetCellValuesImpl(_values);
@@ -28,6 +36,7 @@ public class SetCellValuesCommand : IUndoableCommand
 
     public bool Undo(Sheet sheet)
     {
+        sheet.Selection.SetSingle(new Region(_minrow, _maxrow, _minCol, _maxCol));
         return sheet.SetCellValuesImpl(_undoValues);
     }
 }

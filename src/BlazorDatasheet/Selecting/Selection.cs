@@ -150,6 +150,17 @@ public class Selection : BRange
     }
 
     /// <summary>
+    /// Adds the region to the selection
+    /// </summary>
+    /// <param name="region"></param>
+    internal void AddRegionsToSelections(IEnumerable<IRegion> regions)
+    {
+        _regions.AddRange(regions);
+        ActiveRegion = ExpandRegionOverMerged(regions.LastOrDefault());
+        emitSelectionChange();
+    }
+
+    /// <summary>
     /// Expands the active selection so that it covers any merged cells
     /// </summary>
     private IRegion? ExpandRegionOverMerged(IRegion? region)
@@ -176,9 +187,9 @@ public class Selection : BRange
 
             mergeOverlaps =
                 Sheet.MergedCells
-                     .Search(top, right, left, bottom)
-                     .Where(x => !boundedRegion.Contains(x.Region))
-                     .ToList();
+                    .Search(top, right, left, bottom)
+                    .Where(x => !boundedRegion.Contains(x.Region))
+                    .ToList();
 
             // Expand bounded selection to cover all the merges
             foreach (var merge in mergeOverlaps)
@@ -227,6 +238,17 @@ public class Selection : BRange
     public void SetSingle(int row, int col)
     {
         SetSingle(new Region(row, col));
+    }
+
+    public void Set(BRange range)
+    {
+        _regions.Clear();
+        this.EndSelecting();
+        if (!range.Regions.Any())
+            return;
+
+        this.ActiveCellPosition = range.Regions.Last().TopLeft;
+        this.AddRegionsToSelections(range.Regions);
     }
 
     /// <summary>

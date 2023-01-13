@@ -38,6 +38,7 @@ public class ClearCellsCommand : IUndoableCommand
 
     public bool Undo(Sheet sheet)
     {
+        sheet.Selection.Set(_range);
         sheet.SetCellValuesImpl(_clearCommandOccurences);
         return true;
     }
