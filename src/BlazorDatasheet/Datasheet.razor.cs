@@ -119,6 +119,8 @@ public partial class Datasheet : IHandleEvent
             {
                 _sheetLocal.RowInserted -= SheetOnRowInserted;
                 _sheetLocal.RowRemoved -= SheetOnRowRemoved;
+                _sheetLocal.ColumnInserted -= SheetOnColInserted;
+                _sheetLocal.ColumnRemoved -= SheetOnColRemoved;
                 _sheetLocal.FormatsChanged -= SheetLocalOnFormatsChanged;
                 _sheetLocal.ColumnWidthChanged -= SheetLocalOnColumnWidthChanged;
                 _sheetLocal.SheetInvalidated -= SheetLocalOnSheetInvalidated;
@@ -129,6 +131,8 @@ public partial class Datasheet : IHandleEvent
             {
                 _sheetLocal.RowInserted += SheetOnRowInserted;
                 _sheetLocal.RowRemoved += SheetOnRowRemoved;
+                _sheetLocal.ColumnInserted += SheetOnColInserted;
+                _sheetLocal.ColumnRemoved += SheetOnColRemoved;
                 _sheetLocal.FormatsChanged += SheetLocalOnFormatsChanged;
                 _sheetLocal.ColumnWidthChanged += SheetLocalOnColumnWidthChanged;
                 _sheetLocal.SheetInvalidated += SheetLocalOnSheetInvalidated;
@@ -136,6 +140,16 @@ public partial class Datasheet : IHandleEvent
         }
 
         base.OnParametersSet();
+    }
+
+    private void SheetOnColInserted(object? sender, ColumnInsertedEventArgs e)
+    {
+        this.ForceReRender();
+    }
+
+    private void SheetOnColRemoved(object? sender, ColumnRemovedEventArgs e)
+    {
+        this.ForceReRender();
     }
 
     private void SheetLocalOnSheetInvalidated(object? sender, SheetInvalidateEventArgs e)
