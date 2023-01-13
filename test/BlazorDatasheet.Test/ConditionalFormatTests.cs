@@ -36,11 +36,11 @@ public class ConditionalFormatTests
     {
         sheet.TrySetCellValue(0, 0, -1);
         cm.Apply(greaterThanEqualToZeroRedBgCf);
-        var format = cm.GetFormat(0, 0);
+        var format = cm.GetFormatResult(0, 0);
         Assert.IsNull(format);
         sheet.TrySetCellValue(0, 0, 1);
 
-        format = cm.GetFormat(0, 0);
+        format = cm.GetFormatResult(0, 0);
         Assert.AreEqual(format.BackgroundColor, redBgColor);
     }
 
@@ -54,7 +54,7 @@ public class ConditionalFormatTests
             (posn, sheet) => true, (cell, cells) => new Format() { BackgroundColor = cells.Count().ToString() });
         cf.IsShared = true;
         cm.Apply(cf);
-        var formatApplied = cm.GetFormat(0, 0);
+        var formatApplied = cm.GetFormatResult(0, 0);
         Assert.NotNull(formatApplied);
         Assert.AreEqual(sheet.Region.Area.ToString(), formatApplied!.BackgroundColor);
     }
@@ -68,11 +68,11 @@ public class ConditionalFormatTests
         // Set this format to the second row in the sheet (sheet has 2 rows)
         sheet.ConditionalFormatting.Apply(cf, new RowRegion(1));
         sheet.InsertRowAfter(0);
-        Assert.Null(sheet.ConditionalFormatting.GetFormat(0, 0)?.BackgroundColor);
-        Assert.AreEqual("2", sheet.ConditionalFormatting.GetFormat(2, 0)?.BackgroundColor);
+        Assert.Null(sheet.ConditionalFormatting.GetFormatResult(0, 0)?.BackgroundColor);
+        Assert.AreEqual("2", sheet.ConditionalFormatting.GetFormatResult(2, 0)?.BackgroundColor);
         sheet.RemoveRow(0);
-        Assert.Null(sheet.ConditionalFormatting.GetFormat(0, 0)?.BackgroundColor);
-        Assert.AreEqual("1", sheet.ConditionalFormatting.GetFormat(1, 0)?.BackgroundColor);
+        Assert.Null(sheet.ConditionalFormatting.GetFormatResult(0, 0)?.BackgroundColor);
+        Assert.AreEqual("1", sheet.ConditionalFormatting.GetFormatResult(1, 0)?.BackgroundColor);
     }
 
     [Test]
@@ -82,11 +82,11 @@ public class ConditionalFormatTests
                                        cell => new Format() { BackgroundColor = cell.Col.ToString() });
         sheet.ConditionalFormatting.Apply(cf, new ColumnRegion(1));
         sheet.InsertColAfter(0);
-        Assert.Null(sheet.ConditionalFormatting.GetFormat(0, 0)?.BackgroundColor);
-        Assert.AreEqual("2", sheet.ConditionalFormatting.GetFormat(0, 2)?.BackgroundColor);
+        Assert.Null(sheet.ConditionalFormatting.GetFormatResult(0, 0)?.BackgroundColor);
+        Assert.AreEqual("2", sheet.ConditionalFormatting.GetFormatResult(0, 2)?.BackgroundColor);
         sheet.RemoveCol(0);
-        Assert.Null(sheet.ConditionalFormatting.GetFormat(0, 0)?.BackgroundColor);
-        Assert.AreEqual("1", sheet.ConditionalFormatting.GetFormat(0, 1)?.BackgroundColor);
+        Assert.Null(sheet.ConditionalFormatting.GetFormatResult(0, 0)?.BackgroundColor);
+        Assert.AreEqual("1", sheet.ConditionalFormatting.GetFormatResult(0, 1)?.BackgroundColor);
     }
 
     [Test]
@@ -97,9 +97,9 @@ public class ConditionalFormatTests
 
         sheet.ConditionalFormatting.Apply(cf, new Region(1, 2, 1, 2));
         sheet.InsertColAfter(1);
-        Assert.AreEqual("3", sheet.ConditionalFormatting.GetFormat(1, 3)?.BackgroundColor);
+        Assert.AreEqual("3", sheet.ConditionalFormatting.GetFormatResult(1, 3)?.BackgroundColor);
         sheet.RemoveCol(2);
-        Assert.Null(sheet.ConditionalFormatting.GetFormat(1, 3)?.BackgroundColor);
+        Assert.Null(sheet.ConditionalFormatting.GetFormatResult(1, 3)?.BackgroundColor);
     }
 
     [Test]
@@ -110,8 +110,8 @@ public class ConditionalFormatTests
 
         sheet.ConditionalFormatting.Apply(cf, new Region(1, 2, 1, 2));
         sheet.InsertRowAfter(1);
-        Assert.AreEqual("3", sheet.ConditionalFormatting.GetFormat(3, 1)?.BackgroundColor);
+        Assert.AreEqual("3", sheet.ConditionalFormatting.GetFormatResult(3, 1)?.BackgroundColor);
         sheet.RemoveRow(2);
-        Assert.Null(sheet.ConditionalFormatting.GetFormat(3, 1)?.BackgroundColor);
+        Assert.Null(sheet.ConditionalFormatting.GetFormatResult(3, 1)?.BackgroundColor);
     }
 }

@@ -8,7 +8,7 @@
 
 @if (true)
 {
-    var conditionalFormatting = Sheet.ConditionalFormatting.GetFormat(Cell.Row, Cell.Col);
+    var conditionalFormatting = Sheet.ConditionalFormatting.GetFormatResult(Cell.Row, Cell.Col);
 
     Format? format = Sheet!.GetFormat(Cell.Row, Cell.Col)?.Clone();
     if (format != null)

@@ -71,9 +71,10 @@ public class ConditionalFormatManager
     }
 
     /// <summary>
-    /// Applies the conditional format to all cells in a range
+    /// Applies the conditional format to the region
     /// </summary>
-    /// <param name="region"></param>
+    /// <param name="conditionalFormat"></param>
+    /// <param name="range"></param>
     public void Apply(ConditionalFormatAbstractBase conditionalFormat, BRange? range)
     {
         if (range == null)
@@ -99,7 +100,7 @@ public class ConditionalFormatManager
         {
             var env = region.ToEnvelope();
             var spatialData = _cfTree.Search(env)
-                                     .FirstOrDefault(x => x.ConditionalFormat == cf && x.Envelope.IsSameAs(env));
+                .FirstOrDefault(x => x.ConditionalFormat == cf && x.Envelope.IsSameAs(env));
             if (spatialData != null)
                 _cfTree.Delete(spatialData);
         }
@@ -131,8 +132,7 @@ public class ConditionalFormatManager
                 if (format.IsShared)
                 {
                     format.Prepare(_sheet);
-                    ConditionalFormatPrepared?.Invoke(this,
-                                                      new ConditionalFormatPreparedEventArgs(format));
+                    _sheet.MarkDirty(format.GetPositions());
                 }
 
                 handled.Add(format.Order);
@@ -148,7 +148,7 @@ public class ConditionalFormatManager
     private IEnumerable<ConditionalFormatAbstractBase> GetFormatsAppliedToPosition(int row, int col)
     {
         return _cfTree.Search(new Envelope(col, row, col, row))
-                      .Select(x => x.ConditionalFormat);
+            .Select(x => x.ConditionalFormat);
     }
 
     /// <summary>
@@ -168,7 +168,7 @@ public class ConditionalFormatManager
     /// <param name="row"></param>
     /// <param name="col"></param>
     /// <returns></returns>
-    public Format? GetFormat(int row, int col)
+    public Format? GetFormatResult(int row, int col)
     {
         if (!_sheet.Region.Contains(row, col))
             return null;
@@ -201,7 +201,7 @@ public class ConditionalFormatManager
         internal ConditionalFormatSpatialData(ConditionalFormatAbstractBase cf, IRegion region)
         {
             _envelope = new Envelope(region.Left, region.Top, region.Right,
-                                     region.Bottom);
+                region.Bottom);
             _conditionalFormat = cf;
         }
     }

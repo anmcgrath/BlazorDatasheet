@@ -21,9 +21,14 @@ public class CommandManager
     public bool ExecuteCommand(ICommand command)
     {
         var result = command.Execute(_sheet);
-        if (command is IUndoableCommand undoCommand && result == true)
+        if (result)
         {
-            _history.Push(undoCommand);
+            if (command is IUndoableCommand undoCommand)
+            {
+                _history.Push(undoCommand);
+            }
+
+            _sheet.Invalidate();
         }
 
         return result;
@@ -42,7 +47,11 @@ public class CommandManager
         var cmd = _history.Pop()!;
         var result = cmd.Undo(_sheet);
         if (result)
+        {
             _redos.Push(cmd);
+            _sheet.Invalidate();
+        }
+
         return result;
     }
 
@@ -51,7 +60,10 @@ public class CommandManager
         if (_redos.Peek() == null)
             return false;
 
-        return ExecuteCommand(_redos.Pop()!);
+        var result = ExecuteCommand(_redos.Pop()!);
+        if (result)
+            _sheet.Invalidate();
+        return result;
     }
 
     public void ClearHistory()

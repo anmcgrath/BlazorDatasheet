@@ -117,30 +117,31 @@ public partial class Datasheet : IHandleEvent
         {
             if (_sheetLocal != null)
             {
-                _sheetLocal.CellsChanged -= SheetOnCellsChanged;
                 _sheetLocal.RowInserted -= SheetOnRowInserted;
                 _sheetLocal.RowRemoved -= SheetOnRowRemoved;
-                _sheetLocal.ColumnRemoved -= SheetOnColRemoved;
-                _sheetLocal.ColumnInserted -= SheetOnColInserted;
-                _sheetLocal.ConditionalFormatting.ConditionalFormatPrepared -=
-                    ConditionalFormattingOnConditionalFormatPrepared;
                 _sheetLocal.FormatsChanged -= SheetLocalOnFormatsChanged;
                 _sheetLocal.ColumnWidthChanged -= SheetLocalOnColumnWidthChanged;
+                _sheetLocal.SheetInvalidated -= SheetLocalOnSheetInvalidated;
             }
 
             _sheetLocal = Sheet;
-            _sheetLocal.CellsChanged += SheetOnCellsChanged;
-            _sheetLocal.RowInserted += SheetOnRowInserted;
-            _sheetLocal.RowRemoved += SheetOnRowRemoved;
-            _sheetLocal.ColumnRemoved += SheetOnColRemoved;
-            _sheetLocal.ColumnInserted += SheetOnColInserted;
-            _sheetLocal.ConditionalFormatting.ConditionalFormatPrepared +=
-                ConditionalFormattingOnConditionalFormatPrepared;
-            _sheetLocal.FormatsChanged += SheetLocalOnFormatsChanged;
-            _sheetLocal.ColumnWidthChanged += SheetLocalOnColumnWidthChanged;
+            if (_sheetLocal != null)
+            {
+                _sheetLocal.RowInserted += SheetOnRowInserted;
+                _sheetLocal.RowRemoved += SheetOnRowRemoved;
+                _sheetLocal.FormatsChanged += SheetLocalOnFormatsChanged;
+                _sheetLocal.ColumnWidthChanged += SheetLocalOnColumnWidthChanged;
+                _sheetLocal.SheetInvalidated += SheetLocalOnSheetInvalidated;
+            }
         }
 
         base.OnParametersSet();
+    }
+
+    private void SheetLocalOnSheetInvalidated(object? sender, SheetInvalidateEventArgs e)
+    {
+        DirtyCells = e.DirtyCells.ToHashSet();
+        StateHasChanged();
     }
 
     private void SheetLocalOnColumnWidthChanged(object? sender, ColumnWidthChangedArgs e)
@@ -153,46 +154,14 @@ public partial class Datasheet : IHandleEvent
         this.SheetIsDirty = true;
     }
 
-    private void ConditionalFormattingOnConditionalFormatPrepared(object? sender, ConditionalFormatPreparedEventArgs e)
-    {
-        var cells = e.ConditionalFormat.GetCells(_sheetLocal);
-        foreach (var cell in cells)
-            DirtyCells.Add((cell.Row, cell.Col));
-    }
-
     private async void SheetOnRowRemoved(object? sender, RowRemovedEventArgs e)
     {
-        SheetIsDirty = true;
         await _virtualizer.RefreshDataAsync();
     }
 
     private async void SheetOnRowInserted(object? sender, RowInsertedEventArgs e)
     {
-        SheetIsDirty = true;
         await _virtualizer.RefreshDataAsync();
-    }
-
-    private void SheetOnColRemoved(object? sender, ColumnRemovedEventArgs e)
-    {
-        SheetIsDirty = true;
-    }
-
-    private void SheetOnColInserted(object? sender, ColumnInsertedEventArgs e)
-    {
-        SheetIsDirty = true;
-    }
-
-    private void SheetOnCellsChanged(object? sender, IEnumerable<Data.Events.ChangeEventArgs> e)
-    {
-        if (e.Any())
-        {
-            foreach (var cell in e)
-            {
-                DirtyCells.Add((cell.Row, cell.Col));
-            }
-
-            StateHasChanged();
-        }
     }
 
     private Type getCellRendererType(string type)
@@ -399,23 +368,20 @@ public partial class Datasheet : IHandleEvent
 
         if (e.Key.ToLower() == "y" && (e.CtrlKey || e.MetaKey) && !_editorManager.IsEditing)
         {
-            if (Sheet.Commands.Redo())
-                StateHasChanged();
-            return true;
+            return Sheet!.Commands.Redo();
         }
 
 
         if (e.Key.ToLower() == "z" && (e.CtrlKey || e.MetaKey) && !_editorManager.IsEditing)
         {
-            if (Sheet.Commands.Undo())
-                StateHasChanged();
-            return true;
+            return Sheet!.Commands.Undo();
         }
 
         if ((e.Key == "Delete" || e.Key == "Backspace") && !_editorManager.IsEditing)
         {
-            if (!Sheet.Selection.Regions.Any())
+            if (!Sheet!.Selection.Regions.Any())
                 return true;
+
             Sheet.Selection.ClearCells();
             return true;
         }

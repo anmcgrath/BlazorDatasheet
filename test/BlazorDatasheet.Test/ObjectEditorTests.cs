@@ -51,12 +51,12 @@ public class ObjectEditorTests
 
         var sheet = builder.Build().Sheet;
         // Format is not applied to the first column which is not PropBool
-        Assert.Null(sheet.ConditionalFormatting.GetFormat(0, 0));
+        Assert.Null(sheet.ConditionalFormatting.GetFormatResult(0, 0));
 
         // Should be null the first time because the propBool = false
-        Assert.Null(sheet.ConditionalFormatting.GetFormat(0, 1));
+        Assert.Null(sheet.ConditionalFormatting.GetFormatResult(0, 1));
         sheet.TrySetCellValue(0, 1, false);
-        Assert.Null(sheet.ConditionalFormatting.GetFormat(0, 1));
+        Assert.Null(sheet.ConditionalFormatting.GetFormatResult(0, 1));
     }
 
     [Test]
@@ -76,12 +76,12 @@ public class ObjectEditorTests
 
         var sheet = builder.Build().Sheet;
         // Format is not applied to the first row which is not PropBool
-        Assert.Null(sheet.ConditionalFormatting.GetFormat(0, 0));
+        Assert.Null(sheet.ConditionalFormatting.GetFormatResult(0, 0));
 
         // Should be null the first time because the propBool = false
-        Assert.Null(sheet.ConditionalFormatting.GetFormat(1, 0));
+        Assert.Null(sheet.ConditionalFormatting.GetFormatResult(1, 0));
         sheet.TrySetCellValue(0, 1, false);
-        Assert.Null(sheet.ConditionalFormatting.GetFormat(1, 0));
+        Assert.Null(sheet.ConditionalFormatting.GetFormatResult(1, 0));
     }
 }
 

@@ -64,6 +64,8 @@ public class Sheet
     /// </summary>
     public Selection Selection { get; }
 
+    private readonly HashSet<(int row, int col)> _dirtyCells;
+
     private readonly Dictionary<string, Type> _editorTypes;
     public IReadOnlyDictionary<string, Type> EditorTypes => _editorTypes;
     private Dictionary<string, Type> _renderComponentTypes { get; set; }
@@ -89,42 +91,47 @@ public class Sheet
     /// <summary>
     /// Fired when a row is inserted into the sheet
     /// </summary>
-    public event EventHandler<RowInsertedEventArgs> RowInserted;
+    public event EventHandler<RowInsertedEventArgs>? RowInserted;
 
     /// <summary>
     /// Fired when a row is removed from the sheet.
     /// </summary>
-    public event EventHandler<RowRemovedEventArgs> RowRemoved;
+    public event EventHandler<RowRemovedEventArgs>? RowRemoved;
 
     /// <summary>
     /// Fired when a column is inserted into the sheet
     /// </summary>
-    public event EventHandler<ColumnInsertedEventArgs> ColumnInserted;
+    public event EventHandler<ColumnInsertedEventArgs>? ColumnInserted;
 
     /// <summary>
     /// Fired when a column is removed from the sheet.
     /// </summary>
-    public event EventHandler<ColumnRemovedEventArgs> ColumnRemoved;
+    public event EventHandler<ColumnRemovedEventArgs>? ColumnRemoved;
 
     /// <summary>
     /// Fired when one or more cells are changed
     /// </summary>
-    public event EventHandler<IEnumerable<ChangeEventArgs>> CellsChanged;
+    public event EventHandler<IEnumerable<ChangeEventArgs>>? CellsChanged;
 
     /// <summary>
     /// Fired when a column width is changed
     /// </summary>
-    public event EventHandler<ColumnWidthChangedArgs> ColumnWidthChanged;
+    public event EventHandler<ColumnWidthChangedArgs>? ColumnWidthChanged;
 
     /// <summary>
     /// Fired when cells are merged
     /// </summary>
-    public event EventHandler<IRegion> RegionMerged;
+    public event EventHandler<IRegion>? RegionMerged;
 
     /// <summary>
     /// Fired when cell formats change
     /// </summary>
-    public event EventHandler<FormatChangedEventArgs> FormatsChanged;
+    public event EventHandler<FormatChangedEventArgs>? FormatsChanged;
+
+    /// <summary>
+    /// Fired when the sheet is invalidated (requires re-render).
+    /// </summary>
+    public event EventHandler<SheetInvalidateEventArgs>? SheetInvalidated;
 
     #endregion
 
@@ -141,6 +148,7 @@ public class Sheet
         ConditionalFormatting = new ConditionalFormatManager(this);
         _editorTypes = new Dictionary<string, Type>();
         _renderComponentTypes = new Dictionary<string, Type>();
+        _dirtyCells = new HashSet<(int row, int col)>();
 
         registerDefaultEditors();
         registerDefaultRenderers();
@@ -324,6 +332,7 @@ public class Sheet
 
 
     #region CELLS
+
     /// <summary>
     /// Returns all cells in the specified region
     /// </summary>
@@ -388,11 +397,11 @@ public class Sheet
             region.TopLeft.Col,
             region.BottomRight.Col);
     }
-    
+
     #endregion
-    
+
     #region DATA
-    
+
     public bool TrySetCellValue(int row, int col, object value)
     {
         var cmd = new SetCellValueCommand(row, col, value);
@@ -408,6 +417,8 @@ public class Sheet
             _cellDataStore.Set(row, col, cell);
             if (raiseEvent)
                 CellsChanged?.Invoke(this, new List<ChangeEventArgs>() { new(row, col, null, value) });
+
+            MarkDirty(row, col);
             return true;
         }
 
@@ -435,9 +446,88 @@ public class Sheet
             CellsChanged?.Invoke(this, args);
         }
 
+        if (setValue)
+            MarkDirty(row, col);
+
         return setValue;
     }
-    
+
+
+    internal void SetCell(int row, int col, Cell cell)
+    {
+        _cellDataStore.Set(row, col, cell);
+    }
+
+    /// <summary>
+    /// Gets the cell's value at row, col
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <returns></returns>
+    public object? GetValue(int row, int col)
+    {
+        return GetCell(row, col)?.GetValue();
+    }
+
+    public bool SetCellValues(IEnumerable<ValueChange> changes)
+    {
+        var cmd = new SetCellValuesCommand(changes);
+        return Commands.ExecuteCommand(cmd);
+    }
+
+    internal bool SetCellValuesImpl(IEnumerable<ValueChange> changes)
+    {
+        var changeEvents = new List<ChangeEventArgs>();
+        foreach (var change in changes)
+        {
+            var currValue = GetValue(change.Row, change.Col);
+            var set = TrySetCellValueImpl(change.Row, change.Col, change.Value, false);
+            var newValue = GetValue(change.Row, change.Col);
+            if (set && currValue != newValue)
+            {
+                changeEvents.Add(new ChangeEventArgs(change.Row, change.Col, currValue, newValue));
+                MarkDirty(change.Row, change.Col);
+            }
+        }
+
+        CellsChanged?.Invoke(this, changeEvents);
+        return changeEvents.Any();
+    }
+
+    /// <summary>
+    /// Clears all cell values in the region
+    /// </summary>
+    /// <param name="region"></param>
+    public void ClearCells(BRange range)
+    {
+        var cmd = new ClearCellsCommand(range);
+        Commands.ExecuteCommand(cmd);
+    }
+
+    internal void ClearCellsImpl(BRange range)
+    {
+        ClearCellsImpl(range.GetNonEmptyPositions());
+    }
+
+    internal void ClearCellsImpl(IEnumerable<(int row, int col)> positions)
+    {
+        var changeArgs = new List<ChangeEventArgs>();
+        foreach (var posn in positions)
+        {
+            var cell = this.GetCell(posn.row, posn.col) as Cell;
+            var oldValue = cell.GetValue();
+            cell.ClearValue();
+            var newVal = cell.GetValue();
+            if (oldValue != newVal)
+            {
+                changeArgs.Add(new ChangeEventArgs(posn.row, posn.col, oldValue, newVal));
+                MarkDirty(posn.row, posn.col);
+            }
+        }
+
+        this.CellsChanged?.Invoke(this, changeArgs);
+    }
+
     #endregion
 
     /// <summary>
@@ -479,6 +569,38 @@ public class Sheet
         RegisterRenderer<SelectRenderer>("select");
         RegisterRenderer<NumberRenderer>("number");
         RegisterRenderer<BoolRenderer>("boolean");
+    }
+
+    /// <summary>
+    /// Call when the sheet requires re-render
+    /// </summary>
+    internal void Invalidate()
+    {
+        if (SheetInvalidated != null)
+            SheetInvalidated(this, new SheetInvalidateEventArgs(_dirtyCells));
+        _dirtyCells.Clear();
+    }
+
+    /// <summary>
+    /// Marks the cell as dirty and requiring re-render
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    internal void MarkDirty(int row, int col)
+    {
+        _dirtyCells.Add((row, col));
+    }
+
+    /// <summary>
+    /// Mark the cells specified by positions dirty.
+    /// </summary>
+    /// <param name="positions"></param>
+    internal void MarkDirty(IEnumerable<(int row, int col)> positions)
+    {
+        foreach (var position in positions)
+        {
+            MarkDirty(position.row, position.col);
+        }
     }
 
     /// <summary>
@@ -755,77 +877,8 @@ public class Sheet
 
         return new CellChangedFormat(row, col, oldFormat, format);
     }
-    
+
     #endregion
-
-    internal void SetCell(int row, int col, Cell cell)
-    {
-        _cellDataStore.Set(row, col, cell);
-    }
-
-    /// <summary>
-    /// Gets the cell's value at row, col
-    /// </summary>
-    /// <param name="row"></param>
-    /// <param name="col"></param>
-    /// <returns></returns>
-    public object? GetValue(int row, int col)
-    {
-        return GetCell(row, col)?.GetValue();
-    }
-
-    public bool SetCellValues(IEnumerable<ValueChange> changes)
-    {
-        var cmd = new SetCellValuesCommand(changes);
-        return Commands.ExecuteCommand(cmd);
-    }
-
-    internal bool SetCellValuesImpl(IEnumerable<ValueChange> changes)
-    {
-        var changeEvents = new List<ChangeEventArgs>();
-        foreach (var change in changes)
-        {
-            var currValue = GetValue(change.Row, change.Col);
-            var set = TrySetCellValueImpl(change.Row, change.Col, change.Value, false);
-            var newValue = GetValue(change.Row, change.Col);
-            if (set && currValue != newValue)
-                changeEvents.Add(new ChangeEventArgs(change.Row, change.Col, currValue, newValue));
-        }
-
-        CellsChanged?.Invoke(this, changeEvents);
-        return changeEvents.Any();
-    }
-
-    /// <summary>
-    /// Clears all cell values in the region
-    /// </summary>
-    /// <param name="region"></param>
-    public void ClearCells(BRange range)
-    {
-        var cmd = new ClearCellsCommand(range);
-        Commands.ExecuteCommand(cmd);
-    }
-
-    internal void ClearCellsImpl(BRange range)
-    {
-        ClearCellsImpl(range.GetNonEmptyPositions());
-    }
-
-    internal void ClearCellsImpl(IEnumerable<(int row, int col)> positions)
-    {
-        var changeArgs = new List<ChangeEventArgs>();
-        foreach (var posn in positions)
-        {
-            var cell = this.GetCell(posn.row, posn.col) as Cell;
-            var oldValue = cell.GetValue();
-            cell.ClearValue();
-            var newVal = cell.GetValue();
-            if (oldValue != newVal)
-                changeArgs.Add(new ChangeEventArgs(posn.row, posn.col, oldValue, newVal));
-        }
-
-        this.CellsChanged?.Invoke(this, changeArgs);
-    }
 
     public string GetRegionAsDelimitedText(IRegion inputRegion, char tabDelimiter = '\t', string newLineDelim = "\n")
     {
