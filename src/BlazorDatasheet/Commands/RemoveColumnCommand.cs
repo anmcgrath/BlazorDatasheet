@@ -6,7 +6,7 @@ public class RemoveColumnCommand : IUndoableCommand
 {
     private int _columnIndex;
     private Heading _removedHeading;
-    private List<ValueChange> _removedValues;
+    private List<CellChange> _removedValues;
 
     public RemoveColumnCommand(int columnIndex)
     {
@@ -17,7 +17,7 @@ public class RemoveColumnCommand : IUndoableCommand
     {
         // Keep track of the values we have removed
         var nonEmptyInCol = sheet.GetNonEmptyCellPositions(new ColumnRegion(_columnIndex));
-        _removedValues = nonEmptyInCol.Select(x => new ValueChange(x.row, x.col, sheet.GetValue(x.row, x.col)))
+        _removedValues = nonEmptyInCol.Select(x => new CellChange(x.row, x.col, sheet.GetValue(x.row, x.col)))
                                       .ToList();
         if (sheet.ColumnHeadings.Any() && _columnIndex >= 0 && _columnIndex < sheet.ColumnHeadings.Count)
             _removedHeading = sheet.ColumnHeadings[_columnIndex];

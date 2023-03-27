@@ -5,18 +5,19 @@ namespace BlazorDatasheet.Commands;
 public class RemoveRowCommand : IUndoableCommand
 {
     private readonly int _rowIndex;
-    private IEnumerable<ValueChange> _valuesRemoved;
+    private List<CellChange> _valuesRemoved;
 
     public RemoveRowCommand(int rowIndex)
     {
         _rowIndex = rowIndex;
+        _valuesRemoved = new List<CellChange>();
     }
 
     public bool Execute(Sheet sheet)
     {
         // Keep track of values that we have removed
         var nonEmptyPosns = sheet.GetNonEmptyCellPositions(new RowRegion(_rowIndex));
-        _valuesRemoved = nonEmptyPosns.Select(x => new ValueChange(x.row, x.col, sheet.GetValue(x.row, x.col)))
+        _valuesRemoved = nonEmptyPosns.Select(x => new CellChange(x.row, x.col, sheet.GetValue(x.row, x.col)))
                                       .ToList();
         return sheet.RemoveRowAtImpl(_rowIndex);
     }

@@ -9,7 +9,7 @@ public class MergeCellsCommand : IUndoableCommand
     private readonly BRange _range;
     private readonly List<IRegion> _overridenMergedRegions = new();
     private readonly List<IRegion> _mergesPerformed = new();
-    private readonly List<ValueChange> _changes = new();
+    private readonly List<CellChange> _changes = new();
 
     public MergeCellsCommand(BRange range)
     {
@@ -55,9 +55,9 @@ public class MergeCellsCommand : IUndoableCommand
         return true;
     }
 
-    private ValueChange getValueChangeOnClear(int row, int col, Sheet sheet)
+    private CellChange getValueChangeOnClear(int row, int col, Sheet sheet)
     {
-        return new ValueChange(row, col, sheet.GetValue(row, col));
+        return new CellChange(row, col, sheet.GetValue(row, col));
     }
 
     public bool Undo(Sheet sheet)

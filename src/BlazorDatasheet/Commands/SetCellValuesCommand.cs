@@ -4,26 +4,27 @@ namespace BlazorDatasheet.Commands;
 
 public class SetCellValuesCommand : IUndoableCommand
 {
-    private IEnumerable<ValueChange> _values;
-    private List<ValueChange> _undoValues;
+    private List<CellChange> _values;
+    private List<CellChange> _undoValues;
     private int _minrow = int.MaxValue;
     private int _maxrow = int.MinValue;
     private int _minCol = int.MaxValue;
     private int _maxCol = int.MinValue;
 
-    public SetCellValuesCommand(IEnumerable<ValueChange> values)
+    public SetCellValuesCommand(List<CellChange> values)
     {
         _values = values;
+        _undoValues = new List<CellChange>();
     }
 
     public bool Execute(Sheet sheet)
     {
         // Get old values for undo
-        _undoValues = new List<ValueChange>();
+        _undoValues = new List<CellChange>();
         foreach (var valChange in _values)
         {
             var oldCellValue = sheet.GetValue(valChange.Row, valChange.Col);
-            _undoValues.Add(new ValueChange(valChange.Row, valChange.Col, oldCellValue));
+            _undoValues.Add(new CellChange(valChange.Row, valChange.Col, oldCellValue));
             _minrow = Math.Min(_minrow, valChange.Row);
             _maxrow = Math.Max(_maxrow, valChange.Row);
             _minCol = Math.Min(_minCol, valChange.Col);

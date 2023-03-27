@@ -6,11 +6,11 @@ namespace BlazorDatasheet.Commands;
 public class ClearCellsCommand : IUndoableCommand
 {
     private readonly BRange _range;
-    private readonly List<ValueChange> _clearCommandOccurences;
+    private readonly List<CellChange> _clearCommandOccurences;
 
     public ClearCellsCommand(BRange range)
     {
-        _clearCommandOccurences = new List<ValueChange>();
+        _clearCommandOccurences = new List<CellChange>();
         _range = range.Clone();
     }
 
@@ -24,7 +24,7 @@ public class ClearCellsCommand : IUndoableCommand
             if (oldValue != null && !string.IsNullOrEmpty(oldValue.ToString()))
             {
                 _clearCommandOccurences.Add(
-                    new ValueChange(cell.Row, cell.Col, oldValue));
+                    new CellChange(cell.Row, cell.Col, oldValue));
             }
         }
 

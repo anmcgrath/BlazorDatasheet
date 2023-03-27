@@ -135,6 +135,11 @@ public class Sheet
     /// </summary>
     public event EventHandler<SheetInvalidateEventArgs>? SheetInvalidated;
 
+    /// <summary>
+    /// Fired before a cell's value is set. Allows for changing the value that is set.
+    /// </summary>
+    public event EventHandler<BeforeCellChangeEventArgs> BeforeSetCellValue;
+
     #endregion
 
     internal CellLayoutProvider LayoutProvider { get; }
@@ -407,8 +412,7 @@ public class Sheet
 
     public bool TrySetCellValue(int row, int col, object value)
     {
-        var cmd = new SetCellValueCommand(row, col, value);
-        return Commands.ExecuteCommand(cmd);
+        return SetCellValues(new List<CellChange>() { new CellChange(row, col, value) });
     }
 
     internal bool TrySetCellValueImpl(int row, int col, object value, bool raiseEvent = true)
@@ -472,19 +476,25 @@ public class Sheet
         return GetCell(row, col)?.GetValue();
     }
 
-    public bool SetCellValues(IEnumerable<ValueChange> changes)
+    public bool SetCellValues(List<CellChange> changes)
     {
         var cmd = new SetCellValuesCommand(changes);
         return Commands.ExecuteCommand(cmd);
     }
 
-    internal bool SetCellValuesImpl(IEnumerable<ValueChange> changes)
+    internal bool SetCellValuesImpl(List<CellChange> changes)
     {
+        var beforeChangesEvent = new BeforeCellChangeEventArgs(changes);
+        BeforeSetCellValue?.Invoke(this, beforeChangesEvent);
+
+        if (beforeChangesEvent.Cancel)
+            return false;
+
         var changeEvents = new List<ChangeEventArgs>();
         foreach (var change in changes)
         {
             var currValue = GetValue(change.Row, change.Col);
-            var set = TrySetCellValueImpl(change.Row, change.Col, change.Value, false);
+            var set = TrySetCellValueImpl(change.Row, change.Col, change.NewValue, false);
             var newValue = GetValue(change.Row, change.Col);
             if (set && currValue != newValue)
             {
@@ -630,7 +640,7 @@ public class Sheet
         // It is possible that each line is of different cell lengths, so we return the max for all lines
         var maxEndCol = -1;
 
-        var valChanges = new List<ValueChange>();
+        var valChanges = new List<CellChange>();
 
         int lineNo = 0;
         for (int row = inputPosition.Row; row <= endRow; row++)
@@ -645,7 +655,7 @@ public class Sheet
             for (int col = inputPosition.Col; col <= endCol; col++)
             {
                 var cell = this.GetCell(row, col);
-                valChanges.Add(new ValueChange(row, col, lineSplit[cellIndex]));
+                valChanges.Add(new CellChange(row, col, lineSplit[cellIndex]));
                 cellIndex++;
             }
 
