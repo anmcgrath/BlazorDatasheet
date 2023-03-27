@@ -53,7 +53,7 @@
         }
         _editor.InsertAt(new Person(), Sheet.Selection.ActiveRegion.TopLeft.Row);
     }
-    
+
     private void InsertColAfterSelection()
     {
         if (Sheet.Selection.ActiveRegion == null)
@@ -62,7 +62,7 @@
         }
         _editor.Sheet.InsertColAfter(Sheet.Selection.ActiveRegion.Left);
     }
-    
+
     private void RemoveCol()
     {
         if (Sheet.Selection.ActiveRegion == null)
@@ -103,22 +103,22 @@
 
         var builder1 = new ObjectEditorBuilder<Person>(People, GridDirection.PropertiesAcrossColumns);
         builder1.AutogenerateProperties(false)
-                .WithExpressionFormat(x => x.IsFriendly, x => GreenBg)
-                .WithProperty(x => x.Id, pd => { pd.Heading = "Person ID"; })
-                .WithProperty(x => x.FirstName, pd => { pd.Heading = "First Name"; })
-                .WithProperty(x => x.LastName, pd => { pd.Heading = "Last Name"; })
-                .WithProperty(x => x.Age, pd =>
-                {
-                    pd.ApplyConditionalFormat(ageCf);
-                    pd.UseDataValidator(new NumberValidator(true));
-                })
-                .WithProperty(x => x.Category, pd =>
-                {
-                    pd.Heading = "Category";
-                    pd.Type = "select";
-                    pd.UseDataValidator(new SourceValidator(new List<string>() { "", "Manager", "Employee" }, true));
-                })
-                .WithProperty(x => x.IsFriendly, pd => { pd.Heading = "Is Friendly?"; });
+            .WithExpressionFormat(x => x.IsFriendly, x => GreenBg)
+            .WithProperty(x => x.Id, pd => { pd.Heading = "Person ID"; })
+            .WithProperty(x => x.FirstName, pd => { pd.Heading = "First Name"; })
+            .WithProperty(x => x.LastName, pd => { pd.Heading = "Last Name"; })
+            .WithProperty(x => x.Age, pd =>
+            {
+                pd.ApplyConditionalFormat(ageCf);
+                pd.UseDataValidator(new NumberValidator(true));
+            })
+            .WithProperty(x => x.Category, pd =>
+            {
+                pd.Heading = "Category";
+                pd.Type = "select";
+                pd.UseDataValidator(new SourceValidator(new List<string>() { "", "Manager", "Employee" }, true));
+            })
+            .WithProperty(x => x.IsFriendly, pd => { pd.Heading = "Is Friendly?"; });
 
         _editor = builder1.Build();
 

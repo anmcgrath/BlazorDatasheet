@@ -118,6 +118,8 @@ public class Sheet
     /// </summary>
     public event EventHandler<ColumnWidthChangedArgs>? ColumnWidthChanged;
 
+    public event EventHandler<CellsSelectedEventArgs>? CellsSelected;
+
     /// <summary>
     /// Fired when cells are merged
     /// </summary>
@@ -145,6 +147,7 @@ public class Sheet
         RowHeadings = new List<Heading>();
         Commands = new CommandManager(this);
         Selection = new Selection(this);
+        Selection.SelectionChanged += SelectionOnSelectionChanged;
         ConditionalFormatting = new ConditionalFormatManager(this);
         _editorTypes = new Dictionary<string, Type>();
         _renderComponentTypes = new Dictionary<string, Type>();
@@ -999,5 +1002,11 @@ public class Sheet
         var merges = MergedCells.Search(cellRegion.ToEnvelope());
         // There will only be one merge because we don't allow overlapping
         return merges.FirstOrDefault()?.Region;
+    }
+
+    private void SelectionOnSelectionChanged(object? sender, IEnumerable<IRegion> e)
+    {
+        var cellsSelected = this.GetCellsInRegions(e);
+        this.CellsSelected?.Invoke(this, new CellsSelectedEventArgs(cellsSelected));
     }
 }
