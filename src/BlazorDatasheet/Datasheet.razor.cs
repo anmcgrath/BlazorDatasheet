@@ -60,12 +60,6 @@ public partial class Datasheet : IHandleEvent
     [Parameter] public string Theme { get; set; } = "default";
 
     /// <summary>
-    /// The extent of the region that is rendered on the screen
-    /// </summary>
-    [Parameter]
-    public IRegion VisualRegion { get; set; }
-
-    /// <summary>
     /// Whether the user is focused on the datasheet.
     /// </summary>
     private bool IsDataSheetActive { get; set; }
