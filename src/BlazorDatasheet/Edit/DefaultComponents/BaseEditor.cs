@@ -12,7 +12,7 @@ public abstract class BaseEditor : ComponentBase, ICellEditor
     protected void CancelEdit() => RequestCancelEdit?.Invoke(this, EventArgs.Empty);
     protected void AcceptEdit() => RequestAcceptEdit?.Invoke(this, EventArgs.Empty);
 
-    private bool FocusRequested { get; set; }
+    protected bool FocusRequested { get; set; }
 
     /// <summary>
     /// If this is linked to the editor's input reference then the base editor will handle focusing.
@@ -27,7 +27,14 @@ public abstract class BaseEditor : ComponentBase, ICellEditor
     {
         if (FocusRequested)
         {
-            await InputRef.FocusAsync();
+            // If the editor component doesn't have a focusable UI element,
+            // then trying to focus it will throw an error.
+            // This check determines whether the InputRef has been set
+            if (!EqualityComparer<ElementReference>.Default.Equals(InputRef, default(ElementReference)))
+            {
+                await InputRef.FocusAsync();
+            }
+
             FocusRequested = false;
         }
 
