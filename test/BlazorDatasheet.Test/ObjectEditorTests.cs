@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using BlazorDatasheet.Formats;
 using BlazorDatasheet.ObjectEditor;
 using BlazorDatasheet.Render;
 using NUnit.Framework;
@@ -41,7 +42,7 @@ public class ObjectEditorTests
         // Create a conditional format that sets bg color to green when true
         var cf = new ConditionalFormat(
             (posn, sheet) => sheet.GetCell(posn.row, posn.col).GetValue<bool?>() == true,
-            c => new Format() { BackgroundColor = "green" });
+            c => new CellFormat() { BackgroundColor = "green" });
 
         builder.AutogenerateProperties(false);
         // Define first column as PropString
@@ -66,7 +67,7 @@ public class ObjectEditorTests
         // Create a conditional format that sets bg color to green when true
         var cf = new ConditionalFormat(
             (posn, sheet) => sheet.GetCell(posn.row, posn.col).GetValue<bool>() == true,
-            c => new Format() { BackgroundColor = "green" });
+            c => new CellFormat() { BackgroundColor = "green" });
 
         builder.AutogenerateProperties(false);
         // Define first row as PropString

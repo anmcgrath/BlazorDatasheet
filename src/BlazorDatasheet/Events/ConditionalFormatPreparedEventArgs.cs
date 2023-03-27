@@ -1,6 +1,6 @@
-using BlazorDatasheet.Interfaces;
+using BlazorDatasheet.Formats;
 
-namespace BlazorDatasheet.Formats;
+namespace BlazorDatasheet.Events;
 
 public class ConditionalFormatPreparedEventArgs
 {

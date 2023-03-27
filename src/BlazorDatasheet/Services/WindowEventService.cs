@@ -1,4 +1,4 @@
-using BlazorDatasheet.Data.Events;
+using BlazorDatasheet.Events;
 using BlazorDatasheet.Interfaces;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;

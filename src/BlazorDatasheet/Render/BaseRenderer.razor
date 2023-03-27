@@ -1,0 +1,56 @@
+@namespace BlazorDatasheet.Render
+@using BlazorDatasheet.Interfaces
+@using BlazorDatasheet.Edit.Events
+
+@code {
+
+    /// <summary>
+    /// A read-only copy of the cell that this renderer will display.
+    /// </summary>
+    [Parameter]
+    public IReadOnlyCell Cell { get; set; }
+
+    /// <summary>
+    /// The cell's row
+    /// </summary>
+    [Parameter]
+    public int Row { get; set; }
+
+    /// <summary>
+    /// The cells' column
+    /// </summary>
+    [Parameter]
+    public int Col { get; set; }
+
+    /// <summary>
+    /// Run when the renderer requests that the cell value is changed (used, for example for the default bool renderer)
+    /// </summary>
+    [Parameter]
+    public Action<ChangeCellValueRequest>? OnChangeCellValueRequest { get; set; }
+
+    /// <summary>
+    /// Run when the renderer requests that an edit is started (used, for example for the default select renderer)
+    /// </summary>
+    [Parameter]
+    public Action<CellEditRequest>? OnBeginEditRequest { get; set; }
+    
+    /// <summary>
+    /// Request that the cell should change value without going to an editor.
+    /// </summary>
+    /// <param name="value">The value to change the cell to. This will be converted from a string to the appropriate value.</param>
+    protected void RequestChangeCellValue(string value)
+    {
+        OnChangeCellValueRequest?.Invoke(new ChangeCellValueRequest(Row, Col, value));
+    }
+    
+    /// <summary>
+    /// Request that the sheet should start editing the cell
+    /// </summary>
+    /// <param name="isSoftEdit">Whether the edit is a "soft edit"</param>
+    /// <param name="mode">The mode used to enter the edit</param>
+    protected void RequestEdit(bool isSoftEdit, EditEntryMode mode)
+    {
+        OnBeginEditRequest?.Invoke(new CellEditRequest(Row, Col, isSoftEdit, mode));
+    }
+
+}

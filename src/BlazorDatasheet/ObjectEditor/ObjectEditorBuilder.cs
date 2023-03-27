@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using System.Reflection.Metadata;
 using BlazorDatasheet.Data;
+using BlazorDatasheet.Formats;
 using BlazorDatasheet.Formats.DefaultConditionalFormats;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Util;
@@ -14,7 +15,7 @@ public class ObjectEditorBuilder<T>
     private bool _autoGenerateProperties;
     private List<Tuple<string, Action<ObjectPropertyDefinition<T>>>> _propertyActions = new();
     private List<ObjectPropertyDefinition<T>> _propertyDefinitions = new();
-    private List<(Predicate<T> pred, Func<T, Format?> formatFunc)> _expressionFormats = new();
+    private List<(Predicate<T> pred, Func<T, CellFormat?> formatFunc)> _expressionFormats = new();
     private List<string> _suppliedPropertyNames { get; set; } = new();
 
     /// <summary>
@@ -45,7 +46,7 @@ public class ObjectEditorBuilder<T>
     /// <param name="predicate">Whether the format is run</param>
     /// <param name="formatFunc">The function returning the formula, given the T Data </param>
     /// <returns></returns>
-    public ObjectEditorBuilder<T> WithExpressionFormat(Predicate<T> predicate, Func<T, Format?> formatFunc)
+    public ObjectEditorBuilder<T> WithExpressionFormat(Predicate<T> predicate, Func<T, CellFormat?> formatFunc)
     {
         _expressionFormats.Add((predicate, formatFunc));
         return this;

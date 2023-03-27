@@ -1,8 +1,8 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Security.AccessControl;
 using BlazorDatasheet.Data;
-using BlazorDatasheet.Data.Events;
 using BlazorDatasheet.Data.SpatialDataStructures;
+using BlazorDatasheet.Events;
 using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Util;
@@ -168,12 +168,12 @@ public class ConditionalFormatManager
     /// <param name="row"></param>
     /// <param name="col"></param>
     /// <returns></returns>
-    public Format? GetFormatResult(int row, int col)
+    public CellFormat? GetFormatResult(int row, int col)
     {
         if (!_sheet.Region.Contains(row, col))
             return null;
         var cfs = GetFormatsAppliedToPosition(row, col);
-        Format? initialFormat = null;
+        CellFormat? initialFormat = null;
         foreach (var format in cfs)
         {
             var apply = format.Predicate?.Invoke((row, col), _sheet);

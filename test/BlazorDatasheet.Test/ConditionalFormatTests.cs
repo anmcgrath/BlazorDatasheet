@@ -25,7 +25,7 @@ public class ConditionalFormatTests
         cm = new ConditionalFormatManager(sheet);
         greaterThanEqualToZeroRedBgCf = new ConditionalFormat(
             (posn, s) => s.GetCell(posn.row, posn.col).GetValue<int?>() >= 0
-            , (cell => new Format
+            , (cell => new CellFormat
             {
                 BackgroundColor = redBgColor
             }));
@@ -51,7 +51,7 @@ public class ConditionalFormatTests
         // a string which is equal to the number of cells that have the conditional
         // format registered
         var cf = new ConditionalFormat(
-            (posn, sheet) => true, (cell, cells) => new Format() { BackgroundColor = cells.Count().ToString() });
+            (posn, sheet) => true, (cell, cells) => new CellFormat() { BackgroundColor = cells.Count().ToString() });
         cf.IsShared = true;
         cm.Apply(cf);
         var formatApplied = cm.GetFormatResult(0, 0);
@@ -64,7 +64,7 @@ public class ConditionalFormatTests
     {
         // Create a new conditional format that is always run and sets the background colour to the row number
         var cf = new ConditionalFormat((posn, sheet) => true,
-                                       cell => new Format() { BackgroundColor = cell.Row.ToString() });
+                                       cell => new CellFormat() { BackgroundColor = cell.Row.ToString() });
         // Set this format to the second row in the sheet (sheet has 2 rows)
         sheet.ConditionalFormatting.Apply(cf, new RowRegion(1));
         sheet.InsertRowAfter(0);
@@ -79,7 +79,7 @@ public class ConditionalFormatTests
     public void Conditional_Format_Shifts_When_Col_Inserted_And_Removed_Before()
     {
         var cf = new ConditionalFormat((posn, sheet) => true,
-                                       cell => new Format() { BackgroundColor = cell.Col.ToString() });
+                                       cell => new CellFormat() { BackgroundColor = cell.Col.ToString() });
         sheet.ConditionalFormatting.Apply(cf, new ColumnRegion(1));
         sheet.InsertColAfter(0);
         Assert.Null(sheet.ConditionalFormatting.GetFormatResult(0, 0)?.BackgroundColor);
@@ -93,7 +93,7 @@ public class ConditionalFormatTests
     public void Conditional_Format_Expands_When_Col_Inserted_Inside_It()
     {
         var cf = new ConditionalFormat((posn, sheet) => true,
-                                       cell => new Format() { BackgroundColor = cell.Col.ToString() });
+                                       cell => new CellFormat() { BackgroundColor = cell.Col.ToString() });
 
         sheet.ConditionalFormatting.Apply(cf, new Region(1, 2, 1, 2));
         sheet.InsertColAfter(1);
@@ -106,7 +106,7 @@ public class ConditionalFormatTests
     public void Conditional_Format_Expands_When_Row_Inserted_Inside_It()
     {
         var cf = new ConditionalFormat((posn, sheet) => true,
-                                       cell => new Format() { BackgroundColor = cell.Row.ToString() });
+                                       cell => new CellFormat() { BackgroundColor = cell.Row.ToString() });
 
         sheet.ConditionalFormatting.Apply(cf, new Region(1, 2, 1, 2));
         sheet.InsertRowAfter(1);

@@ -1,3 +1,4 @@
+using BlazorDatasheet.Formats;
 using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Render;
 
@@ -8,7 +9,7 @@ public class ObjectPropertyDefinition<T>
     public string PropertyName { get; set; }
     public string Heading { get; set; }
     public string Type { get; set; } = "text";
-    public Format? Format { get; set; }
+    public CellFormat? Format { get; set; }
     public bool IsReadOnly { get; set; }
     internal List<ConditionalFormat> ConditionalFormats { get; set; }
     internal List<IDataValidator> Validators { get; set; }

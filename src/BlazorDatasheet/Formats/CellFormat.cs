@@ -1,9 +1,9 @@
 using BlazorDatasheet.Data.SpatialDataStructures;
 using Microsoft.AspNetCore.Components;
 
-namespace BlazorDatasheet.Render;
+namespace BlazorDatasheet.Formats;
 
-public class Format : IMergeable<Format>
+public class CellFormat : IMergeable<CellFormat>
 {
     public string? FontWeight { get; set; }
     public string? BackgroundColor { get; set; }
@@ -16,9 +16,9 @@ public class Format : IMergeable<Format>
     /// Returns a new Format object with cloned properties
     /// </summary>
     /// <returns></returns>
-    public Format Clone()
+    public CellFormat Clone()
     {
-        return new Format()
+        return new CellFormat()
         {
             FontWeight = FontWeight,
             BackgroundColor = BackgroundColor,
@@ -34,7 +34,7 @@ public class Format : IMergeable<Format>
     /// the overriding format object.
     /// </summary>
     /// <param name="format">The format object that will override properties of this object, if they exist.</param>
-    public void Merge(Format? format)
+    public void Merge(CellFormat? format)
     {
         if (format == null)
             return;

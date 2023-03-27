@@ -1,5 +1,5 @@
 @using BlazorDatasheet.Data
-@using BlazorDatasheet.Data.Events
+@using BlazorDatasheet.Events
 @using BlazorDatasheet.Render
 @using BlazorDatasheet.Selecting
 @using BlazorDatasheet.Util
@@ -52,13 +52,13 @@
     public CellLayoutProvider CellLayoutProvider { get; set; }
 
     [Parameter]
-    public EventCallback<RowMouseEvent> OnMouseUp { get; set; }
+    public EventCallback<RowMouseEventArgs> OnMouseUp { get; set; }
 
     [Parameter]
-    public EventCallback<RowMouseEvent> OnMouseOver { get; set; }
+    public EventCallback<RowMouseEventArgs> OnMouseOver { get; set; }
 
     [Parameter]
-    public EventCallback<RowMouseEvent> OnMouseDown { get; set; }
+    public EventCallback<RowMouseEventArgs> OnMouseDown { get; set; }
 
     public List<OrderedInterval> _selectionIntervals { get; set; } = new();
 
@@ -128,17 +128,17 @@
 
     private void HandleMouseUp(int row, MouseEventArgs args)
     {
-        OnMouseUp.InvokeAsync(new RowMouseEvent(row, args));
+        OnMouseUp.InvokeAsync(new RowMouseEventArgs(row, args));
     }
 
     private void HandleMouseDown(int row, MouseEventArgs args)
     {
-        OnMouseDown.InvokeAsync(new RowMouseEvent(row, args));
+        OnMouseDown.InvokeAsync(new RowMouseEventArgs(row, args));
     }
 
     private void HandleMouseOver(int row, MouseEventArgs args)
     {
-        OnMouseOver.InvokeAsync(new RowMouseEvent(row, args));
+        OnMouseOver.InvokeAsync(new RowMouseEventArgs(row, args));
     }
 
     /// <summary>

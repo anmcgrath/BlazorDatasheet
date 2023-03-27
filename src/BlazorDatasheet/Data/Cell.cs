@@ -1,4 +1,5 @@
 using System.Reflection;
+using BlazorDatasheet.Formats;
 using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Util;
@@ -25,7 +26,7 @@ public class Cell : IReadOnlyCell, IWriteableCell
     /// <summary>
     /// The formatting to be applied to the cell on render
     /// </summary>
-    public Format? Formatting { get; set; }
+    public CellFormat? Formatting { get; set; }
 
     /// <summary>
     /// If IsReadOnly = true, the cell's value cannot be edited via the datasheet
@@ -258,7 +259,7 @@ public class Cell : IReadOnlyCell, IWriteableCell
         }
     }
 
-    public void MergeFormat(Format? format)
+    public void MergeFormat(CellFormat? format)
     {
         if (this.Formatting == null)
             Formatting = format.Clone();

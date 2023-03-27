@@ -1,8 +1,8 @@
-namespace BlazorDatasheet.Data.Events;
+namespace BlazorDatasheet.Events;
 
-public class ColumnWidthChangedArgs
+public class ColumnWidthChangedEventArgs
 {
-    public ColumnWidthChangedArgs(int column, double newWidth, double oldWidth)
+    public ColumnWidthChangedEventArgs(int column, double newWidth, double oldWidth)
     {
         Column = column;
         NewWidth = newWidth;

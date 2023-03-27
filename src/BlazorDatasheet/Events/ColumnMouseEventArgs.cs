@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Components.Web;
 
-namespace BlazorDatasheet.Data.Events;
+namespace BlazorDatasheet.Events;
 
-public class ColumnMouseEvent
+public class ColumnMouseEventArgs
 {
-    public ColumnMouseEvent(int column, MouseEventArgs args)
+    public ColumnMouseEventArgs(int column, MouseEventArgs args)
     {
         Column = column;
         Args = args;

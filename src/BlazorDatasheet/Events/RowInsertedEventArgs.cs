@@ -1,4 +1,4 @@
-﻿namespace BlazorDatasheet.Data.Events;
+﻿namespace BlazorDatasheet.Events;
 
 public class RowInsertedEventArgs
 {

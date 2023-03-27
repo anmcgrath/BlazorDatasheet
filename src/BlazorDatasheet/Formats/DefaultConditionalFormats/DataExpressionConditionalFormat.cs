@@ -9,11 +9,11 @@ namespace BlazorDatasheet.Formats.DefaultConditionalFormats;
 /// </summary>
 internal class DataExpressionConditionalFormat<T> : ConditionalFormatAbstractBase
 {
-    private readonly Func<T, Format?> _conditionalFormatFunc;
+    private readonly Func<T, CellFormat?> _conditionalFormatFunc;
     public T? Data { get; set; }
 
     internal DataExpressionConditionalFormat(T? data, Predicate<T> dataPredicate,
-        Func<T, Format?> conditionalFormatFunc)
+        Func<T, CellFormat?> conditionalFormatFunc)
     {
         Data = data;
         _conditionalFormatFunc = conditionalFormatFunc;
@@ -21,7 +21,7 @@ internal class DataExpressionConditionalFormat<T> : ConditionalFormatAbstractBas
         this.IsShared = true;
     }
 
-    public override Format? CalculateFormat(int row, int col, Sheet sheet)
+    public override CellFormat? CalculateFormat(int row, int col, Sheet sheet)
     {
         return _conditionalFormatFunc.Invoke(Data);
     }

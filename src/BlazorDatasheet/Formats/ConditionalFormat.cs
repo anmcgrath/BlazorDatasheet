@@ -1,9 +1,8 @@
 using BlazorDatasheet.Data;
-using BlazorDatasheet.Data.SpatialDataStructures;
-using BlazorDatasheet.Formats;
 using BlazorDatasheet.Interfaces;
+using BlazorDatasheet.Render;
 
-namespace BlazorDatasheet.Render;
+namespace BlazorDatasheet.Formats;
 
 public class ConditionalFormat : ConditionalFormatAbstractBase
 {
@@ -11,12 +10,12 @@ public class ConditionalFormat : ConditionalFormatAbstractBase
     /// The function that returns the conditional format, based on the cell's value
     /// and all other cell values in the sheet
     /// </summary>
-    public Func<IReadOnlyCell, IEnumerable<IReadOnlyCell>, Format>? FormatFuncDependent { get; private set; }
+    public Func<IReadOnlyCell, IEnumerable<IReadOnlyCell>, CellFormat>? FormatFuncDependent { get; private set; }
 
     /// <summary>
     /// The function that returns the conditional format, based only on one cell's value
     /// </summary>
-    public Func<IReadOnlyCell, Format>? FormatFunc { get; }
+    public Func<IReadOnlyCell, CellFormat>? FormatFunc { get; }
 
     private ConditionalFormat()
     {
@@ -31,7 +30,7 @@ public class ConditionalFormat : ConditionalFormatAbstractBase
     /// <param name="formatFuncDependent">The function determining the actual format to apply, based on both the single cell's
     /// value and all cells that the conditional format applies to.</param>
     public ConditionalFormat(Func<(int row, int col), Sheet, bool> rule,
-        Func<IReadOnlyCell, IEnumerable<IReadOnlyCell>, Format> formatFuncDependent)
+        Func<IReadOnlyCell, IEnumerable<IReadOnlyCell>, CellFormat> formatFuncDependent)
         : this()
     {
         Predicate = rule;
@@ -47,7 +46,7 @@ public class ConditionalFormat : ConditionalFormatAbstractBase
     /// <param name="rule">The rule determining whether the conditional format is applied</param>
     /// <param name="formatFunc">The function determining the actual format to apply, based on both the single cell's
     /// value and all cells that the conditional format applies to.</param>
-    public ConditionalFormat(Func<(int row, int col), Sheet, bool> rule, Func<IReadOnlyCell, Format> formatFunc) : this()
+    public ConditionalFormat(Func<(int row, int col), Sheet, bool> rule, Func<IReadOnlyCell, CellFormat> formatFunc) : this()
     {
         this.Predicate = rule;
         FormatFunc = formatFunc;
@@ -60,7 +59,7 @@ public class ConditionalFormat : ConditionalFormatAbstractBase
         cellCache = this.GetCells(sheet);
     }
 
-    public override Format? CalculateFormat(int row, int col, Sheet sheet)
+    public override CellFormat? CalculateFormat(int row, int col, Sheet sheet)
     {
         var cell = sheet.GetCell(row, col);
         if (IsShared)

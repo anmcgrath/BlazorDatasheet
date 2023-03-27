@@ -1,4 +1,5 @@
 using BlazorDatasheet.Data;
+using BlazorDatasheet.Events;
 using BlazorDatasheet.Formats;
 using BlazorDatasheet.Render;
 
@@ -6,16 +7,16 @@ namespace BlazorDatasheet.Commands;
 
 public class SetRangeFormatCommand : IUndoableCommand
 {
-    private readonly Format _format;
+    private readonly CellFormat _cellFormat;
     private readonly BRange _range;
 
-    private IEnumerable<OrderedInterval<Format>> _colFormats;
-    private IEnumerable<OrderedInterval<Format>> _rowFormats;
+    private IEnumerable<OrderedInterval<CellFormat>> _colFormats;
+    private IEnumerable<OrderedInterval<CellFormat>> _rowFormats;
     private Dictionary<(int row, int col), CellChangedFormat> _cellFormatsChanged;
 
-    public SetRangeFormatCommand(Format format, BRange range)
+    public SetRangeFormatCommand(CellFormat cellFormat, BRange range)
     {
-        _format = format;
+        _cellFormat = cellFormat;
         _range = range.Clone();
     }
 
@@ -25,7 +26,7 @@ public class SetRangeFormatCommand : IUndoableCommand
         _colFormats = sheet.ColFormats.CloneAllIntervals();
         _rowFormats = sheet.RowFormats.CloneAllIntervals();
         // get the current format values of all cells
-        var changed = sheet.SetFormatImpl(_format, _range);
+        var changed = sheet.SetFormatImpl(_cellFormat, _range);
         _cellFormatsChanged = new Dictionary<(int row, int col), CellChangedFormat>();
 
         foreach (var change in changed)
@@ -33,7 +34,7 @@ public class SetRangeFormatCommand : IUndoableCommand
             if (!_cellFormatsChanged.ContainsKey((change.Row, change.Col)))
                 _cellFormatsChanged.Add((change.Row, change.Col),
                                         new CellChangedFormat(change.Row, change.Col, change.OldFormat?.Clone(),
-                                                              _format));
+                                                              _cellFormat));
         }
 
         return true;

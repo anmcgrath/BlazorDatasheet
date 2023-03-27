@@ -1,7 +1,8 @@
 using BlazorDatasheet.Data;
+using BlazorDatasheet.Formats;
 using BlazorDatasheet.Render;
 
-namespace BlazorDatasheet.Formats;
+namespace BlazorDatasheet.Events;
 
 public class FormatChangedEventArgs
 {
@@ -26,7 +27,7 @@ public class FormatChangedEventArgs
 
 public class CellChangedFormat
 {
-    public CellChangedFormat(int row, int col, Format? oldFormat, Format? newFormat)
+    public CellChangedFormat(int row, int col, CellFormat? oldFormat, CellFormat? newFormat)
     {
         Row = row;
         Col = col;
@@ -36,6 +37,6 @@ public class CellChangedFormat
 
     public int Row { get; }
     public int Col { get; }
-    public Format? OldFormat { get; }
-    public Format? NewFormat { get; }
+    public CellFormat? OldFormat { get; }
+    public CellFormat? NewFormat { get; }
 }

@@ -1,4 +1,5 @@
 using BlazorDatasheet.Data;
+using BlazorDatasheet.Events;
 using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Render;
 
@@ -217,7 +218,7 @@ public abstract class ConditionalFormatAbstractBase
     /// <param name="col"></param>
     /// <param name="sheet"></param>
     /// <returns></returns>
-    public abstract Format? CalculateFormat(int row, int col, Sheet sheet);
+    public abstract CellFormat? CalculateFormat(int row, int col, Sheet sheet);
 
     /// <summary>
     /// Prepare for calculating one or many formats (useful for caching values).

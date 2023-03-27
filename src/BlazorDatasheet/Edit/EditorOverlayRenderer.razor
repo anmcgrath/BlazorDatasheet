@@ -27,16 +27,16 @@
     private Type? ActiveEditorType { get; set; } = typeof(TextEditorComponent);
 
     /// Whether the Editor is currently editing
-    public bool IsEditing { get; set; }
+    internal bool IsEditing { get; private set; }
 
     /// The Row where we are currently editing
-    public int EditRow { get; set; }
+    internal int EditRow { get; private set; }
 
     /// The column where we are currently editing
-    public int EditCol { get; set; }
+    internal int EditCol { get; private set; }
 
-    /// Whether the edit is "soft" which means that it can be finished with arrow navigation
-    public bool IsSoftEdit { get; set; }
+    /// Whether the edit is "soft" which means that it can be accepted with arrow navigation
+    internal bool IsSoftEdit { get; private set; }
 
     /// The current edit entry mode
     private EditEntryMode EditEntryMode { get; set; }

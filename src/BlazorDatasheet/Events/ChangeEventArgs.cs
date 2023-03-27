@@ -1,8 +1,6 @@
-﻿using System.ComponentModel;
+﻿namespace BlazorDatasheet.Events;
 
-namespace BlazorDatasheet.Data.Events;
-
-public class ChangeEventArgs : CancelEventArgs
+public class ChangeEventArgs
 {
     public int Row { get; }
     public int Col { get; }

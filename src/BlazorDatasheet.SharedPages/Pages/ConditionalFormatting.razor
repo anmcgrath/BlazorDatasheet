@@ -59,13 +59,13 @@
             _secretText = secretText;
         }
 
-        public Format Check = new Format()
+        public CellFormat Check = new CellFormat()
         {
             Icon = Icons.CheckIcon,
             IconColor = "green",
         };
 
-        public override Format? CalculateFormat(int row, int col, Sheet sheet)
+        public override CellFormat? CalculateFormat(int row, int col, Sheet sheet)
         {
             var cell = sheet.GetCell(row, col);
             var value = cell.GetValue<string>();

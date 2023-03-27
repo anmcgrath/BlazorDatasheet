@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using BlazorDatasheet.Data.Events;
 using BlazorDatasheet.Util;
 
 namespace BlazorDatasheet.Data;

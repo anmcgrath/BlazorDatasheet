@@ -1,8 +1,7 @@
-using System.Diagnostics.CodeAnalysis;
 using BlazorDatasheet.Interfaces;
 using Microsoft.AspNetCore.Components;
 
-namespace BlazorDatasheet.Edit.DefaultComponents;
+namespace BlazorDatasheet.Edit;
 
 public abstract class BaseEditor : ComponentBase, ICellEditor
 {

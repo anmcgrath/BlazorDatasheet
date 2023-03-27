@@ -1,5 +1,6 @@
 using System.Linq;
 using BlazorDatasheet.Data;
+using BlazorDatasheet.Formats;
 using BlazorDatasheet.Render;
 using NUnit.Framework;
 
@@ -18,7 +19,7 @@ public class FormattingTests
     [Test]
     public void Set_Format_On_Cells_Then_Undo_Correct()
     {
-        var format = new Format() { BackgroundColor = "red" };
+        var format = new CellFormat() { BackgroundColor = "red" };
         _sheet.SetFormat(format, new BRangeCell(_sheet, 0, 0));
         Assert.AreEqual(format.BackgroundColor, _sheet.GetFormat(0, 0)?.BackgroundColor);
         // Test the cell next to it to ensure it hasn't changed format
@@ -32,7 +33,7 @@ public class FormattingTests
     [Test]
     public void Apply_Col_Format_Sets_Format_Correctly()
     {
-        var format = new Format() { BackgroundColor = "red" };
+        var format = new CellFormat() { BackgroundColor = "red" };
         _sheet.SetFormat(format, _sheet.Range(new ColumnRegion(0)));
         Assert.AreEqual(format.BackgroundColor, _sheet.GetFormat(0, 0)?.BackgroundColor);
         Assert.AreEqual(format.BackgroundColor, _sheet.GetFormat(9, 0)?.BackgroundColor);
@@ -44,7 +45,7 @@ public class FormattingTests
     [Test]
     public void Apply_Row_Format_Sets_Format_Correctly()
     {
-        var format = new Format() { BackgroundColor = "red" };
+        var format = new CellFormat() { BackgroundColor = "red" };
         _sheet.SetFormat(format, _sheet.Range(new RowRegion(1)));
         Assert.AreEqual(format.BackgroundColor, _sheet.GetFormat(1, 0)?.BackgroundColor);
         Assert.AreEqual(format.BackgroundColor, _sheet.GetFormat(1, 9)?.BackgroundColor);
@@ -56,8 +57,8 @@ public class FormattingTests
     [Test]
     public void Apply_Overlapping_Col_And_Row_Formats_Correctly()
     {
-        var colFormat = new Format() { BackgroundColor = "red" };
-        var rowFormat = new Format() { BackgroundColor = "blue" };
+        var colFormat = new CellFormat() { BackgroundColor = "red" };
+        var rowFormat = new CellFormat() { BackgroundColor = "blue" };
         var rowRange = _sheet.Range(new RowRegion(1));
         var colRange = _sheet.Range(new ColumnRegion(1));
         _sheet.SetFormat(colFormat, colRange);
@@ -74,8 +75,8 @@ public class FormattingTests
     public void Apply_Row_Formats_Over_Each_Other_Behaves_Correctly()
     {
         // Checks a bug that was found when the row formats apply over each other
-        var format1 = new Format() { BackgroundColor = "red" };
-        var format2 = new Format() { BackgroundColor = "blue" };
+        var format1 = new CellFormat() { BackgroundColor = "red" };
+        var format2 = new CellFormat() { BackgroundColor = "blue" };
         _sheet.SetFormat(format1, _sheet.Range(new RowRegion(0, 2)));
         _sheet.SetFormat(format2, _sheet.Range(new RowRegion(1)));
 

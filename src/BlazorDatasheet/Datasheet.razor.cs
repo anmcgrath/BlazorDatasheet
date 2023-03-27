@@ -1,9 +1,9 @@
 using System.Text;
 using BlazorDatasheet.Commands;
 using BlazorDatasheet.Data;
-using BlazorDatasheet.Data.Events;
 using BlazorDatasheet.Edit;
 using BlazorDatasheet.Edit.Events;
+using BlazorDatasheet.Events;
 using BlazorDatasheet.Formats;
 using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Render;
@@ -152,7 +152,7 @@ public partial class Datasheet : IHandleEvent
         StateHasChanged();
     }
 
-    private void SheetLocalOnColumnWidthChanged(object? sender, ColumnWidthChangedArgs e)
+    private void SheetLocalOnColumnWidthChanged(object? sender, ColumnWidthChangedEventArgs e)
     {
         this.ForceReRender();
     }
@@ -465,7 +465,7 @@ public partial class Datasheet : IHandleEvent
     /// Handles when a cell renderer requests to start editing the cell
     /// </summary>
     /// <param name="args"></param>
-    private async void HandleCellRequestBeginEdit(EditRequestArgs args)
+    private async void HandleCellRequestBeginEdit(CellEditRequest args)
     {
         await BeginEdit(args.Row, args.Col, args.IsSoftEdit, args.EntryMode);
     }
@@ -474,7 +474,7 @@ public partial class Datasheet : IHandleEvent
     /// Handles when a cell renderer requests that a cell's value be changed
     /// </summary>
     /// <param name="args"></param>
-    private void HandleCellRendererRequestChangeValue(ChangeCellRequestEventArgs args)
+    private void HandleCellRendererRequestChangeValue(ChangeCellValueRequest args)
     {
         Sheet.TrySetCellValue(args.Row, args.Col, args.NewValue);
     }

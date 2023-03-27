@@ -1,6 +1,6 @@
 using BlazorDatasheet.Data;
 
-namespace BlazorDatasheet.Formats;
+namespace BlazorDatasheet.Events;
 
 public class ConditionalFormatRegionsChangedEventArgs
 {

@@ -1,4 +1,4 @@
-namespace BlazorDatasheet.Edit.DefaultComponents;
+namespace BlazorDatasheet.Edit;
 
 public abstract class BaseEditor<T> : BaseEditor
 {

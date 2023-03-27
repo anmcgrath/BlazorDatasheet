@@ -1,5 +1,5 @@
 using BlazorDatasheet.Data;
-using BlazorDatasheet.Data.Events;
+using BlazorDatasheet.Events;
 
 namespace BlazorDatasheet.Render;
 

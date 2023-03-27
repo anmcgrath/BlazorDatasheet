@@ -1,5 +1,5 @@
 @using BlazorDatasheet.Data
-@using BlazorDatasheet.Data.Events
+@using BlazorDatasheet.Events
 @using BlazorDatasheet.Interfaces
 @using BlazorDatasheet.Render
 @using BlazorDatasheet.Selecting
@@ -74,13 +74,13 @@
     public CellLayoutProvider CellLayoutProvider { get; set; }
 
     [Parameter]
-    public EventCallback<ColumnMouseEvent> OnMouseUp { get; set; }
+    public EventCallback<ColumnMouseEventArgs> OnMouseUp { get; set; }
 
     [Parameter]
-    public EventCallback<ColumnMouseEvent> OnMouseOver { get; set; }
+    public EventCallback<ColumnMouseEventArgs> OnMouseOver { get; set; }
 
     [Parameter]
-    public EventCallback<ColumnMouseEvent> OnMouseDown { get; set; }
+    public EventCallback<ColumnMouseEventArgs> OnMouseDown { get; set; }
 
     private IWindowEventService _windowEventService;
 
@@ -199,17 +199,17 @@
 
     private void HandleMouseUp(int col, MouseEventArgs args)
     {
-        OnMouseUp.InvokeAsync(new ColumnMouseEvent(col, args));
+        OnMouseUp.InvokeAsync(new ColumnMouseEventArgs(col, args));
     }
 
     private void HandleMouseDown(int col, MouseEventArgs args)
     {
-        OnMouseDown.InvokeAsync(new ColumnMouseEvent(col, args));
+        OnMouseDown.InvokeAsync(new ColumnMouseEventArgs(col, args));
     }
 
     private void HandleMouseOver(int col, MouseEventArgs args)
     {
-        OnMouseOver.InvokeAsync(new ColumnMouseEvent(col, args));
+        OnMouseOver.InvokeAsync(new ColumnMouseEventArgs(col, args));
     }
 
 }

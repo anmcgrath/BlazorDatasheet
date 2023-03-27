@@ -56,14 +56,14 @@ public class NumberScaleConditionalFormat : ConditionalFormatAbstractBase
         return str;
     }
 
-    public override Format? CalculateFormat(int row, int col, Sheet sheet)
+    public override CellFormat? CalculateFormat(int row, int col, Sheet sheet)
     {
         var cell = sheet.GetCell(row, col);
         var value = cell.GetValue<double?>();
         if (value == null)
             return null;
 
-        return new Format()
+        return new CellFormat()
         {
             BackgroundColor = getColour(value.Value, cachedMin, cachedMax, cachedMean)
         };

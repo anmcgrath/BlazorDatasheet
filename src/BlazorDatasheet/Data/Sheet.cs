@@ -1,8 +1,8 @@
 using System.Text;
 using BlazorDatasheet.Commands;
-using BlazorDatasheet.Data.Events;
 using BlazorDatasheet.Data.SpatialDataStructures;
 using BlazorDatasheet.Edit.DefaultComponents;
+using BlazorDatasheet.Events;
 using BlazorDatasheet.Formats;
 using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Render;
@@ -74,12 +74,12 @@ public class Sheet
     /// <summary>
     /// Formats applied to any rows
     /// </summary>
-    internal NonOverlappingIntervals<Format> RowFormats = new();
+    internal NonOverlappingIntervals<CellFormat> RowFormats = new();
 
     /// <summary>
     /// Formats applied to any cols
     /// </summary>
-    internal NonOverlappingIntervals<Format> ColFormats = new();
+    internal NonOverlappingIntervals<CellFormat> ColFormats = new();
 
     /// <summary>
     /// The merged cells in the sheet.
@@ -116,7 +116,7 @@ public class Sheet
     /// <summary>
     /// Fired when a column width is changed
     /// </summary>
-    public event EventHandler<ColumnWidthChangedArgs>? ColumnWidthChanged;
+    public event EventHandler<ColumnWidthChangedEventArgs>? ColumnWidthChanged;
 
     public event EventHandler<CellsSelectedEventArgs>? CellsSelected;
 
@@ -669,7 +669,7 @@ public class Sheet
     /// <param name="row"></param>
     /// <param name="col"></param>
     /// <returns></returns>
-    public Format? GetFormat(int row, int col)
+    public CellFormat? GetFormat(int row, int col)
     {
         var cell = GetCell(row, col);
         var rowFormat = RowFormats.Get(row);
@@ -685,11 +685,11 @@ public class Sheet
     /// <summary>
     /// Sets the format for a particular range
     /// </summary>
-    /// <param name="format"></param>
+    /// <param name="cellFormat"></param>
     /// <param name="range"></param>
-    public void SetFormat(Format format, BRange range)
+    public void SetFormat(CellFormat cellFormat, BRange range)
     {
-        var cmd = new SetRangeFormatCommand(format, range);
+        var cmd = new SetRangeFormatCommand(cellFormat, range);
         Commands.ExecuteCommand(cmd);
     }
 
@@ -697,14 +697,14 @@ public class Sheet
     /// <summary>
     /// Performs the setting of formats to the range given, returning the individual cells that were affected.
     /// </summary>
-    /// <param name="format"></param>
+    /// <param name="cellFormat"></param>
     /// <param name="range"></param>
-    internal IEnumerable<CellChangedFormat> SetFormatImpl(Format format, BRange range)
+    internal IEnumerable<CellChangedFormat> SetFormatImpl(CellFormat cellFormat, BRange range)
     {
         var changes = new List<CellChangedFormat>();
         foreach (var region in range.Regions)
         {
-            changes.AddRange(SetFormatImpl(format, region));
+            changes.AddRange(SetFormatImpl(cellFormat, region));
         }
 
         return changes;
@@ -713,10 +713,10 @@ public class Sheet
     /// <summary>
     /// Performs the setting of formats to the region and returns the individual cells that were affected.
     /// </summary>
-    /// <param name="format"></param>
+    /// <param name="cellFormat"></param>
     /// <param name="region"></param>
     /// <returns></returns>
-    internal List<CellChangedFormat> SetFormatImpl(Format format, IRegion region)
+    internal List<CellChangedFormat> SetFormatImpl(CellFormat cellFormat, IRegion region)
     {
         // Keep track of all changes to individual cells
         var changes = new List<CellChangedFormat>();
@@ -725,14 +725,14 @@ public class Sheet
 
         if (region is ColumnRegion columnRegion)
         {
-            changes.AddRange(SetColumnFormatImpl(format, columnRegion));
+            changes.AddRange(SetColumnFormatImpl(cellFormat, columnRegion));
             colRegions.Add(columnRegion);
         }
 
 
         else if (region is RowRegion rowRegion)
         {
-            changes.AddRange(SetRowFormatImpl(format, rowRegion));
+            changes.AddRange(SetRowFormatImpl(cellFormat, rowRegion));
             rowRegions.Add(rowRegion);
         }
         else
@@ -745,8 +745,8 @@ public class Sheet
                     _cellDataStore.Set(posn.row, posn.col, new Cell());
                 var cell = _cellDataStore.Get(posn.row, posn.col);
                 var oldFormat = cell!.Formatting?.Clone();
-                cell!.MergeFormat(format);
-                changes.Add(new CellChangedFormat(posn.row, posn.col, oldFormat, format));
+                cell!.MergeFormat(cellFormat);
+                changes.Add(new CellChangedFormat(posn.row, posn.col, oldFormat, cellFormat));
             }
         }
 
@@ -761,12 +761,12 @@ public class Sheet
         FormatsChanged?.Invoke(this, args);
     }
 
-    private IEnumerable<CellChangedFormat> SetColumnFormatImpl(Format format, ColumnRegion region)
+    private IEnumerable<CellChangedFormat> SetColumnFormatImpl(CellFormat cellFormat, ColumnRegion region)
     {
         // Keep track of individual cell changes
         var changes = new List<CellChangedFormat>();
 
-        ColFormats.Add(new OrderedInterval<Format>(region.Start.Col, region.End.Col, format));
+        ColFormats.Add(new OrderedInterval<CellFormat>(region.Start.Col, region.End.Col, cellFormat));
         // Set the specific format of any non-empty cells in the column range (empty cells are covered by the range format).
         // We do this because cell formatting takes precedence in rendering over col & range formats.
         // So if the cell already has a format, it should be merged.
@@ -776,9 +776,9 @@ public class Sheet
             var cell = _cellDataStore.Get(posn.row, posn.col);
             var oldFormat = cell!.Formatting?.Clone();
             if (cell.Formatting == null)
-                cell.Formatting = format.Clone();
+                cell.Formatting = cellFormat.Clone();
             else
-                cell.Formatting.Merge(format);
+                cell.Formatting.Merge(cellFormat);
 
             changes.Add(new CellChangedFormat(posn.row, posn.col, oldFormat, cell.Formatting));
         }
@@ -801,20 +801,20 @@ public class Sheet
                     _cellDataStore.Set(posn.row, posn.col, new Cell());
                 var cell = _cellDataStore.Get(posn.row, posn.col);
                 var oldFormat = cell!.Formatting?.Clone();
-                _cellDataStore.Get(posn.row, posn.col)!.MergeFormat(format);
-                changes.Add(new CellChangedFormat(posn.row, posn.col, oldFormat, format));
+                _cellDataStore.Get(posn.row, posn.col)!.MergeFormat(cellFormat);
+                changes.Add(new CellChangedFormat(posn.row, posn.col, oldFormat, cellFormat));
             }
         }
 
         return changes;
     }
 
-    private IEnumerable<CellChangedFormat> SetRowFormatImpl(Format format, RowRegion region)
+    private IEnumerable<CellChangedFormat> SetRowFormatImpl(CellFormat cellFormat, RowRegion region)
     {
         // Keep track of individual cell changes
         var changes = new List<CellChangedFormat>();
 
-        RowFormats.Add(new OrderedInterval<Format>(region.Start.Row, region.End.Row, format));
+        RowFormats.Add(new OrderedInterval<CellFormat>(region.Start.Row, region.End.Row, cellFormat));
         // Set the specific format of any non-empty cells in the column range (empty cells are covered by the range format).
         // We do this because cell formatting takes precedence in rendering over col & range formats.
         // So if the cell already has a format, it should be merged.
@@ -824,9 +824,9 @@ public class Sheet
             var cell = _cellDataStore.Get(posn.row, posn.col);
             var oldFormat = cell!.Formatting?.Clone();
             if (cell.Formatting == null)
-                cell.Formatting = format.Clone();
+                cell.Formatting = cellFormat.Clone();
             else
-                cell.Formatting.Merge(format);
+                cell.Formatting.Merge(cellFormat);
 
             changes.Add(new CellChangedFormat(posn.row, posn.col, oldFormat, cell.Formatting));
         }
@@ -849,8 +849,8 @@ public class Sheet
                     _cellDataStore.Set(posn.row, posn.col, new Cell());
                 var cell = _cellDataStore.Get(posn.row, posn.col);
                 var oldFormat = cell!.Formatting?.Clone();
-                _cellDataStore.Get(posn.row, posn.col)!.MergeFormat(format);
-                changes.Add(new CellChangedFormat(posn.row, posn.col, oldFormat, format));
+                _cellDataStore.Get(posn.row, posn.col)!.MergeFormat(cellFormat);
+                changes.Add(new CellChangedFormat(posn.row, posn.col, oldFormat, cellFormat));
             }
         }
 
@@ -864,21 +864,21 @@ public class Sheet
     /// </summary>
     /// <param name="row"></param>
     /// <param name="col"></param>
-    /// <param name="format"></param>
+    /// <param name="cellFormat"></param>
     /// <returns>A record of what change occured.</returns>
-    internal CellChangedFormat SetCellFormat(int row, int col, Format format)
+    internal CellChangedFormat SetCellFormat(int row, int col, CellFormat cellFormat)
     {
-        Format? oldFormat = null;
+        CellFormat? oldFormat = null;
         if (!_cellDataStore.Contains(row, col))
-            _cellDataStore.Set(row, col, new Cell() { Formatting = format });
+            _cellDataStore.Set(row, col, new Cell() { Formatting = cellFormat });
         else
         {
             var cell = _cellDataStore.Get(row, col);
             oldFormat = cell!.Formatting;
-            cell!.Formatting = format;
+            cell!.Formatting = cellFormat;
         }
 
-        return new CellChangedFormat(row, col, oldFormat, format);
+        return new CellChangedFormat(row, col, oldFormat, cellFormat);
     }
 
     #endregion
@@ -931,7 +931,7 @@ public class Sheet
     {
         var oldWidth = this.LayoutProvider.ComputeWidth(col, 1);
         this.LayoutProvider.SetColumnWidth(col, width);
-        ColumnWidthChanged?.Invoke(this, new ColumnWidthChangedArgs(col, width, oldWidth));
+        ColumnWidthChanged?.Invoke(this, new ColumnWidthChangedEventArgs(col, width, oldWidth));
     }
 
     internal bool MergeCellsImpl(BRange range)

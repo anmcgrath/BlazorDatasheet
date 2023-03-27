@@ -1,5 +1,6 @@
 @page "/"
 @using BlazorDatasheet.Data
+@using BlazorDatasheet.Formats
 @using BlazorDatasheet.ObjectEditor
 @using BlazorDatasheet.Validation
 @using BlazorDatasheet.Render
@@ -26,9 +27,9 @@
     <button @onclick="() => Sheet.Commands.Undo()">Undo</button>
     <button @onclick="() => Sheet.Commands.Redo()">Redo</button>
     <button @onclick="@(() => Sheet.Selection.Value = "Bob")">Set to Bob</button>
-    <button @onclick="@(() => Sheet.SetFormat(new Format() { BackgroundColor = "red" }, Sheet.Selection))">Set bg to red</button>
-    <button @onclick="@(() => Sheet.SetFormat(new Format() { BackgroundColor = "blue" }, Sheet.Selection))">Set bg to blue</button>
-    <button @onclick="@(() => Sheet.SetFormat(new Format() { ForegroundColor = "green" }, Sheet.Selection))">Set font colour to green</button>
+    <button @onclick="@(() => Sheet.SetFormat(new CellFormat() { BackgroundColor = "red" }, Sheet.Selection))">Set bg to red</button>
+    <button @onclick="@(() => Sheet.SetFormat(new CellFormat() { BackgroundColor = "blue" }, Sheet.Selection))">Set bg to blue</button>
+    <button @onclick="@(() => Sheet.SetFormat(new CellFormat() { ForegroundColor = "green" }, Sheet.Selection))">Set font colour to green</button>
     <button @onclick="@(() => Sheet.MergeCells(Sheet.Selection))">Merge cells</button>
 </div>
 
@@ -72,7 +73,7 @@
         _editor.Sheet.RemoveCol(Sheet.Selection.ActiveRegion.Left);
     }
 
-    private Format GreenBg = new Format() { BackgroundColor = "var(--cell-highlight-bg-color)" };
+    private CellFormat GreenBg = new CellFormat() { BackgroundColor = "var(--cell-highlight-bg-color)" };
 
     protected override void OnInitialized()
     {
@@ -99,7 +100,7 @@
 
         var ageCf =
             new ConditionalFormat(
-                (posn, sheet) => (sheet.GetCell(posn.row, posn.col).GetValue<int?>()) > 85, cell => new Format() { ForegroundColor = "var(--invalid-cell-foreground-color)" });
+                (posn, sheet) => (sheet.GetCell(posn.row, posn.col).GetValue<int?>()) > 85, cell => new CellFormat() { ForegroundColor = "var(--invalid-cell-foreground-color)" });
 
         var builder1 = new ObjectEditorBuilder<Person>(People, GridDirection.PropertiesAcrossColumns);
         builder1.AutogenerateProperties(false)
