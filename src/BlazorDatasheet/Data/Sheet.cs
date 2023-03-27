@@ -144,7 +144,7 @@ public class Sheet
 
     internal CellLayoutProvider LayoutProvider { get; }
 
-    private IMatrixDataStore<Cell> _cellDataStore { get; set; } = new SparseMatrixStore<Cell>();
+    private readonly IMatrixDataStore<Cell> _cellDataStore = new SparseMatrixStore<Cell>();
 
     private Sheet()
     {
@@ -950,6 +950,7 @@ public class Sheet
         foreach (var region in range.Regions)
         {
             isSuccess &= MergeCellsImpl(region);
+            RegionMerged?.Invoke(this, region);
         }
 
         return isSuccess;
