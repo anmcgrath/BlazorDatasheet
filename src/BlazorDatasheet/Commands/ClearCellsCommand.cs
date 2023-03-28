@@ -3,14 +3,17 @@ using BlazorDatasheet.Interfaces;
 
 namespace BlazorDatasheet.Commands;
 
+/// <summary>
+/// Clears cell values in the given ranges
+/// </summary>
 public class ClearCellsCommand : IUndoableCommand
 {
     private readonly BRange _range;
-    private readonly List<CellChange> _clearCommandOccurences;
+    private readonly List<CellChange> _clearCommandOccurrences;
 
     public ClearCellsCommand(BRange range)
     {
-        _clearCommandOccurences = new List<CellChange>();
+        _clearCommandOccurrences = new List<CellChange>();
         _range = range.Clone();
     }
 
@@ -23,13 +26,13 @@ public class ClearCellsCommand : IUndoableCommand
             // When this is redone it'll update the new value to the old value.
             if (oldValue != null && !string.IsNullOrEmpty(oldValue.ToString()))
             {
-                _clearCommandOccurences.Add(
+                _clearCommandOccurrences.Add(
                     new CellChange(cell.Row, cell.Col, oldValue));
             }
         }
 
         // There were no empty cells in range so we can't clear anything
-        if (!_clearCommandOccurences.Any())
+        if (!_clearCommandOccurrences.Any())
             return false;
 
         sheet.ClearCellsImpl(_range);
@@ -39,7 +42,7 @@ public class ClearCellsCommand : IUndoableCommand
     public bool Undo(Sheet sheet)
     {
         sheet.Selection.Set(_range);
-        sheet.SetCellValuesImpl(_clearCommandOccurences);
+        sheet.SetCellValuesImpl(_clearCommandOccurrences);
         return true;
     }
 }

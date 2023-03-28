@@ -18,6 +18,11 @@ public class CommandManager
         _redos = new MaxStack<ICommand>(40);
     }
 
+    /// <summary>
+    /// Executes a command and, if it is an undoable command, adds it to the undo stack.
+    /// </summary>
+    /// <param name="command"></param>
+    /// <returns></returns>
     public bool ExecuteCommand(ICommand command)
     {
         var result = command.Execute(_sheet);
@@ -39,6 +44,10 @@ public class CommandManager
         _sheet = sheet;
     }
 
+    /// <summary>
+    /// Executes the undo function of the last undo-able command run.
+    /// </summary>
+    /// <returns></returns>
     public bool Undo()
     {
         if (_history.Peek() == null)
@@ -55,6 +64,10 @@ public class CommandManager
         return result;
     }
 
+    /// <summary>
+    /// Execute the last command that was un-done.
+    /// </summary>
+    /// <returns></returns>
     public bool Redo()
     {
         if (_redos.Peek() == null)
@@ -66,6 +79,9 @@ public class CommandManager
         return result;
     }
 
+    /// <summary>
+    /// Removes all commands from the history, clearing the undo/redo functionality for those commands.
+    /// </summary>
     public void ClearHistory()
     {
         _history.Clear();

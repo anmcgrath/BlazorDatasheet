@@ -2,6 +2,9 @@
 
 namespace BlazorDatasheet.Commands;
 
+/// <summary>
+/// A command that can be un-done/re-run
+/// </summary>
 public interface IUndoableCommand : ICommand
 {
     /// <summary>

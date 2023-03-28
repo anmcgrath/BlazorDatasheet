@@ -8,6 +8,10 @@ public class RemoveColumnCommand : IUndoableCommand
     private Heading _removedHeading;
     private List<CellChange> _removedValues;
 
+    /// <summary>
+    /// Command for removing a column at the index given.
+    /// </summary>
+    /// <param name="columnIndex">The column to remove.</param>
     public RemoveColumnCommand(int columnIndex)
     {
         _columnIndex = columnIndex;

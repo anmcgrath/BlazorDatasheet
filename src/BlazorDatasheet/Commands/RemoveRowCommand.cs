@@ -7,6 +7,10 @@ public class RemoveRowCommand : IUndoableCommand
     private readonly int _rowIndex;
     private List<CellChange> _valuesRemoved;
 
+    /// <summary>
+    /// Command to remove the row at the index given.
+    /// </summary>
+    /// <param name="rowIndex">The row to remove.</param>
     public RemoveRowCommand(int rowIndex)
     {
         _rowIndex = rowIndex;

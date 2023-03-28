@@ -3,7 +3,7 @@ using BlazorDatasheet.Interfaces;
 namespace BlazorDatasheet.Data;
 
 /// <summary>
-/// Provide convenient functions for setting/getting values in the sheet.
+/// Specifies a range, which is a collection of regions in a sheet.
 /// </summary>
 public class BRange
 {
@@ -44,16 +44,28 @@ public class BRange
     {
     }
 
+    /// <summary>
+    /// Return all cells in this range.
+    /// </summary>
+    /// <returns></returns>
     public IEnumerable<IReadOnlyCell> GetCells()
     {
         return Positions.Select(x => Sheet.GetCell(x.row, x.col));
     }
 
+    /// <summary>
+    /// Return all non-empty cells in this range.
+    /// </summary>
+    /// <returns></returns>
     public IEnumerable<IReadOnlyCell> GetNonEmptyCells()
     {
         return this.GetNonEmptyPositions().Select(x => Sheet.GetCell(x.row, x.col));
     }
 
+    /// <summary>
+    /// Return all positions of non-empty cells in the sheet.
+    /// </summary>
+    /// <returns>A collection of (row, column) positions of all non-empty cells.</returns>
     public IEnumerable<(int row, int col)> GetNonEmptyPositions()
     {
         return Regions.SelectMany(Sheet.GetNonEmptyCellPositions);

@@ -49,7 +49,7 @@ public abstract class BaseEditor : ComponentBase, ICellEditor
 
     public virtual bool CanCancelEdit() => true;
 
-    public virtual object? GetValue()
+    public virtual object? GetValue() 
     {
         return default;
     }

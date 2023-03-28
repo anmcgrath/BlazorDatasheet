@@ -14,6 +14,12 @@ public class SetRangeFormatCommand : IUndoableCommand
     private IEnumerable<OrderedInterval<CellFormat>> _rowFormats;
     private Dictionary<(int row, int col), CellChangedFormat> _cellFormatsChanged;
 
+    /// <summary>
+    /// Command to set the format of the range given. The cell format is merged into the existing format, so that
+    /// only properties that are specifically defined in cellFormat are changed.
+    /// </summary>
+    /// <param name="cellFormat">The new cell format.</param>
+    /// <param name="range">The range to set the format for. Can be a cell, column or row range.</param>
     public SetRangeFormatCommand(CellFormat cellFormat, BRange range)
     {
         _cellFormat = cellFormat;

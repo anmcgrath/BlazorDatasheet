@@ -68,18 +68,18 @@ public class Sheet
 
     private readonly Dictionary<string, Type> _editorTypes;
     public IReadOnlyDictionary<string, Type> EditorTypes => _editorTypes;
-    private Dictionary<string, Type> _renderComponentTypes { get; set; }
+    private readonly Dictionary<string, Type> _renderComponentTypes;
     public IReadOnlyDictionary<string, Type> RenderComponentTypes => _renderComponentTypes;
 
     /// <summary>
     /// Formats applied to any rows
     /// </summary>
-    internal NonOverlappingIntervals<CellFormat> RowFormats = new();
+    internal readonly NonOverlappingIntervals<CellFormat> RowFormats = new();
 
     /// <summary>
     /// Formats applied to any cols
     /// </summary>
-    internal NonOverlappingIntervals<CellFormat> ColFormats = new();
+    internal readonly NonOverlappingIntervals<CellFormat> ColFormats = new();
 
     /// <summary>
     /// The merged cells in the sheet.
@@ -158,8 +158,8 @@ public class Sheet
         _renderComponentTypes = new Dictionary<string, Type>();
         _dirtyCells = new HashSet<(int row, int col)>();
 
-        registerDefaultEditors();
-        registerDefaultRenderers();
+        RegisterDefaultEditors();
+        RegisterDefaultRenderers();
     }
 
     public Sheet(int numRows, int numCols, Cell[,] cells) : this()
@@ -263,7 +263,6 @@ public class Sheet
     /// This function does not add a command that is able to be undone.
     /// </summary>
     /// <param name="rowIndex"></param>
-    /// <param name="row"></param>
     /// <returns></returns>
     internal bool InsertRowAfterImpl(int rowIndex)
     {
@@ -377,7 +376,7 @@ public class Sheet
         var cell = _cellDataStore.Get(row, col);
 
         if (cell == null)
-            return new Cell(null)
+            return new Cell()
             {
                 Row = row,
                 Col = col
@@ -415,7 +414,7 @@ public class Sheet
         return SetCellValues(new List<CellChange>() { new CellChange(row, col, value) });
     }
 
-    internal bool TrySetCellValueImpl(int row, int col, object value, bool raiseEvent = true)
+    internal bool TrySetCellValueImpl(int row, int col, object? value, bool raiseEvent = true)
     {
         var cell = _cellDataStore.Get(row, col);
         if (cell == null)
@@ -446,9 +445,9 @@ public class Sheet
         var setValue = cell.TrySetValue(value);
         if (setValue && raiseEvent)
         {
-            var args = new ChangeEventArgs[1]
+            var args = new ChangeEventArgs[]
             {
-                new ChangeEventArgs(row, col, oldValue, value)
+                new(row, col, oldValue, value)
             };
             CellsChanged?.Invoke(this, args);
         }
@@ -473,16 +472,15 @@ public class Sheet
     /// <returns></returns>
     public object? GetValue(int row, int col)
     {
-        return GetCell(row, col)?.GetValue();
+        return GetCell(row, col).GetValue();
     }
 
+    /// <summary>
+    /// Sets cell values to those specified.
+    /// </summary>
+    /// <param name="changes"></param>
+    /// <returns></returns>
     public bool SetCellValues(List<CellChange> changes)
-    {
-        var cmd = new SetCellValuesCommand(changes);
-        return Commands.ExecuteCommand(cmd);
-    }
-
-    internal bool SetCellValuesImpl(List<CellChange> changes)
     {
         var beforeChangesEvent = new BeforeCellChangeEventArgs(changes);
         BeforeSetCellValue?.Invoke(this, beforeChangesEvent);
@@ -490,6 +488,17 @@ public class Sheet
         if (beforeChangesEvent.Cancel)
             return false;
 
+        var cmd = new SetCellValuesCommand(changes);
+        return Commands.ExecuteCommand(cmd);
+    }
+
+    /// <summary>
+    /// Performs the actual setting of cell values, including raising events for any changes made.
+    /// </summary>
+    /// <param name="changes"></param>
+    /// <returns></returns>
+    internal bool SetCellValuesImpl(List<CellChange> changes)
+    {
         var changeEvents = new List<ChangeEventArgs>();
         foreach (var change in changes)
         {
@@ -510,7 +519,7 @@ public class Sheet
     /// <summary>
     /// Clears all cell values in the region
     /// </summary>
-    /// <param name="region"></param>
+    /// <param name="range">The range in which to clear all cells</param>
     public void ClearCells(BRange range)
     {
         var cmd = new ClearCellsCommand(range);
@@ -528,8 +537,8 @@ public class Sheet
         foreach (var posn in positions)
         {
             var cell = this.GetCell(posn.row, posn.col) as Cell;
-            var oldValue = cell.GetValue();
-            cell.ClearValue();
+            var oldValue = cell!.GetValue();
+            cell!.ClearValue();
             var newVal = cell.GetValue();
             if (oldValue != newVal)
             {
@@ -568,7 +577,7 @@ public class Sheet
             _renderComponentTypes[name] = typeof(T);
     }
 
-    private void registerDefaultEditors()
+    private void RegisterDefaultEditors()
     {
         RegisterEditor<TextEditorComponent>("text");
         RegisterEditor<DateTimeEditorComponent>("datetime");
@@ -576,7 +585,7 @@ public class Sheet
         RegisterEditor<SelectEditorComponent>("select");
     }
 
-    private void registerDefaultRenderers()
+    private void RegisterDefaultRenderers()
     {
         RegisterRenderer<TextRenderer>("text");
         RegisterRenderer<SelectRenderer>("select");
@@ -623,15 +632,16 @@ public class Sheet
     /// </summary>
     /// <param name="text">The text to insert</param>
     /// <param name="inputPosition">The position where the insertion starts</param>
+    /// <param name="newLineDelim">The delimiter that specifies a new-line</param>
     /// <returns>The region of cells that were affected</returns>
-    public Region InsertDelimitedText(string text, CellPosition inputPosition, string newLineDelim = "\n")
+    public Region? InsertDelimitedText(string text, CellPosition inputPosition, string newLineDelim = "\n")
     {
         if (inputPosition.IsInvalid)
             return null;
 
         if (text.EndsWith('\n'))
             text = text.Substring(0, text.Length - 1);
-        var lines = text.Split(newLineDelim, StringSplitOptions.None);
+        var lines = text.Split(newLineDelim);
 
         // We may reach the end of the sheet, so we only need to paste the rows up until the end.
         var endRow = Math.Min(inputPosition.Row + lines.Length - 1, NumRows - 1);
@@ -654,7 +664,6 @@ public class Sheet
             int cellIndex = 0;
             for (int col = inputPosition.Col; col <= endCol; col++)
             {
-                var cell = this.GetCell(row, col);
                 valChanges.Add(new CellChange(row, col, lineSplit[cellIndex]));
                 cellIndex++;
             }
@@ -726,7 +735,7 @@ public class Sheet
     /// <param name="cellFormat"></param>
     /// <param name="region"></param>
     /// <returns></returns>
-    internal List<CellChangedFormat> SetFormatImpl(CellFormat cellFormat, IRegion region)
+    private List<CellChangedFormat> SetFormatImpl(CellFormat cellFormat, IRegion region)
     {
         // Keep track of all changes to individual cells
         var changes = new List<CellChangedFormat>();
@@ -748,15 +757,18 @@ public class Sheet
         else
         {
             var sheetRegion = region.GetIntersection(this.Region);
-            var posns = new BRange(this, sheetRegion).Positions;
-            foreach (var posn in posns)
+            if (sheetRegion != null)
             {
-                if (!_cellDataStore.Contains(posn.row, posn.col))
-                    _cellDataStore.Set(posn.row, posn.col, new Cell());
-                var cell = _cellDataStore.Get(posn.row, posn.col);
-                var oldFormat = cell!.Formatting?.Clone();
-                cell!.MergeFormat(cellFormat);
-                changes.Add(new CellChangedFormat(posn.row, posn.col, oldFormat, cellFormat));
+                var positions = new BRange(this, sheetRegion).Positions;
+                foreach (var cellPosition in positions)
+                {
+                    if (!_cellDataStore.Contains(cellPosition.row, cellPosition.col))
+                        _cellDataStore.Set(cellPosition.row, cellPosition.col, new Cell());
+                    var cell = _cellDataStore.Get(cellPosition.row, cellPosition.col);
+                    var oldFormat = cell!.Formatting?.Clone();
+                    cell!.MergeFormat(cellFormat);
+                    changes.Add(new CellChangedFormat(cellPosition.row, cellPosition.col, oldFormat, cellFormat));
+                }
             }
         }
 
@@ -804,15 +816,18 @@ public class Sheet
         foreach (var overlapRegion in overlappingRegions)
         {
             var sheetRegion = overlapRegion.GetIntersection(this.Region);
-            var posns = new BRange(this, sheetRegion).Positions;
-            foreach (var posn in posns)
+            if (sheetRegion != null)
             {
-                if (!_cellDataStore.Contains(posn.row, posn.col))
-                    _cellDataStore.Set(posn.row, posn.col, new Cell());
-                var cell = _cellDataStore.Get(posn.row, posn.col);
-                var oldFormat = cell!.Formatting?.Clone();
-                _cellDataStore.Get(posn.row, posn.col)!.MergeFormat(cellFormat);
-                changes.Add(new CellChangedFormat(posn.row, posn.col, oldFormat, cellFormat));
+                var positions = new BRange(this, sheetRegion).Positions;
+                foreach (var position in positions)
+                {
+                    if (!_cellDataStore.Contains(position.row, position.col))
+                        _cellDataStore.Set(position.row, position.col, new Cell());
+                    var cell = _cellDataStore.Get(position.row, position.col);
+                    var oldFormat = cell!.Formatting?.Clone();
+                    _cellDataStore.Get(position.row, position.col)!.MergeFormat(cellFormat);
+                    changes.Add(new CellChangedFormat(position.row, position.col, oldFormat, cellFormat));
+                }
             }
         }
 
@@ -852,15 +867,18 @@ public class Sheet
         foreach (var overlapRegion in overlappingRegions)
         {
             var sheetRegion = overlapRegion.GetIntersection(this.Region);
-            var posns = new BRange(this, sheetRegion).Positions;
-            foreach (var posn in posns)
+            if (sheetRegion != null)
             {
-                if (!_cellDataStore.Contains(posn.row, posn.col))
-                    _cellDataStore.Set(posn.row, posn.col, new Cell());
-                var cell = _cellDataStore.Get(posn.row, posn.col);
-                var oldFormat = cell!.Formatting?.Clone();
-                _cellDataStore.Get(posn.row, posn.col)!.MergeFormat(cellFormat);
-                changes.Add(new CellChangedFormat(posn.row, posn.col, oldFormat, cellFormat));
+                var posns = new BRange(this, sheetRegion).Positions;
+                foreach (var posn in posns)
+                {
+                    if (!_cellDataStore.Contains(posn.row, posn.col))
+                        _cellDataStore.Set(posn.row, posn.col, new Cell());
+                    var cell = _cellDataStore.Get(posn.row, posn.col);
+                    var oldFormat = cell!.Formatting?.Clone();
+                    _cellDataStore.Get(posn.row, posn.col)!.MergeFormat(cellFormat);
+                    changes.Add(new CellChangedFormat(posn.row, posn.col, oldFormat, cellFormat));
+                }
             }
         }
 
@@ -893,9 +911,9 @@ public class Sheet
 
     #endregion
 
-    public string GetRegionAsDelimitedText(IRegion inputRegion, char tabDelimiter = '\t', string newLineDelim = "\n")
+    public string? GetRegionAsDelimitedText(IRegion inputRegion, char tabDelimiter = '\t', string newLineDelim = "\n")
     {
-        if (inputRegion == null)
+        if (inputRegion.Area == 0)
             return string.Empty;
 
         var intersection = inputRegion.GetIntersection(this.Region);
@@ -920,7 +938,7 @@ public class Sheet
                 if (value == null)
                     strBuilder.Append("");
                 else
-                    strBuilder.Append(value.ToString());
+                    strBuilder.Append(value);
                 if (col != c1)
                     strBuilder.Append(tabDelimiter);
             }
@@ -1012,7 +1030,7 @@ public class Sheet
         var cellRegion = new Region(row, col);
         var merges = MergedCells.Search(cellRegion.ToEnvelope());
         // There will only be one merge because we don't allow overlapping
-        return merges.FirstOrDefault()?.Region;
+        return merges.Any() ? merges[0].Region : null;
     }
 
     private void SelectionOnSelectionChanged(object? sender, IEnumerable<IRegion> e)

@@ -7,7 +7,7 @@ public interface IDataValidator
     /// </summary>
     /// <param name="value"></param>
     /// <returns></returns>
-    public bool IsValid(object value);
+    public bool IsValid(object? value);
 
     /// <summary>
     /// If IsStrict, the cell's value won't be changed if the validation fails during editing.

@@ -11,6 +11,11 @@ public class MergeCellsCommand : IUndoableCommand
     private readonly List<IRegion> _mergesPerformed = new();
     private readonly List<CellChange> _changes = new();
 
+    /// <summary>
+    /// Command that merges the cells in the range give.
+    /// Note that the value in the top LHS will be kept, while other cell values will be cleared.
+    /// </summary>
+    /// <param name="range">The range in which to merge. </param>
     public MergeCellsCommand(BRange range)
     {
         _range = range.Clone();
@@ -19,7 +24,6 @@ public class MergeCellsCommand : IUndoableCommand
 
     public bool Execute(Sheet sheet)
     {
-        Console.WriteLine("Executing merge");
         _overridenMergedRegions.Clear();
         _changes.Clear();
         _mergesPerformed.Clear();

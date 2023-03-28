@@ -9,7 +9,7 @@ public class NumberValidator : IDataValidator
         IsStrict = isStrict;
     }
 
-    public bool IsValid(object value)
+    public bool IsValid(object? value)
     {
         if (value == null)
             return true;

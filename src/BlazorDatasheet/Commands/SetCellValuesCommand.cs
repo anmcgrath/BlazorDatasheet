@@ -11,6 +11,10 @@ public class SetCellValuesCommand : IUndoableCommand
     private int _minCol = int.MaxValue;
     private int _maxCol = int.MinValue;
 
+    /// <summary>
+    /// Command to set the values of a collection of cells to the values specified.
+    /// </summary>
+    /// <param name="values"></param>
     public SetCellValuesCommand(List<CellChange> values)
     {
         _values = values;

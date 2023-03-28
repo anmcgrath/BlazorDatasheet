@@ -6,6 +6,10 @@ public class CellMerge : ISpatialData
 {
     public IRegion Region { get; }
 
+    /// <summary>
+    /// Describes a merged region of cells.
+    /// </summary>
+    /// <param name="region">The region of cells included in this merge.</param>
     public CellMerge(IRegion region)
     {
         Region = region;

@@ -5,11 +5,29 @@ namespace BlazorDatasheet.Formats;
 
 public class CellFormat : IMergeable<CellFormat>
 {
+    /// <summary>
+    /// CSS font-weight
+    /// </summary>
     public string? FontWeight { get; set; }
+    /// <summary>
+    /// CSS background color
+    /// </summary>
     public string? BackgroundColor { get; set; }
+    /// <summary>
+    /// CSS color
+    /// </summary>
     public string? ForegroundColor { get; set; }
+    /// <summary>
+    /// How to format the string when rendered.
+    /// </summary>
     public string? StringFormat { get; set; }
+    /// <summary>
+    /// The icon displayed inside the cell
+    /// </summary>
     public RenderFragment? Icon { get; set; }
+    /// <summary>
+    /// The icon's CSS color
+    /// </summary>
     public string? IconColor { get; set; }
 
     /// <summary>
