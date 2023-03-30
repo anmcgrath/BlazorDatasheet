@@ -515,7 +515,7 @@ public class Sheet
         }
 
         CellsChanged?.Invoke(this, changeEvents);
-        return changeEvents.Any();
+        return changes.Any();
     }
 
     /// <summary>
