@@ -1,6 +1,4 @@
-﻿using BlazorDatasheet.Data.SpatialDataStructures;
-
-namespace BlazorDatasheet.Data;
+﻿namespace BlazorDatasheet.Data;
 
 public interface IRegion
 {

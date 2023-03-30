@@ -1,4 +1,4 @@
-using BlazorDatasheet.Data.SpatialDataStructures;
+using BlazorDatasheet.DataStructures.Intervals;
 using Microsoft.AspNetCore.Components;
 
 namespace BlazorDatasheet.Formats;

@@ -1,5 +1,6 @@
 using System.Linq;
 using BlazorDatasheet.Data;
+using BlazorDatasheet.DataStructures.Store;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test;

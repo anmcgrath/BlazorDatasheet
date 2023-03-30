@@ -1,4 +1,4 @@
-using BlazorDatasheet.Data.SpatialDataStructures;
+using BlazorDatasheet.DataStructures.RTree;
 
 namespace BlazorDatasheet.Data;
 

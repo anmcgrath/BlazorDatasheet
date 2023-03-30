@@ -12,6 +12,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorDatasheet.Test", "..\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorDatasheet.SharedPages", "BlazorDatasheet.SharedPages\BlazorDatasheet.SharedPages.csproj", "{6E79372A-F6EB-4D7B-A9B5-08F7CD905887}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorDatasheet.DataStructures", "BlazorDatasheet.DataStructures\BlazorDatasheet.DataStructures.csproj", "{F76F8DB8-B91D-41F6-ACFF-7DE346B51D2B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -38,6 +40,10 @@ Global
 		{6E79372A-F6EB-4D7B-A9B5-08F7CD905887}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6E79372A-F6EB-4D7B-A9B5-08F7CD905887}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6E79372A-F6EB-4D7B-A9B5-08F7CD905887}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F76F8DB8-B91D-41F6-ACFF-7DE346B51D2B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F76F8DB8-B91D-41F6-ACFF-7DE346B51D2B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F76F8DB8-B91D-41F6-ACFF-7DE346B51D2B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F76F8DB8-B91D-41F6-ACFF-7DE346B51D2B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{8D866B46-349C-4B1C-B5A6-146DAECCA089} = {88903F7E-79AF-45FD-A777-4E0A101AB65C}

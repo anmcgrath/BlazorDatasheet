@@ -1,6 +1,8 @@
 using System.Text;
 using BlazorDatasheet.Commands;
-using BlazorDatasheet.Data.SpatialDataStructures;
+using BlazorDatasheet.DataStructures.Intervals;
+using BlazorDatasheet.DataStructures.RTree;
+using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Edit.DefaultComponents;
 using BlazorDatasheet.Events;
 using BlazorDatasheet.Formats;

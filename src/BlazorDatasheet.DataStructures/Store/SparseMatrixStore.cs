@@ -1,7 +1,6 @@
-using System.Collections.Immutable;
-using BlazorDatasheet.Util;
+using BlazorDatasheet.DataStructures.Search;
 
-namespace BlazorDatasheet.Data;
+namespace BlazorDatasheet.DataStructures.Store;
 
 public class SparseMatrixStore<T> : IMatrixDataStore<T>
 {

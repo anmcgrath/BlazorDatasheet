@@ -1,4 +1,4 @@
-namespace BlazorDatasheet.Data;
+namespace BlazorDatasheet.DataStructures.Store;
 
 public interface IMatrixDataStore<T>
 {
