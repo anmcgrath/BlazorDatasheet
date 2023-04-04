@@ -11,7 +11,7 @@ public class DataStoreTests
     public void Set_Get_Operations_Correct()
     {
         IMatrixDataStore<string> store = new SparseMatrixStore<string>();
-        Assert.AreEqual(default(Cell), store.Get(0, 0));
+        Assert.AreEqual(default(string), store.Get(0, 0));
         store.Set(0, 0, "A");
         Assert.AreEqual("A", store.Get(0, 0));
         store.Set(10, 10, "B");

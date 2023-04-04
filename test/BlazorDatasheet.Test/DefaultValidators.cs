@@ -54,8 +54,7 @@ public class DefaultValidators
     public void Number_Validator_Invalidates_Date()
     {
         var validator = new NumberValidator(true);
-        var cell = new Cell(DateTime.MinValue);
-        Assert.IsFalse(validator.IsValid(cell));
+        Assert.IsFalse(validator.IsValid(DateTime.MinValue));
     }
 
     [Test]
@@ -63,15 +62,10 @@ public class DefaultValidators
     {
         var items = new List<string>() { "Item1", "Item2" };
         var validator = new SourceValidator(items, false);
-        var cell = new Cell("Item1");
-        Assert.IsTrue(validator.IsValid(cell.GetValue()));
-        cell.TrySetValue("Item3");
-        Assert.IsFalse(validator.IsValid(cell.GetValue()));
-        cell.TrySetValue("Item2");
-        Assert.IsTrue(validator.IsValid(cell.GetValue()));
-
-        cell.TrySetValue(100);
-        Assert.IsFalse(validator.IsValid(cell.GetValue()));
+        Assert.IsTrue(validator.IsValid("Item1"));
+        Assert.IsFalse(validator.IsValid("Item3"));
+        Assert.IsTrue(validator.IsValid("Item2"));
+        Assert.IsFalse(validator.IsValid(100));
     }
 
     [Test]
@@ -79,9 +73,8 @@ public class DefaultValidators
     {
         var items = new List<string>() { "1", "2", "100.2" };
         var validator = new SourceValidator(items, false);
-        var cell = new Cell("a");
-        Assert.IsFalse(validator.IsValid(cell.GetValue()));
-        cell.TrySetValue(100.2);
-        Assert.IsTrue(validator.IsValid(cell.GetValue()));
+        Assert.IsFalse(validator.IsValid("a"));
+        Assert.IsTrue(validator.IsValid(100.2));
+        Assert.IsFalse(validator.IsValid(5));
     }
 }

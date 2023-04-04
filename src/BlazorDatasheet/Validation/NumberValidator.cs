@@ -12,7 +12,7 @@ public class NumberValidator : IDataValidator
     public bool IsValid(object? value)
     {
         if (value == null)
-            return true;
+            return false;
         var val = value.ToString();
         return double.TryParse(val, out double res);
     }
