@@ -80,7 +80,7 @@
                                 <ItemTemplate>
                                     <DynamicComponent
                                         Type="@getCellRendererType(cell.Type)"
-                                        Parameters="@getCellRendererParameters(cell, row, col)">
+                                        Parameters="@getCellRendererParameters(Sheet, cell, row, col)">
                                     </DynamicComponent>
                                 </ItemTemplate>
                             </CellRenderer>
@@ -113,7 +113,7 @@
                         <ItemTemplate>
                             <DynamicComponent
                                 Type="@getCellRendererType(cell.Type)"
-                                Parameters="@getCellRendererParameters(cell, row, col)">
+                                Parameters="@getCellRendererParameters(Sheet, cell, row, col)">
                             </DynamicComponent>
                         </ItemTemplate>
                     </CellRenderer>

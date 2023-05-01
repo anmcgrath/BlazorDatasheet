@@ -1,0 +1,56 @@
+﻿@using BlazorDatasheet.Edit;
+@using BlazorDatasheet.Interfaces
+@using BlazorDatasheet.Util
+
+@inherits BaseEditor<string>
+
+<textarea @oninput="HandleOnChange"
+          class="text-input"
+          style="@CssUtil.GetStyledInput(Cell); z-index: 1000;"
+          rows="@RowsCount"
+          @ref="InputRef">@EditedValue</textarea>
+
+@code {
+    public static int RowsCount = 5;
+
+    private IReadOnlyCell Cell;
+
+    public override void BeforeEdit(IReadOnlyCell cell)
+    {
+        base.BeforeEdit(cell);
+        Cell = cell;
+    }
+
+    public override void BeginEdit(EditEntryMode entryMode, IReadOnlyCell cell, string key)
+    {
+        EditedValue = cell.GetValue<string>();
+        if (EditedValue == null)
+            EditedValue = string.Empty;
+
+        if (entryMode == EditEntryMode.Key && !String.IsNullOrEmpty(key) && key.Length == 1)
+        {
+            EditedValue = key;
+        }
+    }
+
+    private void HandleOnChange(ChangeEventArgs args)
+    {
+        EditedValue = args.Value.ToString();
+    }
+
+    public override bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
+    {
+        if (!ctrlKey && key == "Enter")
+        {
+            return true;
+        }
+
+        if (KeyUtil.IsArrowKey(key))
+        {
+            return true;
+        }
+
+        return base.HandleKey(key, ctrlKey, shiftKey, altKey, metaKey);
+    }
+
+}

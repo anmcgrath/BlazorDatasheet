@@ -37,10 +37,11 @@ public class CssUtil
     /// <returns></returns>
     public static string GetCellWidthStyles(int col, int colSpan, CellLayoutProvider provider)
     {
+        var width = provider.ComputeWidth(col, colSpan);
         var str = new StringBuilder();
-        str.Append($"width:{provider.ComputeWidth(col, colSpan)}px;");
-        str.Append($"max-width:{provider.ComputeWidth(col, colSpan)}px;");
-        str.Append($"min-width:{provider.ComputeWidth(col, colSpan)}px;");
+        str.Append($"width:{width}px;");
+        str.Append($"max-width:{width}px;");
+        str.Append($"min-width:{width}px;");
         return str.ToString();
     }
 }

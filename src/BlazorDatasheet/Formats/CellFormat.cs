@@ -30,6 +30,12 @@ public class CellFormat : IMergeable<CellFormat>
     /// </summary>
     public string? IconColor { get; set; }
 
+
+    /// <summary>
+    /// CSS text align
+    /// </summary>
+    public string? TextAlign { get; set; }
+
     /// <summary>
     /// Returns a new Format object with cloned properties
     /// </summary>
@@ -43,7 +49,8 @@ public class CellFormat : IMergeable<CellFormat>
             ForegroundColor = ForegroundColor,
             Icon = Icon,
             StringFormat = StringFormat,
-            IconColor = IconColor
+            IconColor = IconColor,
+            TextAlign = TextAlign
         };
     }
 
@@ -62,6 +69,8 @@ public class CellFormat : IMergeable<CellFormat>
             this.ForegroundColor = format.ForegroundColor;
         if (!String.IsNullOrEmpty(format.BackgroundColor))
             this.FontWeight = format.FontWeight;
+        if (!String.IsNullOrEmpty(format.TextAlign))
+            this.TextAlign = format.TextAlign;
         if (format.Icon != null)
             this.Icon = format.Icon;
         if (!String.IsNullOrEmpty(format.StringFormat))

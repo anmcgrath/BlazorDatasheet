@@ -1,0 +1,55 @@
+﻿@using BlazorDatasheet.Edit
+@using BlazorDatasheet.Interfaces
+@using BlazorDatasheet.Util;
+@using System.Linq;
+
+@typeparam TEnum where TEnum: Enum
+
+@inherits BaseEditor<TEnum>
+<select @bind="EditedValue"
+        style="width: 100%; height: 100%"
+        @ref="InputRef"
+        @bind:event="oninput">
+
+    @foreach (var item in Enum.GetValues(typeof(TEnum)))
+    {
+        <option value="@item">@item</option>
+    }
+
+</select>
+
+@code {
+
+    public override void BeginEdit(EditEntryMode entryMode, IReadOnlyCell cell, string key)
+    {
+        try
+        {
+            var cellValue = cell.GetValue<TEnum>();
+            EditedValue = cellValue;
+
+            if (entryMode == EditEntryMode.Key && !String.IsNullOrEmpty(key) && key.Length == 1)
+            {
+                var stringValue = key.ToUpperInvariant();
+                EditedValue = Enum.GetValues(typeof(TEnum))
+                                .OfType<TEnum>()
+                                .FirstOrDefault(x => x.ToString().ToUpperInvariant().StartsWith(stringValue), EditedValue);
+            }
+
+        }
+        catch (Exception e)
+        {
+            EditedValue = default(TEnum);
+        }
+    }
+
+    public override bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
+    {
+
+        if (KeyUtil.IsKeyDown(key) || KeyUtil.IsKeyUp(key))
+        {
+            return true;
+        }
+
+        return base.HandleKey(key, ctrlKey, shiftKey, altKey, metaKey);
+    }
+}

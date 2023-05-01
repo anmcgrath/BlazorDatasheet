@@ -585,6 +585,7 @@ public class Sheet
         RegisterEditor<DateTimeEditorComponent>("datetime");
         RegisterEditor<BoolEditorComponent>("boolean");
         RegisterEditor<SelectEditorComponent>("select");
+        RegisterEditor<TextareaEditorComponent>("textarea");
     }
 
     private void RegisterDefaultRenderers()
@@ -940,7 +941,16 @@ public class Sheet
                 if (value == null)
                     strBuilder.Append("");
                 else
-                    strBuilder.Append(value);
+                {
+                    if (value is string s)
+                    {
+                        strBuilder.Append(s.Replace(newLineDelim, " ").Replace(tabDelimiter, ' '));
+                    }
+                    else
+                    {
+                        strBuilder.Append(value);
+                    }
+                }
                 if (col != c1)
                     strBuilder.Append(tabDelimiter);
             }

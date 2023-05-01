@@ -12,11 +12,10 @@
     Blazor DataSheet is an excel-like editor for cellular values. Below shows some of the features of the data sheet. Sample code is available on <a href="https://github.com/anmcgrath/BlazorDatasheet">GitHub</a>
 </p>
 
-<Datasheet
-    Theme="@Theme"
-    Sheet="Sheet"
-    StickyHeadings="true"
-    IsFixedHeight="true">
+<Datasheet Theme="@Theme"
+           Sheet="Sheet"
+           StickyHeadings="true"
+           IsFixedHeight="true">
 
 </Datasheet>
 
@@ -34,11 +33,11 @@
 </div>
 
 <div>
-    <input id="darkmode-toggle" type="checkbox" @bind="IsDarkMode"/>
+    <input id="darkmode-toggle" type="checkbox" @bind="IsDarkMode" />
     <label for="darkmode-toggle">Darkmode</label>
 </div>
 
-@code{
+@code {
 
     private Sheet Sheet;
     private List<Person> People { get; set; }
@@ -85,17 +84,20 @@
         var lastNames = new List<string>() { "Walters", "Hall", "Smith", "Parker", "Velasquez", "Mccall", "Farmer", "Boone", "Fitzpatrick", "Mcclain", "Mccoy", "Baker" };
         var cats = new List<string>() { "Manager", "Employee" };
 
+        var lorem = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum ac ultricies nisi. Sed tincidunt nunc ac tellus ullamcorper faucibus. In feugiat felis urna, in lacinia erat aliquet eget. Curabitur bibendum varius facilisis. Etiam vel urna sagittis, pellentesque neque eu, bibendum ante. Phasellus sodales facilisis massa sollicitudin rutrum. Vivamus elementum non sapien eget placerat. Etiam ultricies, turpis in fringilla interdum, nulla nulla varius urna, et dapibus lectus mi sit amet urna. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Curabitur dapibus a dolor non elementum. Aliquam nec nulla ante.\r\nPellentesque cursus enim massa, sit amet dictum ante luctus eget. Pellentesque quis ultricies lectus, id elementum purus. Nulla sit amet leo tincidunt, facilisis lectus non, sodales mauris. Duis ultricies ornare mi nec sagittis. Vestibulum fermentum orci urna, a interdum mauris laoreet eu. Donec luctus pellentesque tortor ac faucibus. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Curabitur maximus diam tellus, sed porttitor sem fringilla ac. Nunc semper tellus sit amet velit gravida interdum.";
+
         for (int i = 0; i < 1000; i++)
         {
             People.Add(new Person()
-            {
-                Id = i,
-                Age = random.Next(100).ToString(),
-                FirstName = firstNames[random.Next(0, firstNames.Count)],
-                LastName = lastNames[random.Next(0, lastNames.Count)],
-                Category = cats[random.Next(0, cats.Count)],
-                IsFriendly = false
-            });
+                {
+                    Id = i,
+                    Age = random.Next(100).ToString(),
+                    FirstName = firstNames[random.Next(0, firstNames.Count)],
+                    LastName = lastNames[random.Next(0, lastNames.Count)],
+                    Category = cats[random.Next(0, cats.Count)],
+                    IsFriendly = false,
+                    Information = i % 2 == 0 ? lorem : ""
+                });
         }
 
         var ageCf =
@@ -119,7 +121,11 @@
                 pd.Type = "select";
                 pd.UseDataValidator(new SourceValidator(new List<string>() { "", "Manager", "Employee" }, true));
             })
-            .WithProperty(x => x.IsFriendly, pd => { pd.Heading = "Is Friendly?"; });
+            .WithProperty(x => x.IsFriendly, pd => { pd.Heading = "Is Friendly?"; })
+            .WithProperty(x => x.Information, pd =>
+            {
+                pd.Type = "textarea";
+            });
 
         _editor = builder1.Build();
 
