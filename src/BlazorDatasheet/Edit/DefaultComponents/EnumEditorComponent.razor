@@ -6,19 +6,34 @@
 @typeparam TEnum where TEnum: Enum
 
 @inherits BaseEditor<TEnum>
-<select @bind="EditedValue"
-        style="width: 100%; height: 100%"
-        @ref="InputRef"
-        @bind:event="oninput">
 
-    @foreach (var item in Enum.GetValues(typeof(TEnum)))
+<input @bind="EditedValue"
+       class="text-input"
+       disabled
+       style="@CssUtil.GetStyledInput(Cell)"
+       @ref="InputRef" />
+
+<div class="select-list">
+    @foreach (TEnum val in Enum.GetValues(typeof(TEnum)))
     {
-        <option value="@item">@item</option>
+        <div class="select-item"
+         @onmouseup="() => { EditedValue = val; this.AcceptEdit(); }">
+            @val
+        </div>
     }
+</div>
 
-</select>
+
+
 
 @code {
+
+    private IReadOnlyCell Cell;
+
+    public override void BeforeEdit(IReadOnlyCell cell)
+    {
+        Cell = cell;
+    }
 
     public override void BeginEdit(EditEntryMode entryMode, IReadOnlyCell cell, string key)
     {

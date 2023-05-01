@@ -1,6 +1,7 @@
 @page "/ObjectEditor"
 @using BlazorDatasheet.Edit.DefaultComponents;
 @using BlazorDatasheet.ObjectEditor
+@using BlazorDatasheet.Render.DefaultComponents;
 @using BlazorDatasheet.Validation
 @using BlazorDatasheet.Data
 @using BlazorDatasheet.SharedPages.Data
@@ -70,7 +71,11 @@
             .Build();
 
         editor1.Sheet.RegisterEditor<EnumEditorComponent<PersonState>>("PersonState");
+        editor1.Sheet.RegisterRenderer<SelectRenderer>("PersonState");
+
         editor2.Sheet.RegisterEditor<EnumEditorComponent<PersonState>>("PersonState");
+        editor2.Sheet.RegisterRenderer<SelectRenderer>("PersonState");
+
 
         editor1.Sheet.CellsChanged += (sender, enumerable) => dataSheet2.ForceReRender();
         editor2.Sheet.CellsChanged += (sender, enumerable) => dataSheet1.ForceReRender();
