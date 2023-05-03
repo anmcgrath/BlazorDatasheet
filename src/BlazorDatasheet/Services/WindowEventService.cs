@@ -16,6 +16,7 @@ public class WindowEventService : IWindowEventService
     public event Func<KeyboardEventArgs, bool?> OnKeyDown;
     public event Func<MouseEventArgs, bool>? OnMouseDown;
     public event Func<MouseEventArgs, bool>? OnMouseUp;
+    public event Func<MouseEventArgs, bool>? OnMouseMove;
     public event Func<PasteEventArgs, Task>? OnPaste;
 
     public WindowEventService(IJSRuntime js)
@@ -29,6 +30,7 @@ public class WindowEventService : IWindowEventService
         _fnStore.Add(await addWindowEvent("keydown", nameof(HandleWindowKeyDown)));
         _fnStore.Add(await addWindowEvent("mousedown", nameof(HandleWindowMouseDown)));
         _fnStore.Add(await addWindowEvent("mouseup", nameof(HandleWindowMouseUp)));
+        _fnStore.Add(await addWindowEvent("mousemove", nameof(HandleWindowMouseMove)));
         _fnStore.Add(await addWindowEvent("paste", nameof(HandleWindowPaste)));
     }
 
@@ -60,6 +62,16 @@ public class WindowEventService : IWindowEventService
     public bool HandleWindowMouseUp(MouseEventArgs e)
     {
         var result = OnMouseUp?.Invoke(e);
+        if (!result.HasValue)
+            return false;
+        return result.Value;
+    }
+
+
+    [JSInvokable]
+    public bool HandleWindowMouseMove(MouseEventArgs e)
+    {
+        var result = OnMouseMove?.Invoke(e);
         if (!result.HasValue)
             return false;
         return result.Value;

@@ -90,7 +90,7 @@
             </Virtualize>
 
             <!-- Merged cells -->
-            @if (Sheet.MergedCells.Count > 0)
+            @if (Sheet.MergedCells.Count > 0 && this.ViewportRegion is not null)
             {
                 var mergesInView = Sheet.MergedCells.Search(this.ViewportRegion.ToEnvelope());
                 @foreach (var merge in mergesInView)
