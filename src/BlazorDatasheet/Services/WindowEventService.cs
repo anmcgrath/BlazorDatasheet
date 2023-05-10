@@ -80,7 +80,10 @@ public class WindowEventService : IWindowEventService
     [JSInvokable]
     public async Task HandleWindowPaste(PasteEventArgs e)
     {
-        await OnPaste?.Invoke(e);
+        if (OnPaste is not null)
+        {
+            await OnPaste.Invoke(e);
+        }
     }
 
     public async Task DisposeAsync()
