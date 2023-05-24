@@ -80,7 +80,7 @@
                                 <ItemTemplate>
                                     <DynamicComponent
                                         Type="@getCellRendererType(cell.Type)"
-                                        Parameters="@getCellRendererParameters(cell, row, col)">
+                                        Parameters="@getCellRendererParameters(Sheet, cell, row, col)">
                                     </DynamicComponent>
                                 </ItemTemplate>
                             </CellRenderer>
@@ -90,7 +90,7 @@
             </Virtualize>
 
             <!-- Merged cells -->
-            @if (Sheet.MergedCells.Count > 0)
+            @if (Sheet.MergedCells.Count > 0 && this.ViewportRegion is not null)
             {
                 var mergesInView = Sheet.MergedCells.Search(this.ViewportRegion.ToEnvelope());
                 @foreach (var merge in mergesInView)
@@ -113,7 +113,7 @@
                         <ItemTemplate>
                             <DynamicComponent
                                 Type="@getCellRendererType(cell.Type)"
-                                Parameters="@getCellRendererParameters(cell, row, col)">
+                                Parameters="@getCellRendererParameters(Sheet, cell, row, col)">
                             </DynamicComponent>
                         </ItemTemplate>
                     </CellRenderer>

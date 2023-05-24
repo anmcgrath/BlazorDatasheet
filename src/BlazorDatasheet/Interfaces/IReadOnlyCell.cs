@@ -1,5 +1,4 @@
 using BlazorDatasheet.Formats;
-using BlazorDatasheet.Render;
 
 namespace BlazorDatasheet.Interfaces;
 
@@ -15,4 +14,5 @@ public interface IReadOnlyCell
     public int Row { get; }
     public int Col { get; }
     public bool IsValid { get; }
+    public object? Data { get; }
 }

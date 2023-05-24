@@ -94,6 +94,13 @@
         sb.Append($"background-color:{format?.BackgroundColor ?? "var(--sheet-bg-color)"};");
         sb.Append($"color:{format?.ForegroundColor ?? $"var({foreGroundVar})"};");
         sb.Append($"font-weight:{format?.FontWeight ?? "var(--sheet-font-weight)"};");
+
+        if (!string.IsNullOrWhiteSpace(format?.TextAlign))
+        {
+            sb.Append($"text-align: {format.TextAlign};");
+        }
+
+
         return sb.ToString();
     }
 

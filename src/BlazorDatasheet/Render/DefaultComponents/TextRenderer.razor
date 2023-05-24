@@ -2,8 +2,7 @@
 @using System.Text
 @inherits BaseRenderer
 
-<div
-    class="cell-renderer">
+<div class="cell-renderer" title="@(Cell.GetValue<string>())">
     @(Cell.GetValue<string>())
 </div>
 

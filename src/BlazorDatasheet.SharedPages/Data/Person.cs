@@ -9,4 +9,14 @@ public class Person
     public string? Age { get; set; }
     public bool IsFriendly { get; set; }
     public DateTime StartDate { get; set; } = DateTime.Now;
+
+    public PersonState State { get; set; }
+
+    public string? Information { get; set; }
+}
+
+public enum PersonState
+{
+    Active,
+    Fired
 }

@@ -103,7 +103,7 @@ public class Cell : IReadOnlyCell, IWriteableCell
 
             if (string.IsNullOrEmpty(Key))
             {
-                if (this.Data.GetType() == type)
+                if (this.Data?.GetType() == type)
                     return Data;
                 else
                 {
@@ -114,7 +114,7 @@ public class Cell : IReadOnlyCell, IWriteableCell
                     }
 
                     if (conversionType == typeof(string))
-                        return Data.ToString();
+                        return Data?.ToString();
 
                     if (Data is IConvertible)
                         return Convert.ChangeType(Data, conversionType);

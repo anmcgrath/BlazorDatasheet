@@ -1,0 +1,70 @@
+﻿@using BlazorDatasheet.Edit
+@using BlazorDatasheet.Interfaces
+@using BlazorDatasheet.Util;
+@using System.Linq;
+
+@typeparam TEnum where TEnum: Enum
+
+@inherits BaseEditor<TEnum>
+
+<input @bind="EditedValue"
+       class="text-input"
+       disabled
+       style="@CssUtil.GetStyledInput(Cell)"
+       @ref="InputRef" />
+
+<div class="select-list">
+    @foreach (TEnum val in Enum.GetValues(typeof(TEnum)))
+    {
+        <div class="select-item"
+         @onmouseup="() => { EditedValue = val; this.AcceptEdit(); }">
+            @val
+        </div>
+    }
+</div>
+
+
+
+
+@code {
+
+    private IReadOnlyCell Cell;
+
+    public override void BeforeEdit(IReadOnlyCell cell)
+    {
+        Cell = cell;
+    }
+
+    public override void BeginEdit(EditEntryMode entryMode, IReadOnlyCell cell, string key)
+    {
+        try
+        {
+            var cellValue = cell.GetValue<TEnum>();
+            EditedValue = cellValue;
+
+            if (entryMode == EditEntryMode.Key && !String.IsNullOrEmpty(key) && key.Length == 1)
+            {
+                var stringValue = key.ToUpperInvariant();
+                EditedValue = Enum.GetValues(typeof(TEnum))
+                                .OfType<TEnum>()
+                                .FirstOrDefault(x => x.ToString().ToUpperInvariant().StartsWith(stringValue), EditedValue);
+            }
+
+        }
+        catch (Exception e)
+        {
+            EditedValue = default(TEnum);
+        }
+    }
+
+    public override bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
+    {
+
+        if (KeyUtil.IsKeyDown(key) || KeyUtil.IsKeyUp(key))
+        {
+            return true;
+        }
+
+        return base.HandleKey(key, ctrlKey, shiftKey, altKey, metaKey);
+    }
+}

@@ -6,7 +6,7 @@ A simple datasheet component for editing tabular data.
 
 #### Features
 - Data editing
-  - Built in editors including text, date, select, boolean
+  - Built in editors including text, date, select, boolean, texarea, enum
   - Add custom editors for any data type
 - Conditional formatting
 - Data validation

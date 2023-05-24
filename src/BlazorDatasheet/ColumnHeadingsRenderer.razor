@@ -93,8 +93,6 @@
 
     public List<OrderedInterval> _selectionIntervals { get; set; } = new();
 
-    private DotNetObjectReference<ColumnHeadingsRenderer>? selfReference;
-
     protected override void OnParametersSet()
     {
         if (_sheet != Sheet)
@@ -112,14 +110,16 @@
     }
 
     [JSInvokable]
-    public void HandleMouseMove(int x, int y)
+    public bool WindowHandleMouseMove(MouseEventArgs arg)
     {
-        MouseX = x;
+        MouseX = arg.PageX;
         if (IsDragging)
         {
             CurrentColResizeAmount = MouseX - MouseXStart; // 10 being the minimum width we can resize to
             StateHasChanged();
+            return true;
         }
+        return false;
     }
 
     private void HandleMouseDownOnAdorner(int col)
@@ -134,11 +134,12 @@
     {
         if (firstRender)
         {
-            selfReference = DotNetObjectReference.Create(this);
-            await JS.InvokeVoidAsync("onThrottledMouseMove", selfReference, 200);
+           
+          
             _windowEventService = new WindowEventService(JS);
             await _windowEventService.Init();
             _windowEventService.OnMouseUp += WindowEventServiceOnOnMouseUp;
+            _windowEventService.OnMouseMove += WindowHandleMouseMove;
         }
     }
 
@@ -157,7 +158,7 @@
 
     public void Dispose()
     {
-        selfReference?.Dispose();
+       
     }
 
     private bool IsActive(int col)

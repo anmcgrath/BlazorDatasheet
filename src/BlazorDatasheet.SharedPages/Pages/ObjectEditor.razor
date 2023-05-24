@@ -1,5 +1,7 @@
 @page "/ObjectEditor"
+@using BlazorDatasheet.Edit.DefaultComponents;
 @using BlazorDatasheet.ObjectEditor
+@using BlazorDatasheet.Render.DefaultComponents;
 @using BlazorDatasheet.Validation
 @using BlazorDatasheet.Data
 @using BlazorDatasheet.SharedPages.Data
@@ -49,7 +51,12 @@
                 pd.UseDataValidator(categoryValidator);
                 pd.Type = "select";
             })
+             .WithProperty(x => x.State, pd =>
+            {
+                pd.Type = "PersonState";
+            })
             .Build();
+
         editor2 = builderRows
             .AutogenerateProperties(true)
             .WithProperty(x => x.Category, pd =>
@@ -57,7 +64,18 @@
                 pd.UseDataValidator(categoryValidator);
                 pd.Type = "select";
             })
+              .WithProperty(x => x.State, pd =>
+            {
+                pd.Type = "PersonState";
+            })
             .Build();
+
+        editor1.Sheet.RegisterEditor<EnumEditorComponent<PersonState>>("PersonState");
+        editor1.Sheet.RegisterRenderer<SelectRenderer>("PersonState");
+
+        editor2.Sheet.RegisterEditor<EnumEditorComponent<PersonState>>("PersonState");
+        editor2.Sheet.RegisterRenderer<SelectRenderer>("PersonState");
+
 
         editor1.Sheet.CellsChanged += (sender, enumerable) => dataSheet2.ForceReRender();
         editor2.Sheet.CellsChanged += (sender, enumerable) => dataSheet1.ForceReRender();

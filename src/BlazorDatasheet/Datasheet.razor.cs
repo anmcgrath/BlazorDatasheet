@@ -180,10 +180,11 @@ public partial class Datasheet : IHandleEvent
         return typeof(TextRenderer);
     }
 
-    private Dictionary<string, object> getCellRendererParameters(IReadOnlyCell cell, int row, int col)
+    private Dictionary<string, object> getCellRendererParameters(Sheet sheet, IReadOnlyCell cell, int row, int col)
     {
         return new Dictionary<string, object>()
         {
+            { "Sheet", sheet },
             { "Cell", cell },
             { "Row", row },
             { "Col", col },
@@ -368,19 +369,19 @@ public partial class Datasheet : IHandleEvent
             return true;
         }
 
-        if (e.Key.ToLower() == "c" && (e.CtrlKey || e.MetaKey) && !_editorManager.IsEditing)
+        if (e.Code == "67" /*C*/ && (e.CtrlKey || e.MetaKey) && !_editorManager.IsEditing)
         {
             CopySelectionToClipboard();
             return true;
         }
 
-        if (e.Key.ToLower() == "y" && (e.CtrlKey || e.MetaKey) && !_editorManager.IsEditing)
+        if (e.Code == "89" /*Y*/ && (e.CtrlKey || e.MetaKey) && !_editorManager.IsEditing)
         {
             return Sheet!.Commands.Redo();
         }
 
 
-        if (e.Key.ToLower() == "z" && (e.CtrlKey || e.MetaKey) && !_editorManager.IsEditing)
+        if (e.Code == "90" /*Z*/ && (e.CtrlKey || e.MetaKey) && !_editorManager.IsEditing)
         {
             return Sheet!.Commands.Undo();
         }
@@ -415,6 +416,28 @@ public partial class Datasheet : IHandleEvent
                     return false;
                 BeginEdit(inputPosition.Row, inputPosition.Col, softEdit: true, EditEntryMode.Key, e.Key);
             }
+
+            return true;
+        }
+
+        // Ecxel like begin edit request by pressing F2
+        if ((e.Key == "F2") && !_editorManager.IsEditing && IsDataSheetActive)
+        {
+            // Don't input anything if we are currently selecting
+            if (this.IsSelecting)
+                return false;
+
+            // Capture commands and return early (mainly for paste)
+            if (e.CtrlKey || e.MetaKey)
+                return false;
+
+
+            if (Sheet == null || !Sheet.Selection.Regions.Any())
+                return false;
+            var inputPosition = Sheet.Selection.GetInputPosition();
+            if (inputPosition.IsInvalid)
+                return false;
+            BeginEdit(inputPosition.Row, inputPosition.Col, softEdit: true, EditEntryMode.Key, e.Key);
 
             return true;
         }
@@ -489,7 +512,6 @@ public partial class Datasheet : IHandleEvent
 
         // Can only handle single selections for now
         var region = Sheet.Selection.ActiveRegion;
-        var text = Sheet.GetRegionAsDelimitedText(region);
         await _clipboard.Copy(region, Sheet);
     }
 

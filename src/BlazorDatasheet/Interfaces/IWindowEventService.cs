@@ -10,4 +10,5 @@ public interface IWindowEventService : IDisposable
     event Func<MouseEventArgs, bool>? OnMouseDown;
     event Func<MouseEventArgs, bool>? OnMouseUp;
     event Func<PasteEventArgs, Task>? OnPaste;
+    event Func<MouseEventArgs, bool>? OnMouseMove;
 }
