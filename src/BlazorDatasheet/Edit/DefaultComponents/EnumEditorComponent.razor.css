@@ -29,6 +29,7 @@
     padding-left: 0.2rem;
 }
 
-.select-item:hover {
-    background: var(--selection-bg-color)
-}
+    .select-item:hover,
+    .select-item.active {
+        background: var(--selection-bg-color)
+    }
