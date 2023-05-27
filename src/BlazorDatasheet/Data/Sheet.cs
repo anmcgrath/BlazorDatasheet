@@ -501,6 +501,18 @@ public class Sheet
     /// <param name="readOnly"></param>
     public void SetCellReadOnly(int row, int col, bool readOnly)
     {
+        var cmd = new SetCellReadOnlyCommand(row, col, readOnly);
+        Commands.ExecuteCommand(cmd);
+    }
+
+    /// <summary>
+    /// Set read only state for specified cell - command execution impl
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <param name="readOnly"></param>
+    internal void SetCellReadOnlyImpl(int row, int col, bool readOnly)
+    {
         var cell = _cellDataStore.Get(row, col);
         cell.IsReadOnly = readOnly;
     }
