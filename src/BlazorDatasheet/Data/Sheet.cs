@@ -337,13 +337,15 @@ public class Sheet
             }
 
             MergedCells.Delete(item);
-            var merge = new CellMerge(region);
+           
             if (region.Top != region.Bottom && region.Left != region.Right)
             {
+                var merge = new CellMerge(region);
                 MergedCells.Insert(merge);
                 overridenMergedRegions.Add(merge);
             }
         }
+
         return (mergesPerformed, overridenMergedRegions.AsReadOnly());
     }
     /// <summary>
