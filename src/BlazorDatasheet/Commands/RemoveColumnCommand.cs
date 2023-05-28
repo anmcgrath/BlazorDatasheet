@@ -42,7 +42,6 @@ public class RemoveColumnCommand : IUndoableCommand
             sheet.ColumnHeadings[_columnIndex] = _removedHeading;
         sheet.SetCellValuesImpl(_removedValues);
         sheet.UndoRerangeMergedCells(_mergesPerformed, _overridenMergedRegions);
-
         return true;
     }
 }

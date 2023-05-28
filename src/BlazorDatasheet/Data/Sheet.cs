@@ -212,8 +212,6 @@ public class Sheet
             ColumnHeadings.Insert(colIndex + 1, new Heading());
         NumCols++;
         ColumnInserted?.Invoke(this, new ColumnInsertedEventArgs(colIndex));
-
-
     }
 
     /// <summary>
@@ -241,7 +239,6 @@ public class Sheet
                 ColumnHeadings.RemoveAt(colIndex);
             NumCols--;
             ColumnRemoved?.Invoke(this, new ColumnRemovedEventArgs(colIndex));
-
             return true;
         }
 

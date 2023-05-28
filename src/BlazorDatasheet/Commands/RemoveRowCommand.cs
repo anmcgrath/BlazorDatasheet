@@ -34,7 +34,6 @@ public class RemoveRowCommand : IUndoableCommand
         sheet.InsertRowAfterImpl(_rowIndex - 1);
         sheet.SetCellValuesImpl(_valuesRemoved);
         sheet.UndoRerangeMergedCells(_mergesPerformed, _overridenMergedRegions);
-
         return true;
     }
 }
