@@ -8,6 +8,8 @@ namespace BlazorDatasheet.Commands;
 public class InsertColAfterCommand : IUndoableCommand
 {
     private readonly int _colIndex;
+    private IReadOnlyList<CellMerge> _mergesPerformed = default!;
+    private IReadOnlyList<CellMerge> _overridenMergedRegions = default!;
 
     /// <summary>
     /// Command for inserting a column into the sheet.
@@ -21,12 +23,15 @@ public class InsertColAfterCommand : IUndoableCommand
     public bool Execute(Sheet sheet)
     {
         sheet.InsertColAfterImpl(_colIndex);
+
+        (_mergesPerformed, _overridenMergedRegions) = sheet.RerangeMergedCells(Axis.Col, _colIndex, 1);
         return true;
     }
 
     public bool Undo(Sheet sheet)
     {
         sheet.RemoveColImpl(_colIndex + 1);
+        sheet.UndoRerangeMergedCells(_mergesPerformed, _overridenMergedRegions);
         return true;
     }
 }
