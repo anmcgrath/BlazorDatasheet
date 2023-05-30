@@ -27,6 +27,11 @@ public class KeyUtil
         return key == "ArrowDown";
     }
 
+    public static bool IsEnter(string key)
+    {
+        return key == "Enter";
+    }
+
     public static Tuple<int, int> GetKeyMovementDirection(string key)
     {
         if (IsKeyDown(key)) return new Tuple<int, int>(1, 0);

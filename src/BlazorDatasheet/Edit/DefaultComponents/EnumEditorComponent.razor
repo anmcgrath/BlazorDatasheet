@@ -14,21 +14,21 @@
        @ref="InputRef" />
 
 <div class="select-list">
-    @foreach (TEnum val in Enum.GetValues(typeof(TEnum)))
+    @foreach (TEnum val in Items)
     {
-        <div class="select-item"
-         @onmouseup="() => { EditedValue = val; this.AcceptEdit(); }">
+        <div class="select-item @(val.Equals(currentSelected) ? "active": "")"
+         @onmouseup="() => selectItem(val)">
             @val
         </div>
     }
 </div>
 
 
-
-
 @code {
 
     private IReadOnlyCell Cell;
+    TEnum? currentSelected;
+    IList<TEnum> Items = Enum.GetValues(typeof(TEnum)).Cast<TEnum>().ToList();
 
     public override void BeforeEdit(IReadOnlyCell cell)
     {
@@ -45,9 +45,7 @@
             if (entryMode == EditEntryMode.Key && !String.IsNullOrEmpty(key) && key.Length == 1)
             {
                 var stringValue = key.ToUpperInvariant();
-                EditedValue = Enum.GetValues(typeof(TEnum))
-                                .OfType<TEnum>()
-                                .FirstOrDefault(x => x.ToString().ToUpperInvariant().StartsWith(stringValue), EditedValue);
+                EditedValue = Items.FirstOrDefault(x => x.ToString().ToUpperInvariant().StartsWith(stringValue), EditedValue);
             }
 
         }
@@ -59,12 +57,47 @@
 
     public override bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
     {
-
-        if (KeyUtil.IsKeyDown(key) || KeyUtil.IsKeyUp(key))
+        if (KeyUtil.IsEnter(key))
         {
+            if (currentSelected is not null)
+            {
+                selectItem(currentSelected);
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        if (KeyUtil.IsKeyDown(key))
+        {
+            hoverItem(1);
+            return true;
+        }
+
+        if (KeyUtil.IsKeyUp(key))
+        {
+            hoverItem(-1);
             return true;
         }
 
         return base.HandleKey(key, ctrlKey, shiftKey, altKey, metaKey);
+    }
+
+    void hoverItem(int direction)
+    {
+        var index = currentSelected is not null ? Items.IndexOf(currentSelected) : 0;
+
+        index = direction > 0 ? Math.Min(index + 1, Items.Count - 1) : Math.Max(index - 1, 0);
+
+        currentSelected = Items[index];
+
+        StateHasChanged();
+    }
+
+    void selectItem(TEnum item)
+    {
+        EditedValue = item;
+        AcceptEdit();
     }
 }

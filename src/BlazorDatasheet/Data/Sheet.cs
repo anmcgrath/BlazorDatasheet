@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Text;
 using BlazorDatasheet.Commands;
 using BlazorDatasheet.DataStructures.Intervals;
@@ -280,13 +281,13 @@ public class Sheet
         return Commands.ExecuteCommand(cmd);
     }
 
-    internal bool RemoveRowAtImpl(int index)
+    internal bool RemoveRowAtImpl(int rowIndex)
     {
-        if (index >= 0 && index < NumRows)
+        if (rowIndex >= 0 && rowIndex < NumRows)
         {
-            _cellDataStore.RemoveRowAt(index);
+            _cellDataStore.RemoveRowAt(rowIndex);
             NumRows--;
-            RowRemoved?.Invoke(this, new RowRemovedEventArgs(index));
+            RowRemoved?.Invoke(this, new RowRemovedEventArgs(rowIndex));
             return true;
         }
 
@@ -294,6 +295,80 @@ public class Sheet
     }
 
     #endregion
+
+    /// <summary>
+    /// Updates a merged regions after insert or remove rows or columns
+    /// </summary>
+    /// <param name="axis"></param>
+    /// <param name="index">index of inserted row\column</param>
+    /// <param name="count">count of inserted or removed rows\columns. count > 0 when inserted, count < 0 when reomved</param>
+    /// <returns>list of affected regions (before operation state) and list of new regions (state after operation)</returns>
+    internal (IReadOnlyList<CellMerge> mergesPerformed, IReadOnlyList<CellMerge> overridenMergedRegions) RerangeMergedCells(Axis axis, int index, int count)
+    {
+        var afterInserted = axis == Axis.Row ? new Region(index, NumRows, 0, NumCols) : new Region(0, NumRows, index, NumCols);
+        var envelope = afterInserted.ToEnvelope();
+        var mergesPerformed = MergedCells.Search(envelope);
+        var overridenMergedRegions = new List<CellMerge>();
+        foreach (var item in mergesPerformed)
+        {
+            // Ignore row or column regions because
+            // they do not have a fixed end position
+            if ((item.Region is RowRegion && axis == Axis.Col) || (item.Region is ColumnRegion && axis == Axis.Row))
+                continue;
+
+            var region = item.Region.Clone();
+
+            if (axis == Axis.Row)
+            {
+                if (index < region.Top)
+                {
+                    region.Shift(count, 0);
+                }
+                else
+                {
+                    region.Expand(Edge.Bottom, count);
+                }
+            }
+            else if (axis == Axis.Col)
+            {
+                if (index < region.Left)
+                {
+                    region.Shift(0, count);
+                }
+                else
+                {
+                    region.Expand(Edge.Right, count);
+                }
+            }
+
+            MergedCells.Delete(item);
+
+            if ((region.Top != region.Bottom && region.Left != region.Right) || region is RowRegion || region is ColumnRegion)
+            {
+                var merge = new CellMerge(region);
+                MergedCells.Insert(merge);
+                overridenMergedRegions.Add(merge);
+            }
+        }
+
+        return (mergesPerformed, overridenMergedRegions.AsReadOnly());
+    }
+    /// <summary>
+    /// Undo rerange operation to restore state before Insert\Remove rows\columns commands
+    /// </summary>
+    /// <param name="_mergesPerformed">state to return on</param>
+    /// <param name="_overridenMergedRegions">state to undo</param>
+    internal void UndoRerangeMergedCells(IReadOnlyList<CellMerge> _mergesPerformed, IReadOnlyList<CellMerge> _overridenMergedRegions)
+    {
+        foreach (var item in _overridenMergedRegions)
+        {
+            MergedCells.Delete(item);
+        }
+        foreach (var item in _mergesPerformed)
+        {
+            MergedCells.Insert(item);
+        }
+    }
 
     /// <summary>
     /// Returns a single cell range at the position row, col

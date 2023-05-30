@@ -8,6 +8,8 @@ public class RemoveColumnCommand : IUndoableCommand
     private Heading _removedHeading;
     private double _removedWidth;
     private List<CellChange> _removedValues;
+    private IReadOnlyList<CellMerge> _mergesPerformed = default!;
+    private IReadOnlyList<CellMerge> _overridenMergedRegions = default!;
 
     /// <summary>
     /// Command for removing a column at the index given.
@@ -29,6 +31,8 @@ public class RemoveColumnCommand : IUndoableCommand
             _removedHeading = sheet.ColumnHeadings[_columnIndex];
 
         var res = sheet.RemoveColImpl(_columnIndex);
+
+        (_mergesPerformed, _overridenMergedRegions) = sheet.RerangeMergedCells(Axis.Col, _columnIndex, -1);
         return res;
     }
 
@@ -39,6 +43,7 @@ public class RemoveColumnCommand : IUndoableCommand
         if (_columnIndex >= 0 && _columnIndex < sheet.ColumnHeadings.Count)
             sheet.ColumnHeadings[_columnIndex] = _removedHeading;
         sheet.SetCellValuesImpl(_removedValues);
+        sheet.UndoRerangeMergedCells(_mergesPerformed, _overridenMergedRegions);
         return true;
     }
 }
