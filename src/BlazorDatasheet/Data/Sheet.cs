@@ -311,6 +311,11 @@ public class Sheet
         var overridenMergedRegions = new List<CellMerge>();
         foreach (var item in mergesPerformed)
         {
+            // Ignore row or column regions because
+            // they do not have a fixed end position
+            if(item.Region is RowRegion or ColumnRegion)
+                continue;
+            
             var region = item.Region.Clone();
 
             if (axis == Axis.Row)

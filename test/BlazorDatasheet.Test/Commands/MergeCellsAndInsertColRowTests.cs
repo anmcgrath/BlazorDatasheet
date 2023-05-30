@@ -76,7 +76,6 @@ public class MergeCellsAndInsertColRowTests
 
         Assert.False(sheet.IsPositionMerged(0, 0));
         Assert.False(sheet.IsPositionMerged(4, 4));
-
     }
 
     [Test]
@@ -502,5 +501,39 @@ public class MergeCellsAndInsertColRowTests
 
         Assert.False(sheet.IsPositionMerged(2, 2));
         Assert.False(sheet.IsPositionMerged(3, 2));
+    }
+
+    [Test]
+    public void Insert_Row_Inside_Merged_Column_Expands_Merge()
+    {
+        // This case tests when an entire column is merged
+        // and a row is inserted inside the merge. The behaviour
+        // should be the same as when inserting inside a smaller range
+        var sheet = new Sheet(3, 3);
+        sheet.TrySetCellValue(0, 1, "M");
+        sheet.MergeCells(new ColumnRegion(1));
+        Assert.AreEqual(sheet.GetValue(0, 1), "M");
+
+        sheet.InsertRowAfter(0);
+        var mergeRegion = sheet.GetMergedRegionAtPosition(0, 1);
+        Assert.NotNull(mergeRegion);
+        Assert.AreEqual(mergeRegion.GetType(), typeof(ColumnRegion));
+    }
+
+    [Test]
+    public void Insert_Col_Inside_Merged_Row_Expands_Merge()
+    {
+        // This case tests when an entire row is merged
+        // and a col is inserted inside the merge. The behaviour
+        // should be the same as when inserting inside a smaller range
+        var sheet = new Sheet(3, 3);
+        sheet.TrySetCellValue(0, 1, "M");
+        sheet.MergeCells(new RowRegion(1));
+        Assert.AreEqual(sheet.GetValue(0, 1), "M");
+
+        sheet.InsertColAfter(0);
+        var mergeRegion = sheet.GetMergedRegionAtPosition(1, 0);
+        Assert.NotNull(mergeRegion);
+        Assert.AreEqual(mergeRegion.GetType(), typeof(RowRegion));
     }
 }
