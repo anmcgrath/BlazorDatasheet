@@ -88,7 +88,7 @@
 
     private double getLeft(IRegion region) => CellLayoutProvider.ComputeLeftPosition(region) - 1;
     private double getTop(IRegion region) => CellLayoutProvider.ComputeTopPosition(region) - 1;
-    private double getWidth(IRegion region) => CellLayoutProvider.ComputeWidth(region) + 2;
+    private double getWidth(IRegion region) => CellLayoutProvider.ComputeWidth(region) + 1;
     private double getHeight(IRegion region) => CellLayoutProvider.ComputeHeight(region) + 1;
 
     // Returns the region that the position covers (may be > 1 because of merged cells)

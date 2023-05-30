@@ -13,7 +13,7 @@
 
 <div>
     <div
-        style="@(IsFixedHeight ? $"max-height: {FixedHeightInPx}px;" : "");"
+        style="@(IsFixedHeight ? $"max-height: {FixedHeightInPx}px;" : ""); width: @Sheet.LayoutProvider.ComputeWidth(0, Sheet.NumCols);"
         theme="@Theme"
         class="vars sheet @(IsDataSheetActive ? "active-sheet" : "inactive-sheet")
      @(IsFixedHeight ? $" sheet-fixed-height" : "sheet-dynamic-height") "

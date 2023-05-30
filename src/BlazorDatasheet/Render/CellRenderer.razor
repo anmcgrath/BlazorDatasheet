@@ -18,7 +18,9 @@
         format = conditionalFormatting;
     <div
         class="sheet-cell"
-        style="@GetAbsolutePositionStyles() @($"height:{Sheet.LayoutProvider.ComputeHeight(RowSpan)}px")"
+        style="@GetAbsolutePositionStyles() 
+        @CssUtil.GetCellWidthStyles(Cell.Col, ColSpan, Sheet.LayoutProvider)
+        @($"height:{Sheet.LayoutProvider.ComputeHeight(RowSpan)}px;")"
         @ondblclick="ondblclick"
         @onmousedown="onmousedown"
         @onmouseup="onmouseup"
@@ -27,8 +29,7 @@
         <div
             class="cell"
             style="
-            @CalculateCellFormattingStyle(format, Cell.IsValid)
-            @CssUtil.GetCellWidthStyles(Cell.Col, ColSpan, Sheet.LayoutProvider)">
+            @CalculateCellFormattingStyle(format, Cell.IsValid)">
 
             @if (format?.Icon != null)
             {

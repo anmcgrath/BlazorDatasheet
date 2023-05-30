@@ -18,7 +18,7 @@ public class CellLayoutProvider
     private List<double> _columnWidths { get; } = new();
     private List<double> _columnStartPositions { get; } = new();
 
-    internal CellLayoutProvider(Sheet sheet, double defaultColumnWidth, double defaultRowHeight)
+    public CellLayoutProvider(Sheet sheet, double defaultColumnWidth, double defaultRowHeight)
     {
         _sheet = sheet;
         _sheet.ColumnInserted += SheetOnColumnInserted;
@@ -36,7 +36,7 @@ public class CellLayoutProvider
         updateXPositions();
     }
 
-    internal void SetColumnWidth(int col, double width)
+    public void SetColumnWidth(int col, double width)
     {
         _columnWidths[col] = width;
         updateXPositions();
@@ -95,7 +95,7 @@ public class CellLayoutProvider
         var colXStart = _columnStartPositions[startCol];
         var colXEnd = _columnStartPositions[end];
 
-        var w = colXEnd - colXStart + _columnWidths[end] - 1;
+        var w = colXEnd - colXStart + _columnWidths[end];
         return w;
     }
 

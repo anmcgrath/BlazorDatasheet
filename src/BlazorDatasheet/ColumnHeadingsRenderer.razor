@@ -18,9 +18,9 @@
             BackgroundVisible="@true"
             BorderThickness="0"
             BackgroundStyle="background:var(--selection-bg-color);"
-            Width="CellLayoutProvider.ComputeWidth(interval.Start, interval.Length) + 2"
+            Width="CellLayoutProvider.ComputeWidth(interval.Start, interval.Length) + 1"
             Height="CellLayoutProvider.ComputeHeight(1) + 1"
-            X="CellLayoutProvider.ComputeLeftPosition(interval.Start) - 1"
+            X="CellLayoutProvider.ComputeLeftPosition(interval.Start)"
             Y="CellLayoutProvider.ComputeTopPosition(-1)"/>
     }
 
@@ -53,11 +53,11 @@
 
     <div
         class="sheet-cell @(IsActive(col) ? "column-active" : "")"
-        style="z-index: 1;"
+        style="z-index: 1; @CssUtil.GetCellWidthStyles(i, 1, CellLayoutProvider)"
         @onmouseup="e => HandleMouseUp(col, e)"
         @onmouseover="e => HandleMouseOver(col, e)"
         @onmousedown="e => HandleMouseDown(col, e)">
-        <div class="cell" style="@CssUtil.GetCellWidthStyles(i, 1, CellLayoutProvider)">
+        <div class="cell" style="">
             @colDefn?.Header
         </div>
     </div>
