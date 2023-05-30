@@ -18,4 +18,21 @@ public class CellLayoutProviderTests
         provider.SetColumnWidth(1, w2);
         Assert.AreEqual(2 * w1 + w2, provider.ComputeWidth(0, 3));
     }
+
+    [Test]
+    public void Inserting_Column_After_Setting_Width_Ends_With_Correct_Widths()
+    {
+        var sheet = new Sheet(3, 3);
+        var defaultW = 20;
+        var w2 = 40;
+        var provider = new CellLayoutProvider(sheet, defaultW, 10);
+        provider.SetColumnWidth(1, w2);
+        sheet.InsertColAfter(0);
+        Assert.AreEqual(defaultW, provider.ComputeWidth(1, 1));
+        Assert.AreEqual(w2, provider.ComputeWidth(2, 1));
+        Assert.AreEqual(defaultW, provider.ComputeWidth(0, 1));
+        sheet.Commands.Undo();
+        Assert.AreEqual(w2, provider.ComputeWidth(1, 1));
+        Assert.AreEqual(defaultW * 2 + w2, provider.ComputeWidth(0, 3));
+    }
 }

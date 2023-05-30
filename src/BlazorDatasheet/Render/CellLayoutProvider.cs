@@ -22,6 +22,7 @@ public class CellLayoutProvider
     {
         _sheet = sheet;
         _sheet.ColumnInserted += SheetOnColumnInserted;
+        _sheet.ColumnRemoved += SheetOnColumnRemoved;
         _defaultColumnWidth = defaultColumnWidth;
         _defaultRowHeight = defaultRowHeight;
 
@@ -30,9 +31,15 @@ public class CellLayoutProvider
         updateXPositions();
     }
 
+    private void SheetOnColumnRemoved(object? sender, ColumnRemovedEventArgs e)
+    {
+        _columnWidths.RemoveAt(e.ColumnIndex);
+        updateXPositions();
+    }
+
     private void SheetOnColumnInserted(object? sender, ColumnInsertedEventArgs e)
     {
-        _columnWidths.Insert(e.ColAfter + 1, _defaultColumnWidth);
+        _columnWidths.Insert(e.ColAfter + 1, e.Width ?? _defaultColumnWidth);
         updateXPositions();
     }
 

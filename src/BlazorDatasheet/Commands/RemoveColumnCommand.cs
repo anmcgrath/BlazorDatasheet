@@ -6,6 +6,7 @@ public class RemoveColumnCommand : IUndoableCommand
 {
     private int _columnIndex;
     private Heading _removedHeading;
+    private double _removedWidth;
     private List<CellChange> _removedValues;
 
     /// <summary>
@@ -23,6 +24,7 @@ public class RemoveColumnCommand : IUndoableCommand
         var nonEmptyInCol = sheet.GetNonEmptyCellPositions(new ColumnRegion(_columnIndex));
         _removedValues = nonEmptyInCol.Select(x => new CellChange(x.row, x.col, sheet.GetValue(x.row, x.col)))
                                       .ToList();
+        _removedWidth = sheet.LayoutProvider.ComputeWidth(_columnIndex, 1);
         if (sheet.ColumnHeadings.Any() && _columnIndex >= 0 && _columnIndex < sheet.ColumnHeadings.Count)
             _removedHeading = sheet.ColumnHeadings[_columnIndex];
 
@@ -33,7 +35,7 @@ public class RemoveColumnCommand : IUndoableCommand
     public bool Undo(Sheet sheet)
     {
         // Insert column back in and set all the values that we removed
-        sheet.InsertColAfterImpl(_columnIndex - 1);
+        sheet.InsertColAfterImpl(_columnIndex - 1, _removedWidth);
         if (_columnIndex >= 0 && _columnIndex < sheet.ColumnHeadings.Count)
             sheet.ColumnHeadings[_columnIndex] = _removedHeading;
         sheet.SetCellValuesImpl(_removedValues);

@@ -204,13 +204,13 @@ public class Sheet
         Commands.ExecuteCommand(cmd);
     }
 
-    internal void InsertColAfterImpl(int colIndex)
+    internal void InsertColAfterImpl(int colIndex, double? width = null)
     {
         _cellDataStore.InsertColAfter(colIndex);
         if (ColumnHeadings.Count > colIndex)
             ColumnHeadings.Insert(colIndex + 1, new Heading());
         NumCols++;
-        ColumnInserted?.Invoke(this, new ColumnInsertedEventArgs(colIndex));
+        ColumnInserted?.Invoke(this, new ColumnInsertedEventArgs(colIndex, width));
     }
 
     /// <summary>
