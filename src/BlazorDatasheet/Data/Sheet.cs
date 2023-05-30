@@ -313,7 +313,7 @@ public class Sheet
         {
             // Ignore row or column regions because
             // they do not have a fixed end position
-            if(item.Region is RowRegion or ColumnRegion)
+            if((item.Region is RowRegion && axis == Axis.Col) || (item.Region is ColumnRegion && axis == Axis.Row))
                 continue;
             
             var region = item.Region.Clone();
