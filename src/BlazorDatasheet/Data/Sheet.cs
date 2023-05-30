@@ -313,9 +313,9 @@ public class Sheet
         {
             // Ignore row or column regions because
             // they do not have a fixed end position
-            if((item.Region is RowRegion && axis == Axis.Col) || (item.Region is ColumnRegion && axis == Axis.Row))
+            if ((item.Region is RowRegion && axis == Axis.Col) || (item.Region is ColumnRegion && axis == Axis.Row))
                 continue;
-            
+
             var region = item.Region.Clone();
 
             if (axis == Axis.Row)
@@ -342,8 +342,8 @@ public class Sheet
             }
 
             MergedCells.Delete(item);
-           
-            if (region.Top != region.Bottom && region.Left != region.Right)
+
+            if ((region.Top != region.Bottom && region.Left != region.Right) || region is RowRegion || region is ColumnRegion)
             {
                 var merge = new CellMerge(region);
                 MergedCells.Insert(merge);

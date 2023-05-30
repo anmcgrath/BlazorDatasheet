@@ -528,12 +528,58 @@ public class MergeCellsAndInsertColRowTests
         // should be the same as when inserting inside a smaller range
         var sheet = new Sheet(3, 3);
         sheet.TrySetCellValue(0, 1, "M");
+        
         sheet.MergeCells(new RowRegion(1));
+
         Assert.AreEqual(sheet.GetValue(0, 1), "M");
 
         sheet.InsertColAfter(0);
-        var mergeRegion = sheet.GetMergedRegionAtPosition(1, 0);
-        Assert.NotNull(mergeRegion);
-        Assert.AreEqual(mergeRegion.GetType(), typeof(RowRegion));
+
+        var mergeRowRegion = sheet.GetMergedRegionAtPosition(1, 0);
+        Assert.NotNull(mergeRowRegion);
+        Assert.AreEqual(mergeRowRegion.GetType(), typeof(RowRegion));
+
+    }
+
+    [Test]
+    public void Insert_Col_Inside_Merged_Column_Shift_Merge()
+    {
+        // This case tests when an entire row is merged
+        // and a col is inserted inside the merge. The behaviour
+        // should be the same as when inserting inside a smaller range
+        var sheet = new Sheet(3, 3);
+        sheet.TrySetCellValue(0, 1, "M");
+
+        sheet.MergeCells(new ColumnRegion(2));
+
+
+        Assert.AreEqual(sheet.GetValue(0, 1), "M");
+
+        sheet.InsertColAfter(0);
+
+
+        var mergeColumnRegion = sheet.GetMergedRegionAtPosition(0, 3);
+        Assert.NotNull(mergeColumnRegion);
+        Assert.AreEqual(mergeColumnRegion.GetType(), typeof(ColumnRegion));
+    }
+
+    [Test]
+    public void Insert_Col_Inside_Merged_Row_Shift_Merge()
+    {
+        // This case tests when an entire row is merged
+        // and a col is inserted inside the merge. The behaviour
+        // should be the same as when inserting inside a smaller range
+        var sheet = new Sheet(3, 3);
+        sheet.TrySetCellValue(0, 1, "M");
+
+        sheet.MergeCells(new RowRegion(1));
+
+        Assert.AreEqual(sheet.GetValue(0, 1), "M");
+
+        sheet.InsertRowAfter(0);
+
+        var mergeRowRegion = sheet.GetMergedRegionAtPosition(2, 0);
+        Assert.NotNull(mergeRowRegion);
+        Assert.AreEqual(mergeRowRegion.GetType(), typeof(RowRegion));
     }
 }
