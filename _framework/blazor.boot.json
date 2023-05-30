@@ -8,7 +8,7 @@
   "resources": {
     "assembly": {
       "BlazorDatasheet.DataStructures.dll": "sha256-\/l7TmQ46ibDKhhX4GMK1jl7+v51AitlWT5\/Gt6BKTVI=",
-      "BlazorDatasheet.dll": "sha256-cPt09sx+1kI5lRqA6SQau9g3GxATF8MYifO5Lt98f24=",
+      "BlazorDatasheet.dll": "sha256-D77hMuy0oR0ZA7ztWAJMPuNRd2A7NWh6gCMqHn3zTRY=",
       "BlazorDatasheet.SharedPages.dll": "sha256-DU8Q64u7OoRfnkasfiyQiRC\/SPw8UVlWA9f37KI0wiQ=",
       "BlazorDatasheet.Wasm.dll": "sha256-Qf1Kp7i07JAkaUmv02AWWCU6YdQpYWDDahMI9VcAtrg=",
       "Microsoft.AspNetCore.Components.dll": "sha256-qraqwdbzj3DF3iNXjyDg6F+imUEj72DugoZG+lu1b4Q=",
