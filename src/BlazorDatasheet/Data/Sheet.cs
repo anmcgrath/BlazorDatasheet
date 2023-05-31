@@ -139,6 +139,11 @@ public class Sheet
     public event EventHandler<SheetInvalidateEventArgs>? SheetInvalidated;
 
     /// <summary>
+    /// Fired when a cell's formula is changed
+    /// </summary>
+    public event EventHandler<FormulaChangedEventArgs>? FormulaChanged;
+
+    /// <summary>
     /// Fired before a cell's value is set. Allows for changing the value that is set.
     /// </summary>
     public event EventHandler<BeforeCellChangeEventArgs> BeforeSetCellValue;
@@ -303,9 +308,12 @@ public class Sheet
     /// <param name="index">index of inserted row\column</param>
     /// <param name="count">count of inserted or removed rows\columns. count > 0 when inserted, count < 0 when reomved</param>
     /// <returns>list of affected regions (before operation state) and list of new regions (state after operation)</returns>
-    internal (IReadOnlyList<CellMerge> mergesPerformed, IReadOnlyList<CellMerge> overridenMergedRegions) RerangeMergedCells(Axis axis, int index, int count)
+    internal (IReadOnlyList<CellMerge> mergesPerformed, IReadOnlyList<CellMerge> overridenMergedRegions)
+        RerangeMergedCells(Axis axis, int index, int count)
     {
-        var afterInserted = axis == Axis.Row ? new Region(index, NumRows, 0, NumCols) : new Region(0, NumRows, index, NumCols);
+        var afterInserted = axis == Axis.Row
+            ? new Region(index, NumRows, 0, NumCols)
+            : new Region(0, NumRows, index, NumCols);
         var envelope = afterInserted.ToEnvelope();
         var mergesPerformed = MergedCells.Search(envelope);
         var overridenMergedRegions = new List<CellMerge>();
@@ -343,7 +351,8 @@ public class Sheet
 
             MergedCells.Delete(item);
 
-            if ((region.Top != region.Bottom && region.Left != region.Right) || region is RowRegion || region is ColumnRegion)
+            if ((region.Top != region.Bottom && region.Left != region.Right) || region is RowRegion ||
+                region is ColumnRegion)
             {
                 var merge = new CellMerge(region);
                 MergedCells.Insert(merge);
@@ -353,17 +362,20 @@ public class Sheet
 
         return (mergesPerformed, overridenMergedRegions.AsReadOnly());
     }
+
     /// <summary>
     /// Undo rerange operation to restore state before Insert\Remove rows\columns commands
     /// </summary>
     /// <param name="_mergesPerformed">state to return on</param>
     /// <param name="_overridenMergedRegions">state to undo</param>
-    internal void UndoRerangeMergedCells(IReadOnlyList<CellMerge> _mergesPerformed, IReadOnlyList<CellMerge> _overridenMergedRegions)
+    internal void UndoRerangeMergedCells(IReadOnlyList<CellMerge> _mergesPerformed,
+        IReadOnlyList<CellMerge> _overridenMergedRegions)
     {
         foreach (var item in _overridenMergedRegions)
         {
             MergedCells.Delete(item);
         }
+
         foreach (var item in _mergesPerformed)
         {
             MergedCells.Insert(item);
@@ -535,6 +547,28 @@ public class Sheet
         return setValue;
     }
 
+    public bool SetFormula(int row, int col, string? formulaString)
+    {
+        var cmd = new SetFormulaCommand(row, col, formulaString);
+        return Commands.ExecuteCommand(cmd);
+    }
+
+    internal bool SetFormulaImpl(int row, int col, string? formulaString)
+    {
+        var cell = _cellDataStore.Get(row, col);
+        if (cell == null)
+        {
+            cell = new Cell();
+            _cellDataStore.Set(row, col, cell);
+        }
+
+        var oldFormula = cell.FormulaString;
+        cell.FormulaString = formulaString;
+
+        FormulaChanged?.Invoke(this, new FormulaChangedEventArgs(row, col, oldFormula, formulaString));
+        return true;
+    }
+
 
     internal void SetCell(int row, int col, Cell cell)
     {
@@ -568,6 +602,7 @@ public class Sheet
         var cmd = new SetCellValuesCommand(changes);
         return Commands.ExecuteCommand(cmd);
     }
+
     /// <summary>
     /// Set read only state for specified cell
     /// </summary>
@@ -591,6 +626,7 @@ public class Sheet
         var cell = _cellDataStore.Get(row, col);
         cell.IsReadOnly = readOnly;
     }
+
     /// <summary>
     /// Performs the actual setting of cell values, including raising events for any changes made.
     /// </summary>
@@ -637,7 +673,7 @@ public class Sheet
         {
             var cell = this.GetCell(posn.row, posn.col) as Cell;
             var oldValue = cell!.GetValue();
-            cell!.ClearValue();
+            cell!.Clear();
             var newVal = cell.GetValue();
             if (oldValue != newVal)
             {
@@ -1048,6 +1084,7 @@ public class Sheet
                         strBuilder.Append(value);
                     }
                 }
+
                 if (col != c1)
                     strBuilder.Append(tabDelimiter);
             }

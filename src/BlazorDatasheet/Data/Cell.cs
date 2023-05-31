@@ -57,6 +57,11 @@ public class Cell : IReadOnlyCell, IWriteableCell
     /// The best choice for the underlying data type of Data.
     /// </summary>
     public Type DataType { get; set; }
+    
+    /// <summary>
+    /// The cell's formula string
+    /// </summary>
+    public string? FormulaString { get; internal set; }
 
     /// <summary>
     /// Represents an individual datasheet cell
@@ -151,9 +156,11 @@ public class Cell : IReadOnlyCell, IWriteableCell
         }
     }
 
-    public void ClearValue()
+    public void Clear()
     {
+        FormulaString = null;
         var currentVal = GetValue();
+        
         if (currentVal == null)
             return;
 

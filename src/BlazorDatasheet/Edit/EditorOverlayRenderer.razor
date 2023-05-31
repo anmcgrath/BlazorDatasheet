@@ -4,6 +4,7 @@
 @using BlazorDatasheet.Interfaces
 @using BlazorDatasheet.Render
 @using System.Reflection.Metadata
+@using BlazorDatasheet.FormulaEngine
 
 @if (IsEditing)
 {
@@ -96,7 +97,10 @@
             return;
 
         var cell = Sheet.GetCell(row, col);
-        if (Sheet.EditorTypes.ContainsKey(cell.Type))
+
+        if (!string.IsNullOrEmpty(cell.FormulaString) || Formula.IsFormula(key))
+            ActiveEditorType = typeof(TextEditorComponent);
+        else if (Sheet.EditorTypes.ContainsKey(cell.Type))
             ActiveEditorType = Sheet.EditorTypes[cell.Type];
         else
             ActiveEditorType = typeof(TextEditorComponent);
@@ -127,6 +131,14 @@
         }
 
         var editorValue = ActiveCellEditor.GetValue();
+
+        if (editorValue != null && Formula.IsFormula(editorValue.ToString()))
+        {
+            Sheet.SetFormula(EditRow, EditCol, editorValue.ToString());
+            this.clearCurrentEdit();
+            return true;
+        }
+
         var setCell = Sheet.TrySetCellValue(EditRow, EditCol, editorValue);
 
         if (setCell)

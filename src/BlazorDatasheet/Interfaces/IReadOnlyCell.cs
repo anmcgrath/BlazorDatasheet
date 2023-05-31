@@ -15,4 +15,5 @@ public interface IReadOnlyCell
     public int Col { get; }
     public bool IsValid { get; }
     public object? Data { get; }
+    public string? FormulaString { get; }
 }
