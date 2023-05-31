@@ -219,6 +219,17 @@ public class Selection : BRange
     }
 
     /// <summary>
+    /// Extends the active region to the row/col specified
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    internal void ExtendTo(int row, int col)
+    {
+        ActiveRegion?.ExtendTo(row, col);
+        emitSelectingChanged();
+    }
+
+    /// <summary>
     /// Clears any selections or active selections and sets the selection to the region specified
     /// </summary>
     /// <param name="region"></param>

@@ -220,7 +220,7 @@ public partial class Datasheet : IHandleEvent
     private void HandleCellMouseDown(int row, int col, MouseEventArgs e)
     {
         if (e.ShiftKey && Sheet?.Selection?.ActiveRegion != null)
-            Sheet?.Selection?.ActiveRegion.ExtendTo(row, col);
+            Sheet?.Selection?.ExtendTo(row, col);
         else
         {
             if (!e.MetaKey && !e.CtrlKey)
@@ -242,7 +242,7 @@ public partial class Datasheet : IHandleEvent
     private void HandleColumnHeaderMouseDown(int col, MouseEventArgs e)
     {
         if (e.ShiftKey && Sheet?.Selection?.ActiveRegion != null)
-            Sheet?.Selection?.ActiveRegion.ExtendTo(0, col);
+            Sheet?.Selection?.ExtendTo(0, col);
         else
         {
             if (!e.MetaKey && !e.CtrlKey)
@@ -259,7 +259,7 @@ public partial class Datasheet : IHandleEvent
     private void HandleRowHeaderMouseDown(int row, MouseEventArgs e)
     {
         if (e.ShiftKey && Sheet?.Selection?.ActiveRegion != null)
-            Sheet?.Selection?.ActiveRegion.ExtendTo(row, 0);
+            Sheet?.Selection?.ExtendTo(row, 0);
         else
         {
             if (!e.MetaKey && !e.CtrlKey)
