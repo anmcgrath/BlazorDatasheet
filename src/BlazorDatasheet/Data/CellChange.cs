@@ -16,7 +16,7 @@ public class CellChange
     /// <summary>
     /// The new value of the cell
     /// </summary>
-    public object? NewValue { get; set; }
+    public object? NewValue { get; }
 
     public CellChange(int row, int col, object? newValue)
     {

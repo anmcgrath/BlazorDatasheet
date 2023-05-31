@@ -76,8 +76,8 @@ public class OrderedInterval
     {
         var sortedIntervals =
             intervals.Select(x => x.Copy())
-                     .OrderBy(x => x.Start)
-                     .ToList();
+                .OrderBy(x => x.Start)
+                .ToList();
         var mergedIntervals = new List<OrderedInterval>();
 
         if (!sortedIntervals.Any())
@@ -121,5 +121,10 @@ public class OrderedInterval<T> : OrderedInterval
     public OrderedInterval(int start, int end, T data) : base(start, end)
     {
         Data = data;
+    }
+
+    public new OrderedInterval<T> Copy()
+    {
+        return new OrderedInterval<T>(Start, End, Data);
     }
 }
