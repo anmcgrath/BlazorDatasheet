@@ -1,6 +1,7 @@
 @page "/simple"
 @using BlazorDatasheet.Data
 @using BlazorDatasheet.Formats
+@using BlazorDatasheet.FormulaEngine
 @using BlazorDatasheet.Render
 
 <PageTitle>Simple example</PageTitle>
@@ -12,10 +13,9 @@
 <Datasheet
     Sheet="sheet"
     IsFixedHeight="true"
-    FixedHeightInPx="600"
-    />
+    FixedHeightInPx="600"/>
 <button @onclick="@(() => sheet.SetFormat(new CellFormat() { BackgroundColor = "red" }, sheet.Selection))">Set format to red</button>
-    <button @onclick="@(() => sheet.SetFormat(new CellFormat() { BackgroundColor = "blue" }, sheet.Selection))">Set format to blue</button>
+<button @onclick="@(() => sheet.SetFormat(new CellFormat() { BackgroundColor = "blue" }, sheet.Selection))">Set format to blue</button>
 
 
 @code{
