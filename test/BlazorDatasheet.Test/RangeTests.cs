@@ -50,4 +50,19 @@ public class RangeTests
         Assert.AreEqual(cell.Value, "Test");
         Assert.AreEqual(sheet.GetValue(0, 0), "Test");
     }
+
+    [Test]
+    public void Get_Col_Row_Range_From_Sheet_Ok()
+    {
+        var sheet = new Sheet(3, 3);
+        var rowRange = sheet.Range(Axis.Row, 1, 3);
+        Assert.AreEqual(typeof(RowRegion), rowRange.Regions.First().GetType());
+        Assert.AreEqual(1, rowRange.Regions.First().Start.Row);
+        Assert.AreEqual(3, rowRange.Regions.First().End.Row);
+
+        var colRange = sheet.Range(Axis.Col, 1, 3);
+        Assert.AreEqual(typeof(ColumnRegion), colRange.Regions.First().GetType());
+        Assert.AreEqual(1, colRange.Regions.First().Start.Col);
+        Assert.AreEqual(3, colRange.Regions.First().End.Col);
+    }
 }

@@ -417,6 +417,26 @@ public class Sheet
     }
 
     /// <summary>
+    /// Returns a column or row range, depending on the axis provided
+    /// </summary>
+    /// <param name="axis">The axis of the range (row or column)</param>
+    /// <param name="start">The start row/column index</param>
+    /// <param name="end">The end row/column index</param>
+    /// <returns></returns>
+    public BRange Range(Axis axis, int start, int end)
+    {
+        switch (axis)
+        {
+            case Axis.Col:
+                return Range(new ColumnRegion(start, end));
+            case Axis.Row:
+                return Range(new RowRegion(start, end));
+        }
+        
+        throw new Exception("Cannot return a range for axis "+axis);
+    }
+
+    /// <summary>
     /// Returns a new range that contains all the regions specified
     /// </summary>
     /// <param name="regions"></param>
