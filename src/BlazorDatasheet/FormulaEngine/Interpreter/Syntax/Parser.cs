@@ -19,7 +19,7 @@ public class Parser
 
     private SyntaxToken Current => Peek(0);
 
-    public SyntaxTree Parse(Lexer lexer, string text)
+    internal SyntaxTree Parse(Lexer lexer, string text)
     {
         Errors = new List<string>();
         _references = new List<Reference>();

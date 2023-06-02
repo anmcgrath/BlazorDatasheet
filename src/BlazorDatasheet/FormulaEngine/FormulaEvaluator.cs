@@ -6,25 +6,62 @@ namespace BlazorDatasheet.FormulaEngine;
 
 public class FormulaEvaluator
 {
-    private readonly Environment _environment;
+    private readonly IEnvironment _environment;
     private readonly ParameterTypeConversion _converter;
 
-    public FormulaEvaluator(Environment environment)
+    /// <summary>
+    /// The row address of the currently evaluated formula. If null, then the formula is not associated with a row/col.
+    /// </summary>
+    private int? _currentRow;
+
+    /// <summary>
+    /// The column address of the currently evaluated formula. If null, then the formula is not associated with a row/col.
+    /// </summary>
+    private int? _currentCol;
+
+    public FormulaEvaluator(IEnvironment environment)
     {
         _environment = environment;
         _converter = new ParameterTypeConversion(environment);
     }
 
-    public object Evaluate(SyntaxTree tree)
+    internal object Evaluate(SyntaxTree tree)
     {
         if (tree.Diagnostics.Any())
             return new FormulaError(ErrorType.Na);
         return Evaluate(tree.Root);
     }
 
-    public object Evaluate(Formula formula)
+    /// <summary>
+    /// Evaluates the formula at a given position.
+    /// </summary>
+    /// <param name="formula">The formula to evaluate</param>
+    /// <param name="row">The row of the formula. Required to evaluate relative references.</param>
+    /// <param name="col">The column of the formula. Required to evaluate relative reference.</param>
+    /// <returns></returns>
+    public object Evaluate(Formula formula, int? row, int? col)
     {
+        _currentCol = col;
+        _currentRow = row;
         return Evaluate(formula.ExpressionTree);
+    }
+
+    /// <summary>
+    /// Evaluate the formula.
+    /// </summary>
+    /// <param name="formula">The formula to evaluate</param>
+    /// <returns></returns>
+    public object? Evaluate(Formula formula)
+    {
+        _currentCol = null;
+        _currentRow = null;
+        var result = Evaluate(formula.ExpressionTree);
+        // The only case we want to do any conversion on here is if we are
+        // evaluating a formula and end up with a cell address as the result.
+        // In that case we want to get the cell's value
+        if (result is CellAddress addr)
+            return _environment.GetCellValue(addr.Row, addr.Col);
+        return result;
     }
 
     private object Evaluate(SyntaxNode node)
@@ -57,7 +94,7 @@ public class FormulaEvaluator
         if (!_environment.FunctionExists(node.Identifier.Text))
             return new FormulaError(ErrorType.Name, $"Function {node.Identifier.Text} not found");
 
-        var func = _environment.GetFunction(node.Identifier.Text);
+        var func = _environment.GetFunctionDefinition(node.Identifier.Text);
         var nArgsProvided = node.Args.Count();
 
         if (nArgsProvided < func.MinArity ||
@@ -104,34 +141,78 @@ public class FormulaEvaluator
 
     private object EvaluateRangeReference(RangeReferenceExpressionSyntax node)
     {
+        if (node.Reference.IsRelativeReference &&
+            (_currentCol == null || _currentRow == null))
+        {
+            return new FormulaError(ErrorType.Ref,
+                "Relative reference used but formula is not defined on a row/column.");
+        }
+
         var start = node.Reference.Start;
         var end = node.Reference.End;
 
+
         if (start.Kind == ReferenceKind.Cell && end.Kind == ReferenceKind.Cell)
         {
-            var cellStart = (CellReference)start;
-            var cellEnd = (CellReference)end;
-            return _environment.GetRange(cellStart.Row.RowNumber,
-                                         cellEnd.Row.RowNumber,
-                                         cellStart.Col.ColNumber,
-                                         cellEnd.Col.ColNumber);
+            return ToRangeAddress(start, end);
         }
 
         if (start.Kind == ReferenceKind.Column && end.Kind == ReferenceKind.Column)
         {
-            var colStart = (ColReference)start;
-            var colEnd = (ColReference)end;
-            return _environment.GetColRange(colStart, colEnd);
+            return ToColumnAddress((ColReference)start, (ColReference)end);
         }
 
         if (start.Kind == ReferenceKind.Row && end.Kind == ReferenceKind.Row)
         {
-            var rowStart = (RowReference)start;
-            var rowEnd = (RowReference)end;
-            return _environment.GetRowRange(rowStart, rowEnd);
+            return ToRowAddress((RowReference)start, (RowReference)end);
         }
 
         return new FormulaError(ErrorType.Name, $"Range could not be evaluated");
+    }
+
+    private object ToRowAddress(RowReference start, RowReference end)
+    {
+        var colStart = start.IsRelativeReference
+            ? start.RowNumber + _currentRow!.Value
+            : start.RowNumber;
+        var colEnd = end.IsRelativeReference
+            ? end.RowNumber + _currentRow!.Value
+            : end.RowNumber;
+
+        return new ColumnAddress(Math.Min(colStart, colEnd), Math.Max(colStart, colEnd));
+    }
+
+    private ColumnAddress ToColumnAddress(ColReference colStartRef, ColReference colEndRef)
+    {
+        var colStart = colStartRef.IsRelativeReference
+            ? colStartRef.ColNumber + _currentCol!.Value
+            : colStartRef.ColNumber;
+        var colEnd = colEndRef.IsRelativeReference
+            ? colEndRef.ColNumber + _currentCol!.Value
+            : colEndRef.ColNumber;
+
+        return new ColumnAddress(Math.Min(colStart, colEnd), Math.Max(colStart, colEnd));
+    }
+
+    private RangeAddress ToRangeAddress(Reference referenceStart, Reference referenceEnd)
+    {
+        var cellStart = (CellReference)referenceStart;
+        var cellEnd = (CellReference)referenceEnd;
+        var colStart = cellStart.IsRelativeReference
+            ? cellStart.Col.ColNumber + _currentCol!.Value
+            : cellStart.Col.ColNumber;
+        var colEnd = cellEnd.IsRelativeReference
+            ? cellEnd.Col.ColNumber + _currentCol!.Value
+            : cellEnd.Col.ColNumber;
+        var rowStart = cellStart.IsRelativeReference
+            ? cellStart.Row.RowNumber + _currentRow!.Value
+            : cellStart.Row.RowNumber;
+        var rowEnd = cellEnd.IsRelativeReference
+            ? cellEnd.Row.RowNumber + _currentRow!.Value
+            : cellEnd.Row.RowNumber;
+
+        return new RangeAddress(Math.Min(rowStart, rowEnd), Math.Max(rowStart, rowEnd), Math.Min(colStart, colEnd),
+            Math.Max(colStart, colEnd));
     }
 
     private object EvaluateParenthesizedExpression(ParenthesizedExpressionSyntax node)
@@ -141,8 +222,22 @@ public class FormulaEvaluator
 
     private object EvaluateCellReference(CellExpressionSyntax node)
     {
-        var cellValue = _environment.GetCellValue(node.CellReference.Row.RowNumber, node.CellReference.Col.ColNumber);
-        return cellValue;
+        if (node.CellReference.IsRelativeReference &&
+            (_currentCol == null || _currentRow == null))
+        {
+            return new FormulaError(ErrorType.Ref,
+                "Relative reference used but formula is not defined on a row/column.");
+        }
+
+        var row = node.CellReference.IsRelativeReference
+            ? _currentRow!.Value + node.CellReference.Row.RowNumber
+            : node.CellReference.Row.RowNumber;
+
+        var col = node.CellReference.IsRelativeReference
+            ? _currentCol!.Value + node.CellReference.Col.ColNumber
+            : node.CellReference.Col.ColNumber;
+
+        return new CellAddress(row, col);
     }
 
     private object EvaluateLiteralExpression(LiteralExpressionSyntax syntax)
@@ -162,6 +257,9 @@ public class FormulaEvaluator
     {
         var operand = Evaluate(syntax.Operand);
 
+        if (operand is CellAddress addr)
+            operand = _environment.GetCellValue(addr.Row, addr.Col);
+
         if (operand is FormulaError)
             return operand;
 
@@ -180,7 +278,7 @@ public class FormulaEvaluator
     private FormulaError InvalidUnaryExpression(UnaryExpressionSyntax syntax, object operand)
     {
         return new FormulaError(ErrorType.Na,
-                                $"Invalid operation {operand.ToString()} on {syntax.OperatorToken.Text}");
+            $"Invalid operation {operand.ToString()} on {syntax.OperatorToken.Text}");
     }
 
     private object EvalueBinaryExpression(BinaryExpressionSyntax syntax)
@@ -191,6 +289,12 @@ public class FormulaEvaluator
             return left;
         if (right is FormulaError)
             return right;
+
+        if (left is CellAddress addrLeft)
+            left = _environment.GetCellValue(addrLeft.Row, addrLeft.Col);
+
+        if (right is CellAddress addrRight)
+            right = _environment.GetCellValue(addrRight.Row, addrRight.Col);
 
         Console.WriteLine("Checking");
         if (IsValid(left, right, syntax.OperatorToken))
@@ -228,7 +332,7 @@ public class FormulaEvaluator
         return new FormulaError(ErrorType.Value, "Invalid input to binary expression");
     }
 
-    private bool IsValid(object left, object right, SyntaxToken binaryExpressionOperatorToken)
+    private bool IsValid(object? left, object? right, SyntaxToken binaryExpressionOperatorToken)
     {
         // TODO replace with some other pattern so we can more easily handle 
         // operators that operate on different types e.g < can operated on strings and numbers

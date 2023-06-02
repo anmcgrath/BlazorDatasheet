@@ -4,14 +4,14 @@ using BlazorDatasheet.FormulaEngine.Interpreter.References;
 
 namespace BlazorDatasheet.FormulaEngine;
 
-public class Environment
+public class SheetEnvironment : IEnvironment
 {
     // only one sheet for now...
     private readonly Sheet _sheet;
     private readonly Dictionary<string, object> _variables = new();
     private readonly Dictionary<string, CallableFunctionDefinition> _functions = new();
 
-    public Environment(Sheet sheet)
+    public SheetEnvironment(Sheet sheet)
     {
         _sheet = sheet;
     }
@@ -39,7 +39,7 @@ public class Environment
         return _functions.ContainsKey(name);
     }
 
-    public CallableFunctionDefinition GetFunction(string name)
+    public CallableFunctionDefinition GetFunctionDefinition(string name)
     {
         return _functions[name];
     }
@@ -54,12 +54,33 @@ public class Environment
 
     public object? GetCellValue(int row, int col) => _sheet.GetValue(row, col);
 
-    public BRange GetRange(int rowStart, int rowEnd, int colStart, int colEnd) =>
-        _sheet.Range(rowStart, rowEnd, colStart, colEnd);
+    public List<double> GetNumbersInRange(RangeAddress rangeAddress)
+    {
+        return GetNumbersInSheetRange(
+            _sheet.Range(rangeAddress.RowStart, rangeAddress.RowEnd, rangeAddress.ColStart, rangeAddress.ColEnd));
+    }
 
-    public BRange GetColRange(ColReference start, ColReference end) =>
-        _sheet.Range(new ColumnRegion(start.ColNumber, end.ColNumber));
+    public List<double> GetNumbersInRange(ColumnAddress rangeAddress)
+    {
+        return GetNumbersInSheetRange(_sheet.Range(Axis.Col, rangeAddress.Start, rangeAddress.End));
+    }
 
-    public BRange GetRowRange(RowReference start, RowReference end) =>
-        _sheet.Range(new ColumnRegion(start.RowNumber, end.RowNumber));
+    public List<double> GetNumbersInRange(RowAddress rangeAddress)
+    {
+        return GetNumbersInSheetRange(_sheet.Range(Axis.Row, rangeAddress.Start, rangeAddress.End));
+    }
+
+    private List<double> GetNumbersInSheetRange(BRange range)
+    {
+        var nonEmptyCells = range.GetNonEmptyCells();
+        var nums = new List<double>();
+        foreach (var cell in nonEmptyCells)
+        {
+            var val = cell.GetValue<double?>();
+            if (val != null)
+                nums.Add(val.Value);
+        }
+
+        return nums;
+    }
 }

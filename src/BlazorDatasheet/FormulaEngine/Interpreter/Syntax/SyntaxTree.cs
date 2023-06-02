@@ -4,7 +4,7 @@ namespace BlazorDatasheet.FormulaEngine.Interpreter.Syntax;
 
 public sealed class SyntaxTree
 {
-    public SyntaxTree(IEnumerable<string> diagnostics, IEnumerable<Reference> references, ExpressionSyntax root,
+    internal SyntaxTree(IEnumerable<string> diagnostics, IEnumerable<Reference> references, ExpressionSyntax root,
         SyntaxToken endOfFileToken)
     {
         Diagnostics = diagnostics.ToArray();

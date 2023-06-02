@@ -9,20 +9,18 @@ namespace BlazorDatasheet.FormulaEngine;
 public class FormulaEngine
 {
     private readonly Sheet _sheet;
-    private Environment _environment;
-    private readonly Parser _parser = new Parser();
-    private readonly Lexer _lexer = new Lexer();
+    private IEnvironment _environment;
+    private readonly FormulaParser _parser = new();
     private readonly FormulaEvaluator _evaluator;
     private readonly Dictionary<(int row, int col), Formula> _formula = new();
     private readonly DependencyGraph _dependencyGraph;
     private bool _isCalculating = false;
 
-    public FormulaEngine(Sheet sheet)
+    public FormulaEngine(IEnvironment environment)
     {
-        _sheet = sheet;
         _sheet.FormulaChanged += SheetOnFormulaChanged;
         _sheet.CellsChanged += SheetOnCellsChanged;
-        _environment = new Environment(sheet);
+        _environment = environment;
         _evaluator = new FormulaEvaluator(_environment);
         _dependencyGraph = new DependencyGraph();
     }
@@ -48,7 +46,7 @@ public class FormulaEngine
         }
         else
         {
-            var formula = Parse(e.NewFormula);
+            var formula = _parser.FromString(e.NewFormula);
 
             var exists = _formula.ContainsKey((row, col));
             if (!exists)
@@ -72,11 +70,6 @@ public class FormulaEngine
         if (!_formula.ContainsKey((row, col)))
             return null;
         return _evaluator.Evaluate(_formula[(row, col)].ExpressionTree);
-    }
-
-    public Formula Parse(string formulaText)
-    {
-        return new Formula(_parser.Parse(_lexer, formulaText));
     }
 
     public void ClearFormula(int row, int col)

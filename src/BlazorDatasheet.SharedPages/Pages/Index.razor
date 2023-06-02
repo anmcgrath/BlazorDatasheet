@@ -131,7 +131,7 @@
         _editor = builder1.Build();
 
         Sheet = _editor.Sheet;
-        var engine = new FormulaEngine(Sheet);
+        var engine = new FormulaEngine(new SheetEnvironment(Sheet));
     }
 
 }

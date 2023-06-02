@@ -6,14 +6,14 @@ namespace BlazorDatasheet.FormulaEngine.Interpreter.Functions;
 
 public class ParameterTypeConversion
 {
-    private Environment _environment;
+    private IEnvironment _environment;
 
-    public ParameterTypeConversion(Environment environment)
+    public ParameterTypeConversion(IEnvironment environment)
     {
         _environment = environment;
     }
 
-    public object ConvertTo(ParameterType type, object val)
+    internal object? ConvertTo(ParameterType type, object? val)
     {
         switch (type)
         {
@@ -43,17 +43,20 @@ public class ParameterTypeConversion
         if (val is string t)
             return t;
 
-        if (val is IReadOnlyCell cell)
-            return ToText(cell.GetValue());
+        if (val is CellAddress addr)
+            return ToText(_environment.GetCellValue(addr.Row, addr.Col));
 
-        if (val is BRange range)
+        if (val is RangeAddress or ColumnAddress or RowAddress)
             return new FormulaError(ErrorType.Value);
 
         return val.ToString();
     }
 
-    private object ToNumber(object val)
+    private object ToNumber(object? val)
     {
+        if (val is CellAddress addr)
+            val = _environment.GetCellValue(addr.Row, addr.Col);
+
         if (ConvertsToNumber(val))
             return Convert.ToDouble(val);
         return new FormulaError(ErrorType.Value);
@@ -64,7 +67,7 @@ public class ParameterTypeConversion
     /// </summary>
     /// <param name="arg"></param>
     /// <returns></returns>
-    public object? ToNumberSequence(object? arg)
+    private object? ToNumberSequence(object? arg)
     {
         if (arg == null)
             return Enumerable.Empty<double>();
@@ -75,30 +78,33 @@ public class ParameterTypeConversion
         if (ConvertsToNumber(arg))
             return new[] { Convert.ToDouble(arg) };
 
-        if (arg is IReadOnlyCell cell)
+        if (arg is CellAddress cellAddr)
         {
-            if (cell.GetValue() is double value)
+            var cellVal = _environment.GetCellValue(cellAddr.Row, cellAddr.Col);
+
+            if (cellVal is double value)
                 return new[] { value };
         }
 
-        if (arg is BRange range)
+        if (arg is RangeAddress rangeAddress)
         {
-            var nonEmptyCells = range.GetNonEmptyCells();
-            var numbers = new List<double>();
-            foreach (var numberCell in nonEmptyCells)
-            {
-                var num = numberCell.GetValue<double?>();
-                if (num != null)
-                    numbers.Add(num.Value);
-            }
+            return _environment.GetNumbersInRange(rangeAddress);
+        }
 
-            return numbers;
+        if (arg is ColumnAddress columnAddress)
+        {
+            return _environment.GetNumbersInRange(columnAddress);
+        }
+
+        if (arg is RowAddress rowAddress)
+        {
+            return _environment.GetNumbersInRange(rowAddress);
         }
 
         return new FormulaError(ErrorType.Num);
     }
 
-    public object? ToLogical(object? arg)
+    private object? ToLogical(object? arg)
     {
         if (arg is bool b)
             return b;
@@ -107,9 +113,9 @@ public class ParameterTypeConversion
             return d != 0;
         }
 
-        if (arg is IReadOnlyCell cell)
+        if (arg is CellAddress addr)
         {
-            return ToLogical(cell.GetValue());
+            return ToLogical(_environment.GetCellValue(addr.Row, addr.Col));
         }
 
         return new FormulaError(ErrorType.Value);
@@ -119,7 +125,7 @@ public class ParameterTypeConversion
     {
         if (o == null)
             return false;
-        
+
         var type = o.GetType();
         return type == typeof(double) ||
                type == typeof(bool) ||

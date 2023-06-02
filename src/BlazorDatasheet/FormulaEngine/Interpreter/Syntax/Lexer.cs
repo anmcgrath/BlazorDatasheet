@@ -2,7 +2,7 @@
 
 namespace BlazorDatasheet.FormulaEngine.Interpreter.Syntax;
 
-public class Lexer
+internal class Lexer
 {
     private string _text;
     private readonly List<string> _errors = new();

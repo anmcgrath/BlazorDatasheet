@@ -1,4 +1,6 @@
-﻿using BlazorDatasheet.FormulaEngine.Interpreter.References;
+﻿using System;
+using BlazorDatasheet.FormulaEngine.Interpreter.References;
+using BlazorDatasheet.FormulaEngine.Interpreter.Syntax;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Formula;
