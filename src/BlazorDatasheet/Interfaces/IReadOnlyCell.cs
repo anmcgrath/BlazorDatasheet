@@ -15,4 +15,6 @@ public interface IReadOnlyCell
     public int Col { get; }
     public bool IsValid { get; }
     public object? Data { get; }
+    object? GetMetaData(string name);
+    bool HasMetaData(string name);
 }

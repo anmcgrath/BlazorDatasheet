@@ -123,6 +123,8 @@ public class Sheet
 
     public event EventHandler<CellsSelectedEventArgs>? CellsSelected;
 
+    public event EventHandler<CellMetaDataChangeEventArgs>? MetaDataChanged;
+
     /// <summary>
     /// Fired when cells are merged
     /// </summary>
@@ -303,9 +305,12 @@ public class Sheet
     /// <param name="index">index of inserted row\column</param>
     /// <param name="count">count of inserted or removed rows\columns. count > 0 when inserted, count < 0 when reomved</param>
     /// <returns>list of affected regions (before operation state) and list of new regions (state after operation)</returns>
-    internal (IReadOnlyList<CellMerge> mergesPerformed, IReadOnlyList<CellMerge> overridenMergedRegions) RerangeMergedCells(Axis axis, int index, int count)
+    internal (IReadOnlyList<CellMerge> mergesPerformed, IReadOnlyList<CellMerge> overridenMergedRegions)
+        RerangeMergedCells(Axis axis, int index, int count)
     {
-        var afterInserted = axis == Axis.Row ? new Region(index, NumRows, 0, NumCols) : new Region(0, NumRows, index, NumCols);
+        var afterInserted = axis == Axis.Row
+            ? new Region(index, NumRows, 0, NumCols)
+            : new Region(0, NumRows, index, NumCols);
         var envelope = afterInserted.ToEnvelope();
         var mergesPerformed = MergedCells.Search(envelope);
         var overridenMergedRegions = new List<CellMerge>();
@@ -343,7 +348,8 @@ public class Sheet
 
             MergedCells.Delete(item);
 
-            if ((region.Top != region.Bottom && region.Left != region.Right) || region is RowRegion || region is ColumnRegion)
+            if ((region.Top != region.Bottom && region.Left != region.Right) || region is RowRegion ||
+                region is ColumnRegion)
             {
                 var merge = new CellMerge(region);
                 MergedCells.Insert(merge);
@@ -353,17 +359,20 @@ public class Sheet
 
         return (mergesPerformed, overridenMergedRegions.AsReadOnly());
     }
+
     /// <summary>
     /// Undo rerange operation to restore state before Insert\Remove rows\columns commands
     /// </summary>
     /// <param name="_mergesPerformed">state to return on</param>
     /// <param name="_overridenMergedRegions">state to undo</param>
-    internal void UndoRerangeMergedCells(IReadOnlyList<CellMerge> _mergesPerformed, IReadOnlyList<CellMerge> _overridenMergedRegions)
+    internal void UndoRerangeMergedCells(IReadOnlyList<CellMerge> _mergesPerformed,
+        IReadOnlyList<CellMerge> _overridenMergedRegions)
     {
         foreach (var item in _overridenMergedRegions)
         {
             MergedCells.Delete(item);
         }
+
         foreach (var item in _mergesPerformed)
         {
             MergedCells.Insert(item);
@@ -425,8 +434,8 @@ public class Sheet
     public IEnumerable<IReadOnlyCell> GetCellsInRegion(IRegion region)
     {
         return (new BRange(this, region))
-            .Positions
-            .Select(x => this.GetCell(x.row, x.col));
+               .Positions
+               .Select(x => this.GetCell(x.row, x.col));
     }
 
     /// <summary>
@@ -477,9 +486,9 @@ public class Sheet
     internal IEnumerable<(int row, int col)> GetNonEmptyCellPositions(IRegion region)
     {
         return _cellDataStore.GetNonEmptyPositions(region.TopLeft.Row,
-            region.BottomRight.Row,
-            region.TopLeft.Col,
-            region.BottomRight.Col);
+                                                   region.BottomRight.Row,
+                                                   region.TopLeft.Col,
+                                                   region.BottomRight.Col);
     }
 
     #endregion
@@ -535,6 +544,47 @@ public class Sheet
         return setValue;
     }
 
+    /// <summary>
+    /// Sets cell metadata, specified by name, for the cell at position row, col
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <param name="name"></param>
+    /// <param name="value"></param>
+    /// <returns>Whether setting the cell metadata was successful</returns>
+    public bool SetCellMetaData(int row, int col, string name, object? value)
+    {
+        var cmd = new SetMetaDataCommand(row, col, name, value);
+        return Commands.ExecuteCommand(cmd);
+    }
+
+    internal void SetMetaDataImpl(int row, int col, string name, object? value)
+    {
+        var cell = _cellDataStore.Get(row, col);
+        if (cell == null)
+        {
+            cell = new Cell();
+            _cellDataStore.Set(row, col, cell);
+        }
+
+        var oldMetaData = cell.GetMetaData(name);
+
+        cell.SetCellMetaData(name, value);
+        this.MetaDataChanged?.Invoke(this, new CellMetaDataChangeEventArgs(row, col, name, oldMetaData, value));
+    }
+
+    /// <summary>
+    /// Returns the metadata with key "name" for the cell at row, col.
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <param name="name"></param>
+    /// <returns></returns>
+    public object? GetMetaData(int row, int col, string name)
+    {
+        return GetCell(row, col)?.GetMetaData(name);
+    }
+
 
     internal void SetCell(int row, int col, Cell cell)
     {
@@ -568,6 +618,7 @@ public class Sheet
         var cmd = new SetCellValuesCommand(changes);
         return Commands.ExecuteCommand(cmd);
     }
+
     /// <summary>
     /// Set read only state for specified cell
     /// </summary>
@@ -591,6 +642,7 @@ public class Sheet
         var cell = _cellDataStore.Get(row, col);
         cell.IsReadOnly = readOnly;
     }
+
     /// <summary>
     /// Performs the actual setting of cell values, including raising events for any changes made.
     /// </summary>
@@ -910,7 +962,7 @@ public class Sheet
         foreach (var rowInterval in RowFormats.GetAllIntervals())
         {
             overlappingRegions.Add(new Region(rowInterval.Start, rowInterval.End, region.Start.Col,
-                region.End.Col));
+                                              region.End.Col));
         }
 
         foreach (var overlapRegion in overlappingRegions)
@@ -961,7 +1013,7 @@ public class Sheet
         foreach (var colInterval in ColFormats.GetAllIntervals())
         {
             overlappingRegions.Add(new Region(region.Start.Row, region.End.Row, colInterval.Start,
-                colInterval.End));
+                                              colInterval.End));
         }
 
         foreach (var overlapRegion in overlappingRegions)
@@ -1048,6 +1100,7 @@ public class Sheet
                         strBuilder.Append(value);
                     }
                 }
+
                 if (col != c1)
                     strBuilder.Append(tabDelimiter);
             }
