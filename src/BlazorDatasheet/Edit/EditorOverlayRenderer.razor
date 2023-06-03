@@ -4,6 +4,7 @@
 @using BlazorDatasheet.Interfaces
 @using BlazorDatasheet.Render
 @using System.Reflection.Metadata
+@using BlazorDatasheet.Formula.Core
 @using BlazorDatasheet.FormulaEngine
 
 @if (IsEditing)
@@ -98,7 +99,7 @@
 
         var cell = Sheet.GetCell(row, col);
 
-        if (!string.IsNullOrEmpty(cell.FormulaString) || Formula.IsFormula(key))
+        if (!string.IsNullOrEmpty(cell.FormulaString) || CellFormula.IsFormula(key))
             ActiveEditorType = typeof(TextEditorComponent);
         else if (Sheet.EditorTypes.ContainsKey(cell.Type))
             ActiveEditorType = Sheet.EditorTypes[cell.Type];
@@ -132,7 +133,7 @@
 
         var editorValue = ActiveCellEditor.GetValue();
 
-        if (editorValue != null && Formula.IsFormula(editorValue.ToString()))
+        if (editorValue != null && CellFormula.IsFormula(editorValue.ToString()))
         {
             Sheet.SetFormula(EditRow, EditCol, editorValue.ToString());
             this.clearCurrentEdit();

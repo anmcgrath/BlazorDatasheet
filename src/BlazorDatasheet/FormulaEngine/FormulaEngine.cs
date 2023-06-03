@@ -1,8 +1,8 @@
 ﻿using BlazorDatasheet.Data;
 using BlazorDatasheet.DataStructures.Graph;
 using BlazorDatasheet.Events;
-using BlazorDatasheet.FormulaEngine.Interpreter.References;
-using BlazorDatasheet.FormulaEngine.Interpreter.Syntax;
+using BlazorDatasheet.Formula.Core;
+using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.FormulaEngine;
 
@@ -12,7 +12,7 @@ public class FormulaEngine
     private IEnvironment _environment;
     private readonly FormulaParser _parser = new();
     private readonly FormulaEvaluator _evaluator;
-    private readonly Dictionary<(int row, int col), Formula> _formula = new();
+    private readonly Dictionary<(int row, int col), CellFormula> _formula = new();
     private readonly DependencyGraph _dependencyGraph;
     private bool _isCalculating = false;
 
@@ -69,7 +69,7 @@ public class FormulaEngine
     {
         if (!_formula.ContainsKey((row, col)))
             return null;
-        return _evaluator.Evaluate(_formula[(row, col)].ExpressionTree);
+        return _evaluator.Evaluate(_formula[(row, col)]);
     }
 
     public void ClearFormula(int row, int col)

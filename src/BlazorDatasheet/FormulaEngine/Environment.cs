@@ -1,6 +1,6 @@
 ﻿using BlazorDatasheet.Data;
-using BlazorDatasheet.FormulaEngine.Interpreter.Functions;
-using BlazorDatasheet.FormulaEngine.Interpreter.References;
+using BlazorDatasheet.Formula.Core;
+using BlazorDatasheet.Formula.Core.Interpreter.Functions;
 
 namespace BlazorDatasheet.FormulaEngine;
 

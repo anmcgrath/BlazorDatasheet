@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
+using BlazorDatasheet.Formula.Core;
+using BlazorDatasheet.Formula.Core.Interpreter.Functions;
 using BlazorDatasheet.FormulaEngine;
-using BlazorDatasheet.FormulaEngine.Interpreter.Functions;
 
 namespace BlazorDatasheet.Test.Formula;
 

@@ -21,6 +21,13 @@
 
     <ItemGroup>
       <ProjectReference Include="..\BlazorDatasheet.DataStructures\BlazorDatasheet.DataStructures.csproj" />
+      <ProjectReference Include="..\BlazorDatasheet.Formula.Core\BlazorDatasheet.Formula.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="FormulaEngine\Interpreter\Functions\" />
+      <Folder Include="FormulaEngine\Interpreter\References\" />
+      <Folder Include="FormulaEngine\Interpreter\Syntax\" />
     </ItemGroup>
 
 </Project>
