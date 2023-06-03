@@ -139,11 +139,6 @@ public class Sheet
     public event EventHandler<SheetInvalidateEventArgs>? SheetInvalidated;
 
     /// <summary>
-    /// Fired when a cell's formula is changed
-    /// </summary>
-    public event EventHandler<FormulaChangedEventArgs>? FormulaChanged;
-
-    /// <summary>
     /// Fired before a cell's value is set. Allows for changing the value that is set.
     /// </summary>
     public event EventHandler<BeforeCellChangeEventArgs> BeforeSetCellValue;
@@ -432,8 +427,8 @@ public class Sheet
             case Axis.Row:
                 return Range(new RowRegion(start, end));
         }
-        
-        throw new Exception("Cannot return a range for axis "+axis);
+
+        throw new Exception("Cannot return a range for axis " + axis);
     }
 
     /// <summary>
@@ -457,8 +452,8 @@ public class Sheet
     public IEnumerable<IReadOnlyCell> GetCellsInRegion(IRegion region)
     {
         return (new BRange(this, region))
-            .Positions
-            .Select(x => this.GetCell(x.row, x.col));
+               .Positions
+               .Select(x => this.GetCell(x.row, x.col));
     }
 
     /// <summary>
@@ -509,9 +504,9 @@ public class Sheet
     internal IEnumerable<(int row, int col)> GetNonEmptyCellPositions(IRegion region)
     {
         return _cellDataStore.GetNonEmptyPositions(region.TopLeft.Row,
-            region.BottomRight.Row,
-            region.TopLeft.Col,
-            region.BottomRight.Col);
+                                                   region.BottomRight.Row,
+                                                   region.TopLeft.Col,
+                                                   region.BottomRight.Col);
     }
 
     #endregion
@@ -566,29 +561,6 @@ public class Sheet
 
         return setValue;
     }
-
-    public bool SetFormula(int row, int col, string? formulaString)
-    {
-        var cmd = new SetFormulaCommand(row, col, formulaString);
-        return Commands.ExecuteCommand(cmd);
-    }
-
-    internal bool SetFormulaImpl(int row, int col, string? formulaString)
-    {
-        var cell = _cellDataStore.Get(row, col);
-        if (cell == null)
-        {
-            cell = new Cell();
-            _cellDataStore.Set(row, col, cell);
-        }
-
-        var oldFormula = cell.FormulaString;
-        cell.FormulaString = formulaString;
-
-        FormulaChanged?.Invoke(this, new FormulaChangedEventArgs(row, col, oldFormula, formulaString));
-        return true;
-    }
-
 
     internal void SetCell(int row, int col, Cell cell)
     {
@@ -966,7 +938,7 @@ public class Sheet
         foreach (var rowInterval in RowFormats.GetAllIntervals())
         {
             overlappingRegions.Add(new Region(rowInterval.Start, rowInterval.End, region.Start.Col,
-                region.End.Col));
+                                              region.End.Col));
         }
 
         foreach (var overlapRegion in overlappingRegions)
@@ -1017,7 +989,7 @@ public class Sheet
         foreach (var colInterval in ColFormats.GetAllIntervals())
         {
             overlappingRegions.Add(new Region(region.Start.Row, region.End.Row, colInterval.Start,
-                colInterval.End));
+                                              colInterval.End));
         }
 
         foreach (var overlapRegion in overlappingRegions)

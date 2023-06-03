@@ -99,9 +99,7 @@
 
         var cell = Sheet.GetCell(row, col);
 
-        if (!string.IsNullOrEmpty(cell.FormulaString) || CellFormula.IsFormula(key))
-            ActiveEditorType = typeof(TextEditorComponent);
-        else if (Sheet.EditorTypes.ContainsKey(cell.Type))
+        if (Sheet.EditorTypes.ContainsKey(cell.Type))
             ActiveEditorType = Sheet.EditorTypes[cell.Type];
         else
             ActiveEditorType = typeof(TextEditorComponent);
@@ -132,13 +130,6 @@
         }
 
         var editorValue = ActiveCellEditor.GetValue();
-
-        if (editorValue != null && CellFormula.IsFormula(editorValue.ToString()))
-        {
-            Sheet.SetFormula(EditRow, EditCol, editorValue.ToString());
-            this.clearCurrentEdit();
-            return true;
-        }
 
         var setCell = Sheet.TrySetCellValue(EditRow, EditCol, editorValue);
 

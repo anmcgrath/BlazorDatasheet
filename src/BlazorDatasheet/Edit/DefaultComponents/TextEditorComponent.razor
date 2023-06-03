@@ -16,10 +16,7 @@
 
     public override void BeginEdit(EditEntryMode entryMode, IReadOnlyCell cell, string key)
     {
-        if (!string.IsNullOrEmpty(cell.FormulaString))
-            EditedValue = cell.FormulaString;
-        else
-            EditedValue = cell.GetValue<string>();
+        EditedValue = cell.GetValue<string>();
 
         if (EditedValue == null)
             EditedValue = string.Empty;

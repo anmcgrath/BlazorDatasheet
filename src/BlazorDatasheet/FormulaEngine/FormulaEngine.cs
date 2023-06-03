@@ -19,7 +19,6 @@ public class FormulaEngine
     public FormulaEngine(Sheet sheet)
     {
         _sheet = sheet;
-        _sheet.FormulaChanged += SheetOnFormulaChanged;
         _sheet.CellsChanged += SheetOnCellsChanged;
         _environment = new SheetEnvironment(sheet);
         _evaluator = new FormulaEvaluator(_environment);
