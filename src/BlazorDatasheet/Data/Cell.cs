@@ -58,6 +58,9 @@ public class Cell : IReadOnlyCell, IWriteableCell
     /// </summary>
     public Type DataType { get; set; }
 
+    private Dictionary<string, object?>? _metaData;
+    public IReadOnlyDictionary<string, object?> MetaData => _metaData ?? new Dictionary<string, object?>();
+
     /// <summary>
     /// Represents an individual datasheet cell
     /// </summary>
@@ -151,10 +154,20 @@ public class Cell : IReadOnlyCell, IWriteableCell
         }
     }
 
+    public void ClearMetadata()
+    {
+        _metaData?.Clear();
+    }
+
     public void Clear()
     {
-        var currentVal = GetValue();
+        ClearMetadata();
+        ClearValue();
+    }
 
+    public void ClearValue()
+    {
+        var currentVal = GetValue();
         if (currentVal == null)
             return;
 
@@ -198,6 +211,28 @@ public class Cell : IReadOnlyCell, IWriteableCell
     public bool TrySetValue<T>(T val)
     {
         return TrySetValue(val, typeof(T));
+    }
+
+    internal void SetCellMetaData(string name, object? value)
+    {
+        if (_metaData == null)
+            _metaData = new Dictionary<string, object?>();
+
+        if (!_metaData.ContainsKey(name))
+            _metaData.Add(name, value);
+        _metaData[name] = value;
+    }
+
+    public object? GetMetaData(string name)
+    {
+        if (HasMetaData(name))
+            return _metaData[name];
+        return null;
+    }
+
+    public bool HasMetaData(string name)
+    {
+        return _metaData != null && _metaData.ContainsKey(name);
     }
 
     public bool DoTrySetValue(object? val, Type type)
