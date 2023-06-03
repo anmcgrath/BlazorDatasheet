@@ -16,11 +16,12 @@ public class FormulaEngine
     private readonly DependencyGraph _dependencyGraph;
     private bool _isCalculating = false;
 
-    public FormulaEngine(IEnvironment environment)
+    public FormulaEngine(Sheet sheet)
     {
+        _sheet = sheet;
         _sheet.FormulaChanged += SheetOnFormulaChanged;
         _sheet.CellsChanged += SheetOnCellsChanged;
-        _environment = environment;
+        _environment = new SheetEnvironment(sheet);
         _evaluator = new FormulaEvaluator(_environment);
         _dependencyGraph = new DependencyGraph();
     }

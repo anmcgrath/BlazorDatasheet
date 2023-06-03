@@ -25,7 +25,7 @@
     protected override void OnInitialized()
     {
         sheet = new Sheet(numRows: 100000, numCols: 5);
-        var engine = new FormulaEngine(new SheetEnvironment(sheet));
+        var engine = new FormulaEngine(sheet);
     }
 
 }
