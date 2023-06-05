@@ -20,9 +20,45 @@ public class FormulaEngine
     {
         _sheet = sheet;
         _sheet.CellsChanged += SheetOnCellsChanged;
+        _sheet.BeforeEditAccepted += SheetOnBeforeEditAccepted;
+        _sheet.EditAccepted += SheetOnEditAccepted;
+        _sheet.MetaDataChanged += SheetOnMetaDataChanged;
+
         _environment = new SheetEnvironment(sheet);
         _evaluator = new FormulaEvaluator(_environment);
         _dependencyGraph = new DependencyGraph();
+    }
+
+    private void SheetOnMetaDataChanged(object? sender, CellMetaDataChangeEventArgs e)
+    {
+        if (e.Name == "formula")
+        {
+            if (e.NewValue != null && e.NewValue is string f)
+                ParseAndSetFormula(e.Row, e.Col, f);
+            else
+                ClearFormula(e.Row, e.Col);
+        }
+    }
+
+    private void SheetOnEditAccepted(object? sender, EditAcceptedEventArgs e)
+    {
+        var sheet = (Sheet)sender!;
+        // Must not be a formula, because otherwise the BeforeEditAccepted would have caught it
+        sheet.SetCellMetaData(e.Row, e.Col, "formula", null);
+    }
+
+    private void SheetOnBeforeEditAccepted(object? sender, BeforeAcceptEditEventArgs e)
+    {
+        var sheet = (Sheet)sender!;
+        if (e.EditValue is string f)
+        {
+            if (IsFormula(f))
+            {
+                e.AcceptEdit = false;
+                e.EditorCleared = true;
+                sheet.SetCellMetaData(e.Row, e.Col, "formula", f);
+            }
+        }
     }
 
     private void SheetOnCellsChanged(object? sender, IEnumerable<ChangeEventArgs> e)
@@ -35,31 +71,26 @@ public class FormulaEngine
         _isCalculating = false;
     }
 
-    private void SheetOnFormulaChanged(object? sender, FormulaChangedEventArgs e)
+    public void SetFormula(int row, int col, string formulaString)
     {
-        var row = e.Row;
-        var col = e.Col;
+        _sheet.SetMetaDataImpl(row, col, "formula", formulaString);
+    }
 
-        if (e.NewFormula == null)
-        {
-            ClearFormula(row, col);
-        }
+    private void ParseAndSetFormula(int row, int col, string formulaString)
+    {
+        var formula = _parser.FromString(formulaString);
+
+        var exists = _formula.ContainsKey((row, col));
+        if (!exists)
+            _formula.Add((row, col), formula);
         else
         {
-            var formula = _parser.FromString(e.NewFormula);
-
-            var exists = _formula.ContainsKey((row, col));
-            if (!exists)
-                _formula.Add((row, col), formula);
-            else
-            {
-                _formula[(row, col)] = formula;
-            }
-
-            var formulaVertex = new CellVertex(row, col);
-            _dependencyGraph.AddVertex(formulaVertex);
-            _dependencyGraph.AddEdges(formula.References!.Select(GetVertex), formulaVertex);
+            _formula[(row, col)] = formula;
         }
+
+        var formulaVertex = new CellVertex(row, col);
+        _dependencyGraph.AddVertex(formulaVertex);
+        _dependencyGraph.AddEdges(formula.References!.Select(GetVertex), formulaVertex);
 
         // For now, recompute the whole sheet... later will be smarter about it
         CalculateSheet();

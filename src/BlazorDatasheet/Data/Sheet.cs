@@ -141,6 +141,21 @@ public class Sheet
     public event EventHandler<SheetInvalidateEventArgs>? SheetInvalidated;
 
     /// <summary>
+    /// Runs before the editor is accepted. Can set whether the edit is successful and whether the editor
+    /// should be cleared.
+    /// </summary>
+    public event EventHandler<BeforeAcceptEditEventArgs>? BeforeEditAccepted;
+
+    /// <summary>
+    /// Runs when an edit is accepted.
+    /// </summary>
+    public event EventHandler<EditAcceptedEventArgs>? EditAccepted;
+
+    public event EventHandler<EditCancelledEventArgs>? EditCancelled;
+
+    public event EventHandler<EditBeginEventArgs>? EditBegin;
+
+    /// <summary>
     /// Fired before a cell's value is set. Allows for changing the value that is set.
     /// </summary>
     public event EventHandler<BeforeCellChangeEventArgs> BeforeSetCellValue;
@@ -1219,5 +1234,27 @@ public class Sheet
     {
         var cellsSelected = this.GetCellsInRegions(e);
         this.CellsSelected?.Invoke(this, new CellsSelectedEventArgs(cellsSelected));
+    }
+
+    internal BeforeAcceptEditEventArgs RunBeforeAcceptEdit(int editRow, int editCol, object? editorValue)
+    {
+        var args = new BeforeAcceptEditEventArgs(editRow, editCol, editorValue);
+        BeforeEditAccepted?.Invoke(this, args);
+        return args;
+    }
+
+    internal void OnEditAccepted(int row, int col, object? cellValue)
+    {
+        EditAccepted?.Invoke(this, new EditAcceptedEventArgs(row, col, cellValue));
+    }
+
+    internal void OnEditBegin(int row, int col)
+    {
+        EditBegin?.Invoke(this, new EditBeginEventArgs(row, col));
+    }
+
+    internal void OnEditCancelled(int row, int col)
+    {
+        EditCancelled?.Invoke(this, new EditCancelledEventArgs(row, col));
     }
 }

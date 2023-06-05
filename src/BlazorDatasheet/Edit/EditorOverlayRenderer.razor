@@ -131,13 +131,29 @@
 
         var editorValue = ActiveCellEditor.GetValue();
 
-        var setCell = Sheet.TrySetCellValue(EditRow, EditCol, editorValue);
+        var beforeAcceptEdit = Sheet.RunBeforeAcceptEdit(EditRow, EditCol, editorValue);
+        if (beforeAcceptEdit.AcceptEdit)
+        {
+        // TODO: What happens here when the cell value is set and formula re-calculation is triggered?
+        // If the value is replacing a formula, the calculation is performed using the existing
+        // formula and then the formula is set after EditAccepted is listened to and the sheet
+        // is re-calculated again. Not great
+            var setCell = Sheet.TrySetCellValue(EditRow, EditCol, editorValue);
 
-        if (setCell)
+            if (setCell)
+            {
+                this.Sheet.OnEditAccepted(EditRow, EditCol, editorValue);
+                this.clearCurrentEdit();
+                return true;
+            }
+        }
+
+        if (beforeAcceptEdit.EditorCleared)
         {
             this.clearCurrentEdit();
-            return true;
+            return false;
         }
+
         return false;
     }
 
@@ -147,6 +163,7 @@
         if (ActiveCellEditor?.CanCancelEdit() == false)
             return false;
 
+        Sheet.OnEditCancelled(EditRow, EditCol);
         clearCurrentEdit();
         return true;
     }
