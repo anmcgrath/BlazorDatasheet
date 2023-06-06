@@ -2,7 +2,6 @@ using System.Text;
 using BlazorDatasheet.Commands;
 using BlazorDatasheet.Data;
 using BlazorDatasheet.Edit;
-using BlazorDatasheet.Edit.Events;
 using BlazorDatasheet.Events;
 using BlazorDatasheet.Formats;
 using BlazorDatasheet.Interfaces;
