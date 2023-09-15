@@ -25,15 +25,6 @@ public class CellTests
             var val = cell.GetValue<int>();
         });
     }
-
-    [Test]
-    public void Cell_With_Key_Returns_Correct_Value()
-    {
-        var testObject = new TestObject() { Value = "test_string" };
-        var cell = new Cell(testObject, key: nameof(testObject.Value));
-        Assert.AreEqual("test_string", cell.GetValue<string>());
-    }
-
     [Test]
     public void Setting_Cell_Value_Then_Getting_Returns_Correct_Value()
     {
@@ -46,31 +37,6 @@ public class CellTests
 
         cell.TrySetValue(false);
         Assert.AreEqual(false, cell.GetValue<bool>());
-    }
-
-    [Test]
-    public void Setting_Cell_Value_Then_Getting_Returns_Correct_Value_With_Key()
-    {
-        var testObject = new TestObject() { Value = "init" };
-        var cell = new Cell(testObject, nameof(testObject.Value));
-        Assert.AreEqual("init", cell.GetValue());
-        cell.TrySetValue(100);
-        Assert.AreEqual(100, cell.GetValue<int>());
-        Assert.AreEqual("100", cell.GetValue<string>());
-        Assert.AreEqual("100", cell.GetValue());
-        cell.TrySetValue(false);
-        Assert.AreEqual(false, cell.GetValue<bool>());
-        Assert.AreEqual(false.ToString(), testObject.Value);
-    }
-
-    [Test]
-    public void Does_Not_Set_Value_If_Incorrect_Type()
-    {
-        var testObject = new TestObject2() { Value = 100 };
-        var cell = new Cell(testObject, nameof(testObject.Value));
-        var hasSetValue = cell.TrySetValue("abc");
-        Assert.IsFalse(hasSetValue);
-        Assert.AreEqual(100, testObject.Value);
     }
 
     [Test]

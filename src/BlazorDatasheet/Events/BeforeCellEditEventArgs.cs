@@ -7,7 +7,7 @@ public class BeforeCellEditEventArgs
     /// <summary>
     ///  The value that will be passed to the editor. This can be modified.
     /// </summary>
-    public string EditValue { get; set; }
+    public object? EditValue { get; set; }
     /// <summary>
     /// The type of editor. This can be modified.
     /// </summary>

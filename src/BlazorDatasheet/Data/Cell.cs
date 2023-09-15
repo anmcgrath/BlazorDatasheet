@@ -44,11 +44,6 @@ public class Cell : IReadOnlyCell, IWriteableCell
     public bool IsValid { get; internal set; } = true;
 
     /// <summary>
-    /// The property name that determines the cell's value from the Data, if the Data is an object
-    /// </summary>
-    public string? Key { get; set; }
-
-    /// <summary>
     /// The cell's data, which may be a primitive or a complex object.
     /// </summary>
     public object? Data { get; private set; }
@@ -65,11 +60,9 @@ public class Cell : IReadOnlyCell, IWriteableCell
     /// Represents an individual datasheet cell
     /// </summary>
     /// <param name="data">The cell's data, which may be an object or a primitive</param>
-    /// <param name="key">If data is an object, the key is an optional parameter that specifies the value property name</param>
-    public Cell(object? data = null, string key = null)
+    public Cell(object? data = null)
     {
         Data = data;
-        Key = key;
         Validators = new List<IDataValidator>();
     }
 
@@ -104,33 +97,8 @@ public class Cell : IReadOnlyCell, IWriteableCell
             if (Data == null && type == typeof(string))
                 return string.Empty;
 
-            if (string.IsNullOrEmpty(Key))
-            {
-                if (this.Data?.GetType() == type)
-                    return Data;
-                else
-                {
-                    var conversionType = type;
-                    if (System.Nullable.GetUnderlyingType(type) != null)
-                    {
-                        conversionType = System.Nullable.GetUnderlyingType(type);
-                    }
-
-                    if (conversionType == typeof(string))
-                        return Data?.ToString();
-
-                    if (Data is IConvertible)
-                        return Convert.ChangeType(Data, conversionType);
-
-                    return Data;
-                }
-            }
-
-            // Use the Key!
-
-            var val = Data?.GetType().GetProperty(Key)?.GetValue(Data, null);
-            if (val == null || val.GetType() == type || System.Nullable.GetUnderlyingType(type) == val.GetType())
-                return val;
+            if (this.Data?.GetType() == type)
+                return Data;
             else
             {
                 var conversionType = type;
@@ -140,13 +108,15 @@ public class Cell : IReadOnlyCell, IWriteableCell
                 }
 
                 if (conversionType == typeof(string))
-                    return val.ToString();
+                    return Data?.ToString();
 
-                if (val is IConvertible)
-                    return Convert.ChangeType(val, conversionType);
+                if (Data is IConvertible)
+                    return Convert.ChangeType(Data, conversionType);
 
-                return val;
+                return Data;
             }
+
+            // Use the Key!
         }
         catch (Exception e)
         {
@@ -170,20 +140,6 @@ public class Cell : IReadOnlyCell, IWriteableCell
         var currentVal = GetValue();
         if (currentVal == null)
             return;
-
-        if (Data is IClearable clearable)
-        {
-            clearable.Clear(Key);
-            return;
-        }
-
-        // If Data is an object set to default value of the property
-        if (Key != null)
-        {
-            var valueType = currentVal.GetType();
-            this.TrySetValue(valueType.GetDefault());
-            return;
-        }
 
         Data = null;
     }
@@ -239,55 +195,15 @@ public class Cell : IReadOnlyCell, IWriteableCell
     {
         try
         {
-            if (string.IsNullOrEmpty(Key))
-            {
-                if (Data == null)
-                    Data = val;
-                else if (Data.GetType() == type) // data already of the same type
-                    Data = val;
-                else if (val is IConvertible)
-                    Data = Convert.ChangeType(val, type);
-                else
-                    Data = val;
-                return true;
-            }
-
-            // Set with the key
-            var prop = Data.GetType().GetProperty(Key);
-            if (prop == null)
-                return false;
-
-            var propType = prop.PropertyType;
-
-            // If it's a nullable type, set propType to the underlying type
-            // If the value is not null
-            if (System.Nullable.GetUnderlyingType(propType) != null)
-            {
-                if (val == null)
-                {
-                    prop.SetValue(Data, null);
-                    return true;
-                }
-
-                propType = System.Nullable.GetUnderlyingType(propType);
-            }
-
-            if (propType == type)
-            {
-                prop.SetValue(Data, val);
-                return true;
-            }
-
-            if (val is IConvertible)
-            {
-                object convertedValue = Convert.ChangeType(val, propType);
-                prop.SetValue(Data, convertedValue);
-                return true;
-            }
-
-            prop.SetValue(Data, val);
-
-            return false;
+            if (Data == null)
+                Data = val;
+            else if (Data.GetType() == type) // data already of the same type
+                Data = val;
+            else if (val is IConvertible)
+                Data = Convert.ChangeType(val, type);
+            else
+                Data = val;
+            return true;
         }
         catch (Exception e)
         {

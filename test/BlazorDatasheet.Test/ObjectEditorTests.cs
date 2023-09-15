@@ -34,56 +34,6 @@ public class ObjectEditorTests
         Assert.AreEqual(_items.Count, sheet.NumRows);
         Assert.AreEqual(propNames.Count(), sheet.ColumnHeadings.Count);
     }
-
-    [Test]
-    public void Apply_Conditional_Format_On_Obj_Editor_Span_Properties_Across_Cols_Is_Applied_Correctly()
-    {
-        var builder = new ObjectEditorBuilder<TesterObject>(_items, GridDirection.PropertiesAcrossColumns);
-        // Create a conditional format that sets bg color to green when true
-        var cf = new ConditionalFormat(
-            (posn, sheet) => sheet.GetCell(posn.row, posn.col).GetValue<bool?>() == true,
-            c => new CellFormat() { BackgroundColor = "green" });
-
-        builder.AutogenerateProperties(false);
-        // Define first column as PropString
-        builder.WithProperty(x => x.PropString, pd => { });
-        //Define second column as PropBool
-        builder.WithProperty(x => x.PropBool, pd => { pd.ApplyConditionalFormat(cf); });
-
-        var sheet = builder.Build().Sheet;
-        // Format is not applied to the first column which is not PropBool
-        Assert.Null(sheet.ConditionalFormatting.GetFormatResult(0, 0));
-
-        // Should be null the first time because the propBool = false
-        Assert.Null(sheet.ConditionalFormatting.GetFormatResult(0, 1));
-        sheet.TrySetCellValue(0, 1, false);
-        Assert.Null(sheet.ConditionalFormatting.GetFormatResult(0, 1));
-    }
-
-    [Test]
-    public void Apply_Conditional_Format_On_Span_Properties_Across_Rows_Is_Applied_Correctly()
-    {
-        var builder = new ObjectEditorBuilder<TesterObject>(_items, GridDirection.PropertiesAcrossRows);
-        // Create a conditional format that sets bg color to green when true
-        var cf = new ConditionalFormat(
-            (posn, sheet) => sheet.GetCell(posn.row, posn.col).GetValue<bool>() == true,
-            c => new CellFormat() { BackgroundColor = "green" });
-
-        builder.AutogenerateProperties(false);
-        // Define first row as PropString
-        builder.WithProperty(x => x.PropString, pd => { });
-        //Define second row as PropBool
-        builder.WithProperty(x => x.PropBool, pd => { pd.ApplyConditionalFormat(cf); });
-
-        var sheet = builder.Build().Sheet;
-        // Format is not applied to the first row which is not PropBool
-        Assert.Null(sheet.ConditionalFormatting.GetFormatResult(0, 0));
-
-        // Should be null the first time because the propBool = false
-        Assert.Null(sheet.ConditionalFormatting.GetFormatResult(1, 0));
-        sheet.TrySetCellValue(0, 1, false);
-        Assert.Null(sheet.ConditionalFormatting.GetFormatResult(1, 0));
-    }
 }
 
 internal class TesterObject

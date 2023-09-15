@@ -60,7 +60,6 @@ public class ObjectEditorBuilder<T>
     private Cell GetCell(T item, ObjectPropertyDefinition<T> propDefn)
     {
         var cell = new Cell(item);
-        cell.Key = propDefn.PropertyName;
         cell.Formatting = propDefn.Format;
         cell.Type = propDefn.Type;
         cell.IsReadOnly = propDefn.IsReadOnly;
