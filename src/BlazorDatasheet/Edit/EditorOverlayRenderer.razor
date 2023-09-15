@@ -61,6 +61,9 @@
         if (BeginningEdit)
         {
             ActiveCellEditor = (BaseEditor)(ActiveEditorContainer.Instance);
+            if (ActiveCellEditor == null)
+                return;
+            
             var cell = Sheet.GetCell(EditRow, EditCol);
             ActiveCellEditor.BeforeEdit(cell);
             ActiveCellEditor.RequestCancelEdit += HandleEditorRequestCancelEdit;
@@ -77,12 +80,7 @@
         }
         await base.OnAfterRenderAsync(firstRender);
     }
-
-    public void NextTick(Action action)
-    {
-        QueuedForAfterRender.Enqueue(action);
-    }
-
+    
     /// <summary>
     /// Begin the editing process for the cell
     /// </summary>
@@ -124,11 +122,6 @@
         if (!IsEditing || ActiveCellEditor == null)
             return false;
 
-        if (!ActiveCellEditor.CanAcceptEdit())
-        {
-            return false;
-        }
-
         var editorValue = ActiveCellEditor.GetValue();
 
         var beforeAcceptEdit = Sheet.RunBeforeAcceptEdit(EditRow, EditCol, editorValue);
@@ -160,9 +153,6 @@
     /// Cancel the edit without saving values.
     public bool CancelEdit()
     {
-        if (ActiveCellEditor?.CanCancelEdit() == false)
-            return false;
-
         Sheet.OnEditCancelled(EditRow, EditCol);
         clearCurrentEdit();
         return true;

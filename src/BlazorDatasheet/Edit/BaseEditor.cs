@@ -44,21 +44,16 @@ public abstract class BaseEditor : ComponentBase, ICellEditor
     {
         FocusRequested = true;
     }
-
-    public virtual bool CanAcceptEdit() => true;
-
-    public virtual bool CanCancelEdit() => true;
-
-    public virtual object? GetValue() 
-    {
-        return default;
-    }
-
     public abstract void BeginEdit(EditEntryMode entryMode, IReadOnlyCell cell, string key);
 
     public virtual bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
     {
         return false;
+    }
+    
+    public virtual object? GetValue() 
+    {
+        return default;
     }
 
     public void Render() => StateHasChanged();
