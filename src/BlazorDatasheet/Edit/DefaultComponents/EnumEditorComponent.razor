@@ -3,7 +3,7 @@
 @using BlazorDatasheet.Util;
 @using System.Linq;
 
-@typeparam TEnum where TEnum: Enum
+@typeparam TEnum where TEnum : Enum
 
 @inherits BaseEditor<TEnum>
 
@@ -11,13 +11,13 @@
        class="text-input"
        disabled
        style="@CssUtil.GetStyledInput(Cell)"
-       @ref="InputRef" />
+       @ref="InputRef"/>
 
 <div class="select-list">
     @foreach (TEnum val in Items)
     {
-        <div class="select-item @(val.Equals(currentSelected) ? "active": "")"
-         @onmouseup="() => selectItem(val)">
+        <div class="select-item @(val.Equals(currentSelected) ? "active" : "")"
+             @onmouseup="() => selectItem(val)">
             @val
         </div>
     }
@@ -35,11 +35,17 @@
         Cell = cell;
     }
 
-    public override void BeginEdit(EditEntryMode entryMode, IReadOnlyCell cell, string key)
+    public override void BeginEdit(EditEntryMode entryMode, object? editValue, string key)
     {
         try
         {
-            var cellValue = cell.GetValue<TEnum>();
+            if (editValue == null)
+            {
+                EditedValue = default(TEnum);
+                return;
+            }
+            
+            var cellValue = (TEnum)Enum.Parse(typeof(TEnum), editValue!.ToString());
             EditedValue = cellValue;
 
             if (entryMode == EditEntryMode.Key && !String.IsNullOrEmpty(key) && key.Length == 1)
@@ -47,7 +53,6 @@
                 var stringValue = key.ToUpperInvariant();
                 EditedValue = Items.FirstOrDefault(x => x.ToString().ToUpperInvariant().StartsWith(stringValue), EditedValue);
             }
-
         }
         catch (Exception e)
         {
@@ -100,4 +105,5 @@
         EditedValue = item;
         AcceptEdit();
     }
+
 }

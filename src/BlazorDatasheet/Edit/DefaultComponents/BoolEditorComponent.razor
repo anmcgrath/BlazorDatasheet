@@ -4,9 +4,9 @@
 
 @code {
 
-    public override void BeginEdit(EditEntryMode entryMode, IReadOnlyCell cell, string key)
+    public override void BeginEdit(EditEntryMode entryMode, object? editValue, string key)
     {
-        var canParse = bool.TryParse(cell.GetValue<string>(), out bool parsedValue);
+        var canParse = bool.TryParse(editValue.ToString(), out bool parsedValue);
         if (!canParse)
         {
             this.CancelEdit();

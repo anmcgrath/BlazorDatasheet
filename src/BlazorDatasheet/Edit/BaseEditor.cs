@@ -44,7 +44,7 @@ public abstract class BaseEditor : ComponentBase, ICellEditor
     {
         FocusRequested = true;
     }
-    public abstract void BeginEdit(EditEntryMode entryMode, IReadOnlyCell cell, string key);
+    public abstract void BeginEdit(EditEntryMode entryMode, object? editValue, string key);
 
     public virtual bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
     {

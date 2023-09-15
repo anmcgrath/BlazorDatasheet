@@ -7,12 +7,12 @@
        @bind:event="oninput"
        class="text-input"
        style="@CssUtil.GetStyledInput(Cell)"
-       @ref="InputRef" />
+       @ref="InputRef"/>
 <div class="select-list">
     @foreach (var val in values)
     {
-        <div class="select-item @(val.Equals(currentSelected) ? "active": "")"
-         @onmouseup="() => selectItem(val)">
+        <div class="select-item @(val.Equals(currentSelected) ? "active" : "")"
+             @onmouseup="() => selectItem(val)">
             @val
         </div>
     }
@@ -38,11 +38,11 @@
             }
     }
 
-    public override void BeginEdit(EditEntryMode entryMode, IReadOnlyCell cell, string key)
+    public override void BeginEdit(EditEntryMode entryMode, object? editValue, string key)
     {
         if (entryMode == EditEntryMode.Mouse)
         {
-            EditedValue = cell.GetValue<string>();
+            EditedValue = editValue.ToString();
         }
         else if (entryMode == EditEntryMode.Key)
         {
@@ -60,7 +60,6 @@
             {
                 EditedValue = key;
             }
-
         }
 
         if (EditedValue == null)

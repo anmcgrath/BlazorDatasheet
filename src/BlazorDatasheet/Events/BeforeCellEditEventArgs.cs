@@ -5,7 +5,7 @@ public class BeforeCellEditEventArgs
     public int Row { get; }
     public int Col { get; }
     /// <summary>
-    ///  The value that will be passed to the editor. This can be modified.
+    ///  The value that will be passed to the editor. This can be modified before editing starts.
     /// </summary>
     public object? EditValue { get; set; }
     /// <summary>

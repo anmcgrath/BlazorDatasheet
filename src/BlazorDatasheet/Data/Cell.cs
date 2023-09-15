@@ -115,8 +115,6 @@ public class Cell : IReadOnlyCell, IWriteableCell
 
                 return Data;
             }
-
-            // Use the Key!
         }
         catch (Exception e)
         {

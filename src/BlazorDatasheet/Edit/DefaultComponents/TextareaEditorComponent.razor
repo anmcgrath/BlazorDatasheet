@@ -17,13 +17,12 @@
 
     public override void BeforeEdit(IReadOnlyCell cell)
     {
-        base.BeforeEdit(cell);
         Cell = cell;
     }
 
-    public override void BeginEdit(EditEntryMode entryMode, IReadOnlyCell cell, string key)
+    public override void BeginEdit(EditEntryMode entryMode, object? editValue, string key)
     {
-        EditedValue = cell.GetValue<string>();
+        EditedValue = editValue?.ToString();
         if (EditedValue == null)
             EditedValue = string.Empty;
 

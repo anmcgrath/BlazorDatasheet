@@ -13,10 +13,15 @@
 @code {
 
     private IReadOnlyCell Cell;
-
-    public override void BeginEdit(EditEntryMode entryMode, IReadOnlyCell cell, string key)
+    
+    public override void BeforeEdit(IReadOnlyCell cell)
     {
-        EditedValue = cell.GetValue<string>();
+        Cell = cell;
+    }
+
+    public override void BeginEdit(EditEntryMode entryMode, object? editValue, string key)
+    {
+        EditedValue = editValue?.ToString();
 
         if (EditedValue == null)
             EditedValue = string.Empty;

@@ -11,13 +11,17 @@
     @ref="InputRef"/>
 
 @code {
-    
+
     private IReadOnlyCell Cell { get; set; }
 
-    public override void BeginEdit(EditEntryMode entryMode, IReadOnlyCell cell, string key)
+    public override void BeforeEdit(IReadOnlyCell cell)
     {
         Cell = cell;
-        var canParse = DateTime.TryParse(cell.GetValue<string>(), out var parsedDateTime);
+    }
+
+    public override void BeginEdit(EditEntryMode entryMode, object? editValue, string key)
+    {
+        var canParse = DateTime.TryParse(editValue?.ToString(), out var parsedDateTime);
         EditedValue = canParse ? parsedDateTime : DateTime.Now;
     }
 

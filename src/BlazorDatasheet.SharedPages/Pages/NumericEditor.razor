@@ -9,11 +9,11 @@
 
 @code {
     
-    public override void BeginEdit(EditEntryMode entryMode, IReadOnlyCell cell, string key)
+    public override void BeginEdit(EditEntryMode entryMode, object? editValue, string key)
     {
         try
         {
-            var cellValue = cell.GetValue<double?>();
+            double.TryParse(editValue?.ToString(), out var cellValue);
             EditedValue = cellValue;
             if (entryMode == EditEntryMode.Key && char.IsNumber(key[0]))
                 EditedValue = int.Parse(key[0].ToString());
