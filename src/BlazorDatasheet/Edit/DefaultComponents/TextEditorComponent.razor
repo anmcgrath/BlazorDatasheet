@@ -1,11 +1,11 @@
-@inherits BaseEditor<string>
+@inherits BaseEditor
 @using BlazorDatasheet.Interfaces
 @using BlazorDatasheet.Util
 
 <input
     type="text"
     class="text-input"
-    @bind="EditedValue"
+    @bind="CurrentValue"
     @bind:event="oninput"
     style="@CssUtil.GetStyledInput(Cell)"
     @ref="InputRef"/>
@@ -19,15 +19,15 @@
         Cell = cell;
     }
 
-    public override void BeginEdit(EditEntryMode entryMode, object? editValue, string key)
+    public override void BeginEdit(EditEntryMode entryMode, string? editValue, string key)
     {
         if (entryMode == EditEntryMode.Key && !String.IsNullOrEmpty(key) && key.Length == 1)
         {
-            EditedValue = key;
+            CurrentValue = key;
         }
         else
         {
-            EditedValue = editValue?.ToString() ?? string.Empty;
+            CurrentValue = editValue?.ToString() ?? string.Empty;
         }
     }
 

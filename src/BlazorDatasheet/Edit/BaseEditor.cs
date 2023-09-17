@@ -6,11 +6,16 @@ namespace BlazorDatasheet.Edit;
 
 public abstract class BaseEditor : ComponentBase, ICellEditor
 {
-    [Parameter] public string Value { get; set; } = "";
-    
-    [Parameter]
-    public EventCallback<string> OnValueChanged { get; set; }
-    
+    [Parameter] public string Value { get; set; }
+
+    [Parameter] public EventCallback<string> OnValueChanged { get; set; }
+
+    protected string CurrentValue
+    {
+        get => Value;
+        set => OnValueChanged.InvokeAsync(value);
+    }
+
     public event EventHandler? RequestCancelEdit;
     public event EventHandler? RequestAcceptEdit;
 
@@ -51,7 +56,7 @@ public abstract class BaseEditor : ComponentBase, ICellEditor
         FocusRequested = true;
     }
 
-    public abstract void BeginEdit(EditEntryMode entryMode, object? editValue, string key);
+    public abstract void BeginEdit(EditEntryMode entryMode, string? editValue, string key);
 
     public virtual bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
     {

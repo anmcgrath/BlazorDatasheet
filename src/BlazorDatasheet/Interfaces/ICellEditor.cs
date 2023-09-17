@@ -15,7 +15,7 @@ public interface ICellEditor
     /// </summary>
     event EventHandler RequestAcceptEdit;
     void BeforeEdit(IReadOnlyCell cell);
-    void BeginEdit(EditEntryMode entryMode, object? editValue, string key);
+    void BeginEdit(EditEntryMode entryMode, string? editValue, string key);
     bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey);
     Task Focus();
 }

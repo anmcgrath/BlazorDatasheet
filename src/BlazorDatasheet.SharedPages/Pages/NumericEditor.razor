@@ -1,26 +1,26 @@
 @using BlazorDatasheet.Edit
 @using BlazorDatasheet.Interfaces
-@inherits BaseEditor<double?>
+@inherits BaseEditor
 <input type="number"
-       @bind="EditedValue"
+       @bind="CurrentValue"
        style="width: 100%; height: 100%"
        @ref="InputRef"
        @bind:event="oninput"/>
 
 @code {
-    
-    public override void BeginEdit(EditEntryMode entryMode, object? editValue, string key)
+
+    public override void BeginEdit(EditEntryMode entryMode, string? editValue, string key)
     {
         try
         {
             double.TryParse(editValue?.ToString(), out var cellValue);
-            EditedValue = cellValue;
+            CurrentValue = editValue ?? string.Empty;
             if (entryMode == EditEntryMode.Key && char.IsNumber(key[0]))
-                EditedValue = int.Parse(key[0].ToString());
+                CurrentValue = key[0].ToString();
         }
         catch (Exception e)
         {
-            EditedValue = 0;
+            CurrentValue = "0";
         }
     }
 
