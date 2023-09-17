@@ -2,6 +2,16 @@ namespace BlazorDatasheet.Edit;
 
 public abstract class BaseEditor<T> : BaseEditor
 {
-    public T? EditedValue { get; protected set; }
-    public override object? GetValue() => EditedValue;
+    private T? _editedValue;
+
+    public T? EditedValue
+    {
+        get => _editedValue;
+        protected set
+        {
+            _editedValue = value;
+            Console.WriteLine("BaseEditorGeneric.EditedValue set " + _editedValue);
+            this.OnValueChanged.InvokeAsync(_editedValue?.ToString());
+        }
+    }
 }

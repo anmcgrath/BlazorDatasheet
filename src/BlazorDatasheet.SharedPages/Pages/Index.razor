@@ -13,6 +13,11 @@
     Blazor DataSheet is an excel-like editor for cellular values. Below shows some of the features of the data sheet. Sample code is available on <a href="https://github.com/anmcgrath/BlazorDatasheet">GitHub</a>
 </p>
 
+<input type="text" @bind="Sheet.Editor.EditValue" @bind:event="oninput"/>
+<button @onclick="@(()=>Sheet.Editor.EditValue = "Bpb")"></button>
+
+@Sheet.Editor.EditValue
+
 <Datasheet Theme="@Theme"
            Sheet="Sheet"
            StickyHeadings="true"
@@ -35,7 +40,7 @@
 </div>
 
 <div>
-    <input id="darkmode-toggle" type="checkbox" @bind="IsDarkMode" />
+    <input id="darkmode-toggle" type="checkbox" @bind="IsDarkMode"/>
     <label for="darkmode-toggle">Darkmode</label>
 </div>
 
@@ -44,7 +49,7 @@
     private Sheet Sheet;
     private string Theme => IsDarkMode ? "dark" : "default";
     private bool IsDarkMode { get; set; }
-    
+
     private void InsertRowAfterSelection()
     {
         if (Sheet.Selection.ActiveRegion == null)
@@ -72,10 +77,11 @@
         Sheet.RemoveCol(Sheet.Selection.ActiveRegion.Left);
     }
 
-    
+
     protected override void OnInitialized()
     {
         Sheet = new Sheet(50, 6);
+        Sheet.Editor.EditValueChanged += (sender, s) => StateHasChanged();
         var engine = new FormulaEngine(Sheet);
     }
 

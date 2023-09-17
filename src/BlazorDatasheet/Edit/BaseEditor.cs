@@ -1,10 +1,16 @@
 using BlazorDatasheet.Interfaces;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Forms;
 
 namespace BlazorDatasheet.Edit;
 
 public abstract class BaseEditor : ComponentBase, ICellEditor
 {
+    [Parameter] public string Value { get; set; } = "";
+    
+    [Parameter]
+    public EventCallback<string> OnValueChanged { get; set; }
+    
     public event EventHandler? RequestCancelEdit;
     public event EventHandler? RequestAcceptEdit;
 
@@ -44,14 +50,15 @@ public abstract class BaseEditor : ComponentBase, ICellEditor
     {
         FocusRequested = true;
     }
+
     public abstract void BeginEdit(EditEntryMode entryMode, object? editValue, string key);
 
     public virtual bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
     {
         return false;
     }
-    
-    public virtual object? GetValue() 
+
+    public virtual object? GetValue()
     {
         return default;
     }

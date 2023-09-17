@@ -1,10 +1,11 @@
-namespace BlazorDatasheet.Events;
+using BlazorDatasheet.Interfaces;
+
+namespace BlazorDatasheet.Events.Edit;
 
 public class BeforeAcceptEditEventArgs
 {
-    public int Row { get; }
-    public int Col { get; }
-    public object? EditValue { get; }
+    public IReadOnlyCell Cell { get; }
+    public object? EditValue { get; set; }
 
     /// <summary>
     /// Determines whether the edit is accepted or not.
@@ -16,10 +17,9 @@ public class BeforeAcceptEditEventArgs
     /// </summary>
     public bool EditorCleared { get; set; } = true;
 
-    public BeforeAcceptEditEventArgs(int row, int col, object? EditValue)
+    public BeforeAcceptEditEventArgs(IReadOnlyCell cell, object? EditValue)
     {
-        Row = row;
-        Col = col;
+        Cell = cell;
         this.EditValue = EditValue;
     }
 }

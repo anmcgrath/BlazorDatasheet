@@ -1,8 +1,11 @@
 ﻿using BlazorDatasheet.Data;
 using BlazorDatasheet.DataStructures.Graph;
+using BlazorDatasheet.Edit;
 using BlazorDatasheet.Events;
+using BlazorDatasheet.Events.Edit;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
+using BlazorDatasheet.Interfaces;
 
 namespace BlazorDatasheet.FormulaEngine;
 
@@ -20,43 +23,75 @@ public class FormulaEngine
     {
         _sheet = sheet;
         _sheet.CellsChanged += SheetOnCellsChanged;
-        _sheet.BeforeEditAccepted += SheetOnBeforeEditAccepted;
-        _sheet.EditAccepted += SheetOnEditAccepted;
-        _sheet.MetaDataChanged += SheetOnMetaDataChanged;
+        _sheet.Editor.BeforeEditAccepted += SheetOnBeforeEditAccepted;
+        _sheet.Editor.EditAccepted += SheetOnEditAccepted;
+        _sheet.Editor.BeforeCellEdit += SheetOnBeforeCellEdit;
 
         _environment = new SheetEnvironment(sheet);
         _evaluator = new FormulaEvaluator(_environment);
         _dependencyGraph = new DependencyGraph();
     }
 
-    private void SheetOnMetaDataChanged(object? sender, CellMetaDataChangeEventArgs e)
+    private void SheetOnBeforeCellEdit(object? sender, BeforeCellEditEventArgs e)
     {
-        if (e.Name == "formula")
+        if (this.HasFormula(e.Cell))
         {
-            if (e.NewValue != null && e.NewValue is string f)
-                ParseAndSetFormula(e.Row, e.Col, f);
-            else
-                ClearFormula(e.Row, e.Col);
+            e.EditValue = this.GetFormulaString(e.Cell);
         }
     }
 
     private void SheetOnEditAccepted(object? sender, EditAcceptedEventArgs e)
     {
-        var sheet = (Sheet)sender!;
-        // Must not be a formula, because otherwise the BeforeEditAccepted would have caught it
-        sheet.SetCellMetaData(e.Row, e.Col, "formula", null);
+    }
+
+    public bool HasFormula(int row, int col)
+    {
+        return this.HasFormula(_sheet.GetCell(row, col));
+    }
+
+    public bool HasFormula(IReadOnlyCell cell)
+    {
+        return _formula.ContainsKey((cell.Row, cell.Col));
+    }
+
+    /// <summary>
+    /// Returns the formula string for a cell, if it has it. If it has no formula, returns null.
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <returns></returns>
+    public string? GetFormulaString(int row, int col)
+    {
+        return GetFormulaString(row, col);
+    }
+
+    /// <summary>
+    /// Returns the formula string for a cell, if it has it. If it has no formula, returns null.
+    /// </summary>
+    /// <param name="cell"></param>
+    /// <returns></returns>
+    public string? GetFormulaString(IReadOnlyCell cell)
+    {
+        if (HasFormula(cell))
+            return _formula[(cell.Row, cell.Col)].ToFormulaString();
+
+        return null;
     }
 
     private void SheetOnBeforeEditAccepted(object? sender, BeforeAcceptEditEventArgs e)
     {
-        var sheet = (Sheet)sender!;
+        var editor = (Editor)sender!;
         if (e.EditValue is string f)
         {
             if (IsFormula(f))
             {
+                // Don't let the sheet set the value,
+                // we set a formula and compute it.
                 e.AcceptEdit = false;
-                e.EditorCleared = true;
-                sheet.SetCellMetaData(e.Row, e.Col, "formula", f);
+                if (ParseAndSetFormula(e.Cell.Row, e.Cell.Col, f))
+                {
+                    e.EditorCleared = true;
+                }
             }
         }
     }
@@ -71,14 +106,18 @@ public class FormulaEngine
         _isCalculating = false;
     }
 
-    public void SetFormula(int row, int col, string formulaString)
-    {
-        _sheet.SetMetaDataImpl(row, col, "formula", formulaString);
-    }
-
-    private void ParseAndSetFormula(int row, int col, string formulaString)
+    /// <summary>
+    /// Parses and sets a cell formula. Returns false if the formula is invalid.
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <param name="formulaString"></param>
+    /// <returns></returns>
+    private bool ParseAndSetFormula(int row, int col, string formulaString)
     {
         var formula = _parser.FromString(formulaString);
+        if (!formula.IsValid())
+            return false;
 
         var exists = _formula.ContainsKey((row, col));
         if (!exists)
@@ -94,6 +133,7 @@ public class FormulaEngine
 
         // For now, recompute the whole sheet... later will be smarter about it
         CalculateSheet();
+        return true;
     }
 
     public object Evaluate(int row, int col)

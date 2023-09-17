@@ -1,4 +1,4 @@
-namespace BlazorDatasheet.Events;
+namespace BlazorDatasheet.Events.Edit;
 
 public class EditAcceptedEventArgs
 {

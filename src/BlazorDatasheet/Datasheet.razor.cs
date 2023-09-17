@@ -2,7 +2,6 @@ using System.Text;
 using BlazorDatasheet.Commands;
 using BlazorDatasheet.Data;
 using BlazorDatasheet.Edit;
-using BlazorDatasheet.Edit.Events;
 using BlazorDatasheet.Events;
 using BlazorDatasheet.Formats;
 using BlazorDatasheet.Interfaces;
@@ -130,10 +129,18 @@ public partial class Datasheet : IHandleEvent
                 _sheetLocal.FormatsChanged += SheetLocalOnFormatsChanged;
                 _sheetLocal.ColumnWidthChanged += SheetLocalOnColumnWidthChanged;
                 _sheetLocal.SheetInvalidated += SheetLocalOnSheetInvalidated;
+                _sheetLocal.CellsChanged += SheetLocalOnCellsChanged;
             }
         }
 
         base.OnParametersSet();
+    }
+
+    private void SheetLocalOnCellsChanged(object? sender, IEnumerable<Events.ChangeEventArgs> e)
+    {
+        foreach (var change in e)
+            DirtyCells.Add((change.Row, change.Col));
+        StateHasChanged();
     }
 
     private void SheetOnColInserted(object? sender, ColumnInsertedEventArgs e)
@@ -232,10 +239,10 @@ public partial class Datasheet : IHandleEvent
             this.BeginSelectingCell(row, col);
         }
 
-
-        if (_editorManager.IsEditing && !(_editorManager.EditRow == row && _editorManager.EditCol == col))
+        if (_sheetLocal.Editor.IsEditing)
         {
-            AcceptEdit();
+            if (!(Sheet.Editor.EditCell.Row == row && Sheet.Editor.EditCell.Col == col))
+                AcceptEdit();
         }
     }
 
@@ -289,7 +296,7 @@ public partial class Datasheet : IHandleEvent
         if (cell == null || cell.IsReadOnly)
             return;
 
-        await _editorManager.BeginEditAsync(row, col, softEdit, mode, entryChar);
+        Sheet.Editor.BeginEdit(row, col, softEdit, mode, entryChar);
     }
 
     /// <summary>
@@ -299,8 +306,7 @@ public partial class Datasheet : IHandleEvent
     /// <returns></returns>
     private bool AcceptEdit()
     {
-        var result = _editorManager.AcceptEdit();
-        return result;
+        return Sheet.Editor.AcceptEdit();
     }
 
     /// <summary>
@@ -309,7 +315,7 @@ public partial class Datasheet : IHandleEvent
     /// <returns></returns>
     private bool CancelEdit()
     {
-        return _editorManager.CancelEdit();
+        return Sheet.Editor.CancelEdit();
     }
 
     private void HandleCellMouseOver(int row, int col, MouseEventArgs e)

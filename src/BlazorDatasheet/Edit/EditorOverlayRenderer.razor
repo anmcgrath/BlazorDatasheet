@@ -4,6 +4,7 @@
 @using BlazorDatasheet.Interfaces
 @using BlazorDatasheet.Render
 @using System.Reflection.Metadata
+@using BlazorDatasheet.Events.Edit
 @using BlazorDatasheet.Formula.Core
 @using BlazorDatasheet.FormulaEngine
 
@@ -12,6 +13,7 @@
     <div style="position:absolute; @GetEditorSizeStyling()">
         <DynamicComponent
             Type="@ActiveEditorType"
+            Parameters="@GetDynamicEditorParameters()"
             @ref="ActiveEditorContainer"/>
     </div>
 }
@@ -19,8 +21,10 @@
 
 @code {
 
-    [Parameter]
+    [Parameter, EditorRequired]
     public Sheet Sheet { get; set; }
+
+    private Sheet? _sheet;
 
     [Parameter]
     public CellLayoutProvider CellLayoutProvider { get; set; }
@@ -31,11 +35,10 @@
     /// Whether the Editor is currently editing
     internal bool IsEditing { get; private set; }
 
-    /// The Row where we are currently editing
-    internal int EditRow { get; private set; }
+    internal IReadOnlyCell EditCell { get; private set; }
 
-    /// The column where we are currently editing
-    internal int EditCol { get; private set; }
+    // The currently edited value
+    internal object? EditValue { get; private set; }
 
     /// Whether the edit is "soft" which means that it can be accepted with arrow navigation
     internal bool IsSoftEdit { get; private set; }
@@ -56,6 +59,55 @@
 
     public Queue<Action> QueuedForAfterRender { get; set; } = new();
 
+    protected override void OnParametersSet()
+    {
+        if (_sheet != Sheet)
+        {
+            if (_sheet != null)
+            {
+                _sheet.Editor.EditBegin -= EditorOnEditBegin;
+                _sheet.Editor.EditCancelled -= EditorOnEditCancelled;
+                _sheet.Editor.EditAccepted -= EditorOnEditAccepted;
+            }
+            _sheet = Sheet;
+            _sheet.Editor.EditBegin += EditorOnEditBegin;
+            _sheet.Editor.EditCancelled += EditorOnEditCancelled;
+            _sheet.Editor.EditAccepted += EditorOnEditAccepted;
+        }
+        base.OnParametersSet();
+    }
+
+    private void EditorOnEditAccepted(object? sender, EditAcceptedEventArgs e)
+    {
+        this.clearCurrentEdit();
+        StateHasChanged();
+    }
+
+    private void EditorOnEditCancelled(object? sender, EditCancelledEventArgs e)
+    {
+        this.clearCurrentEdit();
+        StateHasChanged();
+    }
+
+    private void EditorOnEditBegin(object? sender, EditBeginEventArgs e)
+    {
+        EditValue = e.EditValue;
+        Console.WriteLine("EditorOnEditBegin " + EditValue);
+
+        if (Sheet.EditorTypes.ContainsKey(e.Type))
+            ActiveEditorType = Sheet.EditorTypes[e.Type];
+        else
+            ActiveEditorType = typeof(TextEditorComponent);
+
+        IsEditing = true;
+        IsSoftEdit = e.IsSoftEdit;
+        EditEntryMode = e.Mode;
+        EditCell = e.Cell;
+        EditEntryKey = e.Key ?? string.Empty;
+        BeginningEdit = true;
+        StateHasChanged();
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (BeginningEdit)
@@ -63,12 +115,11 @@
             ActiveCellEditor = (BaseEditor)(ActiveEditorContainer.Instance);
             if (ActiveCellEditor == null)
                 return;
-            
-            var cell = Sheet.GetCell(EditRow, EditCol);
-            ActiveCellEditor.BeforeEdit(cell);
+
+            ActiveCellEditor.BeforeEdit(EditCell);
             ActiveCellEditor.RequestCancelEdit += HandleEditorRequestCancelEdit;
             ActiveCellEditor.RequestAcceptEdit += HandleEditorRequestAcceptEdit;
-            ActiveCellEditor.BeginEdit(EditEntryMode, cell, EditEntryKey);
+            ActiveCellEditor.BeginEdit(EditEntryMode, EditValue, EditEntryKey);
             await ActiveCellEditor.Focus();
             ActiveCellEditor.Render();
             BeginningEdit = false;
@@ -79,83 +130,6 @@
             action.Invoke();
         }
         await base.OnAfterRenderAsync(firstRender);
-    }
-    
-    /// <summary>
-    /// Begin the editing process for the cell
-    /// </summary>
-    /// <param name="row"></param>
-    /// <param name="col"></param>
-    /// <param name="cell"></param>
-    /// <param name="isSoftEdit"></param>
-    /// <param name="mode"></param>
-    /// <param name="key"></param>
-    public async Task BeginEditAsync(int row, int col, bool isSoftEdit, EditEntryMode mode, string key)
-    {
-        if (IsEditing && row == EditRow && col == EditCol)
-            return;
-
-        var cell = Sheet.GetCell(row, col);
-
-        if (Sheet.EditorTypes.ContainsKey(cell.Type))
-            ActiveEditorType = Sheet.EditorTypes[cell.Type];
-        else
-            ActiveEditorType = typeof(TextEditorComponent);
-
-        IsEditing = true;
-        IsSoftEdit = isSoftEdit;
-        EditEntryMode = mode;
-        EditRow = row;
-        EditCol = col;
-        EditEntryKey = key;
-        BeginningEdit = true;
-        StateHasChanged();
-    }
-
-    /// <summary>
-    /// Attempts to accept edit.
-    /// Returns whether the edit was successful, e.g due to a data validation failure
-    /// </summary>
-    /// <returns></returns>
-    public bool AcceptEdit()
-    {
-        if (!IsEditing || ActiveCellEditor == null)
-            return false;
-
-        var editorValue = ActiveCellEditor.GetValue();
-
-        var beforeAcceptEdit = Sheet.RunBeforeAcceptEdit(EditRow, EditCol, editorValue);
-        if (beforeAcceptEdit.AcceptEdit)
-        {
-        // TODO: What happens here when the cell value is set and formula re-calculation is triggered?
-        // If the value is replacing a formula, the calculation is performed using the existing
-        // formula and then the formula is set after EditAccepted is listened to and the sheet
-        // is re-calculated again. Not great
-            var setCell = Sheet.TrySetCellValue(EditRow, EditCol, editorValue);
-
-            if (setCell)
-            {
-                this.Sheet.OnEditAccepted(EditRow, EditCol, editorValue);
-                this.clearCurrentEdit();
-                return true;
-            }
-        }
-
-        if (beforeAcceptEdit.EditorCleared)
-        {
-            this.clearCurrentEdit();
-            return false;
-        }
-
-        return false;
-    }
-
-    /// Cancel the edit without saving values.
-    public bool CancelEdit()
-    {
-        Sheet.OnEditCancelled(EditRow, EditCol);
-        clearCurrentEdit();
-        return true;
     }
 
     public bool HandleKeyDown(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
@@ -171,12 +145,12 @@
 
     private void HandleEditorRequestCancelEdit(object? sender, EventArgs args)
     {
-        CancelEdit();
+        _sheet?.Editor.CancelEdit();
     }
 
     private void HandleEditorRequestAcceptEdit(object? sender, EventArgs args)
     {
-        AcceptEdit();
+        _sheet?.Editor.AcceptEdit();
     }
 
     private void clearCurrentEdit()
@@ -201,10 +175,10 @@
     //    return "display:none;";
 
         var strBuilder = new StringBuilder();
-        var left = CellLayoutProvider.ComputeLeftPosition(EditCol);
-        var top = CellLayoutProvider.ComputeTopPosition(EditRow);
+        var left = CellLayoutProvider.ComputeLeftPosition(EditCell.Col);
+        var top = CellLayoutProvider.ComputeTopPosition(EditCell.Row);
 
-        var mergedPosn = Sheet.GetMergedRegionAtPosition(EditRow, EditCol);
+        var mergedPosn = Sheet.GetMergedRegionAtPosition(EditCell.Row, EditCell.Col);
         int colSpan = 1;
         int rowSpan = 1;
 
@@ -214,7 +188,7 @@
             rowSpan = mergedPosn.Height;
         }
 
-        var w = CellLayoutProvider.ComputeWidth(EditCol, colSpan);
+        var w = CellLayoutProvider.ComputeWidth(EditCell.Col, colSpan);
         var h = CellLayoutProvider.ComputeHeight(rowSpan);
 
         strBuilder.Append($"left:{left}px;");
@@ -226,5 +200,19 @@
         return style;
     }
 
+
+    private IDictionary<string, object> GetDynamicEditorParameters()
+    {
+        return new Dictionary<string, object>()
+        {
+            { "Value", _sheet.Editor.EditValue },
+            { "OnValueChanged", EventCallback.Factory.Create<string>(this, HandleEditValueChanged) }
+        };
+    }
+
+    private void HandleEditValueChanged(string newValue)
+    {
+        Sheet.Editor.EditValue = newValue;
+    }
 
 }

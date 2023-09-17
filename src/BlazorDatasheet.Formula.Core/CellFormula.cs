@@ -24,4 +24,6 @@ public class CellFormula
     {
         return formula != null && formula.StartsWith('=');
     }
+
+    public string ToFormulaString() => "=" + ExpressionTree.Root.ToExpressionText();
 }

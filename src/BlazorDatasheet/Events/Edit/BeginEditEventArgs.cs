@@ -1,4 +1,6 @@
-namespace BlazorDatasheet.Edit.Events;
+using BlazorDatasheet.Edit;
+
+namespace BlazorDatasheet.Events.Edit;
 
 public class BeginEditEventArgs
 {

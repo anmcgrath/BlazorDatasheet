@@ -13,7 +13,7 @@
 @code {
 
     private IReadOnlyCell Cell;
-    
+
     public override void BeforeEdit(IReadOnlyCell cell)
     {
         Cell = cell;
@@ -21,16 +21,14 @@
 
     public override void BeginEdit(EditEntryMode entryMode, object? editValue, string key)
     {
-        EditedValue = editValue?.ToString();
-
-        if (EditedValue == null)
-            EditedValue = string.Empty;
-
         if (entryMode == EditEntryMode.Key && !String.IsNullOrEmpty(key) && key.Length == 1)
         {
             EditedValue = key;
         }
-        EditedValue = EditedValue;
+        else
+        {
+            EditedValue = editValue?.ToString() ?? string.Empty;
+        }
     }
 
 }

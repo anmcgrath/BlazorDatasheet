@@ -5,6 +5,7 @@ namespace BlazorDatasheet.Edit;
 /// </summary>
 public enum EditEntryMode
 {
+    None,
     /// <summary>
     /// The user has used the mouse to enter.
     /// </summary>

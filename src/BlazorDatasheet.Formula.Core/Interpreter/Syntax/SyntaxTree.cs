@@ -24,4 +24,9 @@ public sealed class SyntaxTree
         var parser = new Parser();
         return parser.Parse(new Lexer(), text);
     }
+
+    public override string ToString()
+    {
+        return Root.ToExpressionText();
+    }
 }
