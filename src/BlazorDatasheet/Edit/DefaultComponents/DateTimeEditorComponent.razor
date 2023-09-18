@@ -1,11 +1,11 @@
 @using BlazorDatasheet.Interfaces
 @using BlazorDatasheet.Util
-@inherits BaseEditor<DateTime>
+@inherits BaseEditor
 
 <input
     type="date"
     class="date-input"
-    @bind="EditedValue"
+    @bind="CurrentDateTime"
     @bind:event="oninput"
     style="@CssUtil.GetStyledInput(Cell)"
     @ref="InputRef"/>
@@ -13,16 +13,41 @@
 @code {
 
     private IReadOnlyCell Cell { get; set; }
+    private DateTime _dateTime;
+
+    private DateTime? CurrentDateTime
+    {
+        get
+        {
+            var parsed = DateTime.TryParse(Value, out var parsedDateTime);
+            if (parsed)
+                return parsedDateTime;
+            else
+                return null;
+        }
+        set
+        {
+            if (value.HasValue)
+                this.OnValueChanged.InvokeAsync(value.ToString());
+        }
+    }
 
     public override void BeforeEdit(IReadOnlyCell cell)
     {
         Cell = cell;
     }
 
-    public override void BeginEdit(EditEntryMode entryMode, object? editValue, string key)
+    public override void BeginEdit(EditEntryMode entryMode, string? editValue, string key)
     {
-        var canParse = DateTime.TryParse(editValue?.ToString(), out var parsedDateTime);
-        EditedValue = canParse ? parsedDateTime : DateTime.Now;
+        /*var canParse = DateTime.TryParse(editValue?.ToString(), out var parsedDateTime);
+        if (canParse)
+        {
+            CurrentDateTime = parsedDateTime;
+        }
+        else
+        {
+            CurrentDateTime = DateTime.Now;
+        }*/
     }
 
 }

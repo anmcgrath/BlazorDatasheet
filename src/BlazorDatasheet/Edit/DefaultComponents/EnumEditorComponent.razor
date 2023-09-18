@@ -5,9 +5,9 @@
 
 @typeparam TEnum where TEnum : Enum
 
-@inherits BaseEditor<TEnum>
+@inherits BaseEditor
 
-<input @bind="EditedValue"
+<input @bind="CurrentValue"
        class="text-input"
        disabled
        style="@CssUtil.GetStyledInput(Cell)"
@@ -18,7 +18,7 @@
     {
         <div class="select-item @(val.Equals(currentSelected) ? "active" : "")"
              @onmouseup="() => selectItem(val)">
-            @val
+            @val.ToString()
         </div>
     }
 </div>
@@ -35,28 +35,30 @@
         Cell = cell;
     }
 
-    public override void BeginEdit(EditEntryMode entryMode, object? editValue, string key)
+    public override void BeginEdit(EditEntryMode entryMode, string? editValue, string key)
     {
         try
         {
             if (editValue == null)
             {
-                EditedValue = default(TEnum);
+                CurrentValue = default(TEnum).ToString();
                 return;
             }
             
             var cellValue = (TEnum)Enum.Parse(typeof(TEnum), editValue!.ToString());
-            EditedValue = cellValue;
+            CurrentValue = cellValue.ToString();
 
             if (entryMode == EditEntryMode.Key && !String.IsNullOrEmpty(key) && key.Length == 1)
             {
                 var stringValue = key.ToUpperInvariant();
-                EditedValue = Items.FirstOrDefault(x => x.ToString().ToUpperInvariant().StartsWith(stringValue), EditedValue);
+                var currenEnum = Items
+                    .FirstOrDefault(x => x.ToString().ToUpperInvariant().StartsWith(stringValue));
+                CurrentValue = currenEnum.ToString();
             }
         }
         catch (Exception e)
         {
-            EditedValue = default(TEnum);
+            CurrentValue = default(TEnum).ToString();
         }
     }
 
@@ -102,7 +104,7 @@
 
     void selectItem(TEnum item)
     {
-        EditedValue = item;
+        CurrentValue = item.ToString();
         AcceptEdit();
     }
 

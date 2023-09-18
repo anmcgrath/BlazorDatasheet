@@ -350,7 +350,7 @@ public partial class Datasheet : IHandleEvent
 
         if (e.Key == "Enter")
         {
-            if (!_editorManager.IsEditing || this.AcceptEdit())
+            if (!Sheet.Editor.IsEditing || this.AcceptEdit())
             {
                 var movementDir = e.ShiftKey ? -1 : 1;
                 Sheet?.Selection?.MoveActivePositionByRow(movementDir);
@@ -361,38 +361,38 @@ public partial class Datasheet : IHandleEvent
         if (KeyUtil.IsArrowKey(e.Key))
         {
             var direction = KeyUtil.GetKeyMovementDirection(e.Key);
-            if (!_editorManager.IsEditing || (_editorManager.IsSoftEdit && AcceptEdit()))
+            if (!Sheet.Editor.IsEditing || (_editorManager.IsSoftEdit && AcceptEdit()))
             {
                 this.collapseAndMoveSelection(direction.Item1, direction.Item2);
                 return true;
             }
         }
 
-        if (e.Key == "Tab" && (!_editorManager.IsEditing || AcceptEdit()))
+        if (e.Key == "Tab" && (!Sheet.Editor.IsEditing || AcceptEdit()))
         {
             var movementDir = e.ShiftKey ? -1 : 1;
             Sheet?.Selection?.MoveActivePositionByCol(movementDir);
             return true;
         }
 
-        if (e.Code == "67" /*C*/ && (e.CtrlKey || e.MetaKey) && !_editorManager.IsEditing)
+        if (e.Code == "67" /*C*/ && (e.CtrlKey || e.MetaKey) && !Sheet.Editor.IsEditing)
         {
             CopySelectionToClipboard();
             return true;
         }
 
-        if (e.Code == "89" /*Y*/ && (e.CtrlKey || e.MetaKey) && !_editorManager.IsEditing)
+        if (e.Code == "89" /*Y*/ && (e.CtrlKey || e.MetaKey) && !Sheet.Editor.IsEditing)
         {
             return Sheet!.Commands.Redo();
         }
 
 
-        if (e.Code == "90" /*Z*/ && (e.CtrlKey || e.MetaKey) && !_editorManager.IsEditing)
+        if (e.Code == "90" /*Z*/ && (e.CtrlKey || e.MetaKey) && !Sheet.Editor.IsEditing)
         {
             return Sheet!.Commands.Undo();
         }
 
-        if ((e.Key == "Delete" || e.Key == "Backspace") && !_editorManager.IsEditing)
+        if ((e.Key == "Delete" || e.Key == "Backspace") && !Sheet.Editor.IsEditing)
         {
             if (!Sheet!.Selection.Regions.Any())
                 return true;
@@ -402,7 +402,7 @@ public partial class Datasheet : IHandleEvent
         }
 
         // Single characters or numbers or symbols
-        if ((e.Key.Length == 1) && !_editorManager.IsEditing && IsDataSheetActive)
+        if ((e.Key.Length == 1) && !Sheet.Editor.IsEditing && IsDataSheetActive)
         {
             // Don't input anything if we are currently selecting
             if (this.IsSelecting)
@@ -427,7 +427,7 @@ public partial class Datasheet : IHandleEvent
         }
 
         // Ecxel like begin edit request by pressing F2
-        if ((e.Key == "F2") && !_editorManager.IsEditing && IsDataSheetActive)
+        if ((e.Key == "F2") && !Sheet.Editor.IsEditing && IsDataSheetActive)
         {
             // Don't input anything if we are currently selecting
             if (this.IsSelecting)

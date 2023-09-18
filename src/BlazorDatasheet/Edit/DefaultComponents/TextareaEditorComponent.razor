@@ -8,7 +8,7 @@
           class="text-input"
           style="@CssUtil.GetStyledInput(Cell); z-index: 1000;"
           rows="@RowsCount"
-          @ref="InputRef">@EditedValue</textarea>
+          @ref="InputRef">@CurrentValue</textarea>
 
 @code {
     public static int RowsCount = 5;
@@ -20,21 +20,21 @@
         Cell = cell;
     }
 
-    public override void BeginEdit(EditEntryMode entryMode, object? editValue, string key)
+    public override void BeginEdit(EditEntryMode entryMode, string? editValue, string key)
     {
-        EditedValue = editValue?.ToString();
-        if (EditedValue == null)
-            EditedValue = string.Empty;
+        CurrentValue = editValue?.ToString();
+        if (CurrentValue == null)
+            CurrentValue = string.Empty;
 
         if (entryMode == EditEntryMode.Key && !String.IsNullOrEmpty(key) && key.Length == 1)
         {
-            EditedValue = key;
+            CurrentValue = key;
         }
     }
 
     private void HandleOnChange(ChangeEventArgs args)
     {
-        EditedValue = args.Value.ToString();
+        CurrentValue = args.Value.ToString();
     }
 
     public override bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)

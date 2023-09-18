@@ -295,11 +295,9 @@ public class FormulaEvaluator
 
         if (right is CellAddress addrRight)
             right = _environment.GetCellValue(addrRight.Row, addrRight.Col);
-
-        Console.WriteLine("Checking");
+        
         if (IsValid(left, right, syntax.OperatorToken))
         {
-            Console.WriteLine("Is Valid");
             switch (syntax.OperatorToken.Kind)
             {
                 case SyntaxKind.PlusToken:

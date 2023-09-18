@@ -66,33 +66,18 @@
             if (_sheet != null)
             {
                 _sheet.Editor.EditBegin -= EditorOnEditBegin;
-                _sheet.Editor.EditCancelled -= EditorOnEditCancelled;
-                _sheet.Editor.EditAccepted -= EditorOnEditAccepted;
+                _sheet.Editor.EditFinished -= EditorOnEditFinished;
             }
             _sheet = Sheet;
             _sheet.Editor.EditBegin += EditorOnEditBegin;
-            _sheet.Editor.EditCancelled += EditorOnEditCancelled;
-            _sheet.Editor.EditAccepted += EditorOnEditAccepted;
+            _sheet.Editor.EditFinished += EditorOnEditFinished;
         }
         base.OnParametersSet();
-    }
-
-    private void EditorOnEditAccepted(object? sender, EditAcceptedEventArgs e)
-    {
-        this.clearCurrentEdit();
-        StateHasChanged();
-    }
-
-    private void EditorOnEditCancelled(object? sender, EditCancelledEventArgs e)
-    {
-        this.clearCurrentEdit();
-        StateHasChanged();
     }
 
     private void EditorOnEditBegin(object? sender, EditBeginEventArgs e)
     {
         EditValue = e.EditValue;
-        Console.WriteLine("EditorOnEditBegin " + EditValue);
 
         if (Sheet.EditorTypes.ContainsKey(e.Type))
             ActiveEditorType = Sheet.EditorTypes[e.Type];
@@ -105,6 +90,12 @@
         EditCell = e.Cell;
         EditEntryKey = e.Key ?? string.Empty;
         BeginningEdit = true;
+        StateHasChanged();
+    }
+
+    private void EditorOnEditFinished(object? sender, EditFinishedEventArgs e)
+    {
+        clearCurrentEdit();
         StateHasChanged();
     }
 

@@ -525,7 +525,7 @@ public class Sheet
         return SetCellValues(new List<CellChange>() { new CellChange(row, col, value) });
     }
 
-    internal bool TrySetCellValueImpl(int row, int col, object? value, bool raiseEvent = true)
+    public bool TrySetCellValueImpl(int row, int col, object? value, bool raiseEvent = true)
     {
         var cell = _cellDataStore.Get(row, col);
         if (cell == null)
@@ -611,7 +611,7 @@ public class Sheet
     }
 
 
-    internal void SetCell(int row, int col, Cell cell)
+    public void SetCell(int row, int col, Cell cell)
     {
         _cellDataStore.Set(row, col, cell);
     }
@@ -757,7 +757,7 @@ public class Sheet
     {
         RegisterEditor<TextEditorComponent>("text");
         RegisterEditor<DateTimeEditorComponent>("datetime");
-        RegisterEditor<BoolEditorComponent>("boolean");
+        RegisterEditor<TextEditorComponent>("boolean");
         RegisterEditor<SelectEditorComponent>("select");
         RegisterEditor<TextareaEditorComponent>("textarea");
     }

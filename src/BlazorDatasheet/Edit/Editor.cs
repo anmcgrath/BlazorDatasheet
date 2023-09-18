@@ -85,8 +85,6 @@ public class Editor
             return;
 
         var cell = Sheet.GetCell(row, col);
-        Console.WriteLine("Editing " + row + "," + col);
-        Console.WriteLine("Editing val " + cell.GetValue());
         var beforeEditArgs = new BeforeCellEditEventArgs(cell, cell.GetValue<string>() ?? string.Empty, cell.Type);
         this.BeforeCellEdit?.Invoke(this, beforeEditArgs);
 
@@ -113,6 +111,7 @@ public class Editor
         if (this.IsEditing && EditCell != null)
         {
             EditCancelled?.Invoke(this, new EditCancelledEventArgs(EditCell.Row, EditCell.Col));
+            EditFinished?.Invoke(this, new EditFinishedEventArgs(EditCell.Row, EditCell.Col));
             ClearEdit();
             return true;
         }
@@ -146,8 +145,10 @@ public class Editor
             return true;
         }
 
-        if (beforeAcceptEdit.EditorCleared)
+        // Stop the edit even if the edit wasn't accepted
+        if (beforeAcceptEdit.StopEdit)
         {
+            EditFinished?.Invoke(this, new EditFinishedEventArgs(EditCell.Row, EditCell.Col));
             this.ClearEdit();
         }
 

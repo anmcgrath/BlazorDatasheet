@@ -13,13 +13,21 @@ public class BeforeAcceptEditEventArgs
     public bool AcceptEdit { get; set; } = true;
 
     /// <summary>
-    /// Whether the editor is cleared (regardless of whether edit is accepted).
+    /// Determines whether the edit is stopped from continuing.
     /// </summary>
-    public bool EditorCleared { get; set; } = true;
+    public bool StopEdit { get; private set; }
 
     public BeforeAcceptEditEventArgs(IReadOnlyCell cell, object? EditValue)
     {
         Cell = cell;
         this.EditValue = EditValue;
+    }
+
+    /// <summary>
+    /// Stop the edit, even if the edit is not accepted.
+    /// </summary>
+    public void StopEditing()
+    {
+        StopEdit = true;
     }
 }

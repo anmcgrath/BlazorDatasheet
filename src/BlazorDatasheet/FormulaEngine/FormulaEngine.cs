@@ -90,7 +90,7 @@ public class FormulaEngine
                 e.AcceptEdit = false;
                 if (ParseAndSetFormula(e.Cell.Row, e.Cell.Col, f))
                 {
-                    e.EditorCleared = true;
+                    e.StopEditing();
                 }
             }
         }
@@ -164,10 +164,10 @@ public class FormulaEngine
         {
             if (vertex is CellVertex cellVertex)
             {
-                if (_formula.ContainsKey((cellVertex.Row, cellVertex.Col)))
+                if (HasFormula(cellVertex.Row, cellVertex.Col))
                 {
                     var value = this.Evaluate(cellVertex.Row, cellVertex.Col);
-                    _sheet.TrySetCellValue(cellVertex.Row, cellVertex.Col, value);
+                    _sheet.TrySetCellValueImpl(cellVertex.Row, cellVertex.Col, value, true);
                 }
             }
         }

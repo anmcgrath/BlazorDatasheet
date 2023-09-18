@@ -1,9 +1,9 @@
 @using BlazorDatasheet.Interfaces
 @using BlazorDatasheet.Util
 @using BlazorDatasheet.Validation
-@inherits BaseEditor<string>
+@inherits BaseEditor
 
-<input @bind="EditedValue"
+<input @bind="CurrentValue"
        @bind:event="oninput"
        class="text-input"
        style="@CssUtil.GetStyledInput(Cell)"
@@ -38,11 +38,11 @@
             }
     }
 
-    public override void BeginEdit(EditEntryMode entryMode, object? editValue, string key)
+    public override void BeginEdit(EditEntryMode entryMode, string? editValue, string key)
     {
         if (entryMode == EditEntryMode.Mouse)
         {
-            EditedValue = editValue.ToString();
+            CurrentValue = editValue.ToString();
         }
         else if (entryMode == EditEntryMode.Key)
         {
@@ -54,16 +54,16 @@
 
             if (!string.IsNullOrWhiteSpace(currentSelected))
             {
-                EditedValue = currentSelected;
+                CurrentValue = currentSelected;
             }
             else
             {
-                EditedValue = key;
+                CurrentValue = key;
             }
         }
 
-        if (EditedValue == null)
-            EditedValue = string.Empty;
+        if (CurrentValue == null)
+            CurrentValue = string.Empty;
     }
 
     public override bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
@@ -92,9 +92,9 @@
             return true;
         }
 
-        if (!string.IsNullOrWhiteSpace(EditedValue))
+        if (!string.IsNullOrWhiteSpace(CurrentValue))
         {
-            var keyUpped = EditedValue.ToUpperInvariant();
+            var keyUpped = CurrentValue.ToUpperInvariant();
             currentSelected = values.FirstOrDefault(v => v.ToUpperInvariant().StartsWith(keyUpped));
 
             if (!string.IsNullOrWhiteSpace(currentSelected))
@@ -120,7 +120,7 @@
 
     void selectItem(string item)
     {
-        EditedValue = item;
+        CurrentValue = item;
         AcceptEdit();
     }
 
