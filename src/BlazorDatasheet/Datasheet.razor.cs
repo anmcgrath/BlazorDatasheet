@@ -200,13 +200,18 @@ public partial class Datasheet : IHandleEvent
         };
     }
 
+    protected override bool ShouldRender()
+    {
+        return SheetIsDirty || DirtyCells.Any();
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             await AddWindowEventsAsync();
         }
-
+        
         SheetIsDirty = false;
         DirtyCells.Clear();
     }
