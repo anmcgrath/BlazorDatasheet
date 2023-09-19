@@ -96,14 +96,37 @@ public class FormulaEngine
         }
     }
 
+    /// <summary>
+    /// Sets the formula for a cell
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <param name="formulaString">The formula string. Must start with =</param>
+    /// <returns>True if the formula was valid and was set, false otherwise.</returns>
+    public bool SetFormulaString(int row, int col, string formulaString)
+    {
+        if (IsFormula(formulaString))
+        {
+            return ParseAndSetFormula(row, col, formulaString);
+        }
+
+        return false;
+    }
+
     private void SheetOnCellsChanged(object? sender, IEnumerable<ChangeEventArgs> e)
     {
         if (_isCalculating)
             return;
 
-        _isCalculating = true;
+        // If cell values are being set while the formula engine is not calculating,
+        // then these values must override the formula and so the formula should be cleared
+        // at those cell positions.
+        foreach (var change in e)
+        {
+            this.RemoveFormula(change.Row, change.Col);
+        }
+
         CalculateSheet();
-        _isCalculating = false;
     }
 
     /// <summary>
@@ -143,10 +166,29 @@ public class FormulaEngine
         return _evaluator.Evaluate(_formula[(row, col)]);
     }
 
+    /// <summary>
+    /// Removes a formula and recalculates the sheet.
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
     public void ClearFormula(int row, int col)
     {
-        _formula.Remove((row, col));
-        _dependencyGraph.RemoveVertex(new CellVertex(row, col));
+        RemoveFormula(row, col);
+        CalculateSheet();
+    }
+
+    /// <summary>
+    /// Deletes a formula if it exists.
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    private void RemoveFormula(int row, int col)
+    {
+        if (HasFormula(row, col))
+        {
+            _formula.Remove((row, col));
+            _dependencyGraph.RemoveVertex(new CellVertex(row, col));
+        }
     }
 
     public void CalculateSheet()
@@ -155,6 +197,7 @@ public class FormulaEngine
         // Stop the sheet from emitting events
         // Sheet.Resume(); should do a bulk event dispatch
         // So that the renderer can handle the updated cells...
+        _isCalculating = true;
 
         var order =
             _dependencyGraph
@@ -171,6 +214,8 @@ public class FormulaEngine
                 }
             }
         }
+
+        _isCalculating = false;
     }
 
     private Vertex GetVertex(Reference reference)
