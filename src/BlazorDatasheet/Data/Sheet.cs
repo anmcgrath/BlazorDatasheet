@@ -131,6 +131,11 @@ public class Sheet
     /// Fired when cells are merged
     /// </summary>
     public event EventHandler<IRegion>? RegionMerged;
+    
+    /// <summary>
+    /// Fired when cells are un-merged
+    /// </summary>
+    public event EventHandler<IRegion>? RegionUnMerged;
 
     /// <summary>
     /// Fired when cell formats change
@@ -459,8 +464,8 @@ public class Sheet
     public IEnumerable<IReadOnlyCell> GetCellsInRegion(IRegion region)
     {
         return (new BRange(this, region))
-               .Positions
-               .Select(x => this.GetCell(x.row, x.col));
+            .Positions
+            .Select(x => this.GetCell(x.row, x.col));
     }
 
     /// <summary>
@@ -511,9 +516,9 @@ public class Sheet
     internal IEnumerable<(int row, int col)> GetNonEmptyCellPositions(IRegion region)
     {
         return _cellDataStore.GetNonEmptyPositions(region.TopLeft.Row,
-                                                   region.BottomRight.Row,
-                                                   region.TopLeft.Col,
-                                                   region.BottomRight.Col);
+            region.BottomRight.Row,
+            region.TopLeft.Col,
+            region.BottomRight.Col);
     }
 
     #endregion
@@ -684,7 +689,6 @@ public class Sheet
             if (set && currValue != newValue)
             {
                 changeEvents.Add(new ChangeEventArgs(change.Row, change.Col, currValue, newValue));
-                MarkDirty(change.Row, change.Col);
             }
         }
 
@@ -719,7 +723,6 @@ public class Sheet
             if (oldValue != newVal)
             {
                 changeArgs.Add(new ChangeEventArgs(posn.row, posn.col, oldValue, newVal));
-                MarkDirty(posn.row, posn.col);
             }
         }
 
@@ -987,7 +990,7 @@ public class Sheet
         foreach (var rowInterval in RowFormats.GetAllIntervals())
         {
             overlappingRegions.Add(new Region(rowInterval.Start, rowInterval.End, region.Start.Col,
-                                              region.End.Col));
+                region.End.Col));
         }
 
         foreach (var overlapRegion in overlappingRegions)
@@ -1038,7 +1041,7 @@ public class Sheet
         foreach (var colInterval in ColFormats.GetAllIntervals())
         {
             overlappingRegions.Add(new Region(region.Start.Row, region.End.Row, colInterval.Start,
-                                              colInterval.End));
+                colInterval.End));
         }
 
         foreach (var overlapRegion in overlappingRegions)
@@ -1155,7 +1158,6 @@ public class Sheet
         foreach (var region in range.Regions)
         {
             isSuccess &= MergeCellsImpl(region);
-            RegionMerged?.Invoke(this, region);
         }
 
         return isSuccess;
@@ -1173,6 +1175,7 @@ public class Sheet
     {
         var cellMerge = new CellMerge(region);
         MergedCells.Insert(cellMerge);
+        RegionMerged?.Invoke(this, region);
         return true;
     }
 
@@ -1188,6 +1191,7 @@ public class Sheet
         foreach (var merge in mergedCellsInRange)
         {
             MergedCells.Delete(merge);
+            RegionUnMerged?.Invoke(this, merge.Region);
         }
     }
 

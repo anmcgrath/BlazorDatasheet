@@ -117,6 +117,8 @@ public partial class Datasheet : IHandleEvent
                 _sheetLocal.FormatsChanged -= SheetLocalOnFormatsChanged;
                 _sheetLocal.ColumnWidthChanged -= SheetLocalOnColumnWidthChanged;
                 _sheetLocal.SheetInvalidated -= SheetLocalOnSheetInvalidated;
+                _sheetLocal.RegionMerged -= SheetLocalOnRegionMerged;
+                _sheetLocal.RegionUnMerged -= SheetLocalOnRegionUnMerged;
             }
 
             _sheetLocal = Sheet;
@@ -130,16 +132,51 @@ public partial class Datasheet : IHandleEvent
                 _sheetLocal.ColumnWidthChanged += SheetLocalOnColumnWidthChanged;
                 _sheetLocal.SheetInvalidated += SheetLocalOnSheetInvalidated;
                 _sheetLocal.CellsChanged += SheetLocalOnCellsChanged;
+                _sheetLocal.RegionMerged += SheetLocalOnRegionMerged;
+                _sheetLocal.RegionUnMerged += SheetLocalOnRegionUnMerged;
             }
         }
 
         base.OnParametersSet();
     }
 
+    private void SheetLocalOnRegionUnMerged(object? sender, IRegion e)
+    {
+        this.MarkDirty(e);
+        this.StateHasChanged();
+    }
+
+    private void SheetLocalOnRegionMerged(object? sender, IRegion region)
+    {
+        this.MarkDirty(region);
+        this.StateHasChanged();
+    }
+
+    private void MarkDirty(IRegion region)
+    {
+        // constrain to 
+        var constrainedRegion = Sheet.Region.GetIntersection(Sheet.Region);
+        var posns = Sheet.Range(constrainedRegion).Positions;
+        foreach (var posn in posns)
+        {
+            MarkDirty(posn.row, posn.col);
+        }
+    }
+
+    /// <summary>
+    /// Marks a cell as "Dirty" so that it will be re-rendered when the Datasheet's state has changed.
+    /// </summary>
+    /// <param name="row">The dirty cell's row</param>
+    /// <param name="col">The dirty cell's column.</param>
+    private void MarkDirty(int row, int col)
+    {
+        DirtyCells.Add((row, col));
+    }
+
     private void SheetLocalOnCellsChanged(object? sender, IEnumerable<Events.ChangeEventArgs> e)
     {
         foreach (var change in e)
-            DirtyCells.Add((change.Row, change.Col));
+            MarkDirty(change.Row, change.Col);
         StateHasChanged();
     }
 
@@ -211,7 +248,9 @@ public partial class Datasheet : IHandleEvent
         {
             await AddWindowEventsAsync();
         }
-        
+
+        Console.WriteLine("OnAfterDatasheetRender " + SheetIsDirty);
+
         SheetIsDirty = false;
         DirtyCells.Clear();
     }
