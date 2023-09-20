@@ -79,6 +79,16 @@ public class InterpreterTests
     }
 
     [Test]
+    public void Divide_By_Zero_Returns_Formula_Error()
+    {
+        var formula = _parser.FromString("=10/0");
+        var res = _evaluator.Evaluate(formula);
+        var resError = res as FormulaError;
+        Assert.NotNull(resError);
+        Assert.AreEqual(ErrorType.Div0, resError!.ErrorType);
+    }
+
+    [Test]
     public void Negative_Operator_Evaluates_To_Correct_Value()
     {
         var formula = _parser.FromString("=-30");

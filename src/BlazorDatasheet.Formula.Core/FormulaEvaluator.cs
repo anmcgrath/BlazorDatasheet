@@ -167,7 +167,7 @@ public class FormulaEvaluator
             return ToRowAddress((RowReference)start, (RowReference)end);
         }
 
-        return new FormulaError(ErrorType.Name, $"Range could not be evaluated");
+        return new FormulaError(ErrorType.Name, "Range could not be evaluated");
     }
 
     private object ToRowAddress(RowReference start, RowReference end)
@@ -307,7 +307,13 @@ public class FormulaEvaluator
                 case SyntaxKind.StarToken:
                     return Convert.ToDouble(left) * Convert.ToDouble(right);
                 case SyntaxKind.SlashToken:
+                {
+                    var rightDouble = Convert.ToDouble(right);
+                    if (rightDouble == 0)
+                        return new FormulaError(ErrorType.Div0);
+                    
                     return Convert.ToDouble(left) / Convert.ToDouble(right);
+                }
                 case SyntaxKind.EqualsToken:
                     return left.GetType() == right.GetType() &&
                            ((IComparable)left).Equals(right);
