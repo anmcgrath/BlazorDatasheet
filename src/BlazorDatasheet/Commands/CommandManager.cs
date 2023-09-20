@@ -32,9 +32,11 @@ public class CommandManager
             {
                 _history.Push(undoCommand);
             }
-
-            _sheet.Invalidate();
         }
+
+        // Clear the redo stack because otherwise we will be redoing changes to the sheet with a changed
+        // model from the original time the commands were run.
+        _redos.Clear();
 
         return result;
     }
@@ -58,7 +60,6 @@ public class CommandManager
         if (result)
         {
             _redos.Push(cmd);
-            _sheet.Invalidate();
         }
 
         return result;
@@ -73,9 +74,17 @@ public class CommandManager
         if (_redos.Peek() == null)
             return false;
 
-        var result = ExecuteCommand(_redos.Pop()!);
+        var cmd = _redos.Pop();
+        var result = cmd.Execute(_sheet);
+
         if (result)
-            _sheet.Invalidate();
+        {
+            if (cmd is IUndoableCommand undoCommand)
+            {
+                _history.Push(undoCommand);
+            }
+        }
+
         return result;
     }
 
