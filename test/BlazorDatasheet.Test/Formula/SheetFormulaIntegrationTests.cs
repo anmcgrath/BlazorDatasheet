@@ -103,4 +103,11 @@ public class SheetFormulaIntegrationTests
         Assert.True(_engine.HasFormula(1, 1));
         Assert.AreEqual("=10", _engine.GetFormulaString(1, 1));
     }
+
+    [Test]
+    public void Sum_On_Empty_Cell_Treats_Empty_Cell_As_Zero()
+    {
+        _engine.SetFormulaString(1, 1, "=A1 + 5");
+        Assert.AreEqual(5, _sheet.GetValue(1, 1));
+    }
 }

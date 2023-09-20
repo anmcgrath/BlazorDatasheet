@@ -145,7 +145,7 @@ public class FormulaEvaluator
             (_currentCol == null || _currentRow == null))
         {
             return new FormulaError(ErrorType.Ref,
-                "Relative reference used but formula is not defined on a row/column.");
+                                    "Relative reference used but formula is not defined on a row/column.");
         }
 
         var start = node.Reference.Start;
@@ -212,7 +212,7 @@ public class FormulaEvaluator
             : cellEnd.Row.RowNumber;
 
         return new RangeAddress(Math.Min(rowStart, rowEnd), Math.Max(rowStart, rowEnd), Math.Min(colStart, colEnd),
-            Math.Max(colStart, colEnd));
+                                Math.Max(colStart, colEnd));
     }
 
     private object EvaluateParenthesizedExpression(ParenthesizedExpressionSyntax node)
@@ -226,7 +226,7 @@ public class FormulaEvaluator
             (_currentCol == null || _currentRow == null))
         {
             return new FormulaError(ErrorType.Ref,
-                "Relative reference used but formula is not defined on a row/column.");
+                                    "Relative reference used but formula is not defined on a row/column.");
         }
 
         var row = node.CellReference.IsRelativeReference
@@ -278,7 +278,7 @@ public class FormulaEvaluator
     private FormulaError InvalidUnaryExpression(UnaryExpressionSyntax syntax, object operand)
     {
         return new FormulaError(ErrorType.Na,
-            $"Invalid operation {operand.ToString()} on {syntax.OperatorToken.Text}");
+                                $"Invalid operation {operand.ToString()} on {syntax.OperatorToken.Text}");
     }
 
     private object EvalueBinaryExpression(BinaryExpressionSyntax syntax)
@@ -295,29 +295,35 @@ public class FormulaEvaluator
 
         if (right is CellAddress addrRight)
             right = _environment.GetCellValue(addrRight.Row, addrRight.Col);
-        
+
         if (IsValid(left, right, syntax.OperatorToken))
         {
             switch (syntax.OperatorToken.Kind)
             {
                 case SyntaxKind.PlusToken:
-                    return Convert.ToDouble(left) + Convert.ToDouble(right);
+                    return convertToDouble(left) + convertToDouble(right);
                 case SyntaxKind.MinusToken:
-                    return Convert.ToDouble(left) - Convert.ToDouble(right);
+                    return convertToDouble(left) - convertToDouble(right);
                 case SyntaxKind.StarToken:
-                    return Convert.ToDouble(left) * Convert.ToDouble(right);
+                    return convertToDouble(left) * convertToDouble(right);
                 case SyntaxKind.SlashToken:
                 {
-                    var rightDouble = Convert.ToDouble(right);
+                    var rightDouble = convertToDouble(right);
                     if (rightDouble == 0)
                         return new FormulaError(ErrorType.Div0);
-                    
-                    return Convert.ToDouble(left) / Convert.ToDouble(right);
+
+                    return convertToDouble(left) / convertToDouble(right);
                 }
                 case SyntaxKind.EqualsToken:
+                    if (left == null && right == null)
+                        return true;
+                    if (left == null || right == null)
+                        return false;
                     return left.GetType() == right.GetType() &&
                            ((IComparable)left).Equals(right);
                 case SyntaxKind.NotEqualsToken:
+                    if (left == null || right == null)
+                        return left == right;
                     return left.GetType() != right.GetType() ||
                            !((IComparable)left).Equals(right);
                 case SyntaxKind.LessThanToken:
@@ -356,17 +362,26 @@ public class FormulaEvaluator
                        left.GetType() == right.GetType();
             case SyntaxKind.EqualsToken:
             case SyntaxKind.NotEqualsToken:
-                return (left as IComparable) != null &&
-                       (right as IComparable) != null;
+                return (left == null || right == null) ||
+                       ((left as IComparable) != null &&
+                        (right as IComparable) != null);
             default:
                 return false;
         }
     }
 
+    private double convertToDouble(object? value)
+    {
+        if (value == null)
+            return 0;
+
+        return Convert.ToDouble(value);
+    }
+
     private bool convertsToDouble(object? value)
     {
         if (value == null)
-            return false;
+            return true;
 
         if (value is double or decimal or int or float)
             return true;
