@@ -152,7 +152,7 @@ public class Selection : BRange
     /// <summary>
     /// Adds the region to the selection
     /// </summary>
-    /// <param name="region"></param>
+    /// <param name="regions"></param>
     internal void AddRegionsToSelections(IEnumerable<IRegion> regions)
     {
         _regions.AddRange(regions);
@@ -371,7 +371,7 @@ public class Selection : BRange
     /// If there's nowhere to go, collapse and move down. Otherwise, move through all regions,
     /// setting them as active where appropriate.
     /// </summary>
-    /// <param name="rowDir"></param>
+    /// <param name="colDir"></param>
     public void MoveActivePositionByCol(int colDir)
     {
         if (ActiveRegion == null || colDir == 0)

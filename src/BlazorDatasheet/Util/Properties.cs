@@ -3,7 +3,7 @@ using System.Reflection;
 
 namespace BlazorDatasheet.Util;
 
-public class Properties
+public static class Properties
 {
     public static PropertyInfo GetPropertyInfo<TSource, TProperty>(
         Expression<Func<TSource, TProperty>> propertyLambda)

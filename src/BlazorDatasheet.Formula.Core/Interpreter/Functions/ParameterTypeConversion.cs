@@ -61,11 +61,11 @@ public class ParameterTypeConversion
     }
 
     /// <summary>
-    /// Converts an object to an IEnumerable<double> or a formula error
+    /// Converts an object to an IEnumerable of doubles or a formula error
     /// </summary>
     /// <param name="arg"></param>
     /// <returns></returns>
-    private object? ToNumberSequence(object? arg)
+    private object ToNumberSequence(object? arg)
     {
         if (arg == null)
             return Enumerable.Empty<double>();

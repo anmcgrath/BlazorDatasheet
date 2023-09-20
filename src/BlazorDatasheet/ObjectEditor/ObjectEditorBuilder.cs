@@ -16,7 +16,7 @@ public class ObjectEditorBuilder<T>
     private List<Tuple<string, Action<ObjectPropertyDefinition<T>>>> _propertyActions = new();
     private List<ObjectPropertyDefinition<T>> _propertyDefinitions = new();
     private List<(Predicate<T> pred, Func<T, CellFormat?> formatFunc)> _expressionFormats = new();
-    private List<string> _suppliedPropertyNames { get; set; } = new();
+    private List<string> _suppliedPropertyNames { get; } = new();
 
     /// <summary>
     /// An ObjectEditorBuilder creates an ObjectEditor & Sheet consisting of the Items
@@ -55,6 +55,7 @@ public class ObjectEditorBuilder<T>
     /// <summary>
     /// Creates a cell based on the property definition
     /// </summary>
+    /// <param name="item"></param>
     /// <param name="propDefn"></param>
     /// <returns></returns>
     private Cell GetCell(T item, ObjectPropertyDefinition<T> propDefn)

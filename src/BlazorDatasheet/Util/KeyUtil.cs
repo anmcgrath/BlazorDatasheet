@@ -1,6 +1,6 @@
 namespace BlazorDatasheet.Util;
 
-public class KeyUtil
+public static class KeyUtil
 {
     public static bool IsArrowKey(string key)
     {

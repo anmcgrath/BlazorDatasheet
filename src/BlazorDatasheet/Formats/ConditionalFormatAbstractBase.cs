@@ -36,7 +36,7 @@ public abstract class ConditionalFormatAbstractBase
     /// <summary>
     /// Set of cell positions in this format
     /// </summary>
-    internal HashSet<(int row, int col)> Positions { get; private set; } = new();
+    internal HashSet<(int row, int col)> Positions { get; } = new();
 
     public event EventHandler<ConditionalFormatRegionsChangedEventArgs> RegionsChanged;
 

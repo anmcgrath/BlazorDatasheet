@@ -164,8 +164,8 @@ public class DependencyGraph
     /// <summary>
     /// Adds edges between the vertex v and all vertices in the array ws
     /// </summary>
-    /// <param name="v"></param>
-    /// <param name="ws"></param>
+    /// <param name="vs"></param>
+    /// <param name="w"></param>
     public void AddEdges(IEnumerable<Vertex> vs, Vertex w)
     {
         foreach (var v in vs)

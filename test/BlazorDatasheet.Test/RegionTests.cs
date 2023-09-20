@@ -106,7 +106,6 @@ public class RegionTests
         const int c0 = 2;
         const int c1 = 8;
         var region = new Region(r0, r1, c0, c1);
-        var region_reverse = new Region(r1, r0, c1, c0);
         var copy = region.Copy() as Region;
         var copyReverse = region.CopyOrdered();
 

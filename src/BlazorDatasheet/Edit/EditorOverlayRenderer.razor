@@ -57,8 +57,6 @@
     /// The Dynamic component holding the Active Editor component
     internal DynamicComponent? ActiveEditorContainer { get; set; }
 
-    public Queue<Action> QueuedForAfterRender { get; set; } = new();
-
     protected override void OnParametersSet()
     {
         if (_sheet != Sheet)
@@ -113,11 +111,6 @@
             await ActiveCellEditor.Focus();
             ActiveCellEditor.Render();
             BeginningEdit = false;
-        }
-        while (QueuedForAfterRender.Any())
-        {
-            var action = QueuedForAfterRender.Dequeue();
-            action.Invoke();
         }
         await base.OnAfterRenderAsync(firstRender);
     }
@@ -185,7 +178,7 @@
         strBuilder.Append($"top:{top}px;");
         strBuilder.Append($"width:{w}px;");
         strBuilder.Append($"height:{h}px;");
-        strBuilder.Append($"box-shadow: 0px 0px 4px var(--shadow-overlay-color)");
+        strBuilder.Append("box-shadow: 0px 0px 4px var(--shadow-overlay-color)");
         var style = strBuilder.ToString();
         return style;
     }

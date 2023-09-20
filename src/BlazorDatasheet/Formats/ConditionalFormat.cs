@@ -10,7 +10,7 @@ public class ConditionalFormat : ConditionalFormatAbstractBase
     /// The function that returns the conditional format, based on the cell's value
     /// and all other cell values in the sheet
     /// </summary>
-    public Func<IReadOnlyCell, IEnumerable<IReadOnlyCell>, CellFormat>? FormatFuncDependent { get; private set; }
+    public Func<IReadOnlyCell, IEnumerable<IReadOnlyCell>, CellFormat>? FormatFuncDependent { get; }
 
     /// <summary>
     /// The function that returns the conditional format, based only on one cell's value

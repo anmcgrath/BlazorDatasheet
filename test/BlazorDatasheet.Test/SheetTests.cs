@@ -37,7 +37,8 @@ public class SheetTests
 
         var insertedRegions = sheet.InsertDelimitedText(copy, copyPasteRegion.TopLeft);
 
-        Assert.True(insertedRegions.Equals(copyPasteRegion));
+        Assert.NotNull(insertedRegions);
+        Assert.True(insertedRegions!.Equals(copyPasteRegion));
 
         foreach (var posn in copyPasteRegion)
             Assert.AreEqual(getCellPosnString(posn.Row, posn.Col),

@@ -16,7 +16,7 @@
         style="@(IsFixedHeight ? $"max-height: {FixedHeightInPx}px;" : ""); width: @Sheet.LayoutProvider.ComputeWidth(0, Sheet.NumCols);"
         theme="@Theme"
         class="vars sheet @(IsDataSheetActive ? "active-sheet" : "inactive-sheet")
-     @(IsFixedHeight ? $" sheet-fixed-height" : "sheet-dynamic-height") "
+     @(IsFixedHeight ? " sheet-fixed-height" : "sheet-dynamic-height") "
         @onmouseover="() => IsMouseInsideSheet = true"
         @onmouseout="() => IsMouseInsideSheet = false">
         <!-- Column headers -->

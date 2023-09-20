@@ -5,7 +5,7 @@ namespace BlazorDatasheet.ObjectEditor;
 public class ObjectEditor<T>
 {
     private readonly ObjectEditorBuilder<T> _builder;
-    public Sheet Sheet { get; private set; }
+    public Sheet Sheet { get; }
 
     internal ObjectEditor(Sheet sheet, ObjectEditorBuilder<T> builder)
     {

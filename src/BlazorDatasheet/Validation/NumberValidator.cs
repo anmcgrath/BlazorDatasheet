@@ -17,5 +17,5 @@ public class NumberValidator : IDataValidator
         return double.TryParse(val, out double res);
     }
 
-    public bool IsStrict { get; private set; }
+    public bool IsStrict { get; }
 }

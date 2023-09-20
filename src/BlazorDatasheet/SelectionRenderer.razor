@@ -84,7 +84,7 @@
 
     private string bgStyle = "background:var(--selection-bg-color);";
 
-    private IRegion? BoundedSelectingRegion => Sheet?.Selection?.SelectingRegion?.GetIntersection(Sheet?.Region);
+    private IRegion? BoundedSelectingRegion => Sheet?.Selection.SelectingRegion?.GetIntersection(Sheet?.Region);
 
     private double getLeft(IRegion region) => CellLayoutProvider.ComputeLeftPosition(region) - 1;
     private double getTop(IRegion region) => CellLayoutProvider.ComputeTopPosition(region) - 1;
@@ -94,7 +94,7 @@
     // Returns the region that the position covers (may be > 1 because of merged cells)
     private IRegion getRegion(CellPosition position)
     {
-        var merge = Sheet.GetMergedRegionAtPosition(position.Row, position.Col);
+        var merge = Sheet?.GetMergedRegionAtPosition(position.Row, position.Col);
         if (merge != null)
             return merge;
         else

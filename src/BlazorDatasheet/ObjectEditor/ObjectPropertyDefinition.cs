@@ -6,7 +6,7 @@ namespace BlazorDatasheet.ObjectEditor;
 
 public class ObjectPropertyDefinition<T>
 {
-    public string PropertyName { get; set; }
+    public string PropertyName { get; }
     public string Heading { get; set; }
     public string Type { get; set; } = "text";
     public CellFormat? Format { get; set; }

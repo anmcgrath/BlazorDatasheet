@@ -37,7 +37,7 @@ public class Sheet
     /// <summary>
     /// The sheet's row headings
     /// </summary>
-    public List<Heading> RowHeadings { get; private set; }
+    public List<Heading> RowHeadings { get; }
 
     /// <summary>
     /// Whether to show the row headings
@@ -52,12 +52,12 @@ public class Sheet
     /// <summary>
     /// Managers commands & undo/redo. Default is true.
     /// </summary>
-    public CommandManager Commands { get; private set; }
+    public CommandManager Commands { get; }
 
     /// <summary>
     /// The bounds of the sheet
     /// </summary>
-    public Region? Region => new Region(0, NumRows - 1, 0, NumCols - 1);
+    public Region Region => new Region(0, NumRows - 1, 0, NumCols - 1);
 
     /// <summary>
     /// Provides functions for managing the sheet's conditional formatting

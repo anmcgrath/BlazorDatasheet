@@ -5,7 +5,7 @@ namespace BlazorDatasheet.Validation;
 public class SourceValidator : IDataValidator
 {
     public List<string> ValidationSource { get; }
-    public bool IsStrict { get; private set; }
+    public bool IsStrict { get; }
 
     /// <summary>
     /// Ensures that the value is equal to one of the validation sources

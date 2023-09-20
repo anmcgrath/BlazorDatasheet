@@ -193,11 +193,6 @@
         StateHasChanged();
     }
 
-    public bool IsColumnActive(int col)
-    {
-        return Sheet.Selection.Regions.Any(x => x.SpansCol(col));
-    }
-
     private void HandleMouseUp(int col, MouseEventArgs args)
     {
         OnMouseUp.InvokeAsync(new ColumnMouseEventArgs(col, args));

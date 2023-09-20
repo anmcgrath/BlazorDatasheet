@@ -7,10 +7,6 @@ public class Parser
     private SyntaxToken[] _tokens;
     private int _position;
 
-    public Parser()
-    {
-    }
-
     public List<string> Errors;
 
     /// <summary>

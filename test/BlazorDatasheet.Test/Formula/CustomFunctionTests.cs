@@ -54,6 +54,6 @@ public class CustomFunctionDefinition : CallableFunctionDefinition
         throw new NotImplementedException();
     }
 
-    public override Type ReturnType { get; }
+    public override Type ReturnType => typeof(string);
     public override bool AcceptsErrors => false;
 }

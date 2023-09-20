@@ -48,7 +48,7 @@ public class UtilTests
     [TestCase(0, 0)]
     public void BinarySearchTests(int val, int indexExpected)
     {
-        var list = new List<int>() { 1, 3, 5 };
+        var list = new List<int> { 1, 3, 5 };
         Assert.AreEqual(indexExpected, list.BinarySearchClosest(val));
     }
 }

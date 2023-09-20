@@ -5,8 +5,6 @@ namespace BlazorDatasheet.Formula.Core;
 
 public class CellFormula
 {
-    public int? Row { get; }
-    public int? Col { get; }
     internal readonly SyntaxTree ExpressionTree;
     public IEnumerable<Reference>? References => ExpressionTree?.References;
 
@@ -18,11 +16,6 @@ public class CellFormula
     public bool IsValid()
     {
         return !ExpressionTree.Diagnostics.Any();
-    }
-
-    public static bool IsFormula(string? formula)
-    {
-        return formula != null && formula.StartsWith('=');
     }
 
     public string ToFormulaString() => "=" + ExpressionTree.Root.ToExpressionText();

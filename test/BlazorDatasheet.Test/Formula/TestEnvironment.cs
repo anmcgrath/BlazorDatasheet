@@ -32,7 +32,7 @@ public class TestEnvironment : IEnvironment
         _variables[name] = variable;
     }
 
-    public object? GetCellValue(int row, int col)
+    public object GetCellValue(int row, int col)
     {
         return _cellValues[(row, col)];
     }
