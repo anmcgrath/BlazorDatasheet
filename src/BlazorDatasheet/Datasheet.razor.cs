@@ -140,9 +140,9 @@ public partial class Datasheet : IHandleEvent
         base.OnParametersSet();
     }
 
-    private void SheetLocalOnRegionUnMerged(object? sender, IRegion e)
+    private void SheetLocalOnRegionUnMerged(object? sender, IRegion region)
     {
-        this.MarkDirty(e);
+        this.MarkDirty(region);
         this.StateHasChanged();
     }
 
@@ -203,7 +203,7 @@ public partial class Datasheet : IHandleEvent
 
     private void SheetLocalOnFormatsChanged(object? sender, FormatChangedEventArgs e)
     {
-        this.SheetIsDirty = true;
+        this.ForceReRender();
     }
 
     private async void SheetOnRowRemoved(object? sender, RowRemovedEventArgs e)
