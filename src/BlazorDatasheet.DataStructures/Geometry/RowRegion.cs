@@ -1,6 +1,6 @@
-using BlazorDatasheet.Util;
+using BlazorDatasheet.DataStructures.Util;
 
-namespace BlazorDatasheet.Data;
+namespace BlazorDatasheet.DataStructures.Geometry;
 
 /// <summary>
 /// A column region. This region does not have an end position.
@@ -49,7 +49,7 @@ public class RowRegion : Region
     public override IRegion GetBoundingRegion(IRegion otherRegion)
     {
         return new RowRegion(Math.Min(otherRegion.TopLeft.Row, this.TopLeft.Row),
-                             Math.Max(otherRegion.BottomRight.Row, this.BottomRight.Row));
+            Math.Max(otherRegion.BottomRight.Row, this.BottomRight.Row));
     }
 
     public override void Shift(int dRow, int dCol)

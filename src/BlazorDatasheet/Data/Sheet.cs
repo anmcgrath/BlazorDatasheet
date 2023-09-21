@@ -1,9 +1,11 @@
 using System.Runtime.InteropServices;
 using System.Text;
 using BlazorDatasheet.Commands;
+using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Intervals;
 using BlazorDatasheet.DataStructures.RTree;
 using BlazorDatasheet.DataStructures.Store;
+using BlazorDatasheet.DataStructures.Util;
 using BlazorDatasheet.Edit;
 using BlazorDatasheet.Edit.DefaultComponents;
 using BlazorDatasheet.Events;

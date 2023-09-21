@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using BlazorDatasheet.Data;
+using BlazorDatasheet.DataStructures.Geometry;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test;

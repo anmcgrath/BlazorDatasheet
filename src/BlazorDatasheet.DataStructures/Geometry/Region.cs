@@ -1,8 +1,6 @@
-using System.Collections;
-using BlazorDatasheet.Interfaces;
-using BlazorDatasheet.Util;
+using BlazorDatasheet.DataStructures.Util;
 
-namespace BlazorDatasheet.Data;
+namespace BlazorDatasheet.DataStructures.Geometry;
 
 /// <summary>
 /// A region that has a specific start/end position

@@ -1,3 +1,4 @@
+using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Interfaces;
 
 namespace BlazorDatasheet.Data;

@@ -1,4 +1,4 @@
-namespace BlazorDatasheet.Data;
+namespace BlazorDatasheet.DataStructures.Geometry;
 
 /// <summary>
 /// Region that applies to all cells

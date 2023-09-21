@@ -1,3 +1,4 @@
+using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.RTree;
 
 namespace BlazorDatasheet.Data;

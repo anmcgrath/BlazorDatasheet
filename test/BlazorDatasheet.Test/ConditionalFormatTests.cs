@@ -1,5 +1,6 @@
 using System.Linq;
 using BlazorDatasheet.Data;
+using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formats;
 using BlazorDatasheet.Render;
 using NUnit.Framework;

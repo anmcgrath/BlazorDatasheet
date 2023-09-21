@@ -1,6 +1,6 @@
-using BlazorDatasheet.Util;
+using BlazorDatasheet.DataStructures.Util;
 
-namespace BlazorDatasheet.Data;
+namespace BlazorDatasheet.DataStructures.Geometry;
 
 /// <summary>
 /// A column region. This region does not have an end position.

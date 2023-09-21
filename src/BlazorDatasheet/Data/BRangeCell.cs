@@ -1,3 +1,5 @@
+using BlazorDatasheet.DataStructures.Geometry;
+
 namespace BlazorDatasheet.Data;
 
 public class BRangeCell : BRange

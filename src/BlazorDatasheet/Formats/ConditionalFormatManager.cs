@@ -1,7 +1,9 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Security.AccessControl;
 using BlazorDatasheet.Data;
+using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.RTree;
+using BlazorDatasheet.DataStructures.Util;
 using BlazorDatasheet.Events;
 using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Render;

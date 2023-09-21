@@ -1,6 +1,7 @@
 using System.Text;
 using BlazorDatasheet.Commands;
 using BlazorDatasheet.Data;
+using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Edit;
 using BlazorDatasheet.Events;
 using BlazorDatasheet.Formats;

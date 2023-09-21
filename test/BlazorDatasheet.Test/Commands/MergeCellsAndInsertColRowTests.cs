@@ -1,5 +1,6 @@
 ﻿using BlazorDatasheet.Commands;
 using BlazorDatasheet.Data;
+using BlazorDatasheet.DataStructures.Geometry;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Commands;

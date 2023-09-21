@@ -1,7 +1,7 @@
-using BlazorDatasheet.Data;
+using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.RTree;
 
-namespace BlazorDatasheet.Util;
+namespace BlazorDatasheet.DataStructures.Util;
 
 public static class SheetMath
 {

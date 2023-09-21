@@ -1,4 +1,5 @@
 using BlazorDatasheet.Data;
+using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Events;
 using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Render;

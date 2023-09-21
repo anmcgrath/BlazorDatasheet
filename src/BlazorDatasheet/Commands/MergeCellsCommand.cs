@@ -1,4 +1,6 @@
 using BlazorDatasheet.Data;
+using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.DataStructures.Util;
 using BlazorDatasheet.Util;
 
 namespace BlazorDatasheet.Commands;

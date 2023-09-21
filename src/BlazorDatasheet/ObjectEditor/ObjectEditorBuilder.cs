@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using System.Reflection.Metadata;
 using BlazorDatasheet.Data;
+using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formats;
 using BlazorDatasheet.Formats.DefaultConditionalFormats;
 using BlazorDatasheet.Render;
