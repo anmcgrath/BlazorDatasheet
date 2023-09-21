@@ -28,7 +28,6 @@ public class DataStoreTests
         store.Set(1, 0, "B");
         store.Set(2, 0, "C");
         store.Set(3, 0, "D");
-
         store.InsertRowAfter(0);
         Assert.AreEqual("A", store.Get(0, 0));
         Assert.AreEqual(default(string), store.Get(1, 0));
@@ -45,7 +44,6 @@ public class DataStoreTests
         store.Set(0, 0, "A");
         store.Set(2, 0, "B");
         store.Set(3, 0, "C");
-
         store.InsertRowAfter(1);
         Assert.AreEqual("A", store.Get(0, 0));
         Assert.AreEqual(default(string), store.Get(1, 0));
@@ -62,7 +60,6 @@ public class DataStoreTests
         store.Set(1, 0, "B");
         store.Set(2, 0, "C");
         store.Set(3, 0, "D");
-
         store.RemoveRowAt(0);
         Assert.AreEqual("B", store.Get(0, 0));
         Assert.AreEqual("C", store.Get(1, 0));
@@ -77,7 +74,6 @@ public class DataStoreTests
         store.Set(0, 0, "A");
         store.Set(2, 0, "B");
         store.Set(3, 0, "C");
-
         store.RemoveRowAt(1);
         Assert.AreEqual("A", store.Get(0, 0));
         Assert.AreEqual("B", store.Get(1, 0));
@@ -103,5 +99,18 @@ public class DataStoreTests
         store.Set(2, 0, "0,0");
         var nonEmpty = store.GetNonEmptyPositions(0, 2, 0, 0);
         Assert.AreEqual(2, nonEmpty.Count());
+    }
+
+    [Test]
+    public void Clear_Cell_Clears_Cell_Correctly()
+    {
+        var store = new SparseMatrixStore<string>();
+        store.Set(0, 0, "0,0");
+        store.Set(0, 1, "0,1");
+        store.Set(1, 0, "1,0");
+        store.Clear(0, 0);
+        Assert.Null(store.Get(0, 0));
+        Assert.AreEqual("0,1", store.Get(0, 1));
+        Assert.AreEqual("1,0", store.Get(1, 0));
     }
 }

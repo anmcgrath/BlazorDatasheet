@@ -9,6 +9,7 @@ public interface IMatrixDataStore<T>
     /// <param name="col"></param>
     /// <returns></returns>
     public bool Contains(int row, int col);
+
     /// <summary>
     /// Returns the data at the row, column specified. If it is empty, returns the default of T.
     /// </summary>
@@ -16,6 +17,7 @@ public interface IMatrixDataStore<T>
     /// <param name="col"></param>
     /// <returns></returns>
     public T? Get(int row, int col);
+
     /// <summary>
     /// Sets the data at the row, column specified.
     /// </summary>
@@ -23,16 +25,26 @@ public interface IMatrixDataStore<T>
     /// <param name="col"></param>
     /// <param name="value"></param>
     public void Set(int row, int col, T value);
+
+    /// <summary>
+    /// Removes the value at the row/column from the store but does not affect the rows/columns around it.
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    public void Clear(int row, int col);
+
     /// <summary>
     /// Inserts a row into the store
     /// </summary>
     /// <param name="row">The index of the row that the new row is inserted AFTER</param>
     public void InsertRowAfter(int row);
+
     /// <summary>
     /// Inserts a column into the store
     /// </summary>
     /// <param name="col">The index of the column that the new column is inserted AFTER</param>
     public void InsertColAfter(int col);
+
     /// <summary>
     /// Removes the column specified from the store.
     /// </summary>

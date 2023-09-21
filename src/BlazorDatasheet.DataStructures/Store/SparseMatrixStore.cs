@@ -37,6 +37,14 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
         column.Set(row, value);
     }
 
+    public void Clear(int row, int col)
+    {
+        var colExists = Columns.TryGetValue(col, out var column);
+        if (!colExists)
+            return;
+        column.Clear(row, col);
+    }
+
     public void InsertRowAfter(int row)
     {
         foreach (var column in Columns.Values)
@@ -140,6 +148,18 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
                 Values.Add(row, value);
             else
                 Values[row] = value;
+        }
+
+        /// <summary>
+        /// Clears a value from memory but doesn't affect any other positions.
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="col"></param>
+        public void Clear(int row, int col)
+        {
+            var index = Values.IndexOfKey(row);
+            if (index >= 0)
+                Values.Remove(row);
         }
 
         public void InsertRowAt(int row)
