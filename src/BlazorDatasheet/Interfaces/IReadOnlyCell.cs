@@ -8,7 +8,6 @@ public interface IReadOnlyCell
     object? GetValue(Type t);
     object? GetValue();
     public CellFormat? Formatting { get; }
-    public bool IsReadOnly { get; }
     public string Type { get; }
     List<IDataValidator> Validators { get; }
     public int Row { get; }

@@ -582,30 +582,6 @@ public class Sheet
     }
 
     /// <summary>
-    /// Set read only state for specified cell
-    /// </summary>
-    /// <param name="row"></param>
-    /// <param name="col"></param>
-    /// <param name="readOnly"></param>
-    public void SetCellReadOnly(int row, int col, bool readOnly)
-    {
-        var cmd = new SetCellReadOnlyCommand(row, col, readOnly);
-        Commands.ExecuteCommand(cmd);
-    }
-
-    /// <summary>
-    /// Set read only state for specified cell - command execution impl
-    /// </summary>
-    /// <param name="row"></param>
-    /// <param name="col"></param>
-    /// <param name="readOnly"></param>
-    internal void SetCellReadOnlyImpl(int row, int col, bool readOnly)
-    {
-        var cell = _cellDataStore.Get(row, col);
-        cell.IsReadOnly = readOnly;
-    }
-
-    /// <summary>
     /// Performs the actual setting of cell values, including raising events for any changes made.
     /// </summary>
     /// <param name="changes"></param>
@@ -1144,8 +1120,8 @@ public class Sheet
         // There will only be one merge because we don't allow overlapping
         return merges.Any() ? merges[0].Region : null;
     }
-    
-        /// <summary>
+
+    /// <summary>
     /// Updates a merged regions after insert or remove rows or columns
     /// </summary>
     /// <param name="axis"></param>

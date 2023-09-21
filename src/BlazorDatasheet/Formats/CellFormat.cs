@@ -9,26 +9,36 @@ public class CellFormat : IMergeable<CellFormat>
     /// CSS font-weight
     /// </summary>
     public string? FontWeight { get; set; }
+
     /// <summary>
     /// CSS background color
     /// </summary>
     public string? BackgroundColor { get; set; }
+
     /// <summary>
     /// CSS color
     /// </summary>
     public string? ForegroundColor { get; set; }
+
     /// <summary>
     /// How to format the string when rendered.
     /// </summary>
     public string? StringFormat { get; set; }
+
     /// <summary>
     /// The icon displayed inside the cell
     /// </summary>
     public RenderFragment? Icon { get; set; }
+
     /// <summary>
     /// The icon's CSS color
     /// </summary>
     public string? IconColor { get; set; }
+
+    /// <summary>
+    /// Whether the cell's value can be modified by the user.
+    /// </summary>
+    public bool? IsReadOnly { get; set; }
 
 
     /// <summary>
@@ -50,7 +60,8 @@ public class CellFormat : IMergeable<CellFormat>
             Icon = Icon,
             StringFormat = StringFormat,
             IconColor = IconColor,
-            TextAlign = TextAlign
+            TextAlign = TextAlign,
+            IsReadOnly = IsReadOnly
         };
     }
 
@@ -63,19 +74,21 @@ public class CellFormat : IMergeable<CellFormat>
     {
         if (format == null)
             return;
-        if (!String.IsNullOrEmpty(format.BackgroundColor))
+        if (!string.IsNullOrEmpty(format.BackgroundColor))
             this.BackgroundColor = format.BackgroundColor;
-        if (!String.IsNullOrEmpty(format.ForegroundColor))
+        if (!string.IsNullOrEmpty(format.ForegroundColor))
             this.ForegroundColor = format.ForegroundColor;
-        if (!String.IsNullOrEmpty(format.BackgroundColor))
+        if (!string.IsNullOrEmpty(format.BackgroundColor))
             this.FontWeight = format.FontWeight;
-        if (!String.IsNullOrEmpty(format.TextAlign))
+        if (!string.IsNullOrEmpty(format.TextAlign))
             this.TextAlign = format.TextAlign;
         if (format.Icon != null)
             this.Icon = format.Icon;
-        if (!String.IsNullOrEmpty(format.StringFormat))
+        if (!string.IsNullOrEmpty(format.StringFormat))
             this.StringFormat = format.StringFormat;
-        if (!String.IsNullOrEmpty(format.IconColor))
+        if (!string.IsNullOrEmpty(format.IconColor))
             this.IconColor = format.IconColor;
+        if (format.IsReadOnly.HasValue)
+            this.IsReadOnly = format.IsReadOnly;
     }
 }

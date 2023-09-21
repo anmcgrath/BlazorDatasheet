@@ -63,7 +63,7 @@ public class ObjectEditorBuilder<T>
         var cell = new Cell(item);
         cell.Formatting = propDefn.Format;
         cell.Type = propDefn.Type;
-        cell.IsReadOnly = propDefn.IsReadOnly;
+        cell.Formatting.IsReadOnly = propDefn.IsReadOnly;
         foreach (var validator in propDefn.Validators)
             cell.Validators.Add(validator);
 

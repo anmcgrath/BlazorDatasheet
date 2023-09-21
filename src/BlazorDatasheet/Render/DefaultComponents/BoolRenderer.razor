@@ -1,7 +1,7 @@
 @namespace BlazorDatasheet.Render.DefaultComponents
 @inherits BaseRenderer
 
-<input type="checkbox" disabled="@Cell.IsReadOnly" @bind="Checked"/>
+<input type="checkbox" disabled="@Cell.Formatting.IsReadOnly" @bind="Checked"/>
 
 @code {
 

@@ -29,11 +29,6 @@ public class Cell : IReadOnlyCell, IWriteableCell
     public CellFormat? Formatting { get; set; }
 
     /// <summary>
-    /// If IsReadOnly = true, the cell's value cannot be edited via the datasheet
-    /// </summary>
-    public bool IsReadOnly { get; set; }
-
-    /// <summary>
     /// The Data Validators to apply to a cell after editing
     /// </summary>
     public List<IDataValidator> Validators { get; private set; }
@@ -189,7 +184,7 @@ public class Cell : IReadOnlyCell, IWriteableCell
         return _metaData != null && _metaData.ContainsKey(name);
     }
 
-    public bool DoTrySetValue(object? val, Type type)
+    private bool DoTrySetValue(object? val, Type type)
     {
         try
         {
