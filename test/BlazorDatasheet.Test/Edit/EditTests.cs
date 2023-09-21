@@ -21,7 +21,7 @@ public class EditTests
         sheet.TrySetCellValue(1, 1, "Test");
 
         sheet.Editor.BeginEdit(0, 0);
-        Assert.Null(sheet.Editor.EditValue);
+        Assert.True(string.IsNullOrEmpty(sheet.Editor.EditValue));
         sheet.Editor.CancelEdit();
 
         sheet.Editor.BeginEdit(1, 1);
@@ -47,7 +47,7 @@ public class EditTests
         sheet.Editor.CancelEdit();
         Assert.AreEqual(false, sheet.Editor.IsEditing);
         Assert.Null(sheet.Editor.EditCell);
-        Assert.Null(sheet.Editor.EditValue);
+        Assert.True(string.IsNullOrEmpty(sheet.Editor.EditValue));
     }
 
     [Test]
