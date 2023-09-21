@@ -338,7 +338,7 @@ public partial class Datasheet : IHandleEvent
         this.CancelSelecting();
 
         var cell = Sheet?.GetCell(row, col);
-        if (cell == null || cell.Formatting.IsReadOnly == true)
+        if (cell == null || cell?.Formatting?.IsReadOnly == true)
             return;
 
         Sheet.Editor.BeginEdit(row, col, softEdit, mode, entryChar);
