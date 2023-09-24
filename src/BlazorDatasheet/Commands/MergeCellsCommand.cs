@@ -34,7 +34,7 @@ public class MergeCellsCommand : IUndoableCommand
             var envelope = region.ToEnvelope();
             // Determine if there are any merged cells in the region
             // We can only merge over merged cells if we entirely overlap them
-            var existingMerges = sheet.MergedCells.Search(envelope);
+            var existingMerges = sheet.Merges.MergedCells.Search(envelope);
             if (!existingMerges.All(x => region.Contains(x.Region)))
                 continue;
 
@@ -50,11 +50,11 @@ public class MergeCellsCommand : IUndoableCommand
             // Store the merges that we will have to re-instate on undo
             // And remove any merges that are contained in the region
             _overridenMergedRegions.AddRange(existingMerges.Select(x => x.Region));
-            sheet.UnMergeCellsImpl(new BRange(sheet, existingMerges.Select(x => x.Region)));
+            sheet.Merges.UnMergeCellsImpl(new BRange(sheet, existingMerges.Select(x => x.Region)));
 
             // Store the merge that we are doing and perform the actual merge
             _mergesPerformed.Add(region);
-            sheet.MergeCellsImpl(region);
+            sheet.Merges.AddImpl(region);
         }
 
         return true;
@@ -69,10 +69,10 @@ public class MergeCellsCommand : IUndoableCommand
     {
         // Undo the merge we performed
         foreach (var merge in _mergesPerformed)
-            sheet.UnMergeCellsImpl(merge);
+            sheet.Merges.UnMergeCellsImpl(merge);
         // Restore all the merges we removed
         foreach (var removedMerge in _overridenMergedRegions)
-            sheet.MergeCellsImpl(removedMerge);
+            sheet.Merges.AddImpl(removedMerge);
 
         sheet.Selection.Set(_range);
         // Restore all the cell values that were lost when merging

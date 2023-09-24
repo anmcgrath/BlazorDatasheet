@@ -13,18 +13,18 @@ public class MergeCellsCommandTests
         sheet.TrySetCellValue(0, 0, "00");
         sheet.TrySetCellValue(2, 2, "22");
 
-        sheet.MergeCells(sheet.Range(0, 2, 0, 2));
+        sheet.Merges.Add(sheet.Range(0, 2, 0, 2));
 
-        Assert.True(sheet.IsPositionMerged(0, 0));
-        Assert.True(sheet.IsPositionMerged(2, 2));
-        Assert.False(sheet.IsPositionMerged(3, 3));
+        Assert.True(sheet.Merges.IsInsideMerge(0, 0));
+        Assert.True(sheet.Merges.IsInsideMerge(2, 2));
+        Assert.False(sheet.Merges.IsInsideMerge(3, 3));
 
         Assert.AreEqual("00", sheet.GetValue(0, 0));
         Assert.AreEqual(null, sheet.GetValue(2, 2));
 
         sheet.Commands.Undo();
 
-        Assert.False(sheet.IsPositionMerged(0, 0));
+        Assert.False(sheet.Merges.IsInsideMerge(0, 0));
 
         Assert.AreEqual("00", sheet.GetValue(0, 0));
         Assert.AreEqual("22", sheet.GetValue(2, 2));

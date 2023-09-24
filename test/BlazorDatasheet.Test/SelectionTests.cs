@@ -108,7 +108,7 @@ public class SelectionManagerTests
     [Test]
     public void Active_Selection_Moves_Over_Merged_cells()
     {
-        _sheet.MergeCells(new Region(0, 1, 0, 1));
+        _sheet.Merges.Add(new Region(0, 1, 0, 1));
         _sheet.Selection.SetSingle(0, 0);
         Assert.AreEqual(4, _sheet.Selection.ActiveRegion.Area);
         _sheet.Selection.MoveActivePositionByRow(1);

@@ -25,14 +25,14 @@ public class InsertColAfterCommand : IUndoableCommand
     {
         sheet.InsertColAfterImpl(_colIndex);
 
-        (_mergesPerformed, _overridenMergedRegions) = sheet.RerangeMergedCells(Axis.Col, _colIndex, 1);
+        (_mergesPerformed, _overridenMergedRegions) = sheet.Merges.RerangeMergedCells(Axis.Col, _colIndex, 1);
         return true;
     }
 
     public bool Undo(Sheet sheet)
     {
         sheet.RemoveColImpl(_colIndex + 1);
-        sheet.UndoRerangeMergedCells(_mergesPerformed, _overridenMergedRegions);
+        sheet.Merges.UndoRerangeMergedCells(_mergesPerformed, _overridenMergedRegions);
         return true;
     }
 }

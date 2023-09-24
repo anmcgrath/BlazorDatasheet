@@ -24,14 +24,14 @@ internal class InsertRowAfterCommand : IUndoableCommand
     public bool Execute(Sheet sheet)
     {
         sheet.InsertRowAfterImpl(_index);
-        (_mergesPerformed, _overridenMergedRegions) = sheet.RerangeMergedCells(Axis.Row, _index, 1);
+        (_mergesPerformed, _overridenMergedRegions) = sheet.Merges.RerangeMergedCells(Axis.Row, _index, 1);
         return true;
     }
 
     public bool Undo(Sheet sheet)
     {
         sheet.RemoveRowAtImpl(_index + 1);
-        sheet.UndoRerangeMergedCells(_mergesPerformed, _overridenMergedRegions);
+        sheet.Merges.UndoRerangeMergedCells(_mergesPerformed, _overridenMergedRegions);
         return true;
     }
 }

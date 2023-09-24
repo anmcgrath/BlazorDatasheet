@@ -95,7 +95,7 @@
     // Returns the region that the position covers (may be > 1 because of merged cells)
     private IRegion getRegion(CellPosition position)
     {
-        var merge = Sheet?.GetMergedRegionAtPosition(position.Row, position.Col);
+        var merge = Sheet.Merges?.Get(position.Row, position.Col);
         if (merge != null)
             return merge;
         else

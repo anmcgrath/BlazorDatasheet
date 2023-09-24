@@ -161,7 +161,7 @@
         var left = CellLayoutProvider.ComputeLeftPosition(EditCell.Col);
         var top = CellLayoutProvider.ComputeTopPosition(EditCell.Row);
 
-        var mergedPosn = Sheet.GetMergedRegionAtPosition(EditCell.Row, EditCell.Col);
+        var mergedPosn = Sheet.Merges.Get(EditCell.Row, EditCell.Col);
         int colSpan = 1;
         int rowSpan = 1;
 

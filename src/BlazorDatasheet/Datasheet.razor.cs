@@ -118,8 +118,8 @@ public partial class Datasheet : IHandleEvent
                 _sheetLocal.FormatsChanged -= SheetLocalOnFormatsChanged;
                 _sheetLocal.ColumnWidthChanged -= SheetLocalOnColumnWidthChanged;
                 _sheetLocal.SheetInvalidated -= SheetLocalOnSheetInvalidated;
-                _sheetLocal.RegionMerged -= SheetLocalOnRegionMerged;
-                _sheetLocal.RegionUnMerged -= SheetLocalOnRegionUnMerged;
+                _sheetLocal.Merges.RegionMerged -= SheetLocalOnRegionMerged;
+                _sheetLocal.Merges.RegionUnMerged -= SheetLocalOnRegionUnMerged;
             }
 
             _sheetLocal = Sheet;
@@ -133,8 +133,8 @@ public partial class Datasheet : IHandleEvent
                 _sheetLocal.ColumnWidthChanged += SheetLocalOnColumnWidthChanged;
                 _sheetLocal.SheetInvalidated += SheetLocalOnSheetInvalidated;
                 _sheetLocal.CellsChanged += SheetLocalOnCellsChanged;
-                _sheetLocal.RegionMerged += SheetLocalOnRegionMerged;
-                _sheetLocal.RegionUnMerged += SheetLocalOnRegionUnMerged;
+                _sheetLocal.Merges.RegionMerged += SheetLocalOnRegionMerged;
+                _sheetLocal.Merges.RegionUnMerged += SheetLocalOnRegionUnMerged;
             }
         }
 
@@ -280,7 +280,7 @@ public partial class Datasheet : IHandleEvent
                 Sheet?.Selection?.ClearSelections();
             }
 
-            var mergeRangeAtPosition = _sheetLocal.GetMergedRegionAtPosition(row, col);
+            var mergeRangeAtPosition = _sheetLocal.Merges.Get(row, col);
             this.BeginSelectingCell(row, col);
         }
 

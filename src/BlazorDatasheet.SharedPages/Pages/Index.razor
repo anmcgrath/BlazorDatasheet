@@ -31,13 +31,14 @@
     <button @onclick="InsertRowAfterSelection">Insert row after selection</button>
     <button @onclick="InsertColAfterSelection">Insert col after selection</button>
     <button @onclick="RemoveCol">RemoveCol</button>
+    <button @onclick="RemoveRow">RemoveRow</button>
     <button @onclick="() => Sheet.Commands.Undo()">Undo</button>
     <button @onclick="() => Sheet.Commands.Redo()">Redo</button>
     <button @onclick="@(() => Sheet.Selection.Value = "Bob")">Set to Bob</button>
     <button @onclick="@(() => Sheet.SetFormat(new CellFormat() { BackgroundColor = "red" }, Sheet.Selection))">Set bg to red</button>
     <button @onclick="@(() => Sheet.SetFormat(new CellFormat() { BackgroundColor = "blue" }, Sheet.Selection))">Set bg to blue</button>
     <button @onclick="@(() => Sheet.SetFormat(new CellFormat() { ForegroundColor = "green" }, Sheet.Selection))">Set font colour to green</button>
-    <button @onclick="@(() => Sheet.MergeCells(Sheet.Selection))">Merge cells</button>
+    <button @onclick="@(() => Sheet.Merges.Add(Sheet.Selection))">Merge cells</button>
 </div>
 
 <div>
@@ -76,6 +77,15 @@
             return;
         }
         Sheet.RemoveCol(Sheet.Selection.ActiveRegion.Left);
+    }
+    
+    private void RemoveRow()
+    {
+        if (Sheet.Selection.ActiveRegion == null)
+        {
+            return;
+        }
+        Sheet.RemoveRow(Sheet.Selection.ActiveRegion.Top);
     }
 
 

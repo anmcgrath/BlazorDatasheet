@@ -53,7 +53,7 @@ public class RemoveRowCommand : IUndoableCommand
                 _removedCellFormats.Add(new CellChangedFormat(position.row, position.col, format, null));
         }
 
-        (_mergesPerformed, _overridenMergedRegions) = sheet.RerangeMergedCells(Axis.Row, _rowIndex, -1);
+        (_mergesPerformed, _overridenMergedRegions) = sheet.Merges.RerangeMergedCells(Axis.Row, _rowIndex, -1);
         return sheet.RemoveRowAtImpl(_rowIndex);
     }
 
@@ -71,7 +71,7 @@ public class RemoveRowCommand : IUndoableCommand
         }
 
 
-        sheet.UndoRerangeMergedCells(_mergesPerformed, _overridenMergedRegions);
+        sheet.Merges.UndoRerangeMergedCells(_mergesPerformed, _overridenMergedRegions);
         return true;
     }
 }
