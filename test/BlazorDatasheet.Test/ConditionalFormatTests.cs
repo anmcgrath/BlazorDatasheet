@@ -68,7 +68,7 @@ public class ConditionalFormatTests
                                        cell => new CellFormat() { BackgroundColor = cell.Row.ToString() });
         // Set this format to the second row in the sheet (sheet has 2 rows)
         sheet.ConditionalFormatting.Apply(cf, new RowRegion(1));
-        sheet.InsertRowAfter(0);
+        sheet.InsertRowAt(0);
         Assert.Null(sheet.ConditionalFormatting.GetFormatResult(0, 0)?.BackgroundColor);
         Assert.AreEqual("2", sheet.ConditionalFormatting.GetFormatResult(2, 0)?.BackgroundColor);
         sheet.RemoveRow(0);
@@ -110,7 +110,7 @@ public class ConditionalFormatTests
                                        cell => new CellFormat() { BackgroundColor = cell.Row.ToString() });
 
         sheet.ConditionalFormatting.Apply(cf, new Region(1, 2, 1, 2));
-        sheet.InsertRowAfter(1);
+        sheet.InsertRowAt(1);
         Assert.AreEqual("3", sheet.ConditionalFormatting.GetFormatResult(3, 1)?.BackgroundColor);
         sheet.RemoveRow(2);
         Assert.Null(sheet.ConditionalFormatting.GetFormatResult(3, 1)?.BackgroundColor);

@@ -28,8 +28,8 @@
 </Datasheet>
 
 <div>
-    <button @onclick="InsertRowAfterSelection">Insert row after selection</button>
-    <button @onclick="InsertColAfterSelection">Insert col after selection</button>
+    <button @onclick="InsertRowAfterSelection">Insert row</button>
+    <button @onclick="InsertColAfterSelection">Insert col</button>
     <button @onclick="RemoveCol">RemoveCol</button>
     <button @onclick="RemoveRow">RemoveRow</button>
     <button @onclick="() => Sheet.Commands.Undo()">Undo</button>
@@ -58,7 +58,7 @@
         {
             return;
         }
-        Sheet.InsertRowAfter(Sheet.Selection.ActiveRegion.TopLeft.Row);
+        Sheet.InsertRowAt(Sheet.Selection.ActiveRegion.TopLeft.Row);
     }
 
     private void InsertColAfterSelection()

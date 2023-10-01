@@ -43,7 +43,7 @@ public class MergeCellsAndInsertColRowTests
         Assert.AreEqual(null, sheet.GetValue(3, 3));
         Assert.AreEqual("U", sheet.GetValue(1, 1));
 
-        sheet.InsertRowAfter(0);
+        sheet.InsertRowAt(1);
         /*
                0  1  2  3  4
            0 |  |  |  |  |  |
@@ -100,7 +100,7 @@ public class MergeCellsAndInsertColRowTests
         Assert.AreEqual(null, sheet.GetValue(3, 3));
         Assert.AreEqual("U", sheet.GetValue(1, 1));
 
-        sheet.InsertRowAfter(2);
+        sheet.InsertRowAt(3);
         /*
                0  1  2  3  4
            0 |  |  |  |  |  |
@@ -515,7 +515,7 @@ public class MergeCellsAndInsertColRowTests
         sheet.Merges.Add(new ColumnRegion(1));
         Assert.AreEqual(sheet.GetValue(0, 1), "M");
 
-        sheet.InsertRowAfter(0);
+        sheet.InsertRowAt(0);
         var mergeRegion = sheet.Merges.Get(0, 1);
         Assert.NotNull(mergeRegion);
         Assert.AreEqual(mergeRegion.GetType(), typeof(ColumnRegion));
@@ -576,7 +576,7 @@ public class MergeCellsAndInsertColRowTests
 
         Assert.AreEqual(sheet.GetValue(0, 1), "M");
 
-        sheet.InsertRowAfter(0);
+        sheet.InsertRowAt(0);
 
         var mergeRowRegion = sheet.Merges.Get(2, 0);
         Assert.NotNull(mergeRowRegion);

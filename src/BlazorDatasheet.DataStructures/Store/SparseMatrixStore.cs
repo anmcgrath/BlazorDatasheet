@@ -45,7 +45,7 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
         column.Clear(row, col);
     }
 
-    public void InsertRowAfter(int row)
+    public void InsertRowAt(int row)
     {
         foreach (var column in Columns.Values)
         {
@@ -164,8 +164,8 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
 
         public void InsertRowAt(int row)
         {
-            // Find where the next row should be inserted after in the dict
-            var index = Values.Keys.BinarySearchIndexOf(row, Comparer<int>.Default);
+            // Find where the next row should be inserted at in the dict
+            var index = Values.Keys.BinarySearchIndexOf(row - 1, Comparer<int>.Default);
             if (index < 0)
                 index = ~index;
             else

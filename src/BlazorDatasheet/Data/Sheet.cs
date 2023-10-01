@@ -269,12 +269,11 @@ public class Sheet
     /// <summary>
     /// Inserts a row at an index specified.
     /// </summary>
-    /// <param name="rowIndex">The index that the new row will be at. If the index is outside of the region of rows,
-    /// a row will be either inserted at the start or appended at the end</param>
-    public void InsertRowAfter(int rowIndex)
+    /// <param name="rowIndex">The index that the new row will be at. The new row will have the index specified.</param>
+    public void InsertRowAt(int rowIndex)
     {
         var indexToAddAfter = Math.Min(NumRows - 1, Math.Max(rowIndex, -1));
-        var cmd = new InsertRowAfterCommand(indexToAddAfter);
+        var cmd = new InsertRowAtCommand(indexToAddAfter);
         Commands.ExecuteCommand(cmd);
     }
 
@@ -284,9 +283,9 @@ public class Sheet
     /// </summary>
     /// <param name="rowIndex"></param>
     /// <returns></returns>
-    internal bool InsertRowAfterImpl(int rowIndex)
+    internal bool InsertRowAtImpl(int rowIndex)
     {
-        _cellDataStore.InsertRowAfter(rowIndex);
+        _cellDataStore.InsertRowAt(rowIndex);
         NumRows++;
         RowInserted?.Invoke(this, new RowInsertedEventArgs(rowIndex));
         return true;

@@ -2,6 +2,7 @@ using BlazorDatasheet.Commands;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.RTree;
 using BlazorDatasheet.DataStructures.Util;
+using BlazorDatasheet.Events;
 
 namespace BlazorDatasheet.Data;
 
@@ -22,6 +23,13 @@ public class MergeManager
     public MergeManager(Sheet sheet)
     {
         _sheet = sheet;
+        _sheet.RowInserted += SheetOnRowInserted;
+    }
+
+    private void SheetOnRowInserted(object? sender, RowInsertedEventArgs e)
+    {
+        var count = 1;
+        // Shift merges BELOW the
     }
 
     /// <summary>

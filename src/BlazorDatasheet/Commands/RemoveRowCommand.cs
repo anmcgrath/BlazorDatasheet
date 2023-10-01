@@ -27,6 +27,9 @@ public class RemoveRowCommand : IUndoableCommand
 
     public bool Execute(Sheet sheet)
     {
+        if (_rowIndex >= sheet.NumRows)
+            return false;
+
         // Keep track of the values we have removed
         var nonEmptyCellPositions = sheet.GetNonEmptyCellPositions(new RowRegion(_rowIndex));
         _removedValues = new List<CellChange>();
@@ -68,12 +71,13 @@ public class RemoveRowCommand : IUndoableCommand
         }
 
         (_mergesPerformed, _overridenMergedRegions) = sheet.Merges.RerangeMergedCells(Axis.Row, _rowIndex, -1);
+
         return sheet.RemoveRowAtImpl(_rowIndex);
     }
 
     public bool Undo(Sheet sheet)
     {
-        sheet.InsertRowAfterImpl(_rowIndex - 1);
+        sheet.InsertRowAtImpl(_rowIndex);
         sheet.SetCellValuesImpl(_removedValues);
 
         if (_modifiedRowFormat != null)

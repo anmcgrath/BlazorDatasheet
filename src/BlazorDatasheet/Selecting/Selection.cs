@@ -1,6 +1,7 @@
 using BlazorDatasheet.Data;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Util;
+using BlazorDatasheet.Events;
 using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Util;
 
@@ -14,6 +15,12 @@ public class Selection : BRange
     /// The region that is active for accepting user input, usually the most recent region added
     /// </summary>
     public IRegion? ActiveRegion { get; private set; }
+
+    /// <summary>
+    /// The position of the cell that is "active" in the selection.
+    /// It is sometimes but not always the same as the input position.
+    /// </summary>
+    public CellPosition ActiveCellPosition { get; private set; }
 
     /// <summary>
     /// The region that is currently being selected
@@ -31,12 +38,6 @@ public class Selection : BRange
     internal CellPosition SelectingStartPosition { get; private set; }
 
     internal bool IsSelecting => SelectingRegion != null;
-
-    /// <summary>
-    /// The position of the cell that is "active" in the selection.
-    /// It is sometimes but not always the same as the input position.
-    /// </summary>
-    public CellPosition ActiveCellPosition { get; private set; }
 
     /// <summary>
     /// Fired when the current selection changes

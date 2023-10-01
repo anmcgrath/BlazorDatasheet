@@ -16,7 +16,7 @@ public class ObjectEditor<T>
     public void InsertAt(T item, int rowIndex)
     {
         var cells = _builder.GetCells(item);
-        Sheet.InsertRowAfter(rowIndex);
+        Sheet.InsertRowAt(rowIndex);
         for (int i = 0; i < cells.Count; i++)
         {
             Sheet.SetCell(rowIndex + 1, i, cells[i]);
