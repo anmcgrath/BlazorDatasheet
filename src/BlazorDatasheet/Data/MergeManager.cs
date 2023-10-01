@@ -124,7 +124,7 @@ public class MergeManager
     /// <returns></returns>
     public bool Any()
     {
-        return MergedCells.Count >= 0;
+        return MergedCells.Count > 0;
     }
 
     /// <summary>

@@ -1,5 +1,6 @@
 using BlazorDatasheet.Data;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.DataStructures.RTree;
 using BlazorDatasheet.Events;
 using BlazorDatasheet.Formats;
 
@@ -15,6 +16,7 @@ public class RemoveColumnCommand : IUndoableCommand
     private OrderedInterval<CellFormat>? _modifiedColumFormat;
     private IReadOnlyList<CellMerge> _mergesPerformed = default!;
     private IReadOnlyList<CellMerge> _overridenMergedRegions = default!;
+    private List<CellMerge> _mergedRemoved;
 
     /// <summary>
     /// Command for removing a column at the index given.
@@ -67,6 +69,18 @@ public class RemoveColumnCommand : IUndoableCommand
 
         var res = sheet.RemoveColImpl(_columnIndex);
 
+        _mergedRemoved = sheet
+                         .Merges.MergedCells
+                         .Search(new Envelope(_columnIndex, 0, _columnIndex, sheet.NumRows))
+                         .Where(x => x.Region.Width == 1)
+                         .ToList();
+
+
+        foreach (var merge in _mergedRemoved)
+        {
+            sheet.Merges.UnMergeCellsImpl(merge.Region);
+        }
+
         (_mergesPerformed, _overridenMergedRegions) = sheet.Merges.RerangeMergedCells(Axis.Col, _columnIndex, -1);
         return res;
     }
@@ -88,6 +102,12 @@ public class RemoveColumnCommand : IUndoableCommand
         }
 
         sheet.Merges.UndoRerangeMergedCells(_mergesPerformed, _overridenMergedRegions);
+
+        foreach (var mergeRemoved in _mergedRemoved)
+        {
+            sheet.Merges.Add(mergeRemoved.Region);
+        }
+
         return true;
     }
 }

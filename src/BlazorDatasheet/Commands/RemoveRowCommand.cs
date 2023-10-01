@@ -1,5 +1,6 @@
 using BlazorDatasheet.Data;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.DataStructures.RTree;
 using BlazorDatasheet.Events;
 using BlazorDatasheet.Formats;
 
@@ -13,6 +14,7 @@ public class RemoveRowCommand : IUndoableCommand
     private OrderedInterval<CellFormat>? _modifiedRowFormat;
     private IReadOnlyList<CellMerge> _mergesPerformed = default!;
     private IReadOnlyList<CellMerge> _overridenMergedRegions = default!;
+    private List<CellMerge> _mergedRemoved;
 
     /// <summary>
     /// Command to remove the row at the index given.
@@ -53,6 +55,18 @@ public class RemoveRowCommand : IUndoableCommand
                 _removedCellFormats.Add(new CellChangedFormat(position.row, position.col, format, null));
         }
 
+        _mergedRemoved = sheet
+                         .Merges.MergedCells
+                         .Search(new Envelope(0, _rowIndex, sheet.NumCols, _rowIndex))
+                         .Where(x => x.Region.Height == 1)
+                         .ToList();
+
+
+        foreach (var merge in _mergedRemoved)
+        {
+            sheet.Merges.UnMergeCellsImpl(merge.Region);
+        }
+
         (_mergesPerformed, _overridenMergedRegions) = sheet.Merges.RerangeMergedCells(Axis.Row, _rowIndex, -1);
         return sheet.RemoveRowAtImpl(_rowIndex);
     }
@@ -72,6 +86,12 @@ public class RemoveRowCommand : IUndoableCommand
 
 
         sheet.Merges.UndoRerangeMergedCells(_mergesPerformed, _overridenMergedRegions);
+
+        foreach (var mergeRemoved in _mergedRemoved)
+        {
+            sheet.Merges.Add(mergeRemoved.Region);
+        }
+
         return true;
     }
 }
