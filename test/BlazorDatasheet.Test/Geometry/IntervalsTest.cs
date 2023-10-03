@@ -2,10 +2,9 @@
 using BlazorDatasheet.Data;
 using BlazorDatasheet.DataStructures.Intervals;
 using BlazorDatasheet.Formats;
-using BlazorDatasheet.Render;
 using NUnit.Framework;
 
-namespace BlazorDatasheet.Test;
+namespace BlazorDatasheet.Test.Geometry;
 
 public class IntervalsTest
 {

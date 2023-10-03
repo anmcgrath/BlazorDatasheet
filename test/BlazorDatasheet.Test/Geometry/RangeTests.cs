@@ -3,7 +3,7 @@ using BlazorDatasheet.Data;
 using BlazorDatasheet.DataStructures.Geometry;
 using NUnit.Framework;
 
-namespace BlazorDatasheet.Test;
+namespace BlazorDatasheet.Test.Geometry;
 
 public class RangeTests
 {

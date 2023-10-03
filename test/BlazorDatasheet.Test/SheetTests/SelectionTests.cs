@@ -4,7 +4,7 @@ using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Selecting;
 using NUnit.Framework;
 
-namespace BlazorDatasheet.Test;
+namespace BlazorDatasheet.Test.SheetTests;
 
 public class SelectionManagerTests
 {

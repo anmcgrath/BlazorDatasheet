@@ -1,6 +1,6 @@
 ﻿using NUnit.Framework;
 
-namespace BlazorDatasheet.Test;
+namespace BlazorDatasheet.Test.SheetTests;
 
 public class SheetValidationTests
 {

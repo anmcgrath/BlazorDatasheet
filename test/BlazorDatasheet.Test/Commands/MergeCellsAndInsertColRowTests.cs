@@ -542,7 +542,7 @@ public class MergeCellsAndInsertColRowTests
     }
 
     [Test]
-    public void Insert_Col_Inside_Merged_Column_Shift_Merge()
+    public void Insert_Col_At_Merged_Column_Shift_Merge()
     {
         // This case tests when an entire row is merged
         // and a col is inserted inside the merge. The behaviour
@@ -555,7 +555,7 @@ public class MergeCellsAndInsertColRowTests
 
         Assert.AreEqual(sheet.GetValue(0, 1), "M");
 
-        sheet.InsertColAfter(0);
+        sheet.InsertColAfter(2);
 
 
         var mergeColumnRegion = sheet.Merges.Get(0, 3);
@@ -564,7 +564,7 @@ public class MergeCellsAndInsertColRowTests
     }
 
     [Test]
-    public void Insert_Col_Inside_Merged_Row_Shift_Merge()
+    public void Insert_Row_At_Merged_Row_Shift_Merge()
     {
         // This case tests when an entire row is merged
         // and a col is inserted inside the merge. The behaviour
@@ -576,7 +576,7 @@ public class MergeCellsAndInsertColRowTests
 
         Assert.AreEqual(sheet.GetValue(0, 1), "M");
 
-        sheet.InsertRowAt(0);
+        sheet.InsertRowAt(1);
 
         var mergeRowRegion = sheet.Merges.Get(2, 0);
         Assert.NotNull(mergeRowRegion);
@@ -600,7 +600,7 @@ public class MergeCellsAndInsertColRowTests
         sheet.Commands.Undo();
         Assert.True(sheet.Merges.IsInsideMerge(1, 1));
     }
-    
+
     [Test]
     public void Remove_Col_On_Single_Col_Width_Merge_Then_Undo_Works_Correctly()
     {
@@ -617,5 +617,20 @@ public class MergeCellsAndInsertColRowTests
         // Undoing should bring the merged row back
         sheet.Commands.Undo();
         Assert.True(sheet.Merges.IsInsideMerge(1, 1));
+    }
+
+    [Test]
+    public void Remove_Top_Row_Of_Merge_Then_Undo_Works_Correctly()
+    {
+        // This is an edge case where we have a merged and remove the top row of the merge.
+        // When the removal is undone, the merge should be the same as before.
+        var sheet = new Sheet(10, 10);
+        sheet.Merges.Add(new Region(2, 5, 2, 3));
+        sheet.Commands.ExecuteCommand(new RemoveRowCommand(2));
+        Assert.True(sheet.Merges.IsInsideMerge(2, 2));
+        Assert.False(sheet.Merges.IsInsideMerge(5, 2));
+        sheet.Commands.Undo();
+        Assert.True(sheet.Merges.IsInsideMerge(2, 2));
+        Assert.True(sheet.Merges.IsInsideMerge(5, 2));
     }
 }

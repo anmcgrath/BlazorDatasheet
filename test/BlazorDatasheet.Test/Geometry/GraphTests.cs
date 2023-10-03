@@ -2,7 +2,7 @@
 using BlazorDatasheet.DataStructures.Graph;
 using NUnit.Framework;
 
-namespace BlazorDatasheet.Test;
+namespace BlazorDatasheet.Test.Geometry;
 
 public class GraphTests
 {

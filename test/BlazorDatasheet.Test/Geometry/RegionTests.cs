@@ -1,10 +1,8 @@
-using System.Collections.Generic;
 using System.Linq;
-using BlazorDatasheet.Data;
 using BlazorDatasheet.DataStructures.Geometry;
 using NUnit.Framework;
 
-namespace BlazorDatasheet.Test;
+namespace BlazorDatasheet.Test.Geometry;
 
 public class RegionTests
 {
