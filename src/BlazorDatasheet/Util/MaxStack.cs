@@ -27,7 +27,7 @@ public class MaxStack<T>
     {
         if (!_listImpl.Any())
             return default(T);
-        
+
         var topItem = _listImpl.LastOrDefault();
         _listImpl.RemoveAt(_listImpl.Count - 1);
         return topItem;
@@ -36,6 +36,16 @@ public class MaxStack<T>
     public T? Peek()
     {
         return _listImpl.LastOrDefault();
+    }
+
+    public IEnumerable<T> GetAllItems()
+    {
+        return _listImpl;
+    }
+
+    public int Count()
+    {
+        return _listImpl.Count;
     }
 
     public void Clear()

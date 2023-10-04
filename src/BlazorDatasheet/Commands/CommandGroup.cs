@@ -4,17 +4,22 @@ namespace BlazorDatasheet.Commands;
 
 public class CommandGroup : IUndoableCommand
 {
-    private IEnumerable<IUndoableCommand> _commands;
-    private List<IUndoableCommand> _successfulCommands;
+    private readonly List<ICommand> _commands;
+    private readonly List<ICommand> _successfulCommands;
 
     /// <summary>
     /// Runs a series of commands sequentially, but stops if any fails.
     /// </summary>
     /// <param name="commands"></param>
-    public CommandGroup(params IUndoableCommand[] commands)
+    public CommandGroup(params ICommand[] commands)
     {
-        _commands = commands;
-        _successfulCommands = new List<IUndoableCommand>();
+        _commands = commands.ToList();
+        _successfulCommands = new List<ICommand>();
+    }
+
+    public void AddCommand(ICommand command)
+    {
+        _commands.Add(command);
     }
 
     public bool Execute(Sheet sheet)
@@ -40,7 +45,7 @@ public class CommandGroup : IUndoableCommand
     public bool Undo(Sheet sheet)
     {
         var undo = true;
-        foreach (var command in _successfulCommands)
+        foreach (var command in _successfulCommands.Where(cmd => cmd is IUndoableCommand).Cast<IUndoableCommand>())
         {
             undo &= command.Undo(sheet);
         }

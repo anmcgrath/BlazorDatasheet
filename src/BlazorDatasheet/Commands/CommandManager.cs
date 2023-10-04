@@ -8,14 +8,23 @@ public class CommandManager
     private readonly MaxStack<IUndoableCommand> _history;
     private readonly MaxStack<ICommand> _redos;
     private Sheet _sheet;
-    private int _maxHistorySize;
+    private CommandGroup? _currentCommandGroup;
+
+    /// <summary>
+    /// Whether the commands executed are being collected in a group.
+    /// </summary>
+    private bool _isCollectingCommands;
+
+    /// <summary>
+    /// If history is paused, commands are no longer added to the undo/redo stack.
+    /// </summary>
+    public bool HistoryPaused { get; private set; }
 
     public CommandManager(Sheet sheet, int maxHistorySize = 50)
     {
         _sheet = sheet;
-        _maxHistorySize = maxHistorySize;
-        _history = new MaxStack<IUndoableCommand>(40);
-        _redos = new MaxStack<ICommand>(40);
+        _history = new MaxStack<IUndoableCommand>(maxHistorySize);
+        _redos = new MaxStack<ICommand>(maxHistorySize);
     }
 
     /// <summary>
@@ -25,10 +34,16 @@ public class CommandManager
     /// <returns></returns>
     public bool ExecuteCommand(ICommand command)
     {
+        if (_isCollectingCommands)
+        {
+            _currentCommandGroup!.AddCommand(command);
+            return true;
+        }
+
         var result = command.Execute(_sheet);
         if (result)
         {
-            if (command is IUndoableCommand undoCommand)
+            if (!HistoryPaused && command is IUndoableCommand undoCommand)
             {
                 _history.Push(undoCommand);
             }
@@ -47,17 +62,38 @@ public class CommandManager
     }
 
     /// <summary>
+    /// Returns all the undo commands in the undo stack
+    /// </summary>
+    /// <returns></returns>
+    public IEnumerable<ICommand> GetUndoCommands()
+    {
+        return _history.GetAllItems();
+    }
+
+    /// <summary>
+    /// Returns all the redo commands in the redo stack.
+    /// </summary>
+    /// <returns></returns>
+    public IEnumerable<ICommand> GetRedoCommands()
+    {
+        return _redos.GetAllItems();
+    }
+
+    /// <summary>
     /// Executes the undo function of the last undo-able command run.
     /// </summary>
     /// <returns></returns>
     public bool Undo()
     {
+        if (_isCollectingCommands)
+            return false;
+
         if (_history.Peek() == null)
             return false;
 
         var cmd = _history.Pop()!;
         var result = cmd.Undo(_sheet);
-        if (result)
+        if (!HistoryPaused && result)
         {
             _redos.Push(cmd);
         }
@@ -71,6 +107,9 @@ public class CommandManager
     /// <returns></returns>
     public bool Redo()
     {
+        if (_isCollectingCommands)
+            return false;
+
         if (_redos.Peek() == null)
             return false;
 
@@ -79,7 +118,7 @@ public class CommandManager
 
         if (result)
         {
-            if (cmd is IUndoableCommand undoCommand)
+            if (!HistoryPaused && cmd is IUndoableCommand undoCommand)
             {
                 _history.Push(undoCommand);
             }
@@ -94,5 +133,48 @@ public class CommandManager
     public void ClearHistory()
     {
         _history.Clear();
+    }
+
+    /// <summary>
+    /// Stop commands to be added to the undo/redo stack.
+    /// </summary>
+    public void PauseHistory()
+    {
+        HistoryPaused = true;
+    }
+
+    /// <summary>
+    /// Allow commands to be added to the undo/redo stack.
+    /// </summary>
+    public void ResumeHistory()
+    {
+        HistoryPaused = false;
+    }
+
+    /// <summary>
+    /// Starts collecting commands in a group. When collecting is finished, via EndCommandGroup()
+    /// the commands are executed. When the commands are then undone/redone, they are undone/redone together.
+    /// </summary>
+    public void BeginCommandGroup()
+    {
+        _isCollectingCommands = true;
+        _currentCommandGroup = new CommandGroup();
+    }
+
+    /// <summary>
+    /// Finishes collecting commands in a group and executes the commands in the group.
+    /// </summary>
+    public bool EndCommandGroup()
+    {
+        _isCollectingCommands = false;
+        if (_currentCommandGroup != null)
+        {
+            var res = this.ExecuteCommand(_currentCommandGroup);
+            _currentCommandGroup = null;
+            return res;
+        }
+
+        _currentCommandGroup = null;
+        return false;
     }
 }
