@@ -40,7 +40,7 @@ public class CellLayoutProvider
 
     private void SheetOnColumnInserted(object? sender, ColumnInsertedEventArgs e)
     {
-        _columnWidths.Insert(e.ColAfter + 1, e.Width ?? _defaultColumnWidth);
+        _columnWidths.Insert(e.ColumnIndex, e.Width ?? _defaultColumnWidth);
         updateXPositions();
     }
 

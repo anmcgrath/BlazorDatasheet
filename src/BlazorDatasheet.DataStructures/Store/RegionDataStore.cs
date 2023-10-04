@@ -1,0 +1,299 @@
+using System.Collections;
+using System.Data.SqlTypes;
+using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.DataStructures.RTree;
+using BlazorDatasheet.DataStructures.Util;
+
+namespace BlazorDatasheet.DataStructures.Store;
+
+/// <summary>
+/// A wrapper around an RTree enabling storing data in regions.
+/// </summary>
+/// <typeparam name="T">Data type</typeparam>
+public class RegionDataStore<T>
+{
+    private readonly int _minArea;
+    private readonly bool _expandWhenInsertAfter;
+    private RTree<DataRegion<T>> _tree;
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="minArea">The minimum area that regions can have before they will be removed after operations.
+    /// If a region's area ends up less than or equal to this, the region will be removed.</param>
+    /// <param name="expandWhenInsertAfter">When set to true, when a row or column is inserted just below/right of a region, the region is expanded</param>
+    public RegionDataStore(int minArea = 0, bool expandWhenInsertAfter = true)
+    {
+        _minArea = minArea;
+        _expandWhenInsertAfter = expandWhenInsertAfter;
+        _tree = new RTree<DataRegion<T>>();
+    }
+
+    /// <summary>
+    /// Returns all data regions in the store.
+    /// </summary>
+    /// <returns></returns>
+    public IEnumerable<DataRegion<T>> GetAllDataRegions()
+    {
+        return _tree.Search();
+    }
+
+    public IEnumerable<DataRegion<T>> GetRegionsOverlapping(int row, int col)
+    {
+        return GetRegionsOverlapping(new Region(row, col));
+    }
+
+    /// <summary>
+    /// Returns all data regions overlapping the regions
+    /// </summary>
+    public IEnumerable<DataRegion<T>> GetRegionsOverlapping(IEnumerable<IRegion> regions)
+    {
+        return regions.SelectMany(GetRegionsOverlapping);
+    }
+
+    /// <summary>
+    /// Returns all data regions overlapping the region
+    /// </summary>
+    /// <param name="region"></param>
+    /// <returns></returns>
+    public IEnumerable<DataRegion<T>> GetRegionsOverlapping(IRegion region)
+    {
+        var env = region.ToEnvelope();
+        return _tree.Search(env);
+    }
+
+    public IEnumerable<T> GetDataOverlapping(int row, int col)
+    {
+        return GetRegionsOverlapping(row, col).Select(x => x.Data);
+    }
+
+    /// <summary>
+    /// Returns the data regions that are contained inside the region.
+    /// </summary>
+    /// <param name="region"></param>
+    /// <returns></returns>
+    public IEnumerable<DataRegion<T>> GetContainedRegions(IRegion region)
+    {
+        return _tree.Search(region.ToEnvelope())
+                    .Where(x => region.Contains(x.Region));
+    }
+
+    /// <summary>
+    /// Adds a region to the store, and assigns it data.
+    /// Overlapping regions are not removed.
+    /// </summary>
+    /// <param name="region"></param>
+    /// <param name="data"></param>
+    public void Add(IRegion region, T data)
+    {
+        Add(new DataRegion<T>(data, region));
+    }
+
+    /// <summary>
+    /// Updates region positions by handling the row insert. Regions are shifted/expanded appropriately.
+    /// </summary>
+    /// <param name="rowIndex"></param>
+    /// <param name="nRows"></param>
+    public void InsertRows(int rowIndex, int nRows) => InsertRowsOrColumnAndShift(rowIndex, nRows, Axis.Row);
+
+    /// <summary>
+    /// Updates region positions by handling the col insert. Regions are shifted/expanded appropriately.
+    /// </summary>
+    /// <param name="colIndex"></param>
+    /// <param name="nCols"></param>
+    public void InsertCols(int colIndex, int nCols) => InsertRowsOrColumnAndShift(colIndex, nCols, Axis.Col);
+
+    private void InsertRowsOrColumnAndShift(int index, int n, Axis axis)
+    {
+        // As an example for inserting rows, there are three things that can happen
+        // 1. Any regions that intersect the index should be expanded by nRows
+        // 2. If _expandWhenInsertedAfter = true, then when the bottom of any region is just above index, expand it too.
+        // 3. Any regions below the index should be shifted down
+        var i0 = _expandWhenInsertAfter ? index - 1 : index;
+        IRegion region = axis == Axis.Col ? new ColumnRegion(i0, index) : new RowRegion(i0, index);
+        var intersecting = GetRegionsOverlapping(region);
+        var dataRegionsToAdd = new List<DataRegion<T>>();
+
+        foreach (var r in intersecting)
+        {
+            if (r.Region.Top == index)
+                continue; // we shift in this case, and don't expand
+            var i1 = axis == Axis.Col ? r.Region.Right : r.Region.Bottom;
+            if (!_expandWhenInsertAfter && index > i1)
+                continue;
+            var clonedRegion = r.Region.Clone();
+            clonedRegion.Expand(axis == Axis.Row ? Edge.Bottom : Edge.Right, n);
+            dataRegionsToAdd.Add(new DataRegion<T>(r.Data, clonedRegion));
+            _tree.Delete(r);
+        }
+
+        // index - 1 because the top of the region has to be above the region to shift it down
+        var below = this.GetAfter(index - 1, axis);
+        foreach (var r in below)
+        {
+            var clonedRegion = r.Region.Clone();
+            var dRow = axis == Axis.Row ? n : 0;
+            var dCol = axis == Axis.Col ? n : 0;
+            clonedRegion.Shift(dRow, dCol);
+            dataRegionsToAdd.Add(new DataRegion<T>(r.Data, clonedRegion));
+            _tree.Delete(r);
+        }
+
+        foreach (var dr in dataRegionsToAdd)
+        {
+            _tree.Insert(dr);
+        }
+    }
+
+    /// <summary>
+    /// Updates the region positions by handling row deletes. Regions are shifted/contracted appropriately.
+    /// Returns any data that is removed during this operation.
+    /// </summary>
+    /// <param name="rowStart"></param>
+    /// <param name="rowEnd"></param>
+    /// <returns>Any data that is removed during this operation</returns>
+    public List<DataRegion<T>> RemoveRows(int rowStart, int rowEnd) =>
+        RemoveRowsOrColumsAndShift(rowStart, rowEnd, Axis.Row);
+
+    /// <summary>
+    /// Updates the region positions by handling column deletes. Regions are shifted/contracted appropriately.
+    /// Returns any data that is removed during this operation.
+    /// </summary>
+    /// <param name="colStart"></param>
+    /// <param name="colEnd"></param>
+    /// <returns>Any data that is removed during this operation</returns>
+    public List<DataRegion<T>> RemoveCols(int colStart, int colEnd) =>
+        RemoveRowsOrColumsAndShift(colStart, colEnd, Axis.Col);
+
+    /// <summary>
+    /// Removes a number of rows or columns and shifts/contracts regions appropriately.
+    /// </summary>
+    /// <param name="start"></param>
+    /// <param name="end"></param>
+    /// <param name="axis"></param>
+    /// <returns></returns>
+    private List<DataRegion<T>> RemoveRowsOrColumsAndShift(int start, int end, Axis axis)
+    {
+        IRegion region = axis == Axis.Col ? new ColumnRegion(start, end) : new RowRegion(start, end);
+        var removed = new List<DataRegion<T>>();
+        var overlapping = GetRegionsOverlapping(region);
+        var newDataRegions = new List<DataRegion<T>>();
+
+        foreach (var r in overlapping)
+        {
+            // If we are leaving the region with an area less than or equal to min, remove.
+            // For the example of removing rows, consider a rect with a height 3 and width 1
+            // if we remove top two rows there is a width of 1 and if the min area is less than one, it should be removed.
+            var cuts = r.Region.Break(region);
+            var cutArea = cuts.Sum(x => x.Area);
+            if (cutArea <= _minArea)
+            {
+                _tree.Delete(r);
+                removed.Add(r);
+                continue;
+            }
+
+            // Contract regions that intersect
+            var nOverlapping = r.Region.GetIntersection(region)!.GetSize(axis);
+            var clonedRegion = r.Region.Clone();
+            clonedRegion.Contract(axis == Axis.Row ? Edge.Bottom : Edge.Right, nOverlapping);
+            newDataRegions.Add(new DataRegion<T>(r.Data, clonedRegion));
+            _tree.Delete(r);
+
+            // There's a special case that if we remove from the top/left of a region, then it becomes un-recoverable
+            // because inserting at the top index won't expand but rather will shift down. So store this region as "removed"
+            var r0 = axis == Axis.Col ? r.Region.Left : r.Region.Top;
+            if (r0 == start)
+                removed.Add(r);
+
+            // This also applies if we remove from the bottom/right of a region,
+            // but only if _expandWhenInsertAfter = false
+            if (!_expandWhenInsertAfter)
+            {
+                var r1 = axis == Axis.Col ? r.Region.Right : r.Region.Bottom;
+                if (r1 == start)
+                    removed.Add(r);
+            }
+        }
+
+        // shift rights right/below
+        var next = GetAfter(end, axis);
+        foreach (var dataRegion in next)
+        {
+            _tree.Delete(dataRegion);
+            var copiedRegion = dataRegion.Region.Clone();
+            var nRows = axis == Axis.Row ? (end - start) + 1 : 0;
+            var nCols = axis == Axis.Col ? (end - start) + 1 : 0;
+            copiedRegion.Shift(-nRows, -nCols);
+            newDataRegions.Add(new DataRegion<T>(dataRegion.Data, copiedRegion));
+        }
+
+        _tree.BulkLoad(newDataRegions);
+
+        return removed;
+    }
+
+    /// <summary>
+    /// Gets data to the right/below the given row or column.
+    /// </summary>
+    /// <param name="rowOrCol"></param>
+    /// <param name="axis"></param>
+    /// <returns></returns>
+    public IEnumerable<DataRegion<T>> GetAfter(int rowOrCol, Axis axis)
+    {
+        switch (axis)
+        {
+            case Axis.Row:
+                return this.GetRegionsOverlapping(new RowRegion(rowOrCol + 1, int.MaxValue))
+                           .Where(x => x.Region.Top > rowOrCol);
+            case Axis.Col:
+                return this.GetRegionsOverlapping(new ColumnRegion(rowOrCol + 1, int.MaxValue))
+                           .Where(x => x.Region.Left > rowOrCol);
+        }
+
+        return Enumerable.Empty<DataRegion<T>>();
+    }
+
+    /// <summary>
+    /// Gets data to the left/above the given row or column.
+    /// </summary>
+    /// <param name="rowOrCol"></param>
+    /// <param name="axis"></param>
+    /// <returns></returns>
+    public IEnumerable<DataRegion<T>> GetBefore(int rowOrCol, Axis axis)
+    {
+        switch (axis)
+        {
+            case Axis.Row:
+                return this.GetRegionsOverlapping(new RowRegion(0, rowOrCol - 1))
+                           .Where(x => x.Region.Bottom < rowOrCol);
+            case Axis.Col:
+                return this.GetRegionsOverlapping(new ColumnRegion(0, rowOrCol - 1))
+                           .Where(x => x.Region.Right < rowOrCol);
+        }
+
+        return Enumerable.Empty<DataRegion<T>>();
+    }
+
+    /// <summary>
+    /// Adds a data region to the store.
+    /// Overlapping regions are not removed.
+    /// </summary>
+    /// <param name="dataRegion"></param>
+    internal void Add(DataRegion<T> dataRegion)
+    {
+        _tree.Insert(dataRegion);
+    }
+
+    public void Delete(DataRegion<T> dataRegion)
+    {
+        _tree.Delete(dataRegion);
+    }
+
+    public bool Any() => _tree.Count > 0;
+
+    public void AddRange(List<DataRegion<T>> dataRegions)
+    {
+        _tree.BulkLoad(dataRegions);
+    }
+}

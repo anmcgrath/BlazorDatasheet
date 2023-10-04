@@ -43,7 +43,7 @@ public interface IMatrixDataStore<T>
     /// Inserts a column into the store
     /// </summary>
     /// <param name="col">The index of the column that the new column is inserted AFTER</param>
-    public void InsertColAfter(int col);
+    public void InsertColAt(int col);
 
     /// <summary>
     /// Removes the column specified from the store.

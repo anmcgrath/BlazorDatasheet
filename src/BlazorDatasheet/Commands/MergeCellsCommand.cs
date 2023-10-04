@@ -31,18 +31,17 @@ public class MergeCellsCommand : IUndoableCommand
 
         foreach (var region in _range.Regions)
         {
-            var envelope = region.ToEnvelope();
             // Determine if there are any merged cells in the region
             // We can only merge over merged cells if we entirely overlap them
-            var existingMerges = sheet.Merges.MergedCells.Search(envelope);
+            var existingMerges = sheet.Merges.Store.GetRegionsOverlapping(region);
             if (!existingMerges.All(x => region.Contains(x.Region)))
                 continue;
 
             // Clear all the cells that are not the top-left posn of merge and store their values for undo
             var cellsToClear = region
-                .Break(region.TopLeft)
-                .SelectMany(sheet.GetNonEmptyCellPositions)
-                .ToList();
+                               .Break(region.TopLeft)
+                               .SelectMany(sheet.GetNonEmptyCellPositions)
+                               .ToList();
 
             _changes.AddRange(cellsToClear.Select(x => getValueChangeOnClear(x.row, x.col, sheet)));
             sheet.ClearCellsImpl(cellsToClear);

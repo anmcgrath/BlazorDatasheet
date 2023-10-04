@@ -81,7 +81,7 @@ public class ConditionalFormatTests
         var cf = new ConditionalFormat((posn, sheet) => true,
                                        cell => new CellFormat() { BackgroundColor = cell.Col.ToString() });
         sheet.ConditionalFormatting.Apply(cf, new ColumnRegion(1));
-        sheet.InsertColAfter(0);
+        sheet.InsertColAt(0);
         Assert.Null(sheet.ConditionalFormatting.GetFormatResult(0, 0)?.BackgroundColor);
         Assert.AreEqual("2", sheet.ConditionalFormatting.GetFormatResult(0, 2)?.BackgroundColor);
         sheet.RemoveCol(0);
@@ -96,7 +96,7 @@ public class ConditionalFormatTests
                                        cell => new CellFormat() { BackgroundColor = cell.Col.ToString() });
 
         sheet.ConditionalFormatting.Apply(cf, new Region(1, 2, 1, 2));
-        sheet.InsertColAfter(1);
+        sheet.InsertColAt(1);
         Assert.AreEqual("3", sheet.ConditionalFormatting.GetFormatResult(1, 3)?.BackgroundColor);
         sheet.RemoveCol(2);
         Assert.Null(sheet.ConditionalFormatting.GetFormatResult(1, 3)?.BackgroundColor);

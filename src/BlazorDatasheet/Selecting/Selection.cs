@@ -180,24 +180,25 @@ public class Selection : BRange
         if (boundedRegion == null)
             return null;
 
-        List<CellMerge> mergeOverlaps;
+        List<IRegion> mergeOverlaps;
         do
         {
-            var top = boundedRegion.GetEdge(Edge.Top).ToEnvelope();
-            var right = boundedRegion.GetEdge(Edge.Right).ToEnvelope();
-            var left = boundedRegion.GetEdge(Edge.Left).ToEnvelope();
-            var bottom = boundedRegion.GetEdge(Edge.Bottom).ToEnvelope();
+            var top = boundedRegion.GetEdge(Edge.Top);
+            var right = boundedRegion.GetEdge(Edge.Right);
+            var left = boundedRegion.GetEdge(Edge.Left);
+            var bottom = boundedRegion.GetEdge(Edge.Bottom);
 
             mergeOverlaps =
-                Sheet.Merges.MergedCells
-                     .Search(top, right, left, bottom)
+                Sheet.Merges.Store
+                     .GetRegionsOverlapping(new[] { top, right, left, bottom })
                      .Where(x => !boundedRegion.Contains(x.Region))
+                     .Select(x => x.Region)
                      .ToList();
 
             // Expand bounded selection to cover all the merges
             foreach (var merge in mergeOverlaps)
             {
-                boundedRegion = boundedRegion.GetBoundingRegion(merge.Region);
+                boundedRegion = boundedRegion.GetBoundingRegion(merge);
             }
         } while (mergeOverlaps.Any());
 

@@ -2,12 +2,12 @@ namespace BlazorDatasheet.Events;
 
 public class ColumnInsertedEventArgs
 {
-    public int ColAfter { get; }
+    public int ColumnIndex { get; }
     public double? Width { get; }
 
-    public ColumnInsertedEventArgs(int colAfter, double? width)
+    public ColumnInsertedEventArgs(int columnIndex, double? width)
     {
-        ColAfter = colAfter;
+        ColumnIndex = columnIndex;
         Width = width;
     }
 }

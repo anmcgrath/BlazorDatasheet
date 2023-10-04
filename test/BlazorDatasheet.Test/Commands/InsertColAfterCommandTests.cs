@@ -11,10 +11,10 @@ public class InsertColAfterCommandTests
         var sheet = new Sheet(1, 3);
         sheet.TrySetCellValue(0, 0, "0,0");
         sheet.TrySetCellValue(0, 2, "0,2");
-        sheet.InsertColAfter(0);
+        sheet.InsertColAt(0);
 
         Assert.AreEqual(4, sheet.NumCols);
-        Assert.AreEqual("0,0", sheet.GetValue(1, 0));
+        Assert.AreEqual("0,0", sheet.GetValue(0, 1));
         Assert.AreEqual("0,2", sheet.GetValue(0, 3));
 
         sheet.Commands.Undo();

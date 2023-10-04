@@ -202,30 +202,35 @@ public class Sheet
     /// A column is added either at the beginning or end of the columns.
     /// </summary>
     /// <param name="colIndex"></param>
-    public void InsertColAfter(int colIndex)
+    public void InsertColAt(int colIndex, int nCols = 1)
     {
-        var indexToAddAfter = Math.Min(NumCols - 1, Math.Max(colIndex, -1));
-        var cmd = new InsertColAfterCommand(indexToAddAfter);
+        var indexToAdd = Math.Min(NumCols - 1, Math.Max(colIndex, 0));
+        Console.WriteLine($"Adding {nCols} cols at index {indexToAdd}");
+        var cmd = new InsertColAtCommand(indexToAdd, nCols);
         Commands.ExecuteCommand(cmd);
     }
 
-    internal void InsertColAfterImpl(int colIndex, double? width = null)
+    internal void InsertColAtImpl(int colIndex, double? width = null, int nRows = 1)
     {
-        _cellDataStore.InsertColAfter(colIndex);
-        if (ColumnHeadings.Count > colIndex)
-            ColumnHeadings.Insert(colIndex + 1, new Heading());
-        NumCols++;
-        ColumnInserted?.Invoke(this, new ColumnInsertedEventArgs(colIndex, width));
+        for (int i = 0; i < nRows; i++)
+        {
+            _cellDataStore.InsertColAt(colIndex);
+            if (ColumnHeadings.Count > colIndex)
+                ColumnHeadings.Insert(colIndex, new Heading());
+            NumCols++;
+            ColumnInserted?.Invoke(this, new ColumnInsertedEventArgs(colIndex, width));
+        }
     }
 
     /// <summary>
     /// Removes the column at the specified index
     /// </summary>
     /// <param name="colIndex"></param>
+    /// <param name="nCols">The number of oclumns to remove</param>
     /// <returns>Whether the column removal was successful</returns>
-    public bool RemoveCol(int colIndex)
+    public bool RemoveCol(int colIndex, int nCols = 1)
     {
-        var cmd = new RemoveColumnCommand(colIndex);
+        var cmd = new RemoveColumnCommand(colIndex, nCols);
         return Commands.ExecuteCommand(cmd);
     }
 
@@ -234,19 +239,21 @@ public class Sheet
     /// </summary>
     /// <param name="colIndex"></param>
     /// <returns>Whether the column at index colIndex was removed</returns>
-    internal bool RemoveColImpl(int colIndex)
+    internal bool RemoveColImpl(int colIndex, int nCols = 1)
     {
-        if (colIndex >= 0 && colIndex <= NumCols - 1)
+        int col = colIndex;
+        int end = colIndex + nCols - 1;
+        while (col >= 0 && col <= NumCols - 1 && col <= end)
         {
             _cellDataStore.RemoveColAt(colIndex);
             if (colIndex < ColumnHeadings.Count)
                 ColumnHeadings.RemoveAt(colIndex);
             NumCols--;
             ColumnRemoved?.Invoke(this, new ColumnRemovedEventArgs(colIndex));
-            return true;
+            col++;
         }
 
-        return false;
+        return true;
     }
 
     public void SetColumnWidth(int col, double width)
@@ -272,8 +279,8 @@ public class Sheet
     /// <param name="rowIndex">The index that the new row will be at. The new row will have the index specified.</param>
     public void InsertRowAt(int rowIndex)
     {
-        var indexToAddAfter = Math.Min(NumRows - 1, Math.Max(rowIndex, -1));
-        var cmd = new InsertRowAtCommand(indexToAddAfter);
+        var indexToAddAt = Math.Min(NumRows - 1, Math.Max(rowIndex, 0));
+        var cmd = new InsertRowsAtCommand(indexToAddAt);
         Commands.ExecuteCommand(cmd);
     }
 
@@ -282,32 +289,40 @@ public class Sheet
     /// This function does not add a command that is able to be undone.
     /// </summary>
     /// <param name="rowIndex"></param>
+    /// <param name="nRows">The number of rows to insert</param>
     /// <returns></returns>
-    internal bool InsertRowAtImpl(int rowIndex)
+    internal bool InsertRowAtImpl(int rowIndex, int nRows = 1)
     {
-        _cellDataStore.InsertRowAt(rowIndex);
-        NumRows++;
-        RowInserted?.Invoke(this, new RowInsertedEventArgs(rowIndex));
+        // TODO make a function in _cellDataStore to insert nRows
+        for (int i = 0; i < nRows; i++)
+        {
+            _cellDataStore.InsertRowAt(rowIndex);
+            NumRows++;
+        }
+
+        RowInserted?.Invoke(this, new RowInsertedEventArgs(rowIndex, nRows));
         return true;
     }
 
     public bool RemoveRow(int index)
     {
-        var cmd = new RemoveRowCommand(index);
+        var cmd = new RemoveRowsCommand(index);
         return Commands.ExecuteCommand(cmd);
     }
 
-    internal bool RemoveRowAtImpl(int rowIndex)
+    internal bool RemoveRowAtImpl(int rowIndex, int nRows)
     {
-        if (rowIndex >= 0 && rowIndex < NumRows)
+        var row = rowIndex;
+        var endIndex = rowIndex + nRows;
+        while (row >= 0 && row < NumRows && row < endIndex)
         {
             _cellDataStore.RemoveRowAt(rowIndex);
             NumRows--;
             RowRemoved?.Invoke(this, new RowRemovedEventArgs(rowIndex));
-            return true;
+            row++;
         }
 
-        return false;
+        return true;
     }
 
     #endregion
@@ -387,8 +402,8 @@ public class Sheet
     public IEnumerable<IReadOnlyCell> GetCellsInRegion(IRegion region)
     {
         return (new BRange(this, region))
-            .Positions
-            .Select(x => this.GetCell(x.row, x.col));
+               .Positions
+               .Select(x => this.GetCell(x.row, x.col));
     }
 
     /// <summary>
@@ -439,9 +454,9 @@ public class Sheet
     internal IEnumerable<(int row, int col)> GetNonEmptyCellPositions(IRegion region)
     {
         return _cellDataStore.GetNonEmptyPositions(region.TopLeft.Row,
-            region.BottomRight.Row,
-            region.TopLeft.Col,
-            region.BottomRight.Col);
+                                                   region.BottomRight.Row,
+                                                   region.TopLeft.Col,
+                                                   region.BottomRight.Col);
     }
 
     #endregion
@@ -889,7 +904,7 @@ public class Sheet
         foreach (var rowInterval in RowFormats.GetAllIntervals())
         {
             overlappingRegions.Add(new Region(rowInterval.Start, rowInterval.End, region.Start.Col,
-                region.End.Col));
+                                              region.End.Col));
         }
 
         foreach (var overlapRegion in overlappingRegions)
@@ -940,7 +955,7 @@ public class Sheet
         foreach (var colInterval in ColFormats.GetAllIntervals())
         {
             overlappingRegions.Add(new Region(region.Start.Row, region.End.Row, colInterval.Start,
-                colInterval.End));
+                                              colInterval.End));
         }
 
         foreach (var overlapRegion in overlappingRegions)

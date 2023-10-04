@@ -91,9 +91,9 @@
             </Virtualize>
 
             <!-- Merged cells -->
-            @if (Sheet.Merges.MergedCells.Count > 0 && this.ViewportRegion is not null)
+            @if (Sheet.Merges.Any() && this.ViewportRegion is not null)
             {
-                var mergesInView = Sheet.Merges.MergedCells.Search(this.ViewportRegion.ToEnvelope());
+                var mergesInView = Sheet.Merges.Store.GetRegionsOverlapping(this.ViewportRegion);
                 @foreach (var merge in mergesInView)
                 {
                     var row = merge.Region.Start.Row;

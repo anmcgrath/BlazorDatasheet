@@ -3,12 +3,14 @@
 public class RowInsertedEventArgs
 {
     /// <summary>
-    /// The index that the row was inserted after
-    /// </summary>
-    public int IndexAfter { get; }
+    /// The index of the new row
+    public int Index { get; }
 
-    public RowInsertedEventArgs(int indexAfter)
+    public int NRows { get; }
+
+    public RowInsertedEventArgs(int index, int nRows)
     {
-        IndexAfter = indexAfter;
+        Index = index;
+        NRows = nRows;
     }
 }

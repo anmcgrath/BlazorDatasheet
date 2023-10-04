@@ -91,10 +91,10 @@ public class Region : IRegion
     /// <returns></returns>
     public bool Contains(IRegion region)
     {
-        return region.Start.Col >= Start.Col &&
-               region.End.Col <= End.Col &&
-               region.Start.Row >= Start.Row &&
-               region.End.Row <= End.Row;
+        return region.Left >= Left &&
+               region.Right <= Right &&
+               region.Top >= Top &&
+               region.Bottom <= Bottom;
     }
 
     /// <summary>
@@ -361,8 +361,14 @@ public class Region : IRegion
     public List<IRegion> Break(IRegion inputRegion)
     {
         var region = inputRegion.GetIntersection(this);
+        // If there's no intersection then there's no break and so 
+        // we return this.
         if (region == null)
-            return new List<IRegion>() { this.Copy() };
+            return new List<IRegion>() { this };
+        // If the region contains this then we break the whole thing and return
+        // an empty list
+        if (region.Contains(this))
+            return new List<IRegion>();
 
         // The region can split into at most 4 regions
         // We attempt to create all the regions and don't use any that are empty

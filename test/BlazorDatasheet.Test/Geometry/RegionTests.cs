@@ -205,6 +205,16 @@ public class RegionTests
     [TestCase(1, 1, 1, 5, 3)]
     public void Break_Region_Around_Regions_Correct(int r0, int r1, int c0, int c1, int nExpected)
     {
+        /*
+               0  1  2  3  4  5
+           0 | x| x| x|  |  |  |
+           1 | x| x| x|  |  |  |
+           2 | x| x| x|  |  |  |
+           3 |  |  |  |  |  |  |
+           4 |  |  |  |  |  |  |
+           5 |  |  |  |  |  |  |
+
+         */
         var region = new Region(0, 2, 0, 2);
         var regionToBreakAround = new Region(r0, r1, c0, c1);
 

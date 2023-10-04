@@ -43,7 +43,7 @@ public class ConditionalFormatManager
     {
         foreach (var cf in _registered)
         {
-            cf.HandleRowInserted(e.IndexAfter);
+            cf.HandleRowInserted(e.Index);
         }
     }
 
@@ -59,7 +59,7 @@ public class ConditionalFormatManager
     {
         foreach (var cf in _registered)
         {
-            cf.HandleColInserted(e.ColAfter);
+            cf.HandleColInserted(e.ColumnIndex);
         }
     }
 
@@ -102,7 +102,7 @@ public class ConditionalFormatManager
         {
             var env = region.ToEnvelope();
             var spatialData = _cfTree.Search(env)
-                .FirstOrDefault(x => x.ConditionalFormat == cf && x.Envelope.IsSameAs(env));
+                                     .FirstOrDefault(x => x.ConditionalFormat == cf && x.Envelope.IsSameAs(env));
             if (spatialData != null)
                 _cfTree.Delete(spatialData);
         }
@@ -149,8 +149,9 @@ public class ConditionalFormatManager
 
     private IEnumerable<ConditionalFormatAbstractBase> GetFormatsAppliedToPosition(int row, int col)
     {
-        return _cfTree.Search(new Envelope(col, row, col, row))
-            .Select(x => x.ConditionalFormat);
+        var region = new Region(row, col);
+        return _cfTree.Search(region.ToEnvelope())
+                      .Select(x => x.ConditionalFormat);
     }
 
     /// <summary>
@@ -202,8 +203,7 @@ public class ConditionalFormatManager
 
         internal ConditionalFormatSpatialData(ConditionalFormatAbstractBase cf, IRegion region)
         {
-            _envelope = new Envelope(region.Left, region.Top, region.Right,
-                region.Bottom);
+            _envelope = region.ToEnvelope();
             _conditionalFormat = cf;
         }
     }

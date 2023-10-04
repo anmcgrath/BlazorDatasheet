@@ -27,7 +27,7 @@ public class CellLayoutProviderTests
         var w2 = 40;
         var provider = new CellLayoutProvider(sheet, defaultW, 10);
         provider.SetColumnWidth(1, w2);
-        sheet.InsertColAfter(0);
+        sheet.InsertColAt(0);
         Assert.AreEqual(defaultW, provider.ComputeWidth(1, 1));
         Assert.AreEqual(w2, provider.ComputeWidth(2, 1));
         Assert.AreEqual(defaultW, provider.ComputeWidth(0, 1));

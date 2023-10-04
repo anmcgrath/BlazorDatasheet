@@ -6,32 +6,33 @@ namespace BlazorDatasheet.Commands;
 /// <summary>
 /// Command for inserting a row into the sheet.
 /// </summary>
-internal class InsertRowAtCommand : IUndoableCommand
+internal class InsertRowsAtCommand : IUndoableCommand
 {
     private readonly int _index;
-    private IReadOnlyList<CellMerge> _mergesPerformed = default!;
-    private IReadOnlyList<CellMerge> _overridenMergedRegions = default!;
+    private readonly int _nRows;
 
     /// <summary>
     /// Command for inserting a row into the sheet.
     /// </summary>
     /// <param name="index">The index that the row will be inserted at.</param>
-    public InsertRowAtCommand(int index)
+    /// <param name="nRows">The number of rows to insert</param>
+    public InsertRowsAtCommand(int index, int nRows = 1)
     {
         _index = index;
+        _nRows = nRows;
     }
 
     public bool Execute(Sheet sheet)
     {
-        sheet.InsertRowAtImpl(_index);
-        (_mergesPerformed, _overridenMergedRegions) = sheet.Merges.RerangeMergedCells(Axis.Row, _index, 1);
+        sheet.Merges.Store.InsertRows(_index, _nRows);
+        sheet.InsertRowAtImpl(_index, _nRows);
         return true;
     }
 
     public bool Undo(Sheet sheet)
     {
-        sheet.RemoveRowAtImpl(_index);
-        sheet.Merges.UndoRerangeMergedCells(_mergesPerformed, _overridenMergedRegions);
+        sheet.Merges.Store.RemoveRows(_index, _index + _nRows - 1);
+        sheet.RemoveRowAtImpl(_index, _nRows);
         return true;
     }
 }

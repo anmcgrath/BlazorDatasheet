@@ -1,5 +1,6 @@
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.RTree;
+using BlazorDatasheet.DataStructures.Util;
 
 namespace BlazorDatasheet.Data;
 
@@ -14,10 +15,7 @@ public class CellMerge : ISpatialData
     public CellMerge(IRegion region)
     {
         Region = region;
-        _envelope = new Envelope(region.TopLeft.Col, 
-                                 region.TopLeft.Row, 
-                                 region.BottomRight.Col,
-                                 region.BottomRight.Row);
+        _envelope = region.ToEnvelope();
     }
 
     private Envelope _envelope;
