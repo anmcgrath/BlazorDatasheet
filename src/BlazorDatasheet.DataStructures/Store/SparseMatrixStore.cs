@@ -53,7 +53,7 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
         }
     }
 
-    public void InsertColAt(int col)
+    public void InsertColAt(int col, int nCols)
     {
         var currentColumns = Columns.ToList();
         List<(int col, SColumn<T> column)> columnsToAdd = new List<(int col, SColumn<T> column)>();
@@ -62,32 +62,39 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
             if (kp.Key >= col)
             {
                 Columns.Remove(kp.Key);
-                columnsToAdd.Add((kp.Key + 1, kp.Value));
+                columnsToAdd.Add((kp.Key + nCols, kp.Value));
             }
         }
 
         foreach (var c in columnsToAdd)
             Columns.Add(c.col, c.column);
 
-        Columns.Add(col, new SColumn<T>());
+        for (int i = 0; i < nCols; i++)
+        {
+            Columns.Add(col, new SColumn<T>());
+        }
     }
 
-    public void RemoveColAt(int col)
+    public void RemoveColAt(int col, int nCols)
     {
-        if (Columns.ContainsKey(col))
-            Columns.Remove(col);
-        List<(int col, SColumn<T> column)> columnsToAdd = new List<(int col, SColumn<T> column)>();
+        for (int i = 0; i < nCols; i++)
+        {
+            if (Columns.ContainsKey(col + i))
+                Columns.Remove(col + i);
+        }
+
+        List<(int col, SColumn<T> column)> columnsToReAdd = new List<(int col, SColumn<T> column)>();
         var currentColumns = Columns.ToList();
         foreach (var kp in currentColumns)
         {
             if (kp.Key > col)
             {
                 Columns.Remove(kp.Key);
-                columnsToAdd.Add((kp.Key - 1, kp.Value));
+                columnsToReAdd.Add((kp.Key - nCols, kp.Value));
             }
         }
 
-        foreach (var c in columnsToAdd)
+        foreach (var c in columnsToReAdd)
             Columns.Add(c.col, c.column);
     }
 
@@ -98,11 +105,11 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
         return Columns[col].GetNextNonEmptyRow(row);
     }
 
-    public void RemoveRowAt(int row)
+    public void RemoveRowAt(int row, int nRows)
     {
         foreach (var column in Columns.Values)
         {
-            column.DeleteRowAt(row);
+            column.DeleteRowAt(row, nRows);
         }
     }
 
@@ -217,27 +224,35 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
         /// "Delete a row" - deleting it if it is found but regardless decreasing the row numbers of all rows after it.
         /// </summary>
         /// <param name="row"></param>
-        public void DeleteRowAt(int row)
+        public void DeleteRowAt(int row, int nRows)
         {
             // Find where the next row should be inserted after in the dict
-            var index = Values.Keys.BinarySearchIndexOf(row, Comparer<int>.Default);
-            if (index < 0)
-                index = ~index;
-            else
-            {
-                Values.RemoveAt(index);
-                // Since we've removed we don't have to ++ index because
-                // it is now at the next highest row.
-            }
+            var startIndex = Values.Keys.BinarySearchIndexOf(row, Comparer<int>.Default);
+            if (startIndex < 0)
+                startIndex = ~startIndex; // the index points to the next row 
 
-            if (index < 0 || index >= Values.Count)
+            if (startIndex > Values.Count - 1)
                 return;
 
-            for (int i = index; i < Values.Count; i++)
+            int startRow = Values.Keys[startIndex];
+            if (startRow < row)
+                startIndex++;
+
+            var endIndex = Values.Keys.BinarySearchClosest(row + nRows - 1);
+            endIndex = Math.Min(endIndex, Values.Count - 1);
+
+            var endRow = Values.Keys[endIndex];
+            if (endRow > row + nRows - 1)
+                endIndex--;
+
+            for (int i = 0; i <= (endIndex - startIndex); i++)
+                Values.RemoveAt(startIndex);
+
+            for (int i = startIndex; i < Values.Count; i++)
             {
                 // Shuffle down the values
                 var val = Values.Values[i];
-                var newRowNum = Values.Keys[i] - 1;
+                var newRowNum = Values.Keys[i] - nRows;
                 Values.RemoveAt(i);
                 Values.Add(newRowNum, val);
             }

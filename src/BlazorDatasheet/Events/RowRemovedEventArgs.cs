@@ -3,8 +3,11 @@
 public class RowRemovedEventArgs
 {
     public int Index { get; }
-    public RowRemovedEventArgs(int index)
+    public int NRows { get; }
+
+    public RowRemovedEventArgs(int index, int nRows)
     {
         Index = index;
+        NRows = nRows;
     }
 }

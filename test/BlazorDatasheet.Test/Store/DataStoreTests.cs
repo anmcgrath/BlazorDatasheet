@@ -1,5 +1,6 @@
 using System.Linq;
 using BlazorDatasheet.DataStructures.Store;
+using FluentAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Store;
@@ -27,7 +28,7 @@ public class DataStoreTests
         store.Set(1, 0, "B");
         store.Set(2, 0, "C");
         store.Set(3, 0, "D");
-        store.InsertRowAt(0);
+        store.InsertRowAt(0, 1);
         Assert.AreEqual(default(string), store.Get(0, 0));
         Assert.AreEqual("A", store.Get(1, 0));
         Assert.AreEqual("B", store.Get(2, 0));
@@ -36,6 +37,7 @@ public class DataStoreTests
         Assert.AreEqual(default(string), store.Get(5, 0));
     }
 
+    [Test]
     public void Insert_2_Rows_At_existing_Correct()
     {
         IMatrixDataStore<string> store = new SparseMatrixStore<string>();
@@ -60,7 +62,7 @@ public class DataStoreTests
         store.Set(0, 0, "A");
         store.Set(2, 0, "B");
         store.Set(3, 0, "C");
-        store.InsertRowAt(1);
+        store.InsertRowAt(1, 1);
         Assert.AreEqual("A", store.Get(0, 0));
         Assert.AreEqual(default(string), store.Get(1, 0));
         Assert.AreEqual(default(string), store.Get(2, 0));
@@ -76,11 +78,25 @@ public class DataStoreTests
         store.Set(1, 0, "B");
         store.Set(2, 0, "C");
         store.Set(3, 0, "D");
-        store.RemoveRowAt(0);
+        store.RemoveRowAt(0, 1);
         Assert.AreEqual("B", store.Get(0, 0));
         Assert.AreEqual("C", store.Get(1, 0));
         Assert.AreEqual("D", store.Get(2, 0));
         Assert.AreEqual(default(string), store.Get(3, 0));
+    }
+
+    [Test]
+    public void Remove_Two_Rows_Removes_Both()
+    {
+        IMatrixDataStore<int> store = new SparseMatrixStore<int>();
+        store.Set(0, 0, 0);
+        store.Set(1, 0, 1);
+        store.Set(2, 0, 2);
+        store.Set(3, 0, 3);
+        store.RemoveRowAt(1, 2);
+        store.Get(0, 0).Should().Be(0);
+        store.Get(1, 0).Should().Be(3);
+        store.Get(2, 0).Should().Be(default(int));
     }
 
     [Test]
@@ -90,7 +106,7 @@ public class DataStoreTests
         store.Set(0, 0, "A");
         store.Set(2, 0, "B");
         store.Set(3, 0, "C");
-        store.RemoveRowAt(1);
+        store.RemoveRowAt(1, 1);
         Assert.AreEqual("A", store.Get(0, 0));
         Assert.AreEqual("B", store.Get(1, 0));
         Assert.AreEqual("C", store.Get(2, 0));

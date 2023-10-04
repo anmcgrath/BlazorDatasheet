@@ -210,16 +210,17 @@ public class Sheet
         Commands.ExecuteCommand(cmd);
     }
 
-    internal void InsertColAtImpl(int colIndex, double? width = null, int nRows = 1)
+    internal void InsertColAtImpl(int colIndex, double? width = null, int nCols = 1)
     {
-        for (int i = 0; i < nRows; i++)
+        _cellDataStore.InsertColAt(colIndex, nCols);
+        for (int i = 0; i < nCols; i++)
         {
-            _cellDataStore.InsertColAt(colIndex);
-            if (ColumnHeadings.Count > colIndex)
-                ColumnHeadings.Insert(colIndex, new Heading());
-            NumCols++;
-            ColumnInserted?.Invoke(this, new ColumnInsertedEventArgs(colIndex, width));
+            if (ColumnHeadings.Count > (colIndex + i))
+                ColumnHeadings.Insert(colIndex + i, new Heading());
         }
+
+        NumCols += nCols;
+        ColumnInserted?.Invoke(this, new ColumnInsertedEventArgs(colIndex, width, nCols));
     }
 
     /// <summary>
@@ -245,7 +246,7 @@ public class Sheet
         int end = colIndex + nCols - 1;
         while (col >= 0 && col <= NumCols - 1 && col <= end)
         {
-            _cellDataStore.RemoveColAt(colIndex);
+            _cellDataStore.RemoveColAt(colIndex, nCols);
             if (colIndex < ColumnHeadings.Count)
                 ColumnHeadings.RemoveAt(colIndex);
             NumCols--;
@@ -310,13 +311,10 @@ public class Sheet
     {
         var row = rowIndex;
         var endIndex = rowIndex + nRows;
-        while (row >= 0 && row < NumRows && row < endIndex)
-        {
-            _cellDataStore.RemoveRowAt(rowIndex);
-            NumRows--;
-            RowRemoved?.Invoke(this, new RowRemovedEventArgs(rowIndex));
-            row++;
-        }
+        _cellDataStore.RemoveRowAt(rowIndex, nRows);
+        NumRows -= nRows;
+        RowRemoved?.Invoke(this, new RowRemovedEventArgs(rowIndex, nRows));
+        row++;
 
         return true;
     }

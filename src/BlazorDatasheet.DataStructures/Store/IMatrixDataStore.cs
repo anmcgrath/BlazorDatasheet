@@ -38,19 +38,19 @@ public interface IMatrixDataStore<T>
     /// </summary>
     /// <param name="row">The index of the row that the new row will now be.</param>
     /// <param name="nRows">The number of rows to inser</param>
-    public void InsertRowAt(int row, int nRows = 1);
+    public void InsertRowAt(int row, int nRows);
 
     /// <summary>
     /// Inserts a column into the store
     /// </summary>
     /// <param name="col">The index of the column that the new column is inserted AFTER</param>
-    public void InsertColAt(int col);
+    public void InsertColAt(int col, int nCols);
 
     /// <summary>
     /// Removes the column specified from the store.
     /// </summary>
     /// <param name="col">The index of the column to remove.</param>
-    public void RemoveColAt(int col);
+    public void RemoveColAt(int col, int nRow);
 
     /// <summary>
     /// Finds the next non-empty row number in the column. Returns -1 if no non-empty rows exist after the row
@@ -64,7 +64,8 @@ public interface IMatrixDataStore<T>
     /// Removes the row specified from the store.
     /// </summary>
     /// <param name="row"></param>
-    void RemoveRowAt(int row);
+    /// <param name="nRows"></param>
+    void RemoveRowAt(int row, int nRows);
 
     /// <summary>
     /// Get non empty cells that exist in the bounds given

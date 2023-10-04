@@ -13,6 +13,7 @@ public class RemoveColCommandTests
         var sheet = new Sheet(1, 3);
         sheet.TrySetCellValue(0, 2, "0,2");
         sheet.TrySetCellValue(0, 3, "0,3");
+        
         sheet.RemoveCol(2);
 
         Assert.AreEqual(2, sheet.NumCols);
