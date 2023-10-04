@@ -25,9 +25,11 @@ public static class SheetMath
 
     public static Envelope ToEnvelope(this IRegion region)
     {
-        return new Envelope(region.TopLeft.Col, 
-                                 region.TopLeft.Row, 
-                                 region.BottomRight.Col,
-                                 region.BottomRight.Row);
+        var maxCol = (region.Right == int.MaxValue) ? int.MaxValue : region.Right + 1;
+        var maxRow = (region.Bottom == int.MaxValue) ? int.MaxValue : region.Bottom + 1;
+        return new Envelope(region.TopLeft.Col,
+                            region.TopLeft.Row,
+                            maxCol,
+                            maxRow);
     }
 }
