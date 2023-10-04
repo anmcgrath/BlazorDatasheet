@@ -36,6 +36,23 @@ public class DataStoreTests
         Assert.AreEqual(default(string), store.Get(5, 0));
     }
 
+    public void Insert_2_Rows_At_existing_Correct()
+    {
+        IMatrixDataStore<string> store = new SparseMatrixStore<string>();
+        store.Set(0, 0, "A");
+        store.Set(1, 0, "B");
+        store.Set(2, 0, "C");
+        store.Set(3, 0, "D");
+        store.InsertRowAt(1, 2);
+        Assert.AreEqual("A", store.Get(0, 0));
+        Assert.AreEqual(default(string), store.Get(1, 0));
+        Assert.AreEqual(default(string), store.Get(2, 0));
+        Assert.AreEqual("B", store.Get(3, 0));
+        Assert.AreEqual("C", store.Get(4, 0));
+        Assert.AreEqual("D", store.Get(5, 0));
+        Assert.AreEqual(default(string), store.Get(6, 0));
+    }
+
     [Test]
     public void Insert_Row_After_Non_Existing_Operations_Correct()
     {

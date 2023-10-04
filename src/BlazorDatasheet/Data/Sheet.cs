@@ -293,12 +293,8 @@ public class Sheet
     /// <returns></returns>
     internal bool InsertRowAtImpl(int rowIndex, int nRows = 1)
     {
-        // TODO make a function in _cellDataStore to insert nRows
-        for (int i = 0; i < nRows; i++)
-        {
-            _cellDataStore.InsertRowAt(rowIndex);
-            NumRows++;
-        }
+        _cellDataStore.InsertRowAt(rowIndex, nRows);
+        NumRows += nRows;
 
         RowInserted?.Invoke(this, new RowInsertedEventArgs(rowIndex, nRows));
         return true;

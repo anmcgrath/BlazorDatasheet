@@ -37,7 +37,8 @@ public interface IMatrixDataStore<T>
     /// Inserts a row into the store
     /// </summary>
     /// <param name="row">The index of the row that the new row will now be.</param>
-    public void InsertRowAt(int row);
+    /// <param name="nRows">The number of rows to inser</param>
+    public void InsertRowAt(int row, int nRows = 1);
 
     /// <summary>
     /// Inserts a column into the store

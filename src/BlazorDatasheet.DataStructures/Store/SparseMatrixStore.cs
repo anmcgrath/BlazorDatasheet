@@ -45,11 +45,11 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
         column.Clear(row, col);
     }
 
-    public void InsertRowAt(int row)
+    public void InsertRowAt(int row, int nRows = 1)
     {
         foreach (var column in Columns.Values)
         {
-            column.InsertRowAt(row);
+            column.InsertRowAt(row, nRows);
         }
     }
 
@@ -162,7 +162,7 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
                 Values.Remove(row);
         }
 
-        public void InsertRowAt(int row)
+        public void InsertRowAt(int row, int nRows)
         {
             // Find where the next row should be inserted at in the dict
             var index = Values.Keys.BinarySearchIndexOf(row - 1, Comparer<int>.Default);
@@ -182,7 +182,7 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
             {
                 // Shuffle up the values
                 var val = Values.Values[i];
-                var newRowNum = Values.Keys[i] + 1;
+                var newRowNum = Values.Keys[i] + nRows;
                 Values.RemoveAt(i);
                 Values.Add(newRowNum, val);
             }
