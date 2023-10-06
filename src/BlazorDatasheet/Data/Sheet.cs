@@ -253,17 +253,11 @@ public class Sheet
     /// <returns>Whether the column at index colIndex was removed</returns>
     internal bool RemoveColImpl(int colIndex, int nCols = 1)
     {
-        int col = colIndex;
-        int end = colIndex + nCols - 1;
-        while (col >= 0 && col <= NumCols - 1 && col <= end)
-        {
-            _cellDataStore.RemoveColAt(colIndex, nCols);
-            if (colIndex < ColumnHeadings.Count)
-                ColumnHeadings.RemoveAt(colIndex);
-            NumCols--;
-            ColumnRemoved?.Invoke(this, new ColumnRemovedEventArgs(colIndex));
-            col++;
-        }
+        _cellDataStore.RemoveColAt(colIndex, nCols);
+        if (colIndex < ColumnHeadings.Count)
+            ColumnHeadings.RemoveAt(colIndex);
+        NumCols -= nCols;
+        ColumnRemoved?.Invoke(this, new ColumnRemovedEventArgs(colIndex, nCols));
 
         return true;
     }
