@@ -7,8 +7,8 @@ namespace BlazorDatasheet.Validation;
 
 public class ValidationManager
 {
-    private ConsolidatedDataStore<int> _store;
-    private Dictionary<int, IDataValidator> _validators;
+    public ConsolidatedDataStore<int> Store { get; }
+    private readonly Dictionary<int, IDataValidator> _validators;
 
     /// <summary>
     /// Fired when a validator is added or removed from a region(s).
@@ -17,7 +17,7 @@ public class ValidationManager
 
     public ValidationManager()
     {
-        _store = new ConsolidatedDataStore<int>();
+        Store = new ConsolidatedDataStore<int>();
         _validators = new Dictionary<int, IDataValidator>();
     }
 
@@ -37,7 +37,7 @@ public class ValidationManager
             _validators.Add(index.Value, validator);
         }
 
-        _store.Add(region, index.Value);
+        Store.Add(region, index.Value);
         var args = new ValidatorChangedEventArgs(Array.Empty<IDataValidator>(),
                                                  new List<IDataValidator>() { validator },
                                                  Array.Empty<IRegion>());
@@ -56,10 +56,10 @@ public class ValidationManager
         if (index == null)
             return;
 
-        var result = _store.Cut(region, index.Value);
+        var result = Store.Cut(region, index.Value);
         var validatorsRemoved = new List<IDataValidator>();
 
-        if (!_store.GetRegionsForData(index.Value).Any())
+        if (!Store.GetRegionsForData(index.Value).Any())
         {
             validatorsRemoved.Add(_validators[index.Value]);
             _validators.Remove(index.Value);
@@ -89,9 +89,9 @@ public class ValidationManager
     /// <returns></returns>
     public IEnumerable<IDataValidator> GetValidators(int row, int col)
     {
-        return _store.GetDataOverlapping(row, col)
-                     .Where(x => _validators.ContainsKey(x))
-                     .Select(x => _validators[x]);
+        return Store.GetDataOverlapping(row, col)
+                    .Where(x => _validators.ContainsKey(x))
+                    .Select(x => _validators[x]);
     }
 
     /// <summary>

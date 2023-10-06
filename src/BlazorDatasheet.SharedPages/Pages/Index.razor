@@ -78,7 +78,7 @@
         }
         Sheet.RemoveCol(Sheet.Selection.ActiveRegion.Left);
     }
-
+    
     private void RemoveRow()
     {
         if (Sheet.Selection.ActiveRegion == null)
@@ -99,18 +99,18 @@
 
         Sheet = new Sheet(50, 6);
         Sheet.TrySetCellValue(0, 0, "Hey");
-
+        
         Sheet.Selection.SelectionChanged += (sender, regions) =>
         {
             var selection = (Selection)sender;
-            if (selection?.ActiveRegion != null)
+            if(selection?.ActiveRegion != null)
                 Sheet.Editor.EditValue = Sheet.GetValue(selection.ActiveCellPosition.Row, selection.ActiveCellPosition.Col)?.ToString();
         };
-
+        
         Sheet.Validation.Add(src, 1, 3);
         Sheet.SetCell(1, 1, new Cell(DateTime.Now) { Type = "datetime" });
         Sheet.SetCell(1, 2, new Cell(false) { Type = "boolean" });
-        Sheet.SetCell(1, 3, new Cell(src.ValidationSource[0]) { Type = "select" });
+        Sheet.SetCell(1, 3, new Cell(src.ValidationSource[0]){Type = "select"});
 
         Sheet.Editor.EditValueChanged += (sender, s) => StateHasChanged();
         var engine = new FormulaEngine(Sheet);

@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Linq;
+using BlazorDatasheet.Data;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Validation;
@@ -44,6 +47,22 @@ public class ValidationManagerTests
         vm.Remove(falseValidator, new Region(2, 3, 2, 3));
         vm.Validate(-1, 0, 0).IsValid.Should().BeFalse();
         vm.Validate(-1, 2, 2).IsValid.Should().BeTrue();
+    }
+
+    [Test]
+    public void Insert_Row_Above_Validor_Shifts_It_Down()
+    {
+        var sheet = new Sheet(4, 4);
+        var val = new SourceValidator(new List<string>() { "A", "B" }, false);
+        var vm = new ValidationManager();
+        vm.Add(val, new Region(2, 2));
+        sheet.InsertRowAt(2);
+        vm.GetValidators(2, 2).Should().BeEmpty();
+        vm.GetValidators(3, 2).First().Should().BeSameAs(val);
+
+        sheet.Commands.Undo();
+        vm.GetValidators(3, 2).Should().BeEmpty();
+        vm.GetValidators(2, 2).First().Should().BeSameAs(val);
     }
 
     internal class AlwaysFalseValidator : IDataValidator

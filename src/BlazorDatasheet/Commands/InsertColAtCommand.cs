@@ -24,6 +24,7 @@ public class InsertColAtCommand : IUndoableCommand
     public bool Execute(Sheet sheet)
     {
         sheet.Merges.Store.InsertCols(_colIndex, _nCols);
+        sheet.Validation.Store.InsertCols(_colIndex, _nCols);
         sheet.InsertColAtImpl(_colIndex, null, _nCols);
         return true;
     }
@@ -31,6 +32,7 @@ public class InsertColAtCommand : IUndoableCommand
     public bool Undo(Sheet sheet)
     {
         sheet.Merges.Store.RemoveCols(_colIndex, _colIndex + _nCols - 1);
+        sheet.Validation.Store.RemoveCols(_colIndex, _colIndex + _nCols - 1);
         sheet.RemoveColImpl(_colIndex, _nCols);
         return true;
     }

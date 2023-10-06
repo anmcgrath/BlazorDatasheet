@@ -16,6 +16,9 @@ public class RemoveRowsCommand : IUndoableCommand
     private List<CellChangedFormat> _removedCellFormats;
     private OrderedInterval<CellFormat>? _modifiedRowFormat;
     private List<DataRegion<bool>> _mergedRemoved;
+
+    private List<DataRegion<int>> _validatorsRemoved;
+
     // The actual number of rows removed (takes into account num of rows in sheet)
     private int _nRowsRemoved;
     private ClearCellsCommand _clearCellsCommand;
@@ -41,8 +44,8 @@ public class RemoveRowsCommand : IUndoableCommand
 
         ClearCells(sheet);
         RemoveFormats(sheet);
-        HandleRemoveAndContractMerges(sheet);
-
+        _mergedRemoved = sheet.Merges.Store.RemoveRows(_rowIndex, _rowIndex + _nRowsRemoved - 1);
+        _validatorsRemoved = sheet.Validation.Store.RemoveRows(_rowIndex, _rowIndex + _nRowsRemoved - 1);
         return sheet.RemoveRowAtImpl(_rowIndex, _nRowsRemoved);
     }
 
@@ -52,11 +55,6 @@ public class RemoveRowsCommand : IUndoableCommand
         _clearCellsCommand =
             new ClearCellsCommand(sheet.Range(new RowRegion(_rowIndex, _rowIndex + _nRowsRemoved - 1)));
         return _clearCellsCommand.Execute(sheet);
-    }
-
-    private void HandleRemoveAndContractMerges(Sheet sheet)
-    {
-        _mergedRemoved = sheet.Merges.Store.RemoveRows(_rowIndex, _rowIndex + _nRowsRemoved - 1);
     }
 
     private void RemoveFormats(Sheet sheet)
@@ -92,6 +90,9 @@ public class RemoveRowsCommand : IUndoableCommand
         sheet.Merges.Store.InsertRows(_rowIndex, _nRowsRemoved);
         foreach (var merge in _mergedRemoved)
             sheet.Merges.AddImpl(merge.Region);
+
+        foreach (var validator in _validatorsRemoved)
+            sheet.Validation.Store.Add(validator.Region, validator.Data);
 
         sheet.InsertRowAtImpl(_rowIndex);
 
