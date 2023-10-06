@@ -19,28 +19,61 @@ public class CellLayoutProvider
     private List<double> _columnWidths { get; } = new();
     private List<double> _columnStartPositions { get; } = new();
 
+    /// <summary>
+    /// The total width of the sheet
+    /// </summary>
+    public double TotalWidth { get; private set; }
+
+    /// <summary>
+    /// The total height of the sheet
+    /// </summary>
+    public double TotalHeight { get; private set; }
+
     public CellLayoutProvider(Sheet sheet, double defaultColumnWidth, double defaultRowHeight)
     {
         _sheet = sheet;
         _sheet.ColumnInserted += SheetOnColumnInserted;
         _sheet.ColumnRemoved += SheetOnColumnRemoved;
+        _sheet.RowInserted += SheetOnRowInserted;
+        _sheet.RowRemoved += SheetOnRowRemoved;
         _defaultColumnWidth = defaultColumnWidth;
         _defaultRowHeight = defaultRowHeight;
 
         // Create default array of column widths
         _columnWidths = Enumerable.Repeat(defaultColumnWidth, sheet.NumCols).ToList();
+
+        TotalWidth = defaultColumnWidth * sheet.NumCols;
+        TotalHeight = defaultRowHeight * sheet.NumRows;
         updateXPositions();
+    }
+
+    private void SheetOnRowRemoved(object? sender, RowRemovedEventArgs e)
+    {
+        TotalHeight -= e.NRows * _defaultRowHeight;
+    }
+
+    private void SheetOnRowInserted(object? sender, RowInsertedEventArgs e)
+    {
+        TotalHeight += e.NRows * _defaultRowHeight;
     }
 
     private void SheetOnColumnRemoved(object? sender, ColumnRemovedEventArgs e)
     {
-        _columnWidths.RemoveAt(e.ColumnIndex);
+        for (int i = e.ColumnIndex; i < e.NCols; i++)
+        {
+            _columnWidths.RemoveAt(i);
+        }
+
         updateXPositions();
     }
 
     private void SheetOnColumnInserted(object? sender, ColumnInsertedEventArgs e)
     {
-        _columnWidths.Insert(e.ColumnIndex, e.Width ?? _defaultColumnWidth);
+        for (int i = e.ColumnIndex; i < e.NCols; i++)
+        {
+            _columnWidths.Insert(e.ColumnIndex, e.Width ?? _defaultColumnWidth);
+        }
+
         updateXPositions();
     }
 
@@ -59,6 +92,8 @@ public class CellLayoutProvider
             _columnStartPositions.Add(cumX);
             cumX += _columnWidths[i];
         }
+
+        TotalWidth = cumX;
     }
 
     public void SetSheet(Sheet sheet)
