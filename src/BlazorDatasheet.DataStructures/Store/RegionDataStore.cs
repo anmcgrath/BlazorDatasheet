@@ -10,11 +10,11 @@ namespace BlazorDatasheet.DataStructures.Store;
 /// A wrapper around an RTree enabling storing data in regions.
 /// </summary>
 /// <typeparam name="T">Data type</typeparam>
-public class RegionDataStore<T>
+public class RegionDataStore<T> where T : IEquatable<T>
 {
     private readonly int _minArea;
     private readonly bool _expandWhenInsertAfter;
-    private RTree<DataRegion<T>> _tree;
+    protected RTree<DataRegion<T>> _tree;
 
     /// <summary>
     /// 
@@ -276,11 +276,48 @@ public class RegionDataStore<T>
     }
 
     /// <summary>
+    /// Cuts the regions from overlapping data where the data is the same.
+    /// Returns the regions that were removed/added in the process.
+    /// </summary>
+    /// <param name="region"></param>
+    /// <param name="data"></param>
+    /// <returns></returns>
+    public virtual (List<IRegion> regionsRemoved, List<IRegion> regionsAdded) Cut(IRegion region, T data)
+    {
+        var overlapping = GetRegionsOverlapping(region)
+            .Where(x => x.Data.Equals(data));
+
+        if (!overlapping.Any())
+            return (new List<IRegion>(), new List<IRegion>());
+
+        var dataRegionsToRemove = new List<DataRegion<T>>();
+        var dataRegionsToAdd = new List<DataRegion<T>>();
+
+        foreach (var overlap in overlapping)
+        {
+            dataRegionsToRemove.Add(overlap);
+            if(region.Contains(overlap.Region))
+                continue;
+            
+            var breakRegions = overlap.Region.Break(region);
+            dataRegionsToAdd.AddRange(breakRegions.Select(x => new DataRegion<T>(overlap.Data, x)));
+        }
+
+        foreach (var regionToRemove in dataRegionsToRemove)
+            _tree.Delete(regionToRemove);
+
+        _tree.BulkLoad(dataRegionsToAdd);
+
+        return (dataRegionsToRemove.Select(x => x.Region).ToList(),
+                dataRegionsToAdd.Select(x => x.Region).ToList());
+    }
+
+    /// <summary>
     /// Adds a data region to the store.
     /// Overlapping regions are not removed.
     /// </summary>
     /// <param name="dataRegion"></param>
-    internal void Add(DataRegion<T> dataRegion)
+    internal virtual void Add(DataRegion<T> dataRegion)
     {
         _tree.Insert(dataRegion);
     }
