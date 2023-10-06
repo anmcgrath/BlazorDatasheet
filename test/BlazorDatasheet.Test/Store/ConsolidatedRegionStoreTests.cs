@@ -96,4 +96,15 @@ public class ConsolidatedRegionStoreTests
         store.Cut(cutRegion, 1);
         store.GetRegionsForData(1).Sum(x => x.Area).Should().Be(r0.Area - cutRegion.Area);
     }
+
+    [Test]
+    public void Insert_Row_Updates_Store_Data_Region_Map()
+    {
+        var store = new ConsolidatedDataStore<int>();
+        store.Add(new Region(1, 1, 1, 1), 0);
+        store.InsertRows(0, 1);
+        store.GetDataOverlapping(1, 1).Should().BeEmpty();
+        store.GetDataOverlapping(2, 1).Should().NotBeEmpty();
+        store.GetRegionsForData(0).First().Top.Should().Be(2);
+    }
 }

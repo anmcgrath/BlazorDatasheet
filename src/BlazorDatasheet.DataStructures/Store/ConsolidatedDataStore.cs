@@ -62,9 +62,9 @@ public class ConsolidatedDataStore<T> : RegionDataStore<T> where T : IEquatable<
     /// <returns></returns>
     public IEnumerable<IRegion> GetRegionsForData(T data)
     {
-        if (_dataMaps.ContainsKey(data))
-            return _dataMaps[data];
-        return Enumerable.Empty<IRegion>();
+        //TODO use data maps... or delete them
+        // since we won't be calling this very often it doesn't have to be efficient?
+        return _tree.Search().Where(x => x.Data.Equals(data)).Select(x => x.Region);
     }
 
     /// <summary>
