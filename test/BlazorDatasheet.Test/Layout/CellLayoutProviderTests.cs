@@ -1,5 +1,6 @@
 using BlazorDatasheet.Data;
 using BlazorDatasheet.Render;
+using FluentAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Layout;
@@ -34,5 +35,19 @@ public class CellLayoutProviderTests
         sheet.Commands.Undo();
         Assert.AreEqual(w2, provider.ComputeWidth(1, 1));
         Assert.AreEqual(defaultW * 2 + w2, provider.ComputeWidth(0, 3));
+        Assert.AreEqual(provider.TotalWidth, defaultW * 2 + w2);
+    }
+
+    [Test]
+    public void Insert_Row_And_Remove_Row_Sets_Total_Height()
+    {
+        var sheet = new Sheet(3, 3);
+        var dH = 20;
+        var provider = new CellLayoutProvider(sheet, 20, dH);
+        provider.TotalHeight.Should().Be(dH * 3);
+        sheet.InsertRowAt(0);
+        provider.TotalHeight.Should().Be(dH * 4);
+        sheet.RemoveRow(0, 2);
+        provider.TotalHeight.Should().Be(dH * 2);
     }
 }

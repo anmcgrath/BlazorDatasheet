@@ -306,9 +306,9 @@ public class Sheet
         return true;
     }
 
-    public bool RemoveRow(int index)
+    public bool RemoveRow(int index, int nRows = 1)
     {
-        var cmd = new RemoveRowsCommand(index);
+        var cmd = new RemoveRowsCommand(index, nRows);
         return Commands.ExecuteCommand(cmd);
     }
 

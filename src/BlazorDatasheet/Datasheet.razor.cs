@@ -641,6 +641,17 @@ public partial class Datasheet : IHandleEvent
     }
 
     /// <summary>
+    /// Returns the width of the sheet(including the headings, if any) in pixels
+    /// </summary>
+    /// <returns></returns>
+    private double GetSheetWidthInPx()
+    {
+        var columnWidth = _sheetLocal.LayoutProvider.TotalWidth;
+        var headingWidth = _sheetLocal.ShowColumnHeadings ? _sheetLocal.LayoutProvider.DefaultColumnWidth : 0;
+        return columnWidth + headingWidth;
+    }
+
+    /// <summary>
     /// Provides rows to the virtualised renderer
     /// </summary>
     /// <param name="request"></param>

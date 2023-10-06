@@ -19,18 +19,19 @@
             BackgroundVisible="@true"
             BorderThickness="0"
             BackgroundStyle="background:var(--selection-bg-color);"
-            Width="CellLayoutProvider.ComputeWidth(interval.Start, interval.Length) + 1"
-            Height="CellLayoutProvider.ComputeHeight(1) + 1"
+            Width="CellLayoutProvider.ComputeWidth(interval.Start, interval.Length) "
+            Height="CellLayoutProvider.ComputeHeight(1)"
             X="CellLayoutProvider.ComputeLeftPosition(interval.Start)"
             Y="CellLayoutProvider.ComputeTopPosition(-1)"/>
     }
 
+    <!-- Ardoners -->
     @for (int i = 0; i < Sheet.NumCols; i++)
     {
         var col = i;
         <div
             @onmousedown="e => HandleMouseDownOnAdorner(col)"
-            style="position:absolute; top: 0; left: @(CellLayoutProvider.ComputeLeftPosition(col + 1) - 5)px; width: 10px; background: none; height: 25px; cursor: col-resize; display: block">
+            style="position:absolute; top: 0; left: @(CellLayoutProvider.ComputeLeftPosition(col + 1) - 5 - 1)px; width: 10px; background: none; height: 25px; cursor: col-resize; display: block">
         </div>
     }
 
@@ -42,7 +43,7 @@
             Width="3"
             BorderThickness="1"
             X="@(CellLayoutProvider.ComputeLeftPosition(ActiveAdorner) + resizeWidth)"
-            Height="CellLayoutProvider.ComputeHeight(Sheet.NumRows)"/>
+            Height="@(CellLayoutProvider.DefaultRowHeight)"/>
     }
 
 </div>
@@ -135,8 +136,6 @@
     {
         if (firstRender)
         {
-           
-          
             _windowEventService = new WindowEventService(JS);
             await _windowEventService.Init();
             _windowEventService.OnMouseUp += WindowEventServiceOnOnMouseUp;

@@ -14,7 +14,7 @@
 
 <div>
     <div
-        style="@(IsFixedHeight ? $"max-height: {FixedHeightInPx}px;" : ""); width: @Sheet.LayoutProvider.ComputeWidth(0, Sheet.NumCols);"
+        style="@(IsFixedHeight ? $"max-height: {FixedHeightInPx}px;" : ""); width: @(GetSheetWidthInPx() + 20)px;"
         theme="@Theme"
         class="vars sheet @(IsDataSheetActive ? "active-sheet" : "inactive-sheet")
      @(IsFixedHeight ? " sheet-fixed-height" : "sheet-dynamic-height") "
@@ -59,6 +59,7 @@
             <Virtualize
                 @ref="_virtualizer"
                 ItemsProvider="@LoadRows"
+                ItemSize="@((float)Sheet.LayoutProvider.DefaultRowHeight)"
                 OverscanCount="8"
                 TItem="int"
                 Context="rowIndex">
