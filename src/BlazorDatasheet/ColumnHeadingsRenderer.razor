@@ -35,6 +35,7 @@
         </div>
     }
 
+    <!-- Resize preview -->
     @if (IsDragging)
     {
         var resizeWidth = Math.Max(MinResizeWidth, Sheet.LayoutProvider.ComputeWidth(ActiveAdorner, 1) + CurrentColResizeAmount);
@@ -43,7 +44,7 @@
             Width="3"
             BorderThickness="1"
             X="@(CellLayoutProvider.ComputeLeftPosition(ActiveAdorner) + resizeWidth)"
-            Height="@(CellLayoutProvider.DefaultRowHeight)"/>
+            Height="@(CellLayoutProvider.TotalHeight)"/>
     }
 
 </div>
