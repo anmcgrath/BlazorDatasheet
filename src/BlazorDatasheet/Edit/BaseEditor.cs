@@ -1,3 +1,4 @@
+using BlazorDatasheet.Data;
 using BlazorDatasheet.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
@@ -29,7 +30,7 @@ public abstract class BaseEditor : ComponentBase, ICellEditor
     /// </summary>
     protected ElementReference InputRef = new ElementReference();
 
-    public virtual void BeforeEdit(IReadOnlyCell cell)
+    public virtual void BeforeEdit(IReadOnlyCell cell, Sheet sheet)
     {
     }
 

@@ -1,3 +1,5 @@
+using BlazorDatasheet.DataStructures.Geometry;
+
 namespace BlazorDatasheet.DataStructures.Store;
 
 public interface IMatrixDataStore<T>
@@ -76,4 +78,11 @@ public interface IMatrixDataStore<T>
     /// <param name="c1">The upper col bound</param>
     /// <returns></returns>
     IEnumerable<(int row, int col)> GetNonEmptyPositions(int r0, int r1, int c0, int c1);
+
+    /// <summary>
+    /// Gets non empty cells that exist in the region given.
+    /// </summary>
+    /// <param name="region"></param>
+    /// <returns></returns>
+    IEnumerable<(int row, int col)> GetNonEmptyPositions(IRegion region);
 }

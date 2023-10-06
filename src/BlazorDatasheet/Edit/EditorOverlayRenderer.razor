@@ -104,7 +104,7 @@
             if (ActiveCellEditor == null)
                 return;
 
-            ActiveCellEditor.BeforeEdit(EditCell);
+            ActiveCellEditor.BeforeEdit(EditCell, Sheet);
             ActiveCellEditor.RequestCancelEdit += HandleEditorRequestCancelEdit;
             ActiveCellEditor.RequestAcceptEdit += HandleEditorRequestAcceptEdit;
             ActiveCellEditor.BeginEdit(EditEntryMode, EditValue, EditEntryKey);

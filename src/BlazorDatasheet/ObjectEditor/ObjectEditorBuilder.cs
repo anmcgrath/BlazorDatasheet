@@ -64,8 +64,6 @@ public class ObjectEditorBuilder<T>
         var cell = new Cell(item);
         cell.Formatting = propDefn.Format;
         cell.Type = propDefn.Type;
-        foreach (var validator in propDefn.Validators)
-            cell.Validators.Add(validator);
 
         return cell;
     }
@@ -181,6 +179,15 @@ public class ObjectEditorBuilder<T>
                     sheet.ConditionalFormatting.Apply(conditionalFormat, new Region(0, nRows - 1, i, i));
                 else if (_direction == GridDirection.PropertiesAcrossRows)
                     sheet.ConditionalFormatting.Apply(conditionalFormat, new Region(i, i, 0, nCols - 1));
+            }
+
+            foreach (var validator in propDefn.Validators)
+            {
+                // Add validators
+                if (_direction == GridDirection.PropertiesAcrossColumns)
+                    sheet.Validation.Add(validator, new ColumnRegion(i));
+                else if (_direction == GridDirection.PropertiesAcrossRows)
+                    sheet.Validation.Add(validator, new RowRegion(i));
             }
         }
 

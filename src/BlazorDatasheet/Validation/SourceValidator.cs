@@ -6,6 +6,7 @@ public class SourceValidator : IDataValidator
 {
     public List<string> ValidationSource { get; }
     public bool IsStrict { get; }
+    public string Message => "The value must be one of the source values.";
 
     /// <summary>
     /// Ensures that the value is equal to one of the validation sources

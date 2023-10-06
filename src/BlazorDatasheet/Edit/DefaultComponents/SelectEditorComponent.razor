@@ -1,6 +1,7 @@
 @using BlazorDatasheet.Interfaces
 @using BlazorDatasheet.Util
 @using BlazorDatasheet.Validation
+@using BlazorDatasheet.Data
 @inherits BaseEditor
 
 <input @bind="CurrentValue"
@@ -26,11 +27,11 @@
 
     string? currentSelected;
 
-    public override void BeforeEdit(IReadOnlyCell cell)
+    public override void BeforeEdit(IReadOnlyCell cell, Sheet sheet)
     {
         Cell = cell;
 
-        foreach (var validator in Cell.Validators)
+        foreach (var validator in sheet.Validation.GetValidators(cell.Row, cell.Col))
             if (validator is SourceValidator)
             {
                 values = ((SourceValidator)validator).ValidationSource.ToArray();

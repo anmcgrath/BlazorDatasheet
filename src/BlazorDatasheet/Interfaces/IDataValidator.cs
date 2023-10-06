@@ -15,4 +15,9 @@ public interface IDataValidator
     /// Note that setting a cell value programatically doesn't check IsStrict.
     /// </summary>
     public bool IsStrict { get; }
+
+    /// <summary>
+    /// The validator's message, which assists the user in working out which validation has failed.
+    /// </summary>
+    public string Message { get; }
 }

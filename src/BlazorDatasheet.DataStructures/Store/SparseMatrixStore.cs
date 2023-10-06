@@ -1,3 +1,4 @@
+using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Search;
 
 namespace BlazorDatasheet.DataStructures.Store;
@@ -133,6 +134,11 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
         }
 
         return nonEmptyPositions;
+    }
+
+    public IEnumerable<(int row, int col)> GetNonEmptyPositions(IRegion region)
+    {
+        return GetNonEmptyPositions(region.Top, region.Bottom, region.Left, region.Right);
     }
 
     private class SColumn<T>

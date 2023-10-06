@@ -40,13 +40,14 @@
                 new Cell()
             }
         };
-
-        cells[0, 0].Validators.Add(new NumberValidator(true));
-        cells[0, 1].Validators.Add(new NumberValidator(false));
+        
         cells[0, 2].Type = "select";
-        cells[0, 2].Validators.Add(new SourceValidator(new List<string>() { "Item 1", "Item 2", "Item 3" }, false));
-        cells[0, 3].Validators.Add(new CustomValidator("foo", false));
+        
         sheet = new Sheet(1, 4, cells);
+        sheet.Validation.Add(new NumberValidator(true), 0, 0);
+        sheet.Validation.Add(new NumberValidator(false), 0, 1);
+        sheet.Validation.Add(new SourceValidator(new List<string>() { "Item 1", "Item 2", "Item 3" }, false), 0, 2);
+        sheet.Validation.Add(new CustomValidator("foo", false), 0, 3);
         base.OnInitialized();
     }
 
@@ -54,6 +55,7 @@
     {
         private readonly string _word;
         public bool IsStrict { get; }
+        public string Message => $"Should contain the word {_word}";
 
         public CustomValidator(string word, bool isStrict)
         {

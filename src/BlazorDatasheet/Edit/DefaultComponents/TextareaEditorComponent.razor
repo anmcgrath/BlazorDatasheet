@@ -1,6 +1,7 @@
 ﻿@using BlazorDatasheet.Edit;
 @using BlazorDatasheet.Interfaces
 @using BlazorDatasheet.Util
+@using BlazorDatasheet.Data
 
 @inherits BaseEditor
 
@@ -15,7 +16,7 @@
 
     private IReadOnlyCell Cell;
 
-    public override void BeforeEdit(IReadOnlyCell cell)
+    public override void BeforeEdit(IReadOnlyCell cell, Sheet sheet)
     {
         Cell = cell;
     }

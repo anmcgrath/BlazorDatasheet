@@ -4,7 +4,7 @@ using BlazorDatasheet.Data;
 using BlazorDatasheet.Validation;
 using NUnit.Framework;
 
-namespace BlazorDatasheet.Test.SheetTests;
+namespace BlazorDatasheet.Test.Validation;
 
 [TestFixture]
 public class DefaultValidators

@@ -10,12 +10,14 @@ using BlazorDatasheet.Edit;
 using BlazorDatasheet.Edit.DefaultComponents;
 using BlazorDatasheet.Events;
 using BlazorDatasheet.Events.Edit;
+using BlazorDatasheet.Events.Validation;
 using BlazorDatasheet.Formats;
 using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Render.DefaultComponents;
 using BlazorDatasheet.Selecting;
 using BlazorDatasheet.Util;
+using BlazorDatasheet.Validation;
 
 namespace BlazorDatasheet.Data;
 
@@ -145,19 +147,29 @@ public class Sheet
 
     internal CellLayoutProvider LayoutProvider { get; }
 
+    /// <summary>
+    /// Contains cell merge information and handles merges.
+    /// </summary>
     public MergeManager Merges { get; }
+
+    /// <summary>
+    /// Manages and holds information on cell validators.
+    /// </summary>
+    public ValidationManager Validation { get; }
 
     private readonly IMatrixDataStore<Cell> _cellDataStore = new SparseMatrixStore<Cell>();
 
     private Sheet()
     {
         Merges = new MergeManager(this);
+        Validation = new ValidationManager();
         ColumnHeadings = new List<Heading>();
         RowHeadings = new List<Heading>();
         Commands = new CommandManager(this);
         Selection = new Selection(this);
         Editor = new Editor(this);
         Selection.SelectionChanged += SelectionOnSelectionChanged;
+        Validation.ValidatorChanged += ValidationOnValidatorChanged;
         ConditionalFormatting = new ConditionalFormatManager(this);
         _editorTypes = new Dictionary<string, Type>();
         _renderComponentTypes = new Dictionary<string, Type>();
@@ -169,7 +181,6 @@ public class Sheet
 
     public Sheet(int numRows, int numCols, Cell[,] cells) : this()
     {
-        Merges = new MergeManager(this);
         NumCols = numCols;
         NumRows = numRows;
 
@@ -189,7 +200,7 @@ public class Sheet
 
     public Sheet(int numRows, int numCols) : this()
     {
-        Merges = new MergeManager(this);
+        Validation = new ValidationManager();
         NumCols = numCols;
         NumRows = numRows;
         LayoutProvider = new CellLayoutProvider(this, 105, 25);
@@ -476,18 +487,6 @@ public class Sheet
             return true;
         }
 
-        // Perform data validation
-        var isValid = true;
-        foreach (var validator in cell.Validators)
-        {
-            if (validator.IsValid(value)) continue;
-            if (validator.IsStrict)
-                return false;
-            isValid = false;
-        }
-
-        cell.IsValid = isValid;
-
         // Try to set the cell's value to the new value
         var oldValue = cell.GetValue();
         var setValue = cell.TrySetValue(value);
@@ -499,6 +498,12 @@ public class Sheet
             };
             CellsChanged?.Invoke(this, args);
         }
+
+        // Perform data validation
+        // but we don't restrict the cell value being set here,
+        // it is just marked as invalid if it is invalid
+        var validationResult = Validation.Validate(value, row, col);
+        cell.IsValid = validationResult.IsValid;
 
         if (setValue)
             MarkDirty(row, col);
@@ -638,6 +643,27 @@ public class Sheet
     }
 
     #endregion
+
+    private void ValidationOnValidatorChanged(object? sender, ValidatorChangedEventArgs e)
+    {
+        foreach (var region in e.RegionsAffected)
+        {
+            ValidateRegion(region);
+        }
+    }
+
+    private void ValidateRegion(IRegion region)
+    {
+        var cellsAffected = _cellDataStore.GetNonEmptyPositions(region).ToList();
+        foreach (var (row, col) in cellsAffected)
+        {
+            var cell = _cellDataStore.Get(row, col);
+            var result = Validation.Validate(cell.GetValue(), row, col);
+            cell.IsValid = result.IsValid;
+        }
+
+        MarkDirty(cellsAffected);
+    }
 
     /// <summary>
     /// Registers a cell editor component with a unique name.

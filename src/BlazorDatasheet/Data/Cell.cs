@@ -19,6 +19,11 @@ public class Cell : IReadOnlyCell, IWriteableCell
     public int Col { get; internal set; }
 
     /// <summary>
+    /// Whether the cell is valid after validation.
+    /// </summary>
+    public bool IsValid { get; internal set; } = true;
+
+    /// <summary>
     /// The cell type, affects the renderer and editor used for the cell
     /// </summary>
     public string Type { get; set; } = "text";
@@ -27,16 +32,6 @@ public class Cell : IReadOnlyCell, IWriteableCell
     /// The formatting to be applied to the cell on render
     /// </summary>
     public CellFormat? Formatting { get; set; }
-
-    /// <summary>
-    /// The Data Validators to apply to a cell after editing
-    /// </summary>
-    public List<IDataValidator> Validators { get; private set; }
-
-    /// <summary>
-    /// Whether the Cell is in a Valid state after Data Validation
-    /// </summary>
-    public bool IsValid { get; internal set; } = true;
 
     /// <summary>
     /// The cell's data, which may be a primitive or a complex object.
@@ -58,7 +53,6 @@ public class Cell : IReadOnlyCell, IWriteableCell
     public Cell(object? data = null)
     {
         Data = data;
-        Validators = new List<IDataValidator>();
     }
 
     /// <summary>

@@ -18,4 +18,5 @@ public class NumberValidator : IDataValidator
     }
 
     public bool IsStrict { get; }
+    public string Message => "The value must be a valid number.";
 }

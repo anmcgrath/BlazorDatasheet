@@ -1,5 +1,6 @@
 @using BlazorDatasheet.Interfaces
 @using BlazorDatasheet.Util
+@using BlazorDatasheet.Data
 @inherits BaseEditor
 
 <input
@@ -32,14 +33,14 @@
         }
     }
 
-    public override void BeforeEdit(IReadOnlyCell cell)
+    public override void BeforeEdit(IReadOnlyCell cell, Sheet sheet)
     {
         Cell = cell;
     }
 
     public override void BeginEdit(EditEntryMode entryMode, string? editValue, string key)
     {
-        /*var canParse = DateTime.TryParse(editValue?.ToString(), out var parsedDateTime);
+    /*var canParse = DateTime.TryParse(editValue?.ToString(), out var parsedDateTime);
         if (canParse)
         {
             CurrentDateTime = parsedDateTime;
