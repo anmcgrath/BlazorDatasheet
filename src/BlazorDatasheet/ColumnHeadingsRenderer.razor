@@ -21,8 +21,8 @@
             BackgroundStyle="background:var(--selection-bg-color);"
             Width="CellLayoutProvider.ComputeWidth(interval.Start, interval.Length) "
             Height="CellLayoutProvider.ComputeHeight(1)"
-            X="CellLayoutProvider.ComputeLeftPosition(interval.Start)"
-            Y="CellLayoutProvider.ComputeTopPosition(-1)"/>
+            X="CellLayoutProvider.ComputeLeftPosition(interval.Start, FixScrollToCellEdge)"
+            Y="CellLayoutProvider.ComputeTopPosition(-1, FixScrollToCellEdge)"/>
     }
 
     <!-- Ardoners -->
@@ -31,7 +31,7 @@
         var col = i;
         <div
             @onmousedown="e => HandleMouseDownOnAdorner(col)"
-            style="position:absolute; top: 0; left: @(CellLayoutProvider.ComputeLeftPosition(col + 1) - 5 - 1)px; width: 10px; background: none; height: 25px; cursor: col-resize; display: block">
+            style="position:absolute; top: 0; left: @(CellLayoutProvider.ComputeLeftPosition(col + 1, FixScrollToCellEdge) - 5 - 1)px; width: 10px; background: none; height: 25px; cursor: col-resize; display: block">
         </div>
     }
 
@@ -43,7 +43,7 @@
             Y="0"
             Width="3"
             BorderThickness="1"
-            X="@(CellLayoutProvider.ComputeLeftPosition(ActiveAdorner) + resizeWidth)"
+            X="@(CellLayoutProvider.ComputeLeftPosition(ActiveAdorner, FixScrollToCellEdge) + resizeWidth)"
             Height="@(CellLayoutProvider.TotalHeight)"/>
     }
 
@@ -84,7 +84,10 @@
 
     [Parameter]
     public EventCallback<ColumnMouseEventArgs> OnMouseDown { get; set; }
-
+    
+    [Parameter]
+    public bool FixScrollToCellEdge { get; set; }
+    
     private IWindowEventService _windowEventService;
 
     private double MouseX { get; set; }

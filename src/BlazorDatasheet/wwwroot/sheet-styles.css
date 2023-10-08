@@ -53,7 +53,10 @@
 
 .sheet-fixed-height {
     overflow-y: scroll;
-    overflow-x: visible;
+}
+
+.sheet-fixed-width{
+    overflow-x:scroll;
 }
 
 .sheet-dynamic-height {

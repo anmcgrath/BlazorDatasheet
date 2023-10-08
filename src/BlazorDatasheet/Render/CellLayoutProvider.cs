@@ -13,6 +13,8 @@ public class CellLayoutProvider
     private Sheet _sheet;
     public double DefaultColumnWidth { get; }
     public double DefaultRowHeight { get; }
+    public int VisibleRowOffset { get; private set; }
+    public int VisibleColOffset { get; private set; }
 
     // as long as the number of columns are small (which we will restrict) 
     // then we can store the column widths & x positions in arrays
@@ -50,6 +52,16 @@ public class CellLayoutProvider
     private void SheetOnRowRemoved(object? sender, RowRemovedEventArgs e)
     {
         TotalHeight -= e.NRows * DefaultRowHeight;
+    }
+
+    public void SetVisibleRowOffset(int row)
+    {
+        VisibleRowOffset = row;
+    }
+
+    public void SetVisibleColOffset(int col)
+    {
+        VisibleColOffset = col;
     }
 
     private void SheetOnRowInserted(object? sender, RowInsertedEventArgs e)
@@ -101,31 +113,35 @@ public class CellLayoutProvider
         _sheet = sheet;
     }
 
-    public double ComputeLeftPosition(IRegion region)
+    public double ComputeLeftPosition(IRegion region, bool fixCellToContainer)
     {
-        return ComputeLeftPosition(region.TopLeft.Col);
+        return ComputeLeftPosition(region.TopLeft.Col, fixCellToContainer);
     }
 
-    public double ComputeLeftPosition(int col)
+    public double ComputeLeftPosition(int col, bool fixCellToContainer)
     {
         var extra = _sheet.ShowRowHeadings ? 1 : 0;
         if (col < 0)
             return 0;
+        var fixCellOffset = fixCellToContainer ? -(ComputeWidth(0, VisibleColOffset + 1)) : 0;
         if (col > _columnWidths.Count - 1)
             return _columnWidths.Last() + _columnStartPositions.Last() +
-                   ((col - _columnWidths.Count) + extra) * DefaultColumnWidth;
-        return extra * DefaultColumnWidth + _columnStartPositions[col];
+                   ((col - _columnWidths.Count) + extra) * DefaultColumnWidth + fixCellOffset;
+        return extra * DefaultColumnWidth + _columnStartPositions[col] + fixCellOffset;
     }
 
-    public double ComputeTopPosition(IRegion region)
+    public double ComputeTopPosition(IRegion region, bool fixCellToContainer)
     {
-        return ComputeTopPosition(region.TopLeft.Row);
+        return ComputeTopPosition(region.TopLeft.Row, fixCellToContainer);
     }
 
-    public double ComputeTopPosition(int row)
+    public double ComputeTopPosition(int row, bool fixCellToContainer)
     {
         var extra = _sheet.ShowColumnHeadings ? 1 : 0;
-        return (row + extra) * DefaultRowHeight;
+        var top = (row + extra) * DefaultRowHeight;
+        if (fixCellToContainer)
+            top -= VisibleRowOffset * DefaultRowHeight;
+        return top;
     }
 
     public double ComputeWidth(int startCol, int colSpan)
@@ -140,6 +156,22 @@ public class CellLayoutProvider
 
         var w = colXEnd - colXStart + _columnWidths[end];
         return w;
+    }
+
+    public int ComputeColumn(double x)
+    {
+        for (int i = 0; i < _columnWidths.Count; i++)
+        {
+            if (x <= _columnWidths[i])
+                return i;
+        }
+
+        return (int)((x - TotalWidth) / DefaultColumnWidth + _columnWidths.Count);
+    }
+
+    public int ComputeRow(double y)
+    {
+        return (int)(y / DefaultRowHeight);
     }
 
     public double ComputeHeight(int rowSpan)

@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.Web.Virtualization;
 using ChangeEventArgs = Microsoft.AspNetCore.Components.ChangeEventArgs;
+using Microsoft.JSInterop;
 
 namespace BlazorDatasheet;
 
@@ -52,12 +53,25 @@ public partial class Datasheet : IHandleEvent
 
     /// <summary>
     /// Whether the datasheet should be a fixed height. If it's true, a scrollbar will be used to
-    /// scroll through the rolls that are outside of the view.
+    /// scroll through the cells that are outside of the view.
     /// </summary>
     [Parameter]
     public bool IsFixedHeight { get; set; }
 
+    /// <summary>
+    /// Whether the datasheet should be a fixed width. If it's true, a scrollbar will be used to
+    /// scroll through the cells that are outside of the view.
+    /// </summary>
+    [Parameter]
+    public bool IsFixedWidth { get; set; }
+
     [Parameter] public string Theme { get; set; } = "default";
+    
+    /// <summary>
+    /// If set to true, cells are aligned to the top left corner of the container, when scrolled.
+    /// </summary>
+    [Parameter]
+    public bool FixScrollToCellEdge { get; set; }
 
     /// <summary>
     /// Whether the user is focused on the datasheet.
@@ -78,6 +92,8 @@ public partial class Datasheet : IHandleEvent
     /// Store any cells that are dirty here
     /// </summary>
     private HashSet<(int row, int col)> DirtyCells { get; set; } = new();
+
+    private ElementReference Inner;
 
     /// <summary>
     /// Whether the entire sheet is dirty
@@ -156,8 +172,11 @@ public partial class Datasheet : IHandleEvent
     private void MarkDirty(IRegion region)
     {
         // constrain to 
-        var constrainedRegion = Sheet.Region.GetIntersection(Sheet.Region);
+        var constrainedRegion = Sheet.Region.GetIntersection(region);
         var posns = Sheet.Range(constrainedRegion).Positions;
+
+        var ct = posns.Count();
+        Console.WriteLine($"marked {ct} cells dirty");
         foreach (var posn in posns)
         {
             MarkDirty(posn.row, posn.col);
@@ -243,17 +262,105 @@ public partial class Datasheet : IHandleEvent
         return SheetIsDirty || DirtyCells.Any();
     }
 
+    private DotNetObjectReference<Datasheet> _dotnetHelper;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
+            _dotnetHelper = DotNetObjectReference.Create(this);
             await AddWindowEventsAsync();
+            await JS.InvokeAsync<string>("addScrollListener", _dotnetHelper, Inner, "HandleScroll");
         }
-
-        Console.WriteLine("OnAfterDatasheetRender " + SheetIsDirty);
 
         SheetIsDirty = false;
         DirtyCells.Clear();
+    }
+
+    private ScrollEvent ScrollEvent = new ScrollEvent();
+
+    private int VisibleRowStart { get; set; }
+    private int VisibleColStart { get; set; }
+    private int NVisibleRows { get; set; }
+    private int NVisibleCols { get; set; }
+
+    [JSInvokable("HandleScroll")]
+    public void HandleScroll(ScrollEvent e)
+    {
+        ScrollEvent = e;
+
+        int overflowY = 1;
+        int overflowX = 1;
+
+        VisibleRowStart = Math.Max(Sheet.LayoutProvider.ComputeRow(e.ScrollTop) - overflowY, 0);
+        var endRow = Math.Min(Sheet.NumRows - 1,
+                              Sheet.LayoutProvider.ComputeRow(e.ScrollTop + e.ContainerHeight) + overflowY);
+        NVisibleRows = endRow - VisibleRowStart + 1;
+
+        VisibleColStart = Math.Max(Sheet.LayoutProvider.ComputeColumn(e.ScrollLeft) - overflowX, 0);
+        var endCol = Math.Min(Sheet.NumCols - 1,
+                                   Sheet.LayoutProvider.ComputeColumn(e.ScrollLeft + e.ContainerWidth) +
+                                   overflowX);
+        NVisibleCols = endCol - VisibleColStart + 1;
+
+        Sheet.LayoutProvider.SetVisibleRowOffset(VisibleRowStart);
+        Sheet.LayoutProvider.SetVisibleColOffset(VisibleColStart);
+
+        var prevRowTop = this.ViewportRegion?.Top;
+        var prevColLeft = this.ViewportRegion?.Left;
+
+        this.ViewportRegion = new Region(VisibleRowStart, endRow, VisibleColStart, endCol);
+
+        if (prevRowTop.HasValue && prevRowTop != this.ViewportRegion.Top)
+        {
+            // only render rows/columns that are new to the view
+            if (ViewportRegion.Top < prevRowTop)
+            {
+                var r = new Region(ViewportRegion.Top, prevRowTop.Value, ViewportRegion.Left, ViewportRegion.Right);
+                this.MarkDirty(r);
+            }
+            else if (ViewportRegion.Top > prevRowTop)
+            {
+                this.MarkDirty(new Region(ViewportRegion.Bottom,
+                                          ViewportRegion.Bottom + (ViewportRegion.Top - prevRowTop.Value),
+                                          ViewportRegion.Left, ViewportRegion.Right));
+            }
+        }
+
+
+        if (prevColLeft.HasValue && prevColLeft != this.ViewportRegion.Left)
+        {
+            // only render rows/columns that are new to the view
+            if (ViewportRegion.Left < prevColLeft)
+            {
+                var r = new Region(ViewportRegion.Top, ViewportRegion.Bottom, prevColLeft.Value - 1,
+                                   ViewportRegion.Left);
+                this.MarkDirty(r);
+            }
+            else if (ViewportRegion.Left > prevColLeft)
+            {
+                this.MarkDirty(new Region(ViewportRegion.Top, ViewportRegion.Bottom,
+                                          ViewportRegion.Right,
+                                          ViewportRegion.Right + (ViewportRegion.Left - prevColLeft.Value)));
+            }
+        }
+
+        this.StateHasChanged();
+    }
+
+    private string GetAbsoluteCellPositionStyles(bool isAbsolutePositioning, IReadOnlyCell cell)
+    {
+        if (isAbsolutePositioning)
+        {
+            var sb = new StringBuilder();
+            var top = Sheet.LayoutProvider.ComputeTopPosition(cell.Row, FixScrollToCellEdge);
+            sb.Append("position:absolute;");
+            sb.Append($"top:{top}px;");
+            sb.Append($"left:{Sheet.LayoutProvider.ComputeLeftPosition(cell.Col, FixScrollToCellEdge)}px;");
+            return sb.ToString();
+        }
+
+        return string.Empty;
     }
 
     private async Task AddWindowEventsAsync()

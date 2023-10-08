@@ -52,6 +52,9 @@
     /// The current cell editor component
     private BaseEditor ActiveCellEditor;
 
+    [Parameter]
+    public bool FixScrollToCellEdge { get; set; }
+
     private bool BeginningEdit { get; set; }
 
     /// The Dynamic component holding the Active Editor component
@@ -158,8 +161,8 @@
     //    return "display:none;";
 
         var strBuilder = new StringBuilder();
-        var left = CellLayoutProvider.ComputeLeftPosition(EditCell.Col);
-        var top = CellLayoutProvider.ComputeTopPosition(EditCell.Row);
+        var left = CellLayoutProvider.ComputeLeftPosition(EditCell.Col, FixScrollToCellEdge);
+        var top = CellLayoutProvider.ComputeTopPosition(EditCell.Row, FixScrollToCellEdge);
 
         var mergedPosn = Sheet.Merges.Get(EditCell.Row, EditCell.Col);
         int colSpan = 1;

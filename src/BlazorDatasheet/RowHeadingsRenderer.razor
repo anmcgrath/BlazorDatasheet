@@ -16,8 +16,8 @@
             BackgroundStyle="background:var(--selection-bg-color);"
             Width="CellLayoutProvider.ComputeWidth(-1, 1)"
             Height="CellLayoutProvider.ComputeHeight(interval.Length)"
-            X="CellLayoutProvider.ComputeLeftPosition(-1)"
-            Y="CellLayoutProvider.ComputeTopPosition(interval.Start)"/>
+            X="CellLayoutProvider.ComputeLeftPosition(-1, FixScrollToCellEdge)"
+            Y="CellLayoutProvider.ComputeTopPosition(interval.Start, FixScrollToCellEdge)"/>
     }
 
 </div>
@@ -61,6 +61,9 @@
 
     [Parameter]
     public EventCallback<RowMouseEventArgs> OnMouseDown { get; set; }
+    
+    [Parameter]
+    public bool FixScrollToCellEdge { get; set; }
 
     public List<OrderedInterval> _selectionIntervals { get; set; } = new();
 

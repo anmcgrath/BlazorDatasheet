@@ -17,26 +17,14 @@
     else if (conditionalFormatting != null)
         format = conditionalFormatting;
     <div
-        class="sheet-cell"
-        style="@GetAbsolutePositionStyles() 
-        @CssUtil.GetCellWidthStyles(Cell.Col, ColSpan, Sheet.LayoutProvider)
-        @($"height:{Sheet.LayoutProvider.ComputeHeight(RowSpan)}px;")"
-        @ondblclick="ondblclick"
-        @onmousedown="onmousedown"
-        @onmouseup="onmouseup"
-        @onmouseover="onmouseover">
-
-        <div
-            class="cell"
-            style="
+        class="cell"
+        style="
             @CalculateCellFormattingStyle(format, Cell.IsValid)">
-
-            @if (format?.Icon != null)
-            {
-                <div style="margin-right:2px; float:left; color: @(format.IconColor ?? "var(--icon-color)");">@format.Icon</div>
-            }
-            @ItemTemplate
-        </div>
+        @if (format?.Icon != null)
+        {
+            <div style="margin-right:2px; float:left; color: @(format.IconColor ?? "var(--icon-color)");">@format.Icon</div>
+        }
+        @ItemTemplate
     </div>
 }
 
@@ -73,20 +61,10 @@
     public IReadOnlyCell Cell { get; set; }
 
     [Parameter]
-    public Sheet Sheet { get; set; }
+    public int VisibleRowOffset { get; set; }
 
-    private string GetAbsolutePositionStyles()
-    {
-        if (IsAbsolutePositioning)
-        {
-            var sb = new StringBuilder();
-            sb.Append("position:absolute;");
-            sb.Append($"top:{Sheet.LayoutProvider.ComputeTopPosition(Cell.Row)}px;");
-            sb.Append($"left:{Sheet.LayoutProvider.ComputeLeftPosition(Cell.Col)}px;");
-            return sb.ToString();
-        }
-        return string.Empty;
-    }
+    [Parameter]
+    public Sheet Sheet { get; set; }
 
     private string CalculateCellFormattingStyle(CellFormat? format, bool isCellValid)
     {
@@ -108,6 +86,12 @@
     protected override bool ShouldRender()
     {
         return IsDirty;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        Console.WriteLine($"Cell rendered {this.Cell.Row}. {this.Cell.Col}. Dirty?" + IsDirty);
+        base.OnAfterRender(firstRender);
     }
 
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

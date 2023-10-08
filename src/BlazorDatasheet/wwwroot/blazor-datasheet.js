@@ -12,6 +12,8 @@ function serialize(eventType, e) {
         return serializeMouseEvent(e)
     else if (eventType.includes('paste'))
         return serializeClipboardEvent(e)
+    else if (eventType.includes('scroll'))
+        return serializeScrollEvent(e)
 }
 
 function serializeKeyboardEvent(e) {
@@ -68,6 +70,17 @@ function serializeClipboardEvent(e) {
     }
 }
 
+function serializeScrollEvent(e) {
+    return {
+        scrollTop: e.target.scrollTop,
+        scrollHeight: e.target.scrollHeight,
+        scrollWidth: e.target.scrollWidth,
+        scrollLeft: e.target.scrollLeft,
+        containerHeight: e.target.clientHeight,
+        containerWidth: e.target.clientWidth
+    }
+}
+
 // Adds a window event and stores the function as a unique ID
 // The reason we do this rather than adding one window event is so that
 // we can remove the events later
@@ -97,7 +110,7 @@ window.writeTextToClipboard = async function (text) {
 
 // Mouse move events
 function onThrottledMouseMove(component, interval) {
-    window.addEventListener('mousemove',e => {
+    window.addEventListener('mousemove', e => {
         component.invokeMethodAsync('HandleMouseMove', e.pageX, e.pageY);
     }, interval);
 }
@@ -114,13 +127,13 @@ function throttle(func, wait, options) {
     var timeout = null;
     var previous = 0;
     if (!options) options = {};
-    var later = function() {
+    var later = function () {
         previous = options.leading === false ? 0 : Date.now();
         timeout = null;
         result = func.apply(context, args);
         if (!timeout) context = args = null;
     };
-    return function() {
+    return function () {
         var now = Date.now();
         if (!previous && options.leading === false) previous = now;
         var remaining = wait - (now - previous);
@@ -140,3 +153,26 @@ function throttle(func, wait, options) {
         return result;
     };
 };
+
+
+
+
+window.addScrollListener = async function (dotNetHelper, el, dotnetHandlerName) {
+    // return initial scroll event to render the sheet
+    dotNetHelper.invokeMethodAsync(dotnetHandlerName,
+        {
+            scrollTop: el.parentElement.scrollTop,
+            containerHeight: el.parentElement.clientHeight,
+            scrollLeft: el.parentElement.scrollLeft,
+            containerWidth: el.parentElement.clientWidth,
+            scrollHeight: el.parentElement.scrollHeight,
+            scrollWidth: el.parentElement.scrollWidth,
+        })
+    el.parentElement.onscroll = throttle(async function (ev) {
+        let isHandledResponse = await dotNetHelper.invokeMethodAsync(dotnetHandlerName, serialize('scroll', ev))
+        if (isHandledResponse == true) {
+            ev.preventDefault()
+            ev.stopImmediatePropagation()
+        }
+    }, 50)
+}
