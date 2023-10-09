@@ -45,7 +45,7 @@
     font-size: .8rem;
     box-sizing: border-box;
     position: relative;
-    display: inline-block;
+    display: block;
     border-left: var(--sheet-border-style);
     border-top: var(--sheet-border-style);
     white-space: nowrap;

@@ -19,7 +19,7 @@
 
 @Sheet.Editor.EditValue
 
-<div style="overflow-y: auto; overflow-x: scroll; height: 600px; width: 600px; background: #0a53be">
+<div style="overflow-y: auto; overflow-x: scroll; height: 600px; width: 600px;">
     <Datasheet
         @ref="_datasheet"
         Theme="@Theme"
@@ -45,12 +45,12 @@
 </div>
 
 <div>
-    <input id="darkmode-toggle" @onclick="()=>_datasheet.ForceReRender()" type="checkbox" @bind="IsDarkMode"/>
+    <input id="darkmode-toggle" @onclick="() => _datasheet.ForceReRender()" type="checkbox" @bind="IsDarkMode"/>
     <label for="darkmode-toggle">Darkmode</label>
 </div>
 
 <div>
-    <input id="fix" type="checkbox" @onclick="()=>_datasheet.ForceReRender()" @bind="FixScrollToCellEdge"/>
+    <input id="fix" type="checkbox" @onclick="() => _datasheet.ForceReRender()" @bind="FixScrollToCellEdge"/>
     <label for="fix">Fix scroll to cell edge</label>
 </div>
 
@@ -107,9 +107,9 @@
             "Option 2"
         }, false);
 
-        Sheet = new Sheet(50, 5);
+        Sheet = new Sheet(300, 300);
         Sheet.TrySetCellValue(0, 0, "Hey");
-        Sheet.ShowColumnHeadings = false;
+        Sheet.ShowColumnHeadings = true;
         Sheet.ShowRowHeadings = true;
 
         Sheet.Selection.SelectionChanged += (sender, regions) =>
