@@ -13,6 +13,7 @@
 <Datasheet
     Sheet="sheet"
     IsFixedHeight="true"
+    IsFixedWidth="true"
     FixedHeightInPx="600"/>
 <button @onclick="@(() => sheet.SetFormat(new CellFormat() { BackgroundColor = "red" }, sheet.Selection))">Set format to red</button>
 <button @onclick="@(() => sheet.SetFormat(new CellFormat() { BackgroundColor = "blue" }, sheet.Selection))">Set format to blue</button>
@@ -24,7 +25,7 @@
 
     protected override void OnInitialized()
     {
-        sheet = new Sheet(numRows: 100000, numCols: 5);
+        sheet = new Sheet(numRows: 100000, numCols: 200);
         var engine = new FormulaEngine(sheet);
     }
 

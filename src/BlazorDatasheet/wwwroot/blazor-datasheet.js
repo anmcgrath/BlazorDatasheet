@@ -70,17 +70,6 @@ function serializeClipboardEvent(e) {
     }
 }
 
-function serializeScrollEvent(e) {
-    return {
-        scrollTop: e.target.scrollTop,
-        scrollHeight: e.target.scrollHeight,
-        scrollWidth: e.target.scrollWidth,
-        scrollLeft: e.target.scrollLeft,
-        containerHeight: e.target.clientHeight,
-        containerWidth: e.target.clientWidth
-    }
-}
-
 // Adds a window event and stores the function as a unique ID
 // The reason we do this rather than adding one window event is so that
 // we can remove the events later
@@ -154,25 +143,81 @@ function throttle(func, wait, options) {
     };
 };
 
+function findScrollableAncestor(element) {
+    let parent = element.parentElement
 
+    if (parent == null)
+        return document
+    let overflowY = window.getComputedStyle(parent).overflowY
+    let overflowX = window.getComputedStyle(parent).overflowX
+    let overflow = window.getComputedStyle(parent).overflow
+
+    if (overflowY == 'scroll' || overflowX == 'scroll' || overflow == 'scroll')
+        return parent
+    return findScrollableAncestor(parent)
+}
+
+function serializeScrollEvent(target, el) {
+    let r = el.getBoundingClientRect()
+    let t = target == document.documentElement ? {
+        top: 0,
+        left: 0,
+        height: window.innerHeight,
+        width: window.innerWidth
+    } : target.getBoundingClientRect()
+    console.log("el", r, "target", t)
+    return {
+        scrollTop: Math.max(0, t.top - r.top),
+        scrollHeight: r.height,
+        scrollWidth: r.width,
+        scrollLeft: Math.max(0, t.left - r.left),
+        containerHeight: t.height - Math.max(0, r.top - t.top),
+        containerWidth: t.width - Math.max(0, r.left - t.left)
+    }
+}
+
+function getScrollOffsetSizes(el, parent) {
+    // how much of the element has disappeared above the parent's scroll area?
+    // if the parent is an element, it is equal to scroll height
+    // otherwise if the parent is the document, it is equal to the top of the document - top of element.
+    let docRect = document.documentElement.getBoundingClientRect()
+    let elRect = el.getBoundingClientRect()
+
+    let scrollTop = parent === document ? Math.max(0, -elRect.top) : parent.scrollTop
+    let scrollLeft = parent === document ? Math.max(0, -elRect.left) : parent.scrollLeft
+
+    // if the parent is the document, the client height is the visible height of the element in the window
+    // otherwise it is the height of the parent
+    let clientHeight = parent === document ? window.innerHeight - (elRect.top - docRect.top) : parent.clientHeight
+    let clientWidth = parent === document ? window.innerWidth - (elRect.left - docRect.left) : parent.clientWidth
+
+    // scroll height/width is always the height/width of the element
+    let scrollHeight = elRect.height
+    let scrollWidth = elRect.width
+
+    return {
+        scrollWidth: scrollWidth,
+        scrollHeight: scrollHeight,
+        scrollLeft: scrollLeft,
+        scrollTop: scrollTop,
+        containerWidth: clientWidth,
+        containerHeight: clientHeight
+    }
+}
 
 
 window.addScrollListener = async function (dotNetHelper, el, dotnetHandlerName) {
     // return initial scroll event to render the sheet
-    dotNetHelper.invokeMethodAsync(dotnetHandlerName,
-        {
-            scrollTop: el.parentElement.scrollTop,
-            containerHeight: el.parentElement.clientHeight,
-            scrollLeft: el.parentElement.scrollLeft,
-            containerWidth: el.parentElement.clientWidth,
-            scrollHeight: el.parentElement.scrollHeight,
-            scrollWidth: el.parentElement.scrollWidth,
-        })
-    el.parentElement.onscroll = throttle(async function (ev) {
-        let isHandledResponse = await dotNetHelper.invokeMethodAsync(dotnetHandlerName, serialize('scroll', ev))
+    let parent = findScrollableAncestor(el)
+    dotNetHelper.invokeMethodAsync(dotnetHandlerName, getScrollOffsetSizes(el, parent))
+    parent.onscroll = throttle(async function (ev) {
+        let offset = getScrollOffsetSizes(el, parent)
+        console.log(offset)
+        
+        let isHandledResponse = await dotNetHelper.invokeMethodAsync(dotnetHandlerName, offset)
         if (isHandledResponse == true) {
             ev.preventDefault()
             ev.stopImmediatePropagation()
         }
-    }, 50)
+    }, 100)
 }

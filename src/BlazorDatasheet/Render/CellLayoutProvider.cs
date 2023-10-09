@@ -123,7 +123,8 @@ public class CellLayoutProvider
         var extra = _sheet.ShowRowHeadings ? 1 : 0;
         if (col < 0)
             return 0;
-        var fixCellOffset = fixCellToContainer ? -(ComputeWidth(0, VisibleColOffset + 1)) : 0;
+        var fixCellOffset = fixCellToContainer ? -(ComputeWidth(0, VisibleColOffset)) : 0;
+
         if (col > _columnWidths.Count - 1)
             return _columnWidths.Last() + _columnStartPositions.Last() +
                    ((col - _columnWidths.Count) + extra) * DefaultColumnWidth + fixCellOffset;
@@ -148,6 +149,9 @@ public class CellLayoutProvider
     {
         if (startCol < 0 || startCol >= _columnWidths.Count)
             return DefaultColumnWidth;
+
+        if (colSpan == 0)
+            return 0;
 
         var end = Math.Min(startCol + colSpan - 1, _columnWidths.Count - 1);
 

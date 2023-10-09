@@ -66,7 +66,7 @@ public partial class Datasheet : IHandleEvent
     public bool IsFixedWidth { get; set; }
 
     [Parameter] public string Theme { get; set; } = "default";
-    
+
     /// <summary>
     /// If set to true, cells are aligned to the top left corner of the container, when scrolled.
     /// </summary>
@@ -105,8 +105,6 @@ public partial class Datasheet : IHandleEvent
     private EditorOverlayRenderer _editorManager;
     private IWindowEventService _windowEventService;
     private IClipboard _clipboard;
-
-    private Virtualize<int> _virtualizer;
 
     // This ensures that the sheet is not re-rendered when mouse events are handled inside the sheet.
     // Performance is improved dramatically when this is used.
@@ -228,12 +226,12 @@ public partial class Datasheet : IHandleEvent
 
     private async void SheetOnRowRemoved(object? sender, RowRemovedEventArgs e)
     {
-        await _virtualizer.RefreshDataAsync();
+        this.ForceReRender();
     }
 
     private async void SheetOnRowInserted(object? sender, RowInsertedEventArgs e)
     {
-        await _virtualizer.RefreshDataAsync();
+        this.ForceReRender();
     }
 
     private Type getCellRendererType(string type)
@@ -289,18 +287,18 @@ public partial class Datasheet : IHandleEvent
     {
         ScrollEvent = e;
 
-        int overflowY = 1;
-        int overflowX = 1;
+        int overflowY = 4;
+        int overflowX = 4;
 
         VisibleRowStart = Math.Max(Sheet.LayoutProvider.ComputeRow(e.ScrollTop) - overflowY, 0);
         var endRow = Math.Min(Sheet.NumRows - 1,
-                              Sheet.LayoutProvider.ComputeRow(e.ScrollTop + e.ContainerHeight) + overflowY);
+            Sheet.LayoutProvider.ComputeRow(e.ScrollTop + e.ContainerHeight) + overflowY);
         NVisibleRows = endRow - VisibleRowStart + 1;
 
         VisibleColStart = Math.Max(Sheet.LayoutProvider.ComputeColumn(e.ScrollLeft) - overflowX, 0);
         var endCol = Math.Min(Sheet.NumCols - 1,
-                                   Sheet.LayoutProvider.ComputeColumn(e.ScrollLeft + e.ContainerWidth) +
-                                   overflowX);
+            Sheet.LayoutProvider.ComputeColumn(e.ScrollLeft + e.ContainerWidth) +
+            overflowX);
         NVisibleCols = endCol - VisibleColStart + 1;
 
         Sheet.LayoutProvider.SetVisibleRowOffset(VisibleRowStart);
@@ -309,9 +307,21 @@ public partial class Datasheet : IHandleEvent
         var prevRowTop = this.ViewportRegion?.Top;
         var prevColLeft = this.ViewportRegion?.Left;
 
+        // if we haven't changed by more than the overflow, don't do anything
+        if (prevRowTop.HasValue && prevColLeft.HasValue)
+        {
+            if (VisibleRowStart != 0 &&
+                VisibleColStart != 0) // prevent the start/end not rendering if you scroll too quick
+            {
+                if (Math.Abs(prevRowTop.Value - VisibleRowStart) < overflowY &&
+                    Math.Abs(prevColLeft.Value - VisibleColStart) < overflowX)
+                    return;
+            }
+        }
+
         this.ViewportRegion = new Region(VisibleRowStart, endRow, VisibleColStart, endCol);
 
-        if (prevRowTop.HasValue && prevRowTop != this.ViewportRegion.Top)
+        if (prevRowTop.HasValue)
         {
             // only render rows/columns that are new to the view
             if (ViewportRegion.Top < prevRowTop)
@@ -322,26 +332,26 @@ public partial class Datasheet : IHandleEvent
             else if (ViewportRegion.Top > prevRowTop)
             {
                 this.MarkDirty(new Region(ViewportRegion.Bottom,
-                                          ViewportRegion.Bottom + (ViewportRegion.Top - prevRowTop.Value),
-                                          ViewportRegion.Left, ViewportRegion.Right));
+                    ViewportRegion.Bottom + (ViewportRegion.Top - prevRowTop.Value),
+                    ViewportRegion.Left, ViewportRegion.Right));
             }
         }
 
 
-        if (prevColLeft.HasValue && prevColLeft != this.ViewportRegion.Left)
+        if (prevColLeft.HasValue)
         {
             // only render rows/columns that are new to the view
             if (ViewportRegion.Left < prevColLeft)
             {
                 var r = new Region(ViewportRegion.Top, ViewportRegion.Bottom, prevColLeft.Value - 1,
-                                   ViewportRegion.Left);
+                    ViewportRegion.Left);
                 this.MarkDirty(r);
             }
             else if (ViewportRegion.Left > prevColLeft)
             {
                 this.MarkDirty(new Region(ViewportRegion.Top, ViewportRegion.Bottom,
-                                          ViewportRegion.Right,
-                                          ViewportRegion.Right + (ViewportRegion.Left - prevColLeft.Value)));
+                    ViewportRegion.Right,
+                    ViewportRegion.Right + (ViewportRegion.Left - prevColLeft.Value)));
             }
         }
 
@@ -756,6 +766,37 @@ public partial class Datasheet : IHandleEvent
         var columnWidth = _sheetLocal.LayoutProvider.TotalWidth;
         var headingWidth = _sheetLocal.ShowColumnHeadings ? _sheetLocal.LayoutProvider.DefaultColumnWidth : 0;
         return columnWidth + headingWidth;
+    }
+
+    private string GetContainerStyleString()
+    {
+        var sb = new StringBuilder();
+        sb.Append($"height:{Sheet.LayoutProvider.TotalHeight}px; display:inline-block;");
+        sb.Append($"width:{GetSheetWidthInPx() + (IsFixedHeight ? 16 : 0)}px;");
+        return sb.ToString();
+    }
+
+    private string GetContainerClassString()
+    {
+        var sb = new StringBuilder();
+        sb.Append(" vars sheet ");
+        sb.Append(IsDataSheetActive ? " active-sheet " : " in-active-sheet ");
+        return sb.ToString();
+    }
+
+    private string GetFixedContainerStyleString()
+    {
+        var sb = new StringBuilder();
+        if (FixScrollToCellEdge)
+        {
+            sb.Append("position:sticky;");
+            sb.Append("left:0;");
+            sb.Append("top:0;");
+            sb.Append("height:100px;");
+            sb.Append("width:100px;");
+        }
+
+        return sb.ToString();
     }
 
     /// <summary>
