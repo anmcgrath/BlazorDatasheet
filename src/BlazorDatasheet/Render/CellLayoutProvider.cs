@@ -164,18 +164,20 @@ public class CellLayoutProvider
 
     public int ComputeColumn(double x)
     {
-        for (int i = 0; i < _columnWidths.Count; i++)
+        var extra = _sheet.ShowRowHeadings ? -1 : 0;
+        for (int i = 0; i < _columnStartPositions.Count; i++)
         {
-            if (x <= _columnWidths[i])
-                return i;
+            if (x < +_columnStartPositions[i])
+                return i - 1 + extra;
         }
 
-        return (int)((x - TotalWidth) / DefaultColumnWidth + _columnWidths.Count);
+        return (int)((x - TotalWidth) / DefaultColumnWidth + _columnWidths.Count) + extra;
     }
 
     public int ComputeRow(double y)
     {
-        return (int)(y / DefaultRowHeight);
+        var extra = _sheet.ShowColumnHeadings ? -1 : 0;
+        return (int)(y / DefaultRowHeight) + extra;
     }
 
     public double ComputeHeight(int rowSpan)

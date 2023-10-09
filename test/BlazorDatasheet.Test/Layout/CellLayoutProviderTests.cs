@@ -50,4 +50,51 @@ public class CellLayoutProviderTests
         sheet.RemoveRow(0, 2);
         provider.TotalHeight.Should().Be(dH * 2);
     }
+
+    [Test]
+    public void Calculate_Column_With_Fixed_Widths_Calculates()
+    {
+        var sheet = new Sheet(5, 5);
+        sheet.ShowRowHeadings = false;
+        var p = new CellLayoutProvider(sheet, 20, 20);
+        p.ComputeColumn(0).Should().Be(0);
+        p.ComputeColumn(19).Should().Be(0);
+        p.ComputeColumn(21).Should().Be(1);
+    }
+
+    [Test]
+    public void Calculate_Column_Width_Non_Fixed_Widths_Calculates_Correctly()
+    {
+        var sheet = new Sheet(5, 3);
+        sheet.ShowRowHeadings = false;
+        var p = new CellLayoutProvider(sheet, 20, 20);
+        p.SetColumnWidth(1, 40);
+        p.ComputeColumn(19).Should().Be(0);
+        p.ComputeColumn(20).Should().Be(1);
+        p.ComputeColumn(21).Should().Be(1);
+        p.ComputeColumn(59).Should().Be(1);
+        p.ComputeColumn(60).Should().Be(2);
+        p.ComputeColumn(61).Should().Be(2);
+        p.ComputeColumn(99).Should().Be(3);
+    }
+
+    [Test]
+    public void Calculate_Column_With_Sheet_Row_Headers_Calculates_Correctly()
+    {
+        var sheet = new Sheet(5, 5);
+        sheet.ShowRowHeadings = true;
+        var p = new CellLayoutProvider(sheet, 20, 20);
+        p.ComputeColumn(1).Should().Be(-1);
+        p.ComputeColumn(20).Should().Be(0);
+    }
+    
+    [Test]
+    public void Calculate_Row_With_Sheet_Col_Headers_Calculates_Correctly()
+    {
+        var sheet = new Sheet(5, 5);
+        sheet.ShowColumnHeadings = true;
+        var p = new CellLayoutProvider(sheet, 20, 20);
+        p.ComputeRow(0).Should().Be(-1);
+        p.ComputeRow(20).Should().Be(0);
+    }
 }

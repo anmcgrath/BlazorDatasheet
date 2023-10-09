@@ -277,8 +277,8 @@ public partial class Datasheet : IHandleEvent
 
     private ScrollEvent ScrollEvent = new ScrollEvent();
 
-    private int VisibleRowStart { get; set; }
-    private int VisibleColStart { get; set; }
+    private int RowStart { get; set; }
+    private int ColStart { get; set; }
     private int NVisibleRows { get; set; }
     private int NVisibleCols { get; set; }
 
@@ -290,19 +290,27 @@ public partial class Datasheet : IHandleEvent
         int overflowY = 4;
         int overflowX = 4;
 
-        VisibleRowStart = Math.Max(Sheet.LayoutProvider.ComputeRow(e.ScrollTop) - overflowY, 0);
-        var endRow = Math.Min(Sheet.NumRows - 1,
-            Sheet.LayoutProvider.ComputeRow(e.ScrollTop + e.ContainerHeight) + overflowY);
-        NVisibleRows = endRow - VisibleRowStart + 1;
+        var visibleRowStart = Sheet.LayoutProvider.ComputeRow(e.ScrollTop);
+        var visibleColStart = Sheet.LayoutProvider.ComputeColumn(e.ScrollLeft);
+        var visibleRowEnd = Sheet.LayoutProvider.ComputeRow(e.ScrollTop + e.ContainerHeight);
+        var visibleColEnd = Sheet.LayoutProvider.ComputeColumn(e.ScrollLeft + e.ContainerWidth);
 
-        VisibleColStart = Math.Max(Sheet.LayoutProvider.ComputeColumn(e.ScrollLeft) - overflowX, 0);
-        var endCol = Math.Min(Sheet.NumCols - 1,
-            Sheet.LayoutProvider.ComputeColumn(e.ScrollLeft + e.ContainerWidth) +
-            overflowX);
-        NVisibleCols = endCol - VisibleColStart + 1;
+        visibleRowEnd = Math.Min(Sheet.NumRows - 1, visibleRowEnd);
+        visibleColEnd = Math.Min(Sheet.NumCols - 1, visibleColEnd);
 
-        Sheet.LayoutProvider.SetVisibleRowOffset(VisibleRowStart);
-        Sheet.LayoutProvider.SetVisibleColOffset(VisibleColStart);
+        RowStart = Math.Max(visibleRowStart - overflowY, 0);
+        var endRow = Math.Min(Sheet.NumRows - 1, visibleRowEnd + overflowY);
+        NVisibleRows = endRow - RowStart + 1;
+
+        ColStart = Math.Max(visibleColStart - overflowX, 0);
+        var endCol = Math.Min(Sheet.NumCols - 1, visibleColEnd + overflowX);
+        NVisibleCols = endCol - ColStart + 1;
+
+        Sheet.LayoutProvider.SetVisibleRowOffset(visibleRowStart);
+        Sheet.LayoutProvider.SetVisibleColOffset(visibleColStart);
+        
+        Console.WriteLine("Start col " + ColStart);
+        Console.WriteLine("End col " + endCol);
 
         var prevRowTop = this.ViewportRegion?.Top;
         var prevColLeft = this.ViewportRegion?.Left;
@@ -310,21 +318,21 @@ public partial class Datasheet : IHandleEvent
         // if we haven't changed by more than the overflow, don't do anything
         if (prevRowTop.HasValue && prevColLeft.HasValue)
         {
-            if (VisibleRowStart != 0 &&
-                VisibleColStart != 0) // prevent the start/end not rendering if you scroll too quick
+            if (RowStart != 0 &&
+                ColStart != 0) // prevent the start/end not rendering if you scroll too quick
             {
-                if (Math.Abs(prevRowTop.Value - VisibleRowStart) < overflowY &&
-                    Math.Abs(prevColLeft.Value - VisibleColStart) < overflowX)
+                if (Math.Abs(prevRowTop.Value - RowStart) < overflowY &&
+                    Math.Abs(prevColLeft.Value - ColStart) < overflowX)
                     return;
             }
         }
 
-        this.ViewportRegion = new Region(VisibleRowStart, endRow, VisibleColStart, endCol);
+        this.ViewportRegion = new Region(RowStart, endRow, ColStart, endCol);
 
         if (prevRowTop.HasValue)
         {
             // only render rows/columns that are new to the view
-            if (ViewportRegion.Top < prevRowTop)
+            if (ViewportRegion.Top < prevRowTop) // scrolling up (top becoming visible)
             {
                 var r = new Region(ViewportRegion.Top, prevRowTop.Value, ViewportRegion.Left, ViewportRegion.Right);
                 this.MarkDirty(r);
@@ -332,8 +340,8 @@ public partial class Datasheet : IHandleEvent
             else if (ViewportRegion.Top > prevRowTop)
             {
                 this.MarkDirty(new Region(ViewportRegion.Bottom,
-                    ViewportRegion.Bottom + (ViewportRegion.Top - prevRowTop.Value),
-                    ViewportRegion.Left, ViewportRegion.Right));
+                                          ViewportRegion.Bottom + (ViewportRegion.Top - prevRowTop.Value),
+                                          ViewportRegion.Left, ViewportRegion.Right));
             }
         }
 
@@ -341,17 +349,17 @@ public partial class Datasheet : IHandleEvent
         if (prevColLeft.HasValue)
         {
             // only render rows/columns that are new to the view
-            if (ViewportRegion.Left < prevColLeft)
+            if (ViewportRegion.Left < prevColLeft) // scrolling left (left becoming visible)
             {
-                var r = new Region(ViewportRegion.Top, ViewportRegion.Bottom, prevColLeft.Value - 1,
-                    ViewportRegion.Left);
+                var r = new Region(ViewportRegion.Top, ViewportRegion.Bottom, prevColLeft.Value,
+                                   ViewportRegion.Left);
                 this.MarkDirty(r);
             }
-            else if (ViewportRegion.Left > prevColLeft)
+            else if (ViewportRegion.Left > prevColLeft) // scrolling right
             {
                 this.MarkDirty(new Region(ViewportRegion.Top, ViewportRegion.Bottom,
-                    ViewportRegion.Right,
-                    ViewportRegion.Right + (ViewportRegion.Left - prevColLeft.Value)));
+                                          ViewportRegion.Right,
+                                          ViewportRegion.Right + (prevColLeft.Value- ViewportRegion.Left)));
             }
         }
 
@@ -363,10 +371,10 @@ public partial class Datasheet : IHandleEvent
         if (isAbsolutePositioning)
         {
             var sb = new StringBuilder();
-            var top = Sheet.LayoutProvider.ComputeTopPosition(cell.Row, FixScrollToCellEdge);
-            sb.Append("position:absolute;");
-            sb.Append($"top:{top}px;");
-            sb.Append($"left:{Sheet.LayoutProvider.ComputeLeftPosition(cell.Col, FixScrollToCellEdge)}px;");
+            //var top = Sheet.LayoutProvider.ComputeTopPosition(cell.Row, FixScrollToCellEdge);
+            //sb.Append("position:absolute;");
+            //sb.Append($"top:{top}px;");
+            //sb.Append($"left:{Sheet.LayoutProvider.ComputeLeftPosition(cell.Col, FixScrollToCellEdge)}px;");
             return sb.ToString();
         }
 
@@ -427,6 +435,7 @@ public partial class Datasheet : IHandleEvent
 
     private void HandleRowHeaderMouseDown(int row, MouseEventArgs e)
     {
+        Console.WriteLine("HandleRowHeaderMouseDown " + row);
         if (e.ShiftKey && Sheet?.Selection?.ActiveRegion != null)
             Sheet?.Selection?.ExtendTo(row, 0);
         else
@@ -764,15 +773,26 @@ public partial class Datasheet : IHandleEvent
     private double GetSheetWidthInPx()
     {
         var columnWidth = _sheetLocal.LayoutProvider.TotalWidth;
-        var headingWidth = _sheetLocal.ShowColumnHeadings ? _sheetLocal.LayoutProvider.DefaultColumnWidth : 0;
+        var headingWidth = _sheetLocal.ShowRowHeadings ? _sheetLocal.LayoutProvider.DefaultColumnWidth : 0;
         return columnWidth + headingWidth;
+    }
+
+    /// <summary>
+    /// Returns the width of the sheet(including the headings, if any) in pixels
+    /// </summary>
+    /// <returns></returns>
+    private double GetSheetHeightInPx()
+    {
+        var rowHeights = _sheetLocal.LayoutProvider.TotalHeight;
+        var headingWidth = _sheetLocal.ShowColumnHeadings ? _sheetLocal.LayoutProvider.DefaultRowHeight : 0;
+        return rowHeights + headingWidth;
     }
 
     private string GetContainerStyleString()
     {
         var sb = new StringBuilder();
-        sb.Append($"height:{Sheet.LayoutProvider.TotalHeight}px; display:inline-block;");
-        sb.Append($"width:{GetSheetWidthInPx() + (IsFixedHeight ? 16 : 0)}px;");
+        sb.Append($"height:{GetSheetHeightInPx()}px;");
+        sb.Append($"width:{GetSheetWidthInPx()}px;");
         return sb.ToString();
     }
 
@@ -792,9 +812,11 @@ public partial class Datasheet : IHandleEvent
             sb.Append("position:sticky;");
             sb.Append("left:0;");
             sb.Append("top:0;");
-            sb.Append("height:100px;");
-            sb.Append("width:100px;");
         }
+
+        sb.Append("height:0px;");
+        sb.Append("width:0px;");
+        sb.Append("overflow:visible;");
 
         return sb.ToString();
     }

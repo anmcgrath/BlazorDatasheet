@@ -25,7 +25,8 @@
 
     protected override void OnInitialized()
     {
-        sheet = new Sheet(numRows: 100000, numCols: 200);
+        sheet = new Sheet(numRows: 2000, numCols: 2000);
+        sheet.ShowColumnHeadings = false;
         var engine = new FormulaEngine(sheet);
     }
 

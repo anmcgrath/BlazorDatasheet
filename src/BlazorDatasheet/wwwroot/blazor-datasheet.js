@@ -188,8 +188,8 @@ function getScrollOffsetSizes(el, parent) {
 
     // if the parent is the document, the client height is the visible height of the element in the window
     // otherwise it is the height of the parent
-    let clientHeight = parent === document ? window.innerHeight - (elRect.top - docRect.top) : parent.clientHeight
-    let clientWidth = parent === document ? window.innerWidth - (elRect.left - docRect.left) : parent.clientWidth
+    let clientHeight = parent === document ? window.innerHeight : parent.clientHeight
+    let clientWidth = parent === document ? window.innerWidth : parent.clientWidth
 
     // scroll height/width is always the height/width of the element
     let scrollHeight = elRect.height
@@ -212,8 +212,6 @@ window.addScrollListener = async function (dotNetHelper, el, dotnetHandlerName) 
     dotNetHelper.invokeMethodAsync(dotnetHandlerName, getScrollOffsetSizes(el, parent))
     parent.onscroll = throttle(async function (ev) {
         let offset = getScrollOffsetSizes(el, parent)
-        console.log(offset)
-        
         let isHandledResponse = await dotNetHelper.invokeMethodAsync(dotnetHandlerName, offset)
         if (isHandledResponse == true) {
             ev.preventDefault()
