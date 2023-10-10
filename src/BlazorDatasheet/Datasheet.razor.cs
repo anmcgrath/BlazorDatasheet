@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using BlazorDatasheet.Commands;
 using BlazorDatasheet.Data;
@@ -174,7 +175,6 @@ public partial class Datasheet : IHandleEvent
         var posns = Sheet.Range(constrainedRegion).Positions;
 
         var ct = posns.Count();
-        Console.WriteLine($"marked {ct} cells dirty");
         foreach (var posn in posns)
         {
             MarkDirty(posn.row, posn.col);
@@ -268,7 +268,7 @@ public partial class Datasheet : IHandleEvent
         {
             _dotnetHelper = DotNetObjectReference.Create(this);
             await AddWindowEventsAsync();
-            await JS.InvokeAsync<string>("addScrollListener", _dotnetHelper, Inner, "HandleScroll");
+            await JS.InvokeAsync<string>("addScrollListener", _dotnetHelper, Inner, nameof(HandleScroll));
         }
 
         SheetIsDirty = false;
@@ -282,18 +282,26 @@ public partial class Datasheet : IHandleEvent
     private int NVisibleRows { get; set; }
     private int NVisibleCols { get; set; }
 
+    /// <summary>
+    /// Handles the JS scroll event. Returns the Rectangle that contains information about how much
+    /// the viewport has to move before it will have to re-render the cells.
+    /// </summary>
+    /// <param name="e"></param>
+    /// <returns></returns>
     [JSInvokable("HandleScroll")]
-    public void HandleScroll(ScrollEvent e)
+    public Rect HandleScroll(ScrollEvent e)
     {
+        var sw = new Stopwatch();
+        sw.Start();
         ScrollEvent = e;
 
-        int overflowY = 4;
-        int overflowX = 4;
+        int overflowY = 6;
+        int overflowX = 2;
 
-        var visibleRowStart = Sheet.LayoutProvider.ComputeRow(e.ScrollTop);
-        var visibleColStart = Sheet.LayoutProvider.ComputeColumn(e.ScrollLeft);
-        var visibleRowEnd = Sheet.LayoutProvider.ComputeRow(e.ScrollTop + e.ContainerHeight);
-        var visibleColEnd = Sheet.LayoutProvider.ComputeColumn(e.ScrollLeft + e.ContainerWidth);
+        var visibleRowStart = Sheet.LayoutProvider.ComputeRow(e.ScrollTop, false);
+        var visibleColStart = Sheet.LayoutProvider.ComputeColumn(e.ScrollLeft, false);
+        var visibleRowEnd = Sheet.LayoutProvider.ComputeRow(e.ScrollTop + e.ContainerHeight, false);
+        var visibleColEnd = Sheet.LayoutProvider.ComputeColumn(e.ScrollLeft + e.ContainerWidth, false);
 
         visibleRowEnd = Math.Min(Sheet.NumRows - 1, visibleRowEnd);
         visibleColEnd = Math.Min(Sheet.NumCols - 1, visibleColEnd);
@@ -308,12 +316,25 @@ public partial class Datasheet : IHandleEvent
 
         Sheet.LayoutProvider.SetVisibleRowOffset(visibleRowStart);
         Sheet.LayoutProvider.SetVisibleColOffset(visibleColStart);
-        
-        Console.WriteLine("Start col " + ColStart);
-        Console.WriteLine("End col " + endCol);
-
         var prevRowTop = this.ViewportRegion?.Top;
         var prevColLeft = this.ViewportRegion?.Left;
+        
+        // calculate the actual x/y positions of the visible row start, to determine how far we have to move
+        // to trigger a re-render
+        var xVisibleStart = Sheet.LayoutProvider.ComputeLeftPosition(visibleColStart, false);
+        var yVisibleStart = Sheet.LayoutProvider.ComputeTopPosition(visibleRowStart, false);
+        var xVisibleEnd = Sheet.LayoutProvider.ComputeLeftPosition(visibleColEnd, false);
+        var yVisibleEnd = Sheet.LayoutProvider.ComputeTopPosition(visibleRowEnd, false);
+        var xStart = Sheet.LayoutProvider.ComputeLeftPosition(ColStart, false);
+        var yStart = Sheet.LayoutProvider.ComputeTopPosition(RowStart, false);
+        var xEnd = Sheet.LayoutProvider.ComputeLeftPosition(endCol, false);
+        var yEnd = Sheet.LayoutProvider.ComputeTopPosition(endRow, false);
+        var leftThresh = e.ScrollLeft - (xVisibleStart - xStart);
+        var topThresh = e.ScrollTop - (yVisibleStart - yStart);
+        var rightThresh = e.ScrollLeft + (xEnd - xVisibleEnd);
+        var bottomThresh = e.ScrollTop + (yEnd - yVisibleEnd);
+        var threshRect = new Rect(topThresh, rightThresh, bottomThresh, leftThresh);
+
 
         // if we haven't changed by more than the overflow, don't do anything
         if (prevRowTop.HasValue && prevColLeft.HasValue)
@@ -323,10 +344,10 @@ public partial class Datasheet : IHandleEvent
             {
                 if (Math.Abs(prevRowTop.Value - RowStart) < overflowY &&
                     Math.Abs(prevColLeft.Value - ColStart) < overflowX)
-                    return;
+                    return threshRect;
             }
         }
-
+        
         this.ViewportRegion = new Region(RowStart, endRow, ColStart, endCol);
 
         if (prevRowTop.HasValue)
@@ -340,8 +361,8 @@ public partial class Datasheet : IHandleEvent
             else if (ViewportRegion.Top > prevRowTop)
             {
                 this.MarkDirty(new Region(ViewportRegion.Bottom,
-                                          ViewportRegion.Bottom + (ViewportRegion.Top - prevRowTop.Value),
-                                          ViewportRegion.Left, ViewportRegion.Right));
+                    ViewportRegion.Bottom + (ViewportRegion.Top - prevRowTop.Value),
+                    ViewportRegion.Left, ViewportRegion.Right));
             }
         }
 
@@ -352,18 +373,23 @@ public partial class Datasheet : IHandleEvent
             if (ViewportRegion.Left < prevColLeft) // scrolling left (left becoming visible)
             {
                 var r = new Region(ViewportRegion.Top, ViewportRegion.Bottom, prevColLeft.Value,
-                                   ViewportRegion.Left);
+                    ViewportRegion.Left);
                 this.MarkDirty(r);
             }
             else if (ViewportRegion.Left > prevColLeft) // scrolling right
             {
                 this.MarkDirty(new Region(ViewportRegion.Top, ViewportRegion.Bottom,
-                                          ViewportRegion.Right,
-                                          ViewportRegion.Right + (prevColLeft.Value- ViewportRegion.Left)));
+                    ViewportRegion.Right,
+                    ViewportRegion.Right + (prevColLeft.Value - ViewportRegion.Left)));
             }
         }
+        
+        Console.WriteLine($"{sw.ElapsedMilliseconds} ms before render");
 
         this.StateHasChanged();
+        Console.WriteLine($"{sw.ElapsedMilliseconds} ms after render");
+
+        return threshRect;
     }
 
     private string GetAbsoluteCellPositionStyles(bool isAbsolutePositioning, IReadOnlyCell cell)
@@ -801,23 +827,6 @@ public partial class Datasheet : IHandleEvent
         var sb = new StringBuilder();
         sb.Append(" vars sheet ");
         sb.Append(IsDataSheetActive ? " active-sheet " : " in-active-sheet ");
-        return sb.ToString();
-    }
-
-    private string GetFixedContainerStyleString()
-    {
-        var sb = new StringBuilder();
-        if (FixScrollToCellEdge)
-        {
-            sb.Append("position:sticky;");
-            sb.Append("left:0;");
-            sb.Append("top:0;");
-        }
-
-        sb.Append("height:0px;");
-        sb.Append("width:0px;");
-        sb.Append("overflow:visible;");
-
         return sb.ToString();
     }
 

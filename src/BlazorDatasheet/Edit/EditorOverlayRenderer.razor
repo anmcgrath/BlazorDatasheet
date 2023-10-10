@@ -161,8 +161,8 @@
     //    return "display:none;";
 
         var strBuilder = new StringBuilder();
-        var left = CellLayoutProvider.ComputeLeftPosition(EditCell.Col, FixScrollToCellEdge);
-        var top = CellLayoutProvider.ComputeTopPosition(EditCell.Row, FixScrollToCellEdge);
+        var left = CellLayoutProvider.ComputeLeftPosition(EditCell.Col, Sheet.ShowRowHeadings);
+        var top = CellLayoutProvider.ComputeTopPosition(EditCell.Row, Sheet.ShowColumnHeadings);
 
         var mergedPosn = Sheet.Merges.Get(EditCell.Row, EditCell.Col);
         int colSpan = 1;

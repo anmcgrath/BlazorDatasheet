@@ -205,17 +205,27 @@ function getScrollOffsetSizes(el, parent) {
     }
 }
 
+// scroll thresholds when a render was triggered
+scroll_thresholds = {}
 
 window.addScrollListener = async function (dotNetHelper, el, dotnetHandlerName) {
     // return initial scroll event to render the sheet
     let parent = findScrollableAncestor(el)
-    dotNetHelper.invokeMethodAsync(dotnetHandlerName, getScrollOffsetSizes(el, parent))
+    let offset = getScrollOffsetSizes(el, parent)
+    scroll_thresholds[el] = await dotNetHelper.invokeMethodAsync(dotnetHandlerName, offset);
+
     parent.onscroll = throttle(async function (ev) {
         let offset = getScrollOffsetSizes(el, parent)
-        let isHandledResponse = await dotNetHelper.invokeMethodAsync(dotnetHandlerName, offset)
-        if (isHandledResponse == true) {
-            ev.preventDefault()
-            ev.stopImmediatePropagation()
+        let thresh = scroll_thresholds[el]
+        
+        if (offset.scrollLeft < thresh.left ||
+            offset.scrollLeft > thresh.right ||
+            offset.scrollTop < thresh.top ||
+            offset.scrollTop > thresh.bottom)
+        {
+            // store the current viewport for the element
+            scroll_thresholds[el] = await dotNetHelper.invokeMethodAsync(dotnetHandlerName, offset);
         }
-    }, 100)
+
+    }, 50)
 }

@@ -29,45 +29,43 @@
         <!-- this div is where the rows/cols are rendered. If we fix the cells to the left/top
         then this grid is fixed to the left/top of the container and cells are rendered with a 0-based rendering
         using the cell layout provider. Otherwise, this is positioned at (0,0) (relative to its parent) -->
-        <div id="fixed" style="@GetFixedContainerStyleString()">
+        <div id="fixed">
             <!-- Column headers -->
             <div style="display: flex; flex-direction: column;">
 
-                <div id="filler-top" style="height: @(Sheet.LayoutProvider.ComputeHeight(RowStart))px; width:1px; display: block;"></div>
-
                 @if (Sheet?.ShowColumnHeadings == true)
                 {
-                    <div style="display: flex; flex-direction: row;">
-                        <div id="filler-left-0" style="width: @(Sheet.LayoutProvider.ComputeWidth(0, ColStart))px; display: block;"></div>
+                    <div style="display: flex; flex-direction: row;" class="sheet-row column-head @(StickyHeadings ? "col-sticky" : "")">
+                        @if (Sheet.ShowRowHeadings)
+                        {
+                            <!-- the little bit outside to the left of first col header -->
+                            <div class="sheet-cell row-head"
+                                 style="@CssUtil.GetCellWidthStyles(-1, 1, Sheet.LayoutProvider); display: inline-block;@(StickyHeadings ? "position: sticky; left: 0; z-index:2;" : "")">
+                                <div class="cell"></div>
+                            </div>
+                        }
+                        <div id="filler-left-0" style="min-width: @(Sheet.LayoutProvider.ComputeWidth(0, ColStart))px; display: block; float: left; height: 1px;"></div>
 
-                        <div class="sheet-row column-head @(StickyHeadings ? "col-sticky" : "")">
-                            @if (Sheet.ShowRowHeadings)
-                            {
-                                <!-- the little bit outside to the left of first col header -->
-                                <div class="sheet-cell row-head" style="@CssUtil.GetCellWidthStyles(-1, 1, Sheet.LayoutProvider)">
-                                    <div class="cell"></div>
-                                </div>
-                            }
-                            <ColumnHeadingsRenderer
-                                NVisibleCols="NVisibleCols"
-                                VisibleColStart="ColStart"
-                                OnMouseUp="@(e => HandleCellMouseUp(-1, e.Column, e.Args))"
-                                OnMouseOver="@(e => HandleCellMouseOver(-1, e.Column, e.Args))"
-                                OnMouseDown="@(e => HandleColumnHeaderMouseDown(e.Column, e.Args))"
-                                FixScrollToCellEdge="FixScrollToCellEdge"
-                                CellLayoutProvider="Sheet.LayoutProvider"
-                                Sheet="Sheet"/>
-                        </div>
+                        <ColumnHeadingsRenderer
+                            NVisibleCols="NVisibleCols"
+                            VisibleColStart="ColStart"
+                            OnMouseUp="@(e => HandleCellMouseUp(-1, e.Column, e.Args))"
+                            OnMouseOver="@(e => HandleCellMouseOver(-1, e.Column, e.Args))"
+                            OnMouseDown="@(e => HandleColumnHeaderMouseDown(e.Column, e.Args))"
+                            FixScrollToCellEdge="FixScrollToCellEdge"
+                            CellLayoutProvider="Sheet.LayoutProvider"
+                            Sheet="Sheet"/>
 
                     </div>
                 }
 
+                <div id="filler-top" style="height: @(Sheet.LayoutProvider.ComputeHeight(RowStart))px; width:1px; display: block;"></div>
+
                 <div id="last-row" style="display: flex; flex-direction: row;">
-                    <div id="filler-left" style="min-width: @(Sheet.LayoutProvider.ComputeWidth(0, ColStart))px; height: 1px;"></div>
 
                     @if (Sheet.ShowRowHeadings)
                     {
-                        <div class="@(StickyHeadings ? "row-sticky" : "")">
+                        <div id="rowHeadings" class="@(StickyHeadings ? "row-sticky" : "")">
                             <RowHeadingsRenderer
                                 NVisibleRows="NVisibleRows"
                                 VisibleRowStart="RowStart"
@@ -79,6 +77,8 @@
                                 CellLayoutProvider="Sheet.LayoutProvider"/>
                         </div>
                     }
+
+                    <div id="filler-left" style="min-width: @(Sheet.LayoutProvider.ComputeWidth(0, ColStart))px; height: 1px;"></div>
 
                     <div id="sheet" style="display: flex; flex-direction: column">
                         @for (int rowIndex = RowStart; rowIndex < (RowStart + NVisibleRows); rowIndex++)

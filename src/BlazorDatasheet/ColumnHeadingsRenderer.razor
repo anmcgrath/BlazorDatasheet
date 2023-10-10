@@ -22,17 +22,17 @@
             BackgroundStyle="background:var(--selection-bg-color);"
             Width="CellLayoutProvider.ComputeWidth(interval.Start, interval.Length)"
             Height="CellLayoutProvider.ComputeHeight(1)"
-            X="CellLayoutProvider.ComputeLeftPosition(interval.Start, FixScrollToCellEdge)"
-            Y="CellLayoutProvider.ComputeTopPosition(-1, FixScrollToCellEdge)"/>
+            X="CellLayoutProvider.ComputeLeftPosition(interval.Start, Sheet.ShowRowHeadings)"
+            Y="CellLayoutProvider.ComputeTopPosition(-1, Sheet.ShowColumnHeadings)"/>
     }
 
     <!-- Ardoners -->
-    @for (int i = 0; i < Sheet.NumCols; i++)
+    @for (int i = VisibleColStart; i < (VisibleColStart + NVisibleCols); i++)
     {
         var col = i;
         <div
             @onmousedown="e => HandleMouseDownOnAdorner(col)"
-            style="position:absolute; z-index: 4; top: 0; left: @(CellLayoutProvider.ComputeLeftPosition(col + 1, FixScrollToCellEdge) - 5 - 1)px; width: 10px; background: none; height: 25px; cursor: col-resize; display: block">
+            style="position:absolute; z-index: 4; top: 0; left: @(CellLayoutProvider.ComputeLeftPosition(col + 1, Sheet.ShowRowHeadings) - 5 - 1)px; width: 10px; background: none; height: 25px; cursor: col-resize; display: block">
         </div>
     }
 
@@ -44,13 +44,13 @@
             Y="0"
             Width="3"
             BorderThickness="1"
-            X="@(CellLayoutProvider.ComputeLeftPosition(ActiveAdorner, FixScrollToCellEdge) + resizeWidth)"
+            X="@(CellLayoutProvider.ComputeLeftPosition(ActiveAdorner, Sheet.ShowRowHeadings) + resizeWidth)"
             Height="@(CellLayoutProvider.TotalHeight)"/>
     }
 
 </div>
 
-@for (var i = 0; i < Sheet?.NumCols; i++)
+@for (var i = VisibleColStart; i < (VisibleColStart + NVisibleCols); i++)
 {
     var col = i;
     var colDefn = Sheet?.ColumnHeadings.Count > i ? Sheet?.ColumnHeadings[i] : null;

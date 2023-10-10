@@ -113,35 +113,32 @@ public class CellLayoutProvider
         _sheet = sheet;
     }
 
-    public double ComputeLeftPosition(IRegion region, bool fixCellToContainer)
+    public double ComputeLeftPosition(IRegion region, bool includeRowHeaders)
     {
-        return ComputeLeftPosition(region.TopLeft.Col, fixCellToContainer);
+        return ComputeLeftPosition(region.TopLeft.Col, includeRowHeaders);
     }
 
-    public double ComputeLeftPosition(int col, bool fixCellToContainer)
+    public double ComputeLeftPosition(int col, bool includeRowHeaders)
     {
-        var extra = _sheet.ShowRowHeadings ? 1 : 0;
+        var extra = includeRowHeaders ? 1 : 0;
         if (col < 0)
             return 0;
-        var fixCellOffset = fixCellToContainer ? -(ComputeWidth(0, VisibleColOffset)) : 0;
 
         if (col > _columnWidths.Count - 1)
             return _columnWidths.Last() + _columnStartPositions.Last() +
-                   ((col - _columnWidths.Count) + extra) * DefaultColumnWidth + fixCellOffset;
-        return extra * DefaultColumnWidth + _columnStartPositions[col] + fixCellOffset;
+                   ((col - _columnWidths.Count) + extra) * DefaultColumnWidth;
+        return extra * DefaultColumnWidth + _columnStartPositions[col];
     }
 
-    public double ComputeTopPosition(IRegion region, bool fixCellToContainer)
+    public double ComputeTopPosition(IRegion region, bool includeRowHeaders)
     {
-        return ComputeTopPosition(region.TopLeft.Row, fixCellToContainer);
+        return ComputeTopPosition(region.TopLeft.Row, includeRowHeaders);
     }
 
-    public double ComputeTopPosition(int row, bool fixCellToContainer)
+    public double ComputeTopPosition(int row, bool includeColHeaders)
     {
-        var extra = _sheet.ShowColumnHeadings ? 1 : 0;
+        var extra = includeColHeaders ? 1 : 0;
         var top = (row + extra) * DefaultRowHeight;
-        if (fixCellToContainer)
-            top -= VisibleRowOffset * DefaultRowHeight;
         return top;
     }
 
@@ -162,9 +159,9 @@ public class CellLayoutProvider
         return w;
     }
 
-    public int ComputeColumn(double x)
+    public int ComputeColumn(double x,bool includeRowHeaders)
     {
-        var extra = _sheet.ShowRowHeadings ? -1 : 0;
+        var extra = includeRowHeaders ? -1 : 0;
         for (int i = 0; i < _columnStartPositions.Count; i++)
         {
             if (x < +_columnStartPositions[i])
@@ -174,9 +171,9 @@ public class CellLayoutProvider
         return (int)((x - TotalWidth) / DefaultColumnWidth + _columnWidths.Count) + extra;
     }
 
-    public int ComputeRow(double y)
+    public int ComputeRow(double y, bool includeColHeaders)
     {
-        var extra = _sheet.ShowColumnHeadings ? -1 : 0;
+        var extra = includeColHeaders ? -1 : 0;
         return (int)(y / DefaultRowHeight) + extra;
     }
 

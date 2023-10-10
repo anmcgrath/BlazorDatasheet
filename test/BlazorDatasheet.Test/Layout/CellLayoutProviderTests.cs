@@ -57,9 +57,9 @@ public class CellLayoutProviderTests
         var sheet = new Sheet(5, 5);
         sheet.ShowRowHeadings = false;
         var p = new CellLayoutProvider(sheet, 20, 20);
-        p.ComputeColumn(0).Should().Be(0);
-        p.ComputeColumn(19).Should().Be(0);
-        p.ComputeColumn(21).Should().Be(1);
+        p.ComputeColumn(0, false).Should().Be(0);
+        p.ComputeColumn(19, false).Should().Be(0);
+        p.ComputeColumn(21, false).Should().Be(1);
     }
 
     [Test]
@@ -69,13 +69,13 @@ public class CellLayoutProviderTests
         sheet.ShowRowHeadings = false;
         var p = new CellLayoutProvider(sheet, 20, 20);
         p.SetColumnWidth(1, 40);
-        p.ComputeColumn(19).Should().Be(0);
-        p.ComputeColumn(20).Should().Be(1);
-        p.ComputeColumn(21).Should().Be(1);
-        p.ComputeColumn(59).Should().Be(1);
-        p.ComputeColumn(60).Should().Be(2);
-        p.ComputeColumn(61).Should().Be(2);
-        p.ComputeColumn(99).Should().Be(3);
+        p.ComputeColumn(19, false).Should().Be(0);
+        p.ComputeColumn(20, false).Should().Be(1);
+        p.ComputeColumn(21, false).Should().Be(1);
+        p.ComputeColumn(59, false).Should().Be(1);
+        p.ComputeColumn(60, false).Should().Be(2);
+        p.ComputeColumn(61, false).Should().Be(2);
+        p.ComputeColumn(99, false).Should().Be(3);
     }
 
     [Test]
@@ -84,8 +84,8 @@ public class CellLayoutProviderTests
         var sheet = new Sheet(5, 5);
         sheet.ShowRowHeadings = true;
         var p = new CellLayoutProvider(sheet, 20, 20);
-        p.ComputeColumn(1).Should().Be(-1);
-        p.ComputeColumn(20).Should().Be(0);
+        p.ComputeColumn(1, true).Should().Be(-1);
+        p.ComputeColumn(20, true).Should().Be(0);
     }
     
     [Test]
@@ -94,7 +94,7 @@ public class CellLayoutProviderTests
         var sheet = new Sheet(5, 5);
         sheet.ShowColumnHeadings = true;
         var p = new CellLayoutProvider(sheet, 20, 20);
-        p.ComputeRow(0).Should().Be(-1);
-        p.ComputeRow(20).Should().Be(0);
+        p.ComputeRow(0, true).Should().Be(-1);
+        p.ComputeRow(20, true).Should().Be(0);
     }
 }
