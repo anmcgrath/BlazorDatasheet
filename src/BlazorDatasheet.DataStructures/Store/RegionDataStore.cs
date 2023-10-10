@@ -116,9 +116,9 @@ public class RegionDataStore<T> where T : IEquatable<T>
 
         foreach (var r in intersecting)
         {
-            if (r.Region.Top == index)
+            if (r.Region.GetLeadingEdgeOffset(axis) == index)
                 continue; // we shift in this case, and don't expand
-            var i1 = axis == Axis.Col ? r.Region.Right : r.Region.Bottom;
+            var i1 = r.Region.GetTrailingEdgeOffset(axis);
             if (!_expandWhenInsertAfter && index > i1)
                 continue;
             var clonedRegion = r.Region.Clone();

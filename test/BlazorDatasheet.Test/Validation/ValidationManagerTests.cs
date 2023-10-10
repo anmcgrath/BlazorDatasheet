@@ -50,19 +50,50 @@ public class ValidationManagerTests
     }
 
     [Test]
-    public void Insert_Row_Above_Validor_Shifts_It_Down()
+    public void Insert_Row_At_Top_Of_Validator_Shifts_It_Down()
     {
         var sheet = new Sheet(4, 4);
         var val = new SourceValidator(new List<string>() { "A", "B" }, false);
-        var vm = new ValidationManager();
-        vm.Add(val, new Region(2, 2));
+        sheet.Validation.Add(val, new Region(2, 2));
         sheet.InsertRowAt(2);
-        vm.GetValidators(2, 2).Should().BeEmpty();
-        vm.GetValidators(3, 2).First().Should().BeSameAs(val);
+        sheet.Validation.GetValidators(1, 2).Should().BeEmpty();
+        sheet.Validation.GetValidators(2, 2).Should().BeEmpty();
+        sheet.Validation.GetValidators(3, 2).First().Should().BeSameAs(val);
 
         sheet.Commands.Undo();
-        vm.GetValidators(3, 2).Should().BeEmpty();
-        vm.GetValidators(2, 2).First().Should().BeSameAs(val);
+        sheet.Validation.GetValidators(3, 2).Should().BeEmpty();
+        sheet.Validation.GetValidators(2, 2).First().Should().BeSameAs(val);
+    }
+    
+    [Test]
+    public void Insert_Col_At_Left_Of_Validator_Shifts_It_Right()
+    {
+        var sheet = new Sheet(4, 4);
+        var val = new SourceValidator(new List<string>() { "A", "B" }, false);
+        sheet.Validation.Add(val, new Region(2, 2));
+        sheet.InsertColAt(2);
+        sheet.Validation.GetValidators(2, 1).Should().BeEmpty();
+        sheet.Validation.GetValidators(2, 2).Should().BeEmpty();
+        sheet.Validation.GetValidators(2, 3).First().Should().BeSameAs(val);
+
+        sheet.Commands.Undo();
+        sheet.Validation.GetValidators(2, 3).Should().BeEmpty();
+        sheet.Validation.GetValidators(2, 2).First().Should().BeSameAs(val);
+    }
+    
+    [Test]
+    public void Insert_Col_At_Left_Of_Validator_WhenAtCol0_Shifts_It_Right()
+    {
+        var sheet = new Sheet(4, 4);
+        var val = new SourceValidator(new List<string>() { "A", "B" }, false);
+        sheet.Validation.Add(val, new Region(2, 0));
+        sheet.InsertColAt(0);
+        sheet.Validation.GetValidators(2, 0).Should().BeEmpty();
+        sheet.Validation.GetValidators(2, 1).First().Should().BeSameAs(val);
+
+        sheet.Commands.Undo();
+        sheet.Validation.GetValidators(2, 1).Should().BeEmpty();
+        sheet.Validation.GetValidators(2, 0).First().Should().BeSameAs(val);
     }
 
     internal class AlwaysFalseValidator : IDataValidator

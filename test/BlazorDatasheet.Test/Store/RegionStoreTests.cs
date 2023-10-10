@@ -135,4 +135,24 @@ public class RegionStoreTests
         store.GetDataOverlapping(6, 5).Should().BeEmpty();
         store.GetDataOverlapping(7, 5).Should().NotBeEmpty();
     }
+
+    [Test]
+    public void Insert_Row_At_Same_Row_As_Data_Shifts_Down()
+    {
+        var store = new RegionDataStore<int>();
+        store.Add(new Region(0, 0), -1);
+        store.InsertRows(0, 1);
+        store.GetDataOverlapping(0, 0).Should().BeEmpty();
+        store.GetDataOverlapping(1, 0).Should().ContainSingle(x => x == -1);
+    }
+
+    [Test]
+    public void Insert_Col_At_Same_Col_As_Data_Shifts_Right()
+    {
+        var store = new RegionDataStore<int>();
+        store.Add(new Region(0, 0), -1);
+        store.InsertCols(0, 1);
+        store.GetDataOverlapping(0, 0).Should().BeEmpty();
+        store.GetDataOverlapping(0, 1).Should().ContainSingle(x => x == -1);
+    }
 }
