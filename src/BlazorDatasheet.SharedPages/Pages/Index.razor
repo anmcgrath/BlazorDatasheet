@@ -122,7 +122,6 @@
         Sheet.SetCell(1, 3, new Cell(src.ValidationSource[0]) { Type = "select" });
 
         Sheet.Editor.EditValueChanged += (sender, s) => StateHasChanged();
-        var engine = new FormulaEngine(Sheet);
     }
 
 }

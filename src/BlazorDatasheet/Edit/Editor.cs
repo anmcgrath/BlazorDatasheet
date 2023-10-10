@@ -2,6 +2,7 @@ using BlazorDatasheet.Commands;
 using BlazorDatasheet.Data;
 using BlazorDatasheet.Events;
 using BlazorDatasheet.Events.Edit;
+using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Interfaces;
 
 namespace BlazorDatasheet.Edit;
@@ -127,18 +128,36 @@ public class Editor
         if (!this.IsEditing || EditCell == null)
             return false;
 
-        var beforeAcceptEdit = new BeforeAcceptEditEventArgs(EditCell, EditValue);
+        // Determine if it's a formula, and calculate.
+        CellFormula? parsedFormula = null;
+        if (Sheet.FormulaEngine.IsFormula(this.EditValue))
+        {
+            parsedFormula = Sheet.FormulaEngine.ParseFormula(this.EditValue);
+            if (!parsedFormula.IsValid())
+            {
+                Sheet.Dialog.Alert("Invalid formula");
+                return false;
+            }
+        }
+
+        object? formulaResult = Sheet.FormulaEngine.Evaluate(parsedFormula);
+
+        var beforeAcceptEdit = new BeforeAcceptEditEventArgs(EditCell, EditValue, parsedFormula, formulaResult);
         BeforeEditAccepted?.Invoke(this, beforeAcceptEdit);
 
         if (beforeAcceptEdit.AcceptEdit)
         {
+            var valToSet = beforeAcceptEdit.Formula != null
+                ? beforeAcceptEdit.EvaluatedFormulaValue
+                : beforeAcceptEdit.EditValue;
+
             // run the validators that are strict. cancel edit if any fail
             var validators = Sheet.Validation.GetValidators(EditCell.Row, EditCell.Col)
                                   .Where(x => x.IsStrict);
 
             foreach (var validator in validators)
             {
-                var res = validator.IsValid(beforeAcceptEdit.EditValue);
+                var res = validator.IsValid(valToSet);
                 if (!res)
                 {
                     Sheet.Dialog.Alert(validator.Message);
@@ -146,9 +165,15 @@ public class Editor
                 }
             }
 
+            if (beforeAcceptEdit.Formula != null)
+            {
+                Sheet.FormulaEngine.SetFormula(EditCell.Row, EditCell.Col, beforeAcceptEdit.Formula);
+                Sheet.FormulaEngine.CalculateSheet();
+            }
+
             Sheet.Commands.ExecuteCommand(new SetCellValuesCommand(new List<CellChange>()
             {
-                new CellChange(EditCell.Row, EditCell.Col, beforeAcceptEdit.EditValue)
+                new CellChange(EditCell.Row, EditCell.Col, valToSet)
             }));
 
             EditAccepted?.Invoke(

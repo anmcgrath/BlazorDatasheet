@@ -57,6 +57,11 @@ public class Sheet
     /// Managers commands & undo/redo. Default is true.
     /// </summary>
     public CommandManager Commands { get; }
+    
+    /// <summary>
+    /// Manages sheet formula
+    /// </summary>
+    internal FormulaEngine.FormulaEngine FormulaEngine { get; }
 
     /// <summary>
     /// The bounds of the sheet
@@ -170,6 +175,7 @@ public class Sheet
         Commands = new CommandManager(this);
         Selection = new Selection(this);
         Editor = new Editor(this);
+        FormulaEngine = new FormulaEngine.FormulaEngine(this);
         Selection.SelectionChanged += SelectionOnSelectionChanged;
         Validation.ValidatorChanged += ValidationOnValidatorChanged;
         ConditionalFormatting = new ConditionalFormatManager(this);

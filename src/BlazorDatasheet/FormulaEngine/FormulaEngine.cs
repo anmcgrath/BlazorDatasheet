@@ -142,6 +142,13 @@ public class FormulaEngine
         if (!formula.IsValid())
             return false;
 
+        SetFormula(row, col, formula);
+
+        return true;
+    }
+
+    public void SetFormula(int row, int col, CellFormula formula)
+    {
         var exists = _formula.ContainsKey((row, col));
         if (!exists)
             _formula.Add((row, col), formula);
@@ -153,17 +160,25 @@ public class FormulaEngine
         var formulaVertex = new CellVertex(row, col);
         _dependencyGraph.AddVertex(formulaVertex);
         _dependencyGraph.AddEdges(formula.References!.Select(GetVertex), formulaVertex);
-
-        // For now, recompute the whole sheet... later will be smarter about it
-        CalculateSheet();
-        return true;
     }
 
-    public object Evaluate(int row, int col)
+    public CellFormula ParseFormula(string formulaString)
+    {
+        return _parser.FromString(formulaString);
+    }
+
+    public object? Evaluate(int row, int col)
     {
         if (!_formula.ContainsKey((row, col)))
             return null;
         return _evaluator.Evaluate(_formula[(row, col)]);
+    }
+
+    public object? Evaluate(CellFormula? formula)
+    {
+        if (formula == null)
+            return null;
+        return _evaluator.Evaluate(formula);
     }
 
     /// <summary>

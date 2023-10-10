@@ -1,3 +1,4 @@
+using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Interfaces;
 
 namespace BlazorDatasheet.Events.Edit;
@@ -5,7 +6,9 @@ namespace BlazorDatasheet.Events.Edit;
 public class BeforeAcceptEditEventArgs
 {
     public IReadOnlyCell Cell { get; }
-    public object? EditValue { get; set; }
+    public object? EditValue { get; }
+    public CellFormula? Formula { get; }
+    public object? EvaluatedFormulaValue { get; }
 
     /// <summary>
     /// Determines whether the edit is accepted or not.
@@ -17,10 +20,12 @@ public class BeforeAcceptEditEventArgs
     /// </summary>
     public bool StopEdit { get; private set; }
 
-    public BeforeAcceptEditEventArgs(IReadOnlyCell cell, object? EditValue)
+    public BeforeAcceptEditEventArgs(IReadOnlyCell cell, object? editValue, CellFormula? formula, object? evaluatedFormulaValue)
     {
         Cell = cell;
-        this.EditValue = EditValue;
+        EditValue = editValue;
+        Formula = formula;
+        EvaluatedFormulaValue = evaluatedFormulaValue;
     }
 
     /// <summary>
