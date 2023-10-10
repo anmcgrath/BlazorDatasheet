@@ -25,8 +25,7 @@
         Theme="@Theme"
         Sheet="Sheet"
         StickyHeadings="true"
-        FixedHeightInPx="600"
-        FixScrollToCellEdge="@FixScrollToCellEdge">
+        FixedHeightInPx="600">
     </Datasheet>
 </div>
 
@@ -49,17 +48,11 @@
     <label for="darkmode-toggle">Darkmode</label>
 </div>
 
-<div>
-    <input id="fix" type="checkbox" @onclick="() => _datasheet.ForceReRender()" @bind="FixScrollToCellEdge"/>
-    <label for="fix">Fix scroll to cell edge</label>
-</div>
-
 @code {
 
     private Sheet Sheet;
     private string Theme => IsDarkMode ? "dark" : "default";
     private bool IsDarkMode { get; set; }
-    private bool FixScrollToCellEdge { get; set; }
     private Datasheet _datasheet;
 
     private void InsertRowAfterSelection()
@@ -111,6 +104,10 @@
         Sheet.TrySetCellValue(0, 0, "Hey");
         Sheet.ShowColumnHeadings = true;
         Sheet.ShowRowHeadings = true;
+        Sheet.Validation.Add(new NumberValidator(true), 4, 0);
+        Sheet.SetFormat(new CellFormat() { BackgroundColor = "blue", ForegroundColor = "white"}, Sheet.Range(4, 0));
+        Sheet.Validation.Add(new NumberValidator(false), 5, 0);
+        Sheet.SetFormat(new CellFormat() { BackgroundColor = "orange"}, Sheet.Range(5, 0));
 
         Sheet.Selection.SelectionChanged += (sender, regions) =>
         {

@@ -9,9 +9,9 @@
 
 @if (true)
 {
-    var conditionalFormatting = Sheet.ConditionalFormatting.GetFormatResult(Cell.Row, Cell.Col);
+    var conditionalFormatting = Sheet.ConditionalFormatting.GetFormatResult(Row, Col);
 
-    CellFormat? format = Sheet!.GetFormat(Cell.Row, Cell.Col)?.Clone();
+    CellFormat? format = Sheet!.GetFormat(Row, Col)?.Clone();
     if (format != null)
         format.Merge(conditionalFormatting);
     else if (conditionalFormatting != null)
@@ -19,7 +19,7 @@
     <div
         class="cell"
         style="
-            @CalculateCellFormattingStyle(format, Cell.IsValid)">
+            @CalculateCellFormattingStyle(format, IsValid)">
         @if (format?.Icon != null)
         {
             <div style="margin-right:2px; float:left; color: @(format.IconColor ?? "var(--icon-color)");">@format.Icon</div>
@@ -31,34 +31,25 @@
 @code {
 
     [Parameter]
-    public EventCallback<MouseEventArgs> onmousedown { get; set; }
-
-    [Parameter]
-    public EventCallback<MouseEventArgs> onmouseup { get; set; }
-
-    [Parameter]
-    public EventCallback<MouseEventArgs> ondblclick { get; set; }
-
-    [Parameter]
-    public EventCallback<MouseEventArgs> onmouseover { get; set; }
-
-    [Parameter]
     public int ColSpan { get; set; } = 1;
 
     [Parameter]
     public int RowSpan { get; set; } = 1;
 
     [Parameter]
-    public bool IsAbsolutePositioning { get; set; }
+    public int Row { get; set; }
+    
+    [Parameter]
+    public int Col { get; set; }
+    
+    [Parameter]
+    public bool IsValid { get; set; }
 
     [Parameter]
     public RenderFragment ItemTemplate { get; set; }
 
     [Parameter, EditorRequired]
     public bool IsDirty { get; set; }
-
-    [Parameter]
-    public IReadOnlyCell Cell { get; set; }
 
     [Parameter]
     public int VisibleRowOffset { get; set; }
@@ -90,7 +81,7 @@
 
     protected override void OnAfterRender(bool firstRender)
     {
-        // Console.WriteLine($"Cell rendered {this.Cell.Row}. {this.Cell.Col}. Dirty?" + IsDirty);
+        //Console.WriteLine($"Cell rendered {Row}. {Col}. Dirty?" + IsDirty);
         base.OnAfterRender(firstRender);
     }
 

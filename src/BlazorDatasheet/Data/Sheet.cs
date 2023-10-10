@@ -72,6 +72,8 @@ public class Sheet
     /// The sheet's active selection
     /// </summary>
     public Selection Selection { get; }
+    
+    internal IDialogService Dialog { get; private set; }
 
     private readonly HashSet<(int row, int col)> _dirtyCells;
 
@@ -1067,9 +1069,10 @@ public class Sheet
         return strBuilder.ToString();
     }
 
-    #region MERGES
-
-    #endregion
+    public void SetDialogService(IDialogService service)
+    {
+        Dialog = service;
+    }
 
     private void SelectionOnSelectionChanged(object? sender, IEnumerable<IRegion> e)
     {

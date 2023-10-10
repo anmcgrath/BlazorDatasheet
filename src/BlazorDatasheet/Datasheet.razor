@@ -20,7 +20,7 @@
     @onmouseout="() => IsMouseInsideSheet = false">
     <!-- entire size of sheet to force scrollbars-->
     <div id="sheet_whole"
-         @ref="Inner"
+         @ref="_wholeSheetDiv"
          style="position:absolute; top:0; pointer-events: none; left:0;height:@GetSheetHeightInPx()px; width:@GetSheetWidthInPx()px;z-index: 0">
     </div>
 
@@ -44,7 +44,7 @@
                                 <div class="cell"></div>
                             </div>
                         }
-                        <div id="filler-left-0" style="min-width: @(Sheet.LayoutProvider.ComputeWidth(0, ColStart))px; display: block; float: left; height: 1px;"></div>
+                        <div id="filler-left-1" @ref="_fillerLeft1" style="min-width: @(Sheet.LayoutProvider.ComputeWidth(0, ColStart))px; display: block; float: left; height: 1px;"></div>
 
                         <ColumnHeadingsRenderer
                             NVisibleCols="NVisibleCols"
@@ -52,14 +52,13 @@
                             OnMouseUp="@(e => HandleCellMouseUp(-1, e.Column, e.Args))"
                             OnMouseOver="@(e => HandleCellMouseOver(-1, e.Column, e.Args))"
                             OnMouseDown="@(e => HandleColumnHeaderMouseDown(e.Column, e.Args))"
-                            FixScrollToCellEdge="FixScrollToCellEdge"
                             CellLayoutProvider="Sheet.LayoutProvider"
                             Sheet="Sheet"/>
 
                     </div>
                 }
 
-                <div id="filler-top" style="height: @(Sheet.LayoutProvider.ComputeHeight(RowStart))px; width:1px; display: block;"></div>
+                <div id="filler-top" @ref="_fillerTop" style="height: @(Sheet.LayoutProvider.ComputeHeight(RowStart))px; width:1px; display: block;"></div>
 
                 <div id="last-row" style="display: flex; flex-direction: row;">
 
@@ -72,21 +71,20 @@
                                 OnMouseDown="e => HandleRowHeaderMouseDown(e.RowIndex, e.MouseEventArgs)"
                                 OnMouseOver="e => HandleCellMouseOver(e.RowIndex, -1, e.MouseEventArgs)"
                                 OnMouseUp="e => HandleCellMouseUp(e.RowIndex, -1, e.MouseEventArgs)"
-                                FixScrollToCellEdge="FixScrollToCellEdge"
                                 Sheet="Sheet"
                                 CellLayoutProvider="Sheet.LayoutProvider"/>
                         </div>
                     }
 
-                    <div id="filler-left" style="min-width: @(Sheet.LayoutProvider.ComputeWidth(0, ColStart))px; height: 1px;"></div>
+                    <div id="filler-left-2" @ref="_fillerLeft2" style="min-width: @(Sheet.LayoutProvider.ComputeWidth(0, ColStart))px; height: 1px;"></div>
 
                     <div id="sheet" style="display: flex; flex-direction: column">
                         @for (int rowIndex = RowStart; rowIndex < (RowStart + NVisibleRows); rowIndex++)
                         {
-                            <div class="sheet-row" @key="rowIndex">
+                            var row = rowIndex;
+                            <div class="sheet-row" @key="row">
                                 @for (int j = ColStart; j < (ColStart + NVisibleCols); j++)
                                 {
-                                    var row = rowIndex;
                                     var col = j;
                                     var cell = Sheet.GetCell(row, col);
 
@@ -95,12 +93,15 @@
                                         @onmousedown="e => HandleCellMouseDown(row, col, e)"
                                         @onmouseover="e => HandleCellMouseOver(row, col, e)"
                                         @ondblclick="e => HandleCellDoubleClick(row, col, e)"
+                                        @onmouseup="e => HandleCellMouseUp(row, col, e)"
                                         class="sheet-cell"
                                         style="@CssUtil.GetCellWidthStyles(cell.Col, 1, Sheet.LayoutProvider) 
                                                         @($"height:{Sheet.LayoutProvider.ComputeHeight(1)}px;")"
-                                        @onmouseup="e => HandleCellMouseUp(row, col, e)">
+                                        >
                                         <CellRenderer
-                                            Cell="cell"
+                                            Col="col"
+                                            Row="row"
+                                            IsValid="cell.IsValid"
                                             Sheet="Sheet"
                                             IsDirty="SheetIsDirty || DirtyCells.Contains((row, col))">
                                             <ItemTemplate>
@@ -126,36 +127,39 @@
                             var col = merge.Region.Start.Col;
                             var cell = Sheet.GetCell(row, col);
 
-                            <CellRenderer
-                                @onmousedown="e => HandleCellMouseDown(row, col, e)"
-                                @onmouseover="e => HandleCellMouseOver(row, col, e)"
-                                @ondblclick="e => HandleCellDoubleClick(row, col, e)"
-                                @onmouseup="e => HandleCellMouseUp(row, col, e)"
-                                ColSpan="merge.Region.Width"
-                                RowSpan="merge.Region.Height"
-                                IsAbsolutePositioning="true"
-                                Cell="cell"
-                                Sheet="Sheet"
-                                IsDirty="SheetIsDirty || DirtyCells.Contains((row, col))">
-                                <ItemTemplate>
-                                    <DynamicComponent
-                                        Type="@getCellRendererType(cell.Type)"
-                                        Parameters="@getCellRendererParameters(Sheet, cell, row, col)">
-                                    </DynamicComponent>
-                                </ItemTemplate>
-                            </CellRenderer>
+                            <div id="merge"
+                                 class="sheet-cell"
+                                 @onmousedown="e => HandleCellMouseDown(row, col, e)"
+                                 @onmouseover="e => HandleCellMouseOver(row, col, e)"
+                                 @ondblclick="e => HandleCellDoubleClick(row, col, e)"
+                                 @onmouseup="e => HandleCellMouseUp(row, col, e)"
+                                 style="@GetAbsoluteCellPositionStyles(row, col, merge.Region.Height, merge.Region.Width)">
+                                <CellRenderer
+                                    ColSpan="merge.Region.Width"
+                                    RowSpan="merge.Region.Height"
+                                    Row="row"
+                                    Col="col"
+                                    IsValid="cell.IsValid"
+                                    Sheet="Sheet"
+                                    IsDirty="SheetIsDirty || DirtyCells.Contains((row, col))">
+                                    <ItemTemplate>
+                                        <DynamicComponent
+                                            Type="@getCellRendererType(cell.Type)"
+                                            Parameters="@getCellRendererParameters(Sheet, cell, row, col)">
+                                        </DynamicComponent>
+                                    </ItemTemplate>
+                                </CellRenderer>
+                            </div>
                         }
                     }
 
                     <EditorOverlayRenderer
                         @ref="_editorManager"
-                        FixScrollToCellEdge="FixScrollToCellEdge"
                         Sheet="Sheet"
                         CellLayoutProvider="Sheet.LayoutProvider"/>
 
                     <SelectionRenderer
                         Sheet="Sheet"
-                        FixScrollToCellEdge="FixScrollToCellEdge"
                         CellLayoutProvider="Sheet.LayoutProvider"/>
                 </div>
             </div>

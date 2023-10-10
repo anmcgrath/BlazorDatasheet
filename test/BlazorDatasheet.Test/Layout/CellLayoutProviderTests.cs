@@ -21,6 +21,15 @@ public class CellLayoutProviderTests
     }
 
     [Test]
+    public void Calculating_Width_And_Height_Width_Non_One_Span_Works()
+    {
+        var sheet = new Sheet(10, 10);
+        var p = new CellLayoutProvider(sheet, 20, 30);
+        p.ComputeWidth(1, 2).Should().Be(40);
+        p.ComputeHeight(3).Should().Be(90);
+    }
+
+    [Test]
     public void Inserting_Column_After_Setting_Width_Ends_With_Correct_Widths()
     {
         var sheet = new Sheet(3, 3);
@@ -63,7 +72,7 @@ public class CellLayoutProviderTests
     }
 
     [Test]
-    public void Calculate_Column_Width_Non_Fixed_Widths_Calculates_Correctly()
+    public void Calculate_Column_With_Non_Fixed_Widths_Calculates_Correctly()
     {
         var sheet = new Sheet(5, 3);
         sheet.ShowRowHeadings = false;

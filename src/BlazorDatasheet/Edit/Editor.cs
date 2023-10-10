@@ -132,6 +132,20 @@ public class Editor
 
         if (beforeAcceptEdit.AcceptEdit)
         {
+            // run the validators that are strict. cancel edit if any fail
+            var validators = Sheet.Validation.GetValidators(EditCell.Row, EditCell.Col)
+                                  .Where(x => x.IsStrict);
+
+            foreach (var validator in validators)
+            {
+                var res = validator.IsValid(beforeAcceptEdit.EditValue);
+                if (!res)
+                {
+                    Sheet.Dialog.Alert(validator.Message);
+                    return false;
+                }
+            }
+
             Sheet.Commands.ExecuteCommand(new SetCellValuesCommand(new List<CellChange>()
             {
                 new CellChange(EditCell.Row, EditCell.Col, beforeAcceptEdit.EditValue)

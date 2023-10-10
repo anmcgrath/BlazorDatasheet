@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 using BlazorDatasheet.Commands;
 using BlazorDatasheet.Data;
@@ -69,12 +70,6 @@ public partial class Datasheet : IHandleEvent
     [Parameter] public string Theme { get; set; } = "default";
 
     /// <summary>
-    /// If set to true, cells are aligned to the top left corner of the container, when scrolled.
-    /// </summary>
-    [Parameter]
-    public bool FixScrollToCellEdge { get; set; }
-
-    /// <summary>
     /// Whether the user is focused on the datasheet.
     /// </summary>
     private bool IsDataSheetActive { get; set; }
@@ -94,7 +89,10 @@ public partial class Datasheet : IHandleEvent
     /// </summary>
     private HashSet<(int row, int col)> DirtyCells { get; set; } = new();
 
-    private ElementReference Inner;
+    private ElementReference _wholeSheetDiv;
+    private ElementReference _fillerTop;
+    private ElementReference _fillerLeft1;
+    private ElementReference _fillerLeft2;
 
     /// <summary>
     /// Whether the entire sheet is dirty
@@ -138,6 +136,7 @@ public partial class Datasheet : IHandleEvent
             }
 
             _sheetLocal = Sheet;
+            _sheetLocal.SetDialogService(new SimpleDialogService(this.JS));
             if (_sheetLocal != null)
             {
                 _sheetLocal.RowInserted += SheetOnRowInserted;
@@ -268,11 +267,15 @@ public partial class Datasheet : IHandleEvent
         {
             _dotnetHelper = DotNetObjectReference.Create(this);
             await AddWindowEventsAsync();
-            await JS.InvokeAsync<string>("addScrollListener", _dotnetHelper, Inner, nameof(HandleScroll));
+            await JS.InvokeAsync<string>("addScrollListener",
+                                         _dotnetHelper,
+                                         _wholeSheetDiv,
+                                         nameof(HandleScroll));
         }
 
         SheetIsDirty = false;
         DirtyCells.Clear();
+        Console.WriteLine("DataSheet rendered");
     }
 
     private ScrollEvent ScrollEvent = new ScrollEvent();
@@ -318,7 +321,7 @@ public partial class Datasheet : IHandleEvent
         Sheet.LayoutProvider.SetVisibleColOffset(visibleColStart);
         var prevRowTop = this.ViewportRegion?.Top;
         var prevColLeft = this.ViewportRegion?.Left;
-        
+
         // calculate the actual x/y positions of the visible row start, to determine how far we have to move
         // to trigger a re-render
         var xVisibleStart = Sheet.LayoutProvider.ComputeLeftPosition(visibleColStart, false);
@@ -347,7 +350,7 @@ public partial class Datasheet : IHandleEvent
                     return threshRect;
             }
         }
-        
+
         this.ViewportRegion = new Region(RowStart, endRow, ColStart, endCol);
 
         if (prevRowTop.HasValue)
@@ -361,8 +364,8 @@ public partial class Datasheet : IHandleEvent
             else if (ViewportRegion.Top > prevRowTop)
             {
                 this.MarkDirty(new Region(ViewportRegion.Bottom,
-                    ViewportRegion.Bottom + (ViewportRegion.Top - prevRowTop.Value),
-                    ViewportRegion.Left, ViewportRegion.Right));
+                                          ViewportRegion.Bottom + (ViewportRegion.Top - prevRowTop.Value),
+                                          ViewportRegion.Left, ViewportRegion.Right));
             }
         }
 
@@ -373,17 +376,17 @@ public partial class Datasheet : IHandleEvent
             if (ViewportRegion.Left < prevColLeft) // scrolling left (left becoming visible)
             {
                 var r = new Region(ViewportRegion.Top, ViewportRegion.Bottom, prevColLeft.Value,
-                    ViewportRegion.Left);
+                                   ViewportRegion.Left);
                 this.MarkDirty(r);
             }
             else if (ViewportRegion.Left > prevColLeft) // scrolling right
             {
                 this.MarkDirty(new Region(ViewportRegion.Top, ViewportRegion.Bottom,
-                    ViewportRegion.Right,
-                    ViewportRegion.Right + (prevColLeft.Value - ViewportRegion.Left)));
+                                          ViewportRegion.Right,
+                                          ViewportRegion.Right + (prevColLeft.Value - ViewportRegion.Left)));
             }
         }
-        
+
         Console.WriteLine($"{sw.ElapsedMilliseconds} ms before render");
 
         this.StateHasChanged();
@@ -392,19 +395,16 @@ public partial class Datasheet : IHandleEvent
         return threshRect;
     }
 
-    private string GetAbsoluteCellPositionStyles(bool isAbsolutePositioning, IReadOnlyCell cell)
+    private string GetAbsoluteCellPositionStyles(int row, int col, int rowSpan, int colSpan)
     {
-        if (isAbsolutePositioning)
-        {
-            var sb = new StringBuilder();
-            //var top = Sheet.LayoutProvider.ComputeTopPosition(cell.Row, FixScrollToCellEdge);
-            //sb.Append("position:absolute;");
-            //sb.Append($"top:{top}px;");
-            //sb.Append($"left:{Sheet.LayoutProvider.ComputeLeftPosition(cell.Col, FixScrollToCellEdge)}px;");
-            return sb.ToString();
-        }
-
-        return string.Empty;
+        var sb = new StringBuilder();
+        var top = Sheet.LayoutProvider.ComputeTopPosition(row, Sheet.ShowColumnHeadings);
+        sb.Append("position:absolute;");
+        sb.Append($"top:{top}px;");
+        sb.Append($"width:{Sheet.LayoutProvider.ComputeWidth(col, colSpan)}px;");
+        sb.Append($"height:{Sheet.LayoutProvider.ComputeHeight(rowSpan)}px;");
+        sb.Append($"left:{Sheet.LayoutProvider.ComputeLeftPosition(col, Sheet.ShowRowHeadings)}px;");
+        return sb.ToString();
     }
 
     private async Task AddWindowEventsAsync()
