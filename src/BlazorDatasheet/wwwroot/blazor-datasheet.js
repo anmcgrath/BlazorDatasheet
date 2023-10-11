@@ -146,8 +146,9 @@ function throttle(func, wait, options) {
 function findScrollableAncestor(element) {
     let parent = element.parentElement
 
-    if (parent == null)
-        return document
+    if (parent == null || element == document.body || element == document.documentElement)
+        return null
+    
     let overflowY = window.getComputedStyle(parent).overflowY
     let overflowX = window.getComputedStyle(parent).overflowX
     let overflow = window.getComputedStyle(parent).overflow
@@ -208,24 +209,43 @@ function getScrollOffsetSizes(el, parent) {
 // scroll thresholds when a render was triggered
 scroll_thresholds = {}
 
-window.addScrollListener = async function (dotNetHelper, el, dotnetHandlerName) {
+window.addScrollListener = function (dotNetHelper, el, dotnetHandlerName, fillerLeft, fillerTop, fillerRight, fillerBottom) {
     // return initial scroll event to render the sheet
     let parent = findScrollableAncestor(el)
-    let offset = getScrollOffsetSizes(el, parent)
-    scroll_thresholds[el] = await dotNetHelper.invokeMethodAsync(dotnetHandlerName, offset);
+    let offset = getScrollOffsetSizes(el, parent || document.documentElement)
+    dotNetHelper.invokeMethodAsync(dotnetHandlerName, offset);
 
-    parent.onscroll = throttle(async function (ev) {
-        let offset = getScrollOffsetSizes(el, parent)
-        let thresh = scroll_thresholds[el]
-        
-        if (offset.scrollLeft < thresh.left ||
-            offset.scrollLeft > thresh.right ||
-            offset.scrollTop < thresh.top ||
-            offset.scrollTop > thresh.bottom)
-        {
-            // store the current viewport for the element
-            scroll_thresholds[el] = await dotNetHelper.invokeMethodAsync(dotnetHandlerName, offset);
+    let observer = new IntersectionObserver((entries, observer) => {
+        for (let i = 0; i < entries.length; i++) {
+            if (!entries[i].isIntersecting)
+                continue
+            let offset = getScrollOffsetSizes(el, parent || document.documentElement)
+            dotNetHelper.invokeMethodAsync(dotnetHandlerName, offset);
         }
 
-    }, 50)
+    }, {root: parent, threshold: 0})
+
+    observer.observe(fillerTop)
+    observer.observe(fillerBottom)
+    observer.observe(fillerLeft)
+    observer.observe(fillerRight)
+
+    createMutationObserver(fillerTop, observer)
+    createMutationObserver(fillerBottom, observer)
+    createMutationObserver(fillerLeft, observer)
+    createMutationObserver(fillerRight, observer)
+
+}
+
+function createMutationObserver(filler, interactionObserver) {
+    // if we are scrolling too fast (or rendering too slow) we may have a situation where
+    // the filler elements get resized and end up in the observable scroll area which won't re-trigger
+    // the interaction observer. so we add mutation observers to un-observe/re-observe the interaction
+    // this is what asp.net/blazor's virtualize component does.
+    let mutationObserver = new MutationObserver((m, o) => {
+        interactionObserver.unobserve(filler)
+        interactionObserver.observe(filler)
+    })
+    
+    mutationObserver.observe(filler, {attributes: true})
 }

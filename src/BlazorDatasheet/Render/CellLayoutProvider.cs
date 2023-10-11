@@ -159,6 +159,12 @@ public class CellLayoutProvider
         return w;
     }
 
+    public double ComputeWidthBetween(int startCol, int endCol)
+    {
+        var span = endCol - startCol + 1;
+        return ComputeWidth(startCol, endCol);
+    }
+
     public int ComputeColumn(double x,bool includeRowHeaders)
     {
         var extra = includeRowHeaders ? -1 : 0;

@@ -26,12 +26,9 @@
 
     @if (Sheet != null)
     {
-        <!-- this div is where the rows/cols are rendered. If we fix the cells to the left/top
-        then this grid is fixed to the left/top of the container and cells are rendered with a 0-based rendering
-        using the cell layout provider. Otherwise, this is positioned at (0,0) (relative to its parent) -->
         <div id="fixed">
             <!-- Column headers -->
-            <div style="display: flex; flex-direction: column;">
+            <div style="display: flex; flex-direction: column; justify-content: start;">
 
                 @if (Sheet?.ShowColumnHeadings == true)
                 {
@@ -44,7 +41,7 @@
                                 <div class="cell"></div>
                             </div>
                         }
-                        <div id="filler-left-1" @ref="_fillerLeft1" style="min-width: @(Sheet.LayoutProvider.ComputeWidth(0, ColStart))px; display: block; float: left; height: 1px;"></div>
+                        <div id="filler-left-0"  style="min-width: @(Sheet.LayoutProvider.ComputeWidth(0, ColStart))px; display: block; float: left; height: 1px;"></div>
 
                         <ColumnHeadingsRenderer
                             NVisibleCols="NVisibleCols"
@@ -58,7 +55,7 @@
                     </div>
                 }
 
-                <div id="filler-top" @ref="_fillerTop" style="height: @(Sheet.LayoutProvider.ComputeHeight(RowStart))px; width:1px; display: block;"></div>
+                <div id="filler-top" @ref="_fillerTop" style="min-height: @(Sheet.LayoutProvider.ComputeHeight(RowStart))px; min-width:@(Sheet.LayoutProvider.TotalWidth)px; display: block;"></div>
 
                 <div id="last-row" style="display: flex; flex-direction: row;">
 
@@ -76,9 +73,9 @@
                         </div>
                     }
 
-                    <div id="filler-left-2" @ref="_fillerLeft2" style="min-width: @(Sheet.LayoutProvider.ComputeWidth(0, ColStart))px; height: 1px;"></div>
+                    <div id="filler-left-1" @ref="_fillerLeft1" style="float:right; min-width: @(Sheet.LayoutProvider.ComputeWidth(0, ColStart))px; height: @(RenderedInnerSheetHeight)px;"></div>
 
-                    <div id="sheet" style="display: flex; flex-direction: column">
+                    <div id="sheet" style="display: flex; flex-direction: column; flex-shrink: 1;">
                         @for (int rowIndex = RowStart; rowIndex < (RowStart + NVisibleRows); rowIndex++)
                         {
                             var row = rowIndex;
@@ -96,8 +93,7 @@
                                         @onmouseup="e => HandleCellMouseUp(row, col, e)"
                                         class="sheet-cell"
                                         style="@CssUtil.GetCellWidthStyles(cell.Col, 1, Sheet.LayoutProvider) 
-                                                        @($"height:{Sheet.LayoutProvider.ComputeHeight(1)}px;")"
-                                        >
+                                                        @($"height:{Sheet.LayoutProvider.ComputeHeight(1)}px;")">
                                         <CellRenderer
                                             Col="col"
                                             Row="row"
@@ -116,6 +112,8 @@
                             </div>
                         }
                     </div>
+
+                    <div id="filler-right" @ref="_fillerRight" style="float:left;min-width: @(Sheet.LayoutProvider.ComputeWidthBetween(ColStart + NVisibleCols - 1 + (Sheet.ShowRowHeadings ? 1 : 0), Sheet.NumCols - 1))px; height:@(RenderedInnerSheetHeight)px;"></div>
 
                     <!-- Merged cells -->
                     @if (Sheet.Merges.Any() && this.ViewportRegion is not null)
@@ -162,6 +160,8 @@
                         Sheet="Sheet"
                         CellLayoutProvider="Sheet.LayoutProvider"/>
                 </div>
+
+                <div id="filler-bottom" @ref="_fillerBottom" style="min-height: @(Sheet.LayoutProvider.ComputeHeight(Sheet.NumRows - (RowStart + NVisibleRows)))px; min-width:@(1)px;"></div>
             </div>
         </div>
     }
