@@ -37,20 +37,20 @@ public class SheetEnvironment : IEnvironment
 
     public bool FunctionExists(string name)
     {
-        return _functions.ContainsKey(name);
+        return _functions.ContainsKey(name.ToLower());
     }
 
     public CallableFunctionDefinition GetFunctionDefinition(string name)
     {
-        return _functions[name];
+        return _functions[name.ToLower()];
     }
 
     public void SetFunction(string name, CallableFunctionDefinition value)
     {
-        if (_functions.ContainsKey(name))
-            _functions[name] = value;
+        if (!_functions.ContainsKey(name.ToLower()))
+            _functions.Add(name.ToLower(), value);
         else
-            _functions.Add(name, value);
+            _functions[name.ToLower()] = value;
     }
 
     public object? GetCellValue(int row, int col) => _sheet.GetValue(row, col);

@@ -11,6 +11,7 @@ internal class SetParsedFormulaCommand : IUndoableCommand
     private readonly CellFormula _formula;
     private readonly bool _calculateSheetOnSet;
     private CellFormula? _previousFormula;
+    private object? _previousValue;
 
     public SetParsedFormulaCommand(int row, int col, CellFormula formula, bool calculateSheetOnSet = false)
     {
@@ -23,6 +24,7 @@ internal class SetParsedFormulaCommand : IUndoableCommand
     public bool Execute(Sheet sheet)
     {
         _previousFormula = sheet.FormulaEngine.GetFormula(_row, _col);
+        _previousValue = sheet.GetValue(_row, _col);
         sheet.FormulaEngine.SetFormula(_row, _col, _formula);
         if (_calculateSheetOnSet)
             sheet.FormulaEngine.CalculateSheet();
@@ -32,7 +34,10 @@ internal class SetParsedFormulaCommand : IUndoableCommand
     public bool Undo(Sheet sheet)
     {
         if (_previousFormula == null)
+        {
             sheet.FormulaEngine.ClearFormula(_row, _col);
+            sheet.TrySetCellValueImpl(_row, _col, _previousValue);
+        }
         else
             sheet.FormulaEngine.SetFormula(_row, _col, _previousFormula);
         if (_calculateSheetOnSet)

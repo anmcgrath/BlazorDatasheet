@@ -111,6 +111,9 @@ public class ParameterTypeConversion
             return d != 0;
         }
 
+        if (bool.TryParse(arg.ToString(), out var parsedBool))
+            return parsedBool;
+
         if (arg is CellAddress addr)
         {
             return ToLogical(_environment.GetCellValue(addr.Row, addr.Col));

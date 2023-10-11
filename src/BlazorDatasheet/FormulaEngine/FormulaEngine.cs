@@ -4,6 +4,7 @@ using BlazorDatasheet.Edit;
 using BlazorDatasheet.Events;
 using BlazorDatasheet.Events.Edit;
 using BlazorDatasheet.Formula.Core;
+using BlazorDatasheet.Formula.Core.CoreFunctions;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 using BlazorDatasheet.Interfaces;
 
@@ -12,7 +13,7 @@ namespace BlazorDatasheet.FormulaEngine;
 public class FormulaEngine
 {
     private readonly Sheet _sheet;
-    private IEnvironment _environment;
+    private SheetEnvironment _environment;
     private readonly FormulaParser _parser = new();
     private readonly FormulaEvaluator _evaluator;
     private readonly Dictionary<(int row, int col), CellFormula> _formula = new();
@@ -28,6 +29,13 @@ public class FormulaEngine
         _environment = new SheetEnvironment(sheet);
         _evaluator = new FormulaEvaluator(_environment);
         _dependencyGraph = new DependencyGraph();
+        
+        RegisterDefaultFunctions();
+    }
+
+    private void RegisterDefaultFunctions()
+    {
+        _environment.SetFunction("IF", new IfFunction());
     }
 
     private void SheetOnBeforeCellEdit(object? sender, BeforeCellEditEventArgs e)
