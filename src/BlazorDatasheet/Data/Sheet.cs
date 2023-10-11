@@ -57,7 +57,7 @@ public class Sheet
     /// Managers commands & undo/redo. Default is true.
     /// </summary>
     public CommandManager Commands { get; }
-    
+
     /// <summary>
     /// Manages sheet formula
     /// </summary>
@@ -77,7 +77,7 @@ public class Sheet
     /// The sheet's active selection
     /// </summary>
     public Selection Selection { get; }
-    
+
     internal IDialogService Dialog { get; private set; }
 
     private readonly HashSet<(int row, int col)> _dirtyCells;
@@ -176,8 +176,6 @@ public class Sheet
         Selection = new Selection(this);
         Editor = new Editor(this);
         FormulaEngine = new FormulaEngine.FormulaEngine(this);
-        Selection.SelectionChanged += SelectionOnSelectionChanged;
-        Validation.ValidatorChanged += ValidationOnValidatorChanged;
         ConditionalFormatting = new ConditionalFormatManager(this);
         _editorTypes = new Dictionary<string, Type>();
         _renderComponentTypes = new Dictionary<string, Type>();
@@ -409,8 +407,8 @@ public class Sheet
     public IEnumerable<IReadOnlyCell> GetCellsInRegion(IRegion region)
     {
         return (new BRange(this, region))
-               .Positions
-               .Select(x => this.GetCell(x.row, x.col));
+            .Positions
+            .Select(x => this.GetCell(x.row, x.col));
     }
 
     /// <summary>
@@ -461,9 +459,9 @@ public class Sheet
     internal IEnumerable<(int row, int col)> GetNonEmptyCellPositions(IRegion region)
     {
         return _cellDataStore.GetNonEmptyPositions(region.TopLeft.Row,
-                                                   region.BottomRight.Row,
-                                                   region.TopLeft.Col,
-                                                   region.BottomRight.Col);
+            region.BottomRight.Row,
+            region.TopLeft.Col,
+            region.BottomRight.Col);
     }
 
     #endregion
@@ -646,15 +644,7 @@ public class Sheet
 
     #endregion
 
-    private void ValidationOnValidatorChanged(object? sender, ValidatorChangedEventArgs e)
-    {
-        foreach (var region in e.RegionsAffected)
-        {
-            ValidateRegion(region);
-        }
-    }
-
-    private void ValidateRegion(IRegion region)
+    internal void ValidateRegion(IRegion region)
     {
         var cellsAffected = _cellDataStore.GetNonEmptyPositions(region).ToList();
         foreach (var (row, col) in cellsAffected)
@@ -739,6 +729,32 @@ public class Sheet
         {
             MarkDirty(position.row, position.col);
         }
+    }
+
+    /// <summary>
+    /// Add a <see cref="IDataValidator"> to a region.
+    /// </summary>
+    /// <param name="region"></param>
+    /// <param name="validator"></param>
+    public void AddValidator(IRegion region, IDataValidator validator)
+    {
+        var cmd = new SetValidatorCommand(region, validator);
+        Commands.ExecuteCommand(cmd);
+    }
+
+    /// <summary>
+    /// Adds multiple validators to a region.
+    /// </summary>
+    /// <param name="region"></param>
+    /// <param name="validators"></param>
+    public void AddValidators(IRegion region, IEnumerable<IDataValidator> validators)
+    {
+        Commands.BeginCommandGroup();
+        foreach (var validator in validators)
+        {
+            AddValidator(region, validator);
+        }
+        Commands.EndCommandGroup();
     }
 
     /// <summary>
@@ -926,7 +942,7 @@ public class Sheet
         foreach (var rowInterval in RowFormats.GetAllIntervals())
         {
             overlappingRegions.Add(new Region(rowInterval.Start, rowInterval.End, region.Start.Col,
-                                              region.End.Col));
+                region.End.Col));
         }
 
         foreach (var overlapRegion in overlappingRegions)
@@ -977,7 +993,7 @@ public class Sheet
         foreach (var colInterval in ColFormats.GetAllIntervals())
         {
             overlappingRegions.Add(new Region(region.Start.Row, region.End.Row, colInterval.Start,
-                                              colInterval.End));
+                colInterval.End));
         }
 
         foreach (var overlapRegion in overlappingRegions)
@@ -1078,11 +1094,5 @@ public class Sheet
     public void SetDialogService(IDialogService service)
     {
         Dialog = service;
-    }
-
-    private void SelectionOnSelectionChanged(object? sender, IEnumerable<IRegion> e)
-    {
-        var cellsSelected = this.GetCellsInRegions(e);
-        this.CellsSelected?.Invoke(this, new CellsSelectedEventArgs(cellsSelected));
     }
 }

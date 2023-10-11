@@ -49,6 +49,8 @@ public class Selection : BRange
     /// </summary>
     public event EventHandler<IRegion> SelectingChanged;
 
+    public event EventHandler<CellsSelectedEventArgs> CellsSelected; 
+
     public Selection(Sheet sheet) : base(sheet, new List<IRegion>())
     {
         _sheet = sheet;
@@ -491,6 +493,7 @@ public class Selection : BRange
     private void emitSelectionChange()
     {
         SelectionChanged?.Invoke(this, _regions);
+        CellsSelected?.Invoke(this, new CellsSelectedEventArgs(_sheet.GetCellsInRegions(_regions)));
     }
 
     /// <summary>
