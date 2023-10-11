@@ -210,6 +210,8 @@ function getScrollOffsetSizes(el, parent) {
 scroll_thresholds = {}
 
 window.addScrollListener = function (dotNetHelper, el, dotnetHandlerName, fillerLeft, fillerTop, fillerRight, fillerBottom) {
+    
+    
     // return initial scroll event to render the sheet
     let parent = findScrollableAncestor(el)
     let offset = getScrollOffsetSizes(el, parent || document.documentElement)

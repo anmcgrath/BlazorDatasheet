@@ -66,6 +66,7 @@
 .sheet-cell {
     display: inline-block;
     height: 100%;
+    width:100%;
     user-select: none;
     -moz-user-select: none;
     border-right: var(--sheet-border-style);

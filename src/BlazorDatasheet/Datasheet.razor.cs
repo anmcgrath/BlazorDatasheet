@@ -272,13 +272,13 @@ public partial class Datasheet : IHandleEvent
             _dotnetHelper = DotNetObjectReference.Create(this);
             await AddWindowEventsAsync();
             await JS.InvokeAsync<string>("addScrollListener",
-                _dotnetHelper,
-                _wholeSheetDiv,
-                nameof(HandleScroll),
-                _fillerLeft1,
-                _fillerTop,
-                _fillerRight,
-                _fillerBottom);
+                                         _dotnetHelper,
+                                         _wholeSheetDiv,
+                                         nameof(HandleScroll),
+                                         _fillerLeft1,
+                                         _fillerTop,
+                                         _fillerRight,
+                                         _fillerBottom);
         }
 
         SheetIsDirty = false;
@@ -328,7 +328,7 @@ public partial class Datasheet : IHandleEvent
         Sheet.LayoutProvider.SetVisibleColOffset(visibleColStart);
         var prevRowTop = this.ViewportRegion?.Top;
         var prevColLeft = this.ViewportRegion?.Left;
-        
+
         this.ViewportRegion = new Region(RowStart, endRow, ColStart, endCol);
 
         if (prevRowTop.HasValue)
@@ -342,25 +342,25 @@ public partial class Datasheet : IHandleEvent
             else if (ViewportRegion.Top > prevRowTop)
             {
                 this.MarkDirty(new Region(ViewportRegion.Bottom,
-                    ViewportRegion.Bottom + (ViewportRegion.Top - prevRowTop.Value),
-                    ViewportRegion.Left, ViewportRegion.Right));
+                                          ViewportRegion.Bottom + (ViewportRegion.Top - prevRowTop.Value),
+                                          ViewportRegion.Left, ViewportRegion.Right));
             }
         }
-        
+
         if (prevColLeft.HasValue)
         {
             // only render rows/columns that are new to the view
             if (ViewportRegion.Left < prevColLeft) // scrolling left (left becoming visible)
             {
                 var r = new Region(ViewportRegion.Top, ViewportRegion.Bottom, prevColLeft.Value,
-                    ViewportRegion.Left);
+                                   ViewportRegion.Left);
                 this.MarkDirty(r);
             }
             else if (ViewportRegion.Left > prevColLeft) // scrolling right
             {
                 this.MarkDirty(new Region(ViewportRegion.Top, ViewportRegion.Bottom,
-                    ViewportRegion.Right,
-                    ViewportRegion.Right + (prevColLeft.Value - ViewportRegion.Left)));
+                                          ViewportRegion.Right,
+                                          ViewportRegion.Right + (prevColLeft.Value - ViewportRegion.Left)));
             }
         }
 
@@ -387,18 +387,18 @@ public partial class Datasheet : IHandleEvent
         _windowEventService.OnPaste += HandleWindowPaste;
     }
 
-    private void HandleCellMouseUp(int row, int col, MouseEventArgs e)
+    private void HandleCellMouseUp(int row, int col, bool MetaKey, bool CtrlKey, bool ShiftKey)
     {
         this.EndSelecting();
     }
 
-    private void HandleCellMouseDown(int row, int col, MouseEventArgs e)
+    private void HandleCellMouseDown(int row, int col, bool MetaKey, bool CtrlKey, bool ShiftKey)
     {
-        if (e.ShiftKey && Sheet?.Selection?.ActiveRegion != null)
+        if (ShiftKey && Sheet?.Selection?.ActiveRegion != null)
             Sheet?.Selection?.ExtendTo(row, col);
         else
         {
-            if (!e.MetaKey && !e.CtrlKey)
+            if (!MetaKey && !CtrlKey)
             {
                 Sheet?.Selection?.ClearSelections();
             }
@@ -449,7 +449,7 @@ public partial class Datasheet : IHandleEvent
         AcceptEdit();
     }
 
-    private async void HandleCellDoubleClick(int row, int col, MouseEventArgs e)
+    private async void HandleCellDoubleClick(int row, int col, bool MetaKey, bool CtrlKey, bool ShiftKey)
     {
         await BeginEdit(row, col, softEdit: false, EditEntryMode.Mouse);
     }
@@ -487,7 +487,7 @@ public partial class Datasheet : IHandleEvent
         return Sheet.Editor.CancelEdit();
     }
 
-    private void HandleCellMouseOver(int row, int col, MouseEventArgs e)
+    private void HandleCellMouseOver(int row, int col)
     {
         this.UpdateSelectingEndPosition(row, col);
     }
@@ -726,6 +726,10 @@ public partial class Datasheet : IHandleEvent
         if (!IsSelecting)
             return;
 
+        if (Sheet?.Selection?.SelectingRegion?.End.Row == row &&
+            Sheet?.Selection?.SelectingRegion?.End.Col == col)
+            return;
+
         Sheet?.Selection.UpdateSelectingEndPosition(row, col);
     }
 
@@ -818,6 +822,39 @@ public partial class Datasheet : IHandleEvent
         ForceReRender();
 
         return new ItemsProviderResult<int>(Enumerable.Range(startIndex, numRows), Sheet.NumRows);
+    }
+
+    private (int row, int col) RowColFromMouseEvent(MouseEventArgs obj)
+    {
+        var startColX = Sheet.LayoutProvider.ComputeLeftPosition(ColStart, false);
+        var col = Sheet.LayoutProvider.ComputeColumn(startColX + obj.OffsetX, false);
+        var startColY = Sheet.LayoutProvider.ComputeTopPosition(RowStart, false);
+        var row = Sheet.LayoutProvider.ComputeRow(startColY + obj.OffsetY, false);
+        return (row, col);
+    }
+
+    private void SheetMouseDown(MouseEventArgs obj)
+    {
+        var (row, col) = RowColFromMouseEvent(obj);
+        this.HandleCellMouseDown(row, col, obj.MetaKey, obj.CtrlKey, obj.ShiftKey);
+    }
+
+    private void SheetMouseUp(MouseEventArgs obj)
+    {
+        var (row, col) = RowColFromMouseEvent(obj);
+        this.HandleCellMouseUp(row, col, obj.MetaKey, obj.CtrlKey, obj.ShiftKey);
+    }
+    
+    private void SheetMouseMove(MouseEventArgs obj)
+    {
+        var (row, col) = RowColFromMouseEvent(obj);
+        this.HandleCellMouseOver(row, col);
+    }
+
+    private void SheetMouseDoubleClick(MouseEventArgs obj)
+    {
+        var (row, col) = RowColFromMouseEvent(obj);
+        this.HandleCellDoubleClick(row, col, obj.MetaKey, obj.CtrlKey, obj.ShiftKey);
     }
 
     /// <summary>
