@@ -23,8 +23,6 @@ public class FormulaEngine
     {
         _sheet = sheet;
         _sheet.CellsChanged += SheetOnCellsChanged;
-        _sheet.Editor.BeforeEditAccepted += SheetOnBeforeEditAccepted;
-        _sheet.Editor.EditAccepted += SheetOnEditAccepted;
         _sheet.Editor.BeforeCellEdit += SheetOnBeforeCellEdit;
 
         _environment = new SheetEnvironment(sheet);
@@ -40,8 +38,11 @@ public class FormulaEngine
         }
     }
 
-    private void SheetOnEditAccepted(object? sender, EditAcceptedEventArgs e)
+    public CellFormula? GetFormula(int row, int col)
     {
+        if (HasFormula(row, col))
+            return _formula[(row, col)];
+        return null;
     }
 
     public bool HasFormula(int row, int col)
@@ -62,7 +63,10 @@ public class FormulaEngine
     /// <returns></returns>
     public string? GetFormulaString(int row, int col)
     {
-        return GetFormulaString(row, col);
+        if (HasFormula(row, col))
+            return _formula[(row, col)].ToFormulaString();
+
+        return null;
     }
 
     /// <summary>
@@ -72,28 +76,7 @@ public class FormulaEngine
     /// <returns></returns>
     public string? GetFormulaString(IReadOnlyCell cell)
     {
-        if (HasFormula(cell))
-            return _formula[(cell.Row, cell.Col)].ToFormulaString();
-
-        return null;
-    }
-
-    private void SheetOnBeforeEditAccepted(object? sender, BeforeAcceptEditEventArgs e)
-    {
-        var editor = (Editor)sender!;
-        if (e.EditValue is string f)
-        {
-            if (IsFormula(f))
-            {
-                // Don't let the sheet set the value,
-                // we set a formula and compute it.
-                e.AcceptEdit = false;
-                if (ParseAndSetFormula(e.Cell.Row, e.Cell.Col, f))
-                {
-                    e.StopEditing();
-                }
-            }
-        }
+        return GetFormulaString(cell.Row, cell.Col);
     }
 
     /// <summary>

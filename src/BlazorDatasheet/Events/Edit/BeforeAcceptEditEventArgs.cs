@@ -8,7 +8,8 @@ public class BeforeAcceptEditEventArgs
     public IReadOnlyCell Cell { get; }
     public object? EditValue { get; }
     public CellFormula? Formula { get; }
-    public object? EvaluatedFormulaValue { get; }
+
+    public string? FormulaString { get; }
 
     /// <summary>
     /// Determines whether the edit is accepted or not.
@@ -20,12 +21,12 @@ public class BeforeAcceptEditEventArgs
     /// </summary>
     public bool StopEdit { get; private set; }
 
-    public BeforeAcceptEditEventArgs(IReadOnlyCell cell, object? editValue, CellFormula? formula, object? evaluatedFormulaValue)
+    public BeforeAcceptEditEventArgs(IReadOnlyCell cell, object? editValue, CellFormula? formula, string? formulaString)
     {
         Cell = cell;
         EditValue = editValue;
         Formula = formula;
-        EvaluatedFormulaValue = evaluatedFormulaValue;
+        FormulaString = formulaString;
     }
 
     /// <summary>

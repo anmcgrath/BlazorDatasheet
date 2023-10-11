@@ -61,7 +61,7 @@ public class Sheet
     /// <summary>
     /// Manages sheet formula
     /// </summary>
-    internal FormulaEngine.FormulaEngine FormulaEngine { get; }
+    public FormulaEngine.FormulaEngine FormulaEngine { get; }
 
     /// <summary>
     /// The bounds of the sheet
@@ -754,6 +754,7 @@ public class Sheet
         {
             AddValidator(region, validator);
         }
+
         Commands.EndCommandGroup();
     }
 

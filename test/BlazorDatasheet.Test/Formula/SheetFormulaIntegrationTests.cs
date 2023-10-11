@@ -14,7 +14,7 @@ public class SheetFormulaIntegrationTests
     public void TestSetup()
     {
         _sheet = new Sheet(10, 10);
-        _engine = new FormulaEngine.FormulaEngine(_sheet);
+        _engine = _sheet.FormulaEngine;
     }
 
     [Test]
