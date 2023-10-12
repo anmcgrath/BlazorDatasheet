@@ -159,13 +159,20 @@ public class CellLayoutProvider
         return w;
     }
 
+    /// <summary>
+    /// Computes the width between the start of start col, and the start of end col.
+    /// </summary>
+    /// <param name="startCol"></param>
+    /// <param name="endCol"></param>
+    /// <returns></returns>
     public double ComputeWidthBetween(int startCol, int endCol)
     {
-        var span = endCol - startCol + 1;
-        return ComputeWidth(startCol, endCol);
+        Console.WriteLine("Computing width between " + startCol + " and " + endCol);
+        var span = (endCol - startCol);
+        return ComputeWidth(startCol, span);
     }
 
-    public int ComputeColumn(double x,bool includeRowHeaders)
+    public int ComputeColumn(double x, bool includeRowHeaders)
     {
         var extra = includeRowHeaders ? -1 : 0;
         for (int i = 0; i < _columnStartPositions.Count; i++)

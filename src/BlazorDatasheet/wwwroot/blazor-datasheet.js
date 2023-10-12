@@ -148,7 +148,7 @@ function findScrollableAncestor(element) {
 
     if (parent == null || element == document.body || element == document.documentElement)
         return null
-    
+
     let overflowY = window.getComputedStyle(parent).overflowY
     let overflowX = window.getComputedStyle(parent).overflowX
     let overflow = window.getComputedStyle(parent).overflow
@@ -206,14 +206,35 @@ function getScrollOffsetSizes(el, parent) {
     }
 }
 
-// scroll thresholds when a render was triggered
-scroll_thresholds = {}
+window.disposeVirtualisationHandlers = function (el) {
+    console.log('dispose js for ' + el.id)
+    leftHandlerMutMap[el].disconnect()
+    rightHandlerMutMap[el].disconnect()
+    topHandlerMutMap[el].disconnect()
+    bottomHandlerMutMap[el].disconnect()
+    interactionMap[el].disconnect()
 
-window.addScrollListener = function (dotNetHelper, el, dotnetHandlerName, fillerLeft, fillerTop, fillerRight, fillerBottom) {
-    
-    
+    leftHandlerMutMap[el] = {}
+    rightHandlerMutMap[el] = {}
+    topHandlerMutMap[el] = {}
+    bottomHandlerMutMap[el] = {}
+    interactionMap[el] = {}
+}
+
+leftHandlerMutMap = {}
+rightHandlerMutMap = {}
+topHandlerMutMap = {}
+bottomHandlerMutMap = {}
+interactionMap = {}
+
+window.addVirtualisationHandlers = function (dotNetHelper, el, dotnetHandlerName, fillerLeft, fillerTop, fillerRight, fillerBottom) {
+
+
     // return initial scroll event to render the sheet
     let parent = findScrollableAncestor(el)
+    if (parent)
+        parent.style.willChange = 'transform' // improves scrolling performance in chrome/edge
+
     let offset = getScrollOffsetSizes(el, parent || document.documentElement)
     dotNetHelper.invokeMethodAsync(dotnetHandlerName, offset);
 
@@ -221,7 +242,12 @@ window.addScrollListener = function (dotNetHelper, el, dotnetHandlerName, filler
         for (let i = 0; i < entries.length; i++) {
             if (!entries[i].isIntersecting)
                 continue
+            if (entries[i].target.getBoundingClientRect().width <= 0 ||
+                entries[i].target.getBoundingClientRect().height <= 0)
+                continue
+
             let offset = getScrollOffsetSizes(el, parent || document.documentElement)
+            console.log(offset)
             dotNetHelper.invokeMethodAsync(dotnetHandlerName, offset);
         }
 
@@ -232,10 +258,12 @@ window.addScrollListener = function (dotNetHelper, el, dotnetHandlerName, filler
     observer.observe(fillerLeft)
     observer.observe(fillerRight)
 
-    createMutationObserver(fillerTop, observer)
-    createMutationObserver(fillerBottom, observer)
-    createMutationObserver(fillerLeft, observer)
-    createMutationObserver(fillerRight, observer)
+    interactionMap[el] = observer
+
+    topHandlerMutMap[el] = createMutationObserver(fillerTop, observer)
+    bottomHandlerMutMap[el] = createMutationObserver(fillerBottom, observer)
+    leftHandlerMutMap[el] = createMutationObserver(fillerLeft, observer)
+    topHandlerMutMap[el] = createMutationObserver(fillerRight, observer)
 
 }
 
@@ -248,6 +276,7 @@ function createMutationObserver(filler, interactionObserver) {
         interactionObserver.unobserve(filler)
         interactionObserver.observe(filler)
     })
-    
+
     mutationObserver.observe(filler, {attributes: true})
+    return mutationObserver
 }

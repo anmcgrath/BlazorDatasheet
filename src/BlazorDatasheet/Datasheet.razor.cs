@@ -249,7 +249,6 @@ public partial class Datasheet : IHandleEvent
     {
         return new Dictionary<string, object>()
         {
-            { "Sheet", sheet },
             { "Cell", cell },
             { "Row", row },
             { "Col", col },
@@ -271,14 +270,14 @@ public partial class Datasheet : IHandleEvent
         {
             _dotnetHelper = DotNetObjectReference.Create(this);
             await AddWindowEventsAsync();
-            await JS.InvokeAsync<string>("addScrollListener",
-                                         _dotnetHelper,
-                                         _wholeSheetDiv,
-                                         nameof(HandleScroll),
-                                         _fillerLeft1,
-                                         _fillerTop,
-                                         _fillerRight,
-                                         _fillerBottom);
+            await JS.InvokeAsync<string>("addVirtualisationHandlers",
+                _dotnetHelper,
+                _wholeSheetDiv,
+                nameof(HandleScroll),
+                _fillerLeft1,
+                _fillerTop,
+                _fillerRight,
+                _fillerBottom);
         }
 
         SheetIsDirty = false;
@@ -326,45 +325,23 @@ public partial class Datasheet : IHandleEvent
 
         Sheet.LayoutProvider.SetVisibleRowOffset(visibleRowStart);
         Sheet.LayoutProvider.SetVisibleColOffset(visibleColStart);
-        var prevRowTop = this.ViewportRegion?.Top;
-        var prevColLeft = this.ViewportRegion?.Left;
+        var prevRegion = ViewportRegion?.Copy();
 
         this.ViewportRegion = new Region(RowStart, endRow, ColStart, endCol);
 
-        if (prevRowTop.HasValue)
+        if (prevRegion != null)
         {
-            // only render rows/columns that are new to the view
-            if (ViewportRegion.Top < prevRowTop) // scrolling up (top becoming visible)
-            {
-                var r = new Region(ViewportRegion.Top, prevRowTop.Value, ViewportRegion.Left, ViewportRegion.Right);
-                this.MarkDirty(r);
-            }
-            else if (ViewportRegion.Top > prevRowTop)
-            {
-                this.MarkDirty(new Region(ViewportRegion.Bottom,
-                                          ViewportRegion.Bottom + (ViewportRegion.Top - prevRowTop.Value),
-                                          ViewportRegion.Left, ViewportRegion.Right));
-            }
+            if (prevRegion.Contains(this.ViewportRegion))
+                return;
+
+            var newRegions = this.ViewportRegion.Break(prevRegion);
+            foreach (var region in newRegions)
+                this.MarkDirty(region);
         }
 
-        if (prevColLeft.HasValue)
-        {
-            // only render rows/columns that are new to the view
-            if (ViewportRegion.Left < prevColLeft) // scrolling left (left becoming visible)
-            {
-                var r = new Region(ViewportRegion.Top, ViewportRegion.Bottom, prevColLeft.Value,
-                                   ViewportRegion.Left);
-                this.MarkDirty(r);
-            }
-            else if (ViewportRegion.Left > prevColLeft) // scrolling right
-            {
-                this.MarkDirty(new Region(ViewportRegion.Top, ViewportRegion.Bottom,
-                                          ViewportRegion.Right,
-                                          ViewportRegion.Right + (prevColLeft.Value - ViewportRegion.Left)));
-            }
-        }
-
+        sw.Reset();
         this.StateHasChanged();
+        Console.WriteLine(sw.ElapsedMilliseconds);
     }
 
     private string GetAbsoluteCellPositionStyles(int row, int col, int rowSpan, int colSpan)
@@ -654,9 +631,19 @@ public partial class Datasheet : IHandleEvent
         Sheet.Selection.SetSingle(range);
     }
 
-    public void Dispose()
+    public async void Dispose()
     {
+        try
+        {
+            await JS.InvokeAsync<string>("disposeVirtualisationHandlers", _wholeSheetDiv);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+        }
+
         _windowEventService.Dispose();
+        _dotnetHelper?.Dispose();
     }
 
     /// <summary>
@@ -830,6 +817,15 @@ public partial class Datasheet : IHandleEvent
         var col = Sheet.LayoutProvider.ComputeColumn(startColX + obj.OffsetX, false);
         var startColY = Sheet.LayoutProvider.ComputeTopPosition(RowStart, false);
         var row = Sheet.LayoutProvider.ComputeRow(startColY + obj.OffsetY, false);
+
+        // check for any merged cells, if so then redirect the row/col to the merge start
+        var merged = Sheet.Merges.Get(row, col);
+        if (merged != null)
+        {
+            row = merged.Top;
+            col = merged.Left;
+        }
+
         return (row, col);
     }
 
@@ -844,7 +840,7 @@ public partial class Datasheet : IHandleEvent
         var (row, col) = RowColFromMouseEvent(obj);
         this.HandleCellMouseUp(row, col, obj.MetaKey, obj.CtrlKey, obj.ShiftKey);
     }
-    
+
     private void SheetMouseMove(MouseEventArgs obj)
     {
         var (row, col) = RowColFromMouseEvent(obj);

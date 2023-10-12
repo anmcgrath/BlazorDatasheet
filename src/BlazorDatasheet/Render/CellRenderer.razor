@@ -54,7 +54,7 @@
     [Parameter]
     public int VisibleRowOffset { get; set; }
 
-    [Parameter]
+    [CascadingParameter]
     public Sheet Sheet { get; set; }
 
     private string CalculateCellFormattingStyle(CellFormat? format, bool isCellValid)

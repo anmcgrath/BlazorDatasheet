@@ -75,13 +75,13 @@
                          @ondblclick="SheetMouseDoubleClick"
                          @onmousemove="SheetMouseMove"
                          @onmousedown="SheetMouseDown">
-                         
+
                         <table style="table-layout: fixed; width: @(RenderedInnerSheetWidth)px; height:@(RenderedInnerSheetHeight)px; pointer-events: none;">
                             <colgroup>
                                 @for (int i = ColStart; i < (ColStart + NVisibleRows); i++)
                                 {
                                     var col = i;
-                                    <col span="1" style="width:@(Sheet.LayoutProvider.ComputeWidth(col, 1))px;"/>
+                                    <col span="1"/>
                                 }
                             </colgroup>
                             <tbody>
@@ -93,25 +93,38 @@
                                     @for (int j = ColStart; j < (ColStart + NVisibleCols); j++)
                                     {
                                         var col = j;
+
+                                        if (row == 3 && col == 2)
+                                        {
+   
+                                            continue;
+                                        }
+                
+
+                                        var rowSpan = (row == 2 && col == 2) ? 2 : 1;
+                                        
                                         var cell = Sheet.GetCell(row, col);
+                                        var colWidth = @Sheet.LayoutProvider.ComputeWidth(col, 1);
                                         <td
                                             @key="col"
-                                            style="overflow: hidden;height:@(rowHeight)px;max-height:@(rowHeight)px;"
+                                            rowspan="@rowSpan"
+                                            style="overflow: hidden;width:@(colWidth)px;max-width:@(colWidth)px;height:@(rowHeight)px;max-height:@(rowHeight)px;"
                                             class="sheet-cell">
-                                            <div style="height:@(rowHeight)px;">
-                                                <CellRenderer
-                                                    Row="row"
-                                                    Col="col"
-                                                    IsValid="cell.IsValid"
-                                                    Sheet="Sheet"
-                                                    IsDirty="SheetIsDirty || DirtyCells.Contains((row, col))">
-                                                    <ItemTemplate>
-                                                        <DynamicComponent
-                                                            Type="@getCellRendererType(cell.Type)"
-                                                            Parameters="@getCellRendererParameters(Sheet, cell, row, col)">
-                                                        </DynamicComponent>
-                                                    </ItemTemplate>
-                                                </CellRenderer>
+                                            <div style="height:100%; width: 100%;">
+                                                <CascadingValue Value="Sheet" IsFixed="true">
+                                                    <CellRenderer
+                                                        Row="row"
+                                                        Col="col"
+                                                        IsValid="cell.IsValid"
+                                                        IsDirty="SheetIsDirty || DirtyCells.Contains((row, col))">
+                                                        <ItemTemplate>
+                                                            <DynamicComponent
+                                                                Type="@getCellRendererType(cell.Type)"
+                                                                Parameters="@getCellRendererParameters(Sheet, cell, row, col)">
+                                                            </DynamicComponent>
+                                                        </ItemTemplate>
+                                                    </CellRenderer>
+                                                </CascadingValue>
                                             </div>
                                         </td>
                                     }
@@ -135,22 +148,23 @@
 
                             <div id="merge"
                                  class="sheet-cell"
-                                 style="@GetAbsoluteCellPositionStyles(row, col, merge.Region.Height, merge.Region.Width)">
-                                <CellRenderer
-                                    ColSpan="merge.Region.Width"
-                                    RowSpan="merge.Region.Height"
-                                    Row="row"
-                                    Col="col"
-                                    IsValid="cell.IsValid"
-                                    Sheet="Sheet"
-                                    IsDirty="SheetIsDirty || DirtyCells.Contains((row, col))">
-                                    <ItemTemplate>
-                                        <DynamicComponent
-                                            Type="@getCellRendererType(cell.Type)"
-                                            Parameters="@getCellRendererParameters(Sheet, cell, row, col)">
-                                        </DynamicComponent>
-                                    </ItemTemplate>
-                                </CellRenderer>
+                                 style="display:none;@GetAbsoluteCellPositionStyles(row, col, merge.Region.Height, merge.Region.Width)">
+                                <CascadingValue Value="Sheet" IsFixed="true">
+                                    <CellRenderer
+                                        ColSpan="merge.Region.Width"
+                                        RowSpan="merge.Region.Height"
+                                        Row="row"
+                                        Col="col"
+                                        IsValid="cell.IsValid"
+                                        IsDirty="SheetIsDirty || DirtyCells.Contains((row, col))">
+                                        <ItemTemplate>
+                                            <DynamicComponent
+                                                Type="@getCellRendererType(cell.Type)"
+                                                Parameters="@getCellRendererParameters(Sheet, cell, row, col)">
+                                            </DynamicComponent>
+                                        </ItemTemplate>
+                                    </CellRenderer>
+                                </CascadingValue>
                             </div>
                         }
                     }
