@@ -66,8 +66,6 @@
 .sheet-cell {
     user-select: none;
     -moz-user-select: none;
-    border-right: var(--sheet-border-style);
-    border-bottom: var(--sheet-border-style);
     -webkit-user-select: none;
 }
 

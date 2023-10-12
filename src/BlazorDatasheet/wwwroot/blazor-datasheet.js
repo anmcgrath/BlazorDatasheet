@@ -247,7 +247,6 @@ window.addVirtualisationHandlers = function (dotNetHelper, el, dotnetHandlerName
                 continue
 
             let offset = getScrollOffsetSizes(el, parent || document.documentElement)
-            console.log(offset)
             dotNetHelper.invokeMethodAsync(dotnetHandlerName, offset);
         }
 

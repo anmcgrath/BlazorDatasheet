@@ -76,62 +76,41 @@
                          @onmousemove="SheetMouseMove"
                          @onmousedown="SheetMouseDown">
 
-                        <table style="table-layout: fixed; width: @(RenderedInnerSheetWidth)px; height:@(RenderedInnerSheetHeight)px; pointer-events: none;">
-                            <colgroup>
-                                @for (int i = ColStart; i < (ColStart + NVisibleRows); i++)
-                                {
-                                    var col = i;
-                                    <col span="1"/>
-                                }
-                            </colgroup>
-                            <tbody>
+                        <div style="width: @(RenderedInnerSheetWidth)px; height:@(RenderedInnerSheetHeight)px; pointer-events: none; border: var(--sheet-border-style); display: block;">
                             @for (int rowIndex = RowStart; rowIndex < (RowStart + NVisibleRows); rowIndex++)
                             {
                                 var row = rowIndex;
                                 var rowHeight = @Sheet.LayoutProvider.ComputeHeight(1);
-                                <tr @key="row">
+                                <div @key="row" style="height:@(rowHeight)px">
                                     @for (int j = ColStart; j < (ColStart + NVisibleCols); j++)
                                     {
                                         var col = j;
-
-                                        if (row == 3 && col == 2)
-                                        {
-   
-                                            continue;
-                                        }
-                
-
-                                        var rowSpan = (row == 2 && col == 2) ? 2 : 1;
-                                        
                                         var cell = Sheet.GetCell(row, col);
                                         var colWidth = @Sheet.LayoutProvider.ComputeWidth(col, 1);
-                                        <td
+                                        <div
                                             @key="col"
-                                            rowspan="@rowSpan"
-                                            style="overflow: hidden;width:@(colWidth)px;max-width:@(colWidth)px;height:@(rowHeight)px;max-height:@(rowHeight)px;"
+                                            style="border-right: var(--sheet-border-style); border-bottom: var(--sheet-border-style);
+                                            padding:0; display: inline-block; box-sizing:border-box; overflow: hidden; width:@(colWidth)px;max-width:@(colWidth)px;height:@(rowHeight)px;max-height:@(rowHeight)px;"
                                             class="sheet-cell">
-                                            <div style="height:100%; width: 100%;">
-                                                <CascadingValue Value="Sheet" IsFixed="true">
-                                                    <CellRenderer
-                                                        Row="row"
-                                                        Col="col"
-                                                        IsValid="cell.IsValid"
-                                                        IsDirty="SheetIsDirty || DirtyCells.Contains((row, col))">
-                                                        <ItemTemplate>
-                                                            <DynamicComponent
-                                                                Type="@getCellRendererType(cell.Type)"
-                                                                Parameters="@getCellRendererParameters(Sheet, cell, row, col)">
-                                                            </DynamicComponent>
-                                                        </ItemTemplate>
-                                                    </CellRenderer>
-                                                </CascadingValue>
-                                            </div>
-                                        </td>
+                                            <CascadingValue Value="Sheet" IsFixed="true">
+                                                <CellRenderer
+                                                    Row="row"
+                                                    Col="col"
+                                                    IsValid="cell.IsValid"
+                                                    IsDirty="SheetIsDirty || DirtyCells.Contains((row, col))">
+                                                    <ItemTemplate>
+                                                        <DynamicComponent
+                                                            Type="@getCellRendererType(cell.Type)"
+                                                            Parameters="@getCellRendererParameters(Sheet, cell, row, col)">
+                                                        </DynamicComponent>
+                                                    </ItemTemplate>
+                                                </CellRenderer>
+                                            </CascadingValue>
+                                        </div>
                                     }
-                                </tr>
+                                </div>
                             }
-                            </tbody>
-                        </table>
+                        </div>
                     </div>
 
                     <div id="filler-right" @ref="_fillerRight" style="float:left;min-width: @(Sheet.LayoutProvider.ComputeWidthBetween(ColStart + NVisibleCols - 1 + (Sheet.ShowRowHeadings ? 1 : 0), Sheet.NumCols - 1))px; height:@(RenderedInnerSheetHeight)px;"></div>

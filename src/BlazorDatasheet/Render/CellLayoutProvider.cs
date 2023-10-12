@@ -167,7 +167,6 @@ public class CellLayoutProvider
     /// <returns></returns>
     public double ComputeWidthBetween(int startCol, int endCol)
     {
-        Console.WriteLine("Computing width between " + startCol + " and " + endCol);
         var span = (endCol - startCol);
         return ComputeWidth(startCol, span);
     }

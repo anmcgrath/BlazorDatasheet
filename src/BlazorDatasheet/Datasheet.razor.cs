@@ -270,14 +270,18 @@ public partial class Datasheet : IHandleEvent
         {
             _dotnetHelper = DotNetObjectReference.Create(this);
             await AddWindowEventsAsync();
-            await JS.InvokeAsync<string>("addVirtualisationHandlers",
-                _dotnetHelper,
-                _wholeSheetDiv,
-                nameof(HandleScroll),
-                _fillerLeft1,
-                _fillerTop,
-                _fillerRight,
-                _fillerBottom);
+            await JS.InvokeVoidAsync("addVirtualisationHandlers",
+                                     _dotnetHelper,
+                                     _wholeSheetDiv,
+                                     nameof(HandleScroll),
+                                     _fillerLeft1,
+                                     _fillerTop,
+                                     _fillerRight,
+                                     _fillerBottom);
+
+            // we need to know the position of the datasheet relative to the 
+            // page start, so that we can calculate mouse events correctly
+            //await JS.InvokeVoidAsync("addSheetPositionHandler", _dotnetHelper, _wholeSheetDiv);
         }
 
         SheetIsDirty = false;
@@ -341,7 +345,6 @@ public partial class Datasheet : IHandleEvent
 
         sw.Reset();
         this.StateHasChanged();
-        Console.WriteLine(sw.ElapsedMilliseconds);
     }
 
     private string GetAbsoluteCellPositionStyles(int row, int col, int rowSpan, int colSpan)
