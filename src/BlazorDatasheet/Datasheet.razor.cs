@@ -5,6 +5,7 @@ using BlazorDatasheet.Commands;
 using BlazorDatasheet.Data;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Edit;
+using BlazorDatasheet.Edit.DefaultComponents;
 using BlazorDatasheet.Events;
 using BlazorDatasheet.Formats;
 using BlazorDatasheet.Interfaces;
@@ -36,6 +37,19 @@ public partial class Datasheet : IHandleEvent
     public bool StickyHeadings { get; set; }
 
     /// <summary>
+    /// Register custom editor components (derived from <see cref="BaseEditor"/>) that will be selected
+    /// based on the cell type.
+    /// </summary>
+    [Parameter]
+    public Dictionary<string, CellTypeDefinition> CustomCellTypeDefinitions { get; set; } = new();
+
+    /// <summary>
+    /// Default editors for cell types.
+    /// </summary>
+    private Dictionary<string, CellTypeDefinition> _defaultCellTypeDefinitions { get; } = new();
+
+
+    /// <summary>
     /// Exists so that we can determine whether the sheet has changed
     /// during parameter set
     /// </summary>
@@ -46,26 +60,6 @@ public partial class Datasheet : IHandleEvent
     /// </summary>
     [Parameter]
     public bool IsReadOnly { get; set; }
-
-    /// <summary>
-    /// Fixed height in pixels of the datasheet, if IsFixedHeight = true. Default is 350 px.
-    /// </summary>
-    [Parameter]
-    public double FixedHeightInPx { get; set; } = 350;
-
-    /// <summary>
-    /// Whether the datasheet should be a fixed height. If it's true, a scrollbar will be used to
-    /// scroll through the cells that are outside of the view.
-    /// </summary>
-    [Parameter]
-    public bool IsFixedHeight { get; set; }
-
-    /// <summary>
-    /// Whether the datasheet should be a fixed width. If it's true, a scrollbar will be used to
-    /// scroll through the cells that are outside of the view.
-    /// </summary>
-    [Parameter]
-    public bool IsFixedWidth { get; set; }
 
     [Parameter] public string Theme { get; set; } = "default";
 
@@ -82,20 +76,46 @@ public partial class Datasheet : IHandleEvent
     /// <summary>
     /// The current (or close to) region in view.
     /// </summary>
-    public IRegion ViewportRegion { get; private set; }
+    public IRegion? ViewportRegion { get; private set; }
 
-    public double RenderedInnerSheetHeight => Sheet.LayoutProvider.ComputeHeight(NVisibleRows);
-    public double RenderedInnerSheetWidth => Sheet.LayoutProvider.ComputeWidth(ColStart, NVisibleCols);
+    /// <summary>
+    /// The total height of the VISIBLE sheet. This changes when the user scrolls or the parent scroll element is resized.
+    /// </summary>
+    public double RenderedInnerSheetHeight => Sheet!.LayoutProvider.ComputeHeight(NVisibleRows);
+
+    /// <summary>
+    /// The total width of the VISIBLE sheet. This changes when the user scrolls or the parent scroll element is resized.
+    /// </summary>
+    public double RenderedInnerSheetWidth => Sheet!.LayoutProvider.ComputeWidth(ColStart, NVisibleCols);
 
     /// <summary>
     /// Store any cells that are dirty here
     /// </summary>
     private HashSet<(int row, int col)> DirtyCells { get; set; } = new();
 
+    /// <summary>
+    /// Div that is the width/height of all the rows/columns in the sheet (does not include row/col headings).
+    /// </summary>
     private ElementReference _wholeSheetDiv;
+
+    /// <summary>
+    /// Top filler element that is used for virtualisation.
+    /// </summary>
     private ElementReference _fillerTop;
+
+    /// <summary>
+    /// Left filler element that is used for virtualisation.
+    /// </summary>
     private ElementReference _fillerLeft1;
+
+    /// <summary>
+    /// Bottom filler element that is used for virtualisation.
+    /// </summary>
     private ElementReference _fillerBottom;
+
+    /// <summary>
+    /// Right filler element that is used for virtualisation.
+    /// </summary>
     private ElementReference _fillerRight;
 
     /// <summary>
@@ -103,10 +123,24 @@ public partial class Datasheet : IHandleEvent
     /// </summary>
     public bool SheetIsDirty { get; set; } = true;
 
+    /// <summary>
+    /// Whether the user is actively selecting cells/rows/columns in the sheet.
+    /// </summary>
     internal bool IsSelecting => Sheet != null && Sheet.Selection.IsSelecting;
 
+    /// <summary>
+    /// Manages the display of the editor, which is rendered using absolute coordinates over the top of the sheet.
+    /// </summary>
     private EditorOverlayRenderer _editorManager;
+
+    /// <summary>
+    /// Mouse/keyboard window events registration/handling.
+    /// </summary>
     private IWindowEventService _windowEventService;
+
+    /// <summary>
+    /// Clipboard service that provides copy/paste functionality.
+    /// </summary>
     private IClipboard _clipboard;
 
     // This ensures that the sheet is not re-rendered when mouse events are handled inside the sheet.
@@ -126,37 +160,54 @@ public partial class Datasheet : IHandleEvent
         // to the sheet in all the managers
         if (_sheetLocal != Sheet)
         {
-            if (_sheetLocal != null)
-            {
-                _sheetLocal.RowInserted -= SheetOnRowInserted;
-                _sheetLocal.RowRemoved -= SheetOnRowRemoved;
-                _sheetLocal.ColumnInserted -= SheetOnColInserted;
-                _sheetLocal.ColumnRemoved -= SheetOnColRemoved;
-                _sheetLocal.FormatsChanged -= SheetLocalOnFormatsChanged;
-                _sheetLocal.ColumnWidthChanged -= SheetLocalOnColumnWidthChanged;
-                _sheetLocal.SheetInvalidated -= SheetLocalOnSheetInvalidated;
-                _sheetLocal.Merges.RegionMerged -= SheetLocalOnRegionMerged;
-                _sheetLocal.Merges.RegionUnMerged -= SheetLocalOnRegionUnMerged;
-            }
+            // Remove any listeners on the old sheet
+            RemoveSheetEventListeners();
 
             _sheetLocal = Sheet;
-            _sheetLocal.SetDialogService(new SimpleDialogService(this.JS));
-            if (_sheetLocal != null)
-            {
-                _sheetLocal.RowInserted += SheetOnRowInserted;
-                _sheetLocal.RowRemoved += SheetOnRowRemoved;
-                _sheetLocal.ColumnInserted += SheetOnColInserted;
-                _sheetLocal.ColumnRemoved += SheetOnColRemoved;
-                _sheetLocal.FormatsChanged += SheetLocalOnFormatsChanged;
-                _sheetLocal.ColumnWidthChanged += SheetLocalOnColumnWidthChanged;
-                _sheetLocal.SheetInvalidated += SheetLocalOnSheetInvalidated;
-                _sheetLocal.CellsChanged += SheetLocalOnCellsChanged;
-                _sheetLocal.Merges.RegionMerged += SheetLocalOnRegionMerged;
-                _sheetLocal.Merges.RegionUnMerged += SheetLocalOnRegionUnMerged;
-            }
+            _sheetLocal?.SetDialogService(new SimpleDialogService(this.JS));
+
+            AddSheetEventListeners();
         }
 
         base.OnParametersSet();
+    }
+
+    private void RemoveSheetEventListeners()
+    {
+        if (_sheetLocal == null) return;
+        _sheetLocal.RowInserted -= SheetOnRowInserted;
+        _sheetLocal.RowRemoved -= SheetOnRowRemoved;
+        _sheetLocal.ColumnInserted -= SheetOnColInserted;
+        _sheetLocal.ColumnRemoved -= SheetOnColRemoved;
+        _sheetLocal.FormatsChanged -= SheetLocalOnFormatsChanged;
+        _sheetLocal.ColumnWidthChanged -= SheetLocalOnColumnWidthChanged;
+        _sheetLocal.SheetInvalidated -= SheetLocalOnSheetInvalidated;
+        _sheetLocal.Merges.RegionMerged -= SheetLocalOnRegionMerged;
+        _sheetLocal.Merges.RegionUnMerged -= SheetLocalOnRegionUnMerged;
+    }
+
+    private void AddSheetEventListeners()
+    {
+        if (_sheetLocal == null) return;
+        _sheetLocal.RowInserted += SheetOnRowInserted;
+        _sheetLocal.RowRemoved += SheetOnRowRemoved;
+        _sheetLocal.ColumnInserted += SheetOnColInserted;
+        _sheetLocal.ColumnRemoved += SheetOnColRemoved;
+        _sheetLocal.FormatsChanged += SheetLocalOnFormatsChanged;
+        _sheetLocal.ColumnWidthChanged += SheetLocalOnColumnWidthChanged;
+        _sheetLocal.SheetInvalidated += SheetLocalOnSheetInvalidated;
+        _sheetLocal.CellsChanged += SheetLocalOnCellsChanged;
+        _sheetLocal.Merges.RegionMerged += SheetLocalOnRegionMerged;
+        _sheetLocal.Merges.RegionUnMerged += SheetLocalOnRegionUnMerged;
+    }
+
+    private void RegisterDefaultCellRendererAndEditors()
+    {
+        _defaultCellTypeDefinitions.Add("text", CellTypeDefinition.Create<TextEditorComponent, TextRenderer>());
+        _defaultCellTypeDefinitions.Add("datetime", CellTypeDefinition.Create<DateTimeEditorComponent, TextRenderer>());
+        _defaultCellTypeDefinitions.Add("boolean", CellTypeDefinition.Create<TextEditorComponent, BoolRenderer>());
+        _defaultCellTypeDefinitions.Add("select", CellTypeDefinition.Create<SelectEditorComponent, SelectRenderer>());
+        _defaultCellTypeDefinitions.Add("textarea", CellTypeDefinition.Create<TextareaEditorComponent, TextRenderer>());
     }
 
     private void SheetLocalOnRegionUnMerged(object? sender, IRegion region)
@@ -239,8 +290,12 @@ public partial class Datasheet : IHandleEvent
 
     private Type getCellRendererType(string type)
     {
-        if (Sheet?.RenderComponentTypes.ContainsKey(type) == true)
-            return Sheet.RenderComponentTypes[type];
+        // First look at any custom renderers
+        if (CustomCellTypeDefinitions.ContainsKey(type))
+            return CustomCellTypeDefinitions[type].RendererType;
+
+        if (_defaultCellTypeDefinitions.ContainsKey(type))
+            return _defaultCellTypeDefinitions[type].RendererType;
 
         return typeof(TextRenderer);
     }
@@ -271,13 +326,13 @@ public partial class Datasheet : IHandleEvent
             _dotnetHelper = DotNetObjectReference.Create(this);
             await AddWindowEventsAsync();
             await JS.InvokeVoidAsync("addVirtualisationHandlers",
-                                     _dotnetHelper,
-                                     _wholeSheetDiv,
-                                     nameof(HandleScroll),
-                                     _fillerLeft1,
-                                     _fillerTop,
-                                     _fillerRight,
-                                     _fillerBottom);
+                _dotnetHelper,
+                _wholeSheetDiv,
+                nameof(HandleScroll),
+                _fillerLeft1,
+                _fillerTop,
+                _fillerRight,
+                _fillerBottom);
 
             // we need to know the position of the datasheet relative to the 
             // page start, so that we can calculate mouse events correctly

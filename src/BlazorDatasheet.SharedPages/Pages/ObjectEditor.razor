@@ -4,6 +4,7 @@
 @using BlazorDatasheet.Render.DefaultComponents;
 @using BlazorDatasheet.Validation
 @using BlazorDatasheet.Data
+@using BlazorDatasheet.Render
 @using BlazorDatasheet.SharedPages.Data
 
 <PageTitle>Object editor</PageTitle>
@@ -14,11 +15,19 @@
 
 <p>With properties across columns:</p>
 
-<Datasheet @ref="dataSheet1" Sheet="editor1.Sheet"></Datasheet>
+<Datasheet
+    @ref="dataSheet1"
+    CustomCellTypeDefinitions="CustomTypes"
+    Sheet="editor1.Sheet">
+</Datasheet>
 
 <p>With properties across rows:</p>
 
-<Datasheet @ref="dataSheet2" Sheet="editor2.Sheet"></Datasheet>
+<Datasheet
+    @ref="dataSheet2"
+    CustomCellTypeDefinitions="CustomTypes"
+    Sheet="editor2.Sheet">
+</Datasheet>
 
 @code {
 
@@ -28,6 +37,7 @@
     private ObjectEditor<Person> editor2;
     private Datasheet dataSheet1;
     private Datasheet dataSheet2;
+    private Dictionary<string, CellTypeDefinition> CustomTypes { get; } = new();
 
     protected override void OnInitialized()
     {
@@ -51,10 +61,7 @@
                 pd.UseDataValidator(categoryValidator);
                 pd.Type = "select";
             })
-             .WithProperty(x => x.State, pd =>
-            {
-                pd.Type = "PersonState";
-            })
+            .WithProperty(x => x.State, pd => { pd.Type = "PersonState"; })
             .Build();
 
         editor2 = builderRows
@@ -64,18 +71,10 @@
                 pd.UseDataValidator(categoryValidator);
                 pd.Type = "select";
             })
-              .WithProperty(x => x.State, pd =>
-            {
-                pd.Type = "PersonState";
-            })
+            .WithProperty(x => x.State, pd => { pd.Type = "PersonState"; })
             .Build();
 
-        editor1.Sheet.RegisterEditor<EnumEditorComponent<PersonState>>("PersonState");
-        editor1.Sheet.RegisterRenderer<SelectRenderer>("PersonState");
-
-        editor2.Sheet.RegisterEditor<EnumEditorComponent<PersonState>>("PersonState");
-        editor2.Sheet.RegisterRenderer<SelectRenderer>("PersonState");
-
+        CustomTypes.Add("PersonState", CellTypeDefinition.Create<EnumEditorComponent<PersonState>, SelectRenderer>());
 
         editor1.Sheet.CellsChanged += (sender, enumerable) => dataSheet2.ForceReRender();
         editor2.Sheet.CellsChanged += (sender, enumerable) => dataSheet1.ForceReRender();

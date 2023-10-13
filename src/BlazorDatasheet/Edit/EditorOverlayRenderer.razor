@@ -24,6 +24,12 @@
     [Parameter, EditorRequired]
     public Sheet Sheet { get; set; }
 
+    [Parameter, EditorRequired]
+    public Dictionary<string, CellTypeDefinition> CustomCellTypes { get; set; }
+
+    [Parameter, EditorRequired]
+    public Dictionary<string, CellTypeDefinition> DefaultCellTypes { get; set; }
+
     private Sheet? _sheet;
 
     [Parameter]
@@ -52,9 +58,6 @@
     /// The current cell editor component
     private BaseEditor ActiveCellEditor;
 
-    [Parameter]
-    public bool FixScrollToCellEdge { get; set; }
-
     private bool BeginningEdit { get; set; }
 
     /// The Dynamic component holding the Active Editor component
@@ -79,12 +82,7 @@
     private void EditorOnEditBegin(object? sender, EditBeginEventArgs e)
     {
         EditValue = e.EditValue;
-
-        if (Sheet.EditorTypes.ContainsKey(e.Type))
-            ActiveEditorType = Sheet.EditorTypes[e.Type];
-        else
-            ActiveEditorType = typeof(TextEditorComponent);
-
+        ActiveEditorType = GetEditorType(e.Type);
         IsEditing = true;
         IsSoftEdit = e.IsSoftEdit;
         EditEntryMode = e.Mode;
@@ -92,6 +90,17 @@
         EditEntryKey = e.Key ?? string.Empty;
         BeginningEdit = true;
         StateHasChanged();
+    }
+
+    private Type GetEditorType(string cellType)
+    {
+        if (CustomCellTypes.ContainsKey(cellType))
+            return CustomCellTypes[cellType].EditorType;
+
+        if (DefaultCellTypes.ContainsKey(cellType))
+            return DefaultCellTypes[cellType].EditorType;
+
+        return typeof(TextEditorComponent);
     }
 
     private void EditorOnEditFinished(object? sender, EditFinishedEventArgs e)
@@ -111,7 +120,7 @@
             ActiveCellEditor.RequestCancelEdit += HandleEditorRequestCancelEdit;
             ActiveCellEditor.RequestAcceptEdit += HandleEditorRequestAcceptEdit;
             ActiveCellEditor.BeginEdit(EditEntryMode, EditValue, EditEntryKey);
-            if(EditEntryMode != EditEntryMode.None)
+            if (EditEntryMode != EditEntryMode.None)
                 await ActiveCellEditor.Focus();
             ActiveCellEditor.Render();
             BeginningEdit = false;
@@ -158,9 +167,6 @@
     /// <returns></returns>
     private string GetEditorSizeStyling()
     {
-    //if (!IsEditing)
-    //    return "display:none;";
-
         var strBuilder = new StringBuilder();
         var left = CellLayoutProvider.ComputeLeftPosition(EditCell.Col, Sheet.ShowRowHeadings);
         var top = CellLayoutProvider.ComputeTopPosition(EditCell.Row, Sheet.ShowColumnHeadings);

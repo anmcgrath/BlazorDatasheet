@@ -11,10 +11,7 @@
 <p>Below is a sheet with 100,000 rows. There is no data validation or formatting and the default editors are used.</p>
 
 <Datasheet
-    Sheet="sheet"
-    IsFixedHeight="true"
-    IsFixedWidth="true"
-    FixedHeightInPx="600"/>
+    Sheet="sheet"/>
 <button @onclick="@(() => sheet.SetFormat(new CellFormat() { BackgroundColor = "red" }, sheet.Selection))">Set format to red</button>
 <button @onclick="@(() => sheet.SetFormat(new CellFormat() { BackgroundColor = "blue" }, sheet.Selection))">Set format to blue</button>
 

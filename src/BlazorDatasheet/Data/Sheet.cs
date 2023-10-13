@@ -82,11 +82,6 @@ public class Sheet
 
     private readonly HashSet<(int row, int col)> _dirtyCells;
 
-    private readonly Dictionary<string, Type> _editorTypes;
-    public IReadOnlyDictionary<string, Type> EditorTypes => _editorTypes;
-    private readonly Dictionary<string, Type> _renderComponentTypes;
-    public IReadOnlyDictionary<string, Type> RenderComponentTypes => _renderComponentTypes;
-
     /// <summary>
     /// Formats applied to any rows
     /// </summary>
@@ -177,12 +172,7 @@ public class Sheet
         Editor = new Editor(this);
         FormulaEngine = new FormulaEngine.FormulaEngine(this);
         ConditionalFormatting = new ConditionalFormatManager(this);
-        _editorTypes = new Dictionary<string, Type>();
-        _renderComponentTypes = new Dictionary<string, Type>();
         _dirtyCells = new HashSet<(int row, int col)>();
-
-        RegisterDefaultEditors();
-        RegisterDefaultRenderers();
     }
 
     public Sheet(int numRows, int numCols, Cell[,] cells) : this()
@@ -655,48 +645,6 @@ public class Sheet
         }
 
         MarkDirty(cellsAffected);
-    }
-
-    /// <summary>
-    /// Registers a cell editor component with a unique name.
-    /// If the editor already exists, it will override the existing.
-    /// </summary>
-    /// <param name="name">A unique name for the editor</param>
-    /// <typeparam name="T"></typeparam>
-    public void RegisterEditor<T>(string name) where T : ICellEditor
-    {
-        if (!_editorTypes.ContainsKey(name))
-            _editorTypes.Add(name, typeof(T));
-        _editorTypes[name] = typeof(T);
-    }
-
-    /// <summary>
-    /// Registers a cell renderer component with a unique name.
-    /// If the renderer already exists, it will override the existing.
-    /// </summary>
-    /// <param name="name">A unique name for the renderer</param>
-    /// <typeparam name="T"></typeparam>
-    public void RegisterRenderer<T>(string name) where T : BaseRenderer
-    {
-        if (!_renderComponentTypes.TryAdd(name, typeof(T)))
-            _renderComponentTypes[name] = typeof(T);
-    }
-
-    private void RegisterDefaultEditors()
-    {
-        RegisterEditor<TextEditorComponent>("text");
-        RegisterEditor<DateTimeEditorComponent>("datetime");
-        RegisterEditor<TextEditorComponent>("boolean");
-        RegisterEditor<SelectEditorComponent>("select");
-        RegisterEditor<TextareaEditorComponent>("textarea");
-    }
-
-    private void RegisterDefaultRenderers()
-    {
-        RegisterRenderer<TextRenderer>("text");
-        RegisterRenderer<SelectRenderer>("select");
-        RegisterRenderer<NumberRenderer>("number");
-        RegisterRenderer<BoolRenderer>("boolean");
     }
 
     /// <summary>
