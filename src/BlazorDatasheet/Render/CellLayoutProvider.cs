@@ -1,6 +1,7 @@
 using BlazorDatasheet.Data;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Events;
+using BlazorDatasheet.Events.Layout;
 
 namespace BlazorDatasheet.Render;
 
@@ -11,101 +12,20 @@ namespace BlazorDatasheet.Render;
 public class CellLayoutProvider
 {
     private Sheet _sheet;
-    public double DefaultColumnWidth { get; }
-    public double DefaultRowHeight { get; }
-    public int VisibleRowOffset { get; private set; }
-    public int VisibleColOffset { get; private set; }
-
-    // as long as the number of columns are small (which we will restrict) 
-    // then we can store the column widths & x positions in arrays
-    private List<double> _columnWidths { get; } = new();
-    private List<double> _columnStartPositions { get; } = new();
 
     /// <summary>
     /// The total width of the sheet
     /// </summary>
-    public double TotalWidth { get; private set; }
+    public double TotalWidth => _sheet.ColumnWidths.GetCumulative(_sheet.NumCols);
 
     /// <summary>
     /// The total height of the sheet
     /// </summary>
-    public double TotalHeight { get; private set; }
+    public double TotalHeight => _sheet.RowHeights.GetCumulative(_sheet.NumRows);
 
-    public CellLayoutProvider(Sheet sheet, double defaultColumnWidth, double defaultRowHeight)
+    public CellLayoutProvider(Sheet sheet)
     {
         _sheet = sheet;
-        _sheet.ColumnInserted += SheetOnColumnInserted;
-        _sheet.ColumnRemoved += SheetOnColumnRemoved;
-        _sheet.RowInserted += SheetOnRowInserted;
-        _sheet.RowRemoved += SheetOnRowRemoved;
-        DefaultColumnWidth = defaultColumnWidth;
-        DefaultRowHeight = defaultRowHeight;
-
-        // Create default array of column widths
-        _columnWidths = Enumerable.Repeat(defaultColumnWidth, sheet.NumCols).ToList();
-
-        TotalWidth = defaultColumnWidth * sheet.NumCols;
-        TotalHeight = defaultRowHeight * sheet.NumRows;
-        updateXPositions();
-    }
-
-    private void SheetOnRowRemoved(object? sender, RowRemovedEventArgs e)
-    {
-        TotalHeight -= e.NRows * DefaultRowHeight;
-    }
-
-    public void SetVisibleRowOffset(int row)
-    {
-        VisibleRowOffset = row;
-    }
-
-    public void SetVisibleColOffset(int col)
-    {
-        VisibleColOffset = col;
-    }
-
-    private void SheetOnRowInserted(object? sender, RowInsertedEventArgs e)
-    {
-        TotalHeight += e.NRows * DefaultRowHeight;
-    }
-
-    private void SheetOnColumnRemoved(object? sender, ColumnRemovedEventArgs e)
-    {
-        for (int i = e.ColumnIndex; i < e.NCols; i++)
-        {
-            _columnWidths.RemoveAt(i);
-        }
-
-        updateXPositions();
-    }
-
-    private void SheetOnColumnInserted(object? sender, ColumnInsertedEventArgs e)
-    {
-        for (int i = e.ColumnIndex; i < e.NCols; i++)
-        {
-            _columnWidths.Insert(e.ColumnIndex, e.Width ?? DefaultColumnWidth);
-        }
-
-        updateXPositions();
-    }
-
-    public void SetColumnWidth(int col, double width)
-    {
-        _columnWidths[col] = width;
-        updateXPositions();
-    }
-
-    private void updateXPositions()
-    {
-        _columnStartPositions.Clear();
-        double cumX = 0;
-        for (int i = 0; i < _columnWidths.Count; i++)
-        {
-            _columnStartPositions.Add(cumX);
-            cumX += _columnWidths[i];
-        }
-
-        TotalWidth = cumX;
     }
 
     public void SetSheet(Sheet sheet)
@@ -124,10 +44,7 @@ public class CellLayoutProvider
         if (col < 0)
             return 0;
 
-        if (col > _columnWidths.Count - 1)
-            return _columnWidths.Last() + _columnStartPositions.Last() +
-                   ((col - _columnWidths.Count) + extra) * DefaultColumnWidth;
-        return extra * DefaultColumnWidth + _columnStartPositions[col];
+        return _sheet.ColumnWidths.GetCumulative(col) + extra;
     }
 
     public double ComputeTopPosition(IRegion region, bool includeRowHeaders)
@@ -138,25 +55,15 @@ public class CellLayoutProvider
     public double ComputeTopPosition(int row, bool includeColHeaders)
     {
         var extra = includeColHeaders ? 1 : 0;
-        var top = (row + extra) * DefaultRowHeight;
-        return top;
+        if (row < 0)
+            return 0;
+
+        return _sheet.RowHeights.GetCumulative(row) + extra;
     }
 
     public double ComputeWidth(int startCol, int colSpan)
     {
-        if (startCol < 0 || startCol >= _columnWidths.Count)
-            return DefaultColumnWidth;
-
-        if (colSpan == 0)
-            return 0;
-
-        var end = Math.Min(startCol + colSpan - 1, _columnWidths.Count - 1);
-
-        var colXStart = _columnStartPositions[startCol];
-        var colXEnd = _columnStartPositions[end];
-
-        var w = colXEnd - colXStart + _columnWidths[end];
-        return w;
+        return _sheet.ColumnWidths.GetSizeBetween(startCol, startCol + colSpan);
     }
 
     /// <summary>
@@ -171,38 +78,42 @@ public class CellLayoutProvider
         return ComputeWidth(startCol, span);
     }
 
+    /// <summary>
+    /// Computes the width between the start of start col, and the start of end col.
+    /// </summary>
+    /// <param name="startRow"></param>
+    /// <param name="endRow"></param>
+    /// <returns></returns>
+    public double ComputeHeightBetween(int startRow, int endRow)
+    {
+        var span = (endRow - startRow);
+        return ComputeHeight(startRow, span);
+    }
+
     public int ComputeColumn(double x, bool includeRowHeaders)
     {
         var extra = includeRowHeaders ? -1 : 0;
-        for (int i = 0; i < _columnStartPositions.Count; i++)
-        {
-            if (x < +_columnStartPositions[i])
-                return i - 1 + extra;
-        }
-
-        return (int)((x - TotalWidth) / DefaultColumnWidth + _columnWidths.Count) + extra;
+        return _sheet.ColumnWidths.GetPosition(x) + extra;
     }
 
     public int ComputeRow(double y, bool includeColHeaders)
     {
         var extra = includeColHeaders ? -1 : 0;
-        return (int)(y / DefaultRowHeight) + extra;
+        return _sheet.RowHeights.GetPosition(y) + extra;
     }
 
-    public double ComputeHeight(int rowSpan)
+    public double ComputeHeight(int startRow, int rowSpan)
     {
-        if (rowSpan > _sheet.NumRows)
-            return (_sheet.NumRows * DefaultRowHeight);
-        return rowSpan * DefaultRowHeight;
+        return _sheet.RowHeights.GetSizeBetween(startRow, startRow + rowSpan);
     }
 
     public double ComputeWidth(IRegion region)
     {
-        return ComputeWidth(region.TopLeft.Col, region.Width);
+        return ComputeWidth(region.Left, region.Width);
     }
 
     public double ComputeHeight(IRegion region)
     {
-        return ComputeHeight(region.Height);
+        return ComputeHeight(region.Top, region.Height);
     }
 }

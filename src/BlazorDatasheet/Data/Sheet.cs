@@ -10,6 +10,7 @@ using BlazorDatasheet.Edit;
 using BlazorDatasheet.Edit.DefaultComponents;
 using BlazorDatasheet.Events;
 using BlazorDatasheet.Events.Edit;
+using BlazorDatasheet.Events.Layout;
 using BlazorDatasheet.Events.Validation;
 using BlazorDatasheet.Formats;
 using BlazorDatasheet.Interfaces;
@@ -36,12 +37,12 @@ public class Sheet
     /// <summary>
     /// The sheet's headings
     /// </summary>
-    public List<Heading> ColumnHeadings { get; private set; }
+    public Dictionary<int, Heading> ColumnHeadings { get; private set; }
 
     /// <summary>
     /// The sheet's row headings
     /// </summary>
-    public List<Heading> RowHeadings { get; }
+    public Dictionary<int, Heading> RowHeadings { get; }
 
     /// <summary>
     /// Whether to show the row headings
@@ -124,6 +125,21 @@ public class Sheet
     /// </summary>
     public event EventHandler<ColumnWidthChangedEventArgs>? ColumnWidthChanged;
 
+    /// <summary>
+    /// Fired when a row height is changed.
+    /// </summary>
+    public event EventHandler<RowHeightChangedEventArgs>? RowHeightChanged;
+
+    /// <summary>
+    /// Stores column heights
+    /// </summary>
+    public CumulativeStore ColumnWidths { get; } = new(105);
+
+    /// <summary>
+    /// Stores row heights.
+    /// </summary>
+    public CumulativeStore RowHeights { get; } = new(25);
+
     public event EventHandler<CellsSelectedEventArgs>? CellsSelected;
 
     public event EventHandler<CellMetaDataChangeEventArgs>? MetaDataChanged;
@@ -159,19 +175,20 @@ public class Sheet
     /// </summary>
     public ValidationManager Validation { get; }
 
-    private readonly IMatrixDataStore<Cell> _cellDataStore = new SparseMatrixStore<Cell>();
+    internal readonly IMatrixDataStore<Cell> CellDataStore = new SparseMatrixStore<Cell>();
 
     private Sheet()
     {
         Merges = new MergeManager(this);
         Validation = new ValidationManager();
-        ColumnHeadings = new List<Heading>();
-        RowHeadings = new List<Heading>();
+        ColumnHeadings = new Dictionary<int, Heading>();
+        RowHeadings = new Dictionary<int, Heading>();
         Commands = new CommandManager(this);
         Selection = new Selection(this);
         Editor = new Editor(this);
         FormulaEngine = new FormulaEngine.FormulaEngine(this);
         ConditionalFormatting = new ConditionalFormatManager(this);
+        LayoutProvider = new CellLayoutProvider(this);
         _dirtyCells = new HashSet<(int row, int col)>();
     }
 
@@ -187,11 +204,9 @@ public class Sheet
                 var cell = cells[i, j];
                 cell.Row = i;
                 cell.Col = j;
-                _cellDataStore.Set(i, j, cell);
+                CellDataStore.Set(i, j, cell);
             }
         }
-
-        LayoutProvider = new CellLayoutProvider(this, 105, 25);
     }
 
     public Sheet(int numRows, int numCols) : this()
@@ -199,8 +214,8 @@ public class Sheet
         Validation = new ValidationManager();
         NumCols = numCols;
         NumRows = numRows;
-        LayoutProvider = new CellLayoutProvider(this, 105, 25);
     }
+
 
     #region COLS
 
@@ -217,17 +232,12 @@ public class Sheet
         Commands.ExecuteCommand(cmd);
     }
 
-    internal void InsertColAtImpl(int colIndex, double? width = null, int nCols = 1)
+    internal void InsertColAtImpl(int colIndex, int nCols = 1)
     {
-        _cellDataStore.InsertColAt(colIndex, nCols);
-        for (int i = 0; i < nCols; i++)
-        {
-            if (ColumnHeadings.Count > (colIndex + i))
-                ColumnHeadings.Insert(colIndex + i, new Heading());
-        }
+        CellDataStore.InsertColAt(colIndex, nCols);
 
         NumCols += nCols;
-        ColumnInserted?.Invoke(this, new ColumnInsertedEventArgs(colIndex, width, nCols));
+        ColumnInserted?.Invoke(this, new ColumnInsertedEventArgs(colIndex, nCols));
     }
 
     /// <summary>
@@ -243,32 +253,85 @@ public class Sheet
     }
 
     /// <summary>
-    /// Internal implementation that removes the column
+    /// Internal implementation that removes the column data
     /// </summary>
     /// <param name="colIndex"></param>
     /// <returns>Whether the column at index colIndex was removed</returns>
     internal bool RemoveColImpl(int colIndex, int nCols = 1)
     {
-        _cellDataStore.RemoveColAt(colIndex, nCols);
-        if (colIndex < ColumnHeadings.Count)
-            ColumnHeadings.RemoveAt(colIndex);
+        CellDataStore.RemoveColAt(colIndex, nCols);
+
         NumCols -= nCols;
         ColumnRemoved?.Invoke(this, new ColumnRemovedEventArgs(colIndex, nCols));
 
         return true;
     }
 
-    public void SetColumnWidth(int col, double width)
+    /// <summary>
+    /// Removes n column headings starting from the colIndex. Returns headings that were removed.
+    /// </summary>
+    /// <param name="colIndex"></param>
+    /// <param name="nCols"></param>
+    /// <returns></returns>
+    internal List<(int index, Heading heading)> RemoveColumnHeadings(int colIndex, int nCols)
     {
-        var cmd = new SetColumnWidthCommand(col, width);
+        for (int i = colIndex; i < colIndex + nCols; i++)
+        {
+            if (ColumnHeadings.ContainsKey(i))
+                ColumnHeadings.Remove(i);
+        }
+
+        var colsToAddBack = new List<(int index, Heading heading)>();
+        var removed = new List<(int index, Heading heading)>();
+        foreach (var kp in ColumnHeadings)
+        {
+            if (kp.Key >= colIndex + nCols)
+            {
+                colsToAddBack.Add((kp.Key, kp.Value));
+                ColumnHeadings.Remove(kp.Key);
+            }
+        }
+
+        foreach (var colHeading in colsToAddBack)
+            ColumnHeadings.Add(colHeading.index, colHeading.heading);
+
+        return removed;
+    }
+
+    /// <summary>
+    /// Sets the width of a column, to the width given (in px).
+    /// </summary>
+    /// <param name="colIndex"></param>
+    /// <param name="width"></param>
+    public void SetColumnWidth(int colIndex, double width)
+    {
+        var cmd = new SetColumnWidthCommand(colIndex, width);
         Commands.ExecuteCommand(cmd);
     }
 
-    internal void SetColumnWidthImpl(int col, double width)
+    internal void SetColumnWidthImpl(int colIndex, double width)
     {
-        var oldWidth = this.LayoutProvider.ComputeWidth(col, 1);
-        this.LayoutProvider.SetColumnWidth(col, width);
-        ColumnWidthChanged?.Invoke(this, new ColumnWidthChangedEventArgs(col, width, oldWidth));
+        var oldWidth = ColumnWidths.GetSize(colIndex);
+        ColumnWidths.Set(colIndex, width);
+        ColumnWidthChanged?.Invoke(this, new ColumnWidthChangedEventArgs(colIndex, width, oldWidth));
+    }
+
+    /// <summary>
+    /// Sets the height of a row to the height given (in px).
+    /// </summary>
+    /// <param name="rowIndex"></param>
+    /// <param name="height"></param>
+    public void SetRowHeight(int rowIndex, double height)
+    {
+        var cmd = new SetRowHeightCommand(rowIndex, height);
+        Commands.ExecuteCommand(cmd);
+    }
+
+    internal void SetRowHeightImpl(int rowIndex, double height)
+    {
+        var oldHeight = RowHeights.GetSize(rowIndex);
+        RowHeights.Set(rowIndex, height);
+        RowHeightChanged?.Invoke(this, new RowHeightChangedEventArgs(rowIndex, height, oldHeight));
     }
 
     #endregion
@@ -292,10 +355,15 @@ public class Sheet
     /// </summary>
     /// <param name="rowIndex"></param>
     /// <param name="nRows">The number of rows to insert</param>
+    /// <param name="height">The height of each row that is inserted. Default is the default row height</param>
     /// <returns></returns>
     internal bool InsertRowAtImpl(int rowIndex, int nRows = 1)
     {
-        _cellDataStore.InsertRowAt(rowIndex, nRows);
+        CellDataStore.InsertRowAt(rowIndex, nRows);
+
+        for (int i = rowIndex; i < (rowIndex + nRows); i++)
+            RowHeights.InsertAt(rowIndex);
+
         NumRows += nRows;
 
         RowInserted?.Invoke(this, new RowInsertedEventArgs(rowIndex, nRows));
@@ -312,7 +380,8 @@ public class Sheet
     {
         var row = rowIndex;
         var endIndex = rowIndex + nRows;
-        _cellDataStore.RemoveRowAt(rowIndex, nRows);
+        CellDataStore.RemoveRowAt(rowIndex, nRows);
+
         NumRows -= nRows;
         RowRemoved?.Invoke(this, new RowRemovedEventArgs(rowIndex, nRows));
         row++;
@@ -397,8 +466,8 @@ public class Sheet
     public IEnumerable<IReadOnlyCell> GetCellsInRegion(IRegion region)
     {
         return (new BRange(this, region))
-            .Positions
-            .Select(x => this.GetCell(x.row, x.col));
+               .Positions
+               .Select(x => this.GetCell(x.row, x.col));
     }
 
     /// <summary>
@@ -422,7 +491,7 @@ public class Sheet
     /// <returns></returns>
     public IReadOnlyCell GetCell(int row, int col)
     {
-        var cell = _cellDataStore.Get(row, col);
+        var cell = CellDataStore.Get(row, col);
 
         if (cell == null)
             return new Cell()
@@ -448,10 +517,10 @@ public class Sheet
 
     internal IEnumerable<(int row, int col)> GetNonEmptyCellPositions(IRegion region)
     {
-        return _cellDataStore.GetNonEmptyPositions(region.TopLeft.Row,
-            region.BottomRight.Row,
-            region.TopLeft.Col,
-            region.BottomRight.Col);
+        return CellDataStore.GetNonEmptyPositions(region.TopLeft.Row,
+                                                  region.BottomRight.Row,
+                                                  region.TopLeft.Col,
+                                                  region.BottomRight.Col);
     }
 
     #endregion
@@ -465,11 +534,11 @@ public class Sheet
 
     public bool TrySetCellValueImpl(int row, int col, object? value, bool raiseEvent = true)
     {
-        var cell = _cellDataStore.Get(row, col);
+        var cell = CellDataStore.Get(row, col);
         if (cell == null)
         {
             cell = new Cell(value);
-            _cellDataStore.Set(row, col, cell);
+            CellDataStore.Set(row, col, cell);
             if (raiseEvent)
                 CellsChanged?.Invoke(this, new List<ChangeEventArgs>() { new(row, col, null, value) });
 
@@ -517,11 +586,11 @@ public class Sheet
 
     internal void SetMetaDataImpl(int row, int col, string name, object? value)
     {
-        var cell = _cellDataStore.Get(row, col);
+        var cell = CellDataStore.Get(row, col);
         if (cell == null)
         {
             cell = new Cell();
-            _cellDataStore.Set(row, col, cell);
+            CellDataStore.Set(row, col, cell);
         }
 
         var oldMetaData = cell.GetMetaData(name);
@@ -545,7 +614,7 @@ public class Sheet
 
     public void SetCell(int row, int col, Cell cell)
     {
-        _cellDataStore.Set(row, col, cell);
+        CellDataStore.Set(row, col, cell);
     }
 
     /// <summary>
@@ -636,10 +705,10 @@ public class Sheet
 
     internal void ValidateRegion(IRegion region)
     {
-        var cellsAffected = _cellDataStore.GetNonEmptyPositions(region).ToList();
+        var cellsAffected = CellDataStore.GetNonEmptyPositions(region).ToList();
         foreach (var (row, col) in cellsAffected)
         {
-            var cell = _cellDataStore.Get(row, col);
+            var cell = CellDataStore.Get(row, col);
             var result = Validation.Validate(cell.GetValue(), row, col);
             cell.IsValid = result.IsValid;
         }
@@ -843,9 +912,9 @@ public class Sheet
                 var positions = new BRange(this, sheetRegion).Positions;
                 foreach (var cellPosition in positions)
                 {
-                    if (!_cellDataStore.Contains(cellPosition.row, cellPosition.col))
-                        _cellDataStore.Set(cellPosition.row, cellPosition.col, new Cell());
-                    var cell = _cellDataStore.Get(cellPosition.row, cellPosition.col);
+                    if (!CellDataStore.Contains(cellPosition.row, cellPosition.col))
+                        CellDataStore.Set(cellPosition.row, cellPosition.col, new Cell());
+                    var cell = CellDataStore.Get(cellPosition.row, cellPosition.col);
                     var oldFormat = cell!.Formatting?.Clone();
                     cell!.MergeFormat(cellFormat);
                     changes.Add(new CellChangedFormat(cellPosition.row, cellPosition.col, oldFormat, cellFormat));
@@ -876,7 +945,7 @@ public class Sheet
         var nonEmpty = this.GetNonEmptyCellPositions(region);
         foreach (var posn in nonEmpty)
         {
-            var cell = _cellDataStore.Get(posn.row, posn.col);
+            var cell = CellDataStore.Get(posn.row, posn.col);
             var oldFormat = cell!.Formatting?.Clone();
             if (cell.Formatting == null)
                 cell.Formatting = cellFormat.Clone();
@@ -891,7 +960,7 @@ public class Sheet
         foreach (var rowInterval in RowFormats.GetAllIntervals())
         {
             overlappingRegions.Add(new Region(rowInterval.Start, rowInterval.End, region.Start.Col,
-                region.End.Col));
+                                              region.End.Col));
         }
 
         foreach (var overlapRegion in overlappingRegions)
@@ -902,11 +971,11 @@ public class Sheet
                 var positions = new BRange(this, sheetRegion).Positions;
                 foreach (var position in positions)
                 {
-                    if (!_cellDataStore.Contains(position.row, position.col))
-                        _cellDataStore.Set(position.row, position.col, new Cell());
-                    var cell = _cellDataStore.Get(position.row, position.col);
+                    if (!CellDataStore.Contains(position.row, position.col))
+                        CellDataStore.Set(position.row, position.col, new Cell());
+                    var cell = CellDataStore.Get(position.row, position.col);
                     var oldFormat = cell!.Formatting?.Clone();
-                    _cellDataStore.Get(position.row, position.col)!.MergeFormat(cellFormat);
+                    CellDataStore.Get(position.row, position.col)!.MergeFormat(cellFormat);
                     changes.Add(new CellChangedFormat(position.row, position.col, oldFormat, cellFormat));
                 }
             }
@@ -927,7 +996,7 @@ public class Sheet
         var nonEmpty = this.GetNonEmptyCellPositions(region);
         foreach (var posn in nonEmpty)
         {
-            var cell = _cellDataStore.Get(posn.row, posn.col);
+            var cell = CellDataStore.Get(posn.row, posn.col);
             var oldFormat = cell!.Formatting?.Clone();
             if (cell.Formatting == null)
                 cell.Formatting = cellFormat.Clone();
@@ -942,7 +1011,7 @@ public class Sheet
         foreach (var colInterval in ColFormats.GetAllIntervals())
         {
             overlappingRegions.Add(new Region(region.Start.Row, region.End.Row, colInterval.Start,
-                colInterval.End));
+                                              colInterval.End));
         }
 
         foreach (var overlapRegion in overlappingRegions)
@@ -953,11 +1022,11 @@ public class Sheet
                 var posns = new BRange(this, sheetRegion).Positions;
                 foreach (var posn in posns)
                 {
-                    if (!_cellDataStore.Contains(posn.row, posn.col))
-                        _cellDataStore.Set(posn.row, posn.col, new Cell());
-                    var cell = _cellDataStore.Get(posn.row, posn.col);
+                    if (!CellDataStore.Contains(posn.row, posn.col))
+                        CellDataStore.Set(posn.row, posn.col, new Cell());
+                    var cell = CellDataStore.Get(posn.row, posn.col);
                     var oldFormat = cell!.Formatting?.Clone();
-                    _cellDataStore.Get(posn.row, posn.col)!.MergeFormat(cellFormat);
+                    CellDataStore.Get(posn.row, posn.col)!.MergeFormat(cellFormat);
                     changes.Add(new CellChangedFormat(posn.row, posn.col, oldFormat, cellFormat));
                 }
             }
@@ -978,11 +1047,11 @@ public class Sheet
     internal CellChangedFormat SetCellFormat(int row, int col, CellFormat cellFormat)
     {
         CellFormat? oldFormat = null;
-        if (!_cellDataStore.Contains(row, col))
-            _cellDataStore.Set(row, col, new Cell() { Formatting = cellFormat });
+        if (!CellDataStore.Contains(row, col))
+            CellDataStore.Set(row, col, new Cell() { Formatting = cellFormat });
         else
         {
-            var cell = _cellDataStore.Get(row, col);
+            var cell = CellDataStore.Get(row, col);
             oldFormat = cell!.Formatting;
             cell!.Formatting = cellFormat;
         }

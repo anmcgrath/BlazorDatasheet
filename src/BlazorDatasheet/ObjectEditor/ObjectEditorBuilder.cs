@@ -163,7 +163,7 @@ public class ObjectEditorBuilder<T>
             var headings = _direction == GridDirection.PropertiesAcrossColumns
                 ? sheet.ColumnHeadings
                 : sheet.RowHeadings;
-            headings.Add(new Heading()
+            headings.Add(i, new Heading()
             {
                 Header = string.IsNullOrEmpty(propDefn.Heading)
                     ? propDefn.PropertyName

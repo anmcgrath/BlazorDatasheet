@@ -1,5 +1,6 @@
 using BlazorDatasheet.Data;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.DataStructures.Intervals;
 using BlazorDatasheet.DataStructures.RTree;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.DataStructures.Util;
@@ -71,7 +72,7 @@ public class RemoveRowsCommand : IUndoableCommand
             _modifiedRowFormat = existingRowFormatInterval.Copy();
             var formatToShrink = existingRowFormatInterval.Copy();
             formatToShrink.End = formatToShrink.End - 1;
-            sheet.RowFormats.Delete(existingRowFormatInterval);
+            sheet.RowFormats.Remove(existingRowFormatInterval);
             sheet.RowFormats.Add(formatToShrink);
         }
 
@@ -83,6 +84,8 @@ public class RemoveRowsCommand : IUndoableCommand
             if (format != null)
                 _removedCellFormats.Add(new CellChangedFormat(position.row, position.col, format, null));
         }
+        
+        sheet.RowFormats.ShiftLeft(_rowIndex, _nRowsRemoved);
     }
 
     public bool Undo(Sheet sheet)
@@ -91,6 +94,7 @@ public class RemoveRowsCommand : IUndoableCommand
         foreach (var merge in _mergedRemoved)
             sheet.Merges.AddImpl(merge.Region);
 
+        sheet.Validation.Store.InsertRows(_rowIndex, _nRowsRemoved);
         foreach (var validator in _validatorsRemoved)
             sheet.Validation.Store.Add(validator.Region, validator.Data);
 
@@ -98,6 +102,7 @@ public class RemoveRowsCommand : IUndoableCommand
 
         _clearCellsCommand.Undo(sheet);
 
+        sheet.RowFormats.ShiftRight(_rowIndex, _nRowsRemoved);
         if (_modifiedRowFormat != null)
             sheet.RowFormats.Add(_modifiedRowFormat);
 

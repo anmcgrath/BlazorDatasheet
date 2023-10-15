@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Components.Web;
 
-namespace BlazorDatasheet.Events;
+namespace BlazorDatasheet.Events.Layout;
 
 public class RowMouseEventArgs
 {

@@ -2,6 +2,7 @@ using System.Linq;
 using BlazorDatasheet.Data;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formats;
+using FluentAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.SheetTests;
@@ -91,5 +92,32 @@ public class FormattingTests
         // Check every cell in row 1 have format 2 bg color
         Assert.True(_sheet.GetCellsInRegion(new RowRegion(1)).Select(x => _sheet.GetFormat(x.Row, x.Col))
                           .All(f => f?.BackgroundColor == format2.BackgroundColor));
+    }
+
+    [Test]
+    public void Insert_ROw_Or_Col_Before_Row_Col_Format_Shifts_Formats()
+    {
+        var f1 = new CellFormat() { BackgroundColor = "red" };
+        var f2 = new CellFormat() { BackgroundColor = "blue" };
+        _sheet.SetFormat(f1, _sheet.Range(new ColumnRegion(2)));
+        _sheet.SetFormat(f2, _sheet.Range(new RowRegion(2)));
+        _sheet.InsertColAt(0);
+        _sheet.InsertRowAt(0);
+        _sheet.GetFormat(0, 2)?.BackgroundColor?.Should().BeNullOrEmpty();
+        _sheet.GetFormat(0, 3)?.BackgroundColor.Should().Be("red");
+        
+        _sheet.GetFormat(2, 0)?.BackgroundColor?.Should().BeNullOrEmpty();
+        _sheet.GetFormat(3, 0)?.BackgroundColor.Should().Be("blue");
+
+        _sheet.Commands.Undo();
+        _sheet.Commands.Undo();
+        
+        _sheet.GetFormat(0, 2)?.BackgroundColor.Should().Be("red");
+        _sheet.GetFormat(0, 3)?.BackgroundColor?.Should().BeNullOrEmpty();
+
+        _sheet.GetFormat(2, 0)?.BackgroundColor.Should().Be("blue");
+        _sheet.GetFormat(3, 0)?.BackgroundColor?.Should().BeNullOrEmpty();
+
+        
     }
 }

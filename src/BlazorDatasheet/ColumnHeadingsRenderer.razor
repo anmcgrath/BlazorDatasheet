@@ -8,6 +8,8 @@
 @using BlazorDatasheet.Util
 @using Microsoft.JSInterop
 @using System.Text
+@using BlazorDatasheet.DataStructures.Intervals
+@using BlazorDatasheet.Events.Layout
 @inject IJSRuntime JS;
 @implements IDisposable
 
@@ -21,7 +23,7 @@
             BorderThickness="0"
             BackgroundStyle="background:var(--selection-bg-color);"
             Width="CellLayoutProvider.ComputeWidth(interval.Start, interval.Length)"
-            Height="CellLayoutProvider.ComputeHeight(1)"
+            Height="CellLayoutProvider.ComputeHeight(-1, 1)"
             X="CellLayoutProvider.ComputeLeftPosition(interval.Start, Sheet.ShowRowHeadings)"
             Y="CellLayoutProvider.ComputeTopPosition(-1, Sheet.ShowColumnHeadings)"/>
     }

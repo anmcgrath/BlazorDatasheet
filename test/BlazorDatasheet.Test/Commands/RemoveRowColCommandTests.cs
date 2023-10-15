@@ -1,11 +1,12 @@
 using BlazorDatasheet.Data;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formats;
+using FluentAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Commands;
 
-public class RemoveColCommandTests
+public class RemoveRowColCommandTests
 {
     [Test]
     public void Remove_Col_Then_Undo_Works_Ok()
@@ -23,6 +24,23 @@ public class RemoveColCommandTests
         Assert.AreEqual(3, sheet.NumCols);
         Assert.AreEqual("0,2", sheet.GetValue(0, 2));
         Assert.AreEqual("0,3", sheet.GetValue(0, 3));
+    }
+    
+    [Test]
+    public void Remove_Row_Then_Undo_Works_Ok()
+    {
+        var sheet = new Sheet(3, 1);
+        sheet.TrySetCellValue(2, 0, "2,0");
+        sheet.TrySetCellValue(3, 0, "3,0");
+        sheet.RemoveRow(2);
+
+        Assert.AreEqual(2, sheet.NumRows);
+        Assert.AreEqual("3,0", sheet.GetValue(2, 0));
+
+        sheet.Commands.Undo();
+        Assert.AreEqual(3, sheet.NumRows);
+        Assert.AreEqual("2,0", sheet.GetValue(2, 0));
+        Assert.AreEqual("3,0", sheet.GetValue(3, 0));
     }
 
     [Test]
@@ -67,5 +85,29 @@ public class RemoveColCommandTests
         Assert.AreEqual("red", sheet.GetFormat(1, 0)?.BackgroundColor);
         Assert.AreEqual("red", sheet.GetFormat(2, 0)?.BackgroundColor);
         Assert.Null(sheet.GetFormat(3, 0));
+    }
+
+    [Test]
+    public void Remove_Cols_Then_Undo_Restores_Widths()
+    {
+        var sheet = new Sheet(5, 5);
+        sheet.SetColumnWidth(1, 100);
+        sheet.SetColumnWidth(2, 200);
+        sheet.RemoveCol(1, 2);
+        sheet.Commands.Undo();
+        sheet.ColumnWidths.GetSize(1).Should().Be(100);
+        sheet.ColumnWidths.GetSize(2).Should().Be(200);
+    }
+    
+    [Test]
+    public void Remove_Rows_Then_Undo_Restores_Widths()
+    {
+        var sheet = new Sheet(5, 5);
+        sheet.SetRowHeight(1, 100);
+        sheet.SetRowHeight(2, 200);
+        sheet.RemoveRow(1, 2);
+        sheet.Commands.Undo();
+        sheet.RowHeights.GetSize(1).Should().Be(100);
+        sheet.RowHeights.GetSize(2).Should().Be(200);
     }
 }

@@ -5,6 +5,7 @@ using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.RTree;
 using BlazorDatasheet.DataStructures.Util;
 using BlazorDatasheet.Events;
+using BlazorDatasheet.Events.Layout;
 using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Util;

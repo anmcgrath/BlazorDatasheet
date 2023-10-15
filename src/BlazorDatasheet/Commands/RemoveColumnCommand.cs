@@ -1,5 +1,6 @@
 using BlazorDatasheet.Data;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.DataStructures.Intervals;
 using BlazorDatasheet.DataStructures.RTree;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.DataStructures.Util;
@@ -13,13 +14,13 @@ public class RemoveColumnCommand : IUndoableCommand
     private int _columnIndex;
     private readonly int _nCols;
     private Heading _removedHeading;
-    private double _removedWidth;
     private List<CellChangedFormat> _removedCellFormats;
     private OrderedInterval<CellFormat>? _modifiedColumFormat;
     private List<DataRegion<bool>> _mergedRemoved;
     private List<DataRegion<int>> _validatorsRemoved;
     private int _nColsRemoved;
     private ClearCellsCommand _clearCellsCommand;
+    private List<(int col, double width)> _removedColumnWidths = new();
 
     /// <summary>
     /// Command for removing a column at the index given.
@@ -42,6 +43,7 @@ public class RemoveColumnCommand : IUndoableCommand
         ClearCells(sheet);
         RemoveFormats(sheet);
         RemoveColumnHeadingAndStoreWidth(sheet);
+        
         _mergedRemoved = sheet.Merges.Store.RemoveCols(_columnIndex, _columnIndex + _nColsRemoved - 1);
         _validatorsRemoved = sheet.Validation.Store.RemoveCols(_columnIndex, _columnIndex + _nColsRemoved - 1);
         return sheet.RemoveColImpl(_columnIndex, _nColsRemoved);
@@ -49,7 +51,7 @@ public class RemoveColumnCommand : IUndoableCommand
 
     private void RemoveColumnHeadingAndStoreWidth(Sheet sheet)
     {
-        _removedWidth = sheet.LayoutProvider.ComputeWidth(_columnIndex, 1);
+        _removedColumnWidths = sheet.ColumnWidths.Cut(_columnIndex, _nColsRemoved);
 
         if (sheet.ColumnHeadings.Any() &&
             _columnIndex >= 0 &&
@@ -73,7 +75,7 @@ public class RemoveColumnCommand : IUndoableCommand
             _modifiedColumFormat = existingColumnFormatInterval.Copy();
             var formatToShrink = existingColumnFormatInterval.Copy();
             formatToShrink.End = formatToShrink.End - 1;
-            sheet.ColFormats.Delete(existingColumnFormatInterval);
+            sheet.ColFormats.Remove(existingColumnFormatInterval);
             sheet.ColFormats.Add(formatToShrink);
         }
 
@@ -86,6 +88,8 @@ public class RemoveColumnCommand : IUndoableCommand
             if (format != null)
                 _removedCellFormats.Add(new CellChangedFormat(position.row, position.col, format, null));
         }
+        
+        sheet.ColFormats.ShiftLeft(_columnIndex, _nColsRemoved);
     }
 
     private void ClearCells(Sheet sheet)
@@ -97,20 +101,20 @@ public class RemoveColumnCommand : IUndoableCommand
 
     public bool Undo(Sheet sheet)
     {
-        sheet.Merges.Store.InsertCols(_columnIndex, _nColsRemoved);
-        foreach (var merge in _mergedRemoved)
-            sheet.Merges.AddImpl(merge.Region);
-
-        foreach (var validator in _validatorsRemoved)
-            sheet.Validation.Store.Add(validator.Region, validator.Data);
-
+        // perform undos for merges, validation etc.
+        UndoMerges(sheet);
+        UndoValidation(sheet);
+        
         // Insert column back in and set all the values that we removed
-        sheet.InsertColAtImpl(_columnIndex, _removedWidth, _nColsRemoved);
+        sheet.InsertColAtImpl(_columnIndex, _nColsRemoved);
 
+        // restore values
         _clearCellsCommand.Undo(sheet);
 
         if (_columnIndex >= 0 && _columnIndex < sheet.ColumnHeadings.Count)
             sheet.ColumnHeadings[_columnIndex] = _removedHeading;
+        
+        sheet.ColFormats.ShiftRight(_columnIndex, _nColsRemoved);
 
         if (_modifiedColumFormat != null)
             sheet.ColFormats.Add(_modifiedColumFormat);
@@ -121,5 +125,20 @@ public class RemoveColumnCommand : IUndoableCommand
         }
 
         return true;
+    }
+    
+
+    private void UndoValidation(Sheet sheet)
+    {
+        sheet.Validation.Store.InsertCols(_columnIndex, _nColsRemoved);
+        foreach (var validator in _validatorsRemoved)
+            sheet.Validation.Store.Add(validator.Region, validator.Data);
+    }
+
+    public void UndoMerges(Sheet sheet)
+    {
+        sheet.Merges.Store.InsertCols(_columnIndex, _nColsRemoved);
+        foreach (var merge in _mergedRemoved)
+            sheet.Merges.AddImpl(merge.Region);
     }
 }

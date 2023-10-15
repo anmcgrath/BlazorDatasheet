@@ -6,11 +6,17 @@ namespace BlazorDatasheet.Test.Store;
 
 public class CumulativeRangeStoreTests
 {
+    private CumulativeRange1DStore store;
+    private double defaultSize => store.Default;
+    [SetUp]
+    public void SetupStore()
+    {
+        store = new CumulativeRange1DStore(100);
+    }
+    
     [Test]
     public void Single_Size_Tests()
     {
-        var defaultSize = 20;
-        var store = new CumulativeRangeStore(defaultSize);
         store.GetSize(0).Should().Be(defaultSize);
         store.GetSize(25).Should().Be(defaultSize);
 
@@ -28,26 +34,88 @@ public class CumulativeRangeStoreTests
     [Test]
     public void CumulativeSizeTests_Default_Size_Only()
     {
-        var defaultSize = 20;
-        var store = new CumulativeRangeStore(defaultSize);
         store.GetCumulative(0).Should().Be(0);
         store.GetCumulative(2).Should().Be(2 * defaultSize);
         store.GetSizeBetween(0, 1).Should().Be(defaultSize);
-        store.GetSizeBetween(1, 2).Should().Be(20);
+        store.GetSizeBetween(1, 2).Should().Be(defaultSize);
         store.GetSizeBetween(10, 20).Should().Be(10 * defaultSize);
     }
 
     [Test]
     public void CumulativeSizeTests_Set_Sizes()
     {
-        var defaultSize = 20;
-        var store = new CumulativeRangeStore(defaultSize);
         store.Set(1, 30);
         store.GetSizeBetween(1, 2).Should().Be(30);
-        store.GetCumulative(2).Should().Be(0 + 30);
-        store.GetCumulative(3).Should().Be(0 + 30 + defaultSize);
+        store.GetCumulative(2).Should().Be(0 + defaultSize + 30);
+        store.GetCumulative(3).Should().Be(0 + defaultSize + 30 + defaultSize);
         store.Set(3, 40);
-        store.GetCumulative(3).Should().Be(0 + 30 + defaultSize);
-        store.GetCumulative(4).Should().Be(0 + 30 + defaultSize + 40);
+        store.GetCumulative(3).Should().Be(0 + defaultSize + 30 + defaultSize);
+        store.GetCumulative(4).Should().Be(0 + defaultSize + 30 + defaultSize + 40);
+        store.GetCumulative(2).Should().Be(0 + defaultSize + 30);
+    }
+
+    [Test]
+    public void GetIndexFromCumulativeTests()
+    {
+        // index  0   1    2    3
+        // cumul  0   100  300  400
+        //store.GetPosition(-1).Should().Be(0);
+        //store.GetPosition(0).Should().Be(0);
+        //store.GetPosition(defaultSize - 1).Should().Be(0);
+        //store.GetPosition(defaultSize).Should().Be(1);
+
+        store.Set(1, 2 * defaultSize);
+        //store.GetPosition(defaultSize + 1).Should().Be(1);
+        //store.GetPosition(2 * defaultSize - 1).Should().Be(1);
+        store.GetPosition(3 * defaultSize + 1).Should().Be(2);
+        store.GetPosition(4 * defaultSize + 1).Should().Be(3);
+    }
+
+    [Test]
+    public void Set_Size_To_Zero_Calculates_Correctly()
+    {
+        store.Set(1, defaultSize);
+        store.Set(1, 0);
+        store.GetSize(1).Should().Be(0);
+        store.GetSizeBetween(0, 2).Should().Be(defaultSize);
+        store.GetCumulative(3).Should().Be(2 * defaultSize);
+    }
+
+    [Test]
+    public void Cut_Ranges_Calculates_Correctly()
+    {
+        store.Set(1, 100);
+        store.Set(2, 200);
+        store.Set(3, 300);
+        store.GetCumulative(3).Should().Be(defaultSize + 100 + 200);
+        store.Cut(2, 2);
+        store.GetSize(2).Should().Be(300);
+        store.GetSize(1).Should().Be(100);
+        store.GetCumulative(3).Should().Be(defaultSize + 100 + 300);
+    }
+
+    [Test]
+    public void Cut_Range_Index_That_is_Default_Correctly_Calculates()
+    {
+        store.Set(1, 100);
+        store.Cut(0, 1);
+        store.GetSize(0).Should().Be(100);
+        store.GetSize(1).Should().Be(defaultSize);
+        store.GetSize(2).Should().Be(defaultSize);
+        store.GetCumulative(3).Should().Be(defaultSize * 2 + 100);
+    }
+
+    [Test]
+    public void Insert_Range_index_Calculates()
+    {
+        store.Set(1, 100);
+        store.Set(2, 200);
+        store.Set(3, 300);
+        store.InsertAt(2, 1);
+        store.Set(2, 150);
+        store.GetSize(1).Should().Be(100);
+        store.GetSize(2).Should().Be(150);
+        store.GetSize(3).Should().Be(200);
+        store.GetCumulative(3).Should().Be(defaultSize + 100 + 150);
     }
 }

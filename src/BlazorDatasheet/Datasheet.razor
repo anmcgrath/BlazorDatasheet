@@ -52,7 +52,7 @@
                     </div>
                 }
 
-                <div id="filler-top" @ref="_fillerTop" style="min-height: @(Sheet.LayoutProvider.ComputeHeight(RowStart))px; min-width:@(Sheet.LayoutProvider.TotalWidth)px; display: block;"></div>
+                <div id="filler-top" @ref="_fillerTop" style="min-height: @(Sheet.LayoutProvider.ComputeWidth(0, RowStart))px; min-width:@(Sheet.LayoutProvider.TotalWidth)px; display: block;"></div>
 
                 <div id="last-row" style="display: flex; flex-direction: row;">
 
@@ -80,7 +80,7 @@
                             @for (int rowIndex = RowStart; rowIndex < (RowStart + NVisibleRows); rowIndex++)
                             {
                                 var row = rowIndex;
-                                var rowHeight = @Sheet.LayoutProvider.ComputeHeight(1);
+                                var rowHeight = @Sheet.LayoutProvider.ComputeHeight(row, 1);
                                 <div @key="row" style="height:@(rowHeight)px">
                                     @for (int j = ColStart; j < (ColStart + NVisibleCols); j++)
                                     {
@@ -158,7 +158,7 @@
                         CellLayoutProvider="Sheet.LayoutProvider"/>
                 </div>
 
-                <div id="filler-bottom" @ref="_fillerBottom" style="min-height: @(Sheet.LayoutProvider.ComputeHeight(Sheet.NumRows - (RowStart + NVisibleRows)))px; min-width:@(1)px;"></div>
+                <div id="filler-bottom" @ref="_fillerBottom" style="min-height: @(Sheet.LayoutProvider.ComputeHeightBetween(RowStart + NVisibleRows - 1 + (Sheet.ShowColumnHeadings ? 1 : 0), Sheet.NumRows - 1))px; min-width:@(1)px;"></div>
             </div>
         </div>
     }

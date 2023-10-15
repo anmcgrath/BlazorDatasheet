@@ -57,22 +57,22 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
     public void InsertColAt(int col, int nCols)
     {
         var currentColumns = Columns.ToList();
-        List<(int col, SColumn<T> column)> columnsToAdd = new List<(int col, SColumn<T> column)>();
+        List<(int col, SColumn<T> column)> columnsToReAdd = new List<(int col, SColumn<T> column)>();
         foreach (var kp in currentColumns)
         {
             if (kp.Key >= col)
             {
                 Columns.Remove(kp.Key);
-                columnsToAdd.Add((kp.Key + nCols, kp.Value));
+                columnsToReAdd.Add((kp.Key + nCols, kp.Value));
             }
         }
 
-        foreach (var c in columnsToAdd)
+        foreach (var c in columnsToReAdd)
             Columns.Add(c.col, c.column);
 
         for (int i = 0; i < nCols; i++)
         {
-            Columns.Add(col, new SColumn<T>());
+            Columns.Add(col + i, new SColumn<T>());
         }
     }
 

@@ -182,7 +182,7 @@
         }
 
         var w = CellLayoutProvider.ComputeWidth(EditCell.Col, colSpan);
-        var h = CellLayoutProvider.ComputeHeight(rowSpan);
+        var h = CellLayoutProvider.ComputeHeight(EditCell.Row, rowSpan);
 
         strBuilder.Append($"left:{left}px;");
         strBuilder.Append($"top:{top}px;");

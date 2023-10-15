@@ -1,4 +1,4 @@
-﻿namespace BlazorDatasheet.Events;
+﻿namespace BlazorDatasheet.Events.Layout;
 
 public class RowRemovedEventArgs
 {

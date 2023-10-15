@@ -1,4 +1,3 @@
-using BlazorDatasheet.Data;
 using BlazorDatasheet.DataStructures.Search;
 
 namespace BlazorDatasheet.DataStructures.Intervals;
@@ -26,6 +25,21 @@ public class NonOverlappingIntervals<T> where T : IMergeable<T>
     /// by their end position.
     /// </summary>
     private SortedList<int, OrderedInterval<T>> _Intervals { get; } = new();
+    /// <summary>
+    /// The default value returned if there is no value found.
+    /// </summary>
+    public T? DefaultValue { get; }
+
+    public NonOverlappingIntervals(T? defaultValue = default(T))
+    {
+        DefaultValue = defaultValue;
+    }
+
+    /// <summary>
+    /// Whether we have any intervals stored.
+    /// </summary>
+    /// <returns></returns>
+    public bool Any() => _Intervals.Any();
 
     /// <summary>
     /// Returns the data (if any) associated with the interval containing the position
@@ -35,10 +49,10 @@ public class NonOverlappingIntervals<T> where T : IMergeable<T>
     public T? Get(int position)
     {
         if (!_Intervals.Any())
-            return default(T);
+            return DefaultValue;
 
         if (position < Start || position > End)
-            return default(T);
+            return DefaultValue;
 
         var i0 = _Intervals.Keys.BinarySearchIndexOf(position);
         if (i0 < 0)
@@ -50,19 +64,25 @@ public class NonOverlappingIntervals<T> where T : IMergeable<T>
         // but it can't be that interval because position < start.
         // so we check the one before i0 to see if position is contained
         if (i0 - 1 < 0)
-            return default(T);
+            return DefaultValue;
 
         if (_Intervals[_Intervals.Keys[i0 - 1]].Contains(position))
             return _Intervals[_Intervals.Keys[i0 - 1]].Data;
 
-        return default(T);
+        return DefaultValue;
+    }
+
+    public List<OrderedInterval<T>> Add(int start, int end, T value)
+    {
+        return Add(new OrderedInterval<T>(start, end, value));
     }
 
     /// <summary>
     /// Adds the interval and merges any overlapping data into it.
     /// </summary>
     /// <param name="interval"></param>
-    public void Add(OrderedInterval<T> interval)
+    /// <returns>Intervals that were either modified while adding</returns>
+    public List<OrderedInterval<T>> Add(OrderedInterval<T> interval)
     {
         Start = Math.Min(interval.Start, Start);
         End = Math.Max(interval.End, End);
@@ -71,7 +91,7 @@ public class NonOverlappingIntervals<T> where T : IMergeable<T>
         if (!overlapping.Any())
         {
             _Intervals.Add(interval.Start, interval);
-            return;
+            return new List<OrderedInterval<T>>();
         }
 
         // Handle when interval extends before the first overlapping interval
@@ -83,11 +103,16 @@ public class NonOverlappingIntervals<T> where T : IMergeable<T>
             _Intervals.Add(overlapping.Last().End + 1,
                            new OrderedInterval<T>(overlapping.Last().End + 1, interval.End, interval.Data));
 
+        var modified = new List<OrderedInterval<T>>();
+
         for (int i = 0; i < overlapping.Count; i++)
         {
             var oi = overlapping[i];
             if (interval.Contains(oi))
             {
+                // We will have modified/removed the original data, so store it so we can keep a record (for undo)
+                // in this case it is the entire interval because it was contained inside the added interval.
+                modified.Add(new OrderedInterval<T>(oi.Start, oi.End, oi.Data.Clone()));
                 oi.Data = oi.Data.Clone();
                 oi.Data.Merge(interval.Data);
             }
@@ -98,6 +123,10 @@ public class NonOverlappingIntervals<T> where T : IMergeable<T>
                 // and i = interval we are adding
                 // we remove o and add o0, and o1 so that we now have
                 // [o0, o0, i, i, o1, o1]
+
+                // first store the (removed) original data that was in o.
+                modified.Add(new OrderedInterval<T>(interval.Start, interval.End, oi.Data.Clone()));
+
                 _Intervals.Remove(oi.Start);
                 if (oi.Start != interval.Start)
                     _Intervals.Add(oi.Start, new OrderedInterval<T>(oi.Start, interval.Start - 1, oi.Data));
@@ -110,6 +139,10 @@ public class NonOverlappingIntervals<T> where T : IMergeable<T>
 
             else if (interval.Start > oi.Start)
             {
+                // [o, o, i, i] i, i
+                // first store the (removed) original data from o
+                modified.Add(new OrderedInterval<T>(interval.Start, oi.End, oi.Data.Clone()));
+
                 _Intervals.Remove(oi.Start);
                 var old = new OrderedInterval<T>(oi.Start, interval.Start - 1, oi.Data);
                 var merged = new OrderedInterval<T>(interval.Start, oi.End, oi.Data.Clone());
@@ -119,10 +152,14 @@ public class NonOverlappingIntervals<T> where T : IMergeable<T>
             }
             else if (interval.End < oi.End)
             {
+                // i, i [i, i, o, o] 
+                // first store the (removed) original data from o
+                modified.Add(new OrderedInterval<T>(oi.Start, interval.End, oi.Data.Clone()));
+
                 _Intervals.Remove(oi.Start);
                 var old = new OrderedInterval<T>(interval.End + 1, oi.End, oi.Data);
-                var merged = new OrderedInterval<T>(oi.Start, interval.Start - 1, oi.Data.Clone());
-                old.Data.Merge(interval.Data);
+                var merged = new OrderedInterval<T>(oi.Start, interval.End, oi.Data.Clone());
+                merged.Data.Merge(interval.Data);
                 _Intervals.Add(old.Start, old);
                 _Intervals.Add(merged.Start, merged);
             }
@@ -131,11 +168,27 @@ public class NonOverlappingIntervals<T> where T : IMergeable<T>
             if (i >= overlapping.Count - 1)
                 continue;
 
+            // we know the next one is overlapping too,
+            // but there's a hole that won't be plugged unless we do it now
+            // [oi, oi, oi], i, i, i, [oi+1, oi+1, o1+1]
             var gap = overlapping[i + 1].Start - oi.End;
             if (gap > 1)
                 _Intervals.Add(
                     oi.End + 1, new OrderedInterval<T>(oi.End + 1, overlapping[i + 1].Start - 1, interval.Data));
         }
+
+        return modified;
+    }
+
+    /// <summary>
+    /// Returns all overlapping intervals between the start and end position.
+    /// </summary>
+    /// <param name="start"></param>
+    /// <param name="end"></param>
+    /// <returns></returns>
+    public List<OrderedInterval<T>> GetOverlappingIntervals(int start, int end)
+    {
+        return GetOverlappingIntervals(new OrderedInterval(start, end));
     }
 
     public List<OrderedInterval<T>> GetOverlappingIntervals(OrderedInterval interval)
@@ -163,22 +216,33 @@ public class NonOverlappingIntervals<T> where T : IMergeable<T>
     public IList<OrderedInterval<T>> GetAllIntervals() => _Intervals.Values.ToList();
 
     /// <summary>
-    /// Deletes the interval from storage
+    /// Remove the interval from storage
     /// </summary>
     /// <param name="interval"></param>
-    public void Delete(OrderedInterval interval)
+    /// <returns>The ordered intervals that were removed during the process.</returns>
+    public List<OrderedInterval<T>> Remove(int start, int end)
+    {
+        return Remove(new OrderedInterval(start, end));
+    }
+
+    /// <summary>
+    /// Remove the interval from storage
+    /// </summary>
+    /// <param name="interval"></param>
+    /// <returns>The ordered intervals that were removed during the process.</returns>
+    public List<OrderedInterval<T>> Remove(OrderedInterval interval)
     {
         if (!_Intervals.Any())
-            return;
+            return new List<OrderedInterval<T>>();
 
         if (interval.End < Start || interval.Start > End)
-            return;
+            return new List<OrderedInterval<T>>();
 
         var i0 = _Intervals.Keys.BinarySearchIndexOf(interval.Start);
         if (i0 < 0)
             i0 = ~i0;
 
-        // We now have either the 
+        // We now have either the interval or the one to the right of it
 
         OrderedInterval<T> currentInterval;
         // Start with a good guess of where the interval starts which is to the left
@@ -196,11 +260,12 @@ public class NonOverlappingIntervals<T> where T : IMergeable<T>
         // In case 1 & 2 we shorten the other intervals by the overlapping amount. 1 = splitRight, 2 = splitLeft.
 
         // intervals to remove
-        List<OrderedInterval<T>> toRemove = new();
+        List<OrderedInterval<T>> removed = new();
         // The interval to split left (if any)
         OrderedInterval<T>? splitLeft = null;
         // The interval to split right (if any). Note splitLeft may be equal to split right.
         OrderedInterval<T>? splitRight = null;
+
         for (int i = i0; i < _Intervals.Count; i++)
         {
             var existingInterval = _Intervals[_Intervals.Keys[i]];
@@ -209,7 +274,7 @@ public class NonOverlappingIntervals<T> where T : IMergeable<T>
 
             if (interval.Contains(existingInterval))
             {
-                toRemove.Add(existingInterval);
+                removed.Add(existingInterval);
                 continue;
             }
 
@@ -220,12 +285,14 @@ public class NonOverlappingIntervals<T> where T : IMergeable<T>
                 splitLeft = existingInterval;
         }
 
-        foreach (var intervalToRemove in toRemove)
+        foreach (var intervalToRemove in removed)
             _Intervals.Remove(intervalToRemove.Start);
 
         // we need to work with split right first because split left may depend on it
         if (splitRight != null)
         {
+            removed.Add(new OrderedInterval<T>(interval.Start, Math.Min(interval.End, splitRight.End),
+                                               splitRight.Data.Clone()));
             _Intervals.Remove(splitRight.Start);
             _Intervals.Add(splitRight.Start,
                            new OrderedInterval<T>(splitRight.Start, interval.Start - 1, splitRight.Data));
@@ -233,12 +300,87 @@ public class NonOverlappingIntervals<T> where T : IMergeable<T>
 
         if (splitLeft != null)
         {
-            if (splitLeft != splitRight)
+            if (splitLeft != splitRight) // we may have already removed split Right, so don't remove it twice
+            {
                 _Intervals.Remove(splitLeft.Start);
+                removed.Add(new OrderedInterval<T>(Math.Max(splitLeft.Start, interval.Start), interval.End,
+                                                   splitLeft.Data.Clone()));
+            }
+
             _Intervals.Add(interval.End + 1, new OrderedInterval<T>(interval.End + 1, splitLeft.End, splitLeft.Data));
         }
 
-        // Update start and end positions of store
+        UpdateStartEndPositions();
+        return removed;
+    }
+
+    /// <summary>
+    /// Shifts all intervals to the right of from, to the right by n
+    /// If from is inside an overlapping interval, the end gets extended
+    /// If from is at the start of an overlapping interval, the interval is shifted right
+    /// </summary>
+    /// <param name="from">The position where everything to the right gets shifted right.</param>
+    /// <param name="by"></param>
+    public void ShiftRight(int from, int n)
+    {
+        var overlapping = this.GetOverlappingIntervals(from, this.End);
+        // need to work backwards so we don't end up with adding keys 
+        // that already exist
+        for (int i = overlapping.Count - 1; i >= 0; i--)
+        {
+            var oi = overlapping[i];
+            if (oi.Start < from)
+                oi.End += n;
+            else
+            {
+                _Intervals.Remove(oi.Start);
+                _Intervals.Add(oi.Start + n, new OrderedInterval<T>(oi.Start + n, oi.End + n, oi.Data));
+            }
+        }
+
+        UpdateStartEndPositions();
+    }
+
+    /// <summary>
+    /// </summary>
+    /// <param name="from">The position where everything to the right gets shifted right.</param>
+    /// <param name="by"></param>
+    public void ShiftLeft(int from, int n)
+    {
+        var removed = new List<OrderedInterval<T>>();
+
+        var overlapping = this.GetOverlappingIntervals(from, this.End);
+
+        for (int i = 0; i < overlapping.Count; i++)
+        {
+            var oi = overlapping[i];
+            if (oi.Start <= from)
+            {
+                if (oi.End - n >= oi.Start) // we end up with an interval of length 1 or greater
+                    oi.End -= n;
+                // Anything that is shifted to the left of from gets removed. This shouldn't
+                // really happen in reality because when we are using it, it will be with a cut also
+                else
+                    _Intervals.Remove(oi.Start);
+            }
+            else
+            {
+                _Intervals.Remove(oi.Start);
+                // if it doesn't move partially past from, we can just shift the whole thing.
+                if (oi.Start - n >= from)
+                    _Intervals.Add(oi.Start - n, new OrderedInterval<T>(oi.Start - n, oi.End - n, oi.Data));
+                else
+                {
+                    _Intervals.Add(from, new OrderedInterval<T>(from, oi.End - n, oi.Data));
+                }
+            }
+        }
+        
+        UpdateStartEndPositions();
+    }
+
+    private void UpdateStartEndPositions()
+    {
         if (_Intervals.Any())
         {
             Start = _Intervals.First().Value.Start;

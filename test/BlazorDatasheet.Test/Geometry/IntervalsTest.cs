@@ -2,7 +2,9 @@
 using BlazorDatasheet.Data;
 using BlazorDatasheet.DataStructures.Intervals;
 using BlazorDatasheet.Formats;
+using FluentAssertions;
 using NUnit.Framework;
+using NUnit.Framework.Internal.Execution;
 
 namespace BlazorDatasheet.Test.Geometry;
 
@@ -104,29 +106,169 @@ public class IntervalsTest
     }
 
     [Test]
-    public void Delete_Ordered_Interval_From_Non_Overlappting_Store_Correct()
+    public void Cut_Ordered_Interval_From_Non_Overlappting_Store_Correct()
     {
-        var format = new CellFormat();
-        var store = new NonOverlappingIntervals<CellFormat>();
-        store.Add(new OrderedInterval<CellFormat>(0, 10, format));
-        store.Delete(new OrderedInterval(1, 9));
-        Assert.AreEqual(format, store.Get(0));
+        var val = new SimpleMergeableData<int>()
+        {
+            Value = 10
+        };
+        var store = new NonOverlappingIntervals<SimpleMergeableData<int>>();
+        store.Add(new OrderedInterval<SimpleMergeableData<int>>(0, 10, val));
+        var cuts = store.Remove(new OrderedInterval(1, 9));
+        Assert.AreEqual(val, store.Get(0));
         Assert.Null(store.Get(1));
         Assert.Null(store.Get(5));
         Assert.Null(store.Get(9));
-        Assert.AreEqual(format, store.Get(10));
+        Assert.AreEqual(val, store.Get(10));
+
+        cuts.Count.Should().Be(1);
+        cuts[0].Start.Should().Be(1);
+        cuts[0].End.Should().Be(9);
+    }
+
+    [Test]
+    public void Cut_Ordered_Interval_From_Non_overlapping_Store_REturns_Correct_Cuts()
+    {
+        var store = new NonOverlappingIntervals<SimpleMergeableData<int>>();
+        store.Add(1, 3, new SimpleMergeableData<int>(-1));
+        store.Add(5, 6, new SimpleMergeableData<int>(1));
+        store.Add(8, 10, new SimpleMergeableData<int>(2));
+
+        var removed = store.Remove(2, 9);
+        removed.Count.Should().Be(3);
+        removed = removed.OrderBy(x => x.Start).ToList();
+        removed[0].Start.Should().Be(2);
+        removed[0].End.Should().Be(3);
+        removed[0].Data.Value.Should().Be(-1);
+
+        removed[1].Start.Should().Be(5);
+        removed[1].End.Should().Be(6);
+        removed[1].Data.Value.Should().Be(1);
+
+        removed[2].Start.Should().Be(8);
+        removed[2].End.Should().Be(9);
+        removed[2].Data.Value.Should().Be(2);
     }
 
     [Test]
     public void Add_Interval_Between_Sets_Correctly()
     {
-        var format1 = new CellFormat() { BackgroundColor = "f1" };
-        var format2 = new CellFormat() { BackgroundColor = "f2" };
-        var store = new NonOverlappingIntervals<CellFormat>();
-        store.Add(new OrderedInterval<CellFormat>(0, 2, format1));
-        store.Add(new OrderedInterval<CellFormat>(1, 1, format2));
-        Assert.AreEqual(format1.BackgroundColor, store.Get(0)?.BackgroundColor);
-        Assert.AreEqual(format2.BackgroundColor, store.Get(1)?.BackgroundColor);
-        Assert.AreEqual(format1.BackgroundColor, store.Get(2)?.BackgroundColor);
+        var format1 = new SimpleMergeableData<string>() { Value = "f1" };
+        var format2 = new SimpleMergeableData<string>() { Value = "f2" };
+        var store = new NonOverlappingIntervals<SimpleMergeableData<string>>();
+        store.Add(new OrderedInterval<SimpleMergeableData<string>>(0, 2, format1));
+        store.Add(new OrderedInterval<SimpleMergeableData<string>>(1, 1, format2));
+        Assert.AreEqual(format1.Value, store.Get(0)?.Value);
+        Assert.AreEqual(format2.Value, store.Get(1)?.Value);
+        Assert.AreEqual(format1.Value, store.Get(2)?.Value);
+    }
+
+    [Test]
+    public void Modified_Intervals_returned_After_adding_When_Interval_Contained_InExisting()
+    {
+        var store = new NonOverlappingIntervals<SimpleMergeableData<string>>();
+        store.Add(0, 10, new SimpleMergeableData<string>("init")).Should().BeEmpty();
+
+        var modified = store.Add(2, 3, new SimpleMergeableData<string>("new"));
+        modified.Count.Should().Be(1);
+        modified[0].Data.Value.Should().Be("init");
+        modified[0].Start.Should().Be(2);
+        modified[0].End.Should().Be(3);
+    }
+
+    [Test]
+    public void Modified_Intervals_returned_After_adding_When_Overlaps_Partially()
+    {
+        var store = new NonOverlappingIntervals<SimpleMergeableData<string>>();
+        store.Add(1, 3, new SimpleMergeableData<string>("init_start")).Should().BeEmpty();
+        store.Add(5, 7, new SimpleMergeableData<string>("init_end")).Should().BeEmpty();
+
+        var modified = store.Add(2, 6, new SimpleMergeableData<string>("new"));
+        modified.Count.Should().Be(2);
+        modified[0].Data.Value.Should().Be("init_start");
+        modified[0].Start.Should().Be(2);
+        modified[0].End.Should().Be(3);
+
+        modified[1].Data.Value.Should().Be("init_end");
+        modified[1].Start.Should().Be(5);
+        modified[1].End.Should().Be(6);
+    }
+
+    [Test]
+    public void Shift_Right_Shifts_To_Right_by_n()
+    {
+        var store = new NonOverlappingIntervals<SimpleMergeableData<string>>();
+        store.Add(0, 2, new SimpleMergeableData<string>("start"));
+        store.Add(4, 5, new SimpleMergeableData<string>("mid"));
+        store.Add(7, 10, new SimpleMergeableData<string>("end"));
+        store.ShiftRight(4, 2);
+        var allIntervals = store.GetAllIntervals().ToList();
+        var shift = 2;
+        allIntervals[0].End.Should().Be(2);
+        allIntervals[1].Start.Should().Be(4 + shift);
+        allIntervals[1].End.Should().Be(5 + shift);
+        allIntervals[2].Start.Should().Be(7 + shift);
+        allIntervals[2].End.Should().Be(10 + shift);
+    }
+
+    [Test]
+    public void NonOverlappingStore_Start_End_Gets_Updated()
+    {
+        var store = new NonOverlappingIntervals<SimpleMergeableData<string>>();
+        store.Add(2, 10, new SimpleMergeableData<string>(""));
+        store.Start.Should().Be(2);
+        store.End.Should().Be(10);
+        store.Remove(0, 4);
+        store.Start.Should().Be(5);
+        store.Remove(9, 11);
+        store.End.Should().Be(8);
+    }
+
+    [Test]
+    public void Shift_Right_Inside_Extends_Interval()
+    {
+        var store = new NonOverlappingIntervals<SimpleMergeableData<string>>();
+        store.Add(4, 6, new SimpleMergeableData<string>(""));
+        store.ShiftRight(5, 5);
+        store.GetOverlappingIntervals(4, 4).First().Start.Should().Be(4);
+        store.GetOverlappingIntervals(4, 4).First().End.Should().Be(6 + 5);
+    }
+
+    [Test]
+    public void Shift_Left_Shifts_NonOverlaps_ByN()
+    {
+        var store = new NonOverlappingIntervals<SimpleMergeableData<string>>();
+        store.Add(5, 10, new SimpleMergeableData<string>());
+        store.Add(15, 20, new SimpleMergeableData<string>());
+        var shift = 2;
+        store.ShiftLeft(6,shift);
+        var all = store.GetAllIntervals();
+        all[0].Start.Should().Be(5);
+        all[0].End.Should().Be(10 - shift);
+        all[1].Start.Should().Be(15 - shift);
+        all[1].End.Should().Be(20 - shift);
+    }
+}
+
+public class SimpleMergeableData<T> : IMergeable<SimpleMergeableData<T>>
+{
+    public T Value { get; set; }
+
+    public SimpleMergeableData(T value = default(T))
+    {
+        Value = value;
+    }
+
+    public void Merge(SimpleMergeableData<T> item)
+    {
+        Value = item.Value;
+    }
+
+    public SimpleMergeableData<T> Clone()
+    {
+        return new SimpleMergeableData<T>()
+        {
+            Value = Value
+        };
     }
 }

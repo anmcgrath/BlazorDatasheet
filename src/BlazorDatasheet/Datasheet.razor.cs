@@ -7,6 +7,7 @@ using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Edit;
 using BlazorDatasheet.Edit.DefaultComponents;
 using BlazorDatasheet.Events;
+using BlazorDatasheet.Events.Layout;
 using BlazorDatasheet.Formats;
 using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Render;
@@ -81,7 +82,7 @@ public partial class Datasheet : IHandleEvent
     /// <summary>
     /// The total height of the VISIBLE sheet. This changes when the user scrolls or the parent scroll element is resized.
     /// </summary>
-    public double RenderedInnerSheetHeight => Sheet!.LayoutProvider.ComputeHeight(NVisibleRows);
+    public double RenderedInnerSheetHeight => Sheet!.LayoutProvider.ComputeHeight(RowStart, NVisibleRows);
 
     /// <summary>
     /// The total width of the VISIBLE sheet. This changes when the user scrolls or the parent scroll element is resized.
@@ -326,13 +327,13 @@ public partial class Datasheet : IHandleEvent
             _dotnetHelper = DotNetObjectReference.Create(this);
             await AddWindowEventsAsync();
             await JS.InvokeVoidAsync("addVirtualisationHandlers",
-                _dotnetHelper,
-                _wholeSheetDiv,
-                nameof(HandleScroll),
-                _fillerLeft1,
-                _fillerTop,
-                _fillerRight,
-                _fillerBottom);
+                                     _dotnetHelper,
+                                     _wholeSheetDiv,
+                                     nameof(HandleScroll),
+                                     _fillerLeft1,
+                                     _fillerTop,
+                                     _fillerRight,
+                                     _fillerBottom);
 
             // we need to know the position of the datasheet relative to the 
             // page start, so that we can calculate mouse events correctly
@@ -382,8 +383,6 @@ public partial class Datasheet : IHandleEvent
         var endCol = Math.Min(Sheet.NumCols - 1, visibleColEnd + overflowX);
         NVisibleCols = endCol - ColStart + 1;
 
-        Sheet.LayoutProvider.SetVisibleRowOffset(visibleRowStart);
-        Sheet.LayoutProvider.SetVisibleColOffset(visibleColStart);
         var prevRegion = ViewportRegion?.Copy();
 
         this.ViewportRegion = new Region(RowStart, endRow, ColStart, endCol);
@@ -409,7 +408,7 @@ public partial class Datasheet : IHandleEvent
         sb.Append("position:absolute;");
         sb.Append($"top:{top}px;");
         sb.Append($"width:{Sheet.LayoutProvider.ComputeWidth(col, colSpan)}px;");
-        sb.Append($"height:{Sheet.LayoutProvider.ComputeHeight(rowSpan)}px;");
+        sb.Append($"height:{Sheet.LayoutProvider.ComputeHeight(row, rowSpan)}px;");
         sb.Append($"left:{Sheet.LayoutProvider.ComputeLeftPosition(col, Sheet.ShowRowHeadings)}px;");
         return sb.ToString();
     }
@@ -820,7 +819,7 @@ public partial class Datasheet : IHandleEvent
     private double GetSheetWidthInPx()
     {
         var columnWidth = _sheetLocal.LayoutProvider.TotalWidth;
-        var headingWidth = _sheetLocal.ShowRowHeadings ? _sheetLocal.LayoutProvider.DefaultColumnWidth : 0;
+        var headingWidth = _sheetLocal.ShowRowHeadings ? _sheetLocal.ColumnWidths.Default : 0;
         return columnWidth + headingWidth;
     }
 
@@ -831,7 +830,7 @@ public partial class Datasheet : IHandleEvent
     private double GetSheetHeightInPx()
     {
         var rowHeights = _sheetLocal.LayoutProvider.TotalHeight;
-        var headingWidth = _sheetLocal.ShowColumnHeadings ? _sheetLocal.LayoutProvider.DefaultRowHeight : 0;
+        var headingWidth = _sheetLocal.ShowColumnHeadings ? _sheetLocal.RowHeights.Default : 0;
         return rowHeights + headingWidth;
     }
 

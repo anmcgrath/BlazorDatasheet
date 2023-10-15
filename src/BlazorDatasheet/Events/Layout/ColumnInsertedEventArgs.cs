@@ -1,15 +1,13 @@
-namespace BlazorDatasheet.Events;
+namespace BlazorDatasheet.Events.Layout;
 
 public class ColumnInsertedEventArgs
 {
     public int ColumnIndex { get; }
-    public double? Width { get; }
     public int NCols { get; }
 
-    public ColumnInsertedEventArgs(int columnIndex, double? width, int nCols)
+    public ColumnInsertedEventArgs(int columnIndex, int nCols)
     {
         ColumnIndex = columnIndex;
-        Width = width;
         NCols = nCols;
     }
 }

@@ -21,7 +21,7 @@ public class SetColumnWidthCommand : IUndoableCommand
 
     public bool Execute(Sheet sheet)
     {
-        _oldWidth = sheet.LayoutProvider.ComputeWidth(_col, 1);
+        _oldWidth = sheet.ColumnWidths.GetSize(_col);
         sheet.SetColumnWidthImpl(_col, _width);
         return true;
     }
