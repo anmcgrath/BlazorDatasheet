@@ -104,8 +104,11 @@
 
         Sheet = new Sheet(300, 300);
         Sheet.TrySetCellValue(0, 0, "Hey");
-        Sheet.ShowColumnHeadings = false;
-        Sheet.ShowRowHeadings = false;
+        Sheet.ShowColumnHeadings = true;
+        Sheet.ShowRowHeadings = true;
+        Sheet.SetColumnWidth(0, 6, 50);
+        Sheet.SetRowHeight(0, 6, 50);
+        
         Sheet.Validation.Add(new NumberValidator(true), 4, 0);
         Sheet.SetFormat(new CellFormat() { BackgroundColor = "blue", ForegroundColor = "white" }, Sheet.Range(4, 0));
         Sheet.Validation.Add(new NumberValidator(false), 5, 0);

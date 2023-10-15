@@ -24,8 +24,8 @@
             BackgroundStyle="background:var(--selection-bg-color);"
             Width="CellLayoutProvider.ComputeWidth(interval.Start, interval.Length)"
             Height="CellLayoutProvider.ComputeHeight(-1, 1)"
-            X="CellLayoutProvider.ComputeLeftPosition(interval.Start, Sheet.ShowRowHeadings)"
-            Y="CellLayoutProvider.ComputeTopPosition(-1, Sheet.ShowColumnHeadings)"/>
+            X="CellLayoutProvider.ComputeLeftPosition(interval.Start)"
+            Y="CellLayoutProvider.ComputeTopPosition(-1)"/>
     }
 
     <!-- Ardoners -->
@@ -34,7 +34,7 @@
         var col = i;
         <div
             @onmousedown="e => HandleMouseDownOnAdorner(col)"
-            style="position:absolute; z-index: 4; top: 0; left: @(CellLayoutProvider.ComputeLeftPosition(col + 1, Sheet.ShowRowHeadings) - 5 - 1)px; width: 10px; background: none; height: 25px; cursor: col-resize; display: block">
+            style="position:absolute; z-index: 2; top: 0; left: @(CellLayoutProvider.ComputeLeftPosition(col + 1) - 5 - 1)px; width: 10px; background: none; height: 25px; cursor: col-resize; display: block">
         </div>
     }
 
@@ -46,7 +46,7 @@
             Y="0"
             Width="3"
             BorderThickness="1"
-            X="@(CellLayoutProvider.ComputeLeftPosition(ActiveAdorner, Sheet.ShowRowHeadings) + resizeWidth)"
+            X="@(CellLayoutProvider.ComputeLeftPosition(ActiveAdorner) + resizeWidth)"
             Height="@(CellLayoutProvider.TotalHeight)"/>
     }
 

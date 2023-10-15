@@ -120,4 +120,14 @@ public class CumulativeRangeStoreTests
         store.GetSize(3).Should().Be(200);
         store.GetCumulative(3).Should().Be(defaultSize + 100 + 150);
     }
+
+    [Test]
+    public void Setting_Values_Over_Default_Should_Return_Default_Changed()
+    {
+        var changed = store.Set(2, 5, 100);
+        changed.Count.Should().Be(1);
+        changed[0].stat.Should().Be(2);
+        changed[0].end.Should().Be(5);
+        changed[0].value.Should().Be(store.Default);
+    }
 }

@@ -25,6 +25,7 @@ public class NonOverlappingIntervals<T> where T : IMergeable<T>
     /// by their end position.
     /// </summary>
     private SortedList<int, OrderedInterval<T>> _Intervals { get; } = new();
+
     /// <summary>
     /// The default value returned if there is no value found.
     /// </summary>
@@ -91,7 +92,11 @@ public class NonOverlappingIntervals<T> where T : IMergeable<T>
         if (!overlapping.Any())
         {
             _Intervals.Add(interval.Start, interval);
-            return new List<OrderedInterval<T>>();
+            return new List<OrderedInterval<T>>()
+            {
+                new OrderedInterval<T>(interval.Start, interval.End, DefaultValue)
+            };
+
         }
 
         // Handle when interval extends before the first overlapping interval
@@ -375,7 +380,7 @@ public class NonOverlappingIntervals<T> where T : IMergeable<T>
                 }
             }
         }
-        
+
         UpdateStartEndPositions();
     }
 

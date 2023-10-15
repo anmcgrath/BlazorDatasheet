@@ -21,6 +21,20 @@ public class CellLayoutProviderTests
     }
 
     [Test]
+    public void Set_Column_Width_Number_Of_Cols_Correct_Width()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.SetColumnWidth(0, 5, 50);
+        var p = new CellLayoutProvider(sheet);
+        p.ComputeWidth(0, 1).Should().Be(50);
+        p.ComputeWidth(1, 1).Should().Be(50);
+        p.ComputeWidth(2, 1).Should().Be(50);
+        p.ComputeWidth(3, 1).Should().Be(50);
+        p.ComputeWidth(4, 1).Should().Be(50);
+        p.ComputeWidth(5, 1).Should().Be(50);
+    }
+
+    [Test]
     public void Calculating_Width_And_Height_Width_Non_One_Span_Works()
     {
         var sheet = new Sheet(10, 10);
@@ -67,9 +81,9 @@ public class CellLayoutProviderTests
         sheet.ShowRowHeadings = false;
         var dW = sheet.ColumnInfo.DefaultWidth;
         var p = new CellLayoutProvider(sheet);
-        p.ComputeColumn(0, false).Should().Be(0);
-        p.ComputeColumn(dW-1, false).Should().Be(0);
-        p.ComputeColumn(dW+1, false).Should().Be(1);
+        p.ComputeColumn(0).Should().Be(0);
+        p.ComputeColumn(dW-1).Should().Be(0);
+        p.ComputeColumn(dW+1).Should().Be(1);
     }
 
     [Test]
@@ -81,34 +95,12 @@ public class CellLayoutProviderTests
         var p = new CellLayoutProvider(sheet);
         var nw = 40;
         sheet.SetColumnWidth(1, nw);
-        p.ComputeColumn(dw-1, false).Should().Be(0);
-        p.ComputeColumn(dw, false).Should().Be(1);
-        p.ComputeColumn(dw+1, false).Should().Be(1);
-        p.ComputeColumn(dw + nw - 1, false).Should().Be(1);
-        p.ComputeColumn(dw + nw, false).Should().Be(2);
-        p.ComputeColumn(dw + nw + 1, false).Should().Be(2);
-        p.ComputeColumn(dw + nw + dw - 1, false).Should().Be(2);
-    }
-
-    [Test]
-    public void Calculate_Column_With_Sheet_Row_Headers_Calculates_Correctly()
-    {
-        var sheet = new Sheet(5, 5);
-        sheet.ShowRowHeadings = true;
-        var dw = sheet.ColumnInfo.DefaultWidth;
-        var p = new CellLayoutProvider(sheet);
-        p.ComputeColumn(1, true).Should().Be(-1);
-        p.ComputeColumn(dw, true).Should().Be(0);
-    }
-    
-    [Test]
-    public void Calculate_Row_With_Sheet_Col_Headers_Calculates_Correctly()
-    {
-        var sheet = new Sheet(5, 5);
-        sheet.ShowColumnHeadings = true;
-        var dh = sheet.RowInfo.DefaultHeight;
-        var p = new CellLayoutProvider(sheet);
-        p.ComputeRow(0, true).Should().Be(-1);
-        p.ComputeRow(dh, true).Should().Be(0);
+        p.ComputeColumn(dw-1).Should().Be(0);
+        p.ComputeColumn(dw).Should().Be(1);
+        p.ComputeColumn(dw+1).Should().Be(1);
+        p.ComputeColumn(dw + nw - 1).Should().Be(1);
+        p.ComputeColumn(dw + nw).Should().Be(2);
+        p.ComputeColumn(dw + nw + 1).Should().Be(2);
+        p.ComputeColumn(dw + nw + dw - 1).Should().Be(2);
     }
 }

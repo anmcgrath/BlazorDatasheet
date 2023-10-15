@@ -168,8 +168,8 @@
     private string GetEditorSizeStyling()
     {
         var strBuilder = new StringBuilder();
-        var left = CellLayoutProvider.ComputeLeftPosition(EditCell.Col, Sheet.ShowRowHeadings);
-        var top = CellLayoutProvider.ComputeTopPosition(EditCell.Row, Sheet.ShowColumnHeadings);
+        var left = CellLayoutProvider.ComputeLeftPosition(EditCell.Col) + (_sheet.ShowRowHeadings ? CellLayoutProvider.RowHeadingWidth : 0) + 1;
+        var top = CellLayoutProvider.ComputeTopPosition(EditCell.Row) + (_sheet.ShowColumnHeadings ? CellLayoutProvider.ColHeadingHeight : 0) + 1;
 
         var mergedPosn = Sheet.Merges.Get(EditCell.Row, EditCell.Col);
         int colSpan = 1;
@@ -181,8 +181,8 @@
             rowSpan = mergedPosn.Height;
         }
 
-        var w = CellLayoutProvider.ComputeWidth(EditCell.Col, colSpan);
-        var h = CellLayoutProvider.ComputeHeight(EditCell.Row, rowSpan);
+        var w = CellLayoutProvider.ComputeWidth(EditCell.Col, colSpan) - 1;
+        var h = CellLayoutProvider.ComputeHeight(EditCell.Row, rowSpan) -1;
 
         strBuilder.Append($"left:{left}px;");
         strBuilder.Append($"top:{top}px;");

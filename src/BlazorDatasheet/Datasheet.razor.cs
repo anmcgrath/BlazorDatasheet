@@ -152,6 +152,7 @@ public partial class Datasheet : IHandleEvent
     {
         _windowEventService = new WindowEventService(JS);
         _clipboard = new Clipboard(JS);
+        this.RegisterDefaultCellRendererAndEditors();
         base.OnInitialized();
     }
 
@@ -367,10 +368,10 @@ public partial class Datasheet : IHandleEvent
         int overflowY = 6;
         int overflowX = 2;
 
-        var visibleRowStart = Sheet.LayoutProvider.ComputeRow(e.ScrollTop, false);
-        var visibleColStart = Sheet.LayoutProvider.ComputeColumn(e.ScrollLeft, false);
-        var visibleRowEnd = Sheet.LayoutProvider.ComputeRow(e.ScrollTop + e.ContainerHeight, false);
-        var visibleColEnd = Sheet.LayoutProvider.ComputeColumn(e.ScrollLeft + e.ContainerWidth, false);
+        var visibleRowStart = Sheet.LayoutProvider.ComputeRow(e.ScrollTop);
+        var visibleColStart = Sheet.LayoutProvider.ComputeColumn(e.ScrollLeft);
+        var visibleRowEnd = Sheet.LayoutProvider.ComputeRow(e.ScrollTop + e.ContainerHeight);
+        var visibleColEnd = Sheet.LayoutProvider.ComputeColumn(e.ScrollLeft + e.ContainerWidth);
 
         visibleRowEnd = Math.Min(Sheet.NumRows - 1, visibleRowEnd);
         visibleColEnd = Math.Min(Sheet.NumCols - 1, visibleColEnd);
@@ -404,12 +405,15 @@ public partial class Datasheet : IHandleEvent
     private string GetAbsoluteCellPositionStyles(int row, int col, int rowSpan, int colSpan)
     {
         var sb = new StringBuilder();
-        var top = Sheet.LayoutProvider.ComputeTopPosition(row, Sheet.ShowColumnHeadings);
+        var top = Sheet.LayoutProvider.ComputeTopPosition(row) +
+                  (_sheetLocal.ShowColumnHeadings ? Sheet.LayoutProvider.ColHeadingHeight : 0);
+        var left = Sheet.LayoutProvider.ComputeLeftPosition(col) +
+                   (_sheetLocal.ShowRowHeadings ? Sheet.LayoutProvider.RowHeadingWidth : 0);
         sb.Append("position:absolute;");
-        sb.Append($"top:{top}px;");
-        sb.Append($"width:{Sheet.LayoutProvider.ComputeWidth(col, colSpan)}px;");
-        sb.Append($"height:{Sheet.LayoutProvider.ComputeHeight(row, rowSpan)}px;");
-        sb.Append($"left:{Sheet.LayoutProvider.ComputeLeftPosition(col, Sheet.ShowRowHeadings)}px;");
+        sb.Append($"top:{top + 1}px;");
+        sb.Append($"width:{Sheet.LayoutProvider.ComputeWidth(col, colSpan) - 1}px;");
+        sb.Append($"height:{Sheet.LayoutProvider.ComputeHeight(row, rowSpan) - 1}px;");
+        sb.Append($"left:{left + 1}px;");
         return sb.ToString();
     }
 
@@ -693,6 +697,7 @@ public partial class Datasheet : IHandleEvent
         try
         {
             await JS.InvokeAsync<string>("disposeVirtualisationHandlers", _wholeSheetDiv);
+            await JS.InvokeAsync<string>("disposePageMoveListener", _wholeSheetDiv);
         }
         catch (Exception e)
         {
@@ -870,10 +875,22 @@ public partial class Datasheet : IHandleEvent
 
     private (int row, int col) RowColFromMouseEvent(MouseEventArgs obj)
     {
-        var startColX = Sheet.LayoutProvider.ComputeLeftPosition(ColStart, false);
-        var col = Sheet.LayoutProvider.ComputeColumn(startColX + obj.OffsetX, false);
-        var startColY = Sheet.LayoutProvider.ComputeTopPosition(RowStart, false);
-        var row = Sheet.LayoutProvider.ComputeRow(startColY + obj.OffsetY, false);
+        var offsetX = obj.PageX;
+        var offsetY = obj.PageY;
+
+        offsetX = _sheetLocal.ShowRowHeadings
+            ? offsetX - _sheetLocal.LayoutProvider.RowHeadingWidth
+            : offsetX;
+        offsetY = _sheetLocal.ShowColumnHeadings
+            ? offsetY - _sheetLocal.LayoutProvider.ColHeadingHeight
+            : offsetY;
+        
+        Console.WriteLine(obj.OffsetX);
+
+        var colStartX = Sheet.LayoutProvider.ComputeLeftPosition(ColStart);
+        var rowStartY = Sheet.LayoutProvider.ComputeTopPosition(RowStart);
+        var col = Sheet.LayoutProvider.ComputeColumn(offsetX + colStartX);
+        var row = Sheet.LayoutProvider.ComputeRow(offsetY + rowStartY);
 
         // check for any merged cells, if so then redirect the row/col to the merge start
         var merged = Sheet.Merges.Get(row, col);

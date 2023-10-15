@@ -1,4 +1,3 @@
-
 @using BlazorDatasheet.Data
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Events
@@ -20,8 +19,8 @@
             BackgroundStyle="background:var(--selection-bg-color);"
             Width="CellLayoutProvider.ComputeWidth(-1, 1)"
             Height="CellLayoutProvider.ComputeHeight(interval.Start, interval.Length)"
-            X="CellLayoutProvider.ComputeLeftPosition(-1, Sheet.ShowRowHeadings)"
-            Y="CellLayoutProvider.ComputeTopPosition(interval.Start, false)"/>
+            X="CellLayoutProvider.ComputeLeftPosition(-1)"
+            Y="CellLayoutProvider.ComputeTopPosition(interval.Start)"/>
     }
 
 </div>
@@ -32,7 +31,7 @@
     <div class="sheet-row">
         <div
             class="sheet-cell row-head @(IsActive(row) ? "row-active" : "")"
-            style="height:25px; display: block !important; @CssUtil.GetCellWidthStyles(-1, 1, CellLayoutProvider)"
+            style="height:@CellLayoutProvider.ComputeHeight(row, 1)px; overflow: hidden; display: block !important; @CssUtil.GetCellWidthStyles(-1, 1, CellLayoutProvider)"
             @onmousedown="e => HandleMouseDown(row, e)"
             @onmouseover="e => HandleMouseOver(row, e)"
             @onmouseup="e => HandleMouseUp(row, e)">
@@ -161,4 +160,5 @@
         var rows = Enumerable.Range(startIndex, numRows);
         return new ItemsProviderResult<int>(rows, Sheet.NumRows);
     }
+
 }

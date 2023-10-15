@@ -34,6 +34,9 @@ public class Sheet
     /// </summary>
     public int NumCols { get; private set; }
 
+    public static readonly int MAX_ROWS = 65000;
+    public static readonly int MAX_COLS = 65000;
+
     /// <summary>
     /// The sheet's row headings
     /// </summary>

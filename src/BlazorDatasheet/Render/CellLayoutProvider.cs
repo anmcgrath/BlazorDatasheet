@@ -23,6 +23,9 @@ public class CellLayoutProvider
     /// </summary>
     public double TotalHeight => _sheet.RowInfo.GetHeightBetween(0, _sheet.NumRows);
 
+    public double RowHeadingWidth => _sheet.ColumnInfo.DefaultWidth;
+    public double ColHeadingHeight => _sheet.RowInfo.DefaultHeight;
+
     public CellLayoutProvider(Sheet sheet)
     {
         _sheet = sheet;
@@ -33,32 +36,24 @@ public class CellLayoutProvider
         _sheet = sheet;
     }
 
-    public double ComputeLeftPosition(IRegion region, bool includeRowHeaders)
+    public double ComputeLeftPosition(IRegion region)
     {
-        return ComputeLeftPosition(region.TopLeft.Col, includeRowHeaders);
+        return ComputeLeftPosition(region.TopLeft.Col);
     }
 
-    public double ComputeLeftPosition(int col, bool includeRowHeaders)
+    public double ComputeLeftPosition(int col)
     {
-        var extra = includeRowHeaders ? 1 : 0;
-        if (col < 0)
-            return 0;
-
-        return _sheet.ColumnInfo.GetLeft(col) + extra;
+        return _sheet.ColumnInfo.GetLeft(col);
     }
 
-    public double ComputeTopPosition(IRegion region, bool includeRowHeaders)
+    public double ComputeTopPosition(IRegion region)
     {
-        return ComputeTopPosition(region.TopLeft.Row, includeRowHeaders);
+        return ComputeTopPosition(region.TopLeft.Row);
     }
 
-    public double ComputeTopPosition(int row, bool includeColHeaders)
+    public double ComputeTopPosition(int row)
     {
-        var extra = includeColHeaders ? 1 : 0;
-        if (row < 0)
-            return 0;
-
-        return _sheet.RowInfo.GetTop(row) + extra;
+        return _sheet.RowInfo.GetTop(row);
     }
 
     public double ComputeWidth(int startCol, int colSpan)
@@ -90,21 +85,21 @@ public class CellLayoutProvider
         return ComputeHeight(startRow, span);
     }
 
-    public int ComputeColumn(double x, bool includeRowHeaders)
+    public int ComputeColumn(double x)
     {
-        var extra = includeRowHeaders ? -1 : 0;
-        return _sheet.ColumnInfo.GetColumn(x) + extra;
+        return _sheet.ColumnInfo.GetColumn(x);
     }
 
-    public int ComputeRow(double y, bool includeColHeaders)
+    public int ComputeRow(double y)
     {
-        var extra = includeColHeaders ? -1 : 0;
-        return _sheet.RowInfo.GetRow(y) + extra;
+        return _sheet.RowInfo.GetRow(y);
     }
 
     public double ComputeHeight(int startRow, int rowSpan)
     {
-        return _sheet.RowInfo.GetHeightBetween(startRow, startRow + rowSpan);
+        var h =  _sheet.RowInfo.GetHeightBetween(startRow, startRow + rowSpan);
+        Console.WriteLine(h);
+        return h;
     }
 
     public double ComputeWidth(IRegion region)

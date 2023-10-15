@@ -8,10 +8,10 @@ public class CumulativeRange1DStore : Range1DStore<double>
 {
     public readonly double Default;
 
-    private readonly List<int> _storedPositionStarts;
-    private readonly List<int> _storedPositionEnds;
-    private readonly List<double> _cumulativeValuesAtEnd;
-    private readonly List<double> _cumulativeValuesAtStart;
+    private readonly List<int> _storedPositionStarts = new();
+    private readonly List<int> _storedPositionEnds = new();
+    private readonly List<double> _cumulativeValuesAtEnd = new();
+    private readonly List<double> _cumulativeValuesAtStart = new();
 
     /// <summary>
     /// Stores/retrieves widths of ranges. Useful for setting column/row size, because
@@ -31,6 +31,7 @@ public class CumulativeRange1DStore : Range1DStore<double>
         _storedPositionEnds = new() { 0 };
         _cumulativeValuesAtStart = new() { 0 };
         _cumulativeValuesAtEnd = new() { Default };
+        _intervals.Add(0, 0, new OverwritingValue<double>(Default));
     }
 
     public override List<(int stat, int end, double value)> Set(int start, int end, double value)
@@ -48,26 +49,41 @@ public class CumulativeRange1DStore : Range1DStore<double>
 
     private void UpdateCumulativePositons(int fromPosition)
     {
-        var startIndex = Math.Max(0, _storedPositionStarts.BinarySearchClosest(fromPosition) - 1);
-        if (startIndex > _storedPositionStarts.Count - 1)
-            return;
-
-        var currentEndPosition = _storedPositionEnds[startIndex];
-        // remove existing because we'll be updating
-        var r0 = SheetMath.ClampInt(0, _storedPositionStarts.Count, startIndex + 1);
+        var startIndex = _storedPositionStarts.BinarySearchIndexOf(fromPosition);
+        int startPosn;
+        if (startIndex >= 0 && _storedPositionStarts.Any())
+            startPosn = _storedPositionStarts[startIndex];
+        else
+        {
+            int nextInd = ~startIndex;
+            if (!_storedPositionStarts.Any() || nextInd == 0)
+            {
+                startPosn = 0;
+                startIndex = 0;
+            }
+            else
+            {
+                startPosn = _storedPositionStarts[nextInd - 1];
+                startIndex = nextInd - 1;
+            }
+        }
+        
+            // remove existing because we'll be updating
+        var r0 = SheetMath.ClampInt(0, _storedPositionStarts.Count, startIndex);
         var n = _storedPositionStarts.Count - r0;
-        _storedPositionStarts.RemoveRange(r0, n);
-        _storedPositionEnds.RemoveRange(r0, n);
-        _cumulativeValuesAtEnd.RemoveRange(r0, n);
-        _cumulativeValuesAtStart.RemoveRange(r0, n);
+        if (n > 0)
+        {
+            _storedPositionStarts.RemoveRange(r0, n);
+            _storedPositionEnds.RemoveRange(r0, n);
+            _cumulativeValuesAtEnd.RemoveRange(r0, n);
+            _cumulativeValuesAtStart.RemoveRange(r0, n);
+        }
 
-        var intervals = _intervals.GetOverlappingIntervals(currentEndPosition + 1, _intervals.End);
+        var intervals = _intervals.GetOverlappingIntervals(startPosn, _intervals.End);
         foreach (var interval in intervals)
         {
-            var r_start = _storedPositionStarts.Last();
-            var r_end = _storedPositionEnds.Last();
-            var c_start = _cumulativeValuesAtStart.Last();
-            var c_end = _cumulativeValuesAtEnd.Last();
+            var r_end = _storedPositionEnds.LastOrDefault();
+            var c_end = _cumulativeValuesAtEnd.LastOrDefault();
             // r_start       r_end               i.start     i.end
             // [       size     ]     default       [          ]
             _cumulativeValuesAtStart.Add(c_end + (interval.Start - r_end - 1) * Default);

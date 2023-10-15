@@ -207,7 +207,6 @@ function getScrollOffsetSizes(el, parent) {
 }
 
 window.disposeVirtualisationHandlers = function (el) {
-    console.log('dispose js for ' + el.id)
     leftHandlerMutMap[el].disconnect()
     rightHandlerMutMap[el].disconnect()
     topHandlerMutMap[el].disconnect()
@@ -264,6 +263,65 @@ window.addVirtualisationHandlers = function (dotNetHelper, el, dotnetHandlerName
     leftHandlerMutMap[el] = createMutationObserver(fillerLeft, observer)
     topHandlerMutMap[el] = createMutationObserver(fillerRight, observer)
 
+    dotNetHelperMap = {}
+
+}
+
+last_page_posns_map = {}
+resize_map = {}
+dotNetHelperMap = {}
+
+
+// adds listeners to determine when the scroll container is moved
+// on the page, so that we can update the pageX and pageY coordinates stored for the element.
+// these are used for determining row/column positions in mouse events
+window.addPageMoveListener = function (dotNetHelper, el, dotnetFunctionName) {
+    console.log('addPageMoveListener')
+    let parent = findScrollableAncestor(el)
+    if (!parent) parent = el
+    // parent is scrollable, parent of parent is the container of the scroll.
+    let resizeable = document.documentElement
+
+    last_page_posns_map[el] = {pageX: getPageX(el), pageY: getPageY(el)}
+    let res = new ResizeObserver((r, o) => {
+        invokeIfPageXYNew(parent, dotNetHelper, dotnetFunctionName)
+        //console.log(parent.getBoundingClientRect())
+    })
+
+    res.observe(resizeable)
+    resize_map[el] = res
+}
+
+window.disposePageMoveListener = function (el) {
+    resize_map[el].disconnect()
+    resize_map = {}
+    last_page_posns_map = {}
+}
+
+function invokeIfPageXYNew(el, dotnetHelper, dotnetFunctionName) {
+    if (el == null)
+        return
+
+    last = last_page_posns_map[el]
+    console.log("last", last)
+    newPage = {pageX: getPageX(el), pageY: getPageY(el)}
+    console.log("new", newPage)
+    let thres = 0.001
+    if (Math.abs(last.pageX - newPage.pageX) <= thres &&
+        Math.abs(last.pageY - newPage.pageY) <= thres)
+        return
+
+    last_page_posns_map[el] = newPage
+
+    dotnetHelper.invokeMethodAsync(dotnetFunctionName, {pageX: getPageX(el), pageY: getPageY(el)})
+}
+
+function getPageX(el) {
+    return el.getBoundingClientRect().x + window.scrollX
+}
+
+function getPageY(el) {
+    return el.getBoundingClientRect().y + window.scrollY
 }
 
 function createMutationObserver(filler, interactionObserver) {

@@ -18,15 +18,10 @@
     class="@GetContainerClassString()"
     @onmouseover="() => IsMouseInsideSheet = true"
     @onmouseout="() => IsMouseInsideSheet = false">
-    <!-- entire size of sheet to force scrollbars-->
-    <div id="sheet_whole"
-         @ref="_wholeSheetDiv"
-         style="position:absolute; top:0; pointer-events: none; left:0;height:@GetSheetHeightInPx()px; width:@GetSheetWidthInPx()px;z-index: 0">
-    </div>
 
     @if (Sheet != null)
     {
-        <div id="fixed">
+        <div>
             <!-- Column headers -->
             <div style="display: flex; flex-direction: column; justify-content: start;">
 
@@ -70,13 +65,9 @@
 
                     <div id="filler-left-1" @ref="_fillerLeft1" style="float:right; min-width: @(Sheet.LayoutProvider.ComputeWidth(0, ColStart))px; height: @(RenderedInnerSheetHeight)px;"></div>
 
-                    <div style="width:@(RenderedInnerSheetWidth)px;height: @(RenderedInnerSheetHeight)px;display: block;"
-                         @onmouseup="SheetMouseUp"
-                         @ondblclick="SheetMouseDoubleClick"
-                         @onmousemove="SheetMouseMove"
-                         @onmousedown="SheetMouseDown">
+                    <div style="width:@(RenderedInnerSheetWidth)px;height: @(RenderedInnerSheetHeight)px;display: block;">
 
-                        <div style="width: @(RenderedInnerSheetWidth)px; height:@(RenderedInnerSheetHeight)px; pointer-events: none; border: var(--sheet-border-style); display: block;">
+                        <div style="width: @(RenderedInnerSheetWidth)px; height:@(RenderedInnerSheetHeight)px; border: var(--sheet-border-style); display: block;">
                             @for (int rowIndex = RowStart; rowIndex < (RowStart + NVisibleRows); rowIndex++)
                             {
                                 var row = rowIndex;
@@ -88,6 +79,10 @@
                                         var cell = Sheet.GetCell(row, col);
                                         var colWidth = @Sheet.LayoutProvider.ComputeWidth(col, 1);
                                         <div
+                                            @onmouseup="e => HandleCellMouseUp(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
+                                            @ondblclick="e => HandleCellDoubleClick(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
+                                            @onmouseover="e => HandleCellMouseOver(row, col)"
+                                            @onmousedown="e => HandleCellMouseDown(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
                                             @key="col"
                                             style="border-right: var(--sheet-border-style); border-bottom: var(--sheet-border-style);
                                             padding:0; display: inline-block; box-sizing:border-box; overflow: hidden; width:@(colWidth)px;max-width:@(colWidth)px;height:@(rowHeight)px;max-height:@(rowHeight)px;"
@@ -127,7 +122,11 @@
 
                             <div id="merge"
                                  class="sheet-cell"
-                                 style="display:none;@GetAbsoluteCellPositionStyles(row, col, merge.Region.Height, merge.Region.Width)">
+                                 @onmouseup="e => HandleCellMouseUp(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
+                                 @ondblclick="e => HandleCellDoubleClick(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
+                                 @onmouseover="e => HandleCellMouseOver(row, col)"
+                                 @onmousedown="e => HandleCellMouseDown(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
+                                 style="@GetAbsoluteCellPositionStyles(row, col, merge.Region.Height, merge.Region.Width)">
                                 <CascadingValue Value="Sheet" IsFixed="true">
                                     <CellRenderer
                                         ColSpan="merge.Region.Width"
@@ -154,14 +153,25 @@
                         DefaultCellTypes="_defaultCellTypeDefinitions"
                         CustomCellTypes="CustomCellTypeDefinitions"
                         CellLayoutProvider="Sheet.LayoutProvider"/>
-
-                    <SelectionRenderer
-                        Sheet="Sheet"
-                        CellLayoutProvider="Sheet.LayoutProvider"/>
                 </div>
 
                 <div id="filler-bottom" @ref="_fillerBottom" style="min-height: @(Sheet.LayoutProvider.ComputeHeightBetween(RowStart + NVisibleRows - 1 + (Sheet.ShowColumnHeadings ? 1 : 0), Sheet.NumRows - 1))px; min-width:@(1)px;"></div>
             </div>
         </div>
     }
+
+    <!-- entire size of sheet to force scrollbars. Includes width of row headers/columns-->
+    <div id="sheet_whole"
+         @ref="_wholeSheetDiv"
+         style="position:absolute; top:0; 
+                     left:0;
+                     height:@GetSheetHeightInPx()px; 
+                     width:@GetSheetWidthInPx()px;
+                     pointer-events: none;
+                     z-index: 0;">
+
+        <SelectionRenderer
+            Sheet="Sheet"
+            CellLayoutProvider="Sheet.LayoutProvider"/>
+    </div>
 </div>

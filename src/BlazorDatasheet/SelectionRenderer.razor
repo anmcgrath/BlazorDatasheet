@@ -87,10 +87,10 @@
 
     private IRegion? BoundedSelectingRegion => Sheet?.Selection.SelectingRegion?.GetIntersection(Sheet?.Region);
 
-    private double getLeft(IRegion region) => CellLayoutProvider.ComputeLeftPosition(region, Sheet.ShowRowHeadings);
-    private double getTop(IRegion region) => CellLayoutProvider.ComputeTopPosition(region, Sheet.ShowColumnHeadings);
-    private double getWidth(IRegion region) => CellLayoutProvider.ComputeWidth(region) + 1;
-    private double getHeight(IRegion region) => CellLayoutProvider.ComputeHeight(region) + 1;
+    private double getLeft(IRegion region) => CellLayoutProvider.ComputeLeftPosition(region) + (_sheet!.ShowRowHeadings ? _sheet.LayoutProvider.RowHeadingWidth : 0) - 1;
+    private double getTop(IRegion region) => CellLayoutProvider.ComputeTopPosition(region) + (_sheet!.ShowColumnHeadings ? _sheet.LayoutProvider.ColHeadingHeight : 0) - 1;
+    private double getWidth(IRegion region) => CellLayoutProvider.ComputeWidth(region) + 3;
+    private double getHeight(IRegion region) => CellLayoutProvider.ComputeHeight(region) + 3;
 
     // Returns the region that the position covers (may be > 1 because of merged cells)
     private IRegion getRegion(CellPosition position)
