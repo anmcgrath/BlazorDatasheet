@@ -11,7 +11,7 @@ public class CellLayoutProviderTests
     public void Setting_Width_Computes_Correct_Column_Width()
     {
         var sheet = new Sheet(3, 3);
-        var w1 = sheet.ColumnWidths.Default;
+        var w1 = sheet.ColumnInfo.DefaultWidth;
         var w2 = 40;
         var provider = new CellLayoutProvider(sheet);
         Assert.AreEqual(w1, provider.ComputeWidth(1, 1));
@@ -25,15 +25,15 @@ public class CellLayoutProviderTests
     {
         var sheet = new Sheet(10, 10);
         var p = new CellLayoutProvider(sheet);
-        p.ComputeWidth(1, 2).Should().Be(sheet.ColumnWidths.Default * 2);
-        p.ComputeHeight(1, 3).Should().Be(sheet.RowHeights.Default * 3);
+        p.ComputeWidth(1, 2).Should().Be(sheet.ColumnInfo.DefaultWidth * 2);
+        p.ComputeHeight(1, 3).Should().Be(sheet.RowInfo.DefaultHeight * 3);
     }
 
     [Test]
     public void Inserting_Column_After_Setting_Width_Ends_With_Correct_Widths()
     {
         var sheet = new Sheet(3, 3);
-        var defaultW = sheet.ColumnWidths.Default;
+        var defaultW = sheet.ColumnInfo.DefaultWidth;
         var w2 = 40;
         var provider = new CellLayoutProvider(sheet);
         sheet.SetColumnWidth(1, w2);
@@ -51,7 +51,7 @@ public class CellLayoutProviderTests
     public void Insert_Row_And_Remove_Row_Sets_Total_Height()
     {
         var sheet = new Sheet(3, 3);
-        var dH = sheet.RowHeights.Default;
+        var dH = sheet.RowInfo.DefaultHeight;
         var provider = new CellLayoutProvider(sheet);
         provider.TotalHeight.Should().Be(dH * 3);
         sheet.InsertRowAt(0);
@@ -65,7 +65,7 @@ public class CellLayoutProviderTests
     {
         var sheet = new Sheet(5, 5);
         sheet.ShowRowHeadings = false;
-        var dW = sheet.ColumnWidths.Default;
+        var dW = sheet.ColumnInfo.DefaultWidth;
         var p = new CellLayoutProvider(sheet);
         p.ComputeColumn(0, false).Should().Be(0);
         p.ComputeColumn(dW-1, false).Should().Be(0);
@@ -77,7 +77,7 @@ public class CellLayoutProviderTests
     {
         var sheet = new Sheet(5, 3);
         sheet.ShowRowHeadings = false;
-        var dw = sheet.ColumnWidths.Default;
+        var dw = sheet.ColumnInfo.DefaultWidth;
         var p = new CellLayoutProvider(sheet);
         var nw = 40;
         sheet.SetColumnWidth(1, nw);
@@ -95,7 +95,7 @@ public class CellLayoutProviderTests
     {
         var sheet = new Sheet(5, 5);
         sheet.ShowRowHeadings = true;
-        var dw = sheet.ColumnWidths.Default;
+        var dw = sheet.ColumnInfo.DefaultWidth;
         var p = new CellLayoutProvider(sheet);
         p.ComputeColumn(1, true).Should().Be(-1);
         p.ComputeColumn(dw, true).Should().Be(0);
@@ -106,7 +106,7 @@ public class CellLayoutProviderTests
     {
         var sheet = new Sheet(5, 5);
         sheet.ShowColumnHeadings = true;
-        var dh = sheet.RowHeights.Default;
+        var dh = sheet.RowInfo.DefaultHeight;
         var p = new CellLayoutProvider(sheet);
         p.ComputeRow(0, true).Should().Be(-1);
         p.ComputeRow(dh, true).Should().Be(0);

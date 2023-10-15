@@ -149,19 +149,22 @@ public class CumulativeRange1DStore : Range1DStore<double>
         if (cumulative > _cumulativeValuesAtEnd.Last())
             return _storedPositionEnds.Last() + 1 + (int)((cumulative - _cumulativeValuesAtEnd.Last()) / Default);
 
-        var searchIndex = _cumulativeValuesAtStart.BinarySearchIndexOf(cumulative);
-        if (searchIndex >= 0)
-            return _storedPositionStarts[searchIndex];
+        var searchIndexStart = _cumulativeValuesAtStart.BinarySearchIndexOf(cumulative);
+        if (searchIndexStart >= 0)
+            return _storedPositionStarts[searchIndexStart];
+        var searchIndexEnd = _cumulativeValuesAtEnd.BinarySearchIndexOf(cumulative);
+        if (searchIndexEnd >= 0)
+            return _storedPositionEnds[searchIndexEnd] + 1; // +1 because it goes into the next interval range
 
-        searchIndex = ~searchIndex; // the next index after where it would have been found
+        searchIndexStart = ~searchIndexStart; // the next index after where it would have been found
 
-        if (cumulative > _cumulativeValuesAtEnd[searchIndex - 1])
+        if (cumulative > _cumulativeValuesAtEnd[searchIndexStart - 1])
         {
             // it is between ranges
             //          c-1end   cumulative   cstart
             // [       ],            x        [      ]
-            var offset = cumulative - _cumulativeValuesAtEnd[searchIndex - 1];
-            return _storedPositionEnds[searchIndex - 1] + (int)(offset / Default);
+            var offset = cumulative - _cumulativeValuesAtEnd[searchIndexStart - 1];
+            return _storedPositionEnds[searchIndexStart - 1] + (int)(offset / Default);
         }
 
         // otherwise it must be inside an interval
@@ -170,11 +173,19 @@ public class CumulativeRange1DStore : Range1DStore<double>
         // [            x         ],           [                   ]
 
         // handle the case of c_1_start = c-1end
-        if (_cumulativeValuesAtStart[searchIndex - 1] == _cumulativeValuesAtEnd[searchIndex - 1])
-            return _storedPositionStarts[searchIndex - 1];
+        if (_cumulativeValuesAtStart[searchIndexStart - 1] == _cumulativeValuesAtEnd[searchIndexStart - 1])
+            return _storedPositionStarts[searchIndexStart - 1];
 
-        var oi = _intervals.Get(_storedPositionStarts[searchIndex - 1]);
-        return _storedPositionStarts[searchIndex - 1] +
-               (int)((cumulative - _cumulativeValuesAtStart[searchIndex - 1]) / Default);
+        var oi = _intervals.Get(_storedPositionStarts[searchIndexStart - 1]);
+        return _storedPositionStarts[searchIndexStart - 1] +
+               (int)((cumulative - _cumulativeValuesAtStart[searchIndexStart - 1]) / Default);
+    }
+
+    public override void BatchSet(List<(int start, int end, double data)> data)
+    {
+        if (!data.Any())
+            return;
+        base.BatchSet(data);
+        this.UpdateCumulativePositons(data.Select(x => x.start).Min());
     }
 }

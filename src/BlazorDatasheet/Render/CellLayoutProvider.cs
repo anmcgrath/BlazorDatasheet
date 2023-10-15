@@ -16,12 +16,12 @@ public class CellLayoutProvider
     /// <summary>
     /// The total width of the sheet
     /// </summary>
-    public double TotalWidth => _sheet.ColumnWidths.GetCumulative(_sheet.NumCols);
+    public double TotalWidth => _sheet.ColumnInfo.GetWidthBetween(0, _sheet.NumCols);
 
     /// <summary>
     /// The total height of the sheet
     /// </summary>
-    public double TotalHeight => _sheet.RowHeights.GetCumulative(_sheet.NumRows);
+    public double TotalHeight => _sheet.RowInfo.GetHeightBetween(0, _sheet.NumRows);
 
     public CellLayoutProvider(Sheet sheet)
     {
@@ -44,7 +44,7 @@ public class CellLayoutProvider
         if (col < 0)
             return 0;
 
-        return _sheet.ColumnWidths.GetCumulative(col) + extra;
+        return _sheet.ColumnInfo.GetLeft(col) + extra;
     }
 
     public double ComputeTopPosition(IRegion region, bool includeRowHeaders)
@@ -58,12 +58,12 @@ public class CellLayoutProvider
         if (row < 0)
             return 0;
 
-        return _sheet.RowHeights.GetCumulative(row) + extra;
+        return _sheet.RowInfo.GetTop(row) + extra;
     }
 
     public double ComputeWidth(int startCol, int colSpan)
     {
-        return _sheet.ColumnWidths.GetSizeBetween(startCol, startCol + colSpan);
+        return _sheet.ColumnInfo.GetWidthBetween(startCol, startCol + colSpan);
     }
 
     /// <summary>
@@ -93,18 +93,18 @@ public class CellLayoutProvider
     public int ComputeColumn(double x, bool includeRowHeaders)
     {
         var extra = includeRowHeaders ? -1 : 0;
-        return _sheet.ColumnWidths.GetPosition(x) + extra;
+        return _sheet.ColumnInfo.GetColumn(x) + extra;
     }
 
     public int ComputeRow(double y, bool includeColHeaders)
     {
         var extra = includeColHeaders ? -1 : 0;
-        return _sheet.RowHeights.GetPosition(y) + extra;
+        return _sheet.RowInfo.GetRow(y) + extra;
     }
 
     public double ComputeHeight(int startRow, int rowSpan)
     {
-        return _sheet.RowHeights.GetSizeBetween(startRow, startRow + rowSpan);
+        return _sheet.RowInfo.GetHeightBetween(startRow, startRow + rowSpan);
     }
 
     public double ComputeWidth(IRegion region)

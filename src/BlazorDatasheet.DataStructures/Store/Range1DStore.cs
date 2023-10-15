@@ -71,6 +71,12 @@ public class Range1DStore<T>
             return _defaultIfNotFound;
         return val.Value;
     }
+
+    public virtual void BatchSet(List<(int start, int end, T data)> data)
+    {
+        foreach (var d in data)
+            this.Set(d.start, d.end, d.data);
+    }
 }
 
 public class OverwritingValue<R> : IMergeable<OverwritingValue<R>>

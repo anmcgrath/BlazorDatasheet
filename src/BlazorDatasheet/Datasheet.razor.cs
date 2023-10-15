@@ -819,7 +819,7 @@ public partial class Datasheet : IHandleEvent
     private double GetSheetWidthInPx()
     {
         var columnWidth = _sheetLocal.LayoutProvider.TotalWidth;
-        var headingWidth = _sheetLocal.ShowRowHeadings ? _sheetLocal.ColumnWidths.Default : 0;
+        var headingWidth = _sheetLocal.ShowRowHeadings ? _sheetLocal.ColumnInfo.DefaultWidth : 0;
         return columnWidth + headingWidth;
     }
 
@@ -830,7 +830,7 @@ public partial class Datasheet : IHandleEvent
     private double GetSheetHeightInPx()
     {
         var rowHeights = _sheetLocal.LayoutProvider.TotalHeight;
-        var headingWidth = _sheetLocal.ShowColumnHeadings ? _sheetLocal.RowHeights.Default : 0;
+        var headingWidth = _sheetLocal.ShowColumnHeadings ? _sheetLocal.RowInfo.DefaultHeight : 0;
         return rowHeights + headingWidth;
     }
 

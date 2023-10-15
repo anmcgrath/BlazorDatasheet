@@ -55,7 +55,7 @@
 @for (var i = VisibleColStart; i < (VisibleColStart + NVisibleCols); i++)
 {
     var col = i;
-    var colDefn = Sheet?.ColumnHeadings.Count > i ? Sheet?.ColumnHeadings[i] : null;
+    var colHeading = Sheet?.ColumnInfo.GetHeading(i) ?? i.ToString();
 
     <div
         class="sheet-cell @(IsActive(col) ? "column-active" : "")"
@@ -64,7 +64,7 @@
         @onmouseover="e => HandleMouseOver(col, e)"
         @onmousedown="e => HandleMouseDown(col, e)">
         <div class="cell" style="">
-            @col
+            @colHeading
         </div>
     </div>
 }

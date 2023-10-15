@@ -94,11 +94,11 @@
 
     private Type GetEditorType(string cellType)
     {
-        if (CustomCellTypes.ContainsKey(cellType))
-            return CustomCellTypes[cellType].EditorType;
+        if (CustomCellTypes?.TryGetValue(cellType, out var customCellType) == true)
+            return customCellType.EditorType;
 
-        if (DefaultCellTypes.ContainsKey(cellType))
-            return DefaultCellTypes[cellType].EditorType;
+        if (DefaultCellTypes.TryGetValue(cellType, out var defaultCellType))
+            return defaultCellType.EditorType;
 
         return typeof(TextEditorComponent);
     }

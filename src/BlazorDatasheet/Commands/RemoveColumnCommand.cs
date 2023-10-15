@@ -13,14 +13,13 @@ public class RemoveColumnCommand : IUndoableCommand
 {
     private int _columnIndex;
     private readonly int _nCols;
-    private Heading _removedHeading;
     private List<CellChangedFormat> _removedCellFormats;
-    private OrderedInterval<CellFormat>? _modifiedColumFormat;
+    private List<OrderedInterval<CellFormat>> _modifiedColumFormats;
     private List<DataRegion<bool>> _mergedRemoved;
     private List<DataRegion<int>> _validatorsRemoved;
     private int _nColsRemoved;
     private ClearCellsCommand _clearCellsCommand;
-    private List<(int col, double width)> _removedColumnWidths = new();
+    private ColumnInfoRestoreData _columnInfoRestoreData;
 
     /// <summary>
     /// Command for removing a column at the index given.
@@ -40,10 +39,13 @@ public class RemoveColumnCommand : IUndoableCommand
             return false;
         _nColsRemoved = Math.Min(sheet.NumCols - _columnIndex + 1, _nCols);
 
+        if (_nColsRemoved == 0)
+            return false;
+
         ClearCells(sheet);
         RemoveFormats(sheet);
         RemoveColumnHeadingAndStoreWidth(sheet);
-        
+
         _mergedRemoved = sheet.Merges.Store.RemoveCols(_columnIndex, _columnIndex + _nColsRemoved - 1);
         _validatorsRemoved = sheet.Validation.Store.RemoveCols(_columnIndex, _columnIndex + _nColsRemoved - 1);
         return sheet.RemoveColImpl(_columnIndex, _nColsRemoved);
@@ -51,14 +53,7 @@ public class RemoveColumnCommand : IUndoableCommand
 
     private void RemoveColumnHeadingAndStoreWidth(Sheet sheet)
     {
-        _removedColumnWidths = sheet.ColumnWidths.Cut(_columnIndex, _nColsRemoved);
-
-        if (sheet.ColumnHeadings.Any() &&
-            _columnIndex >= 0 &&
-            _columnIndex < sheet.ColumnHeadings.Count)
-        {
-            _removedHeading = sheet.ColumnHeadings[_columnIndex];
-        }
+        _columnInfoRestoreData = sheet.ColumnInfo.Cut(_columnIndex, _columnIndex + _nColsRemoved - 1);
     }
 
     private void RemoveFormats(Sheet sheet)
@@ -66,19 +61,7 @@ public class RemoveColumnCommand : IUndoableCommand
         // Keep track of the values we have removed
         var nonEmptyCellPositions = sheet.GetNonEmptyCellPositions(new ColumnRegion(_columnIndex));
         _removedCellFormats = new List<CellChangedFormat>();
-
-        var existingColumnFormatInterval =
-            sheet.ColFormats.GetOverlappingIntervals(new OrderedInterval(_columnIndex, _columnIndex)).FirstOrDefault();
-
-        if (existingColumnFormatInterval != null)
-        {
-            _modifiedColumFormat = existingColumnFormatInterval.Copy();
-            var formatToShrink = existingColumnFormatInterval.Copy();
-            formatToShrink.End = formatToShrink.End - 1;
-            sheet.ColFormats.Remove(existingColumnFormatInterval);
-            sheet.ColFormats.Add(formatToShrink);
-        }
-
+        
 
         foreach (var position in nonEmptyCellPositions)
         {
@@ -88,7 +71,8 @@ public class RemoveColumnCommand : IUndoableCommand
             if (format != null)
                 _removedCellFormats.Add(new CellChangedFormat(position.row, position.col, format, null));
         }
-        
+
+        _modifiedColumFormats = sheet.ColFormats.Remove(_columnIndex, _columnIndex + _nColsRemoved - 1);
         sheet.ColFormats.ShiftLeft(_columnIndex, _nColsRemoved);
     }
 
@@ -104,20 +88,18 @@ public class RemoveColumnCommand : IUndoableCommand
         // perform undos for merges, validation etc.
         UndoMerges(sheet);
         UndoValidation(sheet);
-        
+
         // Insert column back in and set all the values that we removed
         sheet.InsertColAtImpl(_columnIndex, _nColsRemoved);
+        
+        sheet.ColumnInfo.Insert(_columnIndex, _nColsRemoved);
+        sheet.ColumnInfo.RestoreFromData(_columnInfoRestoreData);
 
         // restore values
         _clearCellsCommand.Undo(sheet);
 
-        if (_columnIndex >= 0 && _columnIndex < sheet.ColumnHeadings.Count)
-            sheet.ColumnHeadings[_columnIndex] = _removedHeading;
-        
         sheet.ColFormats.ShiftRight(_columnIndex, _nColsRemoved);
-
-        if (_modifiedColumFormat != null)
-            sheet.ColFormats.Add(_modifiedColumFormat);
+        sheet.ColFormats.AddRange(_modifiedColumFormats);
 
         foreach (var changedFormat in _removedCellFormats)
         {
@@ -126,7 +108,7 @@ public class RemoveColumnCommand : IUndoableCommand
 
         return true;
     }
-    
+
 
     private void UndoValidation(Sheet sheet)
     {

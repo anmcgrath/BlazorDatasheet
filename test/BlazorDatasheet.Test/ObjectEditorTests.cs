@@ -29,10 +29,11 @@ public class ObjectEditorTests
         var editor = builder.Build();
         var sheet = editor.Sheet;
 
-        var propNames = typeof(TesterObject).GetProperties().Select(x => x.Name);
+        var propNames = typeof(TesterObject).GetProperties().Select(x => x.Name).ToList();
 
         Assert.AreEqual(_items.Count, sheet.NumRows);
-        Assert.AreEqual(propNames.Count(), sheet.ColumnHeadings.Count);
+        for(int i = 0; i < propNames.Count; i++)
+            Assert.AreEqual(propNames[i], sheet.ColumnInfo.GetHeading(i));
     }
 }
 

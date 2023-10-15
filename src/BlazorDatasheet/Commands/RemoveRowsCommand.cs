@@ -15,7 +15,7 @@ public class RemoveRowsCommand : IUndoableCommand
     private readonly int _nRows;
 
     private List<CellChangedFormat> _removedCellFormats;
-    private OrderedInterval<CellFormat>? _modifiedRowFormat;
+    private List<OrderedInterval<CellFormat>> _modifiedRowFormats;
     private List<DataRegion<bool>> _mergedRemoved;
 
     private List<DataRegion<int>> _validatorsRemoved;
@@ -64,18 +64,6 @@ public class RemoveRowsCommand : IUndoableCommand
             sheet.GetNonEmptyCellPositions(new RowRegion(_rowIndex, _rowIndex + _nRowsRemoved - 1));
         _removedCellFormats = new List<CellChangedFormat>();
 
-        var existingRowFormatInterval =
-            sheet.RowFormats.GetOverlappingIntervals(new OrderedInterval(_rowIndex, _rowIndex)).FirstOrDefault();
-
-        if (existingRowFormatInterval != null)
-        {
-            _modifiedRowFormat = existingRowFormatInterval.Copy();
-            var formatToShrink = existingRowFormatInterval.Copy();
-            formatToShrink.End = formatToShrink.End - 1;
-            sheet.RowFormats.Remove(existingRowFormatInterval);
-            sheet.RowFormats.Add(formatToShrink);
-        }
-
         foreach (var position in nonEmptyCellPositions)
         {
             var cell = sheet.GetCell(position.row, position.col);
@@ -84,7 +72,8 @@ public class RemoveRowsCommand : IUndoableCommand
             if (format != null)
                 _removedCellFormats.Add(new CellChangedFormat(position.row, position.col, format, null));
         }
-        
+
+        _modifiedRowFormats = sheet.RowFormats.Remove(_rowIndex, _rowIndex + _nRowsRemoved - 1);
         sheet.RowFormats.ShiftLeft(_rowIndex, _nRowsRemoved);
     }
 
@@ -103,8 +92,7 @@ public class RemoveRowsCommand : IUndoableCommand
         _clearCellsCommand.Undo(sheet);
 
         sheet.RowFormats.ShiftRight(_rowIndex, _nRowsRemoved);
-        if (_modifiedRowFormat != null)
-            sheet.RowFormats.Add(_modifiedRowFormat);
+        sheet.RowFormats.AddRange(_modifiedRowFormats);
 
         foreach (var changedFormat in _removedCellFormats)
         {

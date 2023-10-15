@@ -52,7 +52,7 @@
                     </div>
                 }
 
-                <div id="filler-top" @ref="_fillerTop" style="min-height: @(Sheet.LayoutProvider.ComputeWidth(0, RowStart))px; min-width:@(Sheet.LayoutProvider.TotalWidth)px; display: block;"></div>
+                <div id="filler-top" @ref="_fillerTop" style="min-height: @(Sheet.LayoutProvider.ComputeHeight(0, RowStart))px; min-width:@(Sheet.LayoutProvider.TotalWidth)px; display: block;"></div>
 
                 <div id="last-row" style="display: flex; flex-direction: row;">
 
@@ -151,6 +151,8 @@
                     <EditorOverlayRenderer
                         @ref="_editorManager"
                         Sheet="Sheet"
+                        DefaultCellTypes="_defaultCellTypeDefinitions"
+                        CustomCellTypes="CustomCellTypeDefinitions"
                         CellLayoutProvider="Sheet.LayoutProvider"/>
 
                     <SelectionRenderer

@@ -35,11 +35,6 @@ public class Sheet
     public int NumCols { get; private set; }
 
     /// <summary>
-    /// The sheet's headings
-    /// </summary>
-    public Dictionary<int, Heading> ColumnHeadings { get; private set; }
-
-    /// <summary>
     /// The sheet's row headings
     /// </summary>
     public Dictionary<int, Heading> RowHeadings { get; }
@@ -131,14 +126,14 @@ public class Sheet
     public event EventHandler<RowHeightChangedEventArgs>? RowHeightChanged;
 
     /// <summary>
-    /// Stores column heights
+    /// Contains data, including width, on each column.
     /// </summary>
-    public CumulativeStore ColumnWidths { get; } = new(105);
+    public ColumnInfoStore ColumnInfo { get; private set; } = new(105);
 
     /// <summary>
-    /// Stores row heights.
+    /// Contains data, including height, on each row.
     /// </summary>
-    public CumulativeStore RowHeights { get; } = new(25);
+    public RowInfoStore RowInfo { get; private set; } = new(25);
 
     public event EventHandler<CellsSelectedEventArgs>? CellsSelected;
 
@@ -181,7 +176,6 @@ public class Sheet
     {
         Merges = new MergeManager(this);
         Validation = new ValidationManager();
-        ColumnHeadings = new Dictionary<int, Heading>();
         RowHeadings = new Dictionary<int, Heading>();
         Commands = new CommandManager(this);
         Selection = new Selection(this);
@@ -227,7 +221,6 @@ public class Sheet
     public void InsertColAt(int colIndex, int nCols = 1)
     {
         var indexToAdd = Math.Min(NumCols - 1, Math.Max(colIndex, 0));
-        Console.WriteLine($"Adding {nCols} cols at index {indexToAdd}");
         var cmd = new InsertColAtCommand(indexToAdd, nCols);
         Commands.ExecuteCommand(cmd);
     }
@@ -268,71 +261,59 @@ public class Sheet
     }
 
     /// <summary>
-    /// Removes n column headings starting from the colIndex. Returns headings that were removed.
+    /// Sets the width of a column, to the width given (in px).
     /// </summary>
-    /// <param name="colIndex"></param>
-    /// <param name="nCols"></param>
-    /// <returns></returns>
-    internal List<(int index, Heading heading)> RemoveColumnHeadings(int colIndex, int nCols)
+    /// <param name="colStart"></param>
+    /// <param name="width"></param>
+    public void SetColumnWidth(int colStart, int colEnd, double width)
     {
-        for (int i = colIndex; i < colIndex + nCols; i++)
-        {
-            if (ColumnHeadings.ContainsKey(i))
-                ColumnHeadings.Remove(i);
-        }
-
-        var colsToAddBack = new List<(int index, Heading heading)>();
-        var removed = new List<(int index, Heading heading)>();
-        foreach (var kp in ColumnHeadings)
-        {
-            if (kp.Key >= colIndex + nCols)
-            {
-                colsToAddBack.Add((kp.Key, kp.Value));
-                ColumnHeadings.Remove(kp.Key);
-            }
-        }
-
-        foreach (var colHeading in colsToAddBack)
-            ColumnHeadings.Add(colHeading.index, colHeading.heading);
-
-        return removed;
+        var cmd = new SetColumnWidthCommand(colStart, colEnd, width);
+        Commands.ExecuteCommand(cmd);
     }
 
     /// <summary>
     /// Sets the width of a column, to the width given (in px).
     /// </summary>
-    /// <param name="colIndex"></param>
+    /// <param name="colStart"></param>
     /// <param name="width"></param>
-    public void SetColumnWidth(int colIndex, double width)
+    public void SetColumnWidth(int column, double width)
     {
-        var cmd = new SetColumnWidthCommand(colIndex, width);
+        var cmd = new SetColumnWidthCommand(column, column, width);
         Commands.ExecuteCommand(cmd);
     }
 
-    internal void SetColumnWidthImpl(int colIndex, double width)
+    internal void EmitColumnWidthChange(int colIndex, int colEnd, double width)
     {
-        var oldWidth = ColumnWidths.GetSize(colIndex);
-        ColumnWidths.Set(colIndex, width);
-        ColumnWidthChanged?.Invoke(this, new ColumnWidthChangedEventArgs(colIndex, width, oldWidth));
+        ColumnWidthChanged?.Invoke(this, new ColumnWidthChangedEventArgs(colIndex, colEnd, width));
     }
 
     /// <summary>
-    /// Sets the height of a row to the height given (in px).
+    /// Sets the height of a column, to the height given (in px).
     /// </summary>
-    /// <param name="rowIndex"></param>
+    /// <param name="rowStart"></param>
     /// <param name="height"></param>
-    public void SetRowHeight(int rowIndex, double height)
+    public void SetRowHeight(int rowStart, int rowEnd, double height)
     {
-        var cmd = new SetRowHeightCommand(rowIndex, height);
+        var cmd = new SetRowHeightCommand(rowStart, rowEnd, height);
         Commands.ExecuteCommand(cmd);
     }
 
-    internal void SetRowHeightImpl(int rowIndex, double height)
+    /// <summary>
+    /// Sets the width of a column, to the width given (in px).
+    /// </summary>
+    /// <param name="colStart"></param>
+    /// <param name="height"></param>
+    public void SetRowHeight(int row, double height)
     {
-        var oldHeight = RowHeights.GetSize(rowIndex);
-        RowHeights.Set(rowIndex, height);
-        RowHeightChanged?.Invoke(this, new RowHeightChangedEventArgs(rowIndex, height, oldHeight));
+        var cmd = new SetRowHeightCommand(row, row, height);
+        Commands.ExecuteCommand(cmd);
     }
+
+    internal void EmitRowHeightChange(int rowStart, int rowEnd, double height)
+    {
+        RowHeightChanged?.Invoke(this, new RowHeightChangedEventArgs(rowStart, rowEnd, height));
+    }
+
 
     #endregion
 
@@ -360,10 +341,6 @@ public class Sheet
     internal bool InsertRowAtImpl(int rowIndex, int nRows = 1)
     {
         CellDataStore.InsertRowAt(rowIndex, nRows);
-
-        for (int i = rowIndex; i < (rowIndex + nRows); i++)
-            RowHeights.InsertAt(rowIndex);
-
         NumRows += nRows;
 
         RowInserted?.Invoke(this, new RowInsertedEventArgs(rowIndex, nRows));

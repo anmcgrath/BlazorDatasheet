@@ -27,6 +27,7 @@ public class InsertColAtCommand : IUndoableCommand
         sheet.Validation.Store.InsertCols(_colIndex, _nCols);
         sheet.InsertColAtImpl(_colIndex, _nCols);
         sheet.ColFormats.ShiftRight(_colIndex, _nCols);
+        sheet.ColumnInfo.Insert(_colIndex, _nCols);
         return true;
     }
 
@@ -36,6 +37,7 @@ public class InsertColAtCommand : IUndoableCommand
         sheet.Validation.Store.RemoveCols(_colIndex, _colIndex + _nCols - 1);
         sheet.RemoveColImpl(_colIndex, _nCols);
         sheet.ColFormats.ShiftLeft(_colIndex, _nCols);
+        sheet.ColumnInfo.Cut(_colIndex, _colIndex + _nCols - 1);
         return true;
     }
 }

@@ -2,14 +2,14 @@ namespace BlazorDatasheet.Events.Layout;
 
 public class RowHeightChangedEventArgs
 {
-    public int RowIndex { get; }
+    public int RowIndexStart { get; }
     public double NewWidth { get; }
-    public double OldWidth { get; }
+    public double RowIndexEnd { get; }
 
-    public RowHeightChangedEventArgs(int rowIndex, double newWidth, double oldWidth)
+    public RowHeightChangedEventArgs(int rowIndexStart, double newWidth, double rowIndexEnd)
     {
-        RowIndex = rowIndex;
+        RowIndexStart = rowIndexStart;
         NewWidth = newWidth;
-        OldWidth = oldWidth;
+        RowIndexEnd = rowIndexEnd;
     }
 }

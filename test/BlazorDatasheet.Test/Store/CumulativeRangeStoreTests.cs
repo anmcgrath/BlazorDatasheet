@@ -8,12 +8,13 @@ public class CumulativeRangeStoreTests
 {
     private CumulativeRange1DStore store;
     private double defaultSize => store.Default;
+
     [SetUp]
     public void SetupStore()
     {
         store = new CumulativeRange1DStore(100);
     }
-    
+
     [Test]
     public void Single_Size_Tests()
     {
@@ -65,8 +66,9 @@ public class CumulativeRangeStoreTests
         //store.GetPosition(defaultSize).Should().Be(1);
 
         store.Set(1, 2 * defaultSize);
-        //store.GetPosition(defaultSize + 1).Should().Be(1);
-        //store.GetPosition(2 * defaultSize - 1).Should().Be(1);
+        store.GetPosition(3 * defaultSize).Should().Be(2);
+        store.GetPosition(defaultSize + 1).Should().Be(1);
+        store.GetPosition(2 * defaultSize - 1).Should().Be(1);
         store.GetPosition(3 * defaultSize + 1).Should().Be(2);
         store.GetPosition(4 * defaultSize + 1).Should().Be(3);
     }

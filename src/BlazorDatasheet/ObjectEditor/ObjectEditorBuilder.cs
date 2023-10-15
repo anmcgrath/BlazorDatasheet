@@ -160,15 +160,12 @@ public class ObjectEditorBuilder<T>
         for (int i = 0; i < _propertyDefinitions.Count; i++)
         {
             var propDefn = _propertyDefinitions[i];
-            var headings = _direction == GridDirection.PropertiesAcrossColumns
-                ? sheet.ColumnHeadings
-                : sheet.RowHeadings;
-            headings.Add(i, new Heading()
-            {
-                Header = string.IsNullOrEmpty(propDefn.Heading)
-                    ? propDefn.PropertyName
-                    : propDefn.Heading,
-            });
+            var headingStore = _direction == GridDirection.PropertiesAcrossColumns
+                ? sheet.ColumnInfo
+                : null;
+            headingStore.SetColumnHeading(i, string.IsNullOrEmpty(propDefn.Heading)
+                                              ? propDefn.PropertyName
+                                              : propDefn.Heading);
 
             // Apply conditional format to property (whole row or column)
             var conditionalFormats = propDefn.ConditionalFormats;
