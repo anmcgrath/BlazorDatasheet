@@ -34,7 +34,9 @@
         var col = i;
         <div
             @onmousedown="e => HandleMouseDownOnAdorner(col)"
-            style="position:absolute; z-index: 2; top: 0; left: @(CellLayoutProvider.ComputeLeftPosition(col + 1) - 5 - 1)px; width: 10px; background: none; height: 25px; cursor: col-resize; display: block">
+            style="@GetArdornerSizeStyles(col)
+            position:absolute; z-index: 2;  
+            background: none; cursor: col-resize; display: block">
         </div>
     }
 
@@ -59,7 +61,7 @@
 
     <div
         class="sheet-cell @(IsActive(col) ? "column-active" : "")"
-        style="z-index: 1; @CssUtil.GetCellWidthStyles(i, 1, CellLayoutProvider)"
+        style="z-index: 1; @CssUtil.GetCellWidthStyles(i, 1, CellLayoutProvider); height: @(CellLayoutProvider.ColHeadingHeight)px"
         @onmouseup="e => HandleMouseUp(col, e)"
         @onmouseover="e => HandleMouseOver(col, e)"
         @onmousedown="e => HandleMouseDown(col, e)">
@@ -215,6 +217,22 @@
     private void HandleMouseOver(int col, MouseEventArgs args)
     {
         OnMouseOver.InvokeAsync(new ColumnMouseEventArgs(col, args));
+    }
+
+    private string GetArdornerSizeStyles(int col)
+    {
+        var sb = new StringBuilder();
+        var left = CellLayoutProvider.ComputeLeftPosition(col + 1) +
+                   (_sheet.ShowRowHeadings ? CellLayoutProvider.RowHeadingWidth : 0);
+        var top = 0;
+        var width = 10;
+        var height = CellLayoutProvider.ColHeadingHeight;
+
+        sb.Append($"top:{top}px;");
+        sb.Append($"left:{left - 6}px;");
+        sb.Append($"width:{width}px;");
+        sb.Append($"height:{height}px;");
+        return sb.ToString();
     }
 
 }

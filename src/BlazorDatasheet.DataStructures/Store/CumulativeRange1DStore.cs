@@ -27,11 +27,6 @@ public class CumulativeRange1DStore : Range1DStore<double>
     public CumulativeRange1DStore(double @default) : base(@default)
     {
         Default = @default;
-        _storedPositionStarts = new() { 0 };
-        _storedPositionEnds = new() { 0 };
-        _cumulativeValuesAtStart = new() { 0 };
-        _cumulativeValuesAtEnd = new() { Default };
-        _intervals.Add(0, 0, new OverwritingValue<double>(Default));
     }
 
     public override List<(int stat, int end, double value)> Set(int start, int end, double value)
@@ -49,50 +44,41 @@ public class CumulativeRange1DStore : Range1DStore<double>
 
     private void UpdateCumulativePositons(int fromPosition)
     {
-        var startIndex = _storedPositionStarts.BinarySearchIndexOf(fromPosition);
-        int startPosn;
-        if (startIndex >= 0 && _storedPositionStarts.Any())
-            startPosn = _storedPositionStarts[startIndex];
-        else
-        {
-            int nextInd = ~startIndex;
-            if (!_storedPositionStarts.Any() || nextInd == 0)
-            {
-                startPosn = 0;
-                startIndex = 0;
-            }
-            else
-            {
-                startPosn = _storedPositionStarts[nextInd - 1];
-                startIndex = nextInd - 1;
-            }
-        }
-        
-            // remove existing because we'll be updating
-        var r0 = SheetMath.ClampInt(0, _storedPositionStarts.Count, startIndex);
-        var n = _storedPositionStarts.Count - r0;
-        if (n > 0)
-        {
-            _storedPositionStarts.RemoveRange(r0, n);
-            _storedPositionEnds.RemoveRange(r0, n);
-            _cumulativeValuesAtEnd.RemoveRange(r0, n);
-            _cumulativeValuesAtStart.RemoveRange(r0, n);
-        }
+        // update all cumulative positions using all intervals
+        ClearCumulativeData();
 
-        var intervals = _intervals.GetOverlappingIntervals(startPosn, _intervals.End);
+        var intervals = _intervals.GetAllIntervals();
         foreach (var interval in intervals)
         {
-            var r_end = _storedPositionEnds.LastOrDefault();
-            var c_end = _cumulativeValuesAtEnd.LastOrDefault();
-            // r_start       r_end               i.start     i.end
-            // [       size     ]     default       [          ]
-            _cumulativeValuesAtStart.Add(c_end + (interval.Start - r_end - 1) * Default);
-            _cumulativeValuesAtEnd.Add(_cumulativeValuesAtStart.Last() +
-                                       interval.Length * interval.Data.Value);
+            var existingCumEnd = _cumulativeValuesAtEnd.Any();
+            var cumEndPrev = _cumulativeValuesAtEnd.LastOrDefault();
+            var posEndPrev = _storedPositionEnds.LastOrDefault();
+            var intervalSize = interval.Length * interval.Data.Value;
+            //     e s
+            // [   ] [   ] intervals are NON overlapping.
+            // The end of one interval will never be equal to the start of another.
+            // But the cum end of one interval is equal to cum start of another.
+            // the only time we'd have an overlapping end position if if there isn't anything stored
+            // and we our new interval starts at 0, because poSendPrev will be the default value of _storedPositionEnds (0)
 
+            double newCumStart;
+            if (!existingCumEnd)
+                newCumStart = interval.Start * Default;
+            else
+                newCumStart = cumEndPrev + (interval.Start - posEndPrev - 1) * Default;
             _storedPositionStarts.Add(interval.Start);
             _storedPositionEnds.Add(interval.End);
+            _cumulativeValuesAtStart.Add(newCumStart);
+            _cumulativeValuesAtEnd.Add(newCumStart + intervalSize);
         }
+    }
+
+    private void ClearCumulativeData()
+    {
+        _storedPositionEnds.Clear();
+        _storedPositionStarts.Clear();
+        _cumulativeValuesAtEnd.Clear();
+        _cumulativeValuesAtStart.Clear();
     }
 
     public override List<(int start, int end, double value)> Cut(int start, int end)
@@ -126,13 +112,14 @@ public class CumulativeRange1DStore : Range1DStore<double>
         if (indexStart >= 0)
             return _cumulativeValuesAtStart[indexStart];
 
-        // if inside an overlapping interval, calculate the cumulative by looking at the end posn
+        // if inside an overlapping interval, calculate the cumulative by seeing how far from the start it is
         // and the cell size in the interval
         var overlapping = this._intervals.GetOverlappingIntervals(position, position).FirstOrDefault();
         if (overlapping != null)
         {
-            var indexEnd = _storedPositionEnds.BinarySearchIndexOf(overlapping.End);
-            return _cumulativeValuesAtEnd[indexEnd] - (overlapping.End - position) * overlapping.Data.Value;
+            var startPosnIndex = _storedPositionStarts.BinarySearchIndexOf(overlapping.Start);
+            // we know the above exists because its attached to an interval
+            return _cumulativeValuesAtStart[startPosnIndex] + (position - overlapping.Start) * overlapping.Data.Value;
         }
 
         // otherwise we are to the right of zero, one or more intervals
@@ -157,12 +144,12 @@ public class CumulativeRange1DStore : Range1DStore<double>
     /// <returns></returns>
     public int GetPosition(double cumulative)
     {
-        if (!_cumulativeValuesAtStart.Any() || _cumulativeValuesAtStart.Count == 1)
+        if (!_cumulativeValuesAtStart.Any())
             return (int)(cumulative / Default);
 
         //.....clast_start         clast_end      cum
         // .... [                       ]          x
-        if (cumulative > _cumulativeValuesAtEnd.Last())
+        if (cumulative >= _cumulativeValuesAtEnd.Last())
             return _storedPositionEnds.Last() + 1 + (int)((cumulative - _cumulativeValuesAtEnd.Last()) / Default);
 
         var searchIndexStart = _cumulativeValuesAtStart.BinarySearchIndexOf(cumulative);
@@ -174,12 +161,17 @@ public class CumulativeRange1DStore : Range1DStore<double>
 
         searchIndexStart = ~searchIndexStart; // the next index after where it would have been found
 
+        // if searchIndexStart = 0 then it is before the first interval and so can be calculated
+        // by considering the offset from 0 and using default size
+        if (searchIndexStart == 0)
+            return (int)(cumulative / Default);
+
         if (cumulative > _cumulativeValuesAtEnd[searchIndexStart - 1])
         {
             // it is between ranges
             //          c-1end   cumulative   cstart
             // [       ],            x        [      ]
-            var offset = cumulative - _cumulativeValuesAtEnd[searchIndexStart - 1];
+            var offset = cumulative - _cumulativeValuesAtEnd[searchIndexEnd - 1];
             return _storedPositionEnds[searchIndexStart - 1] + (int)(offset / Default);
         }
 

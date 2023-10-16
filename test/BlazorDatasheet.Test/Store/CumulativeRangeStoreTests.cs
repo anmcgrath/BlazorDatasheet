@@ -56,15 +56,26 @@ public class CumulativeRangeStoreTests
     }
 
     [Test]
+    public void Simple()
+    {
+        store.Set(0, 20);
+        store.Set(1, 2, 30);
+        store.Set(5, 40);
+        store.GetSize(0).Should().Be(20);
+    }
+
+    [Test]
     public void GetIndexFromCumulativeTests()
     {
         // index  0   1    2    3
         // cumul  0   100  300  400
-        //store.GetPosition(-1).Should().Be(0);
-        //store.GetPosition(0).Should().Be(0);
-        //store.GetPosition(defaultSize - 1).Should().Be(0);
-        //store.GetPosition(defaultSize).Should().Be(1);
+        store.GetPosition(-1).Should().Be(0);
+        store.GetPosition(0).Should().Be(0);
+        store.GetPosition(defaultSize - 1).Should().Be(0);
+        store.GetPosition(defaultSize).Should().Be(1);
 
+        // index 0    1     2     3
+        // cumul 0    100   300   400
         store.Set(1, 2 * defaultSize);
         store.GetPosition(3 * defaultSize).Should().Be(2);
         store.GetPosition(defaultSize + 1).Should().Be(1);
