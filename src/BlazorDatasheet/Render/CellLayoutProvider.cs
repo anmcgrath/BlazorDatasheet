@@ -98,7 +98,6 @@ public class CellLayoutProvider
     public double ComputeHeight(int startRow, int rowSpan)
     {
         var h =  _sheet.RowInfo.GetHeightBetween(startRow, startRow + rowSpan);
-        Console.WriteLine(h);
         return h;
     }
 

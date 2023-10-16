@@ -442,7 +442,12 @@ public partial class Datasheet : IHandleEvent
             }
 
             var mergeRangeAtPosition = _sheetLocal.Merges.Get(row, col);
-            this.BeginSelectingCell(row, col);
+            if(row == -1)
+                this.BeginSelectingCol(col);
+            else if(col == -1)
+                this.BeginSelectingRow(row);
+            else
+                this.BeginSelectingCell(row, col);
         }
 
         if (_sheetLocal.Editor.IsEditing)
@@ -452,39 +457,34 @@ public partial class Datasheet : IHandleEvent
         }
     }
 
-    private void HandleColumnHeaderMouseDown(int col, MouseEventArgs e)
+    private void HandleColumnHeaderMouseDown(ColumnMouseEventArgs args)
     {
-        if (e.ShiftKey && Sheet?.Selection?.ActiveRegion != null)
-            Sheet?.Selection?.ExtendTo(0, col);
-        else
-        {
-            if (!e.MetaKey && !e.CtrlKey)
-            {
-                Sheet?.Selection?.ClearSelections();
-            }
-
-            this.BeginSelectingCol(col);
-        }
-
-        AcceptEdit();
+        this.HandleCellMouseDown(-1, args.Column, args.Args.MetaKey, args.Args.CtrlKey, args.Args.ShiftKey);
+    }
+    
+    private void HandleColumnHeaderMouseUp(ColumnMouseEventArgs args)
+    {
+        this.HandleCellMouseUp(-1, args.Column, args.Args.MetaKey, args.Args.CtrlKey, args.Args.ShiftKey);
+    }
+    
+    private void HandleColumnHeaderMouseOver(ColumnMouseEventArgs args)
+    {
+        this.HandleCellMouseOver(-1, args.Column);
     }
 
-    private void HandleRowHeaderMouseDown(int row, MouseEventArgs e)
+    private void HandleRowHeaderMouseDown(RowMouseEventArgs e)
     {
-        Console.WriteLine("HandleRowHeaderMouseDown " + row);
-        if (e.ShiftKey && Sheet?.Selection?.ActiveRegion != null)
-            Sheet?.Selection?.ExtendTo(row, 0);
-        else
-        {
-            if (!e.MetaKey && !e.CtrlKey)
-            {
-                Sheet?.Selection?.ClearSelections();
-            }
-
-            this.BeginSelectingRow(row);
-        }
-
-        AcceptEdit();
+        this.HandleCellMouseDown(e.RowIndex, -1, e.Args.MetaKey, e.Args.CtrlKey, e.Args.ShiftKey);
+    }
+    
+    private void HandleRowHeaderMouseUp(RowMouseEventArgs args)
+    {
+        this.HandleCellMouseUp(args.RowIndex, -1, args.Args.MetaKey, args.Args.CtrlKey, args.Args.ShiftKey);
+    }
+    
+    private void HandleRowHeaderMouseOver(RowMouseEventArgs args)
+    {
+        this.HandleCellMouseOver(args.RowIndex, -1);
     }
 
     private async void HandleCellDoubleClick(int row, int col, bool MetaKey, bool CtrlKey, bool ShiftKey)
@@ -792,31 +792,6 @@ public partial class Datasheet : IHandleEvent
 
         Sheet?.Selection.EndSelecting();
     }
-
-    /// <summary>
-    /// Determines whether a column contains any cells that are selected or being selected
-    /// </summary>
-    /// <param name="col"></param>
-    /// <returns></returns>
-    private bool IsColumnActive(int col)
-    {
-        if (Sheet?.Selection.Regions.Any(x => x.SpansCol(col)) == true)
-            return true;
-        return false;
-    }
-
-    /// <summary>
-    /// Determines whether a row contains any cells that are selected or being selected
-    /// </summary>
-    /// <param name="row"></param>
-    /// <returns></returns>
-    private bool IsRowActive(int row)
-    {
-        if (Sheet?.Selection.Regions.Any(x => x.SpansRow(row)) == true)
-            return true;
-        return false;
-    }
-
     /// <summary>
     /// Returns the width of the sheet(including the headings, if any) in pixels
     /// </summary>
@@ -853,78 +828,6 @@ public partial class Datasheet : IHandleEvent
         sb.Append(" vars sheet ");
         sb.Append(IsDataSheetActive ? " active-sheet " : " in-active-sheet ");
         return sb.ToString();
-    }
-
-    /// <summary>
-    /// Provides rows to the virtualised renderer
-    /// </summary>
-    /// <param name="request"></param>
-    /// <returns></returns>
-    public async ValueTask<ItemsProviderResult<int>> LoadRows(
-        ItemsProviderRequest request)
-    {
-        var numRows = request.Count;
-        var startIndex = request.StartIndex;
-
-        this.ViewportRegion = new Region(startIndex, startIndex + numRows, 0, _sheetLocal.NumCols);
-
-        ForceReRender();
-
-        return new ItemsProviderResult<int>(Enumerable.Range(startIndex, numRows), Sheet.NumRows);
-    }
-
-    private (int row, int col) RowColFromMouseEvent(MouseEventArgs obj)
-    {
-        var offsetX = obj.PageX;
-        var offsetY = obj.PageY;
-
-        offsetX = _sheetLocal.ShowRowHeadings
-            ? offsetX - _sheetLocal.LayoutProvider.RowHeadingWidth
-            : offsetX;
-        offsetY = _sheetLocal.ShowColumnHeadings
-            ? offsetY - _sheetLocal.LayoutProvider.ColHeadingHeight
-            : offsetY;
-        
-        Console.WriteLine(obj.OffsetX);
-
-        var colStartX = Sheet.LayoutProvider.ComputeLeftPosition(ColStart);
-        var rowStartY = Sheet.LayoutProvider.ComputeTopPosition(RowStart);
-        var col = Sheet.LayoutProvider.ComputeColumn(offsetX + colStartX);
-        var row = Sheet.LayoutProvider.ComputeRow(offsetY + rowStartY);
-
-        // check for any merged cells, if so then redirect the row/col to the merge start
-        var merged = Sheet.Merges.Get(row, col);
-        if (merged != null)
-        {
-            row = merged.Top;
-            col = merged.Left;
-        }
-
-        return (row, col);
-    }
-
-    private void SheetMouseDown(MouseEventArgs obj)
-    {
-        var (row, col) = RowColFromMouseEvent(obj);
-        this.HandleCellMouseDown(row, col, obj.MetaKey, obj.CtrlKey, obj.ShiftKey);
-    }
-
-    private void SheetMouseUp(MouseEventArgs obj)
-    {
-        var (row, col) = RowColFromMouseEvent(obj);
-        this.HandleCellMouseUp(row, col, obj.MetaKey, obj.CtrlKey, obj.ShiftKey);
-    }
-
-    private void SheetMouseMove(MouseEventArgs obj)
-    {
-        var (row, col) = RowColFromMouseEvent(obj);
-        this.HandleCellMouseOver(row, col);
-    }
-
-    private void SheetMouseDoubleClick(MouseEventArgs obj)
-    {
-        var (row, col) = RowColFromMouseEvent(obj);
-        this.HandleCellDoubleClick(row, col, obj.MetaKey, obj.CtrlKey, obj.ShiftKey);
     }
 
     /// <summary>

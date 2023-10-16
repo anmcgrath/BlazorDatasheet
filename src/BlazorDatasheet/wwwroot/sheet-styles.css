@@ -108,7 +108,7 @@
 
 .column-active {
     background: var(--active-header-bg-color) !important;
-    border-bottom-width: 1px;
+    border-bottom-width: 2px;
     border-bottom-color: var(--selection-border-color);
     border-bottom-style: solid;
 }
@@ -124,7 +124,8 @@
 
 .row-active {
     background: var(--active-header-bg-color) !important;
-    border-right-width: 1px;
+    border-right-width: 2px;
+    padding-right: 4px;
     border-right-color: var(--selection-border-color);
     border-right-style: solid;
 }

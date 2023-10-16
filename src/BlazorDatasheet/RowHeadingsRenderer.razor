@@ -28,7 +28,8 @@
 @for (int rowIndex = VisibleRowStart; rowIndex < (VisibleRowStart + NVisibleRows); rowIndex++)
 {
     var row = rowIndex;
-    <div class="sheet-row">
+    var heading = @Sheet.RowInfo.GetHeading(row) ?? (row+1).ToString();
+    <div class="sheet-row"> 
         <div
             class="sheet-cell row-head @(IsActive(row) ? "row-active" : "")"
             style="height:@CellLayoutProvider.ComputeHeight(row, 1)px; overflow: hidden; display: block !important; @CssUtil.GetCellWidthStyles(-1, 1, CellLayoutProvider)"
@@ -36,7 +37,7 @@
             @onmouseover="e => HandleMouseOver(row, e)"
             @onmouseup="e => HandleMouseUp(row, e)">
             <div class="cell" style="text-align: right">
-                @(Sheet.RowHeadings.Count > row ? Sheet.RowHeadings[row].Header : row)
+                @heading
             </div>
         </div>
     </div>
@@ -82,13 +83,11 @@
         {
             if (_sheet != null)
             {
-                _sheet.Selection.SelectionChanged -= OnSelectionChanged;
                 _sheet.Selection.SelectingChanged -= OnSelectingChanged;
                 _sheet.RowInserted -= SheetOnRowInserted;
                 _sheet.RowRemoved -= SheetOnRowRemoved;
             }
             _sheet = Sheet;
-            _sheet.Selection.SelectionChanged += OnSelectionChanged;
             _sheet.Selection.SelectingChanged += OnSelectingChanged;
             _sheet.RowInserted += SheetOnRowInserted;
             _sheet.RowRemoved += SheetOnRowRemoved;
@@ -105,30 +104,11 @@
     {
         this.StateHasChanged();
     }
-
-    private void OnSelectionChanged(object? sender, IEnumerable<IRegion> regions) => updateIntervals();
+    
     private void OnSelectingChanged(object? sender, IRegion region) => updateIntervals();
 
     private void updateIntervals()
     {
-        if (Sheet?.Selection == null)
-            return;
-
-        var intervals = new List<OrderedInterval>();
-        if (Sheet.Selection.SelectingRegion != null && Sheet.Selection.SelectingRegion is RowRegion)
-        {
-            var fixedTempSelection = Sheet.Selection.SelectingRegion.GetIntersection(Sheet.Region);
-            intervals.Add(new OrderedInterval(fixedTempSelection.TopLeft.Row, fixedTempSelection.BottomRight.Row));
-        }
-        foreach (var region in Sheet.Selection.Regions)
-        {
-            if (region is RowRegion)
-            {
-                var fixedRegion = region.GetIntersection(Sheet.Region);
-                intervals.Add(new OrderedInterval(fixedRegion.TopLeft.Row, fixedRegion.BottomRight.Row));
-            }
-        }
-        _selectionIntervals = OrderedInterval.Merge(intervals);
         StateHasChanged();
     }
 
@@ -145,20 +125,6 @@
     private void HandleMouseOver(int row, MouseEventArgs args)
     {
         OnMouseOver.InvokeAsync(new RowMouseEventArgs(row, args));
-    }
-
-    /// <summary>
-    /// Provides rows to the virtualised renderer
-    /// </summary>
-    /// <param name="request"></param>
-    /// <returns></returns>
-    public async ValueTask<ItemsProviderResult<int>> LoadRows(
-        ItemsProviderRequest request)
-    {
-        var numRows = request.Count;
-        var startIndex = request.StartIndex;
-        var rows = Enumerable.Range(startIndex, numRows);
-        return new ItemsProviderResult<int>(rows, Sheet.NumRows);
     }
 
 }

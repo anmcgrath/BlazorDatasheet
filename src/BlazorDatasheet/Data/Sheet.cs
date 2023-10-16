@@ -34,14 +34,6 @@ public class Sheet
     /// </summary>
     public int NumCols { get; private set; }
 
-    public static readonly int MAX_ROWS = 65000;
-    public static readonly int MAX_COLS = 65000;
-
-    /// <summary>
-    /// The sheet's row headings
-    /// </summary>
-    public Dictionary<int, Heading> RowHeadings { get; }
-
     /// <summary>
     /// Whether to show the row headings
     /// </summary>
@@ -179,7 +171,6 @@ public class Sheet
     {
         Merges = new MergeManager(this);
         Validation = new ValidationManager();
-        RowHeadings = new Dictionary<int, Heading>();
         Commands = new CommandManager(this);
         Selection = new Selection(this);
         Editor = new Editor(this);
@@ -231,7 +222,6 @@ public class Sheet
     internal void InsertColAtImpl(int colIndex, int nCols = 1)
     {
         CellDataStore.InsertColAt(colIndex, nCols);
-
         NumCols += nCols;
         ColumnInserted?.Invoke(this, new ColumnInsertedEventArgs(colIndex, nCols));
     }
@@ -256,7 +246,6 @@ public class Sheet
     internal bool RemoveColImpl(int colIndex, int nCols = 1)
     {
         CellDataStore.RemoveColAt(colIndex, nCols);
-
         NumCols -= nCols;
         ColumnRemoved?.Invoke(this, new ColumnRemovedEventArgs(colIndex, nCols));
 
@@ -290,31 +279,9 @@ public class Sheet
         ColumnWidthChanged?.Invoke(this, new ColumnWidthChangedEventArgs(colIndex, colEnd, width));
     }
 
-    /// <summary>
-    /// Sets the height of a column, to the height given (in px).
-    /// </summary>
-    /// <param name="rowStart"></param>
-    /// <param name="height"></param>
-    public void SetRowHeight(int rowStart, int rowEnd, double height)
+    public void SetColumnHeadings(int colStart, int colEnd, string heading)
     {
-        var cmd = new SetRowHeightCommand(rowStart, rowEnd, height);
-        Commands.ExecuteCommand(cmd);
-    }
-
-    /// <summary>
-    /// Sets the width of a column, to the width given (in px).
-    /// </summary>
-    /// <param name="colStart"></param>
-    /// <param name="height"></param>
-    public void SetRowHeight(int row, double height)
-    {
-        var cmd = new SetRowHeightCommand(row, row, height);
-        Commands.ExecuteCommand(cmd);
-    }
-
-    internal void EmitRowHeightChange(int rowStart, int rowEnd, double height)
-    {
-        RowHeightChanged?.Invoke(this, new RowHeightChangedEventArgs(rowStart, rowEnd, height));
+        Commands.ExecuteCommand(new SetColumnHeadingsCommand(colStart, colEnd, heading));
     }
 
 
@@ -367,6 +334,34 @@ public class Sheet
         row++;
 
         return true;
+    }
+    
+    
+    /// <summary>
+    /// Sets the height of a column, to the height given (in px).
+    /// </summary>
+    /// <param name="rowStart"></param>
+    /// <param name="height"></param>
+    public void SetRowHeight(int rowStart, int rowEnd, double height)
+    {
+        var cmd = new SetRowHeightCommand(rowStart, rowEnd, height);
+        Commands.ExecuteCommand(cmd);
+    }
+
+    /// <summary>
+    /// Sets the width of a column, to the width given (in px).
+    /// </summary>
+    /// <param name="colStart"></param>
+    /// <param name="height"></param>
+    public void SetRowHeight(int row, double height)
+    {
+        var cmd = new SetRowHeightCommand(row, row, height);
+        Commands.ExecuteCommand(cmd);
+    }
+
+    internal void EmitRowHeightChange(int rowStart, int rowEnd, double height)
+    {
+        RowHeightChanged?.Invoke(this, new RowHeightChangedEventArgs(rowStart, rowEnd, height));
     }
 
     #endregion
