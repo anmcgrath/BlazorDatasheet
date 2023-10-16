@@ -44,7 +44,7 @@
     /// Request that the cell should change value without going to an editor.
     /// </summary>
     /// <param name="value">The value to change the cell to. This will be converted from a string to the appropriate value.</param>
-    protected void RequestChangeCellValue(string value)
+    protected void RequestChangeCellValue(object value)
     {
         OnChangeCellValueRequest?.Invoke(new ChangeCellValueRequest(Row, Col, value));
     }
