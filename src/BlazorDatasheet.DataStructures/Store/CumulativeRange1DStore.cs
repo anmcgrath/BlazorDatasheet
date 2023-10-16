@@ -33,7 +33,7 @@ public class CumulativeRange1DStore : Range1DStore<double>
     {
         var res = base.Set(start, end, value);
         // update cumulative positions1
-        UpdateCumulativePositons(start);
+        UpdateCumulativePositionsFrom(start);
         return res;
     }
 
@@ -42,12 +42,19 @@ public class CumulativeRange1DStore : Range1DStore<double>
         return this.Get(position);
     }
 
-    private void UpdateCumulativePositons(int fromPosition)
+    private void UpdateCumulativePositionsFrom(int position)
     {
-        // update all cumulative positions using all intervals
-        ClearCumulativeData();
+        if (_storedPositionStarts.Any())
+        {
+            var index = _storedPositionStarts.BinarySearchIndexOf(position);
+            // if it exists, clear from that position otherwise we want to clear from before it.
+            if (index < 0)
+                index = ~index - 1;
+            position = _storedPositionStarts[Math.Max(0, index)];
+            ClearCumulativeData(index);
+        }
 
-        var intervals = _intervals.GetAllIntervals();
+        var intervals = _intervals.GetOverlappingIntervals(position, _intervals.End);
         foreach (var interval in intervals)
         {
             var existingCumEnd = _cumulativeValuesAtEnd.Any();
@@ -73,25 +80,28 @@ public class CumulativeRange1DStore : Range1DStore<double>
         }
     }
 
-    private void ClearCumulativeData()
+    private void ClearCumulativeData(int fromIndex)
     {
-        _storedPositionEnds.Clear();
-        _storedPositionStarts.Clear();
-        _cumulativeValuesAtEnd.Clear();
-        _cumulativeValuesAtStart.Clear();
+        if (fromIndex < 0)
+            fromIndex = 0;
+        var n = _storedPositionEnds.Count - fromIndex;
+        _storedPositionEnds.RemoveRange(fromIndex, n);
+        _storedPositionStarts.RemoveRange(fromIndex, n);
+        _cumulativeValuesAtEnd.RemoveRange(fromIndex, n);
+        _cumulativeValuesAtStart.RemoveRange(fromIndex, n);
     }
 
     public override List<(int start, int end, double value)> Cut(int start, int end)
     {
         var res = base.Cut(start, end);
-        UpdateCumulativePositons(start);
+        UpdateCumulativePositionsFrom(start);
         return res;
     }
 
     public override void InsertAt(int start, int n)
     {
         base.InsertAt(start, n);
-        UpdateCumulativePositons(start);
+        UpdateCumulativePositionsFrom(0);
     }
 
     /// <summary>
@@ -194,6 +204,6 @@ public class CumulativeRange1DStore : Range1DStore<double>
         if (!data.Any())
             return;
         base.BatchSet(data);
-        this.UpdateCumulativePositons(data.Select(x => x.start).Min());
+        this.UpdateCumulativePositionsFrom(data.Select(x => x.start).Min());
     }
 }
