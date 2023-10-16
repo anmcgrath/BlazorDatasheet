@@ -31,8 +31,6 @@ public class SetColumnWidthCommand : IUndoableCommand
 
     public bool Undo(Sheet sheet)
     {
-        Console.WriteLine("Undo coli,m wodtj");
-        Console.WriteLine(string.Join(",",_oldWidths.Select(x=>x.width)));
         for (int i = 0; i < _oldWidths.Count; i++)
         {
             sheet.ColumnInfo.SetColumnWidths(_oldWidths[i].start, _oldWidths[i].end, _oldWidths[i].width);

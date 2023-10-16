@@ -39,6 +39,9 @@
                         <div id="filler-left-0" style="min-width: @(Sheet.LayoutProvider.ComputeWidth(0, ColStart))px; display: block; float: left; height: 1px;"></div>
 
                         <ColumnHeadingsRenderer
+                            OnMouseDown="HandleColumnHeaderMouseDown"
+                            OnMouseUp="HandleColumnHeaderMouseUp"
+                            OnMouseOver="HandleColumnHeaderMouseOver"
                             NVisibleCols="NVisibleCols"
                             VisibleColStart="ColStart"
                             CellLayoutProvider="Sheet.LayoutProvider"
@@ -55,6 +58,9 @@
                     {
                         <div id="rowHeadings" class="@(StickyHeadings ? "row-sticky" : "")">
                             <RowHeadingsRenderer
+                                OnMouseDown="HandleRowHeaderMouseDown"
+                                OnMouseUp="HandleRowHeaderMouseUp"
+                                OnMouseOver="HandleRowHeaderMouseOver"
                                 NVisibleRows="NVisibleRows"
                                 VisibleRowStart="RowStart"
                                 Sheet="Sheet"
