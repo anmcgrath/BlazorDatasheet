@@ -44,13 +44,12 @@
     <!-- Resize preview -->
     @if (IsDragging)
     {
-        var resizeWidth = Math.Max(MinResizeWidth, Sheet.LayoutProvider.ComputeWidth(ActiveAdornerIndex, 1) + CurrentColResizeAmount);
+        var resizeWidth = Math.Max(MinResizeWidth, CellLayoutProvider.ComputeWidth(ActiveAdornerIndex, 1) + CurrentColResizeAmount);
         <BoxOverlayRenderer
             Y="0"
             Width="3"
             BorderThickness="1"
-            X="@(CellLayoutProvider.ComputeLeftPosition(ActiveAdornerIndex) +
-                  (_sheet.ShowRowHeadings ? CellLayoutProvider.RowHeadingWidth : 0) + resizeWidth)"
+            X="@(CellLayoutProvider.ComputeLeftPosition(ActiveAdornerIndex) + resizeWidth)"
             Height="@(CellLayoutProvider.TotalHeight)"/>
     }
 
@@ -160,7 +159,7 @@
         if (IsDragging)
         {
             IsDragging = false;
-            var resizeWidth = Math.Max(MinResizeWidth, Sheet.LayoutProvider.ComputeWidth(ActiveAdornerIndex, 1) + CurrentColResizeAmount);
+            var resizeWidth = Math.Max(MinResizeWidth, CellLayoutProvider.ComputeWidth(ActiveAdornerIndex, 1) + CurrentColResizeAmount);
             Sheet.SetColumnWidth(ActiveAdornerIndex, resizeWidth);
             return true;
         }
@@ -203,8 +202,7 @@
     private string GetArdornerSizeStyles(int col)
     {
         var sb = new StringBuilder();
-        var left = CellLayoutProvider.ComputeLeftPosition(col + 1) +
-                   (_sheet.ShowRowHeadings ? CellLayoutProvider.RowHeadingWidth : 0);
+        var left = CellLayoutProvider.ComputeLeftPosition(col + 1);
         var top = 0;
         var width = 10;
         var height = CellLayoutProvider.ColHeadingHeight;

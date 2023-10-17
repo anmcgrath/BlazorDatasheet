@@ -20,6 +20,9 @@
     public double Height { get; set; }
 
     [Parameter]
+    public int ZIndex { get; set; }
+
+    [Parameter]
     public double BorderThickness { get; set; }
 
     [Parameter]
@@ -40,6 +43,7 @@
         strBuilder.Append($"width:{Width}px;");
         strBuilder.Append($"height:{Height}px;");
         strBuilder.Append($"position:relative;");
+        strBuilder.Append($"z-index:{ZIndex};");
         if (BorderThickness != 0)
         {
             strBuilder.Append($"outline: {BorderThickness}px solid {BorderColor};");

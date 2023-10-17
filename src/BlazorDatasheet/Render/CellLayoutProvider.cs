@@ -26,6 +26,9 @@ public class CellLayoutProvider
     public double RowHeadingWidth => _sheet.ColumnInfo.DefaultWidth;
     public double ColHeadingHeight => _sheet.RowInfo.DefaultHeight;
 
+    public bool IncludeRowHeadings { get; set; }
+    public bool IncludeColHeadings { get; set; }
+
     public CellLayoutProvider(Sheet sheet)
     {
         _sheet = sheet;
@@ -43,7 +46,8 @@ public class CellLayoutProvider
 
     public double ComputeLeftPosition(int col)
     {
-        return _sheet.ColumnInfo.GetLeft(col);
+        var extra = IncludeRowHeadings ? RowHeadingWidth : 0;
+        return _sheet.ColumnInfo.GetLeft(col) + extra;
     }
 
     public double ComputeTopPosition(IRegion region)
@@ -53,7 +57,8 @@ public class CellLayoutProvider
 
     public double ComputeTopPosition(int row)
     {
-        return _sheet.RowInfo.GetTop(row);
+        var extra = IncludeColHeadings ? ColHeadingHeight : 0;
+        return _sheet.RowInfo.GetTop(row) + extra;
     }
 
     public double ComputeWidth(int startCol, int colSpan)
@@ -87,17 +92,19 @@ public class CellLayoutProvider
 
     public int ComputeColumn(double x)
     {
-        return _sheet.ColumnInfo.GetColumn(x);
+        var offset = IncludeRowHeadings ? ColHeadingHeight : 0;
+        return _sheet.ColumnInfo.GetColumn(x - offset);
     }
 
     public int ComputeRow(double y)
     {
-        return _sheet.RowInfo.GetRow(y);
+        var offset = IncludeColHeadings ? RowHeadingWidth : 0;
+        return _sheet.RowInfo.GetRow(y - offset);
     }
 
     public double ComputeHeight(int startRow, int rowSpan)
     {
-        var h =  _sheet.RowInfo.GetHeightBetween(startRow, startRow + rowSpan);
+        var h = _sheet.RowInfo.GetHeightBetween(startRow, startRow + rowSpan);
         return h;
     }
 

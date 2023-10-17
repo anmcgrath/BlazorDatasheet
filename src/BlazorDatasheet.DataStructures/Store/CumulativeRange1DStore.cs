@@ -50,7 +50,10 @@ public class CumulativeRange1DStore : Range1DStore<double>
             // if it exists, clear from that position otherwise we want to clear from before it.
             if (index < 0)
                 index = ~index - 1;
-            position = _storedPositionStarts[Math.Max(0, index)];
+            var newPosition = _storedPositionStarts[Math.Max(0, index)];
+            if (newPosition < position)
+                position = newPosition;
+            
             ClearCumulativeData(index);
         }
 
@@ -128,7 +131,6 @@ public class CumulativeRange1DStore : Range1DStore<double>
         if (overlapping != null)
         {
             var startPosnIndex = _storedPositionStarts.BinarySearchIndexOf(overlapping.Start);
-            // we know the above exists because its attached to an interval
             return _cumulativeValuesAtStart[startPosnIndex] + (position - overlapping.Start) * overlapping.Data.Value;
         }
 

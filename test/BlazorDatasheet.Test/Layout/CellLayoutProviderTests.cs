@@ -78,9 +78,9 @@ public class CellLayoutProviderTests
     public void Calculate_Column_With_Fixed_Widths_Calculates()
     {
         var sheet = new Sheet(5, 5);
-        sheet.ShowRowHeadings = false;
         var dW = sheet.ColumnInfo.DefaultWidth;
         var p = new CellLayoutProvider(sheet);
+        p.IncludeRowHeadings = false;
         p.ComputeColumn(0).Should().Be(0);
         p.ComputeColumn(dW-1).Should().Be(0);
         p.ComputeColumn(dW+1).Should().Be(1);
@@ -90,9 +90,9 @@ public class CellLayoutProviderTests
     public void Calculate_Column_With_Non_Fixed_Widths_Calculates_Correctly()
     {
         var sheet = new Sheet(5, 3);
-        sheet.ShowRowHeadings = false;
         var dw = sheet.ColumnInfo.DefaultWidth;
         var p = new CellLayoutProvider(sheet);
+        p.IncludeRowHeadings = false;
         var nw = 40;
         sheet.SetColumnWidth(1, nw);
         p.ComputeColumn(dw-1).Should().Be(0);

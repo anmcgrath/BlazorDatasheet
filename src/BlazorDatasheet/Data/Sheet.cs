@@ -35,16 +35,6 @@ public class Sheet
     public int NumCols { get; private set; }
 
     /// <summary>
-    /// Whether to show the row headings
-    /// </summary>
-    public bool ShowRowHeadings { get; set; } = true;
-
-    /// <summary>
-    /// Whether to show the column headings. Default is true.
-    /// </summary>
-    public bool ShowColumnHeadings { get; set; } = true;
-
-    /// <summary>
     /// Managers commands & undo/redo. Default is true.
     /// </summary>
     public CommandManager Commands { get; }
@@ -153,8 +143,6 @@ public class Sheet
 
     public Editor Editor { get; }
 
-    internal CellLayoutProvider LayoutProvider { get; }
-
     /// <summary>
     /// Contains cell merge information and handles merges.
     /// </summary>
@@ -176,7 +164,6 @@ public class Sheet
         Editor = new Editor(this);
         FormulaEngine = new FormulaEngine.FormulaEngine(this);
         ConditionalFormatting = new ConditionalFormatManager(this);
-        LayoutProvider = new CellLayoutProvider(this);
         _dirtyCells = new HashSet<(int row, int col)>();
     }
 

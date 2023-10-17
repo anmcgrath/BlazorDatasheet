@@ -14,8 +14,8 @@
 @using Microsoft.Extensions.Primitives
 <div
     style="@GetContainerStyleString()"
-    theme="@Theme"
     class="@GetContainerClassString()"
+    theme="@Theme"
     @onmouseover="() => IsMouseInsideSheet = true"
     @onmouseout="() => IsMouseInsideSheet = false">
 
@@ -25,18 +25,18 @@
             <!-- Column headers -->
             <div style="display: flex; flex-direction: column; justify-content: start;">
 
-                @if (Sheet?.ShowColumnHeadings == true)
+                @if (ShowColHeadings)
                 {
                     <div style="display: flex; flex-direction: row;" class="sheet-row column-head @(StickyHeadings ? "col-sticky" : "")">
-                        @if (Sheet.ShowRowHeadings)
+                        @if (ShowRowHeadings)
                         {
                             <!-- the little bit outside to the left of first col header -->
                             <div class="sheet-cell row-head"
-                                 style="@CssUtil.GetCellWidthStyles(-1, 1, Sheet.LayoutProvider); display: inline-block;@(StickyHeadings ? "position: sticky; left: 0; z-index:2;" : "")">
+                                 style="@CssUtil.GetCellWidthStyles(-1, 1, _cellLayoutProvider); display: inline-block;@(StickyHeadings ? "position: sticky; left: 0; z-index:2;" : "")">
                                 <div class="cell"></div>
                             </div>
                         }
-                        <div id="filler-left-0" style="min-width: @(Sheet.LayoutProvider.ComputeWidth(0, ColStart))px; display: block; float: left; height: 1px;"></div>
+                        <div id="filler-left-0" style="min-width: @(_cellLayoutProvider.ComputeWidth(0, ColStart))px; display: block; float: left; height: 1px;"></div>
 
                         <ColumnHeadingsRenderer
                             OnMouseDown="HandleColumnHeaderMouseDown"
@@ -44,17 +44,17 @@
                             OnMouseOver="HandleColumnHeaderMouseOver"
                             NVisibleCols="NVisibleCols"
                             VisibleColStart="ColStart"
-                            CellLayoutProvider="Sheet.LayoutProvider"
+                            CellLayoutProvider="_cellLayoutProvider"
                             Sheet="Sheet"/>
 
                     </div>
                 }
 
-                <div id="filler-top" @ref="_fillerTop" style="min-height: @(Sheet.LayoutProvider.ComputeHeight(0, RowStart))px; min-width:@(Sheet.LayoutProvider.TotalWidth)px; display: block;"></div>
+                <div id="filler-top" @ref="_fillerTop" style="min-height: @(_cellLayoutProvider.ComputeHeight(0, RowStart))px; min-width:@(_cellLayoutProvider.TotalWidth)px; display: block;"></div>
 
                 <div id="last-row" style="display: flex; flex-direction: row;">
 
-                    @if (Sheet.ShowRowHeadings)
+                    @if (ShowRowHeadings)
                     {
                         <div id="rowHeadings" class="@(StickyHeadings ? "row-sticky" : "")">
                             <RowHeadingsRenderer
@@ -64,12 +64,12 @@
                                 NVisibleRows="NVisibleRows"
                                 VisibleRowStart="RowStart"
                                 Sheet="Sheet"
-                                CellLayoutProvider="Sheet.LayoutProvider"/>
+                                CellLayoutProvider="_cellLayoutProvider"/>
                         </div>
                     }
 
 
-                    <div id="filler-left-1" @ref="_fillerLeft1" style="float:right; min-width: @(Sheet.LayoutProvider.ComputeWidth(0, ColStart))px; height: @(RenderedInnerSheetHeight)px;"></div>
+                    <div id="filler-left-1" @ref="_fillerLeft1" style="float:right; min-width: @(_cellLayoutProvider.ComputeWidth(0, ColStart))px; height: @(RenderedInnerSheetHeight)px;"></div>
 
                     <div style="width:@(RenderedInnerSheetWidth)px;height: @(RenderedInnerSheetHeight)px;display: block;">
 
@@ -77,13 +77,13 @@
                             @for (int rowIndex = RowStart; rowIndex < (RowStart + NVisibleRows); rowIndex++)
                             {
                                 var row = rowIndex;
-                                var rowHeight = @Sheet.LayoutProvider.ComputeHeight(row, 1);
+                                var rowHeight = @_cellLayoutProvider.ComputeHeight(row, 1);
                                 <div @key="row" style="height:@(rowHeight)px">
                                     @for (int j = ColStart; j < (ColStart + NVisibleCols); j++)
                                     {
                                         var col = j;
                                         var cell = Sheet.GetCell(row, col);
-                                        var colWidth = @Sheet.LayoutProvider.ComputeWidth(col, 1);
+                                        var colWidth = @_cellLayoutProvider.ComputeWidth(col, 1);
                                         <div
                                             @onmouseup="e => HandleCellMouseUp(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
                                             @ondblclick="e => HandleCellDoubleClick(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
@@ -114,7 +114,7 @@
                         </div>
                     </div>
 
-                    <div id="filler-right" @ref="_fillerRight" style="float:left;min-width: @(Sheet.LayoutProvider.ComputeWidthBetween(ColStart + NVisibleCols - 1 + (Sheet.ShowRowHeadings ? 1 : 0), Sheet.NumCols - 1))px; height:@(RenderedInnerSheetHeight)px;"></div>
+                    <div id="filler-right" @ref="_fillerRight" style="float:left;min-width: @(_cellLayoutProvider.ComputeWidthBetween(ColStart + NVisibleCols - 1, Sheet.NumCols - 1))px; height:@(RenderedInnerSheetHeight)px;"></div>
 
                     <!-- Merged cells -->
                     @if (Sheet.Merges.Any() && this.ViewportRegion is not null)
@@ -158,10 +158,10 @@
                         Sheet="Sheet"
                         DefaultCellTypes="_defaultCellTypeDefinitions"
                         CustomCellTypes="CustomCellTypeDefinitions"
-                        CellLayoutProvider="Sheet.LayoutProvider"/>
+                        CellLayoutProvider="_cellLayoutProvider"/>
                 </div>
 
-                <div id="filler-bottom" @ref="_fillerBottom" style="min-height: @(Sheet.LayoutProvider.ComputeHeightBetween(RowStart + NVisibleRows - 1 + (Sheet.ShowColumnHeadings ? 1 : 0), Sheet.NumRows - 1))px; min-width:@(1)px;"></div>
+                <div id="filler-bottom" @ref="_fillerBottom" style="min-height: @(_cellLayoutProvider.ComputeHeightBetween(RowStart + NVisibleRows - 1, Sheet.NumRows - 1))px; min-width:@(1)px;"></div>
             </div>
         </div>
     }
@@ -178,6 +178,6 @@
 
         <SelectionRenderer
             Sheet="Sheet"
-            CellLayoutProvider="Sheet.LayoutProvider"/>
+            CellLayoutProvider="_cellLayoutProvider"/>
     </div>
 </div>

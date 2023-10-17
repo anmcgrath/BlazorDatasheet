@@ -95,6 +95,19 @@ public class CumulativeRangeStoreTests
     }
 
     [Test]
+    public void Set_One_Then_Zero_Size_Doesnt_Crash()
+    {
+        Assert.DoesNotThrow(() =>
+        {
+            store.Set(1, 20);
+            store.Set(0, 15);
+            store.GetCumulative(0);
+            store.GetCumulative(1);
+            store.GetCumulative(2);
+        });
+    }
+
+    [Test]
     public void Cut_Ranges_Calculates_Correctly()
     {
         store.Set(1, 100);

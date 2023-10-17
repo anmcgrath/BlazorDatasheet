@@ -112,6 +112,8 @@
     {
         if (BeginningEdit)
         {
+            if (ActiveEditorContainer == null)
+                return;
             ActiveCellEditor = (BaseEditor)(ActiveEditorContainer.Instance);
             if (ActiveCellEditor == null)
                 return;
@@ -168,8 +170,8 @@
     private string GetEditorSizeStyling()
     {
         var strBuilder = new StringBuilder();
-        var left = CellLayoutProvider.ComputeLeftPosition(EditCell.Col) + (_sheet.ShowRowHeadings ? CellLayoutProvider.RowHeadingWidth : 0) + 1;
-        var top = CellLayoutProvider.ComputeTopPosition(EditCell.Row) + (_sheet.ShowColumnHeadings ? CellLayoutProvider.ColHeadingHeight : 0) + 1;
+        var left = CellLayoutProvider.ComputeLeftPosition(EditCell.Col);
+        var top = CellLayoutProvider.ComputeTopPosition(EditCell.Row);
 
         var mergedPosn = Sheet.Merges.Get(EditCell.Row, EditCell.Col);
         int colSpan = 1;

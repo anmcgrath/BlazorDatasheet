@@ -32,6 +32,18 @@ public partial class Datasheet : IHandleEvent
     public Sheet? Sheet { get; set; }
 
     /// <summary>
+    /// Whether to show the row headings.
+    /// </summary>
+    [Parameter]
+    public bool ShowRowHeadings { get; set; } = true;
+
+    /// <summary>
+    /// Whether to show the column headings.
+    /// </summary>
+    [Parameter]
+    public bool ShowColHeadings { get; set; } = true;
+
+    /// <summary>
     /// Whether the row headings are sticky (only applied if the container is of fixed height)
     /// </summary>
     [Parameter]
@@ -48,7 +60,6 @@ public partial class Datasheet : IHandleEvent
     /// Default editors for cell types.
     /// </summary>
     private Dictionary<string, CellTypeDefinition> _defaultCellTypeDefinitions { get; } = new();
-
 
     /// <summary>
     /// Exists so that we can determine whether the sheet has changed
@@ -82,12 +93,12 @@ public partial class Datasheet : IHandleEvent
     /// <summary>
     /// The total height of the VISIBLE sheet. This changes when the user scrolls or the parent scroll element is resized.
     /// </summary>
-    public double RenderedInnerSheetHeight => Sheet!.LayoutProvider.ComputeHeight(RowStart, NVisibleRows);
+    public double RenderedInnerSheetHeight => _cellLayoutProvider.ComputeHeight(RowStart, NVisibleRows);
 
     /// <summary>
     /// The total width of the VISIBLE sheet. This changes when the user scrolls or the parent scroll element is resized.
     /// </summary>
-    public double RenderedInnerSheetWidth => Sheet!.LayoutProvider.ComputeWidth(ColStart, NVisibleCols);
+    public double RenderedInnerSheetWidth => _cellLayoutProvider.ComputeWidth(ColStart, NVisibleCols);
 
     /// <summary>
     /// Store any cells that are dirty here
@@ -123,6 +134,11 @@ public partial class Datasheet : IHandleEvent
     /// Whether the entire sheet is dirty
     /// </summary>
     public bool SheetIsDirty { get; set; } = true;
+
+    /// <summary>
+    /// Contains positioning calculations
+    /// </summary>
+    private CellLayoutProvider _cellLayoutProvider { get; set; }
 
     /// <summary>
     /// Whether the user is actively selecting cells/rows/columns in the sheet.
@@ -167,8 +183,15 @@ public partial class Datasheet : IHandleEvent
 
             _sheetLocal = Sheet;
             _sheetLocal?.SetDialogService(new SimpleDialogService(this.JS));
+            _cellLayoutProvider = new CellLayoutProvider(_sheetLocal);
 
             AddSheetEventListeners();
+        }
+
+        if (_cellLayoutProvider != null)
+        {
+            _cellLayoutProvider.IncludeColHeadings = ShowColHeadings;
+            _cellLayoutProvider.IncludeRowHeadings = ShowRowHeadings;
         }
 
         base.OnParametersSet();
@@ -323,18 +346,19 @@ public partial class Datasheet : IHandleEvent
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        Console.WriteLine("DATASHEET_RENDER");
         if (firstRender)
         {
             _dotnetHelper = DotNetObjectReference.Create(this);
             await AddWindowEventsAsync();
             await JS.InvokeVoidAsync("addVirtualisationHandlers",
-                                     _dotnetHelper,
-                                     _wholeSheetDiv,
-                                     nameof(HandleScroll),
-                                     _fillerLeft1,
-                                     _fillerTop,
-                                     _fillerRight,
-                                     _fillerBottom);
+                _dotnetHelper,
+                _wholeSheetDiv,
+                nameof(HandleScroll),
+                _fillerLeft1,
+                _fillerTop,
+                _fillerRight,
+                _fillerBottom);
 
             // we need to know the position of the datasheet relative to the 
             // page start, so that we can calculate mouse events correctly
@@ -368,10 +392,10 @@ public partial class Datasheet : IHandleEvent
         int overflowY = 6;
         int overflowX = 2;
 
-        var visibleRowStart = Sheet.LayoutProvider.ComputeRow(e.ScrollTop);
-        var visibleColStart = Sheet.LayoutProvider.ComputeColumn(e.ScrollLeft);
-        var visibleRowEnd = Sheet.LayoutProvider.ComputeRow(e.ScrollTop + e.ContainerHeight);
-        var visibleColEnd = Sheet.LayoutProvider.ComputeColumn(e.ScrollLeft + e.ContainerWidth);
+        var visibleRowStart = _cellLayoutProvider.ComputeRow(e.ScrollTop);
+        var visibleColStart = _cellLayoutProvider.ComputeColumn(e.ScrollLeft);
+        var visibleRowEnd = _cellLayoutProvider.ComputeRow(e.ScrollTop + e.ContainerHeight);
+        var visibleColEnd = _cellLayoutProvider.ComputeColumn(e.ScrollLeft + e.ContainerWidth);
 
         visibleRowEnd = Math.Min(Sheet.NumRows - 1, visibleRowEnd);
         visibleColEnd = Math.Min(Sheet.NumCols - 1, visibleColEnd);
@@ -405,14 +429,12 @@ public partial class Datasheet : IHandleEvent
     private string GetAbsoluteCellPositionStyles(int row, int col, int rowSpan, int colSpan)
     {
         var sb = new StringBuilder();
-        var top = Sheet.LayoutProvider.ComputeTopPosition(row) +
-                  (_sheetLocal.ShowColumnHeadings ? Sheet.LayoutProvider.ColHeadingHeight : 0);
-        var left = Sheet.LayoutProvider.ComputeLeftPosition(col) +
-                   (_sheetLocal.ShowRowHeadings ? Sheet.LayoutProvider.RowHeadingWidth : 0);
+        var top = _cellLayoutProvider.ComputeTopPosition(row);
+        var left = _cellLayoutProvider.ComputeLeftPosition(col);
         sb.Append("position:absolute;");
         sb.Append($"top:{top + 1}px;");
-        sb.Append($"width:{Sheet.LayoutProvider.ComputeWidth(col, colSpan) - 1}px;");
-        sb.Append($"height:{Sheet.LayoutProvider.ComputeHeight(row, rowSpan) - 1}px;");
+        sb.Append($"width:{_cellLayoutProvider.ComputeWidth(col, colSpan) - 1}px;");
+        sb.Append($"height:{_cellLayoutProvider.ComputeHeight(row, rowSpan) - 1}px;");
         sb.Append($"left:{left + 1}px;");
         return sb.ToString();
     }
@@ -442,9 +464,9 @@ public partial class Datasheet : IHandleEvent
             }
 
             var mergeRangeAtPosition = _sheetLocal.Merges.Get(row, col);
-            if(row == -1)
+            if (row == -1)
                 this.BeginSelectingCol(col);
-            else if(col == -1)
+            else if (col == -1)
                 this.BeginSelectingRow(row);
             else
                 this.BeginSelectingCell(row, col);
@@ -461,12 +483,12 @@ public partial class Datasheet : IHandleEvent
     {
         this.HandleCellMouseDown(-1, args.Column, args.Args.MetaKey, args.Args.CtrlKey, args.Args.ShiftKey);
     }
-    
+
     private void HandleColumnHeaderMouseUp(ColumnMouseEventArgs args)
     {
         this.HandleCellMouseUp(-1, args.Column, args.Args.MetaKey, args.Args.CtrlKey, args.Args.ShiftKey);
     }
-    
+
     private void HandleColumnHeaderMouseOver(ColumnMouseEventArgs args)
     {
         this.HandleCellMouseOver(-1, args.Column);
@@ -476,12 +498,12 @@ public partial class Datasheet : IHandleEvent
     {
         this.HandleCellMouseDown(e.RowIndex, -1, e.Args.MetaKey, e.Args.CtrlKey, e.Args.ShiftKey);
     }
-    
+
     private void HandleRowHeaderMouseUp(RowMouseEventArgs args)
     {
         this.HandleCellMouseUp(args.RowIndex, -1, args.Args.MetaKey, args.Args.CtrlKey, args.Args.ShiftKey);
     }
-    
+
     private void HandleRowHeaderMouseOver(RowMouseEventArgs args)
     {
         this.HandleCellMouseOver(args.RowIndex, -1);
@@ -792,14 +814,15 @@ public partial class Datasheet : IHandleEvent
 
         Sheet?.Selection.EndSelecting();
     }
+
     /// <summary>
     /// Returns the width of the sheet(including the headings, if any) in pixels
     /// </summary>
     /// <returns></returns>
     private double GetSheetWidthInPx()
     {
-        var columnWidth = _sheetLocal.LayoutProvider.TotalWidth;
-        var headingWidth = _sheetLocal.ShowRowHeadings ? _sheetLocal.ColumnInfo.DefaultWidth : 0;
+        var columnWidth = _cellLayoutProvider.TotalWidth;
+        var headingWidth = ShowRowHeadings ? _sheetLocal.ColumnInfo.DefaultWidth : 0;
         return columnWidth + headingWidth;
     }
 
@@ -809,8 +832,8 @@ public partial class Datasheet : IHandleEvent
     /// <returns></returns>
     private double GetSheetHeightInPx()
     {
-        var rowHeights = _sheetLocal.LayoutProvider.TotalHeight;
-        var headingWidth = _sheetLocal.ShowColumnHeadings ? _sheetLocal.RowInfo.DefaultHeight : 0;
+        var rowHeights = _cellLayoutProvider.TotalHeight;
+        var headingWidth = ShowColHeadings ? _sheetLocal.RowInfo.DefaultHeight : 0;
         return rowHeights + headingWidth;
     }
 
