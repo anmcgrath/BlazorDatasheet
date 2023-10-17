@@ -50,6 +50,18 @@ public partial class Datasheet : IHandleEvent
     public bool StickyHeadings { get; set; }
 
     /// <summary>
+    /// Renders a number of cells past the visual region, to improve scroll performance.
+    /// </summary>
+    [Parameter]
+    public int OverflowX { get; set; } = 2;
+
+    /// <summary>
+    /// Renders a number of cells past the visual region, to improve scroll performance.
+    /// </summary>
+    [Parameter]
+    public int OverflowY { get; set; } = 6;
+
+    /// <summary>
     /// Register custom editor components (derived from <see cref="BaseEditor"/>) that will be selected
     /// based on the cell type.
     /// </summary>
@@ -86,19 +98,21 @@ public partial class Datasheet : IHandleEvent
     private bool IsMouseInsideSheet { get; set; }
 
     /// <summary>
-    /// The current (or close to) region in view.
+    /// The Viewport
     /// </summary>
-    public IRegion? ViewportRegion { get; private set; }
+    public Viewport? Viewport { get; private set; } = new();
 
     /// <summary>
     /// The total height of the VISIBLE sheet. This changes when the user scrolls or the parent scroll element is resized.
     /// </summary>
-    public double RenderedInnerSheetHeight => _cellLayoutProvider.ComputeHeight(RowStart, NVisibleRows);
+    public double RenderedInnerSheetHeight => _cellLayoutProvider
+        .ComputeHeightBetween(Viewport.VisibleRegion.Top, Viewport.VisibleRegion.Bottom);
 
     /// <summary>
     /// The total width of the VISIBLE sheet. This changes when the user scrolls or the parent scroll element is resized.
     /// </summary>
-    public double RenderedInnerSheetWidth => _cellLayoutProvider.ComputeWidth(ColStart, NVisibleCols);
+    public double RenderedInnerSheetWidth => _cellLayoutProvider
+        .ComputeWidthBetween(Viewport.VisibleRegion.Left, Viewport.VisibleRegion.Right);
 
     /// <summary>
     /// Store any cells that are dirty here
@@ -369,13 +383,6 @@ public partial class Datasheet : IHandleEvent
         DirtyCells.Clear();
     }
 
-    private ScrollEvent ScrollEvent = new ScrollEvent();
-
-    private int RowStart { get; set; }
-    private int ColStart { get; set; }
-    private int NVisibleRows { get; set; }
-    private int NVisibleCols { get; set; }
-
     /// <summary>
     /// Handles the JS scroll event. Returns the Rectangle that contains information about how much
     /// the viewport has to move before it will have to re-render the cells.
@@ -385,44 +392,32 @@ public partial class Datasheet : IHandleEvent
     [JSInvokable("HandleScroll")]
     public void HandleScroll(ScrollEvent e)
     {
-        var sw = new Stopwatch();
-        sw.Start();
-        ScrollEvent = e;
+        var newViewport = _cellLayoutProvider
+            .GetViewPort(
+                e.ScrollLeft,
+                e.ScrollTop,
+                e.ContainerWidth,
+                e.ContainerHeight,
+                OverflowX,
+                OverflowY);
 
-        int overflowY = 6;
-        int overflowX = 2;
+        Console.WriteLine("HANLDE SCROLL");
 
-        var visibleRowStart = _cellLayoutProvider.ComputeRow(e.ScrollTop);
-        var visibleColStart = _cellLayoutProvider.ComputeColumn(e.ScrollLeft);
-        var visibleRowEnd = _cellLayoutProvider.ComputeRow(e.ScrollTop + e.ContainerHeight);
-        var visibleColEnd = _cellLayoutProvider.ComputeColumn(e.ScrollLeft + e.ContainerWidth);
-
-        visibleRowEnd = Math.Min(Sheet.NumRows - 1, visibleRowEnd);
-        visibleColEnd = Math.Min(Sheet.NumCols - 1, visibleColEnd);
-
-        RowStart = Math.Max(visibleRowStart - overflowY, 0);
-        var endRow = Math.Min(Sheet.NumRows - 1, visibleRowEnd + overflowY);
-        NVisibleRows = endRow - RowStart + 1;
-
-        ColStart = Math.Max(visibleColStart - overflowX, 0);
-        var endCol = Math.Min(Sheet.NumCols - 1, visibleColEnd + overflowX);
-        NVisibleCols = endCol - ColStart + 1;
-
-        var prevRegion = ViewportRegion?.Copy();
-
-        this.ViewportRegion = new Region(RowStart, endRow, ColStart, endCol);
+        var prevRegion = Viewport?.VisibleRegion;
 
         if (prevRegion != null)
         {
-            if (prevRegion.Contains(this.ViewportRegion))
+            if (prevRegion.Contains(newViewport.VisibleRegion))
                 return;
 
-            var newRegions = this.ViewportRegion.Break(prevRegion);
+            var newRegions = newViewport.VisibleRegion.Break(prevRegion);
             foreach (var region in newRegions)
                 this.MarkDirty(region);
         }
+        else
+            this.MarkDirty(newViewport.VisibleRegion);
 
-        sw.Reset();
+        Viewport = newViewport;
         this.StateHasChanged();
     }
 

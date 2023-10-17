@@ -117,4 +117,47 @@ public class CellLayoutProvider
     {
         return ComputeHeight(region.Top, region.Height);
     }
+
+    /// <summary>
+    /// Computes the viewport region that is visible based on the left/top position of the view.
+    /// </summary>
+    /// <param name="left">The left position of the visual region</param>
+    /// <param name="top">The top position of the visual region</param>
+    /// <param name="height"> The height of the visual region</param>
+    /// <param name="overflowX">The number of cells to include to the left/right of the "visible" viewport</param>
+    /// <param name="overflowY">The number of cells to include to the top/bottom of the "visible" region.</param>
+    /// <param name="width">The width of the visual region</param>
+    /// <returns></returns>
+    public Viewport GetViewPort(double left, double top, double width, double height, int overflowX, int overflowY)
+    {
+        // what would be seen on screen if there were no overflow
+        var visibleRowStart = ComputeRow(top);
+        var visibleColStart = ComputeColumn(left);
+        var visibleRowEnd = ComputeRow(top + height);
+        var visibleColEnd = ComputeColumn(left + width);
+
+        visibleRowEnd = Math.Min(_sheet.NumRows - 1, visibleRowEnd);
+        visibleColEnd = Math.Min(_sheet.NumCols - 1, visibleColEnd);
+
+        var startRow = Math.Max(visibleRowStart - overflowY, 0);
+        var endRow = Math.Min(_sheet.NumRows - 1, visibleRowEnd + overflowY);
+
+        var startCol = Math.Max(visibleColStart - overflowX, 0);
+        var endCol = Math.Min(_sheet.NumCols - 1, visibleColEnd + overflowX);
+
+        var region = new Region(startRow, endRow, startCol, endCol);
+        var leftPos = _sheet.ColumnInfo.GetLeft(startCol);
+        var topPos = _sheet.RowInfo.GetTop(startRow);
+        var distRight = ComputeWidthBetween(endCol, _sheet.NumCols - 1);
+        var distBottom = ComputeHeightBetween(endRow, _sheet.NumRows - 1);
+
+        return new Viewport()
+        {
+            VisibleRegion = region,
+            Left = leftPos,
+            Top = topPos,
+            DistanceBottom = distBottom,
+            DistanceRight = distRight
+        };
+    }
 }

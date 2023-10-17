@@ -36,21 +36,21 @@
                                 <div class="cell"></div>
                             </div>
                         }
-                        <div id="filler-left-0" style="min-width: @(_cellLayoutProvider.ComputeWidth(0, ColStart))px; display: block; float: left; height: 1px;"></div>
+                        <div id="filler-left-0" style="min-width: @(Viewport.Left)px; display: block; float: left; height: 1px;"></div>
 
                         <ColumnHeadingsRenderer
                             OnMouseDown="HandleColumnHeaderMouseDown"
                             OnMouseUp="HandleColumnHeaderMouseUp"
                             OnMouseOver="HandleColumnHeaderMouseOver"
-                            NVisibleCols="NVisibleCols"
-                            VisibleColStart="ColStart"
+                            NVisibleCols="Viewport.VisibleRegion.Width"
+                            VisibleColStart="Viewport.VisibleRegion.Left"
                             CellLayoutProvider="_cellLayoutProvider"
                             Sheet="Sheet"/>
 
                     </div>
                 }
 
-                <div id="filler-top" @ref="_fillerTop" style="min-height: @(_cellLayoutProvider.ComputeHeight(0, RowStart))px; min-width:@(_cellLayoutProvider.TotalWidth)px; display: block;"></div>
+                <div id="filler-top" @ref="_fillerTop" style="min-height: @(Viewport.Top)px; min-width:@(_cellLayoutProvider.TotalWidth)px; display: block;"></div>
 
                 <div id="last-row" style="display: flex; flex-direction: row;">
 
@@ -61,25 +61,25 @@
                                 OnMouseDown="HandleRowHeaderMouseDown"
                                 OnMouseUp="HandleRowHeaderMouseUp"
                                 OnMouseOver="HandleRowHeaderMouseOver"
-                                NVisibleRows="NVisibleRows"
-                                VisibleRowStart="RowStart"
+                                NVisibleRows="Viewport.VisibleRegion.Height"
+                                VisibleRowStart="Viewport.VisibleRegion.Top"
                                 Sheet="Sheet"
                                 CellLayoutProvider="_cellLayoutProvider"/>
                         </div>
                     }
 
 
-                    <div id="filler-left-1" @ref="_fillerLeft1" style="float:right; min-width: @(_cellLayoutProvider.ComputeWidth(0, ColStart))px; height: @(RenderedInnerSheetHeight)px;"></div>
+                    <div id="filler-left-1" @ref="_fillerLeft1" style="float:right; min-width: @(Viewport.Left)px; height: @(RenderedInnerSheetHeight)px;"></div>
 
                     <div style="width:@(RenderedInnerSheetWidth)px;height: @(RenderedInnerSheetHeight)px;display: block;">
 
                         <div style="width: @(RenderedInnerSheetWidth)px; height:@(RenderedInnerSheetHeight)px; border: var(--sheet-border-style); display: block;">
-                            @for (int rowIndex = RowStart; rowIndex < (RowStart + NVisibleRows); rowIndex++)
+                            @for (int rowIndex = Viewport.VisibleRegion.Top; rowIndex <= Viewport.VisibleRegion.Bottom; rowIndex++)
                             {
                                 var row = rowIndex;
                                 var rowHeight = @_cellLayoutProvider.ComputeHeight(row, 1);
                                 <div @key="row" style="height:@(rowHeight)px">
-                                    @for (int j = ColStart; j < (ColStart + NVisibleCols); j++)
+                                    @for (int j = Viewport.VisibleRegion.Left; j <= Viewport.VisibleRegion.Right; j++)
                                     {
                                         var col = j;
                                         var cell = Sheet.GetCell(row, col);
@@ -114,12 +114,12 @@
                         </div>
                     </div>
 
-                    <div id="filler-right" @ref="_fillerRight" style="float:left;min-width: @(_cellLayoutProvider.ComputeWidthBetween(ColStart + NVisibleCols - 1, Sheet.NumCols - 1))px; height:@(RenderedInnerSheetHeight)px;"></div>
+                    <div id="filler-right" @ref="_fillerRight" style="float:left;min-width: @(Viewport.DistanceRight)px; height:@(RenderedInnerSheetHeight)px;"></div>
 
                     <!-- Merged cells -->
-                    @if (Sheet.Merges.Any() && this.ViewportRegion is not null)
+                    @if (Sheet.Merges.Any() && this.Viewport is not null)
                     {
-                        var mergesInView = Sheet.Merges.Store.GetRegionsOverlapping(this.ViewportRegion);
+                        var mergesInView = Sheet.Merges.Store.GetRegionsOverlapping(this.Viewport.VisibleRegion);
                         @foreach (var merge in mergesInView)
                         {
                             var row = merge.Region.Start.Row;
@@ -161,7 +161,7 @@
                         CellLayoutProvider="_cellLayoutProvider"/>
                 </div>
 
-                <div id="filler-bottom" @ref="_fillerBottom" style="min-height: @(_cellLayoutProvider.ComputeHeightBetween(RowStart + NVisibleRows - 1, Sheet.NumRows - 1))px; min-width:@(1)px;"></div>
+                <div id="filler-bottom" @ref="_fillerBottom" style="min-height: @(Viewport.DistanceBottom)px; min-width:@(1)px;"></div>
             </div>
         </div>
     }
