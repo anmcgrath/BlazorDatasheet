@@ -16,4 +16,9 @@
       <ProjectReference Include="..\BlazorDatasheet\BlazorDatasheet.csproj" />
     </ItemGroup>
 
+    <PropertyGroup>
+        <RunAOTCompilation>true</RunAOTCompilation>
+    </PropertyGroup>
+
+
 </Project>

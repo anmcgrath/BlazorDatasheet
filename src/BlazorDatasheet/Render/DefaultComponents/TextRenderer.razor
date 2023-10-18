@@ -2,10 +2,17 @@
 @using System.Text
 @inherits BaseRenderer
 
-<div class="cell-renderer" title="@(Cell.GetValue<string>())">
-    @(Cell.GetValue<string>())
+<div class="cell-renderer" title="@(ValueText)">
+    @(ValueText)
 </div>
 
 @code{
+
+    public string ValueText { get; set; }
+    protected override void OnParametersSet()
+    {
+        ValueText = Cell.Value?.ToString() ?? string.Empty;
+        base.OnParametersSet();
+    }
 
 }

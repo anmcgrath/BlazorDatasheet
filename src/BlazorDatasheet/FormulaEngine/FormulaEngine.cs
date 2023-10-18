@@ -29,13 +29,14 @@ public class FormulaEngine
         _environment = new SheetEnvironment(sheet);
         _evaluator = new FormulaEvaluator(_environment);
         _dependencyGraph = new DependencyGraph();
-        
+
         RegisterDefaultFunctions();
     }
 
     private void RegisterDefaultFunctions()
     {
         _environment.SetFunction("IF", new IfFunction());
+        _environment.SetFunction("SIN", new SinFunction());
     }
 
     private void SheetOnBeforeCellEdit(object? sender, BeforeCellEditEventArgs e)
@@ -204,6 +205,7 @@ public class FormulaEngine
         // Sheet.Resume(); should do a bulk event dispatch
         // So that the renderer can handle the updated cells...
         _isCalculating = true;
+        _sheet.BatchDirty();
 
         var order =
             _dependencyGraph
@@ -221,6 +223,8 @@ public class FormulaEngine
             }
         }
 
+        _sheet.EndBatchDirty();
+
         _isCalculating = false;
     }
 
@@ -228,6 +232,10 @@ public class FormulaEngine
     {
         if (reference is CellReference cellReference)
             return new CellVertex(cellReference.Row.RowNumber, cellReference.Col.ColNumber);
+        if (reference is NamedReference namedReference)
+        {
+            return new NamedVertex(namedReference.Name);
+        }
 
         throw new Exception("Could not convert reference to vertex");
     }
@@ -240,5 +248,11 @@ public class FormulaEngine
     public bool IsFormula(string formula)
     {
         return formula.StartsWith('=');
+    }
+
+    public void SetVariable(string varName, object value)
+    {
+        _environment.SetVariable(varName, value);
+        CalculateSheet();
     }
 }

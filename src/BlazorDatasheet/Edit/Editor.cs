@@ -1,6 +1,5 @@
 using BlazorDatasheet.Commands;
 using BlazorDatasheet.Data;
-using BlazorDatasheet.Events;
 using BlazorDatasheet.Events.Edit;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Interfaces;

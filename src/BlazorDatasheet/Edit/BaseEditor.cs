@@ -36,17 +36,16 @@ public abstract class BaseEditor : ComponentBase, ICellEditor
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (FocusRequested)
+        if (FocusRequested && firstRender)
         {
             // If the editor component doesn't have a focusable UI element,
             // then trying to focus it will throw an error.
             // This check determines whether the InputRef has been set
             if (!EqualityComparer<ElementReference>.Default.Equals(InputRef, default(ElementReference)))
             {
+                FocusRequested = false;
                 await InputRef.FocusAsync();
             }
-
-            FocusRequested = false;
         }
 
         await base.OnAfterRenderAsync(firstRender);
@@ -63,11 +62,10 @@ public abstract class BaseEditor : ComponentBase, ICellEditor
     {
         return false;
     }
+    
 
     public virtual object? GetValue()
     {
         return default;
     }
-
-    public void Render() => StateHasChanged();
 }

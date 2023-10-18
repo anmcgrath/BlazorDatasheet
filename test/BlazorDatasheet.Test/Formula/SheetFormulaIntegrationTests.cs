@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using BlazorDatasheet.Commands;
 using BlazorDatasheet.Data;
+using FluentAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Formula;
@@ -109,5 +110,14 @@ public class SheetFormulaIntegrationTests
     {
         _engine.SetFormulaString(1, 1, "=A1 + 5");
         Assert.AreEqual(5, _sheet.GetValue(1, 1));
+    }
+
+    [Test]
+    public void FormulaEngine_Set_Variable_Calculates()
+    {
+        _engine.SetVariable("x", 10);
+        _engine.SetFormulaString(1, 1, "=x");
+        _engine.CalculateSheet();
+        _sheet.GetValue(1, 1).Should().Be(10);
     }
 }

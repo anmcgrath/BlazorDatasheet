@@ -9,20 +9,12 @@
 
 @if (true)
 {
-    var conditionalFormatting = Sheet.ConditionalFormatting.GetFormatResult(Row, Col);
-
-    CellFormat? format = Sheet!.GetFormat(Row, Col)?.Clone();
-    if (format != null)
-        format.Merge(conditionalFormatting);
-    else if (conditionalFormatting != null)
-        format = conditionalFormatting;
     <div
         class="cell"
-        style="
-            @CalculateCellFormattingStyle(format, IsValid)">
-        @if (format?.Icon != null)
+        style="@CellFormatStyleString">
+        @if (Icon != null)
         {
-            <div style="margin-right:2px; float:left; color: @(format.IconColor ?? "var(--icon-color)");">@format.Icon</div>
+            <div style="margin-right:2px; float:left; color: @(IconColor ?? "var(--icon-color)");">@Icon</div>
         }
         @ItemTemplate
     </div>
@@ -30,49 +22,22 @@
 
 @code {
 
-    [Parameter]
-    public int ColSpan { get; set; } = 1;
 
-    [Parameter]
-    public int RowSpan { get; set; } = 1;
+    [Parameter, EditorRequired]
+    public string CellFormatStyleString { get; set; } = string.Empty;
 
-    [Parameter]
-    public int Row { get; set; }
-    
-    [Parameter]
-    public int Col { get; set; }
-    
-    [Parameter]
-    public bool IsValid { get; set; }
-
-    [Parameter]
+    [Parameter, EditorRequired]
     public RenderFragment ItemTemplate { get; set; }
 
     [Parameter, EditorRequired]
     public bool IsDirty { get; set; }
 
     [Parameter]
-    public int VisibleRowOffset { get; set; }
+    public RenderFragment? Icon { get; set; }
 
-    [CascadingParameter]
-    public Sheet Sheet { get; set; }
+    [Parameter]
+    public string IconColor { get; set; } = "black";
 
-    private string CalculateCellFormattingStyle(CellFormat? format, bool isCellValid)
-    {
-        var foreGroundVar = isCellValid ? "--sheet-foreground-color" : "--invalid-cell-foreground-color";
-        var sb = new StringBuilder();
-        sb.Append($"background-color:{format?.BackgroundColor ?? "var(--sheet-bg-color)"};");
-        sb.Append($"color:{format?.ForegroundColor ?? $"var({foreGroundVar})"};");
-        sb.Append($"font-weight:{format?.FontWeight ?? "var(--sheet-font-weight)"};");
-
-        if (!string.IsNullOrWhiteSpace(format?.TextAlign))
-        {
-            sb.Append($"text-align: {format.TextAlign};");
-        }
-
-
-        return sb.ToString();
-    }
 
     protected override bool ShouldRender()
     {
@@ -81,7 +46,6 @@
 
     protected override void OnAfterRender(bool firstRender)
     {
-        //Console.WriteLine($"Cell rendered {Row}. {Col}. Dirty?" + IsDirty);
         base.OnAfterRender(firstRender);
     }
 

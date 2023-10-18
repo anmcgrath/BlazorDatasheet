@@ -82,27 +82,34 @@
                                     @for (int j = Viewport.VisibleRegion.Left; j <= Viewport.VisibleRegion.Right; j++)
                                     {
                                         var col = j;
-                                        var cell = Sheet.GetCell(row, col);
-                                        var colWidth = @_cellLayoutProvider.ComputeWidth(col, 1);
+                                        var cell = _visualSheet.GetVisualCell(row, col);
+                                        var colWidth = @cell.Width;
                                         <div
                                             @onmouseup="e => HandleCellMouseUp(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
                                             @ondblclick="e => HandleCellDoubleClick(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
                                             @onmouseover="e => HandleCellMouseOver(row, col)"
                                             @onmousedown="e => HandleCellMouseDown(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
                                             @key="col"
-                                            style="border-right: var(--sheet-border-style); border-bottom: var(--sheet-border-style);
-                                            padding:0; display: inline-block; box-sizing:border-box; overflow: hidden; width:@(colWidth)px;max-width:@(colWidth)px;height:@(rowHeight)px;max-height:@(rowHeight)px;"
+                                            style="border-right: var(--sheet-border-style); 
+                                            border-bottom: var(--sheet-border-style);
+                                            padding:0; 
+                                            display: inline-block; 
+                                            box-sizing:border-box; 
+                                            overflow: hidden; 
+                                            width:@(colWidth)px;
+                                            max-width:@(colWidth)px;
+                                            height:@(rowHeight)px;
+                                            max-height:@(rowHeight)px;"
                                             class="sheet-cell">
                                             <CascadingValue Value="Sheet" IsFixed="true">
                                                 <CellRenderer
-                                                    Row="row"
-                                                    Col="col"
-                                                    IsValid="cell.IsValid"
+                                                    IconColor="@cell.Format?.IconColor"
+                                                    CellFormatStyleString="@cell.FormatStyleString"
                                                     IsDirty="SheetIsDirty || DirtyCells.Contains((row, col))">
                                                     <ItemTemplate>
                                                         <DynamicComponent
-                                                            Type="@getCellRendererType(cell.Type)"
-                                                            Parameters="@getCellRendererParameters(Sheet, cell, row, col)">
+                                                            Type="@getCellRendererType(cell.CellType)"
+                                                            Parameters="@getCellRendererParameters(Sheet, cell)">
                                                         </DynamicComponent>
                                                     </ItemTemplate>
                                                 </CellRenderer>
@@ -135,16 +142,12 @@
                                  style="@GetAbsoluteCellPositionStyles(row, col, merge.Region.Height, merge.Region.Width)">
                                 <CascadingValue Value="Sheet" IsFixed="true">
                                     <CellRenderer
-                                        ColSpan="merge.Region.Width"
-                                        RowSpan="merge.Region.Height"
-                                        Row="row"
-                                        Col="col"
-                                        IsValid="cell.IsValid"
+                                        IconColor="@cell.Formatting?.IconColor"
                                         IsDirty="SheetIsDirty || DirtyCells.Contains((row, col))">
                                         <ItemTemplate>
                                             <DynamicComponent
                                                 Type="@getCellRendererType(cell.Type)"
-                                                Parameters="@getCellRendererParameters(Sheet, cell, row, col)">
+                                                Parameters="@getCellRendererParameters(Sheet, new VisualCell(row, col, _sheetLocal))">
                                             </DynamicComponent>
                                         </ItemTemplate>
                                     </CellRenderer>

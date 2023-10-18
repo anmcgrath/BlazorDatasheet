@@ -29,10 +29,8 @@ public class SheetEnvironment : IEnvironment
 
     public void SetVariable(string name, object value)
     {
-        if (_variables.ContainsKey(name))
+        if (!_variables.TryAdd(name, value))
             _variables[name] = value;
-        else
-            _variables.Add(name, value);
     }
 
     public bool FunctionExists(string name)

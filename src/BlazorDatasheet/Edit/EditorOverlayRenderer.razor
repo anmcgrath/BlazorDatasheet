@@ -112,6 +112,7 @@
     {
         if (BeginningEdit)
         {
+            BeginningEdit = false;
             if (ActiveEditorContainer == null)
                 return;
             ActiveCellEditor = (BaseEditor)(ActiveEditorContainer.Instance);
@@ -124,10 +125,7 @@
             ActiveCellEditor.BeginEdit(EditEntryMode, EditValue, EditEntryKey);
             if (EditEntryMode != EditEntryMode.None)
                 await ActiveCellEditor.Focus();
-            ActiveCellEditor.Render();
-            BeginningEdit = false;
         }
-        await base.OnAfterRenderAsync(firstRender);
     }
 
     public bool HandleKeyDown(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)

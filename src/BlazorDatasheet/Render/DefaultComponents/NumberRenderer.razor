@@ -2,29 +2,30 @@
 @using System.Globalization
 @inherits BaseRenderer
 
-<div style="color: @(ValidationError ? "var(--invalid-cell-foreground-color)" : "var(--sheet-foreground-color)")">
+<div>
     @FormattedNumber
 </div>
 
 @code {
-    private bool ValidationError => !Double.TryParse(Cell.GetValue<string>(), out double res);
 
     private string FormattedNumber
     {
         get
         {
-            var num = Cell.GetValue<double?>();
-            if (num == null || double.IsNaN(num.Value))
-                return "";
+            var parse = double.TryParse(Cell.Value.ToString(), out var num);
+            if (!parse)
+                return string.Empty;
             
-            if (Cell?.Formatting == null || string.IsNullOrEmpty(Cell.Formatting.StringFormat))
-                return num.Value.ToString(CultureInfo.CurrentCulture);
+            if (Cell?.Format == null || string.IsNullOrEmpty(Cell.Format.StringFormat))
+                return num.ToString(CultureInfo.CurrentCulture);
             else
-                return num.Value.ToString(Cell.Formatting.StringFormat, CultureInfo.CurrentCulture);
-
-
-            return Cell.GetValue<string>();
+                return num.ToString(Cell.Format.StringFormat, CultureInfo.CurrentCulture);
         }
+    }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
     }
 
 }

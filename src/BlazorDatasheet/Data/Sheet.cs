@@ -1,23 +1,15 @@
-using System.Runtime.InteropServices;
 using System.Text;
 using BlazorDatasheet.Commands;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Intervals;
-using BlazorDatasheet.DataStructures.RTree;
 using BlazorDatasheet.DataStructures.Store;
-using BlazorDatasheet.DataStructures.Util;
 using BlazorDatasheet.Edit;
-using BlazorDatasheet.Edit.DefaultComponents;
 using BlazorDatasheet.Events;
-using BlazorDatasheet.Events.Edit;
 using BlazorDatasheet.Events.Layout;
-using BlazorDatasheet.Events.Validation;
+using BlazorDatasheet.Events.Visual;
 using BlazorDatasheet.Formats;
 using BlazorDatasheet.Interfaces;
-using BlazorDatasheet.Render;
-using BlazorDatasheet.Render.DefaultComponents;
 using BlazorDatasheet.Selecting;
-using BlazorDatasheet.Util;
 using BlazorDatasheet.Validation;
 
 namespace BlazorDatasheet.Data;
@@ -60,8 +52,6 @@ public class Sheet
     public Selection Selection { get; }
 
     internal IDialogService Dialog { get; private set; }
-
-    private readonly HashSet<(int row, int col)> _dirtyCells;
 
     /// <summary>
     /// Formats applied to any rows
@@ -111,6 +101,11 @@ public class Sheet
     public event EventHandler<RowHeightChangedEventArgs>? RowHeightChanged;
 
     /// <summary>
+    /// Fired when a portion of the sheet is marked as dirty.
+    /// </summary>
+    public event EventHandler<DirtySheetEventArgs>? SheetDirty;
+
+    /// <summary>
     /// Contains data, including width, on each column.
     /// </summary>
     public ColumnInfoStore ColumnInfo { get; private set; } = new(105);
@@ -153,6 +148,21 @@ public class Sheet
     /// </summary>
     public ValidationManager Validation { get; }
 
+    /// <summary>
+    /// True if the sheet is not firing dirty events until <see cref="EndBatchDirty"/> is called.
+    /// </summary>
+    private bool _IsBatchingDirty { get; set; }
+
+    /// <summary>
+    /// If the sheet is batching dirty regions, they are stored here.
+    /// </summary>
+    private List<IRegion> _dirtyRegions = new();
+
+    /// <summary>
+    /// If the sheet is batching dirty cells, they are stored here.
+    /// </summary>
+    private HashSet<(int row, int col)> _dirtyPositions = new();
+
     internal readonly IMatrixDataStore<Cell> CellDataStore = new SparseMatrixStore<Cell>();
 
     private Sheet()
@@ -164,7 +174,6 @@ public class Sheet
         Editor = new Editor(this);
         FormulaEngine = new FormulaEngine.FormulaEngine(this);
         ConditionalFormatting = new ConditionalFormatManager(this);
-        _dirtyCells = new HashSet<(int row, int col)>();
     }
 
     public Sheet(int numRows, int numCols, Cell[,] cells) : this()
@@ -271,7 +280,6 @@ public class Sheet
         Commands.ExecuteCommand(new SetColumnHeadingsCommand(colStart, colEnd, heading));
     }
 
-
     #endregion
 
     #region ROWS
@@ -322,8 +330,8 @@ public class Sheet
 
         return true;
     }
-    
-    
+
+
     /// <summary>
     /// Sets the height of a column, to the height given (in px).
     /// </summary>
@@ -615,6 +623,7 @@ public class Sheet
     internal bool SetCellValuesImpl(List<CellChange> changes)
     {
         var changeEvents = new List<ChangeEventArgs>();
+        BatchDirty();
         foreach (var change in changes)
         {
             var currValue = GetValue(change.Row, change.Col);
@@ -626,6 +635,7 @@ public class Sheet
             }
         }
 
+        EndBatchDirty();
         CellsChanged?.Invoke(this, changeEvents);
         return changes.Any();
     }
@@ -648,6 +658,7 @@ public class Sheet
     internal void ClearCellsImpl(IEnumerable<(int row, int col)> positions)
     {
         var changeArgs = new List<ChangeEventArgs>();
+        this.BatchDirty();
         foreach (var posn in positions)
         {
             var cell = this.GetCell(posn.row, posn.col) as Cell;
@@ -657,8 +668,11 @@ public class Sheet
             if (oldValue != newVal)
             {
                 changeArgs.Add(new ChangeEventArgs(posn.row, posn.col, oldValue, newVal));
+                MarkDirty(posn.row, posn.col);
             }
         }
+
+        this.EndBatchDirty();
 
         this.CellsChanged?.Invoke(this, changeArgs);
     }
@@ -679,13 +693,21 @@ public class Sheet
     }
 
     /// <summary>
-    /// Call when the sheet requires re-render
+    /// Mark the cells specified by positions dirty.
     /// </summary>
-    internal void Invalidate()
+    /// <param name="positions"></param>
+    internal void MarkDirty(IEnumerable<(int row, int col)> positions)
     {
-        if (SheetInvalidated != null)
-            SheetInvalidated(this, new SheetInvalidateEventArgs(_dirtyCells));
-        _dirtyCells.Clear();
+        if (_IsBatchingDirty)
+        {
+            foreach (var position in positions)
+                _dirtyPositions.Add(position);
+        }
+        else
+            SheetDirty?.Invoke(this, new DirtySheetEventArgs()
+            {
+                DirtyPositions = positions.ToHashSet()
+            });
     }
 
     /// <summary>
@@ -695,19 +717,59 @@ public class Sheet
     /// <param name="col"></param>
     internal void MarkDirty(int row, int col)
     {
-        _dirtyCells.Add((row, col));
+        if (_IsBatchingDirty)
+            _dirtyPositions.Add((row, col));
+        else
+            SheetDirty?.Invoke(this, new DirtySheetEventArgs()
+            {
+                DirtyPositions = new HashSet<(int row, int col)>() { (row, col) }
+            });
     }
 
     /// <summary>
-    /// Mark the cells specified by positions dirty.
+    /// Marks the region as dirty and requiring re-render.
     /// </summary>
-    /// <param name="positions"></param>
-    internal void MarkDirty(IEnumerable<(int row, int col)> positions)
+    /// <param name="region"></param>
+    internal void MarkDirty(IRegion region)
     {
-        foreach (var position in positions)
+        MarkDirty(new List<IRegion>() { region });
+    }
+
+    /// <summary>
+    /// Marks the regions as dirty and requiring re-render.
+    /// </summary>
+    /// <param name="regions"></param>
+    internal void MarkDirty(IEnumerable<IRegion> regions)
+    {
+        if (_IsBatchingDirty)
+            _dirtyRegions.AddRange(regions);
+        else
+            SheetDirty?.Invoke(
+                this, new DirtySheetEventArgs() { DirtyRegions = regions, DirtyPositions = _dirtyPositions });
+    }
+
+    /// <summary>
+    /// Batches dirty cell and region additions to emit a dirty sheet event once rather
+    /// than every time mark dirty is called.
+    /// </summary>
+    internal void BatchDirty()
+    {
+        _IsBatchingDirty = true;
+        _dirtyPositions.Clear();
+        _dirtyRegions.Clear();
+    }
+
+    /// <summary>
+    /// Ends the batching of dirty cells and regions, and emits the dirty sheet event.
+    /// </summary>
+    internal void EndBatchDirty()
+    {
+        SheetDirty?.Invoke(this, new DirtySheetEventArgs()
         {
-            MarkDirty(position.row, position.col);
-        }
+            DirtyRegions = _dirtyRegions,
+            DirtyPositions = _dirtyPositions
+        });
+        _IsBatchingDirty = false;
     }
 
     /// <summary>
@@ -942,7 +1004,7 @@ public class Sheet
                 }
             }
         }
-
+        
         return changes;
     }
 

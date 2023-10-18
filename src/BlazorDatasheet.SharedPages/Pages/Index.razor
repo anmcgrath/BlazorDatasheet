@@ -37,6 +37,8 @@
     <button @onclick="@(() => Sheet.SetFormat(new CellFormat() { BackgroundColor = "blue" }, Sheet.Selection))">Set bg to blue</button>
     <button @onclick="@(() => Sheet.SetFormat(new CellFormat() { ForegroundColor = "green" }, Sheet.Selection))">Set font colour to green</button>
     <button @onclick="@(() => Sheet.Merges.Add(Sheet.Selection))">Merge cells</button>
+
+    <input type="range" min="0" max="10" step="0.05" @oninput="@(e => Sheet.FormulaEngine.SetVariable("x", e.Value))"/>
 </div>
 
 <div>
@@ -98,9 +100,10 @@
             "Option 2"
         }, false);
 
-        Sheet = new Sheet(300, 300);
+        Sheet = new Sheet(10, 10);
         Sheet.Commands.PauseHistory();
         Sheet.TrySetCellValue(0, 0, "Hey");
+        Sheet.SetColumnWidth(0, 10, 50);
         Sheet.Validation.Add(new NumberValidator(true), 4, 0);
         Sheet.SetFormat(new CellFormat() { BackgroundColor = "blue", ForegroundColor = "white" }, Sheet.Range(4, 0));
         Sheet.Validation.Add(new NumberValidator(false), 5, 0);
@@ -109,8 +112,46 @@
         Sheet.SetCell(1, 1, new Cell(DateTime.Now) { Type = "datetime" });
         Sheet.SetCell(1, 2, new Cell(false) { Type = "boolean" });
         Sheet.SetCell(1, 3, new Cell(src.ValidationSource[0]) { Type = "select" });
+        for (int i = 0; i < 10; i++)
+        {
+            for (int j = 0; j < 10; j++)
+            {
+                Sheet.FormulaEngine.SetFormulaString(i, j, $"=1+sin(({i/10.0}+{j/10.0})*3.14-x)/2");
+            }
+        }
+        var colorCf = new ConditionalFormat(
+            (posn, sheet) => true,
+            cell =>
+            {
+                var parse = double.TryParse(cell.GetValue<string>(), out var val);
+                if (!parse)
+                    return new CellFormat();
+                return new CellFormat()
+                {
+                    BackgroundColor = getColour(val, 0, 1, 0.5)
+                };
+            });
+        Sheet.ConditionalFormatting.Apply(colorCf, new Region(0, 10, 0, 10));
+        Sheet.FormulaEngine.SetVariable("x", 10);
         Sheet.Commands.ResumeHistory();
     }
+
+    private string getColour(double? value, double min, double max, double mean)
+    {
+        if (value == null)
+            value = 0;
+        byte R;
+        byte G;
+        byte B;
+        var size = Math.Abs(max - min);
+        var frac = (value - min) / size;
+        R = (byte)(255 * frac);
+        G = (byte)(255 * frac);
+        B = (byte)(255 * frac);
+        var str = $"rgb({R},{G},{B})";
+        return str;
+    }
+
 
     private void OnEditorChange(ChangeEventArgs e)
     {

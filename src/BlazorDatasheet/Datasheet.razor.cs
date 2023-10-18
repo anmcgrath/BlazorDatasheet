@@ -174,6 +174,11 @@ public partial class Datasheet : IHandleEvent
     /// </summary>
     private IClipboard _clipboard;
 
+    /// <summary>
+    /// Holds visual cache information.
+    /// </summary>
+    private VisualSheet _visualSheet;
+
     // This ensures that the sheet is not re-rendered when mouse events are handled inside the sheet.
     // Performance is improved dramatically when this is used.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
@@ -192,14 +197,15 @@ public partial class Datasheet : IHandleEvent
         // to the sheet in all the managers
         if (_sheetLocal != Sheet)
         {
-            // Remove any listeners on the old sheet
-            RemoveSheetEventListeners();
-
             _sheetLocal = Sheet;
             _sheetLocal?.SetDialogService(new SimpleDialogService(this.JS));
             _cellLayoutProvider = new CellLayoutProvider(_sheetLocal);
-
-            AddSheetEventListeners();
+            _visualSheet = new VisualSheet(_sheetLocal);
+            _visualSheet.Invalidated += (sender, args) =>
+            {
+                DirtyCells = args.DirtyCells;
+                this.StateHasChanged();
+            };
         }
 
         if (_cellLayoutProvider != null)
@@ -211,35 +217,6 @@ public partial class Datasheet : IHandleEvent
         base.OnParametersSet();
     }
 
-    private void RemoveSheetEventListeners()
-    {
-        if (_sheetLocal == null) return;
-        _sheetLocal.RowInserted -= SheetOnRowInserted;
-        _sheetLocal.RowRemoved -= SheetOnRowRemoved;
-        _sheetLocal.ColumnInserted -= SheetOnColInserted;
-        _sheetLocal.ColumnRemoved -= SheetOnColRemoved;
-        _sheetLocal.FormatsChanged -= SheetLocalOnFormatsChanged;
-        _sheetLocal.ColumnWidthChanged -= SheetLocalOnColumnWidthChanged;
-        _sheetLocal.SheetInvalidated -= SheetLocalOnSheetInvalidated;
-        _sheetLocal.Merges.RegionMerged -= SheetLocalOnRegionMerged;
-        _sheetLocal.Merges.RegionUnMerged -= SheetLocalOnRegionUnMerged;
-    }
-
-    private void AddSheetEventListeners()
-    {
-        if (_sheetLocal == null) return;
-        _sheetLocal.RowInserted += SheetOnRowInserted;
-        _sheetLocal.RowRemoved += SheetOnRowRemoved;
-        _sheetLocal.ColumnInserted += SheetOnColInserted;
-        _sheetLocal.ColumnRemoved += SheetOnColRemoved;
-        _sheetLocal.FormatsChanged += SheetLocalOnFormatsChanged;
-        _sheetLocal.ColumnWidthChanged += SheetLocalOnColumnWidthChanged;
-        _sheetLocal.SheetInvalidated += SheetLocalOnSheetInvalidated;
-        _sheetLocal.CellsChanged += SheetLocalOnCellsChanged;
-        _sheetLocal.Merges.RegionMerged += SheetLocalOnRegionMerged;
-        _sheetLocal.Merges.RegionUnMerged += SheetLocalOnRegionUnMerged;
-    }
-
     private void RegisterDefaultCellRendererAndEditors()
     {
         _defaultCellTypeDefinitions.Add("text", CellTypeDefinition.Create<TextEditorComponent, TextRenderer>());
@@ -247,84 +224,6 @@ public partial class Datasheet : IHandleEvent
         _defaultCellTypeDefinitions.Add("boolean", CellTypeDefinition.Create<TextEditorComponent, BoolRenderer>());
         _defaultCellTypeDefinitions.Add("select", CellTypeDefinition.Create<SelectEditorComponent, SelectRenderer>());
         _defaultCellTypeDefinitions.Add("textarea", CellTypeDefinition.Create<TextareaEditorComponent, TextRenderer>());
-    }
-
-    private void SheetLocalOnRegionUnMerged(object? sender, IRegion region)
-    {
-        this.MarkDirty(region);
-        this.StateHasChanged();
-    }
-
-    private void SheetLocalOnRegionMerged(object? sender, IRegion region)
-    {
-        this.MarkDirty(region);
-        this.StateHasChanged();
-    }
-
-    private void MarkDirty(IRegion region)
-    {
-        // constrain to 
-        var constrainedRegion = Sheet.Region.GetIntersection(region);
-        var posns = Sheet.Range(constrainedRegion).Positions;
-
-        var ct = posns.Count();
-        foreach (var posn in posns)
-        {
-            MarkDirty(posn.row, posn.col);
-        }
-    }
-
-    /// <summary>
-    /// Marks a cell as "Dirty" so that it will be re-rendered when the Datasheet's state has changed.
-    /// </summary>
-    /// <param name="row">The dirty cell's row</param>
-    /// <param name="col">The dirty cell's column.</param>
-    private void MarkDirty(int row, int col)
-    {
-        DirtyCells.Add((row, col));
-    }
-
-    private void SheetLocalOnCellsChanged(object? sender, IEnumerable<Events.ChangeEventArgs> e)
-    {
-        foreach (var change in e)
-            MarkDirty(change.Row, change.Col);
-        StateHasChanged();
-    }
-
-    private void SheetOnColInserted(object? sender, ColumnInsertedEventArgs e)
-    {
-        this.ForceReRender();
-    }
-
-    private void SheetOnColRemoved(object? sender, ColumnRemovedEventArgs e)
-    {
-        this.ForceReRender();
-    }
-
-    private void SheetLocalOnSheetInvalidated(object? sender, SheetInvalidateEventArgs e)
-    {
-        DirtyCells = e.DirtyCells.ToHashSet();
-        StateHasChanged();
-    }
-
-    private void SheetLocalOnColumnWidthChanged(object? sender, ColumnWidthChangedEventArgs e)
-    {
-        this.ForceReRender();
-    }
-
-    private void SheetLocalOnFormatsChanged(object? sender, FormatChangedEventArgs e)
-    {
-        this.ForceReRender();
-    }
-
-    private async void SheetOnRowRemoved(object? sender, RowRemovedEventArgs e)
-    {
-        this.ForceReRender();
-    }
-
-    private async void SheetOnRowInserted(object? sender, RowInsertedEventArgs e)
-    {
-        this.ForceReRender();
     }
 
     private Type getCellRendererType(string type)
@@ -339,13 +238,11 @@ public partial class Datasheet : IHandleEvent
         return typeof(TextRenderer);
     }
 
-    private Dictionary<string, object> getCellRendererParameters(Sheet sheet, IReadOnlyCell cell, int row, int col)
+    private Dictionary<string, object> getCellRendererParameters(Sheet sheet, VisualCell visualCell)
     {
         return new Dictionary<string, object>()
         {
-            { "Cell", cell },
-            { "Row", row },
-            { "Col", col },
+            { "Cell", visualCell },
             { "OnChangeCellValueRequest", HandleCellRendererRequestChangeValue },
             { "OnBeginEditRequest", HandleCellRequestBeginEdit }
         };
@@ -360,19 +257,18 @@ public partial class Datasheet : IHandleEvent
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        Console.WriteLine("DATASHEET_RENDER");
         if (firstRender)
         {
             _dotnetHelper = DotNetObjectReference.Create(this);
             await AddWindowEventsAsync();
             await JS.InvokeVoidAsync("addVirtualisationHandlers",
-                _dotnetHelper,
-                _wholeSheetDiv,
-                nameof(HandleScroll),
-                _fillerLeft1,
-                _fillerTop,
-                _fillerRight,
-                _fillerBottom);
+                                     _dotnetHelper,
+                                     _wholeSheetDiv,
+                                     nameof(HandleScroll),
+                                     _fillerLeft1,
+                                     _fillerTop,
+                                     _fillerRight,
+                                     _fillerBottom);
 
             // we need to know the position of the datasheet relative to the 
             // page start, so that we can calculate mouse events correctly
@@ -401,24 +297,8 @@ public partial class Datasheet : IHandleEvent
                 OverflowX,
                 OverflowY);
 
-        Console.WriteLine("HANLDE SCROLL");
-
-        var prevRegion = Viewport?.VisibleRegion;
-
-        if (prevRegion != null)
-        {
-            if (prevRegion.Contains(newViewport.VisibleRegion))
-                return;
-
-            var newRegions = newViewport.VisibleRegion.Break(prevRegion);
-            foreach (var region in newRegions)
-                this.MarkDirty(region);
-        }
-        else
-            this.MarkDirty(newViewport.VisibleRegion);
-
         Viewport = newViewport;
-        this.StateHasChanged();
+        _visualSheet.UpdateViewport(_sheetLocal, newViewport);
     }
 
     private string GetAbsoluteCellPositionStyles(int row, int col, int rowSpan, int colSpan)
