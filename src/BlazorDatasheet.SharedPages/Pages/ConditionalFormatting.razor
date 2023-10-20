@@ -34,13 +34,13 @@
         var numberScaleConditionalFormat = new NumberScaleConditionalFormat();
         var checkConditionalFormat = new CustomCheckConditionalFormat("check");
 
-        var values = new List<CellChange>();
+        var values = new List<CellValueChange>();
 
         var regionOfNumberScaleFormat = new Region(0, 99, 1, 4);
         var rand = new Random();
         foreach (var posn in regionOfNumberScaleFormat)
         {
-            values.Add(new CellChange(posn.Row, posn.Col, (int?)rand.Next(100)));
+            values.Add(new CellValueChange(posn.Row, posn.Col, (int?)rand.Next(100)));
         }
 
         sheet.SetCellValues(values);

@@ -18,7 +18,7 @@ public class EditTests
     public void Begin_Edit_Sets_Edit_Value()
     {
         var sheet = new Sheet(10, 10);
-        sheet.TrySetCellValue(1, 1, "Test");
+        sheet.SetCellValue(1, 1, "Test");
 
         sheet.Editor.BeginEdit(0, 0);
         Assert.True(string.IsNullOrEmpty(sheet.Editor.EditValue));

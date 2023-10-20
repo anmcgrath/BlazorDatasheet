@@ -67,7 +67,6 @@ public class RemoveRowsCommand : IUndoableCommand
         foreach (var position in nonEmptyCellPositions)
         {
             var cell = sheet.GetCell(position.row, position.col);
-            var value = cell.GetValue();
             var format = cell.Formatting;
             if (format != null)
                 _removedCellFormats.Add(new CellChangedFormat(position.row, position.col, format, null));

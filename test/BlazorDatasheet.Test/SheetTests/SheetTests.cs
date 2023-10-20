@@ -27,7 +27,7 @@ public class SheetTests
         var copyPasteRegion = new Region(copyPasteRegionR0, copyPasteRegionR1, copyPasteRegionC0, copyPasteRegionC1);
 
         foreach (var posn in copyPasteRegion)
-            sheet.TrySetCellValue(posn.Row, posn.Col, getCellPosnString(posn.Row, posn.Col));
+            sheet.SetCellValue(posn.Row, posn.Col, getCellPosnString(posn.Row, posn.Col));
 
         var copy = sheet.GetRegionAsDelimitedText(copyPasteRegion);
         Assert.NotNull(copy);

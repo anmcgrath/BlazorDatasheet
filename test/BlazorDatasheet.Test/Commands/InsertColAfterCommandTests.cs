@@ -9,8 +9,8 @@ public class InsertColAfterCommandTests
     public void Insert_Col_Then_Undo_Works_Ok()
     {
         var sheet = new Sheet(1, 3);
-        sheet.TrySetCellValue(0, 0, "0,0");
-        sheet.TrySetCellValue(0, 2, "0,2");
+        sheet.SetCellValue(0, 0, "0,0");
+        sheet.SetCellValue(0, 2, "0,2");
         sheet.InsertColAt(0);
 
         Assert.AreEqual(4, sheet.NumCols);

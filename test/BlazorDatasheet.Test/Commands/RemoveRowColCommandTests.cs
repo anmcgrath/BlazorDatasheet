@@ -12,8 +12,8 @@ public class RemoveRowColCommandTests
     public void Remove_Col_Then_Undo_Works_Ok()
     {
         var sheet = new Sheet(1, 3);
-        sheet.TrySetCellValue(0, 2, "0,2");
-        sheet.TrySetCellValue(0, 3, "0,3");
+        sheet.SetCellValue(0, 2, "0,2");
+        sheet.SetCellValue(0, 3, "0,3");
 
         sheet.RemoveCol(2);
 
@@ -30,8 +30,8 @@ public class RemoveRowColCommandTests
     public void Remove_Row_Then_Undo_Works_Ok()
     {
         var sheet = new Sheet(3, 1);
-        sheet.TrySetCellValue(2, 0, "2,0");
-        sheet.TrySetCellValue(3, 0, "3,0");
+        sheet.SetCellValue(2, 0, "2,0");
+        sheet.SetCellValue(3, 0, "3,0");
         sheet.RemoveRow(2);
 
         Assert.AreEqual(2, sheet.NumRows);

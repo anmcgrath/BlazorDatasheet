@@ -1,5 +1,6 @@
 using System.Reflection;
 using BlazorDatasheet.Formats;
+using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Util;
@@ -42,6 +43,11 @@ public class Cell : IReadOnlyCell, IWriteableCell
     /// The best choice for the underlying data type of Data.
     /// </summary>
     public Type DataType { get; set; }
+
+    /// <summary>
+    /// The cell's parsed formula
+    /// </summary>
+    public CellFormula? Formula { get; internal set; }
 
     private Dictionary<string, object?>? _metaData;
     public IReadOnlyDictionary<string, object?> MetaData => _metaData ?? new Dictionary<string, object?>();
@@ -118,6 +124,7 @@ public class Cell : IReadOnlyCell, IWriteableCell
 
     public void Clear()
     {
+        Formula = null;
         ClearMetadata();
         ClearValue();
     }
@@ -207,5 +214,21 @@ public class Cell : IReadOnlyCell, IWriteableCell
             Formatting = Formatting.Clone();
             Formatting.Merge(format);
         }
+    }
+
+    public object Clone()
+    {
+        return new Cell()
+        {
+            Data = Data,
+            DataType = DataType,
+            Formula = Formula,
+            IsValid = IsValid,
+            _metaData = _metaData?.ToDictionary(entry => entry.Key, entry => entry.Value),
+            Formatting = Formatting?.Clone(),
+            Col = Col,
+            Row = Row,
+            Type = Type
+        };
     }
 }

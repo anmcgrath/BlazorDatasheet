@@ -10,8 +10,8 @@ public class MergeCellsCommandTests
     {
         var sheet = new Sheet(10, 10);
 
-        sheet.TrySetCellValue(0, 0, "00");
-        sheet.TrySetCellValue(2, 2, "22");
+        sheet.SetCellValue(0, 0, "00");
+        sheet.SetCellValue(2, 2, "22");
 
         sheet.Merges.Add(sheet.Range(0, 2, 0, 2));
 

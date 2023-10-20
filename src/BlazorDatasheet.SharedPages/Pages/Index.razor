@@ -102,7 +102,7 @@
 
         Sheet = new Sheet(10, 10);
         Sheet.Commands.PauseHistory();
-        Sheet.TrySetCellValue(0, 0, "Hey");
+        Sheet.SetCellValue(0, 0, "Hey");
         Sheet.SetColumnWidth(0, 10, 50);
         Sheet.Validation.Add(new NumberValidator(true), 4, 0);
         Sheet.SetFormat(new CellFormat() { BackgroundColor = "blue", ForegroundColor = "white" }, Sheet.Range(4, 0));
@@ -116,7 +116,7 @@
         {
             for (int j = 0; j < 10; j++)
             {
-                Sheet.FormulaEngine.SetFormulaString(i, j, $"=1+sin(({i/10.0}+{j/10.0})*3.14-x)/2");
+                Sheet.FormulaEngine.SetFormulaString(i, j, $"=(1+sin(({i/10.0}+{j/10.0})*3.14-x))/2");
             }
         }
         var colorCf = new ConditionalFormat(

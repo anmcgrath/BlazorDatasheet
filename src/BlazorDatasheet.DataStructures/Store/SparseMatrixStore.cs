@@ -1,3 +1,4 @@
+using System.Collections;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Search;
 
@@ -31,19 +32,26 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
         var colExists = Columns.TryGetValue(col, out var column);
         if (!colExists)
         {
-            column = new SColumn<T>();
+            column = new SColumn<T>(col);
             Columns.Add(col, column);
         }
 
         column.Set(row, value);
     }
 
-    public void Clear(int row, int col)
+    public (int row, int col, T)? Clear(int row, int col)
     {
         var colExists = Columns.TryGetValue(col, out var column);
         if (!colExists)
-            return;
-        column.Clear(row, col);
+            return null;
+
+        return column.Clear(row, col);
+    }
+
+    public IEnumerable<(int row, int col, T)> Clear(IEnumerable<(int row, int col)> positions)
+    {
+        var cleared = positions.Select(x => Clear(x.row, x.col));
+        return cleared.Where(x => x.HasValue).Select(x => x.Value);
     }
 
     public void InsertRowAt(int row, int nRows = 1)
@@ -57,7 +65,7 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
     public void InsertColAt(int col, int nCols)
     {
         var currentColumns = Columns.ToList();
-        List<(int col, SColumn<T> column)> columnsToReAdd = new List<(int col, SColumn<T> column)>();
+        List<(int colIndex, SColumn<T> column)> columnsToReAdd = new List<(int colIndex, SColumn<T> column)>();
         foreach (var kp in currentColumns)
         {
             if (kp.Key >= col)
@@ -68,23 +76,31 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
         }
 
         foreach (var c in columnsToReAdd)
-            Columns.Add(c.col, c.column);
+        {
+            c.column.ColumnIndex = c.colIndex;
+            Columns.Add(c.colIndex, c.column);
+        }
 
         for (int i = 0; i < nCols; i++)
         {
-            Columns.Add(col + i, new SColumn<T>());
+            Columns.Add(col + i, new SColumn<T>(col + i));
         }
     }
 
-    public void RemoveColAt(int col, int nCols)
+    public IEnumerable<(int row, int col, T)> RemoveColAt(int col, int nCols)
     {
+        var deleted = new List<(int row, int col, T)>();
+
         for (int i = 0; i < nCols; i++)
         {
             if (Columns.ContainsKey(col + i))
+            {
+                deleted.AddRange(Columns[col + i].Values.Select(x => (x.Key, col + i, x.Value)));
                 Columns.Remove(col + i);
+            }
         }
 
-        List<(int col, SColumn<T> column)> columnsToReAdd = new List<(int col, SColumn<T> column)>();
+        List<(int colIndex, SColumn<T> column)> columnsToReAdd = new List<(int colIndex, SColumn<T> column)>();
         var currentColumns = Columns.ToList();
         foreach (var kp in currentColumns)
         {
@@ -96,7 +112,12 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
         }
 
         foreach (var c in columnsToReAdd)
-            Columns.Add(c.col, c.column);
+        {
+            c.column.ColumnIndex = c.colIndex;
+            Columns.Add(c.colIndex, c.column);
+        }
+
+        return deleted;
     }
 
     public int GetNextNonBlankRow(int col, int row)
@@ -106,12 +127,12 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
         return Columns[col].GetNextNonEmptyRow(row);
     }
 
-    public void RemoveRowAt(int row, int nRows)
+    public IEnumerable<(int row, int col, T)> RemoveRowAt(int row, int nRows)
     {
+        var deleted = new List<(int row, int col, T)>();
         foreach (var column in Columns.Values)
-        {
-            column.DeleteRowAt(row, nRows);
-        }
+            deleted.AddRange(column.DeleteRowAt(row, nRows));
+        return deleted;
     }
 
     /// <summary>
@@ -148,6 +169,13 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
         /// </summary>
         public SortedList<int, T> Values { get; set; } = new();
 
+        public int ColumnIndex { get; set; }
+
+        public SColumn(int colIndex)
+        {
+            ColumnIndex = colIndex;
+        }
+
         public T? Get(int row)
         {
             if (Values.TryGetValue(row, out var value))
@@ -168,11 +196,18 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
         /// </summary>
         /// <param name="row"></param>
         /// <param name="col"></param>
-        public void Clear(int row, int col)
+        /// <returns>The value that was cleared</return>
+        public (int row, int col, T?)? Clear(int row, int col)
         {
             var index = Values.IndexOfKey(row);
             if (index >= 0)
+            {
+                var removed = Values[row];
                 Values.Remove(row);
+                return (row, ColumnIndex, removed);
+            }
+
+            return null;
         }
 
         public void InsertRowAt(int row, int nRows)
@@ -230,15 +265,18 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
         /// "Delete a row" - deleting it if it is found but regardless decreasing the row numbers of all rows after it.
         /// </summary>
         /// <param name="row"></param>
-        public void DeleteRowAt(int row, int nRows)
+        /// <returns>The removed values</returns>
+        public IEnumerable<(int row, int col, T)> DeleteRowAt(int row, int nRows)
         {
+            var deleted = new List<(int row, int col, T)>();
+
             // Find where the next row should be inserted after in the dict
             var startIndex = Values.Keys.BinarySearchIndexOf(row, Comparer<int>.Default);
             if (startIndex < 0)
                 startIndex = ~startIndex; // the index points to the next row 
 
             if (startIndex > Values.Count - 1)
-                return;
+                return new List<(int row, int col, T)>();
 
             int startRow = Values.Keys[startIndex];
             if (startRow < row)
@@ -252,7 +290,10 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
                 endIndex--;
 
             for (int i = 0; i <= (endIndex - startIndex); i++)
+            {
+                deleted.Add((Values.GetKeyAtIndex(startIndex), ColumnIndex, Values.GetValueAtIndex(startIndex)));
                 Values.RemoveAt(startIndex);
+            }
 
             for (int i = startIndex; i < Values.Count; i++)
             {
@@ -262,6 +303,8 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
                 Values.RemoveAt(i);
                 Values.Add(newRowNum, val);
             }
+
+            return deleted;
         }
 
         public int GetNextNonEmptyRow(int row)

@@ -1,9 +1,11 @@
+using BlazorDatasheet.Formula.Core;
+
 namespace BlazorDatasheet.Data;
 
 /// <summary>
 /// Describes a change to a cell's value
 /// </summary>
-public class CellChange
+public class CellValueChange
 {
     /// <summary>
     /// The cell's row.
@@ -18,7 +20,7 @@ public class CellChange
     /// </summary>
     public object? NewValue { get; }
 
-    public CellChange(int row, int col, object? newValue)
+    public CellValueChange(int row, int col, object? newValue)
     {
         Row = row;
         Col = col;

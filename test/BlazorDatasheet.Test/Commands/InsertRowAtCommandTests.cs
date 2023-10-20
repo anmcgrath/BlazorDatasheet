@@ -10,8 +10,8 @@ public class InsertRowAtCommandTests
     public void Insert_Row_Then_Undo_Correct()
     {
         var sheet = new Sheet(3, 1);
-        sheet.TrySetCellValue(0, 0, "0,0");
-        sheet.TrySetCellValue(2, 0, "2,0");
+        sheet.SetCellValue(0, 0, "0,0");
+        sheet.SetCellValue(2, 0, "2,0");
         sheet.InsertRowAt(0);
 
         Assert.AreEqual(4, sheet.NumRows);

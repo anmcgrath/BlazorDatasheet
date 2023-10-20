@@ -15,14 +15,14 @@ public class ChangeCellValueCommandTests
     {
         //Create a sheet with only one cell, with a value 1
         _sheet = new Sheet(1, 1);
-        _sheet.TrySetCellValue(0, 0, 1);
+        _sheet.SetCellValue(0, 0, 1);
         _commandManager = new CommandManager(_sheet);
     }
 
     [Test]
     public void Execute_Change_Cell_Command_Correctly_Changes_Value_On_Sheet()
     {
-        var changeCmd = new SetCellValuesCommand(new List<CellChange>() { new CellChange(0, 0, 10) });
+        var changeCmd = new SetCellValuesCommand(new List<CellValueChange>() { new CellValueChange(0, 0, 10) });
         _commandManager.ExecuteCommand(changeCmd);
         Assert.AreEqual(10, _sheet.GetCell(0, 0).GetValue<int>());
         _commandManager.Undo();

@@ -6,7 +6,7 @@ using BlazorDatasheet.Render;
 
 namespace BlazorDatasheet.Formats;
 
-public abstract class ConditionalFormatAbstractBase
+public abstract class ConditionalFormatAbstractBase : IEquatable<ConditionalFormatAbstractBase>
 {
     /// <summary>
     /// The order that the conditional format should be applied.
@@ -237,5 +237,12 @@ public abstract class ConditionalFormatAbstractBase
     public virtual ConditionalFormatAbstractBase Clone()
     {
         return (ConditionalFormatAbstractBase)this.MemberwiseClone();
+    }
+
+    public bool Equals(ConditionalFormatAbstractBase? other)
+    {
+        if (other == null)
+            return false;
+        return other == this;
     }
 }

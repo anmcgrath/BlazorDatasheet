@@ -620,7 +620,7 @@ public partial class Datasheet : IHandleEvent
     /// <param name="args"></param>
     private void HandleCellRendererRequestChangeValue(ChangeCellValueRequest args)
     {
-        Sheet.TrySetCellValue(args.Row, args.Col, args.NewValue);
+        Sheet.SetCellValue(args.Row, args.Col, args.NewValue);
     }
 
     /// <summary>

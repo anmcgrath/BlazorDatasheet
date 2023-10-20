@@ -218,7 +218,7 @@ public class FormulaEngine
                 if (HasFormula(cellVertex.Row, cellVertex.Col))
                 {
                     var value = this.Evaluate(cellVertex.Row, cellVertex.Col);
-                    _sheet.TrySetCellValueImpl(cellVertex.Row, cellVertex.Col, value, true);
+                    _sheet.SetCellValueImpl(cellVertex.Row, cellVertex.Col, value, true);
                 }
             }
         }

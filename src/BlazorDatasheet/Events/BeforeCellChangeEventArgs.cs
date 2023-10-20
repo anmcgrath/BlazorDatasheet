@@ -9,7 +9,7 @@ namespace BlazorDatasheet.Events;
 /// </summary>
 public class BeforeCellChangeEventArgs : CancelEventArgs
 {
-    public BeforeCellChangeEventArgs(IEnumerable<CellChange> changes)
+    public BeforeCellChangeEventArgs(IEnumerable<CellValueChange> changes)
     {
         Changes = changes;
         Cancel = false;
@@ -18,5 +18,5 @@ public class BeforeCellChangeEventArgs : CancelEventArgs
     /// <summary>
     /// The list of changes to be made to cells. Modify any individual CellChange when desired to affect the changes.
     /// </summary>
-    public IEnumerable<CellChange> Changes { get; }
+    public IEnumerable<CellValueChange> Changes { get; }
 }

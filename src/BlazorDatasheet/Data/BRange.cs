@@ -78,7 +78,7 @@ public class BRange
     /// <param name="value"></param>
     private void doSetValues(object? value)
     {
-        Sheet.SetCellValues(Positions.Select(x => new CellChange(x.row, x.col, value)).ToList());
+        Sheet.SetCellValues(Positions.Select(x => new CellValueChange(x.row, x.col, value)).ToList());
     }
 
     public void ClearCells()

@@ -99,11 +99,11 @@ public class Editor
         EditBegin?.Invoke(
             this,
             new EditBeginEventArgs(cell,
-                beforeEditArgs.EditValue,
-                beforeEditArgs.EditorType,
-                isSoftEdit,
-                mode,
-                key));
+                                   beforeEditArgs.EditValue,
+                                   beforeEditArgs.EditorType,
+                                   isSoftEdit,
+                                   mode,
+                                   key));
     }
 
     public bool CancelEdit()
@@ -151,30 +151,23 @@ public class Editor
         if (beforeAcceptEdit.AcceptEdit)
         {
             // run the validators that are strict. cancel edit if any fail
-            var validators = Sheet.Validation.GetValidators(EditCell.Row, EditCell.Col)
-                .Where(x => x.IsStrict);
-
-            foreach (var validator in validators)
+            var validationResult = Sheet.Validation.Validate(editValue, EditCell.Row, EditCell.Col);
+            if (validationResult.IsStrictFail)
             {
-                var res = validator.IsValid(beforeAcceptEdit.EditValue);
-                if (!res)
-                {
-                    Sheet.Dialog.Alert(validator.Message);
-                    return false;
-                }
+                Sheet.Dialog.Alert(string.Join("\n", validationResult.FailMessages));
             }
 
             EditAccepted?.Invoke(
                 this,
                 new EditAcceptedEventArgs(EditCell.Row, EditCell.Col, beforeAcceptEdit.EditValue,
-                    beforeAcceptEdit.Formula, isFormula ? EditValue : null));
+                                          beforeAcceptEdit.Formula, isFormula ? EditValue : null));
 
-            var cellChange = new CellChange(EditCell.Row, EditCell.Col, beforeAcceptEdit.EditValue);
-            
+            var cellChange = new CellValueChange(EditCell.Row, EditCell.Col, beforeAcceptEdit.EditValue);
+
             if (isFormula && parsedFormula != null)
-                Sheet.Commands.ExecuteCommand(new SetParsedFormulaCommand(EditCell.Row, EditCell.Col, parsedFormula, true));
+                Sheet.SetFormula(parsedFormula, EditCell.Row, EditCell.Col);
             else
-                Sheet.Commands.ExecuteCommand(new SetCellValuesCommand(new List<CellChange>() { cellChange }));
+                Sheet.SetCellValue(EditCell.Row, EditCell.Col, editValue);
 
             EditFinished?.Invoke(this, new EditFinishedEventArgs(EditCell.Row, EditCell.Col));
             this.ClearEdit();

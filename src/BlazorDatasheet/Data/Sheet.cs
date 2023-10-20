@@ -5,9 +5,11 @@ using BlazorDatasheet.DataStructures.Intervals;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Edit;
 using BlazorDatasheet.Events;
+using BlazorDatasheet.Events.Formula;
 using BlazorDatasheet.Events.Layout;
 using BlazorDatasheet.Events.Visual;
 using BlazorDatasheet.Formats;
+using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Interfaces;
 using BlazorDatasheet.Selecting;
 using BlazorDatasheet.Validation;
@@ -118,6 +120,8 @@ public class Sheet
     public event EventHandler<CellsSelectedEventArgs>? CellsSelected;
 
     public event EventHandler<CellMetaDataChangeEventArgs>? MetaDataChanged;
+
+    public event EventHandler<CellFormulaChangeEventArgs>? FormulaChanged;
 
     /// <summary>
     /// Fired when cell formats change
@@ -497,12 +501,12 @@ public class Sheet
 
     #region DATA
 
-    public bool TrySetCellValue(int row, int col, object value)
+    public bool SetCellValue(int row, int col, object value)
     {
-        return SetCellValues(new List<CellChange>() { new CellChange(row, col, value) });
+        return SetCellValues(new List<CellValueChange>() { new CellValueChange(row, col, value) });
     }
 
-    public bool TrySetCellValueImpl(int row, int col, object? value, bool raiseEvent = true)
+    public bool SetCellValueImpl(int row, int col, object? value, bool raiseEvent = true)
     {
         var cell = CellDataStore.Get(row, col);
         if (cell == null)
@@ -584,7 +588,18 @@ public class Sheet
 
     public void SetCell(int row, int col, Cell cell)
     {
+        cell.Row = row;
+        cell.Col = col;
         CellDataStore.Set(row, col, cell);
+        this.MarkDirty(row, col);
+    }
+
+    public void SetCells(IEnumerable<(int row, int col, Cell cell)> cells)
+    {
+        this.BatchDirty();
+        foreach (var cell in cells)
+            SetCell(cell.row, cell.col, cell.cell);
+        this.EndBatchDirty();
     }
 
     /// <summary>
@@ -603,7 +618,7 @@ public class Sheet
     /// </summary>
     /// <param name="changes"></param>
     /// <returns></returns>
-    public bool SetCellValues(List<CellChange> changes)
+    public bool SetCellValues(List<CellValueChange> changes)
     {
         var beforeChangesEvent = new BeforeCellChangeEventArgs(changes);
         BeforeSetCellValue?.Invoke(this, beforeChangesEvent);
@@ -620,14 +635,14 @@ public class Sheet
     /// </summary>
     /// <param name="changes"></param>
     /// <returns></returns>
-    internal bool SetCellValuesImpl(List<CellChange> changes)
+    internal bool SetCellValuesImpl(List<CellValueChange> changes)
     {
         var changeEvents = new List<ChangeEventArgs>();
         BatchDirty();
         foreach (var change in changes)
         {
             var currValue = GetValue(change.Row, change.Col);
-            var set = TrySetCellValueImpl(change.Row, change.Col, change.NewValue, false);
+            var set = SetCellValueImpl(change.Row, change.Col, change.NewValue, false);
             var newValue = GetValue(change.Row, change.Col);
             if (set && currValue != newValue)
             {
@@ -638,6 +653,46 @@ public class Sheet
         EndBatchDirty();
         CellsChanged?.Invoke(this, changeEvents);
         return changes.Any();
+    }
+
+    /// <summary>
+    /// Set the formula string for a row and col, and calculate the sheet.
+    /// If the parsed formula is invalid, the formula will not be set.
+    /// </summary>
+    /// <param name="formulaString"></param>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    public void SetFormula(string formulaString, int row, int col)
+    {
+        var parsed = FormulaEngine.ParseFormula(formulaString);
+        if (parsed.IsValid())
+            SetFormula(parsed, row, col);
+    }
+
+    /// <summary>
+    /// Sets the formula for a row and col, and calculate the sheet.
+    /// </summary>
+    /// <param name="parsedFormula"></param>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    public void SetFormula(CellFormula parsedFormula, int row, int col)
+    {
+        Commands.ExecuteCommand(new SetParsedFormulaCommand(row, col, parsedFormula, true));
+    }
+
+    internal void SetFormulaImpl(CellFormula parsedFormula, int row, int col)
+    {
+        var cell = CellDataStore.Get(row, col);
+        if (cell == null)
+        {
+            cell = new Cell();
+            CellDataStore.Set(row, col, cell);
+        }
+
+        var oldFormula = cell.Formula;
+
+        cell.Formula = parsedFormula;
+        this.FormulaChanged?.Invoke(this, new CellFormulaChangeEventArgs(row, col, oldFormula, parsedFormula));
     }
 
     /// <summary>
@@ -754,9 +809,13 @@ public class Sheet
     /// </summary>
     internal void BatchDirty()
     {
+        if (!_IsBatchingDirty)
+        {
+            _dirtyPositions.Clear();
+            _dirtyRegions.Clear();
+        }
+
         _IsBatchingDirty = true;
-        _dirtyPositions.Clear();
-        _dirtyRegions.Clear();
     }
 
     /// <summary>
@@ -824,7 +883,7 @@ public class Sheet
         // It is possible that each line is of different cell lengths, so we return the max for all lines
         var maxEndCol = -1;
 
-        var valChanges = new List<CellChange>();
+        var valChanges = new List<CellValueChange>();
 
         int lineNo = 0;
         for (int row = inputPosition.Row; row <= endRow; row++)
@@ -838,7 +897,7 @@ public class Sheet
             int cellIndex = 0;
             for (int col = inputPosition.Col; col <= endCol; col++)
             {
-                valChanges.Add(new CellChange(row, col, lineSplit[cellIndex]));
+                valChanges.Add(new CellValueChange(row, col, lineSplit[cellIndex]));
                 cellIndex++;
             }
 
@@ -867,6 +926,28 @@ public class Sheet
         var cell = GetCell(row, col);
         var rowFormat = RowFormats.Get(row);
         var colFormat = ColFormats.Get(col);
+        if (cell.Formatting != null)
+            return cell.Formatting;
+        if (colFormat != null)
+            return colFormat;
+        else
+            return rowFormat;
+    }
+
+    /// <summary>
+    /// Returns the format that is visible at the cell position row, col.
+    /// The order to determine which format is visible is
+    /// 1. Cell format (if it exists)
+    /// 2. Column format
+    /// 3. Row format
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <returns></returns>
+    public CellFormat? GetFormat(IReadOnlyCell cell)
+    {
+        var rowFormat = RowFormats.Get(cell.Row);
+        var colFormat = ColFormats.Get(cell.Col);
         if (cell.Formatting != null)
             return cell.Formatting;
         if (colFormat != null)
@@ -1004,7 +1085,7 @@ public class Sheet
                 }
             }
         }
-        
+
         return changes;
     }
 

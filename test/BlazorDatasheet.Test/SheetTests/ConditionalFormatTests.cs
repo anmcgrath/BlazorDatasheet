@@ -34,11 +34,11 @@ public class ConditionalFormatTests
     [Test]
     public void Set_Cf_To_Whole_Sheet_Applies_Correctly()
     {
-        sheet.TrySetCellValue(0, 0, -1);
+        sheet.SetCellValue(0, 0, -1);
         cm.Apply(greaterThanEqualToZeroRedBgCf);
         var format = cm.GetFormatResult(0, 0);
         Assert.IsNull(format);
-        sheet.TrySetCellValue(0, 0, 1);
+        sheet.SetCellValue(0, 0, 1);
 
         format = cm.GetFormatResult(0, 0);
         Assert.AreEqual(format.BackgroundColor, redBgColor);

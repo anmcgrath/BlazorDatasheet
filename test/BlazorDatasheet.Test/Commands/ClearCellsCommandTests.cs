@@ -15,8 +15,8 @@ public class ClearCellsCommandTests
     {
         //Create a sheet with only one cell, with a value 1
         _sheet = new Sheet(2, 2);
-        _sheet.TrySetCellValue(0, 0, "1");
-        _sheet.TrySetCellValue(0, 1, "2");
+        _sheet.SetCellValue(0, 0, "1");
+        _sheet.SetCellValue(0, 1, "2");
         _commandManager = new CommandManager(_sheet);
     }
 

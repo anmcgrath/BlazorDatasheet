@@ -26,8 +26,8 @@ public class MergeCellsAndInsertColRowTests
     public void Insert_Row_Above_Then_Undo_Correct()
     {
         var sheet = new Sheet(5, 5);
-        sheet.TrySetCellValue(1, 1, "U");
-        sheet.TrySetCellValue(2, 2, "M");
+        sheet.SetCellValue(1, 1, "U");
+        sheet.SetCellValue(2, 2, "M");
         sheet.Merges.Add(sheet.Range(2, 3, 2, 3));
 
         /*
@@ -93,8 +93,8 @@ public class MergeCellsAndInsertColRowTests
     public void Insert_Row_Into_Then_Undo_Correct()
     {
         var sheet = new Sheet(5, 5);
-        sheet.TrySetCellValue(2, 2, "M");
-        sheet.TrySetCellValue(1, 1, "U");
+        sheet.SetCellValue(2, 2, "M");
+        sheet.SetCellValue(1, 1, "U");
 
         sheet.Merges.Add(sheet.Range(2, 3, 2, 3));
 
@@ -142,8 +142,8 @@ public class MergeCellsAndInsertColRowTests
     public void Insert_Column_Before_Then_Undo_Correct()
     {
         var sheet = new Sheet(5, 5);
-        sheet.TrySetCellValue(2, 2, "M");
-        sheet.TrySetCellValue(1, 1, "U");
+        sheet.SetCellValue(2, 2, "M");
+        sheet.SetCellValue(1, 1, "U");
 
         sheet.Merges.Add(sheet.Range(2, 3, 2, 3));
 
@@ -200,8 +200,8 @@ public class MergeCellsAndInsertColRowTests
     public void Insert_Column_Into_Then_Undo_Correct()
     {
         var sheet = new Sheet(5, 5);
-        sheet.TrySetCellValue(2, 2, "M");
-        sheet.TrySetCellValue(1, 1, "U");
+        sheet.SetCellValue(2, 2, "M");
+        sheet.SetCellValue(1, 1, "U");
 
         sheet.Merges.Add(sheet.Range(2, 3, 2, 3));
 
@@ -260,8 +260,8 @@ public class MergeCellsAndInsertColRowTests
          */
 
         var sheet = new Sheet(5, 5);
-        sheet.TrySetCellValue(2, 2, "M");
-        sheet.TrySetCellValue(1, 1, "U");
+        sheet.SetCellValue(2, 2, "M");
+        sheet.SetCellValue(1, 1, "U");
 
         sheet.Merges.Add(sheet.Range(2, 3, 2, 4));
 
@@ -353,8 +353,8 @@ public class MergeCellsAndInsertColRowTests
          */
 
         var sheet = new Sheet(5, 5);
-        sheet.TrySetCellValue(2, 2, "M");
-        sheet.TrySetCellValue(1, 1, "U");
+        sheet.SetCellValue(2, 2, "M");
+        sheet.SetCellValue(1, 1, "U");
 
         sheet.Merges.Add(sheet.Range(2, 4, 2, 4));
 
@@ -435,8 +435,8 @@ public class MergeCellsAndInsertColRowTests
     public void Unmerge_Column()
     {
         var sheet = new Sheet(5, 5);
-        sheet.TrySetCellValue(2, 2, "M");
-        sheet.TrySetCellValue(1, 1, "U");
+        sheet.SetCellValue(2, 2, "M");
+        sheet.SetCellValue(1, 1, "U");
 
         sheet.Merges.Add(sheet.Range(2, 2, 2, 3));
 
@@ -477,8 +477,8 @@ public class MergeCellsAndInsertColRowTests
     public void Unmerge_Row()
     {
         var sheet = new Sheet(5, 5);
-        sheet.TrySetCellValue(2, 2, "M");
-        sheet.TrySetCellValue(1, 1, "U");
+        sheet.SetCellValue(2, 2, "M");
+        sheet.SetCellValue(1, 1, "U");
 
         sheet.Merges.Add(sheet.Range(2, 3, 2, 2));
 
@@ -521,7 +521,7 @@ public class MergeCellsAndInsertColRowTests
         // and a row is inserted inside the merge. The behaviour
         // should be the same as when inserting inside a smaller range
         var sheet = new Sheet(3, 3);
-        sheet.TrySetCellValue(0, 1, "M");
+        sheet.SetCellValue(0, 1, "M");
         sheet.Merges.Add(new ColumnRegion(1));
         Assert.AreEqual(sheet.GetValue(0, 1), "M");
 
@@ -538,7 +538,7 @@ public class MergeCellsAndInsertColRowTests
         // and a col is inserted inside the merge. The behaviour
         // should be the same as when inserting inside a smaller range
         var sheet = new Sheet(3, 3);
-        sheet.TrySetCellValue(0, 1, "M");
+        sheet.SetCellValue(0, 1, "M");
 
         sheet.Merges.Add(new RowRegion(1));
 
@@ -558,7 +558,7 @@ public class MergeCellsAndInsertColRowTests
         // and a col is inserted inside the merge. The behaviour
         // should be the same as when inserting inside a smaller range
         var sheet = new Sheet(3, 3);
-        sheet.TrySetCellValue(0, 1, "M");
+        sheet.SetCellValue(0, 1, "M");
 
         sheet.Merges.Add(new ColumnRegion(2));
 
@@ -580,7 +580,7 @@ public class MergeCellsAndInsertColRowTests
         // and a col is inserted inside the merge. The behaviour
         // should be the same as when inserting inside a smaller range
         var sheet = new Sheet(3, 3);
-        sheet.TrySetCellValue(0, 1, "M");
+        sheet.SetCellValue(0, 1, "M");
 
         sheet.Merges.Add(new RowRegion(1));
 

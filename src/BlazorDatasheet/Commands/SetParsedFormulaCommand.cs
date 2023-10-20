@@ -36,7 +36,7 @@ internal class SetParsedFormulaCommand : IUndoableCommand
         if (_previousFormula == null)
         {
             sheet.FormulaEngine.ClearFormula(_row, _col);
-            sheet.TrySetCellValueImpl(_row, _col, _previousValue);
+            sheet.SetCellValueImpl(_row, _col, _previousValue);
         }
         else
             sheet.FormulaEngine.SetFormula(_row, _col, _previousFormula);

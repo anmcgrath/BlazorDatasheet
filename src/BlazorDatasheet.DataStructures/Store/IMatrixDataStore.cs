@@ -1,3 +1,4 @@
+using System.Collections;
 using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.DataStructures.Store;
@@ -33,7 +34,9 @@ public interface IMatrixDataStore<T>
     /// </summary>
     /// <param name="row"></param>
     /// <param name="col"></param>
-    public void Clear(int row, int col);
+    public (int row, int col, T)? Clear(int row, int col);
+
+    public IEnumerable<(int row, int col, T)> Clear(IEnumerable<(int row, int col)> positions);
 
     /// <summary>
     /// Inserts a row into the store
@@ -49,10 +52,10 @@ public interface IMatrixDataStore<T>
     public void InsertColAt(int col, int nCols);
 
     /// <summary>
-    /// Removes the column specified from the store.
+    /// Removes the column specified from the store and returns the values that were removed.
     /// </summary>
     /// <param name="col">The index of the column to remove.</param>
-    public void RemoveColAt(int col, int nRow);
+    public IEnumerable<(int row, int col, T)> RemoveColAt(int col, int nRow);
 
     /// <summary>
     /// Finds the next non-empty row number in the column. Returns -1 if no non-empty rows exist after the row
@@ -63,11 +66,11 @@ public interface IMatrixDataStore<T>
     public int GetNextNonBlankRow(int col, int row);
 
     /// <summary>
-    /// Removes the row specified from the store.
+    /// Removes the row specified from the store and returns the values that were removed.
     /// </summary>
     /// <param name="row"></param>
     /// <param name="nRows"></param>
-    void RemoveRowAt(int row, int nRows);
+    public IEnumerable<(int row, int col, T)> RemoveRowAt(int row, int nRows);
 
     /// <summary>
     /// Get non empty cells that exist in the bounds given

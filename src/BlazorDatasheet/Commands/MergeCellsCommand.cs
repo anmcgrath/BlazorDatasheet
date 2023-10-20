@@ -10,7 +10,7 @@ public class MergeCellsCommand : IUndoableCommand
     private readonly BRange _range;
     private readonly List<IRegion> _overridenMergedRegions = new();
     private readonly List<IRegion> _mergesPerformed = new();
-    private readonly List<CellChange> _changes = new();
+    private IList<(int row, int col, Cell)> _clearedCells;
 
     /// <summary>
     /// Command that merges the cells in the range give.
@@ -26,7 +26,6 @@ public class MergeCellsCommand : IUndoableCommand
     public bool Execute(Sheet sheet)
     {
         _overridenMergedRegions.Clear();
-        _changes.Clear();
         _mergesPerformed.Clear();
 
         foreach (var region in _range.Regions)
@@ -43,8 +42,7 @@ public class MergeCellsCommand : IUndoableCommand
                                .SelectMany(sheet.GetNonEmptyCellPositions)
                                .ToList();
 
-            _changes.AddRange(cellsToClear.Select(x => getValueChangeOnClear(x.row, x.col, sheet)));
-            sheet.ClearCellsImpl(cellsToClear);
+            _clearedCells = sheet.CellDataStore.Clear(cellsToClear).ToList()!;
 
             // Store the merges that we will have to re-instate on undo
             // And remove any merges that are contained in the region
@@ -59,9 +57,9 @@ public class MergeCellsCommand : IUndoableCommand
         return true;
     }
 
-    private CellChange getValueChangeOnClear(int row, int col, Sheet sheet)
+    private CellValueChange getValueChangeOnClear(int row, int col, Sheet sheet)
     {
-        return new CellChange(row, col, sheet.GetValue(row, col));
+        return new CellValueChange(row, col, sheet.GetValue(row, col));
     }
 
     public bool Undo(Sheet sheet)
@@ -75,7 +73,7 @@ public class MergeCellsCommand : IUndoableCommand
 
         sheet.Selection.Set(_range);
         // Restore all the cell values that were lost when merging
-        sheet.SetCellValuesImpl(_changes);
+        sheet.SetCells(_clearedCells);
 
         return true;
     }
