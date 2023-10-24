@@ -82,6 +82,8 @@
                                         var col = j;
                                         var cell = _visualSheet.GetVisualCell(row, col);
                                         var colWidth = @cell.Width;
+                                        if(DirtyCells.Contains((row,col)))
+                                            Console.WriteLine(DirtyCells.Contains((row,col)));
                                         <div
                                             @onmouseup="e => HandleCellMouseUp(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
                                             @ondblclick="e => HandleCellDoubleClick(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
@@ -106,7 +108,7 @@
                                                     IsDirty="SheetIsDirty || DirtyCells.Contains((row, col))">
                                                     <ItemTemplate>
                                                         <DynamicComponent
-                                                            Type="@getCellRendererType(cell.CellType)"
+                                                            Type="@GetCellRendererType(cell.CellType)"
                                                             Parameters="@getCellRendererParameters(Sheet, cell)">
                                                         </DynamicComponent>
                                                     </ItemTemplate>
@@ -144,7 +146,7 @@
                                         IsDirty="SheetIsDirty || DirtyCells.Contains((row, col))">
                                         <ItemTemplate>
                                             <DynamicComponent
-                                                Type="@getCellRendererType(cell.Type)"
+                                                Type="@GetCellRendererType(cell.Type)"
                                                 Parameters="@getCellRendererParameters(Sheet, new VisualCell(row, col, _sheetLocal))">
                                             </DynamicComponent>
                                         </ItemTemplate>

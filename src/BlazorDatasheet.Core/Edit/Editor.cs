@@ -161,8 +161,6 @@ public class Editor
                 new EditAcceptedEventArgs(EditCell.Row, EditCell.Col, beforeAcceptEdit.EditValue,
                                           beforeAcceptEdit.Formula, isFormula ? EditValue : null));
 
-            var cellChange = new CellValueChange(EditCell.Row, EditCell.Col, beforeAcceptEdit.EditValue);
-
             if (isFormula && parsedFormula != null)
                 Sheet.SetFormula(parsedFormula, EditCell.Row, EditCell.Col);
             else

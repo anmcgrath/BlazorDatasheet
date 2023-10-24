@@ -226,7 +226,7 @@ public partial class Datasheet : IHandleEvent
         _defaultCellTypeDefinitions.Add("textarea", CellTypeDefinition.Create<TextareaEditorComponent, TextRenderer>());
     }
 
-    private Type getCellRendererType(string type)
+    private Type GetCellRendererType(string type)
     {
         // First look at any custom renderers
         if (CustomCellTypeDefinitions.ContainsKey(type))

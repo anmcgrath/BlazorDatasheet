@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Edit;
@@ -823,11 +824,15 @@ public class Sheet
     /// </summary>
     internal void EndBatchDirty()
     {
-        SheetDirty?.Invoke(this, new DirtySheetEventArgs()
+        if (_dirtyRegions.Any() || _dirtyPositions.Any())
         {
-            DirtyRegions = _dirtyRegions,
-            DirtyPositions = _dirtyPositions
-        });
+            SheetDirty?.Invoke(this, new DirtySheetEventArgs()
+            {
+                DirtyRegions = _dirtyRegions,
+                DirtyPositions = _dirtyPositions
+            });
+        }
+        
         _IsBatchingDirty = false;
     }
 
