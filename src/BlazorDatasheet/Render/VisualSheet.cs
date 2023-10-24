@@ -1,8 +1,7 @@
-using System.Text;
-using BlazorDatasheet.Data;
+using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Events.Visual;
+using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
-using BlazorDatasheet.Events.Visual;
-using BlazorDatasheet.Formats;
 
 namespace BlazorDatasheet.Render;
 

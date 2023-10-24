@@ -1,6 +1,6 @@
-using BlazorDatasheet.Data;
+using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
-using BlazorDatasheet.Formats;
 using FluentAssertions;
 using NUnit.Framework;
 

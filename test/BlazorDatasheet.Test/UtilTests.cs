@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using BlazorDatasheet.Core.Util;
 using BlazorDatasheet.DataStructures.Search;
 using BlazorDatasheet.Util;
 using NUnit.Framework;

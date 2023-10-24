@@ -1,7 +1,5 @@
-﻿using BlazorDatasheet.Data;
-using BlazorDatasheet.Formula.Core;
+﻿using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.Syntax;
-using BlazorDatasheet.FormulaEngine;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Formula;

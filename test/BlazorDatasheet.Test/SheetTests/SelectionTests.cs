@@ -1,7 +1,7 @@
 ﻿using System.Linq;
-using BlazorDatasheet.Data;
+using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Selecting;
 using BlazorDatasheet.DataStructures.Geometry;
-using BlazorDatasheet.Selecting;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.SheetTests;

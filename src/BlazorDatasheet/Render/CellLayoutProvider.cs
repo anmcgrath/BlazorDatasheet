@@ -1,7 +1,5 @@
-using BlazorDatasheet.Data;
+using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.DataStructures.Geometry;
-using BlazorDatasheet.Events;
-using BlazorDatasheet.Events.Layout;
 
 namespace BlazorDatasheet.Render;
 

@@ -1,10 +1,10 @@
 @page "/ConditionalFormatting"
-@using BlazorDatasheet.Data
-@using BlazorDatasheet.Formats
-@using BlazorDatasheet.Formats.DefaultConditionalFormats
 @using BlazorDatasheet.Icons
 @using BlazorDatasheet.Render
 @using Region = BlazorDatasheet.DataStructures.Geometry.Region
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Formats
+@using BlazorDatasheet.Core.Formats.DefaultConditionalFormats
 <PageTitle>Conditional Formatting</PageTitle>
 
 <h1>Conditional Formatting</h1>
@@ -62,7 +62,7 @@
 
         public CellFormat Check = new CellFormat()
         {
-            Icon = Icons.CheckIcon,
+            Icon = "check",
             IconColor = "green",
         };
 

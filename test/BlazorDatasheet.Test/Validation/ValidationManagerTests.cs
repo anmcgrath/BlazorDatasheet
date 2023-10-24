@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
-using BlazorDatasheet.Data;
+using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Interfaces;
+using BlazorDatasheet.Core.Validation;
 using BlazorDatasheet.DataStructures.Geometry;
-using BlazorDatasheet.Interfaces;
-using BlazorDatasheet.Validation;
 using FluentAssertions;
 using NUnit.Framework;
 

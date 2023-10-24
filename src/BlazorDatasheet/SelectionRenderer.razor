@@ -1,10 +1,9 @@
 @using System.Text
-@using BlazorDatasheet.Data
 @using BlazorDatasheet.Render
 @using Region = BlazorDatasheet.DataStructures.Geometry.Region
 @using System.ComponentModel
+@using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.DataStructures.Geometry
-@using BlazorDatasheet.Selecting
 
 <!-- Render the temp selection (currently selected region) -->
 @if (Sheet != null && BoundedSelectingRegion != null && BoundedSelectingRegion?.Area > 0)

@@ -1,5 +1,5 @@
-﻿using BlazorDatasheet.Commands;
-using BlazorDatasheet.Data;
+﻿using BlazorDatasheet.Core.Commands;
+using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.DataStructures.Geometry;
 using NUnit.Framework;
 

@@ -1,7 +1,7 @@
 using System.Linq;
-using BlazorDatasheet.Data;
+using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
-using BlazorDatasheet.Formats;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.SheetTests;
@@ -13,7 +13,7 @@ public class ConditionalFormatTests
     /// <summary>
     /// Sheet of size 2 x 2
     /// </summary>
-    private Data.Sheet sheet;
+    private Sheet sheet;
 
     private ConditionalFormat greaterThanEqualToZeroRedBgCf;
     private string redBgColor = "#ff0000";

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
-using BlazorDatasheet.Commands;
-using BlazorDatasheet.Data;
+using BlazorDatasheet.Core.Commands;
+using BlazorDatasheet.Core.Data;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Commands;

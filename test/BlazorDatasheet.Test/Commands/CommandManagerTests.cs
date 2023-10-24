@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
-using BlazorDatasheet.Commands;
-using BlazorDatasheet.Data;
+using BlazorDatasheet.Core.Commands;
+using BlazorDatasheet.Core.Data;
 using FluentAssertions;
 using NUnit.Framework;
 

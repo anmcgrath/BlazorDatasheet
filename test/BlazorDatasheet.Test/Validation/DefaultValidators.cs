@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using BlazorDatasheet.Data;
-using BlazorDatasheet.Validation;
+using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Validation;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Validation;

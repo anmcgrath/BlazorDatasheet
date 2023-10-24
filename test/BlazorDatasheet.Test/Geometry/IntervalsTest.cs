@@ -1,7 +1,6 @@
 ﻿using System.Linq;
-using BlazorDatasheet.Data;
+using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Intervals;
-using BlazorDatasheet.Formats;
 using FluentAssertions;
 using NUnit.Framework;
 using NUnit.Framework.Internal.Execution;

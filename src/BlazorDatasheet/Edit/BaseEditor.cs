@@ -1,7 +1,7 @@
-using BlazorDatasheet.Data;
-using BlazorDatasheet.Interfaces;
+using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Edit;
+using BlazorDatasheet.Core.Interfaces;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Forms;
 
 namespace BlazorDatasheet.Edit;
 

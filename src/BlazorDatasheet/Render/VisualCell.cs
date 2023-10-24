@@ -1,7 +1,6 @@
 using System.Text;
-using BlazorDatasheet.Data;
-using BlazorDatasheet.Formats;
-using Microsoft.AspNetCore.Components;
+using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Formats;
 
 namespace BlazorDatasheet.Render;
 
@@ -16,7 +15,7 @@ public class VisualCell
     public double Height { get; private set; }
     public string CellType { get; private set; }
     public string FormatStyleString { get; private set; }
-    public RenderFragment? Icon { get; private set; }
+    public string? Icon { get; private set; }
     public CellFormat? Format { get; private set; }
 
     public VisualCell(int row, int col, Sheet sheet)

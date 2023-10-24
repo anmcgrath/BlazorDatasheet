@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
-using BlazorDatasheet.Formats;
-using BlazorDatasheet.ObjectEditor;
+using BlazorDatasheet.Core.ObjectEditor;
 using BlazorDatasheet.Render;
 using NUnit.Framework;
 

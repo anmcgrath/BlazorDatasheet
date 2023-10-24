@@ -1,6 +1,7 @@
 using System.Collections.Generic;
-using BlazorDatasheet.Commands;
-using BlazorDatasheet.Data;
+using BlazorDatasheet.Core.Commands;
+using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.FormulaEngine;
 using FluentAssertions;
 using NUnit.Framework;
 
@@ -9,7 +10,7 @@ namespace BlazorDatasheet.Test.Formula;
 public class SheetFormulaIntegrationTests
 {
     private Sheet _sheet;
-    private FormulaEngine.FormulaEngine _engine;
+    private FormulaEngine _engine;
 
     [SetUp]
     public void TestSetup()

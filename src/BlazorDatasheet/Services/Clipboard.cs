@@ -1,6 +1,6 @@
-using BlazorDatasheet.Data;
+using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.DataStructures.Geometry;
-using BlazorDatasheet.Interfaces;
 using Microsoft.JSInterop;
 
 namespace BlazorDatasheet.Services;

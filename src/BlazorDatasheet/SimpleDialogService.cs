@@ -1,4 +1,4 @@
-using BlazorDatasheet.Interfaces;
+using BlazorDatasheet.Core.Interfaces;
 using Microsoft.JSInterop;
 
 namespace BlazorDatasheet;
