@@ -9,43 +9,43 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
     /// <summary>
     /// Matrix columns, with the key being the column index
     /// </summary>
-    private Dictionary<int, SColumn<T>> Columns { get; set; } = new();
+    private readonly Dictionary<int, SColumn<T>> _columns = new();
 
     public bool Contains(int row, int col)
     {
-        if (!Columns.ContainsKey(col))
+        if (!_columns.ContainsKey(col))
             return false;
-        return Columns[col].Values.ContainsKey(row);
+        return _columns[col].Values.ContainsKey(row);
     }
 
     public T? Get(int row, int col)
     {
-        var colExists = Columns.TryGetValue(col, out var column);
+        var colExists = _columns.TryGetValue(col, out var column);
         if (!colExists)
             return default(T);
 
-        return column.Get(row);
+        return column!.Get(row);
     }
 
     public void Set(int row, int col, T value)
     {
-        var colExists = Columns.TryGetValue(col, out var column);
+        var colExists = _columns.TryGetValue(col, out var column);
         if (!colExists)
         {
             column = new SColumn<T>(col);
-            Columns.Add(col, column);
+            _columns.Add(col, column);
         }
 
-        column.Set(row, value);
+        column!.Set(row, value);
     }
 
     public (int row, int col, T)? Clear(int row, int col)
     {
-        var colExists = Columns.TryGetValue(col, out var column);
+        var colExists = _columns.TryGetValue(col, out var column);
         if (!colExists)
             return null;
 
-        return column.Clear(row, col);
+        return column!.Clear(row, col);
     }
 
     public IEnumerable<(int row, int col, T)> Clear(IEnumerable<(int row, int col)> positions)
@@ -54,9 +54,22 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
         return cleared.Where(x => x.HasValue).Select(x => x.Value);
     }
 
+    public IEnumerable<(int row, int col, T)> Clear(IRegion region)
+    {
+        var cleared = new List<(int row, int col, T)>();
+        foreach (var kp in _columns)
+        {
+            if (kp.Key < region.Left || kp.Key > region.Right)
+                continue;
+            cleared.AddRange(kp.Value.ClearBetween(region.Top, region.Bottom));
+        }
+
+        return cleared;
+    }
+
     public void InsertRowAt(int row, int nRows = 1)
     {
-        foreach (var column in Columns.Values)
+        foreach (var column in _columns.Values)
         {
             column.InsertRowAt(row, nRows);
         }
@@ -64,13 +77,13 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
 
     public void InsertColAt(int col, int nCols)
     {
-        var currentColumns = Columns.ToList();
+        var currentColumns = _columns.ToList();
         List<(int colIndex, SColumn<T> column)> columnsToReAdd = new List<(int colIndex, SColumn<T> column)>();
         foreach (var kp in currentColumns)
         {
             if (kp.Key >= col)
             {
-                Columns.Remove(kp.Key);
+                _columns.Remove(kp.Key);
                 columnsToReAdd.Add((kp.Key + nCols, kp.Value));
             }
         }
@@ -78,12 +91,12 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
         foreach (var c in columnsToReAdd)
         {
             c.column.ColumnIndex = c.colIndex;
-            Columns.Add(c.colIndex, c.column);
+            _columns.Add(c.colIndex, c.column);
         }
 
         for (int i = 0; i < nCols; i++)
         {
-            Columns.Add(col + i, new SColumn<T>(col + i));
+            _columns.Add(col + i, new SColumn<T>(col + i));
         }
     }
 
@@ -93,20 +106,20 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
 
         for (int i = 0; i < nCols; i++)
         {
-            if (Columns.ContainsKey(col + i))
+            if (_columns.ContainsKey(col + i))
             {
-                deleted.AddRange(Columns[col + i].Values.Select(x => (x.Key, col + i, x.Value)));
-                Columns.Remove(col + i);
+                deleted.AddRange(_columns[col + i].Values.Select(x => (x.Key, col + i, x.Value)));
+                _columns.Remove(col + i);
             }
         }
 
         List<(int colIndex, SColumn<T> column)> columnsToReAdd = new List<(int colIndex, SColumn<T> column)>();
-        var currentColumns = Columns.ToList();
+        var currentColumns = _columns.ToList();
         foreach (var kp in currentColumns)
         {
             if (kp.Key > col)
             {
-                Columns.Remove(kp.Key);
+                _columns.Remove(kp.Key);
                 columnsToReAdd.Add((kp.Key - nCols, kp.Value));
             }
         }
@@ -114,7 +127,7 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
         foreach (var c in columnsToReAdd)
         {
             c.column.ColumnIndex = c.colIndex;
-            Columns.Add(c.colIndex, c.column);
+            _columns.Add(c.colIndex, c.column);
         }
 
         return deleted;
@@ -122,15 +135,15 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
 
     public int GetNextNonBlankRow(int col, int row)
     {
-        if (!Columns.ContainsKey(col))
+        if (!_columns.ContainsKey(col))
             return -1;
-        return Columns[col].GetNextNonEmptyRow(row);
+        return _columns[col].GetNextNonEmptyRow(row);
     }
 
     public IEnumerable<(int row, int col, T)> RemoveRowAt(int row, int nRows)
     {
         var deleted = new List<(int row, int col, T)>();
-        foreach (var column in Columns.Values)
+        foreach (var column in _columns.Values)
             deleted.AddRange(column.DeleteRowAt(row, nRows));
         return deleted;
     }
@@ -146,7 +159,7 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
     public IEnumerable<(int row, int col)> GetNonEmptyPositions(int r0, int r1, int c0, int c1)
     {
         List<(int row, int col)> nonEmptyPositions = new List<(int row, int col)>();
-        foreach (var kp in Columns)
+        foreach (var kp in _columns)
         {
             if (kp.Key < c0 || kp.Key > c1)
                 continue;
@@ -317,6 +330,43 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
             if (index >= Values.Keys.Count)
                 return -1;
             return Values.Keys[index];
+        }
+
+        /// <summary>
+        /// Removes all rows in column, between (and including) r0 and r1
+        /// </summary>
+        /// <param name="r0"></param>
+        /// <param name="r1"></param>
+        /// <returns></returns>
+        public IEnumerable<(int row, int col, T)> ClearBetween(int r0, int r1)
+        {
+            var cleared = new List<(int row, int col, T val)>();
+            var startIndex = Values.Keys.BinarySearchIndexOf(r0);
+
+            if (startIndex < 0)
+                startIndex = ~startIndex;
+
+            if (startIndex > Values.Count - 1) // we have no values, so nothing to clear
+                return cleared;
+
+            // start index is now either the actual start or the index after where the row would be found
+            var endIndex = Values.Keys.BinarySearchIndexOf(r1);
+            if (endIndex < 0)
+                endIndex = ~endIndex - 1;
+
+            if (endIndex < startIndex)
+                return cleared;
+
+            var n = (endIndex - startIndex + 1);
+            var nRemoved = 0;
+            while (nRemoved < n)
+            {
+                cleared.Add((Values.GetKeyAtIndex(startIndex), ColumnIndex, Values.GetValueAtIndex(startIndex)));
+                Values.RemoveAt(startIndex);
+                nRemoved++;
+            }
+
+            return cleared;
         }
     }
 }

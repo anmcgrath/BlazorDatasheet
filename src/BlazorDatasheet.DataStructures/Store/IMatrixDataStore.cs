@@ -39,6 +39,20 @@ public interface IMatrixDataStore<T>
     public IEnumerable<(int row, int col, T)> Clear(IEnumerable<(int row, int col)> positions);
 
     /// <summary>
+    /// Clears data inside the given region but does not affect the rows/columns arround it.
+    /// </summary>
+    /// <param name="region"></param>
+    /// <returns></returns>
+    public IEnumerable<(int row, int col, T)> Clear(IRegion region);
+
+    /// <summary>
+    /// Clears data inside the specified regions but does not affect the rows/columsn around it.
+    /// </summary>
+    /// <param name="regions"></param>
+    /// <returns></returns>
+    public IEnumerable<(int row, int col, T)> Clear(IEnumerable<IRegion> regions) => regions.SelectMany(Clear);
+
+    /// <summary>
     /// Inserts a row into the store
     /// </summary>
     /// <param name="row">The index of the row that the new row will now be.</param>

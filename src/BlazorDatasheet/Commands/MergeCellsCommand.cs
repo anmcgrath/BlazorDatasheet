@@ -37,12 +37,11 @@ public class MergeCellsCommand : IUndoableCommand
                 continue;
 
             // Clear all the cells that are not the top-left posn of merge and store their values for undo
-            var cellsToClear = region
+            var regionsToClear = region
                                .Break(region.TopLeft)
-                               .SelectMany(sheet.GetNonEmptyCellPositions)
                                .ToList();
 
-            _clearedCells = sheet.CellDataStore.Clear(cellsToClear).ToList()!;
+            _clearedCells = sheet.CellDataStore.Clear(regionsToClear).ToList()!;
 
             // Store the merges that we will have to re-instate on undo
             // And remove any merges that are contained in the region

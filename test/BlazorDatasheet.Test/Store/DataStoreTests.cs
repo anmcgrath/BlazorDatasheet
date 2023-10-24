@@ -1,4 +1,5 @@
 using System.Linq;
+using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
 using FluentAssertions;
 using NUnit.Framework;
@@ -144,5 +145,22 @@ public class DataStoreTests
         Assert.Null(store.Get(0, 0));
         Assert.AreEqual("0,1", store.Get(0, 1));
         Assert.AreEqual("1,0", store.Get(1, 0));
+    }
+
+    [Test]
+    public void Remove_Region_Removes_Region()
+    {
+        var store = new SparseMatrixStore<string>();
+        store.Set(0,0,"0,0");
+        store.Set(0,1,"0,1");
+        store.Set(1,0,"1,0");
+        store.Set(1,1,"1,1");
+        store.Set(2,2,"2,2");
+        store.Clear(new Region(0, 1, 0, 1));
+        store.Get(0, 0).Should().BeNullOrEmpty();
+        store.Get(0, 1).Should().BeNullOrEmpty();
+        store.Get(1, 0).Should().BeNullOrEmpty();
+        store.Get(1, 1).Should().BeNullOrEmpty();
+        store.Get(2, 2).Should().Be("2,2");
     }
 }
