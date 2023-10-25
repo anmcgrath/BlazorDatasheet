@@ -51,7 +51,7 @@ public class SheetEnvironment : IEnvironment
             _functions[name.ToLower()] = value;
     }
 
-    public object? GetCellValue(int row, int col) => _sheet.GetValue(row, col);
+    public object? GetCellValue(int row, int col) => _sheet.Cells.GetValue(row, col);
 
     public List<double> GetNumbersInRange(RangeAddress rangeAddress)
     {

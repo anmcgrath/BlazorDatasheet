@@ -15,7 +15,7 @@ public class ChangeCellValueCommandTests
     {
         //Create a sheet with only one cell, with a value 1
         _sheet = new Sheet(1, 1);
-        _sheet.SetCellValue(0, 0, 1);
+        _sheet.Cells.SetValue(0, 0, 1);
         _commandManager = new CommandManager(_sheet);
     }
 
@@ -24,11 +24,11 @@ public class ChangeCellValueCommandTests
     {
         var changeCmd = new SetCellValueCommand(0, 0, 10);
         _commandManager.ExecuteCommand(changeCmd);
-        Assert.AreEqual(10, _sheet.GetCell(0, 0).GetValue<int>());
+        Assert.AreEqual(10, _sheet.Cells.GetCell(0, 0).GetValue<int>());
         _commandManager.Undo();
-        Assert.AreEqual(1, _sheet.GetCell(0, 0).GetValue<int>());
+        Assert.AreEqual(1, _sheet.Cells.GetCell(0, 0).GetValue<int>());
         //Try to undo again but nothing changed because there's no more undo commands
         _commandManager.Undo();
-        Assert.AreEqual(1, _sheet.GetCell(0, 0).GetValue<int>());
+        Assert.AreEqual(1, _sheet.Cells.GetCell(0, 0).GetValue<int>());
     }
 }

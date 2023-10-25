@@ -19,8 +19,8 @@ public class ClearCellsCommand : IUndoableCommand
 
     public bool Execute(Sheet sheet)
     {
-        _clearedData = sheet.CellDataStore.Clear(_range.Regions).ToList();
-        _clearedFormula = sheet.CellFormulaStore.Clear(_range.Regions).ToList();
+        _clearedData = sheet.Cells.CellDataStore.Clear(_range.Regions).ToList();
+        _clearedFormula = sheet.Cells.CellFormulaStore.Clear(_range.Regions).ToList();
         foreach (var formula in _clearedFormula)
         {
             sheet.FormulaEngine.RemoveFromDependencyGraph(formula.row, formula.col);
@@ -38,8 +38,8 @@ public class ClearCellsCommand : IUndoableCommand
     public bool Undo(Sheet sheet)
     {
         sheet.Selection.Set(_range);
-        sheet.CellDataStore.Restore(_clearedData);
-        sheet.CellFormulaStore.Restore(_clearedFormula);
+        sheet.Cells.CellDataStore.Restore(_clearedData);
+        sheet.Cells.CellFormulaStore.Restore(_clearedFormula);
 
         foreach (var formula in _clearedFormula)
         {

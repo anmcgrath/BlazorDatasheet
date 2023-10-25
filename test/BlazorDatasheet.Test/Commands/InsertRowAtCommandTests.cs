@@ -9,18 +9,18 @@ public class InsertRowAtCommandTests
     public void Insert_Row_Then_Undo_Correct()
     {
         var sheet = new Sheet(3, 1);
-        sheet.SetCellValue(0, 0, "0,0");
-        sheet.SetCellValue(2, 0, "2,0");
+        sheet.Cells.SetValue(0, 0, "0,0");
+        sheet.Cells.SetValue(2, 0, "2,0");
         sheet.InsertRowAt(0);
 
         Assert.AreEqual(4, sheet.NumRows);
-        Assert.AreEqual("0,0", sheet.GetValue(1, 0));
-        Assert.AreEqual("2,0", sheet.GetValue(3, 0));
+        Assert.AreEqual("0,0", sheet.Cells.GetValue(1, 0));
+        Assert.AreEqual("2,0", sheet.Cells.GetValue(3, 0));
 
         sheet.Commands.Undo();
         Assert.AreEqual(3, sheet.NumRows);
-        Assert.AreEqual("0,0", sheet.GetValue(0, 0));
-        Assert.AreEqual("2,0", sheet.GetValue(2, 0));
+        Assert.AreEqual("0,0", sheet.Cells.GetValue(0, 0));
+        Assert.AreEqual("2,0", sheet.Cells.GetValue(2, 0));
     }
 
     [Test]

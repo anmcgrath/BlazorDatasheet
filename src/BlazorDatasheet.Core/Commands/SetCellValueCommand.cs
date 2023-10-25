@@ -20,8 +20,8 @@ public class SetCellValueCommand : IUndoableCommand
 
     public bool Execute(Sheet sheet)
     {
-        _oldValue = sheet.CellDataStore.Get(_row, _col);
-        _oldFormula = sheet.CellFormulaStore.Get(_row, _col);
+        _oldValue = sheet.Cells.CellDataStore.Get(_row, _col);
+        _oldFormula = sheet.Cells.CellFormulaStore.Get(_row, _col);
 
         // If cell values are being set while the formula engine is not calculating,
         // then these values must override the formula and so the formula should be cleared
@@ -33,16 +33,16 @@ public class SetCellValueCommand : IUndoableCommand
                 sheet.FormulaEngine.RemoveFromDependencyGraph(_row, _col);
             }
 
-            sheet.CellFormulaStore.Clear(_row, _col);
+            sheet.Cells.CellFormulaStore.Clear(_row, _col);
         }
 
-        sheet.CellDataStore.Set(_row, _col, _value);
+        sheet.Cells.CellDataStore.Set(_row, _col, _value);
 
         // Perform data validation
         // but we don't restrict the cell value being set here,
         // it is just marked as invalid if it is invalid
-        var validationResult = sheet.Validation.Validate(_value, _row, _col);
-        sheet.ValidationStore.Set(_row, _col, validationResult.IsValid);
+        var validationResult = sheet.Cells.Validation.Validate(_value, _row, _col);
+        sheet.Cells.ValidationStore.Set(_row, _col, validationResult.IsValid);
 
         sheet.MarkDirty(_row, _col);
 
@@ -54,11 +54,11 @@ public class SetCellValueCommand : IUndoableCommand
         // restore formula first
         if (_oldFormula != null)
         {
-            sheet.CellFormulaStore.Set(_row, _col, _oldFormula);
+            sheet.Cells.CellFormulaStore.Set(_row, _col, _oldFormula);
             sheet.FormulaEngine.AddToDependencyGraph(_row, _col, _oldFormula);
         }
 
-        sheet.CellDataStore.Set(_row, _col, _oldValue);
+        sheet.Cells.CellDataStore.Set(_row, _col, _oldValue);
         sheet.MarkDirty(_row, _col);
 
         return true;

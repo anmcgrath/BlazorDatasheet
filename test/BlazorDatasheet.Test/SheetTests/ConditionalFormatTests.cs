@@ -24,7 +24,7 @@ public class ConditionalFormatTests
         sheet = new Sheet(4, 4);
         cm = new ConditionalFormatManager(sheet);
         greaterThanEqualToZeroRedBgCf = new ConditionalFormat(
-            (posn, s) => s.GetCell(posn.row, posn.col).GetValue<int?>() >= 0
+            (posn, s) => s.Cells.GetCell(posn.row, posn.col).GetValue<int?>() >= 0
             , (cell => new CellFormat
             {
                 BackgroundColor = redBgColor
@@ -34,11 +34,11 @@ public class ConditionalFormatTests
     [Test]
     public void Set_Cf_To_Whole_Sheet_Applies_Correctly()
     {
-        sheet.SetCellValue(0, 0, -1);
+        sheet.Cells.SetValue(0, 0, -1);
         cm.Apply(greaterThanEqualToZeroRedBgCf);
         var format = cm.GetFormatResult(0, 0);
         Assert.IsNull(format);
-        sheet.SetCellValue(0, 0, 1);
+        sheet.Cells.SetValue(0, 0, 1);
 
         format = cm.GetFormatResult(0, 0);
         Assert.AreEqual(format.BackgroundColor, redBgColor);

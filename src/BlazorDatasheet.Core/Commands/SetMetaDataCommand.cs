@@ -20,14 +20,14 @@ public class SetMetaDataCommand : IUndoableCommand
 
     public bool Execute(Sheet sheet)
     {
-        _oldValue = sheet.GetMetaData(_row, _col, _name);
-        sheet.SetMetaDataImpl(_row, _col, _name, _value);
+        _oldValue = sheet.Cells.GetMetaData(_row, _col, _name);
+        sheet.Cells.SetMetaDataImpl(_row, _col, _name, _value);
         return true;
     }
 
     public bool Undo(Sheet sheet)
     {
-        sheet.SetMetaDataImpl(_row, _col, _name, _oldValue);
+        sheet.Cells.SetMetaDataImpl(_row, _col, _name, _oldValue);
         return true;
     }
 }

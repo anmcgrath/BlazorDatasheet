@@ -77,8 +77,8 @@ public class SheetCell : IReadOnlyCell
     public int Col { get; }
     public bool IsValid { get; }
     
-    public CellFormula? Formula => _sheet.CellFormulaStore.Get(Row, Col);
-    public object? Data => _sheet.CellDataStore.Get(Row, Col);
+    public CellFormula? Formula => _sheet.Cells.CellFormulaStore.Get(Row, Col);
+    public object? Data => _sheet.Cells.CellDataStore.Get(Row, Col);
 
     public object? GetMetaData(string name)
     {

@@ -83,7 +83,7 @@ public class Editor
         if (this.IsEditing)
             return;
 
-        var cell = Sheet.GetCell(row, col);
+        var cell = Sheet.Cells.GetCell(row, col);
         var beforeEditArgs = new BeforeCellEditEventArgs(cell, cell.GetValue<string>() ?? string.Empty, cell.Type);
         this.BeforeCellEdit?.Invoke(this, beforeEditArgs);
 
@@ -150,7 +150,7 @@ public class Editor
         if (beforeAcceptEdit.AcceptEdit)
         {
             // run the validators that are strict. cancel edit if any fail
-            var validationResult = Sheet.Validation.Validate(editValue, EditCell.Row, EditCell.Col);
+            var validationResult = Sheet.Cells.Validation.Validate(editValue, EditCell.Row, EditCell.Col);
             if (validationResult.IsStrictFail)
             {
                 Sheet.Dialog.Alert(string.Join("\n", validationResult.FailMessages));
@@ -162,9 +162,9 @@ public class Editor
                                           beforeAcceptEdit.Formula, isFormula ? EditValue : null));
 
             if (isFormula && parsedFormula != null)
-                Sheet.SetFormula(EditCell.Row, EditCell.Col, parsedFormula);
+                Sheet.Cells.SetFormula(EditCell.Row, EditCell.Col, parsedFormula);
             else
-                Sheet.SetCellValue(EditCell.Row, EditCell.Col, editValue);
+                Sheet.Cells.SetValue(EditCell.Row, EditCell.Col, editValue);
 
             EditFinished?.Invoke(this, new EditFinishedEventArgs(EditCell.Row, EditCell.Col));
             this.ClearEdit();

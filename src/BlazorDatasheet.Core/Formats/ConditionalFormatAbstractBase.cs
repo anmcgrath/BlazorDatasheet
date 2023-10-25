@@ -190,7 +190,7 @@ public abstract class ConditionalFormatAbstractBase : IEquatable<ConditionalForm
 
     public IEnumerable<IReadOnlyCell> GetCells(Sheet sheet)
     {
-        return Positions.Select(x => sheet.GetCell(x.row, x.col));
+        return Positions.Select(x => sheet.Cells.GetCell(x.row, x.col));
     }
 
 

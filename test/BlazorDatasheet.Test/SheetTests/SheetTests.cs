@@ -12,8 +12,8 @@ public class SheetTests
     {
         var sheet = new Sheet(2, 1);
         Assert.AreEqual(2, sheet.NumRows);
-        Assert.AreEqual(null, sheet.GetCell(0, 0).GetValue());
-        Assert.AreEqual(null, sheet.GetCell(1, 0).GetValue());
+        Assert.AreEqual(null, sheet.Cells.GetCell(0, 0).GetValue());
+        Assert.AreEqual(null, sheet.Cells.GetCell(1, 0).GetValue());
     }
 
     [Test]
@@ -27,14 +27,14 @@ public class SheetTests
         var copyPasteRegion = new Region(copyPasteRegionR0, copyPasteRegionR1, copyPasteRegionC0, copyPasteRegionC1);
 
         foreach (var posn in copyPasteRegion)
-            sheet.SetCellValue(posn.Row, posn.Col, getCellPosnString(posn.Row, posn.Col));
+            sheet.Cells.SetValue(posn.Row, posn.Col, getCellPosnString(posn.Row, posn.Col));
 
         var copy = sheet.GetRegionAsDelimitedText(copyPasteRegion);
         Assert.NotNull(copy);
         Assert.AreNotEqual(String.Empty, copy);
 
         // Clear the sheet so we are pasting over empty data
-        sheet.ClearCells(sheet.Range(copyPasteRegion));
+        sheet.Cells.ClearCells(sheet.Range(copyPasteRegion));
 
         var insertedRegions = sheet.InsertDelimitedText(copy, copyPasteRegion.TopLeft);
 
@@ -43,7 +43,7 @@ public class SheetTests
 
         foreach (var posn in copyPasteRegion)
             Assert.AreEqual(getCellPosnString(posn.Row, posn.Col),
-                            sheet.GetCell(posn.Row, posn.Col).GetValue<string>());
+                            sheet.Cells.GetCell(posn.Row, posn.Col).GetValue<string>());
     }
 
     private string getCellPosnString(int row, int col)

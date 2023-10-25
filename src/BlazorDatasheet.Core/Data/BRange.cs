@@ -51,7 +51,7 @@ public class BRange
     /// <returns></returns>
     public IEnumerable<IReadOnlyCell> GetCells()
     {
-        return Positions.Select(x => Sheet.GetCell(x.row, x.col));
+        return Positions.Select(x => Sheet.Cells.GetCell(x.row, x.col));
     }
 
     /// <summary>
@@ -60,7 +60,7 @@ public class BRange
     /// <returns></returns>
     public IEnumerable<IReadOnlyCell> GetNonEmptyCells()
     {
-        return this.GetNonEmptyPositions().Select(x => Sheet.GetCell(x.row, x.col));
+        return this.GetNonEmptyPositions().Select(x => Sheet.Cells.GetCell(x.row, x.col));
     }
 
     /// <summary>
@@ -69,7 +69,7 @@ public class BRange
     /// <returns>A collection of (row, column) positions of all non-empty cells.</returns>
     public IEnumerable<(int row, int col)> GetNonEmptyPositions()
     {
-        return Regions.SelectMany(Sheet.GetNonEmptyCellPositions);
+        return Regions.SelectMany(Sheet.Cells.GetNonEmptyCellPositions);
     }
 
     /// <summary>
@@ -78,12 +78,12 @@ public class BRange
     /// <param name="value"></param>
     private void doSetValues(object? value)
     {
-        Sheet.SetCellValues(Positions.Select(x => new CellValueChange(x.row, x.col, value)).ToList());
+        Sheet.Cells.SetCellValues(Positions.Select(x => (x.row, x.col, value)).ToList());
     }
 
     public void ClearCells()
     {
-        Sheet.ClearCells(this);
+        Sheet.Cells.ClearCells(this);
     }
 
     public void AddRegion(IRegion region)

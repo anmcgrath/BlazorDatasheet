@@ -34,16 +34,16 @@
         var numberScaleConditionalFormat = new NumberScaleConditionalFormat();
         var checkConditionalFormat = new CustomCheckConditionalFormat("check");
 
-        var values = new List<CellValueChange>();
+        var values = new List<(int row, int col, object value)>();
 
         var regionOfNumberScaleFormat = new Region(0, 99, 1, 4);
         var rand = new Random();
         foreach (var posn in regionOfNumberScaleFormat)
         {
-            values.Add(new CellValueChange(posn.Row, posn.Col, (int?)rand.Next(100)));
+            values.Add((posn.Row, posn.Col, (int?)rand.Next(100)));
         }
 
-        sheet.SetCellValues(values);
+        sheet.Cells.SetCellValues(values);
 
         sheet.ConditionalFormatting.Apply(numberScaleConditionalFormat, new Region(0, 99, 1, 4));
         sheet.ConditionalFormatting.Apply(checkConditionalFormat, new Region(0, 99, 0, 0));
@@ -68,7 +68,7 @@
 
         public override CellFormat? CalculateFormat(int row, int col, Sheet sheet)
         {
-            var cell = sheet.GetCell(row, col);
+            var cell = sheet.Cells.GetCell(row, col);
             var value = cell.GetValue<string>();
 
             if (value == null)

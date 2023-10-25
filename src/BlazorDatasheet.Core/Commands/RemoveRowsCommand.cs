@@ -43,8 +43,8 @@ public class RemoveRowsCommand : IUndoableCommand
 
         ClearCells(sheet);
         RemoveFormats(sheet);
-        _mergedRemoved = sheet.Merges.Store.RemoveRows(_rowIndex, _rowIndex + _nRowsRemoved - 1);
-        _validatorsRemoved = sheet.Validation.Store.RemoveRows(_rowIndex, _rowIndex + _nRowsRemoved - 1);
+        _mergedRemoved = sheet.Cells.Merges.Store.RemoveRows(_rowIndex, _rowIndex + _nRowsRemoved - 1);
+        _validatorsRemoved = sheet.Cells.Validation.Store.RemoveRows(_rowIndex, _rowIndex + _nRowsRemoved - 1);
         return sheet.RemoveRowAtImpl(_rowIndex, _nRowsRemoved);
     }
 
@@ -59,12 +59,12 @@ public class RemoveRowsCommand : IUndoableCommand
     private void RemoveFormats(Sheet sheet)
     {
         var nonEmptyCellPositions =
-            sheet.GetNonEmptyCellPositions(new RowRegion(_rowIndex, _rowIndex + _nRowsRemoved - 1));
+            sheet.Cells.GetNonEmptyCellPositions(new RowRegion(_rowIndex, _rowIndex + _nRowsRemoved - 1));
         _removedCellFormats = new List<CellChangedFormat>();
 
         foreach (var position in nonEmptyCellPositions)
         {
-            var cell = sheet.GetCell(position.row, position.col);
+            var cell = sheet.Cells.GetCell(position.row, position.col);
             var format = cell.Formatting;
             if (format != null)
                 _removedCellFormats.Add(new CellChangedFormat(position.row, position.col, format, null));
@@ -76,13 +76,13 @@ public class RemoveRowsCommand : IUndoableCommand
 
     public bool Undo(Sheet sheet)
     {
-        sheet.Merges.Store.InsertRows(_rowIndex, _nRowsRemoved);
+        sheet.Cells.Merges.Store.InsertRows(_rowIndex, _nRowsRemoved);
         foreach (var merge in _mergedRemoved)
-            sheet.Merges.AddImpl(merge.Region);
+            sheet.Cells.Merges.AddImpl(merge.Region);
 
-        sheet.Validation.Store.InsertRows(_rowIndex, _nRowsRemoved);
+        sheet.Cells.Validation.Store.InsertRows(_rowIndex, _nRowsRemoved);
         foreach (var validator in _validatorsRemoved)
-            sheet.Validation.Store.Add(validator.Region, validator.Data);
+            sheet.Cells.Validation.Store.Add(validator.Region, validator.Data);
 
         sheet.InsertRowAtImpl(_rowIndex);
 

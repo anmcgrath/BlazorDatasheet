@@ -39,7 +39,7 @@ public class FormulaEngine
 
     private void SheetOnBeforeCellEdit(object? sender, BeforeCellEditEventArgs e)
     {
-        var formula = _sheet.CellFormulaStore.Get(e.Cell.Row, e.Cell.Col);
+        var formula = _sheet.Cells.CellFormulaStore.Get(e.Cell.Row, e.Cell.Col);
         if (formula != null)
         {
             e.EditValue = formula.ToFormulaString();
@@ -95,11 +95,11 @@ public class FormulaEngine
         {
             if (vertex is CellVertex cellVertex)
             {
-                var formula = _sheet.CellFormulaStore.Get(cellVertex.Row, cellVertex.Col);
+                var formula = _sheet.Cells.CellFormulaStore.Get(cellVertex.Row, cellVertex.Col);
                 if (formula != null)
                 {
                     var value = this.Evaluate(formula);
-                    _sheet.CellDataStore.Set(cellVertex.Row, cellVertex.Col, value);
+                    _sheet.Cells.CellDataStore.Set(cellVertex.Row, cellVertex.Col, value);
                     _sheet.MarkDirty(cellVertex.Row, cellVertex.Col);
                     changedValuePositions.Add((cellVertex.Row, cellVertex.Col));
                 }

@@ -60,7 +60,7 @@ public class ConditionalFormat : ConditionalFormatAbstractBase
 
     public override CellFormat? CalculateFormat(int row, int col, Sheet sheet)
     {
-        var cell = sheet.GetCell(row, col);
+        var cell = sheet.Cells.GetCell(row, col);
         if (IsShared)
         {
             var cells = cellCache;

@@ -338,7 +338,7 @@ public partial class Datasheet : IHandleEvent
                 Sheet?.Selection?.ClearSelections();
             }
 
-            var mergeRangeAtPosition = _sheetLocal.Merges.Get(row, col);
+            var mergeRangeAtPosition = _sheetLocal.Cells.Merges.Get(row, col);
             if (row == -1)
                 this.BeginSelectingCol(col);
             else if (col == -1)
@@ -396,7 +396,7 @@ public partial class Datasheet : IHandleEvent
 
         this.CancelSelecting();
 
-        var cell = Sheet?.GetCell(row, col);
+        var cell = Sheet.Cells?.GetCell(row, col);
         if (cell == null || cell?.Formatting?.IsReadOnly == true)
             return;
 
@@ -620,7 +620,7 @@ public partial class Datasheet : IHandleEvent
     /// <param name="args"></param>
     private void HandleCellRendererRequestChangeValue(ChangeCellValueRequest args)
     {
-        Sheet.SetCellValue(args.Row, args.Col, args.NewValue);
+        Sheet.Cells.SetValue(args.Row, args.Col, args.NewValue);
     }
 
     /// <summary>

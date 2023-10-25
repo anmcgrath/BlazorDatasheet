@@ -9,12 +9,12 @@ public class MetaDataTests
     public void Set_Cell_MetaData_And_Undo_Works()
     {
         var sheet = new Sheet(3, 3);
-        sheet.SetCellMetaData(1, 1, "test", 7);
-        Assert.AreEqual(7, sheet.GetMetaData(1, 1, "test"));
-        sheet.SetCellMetaData(1, 1, "test", 8);
-        Assert.AreEqual(8, sheet.GetMetaData(1, 1, "test"));
+        sheet.Cells.SetCellMetaData(1, 1, "test", 7);
+        Assert.AreEqual(7, sheet.Cells.GetMetaData(1, 1, "test"));
+        sheet.Cells.SetCellMetaData(1, 1, "test", 8);
+        Assert.AreEqual(8, sheet.Cells.GetMetaData(1, 1, "test"));
         sheet.Commands.Undo();
-        Assert.AreEqual(7, sheet.GetMetaData(1, 1, "test"));
+        Assert.AreEqual(7, sheet.Cells.GetMetaData(1, 1, "test"));
     }
 
     [Test]
@@ -35,7 +35,7 @@ public class MetaDataTests
             nameFired = args.Name;
         };
 
-        sheet.SetCellMetaData(1, 2, "test", "value");
+        sheet.Cells.SetCellMetaData(1, 2, "test", "value");
 
         Assert.True(fired);
         Assert.AreEqual(1, rowFired);

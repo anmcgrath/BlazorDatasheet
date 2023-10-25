@@ -180,9 +180,9 @@ public class ObjectEditorBuilder<T>
             {
                 // Add validators
                 if (_direction == GridDirection.PropertiesAcrossColumns)
-                    sheet.Validation.Add(validator, new ColumnRegion(i));
+                    sheet.Cells.Validation.Add(validator, new ColumnRegion(i));
                 else if (_direction == GridDirection.PropertiesAcrossRows)
-                    sheet.Validation.Add(validator, new RowRegion(i));
+                    sheet.Cells.Validation.Add(validator, new RowRegion(i));
             }
         }
 

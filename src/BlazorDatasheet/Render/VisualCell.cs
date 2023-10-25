@@ -20,7 +20,7 @@ public class VisualCell
 
     public VisualCell(int row, int col, Sheet sheet)
     {
-        var cell = sheet.GetCell(row, col);
+        var cell = sheet.Cells.GetCell(row, col);
         var format = sheet.GetFormat(cell) ?? new CellFormat();
         Value = cell.GetValue();
         var cf = sheet.ConditionalFormatting.GetFormatResult(row, col);

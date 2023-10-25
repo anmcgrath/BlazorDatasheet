@@ -32,7 +32,7 @@ public class MergeCellsCommand : IUndoableCommand
         {
             // Determine if there are any merged cells in the region
             // We can only merge over merged cells if we entirely overlap them
-            var existingMerges = sheet.Merges.Store.GetRegionsOverlapping(region);
+            var existingMerges = sheet.Cells.Merges.Store.GetRegionsOverlapping(region);
             if (!existingMerges.All(x => region.Contains(x.Region)))
                 continue;
 
@@ -41,17 +41,17 @@ public class MergeCellsCommand : IUndoableCommand
                                .Break(region.TopLeft)
                                .ToList();
 
-            _clearedData = sheet.CellDataStore.Clear(regionsToClear).ToList();
-            _clearedFormula = sheet.CellFormulaStore.Clear(regionsToClear).ToList();
+            _clearedData = sheet.Cells.CellDataStore.Clear(regionsToClear).ToList();
+            _clearedFormula = sheet.Cells.CellFormulaStore.Clear(regionsToClear).ToList();
 
             // Store the merges that we will have to re-instate on undo
             // And remove any merges that are contained in the region
             _overridenMergedRegions.AddRange(existingMerges.Select(x => x.Region));
-            sheet.Merges.UnMergeCellsImpl(new BRange(sheet, existingMerges.Select(x => x.Region)));
+            sheet.Cells.Merges.UnMergeCellsImpl(new BRange(sheet, existingMerges.Select(x => x.Region)));
 
             // Store the merge that we are doing and perform the actual merge
             _mergesPerformed.Add(region);
-            sheet.Merges.AddImpl(region);
+            sheet.Cells.Merges.AddImpl(region);
         }
 
         return true;
@@ -59,22 +59,22 @@ public class MergeCellsCommand : IUndoableCommand
 
     private CellValueChange getValueChangeOnClear(int row, int col, Sheet sheet)
     {
-        return new CellValueChange(row, col, sheet.GetValue(row, col));
+        return new CellValueChange(row, col, sheet.Cells.GetValue(row, col));
     }
 
     public bool Undo(Sheet sheet)
     {
         // Undo the merge we performed
         foreach (var merge in _mergesPerformed)
-            sheet.Merges.UnMergeCellsImpl(merge);
+            sheet.Cells.Merges.UnMergeCellsImpl(merge);
         // Restore all the merges we removed
         foreach (var removedMerge in _overridenMergedRegions)
-            sheet.Merges.AddImpl(removedMerge);
+            sheet.Cells.Merges.AddImpl(removedMerge);
 
         sheet.Selection.Set(_range);
         // Restore all the cell values that were lost when merging
-        sheet.CellDataStore.Restore(_clearedData);
-        sheet.CellFormulaStore.Restore(_clearedFormula);
+        sheet.Cells.CellDataStore.Restore(_clearedData);
+        sheet.Cells.CellFormulaStore.Restore(_clearedFormula);
 
         return true;
     }

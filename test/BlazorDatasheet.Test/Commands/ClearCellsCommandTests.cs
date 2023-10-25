@@ -15,8 +15,8 @@ public class ClearCellsCommandTests
     {
         //Create a sheet with only one cell, with a value 1
         _sheet = new Sheet(2, 2);
-        _sheet.SetCellValue(0, 0, "1");
-        _sheet.SetCellValue(0, 1, "2");
+        _sheet.Cells.SetValue(0, 0, "1");
+        _sheet.Cells.SetValue(0, 1, "2");
         _commandManager = new CommandManager(_sheet);
     }
 
@@ -28,11 +28,11 @@ public class ClearCellsCommandTests
         _commandManager.ExecuteCommand(cmd);
         for (int i = 0; i < 3; i++)
         {
-            Assert.Null(_sheet.GetValue(0, 0));
-            Assert.Null(_sheet.GetValue(0, 0));
+            Assert.Null(_sheet.Cells.GetValue(0, 0));
+            Assert.Null(_sheet.Cells.GetValue(0, 0));
             _commandManager.Undo();
-            Assert.AreEqual("1", _sheet.GetValue(0, 0));
-            Assert.AreEqual("2", _sheet.GetValue(0, 1));
+            Assert.AreEqual("1", _sheet.Cells.GetValue(0, 0));
+            Assert.AreEqual("2", _sheet.Cells.GetValue(0, 1));
             _commandManager.Redo();
         }
     }

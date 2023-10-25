@@ -18,7 +18,7 @@ public class EditTests
     public void Begin_Edit_Sets_Edit_Value()
     {
         var sheet = new Sheet(10, 10);
-        sheet.SetCellValue(1, 1, "Test");
+        sheet.Cells.SetValue(1, 1, "Test");
 
         sheet.Editor.BeginEdit(0, 0);
         Assert.True(string.IsNullOrEmpty(sheet.Editor.EditValue));
@@ -57,7 +57,7 @@ public class EditTests
         sheet.Editor.BeginEdit(0, 0);
         sheet.Editor.EditValue = "Test";
         sheet.Editor.AcceptEdit();
-        Assert.AreEqual("Test", sheet.GetValue(0, 0));
+        Assert.AreEqual("Test", sheet.Cells.GetValue(0, 0));
     }
 
     [Test]
@@ -67,6 +67,6 @@ public class EditTests
         sheet.Editor.BeginEdit(0, 0);
         sheet.Editor.AcceptEdit();
         sheet.Commands.Undo();
-        Assert.AreEqual(null, sheet.GetValue(0, 0));
+        Assert.AreEqual(null, sheet.Cells.GetValue(0, 0));
     }
 }

@@ -30,11 +30,6 @@ public class Sheet
     public int NumCols { get; private set; }
 
     /// <summary>
-    /// Cell storage and functions.
-    /// </summary>
-    public CellStore Cells { get; private set; }
-
-    /// <summary>
     /// Managers commands & undo/redo. Default is true.
     /// </summary>
     public CommandManager Commands { get; }
@@ -144,19 +139,11 @@ public class Sheet
     public Editor Editor { get; }
 
     /// <summary>
-    /// Contains cell merge information and handles merges.
-    /// </summary>
-    public MergeManager Merges { get; }
-
-    /// <summary>
-    /// Manages and holds information on cell validators.
-    /// </summary>
-    public ValidationManager Validation { get; }
-
-    /// <summary>
     /// True if the sheet is not firing dirty events until <see cref="EndBatchDirty"/> is called.
     /// </summary>
     private bool _IsBatchingDirty { get; set; }
+
+    public CellStore Cells { get; }
 
     /// <summary>
     /// If the sheet is batching dirty regions, they are stored here.
@@ -168,24 +155,9 @@ public class Sheet
     /// </summary>
     private HashSet<(int row, int col)> _dirtyPositions = new();
 
-    /// <summary>
-    /// The cell DATA
-    /// </summary>
-    internal readonly IMatrixDataStore<object?> CellDataStore = new SparseMatrixStore<object?>();
-
-    /// <summary>
-    /// Cell formula
-    /// </summary>
-    internal readonly IMatrixDataStore<CellFormula?> CellFormulaStore = new SparseMatrixStore<CellFormula?>();
-
-    internal readonly IMatrixDataStore<bool> ValidationStore = new SparseMatrixStore<bool>();
-
-    internal readonly IMatrixDataStore<CellFormat?> CellFormatStore = new SparseMatrixStore<CellFormat?>();
-
     private Sheet()
     {
-        Merges = new MergeManager(this);
-        Validation = new ValidationManager();
+        Cells = new CellStore(this);
         Commands = new CommandManager(this);
         Selection = new Selection(this);
         Editor = new Editor(this);
@@ -195,6 +167,7 @@ public class Sheet
 
     public Sheet(int numRows, int numCols, Cell[,] cells) : this()
     {
+        Cells = new CellStore(this);
         NumCols = numCols;
         NumRows = numRows;
 
@@ -205,14 +178,14 @@ public class Sheet
                 var cell = cells[i, j];
                 cell.Row = i;
                 cell.Col = j;
-                CellDataStore.Set(i, j, cell);
+                Cells.CellDataStore.Set(i, j, cell);
             }
         }
     }
 
     public Sheet(int numRows, int numCols) : this()
     {
-        Validation = new ValidationManager();
+        Cells = new CellStore(this);
         NumCols = numCols;
         NumRows = numRows;
     }
@@ -234,7 +207,7 @@ public class Sheet
 
     internal void InsertColAtImpl(int colIndex, int nCols = 1)
     {
-        CellDataStore.InsertColAt(colIndex, nCols);
+        Cells.CellDataStore.InsertColAt(colIndex, nCols);
         NumCols += nCols;
         ColumnInserted?.Invoke(this, new ColumnInsertedEventArgs(colIndex, nCols));
     }
@@ -258,7 +231,7 @@ public class Sheet
     /// <returns>Whether the column at index colIndex was removed</returns>
     internal bool RemoveColImpl(int colIndex, int nCols = 1)
     {
-        CellDataStore.RemoveColAt(colIndex, nCols);
+        Cells.CellDataStore.RemoveColAt(colIndex, nCols);
         NumCols -= nCols;
         ColumnRemoved?.Invoke(this, new ColumnRemovedEventArgs(colIndex, nCols));
 
@@ -322,7 +295,7 @@ public class Sheet
     /// <returns></returns>
     internal bool InsertRowAtImpl(int rowIndex, int nRows = 1)
     {
-        CellDataStore.InsertRowAt(rowIndex, nRows);
+        Cells.CellDataStore.InsertRowAt(rowIndex, nRows);
         NumRows += nRows;
 
         RowInserted?.Invoke(this, new RowInsertedEventArgs(rowIndex, nRows));
@@ -339,7 +312,7 @@ public class Sheet
     {
         var row = rowIndex;
         var endIndex = rowIndex + nRows;
-        CellDataStore.RemoveRowAt(rowIndex, nRows);
+        Cells.CellDataStore.RemoveRowAt(rowIndex, nRows);
 
         NumRows -= nRows;
         RowRemoved?.Invoke(this, new RowRemovedEventArgs(rowIndex, nRows));
@@ -445,221 +418,16 @@ public class Sheet
 
     #region CELLS
 
-    /// <summary>
-    /// Returns all cells in the specified region
-    /// </summary>
-    /// <param name="region"></param>
-    /// <returns></returns>
-    public IEnumerable<IReadOnlyCell> GetCellsInRegion(IRegion region)
-    {
-        return (new BRange(this, region))
-            .Positions
-            .Select(x => this.GetCell(x.row, x.col));
-    }
-
-    /// <summary>
-    /// Returns all cells that are present in the regions given.
-    /// </summary>
-    /// <param name="regions"></param>
-    /// <returns></returns>
-    public IEnumerable<IReadOnlyCell> GetCellsInRegions(IEnumerable<IRegion> regions)
-    {
-        var cells = new List<IReadOnlyCell>();
-        foreach (var region in regions)
-            cells.AddRange(GetCellsInRegion(region));
-        return cells.ToArray();
-    }
-
-    /// <summary>
-    /// Returns the cell at the specified position.
-    /// </summary>
-    /// <param name="row"></param>
-    /// <param name="col"></param>
-    /// <returns></returns>
-    public IReadOnlyCell GetCell(int row, int col)
-    {
-        return new SheetCell(row, col, this);
-    }
-
-    /// <summary>
-    /// Returns the cell at the specified position
-    /// </summary>
-    /// <param name="position"></param>
-    /// <returns></returns>
-    public IReadOnlyCell GetCell(CellPosition position)
-    {
-        return GetCell(position.Row, position.Col);
-    }
-
-    internal IEnumerable<(int row, int col)> GetNonEmptyCellPositions(IRegion region)
-    {
-        return CellDataStore.GetNonEmptyPositions(region.TopLeft.Row,
-            region.BottomRight.Row,
-            region.TopLeft.Col,
-            region.BottomRight.Col);
-    }
-
     #endregion
 
     #region DATA
-
-    public bool SetCellValue(int row, int col, object value)
-    {
-        var cmd = new SetCellValueCommand(row, col, value);
-        return Commands.ExecuteCommand(cmd);
-    }
-
-    /// <summary>
-    /// Sets cell values to those specified.
-    /// </summary>
-    /// <param name="changes"></param>
-    /// <returns></returns>
-    public bool SetCellValues(List<CellValueChange> changes)
-    {
-        BatchDirty();
-        Commands.BeginCommandGroup();
-        foreach (var change in changes)
-        {
-            Commands.ExecuteCommand(new SetCellValueCommand(change.Row, change.Col, change.NewValue));
-        }
-
-        Commands.EndCommandGroup();
-        EndBatchDirty();
-
-        return true;
-    }
 
     internal void EmitCellsChanged(IEnumerable<(int row, int col)> positions)
     {
         CellsChanged?.Invoke(this, positions);
     }
 
-    /// <summary>
-    /// Sets cell metadata, specified by name, for the cell at position row, col
-    /// </summary>
-    /// <param name="row"></param>
-    /// <param name="col"></param>
-    /// <param name="name"></param>
-    /// <param name="value"></param>
-    /// <returns>Whether setting the cell metadata was successful</returns>
-    public bool SetCellMetaData(int row, int col, string name, object? value)
-    {
-        var cmd = new SetMetaDataCommand(row, col, name, value);
-        return Commands.ExecuteCommand(cmd);
-    }
-
-    internal void SetMetaDataImpl(int row, int col, string name, object? value)
-    {
-        /*var cell = CellDataStore.Get(row, col);
-        if (cell == null)
-        {
-            cell = new Cell();
-            CellDataStore.Set(row, col, cell);
-        }
-
-        var oldMetaData = cell.GetMetaData(name);
-
-        cell.SetCellMetaData(name, value);
-        this.MetaDataChanged?.Invoke(this, new CellMetaDataChangeEventArgs(row, col, name, oldMetaData, value));*/
-    }
-
-    /// <summary>
-    /// Returns the metadata with key "name" for the cell at row, col.
-    /// </summary>
-    /// <param name="row"></param>
-    /// <param name="col"></param>
-    /// <param name="name"></param>
-    /// <returns></returns>
-    public object? GetMetaData(int row, int col, string name)
-    {
-        return GetCell(row, col)?.GetMetaData(name);
-    }
-
-
-    public void SetCell(int row, int col, Cell cell)
-    {
-        cell.Row = row;
-        cell.Col = col;
-        CellDataStore.Set(row, col, cell);
-        this.MarkDirty(row, col);
-    }
-
-    /// <summary>
-    /// Gets the cell's value at row, col
-    /// </summary>
-    /// <param name="row"></param>
-    /// <param name="col"></param>
-    /// <returns></returns>
-    public object? GetValue(int row, int col)
-    {
-        return CellDataStore.Get(row, col);
-    }
-
-    /// <summary>
-    /// Set the formula string for a row and col, and calculate the sheet.
-    /// If the parsed formula is invalid, the formula will not be set.
-    /// </summary>
-    /// <param name="row"></param>
-    /// <param name="col"></param>
-    /// <param name="formulaString"></param>
-    public void SetFormula(int row, int col, string formulaString)
-    {
-        var parsed = FormulaEngine.ParseFormula(formulaString);
-        if (parsed.IsValid())
-            SetFormula(row, col, parsed);
-    }
-
-    /// <summary>
-    /// Whether the cell has a formula set.
-    /// </summary>
-    /// <param name="row"></param>
-    /// <param name="col"></param>
-    /// <returns></returns>
-    public bool HasFormula(int row, int col)
-    {
-        return CellFormulaStore.Get(row, col) != null;
-    }
-
-    public string? GetFormulaString(int row, int col)
-    {
-        return CellFormulaStore.Get(row, col)?.ToFormulaString();
-    }
-
-    /// <summary>
-    /// Sets the formula for a row and col, and calculate the sheet.
-    /// </summary>
-    /// <param name="row"></param>
-    /// <param name="col"></param>
-    /// <param name="parsedFormula"></param>
-    public void SetFormula(int row, int col, CellFormula parsedFormula)
-    {
-        Commands.ExecuteCommand(new SetParsedFormulaCommand(row, col, parsedFormula, true));
-    }
-
-    /// <summary>
-    /// Clears all cell values in the region
-    /// </summary>
-    /// <param name="range">The range in which to clear all cells</param>
-    public void ClearCells(BRange range)
-    {
-        var cmd = new ClearCellsCommand(range);
-        Commands.ExecuteCommand(cmd);
-    }
-
     #endregion
-
-    internal void ValidateRegion(IRegion region)
-    {
-        var cellsAffected = CellDataStore.GetNonEmptyPositions(region).ToList();
-        foreach (var (row, col) in cellsAffected)
-        {
-            var cellData = CellDataStore.Get(row, col);
-            var result = Validation.Validate(cellData, row, col);
-            ValidationStore.Set(row, col, result.IsValid);
-        }
-
-        MarkDirty(cellsAffected);
-    }
 
     /// <summary>
     /// Mark the cells specified by positions dirty.
@@ -750,33 +518,6 @@ public class Sheet
     }
 
     /// <summary>
-    /// Add a <see cref="IDataValidator"> to a region.
-    /// </summary>
-    /// <param name="region"></param>
-    /// <param name="validator"></param>
-    public void AddValidator(IRegion region, IDataValidator validator)
-    {
-        var cmd = new SetValidatorCommand(region, validator);
-        Commands.ExecuteCommand(cmd);
-    }
-
-    /// <summary>
-    /// Adds multiple validators to a region.
-    /// </summary>
-    /// <param name="region"></param>
-    /// <param name="validators"></param>
-    public void AddValidators(IRegion region, IEnumerable<IDataValidator> validators)
-    {
-        Commands.BeginCommandGroup();
-        foreach (var validator in validators)
-        {
-            AddValidator(region, validator);
-        }
-
-        Commands.EndCommandGroup();
-    }
-
-    /// <summary>
     /// Inserts delimited text from the given position
     /// And assigns cell's values based on the delimited text (tabs and newlines)
     /// Returns the region of cells that surrounds all cells that are affected
@@ -801,7 +542,7 @@ public class Sheet
         // It is possible that each line is of different cell lengths, so we return the max for all lines
         var maxEndCol = -1;
 
-        var valChanges = new List<CellValueChange>();
+        var valChanges = new List<(int row, int col, object value)>();
 
         int lineNo = 0;
         for (int row = inputPosition.Row; row <= endRow; row++)
@@ -815,14 +556,14 @@ public class Sheet
             int cellIndex = 0;
             for (int col = inputPosition.Col; col <= endCol; col++)
             {
-                valChanges.Add(new CellValueChange(row, col, lineSplit[cellIndex]));
+                valChanges.Add((row, col, lineSplit[cellIndex]));
                 cellIndex++;
             }
 
             lineNo++;
         }
 
-        this.SetCellValues(valChanges);
+        Cells.SetCellValues(valChanges);
 
         return new Region(inputPosition.Row, endRow, inputPosition.Col, maxEndCol);
     }
@@ -841,7 +582,7 @@ public class Sheet
     /// <returns></returns>
     public CellFormat? GetFormat(int row, int col)
     {
-        var cell = GetCell(row, col);
+        var cell = Cells.GetCell(row, col);
         var rowFormat = RowFormats.Get(row);
         var colFormat = ColFormats.Get(col);
         if (cell.Formatting != null)
@@ -935,9 +676,9 @@ public class Sheet
                 var positions = new BRange(this, sheetRegion).Positions;
                 foreach (var cellPosition in positions)
                 {
-                    var oldFormat = CellFormatStore.Get(cellPosition.row, cellPosition.col) ?? new CellFormat();
+                    var oldFormat = Cells.CellFormatStore.Get(cellPosition.row, cellPosition.col) ?? new CellFormat();
                     oldFormat!.Merge(cellFormat);
-                    CellFormatStore.Set(cellPosition.row, cellPosition.col,
+                    Cells.CellFormatStore.Set(cellPosition.row, cellPosition.col,
                         oldFormat); // covers the case old format was null initially
                     changes.Add(new CellChangedFormat(cellPosition.row, cellPosition.col, oldFormat, cellFormat));
                 }
@@ -964,21 +705,21 @@ public class Sheet
         // Set the specific format of any non-empty cells in the column range (empty cells are covered by the range format).
         // We do this because cell formatting takes precedence in rendering over col & range formats.
         // So if the cell already has a format, it should be merged.
-        var nonEmpty = this.GetNonEmptyCellPositions(region);
+        var nonEmpty = Cells.GetNonEmptyCellPositions(region);
         foreach (var posn in nonEmpty)
         {
-            var oldFormat = CellFormatStore.Get(posn.row, posn.col);
+            var oldFormat = Cells.CellFormatStore.Get(posn.row, posn.col);
             CellFormat newFormat;
             if (oldFormat == null)
             {
                 newFormat = cellFormat.Clone();
-                CellFormatStore.Set(posn.row, posn.col, newFormat);
+                Cells.CellFormatStore.Set(posn.row, posn.col, newFormat);
             }
             else
             {
                 newFormat = oldFormat.Clone();
                 newFormat.Merge(cellFormat);
-                CellFormatStore.Set(posn.row, posn.col, newFormat);
+                Cells.CellFormatStore.Set(posn.row, posn.col, newFormat);
             }
 
             changes.Add(new CellChangedFormat(posn.row, posn.col, oldFormat, newFormat));
@@ -1000,10 +741,10 @@ public class Sheet
                 var positions = new BRange(this, sheetRegion).Positions;
                 foreach (var position in positions)
                 {
-                    var oldFormat = CellFormatStore.Get(position.row, position.col)?.Clone() ?? new CellFormat();
+                    var oldFormat = Cells.CellFormatStore.Get(position.row, position.col)?.Clone() ?? new CellFormat();
                     var newFormat = oldFormat.Clone();
                     newFormat.Merge(cellFormat);
-                    CellFormatStore.Set(position.row, position.col, newFormat);
+                    Cells.CellFormatStore.Set(position.row, position.col, newFormat);
                     changes.Add(new CellChangedFormat(position.row, position.col, oldFormat, newFormat));
                 }
             }
@@ -1021,21 +762,21 @@ public class Sheet
         // Set the specific format of any non-empty cells in the column range (empty cells are covered by the range format).
         // We do this because cell formatting takes precedence in rendering over col & range formats.
         // So if the cell already has a format, it should be merged.
-        var nonEmpty = this.GetNonEmptyCellPositions(region);
+        var nonEmpty = Cells.GetNonEmptyCellPositions(region);
         foreach (var posn in nonEmpty)
         {
-            var oldFormat = CellFormatStore.Get(posn.row, posn.col);
+            var oldFormat = Cells.CellFormatStore.Get(posn.row, posn.col);
             CellFormat newFormat;
             if (oldFormat == null)
             {
                 newFormat = cellFormat.Clone();
-                CellFormatStore.Set(posn.row, posn.col, newFormat);
+                Cells.CellFormatStore.Set(posn.row, posn.col, newFormat);
             }
             else
             {
                 newFormat = oldFormat.Clone();
                 newFormat.Merge(cellFormat);
-                CellFormatStore.Set(posn.row, posn.col, newFormat);
+                Cells.CellFormatStore.Set(posn.row, posn.col, newFormat);
             }
 
             changes.Add(new CellChangedFormat(posn.row, posn.col, oldFormat, newFormat));
@@ -1057,10 +798,10 @@ public class Sheet
                 var posns = new BRange(this, sheetRegion).Positions;
                 foreach (var posn in posns)
                 {
-                    var oldFormat = CellFormatStore.Get(posn.row, posn.col)?.Clone() ?? new CellFormat();
+                    var oldFormat = Cells.CellFormatStore.Get(posn.row, posn.col)?.Clone() ?? new CellFormat();
                     var newFormat = oldFormat.Clone();
                     newFormat.Merge(cellFormat);
-                    CellFormatStore.Set(posn.row, posn.col, newFormat);
+                    Cells.CellFormatStore.Set(posn.row, posn.col, newFormat);
                     changes.Add(new CellChangedFormat(posn.row, posn.col, oldFormat, cellFormat));
                 }
             }
@@ -1081,13 +822,13 @@ public class Sheet
     internal CellChangedFormat SetCellFormat(int row, int col, CellFormat cellFormat)
     {
         CellFormat? oldFormat = null;
-        if (!CellFormatStore.Contains(row, col))
-            CellFormatStore.Set(row, col, cellFormat);
+        if (!Cells.CellFormatStore.Contains(row, col))
+            Cells.CellFormatStore.Set(row, col, cellFormat);
         else
         {
-            var format = CellFormatStore.Get(row, col);
+            var format = Cells.CellFormatStore.Get(row, col);
             oldFormat = format!.Clone();
-            CellFormatStore.Set(row, col, cellFormat);
+            Cells.CellFormatStore.Set(row, col, cellFormat);
         }
 
         return new CellChangedFormat(row, col, oldFormat, cellFormat);
@@ -1117,7 +858,7 @@ public class Sheet
         {
             for (int col = c0; col <= c1; col++)
             {
-                var cell = this.GetCell(row, col);
+                var cell = Cells.GetCell(row, col);
                 var value = cell.GetValue();
                 if (value == null)
                     strBuilder.Append("");

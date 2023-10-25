@@ -44,10 +44,10 @@
         cells[0, 2].Type = "select";
         
         sheet = new Sheet(1, 4, cells);
-        sheet.Validation.Add(new NumberValidator(true), 0, 0);
-        sheet.Validation.Add(new NumberValidator(false), 0, 1);
-        sheet.Validation.Add(new SourceValidator(new List<string>() { "Item 1", "Item 2", "Item 3" }, false), 0, 2);
-        sheet.Validation.Add(new CustomValidator("foo", false), 0, 3);
+        sheet.Cells.Validation.Add(new NumberValidator(true), 0, 0);
+        sheet.Cells.Validation.Add(new NumberValidator(false), 0, 1);
+        sheet.Cells.Validation.Add(new SourceValidator(new List<string>() { "Item 1", "Item 2", "Item 3" }, false), 0, 2);
+        sheet.Cells.Validation.Add(new CustomValidator("foo", false), 0, 3);
         base.OnInitialized();
     }
 

@@ -82,15 +82,15 @@ public class FormattingTests
         _sheet.SetFormat(format2, _sheet.Range(new RowRegion(1)));
 
         // Check every cell in row 0 and 2 have format 1 bg color
-        var r0cells = _sheet.GetCellsInRegion(new RowRegion(0));
+        var r0cells = _sheet.Cells.GetCellsInRegion(new RowRegion(0));
         var formats = r0cells.Select(x => _sheet.GetFormat(x.Row, x.Col));
-        Assert.True(_sheet.GetCellsInRegion(new RowRegion(0)).Select(x => _sheet.GetFormat(x.Row, x.Col))
+        Assert.True(_sheet.Cells.GetCellsInRegion(new RowRegion(0)).Select(x => _sheet.GetFormat(x.Row, x.Col))
                           .All(f => f?.BackgroundColor == format1.BackgroundColor));
-        Assert.True(_sheet.GetCellsInRegion(new RowRegion(2)).Select(x => _sheet.GetFormat(x.Row, x.Col))
+        Assert.True(_sheet.Cells.GetCellsInRegion(new RowRegion(2)).Select(x => _sheet.GetFormat(x.Row, x.Col))
                           .All(f => f?.BackgroundColor == format1.BackgroundColor));
 
         // Check every cell in row 1 have format 2 bg color
-        Assert.True(_sheet.GetCellsInRegion(new RowRegion(1)).Select(x => _sheet.GetFormat(x.Row, x.Col))
+        Assert.True(_sheet.Cells.GetCellsInRegion(new RowRegion(1)).Select(x => _sheet.GetFormat(x.Row, x.Col))
                           .All(f => f?.BackgroundColor == format2.BackgroundColor));
     }
 

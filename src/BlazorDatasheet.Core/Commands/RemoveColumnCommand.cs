@@ -44,8 +44,8 @@ public class RemoveColumnCommand : IUndoableCommand
         RemoveFormats(sheet);
         RemoveColumnHeadingAndStoreWidth(sheet);
 
-        _mergedRemoved = sheet.Merges.Store.RemoveCols(_columnIndex, _columnIndex + _nColsRemoved - 1);
-        _validatorsRemoved = sheet.Validation.Store.RemoveCols(_columnIndex, _columnIndex + _nColsRemoved - 1);
+        _mergedRemoved = sheet.Cells.Merges.Store.RemoveCols(_columnIndex, _columnIndex + _nColsRemoved - 1);
+        _validatorsRemoved = sheet.Cells.Validation.Store.RemoveCols(_columnIndex, _columnIndex + _nColsRemoved - 1);
         return sheet.RemoveColImpl(_columnIndex, _nColsRemoved);
     }
 
@@ -57,13 +57,13 @@ public class RemoveColumnCommand : IUndoableCommand
     private void RemoveFormats(Sheet sheet)
     {
         // Keep track of the values we have removed
-        var nonEmptyCellPositions = sheet.GetNonEmptyCellPositions(new ColumnRegion(_columnIndex));
+        var nonEmptyCellPositions = sheet.Cells.GetNonEmptyCellPositions(new ColumnRegion(_columnIndex));
         _removedCellFormats = new List<CellChangedFormat>();
         
 
         foreach (var position in nonEmptyCellPositions)
         {
-            var cell = sheet.GetCell(position.row, position.col);
+            var cell = sheet.Cells.GetCell(position.row, position.col);
             var value = cell.GetValue();
             var format = cell.Formatting;
             if (format != null)
@@ -110,15 +110,15 @@ public class RemoveColumnCommand : IUndoableCommand
 
     private void UndoValidation(Sheet sheet)
     {
-        sheet.Validation.Store.InsertCols(_columnIndex, _nColsRemoved);
+        sheet.Cells.Validation.Store.InsertCols(_columnIndex, _nColsRemoved);
         foreach (var validator in _validatorsRemoved)
-            sheet.Validation.Store.Add(validator.Region, validator.Data);
+            sheet.Cells.Validation.Store.Add(validator.Region, validator.Data);
     }
 
     public void UndoMerges(Sheet sheet)
     {
-        sheet.Merges.Store.InsertCols(_columnIndex, _nColsRemoved);
+        sheet.Cells.Merges.Store.InsertCols(_columnIndex, _nColsRemoved);
         foreach (var merge in _mergedRemoved)
-            sheet.Merges.AddImpl(merge.Region);
+            sheet.Cells.Merges.AddImpl(merge.Region);
     }
 }

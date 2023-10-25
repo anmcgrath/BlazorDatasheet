@@ -13,8 +13,8 @@ public class RangeTests
         var sheet = new Sheet(5, 5);
         var range = sheet.Range(new Region(0, 2, 0, 2));
         range.Value = "Test";
-        Assert.AreEqual("Test", sheet.GetValue(0, 0));
-        Assert.Null(sheet.GetValue(4, 4));
+        Assert.AreEqual("Test", sheet.Cells.GetValue(0, 0));
+        Assert.Null(sheet.Cells.GetValue(4, 4));
     }
 
     [Test]
@@ -49,7 +49,7 @@ public class RangeTests
         var cell = sheet.Range(0, 0);
         cell.Value = "Test";
         Assert.AreEqual(cell.Value, "Test");
-        Assert.AreEqual(sheet.GetValue(0, 0), "Test");
+        Assert.AreEqual(sheet.Cells.GetValue(0, 0), "Test");
     }
 
     [Test]

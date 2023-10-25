@@ -122,14 +122,14 @@
                     <div id="filler-right" @ref="_fillerRight" style="float:left;min-width: @(Viewport.DistanceRight)px; height:@(RenderedInnerSheetHeight)px;"></div>
 
                     <!-- Merged cells -->
-                    @if (Sheet.Merges.Any() && this.Viewport is not null)
+                    @if (Sheet.Cells.Merges.Any() && this.Viewport is not null)
                     {
-                        var mergesInView = Sheet.Merges.Store.GetRegionsOverlapping(this.Viewport.VisibleRegion);
+                        var mergesInView = Sheet.Cells.Merges.Store.GetRegionsOverlapping(this.Viewport.VisibleRegion);
                         @foreach (var merge in mergesInView)
                         {
                             var row = merge.Region.Start.Row;
                             var col = merge.Region.Start.Col;
-                            var cell = Sheet.GetCell(row, col);
+                            var cell = Sheet.Cells.GetCell(row, col);
 
                             <div id="merge"
                                  class="sheet-cell"

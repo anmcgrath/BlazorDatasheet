@@ -57,7 +57,7 @@ public class NumberScaleConditionalFormat : ConditionalFormatAbstractBase
 
     public override CellFormat? CalculateFormat(int row, int col, Sheet sheet)
     {
-        var cell = sheet.GetCell(row, col);
+        var cell = sheet.Cells.GetCell(row, col);
         var value = cell.GetValue<double?>();
         if (value == null)
             return null;

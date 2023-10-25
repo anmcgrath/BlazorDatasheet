@@ -22,13 +22,13 @@ internal class SetParsedFormulaCommand : IUndoableCommand
 
     public bool Execute(Sheet sheet)
     {
-        _previousFormula = sheet.CellFormulaStore.Get(_row, _col);
+        _previousFormula = sheet.Cells.CellFormulaStore.Get(_row, _col);
 
         if (_previousFormula?.ToFormulaString() == _formula.ToFormulaString())
             return false;
 
-        _previousValue = sheet.GetValue(_row, _col);
-        sheet.CellFormulaStore.Set(_row, _col, _formula);
+        _previousValue = sheet.Cells.GetValue(_row, _col);
+        sheet.Cells.CellFormulaStore.Set(_row, _col, _formula);
         sheet.FormulaEngine.AddToDependencyGraph(_row, _col, _formula);
         
         if (_calculateSheetOnSet)
@@ -42,13 +42,13 @@ internal class SetParsedFormulaCommand : IUndoableCommand
     {
         if (_previousFormula == null)
         {
-            sheet.CellFormulaStore.Clear(_row, _col);
+            sheet.Cells.CellFormulaStore.Clear(_row, _col);
             sheet.FormulaEngine.RemoveFromDependencyGraph(_row, _col);
-            sheet.CellDataStore.Set(_row, _col, _previousValue);
+            sheet.Cells.CellDataStore.Set(_row, _col, _previousValue);
         }
         else
         {
-            sheet.CellFormulaStore.Set(_row, _col, _previousFormula);
+            sheet.Cells.CellFormulaStore.Set(_row, _col, _previousFormula);
             sheet.FormulaEngine.AddToDependencyGraph(_row, _col, _previousFormula);
         }
 
