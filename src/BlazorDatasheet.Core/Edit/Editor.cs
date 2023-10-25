@@ -162,7 +162,7 @@ public class Editor
                                           beforeAcceptEdit.Formula, isFormula ? EditValue : null));
 
             if (isFormula && parsedFormula != null)
-                Sheet.SetFormula(parsedFormula, EditCell.Row, EditCell.Col);
+                Sheet.SetFormula(EditCell.Row, EditCell.Col, parsedFormula);
             else
                 Sheet.SetCellValue(EditCell.Row, EditCell.Col, editValue);
 

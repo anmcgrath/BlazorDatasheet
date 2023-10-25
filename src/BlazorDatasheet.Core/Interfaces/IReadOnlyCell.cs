@@ -3,7 +3,7 @@ using BlazorDatasheet.Formula.Core;
 
 namespace BlazorDatasheet.Core.Interfaces;
 
-public interface IReadOnlyCell : ICloneable
+public interface IReadOnlyCell
 {
     T GetValue<T>();
     object? GetValue(Type t);

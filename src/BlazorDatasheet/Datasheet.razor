@@ -82,8 +82,6 @@
                                         var col = j;
                                         var cell = _visualSheet.GetVisualCell(row, col);
                                         var colWidth = @cell.Width;
-                                        if(DirtyCells.Contains((row,col)))
-                                            Console.WriteLine(DirtyCells.Contains((row,col)));
                                         <div
                                             @onmouseup="e => HandleCellMouseUp(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
                                             @ondblclick="e => HandleCellDoubleClick(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"

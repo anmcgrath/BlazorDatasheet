@@ -21,7 +21,7 @@
 
 @foreach (var cell in cells)
 {
-    <div>@cell.Data IsValid = @cell.IsValid</div>
+    <div>@cell.GetValue() IsValid = @cell.IsValid</div>
 }
 
 @code {

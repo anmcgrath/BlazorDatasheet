@@ -1,5 +1,6 @@
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.Formula.Core;
 
 namespace BlazorDatasheet.Core.Commands;
 
@@ -8,7 +9,8 @@ public class MergeCellsCommand : IUndoableCommand
     private readonly BRange _range;
     private readonly List<IRegion> _overridenMergedRegions = new();
     private readonly List<IRegion> _mergesPerformed = new();
-    private IList<(int row, int col, Cell)> _clearedCells;
+    private IList<(int row, int col, object?)> _clearedData;
+    private IList<(int row, int col, CellFormula?)> _clearedFormula;
 
     /// <summary>
     /// Command that merges the cells in the range give.
@@ -39,7 +41,8 @@ public class MergeCellsCommand : IUndoableCommand
                                .Break(region.TopLeft)
                                .ToList();
 
-            _clearedCells = sheet.CellDataStore.Clear(regionsToClear).ToList()!;
+            _clearedData = sheet.CellDataStore.Clear(regionsToClear).ToList();
+            _clearedFormula = sheet.CellFormulaStore.Clear(regionsToClear).ToList();
 
             // Store the merges that we will have to re-instate on undo
             // And remove any merges that are contained in the region
@@ -70,7 +73,8 @@ public class MergeCellsCommand : IUndoableCommand
 
         sheet.Selection.Set(_range);
         // Restore all the cell values that were lost when merging
-        sheet.SetCells(_clearedCells);
+        sheet.CellDataStore.Restore(_clearedData);
+        sheet.CellFormulaStore.Restore(_clearedFormula);
 
         return true;
     }

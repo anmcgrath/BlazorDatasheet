@@ -174,6 +174,12 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
     {
         return GetNonEmptyPositions(region.Top, region.Bottom, region.Left, region.Right);
     }
+    
+    public void Restore(IEnumerable<(int row, int col, T data)> restoreData)
+    {
+        foreach (var pt in restoreData)
+            Set(pt.row, pt.col, pt.data);
+    }
 
     private class SColumn<T>
     {

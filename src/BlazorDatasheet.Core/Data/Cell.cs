@@ -202,17 +202,6 @@ public class Cell : IReadOnlyCell, IWriteableCell
         }
     }
 
-    public void MergeFormat(CellFormat? format)
-    {
-        if (this.Formatting == null)
-            Formatting = format.Clone();
-        else
-        {
-            Formatting = Formatting.Clone();
-            Formatting.Merge(format);
-        }
-    }
-
     public object Clone()
     {
         return new Cell()

@@ -203,7 +203,7 @@ public partial class Datasheet : IHandleEvent
             _visualSheet = new VisualSheet(_sheetLocal);
             _visualSheet.Invalidated += (sender, args) =>
             {
-                DirtyCells = args.DirtyCells;
+                DirtyCells.UnionWith(args.DirtyCells);
                 this.StateHasChanged();
             };
         }
@@ -452,7 +452,7 @@ public partial class Datasheet : IHandleEvent
             return CancelEdit();
         }
 
-        if (e.Key == "Enter")
+        if (KeyUtil.IsEnter(e.Key))
         {
             if (!Sheet.Editor.IsEditing || this.AcceptEdit())
             {

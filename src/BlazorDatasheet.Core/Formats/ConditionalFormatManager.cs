@@ -116,13 +116,13 @@ public class ConditionalFormatManager
         Apply(format, _sheet.Region);
     }
 
-    private void HandleCellsChanged(object? sender, IEnumerable<ChangeEventArgs> args)
+    private void HandleCellsChanged(object? sender, IEnumerable<(int row, int col)> args)
     {
         // Simply prepare all cells that the conditional format belongs to (if shared)
         var handled = new HashSet<int>();
-        foreach (var changeEvent in args)
+        foreach (var arg in args)
         {
-            var cfs = GetFormatsAppliedToPosition(changeEvent.Row, changeEvent.Col);
+            var cfs = GetFormatsAppliedToPosition(arg.row, arg.col);
             foreach (var format in cfs)
             {
                 if (handled.Contains(format.Order))

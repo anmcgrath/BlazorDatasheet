@@ -26,7 +26,7 @@ public class VisualSheet
         if (e.DirtyPositions != null)
         {
             InvalidateCells(e.DirtyPositions);
-            set = e.DirtyPositions.ToHashSet();
+            set = e.DirtyPositions;
         }
 
         if (e.DirtyRegions != null)

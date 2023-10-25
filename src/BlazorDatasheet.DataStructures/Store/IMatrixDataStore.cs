@@ -102,4 +102,6 @@ public interface IMatrixDataStore<T>
     /// <param name="region"></param>
     /// <returns></returns>
     IEnumerable<(int row, int col)> GetNonEmptyPositions(IRegion region);
+
+    void Restore(IEnumerable<(int row, int col, T data)> restoreData);
 }

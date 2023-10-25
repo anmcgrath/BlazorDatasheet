@@ -22,11 +22,19 @@ internal class SetParsedFormulaCommand : IUndoableCommand
 
     public bool Execute(Sheet sheet)
     {
-        _previousFormula = sheet.FormulaEngine.GetFormula(_row, _col);
+        _previousFormula = sheet.CellFormulaStore.Get(_row, _col);
+
+        if (_previousFormula?.ToFormulaString() == _formula.ToFormulaString())
+            return false;
+
         _previousValue = sheet.GetValue(_row, _col);
-        sheet.FormulaEngine.SetFormula(_row, _col, _formula);
+        sheet.CellFormulaStore.Set(_row, _col, _formula);
+        sheet.FormulaEngine.AddToDependencyGraph(_row, _col, _formula);
+        
         if (_calculateSheetOnSet)
             sheet.FormulaEngine.CalculateSheet();
+
+        sheet.MarkDirty(_row, _col);
         return true;
     }
 
@@ -34,11 +42,18 @@ internal class SetParsedFormulaCommand : IUndoableCommand
     {
         if (_previousFormula == null)
         {
-            sheet.FormulaEngine.ClearFormula(_row, _col);
-            sheet.SetCellValueImpl(_row, _col, _previousValue);
+            sheet.CellFormulaStore.Clear(_row, _col);
+            sheet.FormulaEngine.RemoveFromDependencyGraph(_row, _col);
+            sheet.CellDataStore.Set(_row, _col, _previousValue);
         }
         else
-            sheet.FormulaEngine.SetFormula(_row, _col, _previousFormula);
+        {
+            sheet.CellFormulaStore.Set(_row, _col, _previousFormula);
+            sheet.FormulaEngine.AddToDependencyGraph(_row, _col, _previousFormula);
+        }
+
+        sheet.MarkDirty(_row, _col);
+
         if (_calculateSheetOnSet)
             sheet.FormulaEngine.CalculateSheet();
         return true;
