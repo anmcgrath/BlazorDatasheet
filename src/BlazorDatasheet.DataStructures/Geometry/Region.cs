@@ -396,33 +396,63 @@ public class Region : IRegion
         if (!r1IsEmpty)
         {
             var r1 = new Region(this.TopLeft.Row, region.TopLeft.Row - 1,
-                                this.TopLeft.Col,
-                                this.BottomRight.Col);
+                this.TopLeft.Col,
+                this.BottomRight.Col);
             regions.Add(r1);
         }
 
         if (!r2IsEmpty)
         {
             var r2 = new Region(region.TopLeft.Row, region.BottomRight.Row, this.TopLeft.Col,
-                                region.TopLeft.Col - 1);
+                region.TopLeft.Col - 1);
             regions.Add(r2);
         }
 
         if (!r3IsEmpty)
         {
             var r3 = new Region(region.TopLeft.Row, region.BottomRight.Row, region.BottomRight.Col + 1,
-                                this.BottomRight.Col);
+                this.BottomRight.Col);
             regions.Add(r3);
         }
 
         if (!r4IsEmpty)
         {
             var r4 = new Region(region.BottomRight.Row + 1, this.BottomRight.Row, this.TopLeft.Col,
-                                this.BottomRight.Col);
+                this.BottomRight.Col);
             regions.Add(r4);
         }
 
         return regions;
+    }
+
+    public List<IRegion> Break(IEnumerable<IRegion> regions)
+    {
+        var allBroken = new List<IRegion>() { this };
+        var newBroken = new List<IRegion>();
+        var toRemove = new List<IRegion>();
+
+        foreach (var region in regions)
+        {
+            toRemove.Clear();
+            newBroken.Clear();
+
+            foreach (var broken in allBroken)
+            {
+                if (broken.GetIntersection(region) == null)
+                    continue;
+                else
+                {
+                    toRemove.Add(broken);
+                    newBroken.AddRange(broken.Break(region));
+                }
+            }
+
+            foreach (var remove in toRemove)
+                allBroken.Remove(remove);
+            allBroken.AddRange(newBroken);
+        }
+
+        return allBroken;
     }
 
     [Obsolete]

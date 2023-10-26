@@ -31,7 +31,7 @@
     <button @onclick="() => Sheet.Commands.Undo()">Undo</button>
     <button @onclick="() => Sheet.Commands.Redo()">Redo</button>
     <button @onclick="@(() => Sheet.Selection.Value = "Bob")">Set to Bob</button>
-    <button @onclick="@(() => Sheet.SetFormat(new CellFormat() { BackgroundColor = "red" }, Sheet.Range(new ColumnRegion(Sheet.Selection.ActiveCellPosition.Col))))">Set bg to red</button>
+    <button @onclick="@(() => Sheet.SetFormat(new CellFormat() { BackgroundColor = "red" }, Sheet.Selection))">Set bg to red</button>
     <button @onclick="@(() => Sheet.SetFormat(new CellFormat() { BackgroundColor = "blue" }, Sheet.Selection))">Set bg to blue</button>
     <button @onclick="@(() => Sheet.SetFormat(new CellFormat() { ForegroundColor = "green" }, Sheet.Selection))">Set font colour to green</button>
     <button @onclick="@(() => Sheet.Cells.Merges.Add(Sheet.Selection))">Merge cells</button>
@@ -98,7 +98,7 @@
             "Option 2"
         }, false);
 
-        Sheet = new Sheet(10, 10);
+        Sheet = new Sheet(14, 14);
         Sheet.Commands.PauseHistory();
         Sheet.Cells.SetValue(0, 0, "Hey");
         Sheet.SetColumnWidth(0, 10, 50);
@@ -107,7 +107,10 @@
         Sheet.Cells.Validation.Add(new NumberValidator(false), 5, 0);
         Sheet.SetFormat(new CellFormat() { BackgroundColor = "orange" }, Sheet.Range(5, 0));
         Sheet.Cells.Validation.Add(src, 1, 3);
-        Sheet.Cells.SetCell(1, 1, new Cell(DateTime.Now) { Type = "datetime" });
+
+        Sheet.Cells[1, 11].Type = "datetime";
+        Sheet.Cells[1, 11].Data = DateTime.Now;
+        
         Sheet.Cells.SetCell(1, 2, new Cell(false) { Type = "boolean" });
         Sheet.Cells.SetCell(1, 3, new Cell(src.ValidationSource[0]) { Type = "select" });
         for (int i = 0; i < 10; i++)

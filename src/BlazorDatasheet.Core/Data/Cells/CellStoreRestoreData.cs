@@ -1,8 +1,9 @@
+using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core;
 
-namespace BlazorDatasheet.Core.Data.Restore;
+namespace BlazorDatasheet.Core.Data.Cells;
 
 internal class CellStoreRestoreData
 {
@@ -10,6 +11,8 @@ internal class CellStoreRestoreData
     internal MatrixRestoreData<CellFormula?> FormulaRestoreData { get; set; } = new();
     internal MatrixRestoreData<bool> ValidRestoreData { get; set; } = new();
     public RegionRestoreData<string> TypeRestoreData { get; set; } = new();
+
+    public RegionRestoreData<CellFormat> FormatRestoreData { get; set; } = new();
 
     public IEnumerable<(int row, int col)> GetAffectedPositions()
     {
@@ -21,6 +24,8 @@ internal class CellStoreRestoreData
     public IEnumerable<IRegion> GetAffectedRegions()
     {
         return TypeRestoreData.RegionsAdded.Select(x => x.Region)
-            .Concat(TypeRestoreData.RegionsRemoved.Select(x => x.Region));
+            .Concat(TypeRestoreData.RegionsRemoved.Select(x => x.Region))
+            .Concat(FormatRestoreData.RegionsAdded.Select(x => x.Region))
+            .Concat(FormatRestoreData.RegionsRemoved.Select(x => x.Region));
     }
 }

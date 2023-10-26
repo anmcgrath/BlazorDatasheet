@@ -1,5 +1,5 @@
 using BlazorDatasheet.Core.Data;
-using BlazorDatasheet.Core.Data.Restore;
+using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Events;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -12,11 +12,11 @@ public class RemoveColumnCommand : IUndoableCommand
 {
     private int _columnIndex;
     private readonly int _nCols;
-    private List<CellChangedFormat> _removedCellFormats;
-    private List<OrderedInterval<CellFormat>> _modifiedColumFormats;
+
     private RegionRestoreData<bool> _mergeRestoreData;
     private RegionRestoreData<int> _validatorRestoreData;
-    private CellStoreRestoreData _cellStoreRestore;
+    private CellStoreRestoreData _cellStoreRestoreData;
+    private List<OrderedInterval<CellFormat>> _colFormatRestoreData;
     private int _nColsRemoved;
     private ColumnInfoRestoreData _columnInfoRestoreData;
 
@@ -41,8 +41,10 @@ public class RemoveColumnCommand : IUndoableCommand
         if (_nColsRemoved == 0)
             return false;
 
-        _cellStoreRestore = sheet.Cells.RemoveColAt(_columnIndex, _nColsRemoved);
-        RemoveFormats(sheet);
+        _cellStoreRestoreData = sheet.Cells.RemoveColAt(_columnIndex, _nColsRemoved);
+        _colFormatRestoreData = sheet.ColFormats.Remove(_columnIndex, _columnIndex + _nColsRemoved - 1);
+        sheet.ColFormats.ShiftLeft(_columnIndex, _nColsRemoved);
+
         RemoveColumnHeadingAndStoreWidth(sheet);
 
         _mergeRestoreData = sheet.Cells.Merges.Store.RemoveCols(_columnIndex, _columnIndex + _nColsRemoved - 1);
@@ -55,26 +57,6 @@ public class RemoveColumnCommand : IUndoableCommand
         _columnInfoRestoreData = sheet.ColumnInfo.Cut(_columnIndex, _columnIndex + _nColsRemoved - 1);
     }
 
-    private void RemoveFormats(Sheet sheet)
-    {
-        // Keep track of the values we have removed
-        var nonEmptyCellPositions = sheet.Cells.GetNonEmptyCellPositions(new ColumnRegion(_columnIndex));
-        _removedCellFormats = new List<CellChangedFormat>();
-
-
-        foreach (var position in nonEmptyCellPositions)
-        {
-            var cell = sheet.Cells.GetCell(position.row, position.col);
-            var value = cell.GetValue();
-            var format = cell.Formatting;
-            if (format != null)
-                _removedCellFormats.Add(new CellChangedFormat(position.row, position.col, format, null));
-        }
-
-        _modifiedColumFormats = sheet.ColFormats.Remove(_columnIndex, _columnIndex + _nColsRemoved - 1);
-        sheet.ColFormats.ShiftLeft(_columnIndex, _nColsRemoved);
-    }
-
     public bool Undo(Sheet sheet)
     {
         // perform undos for merges, validation etc.
@@ -85,18 +67,13 @@ public class RemoveColumnCommand : IUndoableCommand
         sheet.InsertColAtImpl(_columnIndex, _nColsRemoved);
 
         sheet.Cells.InsertColAt(_columnIndex, _nColsRemoved);
-        sheet.Cells.Restore(_cellStoreRestore);
+        sheet.Cells.Restore(_cellStoreRestoreData);
 
         sheet.ColumnInfo.Insert(_columnIndex, _nColsRemoved);
         sheet.ColumnInfo.RestoreFromData(_columnInfoRestoreData);
 
         sheet.ColFormats.ShiftRight(_columnIndex, _nColsRemoved);
-        sheet.ColFormats.AddRange(_modifiedColumFormats);
-
-        foreach (var changedFormat in _removedCellFormats)
-        {
-            sheet.SetCellFormat(changedFormat.Row, changedFormat.Col, changedFormat.OldFormat);
-        }
+        sheet.ColFormats.AddRange(_colFormatRestoreData);
 
         return true;
     }

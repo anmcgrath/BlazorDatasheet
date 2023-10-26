@@ -78,13 +78,13 @@ public class RemoveRowColCommandTests
         var sheet = new Sheet(4, 4);
         sheet.SetFormat(new CellFormat() { BackgroundColor = "red" }, sheet.Range(new RowRegion(1, 2)));
         sheet.RemoveRow(1);
-        Assert.Null(sheet.GetFormat(0, 0));
+        Assert.AreEqual(new CellFormat(), sheet.GetFormat(0, 0));
         Assert.AreEqual("red", sheet.GetFormat(1, 0)?.BackgroundColor);
-        Assert.Null(sheet.GetFormat(2, 0));
+        Assert.AreEqual(new CellFormat(), sheet.GetFormat(2, 0));
         sheet.Commands.Undo();
         Assert.AreEqual("red", sheet.GetFormat(1, 0)?.BackgroundColor);
         Assert.AreEqual("red", sheet.GetFormat(2, 0)?.BackgroundColor);
-        Assert.Null(sheet.GetFormat(3, 0));
+        Assert.AreEqual(new CellFormat(), sheet.GetFormat(3, 0));
     }
 
     [Test]
@@ -113,13 +113,13 @@ public class RemoveRowColCommandTests
         var sheet = new Sheet(4, 4);
         sheet.SetFormat(new CellFormat() { BackgroundColor = "red" }, sheet.Range(new ColumnRegion(1, 2)));
         sheet.RemoveCol(1);
-        Assert.Null(sheet.GetFormat(0, 0));
+        Assert.AreEqual(new CellFormat(), sheet.GetFormat(0, 0));
         Assert.AreEqual("red", sheet.GetFormat(0, 1)?.BackgroundColor);
-        Assert.Null(sheet.GetFormat(0, 2));
+        Assert.AreEqual(new CellFormat(), sheet.GetFormat(0, 2));
         sheet.Commands.Undo();
         Assert.AreEqual("red", sheet.GetFormat(0, 1)?.BackgroundColor);
         Assert.AreEqual("red", sheet.GetFormat(0, 2)?.BackgroundColor);
-        Assert.Null(sheet.GetFormat(3, 0));
+        Assert.AreEqual(new CellFormat(), sheet.GetFormat(3, 0));
     }
 
     [Test]

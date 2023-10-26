@@ -32,6 +32,39 @@ public class FormattingTests
     }
 
     [Test]
+    public void Set_Col_Format_On_Cells_Then_Undo_Correct()
+    {
+        var format = new CellFormat() { BackgroundColor = "red" };
+        _sheet.SetFormat(format, _sheet.Range(new ColumnRegion(2, 4)));
+        _sheet.Commands.Undo();
+        _sheet.GetFormat(2, 2)?.BackgroundColor?.Should().BeNull();
+    }
+
+    [Test]
+    public void Set_Row_Format_On_Cells_Then_Undo_Correct()
+    {
+        var format = new CellFormat() { BackgroundColor = "red" };
+        _sheet.SetFormat(format, _sheet.Range(new RowRegion(2, 4)));
+        _sheet.Commands.Undo();
+        _sheet.GetFormat(2, 2)?.BackgroundColor?.Should().BeNull();
+    }
+
+    [Test]
+    public void Apply_Col_Format_On_Intersecting_Cell_Format_Sets_Correctly()
+    {
+        var cellFormat = new CellFormat() { BackgroundColor = "cell-format-bg" };
+        var colFormat = new CellFormat() { BackgroundColor = "col-format-bg" };
+        var cellRange = _sheet.Range(new Region(2, 4, 2, 4));
+        var colRange = _sheet.Range(new ColumnRegion(2));
+        
+        _sheet.SetFormat(cellFormat, cellRange);
+        _sheet.SetFormat(colFormat, colRange);
+
+        _sheet.GetFormat(2, 3)?.BackgroundColor.Should().Be(cellFormat.BackgroundColor);
+    }
+
+
+    [Test]
     public void Apply_Col_Format_Sets_Format_Correctly()
     {
         var format = new CellFormat() { BackgroundColor = "red" };
@@ -41,6 +74,18 @@ public class FormattingTests
         Assert.AreEqual(format.BackgroundColor, _sheet.GetFormat(100, 0)?.BackgroundColor);
         // Ensure that the bg color wasn't set outside of the column region
         Assert.Null(_sheet.GetFormat(1, 01)?.BackgroundColor);
+    }
+
+    [Test]
+    public void Apply_Col_Format_Over_Cell_Format_Then_Undo_Sets_Correctly()
+    {
+        var cellFormat = new CellFormat() { BackgroundColor = "blue" };
+        var colFormat = new CellFormat() { BackgroundColor = "red" };
+        _sheet.SetFormat(cellFormat, _sheet.Range(2, 4, 2, 2));
+        _sheet.SetFormat(colFormat, _sheet.Range(new ColumnRegion(2)));
+        _sheet.GetFormat(2, 2)?.BackgroundColor.Should().Be("red");
+        _sheet.Commands.Undo();
+        _sheet.GetFormat(2, 2)?.BackgroundColor.Should().Be("blue");
     }
 
     [Test]
@@ -85,13 +130,13 @@ public class FormattingTests
         var r0cells = _sheet.Cells.GetCellsInRegion(new RowRegion(0));
         var formats = r0cells.Select(x => _sheet.GetFormat(x.Row, x.Col));
         Assert.True(_sheet.Cells.GetCellsInRegion(new RowRegion(0)).Select(x => _sheet.GetFormat(x.Row, x.Col))
-                          .All(f => f?.BackgroundColor == format1.BackgroundColor));
+            .All(f => f?.BackgroundColor == format1.BackgroundColor));
         Assert.True(_sheet.Cells.GetCellsInRegion(new RowRegion(2)).Select(x => _sheet.GetFormat(x.Row, x.Col))
-                          .All(f => f?.BackgroundColor == format1.BackgroundColor));
+            .All(f => f?.BackgroundColor == format1.BackgroundColor));
 
         // Check every cell in row 1 have format 2 bg color
         Assert.True(_sheet.Cells.GetCellsInRegion(new RowRegion(1)).Select(x => _sheet.GetFormat(x.Row, x.Col))
-                          .All(f => f?.BackgroundColor == format2.BackgroundColor));
+            .All(f => f?.BackgroundColor == format2.BackgroundColor));
     }
 
     [Test]
@@ -105,19 +150,17 @@ public class FormattingTests
         _sheet.InsertRowAt(0);
         _sheet.GetFormat(0, 2)?.BackgroundColor?.Should().BeNullOrEmpty();
         _sheet.GetFormat(0, 3)?.BackgroundColor.Should().Be("red");
-        
+
         _sheet.GetFormat(2, 0)?.BackgroundColor?.Should().BeNullOrEmpty();
         _sheet.GetFormat(3, 0)?.BackgroundColor.Should().Be("blue");
 
         _sheet.Commands.Undo();
         _sheet.Commands.Undo();
-        
+
         _sheet.GetFormat(0, 2)?.BackgroundColor.Should().Be("red");
         _sheet.GetFormat(0, 3)?.BackgroundColor?.Should().BeNullOrEmpty();
 
         _sheet.GetFormat(2, 0)?.BackgroundColor.Should().Be("blue");
         _sheet.GetFormat(3, 0)?.BackgroundColor?.Should().BeNullOrEmpty();
-
-        
     }
 }

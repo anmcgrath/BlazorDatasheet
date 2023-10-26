@@ -103,7 +103,7 @@ public class RegionDataStore<T> where T : IEquatable<T>
     /// <param name="nCols"></param>
     public void InsertCols(int colIndex, int nCols) => InsertRowsOrColumnAndShift(colIndex, nCols, Axis.Col);
 
-    private void InsertRowsOrColumnAndShift(int index, int n, Axis axis)
+    private void InsertRowsOrColumnAndShift(int index, int nRowsOrCol, Axis axis)
     {
         // As an example for inserting rows, there are three things that can happen
         // 1. Any regions that intersect the index should be expanded by nRows
@@ -122,7 +122,7 @@ public class RegionDataStore<T> where T : IEquatable<T>
             if (!_expandWhenInsertAfter && index > i1)
                 continue;
             var clonedRegion = r.Region.Clone();
-            clonedRegion.Expand(axis == Axis.Row ? Edge.Bottom : Edge.Right, n);
+            clonedRegion.Expand(axis == Axis.Row ? Edge.Bottom : Edge.Right, nRowsOrCol);
             dataRegionsToAdd.Add(new DataRegion<T>(r.Data, clonedRegion));
             _tree.Delete(r);
         }
@@ -132,8 +132,8 @@ public class RegionDataStore<T> where T : IEquatable<T>
         foreach (var r in below)
         {
             var clonedRegion = r.Region.Clone();
-            var dRow = axis == Axis.Row ? n : 0;
-            var dCol = axis == Axis.Col ? n : 0;
+            var dRow = axis == Axis.Row ? nRowsOrCol : 0;
+            var dCol = axis == Axis.Col ? nRowsOrCol : 0;
             clonedRegion.Shift(dRow, dCol);
             dataRegionsToAdd.Add(new DataRegion<T>(r.Data, clonedRegion));
             _tree.Delete(r);

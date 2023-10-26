@@ -1,8 +1,9 @@
 using BlazorDatasheet.DataStructures.Intervals;
+using BlazorDatasheet.Formula.Core;
 
 namespace BlazorDatasheet.Core.Formats;
 
-public class CellFormat : IMergeable<CellFormat>
+public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>
 {
     /// <summary>
     /// CSS font-weight
@@ -89,5 +90,17 @@ public class CellFormat : IMergeable<CellFormat>
             this.IconColor = format.IconColor;
         if (format.IsReadOnly.HasValue)
             this.IsReadOnly = format.IsReadOnly;
+    }
+
+    public bool Equals(CellFormat? other)
+    {
+        return this.FontWeight == other?.FontWeight &&
+               this.BackgroundColor == other?.BackgroundColor &&
+               this.IconColor == other?.IconColor &&
+               this.IsReadOnly == other?.IsReadOnly &&
+               this.ForegroundColor == other?.ForegroundColor &&
+               this.StringFormat == other?.StringFormat &&
+               this.TextAlign == other?.TextAlign &&
+               this.Icon == other?.Icon;
     }
 }

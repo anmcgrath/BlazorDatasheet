@@ -127,6 +127,7 @@ public interface IRegion
 
     /// <summary>
     /// Break into a number of regions that do not include the given region.
+    /// If there are no intersections, this region is returned.
     /// </summary>
     /// <param name="region">The region to break around</param>
     /// <returns></returns>
@@ -134,10 +135,19 @@ public interface IRegion
 
     /// <summary>
     /// Break into a number of regions that do not include the given position.
+    /// If there are no intersections, this region is returned.
     /// </summary>
     /// <param name="position">The position to break around</param>
     /// <returns></returns>
     public List<IRegion> Break(CellPosition position);
+
+    /// <summary>
+    /// Break into a number of regions that do not include the given region.
+    /// If there are no intersections, this region is returned.
+    /// </summary>
+    /// <param name="regions"></param>
+    /// <returns></returns>
+    List<IRegion> Break(IEnumerable<IRegion> regions);
 
     /// <summary>
     /// Returns the region (which will be one cell wide/high) that runs along the specified edge of this region

@@ -82,7 +82,7 @@ public class NonOverlappingIntervals<T> where T : IMergeable<T>
     /// Adds the interval and merges any overlapping data into it.
     /// </summary>
     /// <param name="interval"></param>
-    /// <returns>Intervals that were either modified while adding</returns>
+    /// <returns>Intervals that were either modified or removed while adding</returns>
     public List<OrderedInterval<T>> Add(OrderedInterval<T> interval)
     {
         Start = Math.Min(interval.Start, Start);

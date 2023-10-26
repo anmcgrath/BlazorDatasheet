@@ -21,8 +21,9 @@ public class VisualCell
     public VisualCell(int row, int col, Sheet sheet)
     {
         var cell = sheet.Cells.GetCell(row, col);
-        var format = sheet.GetFormat(cell) ?? new CellFormat();
+        var format = cell.Formatting.Clone();
         Value = cell.GetValue();
+        
         var cf = sheet.ConditionalFormatting.GetFormatResult(row, col);
         if (cf != null)
             format.Merge(cf);

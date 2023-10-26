@@ -11,7 +11,7 @@ public class DataRegion<T> : ISpatialData
     public IRegion Region { get; }
     private Envelope _envelope;
 
-    internal DataRegion(T data, IRegion region)
+    public DataRegion(T data, IRegion region)
     {
         Data = data;
         Region = region;

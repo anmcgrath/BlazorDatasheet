@@ -99,7 +99,7 @@ public class ConditionalFormatManager
         {
             var env = region.ToEnvelope();
             var spatialData = _cfTree.Search(env)
-                                     .FirstOrDefault(x => x.ConditionalFormat == cf && x.Envelope.IsSameAs(env));
+                .FirstOrDefault(x => x.ConditionalFormat == cf && x.Envelope.IsSameAs(env));
             if (spatialData != null)
                 _cfTree.Delete(spatialData);
         }
@@ -148,7 +148,7 @@ public class ConditionalFormatManager
     {
         var region = new Region(row, col);
         return _cfTree.Search(region.ToEnvelope())
-                      .Select(x => x.ConditionalFormat);
+            .Select(x => x.ConditionalFormat);
     }
 
     /// <summary>

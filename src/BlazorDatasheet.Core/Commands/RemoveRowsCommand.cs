@@ -1,5 +1,5 @@
 using BlazorDatasheet.Core.Data;
-using BlazorDatasheet.Core.Data.Restore;
+using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Events;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -14,7 +14,7 @@ public class RemoveRowsCommand : IUndoableCommand
     private readonly int _nRows;
 
     private List<CellChangedFormat> _removedCellFormats;
-    private List<OrderedInterval<CellFormat>> _modifiedRowFormats;
+    private List<OrderedInterval<CellFormat>> _rowFormatRestoreData;
     private RegionRestoreData<bool> _mergeRestoreData;
     private RegionRestoreData<int> _validatorRestoreData;
     private CellStoreRestoreData _cellStoreRestoreData;
@@ -42,28 +42,12 @@ public class RemoveRowsCommand : IUndoableCommand
         _nRowsRemoved = Math.Min(sheet.NumRows - _rowIndex + 1, _nRows);
 
         _cellStoreRestoreData = sheet.Cells.RemoveRowAt(_rowIndex, _nRowsRemoved);
-        RemoveFormats(sheet);
+        _rowFormatRestoreData = sheet.RowFormats.Remove(_rowIndex, _rowIndex + _nRowsRemoved - 1);
+        sheet.RowFormats.ShiftLeft(_rowIndex, _nRowsRemoved);
+        
         _mergeRestoreData = sheet.Cells.Merges.Store.RemoveRows(_rowIndex, _rowIndex + _nRowsRemoved - 1);
         _validatorRestoreData = sheet.Cells.Validation.Store.RemoveRows(_rowIndex, _rowIndex + _nRowsRemoved - 1);
         return sheet.RemoveRowAtImpl(_rowIndex, _nRowsRemoved);
-    }
-
-    private void RemoveFormats(Sheet sheet)
-    {
-        var nonEmptyCellPositions =
-            sheet.Cells.GetNonEmptyCellPositions(new RowRegion(_rowIndex, _rowIndex + _nRowsRemoved - 1));
-        _removedCellFormats = new List<CellChangedFormat>();
-
-        foreach (var position in nonEmptyCellPositions)
-        {
-            var cell = sheet.Cells.GetCell(position.row, position.col);
-            var format = cell.Formatting;
-            if (format != null)
-                _removedCellFormats.Add(new CellChangedFormat(position.row, position.col, format, null));
-        }
-
-        _modifiedRowFormats = sheet.RowFormats.Remove(_rowIndex, _rowIndex + _nRowsRemoved - 1);
-        sheet.RowFormats.ShiftLeft(_rowIndex, _nRowsRemoved);
     }
 
     public bool Undo(Sheet sheet)
@@ -79,12 +63,7 @@ public class RemoveRowsCommand : IUndoableCommand
         sheet.InsertRowAtImpl(_rowIndex);
 
         sheet.RowFormats.ShiftRight(_rowIndex, _nRowsRemoved);
-        sheet.RowFormats.AddRange(_modifiedRowFormats);
-
-        foreach (var changedFormat in _removedCellFormats)
-        {
-            sheet.SetCellFormat(changedFormat.Row, changedFormat.Col, changedFormat.OldFormat);
-        }
+        sheet.RowFormats.AddRange(_rowFormatRestoreData);
 
         return true;
     }

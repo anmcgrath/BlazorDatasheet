@@ -72,7 +72,11 @@ public class SheetCell : IReadOnlyCell
         }
     }
 
-    public CellFormat? Formatting { get; }
+    public CellFormat? Formatting
+    {
+        get => _sheet.GetFormat(Row, Col);
+        set => _sheet.Cells.MergeFormatImpl(new Region(Row, Col), value);
+    }
 
     public string Type
     {
