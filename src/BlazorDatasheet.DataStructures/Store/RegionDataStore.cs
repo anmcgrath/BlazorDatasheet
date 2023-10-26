@@ -75,7 +75,7 @@ public class RegionDataStore<T> where T : IEquatable<T>
     public IEnumerable<DataRegion<T>> GetContainedRegions(IRegion region)
     {
         return _tree.Search(region.ToEnvelope())
-                    .Where(x => region.Contains(x.Region));
+            .Where(x => region.Contains(x.Region));
     }
 
     /// <summary>
@@ -84,9 +84,9 @@ public class RegionDataStore<T> where T : IEquatable<T>
     /// </summary>
     /// <param name="region"></param>
     /// <param name="data"></param>
-    public void Add(IRegion region, T data)
+    public RegionRestoreData<T> Add(IRegion region, T data)
     {
-        Add(new DataRegion<T>(data, region));
+        return Add(new DataRegion<T>(data, region));
     }
 
     /// <summary>
@@ -152,7 +152,7 @@ public class RegionDataStore<T> where T : IEquatable<T>
     /// <param name="rowStart"></param>
     /// <param name="rowEnd"></param>
     /// <returns>Any data that is removed during this operation</returns>
-    public List<DataRegion<T>> RemoveRows(int rowStart, int rowEnd) =>
+    public RegionRestoreData<T> RemoveRows(int rowStart, int rowEnd) =>
         RemoveRowsOrColumsAndShift(rowStart, rowEnd, Axis.Row);
 
     /// <summary>
@@ -162,7 +162,7 @@ public class RegionDataStore<T> where T : IEquatable<T>
     /// <param name="colStart"></param>
     /// <param name="colEnd"></param>
     /// <returns>Any data that is removed during this operation</returns>
-    public List<DataRegion<T>> RemoveCols(int colStart, int colEnd) =>
+    public RegionRestoreData<T> RemoveCols(int colStart, int colEnd) =>
         RemoveRowsOrColumsAndShift(colStart, colEnd, Axis.Col);
 
     /// <summary>
@@ -172,7 +172,7 @@ public class RegionDataStore<T> where T : IEquatable<T>
     /// <param name="end"></param>
     /// <param name="axis"></param>
     /// <returns></returns>
-    private List<DataRegion<T>> RemoveRowsOrColumsAndShift(int start, int end, Axis axis)
+    private RegionRestoreData<T> RemoveRowsOrColumsAndShift(int start, int end, Axis axis)
     {
         IRegion region = axis == Axis.Col ? new ColumnRegion(start, end) : new RowRegion(start, end);
         var removed = new List<DataRegion<T>>();
@@ -230,7 +230,10 @@ public class RegionDataStore<T> where T : IEquatable<T>
 
         _tree.BulkLoad(newDataRegions);
 
-        return removed;
+        return new RegionRestoreData<T>()
+        {
+            RegionsRemoved = removed
+        };
     }
 
     /// <summary>
@@ -245,10 +248,10 @@ public class RegionDataStore<T> where T : IEquatable<T>
         {
             case Axis.Row:
                 return this.GetRegionsOverlapping(new RowRegion(rowOrCol + 1, int.MaxValue))
-                           .Where(x => x.Region.Top > rowOrCol);
+                    .Where(x => x.Region.Top > rowOrCol);
             case Axis.Col:
                 return this.GetRegionsOverlapping(new ColumnRegion(rowOrCol + 1, int.MaxValue))
-                           .Where(x => x.Region.Left > rowOrCol);
+                    .Where(x => x.Region.Left > rowOrCol);
         }
 
         return Enumerable.Empty<DataRegion<T>>();
@@ -266,10 +269,10 @@ public class RegionDataStore<T> where T : IEquatable<T>
         {
             case Axis.Row:
                 return this.GetRegionsOverlapping(new RowRegion(0, rowOrCol - 1))
-                           .Where(x => x.Region.Bottom < rowOrCol);
+                    .Where(x => x.Region.Bottom < rowOrCol);
             case Axis.Col:
                 return this.GetRegionsOverlapping(new ColumnRegion(0, rowOrCol - 1))
-                           .Where(x => x.Region.Right < rowOrCol);
+                    .Where(x => x.Region.Right < rowOrCol);
         }
 
         return Enumerable.Empty<DataRegion<T>>();
@@ -296,9 +299,9 @@ public class RegionDataStore<T> where T : IEquatable<T>
         foreach (var overlap in overlapping)
         {
             dataRegionsToRemove.Add(overlap);
-            if(region.Contains(overlap.Region))
+            if (region.Contains(overlap.Region))
                 continue;
-            
+
             var breakRegions = overlap.Region.Break(region);
             dataRegionsToAdd.AddRange(breakRegions.Select(x => new DataRegion<T>(overlap.Data, x)));
         }
@@ -309,7 +312,7 @@ public class RegionDataStore<T> where T : IEquatable<T>
         _tree.BulkLoad(dataRegionsToAdd);
 
         return (dataRegionsToRemove.Select(x => x.Region).ToList(),
-                dataRegionsToAdd.Select(x => x.Region).ToList());
+            dataRegionsToAdd.Select(x => x.Region).ToList());
     }
 
     /// <summary>
@@ -317,9 +320,10 @@ public class RegionDataStore<T> where T : IEquatable<T>
     /// Overlapping regions are not removed.
     /// </summary>
     /// <param name="dataRegion"></param>
-    internal virtual void Add(DataRegion<T> dataRegion)
+    internal virtual RegionRestoreData<T> Add(DataRegion<T> dataRegion)
     {
         _tree.Insert(dataRegion);
+        return new RegionRestoreData<T>();
     }
 
     public void Delete(DataRegion<T> dataRegion)
@@ -332,5 +336,15 @@ public class RegionDataStore<T> where T : IEquatable<T>
     public void AddRange(List<DataRegion<T>> dataRegions)
     {
         _tree.BulkLoad(dataRegions);
+    }
+
+    public virtual void Restore(RegionRestoreData<T> restoreData)
+    {
+        foreach (var added in restoreData.RegionsAdded)
+        {
+            _tree.Delete(added);
+        }
+
+        _tree.BulkLoad(restoreData.RegionsRemoved);
     }
 }

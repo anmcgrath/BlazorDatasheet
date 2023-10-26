@@ -1,4 +1,5 @@
 ﻿using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Data.Restore;
 using BlazorDatasheet.Formula.Core;
 
 namespace BlazorDatasheet.Core.Commands;
@@ -9,53 +10,24 @@ internal class SetParsedFormulaCommand : IUndoableCommand
     private readonly int _col;
     private readonly CellFormula _formula;
     private readonly bool _calculateSheetOnSet;
-    private CellFormula? _previousFormula;
-    private object? _previousValue;
+    private CellStoreRestoreData _restoreData;
 
-    public SetParsedFormulaCommand(int row, int col, CellFormula formula, bool calculateSheetOnSet = false)
+    public SetParsedFormulaCommand(int row, int col, CellFormula formula)
     {
         _row = row;
         _col = col;
         _formula = formula;
-        _calculateSheetOnSet = calculateSheetOnSet;
     }
 
     public bool Execute(Sheet sheet)
     {
-        _previousFormula = sheet.Cells.CellFormulaStore.Get(_row, _col);
-
-        if (_previousFormula?.ToFormulaString() == _formula.ToFormulaString())
-            return false;
-
-        _previousValue = sheet.Cells.GetValue(_row, _col);
-        sheet.Cells.CellFormulaStore.Set(_row, _col, _formula);
-        sheet.FormulaEngine.AddToDependencyGraph(_row, _col, _formula);
-        
-        if (_calculateSheetOnSet)
-            sheet.FormulaEngine.CalculateSheet();
-
-        sheet.MarkDirty(_row, _col);
+        _restoreData = sheet.Cells.SetFormulaImpl(_row, _col, _formula);
         return true;
     }
 
     public bool Undo(Sheet sheet)
     {
-        if (_previousFormula == null)
-        {
-            sheet.Cells.CellFormulaStore.Clear(_row, _col);
-            sheet.FormulaEngine.RemoveFromDependencyGraph(_row, _col);
-            sheet.Cells.CellDataStore.Set(_row, _col, _previousValue);
-        }
-        else
-        {
-            sheet.Cells.CellFormulaStore.Set(_row, _col, _previousFormula);
-            sheet.FormulaEngine.AddToDependencyGraph(_row, _col, _previousFormula);
-        }
-
-        sheet.MarkDirty(_row, _col);
-
-        if (_calculateSheetOnSet)
-            sheet.FormulaEngine.CalculateSheet();
+        sheet.Cells.Restore(_restoreData);
         return true;
     }
 }

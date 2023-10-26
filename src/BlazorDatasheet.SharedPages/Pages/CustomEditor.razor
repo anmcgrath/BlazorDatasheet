@@ -16,15 +16,9 @@
     {
         CustomEditors.Add("number", CellTypeDefinition.Create<NumericEditor, TextRenderer>());
 
-        sheet = new Sheet(1, 1, new Cell[1, 1]
-        {
-            {
-                new Cell(10)
-                {
-                    Type = "number"
-                }
-            }
-        });
+
+        sheet = new Sheet(1, 1);
+        sheet.Cells[1, 1].Type = "number";
 
         base.OnInitialized();
     }

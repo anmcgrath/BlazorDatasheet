@@ -43,7 +43,7 @@
             values.Add((posn.Row, posn.Col, (int?)rand.Next(100)));
         }
 
-        sheet.Cells.SetCellValues(values);
+        sheet.Cells.SetValues(values);
 
         sheet.ConditionalFormatting.Apply(numberScaleConditionalFormat, new Region(0, 99, 1, 4));
         sheet.ConditionalFormatting.Apply(checkConditionalFormat, new Region(0, 99, 0, 0));

@@ -153,7 +153,7 @@ public class ObjectEditorBuilder<T>
             }
         }
 
-        var sheet = new Sheet(nRows, nCols, cells);
+        var sheet = new Sheet(nRows, nCols);
 
         for (int i = 0; i < _propertyDefinitions.Count; i++)
         {

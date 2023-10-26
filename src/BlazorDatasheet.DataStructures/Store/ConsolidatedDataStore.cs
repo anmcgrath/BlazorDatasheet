@@ -20,18 +20,14 @@ public class ConsolidatedDataStore<T> : RegionDataStore<T> where T : IEquatable<
         _dataMaps = new Dictionary<T, List<IRegion>>();
     }
 
-    internal override void Add(DataRegion<T> dataRegion)
+    internal override RegionRestoreData<T> Add(DataRegion<T> dataRegion)
     {
         var (regionsToRemove, regionsToAdd) = Consolidate(dataRegion);
         foreach (var removal in regionsToRemove)
             _tree.Delete(removal);
         _tree.BulkLoad(regionsToAdd);
 
-        if (!_dataMaps.ContainsKey(dataRegion.Data))
-        {
-            _dataMaps.Add(dataRegion.Data, regionsToAdd.Select(x => x.Region).ToList());
-            return;
-        }
+        _dataMaps.TryAdd(dataRegion.Data, regionsToAdd.Select(x => x.Region).ToList());
 
         foreach (var removal in regionsToRemove)
         {
@@ -39,6 +35,12 @@ public class ConsolidatedDataStore<T> : RegionDataStore<T> where T : IEquatable<
             // the region should refer to the same object as the data map stores.
             _dataMaps[dataRegion.Data].Remove(removal.Region);
         }
+
+        return new RegionRestoreData<T>()
+        {
+            RegionsAdded = regionsToAdd.ToList(),
+            RegionsRemoved = regionsToRemove.ToList()
+        };
     }
 
     public override (List<IRegion> regionsRemoved, List<IRegion> regionsAdded) Cut(IRegion region, T data)
@@ -71,7 +73,7 @@ public class ConsolidatedDataStore<T> : RegionDataStore<T> where T : IEquatable<
     /// Returns the list of regions that should be removed/added when so that an added data region
     /// results in non-overlapping regions.
     /// </summary>
-    /// <param name="region"></param>
+    /// <param name="dataRegion"></param>
     /// <returns></returns>
     private (List<DataRegion<T>> regionsToRemove, List<DataRegion<T>> regionsToAdd) Consolidate(
         DataRegion<T> dataRegion)
@@ -81,8 +83,8 @@ public class ConsolidatedDataStore<T> : RegionDataStore<T> where T : IEquatable<
         // There is most definitely a more efficient way of doing this, because we will end up with more regions
         // than we need to.
         var overlappingData = GetRegionsOverlapping(dataRegion.Region)
-                              .Where(x => x.Data.Equals(dataRegion.Data))
-                              .ToList();
+            .Where(x => x.Data.Equals(dataRegion.Data))
+            .ToList();
 
         var regionsToRemove = new List<DataRegion<T>>();
         var regionsToAdd = new List<DataRegion<T>>();
@@ -108,5 +110,19 @@ public class ConsolidatedDataStore<T> : RegionDataStore<T> where T : IEquatable<
         }
 
         return (regionsToRemove, regionsToAdd);
+    }
+
+    /// <summary>
+    /// Returns the data at row col, if any.
+    /// If no data exists, default(T?) is returned.
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <returns></returns>
+    public T? Get(int row, int col)
+    {
+        // Since this is a consolidated data store, we must have only 
+        // one overlapping bit of data.
+        return this.GetDataOverlapping(row, col).FirstOrDefault();
     }
 }

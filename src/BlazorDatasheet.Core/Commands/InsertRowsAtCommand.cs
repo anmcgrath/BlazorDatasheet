@@ -25,6 +25,7 @@ internal class InsertRowsAtCommand : IUndoableCommand
     {
         sheet.Cells.Merges.Store.InsertRows(_index, _nRows);
         sheet.Cells.Validation.Store.InsertRows(_index, _nRows);
+        sheet.Cells.InsertRowAt(_index, _nRows);
         sheet.InsertRowAtImpl(_index, _nRows);
         sheet.RowFormats.ShiftRight(_index, _nRows);
         return true;
@@ -34,6 +35,7 @@ internal class InsertRowsAtCommand : IUndoableCommand
     {
         sheet.Cells.Merges.Store.RemoveRows(_index, _index + _nRows - 1);
         sheet.Cells.Validation.Store.RemoveRows(_index, _index + _nRows - 1);
+        sheet.Cells.RemoveRowAt(_index, _nRows);
         sheet.RemoveRowAtImpl(_index, _nRows);
         sheet.RowFormats.ShiftLeft(_index, _nRows);
         return true;

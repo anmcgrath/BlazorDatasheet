@@ -23,12 +23,19 @@ public class FormulaEngine
     {
         _sheet = sheet;
         _sheet.Editor.BeforeCellEdit += SheetOnBeforeCellEdit;
+        _sheet.CellsChanged += SheetOnCellsChanged;
 
         _environment = new SheetEnvironment(sheet);
         _evaluator = new FormulaEvaluator(_environment);
         _dependencyGraph = new DependencyGraph();
 
         RegisterDefaultFunctions();
+    }
+
+    private void SheetOnCellsChanged(object? sender, IEnumerable<(int row, int col)> e)
+    {
+        if(!this.IsCalculating)
+            this.CalculateSheet();
     }
 
     private void RegisterDefaultFunctions()
@@ -39,10 +46,10 @@ public class FormulaEngine
 
     private void SheetOnBeforeCellEdit(object? sender, BeforeCellEditEventArgs e)
     {
-        var formula = _sheet.Cells.CellFormulaStore.Get(e.Cell.Row, e.Cell.Col);
+        var formula = _sheet.Cells.GetFormulaString(e.Cell.Row, e.Cell.Col);
         if (formula != null)
         {
-            e.EditValue = formula.ToFormulaString();
+            e.EditValue = formula;
         }
     }
 
@@ -79,11 +86,11 @@ public class FormulaEngine
     {
         if (IsCalculating)
             return;
-        
+
         Console.WriteLine("CALCULATING");
 
         IsCalculating = true;
-        _sheet.BatchDirty();
+        _sheet.BatchUpdates();
 
         var order =
             _dependencyGraph
@@ -95,11 +102,11 @@ public class FormulaEngine
         {
             if (vertex is CellVertex cellVertex)
             {
-                var formula = _sheet.Cells.CellFormulaStore.Get(cellVertex.Row, cellVertex.Col);
+                var formula = _sheet.Cells.GetFormula(cellVertex.Row, cellVertex.Col);
                 if (formula != null)
                 {
                     var value = this.Evaluate(formula);
-                    _sheet.Cells.CellDataStore.Set(cellVertex.Row, cellVertex.Col, value);
+                    _sheet.Cells.SetValueImpl(cellVertex.Row, cellVertex.Col, value);
                     _sheet.MarkDirty(cellVertex.Row, cellVertex.Col);
                     changedValuePositions.Add((cellVertex.Row, cellVertex.Col));
                 }
@@ -107,7 +114,7 @@ public class FormulaEngine
         }
 
         _sheet.EmitCellsChanged(changedValuePositions);
-        _sheet.EndBatchDirty();
+        _sheet.EndBatchUpdates();
 
         IsCalculating = false;
     }

@@ -1,5 +1,6 @@
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Interfaces;
+using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core;
 
 namespace BlazorDatasheet.Core.Data;
@@ -72,13 +73,28 @@ public class SheetCell : IReadOnlyCell
     }
 
     public CellFormat? Formatting { get; }
-    public string Type { get; } = "text";
+
+    public string Type
+    {
+        get => _sheet.Cells.GetCellType(Row, Col);
+        set => _sheet.Cells.SetCellTypeImpl(new Region(Row, Row, Col, Col), value);
+    }
+
     public int Row { get; }
     public int Col { get; }
     public bool IsValid { get; }
-    
-    public CellFormula? Formula => _sheet.Cells.CellFormulaStore.Get(Row, Col);
-    public object? Data => _sheet.Cells.CellDataStore.Get(Row, Col);
+
+    public string? Formula
+    {
+        get => _sheet.Cells.GetFormulaString(Row, Col);
+        set => _sheet.Cells.SetFormulaImpl(Row, Col, value);
+    }
+
+    public object? Data
+    {
+        get => _sheet.Cells.GetValue(Row, Col);
+        set => _sheet.Cells.SetValueImpl(Row, Col, value);
+    }
 
     public object? GetMetaData(string name)
     {

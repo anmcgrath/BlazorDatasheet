@@ -13,7 +13,7 @@ public interface IReadOnlyCell
     public int Row { get; }
     public int Col { get; }
     public bool IsValid { get; }
-    public CellFormula? Formula { get; }
+    public string? Formula { get; }
     public object? Data { get; }
     object? GetMetaData(string name);
     bool HasMetaData(string name);

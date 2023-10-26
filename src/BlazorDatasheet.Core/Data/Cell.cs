@@ -44,7 +44,7 @@ public class Cell : IReadOnlyCell, IWriteableCell
     /// <summary>
     /// The cell's parsed formula
     /// </summary>
-    public CellFormula? Formula { get; internal set; }
+    public string? Formula { get; internal set; }
 
     private Dictionary<string, object?>? _metaData;
     public IReadOnlyDictionary<string, object?> MetaData => _metaData ?? new Dictionary<string, object?>();

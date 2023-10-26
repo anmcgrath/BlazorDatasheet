@@ -65,6 +65,7 @@ public class EditTests
     {
         var sheet = new Sheet(10, 10);
         sheet.Editor.BeginEdit(0, 0);
+        sheet.Editor.EditValue = "Test";
         sheet.Editor.AcceptEdit();
         sheet.Commands.Undo();
         Assert.AreEqual(null, sheet.Cells.GetValue(0, 0));

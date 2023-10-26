@@ -139,9 +139,9 @@ public class Sheet
     public Editor Editor { get; }
 
     /// <summary>
-    /// True if the sheet is not firing dirty events until <see cref="EndBatchDirty"/> is called.
+    /// True if the sheet is not firing dirty events until <see cref="EndBatchUpdates"/> is called.
     /// </summary>
-    private bool _IsBatchingDirty { get; set; }
+    private bool _isBatchingChanges;
 
     public CellStore Cells { get; }
 
@@ -149,6 +149,11 @@ public class Sheet
     /// If the sheet is batching dirty regions, they are stored here.
     /// </summary>
     private List<IRegion> _dirtyRegions = new();
+
+    /// <summary>
+    /// If the sheet is batching changes, they are stored here.
+    /// </summary>
+    private HashSet<(int row, int col)> _cellsChanged = new();
 
     /// <summary>
     /// If the sheet is batching dirty cells, they are stored here.
@@ -163,24 +168,6 @@ public class Sheet
         Editor = new Editor(this);
         FormulaEngine = new FormulaEngine.FormulaEngine(this);
         ConditionalFormatting = new ConditionalFormatManager(this);
-    }
-
-    public Sheet(int numRows, int numCols, Cell[,] cells) : this()
-    {
-        Cells = new CellStore(this);
-        NumCols = numCols;
-        NumRows = numRows;
-
-        for (var i = 0; i < numRows; i++)
-        {
-            for (int j = 0; j < NumCols; j++)
-            {
-                var cell = cells[i, j];
-                cell.Row = i;
-                cell.Col = j;
-                Cells.CellDataStore.Set(i, j, cell);
-            }
-        }
     }
 
     public Sheet(int numRows, int numCols) : this()
@@ -207,7 +194,6 @@ public class Sheet
 
     internal void InsertColAtImpl(int colIndex, int nCols = 1)
     {
-        Cells.CellDataStore.InsertColAt(colIndex, nCols);
         NumCols += nCols;
         ColumnInserted?.Invoke(this, new ColumnInsertedEventArgs(colIndex, nCols));
     }
@@ -231,10 +217,8 @@ public class Sheet
     /// <returns>Whether the column at index colIndex was removed</returns>
     internal bool RemoveColImpl(int colIndex, int nCols = 1)
     {
-        Cells.CellDataStore.RemoveColAt(colIndex, nCols);
         NumCols -= nCols;
         ColumnRemoved?.Invoke(this, new ColumnRemovedEventArgs(colIndex, nCols));
-
         return true;
     }
 
@@ -287,7 +271,7 @@ public class Sheet
 
     /// <summary>
     /// The internal insert function that implements adding a row
-    /// This function does not add a command that is able to be undone.
+    /// This function is not undoable.
     /// </summary>
     /// <param name="rowIndex"></param>
     /// <param name="nRows">The number of rows to insert</param>
@@ -295,9 +279,7 @@ public class Sheet
     /// <returns></returns>
     internal bool InsertRowAtImpl(int rowIndex, int nRows = 1)
     {
-        Cells.CellDataStore.InsertRowAt(rowIndex, nRows);
         NumRows += nRows;
-
         RowInserted?.Invoke(this, new RowInsertedEventArgs(rowIndex, nRows));
         return true;
     }
@@ -310,14 +292,8 @@ public class Sheet
 
     internal bool RemoveRowAtImpl(int rowIndex, int nRows)
     {
-        var row = rowIndex;
-        var endIndex = rowIndex + nRows;
-        Cells.CellDataStore.RemoveRowAt(rowIndex, nRows);
-
         NumRows -= nRows;
         RowRemoved?.Invoke(this, new RowRemovedEventArgs(rowIndex, nRows));
-        row++;
-
         return true;
     }
 
@@ -424,7 +400,20 @@ public class Sheet
 
     internal void EmitCellsChanged(IEnumerable<(int row, int col)> positions)
     {
-        CellsChanged?.Invoke(this, positions);
+        if (_isBatchingChanges)
+        {
+            foreach (var pos in positions)
+                _cellsChanged.Add(pos);
+        }
+        else
+        {
+            CellsChanged?.Invoke(this, positions);
+        }
+    }
+
+    internal void EmitCellChanged(int row, int col)
+    {
+        EmitCellsChanged(new[] { (row, col) });
     }
 
     #endregion
@@ -435,7 +424,7 @@ public class Sheet
     /// <param name="positions"></param>
     internal void MarkDirty(IEnumerable<(int row, int col)> positions)
     {
-        if (_IsBatchingDirty)
+        if (_isBatchingChanges)
         {
             foreach (var position in positions)
                 _dirtyPositions.Add(position);
@@ -454,7 +443,7 @@ public class Sheet
     /// <param name="col"></param>
     internal void MarkDirty(int row, int col)
     {
-        if (_IsBatchingDirty)
+        if (_isBatchingChanges)
             _dirtyPositions.Add((row, col));
         else
             SheetDirty?.Invoke(this, new DirtySheetEventArgs()
@@ -478,7 +467,7 @@ public class Sheet
     /// <param name="regions"></param>
     internal void MarkDirty(IEnumerable<IRegion> regions)
     {
-        if (_IsBatchingDirty)
+        if (_isBatchingChanges)
             _dirtyRegions.AddRange(regions);
         else
             SheetDirty?.Invoke(
@@ -486,26 +475,32 @@ public class Sheet
     }
 
     /// <summary>
-    /// Batches dirty cell and region additions to emit a dirty sheet event once rather
-    /// than every time mark dirty is called.
+    /// Batches dirty cell and region additions, as well as cell value changes to emit events once rather
+    /// than every time a cell is dirty or a value is changed.
     /// </summary>
-    internal void BatchDirty()
+    internal void BatchUpdates()
     {
-        if (!_IsBatchingDirty)
+        if (!_isBatchingChanges)
         {
             _dirtyPositions.Clear();
             _dirtyRegions.Clear();
+            _cellsChanged.Clear();
         }
 
-        _IsBatchingDirty = true;
+        _isBatchingChanges = true;
     }
 
     /// <summary>
     /// Ends the batching of dirty cells and regions, and emits the dirty sheet event.
     /// </summary>
-    internal void EndBatchDirty()
+    internal void EndBatchUpdates()
     {
-        if (_dirtyRegions.Any() || _dirtyPositions.Any())
+        if (_cellsChanged.Any() && _isBatchingChanges)
+            CellsChanged?.Invoke(this, _cellsChanged.AsEnumerable());
+
+        // Checks for batching changes here, because the cells changed event
+        // may start batching more dirty changes again from subscribers of that event.
+        if (_dirtyRegions.Any() || _dirtyPositions.Any() && _isBatchingChanges)
         {
             SheetDirty?.Invoke(this, new DirtySheetEventArgs()
             {
@@ -514,7 +509,7 @@ public class Sheet
             });
         }
 
-        _IsBatchingDirty = false;
+        _isBatchingChanges = false;
     }
 
     /// <summary>
@@ -563,7 +558,7 @@ public class Sheet
             lineNo++;
         }
 
-        Cells.SetCellValues(valChanges);
+        Cells.SetValues(valChanges);
 
         return new Region(inputPosition.Row, endRow, inputPosition.Col, maxEndCol);
     }

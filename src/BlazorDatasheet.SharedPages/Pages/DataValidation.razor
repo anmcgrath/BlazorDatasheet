@@ -31,19 +31,9 @@
 
     protected override void OnInitialized()
     {
-        cells = new Cell[1, 4]
-        {
-            {
-                new Cell(),
-                new Cell(),
-                new Cell(),
-                new Cell()
-            }
-        };
-        
-        cells[0, 2].Type = "select";
-        
-        sheet = new Sheet(1, 4, cells);
+        sheet = new Sheet(1, 4);
+
+        sheet.Cells[0, 2].Type = "select";
         sheet.Cells.Validation.Add(new NumberValidator(true), 0, 0);
         sheet.Cells.Validation.Add(new NumberValidator(false), 0, 1);
         sheet.Cells.Validation.Add(new SourceValidator(new List<string>() { "Item 1", "Item 2", "Item 3" }, false), 0, 2);

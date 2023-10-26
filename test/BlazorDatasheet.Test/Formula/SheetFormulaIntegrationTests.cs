@@ -109,6 +109,15 @@ public class SheetFormulaIntegrationTests
     }
 
     [Test]
+    public void Set_Cell_Formula_Over_Value_Then_Undo_Restores_Value()
+    {
+        _sheet.Cells.SetValue(0, 0, 10);
+        _sheet.Cells.SetFormula(0,0,"=5");
+        _sheet.Commands.Undo();
+        _sheet.Cells.GetValue(0, 0).Should().Be(10);
+    }
+
+    [Test]
     public void FormulaEngine_Set_Variable_Calculates()
     {
         _engine.SetVariable("x", 10);

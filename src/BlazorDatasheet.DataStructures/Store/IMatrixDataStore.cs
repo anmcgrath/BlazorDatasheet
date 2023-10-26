@@ -27,30 +27,30 @@ public interface IMatrixDataStore<T>
     /// <param name="row"></param>
     /// <param name="col"></param>
     /// <param name="value"></param>
-    public void Set(int row, int col, T value);
+    public MatrixRestoreData<T>  Set(int row, int col, T value);
 
     /// <summary>
     /// Removes the value at the row/column from the store but does not affect the rows/columns around it.
     /// </summary>
     /// <param name="row"></param>
     /// <param name="col"></param>
-    public (int row, int col, T)? Clear(int row, int col);
+    public MatrixRestoreData<T> Clear(int row, int col);
 
-    public IEnumerable<(int row, int col, T)> Clear(IEnumerable<(int row, int col)> positions);
+    public MatrixRestoreData<T> Clear(IEnumerable<(int row, int col)> positions);
 
     /// <summary>
     /// Clears data inside the given region but does not affect the rows/columns arround it.
     /// </summary>
     /// <param name="region"></param>
     /// <returns></returns>
-    public IEnumerable<(int row, int col, T)> Clear(IRegion region);
+    public MatrixRestoreData<T>  Clear(IRegion region);
 
     /// <summary>
     /// Clears data inside the specified regions but does not affect the rows/columsn around it.
     /// </summary>
     /// <param name="regions"></param>
     /// <returns></returns>
-    public IEnumerable<(int row, int col, T)> Clear(IEnumerable<IRegion> regions) => regions.SelectMany(Clear);
+    public MatrixRestoreData<T> Clear(IEnumerable<IRegion> regions);
 
     /// <summary>
     /// Inserts a row into the store
@@ -69,7 +69,7 @@ public interface IMatrixDataStore<T>
     /// Removes the column specified from the store and returns the values that were removed.
     /// </summary>
     /// <param name="col">The index of the column to remove.</param>
-    public IEnumerable<(int row, int col, T)> RemoveColAt(int col, int nRow);
+    public MatrixRestoreData<T>  RemoveColAt(int col, int nRow);
 
     /// <summary>
     /// Finds the next non-empty row number in the column. Returns -1 if no non-empty rows exist after the row
@@ -84,7 +84,7 @@ public interface IMatrixDataStore<T>
     /// </summary>
     /// <param name="row"></param>
     /// <param name="nRows"></param>
-    public IEnumerable<(int row, int col, T)> RemoveRowAt(int row, int nRows);
+    public MatrixRestoreData<T>  RemoveRowAt(int row, int nRows);
 
     /// <summary>
     /// Get non empty cells that exist in the bounds given
@@ -103,5 +103,5 @@ public interface IMatrixDataStore<T>
     /// <returns></returns>
     IEnumerable<(int row, int col)> GetNonEmptyPositions(IRegion region);
 
-    void Restore(IEnumerable<(int row, int col, T data)> restoreData);
+    void Restore(MatrixRestoreData<T> restoreData);
 }

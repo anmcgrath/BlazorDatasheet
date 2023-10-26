@@ -1,4 +1,5 @@
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Data.Restore;
 using BlazorDatasheet.Core.Events;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -14,13 +15,12 @@ public class RemoveRowsCommand : IUndoableCommand
 
     private List<CellChangedFormat> _removedCellFormats;
     private List<OrderedInterval<CellFormat>> _modifiedRowFormats;
-    private List<DataRegion<bool>> _mergedRemoved;
-
-    private List<DataRegion<int>> _validatorsRemoved;
+    private RegionRestoreData<bool> _mergeRestoreData;
+    private RegionRestoreData<int> _validatorRestoreData;
+    private CellStoreRestoreData _cellStoreRestoreData;
 
     // The actual number of rows removed (takes into account num of rows in sheet)
     private int _nRowsRemoved;
-    private ClearCellsCommand _clearCellsCommand;
 
     /// <summary>
     /// Command to remove the row at the index given.
@@ -41,19 +41,11 @@ public class RemoveRowsCommand : IUndoableCommand
             return false;
         _nRowsRemoved = Math.Min(sheet.NumRows - _rowIndex + 1, _nRows);
 
-        ClearCells(sheet);
+        _cellStoreRestoreData = sheet.Cells.RemoveRowAt(_rowIndex, _nRowsRemoved);
         RemoveFormats(sheet);
-        _mergedRemoved = sheet.Cells.Merges.Store.RemoveRows(_rowIndex, _rowIndex + _nRowsRemoved - 1);
-        _validatorsRemoved = sheet.Cells.Validation.Store.RemoveRows(_rowIndex, _rowIndex + _nRowsRemoved - 1);
+        _mergeRestoreData = sheet.Cells.Merges.Store.RemoveRows(_rowIndex, _rowIndex + _nRowsRemoved - 1);
+        _validatorRestoreData = sheet.Cells.Validation.Store.RemoveRows(_rowIndex, _rowIndex + _nRowsRemoved - 1);
         return sheet.RemoveRowAtImpl(_rowIndex, _nRowsRemoved);
-    }
-
-    private bool ClearCells(Sheet sheet)
-    {
-        // Keep track of the values we have removed
-        _clearCellsCommand =
-            new ClearCellsCommand(sheet.Range(new RowRegion(_rowIndex, _rowIndex + _nRowsRemoved - 1)));
-        return _clearCellsCommand.Execute(sheet);
     }
 
     private void RemoveFormats(Sheet sheet)
@@ -77,16 +69,14 @@ public class RemoveRowsCommand : IUndoableCommand
     public bool Undo(Sheet sheet)
     {
         sheet.Cells.Merges.Store.InsertRows(_rowIndex, _nRowsRemoved);
-        foreach (var merge in _mergedRemoved)
-            sheet.Cells.Merges.AddImpl(merge.Region);
+        sheet.Cells.Merges.Store.Restore(_mergeRestoreData);
 
         sheet.Cells.Validation.Store.InsertRows(_rowIndex, _nRowsRemoved);
-        foreach (var validator in _validatorsRemoved)
-            sheet.Cells.Validation.Store.Add(validator.Region, validator.Data);
+        sheet.Cells.Validation.Store.Restore(_validatorRestoreData);
 
+        sheet.Cells.InsertRowAt(_rowIndex, _nRows);
+        sheet.Cells.Restore(_cellStoreRestoreData);
         sheet.InsertRowAtImpl(_rowIndex);
-
-        _clearCellsCommand.Undo(sheet);
 
         sheet.RowFormats.ShiftRight(_rowIndex, _nRowsRemoved);
         sheet.RowFormats.AddRange(_modifiedRowFormats);

@@ -24,6 +24,7 @@ public class InsertColAtCommand : IUndoableCommand
     {
         sheet.Cells.Merges.Store.InsertCols(_colIndex, _nCols);
         sheet.Cells.Validation.Store.InsertCols(_colIndex, _nCols);
+        sheet.Cells.InsertColAt(_colIndex, _nCols);
         sheet.InsertColAtImpl(_colIndex, _nCols);
         sheet.ColFormats.ShiftRight(_colIndex, _nCols);
         sheet.ColumnInfo.Insert(_colIndex, _nCols);
@@ -35,6 +36,7 @@ public class InsertColAtCommand : IUndoableCommand
         sheet.Cells.Merges.Store.RemoveCols(_colIndex, _colIndex + _nCols - 1);
         sheet.Cells.Validation.Store.RemoveCols(_colIndex, _colIndex + _nCols - 1);
         sheet.RemoveColImpl(_colIndex, _nCols);
+        sheet.Cells.RemoveColAt(_colIndex, _nCols);
         sheet.ColFormats.ShiftLeft(_colIndex, _nCols);
         sheet.ColumnInfo.Cut(_colIndex, _colIndex + _nCols - 1);
         return true;

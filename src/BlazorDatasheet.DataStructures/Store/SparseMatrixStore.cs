@@ -27,44 +27,82 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
         return column!.Get(row);
     }
 
-    public void Set(int row, int col, T value)
+    public MatrixRestoreData<T> Set(int row, int col, T value)
     {
         var colExists = _columns.TryGetValue(col, out var column);
+        var restoreData = new MatrixRestoreData<T>();
+
         if (!colExists)
         {
+            restoreData.DataRemoved = new List<(int row, int col, T data)>()
+            {
+                (row, col, default(T))
+            };
+
             column = new SColumn<T>(col);
             _columns.Add(col, column);
         }
+        else
+        {
+            restoreData.DataRemoved = new List<(int row, int col, T? data)>()
+            {
+                (row, col, column!.Get(row))
+            };
+        }
 
         column!.Set(row, value);
+        return restoreData;
     }
 
-    public (int row, int col, T)? Clear(int row, int col)
+    public MatrixRestoreData<T> Clear(int row, int col)
     {
         var colExists = _columns.TryGetValue(col, out var column);
         if (!colExists)
-            return null;
+            return new MatrixRestoreData<T>();
 
-        return column!.Clear(row, col);
+        var removed = column!.Clear(row, col);
+        if (removed == null)
+            return new MatrixRestoreData<T>();
+
+        return new MatrixRestoreData<T>()
+        {
+            DataRemoved = new List<(int row, int col, T? data)>() { removed.Value }
+        };
     }
 
-    public IEnumerable<(int row, int col, T)> Clear(IEnumerable<(int row, int col)> positions)
+    public MatrixRestoreData<T> Clear(IEnumerable<(int row, int col)> positions)
     {
         var cleared = positions.Select(x => Clear(x.row, x.col));
-        return cleared.Where(x => x.HasValue).Select(x => x.Value);
+        var clearedData = cleared.SelectMany(x => x.DataRemoved).ToList();
+        return new MatrixRestoreData<T>()
+        {
+            DataRemoved = clearedData
+        };
     }
 
-    public IEnumerable<(int row, int col, T)> Clear(IRegion region)
+    public MatrixRestoreData<T> Clear(IRegion region)
     {
-        var cleared = new List<(int row, int col, T)>();
+        var cleared = new List<(int row, int col, T?)>();
         foreach (var kp in _columns)
         {
             if (kp.Key < region.Left || kp.Key > region.Right)
                 continue;
-            cleared.AddRange(kp.Value.ClearBetween(region.Top, region.Bottom));
+            cleared.AddRange(kp.Value.ClearBetween(region.Top, region.Bottom)!);
         }
 
-        return cleared;
+        return new MatrixRestoreData<T>()
+        {
+            DataRemoved = cleared
+        };
+    }
+
+    public MatrixRestoreData<T> Clear(IEnumerable<IRegion> regions)
+    {
+        var cleared = regions.Select(Clear).SelectMany(x => x.DataRemoved);
+        return new MatrixRestoreData<T>()
+        {
+            DataRemoved = cleared.ToList()
+        };
     }
 
     public void InsertRowAt(int row, int nRows = 1)
@@ -100,15 +138,15 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
         }
     }
 
-    public IEnumerable<(int row, int col, T)> RemoveColAt(int col, int nCols)
+    public MatrixRestoreData<T> RemoveColAt(int col, int nCols)
     {
-        var deleted = new List<(int row, int col, T)>();
+        var deleted = new List<(int row, int col, T? data)>();
 
         for (int i = 0; i < nCols; i++)
         {
             if (_columns.ContainsKey(col + i))
             {
-                deleted.AddRange(_columns[col + i].Values.Select(x => (x.Key, col + i, x.Value)));
+                deleted.AddRange(_columns[col + i].Values.Select(x => (x.Key, col + i, x.Value))!);
                 _columns.Remove(col + i);
             }
         }
@@ -130,7 +168,10 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
             _columns.Add(c.colIndex, c.column);
         }
 
-        return deleted;
+        return new MatrixRestoreData<T>()
+        {
+            DataRemoved = deleted
+        };
     }
 
     public int GetNextNonBlankRow(int col, int row)
@@ -140,12 +181,15 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
         return _columns[col].GetNextNonEmptyRow(row);
     }
 
-    public IEnumerable<(int row, int col, T)> RemoveRowAt(int row, int nRows)
+    public MatrixRestoreData<T> RemoveRowAt(int row, int nRows)
     {
-        var deleted = new List<(int row, int col, T)>();
+        var deleted = new List<(int row, int col, T?)>();
         foreach (var column in _columns.Values)
-            deleted.AddRange(column.DeleteRowAt(row, nRows));
-        return deleted;
+            deleted.AddRange(column.DeleteRowAt(row, nRows)!);
+        return new MatrixRestoreData<T>()
+        {
+            DataRemoved = deleted
+        };
     }
 
     /// <summary>
@@ -174,10 +218,10 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
     {
         return GetNonEmptyPositions(region.Top, region.Bottom, region.Left, region.Right);
     }
-    
-    public void Restore(IEnumerable<(int row, int col, T data)> restoreData)
+
+    public void Restore(MatrixRestoreData<T> restoreData)
     {
-        foreach (var pt in restoreData)
+        foreach (var pt in restoreData.DataRemoved)
             Set(pt.row, pt.col, pt.data);
     }
 

@@ -1,4 +1,5 @@
 ﻿using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Data.Restore;
 using BlazorDatasheet.Formula.Core;
 
 namespace BlazorDatasheet.Core.Commands;
@@ -9,8 +10,7 @@ namespace BlazorDatasheet.Core.Commands;
 public class ClearCellsCommand : IUndoableCommand
 {
     private readonly BRange _range;
-    private List<(int row, int col, object? data)> _clearedData;
-    private List<(int row, int col, CellFormula? formula)> _clearedFormula;
+    private CellStoreRestoreData _restoreData;
 
     public ClearCellsCommand(BRange range)
     {
@@ -19,36 +19,14 @@ public class ClearCellsCommand : IUndoableCommand
 
     public bool Execute(Sheet sheet)
     {
-        _clearedData = sheet.Cells.CellDataStore.Clear(_range.Regions).ToList();
-        _clearedFormula = sheet.Cells.CellFormulaStore.Clear(_range.Regions).ToList();
-        foreach (var formula in _clearedFormula)
-        {
-            sheet.FormulaEngine.RemoveFromDependencyGraph(formula.row, formula.col);
-        }
-
-        var clearedPositions = _clearedData.Select(x => (x.row, x.col))
-            .Concat(_clearedFormula.Select((x => (x.row, x.col))));
-        
-        sheet.EmitCellsChanged(clearedPositions);
-        sheet.MarkDirty(_clearedData.Select(x => (x.row, x.col)));
-        sheet.MarkDirty(_clearedFormula.Select(x => (x.row, x.col)));
+        _restoreData = sheet.Cells.ClearCellsImpl(_range.Regions);
         return true;
     }
 
     public bool Undo(Sheet sheet)
     {
         sheet.Selection.Set(_range);
-        sheet.Cells.CellDataStore.Restore(_clearedData);
-        sheet.Cells.CellFormulaStore.Restore(_clearedFormula);
-
-        foreach (var formula in _clearedFormula)
-        {
-            sheet.FormulaEngine.AddToDependencyGraph(formula.row, formula.col, formula.formula);
-        }
-
-        sheet.MarkDirty(_clearedData.Select(x => (x.row, x.col)));
-        sheet.MarkDirty(_clearedFormula.Select(x => (x.row, x.col)));
-
+        sheet.Cells.Restore(_restoreData);
         return true;
     }
 }
