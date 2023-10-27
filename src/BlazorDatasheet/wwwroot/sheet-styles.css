@@ -46,8 +46,6 @@
     box-sizing: border-box;
     position: relative;
     display: block;
-    border-left: var(--sheet-border-style);
-    border-top: var(--sheet-border-style);
     white-space: nowrap;
 }
 
@@ -55,8 +53,8 @@
     overflow-y: scroll;
 }
 
-.sheet-fixed-width{
-    overflow-x:scroll;
+.sheet-fixed-width {
+    overflow-x: scroll;
 }
 
 .sheet-dynamic-height {
@@ -67,6 +65,10 @@
     user-select: none;
     -moz-user-select: none;
     -webkit-user-select: none;
+    padding: 0;
+    display: inline-block;
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
 .sheet-row {
@@ -78,6 +80,10 @@
     position: sticky;
     top: 0;
     z-index: 2;
+}
+
+.col-nonsticky {
+    border-bottom: var(--sheet-border-style);
 }
 
 .row-sticky {

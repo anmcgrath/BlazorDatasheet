@@ -31,7 +31,12 @@
     <div class="sheet-row"> 
         <div
             class="sheet-cell row-head @(IsActive(row) ? "row-active" : "")"
-            style="height:@CellLayoutProvider.ComputeHeight(row, 1)px; overflow: hidden; display: block !important; @CssUtil.GetCellWidthStyles(-1, 1, CellLayoutProvider)"
+            style="height:@CellLayoutProvider.ComputeHeight(row, 1)px; 
+            border-bottom: var(--sheet-border-style);
+            border-left: var(--sheet-border-style);
+            overflow: hidden; 
+            display: block !important; 
+            @CssUtil.GetCellWidthStyles(-1, 1, CellLayoutProvider)"
             @onmousedown="e => HandleMouseDown(row, e)"
             @onmouseover="e => HandleMouseOver(row, e)"
             @onmouseup="e => HandleMouseUp(row, e)">

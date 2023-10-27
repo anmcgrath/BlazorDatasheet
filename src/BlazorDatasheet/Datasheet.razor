@@ -25,7 +25,7 @@
 
                 @if (ShowColHeadings)
                 {
-                    <div style="display: flex; flex-direction: row;" class="sheet-row column-head @(StickyHeadings ? "col-sticky" : "")">
+                    <div style="display: flex; flex-direction: row;" class="sheet-row column-head @(StickyHeadings ? "col-sticky" : "col-nonsticky")">
                         @if (ShowRowHeadings)
                         {
                             <!-- the little bit outside to the left of first col header -->
@@ -71,7 +71,7 @@
 
                     <div style="width:@(RenderedInnerSheetWidth)px;height: @(RenderedInnerSheetHeight)px;display: block;">
 
-                        <div style="width: @(RenderedInnerSheetWidth)px; height:@(RenderedInnerSheetHeight)px; border: var(--sheet-border-style); display: block;">
+                        <div style="width: @(RenderedInnerSheetWidth)px; height:@(RenderedInnerSheetHeight)px; display: block;">
                             @for (int rowIndex = Viewport.VisibleRegion.Top; rowIndex <= Viewport.VisibleRegion.Bottom; rowIndex++)
                             {
                                 var row = rowIndex;
@@ -89,10 +89,6 @@
                                             @onmousedown="e => HandleCellMouseDown(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
                                             @key="col"
                                             style="
-                                            padding:0; 
-                                            display: inline-block; 
-                                            box-sizing:border-box; 
-                                            overflow: hidden; 
                                             width:@(colWidth)px;
                                             max-width:@(colWidth)px;
                                             height:@(rowHeight)px;

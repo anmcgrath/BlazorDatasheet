@@ -61,11 +61,15 @@
 
     <div
         class="sheet-cell @GetActiveClass(col)"
-        style="z-index: 1; @CssUtil.GetCellWidthStyles(i, 1, CellLayoutProvider); height: @(CellLayoutProvider.ColHeadingHeight)px"
+        style="z-index: 1; 
+        border-right: var(--sheet-border-style);
+        border-top: var(--sheet-border-style);
+        @CssUtil.GetCellWidthStyles(i, 1, CellLayoutProvider); 
+        height: @(CellLayoutProvider.ColHeadingHeight)px"
         @onmouseup="e => HandleMouseUp(col, e)"
         @onmouseover="e => HandleMouseOver(col, e)"
         @onmousedown="e => HandleMouseDown(col, e)">
-        <div class="cell" style="">
+        <div class="cell">
             @colHeading
         </div>
     </div>

@@ -306,10 +306,10 @@ public partial class Datasheet : IHandleEvent
         var top = _cellLayoutProvider.ComputeTopPosition(row);
         var left = _cellLayoutProvider.ComputeLeftPosition(col);
         sb.Append("position:absolute;");
-        sb.Append($"top:{top + 1}px;");
+        sb.Append($"top:{top}px;");
         sb.Append($"width:{_cellLayoutProvider.ComputeWidth(col, colSpan)}px;");
         sb.Append($"height:{_cellLayoutProvider.ComputeHeight(row, rowSpan)}px;");
-        sb.Append($"left:{left + 1}px;");
+        sb.Append($"left:{left}px;");
         return sb.ToString();
     }
 
