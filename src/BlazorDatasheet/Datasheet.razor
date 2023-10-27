@@ -88,8 +88,7 @@
                                             @onmouseover="e => HandleCellMouseOver(row, col)"
                                             @onmousedown="e => HandleCellMouseDown(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
                                             @key="col"
-                                            style="border-right: var(--sheet-border-style); 
-                                            border-bottom: var(--sheet-border-style);
+                                            style="
                                             padding:0; 
                                             display: inline-block; 
                                             box-sizing:border-box; 
@@ -127,24 +126,25 @@
                         var mergesInView = Sheet.Cells.Merges.Store.GetRegionsOverlapping(this.Viewport.VisibleRegion);
                         @foreach (var merge in mergesInView)
                         {
-                            var row = merge.Region.Start.Row;
-                            var col = merge.Region.Start.Col;
-                            var cell = Sheet.Cells.GetCell(row, col);
+                            var row = merge.Region.Top;
+                            var col = merge.Region.Left;
+                            var cell = _visualSheet.GetVisualCell(row, col);
 
                             <div id="merge"
+                                 style="@GetAbsoluteCellPositionStyles(row, col, merge.Region.Height, merge.Region.Width)"
                                  class="sheet-cell"
                                  @onmouseup="e => HandleCellMouseUp(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
                                  @ondblclick="e => HandleCellDoubleClick(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
                                  @onmouseover="e => HandleCellMouseOver(row, col)"
-                                 @onmousedown="e => HandleCellMouseDown(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
-                                 style="@GetAbsoluteCellPositionStyles(row, col, merge.Region.Height, merge.Region.Width)">
+                                 @onmousedown="e => HandleCellMouseDown(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)">
                                 <CascadingValue Value="Sheet" IsFixed="true">
                                     <CellRenderer
-                                        IconColor="@cell.Formatting?.IconColor"
+                                        IconColor="@cell.Format?.IconColor"
+                                        CellFormatStyleString="@cell.FormatStyleString"
                                         IsDirty="SheetIsDirty || DirtyCells.Contains((row, col))">
                                         <ItemTemplate>
                                             <DynamicComponent
-                                                Type="@GetCellRendererType(cell.Type)"
+                                                Type="@GetCellRendererType(cell.CellType)"
                                                 Parameters="@getCellRendererParameters(Sheet, new VisualCell(row, col, _sheetLocal))">
                                             </DynamicComponent>
                                         </ItemTemplate>

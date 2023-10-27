@@ -1,6 +1,7 @@
 using System.Text;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Formats;
+using Microsoft.Extensions.Primitives;
 
 namespace BlazorDatasheet.Render;
 
@@ -23,14 +24,16 @@ public class VisualCell
         var cell = sheet.Cells.GetCell(row, col);
         var format = cell.Formatting.Clone();
         Value = cell.GetValue();
-        
+
         var cf = sheet.ConditionalFormatting.GetFormatResult(row, col);
         if (cf != null)
             format.Merge(cf);
         Row = row;
         Col = col;
+
         Width = sheet.ColumnInfo.GetWidth(col);
         Height = sheet.RowInfo.GetHeight(row);
+
         X = sheet.ColumnInfo.GetLeft(col);
         Y = sheet.RowInfo.GetTop(row);
         FormatStyleString = GetCellFormatStyleString(format, cell.IsValid);
@@ -69,6 +72,12 @@ public class VisualCell
         sb.Append($"background-color:{format?.BackgroundColor ?? "var(--sheet-bg-color)"};");
         sb.Append($"color:{format?.ForegroundColor ?? $"var({foreGroundVar})"};");
         sb.Append($"font-weight:{format?.FontWeight ?? "var(--sheet-font-weight)"};");
+
+        if (format?.BackgroundColor == null)
+        {
+            sb.Append($"border-right: var(--sheet-border-style);");
+            sb.Append($"border-bottom: var(--sheet-border-style);");
+        }
 
         if (!string.IsNullOrWhiteSpace(format?.TextAlign))
         {

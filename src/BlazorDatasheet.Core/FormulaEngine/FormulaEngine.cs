@@ -87,8 +87,6 @@ public class FormulaEngine
         if (IsCalculating)
             return;
 
-        Console.WriteLine("CALCULATING");
-
         IsCalculating = true;
         _sheet.BatchUpdates();
 

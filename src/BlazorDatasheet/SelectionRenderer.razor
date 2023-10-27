@@ -86,8 +86,8 @@
 
     private IRegion? BoundedSelectingRegion => Sheet?.Selection.SelectingRegion?.GetIntersection(Sheet?.Region);
 
-    private double getLeft(IRegion region) => CellLayoutProvider.ComputeLeftPosition(region);
-    private double getTop(IRegion region) => CellLayoutProvider.ComputeTopPosition(region);
+    private double getLeft(IRegion region) => CellLayoutProvider.ComputeLeftPosition(region) + 1;
+    private double getTop(IRegion region) => CellLayoutProvider.ComputeTopPosition(region) + 1;
     private double getWidth(IRegion region) => CellLayoutProvider.ComputeWidth(region) - 1;
     private double getHeight(IRegion region) => CellLayoutProvider.ComputeHeight(region) - 1;
 

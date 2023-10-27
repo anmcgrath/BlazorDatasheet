@@ -300,7 +300,6 @@ public partial class Datasheet : IHandleEvent
         Viewport = newViewport;
         _visualSheet.UpdateViewport(_sheetLocal, newViewport);
     }
-
     private string GetAbsoluteCellPositionStyles(int row, int col, int rowSpan, int colSpan)
     {
         var sb = new StringBuilder();
@@ -308,8 +307,8 @@ public partial class Datasheet : IHandleEvent
         var left = _cellLayoutProvider.ComputeLeftPosition(col);
         sb.Append("position:absolute;");
         sb.Append($"top:{top + 1}px;");
-        sb.Append($"width:{_cellLayoutProvider.ComputeWidth(col, colSpan) - 1}px;");
-        sb.Append($"height:{_cellLayoutProvider.ComputeHeight(row, rowSpan) - 1}px;");
+        sb.Append($"width:{_cellLayoutProvider.ComputeWidth(col, colSpan)}px;");
+        sb.Append($"height:{_cellLayoutProvider.ComputeHeight(row, rowSpan)}px;");
         sb.Append($"left:{left + 1}px;");
         return sb.ToString();
     }

@@ -30,12 +30,14 @@ public class MergeManager
 
     internal bool AddImpl(BRange range)
     {
+        _sheet.BatchUpdates();
         var isSuccess = true;
         foreach (var region in range.Regions)
         {
             isSuccess &= AddImpl(region);
         }
 
+        _sheet.EndBatchUpdates();
         return isSuccess;
     }
 
@@ -43,6 +45,7 @@ public class MergeManager
     {
         Store.Add(region, true);
         RegionMerged?.Invoke(this, region);
+        _sheet.MarkDirty(region);
         return true;
     }
 
@@ -70,12 +73,17 @@ public class MergeManager
     /// <param name="region"></param>
     internal void UnMergeCellsImpl(IRegion region)
     {
-        var mergedCellsInRange = Store.GetRegionsOverlapping(region);
+        var mergedCellsInRange = Store.GetRegionsOverlapping(region).ToList();
+        var updateRegion = mergedCellsInRange.FirstOrDefault()?.Region;
         foreach (var merge in mergedCellsInRange)
         {
+            updateRegion = region.GetBoundingRegion(updateRegion);
             Store.Delete(merge);
             RegionUnMerged?.Invoke(this, region);
         }
+
+        if (updateRegion != null)
+            _sheet.MarkDirty(updateRegion);
     }
 
     /// <summary>
@@ -84,8 +92,10 @@ public class MergeManager
     /// <param name="region"></param>
     internal void UnMergeCellsImpl(BRange range)
     {
+        _sheet.BatchUpdates();
         foreach (var region in range.Regions)
             UnMergeCellsImpl((IRegion)region);
+        _sheet.EndBatchUpdates();
     }
 
     /// <summary>
