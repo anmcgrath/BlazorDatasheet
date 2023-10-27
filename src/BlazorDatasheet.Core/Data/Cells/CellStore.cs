@@ -21,7 +21,7 @@ public partial class CellStore
     /// Manages and holds information on cell validators.
     /// </summary>
     public ValidationManager Validation { get; }
-    
+
     public CellStore(Sheet sheet)
     {
         _sheet = sheet;
@@ -189,20 +189,32 @@ public partial class CellStore
         return restoreData;
     }
 
-    internal void InsertColAt(int col, int nCols)
+    /// <summary>
+    /// Inserts a number of columns into each of the cell's stores.
+    /// </summary>
+    /// <param name="col">The column that will be replaced by the new column.</param>
+    /// <param name="nCols">The number of columns to insert</param>
+    /// <param name="expandNeighboring">Whether to expand any cell data to the left of the insertion. If undoing an action, best to set to false.</param>
+    internal void InsertColAt(int col, int nCols, bool? expandNeighboring = null)
     {
         _dataStore.InsertColAt(col, nCols);
-        _formatStore.InsertCols(col, nCols);
-        _typeStore.InsertCols(col, nCols);
+        _formatStore.InsertCols(col, nCols, expandNeighboring);
+        _typeStore.InsertCols(col, nCols, expandNeighboring);
         _formulaStore.InsertColAt(col, nCols);
         _validStore.InsertColAt(col, nCols);
     }
 
-    internal void InsertRowAt(int row, int nRows)
+    /// <summary>
+    /// Inserts a number of rows into each of the cell's stores.
+    /// </summary>
+    /// <param name="row">The row that will be replaced by the new row.</param>
+    /// <param name="nRows">The number of rows to insert</param>
+    /// <param name="expandNeighboring">Whether to expand any cell data to the left of the insertion. If undoing an action, best to set to false.</param>
+    internal void InsertRowAt(int row, int nRows, bool? expandNeighboring = null)
     {
         _dataStore.InsertRowAt(row, nRows);
-        _formatStore.InsertRows(row, nRows);
-        _typeStore.InsertRows(row, nRows);
+        _formatStore.InsertRows(row, nRows, expandNeighboring);
+        _typeStore.InsertRows(row, nRows, expandNeighboring);
         _formulaStore.InsertRowAt(row, nRows);
         _validStore.InsertRowAt(row, nRows);
     }

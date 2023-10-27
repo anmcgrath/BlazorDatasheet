@@ -94,22 +94,28 @@ public class RegionDataStore<T> where T : IEquatable<T>
     /// </summary>
     /// <param name="rowIndex"></param>
     /// <param name="nRows"></param>
-    public void InsertRows(int rowIndex, int nRows) => InsertRowsOrColumnAndShift(rowIndex, nRows, Axis.Row);
+    /// <param name="expandNeighbouring">Whether to expand the neighbouring values. If null, the value set on the class is used.</param>
+    public void InsertRows(int rowIndex, int nRows, bool? expandNeighbouring = null) =>
+        InsertRowsOrColumnAndShift(rowIndex, nRows, Axis.Row, expandNeighbouring);
 
     /// <summary>
     /// Updates region positions by handling the col insert. Regions are shifted/expanded appropriately.
     /// </summary>
     /// <param name="colIndex"></param>
-    /// <param name="nCols"></param>
-    public void InsertCols(int colIndex, int nCols) => InsertRowsOrColumnAndShift(colIndex, nCols, Axis.Col);
+    /// <param name="nCols"></param>y
+    /// <param name="expandNeighbouring">Whether to expand the neighbouring values. If null, the value set on the class is used.</param>
+    public void InsertCols(int colIndex, int nCols, bool? expandNeighbouring = null) =>
+        InsertRowsOrColumnAndShift(colIndex, nCols, Axis.Col, expandNeighbouring);
 
-    private void InsertRowsOrColumnAndShift(int index, int nRowsOrCol, Axis axis)
+    private void InsertRowsOrColumnAndShift(int index, int nRowsOrCol, Axis axis, bool? expandNeighbouring)
     {
+        var expand = expandNeighbouring ?? _expandWhenInsertAfter;
+
         // As an example for inserting rows, there are three things that can happen
         // 1. Any regions that intersect the index should be expanded by nRows
         // 2. If _expandWhenInsertedAfter = true, then when the bottom of any region is just above index, expand it too.
         // 3. Any regions below the index should be shifted down
-        var i0 = _expandWhenInsertAfter ? index - 1 : index;
+        var i0 = expand ? index - 1 : index;
         IRegion region = axis == Axis.Col ? new ColumnRegion(i0, index) : new RowRegion(i0, index);
         var intersecting = GetRegionsOverlapping(region);
         var dataRegionsToAdd = new List<DataRegion<T>>();
@@ -119,7 +125,7 @@ public class RegionDataStore<T> where T : IEquatable<T>
             if (r.Region.GetLeadingEdgeOffset(axis) == index)
                 continue; // we shift in this case, and don't expand
             var i1 = r.Region.GetTrailingEdgeOffset(axis);
-            if (!_expandWhenInsertAfter && index > i1)
+            if (!expand && index > i1)
                 continue;
             var clonedRegion = r.Region.Clone();
             clonedRegion.Expand(axis == Axis.Row ? Edge.Bottom : Edge.Right, nRowsOrCol);

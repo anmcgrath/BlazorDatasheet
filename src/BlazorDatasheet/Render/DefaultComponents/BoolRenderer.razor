@@ -20,7 +20,7 @@
 
     protected override void OnParametersSet()
     {
-        var parsed = bool.TryParse(Cell.Value.ToString(), out var val);
+        var parsed = bool.TryParse(Cell?.Value?.ToString(), out var val);
         if (!parsed)
             val = false;
         else

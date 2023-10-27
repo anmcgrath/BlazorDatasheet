@@ -57,7 +57,7 @@ public class RemoveColumnCommand : IUndoableCommand
         // Insert column back in and set all the values that we removed
         sheet.InsertColAtImpl(_columnIndex, _nColsRemoved);
 
-        sheet.Cells.InsertColAt(_columnIndex, _nColsRemoved);
+        sheet.Cells.InsertColAt(_columnIndex, _nColsRemoved, false);
         sheet.Cells.Restore(_cellStoreRestoreData);
 
         sheet.ColumnInfo.Insert(_columnIndex, _nColsRemoved);
@@ -71,13 +71,13 @@ public class RemoveColumnCommand : IUndoableCommand
 
     private void UndoValidation(Sheet sheet)
     {
-        sheet.Cells.Validation.Store.InsertCols(_columnIndex, _nColsRemoved);
+        sheet.Cells.Validation.Store.InsertCols(_columnIndex, _nColsRemoved, false);
         sheet.Cells.Validation.Store.Restore(_validatorRestoreData);
     }
 
     public void UndoMerges(Sheet sheet)
     {
-        sheet.Cells.Merges.Store.InsertCols(_columnIndex, _nColsRemoved);
+        sheet.Cells.Merges.Store.InsertCols(_columnIndex, _nColsRemoved, false);
         sheet.Cells.Merges.Store.Restore(_mergeRestoreData);
     }
 }

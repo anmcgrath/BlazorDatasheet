@@ -42,7 +42,6 @@ public class SetFormatCommand : IUndoableCommand
 
     public bool Undo(Sheet sheet)
     {
-        Console.WriteLine("Undoing " + _cellFormatRestoreData.FormatRestoreData.RegionsAdded.First().Region);
         if (_colFormatRestoreData != null)
             Restore(sheet, _colFormatRestoreData, sheet.ColumnInfo.ColFormats);
         if (_rowFormatRestoreData != null)
