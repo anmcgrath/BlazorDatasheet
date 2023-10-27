@@ -45,7 +45,9 @@ public class CommandGroup : IUndoableCommand
     public bool Undo(Sheet sheet)
     {
         var undo = true;
-        foreach (var command in _successfulCommands.Where(cmd => cmd is IUndoableCommand).Cast<IUndoableCommand>())
+        var undoCommands = _successfulCommands.Where(cmd => cmd is IUndoableCommand).Cast<IUndoableCommand>().ToList();
+        undoCommands.Reverse();
+        foreach (var command in undoCommands)
         {
             undo &= command.Undo(sheet);
         }
