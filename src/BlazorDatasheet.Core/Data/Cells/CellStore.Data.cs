@@ -9,8 +9,8 @@ public partial class CellStore
     /// The cell DATA
     /// </summary>
     private readonly IMatrixDataStore<object?> _dataStore = new SparseMatrixStore<object?>();
-    
-    
+
+
     /// <summary>
     /// Sets the cell value using <see cref="SetCellValueCommand"/>
     /// </summary>
@@ -44,7 +44,7 @@ public partial class CellStore
         }
 
         // Validate but don't stop setting cell values if the value is invalid.
-        var validationResult = Validation.Validate(value, row, col);
+        var validationResult = _sheet.Validators.Validate(value, row, col);
 
         // Save old validation result and current cell values.
         restoreData.ValidRestoreData = _validStore.Set(row, col, validationResult.IsValid);
@@ -75,7 +75,7 @@ public partial class CellStore
 
         return true;
     }
-    
+
     /// <summary>
     /// Gets the cell's value at row, col
     /// </summary>

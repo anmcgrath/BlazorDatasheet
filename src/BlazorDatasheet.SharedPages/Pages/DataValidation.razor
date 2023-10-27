@@ -27,10 +27,10 @@
         sheet = new Sheet(1, 4);
 
         sheet.Cells[0, 2].Type = "select";
-        sheet.Cells.Validation.Add(new NumberValidator(true), 0, 0);
-        sheet.Cells.Validation.Add(new NumberValidator(false), 0, 1);
-        sheet.Cells.Validation.Add(new SourceValidator(new List<string>() { "Item 1", "Item 2", "Item 3" }, false), 0, 2);
-        sheet.Cells.Validation.Add(new CustomValidator("foo", false), 0, 3);
+        sheet.AddValidator(0, 0, new NumberValidator(true));
+        sheet.AddValidator(0, 1, new NumberValidator(false));
+        sheet.AddValidator(0, 2, new SourceValidator(new List<string>() { "Item 1", "Item 2", "Item 3" }, false));
+        sheet.AddValidator(0, 3, new CustomValidator("foo", false));
         base.OnInitialized();
     }
 

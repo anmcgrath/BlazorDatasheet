@@ -150,7 +150,7 @@ public class Editor
         if (beforeAcceptEdit.AcceptEdit)
         {
             // run the validators that are strict. cancel edit if any fail
-            var validationResult = Sheet.Cells.Validation.Validate(editValue, EditCell.Row, EditCell.Col);
+            var validationResult = Sheet.Validators.Validate(editValue, EditCell.Row, EditCell.Col);
             if (validationResult.IsStrictFail)
             {
                 Sheet.Dialog.Alert(string.Join("\n", validationResult.FailMessages));

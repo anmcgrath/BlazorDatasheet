@@ -1,3 +1,4 @@
+using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -27,7 +28,7 @@ public class ColumnInfoStore
     /// <param name="col"></param>
     /// <param name="width"></param>
     /// <returns></returns>
-    internal List<(int start, int end, double width)> SetColumnWidth(int col, double width)
+    internal List<(int start, int end, double width)> SetColumnWidthImpl(int col, double width)
     {
         var restoreData = _widthStore.Set(col, width);
         _sheet.MarkDirty(new ColumnRegion(col, _sheet.NumCols));
@@ -42,7 +43,7 @@ public class ColumnInfoStore
     /// <param name="colEnd"></param>
     /// <param name="width"></param>
     /// <returns></returns>
-    internal List<(int start, int end, double width)> SetColumnWidths(int colStart, int colEnd, double width)
+    internal List<(int start, int end, double width)> SetColumnWidthsImpl(int colStart, int colEnd, double width)
     {
         var restoreData = _widthStore.Set(colStart, colEnd, width);
         _sheet.MarkDirty(new ColumnRegion(colStart, _sheet.NumCols));
@@ -55,7 +56,7 @@ public class ColumnInfoStore
     /// <param name="col"></param>
     /// <param name="heading"></param>
     /// <returns></returns>
-    internal List<(int start, int end, string heading)> SetColumnHeading(int col, string heading)
+    internal List<(int start, int end, string heading)> SetColumnHeadingImpl(int col, string heading)
     {
         var restoreData = _headingStore.Set(col, heading);
         _sheet.MarkDirty(new ColumnRegion(col));
@@ -70,7 +71,7 @@ public class ColumnInfoStore
     /// <param name="colEnd"></param>
     /// <param name="heading"></param>
     /// <returns></returns>
-    internal List<(int start, int end, string heading)> SetColumnHeadings(int colStart, int colEnd, string heading)
+    internal List<(int start, int end, string heading)> SetColumnHeadingsImpl(int colStart, int colEnd, string heading)
     {
         var restoreData = _headingStore.Set(colStart, colEnd, heading);
         _sheet.MarkDirty(new ColumnRegion(colStart, colEnd));
@@ -102,11 +103,24 @@ public class ColumnInfoStore
     }
 
     /// <summary>
+    /// Inserts a column after the index specified. If the index is outside of the range of -1 to NumCols-1,
+    /// A column is added either at the beginning or end of the columns.
+    /// </summary>
+    /// <param name="colIndex"></param>
+    /// <param name="nCols"></param>
+    public void InsertAt(int colIndex, int nCols = 1)
+    {
+        var indexToAdd = Math.Min(_sheet.NumCols - 1, Math.Max(colIndex, 0));
+        var cmd = new InsertColAtCommand(indexToAdd, nCols);
+        _sheet.Commands.ExecuteCommand(cmd);
+    }
+
+    /// <summary>
     /// Inserts n empty columns.
     /// </summary>
     /// <param name="start"></param>
     /// <param name="n"></param>
-    internal void Insert(int start, int n)
+    internal void InsertImpl(int start, int n)
     {
         _widthStore.InsertAt(start, n);
         _headingStore.InsertAt(start, n);
@@ -192,7 +206,7 @@ public class ColumnInfoStore
         // this is because we the order of choosing the cell format is 1. cell format, then 2. col format then 3. row format.
         // if we set col format then a row format with some intersection, we would find that the col format is chosen when we
         // query the format at the intersection. It should be the cell format, so we set that.
-        var rowOverlaps = _sheet.RowInfo.RowFormats.GetAllIntervals()
+        var rowOverlaps = _sheet.Rows.RowFormats.GetAllIntervals()
             .Select(x =>
                 new DataRegion<CellFormat>(x.Data, new Region(x.Start, x.End, colRegion.Left, colRegion.Right)));
 
@@ -216,6 +230,47 @@ public class ColumnInfoStore
             IntervalsAdded = new List<OrderedInterval<CellFormat>>() { newOi },
             IntervalsRemoved = modified
         };
+    }
+
+    /// <summary>
+    /// Removes the column at the specified index
+    /// </summary>
+    /// <param name="colIndex"></param>
+    /// <param name="nCols">The number of oclumns to remove</param>
+    /// <returns>Whether the column removal was successful</returns>
+    public bool RemoveAt(int colIndex, int nCols = 1)
+    {
+        var cmd = new RemoveColumnCommand(colIndex, nCols);
+        return _sheet.Commands.ExecuteCommand(cmd);
+    }
+
+    /// <summary>
+    /// Sets the width of a column, to the width given (in px).
+    /// </summary>
+    /// <param name="colStart"></param>
+    /// <param name="colEnd"></param>
+    /// <param name="width"></param>
+    public void SetColumnWidth(int colStart, int colEnd, double width)
+    {
+        var cmd = new SetColumnWidthCommand(colStart, colEnd, width);
+        _sheet.Commands.ExecuteCommand(cmd);
+    }
+
+    /// <summary>
+    /// Sets the width of a column, to the width given (in px).
+    /// </summary>
+    /// <param name="column"></param>
+    /// <param name="width"></param>
+    /// <param name="colStart"></param>
+    public void SetColumnWidth(int column, double width)
+    {
+        var cmd = new SetColumnWidthCommand(column, column, width);
+        _sheet.Commands.ExecuteCommand(cmd);
+    }
+
+    public void SetColumnHeadings(int colStart, int colEnd, string heading)
+    {
+        _sheet.Commands.ExecuteCommand(new SetColumnHeadingsCommand(colStart, colEnd, heading));
     }
 }
 

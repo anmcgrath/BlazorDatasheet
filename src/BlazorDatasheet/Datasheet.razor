@@ -117,17 +117,17 @@
                     <div id="filler-right" @ref="_fillerRight" style="float:left;min-width: @(Viewport.DistanceRight)px; height:@(RenderedInnerSheetHeight)px;"></div>
 
                     <!-- Merged cells -->
-                    @if (Sheet.Cells.Merges.Any() && this.Viewport is not null)
+                    @if (Sheet.Cells.AnyMerges() && this.Viewport is not null)
                     {
-                        var mergesInView = Sheet.Cells.Merges.Store.GetRegionsOverlapping(this.Viewport.VisibleRegion);
+                        var mergesInView = Sheet.Cells.GetMerges(this.Viewport.VisibleRegion);
                         @foreach (var merge in mergesInView)
                         {
-                            var row = merge.Region.Top;
-                            var col = merge.Region.Left;
+                            var row = merge.Top;
+                            var col = merge.Left;
                             var cell = _visualSheet.GetVisualCell(row, col);
 
                             <div id="merge"
-                                 style="@GetAbsoluteCellPositionStyles(row, col, merge.Region.Height, merge.Region.Width)"
+                                 style="@GetAbsoluteCellPositionStyles(row, col, merge.Height, merge.Width)"
                                  class="sheet-cell"
                                  @onmouseup="e => HandleCellMouseUp(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
                                  @ondblclick="e => HandleCellDoubleClick(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"

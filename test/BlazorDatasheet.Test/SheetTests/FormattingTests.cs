@@ -146,8 +146,8 @@ public class FormattingTests
         var f2 = new CellFormat() { BackgroundColor = "blue" };
         _sheet.SetFormat(f1, _sheet.Range(new ColumnRegion(2)));
         _sheet.SetFormat(f2, _sheet.Range(new RowRegion(2)));
-        _sheet.InsertColAt(0);
-        _sheet.InsertRowAt(0);
+        _sheet.Columns.InsertAt(0);
+        _sheet.Rows.InsertRowAt(0, _sheet);
         _sheet.GetFormat(0, 2)?.BackgroundColor?.Should().BeNullOrEmpty();
         _sheet.GetFormat(0, 3)?.BackgroundColor.Should().Be("red");
 

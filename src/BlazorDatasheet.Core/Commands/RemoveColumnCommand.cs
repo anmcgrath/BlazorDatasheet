@@ -42,16 +42,13 @@ public class RemoveColumnCommand : IUndoableCommand
             return false;
 
         _cellStoreRestoreData = sheet.Cells.RemoveColAt(_columnIndex, _nColsRemoved);
-        _columnInfoRestoreData = sheet.ColumnInfo.Cut(_columnIndex, _columnIndex + _nColsRemoved - 1);
-        _mergeRestoreData = sheet.Cells.Merges.Store.RemoveCols(_columnIndex, _columnIndex + _nColsRemoved - 1);
-        _validatorRestoreData = sheet.Cells.Validation.Store.RemoveCols(_columnIndex, _columnIndex + _nColsRemoved - 1);
+        _columnInfoRestoreData = sheet.Columns.Cut(_columnIndex, _columnIndex + _nColsRemoved - 1);
+        _validatorRestoreData = sheet.Validators.Store.RemoveCols(_columnIndex, _columnIndex + _nColsRemoved - 1);
         return sheet.RemoveColImpl(_columnIndex, _nColsRemoved);
     }
 
     public bool Undo(Sheet sheet)
     {
-        // perform undos for merges, validation etc.
-        UndoMerges(sheet);
         UndoValidation(sheet);
 
         // Insert column back in and set all the values that we removed
@@ -60,8 +57,8 @@ public class RemoveColumnCommand : IUndoableCommand
         sheet.Cells.InsertColAt(_columnIndex, _nColsRemoved, false);
         sheet.Cells.Restore(_cellStoreRestoreData);
 
-        sheet.ColumnInfo.Insert(_columnIndex, _nColsRemoved);
-        sheet.ColumnInfo.Restore(_columnInfoRestoreData);
+        sheet.Columns.InsertImpl(_columnIndex, _nColsRemoved);
+        sheet.Columns.Restore(_columnInfoRestoreData);
 
         sheet.MarkDirty(new ColumnRegion(_columnIndex, sheet.NumCols));
 
@@ -71,13 +68,7 @@ public class RemoveColumnCommand : IUndoableCommand
 
     private void UndoValidation(Sheet sheet)
     {
-        sheet.Cells.Validation.Store.InsertCols(_columnIndex, _nColsRemoved, false);
-        sheet.Cells.Validation.Store.Restore(_validatorRestoreData);
-    }
-
-    public void UndoMerges(Sheet sheet)
-    {
-        sheet.Cells.Merges.Store.InsertCols(_columnIndex, _nColsRemoved, false);
-        sheet.Cells.Merges.Store.Restore(_mergeRestoreData);
+        sheet.Validators.Store.InsertCols(_columnIndex, _nColsRemoved, false);
+        sheet.Validators.Store.Restore(_validatorRestoreData);
     }
 }

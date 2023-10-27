@@ -88,13 +88,13 @@
 
     private double getLeft(IRegion region) => CellLayoutProvider.ComputeLeftPosition(region) + 1;
     private double getTop(IRegion region) => CellLayoutProvider.ComputeTopPosition(region) + 1;
-    private double getWidth(IRegion region) => CellLayoutProvider.ComputeWidth(region) - 1;
-    private double getHeight(IRegion region) => CellLayoutProvider.ComputeHeight(region) - 1;
+    private double getWidth(IRegion region) => CellLayoutProvider.ComputeWidth(region) - 2;
+    private double getHeight(IRegion region) => CellLayoutProvider.ComputeHeight(region) - 2;
 
     // Returns the region that the position covers (may be > 1 because of merged cells)
     private IRegion getRegion(CellPosition position)
     {
-        var merge = Sheet.Cells.Merges?.Get(position.Row, position.Col);
+        var merge = Sheet.Cells?.GetMerge(position.Row, position.Col);
         if (merge != null)
             return merge;
         else

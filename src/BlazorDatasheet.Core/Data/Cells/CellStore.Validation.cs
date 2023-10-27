@@ -18,38 +18,11 @@ public partial class CellStore
         foreach (var (row, col) in cellsAffected)
         {
             var cellData = _dataStore.Get(row, col);
-            var result = Validation.Validate(cellData, row, col);
+            var result = _sheet.Validators.Validate(cellData, row, col);
             _validStore.Set(row, col, result.IsValid);
         }
 
         _sheet.MarkDirty(cellsAffected);
-    }
-
-    /// <summary>
-    /// Add a <see cref="IDataValidator"> to a region.
-    /// </summary>
-    /// <param name="region"></param>
-    /// <param name="validator"></param>
-    public void AddValidator(IRegion region, IDataValidator validator)
-    {
-        var cmd = new SetValidatorCommand(region, validator);
-        _sheet.Commands.ExecuteCommand(cmd);
-    }
-
-    /// <summary>
-    /// Adds multiple validators to a region.
-    /// </summary>
-    /// <param name="region"></param>
-    /// <param name="validators"></param>
-    public void AddValidators(IRegion region, IEnumerable<IDataValidator> validators)
-    {
-        _sheet.Commands.BeginCommandGroup();
-        foreach (var validator in validators)
-        {
-            AddValidator(region, validator);
-        }
-
-        _sheet.Commands.EndCommandGroup();
     }
 
 }

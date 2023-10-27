@@ -188,10 +188,9 @@ public class Selection : BRange
             var bottom = boundedRegion.GetEdge(Edge.Bottom);
 
             mergeOverlaps =
-                Sheet.Cells.Merges.Store
-                     .GetRegionsOverlapping(new[] { top, right, left, bottom })
-                     .Where(x => !boundedRegion.Contains(x.Region))
-                     .Select(x => x.Region)
+                Sheet.Cells
+                     .GetMerges(new[] { top, right, left, bottom })
+                     .Where(x => !boundedRegion.Contains(x))
                      .ToList();
 
             // Expand bounded selection to cover all the merges
@@ -300,7 +299,7 @@ public class Selection : BRange
             return;
 
         // If it's currently inside a merged cell, find where it should next move to
-        var merge = Sheet.Cells.Merges.Get(ActiveCellPosition.Row, ActiveCellPosition.Col);
+        var merge = Sheet.Cells.GetMerge(ActiveCellPosition.Row, ActiveCellPosition.Col);
         if (merge != null)
         {
             // Move multiple rows if the current position is on the edge away
@@ -381,7 +380,7 @@ public class Selection : BRange
             return;
 
         // If it's currently inside a merged cell, find where it should next move to
-        var merge = Sheet.Cells.Merges.Get(ActiveCellPosition.Row, ActiveCellPosition.Col);
+        var merge = Sheet.Cells.GetMerge(ActiveCellPosition.Row, ActiveCellPosition.Col);
         if (merge != null)
         {
             // Move multiple rows if the current position is on the edge away
@@ -505,7 +504,7 @@ public class Selection : BRange
         // Check whether there are any merged regions at the ActiveCellPosition.
         // If there are, the input position is the top left of the merged,
         // Otherwise it corresponds to the active cell position.
-        var merged = Sheet.Cells.Merges.Get(ActiveCellPosition.Row, ActiveCellPosition.Col);
+        var merged = Sheet.Cells.GetMerge(ActiveCellPosition.Row, ActiveCellPosition.Col);
         if (merged == null)
             return ActiveCellPosition;
         else

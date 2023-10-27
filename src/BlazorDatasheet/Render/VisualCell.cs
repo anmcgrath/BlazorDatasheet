@@ -31,11 +31,11 @@ public class VisualCell
         Row = row;
         Col = col;
 
-        Width = sheet.ColumnInfo.GetWidth(col);
-        Height = sheet.RowInfo.GetHeight(row);
+        Width = sheet.Columns.GetWidth(col);
+        Height = sheet.Rows.GetHeight(row);
 
-        X = sheet.ColumnInfo.GetLeft(col);
-        Y = sheet.RowInfo.GetTop(row);
+        X = sheet.Columns.GetLeft(col);
+        Y = sheet.Rows.GetTop(row);
         FormatStyleString = GetCellFormatStyleString(format, cell.IsValid);
         Icon = format?.Icon;
         CellType = cell.Type;
@@ -53,10 +53,10 @@ public class VisualCell
             Row = row,
             Col = col,
             FormatStyleString = GetCellFormatStyleString(defaultFormat, true),
-            Width = sheet.ColumnInfo.GetWidth(col),
-            Height = sheet.RowInfo.GetHeight(row),
-            X = sheet.ColumnInfo.GetLeft(col),
-            Y = sheet.RowInfo.GetTop(row),
+            Width = sheet.Columns.GetWidth(col),
+            Height = sheet.Rows.GetHeight(row),
+            X = sheet.Columns.GetLeft(col),
+            Y = sheet.Rows.GetTop(row),
             CellType = "text",
             Format = defaultFormat
         };

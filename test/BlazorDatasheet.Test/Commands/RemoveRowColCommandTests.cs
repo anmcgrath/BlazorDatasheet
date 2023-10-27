@@ -15,7 +15,7 @@ public class RemoveRowColCommandTests
         sheet.Cells.SetValue(0, 2, "0,2");
         sheet.Cells.SetValue(0, 3, "0,3");
 
-        sheet.RemoveCol(2);
+        sheet.Columns.RemoveAt(2);
 
         Assert.AreEqual(2, sheet.NumCols);
         Assert.AreEqual("0,3", sheet.Cells.GetValue(0, 2));
@@ -32,7 +32,7 @@ public class RemoveRowColCommandTests
         var sheet = new Sheet(3, 1);
         sheet.Cells.SetValue(2, 0, "2,0");
         sheet.Cells.SetValue(3, 0, "3,0");
-        sheet.RemoveRow(2);
+        sheet.Rows.RemoveAt(2);
 
         Assert.AreEqual(2, sheet.NumRows);
         Assert.AreEqual("3,0", sheet.Cells.GetValue(2, 0));
@@ -48,7 +48,7 @@ public class RemoveRowColCommandTests
     {
         var sheet = new Sheet(3, 3);
         sheet.SetFormat(new CellFormat() { BackgroundColor = "red" }, sheet.Range(1, 1));
-        sheet.RemoveRow(1);
+        sheet.Rows.RemoveAt(1);
         sheet.Commands.Undo();
         Assert.AreEqual("red", sheet.GetFormat(1, 1)?.BackgroundColor);
     }
@@ -77,7 +77,7 @@ public class RemoveRowColCommandTests
          */
         var sheet = new Sheet(4, 4);
         sheet.SetFormat(new CellFormat() { BackgroundColor = "red" }, sheet.Range(new RowRegion(1, 2)));
-        sheet.RemoveRow(1);
+        sheet.Rows.RemoveAt(1);
         Assert.AreEqual(new CellFormat(), sheet.GetFormat(0, 0));
         Assert.AreEqual("red", sheet.GetFormat(1, 0)?.BackgroundColor);
         Assert.AreEqual(new CellFormat(), sheet.GetFormat(2, 0));
@@ -112,7 +112,7 @@ public class RemoveRowColCommandTests
          */
         var sheet = new Sheet(4, 4);
         sheet.SetFormat(new CellFormat() { BackgroundColor = "red" }, sheet.Range(new ColumnRegion(1, 2)));
-        sheet.RemoveCol(1);
+        sheet.Columns.RemoveAt(1);
         Assert.AreEqual(new CellFormat(), sheet.GetFormat(0, 0));
         Assert.AreEqual("red", sheet.GetFormat(0, 1)?.BackgroundColor);
         Assert.AreEqual(new CellFormat(), sheet.GetFormat(0, 2));
@@ -126,23 +126,23 @@ public class RemoveRowColCommandTests
     public void Remove_Cols_Then_Undo_Restores_Widths()
     {
         var sheet = new Sheet(5, 5);
-        sheet.SetColumnWidth(1, 100);
-        sheet.SetColumnWidth(2, 200);
-        sheet.RemoveCol(1, 2);
+        sheet.Columns.SetColumnWidth(1, 100);
+        sheet.Columns.SetColumnWidth(2, 200);
+        sheet.Columns.RemoveAt(1, 2);
         sheet.Commands.Undo();
-        sheet.ColumnInfo.GetWidth(1).Should().Be(100);
-        sheet.ColumnInfo.GetWidth(2).Should().Be(200);
+        sheet.Columns.GetWidth(1).Should().Be(100);
+        sheet.Columns.GetWidth(2).Should().Be(200);
     }
 
     [Test]
     public void Remove_Rows_Then_Undo_Restores_Heights()
     {
         var sheet = new Sheet(5, 5);
-        sheet.SetRowHeight(1, 100);
-        sheet.SetRowHeight(2, 200);
-        sheet.RemoveRow(1, 2);
+        sheet.Rows.SetRowHeight(1, 100);
+        sheet.Rows.SetRowHeight(2, 200);
+        sheet.Rows.RemoveAt(1, 2);
         sheet.Commands.Undo();
-        sheet.RowInfo.GetHeight(1).Should().Be(100);
-        sheet.RowInfo.GetHeight(2).Should().Be(200);
+        sheet.Rows.GetHeight(1).Should().Be(100);
+        sheet.Rows.GetHeight(2).Should().Be(200);
     }
 }

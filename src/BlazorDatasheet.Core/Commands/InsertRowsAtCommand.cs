@@ -23,21 +23,19 @@ internal class InsertRowsAtCommand : IUndoableCommand
 
     public bool Execute(Sheet sheet)
     {
-        sheet.Cells.Merges.Store.InsertRows(_index, _nRows);
-        sheet.Cells.Validation.Store.InsertRows(_index, _nRows);
+        sheet.Validators.Store.InsertRows(_index, _nRows);
         sheet.Cells.InsertRowAt(_index, _nRows);
         sheet.InsertRowAtImpl(_index, _nRows);
-        sheet.RowInfo.Insert(_index, _nRows);
+        sheet.Rows.InsertImpl(_index, _nRows);
         return true;
     }
 
     public bool Undo(Sheet sheet)
     {
-        sheet.Cells.Merges.Store.RemoveRows(_index, _index + _nRows - 1);
-        sheet.Cells.Validation.Store.RemoveRows(_index, _index + _nRows - 1);
+        sheet.Validators.Store.RemoveRows(_index, _index + _nRows - 1);
         sheet.Cells.RemoveRowAt(_index, _nRows);
         sheet.RemoveRowAtImpl(_index, _nRows);
-        sheet.RowInfo.Cut(_index, _index + _nRows - 1);
+        sheet.Rows.Cut(_index, _index + _nRows - 1);
         return true;
     }
 }

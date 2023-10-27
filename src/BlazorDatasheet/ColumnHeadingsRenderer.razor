@@ -57,7 +57,7 @@
 @for (var i = VisibleColStart; i < (VisibleColStart + NVisibleCols); i++)
 {
     var col = i;
-    var colHeading = Sheet?.ColumnInfo.GetHeading(i) ?? CellReference.ColNumberToLetters(col);
+    var colHeading = Sheet?.Columns.GetHeading(i) ?? CellReference.ColNumberToLetters(col);
 
     <div
         class="sheet-cell @GetActiveClass(col)"
@@ -163,7 +163,7 @@
         {
             IsDragging = false;
             var resizeWidth = Math.Max(MinResizeWidth, CellLayoutProvider.ComputeWidth(ActiveAdornerIndex, 1) + CurrentColResizeAmount);
-            Sheet.SetColumnWidth(ActiveAdornerIndex, resizeWidth);
+            Sheet.Columns.SetColumnWidth(ActiveAdornerIndex, resizeWidth);
             return true;
         }
 

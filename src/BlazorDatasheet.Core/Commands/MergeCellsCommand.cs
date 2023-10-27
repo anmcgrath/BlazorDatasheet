@@ -32,8 +32,8 @@ public class MergeCellsCommand : IUndoableCommand
         {
             // Determine if there are any merged cells in the region
             // We can only merge over merged cells if we entirely overlap them
-            var existingMerges = sheet.Cells.Merges.Store.GetRegionsOverlapping(region);
-            if (!existingMerges.All(x => region.Contains(x.Region)))
+            var existingMerges = sheet.Cells.GetMerges(region).ToList();
+            if (!existingMerges.All(x => region.Contains(x)))
                 continue;
 
             // Clear all the cells that are not the top-left posn of merge and store their values for undo
@@ -45,12 +45,12 @@ public class MergeCellsCommand : IUndoableCommand
 
             // Store the merges that we will have to re-instate on undo
             // And remove any merges that are contained in the region
-            _overridenMergedRegions.AddRange(existingMerges.Select(x => x.Region));
-            sheet.Cells.Merges.UnMergeCellsImpl(new BRange(sheet, existingMerges.Select(x => x.Region)));
+            _overridenMergedRegions.AddRange(existingMerges);
+            sheet.Cells.UnMergeCellsImpl(new BRange(sheet, existingMerges));
 
             // Store the merge that we are doing and perform the actual merge
             _mergesPerformed.Add(region);
-            sheet.Cells.Merges.AddImpl(region);
+            sheet.Cells.MergeImpl(region);
         }
 
         return true;
@@ -65,10 +65,10 @@ public class MergeCellsCommand : IUndoableCommand
     {
         // Undo the merge we performed
         foreach (var merge in _mergesPerformed)
-            sheet.Cells.Merges.UnMergeCellsImpl(merge);
+            sheet.Cells.UnMergeCellsImpl(merge);
         // Restore all the merges we removed
         foreach (var removedMerge in _overridenMergedRegions)
-            sheet.Cells.Merges.AddImpl(removedMerge);
+            sheet.Cells.MergeImpl(removedMerge);
 
         sheet.Selection.Set(_range);
         // Restore all the cell values that were lost when merging

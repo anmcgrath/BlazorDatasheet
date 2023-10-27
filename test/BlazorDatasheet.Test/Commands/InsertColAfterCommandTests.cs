@@ -11,7 +11,7 @@ public class InsertColAfterCommandTests
         var sheet = new Sheet(1, 3);
         sheet.Cells.SetValue(0, 0, "0,0");
         sheet.Cells.SetValue(0, 2, "0,2");
-        sheet.InsertColAt(0);
+        sheet.Columns.InsertAt(0);
 
         Assert.AreEqual(4, sheet.NumCols);
         Assert.AreEqual("0,0", sheet.Cells.GetValue(0, 1));

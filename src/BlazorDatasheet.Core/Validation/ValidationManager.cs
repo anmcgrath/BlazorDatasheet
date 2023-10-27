@@ -7,7 +7,7 @@ namespace BlazorDatasheet.Core.Validation;
 
 public class ValidationManager
 {
-    public ConsolidatedDataStore<int> Store { get; }
+    internal ConsolidatedDataStore<int> Store { get; }
     private readonly Dictionary<int, IDataValidator> _validators;
 
     /// <summary>
@@ -39,18 +39,18 @@ public class ValidationManager
 
         Store.Add(region, index.Value);
         var args = new ValidatorChangedEventArgs(Array.Empty<IDataValidator>(),
-                                                 new List<IDataValidator>() { validator },
-                                                 Array.Empty<IRegion>());
+            new List<IDataValidator>() { validator },
+            Array.Empty<IRegion>());
 
         ValidatorChanged?.Invoke(this, args);
     }
 
     /// <summary>
-    /// Removes the data validator from the region
+    /// Cuts the data validator from the region
     /// </summary>
     /// <param name="validator"></param>
     /// <param name="???"></param>
-    public void Remove(IDataValidator validator, IRegion region)
+    public void Cut(IDataValidator validator, IRegion region)
     {
         var index = GetValidatorIndex(validator);
         if (index == null)
@@ -66,7 +66,7 @@ public class ValidationManager
         }
 
         var args = new ValidatorChangedEventArgs(validatorsRemoved, Array.Empty<IDataValidator>(),
-                                                 result.regionsRemoved.Concat(result.regionsAdded));
+            result.regionsRemoved.Concat(result.regionsAdded));
         ValidatorChanged?.Invoke(this, args);
     }
 
@@ -87,11 +87,11 @@ public class ValidationManager
     /// <param name="row"></param>
     /// <param name="col"></param>
     /// <returns></returns>
-    public IEnumerable<IDataValidator> GetValidators(int row, int col)
+    public IEnumerable<IDataValidator> Get(int row, int col)
     {
         return Store.GetDataOverlapping(row, col)
-                    .Where(x => _validators.ContainsKey(x))
-                    .Select(x => _validators[x]);
+            .Where(x => _validators.ContainsKey(x))
+            .Select(x => _validators[x]);
     }
 
     /// <summary>
@@ -103,7 +103,7 @@ public class ValidationManager
     /// <returns></returns>
     public ValidationResult Validate(object? value, int row, int col)
     {
-        var validators = GetValidators(row, col);
+        var validators = Get(row, col);
         bool isStrict = false;
         bool isValid = true;
         var failMessages = new List<string>();

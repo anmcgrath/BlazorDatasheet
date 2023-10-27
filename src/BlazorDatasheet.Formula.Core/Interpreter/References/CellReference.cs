@@ -73,14 +73,14 @@ public class CellReference : Reference
         return new CellReference(row, col, fixedCol, fixedRow);
     }
 
-    public static int RowStrToNumber(string rowText)
+    internal static int RowStrToNumber(string rowText)
     {
         if (rowText.StartsWith('$'))
             return int.Parse(rowText.Substring(1, rowText.Length - 1)) - 1;
         return int.Parse(rowText) - 1;
     }
 
-    public static int ColStrToNumber(string text)
+    internal static int ColStrToNumber(string text)
     {
         var str = text.ToUpper();
         var start = 'A';

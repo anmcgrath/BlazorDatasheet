@@ -12,21 +12,9 @@ public partial class CellStore
 {
     private Sheet _sheet;
 
-    /// <summary>
-    /// Contains cell merge information and handles merges.
-    /// </summary>
-    public MergeManager Merges { get; }
-
-    /// <summary>
-    /// Manages and holds information on cell validators.
-    /// </summary>
-    public ValidationManager Validation { get; }
-
     public CellStore(Sheet sheet)
     {
         _sheet = sheet;
-        Validation = new ValidationManager();
-        Merges = new MergeManager(sheet);
     }
 
     /// <summary>
@@ -141,37 +129,6 @@ public partial class CellStore
         _sheet.Commands.ExecuteCommand(cmd);
     }
 
-    /// <summary>
-    /// Restores the internal storage state by redoing any actions that caused the internal data to change.
-    /// Fires events for the changed data.
-    /// </summary>
-    /// <param name="restoreData"></param>
-    internal void Restore(CellStoreRestoreData restoreData)
-    {
-        _sheet.BatchUpdates();
-        // Set formula through this function so we add the formula back in to the dependency graph
-        foreach (var data in restoreData.FormulaRestoreData.DataRemoved)
-            this.SetFormulaImpl(data.row, data.col, data.data);
-
-        _validStore.Restore(restoreData.ValidRestoreData);
-        _typeStore.Restore(restoreData.TypeRestoreData);
-        _dataStore.Restore(restoreData.ValueRestoreData);
-        _formatStore.Restore(restoreData.FormatRestoreData);
-
-        foreach (var pt in restoreData.ValueRestoreData.DataRemoved)
-        {
-            _sheet.MarkDirty(pt.row, pt.col);
-            _sheet.EmitCellChanged(pt.row, pt.col);
-        }
-
-        foreach (var region in restoreData.GetAffectedRegions())
-        {
-            _sheet.MarkDirty(region);
-        }
-
-        _sheet.EndBatchUpdates();
-    }
-
     internal CellStoreRestoreData ClearCellsImpl(IEnumerable<IRegion> regionsToClear)
     {
         _sheet.BatchUpdates();
@@ -202,6 +159,7 @@ public partial class CellStore
         _typeStore.InsertCols(col, nCols, expandNeighboring);
         _formulaStore.InsertColAt(col, nCols);
         _validStore.InsertColAt(col, nCols);
+        _mergeStore.InsertCols(col, nCols, false);
     }
 
     /// <summary>
@@ -217,6 +175,7 @@ public partial class CellStore
         _typeStore.InsertRows(row, nRows, expandNeighboring);
         _formulaStore.InsertRowAt(row, nRows);
         _validStore.InsertRowAt(row, nRows);
+        _mergeStore.InsertRows(row, nRows, false);
     }
 
     internal CellStoreRestoreData RemoveRowAt(int row, int nRows)
@@ -227,6 +186,7 @@ public partial class CellStore
         restoreData.TypeRestoreData = _typeStore.RemoveRows(row, row + nRows - 1);
         restoreData.FormulaRestoreData = ClearFormulaImpl(row, nRows).FormulaRestoreData;
         restoreData.FormatRestoreData = _formatStore.RemoveRows(row, row + nRows - 1);
+        restoreData.MergeRestoreData = _mergeStore.RemoveRows(row, row + nRows - 1);
         _formulaStore.RemoveRowAt(row, nRows);
 
         return restoreData;
@@ -240,11 +200,50 @@ public partial class CellStore
         restoreData.TypeRestoreData = _typeStore.RemoveCols(col, col + nCols - 1);
         restoreData.FormulaRestoreData = ClearFormulaImpl(col, nCols).FormulaRestoreData;
         restoreData.FormatRestoreData = _formatStore.RemoveCols(col, col + nCols - 1);
+        restoreData.MergeRestoreData = _mergeStore.RemoveCols(col, col + nCols - 1);
         _formulaStore.RemoveColAt(col, nCols);
 
         return restoreData;
     }
 
+    /// <summary>
+    /// Restores the internal storage state by redoing any actions that caused the internal data to change.
+    /// Fires events for the changed data.
+    /// </summary>
+    /// <param name="restoreData"></param>
+    internal void Restore(CellStoreRestoreData restoreData)
+    {
+        _sheet.BatchUpdates();
+        // Set formula through this function so we add the formula back in to the dependency graph
+        foreach (var data in restoreData.FormulaRestoreData.DataRemoved)
+            this.SetFormulaImpl(data.row, data.col, data.data);
+
+        _validStore.Restore(restoreData.ValidRestoreData);
+        _typeStore.Restore(restoreData.TypeRestoreData);
+        _dataStore.Restore(restoreData.ValueRestoreData);
+        _formatStore.Restore(restoreData.FormatRestoreData);
+        _mergeStore.Restore(restoreData.MergeRestoreData);
+
+        foreach (var pt in restoreData.ValueRestoreData.DataRemoved)
+        {
+            _sheet.MarkDirty(pt.row, pt.col);
+            _sheet.EmitCellChanged(pt.row, pt.col);
+        }
+
+        foreach (var region in restoreData.GetAffectedRegions())
+        {
+            _sheet.MarkDirty(region);
+        }
+
+        _sheet.EndBatchUpdates();
+    }
+
+
+    /// <summary>
+    /// The <see cref="SheetCell"/> at position row, col.
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
     public SheetCell this[int row, int col]
     {
         get { return new SheetCell(row, col, _sheet); }

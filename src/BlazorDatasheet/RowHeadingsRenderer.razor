@@ -27,7 +27,7 @@
 @for (int rowIndex = VisibleRowStart; rowIndex < (VisibleRowStart + NVisibleRows); rowIndex++)
 {
     var row = rowIndex;
-    var heading = @Sheet.RowInfo.GetHeading(row) ?? (row+1).ToString();
+    var heading = @Sheet.Rows.GetHeading(row) ?? (row+1).ToString();
     <div class="sheet-row"> 
         <div
             class="sheet-cell row-head @(IsActive(row) ? "row-active" : "")"

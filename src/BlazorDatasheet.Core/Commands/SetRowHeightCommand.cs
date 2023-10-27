@@ -18,7 +18,7 @@ public class SetRowHeightCommand : IUndoableCommand
 
     public bool Execute(Sheet sheet)
     {
-        _oldHeights = sheet.RowInfo.SetRowHeights(RowStart, RowEnd, _height);
+        _oldHeights = sheet.Rows.SetRowHeightsImpl(RowStart, RowEnd, _height);
         return true;
     }
 
@@ -26,7 +26,7 @@ public class SetRowHeightCommand : IUndoableCommand
     {
         foreach (var old in _oldHeights)
         {
-            sheet.RowInfo.SetRowHeights(old.start, old.end, old.height);
+            sheet.Rows.SetRowHeightsImpl(old.start, old.end, old.height);
             sheet.EmitRowHeightChange(old.start, old.end, old.height);
         }
         return true;

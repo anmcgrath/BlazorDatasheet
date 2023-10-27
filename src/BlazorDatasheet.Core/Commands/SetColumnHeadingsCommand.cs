@@ -18,7 +18,7 @@ public class SetColumnHeadingsCommand: IUndoableCommand
 
     public bool Execute(Sheet sheet)
     {
-        _restoreData = sheet.ColumnInfo.SetColumnHeadings(_colStart, _colEnd, _heading);
+        _restoreData = sheet.Columns.SetColumnHeadingsImpl(_colStart, _colEnd, _heading);
         return true;
     }
 
@@ -26,7 +26,7 @@ public class SetColumnHeadingsCommand: IUndoableCommand
     {
         foreach (var heading in _restoreData)
         {
-            sheet.ColumnInfo.SetColumnHeadings(heading.start, heading.end, heading.heading);
+            sheet.Columns.SetColumnHeadingsImpl(heading.start, heading.end, heading.heading);
         }
 
         return true;

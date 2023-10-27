@@ -1,3 +1,4 @@
+using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -27,7 +28,7 @@ public class RowInfoStore
     /// <param name="row"></param>
     /// <param name="height"></param>
     /// <returns></returns>
-    internal List<(int start, int end, double width)> SetRowHeight(int row, double height)
+    internal List<(int start, int end, double width)> SetRowHeightImpl(int row, double height)
     {
         var restoreData = _heightStore.Set(row, height);
         _sheet.MarkDirty(new RowRegion(row, _sheet.NumRows));
@@ -42,7 +43,7 @@ public class RowInfoStore
     /// <param name="rowEnd"></param>
     /// <param name="height"></param>
     /// <returns></returns>
-    internal List<(int start, int end, double width)> SetRowHeights(int rowStart, int rowEnd, double height)
+    internal List<(int start, int end, double width)> SetRowHeightsImpl(int rowStart, int rowEnd, double height)
     {
         var restoreData = _heightStore.Set(rowStart, rowEnd, height);
         _sheet.MarkDirty(new RowRegion(rowStart, rowEnd));
@@ -55,7 +56,7 @@ public class RowInfoStore
     /// <param name="row"></param>
     /// <param name="heading"></param>
     /// <returns></returns>
-    internal List<(int start, int end, string heading)> SetRowHeading(int row, string heading)
+    internal List<(int start, int end, string heading)> SetRowHeadingImpl(int row, string heading)
     {
         var restoreData = _headingStore.Set(row, heading);
         _sheet.MarkDirty(new RowRegion(row));
@@ -70,7 +71,7 @@ public class RowInfoStore
     /// <param name="rowEnd"></param>
     /// <param name="heading"></param>
     /// <returns></returns>
-    internal List<(int start, int end, string heading)> SetRowHeadings(int rowStart, int rowEnd, string heading)
+    internal List<(int start, int end, string heading)> SetRowHeadingsImpl(int rowStart, int rowEnd, string heading)
     {
         var restoreData = _headingStore.Set(rowStart, rowEnd, heading);
         _sheet.MarkDirty(new RowRegion(rowStart, rowEnd));
@@ -106,7 +107,7 @@ public class RowInfoStore
     /// </summary>
     /// <param name="start"></param>
     /// <param name="n"></param>
-    internal void Insert(int start, int n)
+    internal void InsertImpl(int start, int n)
     {
         _heightStore.InsertAt(start, n);
         _headingStore.InsertAt(start, n);
@@ -192,7 +193,7 @@ public class RowInfoStore
         // this is because we the order of choosing the cell format is 1. cell format, then 2. col format then 3. row format.
         // if we set col format then a row format with some intersection, we would find that the col format is chosen when we
         // query the format at the intersection. It should be the cell format, so we set that.
-        var colOverlaps = _sheet.ColumnInfo.ColFormats.GetAllIntervals()
+        var colOverlaps = _sheet.Columns.ColFormats.GetAllIntervals()
             .Select(x =>
                 new DataRegion<CellFormat>(x.Data, new Region(rowRegion.Top, rowRegion.Bottom, x.Start, x.End)));
 
@@ -216,6 +217,47 @@ public class RowInfoStore
             IntervalsAdded = new List<OrderedInterval<CellFormat>>() { newOi },
             IntervalsRemoved = modified
         };
+    }
+
+    public bool RemoveAt(int index, int nRows = 1)
+    {
+        var cmd = new RemoveRowsCommand(index, nRows);
+        return _sheet.Commands.ExecuteCommand(cmd);
+    }
+
+    /// <summary>
+    /// Inserts a row at an index specified.
+    /// </summary>
+    /// <param name="rowIndex">The index that the new row will be at. The new row will have the index specified.</param>
+    public void InsertRowAt(int rowIndex, Sheet sheet)
+    {
+        var indexToAddAt = Math.Min(sheet.NumRows - 1, Math.Max(rowIndex, 0));
+        var cmd = new InsertRowsAtCommand(indexToAddAt);
+        sheet.Commands.ExecuteCommand(cmd);
+    }
+
+    /// <summary>
+    /// Sets the height of a column, to the height given (in px).
+    /// </summary>
+    /// <param name="rowStart"></param>
+    /// <param name="rowEnd"></param>
+    /// <param name="height"></param>
+    public void SetRowHeight(int rowStart, int rowEnd, double height)
+    {
+        var cmd = new SetRowHeightCommand(rowStart, rowEnd, height);
+        _sheet.Commands.ExecuteCommand(cmd);
+    }
+
+    /// <summary>
+    /// Sets the width of a column, to the width given (in px).
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="height"></param>
+    /// <param name="colStart"></param>
+    public void SetRowHeight(int row, double height)
+    {
+        var cmd = new SetRowHeightCommand(row, row, height);
+        _sheet.Commands.ExecuteCommand(cmd);
     }
 }
 

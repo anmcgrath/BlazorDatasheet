@@ -32,7 +32,7 @@ public class ObjectEditorTests
 
         Assert.AreEqual(_items.Count, sheet.NumRows);
         for(int i = 0; i < propNames.Count; i++)
-            Assert.AreEqual(propNames[i], sheet.ColumnInfo.GetHeading(i));
+            Assert.AreEqual(propNames[i], sheet.Columns.GetHeading(i));
     }
 }
 

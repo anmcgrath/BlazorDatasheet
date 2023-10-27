@@ -337,7 +337,7 @@ public partial class Datasheet : IHandleEvent
                 Sheet?.Selection?.ClearSelections();
             }
 
-            var mergeRangeAtPosition = _sheetLocal.Cells.Merges.Get(row, col);
+            var mergeRangeAtPosition = _sheetLocal.Cells.GetMerge(row, col);
             if (row == -1)
                 this.BeginSelectingCol(col);
             else if (col == -1)
@@ -696,7 +696,7 @@ public partial class Datasheet : IHandleEvent
     private double GetSheetWidthInPx()
     {
         var columnWidth = _cellLayoutProvider.TotalWidth;
-        var headingWidth = ShowRowHeadings ? _sheetLocal.ColumnInfo.DefaultWidth : 0;
+        var headingWidth = ShowRowHeadings ? _sheetLocal.Columns.DefaultWidth : 0;
         return columnWidth + headingWidth;
     }
 
@@ -707,7 +707,7 @@ public partial class Datasheet : IHandleEvent
     private double GetSheetHeightInPx()
     {
         var rowHeights = _cellLayoutProvider.TotalHeight;
-        var headingWidth = ShowColHeadings ? _sheetLocal.RowInfo.DefaultHeight : 0;
+        var headingWidth = ShowColHeadings ? _sheetLocal.Rows.DefaultHeight : 0;
         return rowHeights + headingWidth;
     }
 

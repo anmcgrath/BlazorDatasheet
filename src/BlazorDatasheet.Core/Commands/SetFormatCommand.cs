@@ -32,9 +32,9 @@ public class SetFormatCommand : IUndoableCommand
     public bool Execute(Sheet sheet)
     {
         if (_region is ColumnRegion columnRegion)
-            _colFormatRestoreData = sheet.ColumnInfo.SetColumnFormatImpl(_cellFormat, columnRegion);
+            _colFormatRestoreData = sheet.Columns.SetColumnFormatImpl(_cellFormat, columnRegion);
         else if (_region is RowRegion rowRegion)
-            _rowFormatRestoreData = sheet.RowInfo.SetRowFormatImpl(_cellFormat, rowRegion);
+            _rowFormatRestoreData = sheet.Rows.SetRowFormatImpl(_cellFormat, rowRegion);
         else
             _cellFormatRestoreData = sheet.Cells.MergeFormatImpl(_region, _cellFormat);
         return true;
@@ -43,9 +43,9 @@ public class SetFormatCommand : IUndoableCommand
     public bool Undo(Sheet sheet)
     {
         if (_colFormatRestoreData != null)
-            Restore(sheet, _colFormatRestoreData, sheet.ColumnInfo.ColFormats);
+            Restore(sheet, _colFormatRestoreData, sheet.Columns.ColFormats);
         if (_rowFormatRestoreData != null)
-            Restore(sheet, _rowFormatRestoreData, sheet.RowInfo.RowFormats);
+            Restore(sheet, _rowFormatRestoreData, sheet.Rows.RowFormats);
         if (_cellFormatRestoreData != null)
             sheet.Cells.Restore(_cellFormatRestoreData);
 

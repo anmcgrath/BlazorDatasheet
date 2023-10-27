@@ -15,6 +15,7 @@ using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Intervals;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core;
+using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Core.Data;
 
@@ -29,6 +30,16 @@ public class Sheet
     /// The total of columns in the sheet
     /// </summary>
     public int NumCols { get; private set; }
+
+    /// <summary>
+    /// Start/finish edits.
+    /// </summary>
+    public Editor Editor { get; }
+
+    /// <summary>
+    /// Interact with cells & cell data.
+    /// </summary>
+    public CellStore Cells { get; }
 
     /// <summary>
     /// Managers commands & undo/redo. Default is true.
@@ -49,6 +60,21 @@ public class Sheet
     /// Provides functions for managing the sheet's conditional formatting
     /// </summary>
     public ConditionalFormatManager ConditionalFormatting { get; }
+
+    /// <summary>
+    /// Manages and holds information on cell validators.
+    /// </summary>
+    internal ValidationManager Validators { get; } = new();
+
+    /// <summary>
+    /// Contains data, including width, on each column.
+    /// </summary>
+    public ColumnInfoStore Columns { get; private set; }
+
+    /// <summary>
+    /// Contains data, including height, on each row.
+    /// </summary>
+    public RowInfoStore Rows { get; private set; }
 
     /// <summary>
     /// The sheet's active selection
@@ -99,16 +125,6 @@ public class Sheet
     /// </summary>
     public event EventHandler<DirtySheetEventArgs>? SheetDirty;
 
-    /// <summary>
-    /// Contains data, including width, on each column.
-    /// </summary>
-    public ColumnInfoStore ColumnInfo { get; private set; }
-
-    /// <summary>
-    /// Contains data, including height, on each row.
-    /// </summary>
-    public RowInfoStore RowInfo { get; private set; }
-
     public event EventHandler<CellsSelectedEventArgs>? CellsSelected;
 
     public event EventHandler<CellMetaDataChangeEventArgs>? MetaDataChanged;
@@ -127,14 +143,11 @@ public class Sheet
 
     #endregion
 
-    public Editor Editor { get; }
-
     /// <summary>
     /// True if the sheet is not firing dirty events until <see cref="EndBatchUpdates"/> is called.
     /// </summary>
     private bool _isBatchingChanges;
 
-    public CellStore Cells { get; }
 
     /// <summary>
     /// If the sheet is batching dirty regions, they are stored here.
@@ -153,37 +166,25 @@ public class Sheet
 
     private Sheet()
     {
-        Cells = new CellStore(this);
+        Cells = new Cells.CellStore(this);
         Commands = new CommandManager(this);
         Selection = new Selection(this);
         Editor = new Editor(this);
-        RowInfo = new RowInfoStore(25, this);
-        ColumnInfo = new ColumnInfoStore(105, this);
+        Rows = new RowInfoStore(25, this);
+        Columns = new ColumnInfoStore(105, this);
         FormulaEngine = new FormulaEngine.FormulaEngine(this);
         ConditionalFormatting = new ConditionalFormatManager(this);
     }
 
     public Sheet(int numRows, int numCols) : this()
     {
-        Cells = new CellStore(this);
+        Cells = new Cells.CellStore(this);
         NumCols = numCols;
         NumRows = numRows;
     }
 
 
     #region COLS
-
-    /// <summary>
-    /// Inserts a column after the index specified. If the index is outside of the range of -1 to NumCols-1,
-    /// A column is added either at the beginning or end of the columns.
-    /// </summary>
-    /// <param name="colIndex"></param>
-    public void InsertColAt(int colIndex, int nCols = 1)
-    {
-        var indexToAdd = Math.Min(NumCols - 1, Math.Max(colIndex, 0));
-        var cmd = new InsertColAtCommand(indexToAdd, nCols);
-        Commands.ExecuteCommand(cmd);
-    }
 
     internal void InsertColAtImpl(int colIndex, int nCols = 1)
     {
@@ -192,19 +193,7 @@ public class Sheet
     }
 
     /// <summary>
-    /// Removes the column at the specified index
-    /// </summary>
-    /// <param name="colIndex"></param>
-    /// <param name="nCols">The number of oclumns to remove</param>
-    /// <returns>Whether the column removal was successful</returns>
-    public bool RemoveCol(int colIndex, int nCols = 1)
-    {
-        var cmd = new RemoveColumnCommand(colIndex, nCols);
-        return Commands.ExecuteCommand(cmd);
-    }
-
-    /// <summary>
-    /// Internal implementation that removes the column data
+    /// Internal implementation that reduces number of cols and invokes event.
     /// </summary>
     /// <param name="colIndex"></param>
     /// <returns>Whether the column at index colIndex was removed</returns>
@@ -215,36 +204,9 @@ public class Sheet
         return true;
     }
 
-    /// <summary>
-    /// Sets the width of a column, to the width given (in px).
-    /// </summary>
-    /// <param name="colStart"></param>
-    /// <param name="width"></param>
-    public void SetColumnWidth(int colStart, int colEnd, double width)
-    {
-        var cmd = new SetColumnWidthCommand(colStart, colEnd, width);
-        Commands.ExecuteCommand(cmd);
-    }
-
-    /// <summary>
-    /// Sets the width of a column, to the width given (in px).
-    /// </summary>
-    /// <param name="colStart"></param>
-    /// <param name="width"></param>
-    public void SetColumnWidth(int column, double width)
-    {
-        var cmd = new SetColumnWidthCommand(column, column, width);
-        Commands.ExecuteCommand(cmd);
-    }
-
     internal void EmitColumnWidthChange(int colIndex, int colEnd, double width)
     {
         ColumnWidthChanged?.Invoke(this, new ColumnWidthChangedEventArgs(colIndex, colEnd, width));
-    }
-
-    public void SetColumnHeadings(int colStart, int colEnd, string heading)
-    {
-        Commands.ExecuteCommand(new SetColumnHeadingsCommand(colStart, colEnd, heading));
     }
 
     #endregion
@@ -252,19 +214,7 @@ public class Sheet
     #region ROWS
 
     /// <summary>
-    /// Inserts a row at an index specified.
-    /// </summary>
-    /// <param name="rowIndex">The index that the new row will be at. The new row will have the index specified.</param>
-    public void InsertRowAt(int rowIndex)
-    {
-        var indexToAddAt = Math.Min(NumRows - 1, Math.Max(rowIndex, 0));
-        var cmd = new InsertRowsAtCommand(indexToAddAt);
-        Commands.ExecuteCommand(cmd);
-    }
-
-    /// <summary>
-    /// The internal insert function that implements adding a row
-    /// This function is not undoable.
+    /// Internal implementation that increases number of rows and invokes event.
     /// </summary>
     /// <param name="rowIndex"></param>
     /// <param name="nRows">The number of rows to insert</param>
@@ -277,12 +227,6 @@ public class Sheet
         return true;
     }
 
-    public bool RemoveRow(int index, int nRows = 1)
-    {
-        var cmd = new RemoveRowsCommand(index, nRows);
-        return Commands.ExecuteCommand(cmd);
-    }
-
     internal bool RemoveRowAtImpl(int rowIndex, int nRows)
     {
         NumRows -= nRows;
@@ -290,28 +234,6 @@ public class Sheet
         return true;
     }
 
-
-    /// <summary>
-    /// Sets the height of a column, to the height given (in px).
-    /// </summary>
-    /// <param name="rowStart"></param>
-    /// <param name="height"></param>
-    public void SetRowHeight(int rowStart, int rowEnd, double height)
-    {
-        var cmd = new SetRowHeightCommand(rowStart, rowEnd, height);
-        Commands.ExecuteCommand(cmd);
-    }
-
-    /// <summary>
-    /// Sets the width of a column, to the width given (in px).
-    /// </summary>
-    /// <param name="colStart"></param>
-    /// <param name="height"></param>
-    public void SetRowHeight(int row, double height)
-    {
-        var cmd = new SetRowHeightCommand(row, row, height);
-        Commands.ExecuteCommand(cmd);
-    }
 
     internal void EmitRowHeightChange(int rowStart, int rowEnd, double height)
     {
@@ -385,7 +307,51 @@ public class Sheet
     }
 
 
-    #region CELLS
+    #region VALIDATION
+
+    /// <summary>
+    /// Add a <see cref="IDataValidator"> to a region.
+    /// </summary>
+    /// <param name="region"></param>
+    /// <param name="validator"></param>
+    public void AddValidator(IRegion region, IDataValidator validator)
+    {
+        var cmd = new SetValidatorCommand(region, validator);
+        Commands.ExecuteCommand(cmd);
+    }
+
+    /// <summary>
+    /// Add a <see cref="IDataValidator"> to a cell.
+    /// </summary>
+    /// <param name="col"></param>
+    /// <param name="validator"></param>
+    /// <param name="row"></param>
+    public void AddValidator(int row, int col, IDataValidator validator)
+    {
+        var cmd = new SetValidatorCommand(new Region(row, col), validator);
+        Commands.ExecuteCommand(cmd);
+    }
+
+    /// <summary>
+    /// Adds multiple validators to a region.
+    /// </summary>
+    /// <param name="region"></param>
+    /// <param name="validators"></param>
+    public void AddValidators(IRegion region, IEnumerable<IDataValidator> validators)
+    {
+        Commands.BeginCommandGroup();
+        foreach (var validator in validators)
+        {
+            AddValidator(region, validator);
+        }
+
+        Commands.EndCommandGroup();
+    }
+
+    public IEnumerable<IDataValidator> GetValidators(int cellRow, int cellCol)
+    {
+        return Validators.Get(cellRow, cellCol);
+    }
 
     #endregion
 
@@ -572,8 +538,8 @@ public class Sheet
     {
         var defaultFormat = new CellFormat();
         var cellFormat = Cells.GetFormat(row, col).Clone();
-        var rowFormat = RowInfo.RowFormats.Get(row)?.Clone() ?? defaultFormat;
-        var colFormat = ColumnInfo.ColFormats.Get(col)?.Clone() ?? defaultFormat;
+        var rowFormat = Rows.RowFormats.Get(row)?.Clone() ?? defaultFormat;
+        var colFormat = Columns.ColFormats.Get(col)?.Clone() ?? defaultFormat;
 
         rowFormat.Merge(colFormat);
         rowFormat.Merge(cellFormat);
@@ -604,7 +570,7 @@ public class Sheet
     {
         FormatsChanged?.Invoke(this, args);
     }
-    
+
     #endregion
 
     public string? GetRegionAsDelimitedText(IRegion inputRegion, char tabDelimiter = '\t', string newLineDelim = "\n")

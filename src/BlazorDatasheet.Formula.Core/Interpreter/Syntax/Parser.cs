@@ -144,7 +144,7 @@ public class Parser
             return parseRange();
         }
 
-        if (isValidCellReference(Current.Text))
+        if (RangeText.IsValidCellReference(Current.Text))
             return parseCell();
 
         var identifier = NextToken();
@@ -165,48 +165,7 @@ public class Parser
 
     private Reference ParseRangePartAsReference(SyntaxToken token)
     {
-        if (isValidCellReference(token.Text))
-        {
-            var cellReference = CellReference.FromString(token.Text);
-            return cellReference;
-        }
-
-        if (isValidColReference(token.Text))
-            return new ColReference(CellReference.ColStrToNumber(token.Text),
-                                    token.Text.StartsWith('$'));
-
-        if (isValidRowReference(token.Text))
-            return new RowReference(CellReference.RowStrToNumber(token.Text), token.Text.StartsWith('$'));
-
-        return new NamedReference(token.Text);
-    }
-
-    private bool isValidColReference(string text)
-    {
-        for (int i = 0; i < text.Length; i++)
-        {
-            var c = text[i];
-            if (c == '$' && i == 0)
-                continue;
-            if (!char.IsLetter(c))
-                return false;
-        }
-
-        return true;
-    }
-
-    private bool isValidRowReference(string text)
-    {
-        for (int i = 0; i < text.Length; i++)
-        {
-            var c = text[i];
-            if (c == '$' && i == 0)
-                continue;
-            if (!char.IsDigit(c))
-                return false;
-        }
-
-        return true;
+        return RangeText.ParseRangePartAsReference(token.Text);
     }
 
     private ExpressionSyntax parseCell()
@@ -215,11 +174,6 @@ public class Parser
         var cellReference = CellReference.FromString(cellToken.Text);
         _references.Add(cellReference);
         return new CellExpressionSyntax(cellReference);
-    }
-
-    private bool isValidCellReference(string text)
-    {
-        return CellReference.IsValid(text);
     }
 
     private ExpressionSyntax parseFunctionCall()

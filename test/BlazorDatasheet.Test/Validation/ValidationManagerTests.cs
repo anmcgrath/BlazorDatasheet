@@ -16,9 +16,9 @@ public class ValidationManagerTests
     {
         var vm = new ValidationManager();
         vm.Add(new NumberValidator(true), new Region(0, 5, 0, 5));
-        vm.GetValidators(0, 0).Should().NotBeEmpty();
-        vm.GetValidators(1, 1).Should().NotBeEmpty();
-        vm.GetValidators(6, 0).Should().BeEmpty();
+        vm.Get(0, 0).Should().NotBeEmpty();
+        vm.Get(1, 1).Should().NotBeEmpty();
+        vm.Get(6, 0).Should().BeEmpty();
     }
 
     [Test]
@@ -44,7 +44,7 @@ public class ValidationManagerTests
         var falseValidator = new AlwaysFalseValidator(true);
         var vm = new ValidationManager();
         vm.Add(falseValidator, new Region(0, 5, 0, 5));
-        vm.Remove(falseValidator, new Region(2, 3, 2, 3));
+        vm.Cut(falseValidator, new Region(2, 3, 2, 3));
         vm.Validate(-1, 0, 0).IsValid.Should().BeFalse();
         vm.Validate(-1, 2, 2).IsValid.Should().BeTrue();
     }
@@ -54,46 +54,46 @@ public class ValidationManagerTests
     {
         var sheet = new Sheet(4, 4);
         var val = new SourceValidator(new List<string>() { "A", "B" }, false);
-        sheet.Cells.Validation.Add(val, new Region(2, 2));
-        sheet.InsertRowAt(2);
-        sheet.Cells.Validation.GetValidators(1, 2).Should().BeEmpty();
-        sheet.Cells.Validation.GetValidators(2, 2).Should().BeEmpty();
-        sheet.Cells.Validation.GetValidators(3, 2).First().Should().BeSameAs(val);
+        sheet.AddValidator(2, 2, val);
+        sheet.Rows.InsertRowAt(2, sheet);
+        sheet.GetValidators(1, 2).Should().BeEmpty();
+        sheet.GetValidators(2, 2).Should().BeEmpty();
+        sheet.GetValidators(3, 2).First().Should().BeSameAs(val);
 
         sheet.Commands.Undo();
-        sheet.Cells.Validation.GetValidators(3, 2).Should().BeEmpty();
-        sheet.Cells.Validation.GetValidators(2, 2).First().Should().BeSameAs(val);
+        sheet.GetValidators(3, 2).Should().BeEmpty();
+        sheet.GetValidators(2, 2).First().Should().BeSameAs(val);
     }
-    
+
     [Test]
     public void Insert_Col_At_Left_Of_Validator_Shifts_It_Right()
     {
         var sheet = new Sheet(4, 4);
         var val = new SourceValidator(new List<string>() { "A", "B" }, false);
-        sheet.Cells.Validation.Add(val, new Region(2, 2));
-        sheet.InsertColAt(2);
-        sheet.Cells.Validation.GetValidators(2, 1).Should().BeEmpty();
-        sheet.Cells.Validation.GetValidators(2, 2).Should().BeEmpty();
-        sheet.Cells.Validation.GetValidators(2, 3).First().Should().BeSameAs(val);
+        sheet.AddValidator(2, 2, val);
+        sheet.Columns.InsertAt(2);
+        sheet.GetValidators(2, 1).Should().BeEmpty();
+        sheet.GetValidators(2, 2).Should().BeEmpty();
+        sheet.GetValidators(2, 3).First().Should().BeSameAs(val);
 
         sheet.Commands.Undo();
-        sheet.Cells.Validation.GetValidators(2, 3).Should().BeEmpty();
-        sheet.Cells.Validation.GetValidators(2, 2).First().Should().BeSameAs(val);
+        sheet.GetValidators(2, 3).Should().BeEmpty();
+        sheet.GetValidators(2, 2).First().Should().BeSameAs(val);
     }
-    
+
     [Test]
     public void Insert_Col_At_Left_Of_Validator_WhenAtCol0_Shifts_It_Right()
     {
         var sheet = new Sheet(4, 4);
         var val = new SourceValidator(new List<string>() { "A", "B" }, false);
-        sheet.Cells.Validation.Add(val, new Region(2, 0));
-        sheet.InsertColAt(0);
-        sheet.Cells.Validation.GetValidators(2, 0).Should().BeEmpty();
-        sheet.Cells.Validation.GetValidators(2, 1).First().Should().BeSameAs(val);
+        sheet.AddValidator(2, 0, val);
+        sheet.Columns.InsertAt(0);
+        sheet.GetValidators(2, 0).Should().BeEmpty();
+        sheet.GetValidators(2, 1).First().Should().BeSameAs(val);
 
         sheet.Commands.Undo();
-        sheet.Cells.Validation.GetValidators(2, 1).Should().BeEmpty();
-        sheet.Cells.Validation.GetValidators(2, 0).First().Should().BeSameAs(val);
+        sheet.GetValidators(2, 1).Should().BeEmpty();
+        sheet.GetValidators(2, 0).First().Should().BeSameAs(val);
     }
 
     internal class AlwaysFalseValidator : IDataValidator

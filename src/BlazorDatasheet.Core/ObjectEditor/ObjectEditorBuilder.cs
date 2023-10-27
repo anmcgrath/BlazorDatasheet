@@ -159,9 +159,9 @@ public class ObjectEditorBuilder<T>
         {
             var propDefn = _propertyDefinitions[i];
             var headingStore = _direction == GridDirection.PropertiesAcrossColumns
-                ? sheet.ColumnInfo
+                ? sheet.Columns
                 : null;
-            headingStore.SetColumnHeading(i, string.IsNullOrEmpty(propDefn.Heading)
+            headingStore.SetColumnHeadingImpl(i, string.IsNullOrEmpty(propDefn.Heading)
                                               ? propDefn.PropertyName
                                               : propDefn.Heading);
 
@@ -180,9 +180,9 @@ public class ObjectEditorBuilder<T>
             {
                 // Add validators
                 if (_direction == GridDirection.PropertiesAcrossColumns)
-                    sheet.Cells.Validation.Add(validator, new ColumnRegion(i));
+                    sheet.Validators.Add(validator, new ColumnRegion(i));
                 else if (_direction == GridDirection.PropertiesAcrossRows)
-                    sheet.Cells.Validation.Add(validator, new RowRegion(i));
+                    sheet.Validators.Add(validator, new RowRegion(i));
             }
         }
 

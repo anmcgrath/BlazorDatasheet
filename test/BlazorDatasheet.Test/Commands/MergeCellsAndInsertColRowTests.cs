@@ -28,7 +28,7 @@ public class MergeCellsAndInsertColRowTests
         var sheet = new Sheet(5, 5);
         sheet.Cells.SetValue(1, 1, "U");
         sheet.Cells.SetValue(2, 2, "M");
-        sheet.Cells.Merges.Add(sheet.Range(2, 3, 2, 3));
+        sheet.Cells.Merge(sheet.Range(2, 3, 2, 3));
 
         /*
                0  1  2  3  4
@@ -41,19 +41,19 @@ public class MergeCellsAndInsertColRowTests
 
          */
 
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 2));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 3));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 3));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(3, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(3, 3));
 
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(0, 0));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(4, 4));
+        Assert.False(sheet.Cells.IsInsideMerge(0, 0));
+        Assert.False(sheet.Cells.IsInsideMerge(4, 4));
 
         Assert.AreEqual("M", sheet.Cells.GetValue(2, 2));
         Assert.AreEqual(null, sheet.Cells.GetValue(3, 3));
         Assert.AreEqual("U", sheet.Cells.GetValue(1, 1));
 
-        sheet.InsertRowAt(1);
+        sheet.Rows.InsertRowAt(1, sheet);
         /*
                0  1  2  3  4
            0 |  |  |  |  |  |
@@ -65,14 +65,14 @@ public class MergeCellsAndInsertColRowTests
 
          */
 
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(3, 2));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(3, 3));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(4, 2));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(4, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(3, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(3, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(4, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(4, 3));
 
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(0, 0));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(2, 2));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(5, 2));
+        Assert.False(sheet.Cells.IsInsideMerge(0, 0));
+        Assert.False(sheet.Cells.IsInsideMerge(2, 2));
+        Assert.False(sheet.Cells.IsInsideMerge(5, 2));
 
         Assert.AreEqual("M", sheet.Cells.GetValue(3, 2));
         Assert.AreEqual(null, sheet.Cells.GetValue(4, 3));
@@ -80,13 +80,13 @@ public class MergeCellsAndInsertColRowTests
 
         sheet.Commands.Undo();
 
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 2));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 3));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 3));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(3, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(3, 3));
 
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(0, 0));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(4, 4));
+        Assert.False(sheet.Cells.IsInsideMerge(0, 0));
+        Assert.False(sheet.Cells.IsInsideMerge(4, 4));
     }
 
     [Test]
@@ -96,21 +96,21 @@ public class MergeCellsAndInsertColRowTests
         sheet.Cells.SetValue(2, 2, "M");
         sheet.Cells.SetValue(1, 1, "U");
 
-        sheet.Cells.Merges.Add(sheet.Range(2, 3, 2, 3));
+        sheet.Cells.Merge(sheet.Range(2, 3, 2, 3));
 
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 2));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 3));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 3));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(3, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(3, 3));
 
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(0, 0));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(4, 4));
+        Assert.False(sheet.Cells.IsInsideMerge(0, 0));
+        Assert.False(sheet.Cells.IsInsideMerge(4, 4));
 
         Assert.AreEqual("M", sheet.Cells.GetValue(2, 2));
         Assert.AreEqual(null, sheet.Cells.GetValue(3, 3));
         Assert.AreEqual("U", sheet.Cells.GetValue(1, 1));
 
-        sheet.InsertRowAt(3);
+        sheet.Rows.InsertRowAt(3, sheet);
         /*
                0  1  2  3  4
            0 |  |  |  |  |  |
@@ -122,16 +122,16 @@ public class MergeCellsAndInsertColRowTests
 
          */
 
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 2));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 3));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 2));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(3, 3));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(4, 2));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(4, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(3, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(4, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(4, 3));
 
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(0, 0));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(1, 2));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(5, 2));
+        Assert.False(sheet.Cells.IsInsideMerge(0, 0));
+        Assert.False(sheet.Cells.IsInsideMerge(1, 2));
+        Assert.False(sheet.Cells.IsInsideMerge(5, 2));
 
         Assert.AreEqual("M", sheet.Cells.GetValue(2, 2));
         Assert.AreEqual(null, sheet.Cells.GetValue(4, 3));
@@ -145,21 +145,21 @@ public class MergeCellsAndInsertColRowTests
         sheet.Cells.SetValue(2, 2, "M");
         sheet.Cells.SetValue(1, 1, "U");
 
-        sheet.Cells.Merges.Add(sheet.Range(2, 3, 2, 3));
+        sheet.Cells.Merge(sheet.Range(2, 3, 2, 3));
 
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 2));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 3));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 3));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(3, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(3, 3));
 
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(0, 0));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(4, 4));
+        Assert.False(sheet.Cells.IsInsideMerge(0, 0));
+        Assert.False(sheet.Cells.IsInsideMerge(4, 4));
 
         Assert.AreEqual("M", sheet.Cells.GetValue(2, 2));
         Assert.AreEqual(null, sheet.Cells.GetValue(3, 3));
         Assert.AreEqual("U", sheet.Cells.GetValue(1, 1));
 
-        sheet.InsertColAt(0);
+        sheet.Columns.InsertAt(0);
 
         /*
                0  1  2  3  4  5
@@ -171,15 +171,15 @@ public class MergeCellsAndInsertColRowTests
 
          */
 
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 3));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 4));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(3, 3));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(3, 4));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 4));
+        Assert.True(sheet.Cells.IsInsideMerge(3, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(3, 4));
 
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(0, 0));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(2, 2));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(1, 2));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(4, 5));
+        Assert.False(sheet.Cells.IsInsideMerge(0, 0));
+        Assert.False(sheet.Cells.IsInsideMerge(2, 2));
+        Assert.False(sheet.Cells.IsInsideMerge(1, 2));
+        Assert.False(sheet.Cells.IsInsideMerge(4, 5));
 
         Assert.AreEqual("M", sheet.Cells.GetValue(2, 3));
         Assert.AreEqual(null, sheet.Cells.GetValue(2, 4));
@@ -187,13 +187,13 @@ public class MergeCellsAndInsertColRowTests
 
         sheet.Commands.Undo();
 
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 2));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 3));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 3));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(3, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(3, 3));
 
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(0, 0));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(4, 4));
+        Assert.False(sheet.Cells.IsInsideMerge(0, 0));
+        Assert.False(sheet.Cells.IsInsideMerge(4, 4));
     }
 
     [Test]
@@ -203,21 +203,21 @@ public class MergeCellsAndInsertColRowTests
         sheet.Cells.SetValue(2, 2, "M");
         sheet.Cells.SetValue(1, 1, "U");
 
-        sheet.Cells.Merges.Add(sheet.Range(2, 3, 2, 3));
+        sheet.Cells.Merge(sheet.Range(2, 3, 2, 3));
 
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 2));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 3));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 3));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(3, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(3, 3));
 
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(0, 0));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(4, 4));
+        Assert.False(sheet.Cells.IsInsideMerge(0, 0));
+        Assert.False(sheet.Cells.IsInsideMerge(4, 4));
 
         Assert.AreEqual("M", sheet.Cells.GetValue(2, 2));
         Assert.AreEqual(null, sheet.Cells.GetValue(3, 3));
         Assert.AreEqual("U", sheet.Cells.GetValue(1, 1));
 
-        sheet.InsertColAt(3);
+        sheet.Columns.InsertAt(3);
 
         /*
                0  1  2  3  4  5
@@ -229,17 +229,17 @@ public class MergeCellsAndInsertColRowTests
 
          */
 
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 2));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 3));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 4));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(3, 2));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(3, 3));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(3, 4));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 4));
+        Assert.True(sheet.Cells.IsInsideMerge(3, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(3, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(3, 4));
 
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(0, 0));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(1, 1));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(2, 1));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(4, 5));
+        Assert.False(sheet.Cells.IsInsideMerge(0, 0));
+        Assert.False(sheet.Cells.IsInsideMerge(1, 1));
+        Assert.False(sheet.Cells.IsInsideMerge(2, 1));
+        Assert.False(sheet.Cells.IsInsideMerge(4, 5));
 
         Assert.AreEqual("M", sheet.Cells.GetValue(2, 2));
         Assert.AreEqual(null, sheet.Cells.GetValue(2, 4));
@@ -263,9 +263,9 @@ public class MergeCellsAndInsertColRowTests
         sheet.Cells.SetValue(2, 2, "M");
         sheet.Cells.SetValue(1, 1, "U");
 
-        sheet.Cells.Merges.Add(sheet.Range(2, 3, 2, 4));
+        sheet.Cells.Merge(sheet.Range(2, 3, 2, 4));
 
-        sheet.RemoveCol(3);
+        sheet.Columns.RemoveAt(3); 
 
         /*
                0  1  2  3  4
@@ -277,15 +277,15 @@ public class MergeCellsAndInsertColRowTests
 
          */
 
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 2));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 3));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(3, 2));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(3, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(3, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(3, 3));
 
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(0, 0));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(1, 1));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(2, 4));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(4, 4));
+        Assert.False(sheet.Cells.IsInsideMerge(0, 0));
+        Assert.False(sheet.Cells.IsInsideMerge(1, 1));
+        Assert.False(sheet.Cells.IsInsideMerge(2, 4));
+        Assert.False(sheet.Cells.IsInsideMerge(4, 4));
 
         Assert.AreEqual("M", sheet.Cells.GetValue(2, 2));
         Assert.AreEqual(null, sheet.Cells.GetValue(2, 4));
@@ -293,23 +293,23 @@ public class MergeCellsAndInsertColRowTests
 
         sheet.Commands.Undo();
 
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 2));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 3));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 4));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(3, 2));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(3, 3));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(3, 4));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 4));
+        Assert.True(sheet.Cells.IsInsideMerge(3, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(3, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(3, 4));
 
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(0, 0));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(1, 1));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(2, 1));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(4, 5));
+        Assert.False(sheet.Cells.IsInsideMerge(0, 0));
+        Assert.False(sheet.Cells.IsInsideMerge(1, 1));
+        Assert.False(sheet.Cells.IsInsideMerge(2, 1));
+        Assert.False(sheet.Cells.IsInsideMerge(4, 5));
 
         Assert.AreEqual("M", sheet.Cells.GetValue(2, 2));
         Assert.AreEqual(null, sheet.Cells.GetValue(2, 4));
         Assert.AreEqual("U", sheet.Cells.GetValue(1, 1));
 
-        sheet.RemoveCol(0);
+        sheet.Columns.RemoveAt(0);
 
         /*
                0  1  2  3  4
@@ -321,17 +321,17 @@ public class MergeCellsAndInsertColRowTests
 
          */
 
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 1));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 2));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 3));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(3, 1));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(3, 2));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(3, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 1));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(3, 1));
+        Assert.True(sheet.Cells.IsInsideMerge(3, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(3, 3));
 
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(0, 0));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(1, 1));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(2, 4));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(4, 4));
+        Assert.False(sheet.Cells.IsInsideMerge(0, 0));
+        Assert.False(sheet.Cells.IsInsideMerge(1, 1));
+        Assert.False(sheet.Cells.IsInsideMerge(2, 4));
+        Assert.False(sheet.Cells.IsInsideMerge(4, 4));
 
         Assert.AreEqual("M", sheet.Cells.GetValue(2, 1));
         Assert.AreEqual(null, sheet.Cells.GetValue(2, 3));
@@ -356,9 +356,9 @@ public class MergeCellsAndInsertColRowTests
         sheet.Cells.SetValue(2, 2, "M");
         sheet.Cells.SetValue(1, 1, "U");
 
-        sheet.Cells.Merges.Add(sheet.Range(2, 4, 2, 4));
+        sheet.Cells.Merge(sheet.Range(2, 4, 2, 4));
 
-        sheet.RemoveRow(3);
+        sheet.Rows.RemoveAt(3);
 
         /*
                0  1  2  3  4  5
@@ -370,17 +370,17 @@ public class MergeCellsAndInsertColRowTests
 
          */
 
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 2));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 3));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 4));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(3, 2));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(3, 3));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(3, 4));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 4));
+        Assert.True(sheet.Cells.IsInsideMerge(3, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(3, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(3, 4));
 
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(0, 0));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(1, 1));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(2, 5));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(4, 4));
+        Assert.False(sheet.Cells.IsInsideMerge(0, 0));
+        Assert.False(sheet.Cells.IsInsideMerge(1, 1));
+        Assert.False(sheet.Cells.IsInsideMerge(2, 5));
+        Assert.False(sheet.Cells.IsInsideMerge(4, 4));
 
         Assert.AreEqual("M", sheet.Cells.GetValue(2, 2));
         Assert.AreEqual(null, sheet.Cells.GetValue(2, 3));
@@ -388,19 +388,19 @@ public class MergeCellsAndInsertColRowTests
 
         sheet.Commands.Undo();
 
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 2));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 3));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 4));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(4, 2));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(4, 3));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(4, 4));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 4));
+        Assert.True(sheet.Cells.IsInsideMerge(4, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(4, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(4, 4));
 
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(0, 0));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(1, 1));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(2, 5));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(5, 5));
+        Assert.False(sheet.Cells.IsInsideMerge(0, 0));
+        Assert.False(sheet.Cells.IsInsideMerge(1, 1));
+        Assert.False(sheet.Cells.IsInsideMerge(2, 5));
+        Assert.False(sheet.Cells.IsInsideMerge(5, 5));
 
-        sheet.RemoveRow(0);
+        sheet.Rows.RemoveAt(0);
 
 
         /*
@@ -413,18 +413,18 @@ public class MergeCellsAndInsertColRowTests
 
          */
 
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(1, 2));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(1, 3));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(1, 4));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(3, 2));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(3, 3));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(3, 4));
+        Assert.True(sheet.Cells.IsInsideMerge(1, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(1, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(1, 4));
+        Assert.True(sheet.Cells.IsInsideMerge(3, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(3, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(3, 4));
 
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(0, 0));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(0, 3));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(1, 5));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(3, 5));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(5, 5));
+        Assert.False(sheet.Cells.IsInsideMerge(0, 0));
+        Assert.False(sheet.Cells.IsInsideMerge(0, 3));
+        Assert.False(sheet.Cells.IsInsideMerge(1, 5));
+        Assert.False(sheet.Cells.IsInsideMerge(3, 5));
+        Assert.False(sheet.Cells.IsInsideMerge(5, 5));
 
         Assert.AreEqual("M", sheet.Cells.GetValue(1, 2));
         Assert.AreEqual(null, sheet.Cells.GetValue(2, 3));
@@ -438,7 +438,7 @@ public class MergeCellsAndInsertColRowTests
         sheet.Cells.SetValue(2, 2, "M");
         sheet.Cells.SetValue(1, 1, "U");
 
-        sheet.Cells.Merges.Add(sheet.Range(2, 2, 2, 3));
+        sheet.Cells.Merge(sheet.Range(2, 2, 2, 3));
 
         /*
                 0  1  2  3  4
@@ -449,17 +449,17 @@ public class MergeCellsAndInsertColRowTests
             4 |  |  |  |  |  |
          */
 
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 2));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 3));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 3));
 
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(0, 0));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(4, 4));
+        Assert.False(sheet.Cells.IsInsideMerge(0, 0));
+        Assert.False(sheet.Cells.IsInsideMerge(4, 4));
 
         Assert.AreEqual("M", sheet.Cells.GetValue(2, 2));
         Assert.AreEqual(null, sheet.Cells.GetValue(3, 3));
         Assert.AreEqual("U", sheet.Cells.GetValue(1, 1));
 
-        sheet.RemoveCol(3);
+        sheet.Columns.RemoveAt(3);
         /*
                 0  1  2  3  4
             0 |  |  |  |  |  |
@@ -469,8 +469,8 @@ public class MergeCellsAndInsertColRowTests
             4 |  |  |  |  |  |
          */
 
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(2, 2));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(2, 3));
+        Assert.False(sheet.Cells.IsInsideMerge(2, 2));
+        Assert.False(sheet.Cells.IsInsideMerge(2, 3));
     }
 
     [Test]
@@ -480,7 +480,7 @@ public class MergeCellsAndInsertColRowTests
         sheet.Cells.SetValue(2, 2, "M");
         sheet.Cells.SetValue(1, 1, "U");
 
-        sheet.Cells.Merges.Add(sheet.Range(2, 3, 2, 2));
+        sheet.Cells.Merge(sheet.Range(2, 3, 2, 2));
 
         /*
                 0  1  2  3  4
@@ -491,17 +491,17 @@ public class MergeCellsAndInsertColRowTests
             4 |  |  |  |  |  |
          */
 
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 2));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(3, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(3, 2));
 
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(0, 0));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(4, 4));
+        Assert.False(sheet.Cells.IsInsideMerge(0, 0));
+        Assert.False(sheet.Cells.IsInsideMerge(4, 4));
 
         Assert.AreEqual("M", sheet.Cells.GetValue(2, 2));
         Assert.AreEqual(null, sheet.Cells.GetValue(3, 3));
         Assert.AreEqual("U", sheet.Cells.GetValue(1, 1));
 
-        sheet.RemoveRow(3);
+        sheet.Rows.RemoveAt(3);
         /*
                 0  1  2  3  4
             0 |  |  |  |  |  |
@@ -510,8 +510,8 @@ public class MergeCellsAndInsertColRowTests
             3 |  |  |  |  |  |
          */
 
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(2, 2));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(3, 2));
+        Assert.False(sheet.Cells.IsInsideMerge(2, 2));
+        Assert.False(sheet.Cells.IsInsideMerge(3, 2));
     }
 
     [Test]
@@ -522,11 +522,11 @@ public class MergeCellsAndInsertColRowTests
         // should be the same as when inserting inside a smaller range
         var sheet = new Sheet(3, 3);
         sheet.Cells.SetValue(0, 1, "M");
-        sheet.Cells.Merges.Add(new ColumnRegion(1));
+        sheet.Cells.Merge(new ColumnRegion(1));
         Assert.AreEqual(sheet.Cells.GetValue(0, 1), "M");
 
-        sheet.InsertRowAt(0);
-        var mergeRegion = sheet.Cells.Merges.Get(0, 1);
+        sheet.Rows.InsertRowAt(0, sheet);
+        var mergeRegion = sheet.Cells.GetMerge(0, 1);
         Assert.NotNull(mergeRegion);
         Assert.AreEqual(mergeRegion.GetType(), typeof(ColumnRegion));
     }
@@ -540,13 +540,13 @@ public class MergeCellsAndInsertColRowTests
         var sheet = new Sheet(3, 3);
         sheet.Cells.SetValue(0, 1, "M");
 
-        sheet.Cells.Merges.Add(new RowRegion(1));
+        sheet.Cells.Merge(new RowRegion(1));
 
         Assert.AreEqual(sheet.Cells.GetValue(0, 1), "M");
 
-        sheet.InsertColAt(0);
+        sheet.Columns.InsertAt(0);
 
-        var mergeRowRegion = sheet.Cells.Merges.Get(1, 0);
+        var mergeRowRegion = sheet.Cells.GetMerge(1, 0);
         Assert.NotNull(mergeRowRegion);
         Assert.AreEqual(mergeRowRegion.GetType(), typeof(RowRegion));
     }
@@ -560,15 +560,15 @@ public class MergeCellsAndInsertColRowTests
         var sheet = new Sheet(3, 3);
         sheet.Cells.SetValue(0, 1, "M");
 
-        sheet.Cells.Merges.Add(new ColumnRegion(2));
+        sheet.Cells.Merge(new ColumnRegion(2));
 
 
         Assert.AreEqual(sheet.Cells.GetValue(0, 1), "M");
 
-        sheet.InsertColAt(2);
+        sheet.Columns.InsertAt(2);
 
 
-        var mergeColumnRegion = sheet.Cells.Merges.Get(0, 3);
+        var mergeColumnRegion = sheet.Cells.GetMerge(0, 3);
         Assert.NotNull(mergeColumnRegion);
         Assert.AreEqual(mergeColumnRegion.GetType(), typeof(ColumnRegion));
     }
@@ -582,13 +582,13 @@ public class MergeCellsAndInsertColRowTests
         var sheet = new Sheet(3, 3);
         sheet.Cells.SetValue(0, 1, "M");
 
-        sheet.Cells.Merges.Add(new RowRegion(1));
+        sheet.Cells.Merge(new RowRegion(1));
 
         Assert.AreEqual(sheet.Cells.GetValue(0, 1), "M");
 
-        sheet.InsertRowAt(1);
+        sheet.Rows.InsertRowAt(1, sheet);
 
-        var mergeRowRegion = sheet.Cells.Merges.Get(2, 0);
+        var mergeRowRegion = sheet.Cells.GetMerge(2, 0);
         Assert.NotNull(mergeRowRegion);
         Assert.AreEqual(mergeRowRegion.GetType(), typeof(RowRegion));
     }
@@ -599,16 +599,16 @@ public class MergeCellsAndInsertColRowTests
         // a single row merge should be removed when the row is removed.
         var sheet = new Sheet(10, 10);
         var merge = new Region(1, 1, 1, 2);
-        sheet.Cells.Merges.Add(merge);
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(1, 1));
+        sheet.Cells.Merge(merge);
+        Assert.True(sheet.Cells.IsInsideMerge(1, 1));
 
         // Remove the row and there shouldn't be any merges.
-        sheet.RemoveRow(1);
-        Assert.False(sheet.Cells.Merges.Any());
+        sheet.Rows.RemoveAt(1);
+        Assert.False(sheet.Cells.AnyMerges());
 
         // Undoing should bring the merged row back
         sheet.Commands.Undo();
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(1, 1));
+        Assert.True(sheet.Cells.IsInsideMerge(1, 1));
     }
 
     [Test]
@@ -617,16 +617,16 @@ public class MergeCellsAndInsertColRowTests
         // a single row merge should be removed when the row is removed.
         var sheet = new Sheet(10, 10);
         var merge = new Region(1, 2, 1, 1);
-        sheet.Cells.Merges.Add(merge);
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(1, 1));
+        sheet.Cells.Merge(merge);
+        Assert.True(sheet.Cells.IsInsideMerge(1, 1));
 
         // Remove the row and there shouldn't be any merges.
-        sheet.RemoveCol(1);
-        Assert.False(sheet.Cells.Merges.Any());
+        sheet.Columns.RemoveAt(1);
+        Assert.False(sheet.Cells.AnyMerges());
 
         // Undoing should bring the merged row back
         sheet.Commands.Undo();
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(1, 1));
+        Assert.True(sheet.Cells.IsInsideMerge(1, 1));
     }
 
     [Test]
@@ -635,12 +635,12 @@ public class MergeCellsAndInsertColRowTests
         // This is an edge case where we have a merged and remove the top row of the merge.
         // When the removal is undone, the merge should be the same as before.
         var sheet = new Sheet(10, 10);
-        sheet.Cells.Merges.Add(new Region(2, 5, 2, 3));
+        sheet.Cells.Merge(new Region(2, 5, 2, 3));
         sheet.Commands.ExecuteCommand(new RemoveRowsCommand(2));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 2));
-        Assert.False(sheet.Cells.Merges.IsInsideMerge(5, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 2));
+        Assert.False(sheet.Cells.IsInsideMerge(5, 2));
         sheet.Commands.Undo();
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(2, 2));
-        Assert.True(sheet.Cells.Merges.IsInsideMerge(5, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(2, 2));
+        Assert.True(sheet.Cells.IsInsideMerge(5, 2));
     }
 }

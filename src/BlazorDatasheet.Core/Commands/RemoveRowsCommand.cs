@@ -42,25 +42,21 @@ public class RemoveRowsCommand : IUndoableCommand
         _nRowsRemoved = Math.Min(sheet.NumRows - _rowIndex + 1, _nRows);
 
         _cellStoreRestoreData = sheet.Cells.RemoveRowAt(_rowIndex, _nRowsRemoved);
-        _rowInfoStoreRestore = sheet.RowInfo.Cut(_rowIndex, _rowIndex + _nRowsRemoved - 1);
-        _mergeRestoreData = sheet.Cells.Merges.Store.RemoveRows(_rowIndex, _rowIndex + _nRowsRemoved - 1);
-        _validatorRestoreData = sheet.Cells.Validation.Store.RemoveRows(_rowIndex, _rowIndex + _nRowsRemoved - 1);
+        _rowInfoStoreRestore = sheet.Rows.Cut(_rowIndex, _rowIndex + _nRowsRemoved - 1);
+        _validatorRestoreData = sheet.Validators.Store.RemoveRows(_rowIndex, _rowIndex + _nRowsRemoved - 1);
         return sheet.RemoveRowAtImpl(_rowIndex, _nRowsRemoved);
     }
 
     public bool Undo(Sheet sheet)
     {
-        sheet.Cells.Merges.Store.InsertRows(_rowIndex, _nRowsRemoved, false);
-        sheet.Cells.Merges.Store.Restore(_mergeRestoreData);
-
-        sheet.Cells.Validation.Store.InsertRows(_rowIndex, _nRowsRemoved, false);
-        sheet.Cells.Validation.Store.Restore(_validatorRestoreData);
+        sheet.Validators.Store.InsertRows(_rowIndex, _nRowsRemoved, false);
+        sheet.Validators.Store.Restore(_validatorRestoreData);
 
         sheet.Cells.InsertRowAt(_rowIndex, _nRows, false);
         sheet.Cells.Restore(_cellStoreRestoreData);
 
-        sheet.RowInfo.Insert(_rowIndex, _nRowsRemoved);
-        sheet.RowInfo.Restore(_rowInfoStoreRestore);
+        sheet.Rows.InsertImpl(_rowIndex, _nRowsRemoved);
+        sheet.Rows.Restore(_rowInfoStoreRestore);
 
         sheet.InsertRowAtImpl(_rowIndex);
 
