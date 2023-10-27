@@ -57,16 +57,6 @@ public class Sheet
 
     internal IDialogService Dialog { get; private set; }
 
-    /// <summary>
-    /// Formats applied to any rows
-    /// </summary>
-    internal readonly NonOverlappingIntervals<CellFormat> RowFormats = new();
-
-    /// <summary>
-    /// Formats applied to any cols
-    /// </summary>
-    internal readonly NonOverlappingIntervals<CellFormat> ColFormats = new();
-
     #region EVENTS
 
     /// <summary>
@@ -112,12 +102,12 @@ public class Sheet
     /// <summary>
     /// Contains data, including width, on each column.
     /// </summary>
-    public ColumnInfoStore ColumnInfo { get; private set; } = new(105);
+    public ColumnInfoStore ColumnInfo { get; private set; }
 
     /// <summary>
     /// Contains data, including height, on each row.
     /// </summary>
-    public RowInfoStore RowInfo { get; private set; } = new(25);
+    public RowInfoStore RowInfo { get; private set; }
 
     public event EventHandler<CellsSelectedEventArgs>? CellsSelected;
 
@@ -167,6 +157,8 @@ public class Sheet
         Commands = new CommandManager(this);
         Selection = new Selection(this);
         Editor = new Editor(this);
+        RowInfo = new RowInfoStore(25, this);
+        ColumnInfo = new ColumnInfoStore(105, this);
         FormulaEngine = new FormulaEngine.FormulaEngine(this);
         ConditionalFormatting = new ConditionalFormatManager(this);
     }
@@ -580,8 +572,8 @@ public class Sheet
     {
         var defaultFormat = new CellFormat();
         var cellFormat = Cells.GetFormat(row, col).Clone();
-        var rowFormat = RowFormats.Get(row)?.Clone() ?? defaultFormat;
-        var colFormat = ColFormats.Get(col)?.Clone() ?? defaultFormat;
+        var rowFormat = RowInfo.RowFormats.Get(row)?.Clone() ?? defaultFormat;
+        var colFormat = ColumnInfo.ColFormats.Get(col)?.Clone() ?? defaultFormat;
 
         rowFormat.Merge(colFormat);
         rowFormat.Merge(cellFormat);
@@ -612,85 +604,7 @@ public class Sheet
     {
         FormatsChanged?.Invoke(this, args);
     }
-
-    internal RowColFormatRestoreData SetColumnFormatImpl(CellFormat cellFormat, ColumnRegion colRegion)
-    {
-        // Keep track of individual cell changes
-        var cellChanges = new List<CellStoreRestoreData>();
-
-        // we will ALWAYS merge the column regardless of what the cells are doing.
-        var newOi = new OrderedInterval<CellFormat>(colRegion.Left, colRegion.Right, cellFormat.Clone());
-        var modified = ColFormats.Add(newOi);
-
-        // We need to find the merges between the new region and the row formats/cell formats and add those as cell formats.
-        // this is because we the order of choosing the cell format is 1. cell format, then 2. col format then 3. row format.
-        // if we set col format then a row format with some intersection, we would find that the col format is chosen when we
-        // query the format at the intersection. It should be the cell format, so we set that.
-        var rowOverlaps = RowFormats.GetAllIntervals()
-            .Select(x =>
-                new DataRegion<CellFormat>(x.Data, new Region(x.Start, x.End, colRegion.Left, colRegion.Right)));
-
-        var cellOverlaps = Cells.GetOverlappingFormats(colRegion)
-            .Select(x => new DataRegion<CellFormat>(x.Data, x.Region.GetIntersection(colRegion)!));
-
-        // The intersectings region should be be merged with any existing (or empty) cell formats
-        // So that the new, most recently applied format info is taken when the format is queried.
-        // There may be some cell formats inside the col/row intersections in which case the format will be merged twice.
-        // That should be ok because they will already exist and won't be added
-        foreach (var overlap in rowOverlaps.Concat(cellOverlaps))
-        {
-            cellChanges.Add(Cells.MergeFormatImpl(overlap.Region, cellFormat));
-        }
-
-        MarkDirty(colRegion);
-
-        return new RowColFormatRestoreData()
-        {
-            CellFormatRestoreData = cellChanges,
-            IntervalsAdded = new List<OrderedInterval<CellFormat>>() { newOi },
-            IntervalsRemoved = modified
-        };
-    }
-
-    internal RowColFormatRestoreData SetRowFormatImpl(CellFormat cellFormat, RowRegion rowRegion)
-    {
-        // Keep track of individual cell changes
-        var cellChanges = new List<CellStoreRestoreData>();
-
-        // we will ALWAYS merge the column regardless of what the cells are doing.
-        var newOi = new OrderedInterval<CellFormat>(rowRegion.Top, rowRegion.Bottom, cellFormat.Clone());
-        var modified = RowFormats.Add(newOi);
-
-        // We need to find the merges between the new region and the row formats/cell formats and add those as cell formats.
-        // this is because we the order of choosing the cell format is 1. cell format, then 2. col format then 3. row format.
-        // if we set col format then a row format with some intersection, we would find that the col format is chosen when we
-        // query the format at the intersection. It should be the cell format, so we set that.
-        var colOverlaps = ColFormats.GetAllIntervals()
-            .Select(x =>
-                new DataRegion<CellFormat>(x.Data, new Region(rowRegion.Top, rowRegion.Bottom, x.Start, x.End)));
-
-        var cellOverlaps = Cells.GetOverlappingFormats(rowRegion)
-            .Select(x => new DataRegion<CellFormat>(x.Data, x.Region.GetIntersection(rowRegion)!));
-
-        // The intersectings region should be be merged with any existing (or empty) cell formats
-        // So that the new, most recently applied format info is taken when the format is queried.
-        // There may be some cell formats inside the col/row intersections in which case the format will be merged twice.
-        // That should be ok because they will already exist and won't be added
-        foreach (var overlap in colOverlaps.Concat(cellOverlaps))
-        {
-            cellChanges.Add(Cells.MergeFormatImpl(overlap.Region, cellFormat));
-        }
-
-        MarkDirty(rowRegion);
-
-        return new RowColFormatRestoreData()
-        {
-            CellFormatRestoreData = cellChanges,
-            IntervalsAdded = new List<OrderedInterval<CellFormat>>() { newOi },
-            IntervalsRemoved = modified
-        };
-    }
-
+    
     #endregion
 
     public string? GetRegionAsDelimitedText(IRegion inputRegion, char tabDelimiter = '\t', string newLineDelim = "\n")

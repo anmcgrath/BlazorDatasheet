@@ -42,19 +42,10 @@ public class RemoveColumnCommand : IUndoableCommand
             return false;
 
         _cellStoreRestoreData = sheet.Cells.RemoveColAt(_columnIndex, _nColsRemoved);
-        _colFormatRestoreData = sheet.ColFormats.Remove(_columnIndex, _columnIndex + _nColsRemoved - 1);
-        sheet.ColFormats.ShiftLeft(_columnIndex, _nColsRemoved);
-
-        RemoveColumnHeadingAndStoreWidth(sheet);
-
+        _columnInfoRestoreData = sheet.ColumnInfo.Cut(_columnIndex, _columnIndex + _nColsRemoved - 1);
         _mergeRestoreData = sheet.Cells.Merges.Store.RemoveCols(_columnIndex, _columnIndex + _nColsRemoved - 1);
         _validatorRestoreData = sheet.Cells.Validation.Store.RemoveCols(_columnIndex, _columnIndex + _nColsRemoved - 1);
         return sheet.RemoveColImpl(_columnIndex, _nColsRemoved);
-    }
-
-    private void RemoveColumnHeadingAndStoreWidth(Sheet sheet)
-    {
-        _columnInfoRestoreData = sheet.ColumnInfo.Cut(_columnIndex, _columnIndex + _nColsRemoved - 1);
     }
 
     public bool Undo(Sheet sheet)
@@ -70,10 +61,9 @@ public class RemoveColumnCommand : IUndoableCommand
         sheet.Cells.Restore(_cellStoreRestoreData);
 
         sheet.ColumnInfo.Insert(_columnIndex, _nColsRemoved);
-        sheet.ColumnInfo.RestoreFromData(_columnInfoRestoreData);
+        sheet.ColumnInfo.Restore(_columnInfoRestoreData);
 
-        sheet.ColFormats.ShiftRight(_columnIndex, _nColsRemoved);
-        sheet.ColFormats.AddRange(_colFormatRestoreData);
+        sheet.MarkDirty(new ColumnRegion(_columnIndex, sheet.NumCols));
 
         return true;
     }

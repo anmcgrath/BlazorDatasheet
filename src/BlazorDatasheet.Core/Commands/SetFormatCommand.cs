@@ -32,9 +32,9 @@ public class SetFormatCommand : IUndoableCommand
     public bool Execute(Sheet sheet)
     {
         if (_region is ColumnRegion columnRegion)
-            _colFormatRestoreData = sheet.SetColumnFormatImpl(_cellFormat, columnRegion);
+            _colFormatRestoreData = sheet.ColumnInfo.SetColumnFormatImpl(_cellFormat, columnRegion);
         else if (_region is RowRegion rowRegion)
-            _rowFormatRestoreData = sheet.SetRowFormatImpl(_cellFormat, rowRegion);
+            _rowFormatRestoreData = sheet.RowInfo.SetRowFormatImpl(_cellFormat, rowRegion);
         else
             _cellFormatRestoreData = sheet.Cells.MergeFormatImpl(_region, _cellFormat);
         return true;
@@ -43,12 +43,12 @@ public class SetFormatCommand : IUndoableCommand
     public bool Undo(Sheet sheet)
     {
         if (_colFormatRestoreData != null)
-            Restore(sheet, _colFormatRestoreData, sheet.ColFormats);
+            Restore(sheet, _colFormatRestoreData, sheet.ColumnInfo.ColFormats);
         if (_rowFormatRestoreData != null)
-            Restore(sheet, _rowFormatRestoreData, sheet.RowFormats);
+            Restore(sheet, _rowFormatRestoreData, sheet.RowInfo.RowFormats);
         if (_cellFormatRestoreData != null)
             sheet.Cells.Restore(_cellFormatRestoreData);
-        
+
         sheet.MarkDirty(_region);
         return true;
     }
@@ -58,7 +58,7 @@ public class SetFormatCommand : IUndoableCommand
         foreach (var added in restoreData.IntervalsAdded)
             store.Remove(added);
         store.AddRange(restoreData.IntervalsRemoved.Where(x => x.Data != null));
-        foreach(var cellRestore in restoreData.CellFormatRestoreData)
+        foreach (var cellRestore in restoreData.CellFormatRestoreData)
             sheet.Cells.Restore(cellRestore);
     }
 }

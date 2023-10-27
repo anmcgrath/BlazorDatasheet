@@ -17,13 +17,6 @@
 
 <Datasheet Sheet="sheet"></Datasheet>
 
-<h3>Cells</h3>
-
-@foreach (var cell in cells)
-{
-    <div>@cell.GetValue() IsValid = @cell.IsValid</div>
-}
-
 @code {
 
     private Sheet sheet;

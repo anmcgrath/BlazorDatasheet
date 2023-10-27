@@ -1,15 +1,22 @@
+using BlazorDatasheet.Core.Data.Cells;
+using BlazorDatasheet.Core.Formats;
+using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.DataStructures.Intervals;
 using BlazorDatasheet.DataStructures.Store;
 
 namespace BlazorDatasheet.Core.Data;
 
 public class ColumnInfoStore
 {
+    private readonly Sheet _sheet;
     public double DefaultWidth { get; }
     private readonly Range1DStore<string> _headingStore = new(null);
     private readonly CumulativeRange1DStore _widthStore;
+    internal readonly NonOverlappingIntervals<CellFormat> ColFormats = new();
 
-    public ColumnInfoStore(double defaultWidth)
+    public ColumnInfoStore(double defaultWidth, Sheet sheet)
     {
+        _sheet = sheet;
         DefaultWidth = defaultWidth;
         _widthStore = new CumulativeRange1DStore(defaultWidth);
     }
@@ -22,7 +29,9 @@ public class ColumnInfoStore
     /// <returns></returns>
     internal List<(int start, int end, double width)> SetColumnWidth(int col, double width)
     {
-        return _widthStore.Set(col, width);
+        var restoreData = _widthStore.Set(col, width);
+        _sheet.MarkDirty(new ColumnRegion(col, _sheet.NumCols));
+        return restoreData;
     }
 
     /// <summary>
@@ -35,7 +44,9 @@ public class ColumnInfoStore
     /// <returns></returns>
     internal List<(int start, int end, double width)> SetColumnWidths(int colStart, int colEnd, double width)
     {
-        return _widthStore.Set(colStart, colEnd, width);
+        var restoreData = _widthStore.Set(colStart, colEnd, width);
+        _sheet.MarkDirty(new ColumnRegion(colStart, _sheet.NumCols));
+        return restoreData;
     }
 
     /// <summary>
@@ -46,7 +57,9 @@ public class ColumnInfoStore
     /// <returns></returns>
     internal List<(int start, int end, string heading)> SetColumnHeading(int col, string heading)
     {
-        return _headingStore.Set(col, heading);
+        var restoreData = _headingStore.Set(col, heading);
+        _sheet.MarkDirty(new ColumnRegion(col));
+        return restoreData;
     }
 
     /// <summary>
@@ -59,7 +72,9 @@ public class ColumnInfoStore
     /// <returns></returns>
     internal List<(int start, int end, string heading)> SetColumnHeadings(int colStart, int colEnd, string heading)
     {
-        return _headingStore.Set(colStart, colEnd, heading);
+        var restoreData = _headingStore.Set(colStart, colEnd, heading);
+        _sheet.MarkDirty(new ColumnRegion(colStart, colEnd));
+        return restoreData;
     }
 
     /// <summary>
@@ -71,11 +86,19 @@ public class ColumnInfoStore
     /// <returns></returns>
     internal ColumnInfoRestoreData Cut(int start, int end)
     {
-        return new ColumnInfoRestoreData()
+        var restoreData = new ColumnInfoRestoreData()
         {
             WidthsModified = _widthStore.Cut(start, end),
-            HeadingsModifed = _headingStore.Cut(start, end)
+            HeadingsModifed = _headingStore.Cut(start, end),
+            ColFormatRestoreData = new RowColFormatRestoreData()
+            {
+                IntervalsRemoved = ColFormats.Remove(start, end)
+            }
         };
+
+        ColFormats.ShiftLeft(start, (end - start) + 1);
+        _sheet.MarkDirty(new ColumnRegion(start, _sheet.NumCols));
+        return restoreData;
     }
 
     /// <summary>
@@ -87,6 +110,8 @@ public class ColumnInfoStore
     {
         _widthStore.InsertAt(start, n);
         _headingStore.InsertAt(start, n);
+        ColFormats.ShiftRight(start, n);
+        _sheet.MarkDirty(new ColumnRegion(start, _sheet.NumCols));
     }
 
     /// <summary>
@@ -140,10 +165,57 @@ public class ColumnInfoStore
         return _widthStore.GetCumulative(colIndex);
     }
 
-    internal void RestoreFromData(ColumnInfoRestoreData data)
+    internal void Restore(ColumnInfoRestoreData data)
     {
         _widthStore.BatchSet(data.WidthsModified);
         _headingStore.BatchSet(data.HeadingsModifed);
+        foreach (var removed in data.ColFormatRestoreData.IntervalsRemoved)
+            ColFormats.Remove(removed);
+        ColFormats.AddRange(data.ColFormatRestoreData.IntervalsRemoved);
+    }
+
+    public CellFormat? GetFormat(int column)
+    {
+        return ColFormats.Get(column);
+    }
+
+    internal RowColFormatRestoreData SetColumnFormatImpl(CellFormat cellFormat, ColumnRegion colRegion)
+    {
+        // Keep track of individual cell changes
+        var cellChanges = new List<CellStoreRestoreData>();
+
+        // we will ALWAYS merge the column regardless of what the cells are doing.
+        var newOi = new OrderedInterval<CellFormat>(colRegion.Left, colRegion.Right, cellFormat.Clone());
+        var modified = ColFormats.Add(newOi);
+
+        // We need to find the merges between the new region and the row formats/cell formats and add those as cell formats.
+        // this is because we the order of choosing the cell format is 1. cell format, then 2. col format then 3. row format.
+        // if we set col format then a row format with some intersection, we would find that the col format is chosen when we
+        // query the format at the intersection. It should be the cell format, so we set that.
+        var rowOverlaps = _sheet.RowInfo.RowFormats.GetAllIntervals()
+            .Select(x =>
+                new DataRegion<CellFormat>(x.Data, new Region(x.Start, x.End, colRegion.Left, colRegion.Right)));
+
+        var cellOverlaps = _sheet.Cells.GetOverlappingFormats(colRegion)
+            .Select(x => new DataRegion<CellFormat>(x.Data, x.Region.GetIntersection(colRegion)!));
+
+        // The intersectings region should be be merged with any existing (or empty) cell formats
+        // So that the new, most recently applied format info is taken when the format is queried.
+        // There may be some cell formats inside the col/row intersections in which case the format will be merged twice.
+        // That should be ok because they will already exist and won't be added
+        foreach (var overlap in rowOverlaps.Concat(cellOverlaps))
+        {
+            cellChanges.Add(_sheet.Cells.MergeFormatImpl(overlap.Region, cellFormat));
+        }
+
+        _sheet.MarkDirty(colRegion);
+
+        return new RowColFormatRestoreData()
+        {
+            CellFormatRestoreData = cellChanges,
+            IntervalsAdded = new List<OrderedInterval<CellFormat>>() { newOi },
+            IntervalsRemoved = modified
+        };
     }
 }
 
@@ -151,4 +223,6 @@ internal class ColumnInfoRestoreData
 {
     public List<(int start, int end, double width)> WidthsModified { get; init; }
     public List<(int start, int end, string heading)> HeadingsModifed { get; init; }
+
+    public RowColFormatRestoreData ColFormatRestoreData { get; init; }
 }

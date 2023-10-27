@@ -77,6 +77,11 @@ public class Range1DStore<T>
         foreach (var d in data)
             this.Set(d.start, d.end, d.data);
     }
+
+    public List<(int start, int end, T? data)> GetAllIntervals()
+    {
+        return _intervals.GetAllIntervals().Select(x => (x.Start, x.End, x.Data.Value)).ToList();
+    }
 }
 
 public class OverwritingValue<R> : IMergeable<OverwritingValue<R>>

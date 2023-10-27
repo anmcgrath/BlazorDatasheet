@@ -1,15 +1,22 @@
+using BlazorDatasheet.Core.Data.Cells;
+using BlazorDatasheet.Core.Formats;
+using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.DataStructures.Intervals;
 using BlazorDatasheet.DataStructures.Store;
 
 namespace BlazorDatasheet.Core.Data;
 
 public class RowInfoStore
 {
+    private readonly Sheet _sheet;
     public double DefaultHeight { get; }
     private readonly Range1DStore<string> _headingStore = new(null);
     private readonly CumulativeRange1DStore _heightStore;
+    internal readonly NonOverlappingIntervals<CellFormat> RowFormats = new();
 
-    public RowInfoStore(double defaultHeight)
+    public RowInfoStore(double defaultHeight, Sheet sheet)
     {
+        _sheet = sheet;
         DefaultHeight = defaultHeight;
         _heightStore = new CumulativeRange1DStore(defaultHeight);
     }
@@ -17,16 +24,18 @@ public class RowInfoStore
     /// <summary>
     /// Sets row height of one row and returns any row widths that were modified when set.
     /// </summary>
-    /// <param name="col"></param>
+    /// <param name="row"></param>
     /// <param name="height"></param>
     /// <returns></returns>
-    internal List<(int start, int end, double width)> SetRowHeight(int col, double height)
+    internal List<(int start, int end, double width)> SetRowHeight(int row, double height)
     {
-        return _heightStore.Set(col, height);
+        var restoreData = _heightStore.Set(row, height);
+        _sheet.MarkDirty(new RowRegion(row, _sheet.NumRows));
+        return restoreData;
     }
 
     /// <summary>
-    /// Sets the row heights of all columns between (and including) the rows specified, to the value given.
+    /// Sets the row heights of all rows between (and including) the rows specified, to the value given.
     /// Returns any row ranges that were modified.
     /// </summary>
     /// <param name="rowStart"></param>
@@ -35,7 +44,9 @@ public class RowInfoStore
     /// <returns></returns>
     internal List<(int start, int end, double width)> SetRowHeights(int rowStart, int rowEnd, double height)
     {
-        return _heightStore.Set(rowStart, rowEnd, height);
+        var restoreData = _heightStore.Set(rowStart, rowEnd, height);
+        _sheet.MarkDirty(new RowRegion(rowStart, rowEnd));
+        return restoreData;
     }
 
     /// <summary>
@@ -46,40 +57,52 @@ public class RowInfoStore
     /// <returns></returns>
     internal List<(int start, int end, string heading)> SetRowHeading(int row, string heading)
     {
-        return _headingStore.Set(row, heading);
+        var restoreData = _headingStore.Set(row, heading);
+        _sheet.MarkDirty(new RowRegion(row));
+        return restoreData;
     }
 
     /// <summary>
-    /// Sets the headings of all columns between (and including) the columns specified, to the value given.
-    /// Returns any column ranges that were modified.
+    /// Sets the headings of all rows between (and including) rows columns specified, to the value given.
+    /// Returns any rows ranges that were modified.
     /// </summary>
-    /// <param name="colStart"></param>
-    /// <param name="colEnd"></param>
+    /// <param name="rowStart"></param>
+    /// <param name="rowEnd"></param>
     /// <param name="heading"></param>
     /// <returns></returns>
-    internal List<(int start, int end, string heading)> SetRowHeadings(int colStart, int colEnd, string heading)
+    internal List<(int start, int end, string heading)> SetRowHeadings(int rowStart, int rowEnd, string heading)
     {
-        return _headingStore.Set(colStart, colEnd, heading);
+        var restoreData = _headingStore.Set(rowStart, rowEnd, heading);
+        _sheet.MarkDirty(new RowRegion(rowStart, rowEnd));
+        return restoreData;
     }
 
     /// <summary>
     /// Removes the columns between (and including) the indexes given.
-    /// Handles shifting the column indices to the left and returns any modified data.
+    /// Handles shifting the row indices to the left and returns any modified data.
     /// </summary>
     /// <param name="start"></param>
     /// <param name="end"></param>
     /// <returns></returns>
     internal RowInfoStoreRestoreData Cut(int start, int end)
     {
-        return new RowInfoStoreRestoreData()
+        var res = new RowInfoStoreRestoreData()
         {
             HeightsModified = _heightStore.Cut(start, end),
-            HeadingsModifed = _headingStore.Cut(start, end)
+            HeadingsModifed = _headingStore.Cut(start, end),
+            RowFormatRestoreData = new RowColFormatRestoreData()
+            {
+                IntervalsRemoved = RowFormats.Remove(start, end)
+            }
         };
+
+        RowFormats.ShiftLeft(start, (end - start) + 1);
+        _sheet.MarkDirty(new RowRegion(start, _sheet.NumRows));
+        return res;
     }
 
     /// <summary>
-    /// Inserts n empty columns.
+    /// Inserts n empty rows.
     /// </summary>
     /// <param name="start"></param>
     /// <param name="n"></param>
@@ -87,10 +110,12 @@ public class RowInfoStore
     {
         _heightStore.InsertAt(start, n);
         _headingStore.InsertAt(start, n);
+        RowFormats.ShiftRight(start, n);
+        _sheet.MarkDirty(new RowRegion(start, _sheet.NumRows));
     }
 
     /// <summary>
-    /// Returns the heading at the column index
+    /// Returns the heading at the row index
     /// </summary>
     /// <param name="rowIndex"></param>
     /// <returns></returns>
@@ -100,7 +125,7 @@ public class RowInfoStore
     }
 
     /// <summary>
-    /// Returns the column index at the position x
+    /// Returns the row index at the position y
     /// </summary>
     /// <param name="y"></param>
     /// <returns></returns>
@@ -110,7 +135,7 @@ public class RowInfoStore
     }
 
     /// <summary>
-    /// Returns the width of the column specified.
+    /// Returns the height of the row specified.
     /// </summary>
     /// <param name="row"></param>
     /// <returns></returns>
@@ -120,7 +145,7 @@ public class RowInfoStore
     }
 
     /// <summary>
-    /// Returns the distance between the left positions of two columns.
+    /// Returns the distance between the top positions of two rows.
     /// </summary>
     /// <param name="start"></param>
     /// <param name="end"></param>
@@ -133,17 +158,64 @@ public class RowInfoStore
     /// <summary>
     /// Returns the left position of the column index
     /// </summary>
-    /// <param name="colIndex"></param>
+    /// <param name="rowIndex"></param>
     /// <returns></returns>
-    public double GetTop(int colIndex)
+    public double GetTop(int rowIndex)
     {
-        return _heightStore.GetCumulative(colIndex);
+        return _heightStore.GetCumulative(rowIndex);
     }
 
-    internal void RestoreFromData(RowInfoStoreRestoreData data)
+    internal void Restore(RowInfoStoreRestoreData data)
     {
         _heightStore.BatchSet(data.HeightsModified);
         _headingStore.BatchSet(data.HeadingsModifed);
+        foreach (var removed in data.RowFormatRestoreData.IntervalsRemoved)
+            RowFormats.Remove(removed);
+        RowFormats.AddRange(data.RowFormatRestoreData.IntervalsRemoved);
+    }
+
+    public CellFormat? GetFormat(int column)
+    {
+        return RowFormats.Get(column);
+    }
+
+    internal RowColFormatRestoreData SetRowFormatImpl(CellFormat cellFormat, RowRegion rowRegion)
+    {
+        // Keep track of individual cell changes
+        var cellChanges = new List<CellStoreRestoreData>();
+
+        // we will ALWAYS merge the column regardless of what the cells are doing.
+        var newOi = new OrderedInterval<CellFormat>(rowRegion.Top, rowRegion.Bottom, cellFormat.Clone());
+        var modified = RowFormats.Add(newOi);
+
+        // We need to find the merges between the new region and the row formats/cell formats and add those as cell formats.
+        // this is because we the order of choosing the cell format is 1. cell format, then 2. col format then 3. row format.
+        // if we set col format then a row format with some intersection, we would find that the col format is chosen when we
+        // query the format at the intersection. It should be the cell format, so we set that.
+        var colOverlaps = _sheet.ColumnInfo.ColFormats.GetAllIntervals()
+            .Select(x =>
+                new DataRegion<CellFormat>(x.Data, new Region(rowRegion.Top, rowRegion.Bottom, x.Start, x.End)));
+
+        var cellOverlaps = _sheet.Cells.GetOverlappingFormats(rowRegion)
+            .Select(x => new DataRegion<CellFormat>(x.Data, x.Region.GetIntersection(rowRegion)!));
+
+        // The intersectings region should be be merged with any existing (or empty) cell formats
+        // So that the new, most recently applied format info is taken when the format is queried.
+        // There may be some cell formats inside the col/row intersections in which case the format will be merged twice.
+        // That should be ok because they will already exist and won't be added
+        foreach (var overlap in colOverlaps.Concat(cellOverlaps))
+        {
+            cellChanges.Add(_sheet.Cells.MergeFormatImpl(overlap.Region, cellFormat));
+        }
+
+        _sheet.MarkDirty(rowRegion);
+
+        return new RowColFormatRestoreData()
+        {
+            CellFormatRestoreData = cellChanges,
+            IntervalsAdded = new List<OrderedInterval<CellFormat>>() { newOi },
+            IntervalsRemoved = modified
+        };
     }
 }
 
@@ -151,4 +223,5 @@ internal class RowInfoStoreRestoreData
 {
     public List<(int start, int end, double width)> HeightsModified { get; init; }
     public List<(int start, int end, string heading)> HeadingsModifed { get; init; }
+    public RowColFormatRestoreData RowFormatRestoreData { get; init; }
 }

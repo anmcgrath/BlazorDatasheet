@@ -12,13 +12,6 @@ public partial class CellStore
 {
     private Sheet _sheet;
 
-    public CellStore(Sheet sheet)
-    {
-        _sheet = sheet;
-        Validation = new ValidationManager();
-        Merges = new MergeManager(sheet);
-    }
-
     /// <summary>
     /// Contains cell merge information and handles merges.
     /// </summary>
@@ -28,6 +21,13 @@ public partial class CellStore
     /// Manages and holds information on cell validators.
     /// </summary>
     public ValidationManager Validation { get; }
+    
+    public CellStore(Sheet sheet)
+    {
+        _sheet = sheet;
+        Validation = new ValidationManager();
+        Merges = new MergeManager(sheet);
+    }
 
     /// <summary>
     /// Returns all cells in the specified region

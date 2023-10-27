@@ -14,9 +14,9 @@ public class RemoveRowsCommand : IUndoableCommand
     private readonly int _nRows;
 
     private List<CellChangedFormat> _removedCellFormats;
-    private List<OrderedInterval<CellFormat>> _rowFormatRestoreData;
     private RegionRestoreData<bool> _mergeRestoreData;
     private RegionRestoreData<int> _validatorRestoreData;
+    private RowInfoStoreRestoreData _rowInfoStoreRestore;
     private CellStoreRestoreData _cellStoreRestoreData;
 
     // The actual number of rows removed (takes into account num of rows in sheet)
@@ -42,9 +42,7 @@ public class RemoveRowsCommand : IUndoableCommand
         _nRowsRemoved = Math.Min(sheet.NumRows - _rowIndex + 1, _nRows);
 
         _cellStoreRestoreData = sheet.Cells.RemoveRowAt(_rowIndex, _nRowsRemoved);
-        _rowFormatRestoreData = sheet.RowFormats.Remove(_rowIndex, _rowIndex + _nRowsRemoved - 1);
-        sheet.RowFormats.ShiftLeft(_rowIndex, _nRowsRemoved);
-        
+        _rowInfoStoreRestore = sheet.RowInfo.Cut(_rowIndex, _rowIndex + _nRowsRemoved - 1);
         _mergeRestoreData = sheet.Cells.Merges.Store.RemoveRows(_rowIndex, _rowIndex + _nRowsRemoved - 1);
         _validatorRestoreData = sheet.Cells.Validation.Store.RemoveRows(_rowIndex, _rowIndex + _nRowsRemoved - 1);
         return sheet.RemoveRowAtImpl(_rowIndex, _nRowsRemoved);
@@ -60,11 +58,13 @@ public class RemoveRowsCommand : IUndoableCommand
 
         sheet.Cells.InsertRowAt(_rowIndex, _nRows);
         sheet.Cells.Restore(_cellStoreRestoreData);
+
+        sheet.RowInfo.Insert(_rowIndex, _nRowsRemoved);
+        sheet.RowInfo.Restore(_rowInfoStoreRestore);
+
         sheet.InsertRowAtImpl(_rowIndex);
 
-        sheet.RowFormats.ShiftRight(_rowIndex, _nRowsRemoved);
-        sheet.RowFormats.AddRange(_rowFormatRestoreData);
-
+        sheet.MarkDirty(new RowRegion(_rowIndex, sheet.NumRows));
         return true;
     }
 }

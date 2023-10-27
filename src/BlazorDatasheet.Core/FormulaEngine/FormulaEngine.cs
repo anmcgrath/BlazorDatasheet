@@ -34,7 +34,7 @@ public class FormulaEngine
 
     private void SheetOnCellsChanged(object? sender, IEnumerable<(int row, int col)> e)
     {
-        if(!this.IsCalculating)
+        if (!this.IsCalculating)
             this.CalculateSheet();
     }
 
