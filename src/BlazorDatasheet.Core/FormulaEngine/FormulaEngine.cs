@@ -3,6 +3,7 @@ using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Events;
 using BlazorDatasheet.Core.Events.Edit;
 using BlazorDatasheet.Core.Interfaces;
+using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Graph;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.CoreFunctions;
@@ -42,6 +43,7 @@ public class FormulaEngine
     {
         _environment.SetFunction("IF", new IfFunction());
         _environment.SetFunction("SIN", new SinFunction());
+        _environment.SetFunction("SUM", new SumFunction());
     }
 
     private void SheetOnBeforeCellEdit(object? sender, BeforeCellEditEventArgs e)
@@ -57,7 +59,42 @@ public class FormulaEngine
     {
         var formulaVertex = new CellVertex(row, col);
         _dependencyGraph.AddVertex(formulaVertex);
-        _dependencyGraph.AddEdges(formula.References!.Select(GetVertex), formulaVertex);
+
+        var references = formula.References!;
+        foreach (var reference in references)
+        {
+            var vertex = GetVertex(reference);
+            _dependencyGraph.AddEdge(vertex, formulaVertex);
+            if (reference is RangeReference rangeReference)
+            {
+                var cellVerticesInsideRange = GetCellVerticesInRange(rangeReference);
+                foreach (var cellVertex in cellVerticesInsideRange)
+                {
+                    if (cellVertex != formulaVertex)
+                        _dependencyGraph.AddEdge(cellVertex, vertex);
+                }
+            }
+        }
+    }
+
+    private IEnumerable<CellVertex> GetCellVerticesInRange(RangeReference rangeRef)
+    {
+        var region = ToRegion(rangeRef);
+        if (region == null)
+            return Enumerable.Empty<CellVertex>();
+
+        var cellVertices = new List<CellVertex>();
+
+        foreach (var vertex in _dependencyGraph.GetAll())
+        {
+            if (vertex is CellVertex cellVertex &&
+                region.Contains(cellVertex.Row, cellVertex.Col))
+            {
+                cellVertices.Add(cellVertex);
+            }
+        }
+
+        return cellVertices;
     }
 
     public CellFormula ParseFormula(string formulaString)
@@ -126,7 +163,37 @@ public class FormulaEngine
             return new NamedVertex(namedReference.Name);
         }
 
+        if (reference is RangeReference rangeReference)
+        {
+            var region = ToRegion(rangeReference);
+            if (region != null)
+            {
+                return new RegionVertex(region, rangeReference.ToRefText());
+            }
+        }
+
         throw new Exception("Could not convert reference to vertex");
+    }
+
+    private IRegion? ToRegion(RangeReference reference)
+    {
+        if (reference.Start is CellReference startCell && reference.End is CellReference endCell)
+        {
+            return new Region(startCell.Row.RowNumber, endCell.Row.RowNumber, startCell.Col.ColNumber,
+                endCell.Col.ColNumber);
+        }
+
+        if (reference.Start is ColReference startCol && reference.End is ColReference endCol)
+        {
+            return new ColumnRegion(startCol.ColNumber, endCol.ColNumber);
+        }
+
+        if (reference.Start is RowReference startRow && reference.End is RowReference endRow)
+        {
+            return new RowRegion(startRow.RowNumber, endRow.RowNumber);
+        }
+
+        return null;
     }
 
     /// <summary>

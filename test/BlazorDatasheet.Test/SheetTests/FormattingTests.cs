@@ -163,4 +163,5 @@ public class FormattingTests
         _sheet.GetFormat(2, 0)?.BackgroundColor.Should().Be("blue");
         _sheet.GetFormat(3, 0)?.BackgroundColor?.Should().BeNullOrEmpty();
     }
+    
 }

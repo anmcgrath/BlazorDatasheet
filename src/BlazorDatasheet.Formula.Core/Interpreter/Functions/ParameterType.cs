@@ -7,6 +7,5 @@ public enum ParameterType
     Logical,
     Any,
     Text,
-    NumberListSequence,
     Reference
 }

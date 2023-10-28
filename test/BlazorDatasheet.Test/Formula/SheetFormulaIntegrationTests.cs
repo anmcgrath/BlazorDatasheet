@@ -112,7 +112,7 @@ public class SheetFormulaIntegrationTests
     public void Set_Cell_Formula_Over_Value_Then_Undo_Restores_Value()
     {
         _sheet.Cells.SetValue(0, 0, 10);
-        _sheet.Cells.SetFormula(0,0,"=5");
+        _sheet.Cells.SetFormula(0, 0, "=5");
         _sheet.Commands.Undo();
         _sheet.Cells.GetValue(0, 0).Should().Be(10);
     }
@@ -123,5 +123,21 @@ public class SheetFormulaIntegrationTests
         _engine.SetVariable("x", 10);
         _sheet.Cells.SetFormula(1, 1, "=x");
         _sheet.Cells.GetValue(1, 1).Should().Be(10);
+    }
+
+    [Test]
+    public void Formula_Referencing_Range_With_Formula_Recalcs_When_Formula_Recalcs()
+    {
+        // Cell A1 = 10
+        // Cell A2 = 20
+        // Cell A3 = Sum(A1:A2)
+        // Cell A4 = Sum(A2:A3)
+        // When we set A1 and A2, A3 should evaluate first and then A4 because the result of A4 depends on A3
+        _sheet.Cells.SetFormula(2, 0, "=SUM(A1:A2)");
+        _sheet.Cells.SetFormula(3, 0, "=SUM(A2:A3)");
+        _sheet.Cells.SetValue(0, 0, 10);
+        _sheet.Cells.SetValue(1, 0, 20);
+        _sheet.Cells.GetValue(2, 0).Should().Be(30);
+        _sheet.Cells.GetValue(3, 0).Should().Be(30 + 20);
     }
 }
