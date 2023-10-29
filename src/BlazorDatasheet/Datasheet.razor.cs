@@ -689,36 +689,6 @@ public partial class Datasheet : IHandleEvent
         Sheet?.Selection.EndSelecting();
     }
 
-    /// <summary>
-    /// Returns the width of the sheet(including the headings, if any) in pixels
-    /// </summary>
-    /// <returns></returns>
-    private double GetSheetWidthInPx()
-    {
-        var columnWidth = _cellLayoutProvider.TotalWidth;
-        var headingWidth = ShowRowHeadings ? _sheetLocal.Columns.DefaultWidth : 0;
-        return columnWidth + headingWidth;
-    }
-
-    /// <summary>
-    /// Returns the width of the sheet(including the headings, if any) in pixels
-    /// </summary>
-    /// <returns></returns>
-    private double GetSheetHeightInPx()
-    {
-        var rowHeights = _cellLayoutProvider.TotalHeight;
-        var headingWidth = ShowColHeadings ? _sheetLocal.Rows.DefaultHeight : 0;
-        return rowHeights + headingWidth;
-    }
-
-    private string GetContainerStyleString()
-    {
-        var sb = new StringBuilder();
-        sb.Append($"height:{GetSheetHeightInPx()}px;");
-        sb.Append($"width:{GetSheetWidthInPx()}px;");
-        return sb.ToString();
-    }
-
     private string GetContainerClassString()
     {
         var sb = new StringBuilder();

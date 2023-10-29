@@ -32,7 +32,9 @@ public class VisualSheet
         if (e.DirtyRegions != null)
         {
             InvalidateRegions(e.DirtyRegions);
-            foreach (var position in _sheet.Range(e.DirtyRegions).Positions)
+            foreach (var position in _sheet
+                         .Range(e.DirtyRegions.Select(x => x.GetIntersection(_currentViewport.VisibleRegion)))
+                         .Positions)
                 set.Add(position);
         }
 

@@ -12,14 +12,16 @@ public class CellLayoutProvider
     private Sheet _sheet;
 
     /// <summary>
-    /// The total width of the sheet
+    /// The total width of the sheet including row headings
     /// </summary>
-    public double TotalWidth => _sheet.Columns.GetWidthBetween(0, _sheet.NumCols);
+    public double TotalWidth =>
+        _sheet.Columns.GetWidthBetween(0, _sheet.NumCols) + (IncludeRowHeadings ? RowHeadingWidth : 0);
 
     /// <summary>
-    /// The total height of the sheet
+    /// The total height of the sheet including col headings
     /// </summary>
-    public double TotalHeight => _sheet.Rows.GetHeightBetween(0, _sheet.NumRows);
+    public double TotalHeight =>
+        _sheet.Rows.GetHeightBetween(0, _sheet.NumRows) + (IncludeColHeadings ? ColHeadingHeight : 0);
 
     public double RowHeadingWidth => _sheet.Columns.DefaultWidth;
     public double ColHeadingHeight => _sheet.Rows.DefaultHeight;
@@ -90,15 +92,16 @@ public class CellLayoutProvider
 
     public int ComputeColumn(double x)
     {
-        var offset = IncludeRowHeadings ? ColHeadingHeight : 0;
+        var offset = IncludeRowHeadings ? RowHeadingWidth : 0;
         return _sheet.Columns.GetColumn(x - offset);
     }
 
     public int ComputeRow(double y)
     {
-        var offset = IncludeColHeadings ? RowHeadingWidth : 0;
+        var offset = IncludeColHeadings ? ColHeadingHeight : 0;
         return _sheet.Rows.GetRow(y - offset);
     }
+
 
     public double ComputeHeight(int startRow, int rowSpan)
     {

@@ -11,7 +11,7 @@
 @using BlazorDatasheet.Util
 @using Microsoft.Extensions.Primitives
 <div
-    style="@GetContainerStyleString()"
+    style="height:@(_cellLayoutProvider.TotalHeight)px; width: @(_cellLayoutProvider.TotalWidth)px;"
     class="@GetContainerClassString()"
     theme="@Theme"
     @onmouseover="() => IsMouseInsideSheet = true"
@@ -70,48 +70,45 @@
                     <div id="filler-left-1" @ref="_fillerLeft1" style="float:right; min-width: @(Viewport.Left)px; height: @(RenderedInnerSheetHeight)px;"></div>
 
                     <div style="width:@(RenderedInnerSheetWidth)px;height: @(RenderedInnerSheetHeight)px;display: block;">
-
-                        <div style="width: @(RenderedInnerSheetWidth)px; height:@(RenderedInnerSheetHeight)px; display: block;">
-                            @for (int rowIndex = Viewport.VisibleRegion.Top; rowIndex <= Viewport.VisibleRegion.Bottom; rowIndex++)
-                            {
-                                var row = rowIndex;
-                                var rowHeight = @_cellLayoutProvider.ComputeHeight(row, 1);
-                                <div @key="row" style="height:@(rowHeight)px">
-                                    @for (int j = Viewport.VisibleRegion.Left; j <= Viewport.VisibleRegion.Right; j++)
-                                    {
-                                        var col = j;
-                                        var cell = _visualSheet.GetVisualCell(row, col);
-                                        var colWidth = @cell.Width;
-                                        <div
-                                            @onmouseup="e => HandleCellMouseUp(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
-                                            @ondblclick="e => HandleCellDoubleClick(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
-                                            @onmouseover="e => HandleCellMouseOver(row, col)"
-                                            @onmousedown="e => HandleCellMouseDown(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
-                                            @key="col"
-                                            style="
+                        @for (int rowIndex = Viewport.VisibleRegion.Top; rowIndex <= Viewport.VisibleRegion.Bottom; rowIndex++)
+                        {
+                            var row = rowIndex;
+                            var rowHeight = @_cellLayoutProvider.ComputeHeight(row, 1);
+                            <div @key="row" style="height:@(rowHeight)px">
+                                @for (int j = Viewport.VisibleRegion.Left; j <= Viewport.VisibleRegion.Right; j++)
+                                {
+                                    var col = j;
+                                    var cell = _visualSheet.GetVisualCell(row, col);
+                                    var colWidth = @cell.Width;
+                                    <div
+                                        @onmouseup="e => HandleCellMouseUp(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
+                                        @ondblclick="e => HandleCellDoubleClick(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
+                                        @onmouseover="e => HandleCellMouseOver(row, col)"
+                                        @onmousedown="e => HandleCellMouseDown(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
+                                        @key="col"
+                                        style="
                                             width:@(colWidth)px;
                                             max-width:@(colWidth)px;
                                             height:@(rowHeight)px;
                                             max-height:@(rowHeight)px;"
-                                            class="sheet-cell">
-                                            <CascadingValue Value="Sheet" IsFixed="true">
-                                                <CellRenderer
-                                                    IconColor="@cell.Format?.IconColor"
-                                                    CellFormatStyleString="@cell.FormatStyleString"
-                                                    IsDirty="SheetIsDirty || DirtyCells.Contains((row, col))">
-                                                    <ItemTemplate>
-                                                        <DynamicComponent
-                                                            Type="@GetCellRendererType(cell.CellType)"
-                                                            Parameters="@getCellRendererParameters(Sheet, cell)">
-                                                        </DynamicComponent>
-                                                    </ItemTemplate>
-                                                </CellRenderer>
-                                            </CascadingValue>
-                                        </div>
-                                    }
-                                </div>
-                            }
-                        </div>
+                                        class="sheet-cell">
+                                        <CascadingValue Value="Sheet" IsFixed="true">
+                                            <CellRenderer
+                                                IconColor="@cell.Format?.IconColor"
+                                                CellFormatStyleString="@cell.FormatStyleString"
+                                                IsDirty="SheetIsDirty || DirtyCells.Contains((row, col))">
+                                                <ItemTemplate>
+                                                    <DynamicComponent
+                                                        Type="@GetCellRendererType(cell.CellType)"
+                                                        Parameters="@getCellRendererParameters(Sheet, cell)">
+                                                    </DynamicComponent>
+                                                </ItemTemplate>
+                                            </CellRenderer>
+                                        </CascadingValue>
+                                    </div>
+                                }
+                            </div>
+                        }
                     </div>
 
                     <div id="filler-right" @ref="_fillerRight" style="float:left;min-width: @(Viewport.DistanceRight)px; height:@(RenderedInnerSheetHeight)px;"></div>
@@ -168,8 +165,10 @@
          @ref="_wholeSheetDiv"
          style="position:absolute; top:0; 
                      left:0;
-                     height:@GetSheetHeightInPx()px; 
-                     width:@GetSheetWidthInPx()px;
+                     min-height:@(_cellLayoutProvider.TotalHeight))px; 
+                     max-height:@(_cellLayoutProvider.TotalHeight))px; 
+                     min-width:@(_cellLayoutProvider.TotalWidth))px;
+                     max-width:@(_cellLayoutProvider.TotalWidth))px;
                      pointer-events: none;
                      z-index: 0;">
 
