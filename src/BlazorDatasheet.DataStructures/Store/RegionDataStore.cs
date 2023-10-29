@@ -79,6 +79,17 @@ public class RegionDataStore<T> where T : IEquatable<T>
     }
 
     /// <summary>
+    /// Returns the data regions that have the same area/position as the region given.
+    /// </summary>
+    /// <param name="region"></param>
+    /// <returns></returns>
+    public IEnumerable<DataRegion<T>> GetEqualRegions(IRegion region)
+    {
+        return _tree.Search(region.ToEnvelope())
+            .Where(x => region.Equals(x.Region));
+    }
+
+    /// <summary>
     /// Adds a region to the store, and assigns it data.
     /// Overlapping regions are not removed.
     /// </summary>
@@ -338,6 +349,11 @@ public class RegionDataStore<T> where T : IEquatable<T>
     }
 
     public bool Any() => _tree.Count > 0;
+
+    public bool Any(int row, int col)
+    {
+        return GetRegionsOverlapping(row, col).Any();
+    }
 
     public void AddRange(List<DataRegion<T>> dataRegions)
     {

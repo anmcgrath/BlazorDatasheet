@@ -5,6 +5,7 @@ using BlazorDatasheet.Core.Events.Edit;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Graph;
+using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.CoreFunctions;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
@@ -18,6 +19,14 @@ public class FormulaEngine
     private readonly FormulaParser _parser = new();
     private readonly FormulaEvaluator _evaluator;
     private readonly DependencyGraph _dependencyGraph;
+
+    /// <summary>
+    /// Keeps track of any ranges referenced by formula.
+    /// This should ideally keep track of the formula that reference the range also,
+    /// but for now it's just whether it's referenced or not.
+    /// </summary>
+    private RegionDataStore<bool> _observedRanges = new();
+
     public bool IsCalculating { get; private set; }
 
     public FormulaEngine(Sheet sheet)
@@ -35,8 +44,29 @@ public class FormulaEngine
 
     private void SheetOnCellsChanged(object? sender, IEnumerable<(int row, int col)> e)
     {
-        if (!this.IsCalculating)
-            this.CalculateSheet();
+        if (this.IsCalculating)
+            return;
+
+        var cellsReferenced = false;
+        foreach (var cell in e)
+        {
+            if (IsCellReferenced(cell.row, cell.col))
+            {
+                cellsReferenced = true;
+                break;
+            }
+        }
+        
+        if(!cellsReferenced)
+            return;
+        
+        this.CalculateSheet();
+    }
+
+    private bool IsCellReferenced(int row, int col)
+    {
+        return _dependencyGraph.HasVertex(new CellVertex(row, col).Key) ||
+               _observedRanges.Any(row, col);
     }
 
     private void RegisterDefaultFunctions()
@@ -67,6 +97,7 @@ public class FormulaEngine
             _dependencyGraph.AddEdge(vertex, formulaVertex);
             if (reference is RangeReference rangeReference)
             {
+                _observedRanges.Add(((RegionVertex)vertex).Region, true);
                 var cellVerticesInsideRange = GetCellVerticesInRange(rangeReference);
                 foreach (var cellVertex in cellVerticesInsideRange)
                 {
@@ -116,7 +147,24 @@ public class FormulaEngine
     /// <param name="col"></param>
     public void RemoveFromDependencyGraph(int row, int col)
     {
-        _dependencyGraph.RemoveVertex(new CellVertex(row, col));
+        var vertex = new CellVertex(row, col);
+        var dependent = _dependencyGraph.Prec(vertex);
+        _dependencyGraph.RemoveVertex(vertex);
+
+        foreach (var d in dependent)
+        {
+            if (!_dependencyGraph.IsDependedOn(d))
+            {
+                _dependencyGraph.RemoveVertex(d);
+            }
+
+            if (d is RegionVertex r)
+            {
+                var equalRegions = _observedRanges.GetEqualRegions(r.Region).ToList();
+                if (equalRegions.Any())
+                    _observedRanges.Delete(equalRegions.First());
+            }
+        }
     }
 
     public void CalculateSheet()

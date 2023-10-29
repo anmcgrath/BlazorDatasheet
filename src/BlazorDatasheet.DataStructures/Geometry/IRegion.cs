@@ -1,6 +1,6 @@
 ﻿namespace BlazorDatasheet.DataStructures.Geometry;
 
-public interface IRegion
+public interface IRegion : IEquatable<IRegion>
 {
     /// <summary>
     /// Where the region was started

@@ -499,7 +499,7 @@ public class Region : IRegion
         return $"region from (r{TopLeft.Row}, c{TopLeft.Col}) to (r{BottomRight.Row}, c{BottomRight.Col})";
     }
 
-    public override bool Equals(object? obj)
+    public bool Equals(IRegion? obj)
     {
         if (obj is IRegion region)
             return region.TopLeft.Row == TopLeft.Row

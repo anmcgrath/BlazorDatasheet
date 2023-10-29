@@ -6,17 +6,17 @@ public class DependencyGraph
     /// Adjacency list - specifies directed edges between vertices
     /// Note this is a dictionary of a dictionary
     /// </summary>
-    private Dictionary<string, Dictionary<string, Vertex>> _adj;
+    private readonly Dictionary<string, Dictionary<string, Vertex>> _adj;
 
     /// <summary>
     /// Precedents list - reverse of adjacency list
     /// </summary>
-    private Dictionary<string, Dictionary<string, Vertex>> _prec;
+    private readonly Dictionary<string, Dictionary<string, Vertex>> _prec;
 
     /// <summary>
     /// Maps between vertex key and Vertex
     /// </summary>
-    private Dictionary<string, Vertex> _symbolTable;
+    private readonly Dictionary<string, Vertex> _symbolTable;
 
     private int _numVertices;
     private int _numEdges;
@@ -96,6 +96,14 @@ public class DependencyGraph
             return;
         var adj = Adj(v);
         var prec = Prec(v);
+        // keep a list of vertices that we removed edges to because we want to remove those if they
+        // no longer have any references
+        var toRemoveSet = new HashSet<string>();
+        
+        Console.WriteLine("Removing vertex v");
+        Console.WriteLine(adj.Count());
+        Console.WriteLine(prec.Count());
+
         // Remove edges
         foreach (var w in adj)
         {
@@ -151,6 +159,16 @@ public class DependencyGraph
     }
 
     /// <summary>
+    /// Whether a vertex is connected to any other vertices.
+    /// </summary>
+    /// <param name="v"></param>
+    /// <returns></returns>
+    public bool IsDependedOn(Vertex v)
+    {
+        return Adj(v).Any();
+    }
+
+    /// <summary>
     /// Adds edges between the vertex v and all vertices in the array ws
     /// </summary>
     /// <param name="v"></param>
@@ -175,5 +193,15 @@ public class DependencyGraph
     public IEnumerable<Vertex> TopologicalSort()
     {
         return _topo.Sort(this);
+    }
+
+    /// <summary>
+    /// Checks whether a vertex with the key given exists in the graph.
+    /// </summary>
+    /// <param name="key"></param>
+    /// <returns></returns>
+    public bool HasVertex(string key)
+    {
+        return _symbolTable.ContainsKey(key);
     }
 }
