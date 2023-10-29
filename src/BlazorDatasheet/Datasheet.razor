@@ -97,6 +97,7 @@
                                             <CellRenderer
                                                 IconColor="@cell.Format?.IconColor"
                                                 CellFormatStyleString="@cell.FormatStyleString"
+                                                Icon="@GetIconRenderFragment(cell.Icon)"
                                                 IsDirty="SheetIsDirty || DirtyCells.Contains((row, col))">
                                                 <ItemTemplate>
                                                     <DynamicComponent

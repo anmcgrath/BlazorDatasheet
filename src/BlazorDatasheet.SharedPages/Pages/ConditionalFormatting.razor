@@ -1,6 +1,4 @@
 @page "/ConditionalFormatting"
-@using BlazorDatasheet.Icons
-@using BlazorDatasheet.Render
 @using Region = BlazorDatasheet.DataStructures.Geometry.Region
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Formats
@@ -20,6 +18,7 @@
 
 <div style="height: 600px; overflow-y: scroll">
     <Datasheet
+        Icons="iconDictionary"
         Sheet="sheet">
     </Datasheet>
 </div>
@@ -27,6 +26,14 @@
 @code {
 
     private Sheet sheet;
+
+    private Dictionary<string, RenderFragment> iconDictionary = new()
+    {
+        {
+            "check",
+            Icons.Icons.CheckIcon
+        }
+    };
 
     protected override void OnInitialized()
     {

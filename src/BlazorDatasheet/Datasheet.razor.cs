@@ -87,6 +87,8 @@ public partial class Datasheet : IHandleEvent
 
     [Parameter] public string Theme { get; set; } = "default";
 
+    [Parameter] public Dictionary<string, RenderFragment> Icons { get; set; } = new();
+
     /// <summary>
     /// Whether the user is focused on the datasheet.
     /// </summary>
@@ -262,13 +264,13 @@ public partial class Datasheet : IHandleEvent
             _dotnetHelper = DotNetObjectReference.Create(this);
             await AddWindowEventsAsync();
             await JS.InvokeVoidAsync("addVirtualisationHandlers",
-                                     _dotnetHelper,
-                                     _wholeSheetDiv,
-                                     nameof(HandleScroll),
-                                     _fillerLeft1,
-                                     _fillerTop,
-                                     _fillerRight,
-                                     _fillerBottom);
+                _dotnetHelper,
+                _wholeSheetDiv,
+                nameof(HandleScroll),
+                _fillerLeft1,
+                _fillerTop,
+                _fillerRight,
+                _fillerBottom);
         }
 
         SheetIsDirty = false;
@@ -296,6 +298,7 @@ public partial class Datasheet : IHandleEvent
         Viewport = newViewport;
         _visualSheet.UpdateViewport(_sheetLocal, newViewport);
     }
+
     private string GetAbsoluteCellPositionStyles(int row, int col, int rowSpan, int colSpan)
     {
         var sb = new StringBuilder();
@@ -699,5 +702,12 @@ public partial class Datasheet : IHandleEvent
     {
         SheetIsDirty = true;
         StateHasChanged();
+    }
+
+    private RenderFragment GetIconRenderFragment(string? cellIcon)
+    {
+        if (cellIcon != null && Icons.TryGetValue(cellIcon, out var rf))
+            return rf;
+        return _ => { };
     }
 }
