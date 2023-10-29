@@ -109,7 +109,10 @@
 
 .column-head {
     background: var(--col-header-bg-color) !important;
+    border-right: var(--sheet-border-style);
+    border-top: var(--sheet-border-style);
     color: var(--headers-foreground-color);
+    height: 100%;
 }
 
 .column-active {
@@ -122,6 +125,8 @@
 .row-head {
     background: var(--row-header-bg-color) !important;
     border-right: var(--sheet-border-style);
+    border-bottom: var(--sheet-border-style);
+    border-left: var(--sheet-border-style);
     padding-right: 5px;
     padding-left: 5px;
     align-content: center;

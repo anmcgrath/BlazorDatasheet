@@ -10,9 +10,14 @@
 
 <p>Below is a sheet with 100,000 rows. There is no data validation or formatting and the default editors are used.</p>
 
-<Datasheet
-    ShowColHeadings="false"
-    Sheet="sheet"/>
+<div style="overflow: scroll; width: 700px; height: 400px;">
+
+    <Datasheet
+        ShowColHeadings="true"
+        ShowRowHeadings="true"
+        Sheet="sheet"/>
+
+</div>
 <button @onclick="@(() => sheet.SetFormat(new CellFormat() { BackgroundColor = "red" }, sheet.Selection))">Set format to red</button>
 <button @onclick="@(() => sheet.SetFormat(new CellFormat() { BackgroundColor = "blue" }, sheet.Selection))">Set format to blue</button>
 
@@ -23,7 +28,7 @@
 
     protected override void OnInitialized()
     {
-        sheet = new Sheet(numRows: 2000, numCols: 2000);
+        sheet = new Sheet(numRows: 100000, numCols: 20000);
         var engine = new FormulaEngine(sheet);
     }
 

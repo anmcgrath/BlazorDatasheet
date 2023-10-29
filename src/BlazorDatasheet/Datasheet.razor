@@ -25,12 +25,13 @@
 
                 @if (ShowColHeadings)
                 {
-                    <div style="display: flex; flex-direction: row;" class="sheet-row column-head @(StickyHeadings ? "col-sticky" : "col-nonsticky")">
+                    <div style="display: flex; flex-direction: row;" class="sheet-row @(StickyHeadings ? "col-sticky" : "col-nonsticky")">
                         @if (ShowRowHeadings)
                         {
                             <!-- the little bit outside to the left of first col header -->
-                            <div class="sheet-cell row-head"
-                                 style="@CssUtil.GetCellWidthStyles(-1, 1, _cellLayoutProvider); display: inline-block;@(StickyHeadings ? "position: sticky; left: 0; z-index:2;" : "")">
+                            <div class="sheet-cell row-head column-head"
+                                 style="@CssUtil.GetCellWidthStyles(-1, 1, _cellLayoutProvider); height: @(_cellLayoutProvider.ColHeadingHeight)px;
+                                 display: inline-block;@(StickyHeadings ? "position: sticky; left: 0; z-index:2;" : "")">
                                 <div class="cell"></div>
                             </div>
                         }

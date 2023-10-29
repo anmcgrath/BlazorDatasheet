@@ -60,10 +60,8 @@
     var colHeading = Sheet?.Columns.GetHeading(i) ?? CellReference.ColNumberToLetters(col);
 
     <div
-        class="sheet-cell @GetActiveClass(col)"
+        class="sheet-cell @GetActiveClass(col) column-head"
         style="z-index: 1; 
-        border-right: var(--sheet-border-style);
-        border-top: var(--sheet-border-style);
         @CssUtil.GetCellWidthStyles(i, 1, CellLayoutProvider); 
         height: @(CellLayoutProvider.ColHeadingHeight)px"
         @onmouseup="e => HandleMouseUp(col, e)"
