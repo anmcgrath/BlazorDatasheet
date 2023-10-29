@@ -104,6 +104,9 @@ public class ParameterTypeConversion
 
     private object? ToLogical(object? arg)
     {
+        if (arg == null)
+            return false;
+        
         if (arg is bool b)
             return b;
         if (arg is double d)

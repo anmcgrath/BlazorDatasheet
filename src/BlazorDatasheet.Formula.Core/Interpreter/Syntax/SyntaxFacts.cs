@@ -53,8 +53,6 @@ internal static class SyntaxFacts
                 return SyntaxKind.TrueKeyword;
             case "false":
                 return SyntaxKind.FalseKeyword;
-            case "and":
-                return SyntaxKind.AndKeyword;
             default:
                 return SyntaxKind.IdentifierToken;
         }
