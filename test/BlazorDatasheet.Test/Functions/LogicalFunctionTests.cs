@@ -28,4 +28,15 @@ public class LogicalFunctionTests
         andFunction.Call(new List<object>() { true, false }).Should().Be(false);
         andFunction.Call(new List<object>() { true, true }).Should().Be(true);
     }
+
+    [Test]
+    public void OrFunctionTests()
+    {
+        var orFunction = new OrFunction();
+        orFunction.Call(new List<object>() { true }).Should().Be(true);
+        orFunction.Call(new List<object>() { false }).Should().Be(false);
+        orFunction.Call(new List<object>() { true, false }).Should().Be(true);
+        orFunction.Call(new List<object>() { true, true }).Should().Be(true);
+        orFunction.Call(new List<object>() { false, false }).Should().Be(false);
+    }
 }
