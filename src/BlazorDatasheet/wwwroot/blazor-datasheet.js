@@ -228,11 +228,13 @@ interactionMap = {}
 
 window.addVirtualisationHandlers = function (dotNetHelper, el, dotnetHandlerName, fillerLeft, fillerTop, fillerRight, fillerBottom) {
 
-
     // return initial scroll event to render the sheet
     let parent = findScrollableAncestor(el)
     if (parent)
+    {
         parent.style.willChange = 'transform' // improves scrolling performance in chrome/edge
+        parent.style.overflowAnchor = 'none'
+    }
 
     let offset = getScrollOffsetSizes(el, parent || document.documentElement)
     dotNetHelper.invokeMethodAsync(dotnetHandlerName, offset);
@@ -270,7 +272,6 @@ window.addVirtualisationHandlers = function (dotNetHelper, el, dotnetHandlerName
 last_page_posns_map = {}
 resize_map = {}
 dotNetHelperMap = {}
-
 
 // adds listeners to determine when the scroll container is moved
 // on the page, so that we can update the pageX and pageY coordinates stored for the element.
