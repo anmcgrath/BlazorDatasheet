@@ -7,8 +7,10 @@ using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Graph;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core;
-using BlazorDatasheet.Formula.Core.CoreFunctions;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
+using BlazorDatashet.Formula.Functions;
+using BlazorDatashet.Formula.Functions.Logical;
+using BlazorDatashet.Formula.Functions.Math;
 
 namespace BlazorDatasheet.Core.FormulaEngine;
 
@@ -56,10 +58,10 @@ public class FormulaEngine
                 break;
             }
         }
-        
-        if(!cellsReferenced)
+
+        if (!cellsReferenced)
             return;
-        
+
         this.CalculateSheet();
     }
 
@@ -71,9 +73,8 @@ public class FormulaEngine
 
     private void RegisterDefaultFunctions()
     {
-        _environment.SetFunction("IF", new IfFunction());
-        _environment.SetFunction("SIN", new SinFunction());
-        _environment.SetFunction("SUM", new SumFunction());
+        _environment.RegisterLogicalFunctions();
+        _environment.RegisterMathFunctions();
     }
 
     private void SheetOnBeforeCellEdit(object? sender, BeforeCellEditEventArgs e)

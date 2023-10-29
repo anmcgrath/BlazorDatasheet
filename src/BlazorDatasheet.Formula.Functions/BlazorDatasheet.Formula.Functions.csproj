@@ -4,10 +4,11 @@
         <TargetFramework>net7.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <RootNamespace>BlazorDatashet.Formula.Functions</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="CoreFunctions\" />
+      <ProjectReference Include="..\BlazorDatasheet.Formula.Core\BlazorDatasheet.Formula.Core.csproj" />
     </ItemGroup>
 
 </Project>

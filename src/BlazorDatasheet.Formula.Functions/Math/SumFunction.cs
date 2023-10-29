@@ -1,7 +1,6 @@
-using System.Diagnostics;
 using BlazorDatasheet.Formula.Core.Interpreter.Functions;
 
-namespace BlazorDatasheet.Formula.Core.CoreFunctions;
+namespace BlazorDatashet.Formula.Functions.Math;
 
 public class SumFunction : CallableFunctionDefinition
 {
@@ -11,7 +10,7 @@ public class SumFunction : CallableFunctionDefinition
     {
     }
 
-    public override object Call(IEnumerable<object> arguments)
+    public override object Call(List<object> arguments)
     {
         var args = arguments.Cast<IEnumerable<double>>()
             .ToList();

@@ -12,4 +12,5 @@ public interface IEnvironment
     CallableFunctionDefinition GetFunctionDefinition(string identifierText);
     bool VariableExists(string variableIdentifier);
     object GetVariable(string variableIdentifier);
+    void SetFunction(string name, CallableFunctionDefinition value);
 }

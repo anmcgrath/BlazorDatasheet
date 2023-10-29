@@ -1,6 +1,6 @@
 ﻿using BlazorDatasheet.Formula.Core.Interpreter.Functions;
 
-namespace BlazorDatasheet.Formula.Core.CoreFunctions;
+namespace BlazorDatashet.Formula.Functions.Logical;
 
 public class IfFunction : CallableFunctionDefinition
 {
@@ -13,14 +13,13 @@ public class IfFunction : CallableFunctionDefinition
     {
     }
 
-    public override object Call(IEnumerable<object> arguments)
+    public override object Call(List<object> arguments)
     {
-        var args = arguments.ToList();
-        var isTrue = (bool)args[0];
-        if (args.Count > 1 && isTrue)
-            return args[1];
-        if (args.Count > 2 && !isTrue)
-            return args[2];
+        var isTrue = (bool)arguments[0];
+        if (arguments.Count > 1 && isTrue)
+            return arguments[1];
+        if (arguments.Count > 2 && !isTrue)
+            return arguments[2];
         return isTrue;
     }
 

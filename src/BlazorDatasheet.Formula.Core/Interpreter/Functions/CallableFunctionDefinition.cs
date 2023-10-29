@@ -5,7 +5,7 @@ public abstract class CallableFunctionDefinition
     public const int MAX_ARGS = 128;
     private Parameter[] _parameters;
     public IReadOnlyList<Parameter> Parameters => _parameters;
-    public abstract object Call(IEnumerable<object> arguments);
+    public abstract object Call(List<object> arguments);
     public abstract Type ReturnType { get; }
     public abstract bool AcceptsErrors { get; }
     internal int MinArity { get; }

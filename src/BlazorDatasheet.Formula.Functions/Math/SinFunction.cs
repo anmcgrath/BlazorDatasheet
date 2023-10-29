@@ -1,6 +1,6 @@
 using BlazorDatasheet.Formula.Core.Interpreter.Functions;
 
-namespace BlazorDatasheet.Formula.Core.CoreFunctions;
+namespace BlazorDatashet.Formula.Functions.Math;
 
 public class SinFunction : CallableFunctionDefinition
 {
@@ -11,9 +11,9 @@ public class SinFunction : CallableFunctionDefinition
     {
     }
 
-    public override object Call(IEnumerable<object> arguments)
+    public override object Call(List<object> arguments)
     {
-        return Math.Sin((double)arguments.First());
+        return System.Math.Sin((double)arguments[0]);
     }
 
     public override Type ReturnType => typeof(double);

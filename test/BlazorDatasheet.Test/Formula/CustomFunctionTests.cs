@@ -49,7 +49,7 @@ public class CustomFunctionDefinition : CallableFunctionDefinition
     {
     }
 
-    public override object Call(IEnumerable<object> arguments)
+    public override object Call(List<object> arguments)
     {
         throw new NotImplementedException();
     }
