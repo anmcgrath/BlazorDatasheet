@@ -9,7 +9,7 @@ internal class CellStoreRestoreData
 {
     internal MatrixRestoreData<object?> ValueRestoreData { get; set; } = new();
     internal MatrixRestoreData<CellFormula?> FormulaRestoreData { get; set; } = new();
-    internal MatrixRestoreData<bool> ValidRestoreData { get; set; } = new();
+    internal MatrixRestoreData<bool?> ValidRestoreData { get; set; } = new();
     internal RegionRestoreData<string> TypeRestoreData { get; set; } = new();
     internal RegionRestoreData<CellFormat> FormatRestoreData { get; set; } = new();
     internal RegionRestoreData<bool> MergeRestoreData { get; set; } = new();

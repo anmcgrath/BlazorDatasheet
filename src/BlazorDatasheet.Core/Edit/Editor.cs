@@ -98,11 +98,11 @@ public class Editor
         EditBegin?.Invoke(
             this,
             new EditBeginEventArgs(cell,
-                                   beforeEditArgs.EditValue,
-                                   beforeEditArgs.EditorType,
-                                   isSoftEdit,
-                                   mode,
-                                   key));
+                beforeEditArgs.EditValue,
+                beforeEditArgs.EditorType,
+                isSoftEdit,
+                mode,
+                key));
     }
 
     public bool CancelEdit()
@@ -154,12 +154,14 @@ public class Editor
             if (validationResult.IsStrictFail)
             {
                 Sheet.Dialog.Alert(string.Join("\n", validationResult.FailMessages));
+                return false;
             }
 
             EditAccepted?.Invoke(
                 this,
                 new EditAcceptedEventArgs(EditCell.Row, EditCell.Col, beforeAcceptEdit.EditValue,
-                                          beforeAcceptEdit.Formula, isFormula ? EditValue : null));
+                    beforeAcceptEdit.Formula, isFormula ? EditValue : null));
+
 
             if (isFormula && parsedFormula != null)
                 Sheet.Cells.SetFormula(EditCell.Row, EditCell.Col, parsedFormula);

@@ -86,7 +86,7 @@ public class SheetCell : IReadOnlyCell
 
     public int Row { get; }
     public int Col { get; }
-    public bool IsValid { get; }
+    public bool IsValid => _sheet.Cells.IsValid(Row, Col);
 
     public string? Formula
     {
