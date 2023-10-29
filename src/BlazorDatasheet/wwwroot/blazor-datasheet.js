@@ -158,25 +158,6 @@ function findScrollableAncestor(element) {
     return findScrollableAncestor(parent)
 }
 
-function serializeScrollEvent(target, el) {
-    let r = el.getBoundingClientRect()
-    let t = target == document.documentElement ? {
-        top: 0,
-        left: 0,
-        height: window.innerHeight,
-        width: window.innerWidth
-    } : target.getBoundingClientRect()
-    console.log("el", r, "target", t)
-    return {
-        scrollTop: Math.max(0, t.top - r.top),
-        scrollHeight: r.height,
-        scrollWidth: r.width,
-        scrollLeft: Math.max(0, t.left - r.left),
-        containerHeight: t.height - Math.max(0, r.top - t.top),
-        containerWidth: t.width - Math.max(0, r.left - t.left)
-    }
-}
-
 function getScrollOffsetSizes(el, parent) {
     // how much of the element has disappeared above the parent's scroll area?
     // if the parent is an element, it is equal to scroll height
@@ -265,7 +246,7 @@ window.addVirtualisationHandlers = function (dotNetHelper, el, dotnetHandlerName
     topHandlerMutMap[el] = createMutationObserver(fillerTop, observer)
     bottomHandlerMutMap[el] = createMutationObserver(fillerBottom, observer)
     leftHandlerMutMap[el] = createMutationObserver(fillerLeft, observer)
-    topHandlerMutMap[el] = createMutationObserver(fillerRight, observer)
+    rightHandlerMutMap[el] = createMutationObserver(fillerRight, observer)
 
     dotNetHelperMap = {}
 
@@ -293,38 +274,6 @@ window.addPageMoveListener = function (dotNetHelper, el, dotnetFunctionName) {
 
     res.observe(resizeable)
     resize_map[el] = res
-}
-
-window.disposePageMoveListener = function (el) {
-    resize_map[el].disconnect()
-    resize_map = {}
-    last_page_posns_map = {}
-}
-
-function invokeIfPageXYNew(el, dotnetHelper, dotnetFunctionName) {
-    if (el == null)
-        return
-
-    last = last_page_posns_map[el]
-    console.log("last", last)
-    newPage = {pageX: getPageX(el), pageY: getPageY(el)}
-    console.log("new", newPage)
-    let thres = 0.001
-    if (Math.abs(last.pageX - newPage.pageX) <= thres &&
-        Math.abs(last.pageY - newPage.pageY) <= thres)
-        return
-
-    last_page_posns_map[el] = newPage
-
-    dotnetHelper.invokeMethodAsync(dotnetFunctionName, {pageX: getPageX(el), pageY: getPageY(el)})
-}
-
-function getPageX(el) {
-    return el.getBoundingClientRect().x + window.scrollX
-}
-
-function getPageY(el) {
-    return el.getBoundingClientRect().y + window.scrollY
 }
 
 function createMutationObserver(filler, interactionObserver) {

@@ -269,10 +269,6 @@ public partial class Datasheet : IHandleEvent
                                      _fillerTop,
                                      _fillerRight,
                                      _fillerBottom);
-
-            // we need to know the position of the datasheet relative to the 
-            // page start, so that we can calculate mouse events correctly
-            //await JS.InvokeVoidAsync("addSheetPositionHandler", _dotnetHelper, _wholeSheetDiv);
         }
 
         SheetIsDirty = false;
@@ -593,7 +589,6 @@ public partial class Datasheet : IHandleEvent
         try
         {
             await JS.InvokeAsync<string>("disposeVirtualisationHandlers", _wholeSheetDiv);
-            await JS.InvokeAsync<string>("disposePageMoveListener", _wholeSheetDiv);
         }
         catch (Exception e)
         {
