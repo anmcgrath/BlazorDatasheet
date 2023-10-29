@@ -233,8 +233,10 @@ window.addVirtualisationHandlers = function (dotNetHelper, el, dotnetHandlerName
     if (parent)
     {
         parent.style.willChange = 'transform' // improves scrolling performance in chrome/edge
-        parent.style.overflowAnchor = 'none'
     }
+
+    // fixes scroll jankiness with chrome and firefox.
+    (parent ?? document.documentElement).style.overflowAnchor = 'none'
 
     let offset = getScrollOffsetSizes(el, parent || document.documentElement)
     dotNetHelper.invokeMethodAsync(dotnetHandlerName, offset);
