@@ -10,4 +10,8 @@
       <Folder Include="CoreFunctions\" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\BlazorDatasheet.DataStructures\BlazorDatasheet.DataStructures.csproj" />
+    </ItemGroup>
+
 </Project>

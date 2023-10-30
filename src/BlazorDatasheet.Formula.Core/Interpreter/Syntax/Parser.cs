@@ -1,4 +1,5 @@
-﻿using BlazorDatasheet.Formula.Core.Interpreter.References;
+﻿using BlazorDatasheet.DataStructures.Util;
+using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Formula.Core.Interpreter.Syntax;
 
@@ -145,11 +146,29 @@ public class Parser
         }
 
         if (RangeText.IsValidCellReference(Current.Text))
-            return parseCell();
+            return parseValidCell();
 
         var identifier = NextToken();
         _references.Add(new NamedReference(identifier.Text));
         return new NameExpressionSyntax(identifier);
+    }
+    
+    public Reference ParseRangePartAsReference(string rangeText)
+    {
+        if (RangeText.IsValidCellReference(rangeText))
+        {
+            var res = RangeText.CellFromString(rangeText)!;
+            return new CellReference(res.row, res.col, res.fixedCol, res.fixedRow);
+        }
+
+        if (RangeText.IsValidColReference(rangeText))
+            return new ColReference(RangeText.ColStrToNumber(rangeText),
+                rangeText.StartsWith('$'));
+
+        if (RangeText.IsValidRowReference(rangeText))
+            return new RowReference(RangeText.RowStrToNumber(rangeText), rangeText.StartsWith('$'));
+
+        return new NamedReference(rangeText);
     }
 
     private ExpressionSyntax parseRange()
@@ -165,13 +184,14 @@ public class Parser
 
     private Reference ParseRangePartAsReference(SyntaxToken token)
     {
-        return RangeText.ParseRangePartAsReference(token.Text);
+        return ParseRangePartAsReference(token.Text);
     }
 
-    private ExpressionSyntax parseCell()
+    private ExpressionSyntax parseValidCell()
     {
         var cellToken = NextToken();
-        var cellReference = CellReference.FromString(cellToken.Text);
+        var res = RangeText.CellFromString(cellToken.Text);
+        var cellReference = new CellReference(res.row, res.col, res.fixedCol, res.fixedRow);
         _references.Add(cellReference);
         return new CellExpressionSyntax(cellReference);
     }

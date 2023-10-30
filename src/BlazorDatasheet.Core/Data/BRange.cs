@@ -1,5 +1,6 @@
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Core.Data;
 
@@ -9,7 +10,7 @@ namespace BlazorDatasheet.Core.Data;
 public class BRange
 {
     public readonly Sheet Sheet;
-    protected List<IRegion> _regions;
+    protected List<IRegion> _regions = new();
 
     public IEnumerable<IRegion> Regions
     {
@@ -40,6 +41,26 @@ public class BRange
         _rangePositionEnumerator = new RangePositionEnumerator(this);
     }
 
+    /// <summary>
+    /// Create a range with the expression e.g A1, A:B, A1:A5, Allows multiple regions by seperating with a ',' etc.
+    /// </summary>
+    /// <param name="rangeExpression"></param>
+    internal BRange(Sheet sheet, string rangeExpression)
+    {
+        Sheet = sheet;
+        _rangePositionEnumerator = new RangePositionEnumerator(this);
+
+        if (string.IsNullOrEmpty(rangeExpression))
+            return;
+
+        foreach (var split in rangeExpression.Split(","))
+        {
+            var region = Region.FromString(split);
+            if (region != null)
+                _regions.Add(region);
+        }
+    }
+
     internal BRange(Sheet sheet, IRegion region) :
         this(sheet, new List<IRegion>() { region })
     {
@@ -55,7 +76,7 @@ public class BRange
     }
 
     /// <summary>
-    /// Return all non-empty cells in this range.
+    /// Return all non-empty cells (in terms of Value) in this range.
     /// </summary>
     /// <returns></returns>
     public IEnumerable<IReadOnlyCell> GetNonEmptyCells()
@@ -64,7 +85,7 @@ public class BRange
     }
 
     /// <summary>
-    /// Return all positions of non-empty cells in the sheet.
+    /// Return all positions of non-empty cells (in terms of Value) in the sheet.
     /// </summary>
     /// <returns>A collection of (row, column) positions of all non-empty cells.</returns>
     public IEnumerable<CellPosition> GetNonEmptyPositions()
@@ -81,22 +102,22 @@ public class BRange
         Sheet.Cells.SetValues(Positions.Select(x => (x.row, x.col, value)).ToList());
     }
 
-    public void ClearCells()
+    public void Clear()
     {
         Sheet.Cells.ClearCells(this);
     }
 
-    public void AddRegion(IRegion region)
+    internal void AddRegion(IRegion region)
     {
         _regions.Add(region);
     }
 
-    public void RemoveRegion(IRegion region)
+    internal void RemoveRegion(IRegion region)
     {
         _regions.Remove(region);
     }
 
-    public BRange Clone()
+    internal BRange Clone()
     {
         return new BRange(this.Sheet, _regions.Select(x => x.Clone()));
     }

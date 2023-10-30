@@ -8,6 +8,7 @@
 @using BlazorDatasheet.Core.Events.Layout
 @using BlazorDatasheet.Core.Interfaces
 @using BlazorDatasheet.DataStructures.Intervals
+@using BlazorDatasheet.DataStructures.Util
 @using BlazorDatasheet.Events
 @using BlazorDatasheet.Formula.Core.Interpreter.References
 @inject IJSRuntime JS;
@@ -57,7 +58,7 @@
 @for (var i = VisibleColStart; i < (VisibleColStart + NVisibleCols); i++)
 {
     var col = i;
-    var colHeading = Sheet?.Columns.GetHeading(i) ?? CellReference.ColNumberToLetters(col);
+    var colHeading = Sheet?.Columns.GetHeading(i) ?? RangeText.ColNumberToLetters(col);
 
     <div
         class="sheet-cell @GetActiveClass(col) column-head"

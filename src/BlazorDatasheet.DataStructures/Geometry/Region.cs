@@ -1,3 +1,4 @@
+using BlazorDatasheet.DataStructures.Graph;
 using BlazorDatasheet.DataStructures.Util;
 
 namespace BlazorDatasheet.DataStructures.Geometry;
@@ -35,6 +36,10 @@ public class Region : IRegion
     /// <param name="row"></param>
     /// <param name="col"></param>
     public Region(int row, int col) : this(row, row, col, col)
+    {
+    }
+
+    public Region(CellPosition position) : this(position.row, position.col)
     {
     }
 
@@ -518,5 +523,44 @@ public class Region : IRegion
                    && region.BottomRight.col == BottomRight.col;
 
         return false;
+    }
+
+    /// <summary>
+    /// Returns a new region from the region string, e.g A1, A1:A4, A:A, 4:5, etc.
+    /// The string may contain $ but they are ignored.
+    /// </summary>
+    /// <param name="regionString"></param>
+    /// <returns></returns>
+    public static IRegion? FromString(string regionString)
+    {
+        if (string.IsNullOrEmpty(regionString))
+            return null;
+
+        // probably could be more efficient
+        var split = regionString.Split(':');
+        if (split.Length == 1 && RangeText.IsValidCellReference(split[0]))
+            return new Region(ParseCellPosition(split[0]));
+        if (split.Length == 2)
+        {
+            if (RangeText.IsValidCellReference(split[0]) &&
+                RangeText.IsValidCellReference(split[1]))
+                return new Region(ParseCellPosition(split[0]), ParseCellPosition(split[1]));
+
+            if (RangeText.IsValidColReference(split[0]) &&
+                RangeText.IsValidColReference(split[1]))
+                return new ColumnRegion(RangeText.ColStrToNumber(split[0]), RangeText.ColStrToNumber(split[1]));
+
+            if (RangeText.IsValidRowReference(split[0]) &&
+                RangeText.IsValidRowReference(split[1]))
+                return new RowRegion(RangeText.RowStrToNumber(split[0]), RangeText.RowStrToNumber(split[1]));
+        }
+
+        return null;
+    }
+
+    private static CellPosition ParseCellPosition(string cellText)
+    {
+        var result = RangeText.CellFromString(cellText)!;
+        return new CellPosition(result.row, result.col);
     }
 }

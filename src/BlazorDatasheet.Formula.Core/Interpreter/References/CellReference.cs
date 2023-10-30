@@ -1,11 +1,11 @@
 ﻿using System.Text.RegularExpressions;
+using BlazorDatasheet.DataStructures.Util;
 
 namespace BlazorDatasheet.Formula.Core.Interpreter.References;
 
 public class CellReference : Reference
 {
-    private static readonly string CELL_REFERENCE_REGEX = @"\$*[A-z]+\$*[0-9]+";
-    private static Regex _regex = new Regex(CELL_REFERENCE_REGEX);
+
     private readonly ColReference _col;
     private readonly RowReference _row;
     public ColReference Col => _col;
@@ -22,99 +22,7 @@ public class CellReference : Reference
         _col = col;
     }
 
-    public static bool IsValid(string text)
-    {
-        var match = _regex.Match(text);
-        return match.Success && match.Value == text;
-    }
-
-    public static CellReference? FromString(string text)
-    {
-        if (!IsValid(text))
-            return null;
-
-        bool fixedCol = false;
-        bool fixedRow = false;
-
-        int index = 0;
-        if (text[index] == '$')
-        {
-            fixedCol = true;
-            index++;
-        }
-
-        string colText = "";
-
-        while (index < text.Length &&
-               char.IsLetter(text[index]))
-        {
-            colText += text[index];
-            index++;
-        }
-
-        if (text[index] == '$')
-        {
-            fixedRow = true;
-            index++;
-        }
-
-        string rowText = "";
-
-        while (index < text.Length &&
-               char.IsNumber(text[index]))
-        {
-            rowText += text[index];
-            index++;
-        }
-
-        var row = RowStrToNumber(rowText);
-        var col = ColStrToNumber(colText);
-
-        return new CellReference(row, col, fixedCol, fixedRow);
-    }
-
-    internal static int RowStrToNumber(string rowText)
-    {
-        if (rowText.StartsWith('$'))
-            return int.Parse(rowText.Substring(1, rowText.Length - 1)) - 1;
-        return int.Parse(rowText) - 1;
-    }
-
-    internal static int ColStrToNumber(string text)
-    {
-        var str = text.ToUpper();
-        var start = 'A';
-        var result = 0;
-        var i0 = 0;
-
-        if (str.First() == '$')
-            i0 = 1;
-
-        for (int i = i0; i < str.Length; i++)
-        {
-            result *= 26;
-            var offset = (int)str[i] - (int)start + 1;
-            result += offset;
-        }
-
-        return result - 1;
-    }
-
     public override ReferenceKind Kind { get; }
-
-    public static string ColNumberToLetters(int n)
-    {
-        var N = n + 1;
-        string str = "";
-        while (N > 0)
-        {
-            int m = (N - 1) % 26;
-            str = Convert.ToChar('A' + m) + str;
-            N = (N - m) / 26;
-        }
-
-        return str;
-    }
 
     public override string ToRefText()
     {

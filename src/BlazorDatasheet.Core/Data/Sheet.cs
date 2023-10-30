@@ -625,4 +625,10 @@ public class Sheet
     {
         Dialog = service;
     }
+
+    /// <summary>
+    /// The <see cref="BRange"/> specified by the string e.g A1, B1:B4, A:B, A:A, 2:4, etc.
+    /// Multiple regions can be included by separating them with a ","
+    /// </summary>
+    public BRange this[string rangeString] => new(this, rangeString);
 }

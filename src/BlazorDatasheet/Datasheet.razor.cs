@@ -499,7 +499,7 @@ public partial class Datasheet : IHandleEvent
             if (!Sheet!.Selection.Regions.Any())
                 return true;
 
-            Sheet.Selection.ClearCells();
+            Sheet.Selection.Clear();
             return true;
         }
 

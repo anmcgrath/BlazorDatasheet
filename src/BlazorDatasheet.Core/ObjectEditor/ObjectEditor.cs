@@ -62,7 +62,7 @@ public class ObjectEditor<T>
     private void RefreshView()
     {
         Sheet.BatchUpdates();
-        Sheet.Range(Sheet.Region).ClearCells();
+        Sheet.Range(Sheet.Region).Clear();
 
         var values = new List<(int row, int col, object value)>();
         var items = _dataSource.Skip(PageSize * CurrentPage).Take(PageSize).ToList();

@@ -145,7 +145,7 @@ public class FormulaEvaluator
             (_currentCol == null || _currentRow == null))
         {
             return new FormulaError(ErrorType.Ref,
-                                    "Relative reference used but formula is not defined on a row/column.");
+                "Relative reference used but formula is not defined on a row/column.");
         }
 
         var start = node.Reference.Start;
@@ -212,7 +212,7 @@ public class FormulaEvaluator
             : cellEnd.Row.RowNumber;
 
         return new RangeAddress(Math.Min(rowStart, rowEnd), Math.Max(rowStart, rowEnd), Math.Min(colStart, colEnd),
-                                Math.Max(colStart, colEnd));
+            Math.Max(colStart, colEnd));
     }
 
     private object EvaluateParenthesizedExpression(ParenthesizedExpressionSyntax node)
@@ -226,7 +226,7 @@ public class FormulaEvaluator
             (_currentCol == null || _currentRow == null))
         {
             return new FormulaError(ErrorType.Ref,
-                                    "Relative reference used but formula is not defined on a row/column.");
+                "Relative reference used but formula is not defined on a row/column.");
         }
 
         var row = node.CellReference.IsRelativeReference
@@ -278,7 +278,7 @@ public class FormulaEvaluator
     private FormulaError InvalidUnaryExpression(UnaryExpressionSyntax syntax, object operand)
     {
         return new FormulaError(ErrorType.Na,
-                                $"Invalid operation {operand.ToString()} on {syntax.OperatorToken.Text}");
+            $"Invalid operation {operand.ToString()} on {syntax.OperatorToken.Text}");
     }
 
     private object EvalueBinaryExpression(BinaryExpressionSyntax syntax)

@@ -1,4 +1,5 @@
 ﻿using System;
+using BlazorDatasheet.DataStructures.Util;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 using NUnit.Framework;
 
@@ -17,7 +18,8 @@ public class CellReferenceTests
     public void Cell_Str_Parses_Correctly(string cellStr, int rowExpected, int colExpected, bool rowAbsExpected,
         bool colAbsExpected)
     {
-        var cellRef = CellReference.FromString(cellStr);
+        var res = RangeText.CellFromString(cellStr);
+        var cellRef = new CellReference(res.row, res.col, res.fixedCol, res.fixedRow);
         Assert.AreEqual(rowExpected, cellRef.Row.RowNumber);
         Assert.AreEqual(colExpected, cellRef.Col.ColNumber);
         Assert.AreEqual(rowAbsExpected, cellRef.Row.IsAbsoluteReference);

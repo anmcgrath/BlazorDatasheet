@@ -221,4 +221,5 @@ public interface IRegion : IEquatable<IRegion>
     /// <param name="position"></param>
     /// <returns></returns>
     bool Contains(CellPosition position);
+    
 }

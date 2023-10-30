@@ -1,4 +1,6 @@
-﻿namespace BlazorDatasheet.Formula.Core.Interpreter.References;
+﻿using BlazorDatasheet.DataStructures.Util;
+
+namespace BlazorDatasheet.Formula.Core.Interpreter.References;
 
 
 public class ColReference : Reference
@@ -16,7 +18,7 @@ public class ColReference : Reference
 
     public override string ToRefText()
     {
-        return (IsAbsoluteReference ? "$" : "") + CellReference.ColNumberToLetters(ColNumber);
+        return (IsAbsoluteReference ? "$" : "") + RangeText.ColNumberToLetters(ColNumber);
     }
 
     public override bool SameAs(Reference reference)
