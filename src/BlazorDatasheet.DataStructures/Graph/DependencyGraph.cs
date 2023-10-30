@@ -99,10 +99,6 @@ public class DependencyGraph
         // keep a list of vertices that we removed edges to because we want to remove those if they
         // no longer have any references
         var toRemoveSet = new HashSet<string>();
-        
-        Console.WriteLine("Removing vertex v");
-        Console.WriteLine(adj.Count());
-        Console.WriteLine(prec.Count());
 
         // Remove edges
         foreach (var w in adj)
