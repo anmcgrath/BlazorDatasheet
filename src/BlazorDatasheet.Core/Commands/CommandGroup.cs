@@ -26,6 +26,7 @@ public class CommandGroup : IUndoableCommand
     {
         _successfulCommands.Clear();
 
+        sheet.BatchUpdates();
         foreach (var command in _commands)
         {
             var run = command.Execute(sheet);
@@ -39,6 +40,8 @@ public class CommandGroup : IUndoableCommand
                 _successfulCommands.Add(command);
         }
 
+        sheet.EndBatchUpdates();
+
         return true;
     }
 
@@ -47,10 +50,13 @@ public class CommandGroup : IUndoableCommand
         var undo = true;
         var undoCommands = _successfulCommands.Where(cmd => cmd is IUndoableCommand).Cast<IUndoableCommand>().ToList();
         undoCommands.Reverse();
+        sheet.BatchUpdates();
         foreach (var command in undoCommands)
         {
             undo &= command.Undo(sheet);
         }
+
+        sheet.EndBatchUpdates();
 
         return undo;
     }
