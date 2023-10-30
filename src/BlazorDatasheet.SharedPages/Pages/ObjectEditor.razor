@@ -1,9 +1,7 @@
 @page "/ObjectEditor"
-@using BlazorDatasheet.Edit.DefaultComponents;
-@using BlazorDatasheet.Render.DefaultComponents;
 @using BlazorDatasheet.Render
 @using BlazorDatasheet.SharedPages.Data
-@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Formats
 @using BlazorDatasheet.Core.ObjectEditor
 @using BlazorDatasheet.Core.Validation
 
@@ -13,71 +11,46 @@
 
 <p>We can build an editor that will edit properties of a list of objects.</p>
 
-<p>With properties across columns:</p>
-
 <Datasheet
     @ref="dataSheet1"
     CustomCellTypeDefinitions="CustomTypes"
-    Sheet="editor1.Sheet">
+    ShowRowHeadings="false"
+    Sheet="editor.Sheet">
 </Datasheet>
 
-<p>With properties across rows:</p>
+<p>Page @(editor.CurrentPage + 1) of @editor.NumPages</p>
 
-<Datasheet
-    @ref="dataSheet2"
-    CustomCellTypeDefinitions="CustomTypes"
-    Sheet="editor2.Sheet">
-</Datasheet>
+<button @onclick="() => editor.SetPage(editor.CurrentPage - 1)">Previous Page</button>
+<button @onclick="() => editor.SetPage(editor.CurrentPage + 1)">Next Page</button>
 
 @code {
 
-    private Sheet sheet;
     private List<Person> People;
-    private ObjectEditor<Person> editor1;
-    private ObjectEditor<Person> editor2;
+    private ObjectEditor<Person> editor;
     private Datasheet dataSheet1;
-    private Datasheet dataSheet2;
     private Dictionary<string, CellTypeDefinition> CustomTypes { get; } = new();
 
     protected override void OnInitialized()
     {
-        People = new List<Person>()
+        People = new List<Person>();
+        var r = new Random();
+        for (int i = 0; i < 100; i++)
         {
-            new Person() { Id = 0, FirstName = "John", LastName = "Citizen", Age = "76", IsFriendly = false, StartDate = DateTime.Now.Subtract(TimeSpan.FromDays(1000)) },
-            new Person() { Id = 1, FirstName = "Bob", LastName = "Bobbers", Age = "39", IsFriendly = true, StartDate = DateTime.Now.Subtract(TimeSpan.FromDays(300)) },
-            new Person() { Id = 2, FirstName = "Julia", LastName = "Stevens", Age = "19", IsFriendly = true, StartDate = DateTime.Now.Subtract(TimeSpan.FromDays(12)) }
-        };
+            People.Add(new Person() { FirstName = "Person " + i, LastName = "LastName " + i, Age = (r.Next(90) + 10).ToString() });
+        }
 
-        var builderCols = new ObjectEditorBuilder<Person>(People, GridDirection.PropertiesAcrossColumns);
-        var builderRows = new ObjectEditorBuilder<Person>(People, GridDirection.PropertiesAcrossRows);
+        var builder = new ObjectEditorBuilder<Person>(new EnumerableQuery<Person>(People))
+            .WithProperty(x => x.FirstName)
+            .WithProperty(x => x.LastName)
+            .WithProperty(x => x.Age,
+                x =>
+                    x.WithDataValidator(new NumberValidator(true))
+            ).WithProperty(x => x.IsFriendly,
+                x =>
+                    x.WithType("boolean"));
 
-        var validCategories = new List<string>() { "", "Employer", "Manager" };
-        var categoryValidator = new SourceValidator(validCategories, true);
-
-        editor1 = builderCols
-            .AutogenerateProperties(true)
-            .WithProperty(x => x.Category, pd =>
-            {
-                pd.UseDataValidator(categoryValidator);
-                pd.Type = "select";
-            })
-            .WithProperty(x => x.State, pd => { pd.Type = "PersonState"; })
-            .Build();
-
-        editor2 = builderRows
-            .AutogenerateProperties(true)
-            .WithProperty(x => x.Category, pd =>
-            {
-                pd.UseDataValidator(categoryValidator);
-                pd.Type = "select";
-            })
-            .WithProperty(x => x.State, pd => { pd.Type = "PersonState"; })
-            .Build();
-
-        CustomTypes.Add("PersonState", CellTypeDefinition.Create<EnumEditorComponent<PersonState>, SelectRenderer>());
-
-        editor1.Sheet.CellsChanged += (sender, enumerable) => dataSheet2.ForceReRender();
-        editor2.Sheet.CellsChanged += (sender, enumerable) => dataSheet1.ForceReRender();
+        editor = builder.Build();
+        editor.SetPageSize(10);
 
         base.OnInitialized();
     }

@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using BlazorDatasheet.Core.ObjectEditor;
+using BlazorDatasheet.Core.Validation;
 using BlazorDatasheet.Render;
+using FluentAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test;
@@ -21,18 +23,20 @@ public class ObjectEditorTests
     }
 
     [Test]
-    public void Auto_Generate_Properties_CapturesAll_Props()
+    public void TestObjectBuilder()
     {
-        var builder = new ObjectEditorBuilder<TesterObject>(_items);
-        builder.AutogenerateProperties(true);
+        var builder = new ObjectEditorBuilder<TesterObject>(new EnumerableQuery<TesterObject>(_items))
+            .WithProperty(x => x.PropInt,
+                p => p.WithType("number")
+                    .WithDataValidator(new NumberValidator(false)))
+            .WithProperty(x => x.PropString)
+            .WithProperty(x => x.PropBool);
+
         var editor = builder.Build();
-        var sheet = editor.Sheet;
-
-        var propNames = typeof(TesterObject).GetProperties().Select(x => x.Name).ToList();
-
-        Assert.AreEqual(_items.Count, sheet.NumRows);
-        for(int i = 0; i < propNames.Count; i++)
-            Assert.AreEqual(propNames[i], sheet.Columns.GetHeading(i));
+        editor.Sheet.Cells[0, 0].Data.Should().Be(1);
+        editor.Sheet.Cells[0, 1].Data.Should().Be("obj1");
+        editor.Sheet.Cells[1, 0].Data.Should().Be(2);
+        editor.Sheet.Cells[1, 1].Data.Should().Be("obj2");
     }
 }
 
