@@ -108,7 +108,7 @@ public class Sheet
     /// <summary>
     /// Fired when one or more cells are changed
     /// </summary>
-    public event EventHandler<IEnumerable<(int row, int col)>>? CellsChanged;
+    public event EventHandler<IEnumerable<CellPosition>>? CellsChanged;
 
     /// <summary>
     /// Fired when a column width is changed
@@ -157,12 +157,12 @@ public class Sheet
     /// <summary>
     /// If the sheet is batching changes, they are stored here.
     /// </summary>
-    private HashSet<(int row, int col)> _cellsChanged = new();
+    private HashSet<CellPosition> _cellsChanged = new();
 
     /// <summary>
     /// If the sheet is batching dirty cells, they are stored here.
     /// </summary>
-    private HashSet<(int row, int col)> _dirtyPositions = new();
+    private HashSet<CellPosition> _dirtyPositions = new();
 
     private Sheet()
     {
@@ -357,7 +357,7 @@ public class Sheet
 
     #region DATA
 
-    internal void EmitCellsChanged(IEnumerable<(int row, int col)> positions)
+    internal void EmitCellsChanged(IEnumerable<CellPosition> positions)
     {
         if (_isBatchingChanges)
         {
@@ -372,7 +372,7 @@ public class Sheet
 
     internal void EmitCellChanged(int row, int col)
     {
-        EmitCellsChanged(new[] { (row, col) });
+        EmitCellsChanged(new[] { new CellPosition(row, col) });
     }
 
     #endregion
@@ -381,7 +381,7 @@ public class Sheet
     /// Mark the cells specified by positions dirty.
     /// </summary>
     /// <param name="positions"></param>
-    internal void MarkDirty(IEnumerable<(int row, int col)> positions)
+    internal void MarkDirty(IEnumerable<CellPosition> positions)
     {
         if (_isBatchingChanges)
         {
@@ -403,11 +403,11 @@ public class Sheet
     internal void MarkDirty(int row, int col)
     {
         if (_isBatchingChanges)
-            _dirtyPositions.Add((row, col));
+            _dirtyPositions.Add(new CellPosition(row, col));
         else
             SheetDirty?.Invoke(this, new DirtySheetEventArgs()
             {
-                DirtyPositions = new HashSet<(int row, int col)>() { (row, col) }
+                DirtyPositions = new HashSet<CellPosition>() { new CellPosition(row, col) }
             });
     }
 
@@ -490,7 +490,7 @@ public class Sheet
         var lines = text.Split(newLineDelim);
 
         // We may reach the end of the sheet, so we only need to paste the rows up until the end.
-        var endRow = Math.Min(inputPosition.Row + lines.Length - 1, NumRows - 1);
+        var endRow = Math.Min(inputPosition.row + lines.Length - 1, NumRows - 1);
         // Keep track of the maximum end column that we are inserting into
         // This is used to determine the region to return.
         // It is possible that each line is of different cell lengths, so we return the max for all lines
@@ -499,16 +499,16 @@ public class Sheet
         var valChanges = new List<(int row, int col, object value)>();
 
         int lineNo = 0;
-        for (int row = inputPosition.Row; row <= endRow; row++)
+        for (int row = inputPosition.row; row <= endRow; row++)
         {
             var lineSplit = lines[lineNo].Split('\t');
             // Same thing as above with the number of columns
-            var endCol = Math.Min(inputPosition.Col + lineSplit.Length - 1, NumCols - 1);
+            var endCol = Math.Min(inputPosition.col + lineSplit.Length - 1, NumCols - 1);
 
             maxEndCol = Math.Max(endCol, maxEndCol);
 
             int cellIndex = 0;
-            for (int col = inputPosition.Col; col <= endCol; col++)
+            for (int col = inputPosition.col; col <= endCol; col++)
             {
                 valChanges.Add((row, col, lineSplit[cellIndex]));
                 cellIndex++;
@@ -519,7 +519,7 @@ public class Sheet
 
         Cells.SetValues(valChanges);
 
-        return new Region(inputPosition.Row, endRow, inputPosition.Col, maxEndCol);
+        return new Region(inputPosition.row, endRow, inputPosition.col, maxEndCol);
     }
 
     #region FORMAT
@@ -586,10 +586,10 @@ public class Sheet
 
         var strBuilder = new StringBuilder();
 
-        var r0 = range.TopLeft.Row;
-        var r1 = range.BottomRight.Row;
-        var c0 = range.TopLeft.Col;
-        var c1 = range.BottomRight.Col;
+        var r0 = range.TopLeft.row;
+        var r1 = range.BottomRight.row;
+        var c0 = range.TopLeft.col;
+        var c1 = range.BottomRight.col;
 
         for (int row = r0; row <= r1; row++)
         {

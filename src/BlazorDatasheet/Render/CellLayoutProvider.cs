@@ -41,7 +41,7 @@ public class CellLayoutProvider
 
     public double ComputeLeftPosition(IRegion region)
     {
-        return ComputeLeftPosition(region.TopLeft.Col);
+        return ComputeLeftPosition(region.TopLeft.col);
     }
 
     public double ComputeLeftPosition(int col)
@@ -52,7 +52,7 @@ public class CellLayoutProvider
 
     public double ComputeTopPosition(IRegion region)
     {
-        return ComputeTopPosition(region.TopLeft.Row);
+        return ComputeTopPosition(region.TopLeft.row);
     }
 
     public double ComputeTopPosition(int row)

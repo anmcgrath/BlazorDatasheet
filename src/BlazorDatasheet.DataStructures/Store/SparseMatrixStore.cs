@@ -70,7 +70,7 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
         };
     }
 
-    public MatrixRestoreData<T> Clear(IEnumerable<(int row, int col)> positions)
+    public MatrixRestoreData<T> Clear(IEnumerable<CellPosition> positions)
     {
         var cleared = positions.Select(x => Clear(x.row, x.col));
         var clearedData = cleared.SelectMany(x => x.DataRemoved).ToList();
@@ -200,21 +200,21 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
     /// <param name="c0">The lower col bound</param>
     /// <param name="c1">The upper col bound</param>
     /// <returns></returns>
-    public IEnumerable<(int row, int col)> GetNonEmptyPositions(int r0, int r1, int c0, int c1)
+    public IEnumerable<CellPosition> GetNonEmptyPositions(int r0, int r1, int c0, int c1)
     {
-        List<(int row, int col)> nonEmptyPositions = new List<(int row, int col)>();
+        List<CellPosition> nonEmptyPositions = new List<CellPosition>();
         foreach (var kp in _columns)
         {
             if (kp.Key < c0 || kp.Key > c1)
                 continue;
             var nonEmptyInRow = kp.Value.GetNonEmptyCellsBetween(r0, r1);
-            nonEmptyPositions.AddRange(nonEmptyInRow.Select(x => (x, kp.Key)));
+            nonEmptyPositions.AddRange(nonEmptyInRow.Select(x => new CellPosition(x, kp.Key)));
         }
 
         return nonEmptyPositions;
     }
 
-    public IEnumerable<(int row, int col)> GetNonEmptyPositions(IRegion region)
+    public IEnumerable<CellPosition> GetNonEmptyPositions(IRegion region)
     {
         return GetNonEmptyPositions(region.Top, region.Bottom, region.Left, region.Right);
     }

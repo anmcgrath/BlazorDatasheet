@@ -119,7 +119,7 @@ public partial class Datasheet : IHandleEvent
     /// <summary>
     /// Store any cells that are dirty here
     /// </summary>
-    private HashSet<(int row, int col)> DirtyCells { get; set; } = new();
+    private HashSet<CellPosition> DirtyCells { get; set; } = new();
 
     /// <summary>
     /// Div that is the width/height of all the rows/columns in the sheet (does not include row/col headings).
@@ -521,7 +521,7 @@ public partial class Datasheet : IHandleEvent
                     return false;
                 var inputPosition = Sheet.Selection.GetInputPosition();
                 
-                BeginEdit(inputPosition.Row, inputPosition.Col, softEdit: true, EditEntryMode.Key, e.Key);
+                BeginEdit(inputPosition.row, inputPosition.col, softEdit: true, EditEntryMode.Key, e.Key);
             }
 
             return true;
@@ -542,7 +542,7 @@ public partial class Datasheet : IHandleEvent
             if (Sheet == null || !Sheet.Selection.Regions.Any())
                 return false;
             var inputPosition = Sheet.Selection.GetInputPosition();
-            BeginEdit(inputPosition.Row, inputPosition.Col, softEdit: true, EditEntryMode.Key, e.Key);
+            BeginEdit(inputPosition.row, inputPosition.col, softEdit: true, EditEntryMode.Key, e.Key);
 
             return true;
         }
@@ -560,7 +560,7 @@ public partial class Datasheet : IHandleEvent
 
         var posn = Sheet.Selection.ActiveCellPosition;
         Sheet.Selection.ClearSelections();
-        Sheet.Selection.SetSingle(posn.Row, posn.Col);
+        Sheet.Selection.SetSingle(posn.row, posn.col);
         Sheet.Selection.MoveActivePositionByRow(drow);
         Sheet.Selection.MoveActivePositionByCol(dcol);
     }
@@ -664,8 +664,8 @@ public partial class Datasheet : IHandleEvent
         if (!IsSelecting)
             return;
 
-        if (Sheet?.Selection?.SelectingRegion?.End.Row == row &&
-            Sheet?.Selection?.SelectingRegion?.End.Col == col)
+        if (Sheet?.Selection?.SelectingRegion?.End.row == row &&
+            Sheet?.Selection?.SelectingRegion?.End.col == col)
             return;
 
         Sheet?.Selection.UpdateSelectingEndPosition(row, col);

@@ -22,7 +22,7 @@ public class ColumnRegion : Region
 
     public override IRegion Copy()
     {
-        return new ColumnRegion(TopLeft.Col, BottomRight.Col);
+        return new ColumnRegion(TopLeft.col, BottomRight.col);
     }
 
     public override void ExtendTo(int row, int col, IRegion? regionLimit = null)
@@ -35,7 +35,7 @@ public class ColumnRegion : Region
         }
 
         var newColumnEnd = SheetMath
-            .ClampInt(regionLimit.TopLeft.Col, regionLimit.BottomRight.Col, col);
+            .ClampInt(regionLimit.TopLeft.col, regionLimit.BottomRight.col, col);
 
         End = new CellPosition(int.MaxValue, newColumnEnd);
         SetOrderedBounds();
@@ -58,12 +58,12 @@ public class ColumnRegion : Region
 
     public override IRegion GetBoundingRegion(IRegion otherRegion)
     {
-        return new ColumnRegion(Math.Min(otherRegion.TopLeft.Col, this.TopLeft.Col),
-                                Math.Max(otherRegion.BottomRight.Col, this.BottomRight.Col));
+        return new ColumnRegion(Math.Min(otherRegion.TopLeft.col, this.TopLeft.col),
+                                Math.Max(otherRegion.BottomRight.col, this.BottomRight.col));
     }
 
     public override IRegion Clone()
     {
-        return new ColumnRegion(this.Start.Col, this.End.Col);
+        return new ColumnRegion(this.Start.col, this.End.col);
     }
 }

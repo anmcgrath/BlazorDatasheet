@@ -1,10 +1,12 @@
-﻿namespace BlazorDatasheet.Core.Events;
+﻿using BlazorDatasheet.DataStructures.Geometry;
+
+namespace BlazorDatasheet.Core.Events;
 
 public class SheetInvalidateEventArgs
 {
-    public IReadOnlySet<(int row, int col)> DirtyCells { get; }
+    public IReadOnlySet<CellPosition> DirtyCells { get; }
 
-    internal SheetInvalidateEventArgs(IReadOnlySet<(int row, int col)> dirtyCells)
+    internal SheetInvalidateEventArgs(IReadOnlySet<CellPosition> dirtyCells)
     {
         DirtyCells = dirtyCells;
     }

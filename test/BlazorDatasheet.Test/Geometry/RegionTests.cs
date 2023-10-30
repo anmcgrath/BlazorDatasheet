@@ -11,20 +11,20 @@ public class RegionTests
     {
         // Create a region at row = 10, col = 11 with size 1
         var region = new Region(10, 11);
-        Assert.AreEqual(10, region.TopLeft.Row);
-        Assert.AreEqual(10, region.BottomRight.Row);
-        Assert.AreEqual(11, region.TopLeft.Col);
-        Assert.AreEqual(11, region.BottomRight.Col);
+        Assert.AreEqual(10, region.TopLeft.row);
+        Assert.AreEqual(10, region.BottomRight.row);
+        Assert.AreEqual(11, region.TopLeft.col);
+        Assert.AreEqual(11, region.BottomRight.col);
     }
 
     [Test]
     public void Create_Region_With_Specific_Starts_And_Ends_Creates_With_Correct_Row_Cols()
     {
         var region = new Region(1, 2, 3, 4);
-        Assert.AreEqual(1, region.TopLeft.Row);
-        Assert.AreEqual(2, region.BottomRight.Row);
-        Assert.AreEqual(3, region.TopLeft.Col);
-        Assert.AreEqual(4, region.BottomRight.Col);
+        Assert.AreEqual(1, region.TopLeft.row);
+        Assert.AreEqual(2, region.BottomRight.row);
+        Assert.AreEqual(3, region.TopLeft.col);
+        Assert.AreEqual(4, region.BottomRight.col);
     }
 
     [Test]
@@ -33,10 +33,10 @@ public class RegionTests
         var large = new Region(0, 5, 1, 6);
         var small = new Region(2, 4, 3, 5);
         large.Constrain(small);
-        Assert.AreEqual(small.TopLeft.Row, large.TopLeft.Row);
-        Assert.AreEqual(small.BottomRight.Row, large.BottomRight.Row);
-        Assert.AreEqual(small.TopLeft.Col, large.TopLeft.Col);
-        Assert.AreEqual(small.BottomRight.Col, large.BottomRight.Col);
+        Assert.AreEqual(small.TopLeft.row, large.TopLeft.row);
+        Assert.AreEqual(small.BottomRight.row, large.BottomRight.row);
+        Assert.AreEqual(small.TopLeft.col, large.TopLeft.col);
+        Assert.AreEqual(small.BottomRight.col, large.BottomRight.col);
     }
 
     [Test]
@@ -45,10 +45,10 @@ public class RegionTests
         var large = new Region(0, 5, 1, 6);
         var small = new Region(2, 4, 3, 5);
         small.Constrain(large);
-        Assert.AreEqual(2, small.TopLeft.Row);
-        Assert.AreEqual(4, small.BottomRight.Row);
-        Assert.AreEqual(3, small.TopLeft.Col);
-        Assert.AreEqual(5, small.BottomRight.Col);
+        Assert.AreEqual(2, small.TopLeft.row);
+        Assert.AreEqual(4, small.BottomRight.row);
+        Assert.AreEqual(3, small.TopLeft.col);
+        Assert.AreEqual(5, small.BottomRight.col);
     }
 
     [Test]
@@ -108,15 +108,15 @@ public class RegionTests
         var copy = region.Copy() as Region;
         var copyReverse = region.CopyOrdered();
 
-        Assert.AreEqual(r0, copy.TopLeft.Row);
-        Assert.AreEqual(r1, copy.BottomRight.Row);
-        Assert.AreEqual(c0, copy.TopLeft.Col);
-        Assert.AreEqual(c1, copy.BottomRight.Col);
+        Assert.AreEqual(r0, copy.TopLeft.row);
+        Assert.AreEqual(r1, copy.BottomRight.row);
+        Assert.AreEqual(c0, copy.TopLeft.col);
+        Assert.AreEqual(c1, copy.BottomRight.col);
 
-        Assert.AreEqual(r0, copyReverse.TopLeft.Row);
-        Assert.AreEqual(r1, copyReverse.BottomRight.Row);
-        Assert.AreEqual(c0, copyReverse.TopLeft.Col);
-        Assert.AreEqual(c1, copyReverse.BottomRight.Col);
+        Assert.AreEqual(r0, copyReverse.TopLeft.row);
+        Assert.AreEqual(r1, copyReverse.BottomRight.row);
+        Assert.AreEqual(c0, copyReverse.TopLeft.col);
+        Assert.AreEqual(c1, copyReverse.BottomRight.col);
     }
 
     [Test]
@@ -186,8 +186,8 @@ public class RegionTests
         var intersection = colRegion.GetIntersection(fixedRegion);
         var intersection2 = colRegion.GetIntersection(fixedRegion2);
         Assert.AreEqual(fixedRegion, intersection);
-        Assert.AreEqual(0, intersection2.TopLeft.Col);
-        Assert.AreEqual(10, intersection2.BottomRight.Col);
+        Assert.AreEqual(0, intersection2.TopLeft.col);
+        Assert.AreEqual(10, intersection2.BottomRight.col);
     }
 
     [Test]
@@ -284,10 +284,10 @@ public class RegionTests
     {
         var region = new Region(0, 5, 0, 5);
         region.ExtendTo(1, 2);
-        Assert.AreEqual(1, region.BottomRight.Row);
-        Assert.AreEqual(2, region.BottomRight.Col);
-        Assert.AreEqual(0, region.TopLeft.Col);
-        Assert.AreEqual(0, region.TopLeft.Col);
+        Assert.AreEqual(1, region.BottomRight.row);
+        Assert.AreEqual(2, region.BottomRight.col);
+        Assert.AreEqual(0, region.TopLeft.col);
+        Assert.AreEqual(0, region.TopLeft.col);
     }
 
     [Test]
@@ -306,11 +306,11 @@ public class RegionTests
     {
         var r1 = new ColumnRegion(1, 1);
         r1.ExtendTo(0, 3);
-        Assert.AreEqual(3, r1.BottomRight.Col);
-        Assert.AreEqual(1, r1.TopLeft.Col);
+        Assert.AreEqual(3, r1.BottomRight.col);
+        Assert.AreEqual(1, r1.TopLeft.col);
         r1.ExtendTo(323, 0);
-        Assert.AreEqual(1, r1.BottomRight.Col);
-        Assert.AreEqual(0, r1.TopLeft.Col);
+        Assert.AreEqual(1, r1.BottomRight.col);
+        Assert.AreEqual(0, r1.TopLeft.col);
     }
 
     [Test]
@@ -318,11 +318,11 @@ public class RegionTests
     {
         var r1 = new RowRegion(1, 1);
         r1.ExtendTo(3, 0);
-        Assert.AreEqual(3, r1.BottomRight.Row);
-        Assert.AreEqual(1, r1.TopLeft.Row);
+        Assert.AreEqual(3, r1.BottomRight.row);
+        Assert.AreEqual(1, r1.TopLeft.row);
         r1.ExtendTo(0, 0);
-        Assert.AreEqual(1, r1.BottomRight.Row);
-        Assert.AreEqual(0, r1.TopLeft.Row);
+        Assert.AreEqual(1, r1.BottomRight.row);
+        Assert.AreEqual(0, r1.TopLeft.row);
     }
 
     [Test]
@@ -353,10 +353,10 @@ public class RegionTests
     {
         var r = new Region(1, 1);
         r.Expand(Edge.Left | Edge.Top, 1);
-        Assert.AreEqual(0, r.Start.Col);
-        Assert.AreEqual(0, r.Start.Row);
-        Assert.AreEqual(1, r.End.Col);
-        Assert.AreEqual(1, r.End.Row);
+        Assert.AreEqual(0, r.Start.col);
+        Assert.AreEqual(0, r.Start.row);
+        Assert.AreEqual(1, r.End.col);
+        Assert.AreEqual(1, r.End.row);
     }
 
     [Test]
@@ -364,10 +364,10 @@ public class RegionTests
     {
         var r = new Region(1, 1);
         r.Expand(Edge.Right | Edge.Bottom, 1);
-        Assert.AreEqual(1, r.Start.Col);
-        Assert.AreEqual(1, r.Start.Row);
-        Assert.AreEqual(2, r.End.Col);
-        Assert.AreEqual(2, r.End.Row);
+        Assert.AreEqual(1, r.Start.col);
+        Assert.AreEqual(1, r.Start.row);
+        Assert.AreEqual(2, r.End.col);
+        Assert.AreEqual(2, r.End.row);
     }
 
     [Test]

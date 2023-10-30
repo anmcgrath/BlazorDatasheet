@@ -1,5 +1,6 @@
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Interfaces;
+using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.Formats;
 
@@ -28,7 +29,7 @@ public class ConditionalFormat : ConditionalFormatAbstractBase
     /// <param name="rule">The rule determining whether the conditional format is applied</param>
     /// <param name="formatFuncDependent">The function determining the actual format to apply, based on both the single cell's
     /// value and all cells that the conditional format applies to.</param>
-    public ConditionalFormat(Func<(int row, int col), Sheet, bool> rule,
+    public ConditionalFormat(Func<CellPosition, Sheet, bool> rule,
         Func<IReadOnlyCell, IEnumerable<IReadOnlyCell>, CellFormat> formatFuncDependent)
         : this()
     {
@@ -45,7 +46,7 @@ public class ConditionalFormat : ConditionalFormatAbstractBase
     /// <param name="rule">The rule determining whether the conditional format is applied</param>
     /// <param name="formatFunc">The function determining the actual format to apply, based on both the single cell's
     /// value and all cells that the conditional format applies to.</param>
-    public ConditionalFormat(Func<(int row, int col), Sheet, bool> rule, Func<IReadOnlyCell, CellFormat> formatFunc) : this()
+    public ConditionalFormat(Func<CellPosition, Sheet, bool> rule, Func<IReadOnlyCell, CellFormat> formatFunc) : this()
     {
         this.Predicate = rule;
         FormatFunc = formatFunc;

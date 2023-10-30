@@ -47,7 +47,7 @@
         var rand = new Random();
         foreach (var posn in regionOfNumberScaleFormat)
         {
-            values.Add((posn.Row, posn.Col, (int?)rand.Next(100)));
+            values.Add((posn.row, posn.col, (int?)rand.Next(100)));
         }
 
         sheet.Cells.SetValues(values);

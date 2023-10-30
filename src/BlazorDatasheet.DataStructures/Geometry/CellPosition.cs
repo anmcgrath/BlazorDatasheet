@@ -1,9 +1,9 @@
 namespace BlazorDatasheet.DataStructures.Geometry;
 
-public readonly record struct CellPosition(int Row, int Col)
+public readonly record struct CellPosition(int row, int col)
 {
     public override string ToString()
     {
-        return $"({Col}, {Row})";
+        return $"({col}, {row})";
     }
 }

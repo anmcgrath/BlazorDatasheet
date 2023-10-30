@@ -21,7 +21,7 @@ public class BRange
     /// Return the positions present in the range. May be non-unique & include empty position
     /// depending on the regions present.
     /// </summary>
-    public IEnumerable<(int row, int col)> Positions => _rangePositionEnumerator;
+    public IEnumerable<CellPosition> Positions => _rangePositionEnumerator;
 
     private readonly RangePositionEnumerator _rangePositionEnumerator;
 
@@ -67,7 +67,7 @@ public class BRange
     /// Return all positions of non-empty cells in the sheet.
     /// </summary>
     /// <returns>A collection of (row, column) positions of all non-empty cells.</returns>
-    public IEnumerable<(int row, int col)> GetNonEmptyPositions()
+    public IEnumerable<CellPosition> GetNonEmptyPositions()
     {
         return Regions.SelectMany(Sheet.Cells.GetNonEmptyCellPositions);
     }

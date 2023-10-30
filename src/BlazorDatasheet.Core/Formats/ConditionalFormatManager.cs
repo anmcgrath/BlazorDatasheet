@@ -107,7 +107,7 @@ public class ConditionalFormatManager
         _cfTree.BulkLoad(e.RegionsAdded.Select(x => new ConditionalFormatSpatialData(cf, x)));
     }
 
-    private void HandleCellsChanged(object? sender, IEnumerable<(int row, int col)> args)
+    private void HandleCellsChanged(object? sender, IEnumerable<CellPosition> args)
     {
         // Simply prepare all cells that the conditional format belongs to (if shared)
         var handled = new HashSet<int>();
@@ -167,7 +167,7 @@ public class ConditionalFormatManager
         CellFormat? initialFormat = null;
         foreach (var format in cfs)
         {
-            var apply = format.Predicate?.Invoke((row, col), _sheet);
+            var apply = format.Predicate?.Invoke(new CellPosition(row, col), _sheet);
             if (apply == false)
                 continue;
             var calced = format.CalculateFormat(row, col, _sheet);

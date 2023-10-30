@@ -1,5 +1,6 @@
 using System.Collections;
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.ObjectEditor;
 
@@ -29,7 +30,7 @@ public class ObjectEditor<T>
         SetPageSize(10);
     }
 
-    private void SheetOnCellsChanged(object? sender, IEnumerable<(int row, int col)> e)
+    private void SheetOnCellsChanged(object? sender, IEnumerable<CellPosition> e)
     {
         foreach (var pos in e)
         {

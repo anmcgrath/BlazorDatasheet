@@ -1,16 +1,11 @@
-﻿using System.Diagnostics;
-using BlazorDatasheet.Core.Data;
-using BlazorDatasheet.Core.Events;
+﻿using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Events.Edit;
-using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Graph;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 using BlazorDatashet.Formula.Functions;
-using BlazorDatashet.Formula.Functions.Logical;
-using BlazorDatashet.Formula.Functions.Math;
 
 namespace BlazorDatasheet.Core.FormulaEngine;
 
@@ -44,7 +39,7 @@ public class FormulaEngine
         RegisterDefaultFunctions();
     }
 
-    private void SheetOnCellsChanged(object? sender, IEnumerable<(int row, int col)> e)
+    private void SheetOnCellsChanged(object? sender, IEnumerable<CellPosition> e)
     {
         if (this.IsCalculating)
             return;
@@ -180,7 +175,7 @@ public class FormulaEngine
             _dependencyGraph
                 .TopologicalSort();
 
-        var changedValuePositions = new List<(int row, int col)>();
+        var changedValuePositions = new List<CellPosition>();
 
         foreach (var vertex in order)
         {
@@ -192,7 +187,7 @@ public class FormulaEngine
                     var value = this.Evaluate(formula);
                     _sheet.Cells.SetValueImpl(cellVertex.Row, cellVertex.Col, value);
                     _sheet.MarkDirty(cellVertex.Row, cellVertex.Col);
-                    changedValuePositions.Add((cellVertex.Row, cellVertex.Col));
+                    changedValuePositions.Add(new CellPosition(cellVertex.Row, cellVertex.Col));
                 }
             }
         }

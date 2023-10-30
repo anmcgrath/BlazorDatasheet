@@ -26,7 +26,7 @@ public partial class CellStore
     {
         return (new BRange(_sheet, region))
             .Positions
-            .Select<(int row, int col), IReadOnlyCell>(x => this.GetCell(x.row, x.col));
+            .Select(x => this.GetCell(x.row, x.col));
     }
 
     /// <summary>
@@ -60,15 +60,15 @@ public partial class CellStore
     /// <returns></returns>
     public IReadOnlyCell GetCell(CellPosition position)
     {
-        return GetCell(position.Row, position.Col);
+        return GetCell(position.row, position.col);
     }
 
-    internal IEnumerable<(int row, int col)> GetNonEmptyCellPositions(IRegion region)
+    internal IEnumerable<CellPosition> GetNonEmptyCellPositions(IRegion region)
     {
-        return _dataStore.GetNonEmptyPositions(region.TopLeft.Row,
-            region.BottomRight.Row,
-            region.TopLeft.Col,
-            region.BottomRight.Col);
+        return _dataStore.GetNonEmptyPositions(region.TopLeft.row,
+            region.BottomRight.row,
+            region.TopLeft.col,
+            region.BottomRight.col);
     }
 
     public void SetCell(int row, int col, Cell cell)

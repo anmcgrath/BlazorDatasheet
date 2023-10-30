@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.Functions;
 
@@ -6,24 +8,28 @@ namespace BlazorDatasheet.Test.Formula;
 
 public class TestEnvironment : IEnvironment
 {
-    private Dictionary<(int row, int col), object> _cellValues = new();
+    private Dictionary<CellPosition, object> _cellValues = new();
     private Dictionary<string, CallableFunctionDefinition> _functions = new();
     private Dictionary<string, object> _variables = new();
 
     public void SetCellValue(int row, int col, object val)
     {
-        if (!_cellValues.ContainsKey((row, col)))
-            _cellValues.Add((row, col), val);
-        _cellValues[(row, col)] = val;
+        SetCellValue(new CellPosition(row, col), val);
     }
-    
+
+    public void SetCellValue(CellPosition position, object val)
+    {
+        _cellValues.TryAdd(position, val);
+        _cellValues[position] = val;
+    }
+
     public void SetFunction(string name, CallableFunctionDefinition functionDefinition)
     {
         if (!_functions.ContainsKey(name))
             _functions.Add(name, functionDefinition);
         _functions[name] = functionDefinition;
     }
-    
+
     public void SetVariable(string name, object variable)
     {
         if (!_variables.ContainsKey(name))
@@ -33,7 +39,7 @@ public class TestEnvironment : IEnvironment
 
     public object GetCellValue(int row, int col)
     {
-        return _cellValues[(row, col)];
+        return _cellValues[new CellPosition(row, col)];
     }
 
     public List<double> GetNumbersInRange(RangeAddress rangeAddress)

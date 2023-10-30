@@ -27,8 +27,8 @@ public static class SheetMath
     {
         var maxCol = (region.Right == int.MaxValue) ? int.MaxValue : region.Right + 1;
         var maxRow = (region.Bottom == int.MaxValue) ? int.MaxValue : region.Bottom + 1;
-        return new Envelope(region.TopLeft.Col,
-                            region.TopLeft.Row,
+        return new Envelope(region.TopLeft.col,
+                            region.TopLeft.row,
                             maxCol,
                             maxRow);
     }

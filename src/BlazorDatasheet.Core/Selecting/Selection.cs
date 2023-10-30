@@ -90,13 +90,13 @@ public class Selection : BRange
         switch (SelectingMode)
         {
             case SelectionMode.Column:
-                SelectingRegion = new ColumnRegion(SelectingStartPosition.Col, col);
+                SelectingRegion = new ColumnRegion(SelectingStartPosition.col, col);
                 break;
             case SelectionMode.Row:
-                SelectingRegion = new RowRegion(SelectingStartPosition.Row, row);
+                SelectingRegion = new RowRegion(SelectingStartPosition.row, row);
                 break;
             case SelectionMode.Cell:
-                SelectingRegion = new Region(SelectingStartPosition.Row, row, SelectingStartPosition.Col, col);
+                SelectingRegion = new Region(SelectingStartPosition.row, row, SelectingStartPosition.col, col);
                 break;
         }
 
@@ -114,7 +114,7 @@ public class Selection : BRange
     {
         if (SelectingRegion == null)
             return;
-        this.ActiveCellPosition = new CellPosition(SelectingStartPosition.Row, SelectingStartPosition.Col);
+        this.ActiveCellPosition = new CellPosition(SelectingStartPosition.row, SelectingStartPosition.col);
         this.AddRegionToSelections(SelectingRegion);
         SelectingRegion = null;
         emitSelectingChanged();
@@ -298,13 +298,13 @@ public class Selection : BRange
             return;
 
         // If it's currently inside a merged cell, find where it should next move to
-        var merge = Sheet.Cells.GetMerge(ActiveCellPosition.Row, ActiveCellPosition.Col);
+        var merge = Sheet.Cells.GetMerge(ActiveCellPosition.row, ActiveCellPosition.col);
         if (merge != null)
         {
             // Move multiple rows if the current position is on the edge away
             // from the movement direction.
-            if (rowDir == 1 && merge.Top == ActiveCellPosition.Row ||
-                rowDir == -1 && merge.Bottom == ActiveCellPosition.Row)
+            if (rowDir == 1 && merge.Top == ActiveCellPosition.row ||
+                rowDir == -1 && merge.Bottom == ActiveCellPosition.row)
             {
                 rowDir *= merge.Height;
             }
@@ -320,11 +320,11 @@ public class Selection : BRange
             // We end up with a new region of area 1 (or the size of the merged cell it is not on)
             _regions.Clear();
 
-            var offsetPosn = new CellPosition(ActiveCellPosition.Row + rowDir, ActiveCellPosition.Col);
+            var offsetPosn = new CellPosition(ActiveCellPosition.row + rowDir, ActiveCellPosition.col);
             offsetPosn = _sheet.Region.GetConstrained(offsetPosn);
-            var newRegion = new Region(offsetPosn.Row, offsetPosn.Col);
+            var newRegion = new Region(offsetPosn.row, offsetPosn.col);
             newRegion = ExpandRegionOverMerged(newRegion) as Region;
-            this.ActiveCellPosition = new CellPosition(offsetPosn.Row, offsetPosn.Col);
+            this.ActiveCellPosition = new CellPosition(offsetPosn.row, offsetPosn.col);
             this.AddRegionToSelections(newRegion);
 
             emitSelectionChange();
@@ -333,8 +333,8 @@ public class Selection : BRange
 
         // Move the posn and attempt to bring into either the next region
         // or the next cell in the region
-        var newRow = ActiveCellPosition.Row + rowDir;
-        var newCol = ActiveCellPosition.Col;
+        var newRow = ActiveCellPosition.row + rowDir;
+        var newCol = ActiveCellPosition.col;
         if (newRow > activeRegionFixed.Bottom)
         {
             newCol++;
@@ -379,13 +379,13 @@ public class Selection : BRange
             return;
 
         // If it's currently inside a merged cell, find where it should next move to
-        var merge = Sheet.Cells.GetMerge(ActiveCellPosition.Row, ActiveCellPosition.Col);
+        var merge = Sheet.Cells.GetMerge(ActiveCellPosition.row, ActiveCellPosition.col);
         if (merge != null)
         {
             // Move multiple rows if the current position is on the edge away
             // from the movement direction.
-            if (colDir == 1 && merge.Left == ActiveCellPosition.Col ||
-                colDir == -1 && merge.Right == ActiveCellPosition.Col)
+            if (colDir == 1 && merge.Left == ActiveCellPosition.col ||
+                colDir == -1 && merge.Right == ActiveCellPosition.col)
             {
                 colDir *= merge.Width;
             }
@@ -401,11 +401,11 @@ public class Selection : BRange
             // We end up with a new region of area 1 (or the size of the merged cell it is not on)
             _regions.Clear();
 
-            var offsetPosn = new CellPosition(ActiveCellPosition.Row, ActiveCellPosition.Col + colDir);
+            var offsetPosn = new CellPosition(ActiveCellPosition.row, ActiveCellPosition.col + colDir);
             offsetPosn = _sheet.Region.GetConstrained(offsetPosn);
-            var newRegion = new Region(offsetPosn.Row, offsetPosn.Col);
+            var newRegion = new Region(offsetPosn.row, offsetPosn.col);
             newRegion = ExpandRegionOverMerged(newRegion) as Region;
-            this.ActiveCellPosition = new CellPosition(offsetPosn.Row, offsetPosn.Col);
+            this.ActiveCellPosition = new CellPosition(offsetPosn.row, offsetPosn.col);
             this.AddRegionToSelections(newRegion);
 
             emitSelectionChange();
@@ -414,8 +414,8 @@ public class Selection : BRange
 
         // Move the posn and attempt to bring into either the next region
         // or the next cell in the region
-        var newRow = ActiveCellPosition.Row;
-        var newCol = ActiveCellPosition.Col + colDir;
+        var newRow = ActiveCellPosition.row;
+        var newCol = ActiveCellPosition.col + colDir;
         if (newCol > activeRegionFixed.Right)
         {
             newCol = activeRegionFixed.Left;
@@ -503,11 +503,11 @@ public class Selection : BRange
         // Check whether there are any merged regions at the ActiveCellPosition.
         // If there are, the input position is the top left of the merged,
         // Otherwise it corresponds to the active cell position.
-        var merged = Sheet.Cells.GetMerge(ActiveCellPosition.Row, ActiveCellPosition.Col);
+        var merged = Sheet.Cells.GetMerge(ActiveCellPosition.row, ActiveCellPosition.col);
         if (merged == null)
             return ActiveCellPosition;
         else
-            return new CellPosition(merged.TopLeft.Row, merged.TopLeft.Col);
+            return new CellPosition(merged.TopLeft.row, merged.TopLeft.col);
     }
 
     #endregion

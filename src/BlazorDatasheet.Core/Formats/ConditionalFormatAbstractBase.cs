@@ -26,7 +26,7 @@ public abstract class ConditionalFormatAbstractBase : IEquatable<ConditionalForm
     /// <summary>
     /// Whether the conditional format is True and should be run/applied.
     /// </summary>
-    public Func<(int row, int col), Sheet, bool>? Predicate { get; protected set; }
+    public Func<CellPosition, Sheet, bool>? Predicate { get; protected set; }
 
     /// <summary>
     /// Whether the conditional formats after this should not be applied if this is true.
@@ -36,7 +36,7 @@ public abstract class ConditionalFormatAbstractBase : IEquatable<ConditionalForm
     /// <summary>
     /// Set of cell positions in this format
     /// </summary>
-    internal HashSet<(int row, int col)> Positions { get; } = new();
+    internal HashSet<CellPosition> Positions { get; } = new();
 
     public event EventHandler<ConditionalFormatRegionsChangedEventArgs> RegionsChanged;
 
@@ -45,7 +45,7 @@ public abstract class ConditionalFormatAbstractBase : IEquatable<ConditionalForm
     /// </summary>
     /// <param name="???"></param>
     /// <returns></returns>
-    public IEnumerable<(int row, int col)> GetPositions(HashSet<(int row, int col)>? restrictedTo = null)
+    public IEnumerable<CellPosition> GetPositions(HashSet<CellPosition>? restrictedTo = null)
     {
         if (restrictedTo == null)
             return Positions.AsEnumerable();

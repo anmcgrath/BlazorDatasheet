@@ -9,10 +9,10 @@ public class Region : IRegion
 {
     public CellPosition TopLeft { get; private set; }
     public CellPosition BottomRight { get; private set; }
-    public int Top => TopLeft.Row;
-    public int Left => TopLeft.Col;
-    public int Bottom => BottomRight.Row;
-    public int Right => BottomRight.Col;
+    public int Top => TopLeft.row;
+    public int Left => TopLeft.col;
+    public int Bottom => BottomRight.row;
+    public int Right => BottomRight.col;
 
     /// <summary>
     /// Where the region was started
@@ -61,10 +61,10 @@ public class Region : IRegion
 
     protected void SetOrderedBounds()
     {
-        var r0 = Math.Min(Start.Row, End.Row);
-        var r1 = Math.Max(Start.Row, End.Row);
-        var c0 = Math.Min(Start.Col, End.Col);
-        var c1 = Math.Max(Start.Col, End.Col);
+        var r0 = Math.Min(Start.row, End.row);
+        var r1 = Math.Max(Start.row, End.row);
+        var c0 = Math.Min(Start.col, End.col);
+        var c1 = Math.Max(Start.col, End.col);
 
         TopLeft = new CellPosition(r0, c0);
         BottomRight = new CellPosition(r1, c1);
@@ -78,10 +78,10 @@ public class Region : IRegion
     /// <returns></returns>
     public bool Contains(int row, int col)
     {
-        return row >= TopLeft.Row &&
-               row <= BottomRight.Row &&
-               col >= TopLeft.Col &&
-               col <= BottomRight.Col;
+        return row >= TopLeft.row &&
+               row <= BottomRight.row &&
+               col >= TopLeft.col &&
+               col <= BottomRight.col;
     }
 
     /// <summary>
@@ -104,7 +104,7 @@ public class Region : IRegion
     /// <returns></returns>
     public bool Contains(CellPosition position)
     {
-        return Contains(position.Row, position.Col);
+        return Contains(position.row, position.col);
     }
 
     /// <summary>
@@ -114,7 +114,7 @@ public class Region : IRegion
     /// <returns></returns>
     public bool SpansCol(int col)
     {
-        return col >= TopLeft.Col && col <= BottomRight.Col;
+        return col >= TopLeft.col && col <= BottomRight.col;
     }
 
     /// <summary>
@@ -124,8 +124,8 @@ public class Region : IRegion
     /// <returns></returns>
     public bool SpansRow(int row)
     {
-        return row >= TopLeft.Row &&
-               row <= BottomRight.Row;
+        return row >= TopLeft.row &&
+               row <= BottomRight.row;
     }
 
     public bool Spans(int index, Axis axis)
@@ -139,7 +139,7 @@ public class Region : IRegion
 
     public IRegion Collapse()
     {
-        return new Region(TopLeft.Row, TopLeft.Col);
+        return new Region(TopLeft.row, TopLeft.col);
     }
 
     /// <summary>
@@ -152,13 +152,13 @@ public class Region : IRegion
         switch (edge)
         {
             case Edge.Top:
-                return new Region(this.Start.Row, this.Start.Row, this.Start.Col, this.End.Col);
+                return new Region(this.Start.row, this.Start.row, this.Start.col, this.End.col);
             case Edge.Bottom:
-                return new Region(this.End.Row, this.End.Row, this.Start.Col, this.End.Col);
+                return new Region(this.End.row, this.End.row, this.Start.col, this.End.col);
             case Edge.Left:
-                return new Region(this.Start.Row, this.End.Row, this.Start.Col, this.Start.Col);
+                return new Region(this.Start.row, this.End.row, this.Start.col, this.Start.col);
             case Edge.Right:
-                return new Region(this.Start.Row, this.End.Row, this.End.Col, this.End.Col);
+                return new Region(this.Start.row, this.End.row, this.End.col, this.End.col);
         }
 
         return default;
@@ -170,7 +170,7 @@ public class Region : IRegion
     /// <param name="region"></param>
     public void Constrain(IRegion? region)
     {
-        Constrain(region.TopLeft.Row, region.BottomRight.Row, region.TopLeft.Col, region.BottomRight.Col);
+        Constrain(region.TopLeft.row, region.BottomRight.row, region.TopLeft.col, region.BottomRight.col);
     }
 
     /// <summary>
@@ -182,10 +182,10 @@ public class Region : IRegion
     /// <param name="otherColEnd"></param>
     public void Constrain(int otherRowStart, int otherRowEnd, int otherColStart, int otherColEnd)
     {
-        var r0 = SheetMath.ClampInt(otherRowStart, otherRowEnd, this.TopLeft.Row);
-        var r1 = SheetMath.ClampInt(otherRowStart, otherRowEnd, this.BottomRight.Row);
-        var c0 = SheetMath.ClampInt(otherColStart, otherColEnd, this.TopLeft.Col);
-        var c1 = SheetMath.ClampInt(otherColStart, otherColEnd, this.BottomRight.Col);
+        var r0 = SheetMath.ClampInt(otherRowStart, otherRowEnd, this.TopLeft.row);
+        var r1 = SheetMath.ClampInt(otherRowStart, otherRowEnd, this.BottomRight.row);
+        var c0 = SheetMath.ClampInt(otherColStart, otherColEnd, this.TopLeft.col);
+        var c1 = SheetMath.ClampInt(otherColStart, otherColEnd, this.BottomRight.col);
         this.Start = new CellPosition(r0, c0);
         this.End = new CellPosition(r1, c1);
         SetOrderedBounds();
@@ -197,7 +197,7 @@ public class Region : IRegion
     /// <returns></returns>
     public virtual IRegion Copy()
     {
-        return new Region(TopLeft.Row, BottomRight.Row, TopLeft.Col, BottomRight.Col);
+        return new Region(TopLeft.row, BottomRight.row, TopLeft.col, BottomRight.col);
     }
 
     /// <summary>
@@ -206,7 +206,7 @@ public class Region : IRegion
     /// <returns></returns>
     public virtual IRegion Clone()
     {
-        return new Region(this.Start.Row, this.End.Row, this.Start.Col, this.End.Col);
+        return new Region(this.Start.row, this.End.row, this.Start.col, this.End.col);
     }
 
     public int GetSize(Axis axis)
@@ -226,8 +226,8 @@ public class Region : IRegion
 
     public CellPosition GetConstrained(CellPosition cellPosition)
     {
-        var r = cellPosition.Row;
-        var c = cellPosition.Col;
+        var r = cellPosition.row;
+        var c = cellPosition.col;
         var r0 = GetLeadingEdgeOffset(Axis.Row);
         var r1 = GetTrailingEdgeOffset(Axis.Row);
         var c0 = GetLeadingEdgeOffset(Axis.Col);
@@ -250,8 +250,8 @@ public class Region : IRegion
     /// <param name="dCol"></param>
     public virtual void Shift(int dRow, int dCol)
     {
-        this.Start = new CellPosition(this.Start.Row + dRow, this.Start.Col + dCol);
-        this.End = new CellPosition(this.End.Row + dRow, this.End.Col + dCol);
+        this.Start = new CellPosition(this.Start.row + dRow, this.Start.col + dCol);
+        this.End = new CellPosition(this.End.row + dRow, this.End.col + dCol);
         this.SetOrderedBounds();
     }
 
@@ -262,10 +262,10 @@ public class Region : IRegion
     /// <param name="amount"></param>
     public virtual void Expand(Edge edges, int amount)
     {
-        var endCol = this.End.Col;
-        var endRow = this.End.Row;
-        var startCol = this.Start.Col;
-        var startRow = this.Start.Row;
+        var endCol = this.End.col;
+        var endRow = this.End.row;
+        var startCol = this.Start.col;
+        var startRow = this.Start.row;
         if ((edges & Edge.Bottom) == Edge.Bottom)
         {
             // The order here is deliberate.
@@ -322,30 +322,30 @@ public class Region : IRegion
     public virtual IRegion GetBoundingRegion(IRegion otherRegion)
     {
         return new Region(
-            Math.Min(this.TopLeft.Row, otherRegion.TopLeft.Row),
-            Math.Max(this.BottomRight.Row, otherRegion.BottomRight.Row),
-            Math.Min(this.TopLeft.Col, otherRegion.TopLeft.Col),
-            Math.Max(this.BottomRight.Col, otherRegion.BottomRight.Col)
+            Math.Min(this.TopLeft.row, otherRegion.TopLeft.row),
+            Math.Max(this.BottomRight.row, otherRegion.BottomRight.row),
+            Math.Min(this.TopLeft.col, otherRegion.TopLeft.col),
+            Math.Max(this.BottomRight.col, otherRegion.BottomRight.col)
         );
     }
 
     public IRegion? GetIntersection(IRegion? region)
     {
-        var x1 = this.BottomRight.Col;
-        var x2 = region.BottomRight.Col;
-        var y1 = this.BottomRight.Row;
-        var y2 = region.BottomRight.Row;
+        var x1 = this.BottomRight.col;
+        var x2 = region.BottomRight.col;
+        var y1 = this.BottomRight.row;
+        var y2 = region.BottomRight.row;
 
         IRegion? intersection = null;
 
-        var xL = Math.Max(this.TopLeft.Col, region.TopLeft.Col);
+        var xL = Math.Max(this.TopLeft.col, region.TopLeft.col);
         var xR = Math.Min(x1, x2);
         if (xR < xL)
             intersection = null;
         else
         {
             var yB = Math.Min(y1, y2);
-            var yT = Math.Max(this.TopLeft.Row, region.TopLeft.Row);
+            var yT = Math.Max(this.TopLeft.row, region.TopLeft.row);
             if (yB < yT)
                 intersection = null;
             else
@@ -365,7 +365,7 @@ public class Region : IRegion
 
     public List<IRegion> Break(CellPosition position)
     {
-        return Break(new Region(position.Row, position.Col));
+        return Break(new Region(position.row, position.col));
     }
 
     public List<IRegion> Break(IRegion inputRegion)
@@ -396,39 +396,39 @@ public class Region : IRegion
         // | \\ | \\ |  3 |
         // | 4  |  4 |  4 |
 
-        var r1IsEmpty = this.TopLeft.Row == region.TopLeft.Row;
-        var r2IsEmpty = this.TopLeft.Col == region.TopLeft.Col;
-        var r3IsEmpty = this.BottomRight.Col == region.BottomRight.Col;
-        var r4IsEmpty = this.BottomRight.Row == region.BottomRight.Row;
+        var r1IsEmpty = this.TopLeft.row == region.TopLeft.row;
+        var r2IsEmpty = this.TopLeft.col == region.TopLeft.col;
+        var r3IsEmpty = this.BottomRight.col == region.BottomRight.col;
+        var r4IsEmpty = this.BottomRight.row == region.BottomRight.row;
 
         var regions = new List<IRegion>();
 
         if (!r1IsEmpty)
         {
-            var r1 = new Region(this.TopLeft.Row, region.TopLeft.Row - 1,
-                this.TopLeft.Col,
-                this.BottomRight.Col);
+            var r1 = new Region(this.TopLeft.row, region.TopLeft.row - 1,
+                this.TopLeft.col,
+                this.BottomRight.col);
             regions.Add(r1);
         }
 
         if (!r2IsEmpty)
         {
-            var r2 = new Region(region.TopLeft.Row, region.BottomRight.Row, this.TopLeft.Col,
-                region.TopLeft.Col - 1);
+            var r2 = new Region(region.TopLeft.row, region.BottomRight.row, this.TopLeft.col,
+                region.TopLeft.col - 1);
             regions.Add(r2);
         }
 
         if (!r3IsEmpty)
         {
-            var r3 = new Region(region.TopLeft.Row, region.BottomRight.Row, region.BottomRight.Col + 1,
-                this.BottomRight.Col);
+            var r3 = new Region(region.TopLeft.row, region.BottomRight.row, region.BottomRight.col + 1,
+                this.BottomRight.col);
             regions.Add(r3);
         }
 
         if (!r4IsEmpty)
         {
-            var r4 = new Region(region.BottomRight.Row + 1, this.BottomRight.Row, this.TopLeft.Col,
-                this.BottomRight.Col);
+            var r4 = new Region(region.BottomRight.row + 1, this.BottomRight.row, this.TopLeft.col,
+                this.BottomRight.col);
             regions.Add(r4);
         }
 
@@ -474,25 +474,25 @@ public class Region : IRegion
     public IRegion CopyOrdered()
     {
         return new Region(
-            Math.Min(TopLeft.Row, BottomRight.Row),
-            Math.Max(TopLeft.Row, BottomRight.Row),
-            Math.Min(TopLeft.Col, BottomRight.Col),
-            Math.Max(TopLeft.Col, BottomRight.Col)
+            Math.Min(TopLeft.row, BottomRight.row),
+            Math.Max(TopLeft.row, BottomRight.row),
+            Math.Min(TopLeft.col, BottomRight.col),
+            Math.Max(TopLeft.col, BottomRight.col)
         );
     }
 
 
     public IEnumerator<CellPosition> GetEnumerator()
     {
-        var rowDir = BottomRight.Row >= TopLeft.Row ? 1 : -1;
-        var colDir = BottomRight.Col >= TopLeft.Col ? 1 : -1;
-        var row = TopLeft.Row;
-        var col = TopLeft.Col;
+        var rowDir = BottomRight.row >= TopLeft.row ? 1 : -1;
+        var colDir = BottomRight.col >= TopLeft.col ? 1 : -1;
+        var row = TopLeft.row;
+        var col = TopLeft.col;
 
         for (var i = 0; i < Height; i++)
         {
             // Reset column at start of each row
-            col = TopLeft.Col;
+            col = TopLeft.col;
 
             for (var j = 0; j < Width; j++)
             {
@@ -506,16 +506,16 @@ public class Region : IRegion
 
     public override string ToString()
     {
-        return $"region from (r{TopLeft.Row}, c{TopLeft.Col}) to (r{BottomRight.Row}, c{BottomRight.Col})";
+        return $"region from (r{TopLeft.row}, c{TopLeft.col}) to (r{BottomRight.row}, c{BottomRight.col})";
     }
 
     public bool Equals(IRegion? obj)
     {
         if (obj is IRegion region)
-            return region.TopLeft.Row == TopLeft.Row
-                   && region.TopLeft.Col == TopLeft.Col
-                   && region.BottomRight.Row == BottomRight.Row
-                   && region.BottomRight.Col == BottomRight.Col;
+            return region.TopLeft.row == TopLeft.row
+                   && region.TopLeft.col == TopLeft.col
+                   && region.BottomRight.row == BottomRight.row
+                   && region.BottomRight.col == BottomRight.col;
 
         return false;
     }

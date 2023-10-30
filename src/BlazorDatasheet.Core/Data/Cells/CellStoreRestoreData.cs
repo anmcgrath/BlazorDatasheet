@@ -14,11 +14,11 @@ internal class CellStoreRestoreData
     internal RegionRestoreData<CellFormat> FormatRestoreData { get; set; } = new();
     internal RegionRestoreData<bool> MergeRestoreData { get; set; } = new();
 
-    public IEnumerable<(int row, int col)> GetAffectedPositions()
+    public IEnumerable<CellPosition> GetAffectedPositions()
     {
-        return ValidRestoreData.DataRemoved.Select(x => (x.row, x.col))
-            .Concat(ValueRestoreData.DataRemoved.Select(x => (x.row, x.col))
-                .Concat(FormulaRestoreData.DataRemoved.Select(x => (x.row, x.col))));
+        return ValidRestoreData.DataRemoved.Select(x => new CellPosition(x.row, x.col))
+            .Concat(ValueRestoreData.DataRemoved.Select(x => new CellPosition(x.row, x.col))
+                .Concat(FormulaRestoreData.DataRemoved.Select(x => new CellPosition(x.row, x.col))));
     }
 
     public IEnumerable<IRegion> GetAffectedRegions()

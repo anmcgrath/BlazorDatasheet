@@ -8,7 +8,7 @@ namespace BlazorDatasheet.Render;
 public class VisualSheet
 {
     private readonly Sheet _sheet;
-    private readonly Dictionary<(int row, int col), VisualCell> _visualCache = new();
+    private readonly Dictionary<CellPosition, VisualCell> _visualCache = new();
     private CellFormat _defaultFormat = new CellFormat();
     private Viewport? _currentViewport = null;
 
@@ -22,7 +22,7 @@ public class VisualSheet
 
     private void SheetOnSheetDirty(object? sender, DirtySheetEventArgs e)
     {
-        var set = new HashSet<(int row, int col)>();
+        var set = new HashSet<CellPosition>();
         if (e.DirtyPositions != null)
         {
             InvalidateCells(e.DirtyPositions);
@@ -101,7 +101,7 @@ public class VisualSheet
         }
     }
 
-    private void InvalidateCells(IEnumerable<(int row, int col)> cellPositions)
+    private void InvalidateCells(IEnumerable<CellPosition> cellPositions)
     {
         foreach (var cellPosition in cellPositions)
             InvalidateCell(cellPosition.row, cellPosition.col);
@@ -115,8 +115,8 @@ public class VisualSheet
     private void InvalidateCell(int row, int col)
     {
         var visualCell = new VisualCell(row, col, _sheet);
-        if (!_visualCache.TryAdd((row, col), visualCell))
-            _visualCache[(row, col)] = visualCell;
+        if (!_visualCache.TryAdd(new CellPosition(row, col), visualCell))
+            _visualCache[new CellPosition(row, col)] = visualCell;
     }
 
     /// <summary>
@@ -127,7 +127,7 @@ public class VisualSheet
     /// <returns></returns>
     public VisualCell GetVisualCell(int row, int col)
     {
-        if (_visualCache.TryGetValue((row, col), out var cell))
+        if (_visualCache.TryGetValue(new CellPosition(row, col), out var cell))
             return cell;
         return VisualCell.Empty(row, col, _sheet, ref _defaultFormat);
     }

@@ -36,7 +36,7 @@ public interface IMatrixDataStore<T>
     /// <param name="col"></param>
     public MatrixRestoreData<T> Clear(int row, int col);
 
-    public MatrixRestoreData<T> Clear(IEnumerable<(int row, int col)> positions);
+    public MatrixRestoreData<T> Clear(IEnumerable<CellPosition> positions);
 
     /// <summary>
     /// Clears data inside the given region but does not affect the rows/columns arround it.
@@ -94,14 +94,14 @@ public interface IMatrixDataStore<T>
     /// <param name="c0">The lower col bound</param>
     /// <param name="c1">The upper col bound</param>
     /// <returns></returns>
-    IEnumerable<(int row, int col)> GetNonEmptyPositions(int r0, int r1, int c0, int c1);
+    IEnumerable<CellPosition> GetNonEmptyPositions(int r0, int r1, int c0, int c1);
 
     /// <summary>
     /// Gets non empty cells that exist in the region given.
     /// </summary>
     /// <param name="region"></param>
     /// <returns></returns>
-    IEnumerable<(int row, int col)> GetNonEmptyPositions(IRegion region);
+    IEnumerable<CellPosition> GetNonEmptyPositions(IRegion region);
 
     void Restore(MatrixRestoreData<T> restoreData);
 }

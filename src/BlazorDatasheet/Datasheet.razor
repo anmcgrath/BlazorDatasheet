@@ -7,6 +7,7 @@
 @using System.Collections.Immutable
 @using System.Reflection
 @using System.Text
+@using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.DataStructures.Util
 @using BlazorDatasheet.Util
 @using Microsoft.Extensions.Primitives
@@ -98,7 +99,7 @@
                                                 IconColor="@cell.Format?.IconColor"
                                                 CellFormatStyleString="@cell.FormatStyleString"
                                                 Icon="@GetIconRenderFragment(cell.Icon)"
-                                                IsDirty="SheetIsDirty || DirtyCells.Contains((row, col))">
+                                                IsDirty="SheetIsDirty || DirtyCells.Contains(new CellPosition(row, col))">
                                                 <ItemTemplate>
                                                     <DynamicComponent
                                                         Type="@GetCellRendererType(cell.CellType)"
@@ -136,7 +137,7 @@
                                     <CellRenderer
                                         IconColor="@cell.Format?.IconColor"
                                         CellFormatStyleString="@cell.FormatStyleString"
-                                        IsDirty="SheetIsDirty || DirtyCells.Contains((row, col))">
+                                        IsDirty="SheetIsDirty || DirtyCells.Contains(new CellPosition(row, col))">
                                         <ItemTemplate>
                                             <DynamicComponent
                                                 Type="@GetCellRendererType(cell.CellType)"

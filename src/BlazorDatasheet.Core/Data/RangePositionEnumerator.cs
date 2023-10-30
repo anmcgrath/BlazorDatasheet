@@ -1,8 +1,9 @@
 using System.Collections;
+using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.Data;
 
-internal class RangePositionEnumerator : IEnumerable<(int row, int col)>
+internal class RangePositionEnumerator : IEnumerable<CellPosition>
 {
     private readonly BRange _range;
 
@@ -11,20 +12,20 @@ internal class RangePositionEnumerator : IEnumerable<(int row, int col)>
         _range = range;
     }
 
-    public IEnumerator<(int row, int col)> GetEnumerator()
+    public IEnumerator<CellPosition> GetEnumerator()
     {
         foreach (var region in _range.Regions)
         {
             var fixedRegion = _range.Sheet.Region.GetIntersection(region);
-            var row = fixedRegion.TopLeft.Row;
-            var col = fixedRegion.TopLeft.Col;
+            var row = fixedRegion.TopLeft.row;
+            var col = fixedRegion.TopLeft.col;
             var w = fixedRegion.Width;
             var h = fixedRegion.Height;
 
             for (var i = 0; i < h; i++)
             {
                 // Reset column at start of each row
-                col = fixedRegion.TopLeft.Col;
+                col = fixedRegion.TopLeft.col;
                 for (var j = 0; j < w; j++)
                 {
                     yield return new(row, col);

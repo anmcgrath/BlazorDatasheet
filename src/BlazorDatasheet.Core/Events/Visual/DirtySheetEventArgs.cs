@@ -4,6 +4,6 @@ namespace BlazorDatasheet.Core.Events.Visual;
 
 public class DirtySheetEventArgs
 {
-    public HashSet<(int row, int col)>? DirtyPositions { get; init; }
+    public HashSet<CellPosition>? DirtyPositions { get; init; }
     public IEnumerable<IRegion>? DirtyRegions { get; init; }
 }
