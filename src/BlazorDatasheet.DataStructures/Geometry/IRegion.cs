@@ -214,4 +214,11 @@ public interface IRegion : IEquatable<IRegion>
     /// <param name="edges"></param>
     /// <param name="amount"></param>
     public void Contract(Edge edges, int amount);
+
+    /// <summary>
+    /// Determines whether the cell position is inside this region
+    /// </summary>
+    /// <param name="position"></param>
+    /// <returns></returns>
+    bool Contains(CellPosition position);
 }

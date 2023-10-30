@@ -98,6 +98,16 @@ public class Region : IRegion
     }
 
     /// <summary>
+    /// Determines whether the cell position is inside this region
+    /// </summary>
+    /// <param name="position"></param>
+    /// <returns></returns>
+    public bool Contains(CellPosition position)
+    {
+        return Contains(position.Row, position.Col);
+    }
+
+    /// <summary>
     /// Determines whether the column is spanned by the region
     /// </summary>
     /// <param name="col"></param>

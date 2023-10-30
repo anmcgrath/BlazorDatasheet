@@ -482,7 +482,7 @@ public class Sheet
     /// <returns>The region of cells that were affected</returns>
     public Region? InsertDelimitedText(string text, CellPosition inputPosition, string newLineDelim = "\n")
     {
-        if (inputPosition.IsInvalid)
+        if (!Region.Contains(inputPosition))
             return null;
 
         if (text.EndsWith('\n'))

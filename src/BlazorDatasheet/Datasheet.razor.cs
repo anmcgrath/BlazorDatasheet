@@ -520,8 +520,7 @@ public partial class Datasheet : IHandleEvent
                 if (Sheet == null || !Sheet.Selection.Regions.Any())
                     return false;
                 var inputPosition = Sheet.Selection.GetInputPosition();
-                if (inputPosition.IsInvalid)
-                    return false;
+                
                 BeginEdit(inputPosition.Row, inputPosition.Col, softEdit: true, EditEntryMode.Key, e.Key);
             }
 
@@ -543,8 +542,6 @@ public partial class Datasheet : IHandleEvent
             if (Sheet == null || !Sheet.Selection.Regions.Any())
                 return false;
             var inputPosition = Sheet.Selection.GetInputPosition();
-            if (inputPosition.IsInvalid)
-                return false;
             BeginEdit(inputPosition.Row, inputPosition.Col, softEdit: true, EditEntryMode.Key, e.Key);
 
             return true;
@@ -577,8 +574,6 @@ public partial class Datasheet : IHandleEvent
             return;
 
         var posnToInput = Sheet.Selection.GetInputPosition();
-        if (posnToInput.IsInvalid)
-            return;
 
         var range = Sheet.InsertDelimitedText(arg.Text, posnToInput);
         if (range == null)

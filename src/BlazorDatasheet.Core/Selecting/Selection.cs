@@ -46,7 +46,7 @@ public class Selection : BRange
     /// </summary>
     public event EventHandler<IRegion> SelectingChanged;
 
-    public event EventHandler<CellsSelectedEventArgs> CellsSelected; 
+    public event EventHandler<CellsSelectedEventArgs> CellsSelected;
 
     public Selection(Sheet sheet) : base(sheet, new List<IRegion>())
     {
@@ -116,7 +116,6 @@ public class Selection : BRange
             return;
         this.ActiveCellPosition = new CellPosition(SelectingStartPosition.Row, SelectingStartPosition.Col);
         this.AddRegionToSelections(SelectingRegion);
-        SelectingStartPosition = new CellPosition(-1, -1);
         SelectingRegion = null;
         emitSelectingChanged();
     }
@@ -189,9 +188,9 @@ public class Selection : BRange
 
             mergeOverlaps =
                 Sheet.Cells
-                     .GetMerges(new[] { top, right, left, bottom })
-                     .Where(x => !boundedRegion.Contains(x))
-                     .ToList();
+                    .GetMerges(new[] { top, right, left, bottom })
+                    .Where(x => !boundedRegion.Contains(x))
+                    .ToList();
 
             // Expand bounded selection to cover all the merges
             foreach (var merge in mergeOverlaps)
@@ -498,7 +497,7 @@ public class Selection : BRange
     /// <returns></returns>
     public CellPosition GetInputPosition()
     {
-        if (ActiveCellPosition.IsInvalid)
+        if (this.ActiveRegion == null)
             throw new Exception("Invalid cell position");
 
         // Check whether there are any merged regions at the ActiveCellPosition.
