@@ -71,47 +71,6 @@ public partial class CellStore
             region.BottomRight.Col);
     }
 
-    /// <summary>
-    /// Sets cell metadata, specified by name, for the cell at position row, col
-    /// </summary>
-    /// <param name="row"></param>
-    /// <param name="col"></param>
-    /// <param name="name"></param>
-    /// <param name="value"></param>
-    /// <returns>Whether setting the cell metadata was successful</returns>
-    public bool SetCellMetaData(int row, int col, string name, object? value)
-    {
-        var cmd = new SetMetaDataCommand(row, col, name, value);
-        return _sheet.Commands.ExecuteCommand(cmd);
-    }
-
-    internal void SetMetaDataImpl(int row, int col, string name, object? value)
-    {
-        /*var cell = CellDataStore.Get(row, col);
-        if (cell == null)
-        {
-            cell = new Cell();
-            CellDataStore.Set(row, col, cell);
-        }
-
-        var oldMetaData = cell.GetMetaData(name);
-
-        cell.SetCellMetaData(name, value);
-        this.MetaDataChanged?.Invoke(this, new CellMetaDataChangeEventArgs(row, col, name, oldMetaData, value));*/
-    }
-
-    /// <summary>
-    /// Returns the metadata with key "name" for the cell at row, col.
-    /// </summary>
-    /// <param name="row"></param>
-    /// <param name="col"></param>
-    /// <param name="name"></param>
-    /// <returns></returns>
-    public object? GetMetaData(int row, int col, string name)
-    {
-        return GetCell(row, col)?.GetMetaData(name);
-    }
-
     public void SetCell(int row, int col, Cell cell)
     {
         _dataStore.Set(row, col, cell.Data);

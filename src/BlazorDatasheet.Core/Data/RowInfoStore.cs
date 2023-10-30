@@ -229,11 +229,11 @@ public class RowInfoStore
     /// Inserts a row at an index specified.
     /// </summary>
     /// <param name="rowIndex">The index that the new row will be at. The new row will have the index specified.</param>
-    public void InsertRowAt(int rowIndex, Sheet sheet)
+    public void InsertRowAt(int rowIndex, int nRows = 1)
     {
-        var indexToAddAt = Math.Min(sheet.NumRows - 1, Math.Max(rowIndex, 0));
-        var cmd = new InsertRowsAtCommand(indexToAddAt);
-        sheet.Commands.ExecuteCommand(cmd);
+        var indexToAddAt = Math.Min(_sheet.NumRows - 1, Math.Max(rowIndex, 0));
+        var cmd = new InsertRowsAtCommand(indexToAddAt, nRows);
+        _sheet.Commands.ExecuteCommand(cmd);
     }
 
     /// <summary>

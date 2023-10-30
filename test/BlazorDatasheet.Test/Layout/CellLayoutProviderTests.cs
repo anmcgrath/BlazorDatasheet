@@ -68,7 +68,7 @@ public class CellLayoutProviderTests
         var dH = sheet.Rows.DefaultHeight;
         var provider = new CellLayoutProvider(sheet);
         provider.TotalHeight.Should().Be(dH * 3);
-        sheet.Rows.InsertRowAt(0, sheet);
+        sheet.Rows.InsertRowAt(0);
         provider.TotalHeight.Should().Be(dH * 4);
         sheet.Rows.RemoveAt(0, 2);
         provider.TotalHeight.Should().Be(dH * 2);

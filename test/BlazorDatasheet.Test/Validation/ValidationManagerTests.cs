@@ -55,7 +55,7 @@ public class ValidationManagerTests
         var sheet = new Sheet(4, 4);
         var val = new SourceValidator(new List<string>() { "A", "B" }, false);
         sheet.AddValidator(2, 2, val);
-        sheet.Rows.InsertRowAt(2, sheet);
+        sheet.Rows.InsertRowAt(2);
         sheet.GetValidators(1, 2).Should().BeEmpty();
         sheet.GetValidators(2, 2).Should().BeEmpty();
         sheet.GetValidators(3, 2).First().Should().BeSameAs(val);

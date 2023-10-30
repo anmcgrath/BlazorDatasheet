@@ -9,6 +9,10 @@ namespace BlazorDatasheet.DataStructures.Store;
 /// <typeparam name="T"></typeparam>
 public class MergeRegionDataStore<T> : RegionDataStore<T> where T : IMergeable<T>, IEquatable<T>
 {
+    public MergeRegionDataStore(int minArea = 0, bool expandOnInsert = true) : base(minArea, expandOnInsert)
+    {
+    }
+
     internal override RegionRestoreData<T> Add(DataRegion<T> dataRegion)
     {
         // we have the valid assumption that only one region will exist at each position

@@ -107,15 +107,6 @@ public class ConditionalFormatManager
         _cfTree.BulkLoad(e.RegionsAdded.Select(x => new ConditionalFormatSpatialData(cf, x)));
     }
 
-    /// <summary>
-    /// Applies conditional format to the whole sheet
-    /// </summary>
-    /// <param name="key"></param>
-    public void Apply(ConditionalFormatAbstractBase format)
-    {
-        Apply(format, _sheet.Region);
-    }
-
     private void HandleCellsChanged(object? sender, IEnumerable<(int row, int col)> args)
     {
         // Simply prepare all cells that the conditional format belongs to (if shared)
