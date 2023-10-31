@@ -233,7 +233,7 @@ public class ColumnInfoStore
             .Select(x =>
                 new DataRegion<CellFormat>(x.Data, new Region(x.Start, x.End, colRegion.Left, colRegion.Right)));
 
-        var cellOverlaps = _sheet.Cells.GetOverlappingFormats(colRegion)
+        var cellOverlaps = _sheet.Cells.GetFormatData(colRegion)
             .Select(x => new DataRegion<CellFormat>(x.Data, x.Region.GetIntersection(colRegion)!));
 
         // The intersectings region should be be merged with any existing (or empty) cell formats

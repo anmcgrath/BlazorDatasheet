@@ -21,7 +21,7 @@ public class FormattingTests
     public void Set_Format_On_Cells_Then_Undo_Correct()
     {
         var format = new CellFormat() { BackgroundColor = "red" };
-        _sheet.SetFormat(format, new BRangeCell(_sheet, 0, 0));
+        _sheet.SetFormat(format,_sheet.Range(0, 0));
         Assert.AreEqual(format.BackgroundColor, _sheet.GetFormat(0, 0)?.BackgroundColor);
         // Test the cell next to it to ensure it hasn't changed format
         Assert.AreNotEqual(format.BackgroundColor, _sheet.GetFormat(0, 1)?.BackgroundColor);

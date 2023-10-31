@@ -24,7 +24,7 @@ public partial class CellStore
     /// <returns></returns>
     public IEnumerable<IReadOnlyCell> GetCellsInRegion(IRegion region)
     {
-        return (new BRange(_sheet, region))
+        return (new SheetRange(_sheet, region))
             .Positions
             .Select(x => this.GetCell(x.row, x.col));
     }
@@ -75,7 +75,7 @@ public partial class CellStore
     /// Clears all cell values in the region
     /// </summary>
     /// <param name="range">The range in which to clear all cells</param>
-    public void ClearCells(BRange range)
+    public void ClearCells(SheetRange range)
     {
         var cmd = new ClearCellsCommand(range);
         _sheet.Commands.ExecuteCommand(cmd);

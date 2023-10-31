@@ -176,9 +176,9 @@ public class Sheet
     /// <param name="row"></param>
     /// <param name="col"></param>
     /// <returns></returns>
-    public BRangeCell Range(int row, int col)
+    public SheetRange Range(int row, int col)
     {
-        return new BRangeCell(this, row, col);
+        return new SheetRange(this, row, col);
     }
 
     /// <summary>
@@ -189,7 +189,7 @@ public class Sheet
     /// <param name="colStart"></param>
     /// <param name="colEnd"></param>
     /// <returns></returns>
-    public BRange Range(int rowStart, int rowEnd, int colStart, int colEnd)
+    public SheetRange Range(int rowStart, int rowEnd, int colStart, int colEnd)
     {
         return Range(new Region(rowStart, rowEnd, colStart, colEnd));
     }
@@ -199,7 +199,7 @@ public class Sheet
     /// </summary>
     /// <param name="region"></param>
     /// <returns></returns>
-    public BRange Range(IRegion region)
+    public SheetRange Range(IRegion region)
     {
         return Range(new List<IRegion>() { region });
     }
@@ -211,7 +211,7 @@ public class Sheet
     /// <param name="start">The start row/column index</param>
     /// <param name="end">The end row/column index</param>
     /// <returns></returns>
-    public BRange Range(Axis axis, int start, int end)
+    public SheetRange Range(Axis axis, int start, int end)
     {
         switch (axis)
         {
@@ -229,9 +229,9 @@ public class Sheet
     /// </summary>
     /// <param name="regions"></param>
     /// <returns></returns>
-    public BRange Range(IEnumerable<IRegion> regions)
+    public SheetRange Range(List<IRegion> regions)
     {
-        return new BRange(this, regions);
+        return new SheetRange(this, regions);
     }
 
     /// <summary>
@@ -407,7 +407,7 @@ public class Sheet
     /// </summary>
     /// <param name="cellFormat"></param>
     /// <param name="range"></param>
-    public void SetFormat(CellFormat cellFormat, BRange range)
+    public void SetFormat(CellFormat cellFormat, SheetRange range)
     {
         BatchUpdates();
 
@@ -478,8 +478,8 @@ public class Sheet
     }
 
     /// <summary>
-    /// The <see cref="BRange"/> specified by the string e.g A1, B1:B4, A:B, A:A, 2:4, etc.
+    /// The <see cref="SheetRange"/> specified by the string e.g A1, B1:B4, A:B, A:A, 2:4, etc.
     /// Multiple regions can be included by separating them with a ","
     /// </summary>
-    public BRange this[string rangeString] => new(this, rangeString);
+    public SheetRange this[string rangeString] => new(this, rangeString);
 }

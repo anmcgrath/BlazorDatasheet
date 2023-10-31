@@ -5,9 +5,9 @@ namespace BlazorDatasheet.Core.Data;
 
 internal class RangePositionEnumerator : IEnumerable<CellPosition>
 {
-    private readonly BRange _range;
+    private readonly SheetRange _range;
 
-    internal RangePositionEnumerator(BRange range)
+    internal RangePositionEnumerator(SheetRange range)
     {
         _range = range;
     }

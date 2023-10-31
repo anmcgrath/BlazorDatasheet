@@ -1,3 +1,4 @@
+using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
@@ -7,12 +8,12 @@ namespace BlazorDatasheet.Core.Data;
 /// <summary>
 /// Specifies a range, which is a collection of regions in a sheet.
 /// </summary>
-public class BRange
+public class SheetRange
 {
-    public readonly Sheet Sheet;
+    internal readonly Sheet Sheet;
     protected List<IRegion> _regions = new();
 
-    public IEnumerable<IRegion> Regions
+    public IReadOnlyList<IRegion> Regions
     {
         get => _regions;
         set => _regions = value.ToList();
@@ -26,26 +27,22 @@ public class BRange
 
     private readonly RangePositionEnumerator _rangePositionEnumerator;
 
-    /// <summary>
-    /// Sets the value of all cells in the range.
-    /// </summary>
-    public object? Value
-    {
-        set => doSetValues(value);
-    }
-
-    internal BRange(Sheet sheet, IEnumerable<IRegion> regions)
+    internal SheetRange(Sheet sheet, List<IRegion> regions)
     {
         Sheet = sheet;
         Regions = regions;
         _rangePositionEnumerator = new RangePositionEnumerator(this);
     }
 
+    internal SheetRange(Sheet sheet, int row, int col) : this(sheet, new Region(row, col))
+    {
+    }
+
     /// <summary>
     /// Create a range with the expression e.g A1, A:B, A1:A5, Allows multiple regions by seperating with a ',' etc.
     /// </summary>
     /// <param name="rangeExpression"></param>
-    internal BRange(Sheet sheet, string rangeExpression)
+    internal SheetRange(Sheet sheet, string rangeExpression)
     {
         Sheet = sheet;
         _rangePositionEnumerator = new RangePositionEnumerator(this);
@@ -61,9 +58,17 @@ public class BRange
         }
     }
 
-    internal BRange(Sheet sheet, IRegion region) :
+    internal SheetRange(Sheet sheet, IRegion region) :
         this(sheet, new List<IRegion>() { region })
     {
+    }
+
+    /// <summary>
+    /// Sets the value of all cells in the range.
+    /// </summary>
+    public object? Value
+    {
+        set => doSetValues(value);
     }
 
     /// <summary>
@@ -117,8 +122,8 @@ public class BRange
         _regions.Remove(region);
     }
 
-    internal BRange Clone()
+    internal SheetRange Clone()
     {
-        return new BRange(this.Sheet, _regions.Select(x => x.Clone()));
+        return new SheetRange(this.Sheet, _regions.Select(x => x.Clone()).ToList());
     }
 }

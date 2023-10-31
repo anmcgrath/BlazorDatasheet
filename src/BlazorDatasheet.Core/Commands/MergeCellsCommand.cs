@@ -7,7 +7,7 @@ namespace BlazorDatasheet.Core.Commands;
 
 public class MergeCellsCommand : IUndoableCommand
 {
-    private readonly BRange _range;
+    private readonly SheetRange _range;
     private readonly List<IRegion> _overridenMergedRegions = new();
     private readonly List<IRegion> _mergesPerformed = new();
     private CellStoreRestoreData _restoreData;
@@ -17,7 +17,7 @@ public class MergeCellsCommand : IUndoableCommand
     /// Note that the value in the top LHS will be kept, while other cell values will be cleared.
     /// </summary>
     /// <param name="range">The range in which to merge. </param>
-    public MergeCellsCommand(BRange range)
+    public MergeCellsCommand(SheetRange range)
     {
         _range = range.Clone();
     }
@@ -46,7 +46,7 @@ public class MergeCellsCommand : IUndoableCommand
             // Store the merges that we will have to re-instate on undo
             // And remove any merges that are contained in the region
             _overridenMergedRegions.AddRange(existingMerges);
-            sheet.Cells.UnMergeCellsImpl(new BRange(sheet, existingMerges));
+            sheet.Cells.UnMergeCellsImpl(new SheetRange(sheet, existingMerges));
 
             // Store the merge that we are doing and perform the actual merge
             _mergesPerformed.Add(region);

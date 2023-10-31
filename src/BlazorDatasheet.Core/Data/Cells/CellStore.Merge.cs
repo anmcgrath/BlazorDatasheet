@@ -26,7 +26,7 @@ namespace BlazorDatasheet.Core.Data.Cells
         /// will not happen.
         /// </summary>
         /// <param name="range"></param>
-        public void Merge(BRange range)
+        public void Merge(SheetRange range)
         {
             var merge = new MergeCellsCommand(range);
             _sheet.Commands.ExecuteCommand(merge);
@@ -37,9 +37,9 @@ namespace BlazorDatasheet.Core.Data.Cells
         /// will not happen.
         /// </summary>
         /// <param name="region"></param>
-        public void Merge(IRegion region) => Merge(new BRange(_sheet, region));
+        public void Merge(IRegion region) => Merge(new SheetRange(_sheet, region));
 
-        internal bool MergeImpl(BRange range)
+        internal bool MergeImpl(SheetRange range)
         {
             _sheet.BatchUpdates();
             var isSuccess = true;
@@ -83,7 +83,7 @@ namespace BlazorDatasheet.Core.Data.Cells
         /// Un-merge all cells that overlap the range
         /// </summary>
         /// <param name="region"></param>
-        internal void UnMergeCellsImpl(BRange range)
+        internal void UnMergeCellsImpl(SheetRange range)
         {
             _sheet.BatchUpdates();
             foreach (var region in range.Regions)

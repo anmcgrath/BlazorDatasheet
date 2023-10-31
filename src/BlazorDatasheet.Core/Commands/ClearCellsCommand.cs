@@ -9,10 +9,10 @@ namespace BlazorDatasheet.Core.Commands;
 /// </summary>
 public class ClearCellsCommand : IUndoableCommand
 {
-    private readonly BRange _range;
+    private readonly SheetRange _range;
     private CellStoreRestoreData _restoreData;
 
-    public ClearCellsCommand(BRange range)
+    public ClearCellsCommand(SheetRange range)
     {
         _range = range.Clone();
     }

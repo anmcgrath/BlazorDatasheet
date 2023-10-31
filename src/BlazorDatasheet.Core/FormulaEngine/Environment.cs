@@ -69,7 +69,7 @@ public class SheetEnvironment : IEnvironment
         return GetNumbersInSheetRange(_sheet.Range(Axis.Row, rangeAddress.Start, rangeAddress.End));
     }
 
-    private List<double> GetNumbersInSheetRange(BRange range)
+    private List<double> GetNumbersInSheetRange(SheetRange range)
     {
         var nonEmptyCells = range.GetNonEmptyCells();
         var nums = new List<double>();

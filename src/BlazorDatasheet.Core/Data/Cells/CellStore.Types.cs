@@ -29,13 +29,21 @@ public partial class CellStore
     }
 
     /// <summary>
-    /// Sets the cell type in a region, to the value specified.
+    /// Sets the cell type in a <paramref name="region"/>, to the <paramref name="type"/> specified.
     /// </summary>
     /// <param name="region"></param>
     /// <param name="type"></param>
     /// <returns></returns>
-    public void SetCellType(IRegion region, string type)
+    public void SetType(IRegion region, string type)
     {
         _sheet.Commands.ExecuteCommand(new SetTypeCommand(region, type));
     }
+
+    /// <summary>
+    /// Sets the cell type for a <paramref name="row"/> amd <paramref name="col"/>
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <returns></returns>
+    public void SetType(int row, int col, string type) => SetType(new Region(row, col), type);
 }

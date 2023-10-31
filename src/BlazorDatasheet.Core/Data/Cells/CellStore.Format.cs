@@ -39,7 +39,7 @@ public partial class CellStore
         return _formatStore.GetData(row, col).FirstOrDefault() ?? new CellFormat();
     }
 
-    internal IEnumerable<DataRegion<CellFormat>> GetOverlappingFormats(IRegion region)
+    internal IEnumerable<DataRegion<CellFormat>> GetFormatData(IRegion region)
     {
         return _formatStore.GetDataRegions(region);
     }

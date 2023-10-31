@@ -4,7 +4,7 @@ using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.Selecting;
 
-public class Selection : BRange
+public class Selection : SheetRange
 {
     private Sheet _sheet;
 
@@ -252,7 +252,7 @@ public class Selection : BRange
         SetSingle(new Region(row, col));
     }
 
-    public void Set(BRange range)
+    public void Set(SheetRange range)
     {
         _regions.Clear();
         this.EndSelecting();

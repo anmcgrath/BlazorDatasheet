@@ -68,7 +68,7 @@ public class ConditionalFormatManager
     /// <param name="conditionalFormat"></param>
     public void Apply(IRegion? region, ConditionalFormatAbstractBase conditionalFormat)
     {
-        Apply(new BRange(_sheet, region), conditionalFormat);
+        Apply(new SheetRange(_sheet, region), conditionalFormat);
     }
 
     /// <summary>
@@ -76,7 +76,7 @@ public class ConditionalFormatManager
     /// </summary>
     /// <param name="range"></param>
     /// <param name="conditionalFormat"></param>
-    public void Apply(BRange? range, ConditionalFormatAbstractBase conditionalFormat)
+    public void Apply(SheetRange? range, ConditionalFormatAbstractBase conditionalFormat)
     {
         if (range == null)
             return;

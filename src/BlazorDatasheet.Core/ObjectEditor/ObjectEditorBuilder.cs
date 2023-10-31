@@ -29,7 +29,7 @@ public class ObjectEditorBuilder<T>
                 sheet.ConditionalFormats.Apply(new ColumnRegion(i), cf);
             foreach (var validator in _properties[i].Validators)
                 sheet.Validators.AddImpl(validator, new ColumnRegion(i));
-            sheet.Cells.SetCellType(new ColumnRegion(i), _properties[i].Type);
+            sheet.Cells.SetType(new ColumnRegion(i), _properties[i].Type);
             sheet.Columns.SetColumnHeadings(i, i, _properties[i].Heading ?? _properties[i].PropertyName);
         }
 

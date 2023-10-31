@@ -24,7 +24,7 @@
         sheet.Cells[0, 0].Data = 0;
         sheet.Cells[0, 1].Data = 100;
         sheet.Cells[0, 1].Data = 200;
-        sheet.Cells.SetCellType(new RowRegion(0), "progress");
+        sheet.Cells.SetType(new RowRegion(0), "progress");
 
 
         base.OnInitialized();

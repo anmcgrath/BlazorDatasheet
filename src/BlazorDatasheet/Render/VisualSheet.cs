@@ -33,7 +33,7 @@ public class VisualSheet
         {
             InvalidateRegions(e.DirtyRegions);
             foreach (var position in _sheet
-                         .Range(e.DirtyRegions.Select(x => x.GetIntersection(_currentViewport.VisibleRegion)))
+                         .Range(e.DirtyRegions.Select(x => x.GetIntersection(_currentViewport.VisibleRegion)).ToList())
                          .Positions)
                 set.Add(position);
         }
@@ -78,7 +78,7 @@ public class VisualSheet
     /// <param name="regions"></param>
     private void RemoveRegionsFromCache(IEnumerable<IRegion> regions)
     {
-        var range = _sheet.Range(regions);
+        var range = _sheet.Range(regions.ToList());
         foreach (var cellPosition in range.Positions)
         {
             if (_visualCache.ContainsKey(cellPosition))
@@ -89,14 +89,14 @@ public class VisualSheet
     private void InvalidateRegions(IEnumerable<IRegion> regions)
     {
         if (_currentViewport == null) // only happens when we are starting up
-            InvalidateCells(_sheet.Range(regions).Positions);
+            InvalidateCells(_sheet.Range(regions.ToList()).Positions);
         else
         {
             var regionsInViewport =
                 regions.Select(x => x.GetIntersection(_currentViewport.VisibleRegion))
                        .Where(x => x != null);
 
-            var cells = _sheet.Range(regionsInViewport!).Positions;
+            var cells = _sheet.Range(regionsInViewport!.ToList()).Positions;
             InvalidateCells(cells);
         }
     }

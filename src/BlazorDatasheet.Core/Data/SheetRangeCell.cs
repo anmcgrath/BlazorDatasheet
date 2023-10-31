@@ -2,7 +2,7 @@ using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.Data;
 
-public class BRangeCell : BRange
+public class SheetRangeCell : SheetRange
 {
     public new object? Value
     {
@@ -16,7 +16,7 @@ public class BRangeCell : BRange
     /// <param name="sheet">The sheet that the range applies to</param>
     /// <param name="row">The cell's row</param>
     /// <param name="col">The cell's column</param>
-    public BRangeCell(Sheet sheet, int row, int col) : base(sheet, new Region(row, col))
+    public SheetRangeCell(Sheet sheet, int row, int col) : base(sheet, new Region(row, col))
     {
     }
 }

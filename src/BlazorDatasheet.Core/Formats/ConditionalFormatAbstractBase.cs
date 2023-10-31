@@ -15,7 +15,7 @@ public abstract class ConditionalFormatAbstractBase : IEquatable<ConditionalForm
     /// <summary>
     /// List of ranges that the format includes
     /// </summary>
-    internal readonly List<BRange> Ranges = new();
+    internal readonly List<SheetRange> Ranges = new();
 
     /// <summary>
     /// Set true if, when one cell value is recalculated, the conditional format should be re-evaluated for all cells
@@ -55,7 +55,7 @@ public abstract class ConditionalFormatAbstractBase : IEquatable<ConditionalForm
         }
     }
 
-    internal void Add(BRange range)
+    internal void Add(SheetRange range)
     {
         Ranges.Add(range);
         foreach (var position in range.Positions)
@@ -194,7 +194,7 @@ public abstract class ConditionalFormatAbstractBase : IEquatable<ConditionalForm
     }
 
 
-    internal void Remove(BRange range)
+    internal void Remove(SheetRange range)
     {
         Ranges.Remove(range);
         updatePositions();
