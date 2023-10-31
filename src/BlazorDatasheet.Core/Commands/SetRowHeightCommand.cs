@@ -27,7 +27,6 @@ public class SetRowHeightCommand : IUndoableCommand
         foreach (var old in _oldHeights)
         {
             sheet.Rows.SetRowHeightsImpl(old.start, old.end, old.height);
-            sheet.EmitRowHeightChange(old.start, old.end, old.height);
         }
         return true;
     }

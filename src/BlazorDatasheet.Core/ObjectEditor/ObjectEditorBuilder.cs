@@ -26,9 +26,9 @@ public class ObjectEditorBuilder<T>
             if (_properties[i].CellFormat != null)
                 sheet.Columns.SetColumnFormatImpl(_properties[i].CellFormat, new ColumnRegion(i));
             foreach (var cf in _properties[i].ConditionalFormats)
-                sheet.ConditionalFormatting.Apply(cf, new ColumnRegion(i));
+                sheet.ConditionalFormats.Apply(new ColumnRegion(i), cf);
             foreach (var validator in _properties[i].Validators)
-                sheet.Validators.Add(validator, new ColumnRegion(i));
+                sheet.Validators.AddImpl(validator, new ColumnRegion(i));
             sheet.Cells.SetCellType(new ColumnRegion(i), _properties[i].Type);
             sheet.Columns.SetColumnHeadings(i, i, _properties[i].Heading ?? _properties[i].PropertyName);
         }

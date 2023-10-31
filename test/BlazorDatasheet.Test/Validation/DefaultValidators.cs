@@ -46,8 +46,7 @@ public class DefaultValidators
     public void Number_Validator_Invalidates_Incorrect_Objects(object val)
     {
         var validator = new NumberValidator(true);
-        var cell = new Cell(val);
-        Assert.IsFalse(validator.IsValid(cell));
+        Assert.IsFalse(validator.IsValid(new char()));
     }
 
     [Test]

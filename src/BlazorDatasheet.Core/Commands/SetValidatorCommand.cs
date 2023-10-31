@@ -17,14 +17,14 @@ public class SetValidatorCommand : IUndoableCommand
 
     public bool Execute(Sheet sheet)
     {
-        sheet.Validators.Add(_validator, _region);
+        sheet.Validators.AddImpl(_validator, _region);
         sheet.Cells.ValidateRegion(_region);
         return true;
     }
 
     public bool Undo(Sheet sheet)
     {
-        sheet.Validators.Cut(_validator, _region);
+        sheet.Validators.Clear(_validator, _region);
         sheet.Cells.ValidateRegion(_region);
         return true;
     }

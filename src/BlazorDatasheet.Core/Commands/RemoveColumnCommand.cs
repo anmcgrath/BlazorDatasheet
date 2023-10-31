@@ -42,7 +42,7 @@ public class RemoveColumnCommand : IUndoableCommand
             return false;
 
         _cellStoreRestoreData = sheet.Cells.RemoveColAt(_columnIndex, _nColsRemoved);
-        _columnInfoRestoreData = sheet.Columns.Cut(_columnIndex, _columnIndex + _nColsRemoved - 1);
+        _columnInfoRestoreData = sheet.Columns.RemoveColumnsImpl(_columnIndex, _columnIndex + _nColsRemoved - 1);
         _validatorRestoreData = sheet.Validators.Store.RemoveCols(_columnIndex, _columnIndex + _nColsRemoved - 1);
         return sheet.RemoveColImpl(_columnIndex, _nColsRemoved);
     }

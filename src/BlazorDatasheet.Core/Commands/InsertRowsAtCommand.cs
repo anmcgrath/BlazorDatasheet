@@ -35,7 +35,7 @@ internal class InsertRowsAtCommand : IUndoableCommand
         sheet.Validators.Store.RemoveRows(_index, _index + _nRows - 1);
         sheet.Cells.RemoveRowAt(_index, _nRows);
         sheet.RemoveRowAtImpl(_index, _nRows);
-        sheet.Rows.Cut(_index, _index + _nRows - 1);
+        sheet.Rows.RemoveRowsImpl(_index, _index + _nRows - 1);
         return true;
     }
 }

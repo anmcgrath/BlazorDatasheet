@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -86,5 +87,36 @@ public class SheetTests
     {
         var sheet = new Sheet(1, 1);
         sheet[badText].Regions.Should().BeEmpty();
+    }
+
+    [Test]
+    public void BatchChanges_Batches_Changes()
+    {
+        var sheet = new Sheet(10, 10);
+        var posnsChanged = new List<CellPosition>();
+        sheet.Cells.CellsChanged += (sender, positions) =>
+        {
+            posnsChanged = positions.ToList();
+        };
+        sheet.BatchUpdates();
+        sheet.Cells.SetValue(0, 0, 0);
+        sheet.Cells.SetValue(1, 1, 1);
+        sheet.EndBatchUpdates();
+        posnsChanged.Should().HaveCount(2);
+    }
+    
+    [Test]
+    public void Cell_Changes_Emits_Cell_ChangeEvent()
+    {
+        var sheet = new Sheet(10, 10);
+        var posnsChanged = new List<CellPosition>();
+        sheet.Cells.CellsChanged += (sender, positions) =>
+        {
+            posnsChanged = positions.ToList();
+        };
+        sheet.Cells.SetValue(1, 1, 1);
+        posnsChanged.Should().HaveCount(1);
+        posnsChanged.First().col.Should().Be(1);
+        posnsChanged.First().row.Should().Be(1);
     }
 }

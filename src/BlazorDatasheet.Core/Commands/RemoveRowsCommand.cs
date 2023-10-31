@@ -42,7 +42,7 @@ public class RemoveRowsCommand : IUndoableCommand
         _nRowsRemoved = Math.Min(sheet.NumRows - _rowIndex + 1, _nRows);
 
         _cellStoreRestoreData = sheet.Cells.RemoveRowAt(_rowIndex, _nRowsRemoved);
-        _rowInfoStoreRestore = sheet.Rows.Cut(_rowIndex, _rowIndex + _nRowsRemoved - 1);
+        _rowInfoStoreRestore = sheet.Rows.RemoveRowsImpl(_rowIndex, _rowIndex + _nRowsRemoved - 1);
         _validatorRestoreData = sheet.Validators.Store.RemoveRows(_rowIndex, _rowIndex + _nRowsRemoved - 1);
         return sheet.RemoveRowAtImpl(_rowIndex, _nRowsRemoved);
     }

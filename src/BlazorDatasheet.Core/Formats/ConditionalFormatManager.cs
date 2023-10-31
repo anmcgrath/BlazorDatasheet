@@ -1,4 +1,5 @@
 ﻿using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Events;
 using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.Core.Interfaces;
@@ -18,14 +19,14 @@ public class ConditionalFormatManager
 
     public event EventHandler<ConditionalFormatPreparedEventArgs> ConditionalFormatPrepared;
 
-    public ConditionalFormatManager(Sheet sheet)
+    public ConditionalFormatManager(Sheet sheet, CellStore cellStore, RowInfoStore rowInfoStore, ColumnInfoStore columnInfoStore)
     {
         _sheet = sheet;
-        _sheet.CellsChanged += HandleCellsChanged;
-        _sheet.RowInserted += HandleRowInserted;
-        _sheet.RowRemoved += HandleRowRemoved;
-        _sheet.ColumnRemoved += HandleColRemoved;
-        _sheet.ColumnInserted += HandleColInserted;
+        cellStore.CellsChanged += HandleCellsChanged;
+        rowInfoStore.RowInserted += HandleRowInserted;
+        rowInfoStore.RowRemoved += HandleRowRemoved;
+        columnInfoStore.ColumnRemoved += HandleColRemoved;
+        columnInfoStore.ColumnInserted += HandleColInserted;
     }
 
     private void HandleRowRemoved(object? sender, RowRemovedEventArgs e)
@@ -64,17 +65,18 @@ public class ConditionalFormatManager
     /// Applies the conditional format specified by "key" to all cells in a region
     /// </summary>
     /// <param name="region"></param>
-    public void Apply(ConditionalFormatAbstractBase conditionalFormat, IRegion? region)
+    /// <param name="conditionalFormat"></param>
+    public void Apply(IRegion? region, ConditionalFormatAbstractBase conditionalFormat)
     {
-        Apply(conditionalFormat, new BRange(_sheet, region));
+        Apply(new BRange(_sheet, region), conditionalFormat);
     }
 
     /// <summary>
     /// Applies the conditional format to the region
     /// </summary>
-    /// <param name="conditionalFormat"></param>
     /// <param name="range"></param>
-    public void Apply(ConditionalFormatAbstractBase conditionalFormat, BRange? range)
+    /// <param name="conditionalFormat"></param>
+    public void Apply(BRange? range, ConditionalFormatAbstractBase conditionalFormat)
     {
         if (range == null)
             return;
@@ -150,7 +152,7 @@ public class ConditionalFormatManager
     /// <param name="region"></param>
     public void Apply(ConditionalFormatAbstractBase format, int row, int col)
     {
-        Apply(format, new Region(row, col));
+        Apply(new Region(row, col), format);
     }
 
     /// <summary>

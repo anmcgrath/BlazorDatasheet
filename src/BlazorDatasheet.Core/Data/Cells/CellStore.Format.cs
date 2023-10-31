@@ -36,11 +36,11 @@ public partial class CellStore
     /// <returns></returns>
     public CellFormat GetFormat(int row, int col)
     {
-        return _formatStore.GetDataOverlapping(row, col).FirstOrDefault() ?? new CellFormat();
+        return _formatStore.GetData(row, col).FirstOrDefault() ?? new CellFormat();
     }
 
     internal IEnumerable<DataRegion<CellFormat>> GetOverlappingFormats(IRegion region)
     {
-        return _formatStore.GetRegionsOverlapping(region);
+        return _formatStore.GetDataRegions(region);
     }
 }

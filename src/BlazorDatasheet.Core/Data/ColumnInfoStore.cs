@@ -1,5 +1,6 @@
 using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Data.Cells;
+using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Intervals;
@@ -13,7 +14,23 @@ public class ColumnInfoStore
     public double DefaultWidth { get; }
     private readonly Range1DStore<string> _headingStore = new(null);
     private readonly CumulativeRange1DStore _widthStore;
-    internal readonly NonOverlappingIntervals<CellFormat> ColFormats = new();
+    internal readonly MergeableIntervalStore<CellFormat> ColFormats = new();
+
+    /// <summary>
+    /// Fired when a column is inserted into the sheet
+    /// </summary>
+    public event EventHandler<ColumnInsertedEventArgs>? ColumnInserted;
+
+    /// <summary>
+    /// Fired when a column is removed from the sheet.
+    /// </summary>
+    public event EventHandler<ColumnRemovedEventArgs>? ColumnRemoved;
+
+    /// <summary>
+    /// Fired when a column width is changed
+    /// </summary>
+    public event EventHandler<ColumnWidthChangedEventArgs>? ColumnWidthChanged;
+
 
     public ColumnInfoStore(double defaultWidth, Sheet sheet)
     {
@@ -46,6 +63,7 @@ public class ColumnInfoStore
     internal List<(int start, int end, double width)> SetColumnWidthsImpl(int colStart, int colEnd, double width)
     {
         var restoreData = _widthStore.Set(colStart, colEnd, width);
+        ColumnWidthChanged?.Invoke(this, new ColumnWidthChangedEventArgs(colStart, colEnd, width));
         _sheet.MarkDirty(new ColumnRegion(colStart, _sheet.NumCols));
         return restoreData;
     }
@@ -85,19 +103,20 @@ public class ColumnInfoStore
     /// <param name="start"></param>
     /// <param name="end"></param>
     /// <returns></returns>
-    internal ColumnInfoRestoreData Cut(int start, int end)
+    internal ColumnInfoRestoreData RemoveColumnsImpl(int start, int end)
     {
         var restoreData = new ColumnInfoRestoreData()
         {
-            WidthsModified = _widthStore.Cut(start, end),
-            HeadingsModifed = _headingStore.Cut(start, end),
+            WidthsModified = _widthStore.Delete(start, end),
+            HeadingsModifed = _headingStore.Delete(start, end),
             ColFormatRestoreData = new RowColFormatRestoreData()
             {
-                IntervalsRemoved = ColFormats.Remove(start, end)
+                IntervalsRemoved = ColFormats.Clear(start, end)
             }
         };
 
         ColFormats.ShiftLeft(start, (end - start) + 1);
+        ColumnRemoved?.Invoke(this, new ColumnRemovedEventArgs(start, (start - end) + 1));
         _sheet.MarkDirty(new ColumnRegion(start, _sheet.NumCols));
         return restoreData;
     }
@@ -125,6 +144,7 @@ public class ColumnInfoStore
         _widthStore.InsertAt(start, n);
         _headingStore.InsertAt(start, n);
         ColFormats.ShiftRight(start, n);
+        ColumnInserted?.Invoke(this, new ColumnInsertedEventArgs(start, n));
         _sheet.MarkDirty(new ColumnRegion(start, _sheet.NumCols));
     }
 
@@ -184,8 +204,11 @@ public class ColumnInfoStore
         _widthStore.BatchSet(data.WidthsModified);
         _headingStore.BatchSet(data.HeadingsModifed);
         foreach (var removed in data.ColFormatRestoreData.IntervalsRemoved)
-            ColFormats.Remove(removed);
+            ColFormats.Clear(removed);
         ColFormats.AddRange(data.ColFormatRestoreData.IntervalsRemoved);
+        
+        foreach(var change in data.WidthsModified)
+            ColumnWidthChanged?.Invoke(this, new ColumnWidthChangedEventArgs(change.start, change.end, change.width));
     }
 
     public CellFormat? GetFormat(int column)

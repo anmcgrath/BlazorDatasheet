@@ -25,7 +25,6 @@ public class SetColumnWidthCommand : IUndoableCommand
     public bool Execute(Sheet sheet)
     {
         _oldWidths = sheet.Columns.SetColumnWidthsImpl(_colStart, _colEnd, _width);
-        sheet.EmitColumnWidthChange(_colStart, _colEnd, _width);
         return true;
     }
 
@@ -34,7 +33,6 @@ public class SetColumnWidthCommand : IUndoableCommand
         for (int i = 0; i < _oldWidths.Count; i++)
         {
             sheet.Columns.SetColumnWidthsImpl(_oldWidths[i].start, _oldWidths[i].end, _oldWidths[i].width);
-            sheet.EmitColumnWidthChange(_oldWidths[i].start, _oldWidths[i].end, _oldWidths[i].width);
         }
 
         return true;

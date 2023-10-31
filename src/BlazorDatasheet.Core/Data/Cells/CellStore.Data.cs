@@ -50,7 +50,7 @@ public partial class CellStore
         restoreData.ValidRestoreData = _validStore.Set(row, col, validationResult.IsValid);
         restoreData.ValueRestoreData = _dataStore.Set(row, col, value);
 
-        _sheet.EmitCellChanged(row, col);
+        this.EmitCellChanged(row, col);
         _sheet.MarkDirty(row, col);
 
         return restoreData;

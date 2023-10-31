@@ -20,20 +20,20 @@ public class RegionStoreTests
 
         store.GetAllDataRegions().Count().Should().Be(1);
 
-        store.GetRegionsOverlapping(r0, c0).First().Data.Should().Be(true);
-        store.GetRegionsOverlapping(r1, c0).First().Data.Should().Be(true);
-        store.GetRegionsOverlapping(r0, c1).First().Data.Should().Be(true);
-        store.GetRegionsOverlapping(r1, c1).First().Data.Should().Be(true);
+        store.GetDataRegions(r0, c0).First().Data.Should().Be(true);
+        store.GetDataRegions(r1, c0).First().Data.Should().Be(true);
+        store.GetDataRegions(r0, c1).First().Data.Should().Be(true);
+        store.GetDataRegions(r1, c1).First().Data.Should().Be(true);
 
-        store.GetDataOverlapping(r0, c0).First().Should().Be(true);
-        store.GetDataOverlapping(r1, c0).First().Should().Be(true);
-        store.GetDataOverlapping(r0, c1).First().Should().Be(true);
-        store.GetDataOverlapping(r1, c1).First().Should().Be(true);
+        store.GetData(r0, c0).First().Should().Be(true);
+        store.GetData(r1, c0).First().Should().Be(true);
+        store.GetData(r0, c1).First().Should().Be(true);
+        store.GetData(r1, c1).First().Should().Be(true);
 
-        store.GetRegionsOverlapping(r0 - 1, c0).Should().BeEmpty();
-        store.GetRegionsOverlapping(r1 + 1, c0).Should().BeEmpty();
-        store.GetRegionsOverlapping(r0, c1 + 1).Should().BeEmpty();
-        store.GetRegionsOverlapping(r1, c1 + 1).Should().BeEmpty();
+        store.GetDataRegions(r0 - 1, c0).Should().BeEmpty();
+        store.GetDataRegions(r1 + 1, c0).Should().BeEmpty();
+        store.GetDataRegions(r0, c1 + 1).Should().BeEmpty();
+        store.GetDataRegions(r1, c1 + 1).Should().BeEmpty();
     }
 
     [Test]
@@ -42,10 +42,10 @@ public class RegionStoreTests
         var store = new RegionDataStore<bool>();
         store.Add(new Region(1, 1, 1, 1), true);
 
-        store.GetRegionsOverlapping(1, 1).First().Data.Should().Be(true);
-        store.GetRegionsOverlapping(0, 1).Should().BeEmpty();
-        store.GetRegionsOverlapping(2, 1).Should().BeEmpty();
-        store.GetRegionsOverlapping(2, 2).Should().BeEmpty();
+        store.GetDataRegions(1, 1).First().Data.Should().Be(true);
+        store.GetDataRegions(0, 1).Should().BeEmpty();
+        store.GetDataRegions(2, 1).Should().BeEmpty();
+        store.GetDataRegions(2, 2).Should().BeEmpty();
     }
 
     [Test]
@@ -78,14 +78,14 @@ public class RegionStoreTests
 
          */
 
-        store.GetDataOverlapping(0, 0).Should().NotBeEmpty();
-        store.GetDataOverlapping(0, 1).Should().BeEmpty();
-        store.GetDataOverlapping(0, 4).Should().NotBeEmpty();
-        store.GetDataOverlapping(1, 0).Should().BeEmpty();
-        store.GetDataOverlapping(1, 4).Should().BeEmpty();
-        store.GetDataOverlapping(2, 4).Should().BeEmpty();
-        store.GetDataOverlapping(1, 5).Should().BeEmpty();
-        store.GetDataOverlapping(2, 5).Should().NotBeEmpty();
+        store.GetData(0, 0).Should().NotBeEmpty();
+        store.GetData(0, 1).Should().BeEmpty();
+        store.GetData(0, 4).Should().NotBeEmpty();
+        store.GetData(1, 0).Should().BeEmpty();
+        store.GetData(1, 4).Should().BeEmpty();
+        store.GetData(2, 4).Should().BeEmpty();
+        store.GetData(1, 5).Should().BeEmpty();
+        store.GetData(2, 5).Should().NotBeEmpty();
         store.GetAllDataRegions().Count().Should().Be(3);
     }
 
@@ -126,14 +126,14 @@ public class RegionStoreTests
          */
 
         store.GetAllDataRegions().Count().Should().Be(5);
-        store.GetDataOverlapping(0, 0).Should().NotBeEmpty();
-        store.GetDataOverlapping(1, 0).Should().NotBeEmpty();
-        store.GetDataOverlapping(3, 0).Should().NotBeEmpty();
-        store.GetDataOverlapping(0, 4).Should().NotBeEmpty();
-        store.GetDataOverlapping(4, 4).Should().NotBeEmpty();
-        store.GetDataOverlapping(2, 2).Should().BeEmpty();
-        store.GetDataOverlapping(6, 5).Should().BeEmpty();
-        store.GetDataOverlapping(7, 5).Should().NotBeEmpty();
+        store.GetData(0, 0).Should().NotBeEmpty();
+        store.GetData(1, 0).Should().NotBeEmpty();
+        store.GetData(3, 0).Should().NotBeEmpty();
+        store.GetData(0, 4).Should().NotBeEmpty();
+        store.GetData(4, 4).Should().NotBeEmpty();
+        store.GetData(2, 2).Should().BeEmpty();
+        store.GetData(6, 5).Should().BeEmpty();
+        store.GetData(7, 5).Should().NotBeEmpty();
     }
 
     [Test]
@@ -142,8 +142,8 @@ public class RegionStoreTests
         var store = new RegionDataStore<int>();
         store.Add(new Region(0, 0), -1);
         store.InsertRows(0, 1);
-        store.GetDataOverlapping(0, 0).Should().BeEmpty();
-        store.GetDataOverlapping(1, 0).Should().ContainSingle(x => x == -1);
+        store.GetData(0, 0).Should().BeEmpty();
+        store.GetData(1, 0).Should().ContainSingle(x => x == -1);
     }
 
     [Test]
@@ -152,7 +152,7 @@ public class RegionStoreTests
         var store = new RegionDataStore<int>();
         store.Add(new Region(0, 0), -1);
         store.InsertCols(0, 1);
-        store.GetDataOverlapping(0, 0).Should().BeEmpty();
-        store.GetDataOverlapping(0, 1).Should().ContainSingle(x => x == -1);
+        store.GetData(0, 0).Should().BeEmpty();
+        store.GetData(0, 1).Should().ContainSingle(x => x == -1);
     }
 }

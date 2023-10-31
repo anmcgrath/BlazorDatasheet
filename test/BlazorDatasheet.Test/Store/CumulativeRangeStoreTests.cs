@@ -1,4 +1,5 @@
-﻿using BlazorDatasheet.DataStructures.Store;
+﻿using System.Collections.Generic;
+using BlazorDatasheet.DataStructures.Store;
 using FluentAssertions;
 using NUnit.Framework;
 
@@ -114,7 +115,7 @@ public class CumulativeRangeStoreTests
         store.Set(2, 200);
         store.Set(3, 300);
         store.GetCumulative(3).Should().Be(defaultSize + 100 + 200);
-        store.Cut(2, 2);
+        store.Delete(2, 2);
         store.GetSize(2).Should().Be(300);
         store.GetSize(1).Should().Be(100);
         store.GetCumulative(3).Should().Be(defaultSize + 100 + 300);
@@ -124,7 +125,7 @@ public class CumulativeRangeStoreTests
     public void Cut_Range_Index_That_is_Default_Correctly_Calculates()
     {
         store.Set(1, 100);
-        store.Cut(0, 1);
+        store.Delete(0, 1);
         store.GetSize(0).Should().Be(100);
         store.GetSize(1).Should().Be(defaultSize);
         store.GetSize(2).Should().Be(defaultSize);
@@ -150,7 +151,7 @@ public class CumulativeRangeStoreTests
     {
         var changed = store.Set(2, 5, 100);
         changed.Count.Should().Be(1);
-        changed[0].stat.Should().Be(2);
+        changed[0].start.Should().Be(2);
         changed[0].end.Should().Be(5);
         changed[0].value.Should().Be(store.Default);
     }

@@ -33,7 +33,7 @@
     {
         Cell = cell;
 
-        foreach (var validator in sheet.GetValidators(cell.Row, cell.Col))
+        foreach (var validator in sheet.Validators.Get(cell.Row, cell.Col))
             if (validator is SourceValidator)
             {
                 values = ((SourceValidator)validator).ValidationSource.ToArray();

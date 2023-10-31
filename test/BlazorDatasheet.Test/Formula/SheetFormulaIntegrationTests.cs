@@ -10,13 +10,11 @@ namespace BlazorDatasheet.Test.Formula;
 public class SheetFormulaIntegrationTests
 {
     private Sheet _sheet;
-    private FormulaEngine _engine;
 
     [SetUp]
     public void TestSetup()
     {
         _sheet = new Sheet(10, 10);
-        _engine = _sheet.FormulaEngine;
     }
 
     [Test]
@@ -44,6 +42,10 @@ public class SheetFormulaIntegrationTests
     public void Formula_Calculation_Performs_When_Formula_Is_Set()
     {
         _sheet.Cells.SetValue(0, 0, 5);
+        _sheet.Cells.CellsChanged += (sender, positions) =>
+        {
+            var x = 2;
+        };
         _sheet.Cells.SetFormula(1, 1, "=A1 + 10");
         Assert.AreEqual(15, _sheet.Cells.GetValue(1, 1));
     }
@@ -120,7 +122,7 @@ public class SheetFormulaIntegrationTests
     [Test]
     public void FormulaEngine_Set_Variable_Calculates()
     {
-        _engine.SetVariable("x", 10);
+        _sheet.FormulaEngine.SetVariable("x", 10);
         _sheet.Cells.SetFormula(1, 1, "=x");
         _sheet.Cells.GetValue(1, 1).Should().Be(10);
     }

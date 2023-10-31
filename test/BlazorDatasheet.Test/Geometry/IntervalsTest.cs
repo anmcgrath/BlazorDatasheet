@@ -66,7 +66,7 @@ public class IntervalsTest
     [Test]
     public void Add_Ordered_Intervals_To_Non_Overlappying_Interval_Store_Correct()
     {
-        var store = new NonOverlappingIntervals<CellFormat>();
+        var store = new MergeableIntervalStore<CellFormat>();
         var f1 = new CellFormat()
         {
             BackgroundColor = "f1",
@@ -111,9 +111,9 @@ public class IntervalsTest
         {
             Value = 10
         };
-        var store = new NonOverlappingIntervals<SimpleMergeableData<int>>();
+        var store = new MergeableIntervalStore<SimpleMergeableData<int>>();
         store.Add(new OrderedInterval<SimpleMergeableData<int>>(0, 10, val));
-        var cuts = store.Remove(new OrderedInterval(1, 9));
+        var cuts = store.Clear(new OrderedInterval(1, 9));
         Assert.AreEqual(val, store.Get(0));
         Assert.Null(store.Get(1));
         Assert.Null(store.Get(5));
@@ -128,12 +128,12 @@ public class IntervalsTest
     [Test]
     public void Cut_Ordered_Interval_From_Non_overlapping_Store_REturns_Correct_Cuts()
     {
-        var store = new NonOverlappingIntervals<SimpleMergeableData<int>>();
+        var store = new MergeableIntervalStore<SimpleMergeableData<int>>();
         store.Add(1, 3, new SimpleMergeableData<int>(-1));
         store.Add(5, 6, new SimpleMergeableData<int>(1));
         store.Add(8, 10, new SimpleMergeableData<int>(2));
 
-        var removed = store.Remove(2, 9);
+        var removed = store.Clear(2, 9);
         removed.Count.Should().Be(3);
         removed = removed.OrderBy(x => x.Start).ToList();
         removed[0].Start.Should().Be(2);
@@ -154,7 +154,7 @@ public class IntervalsTest
     {
         var format1 = new SimpleMergeableData<string>() { Value = "f1" };
         var format2 = new SimpleMergeableData<string>() { Value = "f2" };
-        var store = new NonOverlappingIntervals<SimpleMergeableData<string>>();
+        var store = new MergeableIntervalStore<SimpleMergeableData<string>>();
         store.Add(new OrderedInterval<SimpleMergeableData<string>>(0, 2, format1));
         store.Add(new OrderedInterval<SimpleMergeableData<string>>(1, 1, format2));
         Assert.AreEqual(format1.Value, store.Get(0)?.Value);
@@ -165,7 +165,7 @@ public class IntervalsTest
     [Test]
     public void Modified_Intervals_returned_After_adding_When_Interval_Contained_InExisting()
     {
-        var store = new NonOverlappingIntervals<SimpleMergeableData<string>>();
+        var store = new MergeableIntervalStore<SimpleMergeableData<string>>();
         store.Add(0, 10, new SimpleMergeableData<string>("init")).Should().NotBeEmpty();
 
         var modified = store.Add(2, 3, new SimpleMergeableData<string>("new"));
@@ -178,7 +178,7 @@ public class IntervalsTest
     [Test]
     public void Modified_Intervals_returned_After_adding_When_Overlaps_Partially()
     {
-        var store = new NonOverlappingIntervals<SimpleMergeableData<string>>();
+        var store = new MergeableIntervalStore<SimpleMergeableData<string>>();
         store.Add(1, 3, new SimpleMergeableData<string>("init_start"))
             .Should().NotBeEmpty()
             .And.Subject.First().Data.Should().Be(default(string));
@@ -201,7 +201,7 @@ public class IntervalsTest
     [Test]
     public void Shift_Right_Shifts_To_Right_by_n()
     {
-        var store = new NonOverlappingIntervals<SimpleMergeableData<string>>();
+        var store = new MergeableIntervalStore<SimpleMergeableData<string>>();
         store.Add(0, 2, new SimpleMergeableData<string>("start"));
         store.Add(4, 5, new SimpleMergeableData<string>("mid"));
         store.Add(7, 10, new SimpleMergeableData<string>("end"));
@@ -218,30 +218,30 @@ public class IntervalsTest
     [Test]
     public void NonOverlappingStore_Start_End_Gets_Updated()
     {
-        var store = new NonOverlappingIntervals<SimpleMergeableData<string>>();
+        var store = new MergeableIntervalStore<SimpleMergeableData<string>>();
         store.Add(2, 10, new SimpleMergeableData<string>(""));
         store.Start.Should().Be(2);
         store.End.Should().Be(10);
-        store.Remove(0, 4);
+        store.Clear(0, 4);
         store.Start.Should().Be(5);
-        store.Remove(9, 11);
+        store.Clear(9, 11);
         store.End.Should().Be(8);
     }
 
     [Test]
     public void Shift_Right_Inside_Extends_Interval()
     {
-        var store = new NonOverlappingIntervals<SimpleMergeableData<string>>();
+        var store = new MergeableIntervalStore<SimpleMergeableData<string>>();
         store.Add(4, 6, new SimpleMergeableData<string>(""));
         store.ShiftRight(5, 5);
-        store.GetOverlappingIntervals(4, 4).First().Start.Should().Be(4);
-        store.GetOverlappingIntervals(4, 4).First().End.Should().Be(6 + 5);
+        store.GetIntervals(4, 4).First().Start.Should().Be(4);
+        store.GetIntervals(4, 4).First().End.Should().Be(6 + 5);
     }
 
     [Test]
     public void Shift_Left_Shifts_NonOverlaps_ByN()
     {
-        var store = new NonOverlappingIntervals<SimpleMergeableData<string>>();
+        var store = new MergeableIntervalStore<SimpleMergeableData<string>>();
         store.Add(5, 10, new SimpleMergeableData<string>());
         store.Add(15, 20, new SimpleMergeableData<string>());
         var shift = 2;

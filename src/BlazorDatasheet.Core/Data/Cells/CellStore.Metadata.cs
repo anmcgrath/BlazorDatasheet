@@ -39,7 +39,7 @@ public partial class CellStore
     /// <returns></returns>
     public object? GetMetaData(int row, int col, string name)
     {
-        var container = _metaDataStore.GetDataOverlapping(row, col).FirstOrDefault() ?? new CellMetadata();
+        var container = _metaDataStore.GetData(row, col).FirstOrDefault() ?? new CellMetadata();
         return container.GetItem(name);
     }
 }

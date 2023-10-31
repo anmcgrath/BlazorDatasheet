@@ -44,7 +44,7 @@
     <!-- Resize preview -->
     @if (IsDragging)
     {
-        var resizeWidth = Math.Max(MinResizeWidth, CellLayoutProvider.ComputeWidth(ActiveAdornerIndex, 1) + CurrentColResizeAmount);
+        var resizeWidth = Math.Max(_minResizeWidth, CellLayoutProvider.ComputeWidth(ActiveAdornerIndex, 1) + CurrentColResizeAmount);
         <BoxOverlayRenderer
             Y="0"
             Width="3"
@@ -106,7 +106,7 @@
     public int ActiveAdornerIndex { get; set; }
     public bool IsDragging { get; set; }
     public double CurrentColResizeAmount { get; set; }
-    private int MinResizeWidth = 15;
+    private int _minResizeWidth = 15;
 
     public List<OrderedInterval> _selectionIntervals { get; set; } = new();
 
@@ -117,9 +117,15 @@
             if (_sheet != null)
             {
                 _sheet.Selection.SelectingChanged -= OnSelectingChanged;
+                _sheet.Selection.SelectionChanged -= SelectionOnSelectionChanged;;
             }
             _sheet = Sheet;
-            _sheet.Selection.SelectingChanged += OnSelectingChanged;
+            if (_sheet == null)
+                return;
+            
+            _sheet.Selection.SelectingChanged += OnSelectingChanged;                
+            _sheet.Selection.SelectionChanged += SelectionOnSelectionChanged;;
+
         }
         base.OnParametersSet();
     }
@@ -161,7 +167,7 @@
         if (IsDragging)
         {
             IsDragging = false;
-            var resizeWidth = Math.Max(MinResizeWidth, CellLayoutProvider.ComputeWidth(ActiveAdornerIndex, 1) + CurrentColResizeAmount);
+            var resizeWidth = Math.Max(_minResizeWidth, CellLayoutProvider.ComputeWidth(ActiveAdornerIndex, 1) + CurrentColResizeAmount);
             Sheet.Columns.SetColumnWidth(ActiveAdornerIndex, resizeWidth);
             return true;
         }
@@ -179,9 +185,11 @@
                || Sheet!.Selection!.Regions.Any(x => x.SpansCol(col));
     }
 
-    private void OnSelectingChanged(object? sender, IRegion region) => updateIntervals();
+    private void OnSelectingChanged(object? sender, IRegion region) => UpdateIntervals();
 
-    private void updateIntervals()
+    private void SelectionOnSelectionChanged(object? sender, IEnumerable<IRegion> e) => UpdateIntervals();
+
+    private void UpdateIntervals()
     {
         StateHasChanged();
     }

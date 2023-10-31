@@ -22,9 +22,9 @@ public class VisualCell
     public VisualCell(int row, int col, Sheet sheet)
     {
         var cell = sheet.Cells.GetCell(row, col);
-        var format = cell.Formatting.Clone();
+        var format = cell.Format.Clone();
         Value = cell.GetValue();
-        var cf = sheet.ConditionalFormatting.GetFormatResult(row, col);
+        var cf = sheet.ConditionalFormats.GetFormatResult(row, col);
         if (cf != null)
             format.Merge(cf);
         Row = row;

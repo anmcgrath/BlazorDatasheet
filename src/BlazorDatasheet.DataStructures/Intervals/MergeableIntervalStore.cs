@@ -7,7 +7,7 @@ namespace BlazorDatasheet.DataStructures.Intervals;
 /// When a new interval is added, the data from that interval is merged into any existing.
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public class NonOverlappingIntervals<T> where T : IMergeable<T>
+public class MergeableIntervalStore<T> where T : IMergeable<T>
 {
     /// <summary>
     ///  The minimum value of all ranges
@@ -31,7 +31,7 @@ public class NonOverlappingIntervals<T> where T : IMergeable<T>
     /// </summary>
     public T? DefaultValue { get; }
 
-    public NonOverlappingIntervals(T? defaultValue = default(T))
+    public MergeableIntervalStore(T? defaultValue = default(T))
     {
         DefaultValue = defaultValue;
     }
@@ -88,7 +88,7 @@ public class NonOverlappingIntervals<T> where T : IMergeable<T>
         Start = Math.Min(interval.Start, Start);
         End = Math.Max(interval.End, End);
 
-        var overlapping = GetOverlappingIntervals(interval);
+        var overlapping = GetIntervals(interval);
         if (!overlapping.Any())
         {
             _Intervals.Add(interval.Start, interval);
@@ -191,12 +191,12 @@ public class NonOverlappingIntervals<T> where T : IMergeable<T>
     /// <param name="start"></param>
     /// <param name="end"></param>
     /// <returns></returns>
-    public List<OrderedInterval<T>> GetOverlappingIntervals(int start, int end)
+    public List<OrderedInterval<T>> GetIntervals(int start, int end)
     {
-        return GetOverlappingIntervals(new OrderedInterval(start, end));
+        return GetIntervals(new OrderedInterval(start, end));
     }
 
-    public List<OrderedInterval<T>> GetOverlappingIntervals(OrderedInterval interval)
+    public List<OrderedInterval<T>> GetIntervals(OrderedInterval interval)
     {
         var overlapping = new List<OrderedInterval<T>>();
 
@@ -225,9 +225,9 @@ public class NonOverlappingIntervals<T> where T : IMergeable<T>
     /// </summary>
     /// <param name="interval"></param>
     /// <returns>The ordered intervals that were removed during the process.</returns>
-    public List<OrderedInterval<T>> Remove(int start, int end)
+    public List<OrderedInterval<T>> Clear(int start, int end)
     {
-        return Remove(new OrderedInterval(start, end));
+        return Clear(new OrderedInterval(start, end));
     }
 
     /// <summary>
@@ -235,7 +235,7 @@ public class NonOverlappingIntervals<T> where T : IMergeable<T>
     /// </summary>
     /// <param name="interval"></param>
     /// <returns>The ordered intervals that were removed during the process.</returns>
-    public List<OrderedInterval<T>> Remove(OrderedInterval interval)
+    public List<OrderedInterval<T>> Clear(OrderedInterval interval)
     {
         if (!_Intervals.Any())
             return new List<OrderedInterval<T>>();
@@ -320,15 +320,15 @@ public class NonOverlappingIntervals<T> where T : IMergeable<T>
     }
 
     /// <summary>
-    /// Shifts all intervals to the right of from, to the right by n
+    /// Shifts all intervals to the right of <paramref name="from"/>, to the right by <paramref name="n"/>
     /// If from is inside an overlapping interval, the end gets extended
     /// If from is at the start of an overlapping interval, the interval is shifted right
     /// </summary>
     /// <param name="from">The position where everything to the right gets shifted right.</param>
-    /// <param name="by"></param>
+    /// <param name="n"></param>
     public void ShiftRight(int from, int n)
     {
-        var overlapping = this.GetOverlappingIntervals(from, this.End);
+        var overlapping = this.GetIntervals(from, this.End);
         // need to work backwards so we don't end up with adding keys 
         // that already exist
         for (int i = overlapping.Count - 1; i >= 0; i--)
@@ -347,14 +347,16 @@ public class NonOverlappingIntervals<T> where T : IMergeable<T>
     }
 
     /// <summary>
+    /// Shifts all intervals to the right of <paramref name="from"/>, to the left by <paramref name="n"/>
+    /// If from is inside an overlapping interval, the end gets contracted
     /// </summary>
-    /// <param name="from">The position where everything to the right gets shifted right.</param>
-    /// <param name="by"></param>
+    /// <param name="from">The position where everything to the right gets shifted left.</param>
+    /// <param name="n"></param>
     public void ShiftLeft(int from, int n)
     {
         var removed = new List<OrderedInterval<T>>();
 
-        var overlapping = this.GetOverlappingIntervals(from, this.End);
+        var overlapping = this.GetIntervals(from, this.End);
 
         for (int i = 0; i < overlapping.Count; i++)
         {
@@ -391,19 +393,6 @@ public class NonOverlappingIntervals<T> where T : IMergeable<T>
             Start = _Intervals.First().Value.Start;
             End = _Intervals.Last().Value.End;
         }
-    }
-
-    /// <summary>
-    /// Clones all intervals (including data) and returns the list of cloned intervals
-    /// </summary>
-    /// <returns></returns>
-    public IEnumerable<OrderedInterval<T>> CloneAllIntervals()
-    {
-        var clones =
-            _Intervals
-                .Values
-                .Select(x => new OrderedInterval<T>(x.Start, x.End, x.Data.Clone()));
-        return clones.ToList();
     }
 
     public void AddRange(IEnumerable<OrderedInterval<T>> intervals)

@@ -99,12 +99,12 @@
         Sheet = new Sheet(100, 100);
         Sheet.Commands.PauseHistory();
         Sheet.Cells[0, 0].Data = "Hey";
-        Sheet.AddValidator(4, 0, new NumberValidator(true));
-        Sheet.AddValidator(5, 0, new NumberValidator(false));
-        Sheet.AddValidator(1, 3, src);
-        Sheet.Cells[0, 0].Formatting = new CellFormat() { TextAlign = "center" };
-        Sheet.Cells[5, 0].Formatting = new CellFormat() { BackgroundColor = "orange" };
-        Sheet.Cells[5, 0].Formatting = new CellFormat() { BackgroundColor = "blue", ForegroundColor = "white" };
+        Sheet.Validators.Add(4, 0, new NumberValidator(true));
+        Sheet.Validators.Add(5, 0, new NumberValidator(false));
+        Sheet.Validators.Add(1, 3, src);
+        Sheet.Cells[0, 0].Format = new CellFormat() { TextAlign = "center" };
+        Sheet.Cells[5, 0].Format = new CellFormat() { BackgroundColor = "orange" };
+        Sheet.Cells[5, 0].Format = new CellFormat() { BackgroundColor = "blue", ForegroundColor = "white" };
         Sheet.Cells[1, 11].Type = "datetime";
         Sheet.Cells[1, 11].Data = DateTime.Now;
         Sheet.Cells[1, 3].Type = "select";

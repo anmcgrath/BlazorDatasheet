@@ -14,15 +14,15 @@ public static class CssUtil
     public static string GetStyledInput(IReadOnlyCell cell)
     {
         var str = new StringBuilder();
-        if (cell == null || cell.Formatting == null)
+        if (cell == null || cell.Format == null)
         {
             str.Append("background:var(--sheet-bg-color);");
             str.Append("color:var(--sheet-foreground-color)");
         }
-        else if (cell.Formatting != null)
+        else if (cell.Format != null)
         {
-            str.Append($"background:{cell.Formatting.BackgroundColor};");
-            str.Append($"color:{cell.Formatting.ForegroundColor};");
+            str.Append($"background:{cell.Format.BackgroundColor};");
+            str.Append($"color:{cell.Format.ForegroundColor};");
         }
         return str.ToString();
     }

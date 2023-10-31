@@ -34,7 +34,7 @@ public class InsertColAtCommand : IUndoableCommand
         sheet.Validators.Store.RemoveCols(_colIndex, _colIndex + _nCols - 1);
         sheet.RemoveColImpl(_colIndex, _nCols);
         sheet.Cells.RemoveColAt(_colIndex, _nCols);
-        sheet.Columns.Cut(_colIndex, _colIndex + _nCols - 1);
+        sheet.Columns.RemoveColumnsImpl(_colIndex, _colIndex + _nCols - 1);
         return true;
     }
 }

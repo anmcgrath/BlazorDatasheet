@@ -7,13 +7,13 @@ namespace BlazorDatasheet.DataStructures.Store;
 /// </summary>
 public class Range1DStore<T>
 {
-    protected readonly NonOverlappingIntervals<OverwritingValue<T>> _intervals;
+    protected readonly MergeableIntervalStore<OverwritingValue<T>> _intervals;
     private readonly T? _defaultIfNotFound;
 
     public Range1DStore(T? defaultIfNotFound)
     {
         _defaultIfNotFound = defaultIfNotFound;
-        _intervals = new NonOverlappingIntervals<OverwritingValue<T>>(new OverwritingValue<T>(defaultIfNotFound));
+        _intervals = new MergeableIntervalStore<OverwritingValue<T>>(new OverwritingValue<T>(defaultIfNotFound));
     }
 
     /// <summary>
@@ -23,7 +23,7 @@ public class Range1DStore<T>
     /// <param name="end"></param>
     /// <param name="value"></param>
     /// <returns></returns>
-    public virtual List<(int stat, int end, T value)> Set(int start, int end, T value)
+    public virtual List<(int start, int end, T value)> Set(int start, int end, T value)
     {
         var modified = _intervals.Add(start, end, new OverwritingValue<T>(value));
         return modified.Select(x => (x.Start, x.End, x.Data.Value)).ToList();
@@ -41,15 +41,15 @@ public class Range1DStore<T>
     }
 
     /// <summary>
-    /// Cuts the range from the store and returns any ranges that were removed to so so.
-    /// Shifts the remaining values to the left.
+    /// Removes the intervals between and including <paramref name="start"/> amd <paramref name="end"/>
+    /// and shifts the remaining values to the left.
     /// </summary>
     /// <param name="start"></param>
     /// <param name="end"></param>
     /// <returns></returns>
-    public virtual List<(int start, int end, T value)> Cut(int start, int end)
+    public virtual List<(int start, int end, T value)> Delete(int start, int end)
     {
-        var removed = _intervals.Remove(start, end).Select(x => (x.Start, x.End, x.Data.Value)).ToList();
+        var removed = _intervals.Clear(start, end).Select(x => (x.Start, x.End, x.Data.Value)).ToList();
         _intervals.ShiftLeft(start, (start - end) + 1);
         return removed;
     }

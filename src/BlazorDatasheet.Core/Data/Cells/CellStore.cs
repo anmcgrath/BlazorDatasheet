@@ -71,13 +71,6 @@ public partial class CellStore
             region.BottomRight.col);
     }
 
-    public void SetCell(int row, int col, Cell cell)
-    {
-        _dataStore.Set(row, col, cell.Data);
-        _formatStore.Add(new Region(row, col), cell.Formatting ?? new CellFormat());
-        _sheet.MarkDirty(row, col);
-    }
-
     /// <summary>
     /// Clears all cell values in the region
     /// </summary>
@@ -98,7 +91,7 @@ public partial class CellStore
         restoreData.FormulaRestoreData = ClearFormulaImpl(toClear).FormulaRestoreData;
 
         var affected = restoreData.GetAffectedPositions().ToList();
-        _sheet.EmitCellsChanged(affected);
+        EmitCellsChanged(affected);
         _sheet.MarkDirty(affected);
 
         _sheet.EndBatchUpdates();
@@ -186,7 +179,7 @@ public partial class CellStore
         foreach (var pt in restoreData.ValueRestoreData.DataRemoved)
         {
             _sheet.MarkDirty(pt.row, pt.col);
-            _sheet.EmitCellChanged(pt.row, pt.col);
+            EmitCellChanged(pt.row, pt.col);
         }
 
         foreach (var region in restoreData.GetAffectedRegions())

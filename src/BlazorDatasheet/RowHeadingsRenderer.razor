@@ -27,8 +27,8 @@
 @for (int rowIndex = VisibleRowStart; rowIndex < (VisibleRowStart + NVisibleRows); rowIndex++)
 {
     var row = rowIndex;
-    var heading = @Sheet.Rows.GetHeading(row) ?? (row+1).ToString();
-    <div class="sheet-row"> 
+    var heading = @Sheet.Rows.GetHeading(row) ?? (row + 1).ToString();
+    <div class="sheet-row">
         <div
             class="sheet-cell row-head @(IsActive(row) ? "row-active" : "")"
             style="height:@CellLayoutProvider.ComputeHeight(row, 1)px; 
@@ -86,30 +86,24 @@
             if (_sheet != null)
             {
                 _sheet.Selection.SelectingChanged -= OnSelectingChanged;
-                _sheet.RowInserted -= SheetOnRowInserted;
-                _sheet.RowRemoved -= SheetOnRowRemoved;
+                _sheet.Selection.SelectionChanged -= OnSelectionChanged;
             }
             _sheet = Sheet;
+            
+            if (_sheet == null)
+                return;
+            
             _sheet.Selection.SelectingChanged += OnSelectingChanged;
-            _sheet.RowInserted += SheetOnRowInserted;
-            _sheet.RowRemoved += SheetOnRowRemoved;
+            _sheet.Selection.SelectionChanged += OnSelectionChanged;
         }
         base.OnParametersSet();
     }
 
-    private async void SheetOnRowRemoved(object? sender, RowRemovedEventArgs e)
-    {
-        this.StateHasChanged();
-    }
+    private void OnSelectionChanged(object? sender, IEnumerable<IRegion> e) => UpdateIntervals();
 
-    private async void SheetOnRowInserted(object? sender, RowInsertedEventArgs e)
-    {
-        this.StateHasChanged();
-    }
-    
-    private void OnSelectingChanged(object? sender, IRegion region) => updateIntervals();
+    private void OnSelectingChanged(object? sender, IRegion region) => UpdateIntervals();
 
-    private void updateIntervals()
+    private void UpdateIntervals()
     {
         StateHasChanged();
     }

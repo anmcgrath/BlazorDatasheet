@@ -43,12 +43,12 @@ public class ConsolidatedDataStore<T> : RegionDataStore<T> where T : IEquatable<
         };
     }
 
-    public override (List<IRegion> regionsRemoved, List<IRegion> regionsAdded) Cut(IRegion region, T data)
+    public override (List<IRegion> regionsRemoved, List<IRegion> regionsAdded) Clear(IRegion region, T data)
     {
         if (!_dataMaps.ContainsKey(data))
             return (new List<IRegion>(), new List<IRegion>());
 
-        var regionsRemoved = base.Cut(region, data);
+        var regionsRemoved = base.Clear(region, data);
         foreach (var removed in regionsRemoved.regionsRemoved)
             _dataMaps[data].Remove(removed);
         foreach (var added in regionsRemoved.regionsAdded)
@@ -62,7 +62,7 @@ public class ConsolidatedDataStore<T> : RegionDataStore<T> where T : IEquatable<
     /// </summary>
     /// <param name="data"></param>
     /// <returns></returns>
-    public IEnumerable<IRegion> GetRegionsForData(T data)
+    public IEnumerable<IRegion> GetRegions(T data)
     {
         //TODO use data maps... or delete them
         // since we won't be calling this very often it doesn't have to be efficient?
@@ -82,7 +82,7 @@ public class ConsolidatedDataStore<T> : RegionDataStore<T> where T : IEquatable<
         // when new ones are added, so we assume that all existing regions are non-overlapping.
         // There is most definitely a more efficient way of doing this, because we will end up with more regions
         // than we need to.
-        var overlappingData = GetRegionsOverlapping(dataRegion.Region)
+        var overlappingData = GetDataRegions(dataRegion.Region)
             .Where(x => x.Data.Equals(dataRegion.Data))
             .ToList();
 
@@ -123,6 +123,6 @@ public class ConsolidatedDataStore<T> : RegionDataStore<T> where T : IEquatable<
     {
         // Since this is a consolidated data store, we must have only 
         // one overlapping bit of data.
-        return this.GetDataOverlapping(row, col).FirstOrDefault();
+        return this.GetData(row, col).FirstOrDefault();
     }
 }

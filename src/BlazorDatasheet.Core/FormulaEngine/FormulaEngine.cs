@@ -1,4 +1,5 @@
 ﻿using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Events.Edit;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Graph;
@@ -12,6 +13,7 @@ namespace BlazorDatasheet.Core.FormulaEngine;
 public class FormulaEngine
 {
     private readonly Sheet _sheet;
+    private readonly CellStore _cells;
     private SheetEnvironment _environment;
     private readonly FormulaParser _parser = new();
     private readonly FormulaEvaluator _evaluator;
@@ -26,11 +28,12 @@ public class FormulaEngine
 
     public bool IsCalculating { get; private set; }
 
-    public FormulaEngine(Sheet sheet)
+    public FormulaEngine(Sheet sheet, CellStore cells)
     {
         _sheet = sheet;
+        _cells = cells;
         _sheet.Editor.BeforeCellEdit += SheetOnBeforeCellEdit;
-        _sheet.CellsChanged += SheetOnCellsChanged;
+        _cells.CellsChanged += SheetOnCellsChanged;
 
         _environment = new SheetEnvironment(sheet);
         _evaluator = new FormulaEvaluator(_environment);
@@ -156,7 +159,8 @@ public class FormulaEngine
 
             if (d is RegionVertex r)
             {
-                var equalRegions = _observedRanges.GetEqualRegions(r.Region).ToList();
+                var equalRegions = _observedRanges.GetDataRegions(r.Region)
+                    .Where(x => x.Region.Equals(r.Region)).ToList();
                 if (equalRegions.Any())
                     _observedRanges.Delete(equalRegions.First());
             }
@@ -192,7 +196,6 @@ public class FormulaEngine
             }
         }
 
-        _sheet.EmitCellsChanged(changedValuePositions);
         _sheet.EndBatchUpdates();
 
         IsCalculating = false;

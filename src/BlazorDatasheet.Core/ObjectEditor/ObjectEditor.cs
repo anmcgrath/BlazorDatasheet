@@ -25,7 +25,7 @@ public class ObjectEditor<T>
         NColumns = nColumns;
         Sheet = sheet;
 
-        Sheet.CellsChanged += SheetOnCellsChanged;
+        Sheet.Cells.CellsChanged += SheetOnCellsChanged;
 
         SetPageSize(10);
     }
@@ -37,7 +37,6 @@ public class ObjectEditor<T>
             var item = (T?)Sheet.Cells.GetMetaData(pos.row, pos.col, ItemMetaDataName);
             if (item != null)
             {
-                
             }
         }
     }

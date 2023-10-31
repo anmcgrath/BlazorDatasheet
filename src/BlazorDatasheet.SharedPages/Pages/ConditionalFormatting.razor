@@ -52,8 +52,8 @@
 
         sheet.Cells.SetValues(values);
 
-        sheet.ConditionalFormatting.Apply(numberScaleConditionalFormat, new Region(0, 99, 1, 4));
-        sheet.ConditionalFormatting.Apply(checkConditionalFormat, new Region(0, 99, 0, 0));
+        sheet.ConditionalFormats.Apply(new Region(0, 99, 1, 4), numberScaleConditionalFormat);
+        sheet.ConditionalFormats.Apply(new Region(0, 99, 0, 0), checkConditionalFormat);
 
         base.OnInitialized();
     }

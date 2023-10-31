@@ -38,17 +38,17 @@ public class RegionDataStore<T> where T : IEquatable<T>
         return _tree.Search();
     }
 
-    public IEnumerable<DataRegion<T>> GetRegionsOverlapping(int row, int col)
+    public IEnumerable<DataRegion<T>> GetDataRegions(int row, int col)
     {
-        return GetRegionsOverlapping(new Region(row, col));
+        return GetDataRegions(new Region(row, col));
     }
 
     /// <summary>
     /// Returns all data regions overlapping the regions
     /// </summary>
-    public IEnumerable<DataRegion<T>> GetRegionsOverlapping(IEnumerable<IRegion> regions)
+    public IEnumerable<DataRegion<T>> GetDataRegions(IEnumerable<IRegion> regions)
     {
-        return regions.SelectMany(GetRegionsOverlapping);
+        return regions.SelectMany(GetDataRegions);
     }
 
     /// <summary>
@@ -56,15 +56,15 @@ public class RegionDataStore<T> where T : IEquatable<T>
     /// </summary>
     /// <param name="region"></param>
     /// <returns></returns>
-    public IEnumerable<DataRegion<T>> GetRegionsOverlapping(IRegion region)
+    public IEnumerable<DataRegion<T>> GetDataRegions(IRegion region)
     {
         var env = region.ToEnvelope();
         return _tree.Search(env);
     }
 
-    public IEnumerable<T> GetDataOverlapping(int row, int col)
+    public IEnumerable<T> GetData(int row, int col)
     {
-        return GetRegionsOverlapping(row, col).Select(x => x.Data);
+        return GetDataRegions(row, col).Select(x => x.Data);
     }
 
     /// <summary>
@@ -72,21 +72,10 @@ public class RegionDataStore<T> where T : IEquatable<T>
     /// </summary>
     /// <param name="region"></param>
     /// <returns></returns>
-    public IEnumerable<DataRegion<T>> GetContainedRegions(IRegion region)
+    internal IEnumerable<DataRegion<T>> GetContainedRegions(IRegion region)
     {
         return _tree.Search(region.ToEnvelope())
             .Where(x => region.Contains(x.Region));
-    }
-
-    /// <summary>
-    /// Returns the data regions that have the same area/position as the region given.
-    /// </summary>
-    /// <param name="region"></param>
-    /// <returns></returns>
-    public IEnumerable<DataRegion<T>> GetEqualRegions(IRegion region)
-    {
-        return _tree.Search(region.ToEnvelope())
-            .Where(x => region.Equals(x.Region));
     }
 
     /// <summary>
@@ -128,7 +117,7 @@ public class RegionDataStore<T> where T : IEquatable<T>
         // 3. Any regions below the index should be shifted down
         var i0 = expand ? index - 1 : index;
         IRegion region = axis == Axis.Col ? new ColumnRegion(i0, index) : new RowRegion(i0, index);
-        var intersecting = GetRegionsOverlapping(region);
+        var intersecting = GetDataRegions(region);
         var dataRegionsToAdd = new List<DataRegion<T>>();
 
         foreach (var r in intersecting)
@@ -193,7 +182,7 @@ public class RegionDataStore<T> where T : IEquatable<T>
     {
         IRegion region = axis == Axis.Col ? new ColumnRegion(start, end) : new RowRegion(start, end);
         var removed = new List<DataRegion<T>>();
-        var overlapping = GetRegionsOverlapping(region);
+        var overlapping = GetDataRegions(region);
         var newDataRegions = new List<DataRegion<T>>();
 
         foreach (var r in overlapping)
@@ -259,15 +248,15 @@ public class RegionDataStore<T> where T : IEquatable<T>
     /// <param name="rowOrCol"></param>
     /// <param name="axis"></param>
     /// <returns></returns>
-    public IEnumerable<DataRegion<T>> GetAfter(int rowOrCol, Axis axis)
+    private IEnumerable<DataRegion<T>> GetAfter(int rowOrCol, Axis axis)
     {
         switch (axis)
         {
             case Axis.Row:
-                return this.GetRegionsOverlapping(new RowRegion(rowOrCol + 1, int.MaxValue))
+                return this.GetDataRegions(new RowRegion(rowOrCol + 1, int.MaxValue))
                     .Where(x => x.Region.Top > rowOrCol);
             case Axis.Col:
-                return this.GetRegionsOverlapping(new ColumnRegion(rowOrCol + 1, int.MaxValue))
+                return this.GetDataRegions(new ColumnRegion(rowOrCol + 1, int.MaxValue))
                     .Where(x => x.Region.Left > rowOrCol);
         }
 
@@ -280,15 +269,15 @@ public class RegionDataStore<T> where T : IEquatable<T>
     /// <param name="rowOrCol"></param>
     /// <param name="axis"></param>
     /// <returns></returns>
-    public IEnumerable<DataRegion<T>> GetBefore(int rowOrCol, Axis axis)
+    private IEnumerable<DataRegion<T>> GetBefore(int rowOrCol, Axis axis)
     {
         switch (axis)
         {
             case Axis.Row:
-                return this.GetRegionsOverlapping(new RowRegion(0, rowOrCol - 1))
+                return this.GetDataRegions(new RowRegion(0, rowOrCol - 1))
                     .Where(x => x.Region.Bottom < rowOrCol);
             case Axis.Col:
-                return this.GetRegionsOverlapping(new ColumnRegion(0, rowOrCol - 1))
+                return this.GetDataRegions(new ColumnRegion(0, rowOrCol - 1))
                     .Where(x => x.Region.Right < rowOrCol);
         }
 
@@ -296,15 +285,15 @@ public class RegionDataStore<T> where T : IEquatable<T>
     }
 
     /// <summary>
-    /// Cuts the regions from overlapping data where the data is the same.
+    /// Clears the regions from overlapping data where the data is the same.
     /// Returns the regions that were removed/added in the process.
     /// </summary>
     /// <param name="region"></param>
     /// <param name="data"></param>
     /// <returns></returns>
-    public virtual (List<IRegion> regionsRemoved, List<IRegion> regionsAdded) Cut(IRegion region, T data)
+    public virtual (List<IRegion> regionsRemoved, List<IRegion> regionsAdded) Clear(IRegion region, T data)
     {
-        var overlapping = GetRegionsOverlapping(region)
+        var overlapping = GetDataRegions(region)
             .Where(x => x.Data.Equals(data));
 
         if (!overlapping.Any())
@@ -352,7 +341,7 @@ public class RegionDataStore<T> where T : IEquatable<T>
 
     public bool Any(int row, int col)
     {
-        return GetRegionsOverlapping(row, col).Any();
+        return GetDataRegions(row, col).Any();
     }
 
     public void AddRange(List<DataRegion<T>> dataRegions)

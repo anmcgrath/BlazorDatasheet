@@ -29,14 +29,26 @@ public class CumulativeRange1DStore : Range1DStore<double>
         Default = @default;
     }
 
-    public override List<(int stat, int end, double value)> Set(int start, int end, double value)
+    /// <summary>
+    /// Sets the interval data, overriding any existing.
+    /// </summary>
+    /// <param name="start"></param>
+    /// <param name="end"></param>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    public override List<(int start, int end, double value)> Set(int start, int end, double value)
     {
-        var res = base.Set(start, end, value);
+        List<(int start, int end, double value)> res = base.Set(start, end, value);
         // update cumulative positions1
         UpdateCumulativePositionsFrom(start);
         return res;
     }
 
+    /// <summary>
+    /// Returns the size of the interval [position, position]
+    /// </summary>
+    /// <param name="position"></param>
+    /// <returns></returns>
     public double GetSize(int position)
     {
         return this.Get(position);
@@ -57,7 +69,7 @@ public class CumulativeRange1DStore : Range1DStore<double>
             ClearCumulativeData(index);
         }
 
-        var intervals = _intervals.GetOverlappingIntervals(position, _intervals.End);
+        var intervals = _intervals.GetIntervals(position, _intervals.End);
         foreach (var interval in intervals)
         {
             var existingCumEnd = _cumulativeValuesAtEnd.Any();
@@ -94,13 +106,25 @@ public class CumulativeRange1DStore : Range1DStore<double>
         _cumulativeValuesAtStart.RemoveRange(fromIndex, n);
     }
 
-    public override List<(int start, int end, double value)> Cut(int start, int end)
+    /// <summary>
+    /// Removes the intervals between and including <paramref name="start"/> amd <paramref name="end"/>
+    /// and shifts the remaining values to the left.
+    /// </summary>
+    /// <param name="start"></param>
+    /// <param name="end"></param>
+    /// <returns></returns>
+    public override List<(int start, int end, double value)> Delete(int start, int end)
     {
-        var res = base.Cut(start, end);
+        var res = base.Delete(start, end);
         UpdateCumulativePositionsFrom(start);
         return res;
     }
 
+    /// <summary>
+    /// Inserts n empty intervals at the position start.
+    /// </summary>
+    /// <param name="start"></param>
+    /// <param name="n"></param>
     public override void InsertAt(int start, int n)
     {
         base.InsertAt(start, n);
@@ -127,7 +151,7 @@ public class CumulativeRange1DStore : Range1DStore<double>
 
         // if inside an overlapping interval, calculate the cumulative by seeing how far from the start it is
         // and the cell size in the interval
-        var overlapping = this._intervals.GetOverlappingIntervals(position, position).FirstOrDefault();
+        var overlapping = this._intervals.GetIntervals(position, position).FirstOrDefault();
         if (overlapping != null)
         {
             var startPosnIndex = _storedPositionStarts.BinarySearchIndexOf(overlapping.Start);
@@ -142,6 +166,12 @@ public class CumulativeRange1DStore : Range1DStore<double>
                (_storedPositionStarts[closestRightStartPosition] - position) * Default;
     }
 
+    /// <summary>
+    /// Returns the size between the start of <paramref name="start"/> and <paramref name="end"/>
+    /// </summary>
+    /// <param name="start"></param>
+    /// <param name="end"></param>
+    /// <returns></returns>
     public double GetSizeBetween(int start, int end)
     {
         var c0 = GetCumulative(start);
@@ -201,6 +231,10 @@ public class CumulativeRange1DStore : Range1DStore<double>
                (int)((cumulative - _cumulativeValuesAtStart[searchIndexStart - 1]) / Default);
     }
 
+    /// <summary>
+    /// Sets a number of intervals with data at once.
+    /// </summary>
+    /// <param name="data"></param>
     public override void BatchSet(List<(int start, int end, double data)> data)
     {
         if (!data.Any())

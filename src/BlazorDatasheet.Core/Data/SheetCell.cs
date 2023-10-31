@@ -72,7 +72,7 @@ public class SheetCell : IReadOnlyCell
         }
     }
 
-    public CellFormat? Formatting
+    public CellFormat? Format
     {
         get => _sheet.GetFormat(Row, Col);
         set => _sheet.Cells.MergeFormatImpl(new Region(Row, Col), value);

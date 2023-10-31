@@ -1,4 +1,6 @@
-﻿using BlazorDatasheet.Core.Events.Validation;
+﻿using BlazorDatasheet.Core.Commands;
+using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Events.Validation;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
@@ -7,18 +9,54 @@ namespace BlazorDatasheet.Core.Validation;
 
 public class ValidationManager
 {
-    internal ConsolidatedDataStore<int> Store { get; }
-    private readonly Dictionary<int, IDataValidator> _validators;
+    private readonly Sheet _sheet;
+    internal ConsolidatedDataStore<int> Store { get; } = new();
+    private readonly Dictionary<int, IDataValidator> _validators = new();
+
+    public ValidationManager(Sheet sheet)
+    {
+        _sheet = sheet;
+    }
 
     /// <summary>
     /// Fired when a validator is added or removed from a region(s).
     /// </summary>
     public event EventHandler<ValidatorChangedEventArgs> ValidatorChanged;
 
-    public ValidationManager()
+    /// <summary>
+    /// Add a <see cref="IDataValidator"> to a cell.
+    /// </summary>
+    /// <param name="col"></param>
+    /// <param name="validator"></param>
+    /// <param name="row"></param>
+    public void Add(int row, int col, IDataValidator validator) =>
+        Add(new Region(row, col), validator);
+
+    /// <summary>
+    /// Adds multiple validators to a region.
+    /// </summary>
+    /// <param name="region"></param>
+    /// <param name="validators"></param>
+    public void Add(IRegion region, IEnumerable<IDataValidator> validators)
     {
-        Store = new ConsolidatedDataStore<int>();
-        _validators = new Dictionary<int, IDataValidator>();
+        _sheet.Commands.BeginCommandGroup();
+        foreach (var validator in validators)
+        {
+            _sheet.Validators.Add(region, validator);
+        }
+
+        _sheet.Commands.EndCommandGroup();
+    }
+
+    /// <summary>
+    /// Add a <see cref="IDataValidator"> to a region with the <see cref="SetValidatorCommand"/>
+    /// </summary>
+    /// <param name="region"></param>
+    /// <param name="validator"></param>
+    public void Add(IRegion region, IDataValidator validator)
+    {
+        var cmd = new SetValidatorCommand(region, validator);
+        _sheet.Commands.ExecuteCommand(cmd);
     }
 
     /// <summary>
@@ -26,7 +64,7 @@ public class ValidationManager
     /// </summary>
     /// <param name="validator"></param>
     /// <param name="region"></param>
-    public void Add(IDataValidator validator, IRegion region)
+    internal void AddImpl(IDataValidator validator, IRegion region)
     {
         // if the validator already exists, find the index
         int? index = GetValidatorIndex(validator);
@@ -46,20 +84,32 @@ public class ValidationManager
     }
 
     /// <summary>
-    /// Cuts the data validator from the region
+    /// Adds the data validator to a cell position
+    /// </summary>
+    /// <param name="validator"></param>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    internal void AddImpl(IDataValidator validator, int row, int col)
+    {
+        AddImpl(validator, new Region(row, col));
+    }
+
+
+    /// <summary>
+    /// Clears the data validator from the region
     /// </summary>
     /// <param name="validator"></param>
     /// <param name="???"></param>
-    public void Cut(IDataValidator validator, IRegion region)
+    public void Clear(IDataValidator validator, IRegion region)
     {
         var index = GetValidatorIndex(validator);
         if (index == null)
             return;
 
-        var result = Store.Cut(region, index.Value);
+        var result = Store.Clear(region, index.Value);
         var validatorsRemoved = new List<IDataValidator>();
 
-        if (!Store.GetRegionsForData(index.Value).Any())
+        if (!Store.GetRegions(index.Value).Any())
         {
             validatorsRemoved.Add(_validators[index.Value]);
             _validators.Remove(index.Value);
@@ -71,17 +121,6 @@ public class ValidationManager
     }
 
     /// <summary>
-    /// Adds the data validator to a cell position
-    /// </summary>
-    /// <param name="validator"></param>
-    /// <param name="row"></param>
-    /// <param name="col"></param>
-    public void Add(IDataValidator validator, int row, int col)
-    {
-        Add(validator, new Region(row, col));
-    }
-
-    /// <summary>
     /// Returns all data validators for a cell position.
     /// </summary>
     /// <param name="row"></param>
@@ -89,7 +128,7 @@ public class ValidationManager
     /// <returns></returns>
     public IEnumerable<IDataValidator> Get(int row, int col)
     {
-        return Store.GetDataOverlapping(row, col)
+        return Store.GetData(row, col)
             .Where(x => _validators.ContainsKey(x))
             .Select(x => _validators[x]);
     }

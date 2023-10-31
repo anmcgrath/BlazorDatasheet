@@ -59,12 +59,12 @@ public class Sheet
     /// <summary>
     /// Provides functions for managing the sheet's conditional formatting
     /// </summary>
-    public ConditionalFormatManager ConditionalFormatting { get; }
+    public ConditionalFormatManager ConditionalFormats { get; }
 
     /// <summary>
     /// Manages and holds information on cell validators.
     /// </summary>
-    internal ValidationManager Validators { get; } = new();
+    public ValidationManager Validators { get; }
 
     /// <summary>
     /// Contains data, including width, on each column.
@@ -81,65 +81,14 @@ public class Sheet
     /// </summary>
     public Selection Selection { get; }
 
-    internal IDialogService Dialog { get; private set; }
+    internal IDialogService? Dialog { get; private set; }
 
     #region EVENTS
-
-    /// <summary>
-    /// Fired when a row is inserted into the sheet
-    /// </summary>
-    public event EventHandler<RowInsertedEventArgs>? RowInserted;
-
-    /// <summary>
-    /// Fired when a row is removed from the sheet.
-    /// </summary>
-    public event EventHandler<RowRemovedEventArgs>? RowRemoved;
-
-    /// <summary>
-    /// Fired when a column is inserted into the sheet
-    /// </summary>
-    public event EventHandler<ColumnInsertedEventArgs>? ColumnInserted;
-
-    /// <summary>
-    /// Fired when a column is removed from the sheet.
-    /// </summary>
-    public event EventHandler<ColumnRemovedEventArgs>? ColumnRemoved;
-
-    /// <summary>
-    /// Fired when one or more cells are changed
-    /// </summary>
-    public event EventHandler<IEnumerable<CellPosition>>? CellsChanged;
-
-    /// <summary>
-    /// Fired when a column width is changed
-    /// </summary>
-    public event EventHandler<ColumnWidthChangedEventArgs>? ColumnWidthChanged;
-
-    /// <summary>
-    /// Fired when a row height is changed.
-    /// </summary>
-    public event EventHandler<RowHeightChangedEventArgs>? RowHeightChanged;
 
     /// <summary>
     /// Fired when a portion of the sheet is marked as dirty.
     /// </summary>
     public event EventHandler<DirtySheetEventArgs>? SheetDirty;
-
-    public event EventHandler<CellsSelectedEventArgs>? CellsSelected;
-
-    public event EventHandler<CellMetaDataChangeEventArgs>? MetaDataChanged;
-
-    public event EventHandler<CellFormulaChangeEventArgs>? FormulaChanged;
-
-    /// <summary>
-    /// Fired when cell formats change
-    /// </summary>
-    public event EventHandler<FormatChangedEventArgs>? FormatsChanged;
-
-    /// <summary>
-    /// Fired when the sheet is invalidated (requires re-render).
-    /// </summary>
-    public event EventHandler<SheetInvalidateEventArgs>? SheetInvalidated;
 
     #endregion
 
@@ -148,16 +97,10 @@ public class Sheet
     /// </summary>
     private bool _isBatchingChanges;
 
-
     /// <summary>
     /// If the sheet is batching dirty regions, they are stored here.
     /// </summary>
     private List<IRegion> _dirtyRegions = new();
-
-    /// <summary>
-    /// If the sheet is batching changes, they are stored here.
-    /// </summary>
-    private HashSet<CellPosition> _cellsChanged = new();
 
     /// <summary>
     /// If the sheet is batching dirty cells, they are stored here.
@@ -170,15 +113,15 @@ public class Sheet
         Commands = new CommandManager(this);
         Selection = new Selection(this);
         Editor = new Editor(this);
+        Validators = new ValidationManager(this);
         Rows = new RowInfoStore(25, this);
         Columns = new ColumnInfoStore(105, this);
-        FormulaEngine = new FormulaEngine.FormulaEngine(this);
-        ConditionalFormatting = new ConditionalFormatManager(this);
+        FormulaEngine = new FormulaEngine.FormulaEngine(this, Cells);
+        ConditionalFormats = new ConditionalFormatManager(this, Cells, Rows, Columns);
     }
 
     public Sheet(int numRows, int numCols) : this()
     {
-        Cells = new Cells.CellStore(this);
         NumCols = numCols;
         NumRows = numRows;
     }
@@ -189,7 +132,6 @@ public class Sheet
     internal void InsertColAtImpl(int colIndex, int nCols = 1)
     {
         NumCols += nCols;
-        ColumnInserted?.Invoke(this, new ColumnInsertedEventArgs(colIndex, nCols));
     }
 
     /// <summary>
@@ -200,13 +142,7 @@ public class Sheet
     internal bool RemoveColImpl(int colIndex, int nCols = 1)
     {
         NumCols -= nCols;
-        ColumnRemoved?.Invoke(this, new ColumnRemovedEventArgs(colIndex, nCols));
         return true;
-    }
-
-    internal void EmitColumnWidthChange(int colIndex, int colEnd, double width)
-    {
-        ColumnWidthChanged?.Invoke(this, new ColumnWidthChangedEventArgs(colIndex, colEnd, width));
     }
 
     #endregion
@@ -223,21 +159,13 @@ public class Sheet
     internal bool InsertRowAtImpl(int rowIndex, int nRows = 1)
     {
         NumRows += nRows;
-        RowInserted?.Invoke(this, new RowInsertedEventArgs(rowIndex, nRows));
         return true;
     }
 
     internal bool RemoveRowAtImpl(int rowIndex, int nRows)
     {
         NumRows -= nRows;
-        RowRemoved?.Invoke(this, new RowRemovedEventArgs(rowIndex, nRows));
         return true;
-    }
-
-
-    internal void EmitRowHeightChange(int rowStart, int rowEnd, double height)
-    {
-        RowHeightChanged?.Invoke(this, new RowHeightChangedEventArgs(rowStart, rowEnd, height));
     }
 
     #endregion
@@ -306,77 +234,6 @@ public class Sheet
         return new BRange(this, regions);
     }
 
-
-    #region VALIDATION
-
-    /// <summary>
-    /// Add a <see cref="IDataValidator"> to a region.
-    /// </summary>
-    /// <param name="region"></param>
-    /// <param name="validator"></param>
-    public void AddValidator(IRegion region, IDataValidator validator)
-    {
-        var cmd = new SetValidatorCommand(region, validator);
-        Commands.ExecuteCommand(cmd);
-    }
-
-    /// <summary>
-    /// Add a <see cref="IDataValidator"> to a cell.
-    /// </summary>
-    /// <param name="col"></param>
-    /// <param name="validator"></param>
-    /// <param name="row"></param>
-    public void AddValidator(int row, int col, IDataValidator validator)
-    {
-        var cmd = new SetValidatorCommand(new Region(row, col), validator);
-        Commands.ExecuteCommand(cmd);
-    }
-
-    /// <summary>
-    /// Adds multiple validators to a region.
-    /// </summary>
-    /// <param name="region"></param>
-    /// <param name="validators"></param>
-    public void AddValidators(IRegion region, IEnumerable<IDataValidator> validators)
-    {
-        Commands.BeginCommandGroup();
-        foreach (var validator in validators)
-        {
-            AddValidator(region, validator);
-        }
-
-        Commands.EndCommandGroup();
-    }
-
-    public IEnumerable<IDataValidator> GetValidators(int cellRow, int cellCol)
-    {
-        return Validators.Get(cellRow, cellCol);
-    }
-
-    #endregion
-
-    #region DATA
-
-    internal void EmitCellsChanged(IEnumerable<CellPosition> positions)
-    {
-        if (_isBatchingChanges)
-        {
-            foreach (var pos in positions)
-                _cellsChanged.Add(pos);
-        }
-        else
-        {
-            CellsChanged?.Invoke(this, positions);
-        }
-    }
-
-    internal void EmitCellChanged(int row, int col)
-    {
-        EmitCellsChanged(new[] { new CellPosition(row, col) });
-    }
-
-    #endregion
-
     /// <summary>
     /// Mark the cells specified by positions dirty.
     /// </summary>
@@ -437,25 +294,24 @@ public class Sheet
     /// Batches dirty cell and region additions, as well as cell value changes to emit events once rather
     /// than every time a cell is dirty or a value is changed.
     /// </summary>
-    internal void BatchUpdates()
+    public void BatchUpdates()
     {
         if (!_isBatchingChanges)
         {
             _dirtyPositions.Clear();
             _dirtyRegions.Clear();
-            _cellsChanged.Clear();
         }
 
+        Cells.BatchChanges();
         _isBatchingChanges = true;
     }
 
     /// <summary>
     /// Ends the batching of dirty cells and regions, and emits the dirty sheet event.
     /// </summary>
-    internal void EndBatchUpdates()
+    public void EndBatchUpdates()
     {
-        if (_cellsChanged.Any() && _isBatchingChanges)
-            CellsChanged?.Invoke(this, _cellsChanged.AsEnumerable());
+        Cells.EndBatchChanges();
 
         // Checks for batching changes here, because the cells changed event
         // may start batching more dirty changes again from subscribers of that event.
@@ -566,11 +422,6 @@ public class Sheet
         EndBatchUpdates();
     }
 
-    internal void EmitFormatChanged(FormatChangedEventArgs args)
-    {
-        FormatsChanged?.Invoke(this, args);
-    }
-
     #endregion
 
     public string? GetRegionAsDelimitedText(IRegion inputRegion, char tabDelimiter = '\t', string newLineDelim = "\n")
@@ -621,7 +472,7 @@ public class Sheet
         return strBuilder.ToString();
     }
 
-    public void SetDialogService(IDialogService service)
+    public void SetDialogService(IDialogService? service)
     {
         Dialog = service;
     }

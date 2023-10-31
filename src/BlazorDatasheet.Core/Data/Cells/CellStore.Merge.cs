@@ -66,7 +66,7 @@ namespace BlazorDatasheet.Core.Data.Cells
         /// <param name="region"></param>
         internal void UnMergeCellsImpl(IRegion region)
         {
-            var mergedCellsInRange = _mergeStore.GetRegionsOverlapping(region).ToList();
+            var mergedCellsInRange = _mergeStore.GetDataRegions(region).ToList();
             var updateRegion = mergedCellsInRange.FirstOrDefault()?.Region;
             foreach (var merge in mergedCellsInRange)
             {
@@ -111,7 +111,7 @@ namespace BlazorDatasheet.Core.Data.Cells
         /// <returns></returns>
         public IRegion? GetMerge(int row, int col)
         {
-            var merges = _mergeStore.GetRegionsOverlapping(row, col).ToList();
+            var merges = _mergeStore.GetDataRegions(row, col).ToList();
             // There will only be one merge because we don't allow overlapping
             return merges.Any() ? merges[0].Region : null;
         }
@@ -123,7 +123,7 @@ namespace BlazorDatasheet.Core.Data.Cells
         /// <returns></returns>
         public IEnumerable<IRegion> GetMerges(IRegion region)
         {
-            return _mergeStore.GetRegionsOverlapping(region).Select(x => x.Region);
+            return _mergeStore.GetDataRegions(region).Select(x => x.Region);
         }
         
         /// <summary>
@@ -133,7 +133,7 @@ namespace BlazorDatasheet.Core.Data.Cells
         /// <returns></returns>
         public IEnumerable<IRegion> GetMerges(IEnumerable<IRegion> regions)
         {
-            return _mergeStore.GetRegionsOverlapping(regions).Select(x => x.Region);
+            return _mergeStore.GetDataRegions(regions).Select(x => x.Region);
         }
 
         /// <summary>

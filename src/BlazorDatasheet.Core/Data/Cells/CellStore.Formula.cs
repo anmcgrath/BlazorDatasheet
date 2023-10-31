@@ -1,4 +1,5 @@
 using BlazorDatasheet.Core.Commands;
+using BlazorDatasheet.Core.Events.Formula;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core;
@@ -41,7 +42,13 @@ public partial class CellStore
         restoreData.FormulaRestoreData = _formulaStore.Set(row, col, formula);
         if (formula != null)
             _sheet.FormulaEngine.AddToDependencyGraph(row, col, formula);
-        _sheet.EmitCellChanged(row, col);
+        
+        FormulaChanged?.Invoke(this,
+            new CellFormulaChangeEventArgs(row, col,
+                restoreData.FormulaRestoreData.DataRemoved.FirstOrDefault().data,
+                formula));
+        EmitCellChanged(row, col);
+        
         _sheet.MarkDirty(row, col);
         return restoreData;
     }

@@ -1,5 +1,6 @@
 using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Data.Cells;
+using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Intervals;
@@ -13,7 +14,22 @@ public class RowInfoStore
     public double DefaultHeight { get; }
     private readonly Range1DStore<string> _headingStore = new(null);
     private readonly CumulativeRange1DStore _heightStore;
-    internal readonly NonOverlappingIntervals<CellFormat> RowFormats = new();
+    internal readonly MergeableIntervalStore<CellFormat> RowFormats = new();
+
+    /// <summary>
+    /// Fired when a row is inserted into the sheet
+    /// </summary>
+    public event EventHandler<RowInsertedEventArgs>? RowInserted;
+
+    /// <summary>
+    /// Fired when a row is removed from the sheet.
+    /// </summary>
+    public event EventHandler<RowRemovedEventArgs>? RowRemoved;
+
+    /// <summary>
+    /// Fired when a row height is changed.
+    /// </summary>
+    public event EventHandler<RowHeightChangedEventArgs> RowHeightChanged;
 
     public RowInfoStore(double defaultHeight, Sheet sheet)
     {
@@ -46,6 +62,7 @@ public class RowInfoStore
     internal List<(int start, int end, double width)> SetRowHeightsImpl(int rowStart, int rowEnd, double height)
     {
         var restoreData = _heightStore.Set(rowStart, rowEnd, height);
+        RowHeightChanged?.Invoke(this, new RowHeightChangedEventArgs(rowStart, rowEnd, height));
         _sheet.MarkDirty(new RowRegion(rowStart, rowEnd));
         return restoreData;
     }
@@ -85,19 +102,20 @@ public class RowInfoStore
     /// <param name="start"></param>
     /// <param name="end"></param>
     /// <returns></returns>
-    internal RowInfoStoreRestoreData Cut(int start, int end)
+    internal RowInfoStoreRestoreData RemoveRowsImpl(int start, int end)
     {
         var res = new RowInfoStoreRestoreData()
         {
-            HeightsModified = _heightStore.Cut(start, end),
-            HeadingsModifed = _headingStore.Cut(start, end),
+            HeightsModified = _heightStore.Delete(start, end),
+            HeadingsModifed = _headingStore.Delete(start, end),
             RowFormatRestoreData = new RowColFormatRestoreData()
             {
-                IntervalsRemoved = RowFormats.Remove(start, end)
+                IntervalsRemoved = RowFormats.Clear(start, end)
             }
         };
 
         RowFormats.ShiftLeft(start, (end - start) + 1);
+        RowRemoved?.Invoke(this, new RowRemovedEventArgs(start, (start - end) + 1));
         _sheet.MarkDirty(new RowRegion(start, _sheet.NumRows));
         return res;
     }
@@ -112,6 +130,7 @@ public class RowInfoStore
         _heightStore.InsertAt(start, n);
         _headingStore.InsertAt(start, n);
         RowFormats.ShiftRight(start, n);
+        RowInserted?.Invoke(this, new RowInsertedEventArgs(start, n));
         _sheet.MarkDirty(new RowRegion(start, _sheet.NumRows));
     }
 
@@ -171,8 +190,11 @@ public class RowInfoStore
         _heightStore.BatchSet(data.HeightsModified);
         _headingStore.BatchSet(data.HeadingsModifed);
         foreach (var removed in data.RowFormatRestoreData.IntervalsRemoved)
-            RowFormats.Remove(removed);
+            RowFormats.Clear(removed);
         RowFormats.AddRange(data.RowFormatRestoreData.IntervalsRemoved);
+        
+        foreach(var change in data.HeightsModified)
+            RowHeightChanged?.Invoke(this, new RowHeightChangedEventArgs(change.start, change.end, change.height));
     }
 
     public CellFormat? GetFormat(int column)
@@ -237,7 +259,7 @@ public class RowInfoStore
     }
 
     /// <summary>
-    /// Sets the height of a column, to the height given (in px).
+    /// Sets the height of a row, to the height given (in px).
     /// </summary>
     /// <param name="rowStart"></param>
     /// <param name="rowEnd"></param>
@@ -249,21 +271,17 @@ public class RowInfoStore
     }
 
     /// <summary>
-    /// Sets the width of a column, to the width given (in px).
+    /// Sets the height of a row, to the height given (in px).
     /// </summary>
     /// <param name="row"></param>
     /// <param name="height"></param>
     /// <param name="colStart"></param>
-    public void SetRowHeight(int row, double height)
-    {
-        var cmd = new SetRowHeightCommand(row, row, height);
-        _sheet.Commands.ExecuteCommand(cmd);
-    }
+    public void SetRowHeight(int row, double height) => SetRowHeight(row, row, height);
 }
 
 internal class RowInfoStoreRestoreData
 {
-    public List<(int start, int end, double width)> HeightsModified { get; init; }
+    public List<(int start, int end, double height)> HeightsModified { get; init; }
     public List<(int start, int end, string heading)> HeadingsModifed { get; init; }
     public RowColFormatRestoreData RowFormatRestoreData { get; init; }
 }

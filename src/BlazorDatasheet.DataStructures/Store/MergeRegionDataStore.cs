@@ -17,7 +17,7 @@ public class MergeRegionDataStore<T> : RegionDataStore<T> where T : IMergeable<T
     {
         // we have the valid assumption that only one region will exist at each position
         // because we are always merging regions when adding.
-        var overlaps = this.GetRegionsOverlapping(dataRegion.Region);
+        var overlaps = this.GetDataRegions(dataRegion.Region);
         // we need to remove any parts that are overlapping, 
         // and add them back in with the data merged
 

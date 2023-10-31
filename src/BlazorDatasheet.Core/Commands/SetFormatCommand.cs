@@ -53,10 +53,10 @@ public class SetFormatCommand : IUndoableCommand
         return true;
     }
 
-    private void Restore(Sheet sheet, RowColFormatRestoreData restoreData, NonOverlappingIntervals<CellFormat> store)
+    private void Restore(Sheet sheet, RowColFormatRestoreData restoreData, MergeableIntervalStore<CellFormat> store)
     {
         foreach (var added in restoreData.IntervalsAdded)
-            store.Remove(added);
+            store.Clear(added);
         store.AddRange(restoreData.IntervalsRemoved.Where(x => x.Data != null));
         foreach (var cellRestore in restoreData.CellFormatRestoreData)
             sheet.Cells.Restore(cellRestore);
