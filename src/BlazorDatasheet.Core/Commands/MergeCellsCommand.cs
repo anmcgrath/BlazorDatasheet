@@ -69,8 +69,7 @@ public class MergeCellsCommand : IUndoableCommand
         // Restore all the merges we removed
         foreach (var removedMerge in _overridenMergedRegions)
             sheet.Cells.MergeImpl(removedMerge);
-
-        sheet.Selection.Set(_range);
+        
         // Restore all the cell values that were lost when merging
         sheet.Cells.Restore(_restoreData);
 

@@ -94,7 +94,7 @@ public class VisualSheet
         {
             var regionsInViewport =
                 regions.Select(x => x.GetIntersection(_currentViewport.VisibleRegion))
-                       .Where(x => x != null);
+                    .Where(x => x != null);
 
             var cells = _sheet.Range(regionsInViewport!.ToList()).Positions;
             InvalidateCells(cells);

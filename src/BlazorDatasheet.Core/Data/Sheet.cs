@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Data.Cells;
@@ -294,17 +295,22 @@ public class Sheet
     /// <summary>
     /// Batches dirty cell and region additions, as well as cell value changes to emit events once rather
     /// than every time a cell is dirty or a value is changed.
+    /// <returns>Returns false if the sheet was already batching, true otherwise.</returns>
     /// </summary>
-    public void BatchUpdates()
+    public bool BatchUpdates()
     {
+        var hasChanged = false;
         if (!_isBatchingChanges)
         {
             _dirtyPositions.Clear();
             _dirtyRegions.Clear();
+            hasChanged = true;
         }
 
         Cells.BatchChanges();
         _isBatchingChanges = true;
+
+        return hasChanged;
     }
 
     /// <summary>

@@ -1,11 +1,12 @@
 ﻿using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Selecting;
 using BlazorDatasheet.Core.Util;
 
 namespace BlazorDatasheet.Core.Commands;
 
 public class CommandManager
 {
-    private readonly MaxStack<IUndoableCommand> _history;
+    private readonly MaxStack<UndoCommandData> _history;
     private readonly MaxStack<ICommand> _redos;
     private Sheet _sheet;
     private CommandGroup? _currentCommandGroup;
@@ -23,7 +24,7 @@ public class CommandManager
     public CommandManager(Sheet sheet, int maxHistorySize = 50)
     {
         _sheet = sheet;
-        _history = new MaxStack<IUndoableCommand>(maxHistorySize);
+        _history = new MaxStack<UndoCommandData>(maxHistorySize);
         _redos = new MaxStack<ICommand>(maxHistorySize);
     }
 
@@ -45,7 +46,11 @@ public class CommandManager
         {
             if (!HistoryPaused && command is IUndoableCommand undoCommand)
             {
-                _history.Push(undoCommand);
+                _history.Push(new UndoCommandData()
+                {
+                    Command = undoCommand,
+                    Selection = _sheet.Selection.Clone()
+                });
             }
         }
 
@@ -67,7 +72,7 @@ public class CommandManager
     /// <returns></returns>
     public IEnumerable<ICommand> GetUndoCommands()
     {
-        return _history.GetAllItems();
+        return _history.GetAllItems().Select(x => x.Command);
     }
 
     /// <summary>
@@ -92,10 +97,13 @@ public class CommandManager
             return false;
 
         var cmd = _history.Pop()!;
-        var result = cmd.Undo(_sheet);
+        var result = cmd.Command.Undo(_sheet);
+        if (cmd.Selection != null)
+            _sheet.Selection.Set(cmd.Selection);
+
         if (!HistoryPaused && result)
         {
-            _redos.Push(cmd);
+            _redos.Push(cmd.Command);
         }
 
         return result;
@@ -113,14 +121,18 @@ public class CommandManager
         if (_redos.Peek() == null)
             return false;
 
-        var cmd = _redos.Pop();
+        var cmd = _redos.Pop()!;
         var result = cmd.Execute(_sheet);
 
         if (result)
         {
             if (!HistoryPaused && cmd is IUndoableCommand undoCommand)
             {
-                _history.Push(undoCommand);
+                _history.Push(new UndoCommandData()
+                {
+                    Command = undoCommand,
+                    Selection = _sheet.Selection.Clone()
+                });
             }
         }
 
@@ -177,4 +189,17 @@ public class CommandManager
         _currentCommandGroup = null;
         return false;
     }
+}
+
+internal class UndoCommandData
+{
+    /// <summary>
+    /// The command to undo.
+    /// </summary>
+    public IUndoableCommand Command { get; init; }
+
+    /// <summary>
+    /// The selected range at the time the command was run.
+    /// </summary>
+    public SheetRange? Selection { get; init; }
 }

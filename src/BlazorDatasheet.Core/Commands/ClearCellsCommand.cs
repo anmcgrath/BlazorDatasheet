@@ -25,7 +25,6 @@ public class ClearCellsCommand : IUndoableCommand
 
     public bool Undo(Sheet sheet)
     {
-        sheet.Selection.Set(_range);
         sheet.Cells.Restore(_restoreData);
         return true;
     }

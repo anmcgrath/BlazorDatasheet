@@ -165,7 +165,8 @@ public partial class CellStore
     /// <param name="restoreData"></param>
     internal void Restore(CellStoreRestoreData restoreData)
     {
-        _sheet.BatchUpdates();
+        var batches = _sheet.BatchUpdates();
+
         // Set formula through this function so we add the formula back in to the dependency graph
         foreach (var data in restoreData.FormulaRestoreData.DataRemoved)
             this.SetFormulaImpl(data.row, data.col, data.data);
@@ -187,7 +188,8 @@ public partial class CellStore
             _sheet.MarkDirty(region);
         }
 
-        _sheet.EndBatchUpdates();
+        if (batches) // if this is false, a higher power is batching changes.
+            _sheet.EndBatchUpdates();
     }
 
 

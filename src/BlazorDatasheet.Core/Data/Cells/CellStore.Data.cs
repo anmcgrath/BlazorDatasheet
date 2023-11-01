@@ -63,7 +63,6 @@ public partial class CellStore
     /// <returns></returns>
     public bool SetValues(IEnumerable<(int row, int col, object value)> changes)
     {
-        _sheet.BatchUpdates();
         _sheet.Commands.BeginCommandGroup();
         foreach (var change in changes)
         {
@@ -71,7 +70,6 @@ public partial class CellStore
         }
 
         _sheet.Commands.EndCommandGroup();
-        _sheet.EndBatchUpdates();
 
         return true;
     }

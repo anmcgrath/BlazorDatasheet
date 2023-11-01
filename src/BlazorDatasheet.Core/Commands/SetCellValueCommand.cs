@@ -26,7 +26,6 @@ public class SetCellValueCommand : IUndoableCommand
 
     public bool Undo(Sheet sheet)
     {
-        sheet.Selection.SetSingle(_row, _col);
         sheet.Cells.Restore(_restoreData);
         return true;
     }

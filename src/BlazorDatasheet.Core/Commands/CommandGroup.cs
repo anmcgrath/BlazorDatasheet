@@ -55,7 +55,6 @@ public class CommandGroup : IUndoableCommand
         {
             undo &= command.Undo(sheet);
         }
-
         sheet.EndBatchUpdates();
 
         return undo;
