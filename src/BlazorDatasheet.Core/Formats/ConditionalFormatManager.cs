@@ -132,11 +132,6 @@ public class ConditionalFormatManager
         }
     }
 
-    private IEnumerable<IReadOnlyCell> GetCellsInFormat(ConditionalFormat format)
-    {
-        return format.Ranges.SelectMany(x => x.GetCells());
-    }
-
     private IEnumerable<ConditionalFormatAbstractBase> GetFormatsAppliedToPosition(int row, int col)
     {
         var region = new Region(row, col);

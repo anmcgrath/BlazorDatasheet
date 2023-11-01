@@ -7,14 +7,12 @@ public interface IReadOnlyCell
 {
     T GetValue<T>();
     object? GetValue(Type t);
-    object? GetValue();
     public CellFormat Format { get; }
     public string Type { get; }
     public int Row { get; }
     public int Col { get; }
     public bool IsValid { get; }
     public string? Formula { get; }
-    public object? Data { get; }
+    public object? Value { get; }
     object? GetMetaData(string name);
-    bool HasMetaData(string name);
 }

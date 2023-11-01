@@ -27,7 +27,7 @@ public class Selection : SheetRange
     /// <summary>
     /// The current mode of selecting
     /// </summary>
-    private SelectionMode SelectingMode { get; set; }
+    private SelectionMode _selectingMode;
 
     /// <summary>
     /// The position that the selecting process was started at
@@ -59,7 +59,7 @@ public class Selection : SheetRange
     {
         this.SelectingRegion = new Region(row, col);
         this.SelectingStartPosition = new CellPosition(row, col);
-        this.SelectingMode = SelectionMode.Cell;
+        this._selectingMode = SelectionMode.Cell;
         this.SelectingRegion = ExpandRegionOverMerged(SelectingRegion);
         emitSelectingChanged();
     }
@@ -68,7 +68,7 @@ public class Selection : SheetRange
     {
         this.SelectingRegion = new ColumnRegion(col, col);
         this.SelectingStartPosition = new CellPosition(0, col);
-        this.SelectingMode = SelectionMode.Column;
+        this._selectingMode = SelectionMode.Column;
         this.SelectingRegion = ExpandRegionOverMerged(SelectingRegion);
         emitSelectingChanged();
     }
@@ -77,7 +77,7 @@ public class Selection : SheetRange
     {
         this.SelectingRegion = new RowRegion(row, row);
         this.SelectingStartPosition = new CellPosition(row, 0);
-        this.SelectingMode = SelectionMode.Row;
+        this._selectingMode = SelectionMode.Row;
         this.SelectingRegion = ExpandRegionOverMerged(SelectingRegion);
         emitSelectingChanged();
     }
@@ -87,7 +87,7 @@ public class Selection : SheetRange
         if (SelectingRegion == null)
             return;
 
-        switch (SelectingMode)
+        switch (_selectingMode)
         {
             case SelectionMode.Column:
                 SelectingRegion = new ColumnRegion(SelectingStartPosition.col, col);
@@ -162,7 +162,7 @@ public class Selection : SheetRange
     }
 
     /// <summary>
-    /// Expands the active selection so that it covers any merged cells
+    /// Expands the <paramref name="region"/> so that it covers any merged cells
     /// </summary>
     private IRegion? ExpandRegionOverMerged(IRegion? region)
     {
@@ -206,7 +206,7 @@ public class Selection : SheetRange
     /// Removes the region from the selection
     /// </summary>
     /// <param name="region"></param>
-    public void Remove(IRegion region)
+    private void Remove(IRegion region)
     {
         _regions.Remove(region);
         var newActiveRegion = _regions.LastOrDefault();

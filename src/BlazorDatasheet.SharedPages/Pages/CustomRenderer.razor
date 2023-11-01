@@ -21,9 +21,9 @@
     {
         CustomTypes.Add("progress", CellTypeDefinition.Create<TextEditorComponent, ProgressRenderer>());
         sheet = new Sheet(1, 3);
-        sheet.Cells[0, 0].Data = 0;
-        sheet.Cells[0, 1].Data = 100;
-        sheet.Cells[0, 1].Data = 200;
+        sheet.Cells[0, 0].Value = 0;
+        sheet.Cells[0, 1].Value = 100;
+        sheet.Cells[0, 1].Value = 200;
         sheet.Cells.SetType(new RowRegion(0), "progress");
 
 

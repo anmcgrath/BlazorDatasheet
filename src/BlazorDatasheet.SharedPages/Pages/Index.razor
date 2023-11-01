@@ -98,7 +98,7 @@
 
         Sheet = new Sheet(100, 100);
         Sheet.Commands.PauseHistory();
-        Sheet.Cells[0, 0].Data = "Hey";
+        Sheet.Cells[0, 0].Value = "Hey";
         Sheet.Validators.Add(4, 0, new NumberValidator(true));
         Sheet.Validators.Add(5, 0, new NumberValidator(false));
         Sheet.Validators.Add(1, 3, src);
@@ -106,11 +106,12 @@
         Sheet.Cells[5, 0].Format = new CellFormat() { BackgroundColor = "orange" };
         Sheet.Cells[5, 0].Format = new CellFormat() { BackgroundColor = "blue", ForegroundColor = "white" };
         Sheet.Cells[1, 11].Type = "datetime";
-        Sheet.Cells[1, 11].Data = DateTime.Now;
+        Sheet.Cells[1, 11].Value = DateTime.Now;
         Sheet.Cells[1, 3].Type = "select";
-        Sheet.Cells[1, 3].Data = src.ValidationSource[0];
+        Sheet.Cells[1, 3].Value = src.ValidationSource[0];
         Sheet.Cells[1, 2].Type = "boolean";
-        Sheet.Cells[1, 2].Data = false;
+        Sheet.Cells[1, 2].Value = false;
+        Sheet.Rows.SetHeadings(0, 10, "Test");
 
         Sheet.Cells[1, 1].Formula = "=A1";
         Sheet.Commands.ResumeHistory();

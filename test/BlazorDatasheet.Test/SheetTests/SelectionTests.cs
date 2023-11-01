@@ -22,7 +22,8 @@ public class SelectionManagerTests
         var selection = new Selection(_sheet);
         //Select all
         selection.SetSingle(_sheet.Region);
-        var cells = selection.GetCells().ToList();
+        var posns = selection.Positions.ToList();
+        var cells = posns.Select(x => _sheet.Cells.GetCell(x.row, x.col)).ToList();
         Assert.AreEqual(_sheet.Region.Area, cells.Count);
     }
 

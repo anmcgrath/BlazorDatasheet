@@ -1,5 +1,6 @@
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Interfaces;
+using BlazorDatasheet.Core.Metadata;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core;
 
@@ -7,7 +8,10 @@ namespace BlazorDatasheet.Core.Data;
 
 public class SheetCell : IReadOnlyCell
 {
-    private readonly Sheet _sheet;
+    public int Row { get; }
+    public int Col { get; }
+    private Sheet _sheet { get; }
+    public bool IsValid => _sheet.Cells.IsValid(Row, Col);
 
     public SheetCell(int row, int col, Sheet sheet)
     {
@@ -27,15 +31,6 @@ public class SheetCell : IReadOnlyCell
     }
 
     /// <summary>
-    /// Returns the Cell's Value
-    /// </summary>
-    /// <returns></returns>
-    public object? GetValue()
-    {
-        return GetValue<object?>();
-    }
-
-    /// <summary>
     /// Returns a cell's Value and converts to the type if possible
     /// </summary>
     /// <param name="type"></param>
@@ -44,11 +39,11 @@ public class SheetCell : IReadOnlyCell
     {
         try
         {
-            if (Data == null && type == typeof(string))
+            if (Value == null && type == typeof(string))
                 return string.Empty;
 
-            if (this.Data?.GetType() == type)
-                return Data;
+            if (this.Value?.GetType() == type)
+                return Value;
             else
             {
                 var conversionType = type;
@@ -58,12 +53,12 @@ public class SheetCell : IReadOnlyCell
                 }
 
                 if (conversionType == typeof(string))
-                    return Data?.ToString();
+                    return Value?.ToString();
 
-                if (Data is IConvertible)
-                    return Convert.ChangeType(Data, conversionType);
+                if (Value is IConvertible)
+                    return Convert.ChangeType(Value, conversionType);
 
-                return Data;
+                return Value;
             }
         }
         catch (Exception e)
@@ -72,6 +67,10 @@ public class SheetCell : IReadOnlyCell
         }
     }
 
+    /// <summary>
+    /// Gets the merged format at the cell's position. Setting the format will
+    /// merge the format with existing formats in the sheet.
+    /// </summary>
     public CellFormat? Format
     {
         get => _sheet.GetFormat(Row, Col);
@@ -84,17 +83,13 @@ public class SheetCell : IReadOnlyCell
         set => _sheet.Cells.SetCellTypeImpl(new Region(Row, Row, Col, Col), value);
     }
 
-    public int Row { get; }
-    public int Col { get; }
-    public bool IsValid => _sheet.Cells.IsValid(Row, Col);
-
     public string? Formula
     {
         get => _sheet.Cells.GetFormulaString(Row, Col);
         set => _sheet.Cells.SetFormulaImpl(Row, Col, value);
     }
 
-    public object? Data
+    public object? Value
     {
         get => _sheet.Cells.GetValue(Row, Col);
         set => _sheet.Cells.SetValueImpl(Row, Col, value);
@@ -102,11 +97,11 @@ public class SheetCell : IReadOnlyCell
 
     public object? GetMetaData(string name)
     {
-        return null;
+        return _sheet.Cells.GetMetaData(Row, Col, name);
     }
 
-    public bool HasMetaData(string name)
+    public void Clear()
     {
-        return false;
+        _sheet.Cells.ClearCellsImpl(new[] { new Region(Row, Col) });
     }
 }

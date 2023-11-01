@@ -23,7 +23,7 @@ public class VisualCell
     {
         var cell = sheet.Cells.GetCell(row, col);
         var format = cell.Format.Clone();
-        Value = cell.GetValue();
+        Value = cell.Value;
         var cf = sheet.ConditionalFormats.GetFormatResult(row, col);
         if (cf != null)
             format.Merge(cf);

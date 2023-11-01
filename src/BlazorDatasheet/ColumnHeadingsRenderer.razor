@@ -168,7 +168,7 @@
         {
             IsDragging = false;
             var resizeWidth = Math.Max(_minResizeWidth, CellLayoutProvider.ComputeWidth(ActiveAdornerIndex, 1) + CurrentColResizeAmount);
-            Sheet.Columns.SetColumnWidth(ActiveAdornerIndex, resizeWidth);
+            Sheet.Columns.SetWidth(ActiveAdornerIndex, resizeWidth);
             return true;
         }
 

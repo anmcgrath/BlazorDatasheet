@@ -16,7 +16,7 @@ public class CellLayoutProviderTests
         var provider = new CellLayoutProvider(sheet);
         Assert.AreEqual(w1, provider.ComputeWidth(1, 1));
         Assert.AreEqual(w1 * 3, provider.ComputeWidth(0, 3));
-        sheet.Columns.SetColumnWidth(1, w2);
+        sheet.Columns.SetWidth(1, w2);
         Assert.AreEqual(2 * w1 + w2, provider.ComputeWidth(0, 3));
     }
 
@@ -24,7 +24,7 @@ public class CellLayoutProviderTests
     public void Set_Column_Width_Number_Of_Cols_Correct_Width()
     {
         var sheet = new Sheet(10, 10);
-        sheet.Columns.SetColumnWidth(0, 5, 50);
+        sheet.Columns.SetWidth(0, 5, 50);
         var p = new CellLayoutProvider(sheet);
         p.ComputeWidth(0, 1).Should().Be(50);
         p.ComputeWidth(1, 1).Should().Be(50);
@@ -50,7 +50,7 @@ public class CellLayoutProviderTests
         var defaultW = sheet.Columns.DefaultWidth;
         var w2 = 40;
         var provider = new CellLayoutProvider(sheet);
-        sheet.Columns.SetColumnWidth(1, w2);
+        sheet.Columns.SetWidth(1, w2);
         sheet.Columns.InsertAt(0);
         Assert.AreEqual(defaultW, provider.ComputeWidth(1, 1));
         Assert.AreEqual(w2, provider.ComputeWidth(2, 1));
@@ -94,7 +94,7 @@ public class CellLayoutProviderTests
         var p = new CellLayoutProvider(sheet);
         p.IncludeRowHeadings = false;
         var nw = 40;
-        sheet.Columns.SetColumnWidth(1, nw);
+        sheet.Columns.SetWidth(1, nw);
         p.ComputeColumn(dw-1).Should().Be(0);
         p.ComputeColumn(dw).Should().Be(1);
         p.ComputeColumn(dw+1).Should().Be(1);

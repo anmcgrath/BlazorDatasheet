@@ -40,6 +40,22 @@ public partial class CellStore
     }
 
     /// <summary>
+    /// Sets the cell type in a <paramref name="region"/>, to the <paramref name="type"/> specified.
+    /// </summary>
+    /// <param name="region"></param>
+    /// <param name="type"></param>
+    /// <returns></returns>
+    public void SetType(IEnumerable<IRegion> regions, string type)
+    {
+        _sheet.Commands.BeginCommandGroup();
+        foreach (var region in regions)
+        {
+            _sheet.Commands.ExecuteCommand(new SetTypeCommand(region, type));
+        }
+        _sheet.Commands.EndCommandGroup();
+    }
+
+    /// <summary>
     /// Sets the cell type for a <paramref name="row"/> amd <paramref name="col"/>
     /// </summary>
     /// <param name="row"></param>

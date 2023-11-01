@@ -1,21 +1,13 @@
-using System.Diagnostics;
 using System.Text;
 using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Edit;
-using BlazorDatasheet.Core.Events;
-using BlazorDatasheet.Core.Events.Formula;
-using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.Core.Events.Visual;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Core.Selecting;
 using BlazorDatasheet.Core.Validation;
 using BlazorDatasheet.DataStructures.Geometry;
-using BlazorDatasheet.DataStructures.Intervals;
-using BlazorDatasheet.DataStructures.Store;
-using BlazorDatasheet.Formula.Core;
-using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Core.Data;
 
@@ -202,6 +194,15 @@ public class Sheet
     public SheetRange Range(IRegion region)
     {
         return Range(new List<IRegion>() { region });
+    }
+
+    /// <summary>
+    /// The <see cref="SheetRange"/> specified by the string e.g A1, B1:B4, A:B, A:A, 2:4, etc.
+    /// Multiple regions can be included by separating them with a ","
+    /// </summary>
+    public SheetRange Range(string rangeStr)
+    {
+        return new SheetRange(this, rangeStr);
     }
 
     /// <summary>
@@ -447,7 +448,7 @@ public class Sheet
             for (int col = c0; col <= c1; col++)
             {
                 var cell = Cells.GetCell(row, col);
-                var value = cell.GetValue();
+                var value = cell.Value;
                 if (value == null)
                     strBuilder.Append("");
                 else
@@ -476,10 +477,4 @@ public class Sheet
     {
         Dialog = service;
     }
-
-    /// <summary>
-    /// The <see cref="SheetRange"/> specified by the string e.g A1, B1:B4, A:B, A:A, 2:4, etc.
-    /// Multiple regions can be included by separating them with a ","
-    /// </summary>
-    public SheetRange this[string rangeString] => new(this, rangeString);
 }

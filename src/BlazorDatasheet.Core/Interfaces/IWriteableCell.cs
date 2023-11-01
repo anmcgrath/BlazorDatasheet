@@ -1,9 +1,12 @@
+using BlazorDatasheet.Core.Formats;
+
 namespace BlazorDatasheet.Core.Interfaces;
 
 public interface IWriteableCell
 {
-    public bool TrySetValue<T>(T val);
-    public bool TrySetValue(object? val, Type type);
-    T GetValue<T>();
-    object? GetValue(Type t);
+    public CellFormat Format { set; }
+    public string Type { set; }
+    public string? Formula { set; }
+    public object? Value { set; }
+    void SetMetaData(string name, object? value);
 }

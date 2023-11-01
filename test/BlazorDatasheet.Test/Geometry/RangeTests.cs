@@ -25,7 +25,7 @@ public class RangeTests
         var sheet = new Sheet(nRows, nCols);
         var sheetRange = sheet.Range(sheet.Region);
         var posns = sheetRange.Positions.ToList();
-        var cells = sheetRange.GetCells().ToList();
+        var cells = posns.Select(x => sheet.Cells.GetCell(x.row, x.col)).ToList();
         Assert.AreEqual(posns.Count, nRows * nCols);
         int i = 0;
         for (int row = 0; row < nRows; row++)
@@ -40,16 +40,6 @@ public class RangeTests
                 i++;
             }
         }
-    }
-
-    [Test]
-    public void BRange_Cell_Sets_Value_Correctly()
-    {
-        var sheet = new Sheet(2, 2);
-        var cell = sheet.Range(0, 0);
-        cell.Value = "Test";
-        Assert.AreEqual(cell.Value, "Test");
-        Assert.AreEqual(sheet.Cells.GetValue(0, 0), "Test");
     }
 
     [Test]

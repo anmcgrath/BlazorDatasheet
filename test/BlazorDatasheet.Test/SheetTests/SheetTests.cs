@@ -15,8 +15,8 @@ public class SheetTests
     {
         var sheet = new Sheet(2, 1);
         Assert.AreEqual(2, sheet.NumRows);
-        Assert.AreEqual(null, sheet.Cells.GetCell(0, 0).GetValue());
-        Assert.AreEqual(null, sheet.Cells.GetCell(1, 0).GetValue());
+        Assert.AreEqual(null, sheet.Cells.GetCell(0, 0).Value);
+        Assert.AreEqual(null, sheet.Cells.GetCell(1, 0).Value);
     }
 
     [Test]
@@ -58,20 +58,20 @@ public class SheetTests
     public void Range_String_Specification_Tests()
     {
         var sheet = new Sheet(1, 1); // size doesn't matter, could be anything
-        sheet["a1"].Regions.Should().ContainSingle(x => x.Left == 0 && x.Top == 0);
-        sheet["b2"].Regions.Should().ContainSingle(x => x.Left == 1 && x.Top == 1);
-        sheet["2a"].Regions.Should().BeEmpty();
+        sheet.Range("a1").Regions.Should().ContainSingle(x => x.Left == 0 && x.Top == 0);
+        sheet.Range("b2").Regions.Should().ContainSingle(x => x.Left == 1 && x.Top == 1);
+        sheet.Range("2a").Regions.Should().BeEmpty();
 
-        sheet["a1,b2"].Regions.Should().HaveCount(2);
+        sheet.Range("a1,b2").Regions.Should().HaveCount(2);
 
-        sheet["A1:B2"].Regions.Should()
+        sheet.Range("A1:B2").Regions.Should()
             .ContainSingle(x => x.Left == 0 && x.Right == 1 && x.Top == 0 && x.Bottom == 1);
 
-        sheet["B:C"].Regions.First().Should().BeOfType<ColumnRegion>();
-        sheet["B:C"].Regions.Should().ContainSingle(x => x.Left == 1 && x.Right == 2);
+        sheet.Range("B:C").Regions.First().Should().BeOfType<ColumnRegion>();
+        sheet.Range("B:C").Regions.Should().ContainSingle(x => x.Left == 1 && x.Right == 2);
 
-        sheet["2:3"].Regions.First().Should().BeOfType<RowRegion>();
-        sheet["2:3"].Regions.Should().ContainSingle(x => x.Top == 1 && x.Bottom == 2);
+        sheet.Range("2:3").Regions.First().Should().BeOfType<RowRegion>();
+        sheet.Range("2:3").Regions.Should().ContainSingle(x => x.Top == 1 && x.Bottom == 2);
     }
 
     [Test]
@@ -86,7 +86,7 @@ public class SheetTests
     public void Bad_Range_Strings_return_Empty(string badText)
     {
         var sheet = new Sheet(1, 1);
-        sheet[badText].Regions.Should().BeEmpty();
+        sheet.Range(badText).Regions.Should().BeEmpty();
     }
 
     [Test]

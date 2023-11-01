@@ -1,5 +1,6 @@
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Interfaces;
+using BlazorDatasheet.Core.Metadata;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 
@@ -72,19 +73,10 @@ public class SheetRange
     }
 
     /// <summary>
-    /// Return all cells in this range.
-    /// </summary>
-    /// <returns></returns>
-    public IEnumerable<IReadOnlyCell> GetCells()
-    {
-        return Positions.Select(x => Sheet.Cells.GetCell(x.row, x.col));
-    }
-
-    /// <summary>
     /// Return all non-empty cells (in terms of Value) in this range.
     /// </summary>
     /// <returns></returns>
-    public IEnumerable<IReadOnlyCell> GetNonEmptyCells()
+    internal IEnumerable<IReadOnlyCell> GetNonEmptyCells()
     {
         return this.GetNonEmptyPositions().Select(x => Sheet.Cells.GetCell(x.row, x.col));
     }
@@ -93,7 +85,7 @@ public class SheetRange
     /// Return all positions of non-empty cells (in terms of Value) in the sheet.
     /// </summary>
     /// <returns>A collection of (row, column) positions of all non-empty cells.</returns>
-    public IEnumerable<CellPosition> GetNonEmptyPositions()
+    internal IEnumerable<CellPosition> GetNonEmptyPositions()
     {
         return Regions.SelectMany(Sheet.Cells.GetNonEmptyCellPositions);
     }
@@ -125,5 +117,46 @@ public class SheetRange
     internal SheetRange Clone()
     {
         return new SheetRange(this.Sheet, _regions.Select(x => x.Clone()).ToList());
+    }
+
+    /// <summary>
+    /// Sets the sheet's selection to this range.
+    /// </summary>
+    public void Select()
+    {
+        Sheet.Selection.ClearSelections();
+        Sheet.Selection.Set(this);
+    }
+
+    public void SetMetaData(string name, object? value)
+    {
+        Sheet.BatchUpdates();
+        foreach (var cellPosition in this.Positions)
+        {
+            Sheet.Cells.SetMetaDataImpl(cellPosition.row, cellPosition.col, name, value);
+        }
+
+        Sheet.EndBatchUpdates();
+    }
+
+    /// <summary>
+    /// Set the cell type e.g "text", "boolean", "select" on the range.
+    /// </summary>
+    public string Type
+    {
+        set => Sheet.Cells.SetType(_regions, value);
+    }
+
+    public CellFormat? Format
+    {
+        set => Sheet.SetFormat(value, this);
+    }
+
+    public void AddValidator(IDataValidator validator)
+    {
+        Sheet.BatchUpdates();
+        foreach (var region in _regions)
+            Sheet.Validators.AddImpl(validator, region);
+        Sheet.EndBatchUpdates();
     }
 }

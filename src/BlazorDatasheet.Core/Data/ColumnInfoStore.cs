@@ -273,7 +273,7 @@ public class ColumnInfoStore
     /// <param name="colStart"></param>
     /// <param name="colEnd"></param>
     /// <param name="width"></param>
-    public void SetColumnWidth(int colStart, int colEnd, double width)
+    public void SetWidth(int colStart, int colEnd, double width)
     {
         var cmd = new SetColumnWidthCommand(colStart, colEnd, width);
         _sheet.Commands.ExecuteCommand(cmd);
@@ -285,13 +285,19 @@ public class ColumnInfoStore
     /// <param name="column"></param>
     /// <param name="width"></param>
     /// <param name="colStart"></param>
-    public void SetColumnWidth(int column, double width)
+    public void SetWidth(int column, double width)
     {
         var cmd = new SetColumnWidthCommand(column, column, width);
         _sheet.Commands.ExecuteCommand(cmd);
     }
 
-    public void SetColumnHeadings(int colStart, int colEnd, string heading)
+    /// <summary>
+    /// Sets the column headings from (and including) <paramref name="colStart"/> to <paramref name="colEnd"/> to <paramref name="heading"/>
+    /// </summary>
+    /// <param name="colStart"></param>
+    /// <param name="colEnd"></param>
+    /// <param name="heading"></param>
+    public void SetHeadings(int colStart, int colEnd, string heading)
     {
         _sheet.Commands.ExecuteCommand(new SetColumnHeadingsCommand(colStart, colEnd, heading));
     }

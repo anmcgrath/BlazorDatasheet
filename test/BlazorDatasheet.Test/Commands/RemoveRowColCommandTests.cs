@@ -126,8 +126,8 @@ public class RemoveRowColCommandTests
     public void Remove_Cols_Then_Undo_Restores_Widths()
     {
         var sheet = new Sheet(5, 5);
-        sheet.Columns.SetColumnWidth(1, 100);
-        sheet.Columns.SetColumnWidth(2, 200);
+        sheet.Columns.SetWidth(1, 100);
+        sheet.Columns.SetWidth(2, 200);
         sheet.Columns.RemoveAt(1, 2);
         sheet.Commands.Undo();
         sheet.Columns.GetWidth(1).Should().Be(100);
@@ -138,8 +138,8 @@ public class RemoveRowColCommandTests
     public void Remove_Rows_Then_Undo_Restores_Heights()
     {
         var sheet = new Sheet(5, 5);
-        sheet.Rows.SetRowHeight(1, 100);
-        sheet.Rows.SetRowHeight(2, 200);
+        sheet.Rows.SetHeight(1, 100);
+        sheet.Rows.SetHeight(2, 200);
         sheet.Rows.RemoveAt(1, 2);
         sheet.Commands.Undo();
         sheet.Rows.GetHeight(1).Should().Be(100);

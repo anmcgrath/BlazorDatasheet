@@ -192,8 +192,8 @@ public class RowInfoStore
         foreach (var removed in data.RowFormatRestoreData.IntervalsRemoved)
             RowFormats.Clear(removed);
         RowFormats.AddRange(data.RowFormatRestoreData.IntervalsRemoved);
-        
-        foreach(var change in data.HeightsModified)
+
+        foreach (var change in data.HeightsModified)
             RowHeightChanged?.Invoke(this, new RowHeightChangedEventArgs(change.start, change.end, change.height));
     }
 
@@ -264,7 +264,7 @@ public class RowInfoStore
     /// <param name="rowStart"></param>
     /// <param name="rowEnd"></param>
     /// <param name="height"></param>
-    public void SetRowHeight(int rowStart, int rowEnd, double height)
+    public void SetHeight(int rowStart, int rowEnd, double height)
     {
         var cmd = new SetRowHeightCommand(rowStart, rowEnd, height);
         _sheet.Commands.ExecuteCommand(cmd);
@@ -276,7 +276,18 @@ public class RowInfoStore
     /// <param name="row"></param>
     /// <param name="height"></param>
     /// <param name="colStart"></param>
-    public void SetRowHeight(int row, double height) => SetRowHeight(row, row, height);
+    public void SetHeight(int row, double height) => SetHeight(row, row, height);
+
+    /// <summary>
+    /// Sets the row headings from (and including) <paramref name="rowStart"/> to <paramref name="rowEnd"/> to <paramref name="heading"/>
+    /// </summary>
+    /// <param name="rowStart"></param>
+    /// <param name="rowEnd"></param>
+    /// <param name="heading"></param>
+    public void SetHeadings(int rowStart, int rowEnd, string heading)
+    {
+        _sheet.Commands.ExecuteCommand(new SetRowHeadingsCommand(rowStart, rowEnd, heading));
+    }
 }
 
 internal class RowInfoStoreRestoreData

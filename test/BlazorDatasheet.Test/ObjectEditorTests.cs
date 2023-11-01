@@ -33,10 +33,10 @@ public class ObjectEditorTests
             .WithProperty(x => x.PropBool);
 
         var editor = builder.Build();
-        editor.Sheet.Cells[0, 0].Data.Should().Be(1);
-        editor.Sheet.Cells[0, 1].Data.Should().Be("obj1");
-        editor.Sheet.Cells[1, 0].Data.Should().Be(2);
-        editor.Sheet.Cells[1, 1].Data.Should().Be("obj2");
+        editor.Sheet.Cells[0, 0].Value.Should().Be(1);
+        editor.Sheet.Cells[0, 1].Value.Should().Be("obj1");
+        editor.Sheet.Cells[1, 0].Value.Should().Be(2);
+        editor.Sheet.Cells[1, 1].Value.Should().Be("obj2");
     }
 }
 
