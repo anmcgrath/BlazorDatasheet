@@ -189,8 +189,8 @@ public class RowInfoStore
     {
         _heightStore.BatchSet(data.HeightsModified);
         _headingStore.BatchSet(data.HeadingsModifed);
-        foreach (var removed in data.RowFormatRestoreData.IntervalsRemoved)
-            RowFormats.Clear(removed);
+        foreach (var added in data.RowFormatRestoreData.IntervalsAdded)
+            RowFormats.Clear(added);
         RowFormats.AddRange(data.RowFormatRestoreData.IntervalsRemoved);
 
         foreach (var change in data.HeightsModified)

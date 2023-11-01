@@ -203,8 +203,8 @@ public class ColumnInfoStore
     {
         _widthStore.BatchSet(data.WidthsModified);
         _headingStore.BatchSet(data.HeadingsModifed);
-        foreach (var removed in data.ColFormatRestoreData.IntervalsRemoved)
-            ColFormats.Clear(removed);
+        foreach (var added in data.ColFormatRestoreData.IntervalsAdded)
+            ColFormats.Clear(added);
         ColFormats.AddRange(data.ColFormatRestoreData.IntervalsRemoved);
         
         foreach(var change in data.WidthsModified)
