@@ -17,7 +17,7 @@
     </ol>
 </p>
 
-<div style="height:500px; width: 500px; overflow-y: scroll">
+<div>
     <Datasheet
         Icons="iconDictionary"
         Sheet="sheet">
@@ -38,7 +38,7 @@
 
     protected override void OnInitialized()
     {
-        sheet = new Sheet(30, 5);
+        sheet = new Sheet(15, 5);
         var numberScaleConditionalFormat = new NumberScaleConditionalFormat(Color.YellowGreen, Color.IndianRed);
         var checkConditionalFormat = new CustomCheckConditionalFormat("check");
 

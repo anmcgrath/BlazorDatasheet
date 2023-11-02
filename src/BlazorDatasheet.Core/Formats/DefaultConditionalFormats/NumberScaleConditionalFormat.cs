@@ -17,7 +17,7 @@ public class NumberScaleConditionalFormat : ConditionalFormatAbstractBase
     {
         _colorStart = colorStart;
         _colorEnd = colorEnd;
-        ComputeLUT(50);
+        ComputeLUT(20);
         this.IsShared = true;
     }
 
