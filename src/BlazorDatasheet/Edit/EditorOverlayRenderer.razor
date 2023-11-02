@@ -10,7 +10,7 @@
 
 @if (IsEditing)
 {
-    <div style="position:absolute; @GetEditorSizeStyling()">
+    <div id="editor" style="position:absolute; @GetEditorSizeStyling()">
         <DynamicComponent
             Type="@ActiveEditorType"
             Parameters="@GetDynamicEditorParameters()"
