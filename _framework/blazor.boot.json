@@ -7,7 +7,7 @@
   "linkerEnabled": true,
   "resources": {
     "assembly": {
-      "BlazorDatasheet.Core.dll": "sha256-5EqnW4+1od72bTuFcSi3Emwws8m\/HTVQ2bOeVymMqgE=",
+      "BlazorDatasheet.Core.dll": "sha256-mWNsOGMaqfoah3ZmXJh3w5oNkjqHO9hip1Q4bkuLaEY=",
       "BlazorDatasheet.DataStructures.dll": "sha256-tKQ2mNbrHzU9GnVjr1JM1XBR\/5fhoR2NG\/jMEzIAGNU=",
       "BlazorDatasheet.dll": "sha256-GtPCqH2H4BFjuCrLMqSg9infasu7tUfU2LY8XqzDBP8=",
       "BlazorDatasheet.Formula.Core.dll": "sha256-esP7mGFkIe94iL58RazQwqYou6Gy5P48xCdOjbMFtWM=",
