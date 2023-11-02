@@ -47,7 +47,7 @@ public class RemoveRowColCommandTests
     public void Remove_Row_Then_Undo_Restores_Formatting()
     {
         var sheet = new Sheet(3, 3);
-        sheet.SetFormat(new CellFormat() { BackgroundColor = "red" }, sheet.Range(1, 1));
+        sheet.SetFormat(sheet.Range(1, 1), new CellFormat() { BackgroundColor = "red" });
         sheet.Rows.RemoveAt(1);
         sheet.Commands.Undo();
         Assert.AreEqual("red", sheet.GetFormat(1, 1)?.BackgroundColor);
@@ -76,7 +76,7 @@ public class RemoveRowColCommandTests
          3 - | - | - | -
          */
         var sheet = new Sheet(4, 4);
-        sheet.SetFormat(new CellFormat() { BackgroundColor = "red" }, sheet.Range(new RowRegion(1, 2)));
+        sheet.SetFormat(sheet.Range(new RowRegion(1, 2)), new CellFormat() { BackgroundColor = "red" });
         sheet.Rows.RemoveAt(1);
         Assert.AreEqual(new CellFormat(), sheet.GetFormat(0, 0));
         Assert.AreEqual("red", sheet.GetFormat(1, 0)?.BackgroundColor);
@@ -111,7 +111,7 @@ public class RemoveRowColCommandTests
            3 - | r | r | -
          */
         var sheet = new Sheet(4, 4);
-        sheet.SetFormat(new CellFormat() { BackgroundColor = "red" }, sheet.Range(new ColumnRegion(1, 2)));
+        sheet.SetFormat(sheet.Range(new ColumnRegion(1, 2)), new CellFormat() { BackgroundColor = "red" });
         sheet.Columns.RemoveAt(1);
         Assert.AreEqual(new CellFormat(), sheet.GetFormat(0, 0));
         Assert.AreEqual("red", sheet.GetFormat(0, 1)?.BackgroundColor);

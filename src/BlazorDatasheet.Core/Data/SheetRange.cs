@@ -149,7 +149,7 @@ public class SheetRange
 
     public CellFormat? Format
     {
-        set => Sheet.SetFormat(value, this);
+        set => Sheet.SetFormat(this, value);
     }
 
     public void AddValidator(IDataValidator validator)

@@ -412,9 +412,9 @@ public class Sheet
     /// <summary>
     /// Sets the format for a particular range
     /// </summary>
-    /// <param name="cellFormat"></param>
     /// <param name="range"></param>
-    public void SetFormat(CellFormat cellFormat, SheetRange range)
+    /// <param name="cellFormat"></param>
+    public void SetFormat(SheetRange range, CellFormat cellFormat)
     {
         BatchUpdates();
 

@@ -21,7 +21,7 @@ public class FormattingTests
     public void Set_Format_On_Cells_Then_Undo_Correct()
     {
         var format = new CellFormat() { BackgroundColor = "red" };
-        _sheet.SetFormat(format,_sheet.Range(0, 0));
+        _sheet.SetFormat(_sheet.Range(0, 0), format);
         Assert.AreEqual(format.BackgroundColor, _sheet.GetFormat(0, 0)?.BackgroundColor);
         // Test the cell next to it to ensure it hasn't changed format
         Assert.AreNotEqual(format.BackgroundColor, _sheet.GetFormat(0, 1)?.BackgroundColor);
@@ -35,7 +35,7 @@ public class FormattingTests
     public void Set_Col_Format_On_Cells_Then_Undo_Correct()
     {
         var format = new CellFormat() { BackgroundColor = "red" };
-        _sheet.SetFormat(format, _sheet.Range(new ColumnRegion(2, 4)));
+        _sheet.SetFormat(_sheet.Range(new ColumnRegion(2, 4)), format);
         _sheet.Commands.Undo();
         _sheet.GetFormat(2, 2)?.BackgroundColor?.Should().BeNull();
     }
@@ -44,7 +44,7 @@ public class FormattingTests
     public void Set_Row_Format_On_Cells_Then_Undo_Correct()
     {
         var format = new CellFormat() { BackgroundColor = "red" };
-        _sheet.SetFormat(format, _sheet.Range(new RowRegion(2, 4)));
+        _sheet.SetFormat(_sheet.Range(new RowRegion(2, 4)), format);
         _sheet.Commands.Undo();
         _sheet.GetFormat(2, 2)?.BackgroundColor?.Should().BeNull();
     }
@@ -57,8 +57,8 @@ public class FormattingTests
         var cellRange = _sheet.Range(new Region(2, 4, 2, 4));
         var colRange = _sheet.Range(new ColumnRegion(2));
         
-        _sheet.SetFormat(cellFormat, cellRange);
-        _sheet.SetFormat(colFormat, colRange);
+        _sheet.SetFormat(cellRange, cellFormat);
+        _sheet.SetFormat(colRange, colFormat);
 
         _sheet.GetFormat(2, 3)?.BackgroundColor.Should().Be(cellFormat.BackgroundColor);
     }
@@ -68,7 +68,7 @@ public class FormattingTests
     public void Apply_Col_Format_Sets_Format_Correctly()
     {
         var format = new CellFormat() { BackgroundColor = "red" };
-        _sheet.SetFormat(format, _sheet.Range(new ColumnRegion(0)));
+        _sheet.SetFormat(_sheet.Range(new ColumnRegion(0)), format);
         Assert.AreEqual(format.BackgroundColor, _sheet.GetFormat(0, 0)?.BackgroundColor);
         Assert.AreEqual(format.BackgroundColor, _sheet.GetFormat(9, 0)?.BackgroundColor);
         Assert.AreEqual(format.BackgroundColor, _sheet.GetFormat(100, 0)?.BackgroundColor);
@@ -81,8 +81,8 @@ public class FormattingTests
     {
         var cellFormat = new CellFormat() { BackgroundColor = "blue" };
         var colFormat = new CellFormat() { BackgroundColor = "red" };
-        _sheet.SetFormat(cellFormat, _sheet.Range(2, 4, 2, 2));
-        _sheet.SetFormat(colFormat, _sheet.Range(new ColumnRegion(2)));
+        _sheet.SetFormat(_sheet.Range(2, 4, 2, 2), cellFormat);
+        _sheet.SetFormat(_sheet.Range(new ColumnRegion(2)), colFormat);
         _sheet.GetFormat(2, 2)?.BackgroundColor.Should().Be("red");
         _sheet.Commands.Undo();
         _sheet.GetFormat(2, 2)?.BackgroundColor.Should().Be("blue");
@@ -92,7 +92,7 @@ public class FormattingTests
     public void Apply_Row_Format_Sets_Format_Correctly()
     {
         var format = new CellFormat() { BackgroundColor = "red" };
-        _sheet.SetFormat(format, _sheet.Range(new RowRegion(1)));
+        _sheet.SetFormat(_sheet.Range(new RowRegion(1)), format);
         Assert.AreEqual(format.BackgroundColor, _sheet.GetFormat(1, 0)?.BackgroundColor);
         Assert.AreEqual(format.BackgroundColor, _sheet.GetFormat(1, 9)?.BackgroundColor);
         Assert.AreEqual(format.BackgroundColor, _sheet.GetFormat(1, 100)?.BackgroundColor);
@@ -107,12 +107,12 @@ public class FormattingTests
         var rowFormat = new CellFormat() { BackgroundColor = "blue" };
         var rowRange = _sheet.Range(new RowRegion(1));
         var colRange = _sheet.Range(new ColumnRegion(1));
-        _sheet.SetFormat(colFormat, colRange);
-        _sheet.SetFormat(rowFormat, rowRange);
+        _sheet.SetFormat(colRange, colFormat);
+        _sheet.SetFormat(rowRange, rowFormat);
         // The overlapping cell (at 1, 1) should have the row format
         Assert.AreEqual(rowFormat.BackgroundColor, _sheet.GetFormat(1, 1)?.BackgroundColor);
         // Set the column format over it
-        _sheet.SetFormat(colFormat, colRange);
+        _sheet.SetFormat(colRange, colFormat);
         // The overlapping cell (1, 1) should have the col format
         Assert.AreEqual(colFormat.BackgroundColor, _sheet.GetFormat(1, 1)?.BackgroundColor);
     }
@@ -123,8 +123,8 @@ public class FormattingTests
         // Checks a bug that was found when the row formats apply over each other
         var format1 = new CellFormat() { BackgroundColor = "red" };
         var format2 = new CellFormat() { BackgroundColor = "blue" };
-        _sheet.SetFormat(format1, _sheet.Range(new RowRegion(0, 2)));
-        _sheet.SetFormat(format2, _sheet.Range(new RowRegion(1)));
+        _sheet.SetFormat(_sheet.Range(new RowRegion(0, 2)), format1);
+        _sheet.SetFormat(_sheet.Range(new RowRegion(1)), format2);
 
         // Check every cell in row 0 and 2 have format 1 bg color
         var r0cells = _sheet.Cells.GetCellsInRegion(new RowRegion(0));
@@ -144,8 +144,8 @@ public class FormattingTests
     {
         var f1 = new CellFormat() { BackgroundColor = "red" };
         var f2 = new CellFormat() { BackgroundColor = "blue" };
-        _sheet.SetFormat(f1, _sheet.Range(new ColumnRegion(2)));
-        _sheet.SetFormat(f2, _sheet.Range(new RowRegion(2)));
+        _sheet.SetFormat(_sheet.Range(new ColumnRegion(2)), f1);
+        _sheet.SetFormat(_sheet.Range(new RowRegion(2)), f2);
         _sheet.Columns.InsertAt(0);
         _sheet.Rows.InsertRowAt(0);
         _sheet.GetFormat(0, 2)?.BackgroundColor?.Should().BeNullOrEmpty();

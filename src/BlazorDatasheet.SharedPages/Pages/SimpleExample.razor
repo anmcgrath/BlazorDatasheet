@@ -18,8 +18,8 @@
         Sheet="sheet"/>
 
 </div>
-<button @onclick="@(() => sheet.SetFormat(new CellFormat() { BackgroundColor = "red" }, sheet.Selection))">Set format to red</button>
-<button @onclick="@(() => sheet.SetFormat(new CellFormat() { BackgroundColor = "blue" }, sheet.Selection))">Set format to blue</button>
+<button @onclick="@(() => sheet.SetFormat(sheet.Selection, new CellFormat() { BackgroundColor = "red" }))">Set format to red</button>
+<button @onclick="@(() => sheet.SetFormat(sheet.Selection, new CellFormat() { BackgroundColor = "blue" }))">Set format to blue</button>
 
 
 @code{
