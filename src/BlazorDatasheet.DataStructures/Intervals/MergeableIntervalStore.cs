@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using BlazorDatasheet.DataStructures.Search;
 
 namespace BlazorDatasheet.DataStructures.Intervals;
@@ -92,21 +93,21 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
         if (!overlapping.Any())
         {
             _Intervals.Add(interval.Start, interval);
+            UpdateStartEndPositions();
             return new List<OrderedInterval<T>>()
             {
                 new OrderedInterval<T>(interval.Start, interval.End, DefaultValue)
             };
-
         }
 
         // Handle when interval extends before the first overlapping interval
         if (interval.Start < overlapping.First().Start)
             _Intervals.Add(interval.Start,
-                           new OrderedInterval<T>(interval.Start, overlapping.First().Start - 1, interval.Data));
+                new OrderedInterval<T>(interval.Start, overlapping.First().Start - 1, interval.Data));
         // Handle when interval extends after the last overlapping interval
         if (interval.End > overlapping.Last().End)
             _Intervals.Add(overlapping.Last().End + 1,
-                           new OrderedInterval<T>(overlapping.Last().End + 1, interval.End, interval.Data));
+                new OrderedInterval<T>(overlapping.Last().End + 1, interval.End, interval.Data));
 
         var modified = new List<OrderedInterval<T>>();
 
@@ -182,6 +183,7 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
                     oi.End + 1, new OrderedInterval<T>(oi.End + 1, overlapping[i + 1].Start - 1, interval.Data));
         }
 
+        UpdateStartEndPositions();
         return modified;
     }
 
@@ -297,10 +299,10 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
         if (splitRight != null)
         {
             removed.Add(new OrderedInterval<T>(interval.Start, Math.Min(interval.End, splitRight.End),
-                                               splitRight.Data.Clone()));
+                splitRight.Data.Clone()));
             _Intervals.Remove(splitRight.Start);
             _Intervals.Add(splitRight.Start,
-                           new OrderedInterval<T>(splitRight.Start, interval.Start - 1, splitRight.Data));
+                new OrderedInterval<T>(splitRight.Start, interval.Start - 1, splitRight.Data));
         }
 
         if (splitLeft != null)
@@ -309,7 +311,7 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
             {
                 _Intervals.Remove(splitLeft.Start);
                 removed.Add(new OrderedInterval<T>(Math.Max(splitLeft.Start, interval.Start), interval.End,
-                                                   splitLeft.Data.Clone()));
+                    splitLeft.Data.Clone()));
             }
 
             _Intervals.Add(interval.End + 1, new OrderedInterval<T>(interval.End + 1, splitLeft.End, splitLeft.Data));
@@ -328,7 +330,7 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
     /// <param name="n"></param>
     public void ShiftRight(int from, int n)
     {
-        var overlapping = this.GetIntervals(from, this.End);
+        var overlapping = this.GetIntervals(from, Math.Max(this.End, from));
         // need to work backwards so we don't end up with adding keys 
         // that already exist
         for (int i = overlapping.Count - 1; i >= 0; i--)
@@ -356,7 +358,7 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
     {
         var removed = new List<OrderedInterval<T>>();
 
-        var overlapping = this.GetIntervals(from, this.End);
+        var overlapping = this.GetIntervals(from, Math.Max(from, this.End));
 
         for (int i = 0; i < overlapping.Count; i++)
         {
