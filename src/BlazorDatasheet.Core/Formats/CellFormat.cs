@@ -78,7 +78,7 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>
             this.BackgroundColor = format.BackgroundColor;
         if (!string.IsNullOrEmpty(format.ForegroundColor))
             this.ForegroundColor = format.ForegroundColor;
-        if (!string.IsNullOrEmpty(format.BackgroundColor))
+        if (!string.IsNullOrEmpty(format.FontWeight))
             this.FontWeight = format.FontWeight;
         if (!string.IsNullOrEmpty(format.TextAlign))
             this.TextAlign = format.TextAlign;

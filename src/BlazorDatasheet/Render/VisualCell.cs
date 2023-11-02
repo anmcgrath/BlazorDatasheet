@@ -66,10 +66,12 @@ public class VisualCell
         if (format == null)
             return string.Empty;
 
-        var foreGroundVar = isCellValid ? "--sheet-foreground-color" : "--invalid-cell-foreground-color";
+        var foregroundColor = isCellValid
+            ? (format?.ForegroundColor ?? "var(--sheet-foreground-color)")
+            : ("var(--invalid-cell-foreground-color)");
         var sb = new StringBuilder();
         sb.Append($"background-color:{format?.BackgroundColor ?? "var(--sheet-bg-color)"};");
-        sb.Append($"color:{format?.ForegroundColor ?? $"var({foreGroundVar})"};");
+        sb.Append($"color:{foregroundColor};");
         sb.Append($"font-weight:{format?.FontWeight ?? "var(--sheet-font-weight)"};");
 
         if (format?.BackgroundColor == null)

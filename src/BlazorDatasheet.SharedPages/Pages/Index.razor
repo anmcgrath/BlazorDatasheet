@@ -103,7 +103,7 @@
         Sheet.Validators.Add(5, 0, new NumberValidator(false));
         Sheet.Validators.Add(1, 3, src);
         
-        Sheet.Cells[0, 0].Format = new CellFormat() { TextAlign = "center" };
+        Sheet.Cells[0, 0].Format = new CellFormat() { TextAlign = "right", FontWeight = "bold"};
         Sheet.Cells[5, 0].Format = new CellFormat() { BackgroundColor = "orange" };
         Sheet.Cells[6, 0].Format = new CellFormat() { BackgroundColor = "blue", ForegroundColor = "white" };
         Sheet.Cells[1, 11].Type = "datetime";
