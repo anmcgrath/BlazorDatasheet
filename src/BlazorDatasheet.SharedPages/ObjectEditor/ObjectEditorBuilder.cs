@@ -1,7 +1,5 @@
 using System.Linq.Expressions;
 using BlazorDatasheet.Core.Data;
-using BlazorDatasheet.Core.Formats;
-using BlazorDatasheet.Core.Formats.DefaultConditionalFormats;
 using BlazorDatasheet.Core.Util;
 using BlazorDatasheet.DataStructures.Geometry;
 
@@ -11,6 +9,7 @@ public class ObjectEditorBuilder<T>
 {
     private readonly IQueryable<T> _dataSource;
     private List<ObjectPropertyBuilder<T>> _properties = new();
+    private Func<T, string> _rowHeadingSelector = x => null;
     private int _pageSize = 10;
 
     public ObjectEditorBuilder(IQueryable<T> dataSource)
@@ -37,6 +36,7 @@ public class ObjectEditorBuilder<T>
         return new ObjectEditor<T>(sheet,
             _pageSize,
             _dataSource,
+            _rowHeadingSelector,
             (i, o) => _properties[i].GetPropertyValue(o)!,
             (i, o, v) => _properties[i].SetPropertyValue(o, v),
             _properties.Count);
@@ -64,6 +64,12 @@ public class ObjectEditorBuilder<T>
     public ObjectEditorBuilder<T> WithPageSize(int pageSize)
     {
         _pageSize = pageSize;
+        return this;
+    }
+    
+    public ObjectEditorBuilder<T> WithRowHeadingSelector(Func<T, string> rowHeadingSelector)
+    {
+        _rowHeadingSelector = rowHeadingSelector;
         return this;
     }
 }

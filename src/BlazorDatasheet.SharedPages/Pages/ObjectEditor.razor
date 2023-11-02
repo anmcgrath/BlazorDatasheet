@@ -7,14 +7,15 @@
 
 <PageTitle>Object editor</PageTitle>
 
-<h1>Object Editor Builder</h1>
+<h1>Object Editor</h1>
 
-<p>We can build an editor that will edit properties of a list of objects.</p>
+<p>This example shows one method of using metadata and cell change events to create an object property editor for a set of objects.</p>
+
+<p>In this example we have a datasource of 100 people and set up a page size of 10. When the page is changed, the Sheet data is overidden from the new data.</p>
 
 <Datasheet
     @ref="dataSheet1"
     CustomCellTypeDefinitions="CustomTypes"
-    ShowRowHeadings="false"
     Sheet="editor.Sheet">
 </Datasheet>
 
@@ -36,10 +37,11 @@
         var r = new Random();
         for (int i = 0; i < 100; i++)
         {
-            People.Add(new Person() { FirstName = "Person " + i, LastName = "LastName " + i, Age = (r.Next(90) + 10).ToString() });
+            People.Add(new Person() { Id = i + 1, FirstName = "Person " + i, LastName = "LastName " + i, Age = (r.Next(90) + 10).ToString() });
         }
 
         var builder = new ObjectEditorBuilder<Person>(new EnumerableQuery<Person>(People))
+            .WithRowHeadingSelector(x => x.Id.ToString())
             .WithPageSize(10)
             .WithProperty(x => x.FirstName)
             .WithProperty(x => x.LastName)

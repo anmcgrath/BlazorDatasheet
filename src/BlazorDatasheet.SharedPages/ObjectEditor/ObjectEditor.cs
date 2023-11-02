@@ -8,6 +8,7 @@ namespace BlazorDatasheet.Core.ObjectEditor;
 public class ObjectEditor<T>
 {
     private readonly IQueryable<T> _dataSource;
+    private readonly Func<T, string> _rowHeadingSelector;
     private readonly Func<int, T, object> _valueColumnSelector;
     private readonly Action<int, T, object> _valueColumnSetter;
     private readonly ObjectEditorBuilder<T> _builder;
@@ -23,11 +24,13 @@ public class ObjectEditor<T>
     internal ObjectEditor(Sheet sheet,
         int pageSize,
         IQueryable<T> dataSource,
+        Func<T, string> rowHeadingSelector,
         Func<int, T, object> valueColumnSelector,
         Action<int, T, object> valueColumnSetter,
         int nColumns)
     {
         _dataSource = dataSource;
+        _rowHeadingSelector = rowHeadingSelector;
         _valueColumnSelector = valueColumnSelector;
         _valueColumnSetter = valueColumnSetter;
         NColumns = nColumns;
@@ -77,6 +80,7 @@ public class ObjectEditor<T>
 
         for (int i = 0; i < items.Count; i++)
         {
+            Sheet.Rows.SetHeadings(i, i, _rowHeadingSelector(items[i]));
             for (int j = 0; j < NColumns; j++)
             {
                 var data = _valueColumnSelector(j, items[i]);
