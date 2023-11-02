@@ -1,10 +1,22 @@
-using BlazorDatasheet.Interfaces;
+using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Edit;
+using BlazorDatasheet.Core.Interfaces;
 using Microsoft.AspNetCore.Components;
 
 namespace BlazorDatasheet.Edit;
 
 public abstract class BaseEditor : ComponentBase, ICellEditor
 {
+    [Parameter] public string Value { get; set; }
+
+    [Parameter] public EventCallback<string> OnValueChanged { get; set; }
+
+    protected string CurrentValue
+    {
+        get => Value;
+        set => OnValueChanged.InvokeAsync(value);
+    }
+
     public event EventHandler? RequestCancelEdit;
     public event EventHandler? RequestAcceptEdit;
 
@@ -18,23 +30,22 @@ public abstract class BaseEditor : ComponentBase, ICellEditor
     /// </summary>
     protected ElementReference InputRef = new ElementReference();
 
-    public virtual void BeforeEdit(IReadOnlyCell cell)
+    public virtual void BeforeEdit(IReadOnlyCell cell, Sheet sheet)
     {
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (FocusRequested)
+        if (FocusRequested && firstRender)
         {
             // If the editor component doesn't have a focusable UI element,
             // then trying to focus it will throw an error.
             // This check determines whether the InputRef has been set
             if (!EqualityComparer<ElementReference>.Default.Equals(InputRef, default(ElementReference)))
             {
+                FocusRequested = false;
                 await InputRef.FocusAsync();
             }
-
-            FocusRequested = false;
         }
 
         await base.OnAfterRenderAsync(firstRender);
@@ -45,21 +56,16 @@ public abstract class BaseEditor : ComponentBase, ICellEditor
         FocusRequested = true;
     }
 
-    public virtual bool CanAcceptEdit() => true;
-
-    public virtual bool CanCancelEdit() => true;
-
-    public virtual object? GetValue() 
-    {
-        return default;
-    }
-
-    public abstract void BeginEdit(EditEntryMode entryMode, IReadOnlyCell cell, string key);
+    public abstract void BeginEdit(EditEntryMode entryMode, string? editValue, string key);
 
     public virtual bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
     {
         return false;
     }
+    
 
-    public void Render() => StateHasChanged();
+    public virtual object? GetValue()
+    {
+        return default;
+    }
 }

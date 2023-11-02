@@ -45,15 +45,16 @@
     font-size: .8rem;
     box-sizing: border-box;
     position: relative;
-    display: inline-block;
-    border-left: var(--sheet-border-style);
-    border-top: var(--sheet-border-style);
+    display: block;
     white-space: nowrap;
 }
 
 .sheet-fixed-height {
     overflow-y: scroll;
-    overflow-x: visible;
+}
+
+.sheet-fixed-width {
+    overflow-x: scroll;
 }
 
 .sheet-dynamic-height {
@@ -61,18 +62,17 @@
 }
 
 .sheet-cell {
-    display: inline-block;
-    height: 100%;
     user-select: none;
     -moz-user-select: none;
-    border-right: var(--sheet-border-style);
-    border-bottom: var(--sheet-border-style);
     -webkit-user-select: none;
+    padding: 0;
+    display: inline-block;
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
 .sheet-row {
     padding: 0;
-    height: 25px;
 }
 
 .col-sticky {
@@ -80,6 +80,10 @@
     position: sticky;
     top: 0;
     z-index: 2;
+}
+
+.col-nonsticky {
+    border-bottom: var(--sheet-border-style);
 }
 
 .row-sticky {
@@ -105,12 +109,15 @@
 
 .column-head {
     background: var(--col-header-bg-color) !important;
+    border-right: var(--sheet-border-style);
+    border-top: var(--sheet-border-style);
     color: var(--headers-foreground-color);
+    height: 100%;
 }
 
 .column-active {
     background: var(--active-header-bg-color) !important;
-    border-bottom-width: 1px;
+    border-bottom-width: 2px;
     border-bottom-color: var(--selection-border-color);
     border-bottom-style: solid;
 }
@@ -118,6 +125,8 @@
 .row-head {
     background: var(--row-header-bg-color) !important;
     border-right: var(--sheet-border-style);
+    border-bottom: var(--sheet-border-style);
+    border-left: var(--sheet-border-style);
     padding-right: 5px;
     padding-left: 5px;
     align-content: center;
@@ -126,7 +135,8 @@
 
 .row-active {
     background: var(--active-header-bg-color) !important;
-    border-right-width: 1px;
+    border-right-width: 2px;
+    padding-right: 4px;
     border-right-color: var(--selection-border-color);
     border-right-style: solid;
 }

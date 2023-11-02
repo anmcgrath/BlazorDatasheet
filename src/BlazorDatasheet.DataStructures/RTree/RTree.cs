@@ -24,6 +24,8 @@
 // modified to suit the blazor datasheet project.
 
 using System.Diagnostics.CodeAnalysis;
+using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.DataStructures.Util;
 
 namespace BlazorDatasheet.DataStructures.RTree;
 

@@ -20,13 +20,16 @@
     public double Height { get; set; }
 
     [Parameter]
+    public int ZIndex { get; set; }
+
+    [Parameter]
     public double BorderThickness { get; set; }
 
     [Parameter]
     public string BackgroundStyle { get; set; }
 
     [Parameter]
-    public string BorderColorStyle { get; set; } = "border-color:var(--selection-border-color);";
+    public string BorderColor { get; set; } = "var(--selection-border-color);";
 
     [Parameter]
     public bool BackgroundVisible { get; set; }
@@ -39,12 +42,11 @@
         strBuilder.Append($"top:{Y}px;");
         strBuilder.Append($"width:{Width}px;");
         strBuilder.Append($"height:{Height}px;");
-
+        strBuilder.Append($"position:relative;");
+        strBuilder.Append($"z-index:{ZIndex};");
         if (BorderThickness != 0)
         {
-            strBuilder.Append($"border-width: {BorderThickness}px;");
-            strBuilder.Append($"border-style:solid;");
-            strBuilder.Append(BorderColorStyle);
+            strBuilder.Append($"outline: {BorderThickness}px solid {BorderColor};");
         }
 
         if (BackgroundVisible)

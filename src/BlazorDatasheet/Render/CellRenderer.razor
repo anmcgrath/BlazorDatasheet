@@ -1,7 +1,4 @@
-@using BlazorDatasheet.Interfaces
 @using System.Text
-@using BlazorDatasheet.Data
-@using BlazorDatasheet.Formats
 @using BlazorDatasheet.Util
 @implements IHandleEvent
 
@@ -9,105 +6,44 @@
 
 @if (true)
 {
-    var conditionalFormatting = Sheet.ConditionalFormatting.GetFormatResult(Cell.Row, Cell.Col);
-
-    CellFormat? format = Sheet!.GetFormat(Cell.Row, Cell.Col)?.Clone();
-    if (format != null)
-        format.Merge(conditionalFormatting);
-    else if (conditionalFormatting != null)
-        format = conditionalFormatting;
     <div
-        class="sheet-cell"
-        style="@GetAbsolutePositionStyles() 
-        @CssUtil.GetCellWidthStyles(Cell.Col, ColSpan, Sheet.LayoutProvider)
-        @($"height:{Sheet.LayoutProvider.ComputeHeight(RowSpan)}px;")"
-        @ondblclick="ondblclick"
-        @onmousedown="onmousedown"
-        @onmouseup="onmouseup"
-        @onmouseover="onmouseover">
-
-        <div
-            class="cell"
-            style="
-            @CalculateCellFormattingStyle(format, Cell.IsValid)">
-
-            @if (format?.Icon != null)
-            {
-                <div style="margin-right:2px; float:left; color: @(format.IconColor ?? "var(--icon-color)");">@format.Icon</div>
-            }
-            @ItemTemplate
-        </div>
+        class="cell"
+        style="@CellFormatStyleString">
+        @if (Icon != null)
+        {
+            <div style="margin-right:2px; float:left; color: @(IconColor ?? "var(--icon-color)");">@Icon</div>
+        }
+        @ItemTemplate
     </div>
 }
 
 @code {
 
-    [Parameter]
-    public EventCallback<MouseEventArgs> onmousedown { get; set; }
 
-    [Parameter]
-    public EventCallback<MouseEventArgs> onmouseup { get; set; }
+    [Parameter, EditorRequired]
+    public string CellFormatStyleString { get; set; } = string.Empty;
 
-    [Parameter]
-    public EventCallback<MouseEventArgs> ondblclick { get; set; }
-
-    [Parameter]
-    public EventCallback<MouseEventArgs> onmouseover { get; set; }
-
-    [Parameter]
-    public int ColSpan { get; set; } = 1;
-
-    [Parameter]
-    public int RowSpan { get; set; } = 1;
-
-    [Parameter]
-    public bool IsAbsolutePositioning { get; set; }
-
-    [Parameter]
+    [Parameter, EditorRequired]
     public RenderFragment ItemTemplate { get; set; }
 
     [Parameter, EditorRequired]
     public bool IsDirty { get; set; }
 
     [Parameter]
-    public IReadOnlyCell Cell { get; set; }
+    public RenderFragment? Icon { get; set; }
 
     [Parameter]
-    public Sheet Sheet { get; set; }
+    public string IconColor { get; set; } = "black";
 
-    private string GetAbsolutePositionStyles()
-    {
-        if (IsAbsolutePositioning)
-        {
-            var sb = new StringBuilder();
-            sb.Append("position:absolute;");
-            sb.Append($"top:{Sheet.LayoutProvider.ComputeTopPosition(Cell.Row)}px;");
-            sb.Append($"left:{Sheet.LayoutProvider.ComputeLeftPosition(Cell.Col)}px;");
-            return sb.ToString();
-        }
-        return string.Empty;
-    }
-
-    private string CalculateCellFormattingStyle(CellFormat? format, bool isCellValid)
-    {
-        var foreGroundVar = isCellValid ? "--sheet-foreground-color" : "--invalid-cell-foreground-color";
-        var sb = new StringBuilder();
-        sb.Append($"background-color:{format?.BackgroundColor ?? "var(--sheet-bg-color)"};");
-        sb.Append($"color:{format?.ForegroundColor ?? $"var({foreGroundVar})"};");
-        sb.Append($"font-weight:{format?.FontWeight ?? "var(--sheet-font-weight)"};");
-
-        if (!string.IsNullOrWhiteSpace(format?.TextAlign))
-        {
-            sb.Append($"text-align: {format.TextAlign};");
-        }
-
-
-        return sb.ToString();
-    }
 
     protected override bool ShouldRender()
     {
         return IsDirty;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
     }
 
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

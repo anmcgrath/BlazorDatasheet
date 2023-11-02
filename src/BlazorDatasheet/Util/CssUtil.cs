@@ -1,11 +1,10 @@
 using System.Text;
-using BlazorDatasheet.Data;
-using BlazorDatasheet.Interfaces;
+using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Render;
 
 namespace BlazorDatasheet.Util;
 
-public class CssUtil
+public static class CssUtil
 {
     /// <summary>
     /// Returns correctly styled input background colour & foreground colour, given the cell's formatting.
@@ -15,21 +14,21 @@ public class CssUtil
     public static string GetStyledInput(IReadOnlyCell cell)
     {
         var str = new StringBuilder();
-        if (cell == null || cell.Formatting == null)
+        if (cell == null || cell.Format == null)
         {
             str.Append("background:var(--sheet-bg-color);");
             str.Append("color:var(--sheet-foreground-color)");
         }
-        else if (cell.Formatting != null)
+        else if (cell.Format != null)
         {
-            str.Append($"background:{cell.Formatting.BackgroundColor};");
-            str.Append($"color:{cell.Formatting.ForegroundColor};");
+            str.Append($"background:{cell.Format.BackgroundColor};");
+            str.Append($"color:{cell.Format.ForegroundColor};");
         }
         return str.ToString();
     }
 
     /// <summary>
-    /// Returns the css strings for producing width & max width of a cell given its location and spon
+    /// Returns the css strings for producing width & max width of a cell given its location and span
     /// </summary>
     /// <param name="col"></param>
     /// <param name="colSpan"></param>

@@ -107,10 +107,10 @@ public readonly record struct Envelope(
     /// <see langword="false" /> otherwise.
     /// </returns>
     public bool Intersects(in Envelope other) =>
-        this.MinX <= other.MaxX &&
-        this.MinY <= other.MaxY &&
-        this.MaxX >= other.MinX &&
-        this.MaxY >= other.MinY;
+        this.MinX < other.MaxX &&
+        this.MinY < other.MaxY &&
+        this.MaxX > other.MinX &&
+        this.MaxY > other.MinY;
 
     /// <summary>
     /// A bounding box that contains the entire 2-d plane.

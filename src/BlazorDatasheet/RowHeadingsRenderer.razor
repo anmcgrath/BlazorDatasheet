@@ -1,9 +1,12 @@
-@using BlazorDatasheet.Data
-@using BlazorDatasheet.Events
+@using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Render
-@using BlazorDatasheet.Selecting
 @using BlazorDatasheet.Util
 @using Microsoft.AspNetCore.Components.Web.Virtualization;
+@using System.Text
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events.Layout
+@using BlazorDatasheet.DataStructures.Intervals
+@using BlazorDatasheet.Events
 
 <div style="position: absolute; top: 0; left: 0;">
 
@@ -13,33 +16,35 @@
             BackgroundVisible="@true"
             BorderThickness="0"
             BackgroundStyle="background:var(--selection-bg-color);"
-            Width="CellLayoutProvider.ComputeWidth(-1, 1) + 1"
-            Height="CellLayoutProvider.ComputeHeight(interval.Length) + 1"
+            Width="CellLayoutProvider.ComputeWidth(-1, 1)"
+            Height="CellLayoutProvider.ComputeHeight(interval.Start, interval.Length)"
             X="CellLayoutProvider.ComputeLeftPosition(-1)"
             Y="CellLayoutProvider.ComputeTopPosition(interval.Start)"/>
     }
 
 </div>
 
-<Virtualize
-    @ref="_virtualizer"
-    ItemsProvider="LoadRows"
-    OverscanCount="8"
-    Context="rowNumber">
+@for (int rowIndex = VisibleRowStart; rowIndex < (VisibleRowStart + NVisibleRows); rowIndex++)
+{
+    var row = rowIndex;
+    var heading = @Sheet.Rows.GetHeading(row) ?? (row + 1).ToString();
     <div class="sheet-row">
         <div
-            @key="rowNumber"
-            class="sheet-cell row-head @(IsActive(rowNumber) ? "row-active" : "")"
-            style="display: block !important; @CssUtil.GetCellWidthStyles(-1, 1, CellLayoutProvider)"
-            @onmousedown="e => HandleMouseDown(rowNumber, e)"
-            @onmouseover="e => HandleMouseOver(rowNumber, e)"
-            @onmouseup="e => HandleMouseUp(rowNumber, e)">
+            class="sheet-cell row-head @(IsActive(row) ? "row-active" : "")"
+            style="height:@CellLayoutProvider.ComputeHeight(row, 1)px; 
+            overflow: hidden; 
+            display: block !important; 
+            @CssUtil.GetCellWidthStyles(-1, 1, CellLayoutProvider)"
+            @onmousedown="e => HandleMouseDown(row, e)"
+            @onmouseover="e => HandleMouseOver(row, e)"
+            @onmouseup="e => HandleMouseUp(row, e)">
             <div class="cell" style="text-align: right">
-                @(Sheet.RowHeadings.Count > rowNumber ? Sheet.RowHeadings[rowNumber].Header : rowNumber)
+                @heading
             </div>
         </div>
     </div>
-</Virtualize>
+}
+
 
 @code {
 
@@ -60,9 +65,13 @@
     [Parameter]
     public EventCallback<RowMouseEventArgs> OnMouseDown { get; set; }
 
-    public List<OrderedInterval> _selectionIntervals { get; set; } = new();
+    [Parameter]
+    public int VisibleRowStart { get; set; }
 
-    private Virtualize<int> _virtualizer;
+    [Parameter]
+    public int NVisibleRows { get; set; }
+
+    public List<OrderedInterval> _selectionIntervals { get; set; } = new();
 
     private bool IsActive(int row)
     {
@@ -76,53 +85,26 @@
         {
             if (_sheet != null)
             {
-                _sheet.Selection.SelectionChanged -= OnSelectionChanged;
                 _sheet.Selection.SelectingChanged -= OnSelectingChanged;
-                _sheet.RowInserted -= SheetOnRowInserted;
-                _sheet.RowRemoved -= SheetOnRowRemoved;
+                _sheet.Selection.SelectionChanged -= OnSelectionChanged;
             }
             _sheet = Sheet;
-            _sheet.Selection.SelectionChanged += OnSelectionChanged;
+            
+            if (_sheet == null)
+                return;
+            
             _sheet.Selection.SelectingChanged += OnSelectingChanged;
-            _sheet.RowInserted += SheetOnRowInserted;
-            _sheet.RowRemoved += SheetOnRowRemoved;
+            _sheet.Selection.SelectionChanged += OnSelectionChanged;
         }
         base.OnParametersSet();
     }
 
-    private async void SheetOnRowRemoved(object? sender, RowRemovedEventArgs e)
+    private void OnSelectionChanged(object? sender, IEnumerable<IRegion> e) => UpdateIntervals();
+
+    private void OnSelectingChanged(object? sender, IRegion region) => UpdateIntervals();
+
+    private void UpdateIntervals()
     {
-        await _virtualizer.RefreshDataAsync();
-    }
-
-    private async void SheetOnRowInserted(object? sender, RowInsertedEventArgs e)
-    {
-        await _virtualizer.RefreshDataAsync();
-    }
-
-    private void OnSelectionChanged(object? sender, IEnumerable<IRegion> regions) => updateIntervals();
-    private void OnSelectingChanged(object? sender, IRegion region) => updateIntervals();
-
-    private void updateIntervals()
-    {
-        if (Sheet?.Selection == null)
-            return;
-
-        var intervals = new List<OrderedInterval>();
-        if (Sheet.Selection.SelectingRegion != null && Sheet.Selection.SelectingRegion is RowRegion)
-        {
-            var fixedTempSelection = Sheet.Selection.SelectingRegion.GetIntersection(Sheet.Region);
-            intervals.Add(new OrderedInterval(fixedTempSelection.TopLeft.Row, fixedTempSelection.BottomRight.Row));
-        }
-        foreach (var region in Sheet.Selection.Regions)
-        {
-            if (region is RowRegion)
-            {
-                var fixedRegion = region.GetIntersection(Sheet.Region);
-                intervals.Add(new OrderedInterval(fixedRegion.TopLeft.Row, fixedRegion.BottomRight.Row));
-            }
-        }
-        _selectionIntervals = OrderedInterval.Merge(intervals);
         StateHasChanged();
     }
 
@@ -139,20 +121,6 @@
     private void HandleMouseOver(int row, MouseEventArgs args)
     {
         OnMouseOver.InvokeAsync(new RowMouseEventArgs(row, args));
-    }
-
-    /// <summary>
-    /// Provides rows to the virtualised renderer
-    /// </summary>
-    /// <param name="request"></param>
-    /// <returns></returns>
-    public async ValueTask<ItemsProviderResult<int>> LoadRows(
-        ItemsProviderRequest request)
-    {
-        var numRows = request.Count;
-        var startIndex = request.StartIndex;
-        var rows = Enumerable.Range(startIndex, numRows);
-        return new ItemsProviderResult<int>(rows, Sheet.NumRows);
     }
 
 }

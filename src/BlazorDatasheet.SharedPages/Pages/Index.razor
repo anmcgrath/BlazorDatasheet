@@ -1,10 +1,12 @@
 @page "/"
-@using BlazorDatasheet.Data
-@using BlazorDatasheet.Formats
-@using BlazorDatasheet.ObjectEditor
-@using BlazorDatasheet.Validation
+@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Edit
 @using BlazorDatasheet.Render
 @using BlazorDatasheet.SharedPages.Data
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Edit
+@using BlazorDatasheet.Core.Formats
+@using BlazorDatasheet.Core.Validation
 
 <PageTitle>Index</PageTitle>
 
@@ -12,38 +14,42 @@
     Blazor DataSheet is an excel-like editor for cellular values. Below shows some of the features of the data sheet. Sample code is available on <a href="https://github.com/anmcgrath/BlazorDatasheet">GitHub</a>
 </p>
 
-<Datasheet Theme="@Theme"
-           Sheet="Sheet"
-           StickyHeadings="true"
-           IsFixedHeight="true">
-
-</Datasheet>
-
-<div>
-    <button @onclick="InsertRowAfterSelection">Insert row after selection</button>
-    <button @onclick="InsertColAfterSelection">Insert col after selection</button>
-    <button @onclick="RemoveCol">RemoveCol</button>
-    <button @onclick="() => Sheet.Commands.Undo()">Undo</button>
-    <button @onclick="() => Sheet.Commands.Redo()">Redo</button>
-    <button @onclick="@(() => Sheet.Selection.Value = "Bob")">Set to Bob</button>
-    <button @onclick="@(() => Sheet.SetFormat(new CellFormat() { BackgroundColor = "red" }, Sheet.Selection))">Set bg to red</button>
-    <button @onclick="@(() => Sheet.SetFormat(new CellFormat() { BackgroundColor = "blue" }, Sheet.Selection))">Set bg to blue</button>
-    <button @onclick="@(() => Sheet.SetFormat(new CellFormat() { ForegroundColor = "green" }, Sheet.Selection))">Set font colour to green</button>
-    <button @onclick="@(() => Sheet.MergeCells(Sheet.Selection))">Merge cells</button>
+<div style="overflow-y: auto; overflow-x: scroll; height: 500px; width: 800px; border: 1px solid #51585e; border-radius: 8px;">
+    <Datasheet
+        @ref="_datasheet"
+        Theme="@Theme"
+        Sheet="Sheet"
+        ShowColHeadings="true"
+        ShowRowHeadings="true"
+        StickyHeadings="true">
+    </Datasheet>
 </div>
 
 <div>
-    <input id="darkmode-toggle" type="checkbox" @bind="IsDarkMode" />
+    <button @onclick="InsertRowAfterSelection">Insert row</button>
+    <button @onclick="InsertColAfterSelection">Insert col</button>
+    <button @onclick="RemoveCol">RemoveCol</button>
+    <button @onclick="RemoveRow">RemoveRow</button>
+    <button @onclick="() => Sheet.Commands.Undo()">Undo</button>
+    <button @onclick="() => Sheet.Commands.Redo()">Redo</button>
+    <button @onclick="@(() => Sheet.Selection.Value = "Bob")">Set to Bob</button>
+    <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection, new CellFormat() { BackgroundColor = "red" }))">Set bg to red</button>
+    <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection, new CellFormat() { BackgroundColor = "blue" }))">Set bg to blue</button>
+    <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection, new CellFormat() { ForegroundColor = "green" }))">Set font colour to green</button>
+    <button @onclick="@(() => Sheet.Cells.Merge(Sheet.Selection))">Merge cells</button>
+</div>
+
+<div>
+    <input id="darkmode-toggle" @onclick="() => _datasheet.ForceReRender()" type="checkbox" @bind="IsDarkMode"/>
     <label for="darkmode-toggle">Darkmode</label>
 </div>
 
 @code {
 
     private Sheet Sheet;
-    private List<Person> People { get; set; }
-    private ObjectEditor<Person> _editor;
     private string Theme => IsDarkMode ? "dark" : "default";
     private bool IsDarkMode { get; set; }
+    private Datasheet _datasheet;
 
     private void InsertRowAfterSelection()
     {
@@ -51,7 +57,7 @@
         {
             return;
         }
-        _editor.InsertAt(new Person(), Sheet.Selection.ActiveRegion.TopLeft.Row);
+        Sheet.Rows.InsertRowAt(Sheet.Selection.ActiveRegion.TopLeft.row);
     }
 
     private void InsertColAfterSelection()
@@ -60,7 +66,7 @@
         {
             return;
         }
-        _editor.Sheet.InsertColAfter(Sheet.Selection.ActiveRegion.Left);
+        Sheet.Columns.InsertAt(Sheet.Selection.ActiveRegion.TopLeft.col);
     }
 
     private void RemoveCol()
@@ -69,67 +75,67 @@
         {
             return;
         }
-        _editor.Sheet.RemoveCol(Sheet.Selection.ActiveRegion.Left);
+        Sheet.Columns.RemoveAt(Sheet.Selection.ActiveRegion.Left);
     }
 
-    private CellFormat GreenBg = new CellFormat() { BackgroundColor = "var(--cell-highlight-bg-color)" };
+    private void RemoveRow()
+    {
+        if (Sheet.Selection.ActiveRegion == null)
+        {
+            return;
+        }
+        Sheet.Rows.RemoveAt(Sheet.Selection.ActiveRegion.Top);
+    }
+
 
     protected override void OnInitialized()
     {
-        People = new List<Person>();
-
-        var random = new Random();
-
-        var firstNames = new List<string>() { "Myah", "Jaeden", "Evelin", "Riya", "Isiah", "Alannah", "Mohamed", "Gavyn", "Leo", "Carley", "Sloane" };
-        var lastNames = new List<string>() { "Walters", "Hall", "Smith", "Parker", "Velasquez", "Mccall", "Farmer", "Boone", "Fitzpatrick", "Mcclain", "Mccoy", "Baker" };
-        var cats = new List<string>() { "Manager", "Employee" };
-
-        var lorem = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum ac ultricies nisi. Sed tincidunt nunc ac tellus ullamcorper faucibus. In feugiat felis urna, in lacinia erat aliquet eget. Curabitur bibendum varius facilisis. Etiam vel urna sagittis, pellentesque neque eu, bibendum ante. Phasellus sodales facilisis massa sollicitudin rutrum. Vivamus elementum non sapien eget placerat. Etiam ultricies, turpis in fringilla interdum, nulla nulla varius urna, et dapibus lectus mi sit amet urna. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Curabitur dapibus a dolor non elementum. Aliquam nec nulla ante.\r\nPellentesque cursus enim massa, sit amet dictum ante luctus eget. Pellentesque quis ultricies lectus, id elementum purus. Nulla sit amet leo tincidunt, facilisis lectus non, sodales mauris. Duis ultricies ornare mi nec sagittis. Vestibulum fermentum orci urna, a interdum mauris laoreet eu. Donec luctus pellentesque tortor ac faucibus. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Curabitur maximus diam tellus, sed porttitor sem fringilla ac. Nunc semper tellus sit amet velit gravida interdum.";
-
-        for (int i = 0; i < 1000; i++)
+        var src = new SourceValidator(new List<string>()
         {
-            People.Add(new Person()
-                {
-                    Id = i,
-                    Age = random.Next(100).ToString(),
-                    FirstName = firstNames[random.Next(0, firstNames.Count)],
-                    LastName = lastNames[random.Next(0, lastNames.Count)],
-                    Category = cats[random.Next(0, cats.Count)],
-                    IsFriendly = false,
-                    Information = i % 2 == 0 ? lorem : ""
-                });
+            "Option 1",
+            "Option 2"
+        }, false);
+
+        Sheet = new Sheet(100, 100);
+        Sheet.BatchUpdates();
+        Sheet.Commands.PauseHistory();
+        Sheet.Validators.Add(4, 0, new NumberValidator(true));
+        Sheet.Validators.Add(1, 3, src);
+        
+        Sheet.Cells[0, 0].Value = "Blazor datasheet";
+
+        Sheet.Cells[3, 3].Value = "Date/Time:";
+        Sheet.Cells[3, 4].Type = "datetime";
+        Sheet.Cells[3, 4].Value = DateTime.Now;
+
+        Sheet.Cells[4, 3].Value = "Select:";
+        Sheet.Cells[4, 4].Type = "select";
+        Sheet.Cells[4, 4].Value = src.ValidationSource[0];
+        Sheet.Validators.Add(4, 4, src);
+
+        Sheet.Cells[5, 3].Value = "Bool:";
+        Sheet.Cells[5, 4].Type = "boolean";
+        Sheet.Cells[5, 4].Value = false;
+
+        Sheet.Cells.Merge(new Region(16, 17, 0, 2));
+        
+        for (int i = 1; i < 5; i++)
+        {
+            Sheet.Cells[i, 1].Value = i * 2;
         }
 
-        var ageCf =
-            new ConditionalFormat(
-                (posn, sheet) => (sheet.GetCell(posn.row, posn.col).GetValue<int?>()) > 85, cell => new CellFormat() { ForegroundColor = "var(--invalid-cell-foreground-color)" });
+        Sheet.Cells[5, 0].Value = "Sum:";
+        Sheet.Cells[5, 1].Formula = "=SUM(B2:B5)";
 
-        var builder1 = new ObjectEditorBuilder<Person>(People, GridDirection.PropertiesAcrossColumns);
-        builder1.AutogenerateProperties(false)
-            .WithExpressionFormat(x => x.IsFriendly, x => GreenBg)
-            .WithProperty(x => x.Id, pd => { pd.Heading = "Person ID"; })
-            .WithProperty(x => x.FirstName, pd => { pd.Heading = "First Name"; })
-            .WithProperty(x => x.LastName, pd => { pd.Heading = "Last Name"; })
-            .WithProperty(x => x.Age, pd =>
-            {
-                pd.ApplyConditionalFormat(ageCf);
-                pd.UseDataValidator(new NumberValidator(true));
-            })
-            .WithProperty(x => x.Category, pd =>
-            {
-                pd.Heading = "Category";
-                pd.Type = "select";
-                pd.UseDataValidator(new SourceValidator(new List<string>() { "", "Manager", "Employee" }, true));
-            })
-            .WithProperty(x => x.IsFriendly, pd => { pd.Heading = "Is Friendly?"; })
-            .WithProperty(x => x.Information, pd =>
-            {
-                pd.Type = "textarea";
-            });
+        Sheet.SetFormat(Sheet.Range(8, 12, 0, 4), new CellFormat() { BackgroundColor = "#c8d9ed" });
 
-        _editor = builder1.Build();
+        Sheet.SetFormat(Sheet.Range(new Region(3, 5, 3, 3)), new CellFormat() { TextAlign = "right" });
 
-        Sheet = _editor.Sheet;
+        Sheet.Rows.SetHeadings(7, 7, "Custom Row");
+        Sheet.Columns.SetHeadings(5, 5, "Custom Col");
+
+        Sheet.EndBatchUpdates();
+        Sheet.Commands.ResumeHistory();
     }
 
 }

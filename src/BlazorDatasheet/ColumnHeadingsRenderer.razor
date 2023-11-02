@@ -1,11 +1,16 @@
-@using BlazorDatasheet.Data
-@using BlazorDatasheet.Events
-@using BlazorDatasheet.Interfaces
+@using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Render
-@using BlazorDatasheet.Selecting
 @using BlazorDatasheet.Services
 @using BlazorDatasheet.Util
 @using Microsoft.JSInterop
+@using System.Text
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events.Layout
+@using BlazorDatasheet.Core.Interfaces
+@using BlazorDatasheet.DataStructures.Intervals
+@using BlazorDatasheet.DataStructures.Util
+@using BlazorDatasheet.Events
+@using BlazorDatasheet.Formula.Core.Interpreter.References
 @inject IJSRuntime JS;
 @implements IDisposable
 
@@ -18,47 +23,53 @@
             BackgroundVisible="@true"
             BorderThickness="0"
             BackgroundStyle="background:var(--selection-bg-color);"
-            Width="CellLayoutProvider.ComputeWidth(interval.Start, interval.Length) + 1"
-            Height="CellLayoutProvider.ComputeHeight(1) + 1"
+            Width="CellLayoutProvider.ComputeWidth(interval.Start, interval.Length)"
+            Height="CellLayoutProvider.ComputeHeight(-1, 1)"
             X="CellLayoutProvider.ComputeLeftPosition(interval.Start)"
             Y="CellLayoutProvider.ComputeTopPosition(-1)"/>
     }
 
-    @for (int i = 0; i < Sheet.NumCols; i++)
+    <!-- Ardoners -->
+    @for (int i = VisibleColStart; i < (VisibleColStart + NVisibleCols); i++)
     {
         var col = i;
         <div
             @onmousedown="e => HandleMouseDownOnAdorner(col)"
-            style="position:absolute; top: 0; left: @(CellLayoutProvider.ComputeLeftPosition(col + 1) - 5)px; width: 10px; background: none; height: 25px; cursor: col-resize; display: block">
+            style="@GetArdornerSizeStyles(col)
+            position:absolute; z-index: 2;  
+            background: none; cursor: col-resize; display: block">
         </div>
     }
 
+    <!-- Resize preview -->
     @if (IsDragging)
     {
-        var resizeWidth = Math.Max(MinResizeWidth, Sheet.LayoutProvider.ComputeWidth(ActiveAdorner, 1) + CurrentColResizeAmount);
+        var resizeWidth = Math.Max(_minResizeWidth, CellLayoutProvider.ComputeWidth(ActiveAdornerIndex, 1) + CurrentColResizeAmount);
         <BoxOverlayRenderer
             Y="0"
             Width="3"
             BorderThickness="1"
-            X="@(CellLayoutProvider.ComputeLeftPosition(ActiveAdorner) + resizeWidth)"
-            Height="CellLayoutProvider.ComputeHeight(Sheet.NumRows)"/>
+            X="@(CellLayoutProvider.ComputeLeftPosition(ActiveAdornerIndex) + resizeWidth)"
+            Height="@(CellLayoutProvider.TotalHeight)"/>
     }
 
 </div>
 
-@for (var i = 0; i < Sheet?.NumCols; i++)
+@for (var i = VisibleColStart; i < (VisibleColStart + NVisibleCols); i++)
 {
     var col = i;
-    var colDefn = Sheet?.ColumnHeadings.Count > i ? Sheet?.ColumnHeadings[i] : null;
+    var colHeading = Sheet?.Columns.GetHeading(i) ?? RangeText.ColNumberToLetters(col);
 
     <div
-        class="sheet-cell @(IsActive(col) ? "column-active" : "")"
-        style="z-index: 1; @CssUtil.GetCellWidthStyles(i, 1, CellLayoutProvider)"
+        class="sheet-cell @GetActiveClass(col) column-head"
+        style="z-index: 1; 
+        @CssUtil.GetCellWidthStyles(i, 1, CellLayoutProvider); 
+        height: @(CellLayoutProvider.ColHeadingHeight)px"
         @onmouseup="e => HandleMouseUp(col, e)"
         @onmouseover="e => HandleMouseOver(col, e)"
         @onmousedown="e => HandleMouseDown(col, e)">
-        <div class="cell" style="">
-            @colDefn?.Header
+        <div class="cell">
+            @colHeading
         </div>
     </div>
 }
@@ -82,14 +93,20 @@
     [Parameter]
     public EventCallback<ColumnMouseEventArgs> OnMouseDown { get; set; }
 
+    [Parameter]
+    public int NVisibleCols { get; set; }
+
+    [Parameter]
+    public int VisibleColStart { get; set; }
+
     private IWindowEventService _windowEventService;
 
     private double MouseX { get; set; }
     private double MouseXStart { get; set; }
-    public int ActiveAdorner { get; set; }
+    public int ActiveAdornerIndex { get; set; }
     public bool IsDragging { get; set; }
     public double CurrentColResizeAmount { get; set; }
-    private int MinResizeWidth = 15;
+    private int _minResizeWidth = 15;
 
     public List<OrderedInterval> _selectionIntervals { get; set; } = new();
 
@@ -99,12 +116,16 @@
         {
             if (_sheet != null)
             {
-                _sheet.Selection.SelectionChanged -= OnSelectionChanged;
                 _sheet.Selection.SelectingChanged -= OnSelectingChanged;
+                _sheet.Selection.SelectionChanged -= SelectionOnSelectionChanged;;
             }
             _sheet = Sheet;
-            _sheet.Selection.SelectionChanged += OnSelectionChanged;
-            _sheet.Selection.SelectingChanged += OnSelectingChanged;
+            if (_sheet == null)
+                return;
+            
+            _sheet.Selection.SelectingChanged += OnSelectingChanged;                
+            _sheet.Selection.SelectionChanged += SelectionOnSelectionChanged;;
+
         }
         base.OnParametersSet();
     }
@@ -125,7 +146,7 @@
     private void HandleMouseDownOnAdorner(int col)
     {
         MouseXStart = MouseX;
-        ActiveAdorner = col;
+        ActiveAdornerIndex = col;
         CurrentColResizeAmount = 0;
         IsDragging = true;
     }
@@ -134,8 +155,6 @@
     {
         if (firstRender)
         {
-           
-          
             _windowEventService = new WindowEventService(JS);
             await _windowEventService.Init();
             _windowEventService.OnMouseUp += WindowEventServiceOnOnMouseUp;
@@ -148,8 +167,8 @@
         if (IsDragging)
         {
             IsDragging = false;
-            var resizeWidth = Math.Max(MinResizeWidth, Sheet.LayoutProvider.ComputeWidth(ActiveAdorner, 1) + CurrentColResizeAmount);
-            Sheet.SetColumnWidth(ActiveAdorner, resizeWidth);
+            var resizeWidth = Math.Max(_minResizeWidth, CellLayoutProvider.ComputeWidth(ActiveAdornerIndex, 1) + CurrentColResizeAmount);
+            Sheet.Columns.SetWidth(ActiveAdornerIndex, resizeWidth);
             return true;
         }
 
@@ -158,7 +177,6 @@
 
     public void Dispose()
     {
-       
     }
 
     private bool IsActive(int col)
@@ -167,35 +185,13 @@
                || Sheet!.Selection!.Regions.Any(x => x.SpansCol(col));
     }
 
-    private void OnSelectionChanged(object? sender, IEnumerable<IRegion> regions) => updateIntervals();
-    private void OnSelectingChanged(object? sender, IRegion region) => updateIntervals();
+    private void OnSelectingChanged(object? sender, IRegion region) => UpdateIntervals();
 
-    private void updateIntervals()
+    private void SelectionOnSelectionChanged(object? sender, IEnumerable<IRegion> e) => UpdateIntervals();
+
+    private void UpdateIntervals()
     {
-        if (Sheet?.Selection == null)
-            return;
-
-        var intervals = new List<OrderedInterval>();
-        if (Sheet.Selection.SelectingRegion != null && Sheet.Selection.SelectingRegion is ColumnRegion)
-        {
-            var fixedTempSelection = Sheet.Selection.SelectingRegion.GetIntersection(Sheet.Region);
-            intervals.Add(new OrderedInterval(fixedTempSelection.TopLeft.Col, fixedTempSelection.BottomRight.Col));
-        }
-        foreach (var region in Sheet.Selection.Regions)
-        {
-            if (region is ColumnRegion)
-            {
-                var fixedRegion = region.GetIntersection(Sheet.Region);
-                intervals.Add(new OrderedInterval(fixedRegion.TopLeft.Col, fixedRegion.BottomRight.Col));
-            }
-        }
-        _selectionIntervals = OrderedInterval.Merge(intervals);
         StateHasChanged();
-    }
-
-    public bool IsColumnActive(int col)
-    {
-        return Sheet.Selection.Regions.Any(x => x.SpansCol(col));
     }
 
     private void HandleMouseUp(int col, MouseEventArgs args)
@@ -211,6 +207,28 @@
     private void HandleMouseOver(int col, MouseEventArgs args)
     {
         OnMouseOver.InvokeAsync(new ColumnMouseEventArgs(col, args));
+    }
+
+    private string GetArdornerSizeStyles(int col)
+    {
+        var sb = new StringBuilder();
+        var left = CellLayoutProvider.ComputeLeftPosition(col + 1);
+        var top = 0;
+        var width = 10;
+        var height = CellLayoutProvider.ColHeadingHeight;
+
+        sb.Append($"top:{top}px;");
+        sb.Append($"left:{left - 6}px;");
+        sb.Append($"width:{width}px;");
+        sb.Append($"height:{height}px;");
+        return sb.ToString();
+    }
+
+    private string GetActiveClass(int col)
+    {
+        var isSelecting = (Sheet!.Selection!.SelectingRegion?.SpansCol(col) == true)
+                          || Sheet!.Selection!.Regions.Any(x => x.SpansCol(col));
+        return isSelecting ? "column-active" : "";
     }
 
 }

@@ -1,18 +1,21 @@
-@using BlazorDatasheet.Interfaces
 @using BlazorDatasheet.Util
-@using BlazorDatasheet.Validation
-@inherits BaseEditor<string>
+@using BlazorDatasheet.Core.Util
+@using BlazorDatasheet.Core.Interfaces
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Edit
+@using BlazorDatasheet.Core.Validation
+@inherits BaseEditor
 
-<input @bind="EditedValue"
+<input @bind="CurrentValue"
        @bind:event="oninput"
        class="text-input"
-       style="@CssUtil.GetStyledInput(Cell)"
-       @ref="InputRef" />
+       style="@CssUtil.GetStyledInput(Cell);"
+       @ref="InputRef"/>
 <div class="select-list">
     @foreach (var val in values)
     {
-        <div class="select-item @(val.Equals(currentSelected) ? "active": "")"
-         @onmouseup="() => selectItem(val)">
+        <div class="select-item @(val.Equals(currentSelected) ? "active" : "")"
+             @onmouseup="() => selectItem(val)">
             @val
         </div>
     }
@@ -26,11 +29,11 @@
 
     string? currentSelected;
 
-    public override void BeforeEdit(IReadOnlyCell cell)
+    public override void BeforeEdit(IReadOnlyCell cell, Sheet sheet)
     {
         Cell = cell;
 
-        foreach (var validator in Cell.Validators)
+        foreach (var validator in sheet.Validators.Get(cell.Row, cell.Col))
             if (validator is SourceValidator)
             {
                 values = ((SourceValidator)validator).ValidationSource.ToArray();
@@ -38,11 +41,11 @@
             }
     }
 
-    public override void BeginEdit(EditEntryMode entryMode, IReadOnlyCell cell, string key)
+    public override void BeginEdit(EditEntryMode entryMode, string? editValue, string key)
     {
         if (entryMode == EditEntryMode.Mouse)
         {
-            EditedValue = cell.GetValue<string>();
+            CurrentValue = editValue.ToString();
         }
         else if (entryMode == EditEntryMode.Key)
         {
@@ -54,17 +57,16 @@
 
             if (!string.IsNullOrWhiteSpace(currentSelected))
             {
-                EditedValue = currentSelected;
+                CurrentValue = currentSelected;
             }
             else
             {
-                EditedValue = key;
+                CurrentValue = key;
             }
-
         }
 
-        if (EditedValue == null)
-            EditedValue = string.Empty;
+        if (CurrentValue == null)
+            CurrentValue = string.Empty;
     }
 
     public override bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
@@ -93,9 +95,9 @@
             return true;
         }
 
-        if (!string.IsNullOrWhiteSpace(EditedValue))
+        if (!string.IsNullOrWhiteSpace(CurrentValue))
         {
-            var keyUpped = EditedValue.ToUpperInvariant();
+            var keyUpped = CurrentValue.ToUpperInvariant();
             currentSelected = values.FirstOrDefault(v => v.ToUpperInvariant().StartsWith(keyUpped));
 
             if (!string.IsNullOrWhiteSpace(currentSelected))
@@ -121,7 +123,7 @@
 
     void selectItem(string item)
     {
-        EditedValue = item;
+        CurrentValue = item;
         AcceptEdit();
     }
 

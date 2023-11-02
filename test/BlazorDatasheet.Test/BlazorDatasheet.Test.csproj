@@ -8,6 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="FluentAssertions" Version="6.12.0" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.4.0" />
         <PackageReference Include="NUnit" Version="3.13.2" />
         <PackageReference Include="NUnit3TestAdapter" Version="4.0.0" />
@@ -15,7 +16,9 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\src\BlazorDatasheet.SharedPages\BlazorDatasheet.SharedPages.csproj" />
       <ProjectReference Include="..\..\src\BlazorDatasheet\BlazorDatasheet.csproj" />
     </ItemGroup>
+
 
 </Project>

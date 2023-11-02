@@ -6,8 +6,8 @@ public static class SearchExtensions
     /// Binary search for the index of a value. If the value is in the array, the index is returned,
     /// otherwise the returned index is the index of the next highest value.
     /// </summary>
+    /// <param name="list">The array to search in</param>
     /// <param name="value">The value to search for</param>
-    /// <param name="array">The array to search in</param>
     /// <returns></returns>
     public static int BinarySearchClosest<T>(this IList<T> list, T value) where T : IComparable
     {

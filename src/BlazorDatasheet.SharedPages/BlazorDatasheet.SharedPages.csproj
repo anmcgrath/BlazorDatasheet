@@ -23,4 +23,8 @@
       <ProjectReference Include="..\BlazorDatasheet\BlazorDatasheet.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <AdditionalFiles Include="Icons\Icons.razor" />
+    </ItemGroup>
+
 </Project>

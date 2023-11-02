@@ -4,12 +4,12 @@ namespace BlazorDatasheet.Events;
 
 public class RowMouseEventArgs
 {
-    public RowMouseEventArgs(int rowIndex, MouseEventArgs mouseEventArgs)
+    public RowMouseEventArgs(int rowIndex, MouseEventArgs args)
     {
         RowIndex = rowIndex;
-        MouseEventArgs = mouseEventArgs;
+        Args = args;
     }
 
     public int RowIndex { get; }
-    public MouseEventArgs MouseEventArgs { get; }
+    public MouseEventArgs Args { get; }
 }

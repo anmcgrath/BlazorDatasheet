@@ -16,9 +16,9 @@
       <ProjectReference Include="..\BlazorDatasheet\BlazorDatasheet.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Data" />
-      <Folder Include="Pages" />
-    </ItemGroup>
+    <PropertyGroup>
+        <RunAOTCompilation>true</RunAOTCompilation>
+    </PropertyGroup>
+
 
 </Project>

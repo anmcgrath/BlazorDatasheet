@@ -1,30 +1,41 @@
-@inherits BaseEditor<string>
-@using BlazorDatasheet.Interfaces
+@inherits BaseEditor
 @using BlazorDatasheet.Util
+@using BlazorDatasheet.Core.Interfaces
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Edit
 
 <input
     type="text"
     class="text-input"
-    @bind="EditedValue"
+    @bind="CurrentValue"
     @bind:event="oninput"
     style="@CssUtil.GetStyledInput(Cell)"
     @ref="InputRef"/>
 
 @code {
-    
-    private IReadOnlyCell Cell;
-    
-    public override void BeginEdit(EditEntryMode entryMode, IReadOnlyCell cell, string key)
-    {
-        EditedValue = cell.GetValue<string>();
-        if (EditedValue == null)
-            EditedValue = string.Empty;
 
+    private IReadOnlyCell Cell;
+
+    public override void BeforeEdit(IReadOnlyCell cell, Sheet sheet)
+    {
+        Cell = cell;
+    }
+
+    public override void BeginEdit(EditEntryMode entryMode, string? editValue, string key)
+    {
         if (entryMode == EditEntryMode.Key && !String.IsNullOrEmpty(key) && key.Length == 1)
         {
-            EditedValue = key;
+            CurrentValue = key;
         }
-        EditedValue = EditedValue;
+        else
+        {
+            CurrentValue = editValue?.ToString() ?? string.Empty;
+        }
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
     }
 
 }

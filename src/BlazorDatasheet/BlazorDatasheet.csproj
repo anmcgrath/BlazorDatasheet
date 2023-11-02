@@ -20,7 +20,13 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\BlazorDatasheet.Core\BlazorDatasheet.Core.csproj" />
       <ProjectReference Include="..\BlazorDatasheet.DataStructures\BlazorDatasheet.DataStructures.csproj" />
+      <ProjectReference Include="..\BlazorDatasheet.Formula.Core\BlazorDatasheet.Formula.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="Icons\Icons.razor" />
     </ItemGroup>
 
 </Project>

@@ -1,3 +1,8 @@
+using BlazorDatasheet.Core.Commands;
+using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Formats;
+using BlazorDatasheet.Core.Validation;
+using BlazorDatasheet.DataStructures.Geometry;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using BlazorDatasheet.Wasm;

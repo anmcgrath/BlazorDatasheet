@@ -4,6 +4,6 @@
 
 @code {
 
-    private string ProgressValue => Cell.GetValue<string>();
+    private string ProgressValue => Cell.Value?.ToString() ?? "0";
 
 }

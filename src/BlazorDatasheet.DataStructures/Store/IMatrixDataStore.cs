@@ -1,3 +1,6 @@
+using System.Collections;
+using BlazorDatasheet.DataStructures.Geometry;
+
 namespace BlazorDatasheet.DataStructures.Store;
 
 public interface IMatrixDataStore<T>
@@ -9,6 +12,7 @@ public interface IMatrixDataStore<T>
     /// <param name="col"></param>
     /// <returns></returns>
     public bool Contains(int row, int col);
+
     /// <summary>
     /// Returns the data at the row, column specified. If it is empty, returns the default of T.
     /// </summary>
@@ -16,28 +20,56 @@ public interface IMatrixDataStore<T>
     /// <param name="col"></param>
     /// <returns></returns>
     public T? Get(int row, int col);
+
     /// <summary>
     /// Sets the data at the row, column specified.
     /// </summary>
     /// <param name="row"></param>
     /// <param name="col"></param>
     /// <param name="value"></param>
-    public void Set(int row, int col, T value);
+    public MatrixRestoreData<T>  Set(int row, int col, T value);
+
+    /// <summary>
+    /// Removes the value at the row/column from the store but does not affect the rows/columns around it.
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    public MatrixRestoreData<T> Clear(int row, int col);
+
+    public MatrixRestoreData<T> Clear(IEnumerable<CellPosition> positions);
+
+    /// <summary>
+    /// Clears data inside the given region but does not affect the rows/columns arround it.
+    /// </summary>
+    /// <param name="region"></param>
+    /// <returns></returns>
+    public MatrixRestoreData<T>  Clear(IRegion region);
+
+    /// <summary>
+    /// Clears data inside the specified regions but does not affect the rows/columsn around it.
+    /// </summary>
+    /// <param name="regions"></param>
+    /// <returns></returns>
+    public MatrixRestoreData<T> Clear(IEnumerable<IRegion> regions);
+
     /// <summary>
     /// Inserts a row into the store
     /// </summary>
-    /// <param name="row">The index of the row that the new row is inserted AFTER</param>
-    public void InsertRowAfter(int row);
+    /// <param name="row">The index of the row that the new row will now be.</param>
+    /// <param name="nRows">The number of rows to inser</param>
+    public void InsertRowAt(int row, int nRows);
+
     /// <summary>
     /// Inserts a column into the store
     /// </summary>
     /// <param name="col">The index of the column that the new column is inserted AFTER</param>
-    public void InsertColAfter(int col);
+    public void InsertColAt(int col, int nCols);
+
     /// <summary>
-    /// Removes the column specified from the store.
+    /// Removes the column specified from the store and returns the values that were removed.
     /// </summary>
     /// <param name="col">The index of the column to remove.</param>
-    public void RemoveColAt(int col);
+    public MatrixRestoreData<T>  RemoveColAt(int col, int nRow);
 
     /// <summary>
     /// Finds the next non-empty row number in the column. Returns -1 if no non-empty rows exist after the row
@@ -48,10 +80,11 @@ public interface IMatrixDataStore<T>
     public int GetNextNonBlankRow(int col, int row);
 
     /// <summary>
-    /// Removes the row specified from the store.
+    /// Removes the row specified from the store and returns the values that were removed.
     /// </summary>
     /// <param name="row"></param>
-    void RemoveRowAt(int row);
+    /// <param name="nRows"></param>
+    public MatrixRestoreData<T>  RemoveRowAt(int row, int nRows);
 
     /// <summary>
     /// Get non empty cells that exist in the bounds given
@@ -61,5 +94,14 @@ public interface IMatrixDataStore<T>
     /// <param name="c0">The lower col bound</param>
     /// <param name="c1">The upper col bound</param>
     /// <returns></returns>
-    IEnumerable<(int row, int col)> GetNonEmptyPositions(int r0, int r1, int c0, int c1);
+    IEnumerable<CellPosition> GetNonEmptyPositions(int r0, int r1, int c0, int c1);
+
+    /// <summary>
+    /// Gets non empty cells that exist in the region given.
+    /// </summary>
+    /// <param name="region"></param>
+    /// <returns></returns>
+    IEnumerable<CellPosition> GetNonEmptyPositions(IRegion region);
+
+    void Restore(MatrixRestoreData<T> restoreData);
 }

@@ -1,11 +1,12 @@
 @namespace BlazorDatasheet.Render.DefaultComponents
 @inherits BaseRenderer
 
-<input type="checkbox" disabled="@Cell.IsReadOnly" @bind="Checked"/>
+<input type="checkbox" disabled="@Cell?.Format?.IsReadOnly" @bind="Checked"/>
 
 @code {
 
     private bool _checked;
+    private bool IsReadOnly { get; init; }
 
     public bool Checked
     {
@@ -13,19 +14,18 @@
         set
         {
             _checked = value;
-            this.RequestChangeCellValue(_checked.ToString());
+            this.RequestChangeCellValue(_checked);
         }
     }
 
     protected override void OnParametersSet()
     {
-        var val = this.Cell.GetValue<bool?>();
-        if (!val.HasValue)
-            _checked = false;
+        var parsed = bool.TryParse(Cell?.Value?.ToString(), out var val);
+        if (!parsed)
+            val = false;
         else
-        {
-            _checked = val.Value;
-        }
+            _checked = val;
+
         base.OnParametersSet();
     }
 

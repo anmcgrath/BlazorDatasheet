@@ -1,9 +1,9 @@
 @using System.Text
-@using BlazorDatasheet.Data
 @using BlazorDatasheet.Render
-@using Region = BlazorDatasheet.Data.Region
+@using Region = BlazorDatasheet.DataStructures.Geometry.Region
 @using System.ComponentModel
-@using BlazorDatasheet.Selecting
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.DataStructures.Geometry
 
 <!-- Render the temp selection (currently selected region) -->
 @if (Sheet != null && BoundedSelectingRegion != null && BoundedSelectingRegion?.Area > 0)
@@ -25,7 +25,7 @@
     <!-- now render the border around the whole thing -->
     <BoxOverlayRenderer
         BackgroundVisible="@false"
-        BorderThickness="1"
+        BorderThickness="2"
         BackgroundStyle="@bgStyle"
         X="getLeft(BoundedSelectingRegion)"
         Y="getTop(BoundedSelectingRegion)"
@@ -63,7 +63,7 @@
         <!-- now render the border around the whole region. No fill on active region because we've filled it already -->
         <BoxOverlayRenderer
             BackgroundVisible="@(!isActiveRegion)"
-            BorderThickness="1"
+            BorderThickness="@(isActiveRegion ? 2 : 0)"
             BackgroundStyle="@bgStyle"
             X="getLeft(boundedRegion)"
             Y="getTop(boundedRegion)"
@@ -84,21 +84,21 @@
 
     private string bgStyle = "background:var(--selection-bg-color);";
 
-    private IRegion? BoundedSelectingRegion => Sheet?.Selection?.SelectingRegion?.GetIntersection(Sheet?.Region);
+    private IRegion? BoundedSelectingRegion => Sheet?.Selection.SelectingRegion?.GetIntersection(Sheet?.Region);
 
-    private double getLeft(IRegion region) => CellLayoutProvider.ComputeLeftPosition(region) - 1;
-    private double getTop(IRegion region) => CellLayoutProvider.ComputeTopPosition(region) - 1;
-    private double getWidth(IRegion region) => CellLayoutProvider.ComputeWidth(region) + 1;
-    private double getHeight(IRegion region) => CellLayoutProvider.ComputeHeight(region) + 1;
+    private double getLeft(IRegion region) => CellLayoutProvider.ComputeLeftPosition(region) + 1;
+    private double getTop(IRegion region) => CellLayoutProvider.ComputeTopPosition(region) + 1;
+    private double getWidth(IRegion region) => CellLayoutProvider.ComputeWidth(region) - 2;
+    private double getHeight(IRegion region) => CellLayoutProvider.ComputeHeight(region) - 2;
 
     // Returns the region that the position covers (may be > 1 because of merged cells)
     private IRegion getRegion(CellPosition position)
     {
-        var merge = Sheet.GetMergedRegionAtPosition(position.Row, position.Col);
+        var merge = Sheet.Cells?.GetMerge(position.row, position.col);
         if (merge != null)
             return merge;
         else
-            return new Region(position.Row, position.Col);
+            return new Region(position.row, position.col);
     }
 
     protected override void OnParametersSet()

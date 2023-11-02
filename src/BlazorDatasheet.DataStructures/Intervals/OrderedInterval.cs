@@ -1,4 +1,4 @@
-﻿namespace BlazorDatasheet.Data;
+﻿namespace BlazorDatasheet.DataStructures.Intervals;
 
 /// <summary>
 /// An ordered interval between its start and end position (inclusive)
@@ -112,6 +112,11 @@ public class OrderedInterval
     {
         return Merge(intervals.AsEnumerable());
     }
+    
+    public override string ToString()
+    {
+        return $"[{Start},{End}]";
+    }
 }
 
 public class OrderedInterval<T> : OrderedInterval
@@ -126,5 +131,10 @@ public class OrderedInterval<T> : OrderedInterval
     public new OrderedInterval<T> Copy()
     {
         return new OrderedInterval<T>(Start, End, Data);
+    }
+
+    public override string ToString()
+    {
+        return $"[{Start},{End}]:{Data.ToString()}";
     }
 }

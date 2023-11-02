@@ -1,7 +1,7 @@
 @page "/DataValidation"
-@using BlazorDatasheet.Validation
-@using BlazorDatasheet.Interfaces
-@using BlazorDatasheet.Data
+@using BlazorDatasheet.Core.Interfaces
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Validation
 
 <PageTitle>Data validation</PageTitle>
 
@@ -17,36 +17,19 @@
 
 <Datasheet Sheet="sheet"></Datasheet>
 
-<h3>Cells</h3>
-
-@foreach (var cell in cells)
-{
-    <div>@cell.Data IsValid = @cell.IsValid</div>
-}
-
 @code {
 
     private Sheet sheet;
-    private Cell[,] cells;
 
     protected override void OnInitialized()
     {
-        cells = new Cell[1, 4]
-        {
-            {
-                new Cell(),
-                new Cell(),
-                new Cell(),
-                new Cell()
-            }
-        };
+        sheet = new Sheet(1, 4);
 
-        cells[0, 0].Validators.Add(new NumberValidator(true));
-        cells[0, 1].Validators.Add(new NumberValidator(false));
-        cells[0, 2].Type = "select";
-        cells[0, 2].Validators.Add(new SourceValidator(new List<string>() { "Item 1", "Item 2", "Item 3" }, false));
-        cells[0, 3].Validators.Add(new CustomValidator("foo", false));
-        sheet = new Sheet(1, 4, cells);
+        sheet.Cells[0, 2].Type = "select";
+        sheet.Validators.Add(0, 0, new NumberValidator(true));
+        sheet.Validators.Add(0, 1, new NumberValidator(false));
+        sheet.Validators.Add(0, 2, new SourceValidator(new List<string>() { "Item 1", "Item 2", "Item 3" }, false));
+        sheet.Validators.Add(0, 3, new CustomValidator("foo", false));
         base.OnInitialized();
     }
 
@@ -54,6 +37,7 @@
     {
         private readonly string _word;
         public bool IsStrict { get; }
+        public string Message => $"Should contain the word {_word}";
 
         public CustomValidator(string word, bool isStrict)
         {

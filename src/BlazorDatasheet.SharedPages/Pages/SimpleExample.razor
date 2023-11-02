@@ -1,7 +1,8 @@
 @page "/simple"
-@using BlazorDatasheet.Data
-@using BlazorDatasheet.Formats
 @using BlazorDatasheet.Render
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Formats
+@using BlazorDatasheet.Core.FormulaEngine
 
 <PageTitle>Simple example</PageTitle>
 
@@ -9,13 +10,16 @@
 
 <p>Below is a sheet with 100,000 rows. There is no data validation or formatting and the default editors are used.</p>
 
-<Datasheet
-    Sheet="sheet"
-    IsFixedHeight="true"
-    FixedHeightInPx="600"
-    />
-<button @onclick="@(() => sheet.SetFormat(new CellFormat() { BackgroundColor = "red" }, sheet.Selection))">Set format to red</button>
-    <button @onclick="@(() => sheet.SetFormat(new CellFormat() { BackgroundColor = "blue" }, sheet.Selection))">Set format to blue</button>
+<div style="overflow: scroll; width: 700px; height: 400px;">
+
+    <Datasheet
+        ShowColHeadings="true"
+        ShowRowHeadings="true"
+        Sheet="sheet"/>
+
+</div>
+<button @onclick="@(() => sheet.SetFormat(sheet.Selection, new CellFormat() { BackgroundColor = "red" }))">Set format to red</button>
+<button @onclick="@(() => sheet.SetFormat(sheet.Selection, new CellFormat() { BackgroundColor = "blue" }))">Set format to blue</button>
 
 
 @code{
@@ -24,7 +28,7 @@
 
     protected override void OnInitialized()
     {
-        sheet = new Sheet(numRows: 100000, numCols: 5);
+        sheet = new Sheet(numRows: 100000, numCols: 20000);
     }
 
 }

@@ -1,10 +1,9 @@
 @page "/ConditionalFormatting"
-@using BlazorDatasheet.Data
-@using BlazorDatasheet.Formats
-@using BlazorDatasheet.Formats.DefaultConditionalFormats
-@using BlazorDatasheet.Icons
-@using BlazorDatasheet.Render
-@using Region = BlazorDatasheet.Data.Region
+@using Region = BlazorDatasheet.DataStructures.Geometry.Region
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Formats
+@using BlazorDatasheet.Core.Formats.DefaultConditionalFormats
+@using System.Drawing
 <PageTitle>Conditional Formatting</PageTitle>
 
 <h1>Conditional Formatting</h1>
@@ -14,38 +13,48 @@
 
     <ol>
         <li>Column 1: Shows a "check" icon if the cell contains the word check.</li>
-        <li>Columns 2 - 6: Shows a black and white colour gradient that depends on the cell's value in relation to all others with the conditional format applied.</li>
+        <li>Columns 2 - 6: Shows a colour gradient that depends on the cell's value in relation to all others with the conditional format applied.</li>
     </ol>
 </p>
 
-<Datasheet
-    IsFixedHeight="true"
-    Sheet="sheet">
-</Datasheet>
+<div>
+    <Datasheet
+        Icons="iconDictionary"
+        Sheet="sheet">
+    </Datasheet>
+</div>
 
 @code {
 
     private Sheet sheet;
 
+    private Dictionary<string, RenderFragment> iconDictionary = new()
+    {
+        {
+            "check",
+            Icons.Icons.CheckIcon
+        }
+    };
+
     protected override void OnInitialized()
     {
-        sheet = new Sheet(30, 5);
-        var numberScaleConditionalFormat = new NumberScaleConditionalFormat();
+        sheet = new Sheet(15, 5);
+        var numberScaleConditionalFormat = new NumberScaleConditionalFormat(Color.YellowGreen, Color.IndianRed);
         var checkConditionalFormat = new CustomCheckConditionalFormat("check");
 
-        var values = new List<CellChange>();
+        var values = new List<(int row, int col, object value)>();
 
         var regionOfNumberScaleFormat = new Region(0, 99, 1, 4);
         var rand = new Random();
         foreach (var posn in regionOfNumberScaleFormat)
         {
-            values.Add(new CellChange(posn.Row, posn.Col, (int?)rand.Next(100)));
+            values.Add((posn.row, posn.col, (int?)rand.Next(100)));
         }
 
-        sheet.SetCellValues(values);
+        sheet.Cells.SetValues(values);
 
-        sheet.ConditionalFormatting.Apply(numberScaleConditionalFormat, new Region(0, 99, 1, 4));
-        sheet.ConditionalFormatting.Apply(checkConditionalFormat, new Region(0, 99, 0, 0));
+        sheet.ConditionalFormats.Apply(new Region(0, 99, 1, 4), numberScaleConditionalFormat);
+        sheet.ConditionalFormats.Apply(new Region(0, 99, 0, 0), checkConditionalFormat);
 
         base.OnInitialized();
     }
@@ -61,13 +70,13 @@
 
         public CellFormat Check = new CellFormat()
         {
-            Icon = Icons.CheckIcon,
+            Icon = "check",
             IconColor = "green",
         };
 
         public override CellFormat? CalculateFormat(int row, int col, Sheet sheet)
         {
-            var cell = sheet.GetCell(row, col);
+            var cell = sheet.Cells.GetCell(row, col);
             var value = cell.GetValue<string>();
 
             if (value == null)
