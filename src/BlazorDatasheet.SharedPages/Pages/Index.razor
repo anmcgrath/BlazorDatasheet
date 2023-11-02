@@ -124,8 +124,8 @@
             Sheet.Cells[i, 1].Value = i * 2;
         }
 
-        Sheet.Cells[5, 1].Formula = "=SUM(B2:B5)";
         Sheet.Cells[5, 0].Value = "Sum:";
+        Sheet.Cells[5, 1].Formula = "=SUM(B2:B5)";
 
         Sheet.SetFormat(new CellFormat() { BackgroundColor = "#c8d9ed" }, Sheet.Range(8, 12, 0, 4));
 

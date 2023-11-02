@@ -1,17 +1,40 @@
+using System.Drawing;
 using BlazorDatasheet.Core.Data;
+using ColorConverter = BlazorDatasheet.Core.Color.ColorConverter;
 
 namespace BlazorDatasheet.Core.Formats.DefaultConditionalFormats;
 
 public class NumberScaleConditionalFormat : ConditionalFormatAbstractBase
 {
-    public NumberScaleConditionalFormat()
-    {
-        this.IsShared = true;
-    }
-
+    private readonly System.Drawing.Color _colorStart;
+    private readonly System.Drawing.Color _colorEnd;
+    private string[] _computedLut;
     private double cachedMean;
     private double cachedMin;
     private double cachedMax;
+
+    public NumberScaleConditionalFormat(System.Drawing.Color colorStart, System.Drawing.Color colorEnd)
+    {
+        _colorStart = colorStart;
+        _colorEnd = colorEnd;
+        ComputeLUT(50);
+        this.IsShared = true;
+    }
+
+    private void ComputeLUT(int size)
+    {
+        _computedLut = new string[size];
+        var hsvStart = ColorConverter.RGBToHSV(_colorStart);
+        var hsvEnd = ColorConverter.RGBToHSV(_colorEnd);
+        for (int i = 0; i < size; i++)
+        {
+            (double h, double s, double v) = ColorConverter.HsvInterp(hsvStart, hsvEnd, (i / (double)size));
+            var newColor = ColorConverter.HSVToRGB(h, s, v);
+            _computedLut[i] = $"rgb({newColor.R},{newColor.G},{newColor.B})";
+        }
+
+        Console.WriteLine("Computed LUT");
+    }
 
     public override void Prepare(Sheet sheet)
     {
@@ -41,18 +64,13 @@ public class NumberScaleConditionalFormat : ConditionalFormatAbstractBase
         base.Prepare(sheet);
     }
 
-    private string getColour(double value, double min, double max, double mean)
+    private string GetColourString(double value, double min, double max, double mean)
     {
-        byte R;
-        byte G;
-        byte B;
         var size = Math.Abs(max - min);
-        var frac = (value - min)/size;
-        R = (byte)(255 * frac);
-        G = (byte)(255 * frac);
-        B = (byte)(255 * frac);
-        var str = $"rgb({R},{G},{B})";
-        return str;
+        var frac = (value - min) / size;
+        var index = (int)(frac * _computedLut.Length);
+        var color = _computedLut[Math.Min(index, _computedLut.Length - 1)];
+        return color;
     }
 
     public override CellFormat? CalculateFormat(int row, int col, Sheet sheet)
@@ -64,7 +82,7 @@ public class NumberScaleConditionalFormat : ConditionalFormatAbstractBase
 
         return new CellFormat()
         {
-            BackgroundColor = getColour(value.Value, cachedMin, cachedMax, cachedMean)
+            BackgroundColor = GetColourString(value.Value, cachedMin, cachedMax, cachedMean)
         };
     }
 }

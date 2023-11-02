@@ -3,6 +3,7 @@
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Formats
 @using BlazorDatasheet.Core.Formats.DefaultConditionalFormats
+@using System.Drawing
 <PageTitle>Conditional Formatting</PageTitle>
 
 <h1>Conditional Formatting</h1>
@@ -12,11 +13,11 @@
 
     <ol>
         <li>Column 1: Shows a "check" icon if the cell contains the word check.</li>
-        <li>Columns 2 - 6: Shows a black and white colour gradient that depends on the cell's value in relation to all others with the conditional format applied.</li>
+        <li>Columns 2 - 6: Shows a colour gradient that depends on the cell's value in relation to all others with the conditional format applied.</li>
     </ol>
 </p>
 
-<div style="height: 600px; overflow-y: scroll">
+<div style="height:500px; width: 500px; overflow-y: scroll">
     <Datasheet
         Icons="iconDictionary"
         Sheet="sheet">
@@ -38,7 +39,7 @@
     protected override void OnInitialized()
     {
         sheet = new Sheet(30, 5);
-        var numberScaleConditionalFormat = new NumberScaleConditionalFormat();
+        var numberScaleConditionalFormat = new NumberScaleConditionalFormat(Color.YellowGreen, Color.IndianRed);
         var checkConditionalFormat = new CustomCheckConditionalFormat("check");
 
         var values = new List<(int row, int col, object value)>();
