@@ -1,4 +1,8 @@
+using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Formats;
+using BlazorDatasheet.Core.Validation;
+using BlazorDatasheet.DataStructures.Geometry;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using BlazorDatasheet.Wasm;
@@ -10,5 +14,3 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
 await builder.Build().RunAsync();
-
-var sheet = new Sheet(2,2);
