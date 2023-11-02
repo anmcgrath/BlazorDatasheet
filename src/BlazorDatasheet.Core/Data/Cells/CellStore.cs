@@ -136,7 +136,7 @@ public partial class CellStore
         restoreData.ValueRestoreData = _dataStore.RemoveRowAt(row, nRows);
         restoreData.ValidRestoreData = _validStore.RemoveRowAt(row, nRows);
         restoreData.TypeRestoreData = _typeStore.RemoveRows(row, row + nRows - 1);
-        restoreData.FormulaRestoreData = ClearFormulaImpl(row, nRows).FormulaRestoreData;
+        restoreData.FormulaRestoreData = ClearFormulaImpl(new[] { new RowRegion(row, nRows) }).FormulaRestoreData;
         restoreData.FormatRestoreData = _formatStore.RemoveRows(row, row + nRows - 1);
         restoreData.MergeRestoreData = _mergeStore.RemoveRows(row, row + nRows - 1);
         _formulaStore.RemoveRowAt(row, nRows);
@@ -150,7 +150,7 @@ public partial class CellStore
         restoreData.ValueRestoreData = _dataStore.RemoveColAt(col, nCols);
         restoreData.ValidRestoreData = _validStore.RemoveColAt(col, nCols);
         restoreData.TypeRestoreData = _typeStore.RemoveCols(col, col + nCols - 1);
-        restoreData.FormulaRestoreData = ClearFormulaImpl(col, nCols).FormulaRestoreData;
+        restoreData.FormulaRestoreData = ClearFormulaImpl(new[] { new ColumnRegion(col, nCols) }).FormulaRestoreData;
         restoreData.FormatRestoreData = _formatStore.RemoveCols(col, col + nCols - 1);
         restoreData.MergeRestoreData = _mergeStore.RemoveCols(col, col + nCols - 1);
         _formulaStore.RemoveColAt(col, nCols);
