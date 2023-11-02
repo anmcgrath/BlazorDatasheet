@@ -223,7 +223,7 @@ public partial class Datasheet : IHandleEvent
     {
         _defaultCellTypeDefinitions.Add("text", CellTypeDefinition.Create<TextEditorComponent, TextRenderer>());
         _defaultCellTypeDefinitions.Add("datetime", CellTypeDefinition.Create<DateTimeEditorComponent, TextRenderer>());
-        _defaultCellTypeDefinitions.Add("boolean", CellTypeDefinition.Create<TextEditorComponent, BoolRenderer>());
+        _defaultCellTypeDefinitions.Add("boolean", CellTypeDefinition.Create<BoolEditorComponent, BoolRenderer>());
         _defaultCellTypeDefinitions.Add("select", CellTypeDefinition.Create<SelectEditorComponent, SelectRenderer>());
         _defaultCellTypeDefinitions.Add("textarea", CellTypeDefinition.Create<TextareaEditorComponent, TextRenderer>());
     }
@@ -520,7 +520,7 @@ public partial class Datasheet : IHandleEvent
                 if (Sheet == null || !Sheet.Selection.Regions.Any())
                     return false;
                 var inputPosition = Sheet.Selection.GetInputPosition();
-                
+
                 BeginEdit(inputPosition.row, inputPosition.col, softEdit: true, EditEntryMode.Key, e.Key);
             }
 
