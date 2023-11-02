@@ -11,6 +11,7 @@ public class ObjectEditorBuilder<T>
 {
     private readonly IQueryable<T> _dataSource;
     private List<ObjectPropertyBuilder<T>> _properties = new();
+    private int _pageSize = 10;
 
     public ObjectEditorBuilder(IQueryable<T> dataSource)
     {
@@ -24,16 +25,20 @@ public class ObjectEditorBuilder<T>
         for (int i = 0; i < _properties.Count; i++)
         {
             if (_properties[i].CellFormat != null)
-                sheet.Columns.SetColumnFormatImpl(_properties[i].CellFormat, new ColumnRegion(i));
+                sheet.SetFormat(_properties[i].CellFormat, sheet.Range(new ColumnRegion(i)));
             foreach (var cf in _properties[i].ConditionalFormats)
                 sheet.ConditionalFormats.Apply(new ColumnRegion(i), cf);
             foreach (var validator in _properties[i].Validators)
-                sheet.Validators.AddImpl(validator, new ColumnRegion(i));
+                sheet.Validators.Add(new ColumnRegion(i), validator);
             sheet.Cells.SetType(new ColumnRegion(i), _properties[i].Type);
             sheet.Columns.SetHeadings(i, i, _properties[i].Heading ?? _properties[i].PropertyName);
         }
 
-        return new ObjectEditor<T>(sheet, _dataSource, (i, o) => _properties[i].GetPropertyValue(o)!,
+        return new ObjectEditor<T>(sheet,
+            _pageSize,
+            _dataSource,
+            (i, o) => _properties[i].GetPropertyValue(o)!,
+            (i, o, v) => _properties[i].SetPropertyValue(o, v),
             _properties.Count);
     }
 
@@ -51,7 +56,14 @@ public class ObjectEditorBuilder<T>
         var propertyBuilder = new ObjectPropertyBuilder<T>(propName);
         if (propDefn != null)
             propDefn.Invoke(propertyBuilder);
+
         _properties.Add(propertyBuilder);
+        return this;
+    }
+
+    public ObjectEditorBuilder<T> WithPageSize(int pageSize)
+    {
+        _pageSize = pageSize;
         return this;
     }
 }

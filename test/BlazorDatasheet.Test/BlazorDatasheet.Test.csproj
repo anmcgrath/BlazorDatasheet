@@ -16,6 +16,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\src\BlazorDatasheet.SharedPages\BlazorDatasheet.SharedPages.csproj" />
       <ProjectReference Include="..\..\src\BlazorDatasheet\BlazorDatasheet.csproj" />
     </ItemGroup>
 

@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Diagnostics;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.DataStructures.Geometry;
 
@@ -8,6 +9,7 @@ public class ObjectEditor<T>
 {
     private readonly IQueryable<T> _dataSource;
     private readonly Func<int, T, object> _valueColumnSelector;
+    private readonly Action<int, T, object> _valueColumnSetter;
     private readonly ObjectEditorBuilder<T> _builder;
 
     public int PageSize { get; private set; }
@@ -16,32 +18,40 @@ public class ObjectEditor<T>
     public int NColumns { get; private set; }
     public Sheet Sheet { get; }
 
-    private const string ItemMetaDataName = "obj";
+    private const string ItemMetaData = "obj";
 
-    internal ObjectEditor(Sheet sheet, IQueryable<T> dataSource, Func<int, T, object> valueColumnSelector, int nColumns)
+    internal ObjectEditor(Sheet sheet,
+        int pageSize,
+        IQueryable<T> dataSource,
+        Func<int, T, object> valueColumnSelector,
+        Action<int, T, object> valueColumnSetter,
+        int nColumns)
     {
         _dataSource = dataSource;
         _valueColumnSelector = valueColumnSelector;
+        _valueColumnSetter = valueColumnSetter;
         NColumns = nColumns;
         Sheet = sheet;
 
         Sheet.Cells.CellsChanged += SheetOnCellsChanged;
 
-        SetPageSize(10);
+        SetPageSize(pageSize);
     }
 
     private void SheetOnCellsChanged(object? sender, IEnumerable<CellPosition> e)
     {
         foreach (var pos in e)
         {
-            var item = (T?)Sheet.Cells.GetMetaData(pos.row, pos.col, ItemMetaDataName);
+            var value = Sheet.Cells.GetValue(pos.row, pos.col);
+            var item = (T?)Sheet.Cells.GetMetaData(pos.row, pos.col, ItemMetaData);
             if (item != null)
             {
+                _valueColumnSetter.Invoke(pos.col, item, value);
             }
         }
     }
 
-    public void SetPageSize(int nPages)
+    private void SetPageSize(int nPages)
     {
         PageSize = nPages;
         NumPages = _dataSource.Count() / PageSize;
@@ -60,8 +70,7 @@ public class ObjectEditor<T>
 
     private void RefreshView()
     {
-        Sheet.BatchUpdates();
-        Sheet.Range(Sheet.Region).Clear();
+        //Sheet.Range(Sheet.Region).Clear();
 
         var values = new List<(int row, int col, object value)>();
         var items = _dataSource.Skip(PageSize * CurrentPage).Take(PageSize).ToList();
@@ -72,12 +81,11 @@ public class ObjectEditor<T>
             {
                 var data = _valueColumnSelector(j, items[i]);
                 values.Add((i, j, data));
-                Sheet.Cells.SetCellMetaData(i, j, ItemMetaDataName, items[i]);
+                Sheet.Cells.SetCellMetaData(i, j, ItemMetaData, items[i]);
             }
         }
 
         Sheet.Cells.SetValues(values);
-        Sheet.EndBatchUpdates();
         Sheet.Commands.ClearHistory();
     }
 }

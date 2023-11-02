@@ -40,6 +40,7 @@
         }
 
         var builder = new ObjectEditorBuilder<Person>(new EnumerableQuery<Person>(People))
+            .WithPageSize(10)
             .WithProperty(x => x.FirstName)
             .WithProperty(x => x.LastName)
             .WithProperty(x => x.Age,
@@ -50,7 +51,6 @@
                     x.WithType("boolean"));
 
         editor = builder.Build();
-        editor.SetPageSize(10);
 
         base.OnInitialized();
     }

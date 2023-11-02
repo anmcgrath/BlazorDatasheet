@@ -54,4 +54,11 @@ public class ObjectPropertyBuilder<T>
         CellFormat = format;
         return this;
     }
+
+    public void SetPropertyValue<T>(T item, object value)
+    {
+        var prop = typeof(T).GetProperty(PropertyName);
+        var converted = Convert.ChangeType(value, prop.PropertyType);
+        typeof(T).GetProperty(PropertyName)!.SetValue(item, converted);
+    }
 }
