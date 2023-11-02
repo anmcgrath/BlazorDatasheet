@@ -62,7 +62,7 @@
 
 .select-list[b-k71ijntl8x] {
     min-width: 10rem;
-    z-index: 3;
+    z-index: 4;
     border: var(--sheet-border-style);
     background: var(--sheet-bg-color);
     position: absolute;
