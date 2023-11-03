@@ -4,6 +4,15 @@
         <TargetFramework>net7.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
+        <Title>BlazorDatasheet</Title>
+        <Authors>Andrew McGrath</Authors>
+        <Description>A simple Blazor datasheet component for editing tabular data.</Description>
+        <PackageProjectUrl>https://github.com/anmcgrath/BlazorDatasheet</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/anmcgrath/BlazorDatasheet.git</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageTags>blazor,editor,excel,spreadsheet,datasheet</PackageTags>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <Version>0.1.0.0</Version>
     </PropertyGroup>
 
 
