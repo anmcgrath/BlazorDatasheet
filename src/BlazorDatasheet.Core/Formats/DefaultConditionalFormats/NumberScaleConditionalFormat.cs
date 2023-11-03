@@ -32,8 +32,7 @@ public class NumberScaleConditionalFormat : ConditionalFormatAbstractBase
             var newColor = ColorConverter.HSVToRGB(h, s, v);
             _computedLut[i] = $"rgb({newColor.R},{newColor.G},{newColor.B})";
         }
-
-        Console.WriteLine("Computed LUT");
+        
     }
 
     public override void Prepare(Sheet sheet)
