@@ -213,7 +213,7 @@ public class CumulativeRange1DStore : Range1DStore<double>
             // it is between ranges
             //          c-1end   cumulative   cstart
             // [       ],            x        [      ]
-            var offset = cumulative - _cumulativeValuesAtEnd[searchIndexEnd - 1];
+            var offset = cumulative - _cumulativeValuesAtEnd[searchIndexStart - 1];
             return _storedPositionEnds[searchIndexStart - 1] + (int)(offset / Default);
         }
 

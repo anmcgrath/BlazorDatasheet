@@ -278,8 +278,7 @@ public partial class Datasheet : IHandleEvent
     }
 
     /// <summary>
-    /// Handles the JS scroll event. Returns the Rectangle that contains information about how much
-    /// the viewport has to move before it will have to re-render the cells.
+    /// Handles the JS interaction events
     /// </summary>
     /// <param name="e"></param>
     /// <returns></returns>
@@ -327,6 +326,15 @@ public partial class Datasheet : IHandleEvent
 
     private void HandleCellMouseDown(int row, int col, bool MetaKey, bool CtrlKey, bool ShiftKey)
     {
+        if (_sheetLocal.Editor.IsEditing)
+        {
+            if (!(Sheet.Editor.EditCell.Row == row && Sheet.Editor.EditCell.Col == col))
+            {
+                if (!AcceptEdit())
+                    return;
+            }
+        }
+
         if (ShiftKey && Sheet?.Selection?.ActiveRegion != null)
             Sheet?.Selection?.ExtendTo(row, col);
         else
@@ -343,12 +351,6 @@ public partial class Datasheet : IHandleEvent
                 this.BeginSelectingRow(row);
             else
                 this.BeginSelectingCell(row, col);
-        }
-
-        if (_sheetLocal.Editor.IsEditing)
-        {
-            if (!(Sheet.Editor.EditCell.Row == row && Sheet.Editor.EditCell.Col == col))
-                AcceptEdit();
         }
     }
 

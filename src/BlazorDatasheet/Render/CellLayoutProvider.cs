@@ -137,6 +137,7 @@ public class CellLayoutProvider
         var visibleRowEnd = ComputeRow(top + height);
         var visibleColEnd = ComputeColumn(left + width);
 
+
         visibleRowEnd = Math.Min(_sheet.NumRows - 1, visibleRowEnd);
         visibleColEnd = Math.Min(_sheet.NumCols - 1, visibleColEnd);
 
@@ -151,7 +152,7 @@ public class CellLayoutProvider
         var topPos = _sheet.Rows.GetTop(startRow);
         var distRight = ComputeWidthBetween(endCol, _sheet.NumCols - 1);
         var distBottom = ComputeHeightBetween(endRow, _sheet.NumRows - 1);
-
+        
         return new Viewport()
         {
             VisibleRegion = region,

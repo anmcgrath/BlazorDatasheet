@@ -199,26 +199,34 @@ public class RegionDataStore<T> where T : IEquatable<T>
                 continue;
             }
 
-            // Contract regions that intersect
-            var nOverlapping = r.Region.GetIntersection(region)!.GetSize(axis);
-            var clonedRegion = r.Region.Clone();
-            clonedRegion.Contract(axis == Axis.Row ? Edge.Bottom : Edge.Right, nOverlapping);
-            newDataRegions.Add(new DataRegion<T>(r.Data, clonedRegion));
-            _tree.Delete(r);
+            // Contract regions that intersect only if the rows/cols are contained inside the region
+            // The restore will then just be handled by re-inserting rows/cols which will expand the regions.
+            var contained = axis == Axis.Col
+                ? (r.Region.SpansCol(start + 1) && r.Region.SpansCol(end - 1))
+                : (r.Region.SpansRow(start + 1) && r.Region.SpansRow(end - 1));
 
-            // There's a special case that if we remove from the top/left of a region, then it becomes un-recoverable
-            // because inserting at the top index won't expand but rather will shift down. So store this region as "removed"
-            var r0 = axis == Axis.Col ? r.Region.Left : r.Region.Top;
-            if (r0 == start)
-                removed.Add(r);
-
-            // This also applies if we remove from the bottom/right of a region,
-            // but only if _expandWhenInsertAfter = false
-            if (!_expandWhenInsertAfter)
+            if (contained)
             {
-                var r1 = axis == Axis.Col ? r.Region.Right : r.Region.Bottom;
-                if (r1 == start)
-                    removed.Add(r);
+                var nOverlapping = r.Region.GetIntersection(region)!.GetSize(axis);
+                var clonedRegion = r.Region.Clone();
+                clonedRegion.Contract(axis == Axis.Row ? Edge.Bottom : Edge.Right, nOverlapping);
+                newDataRegions.Add(new DataRegion<T>(r.Data, clonedRegion));
+                _tree.Delete(r);
+            }
+            else // Add the bits that aren't intersecting back in only
+            {
+                // we need to shift anything to the left/up if it is located to the right/bottom
+                // of the remove row/col
+                foreach (var cut in cuts)
+                {
+                    var dCol = (axis == Axis.Col && cut.Left >= end) ? (start - end + 1) : 0;
+                    var dRow = (axis == Axis.Row && cut.Top >= end) ? (start - end + 1) : 0;
+                    cut.Shift(-dRow, -dCol);
+                    newDataRegions.Add(new DataRegion<T>(r.Data, cut));
+                }
+
+                removed.Add(r);
+                _tree.Delete(r);
             }
         }
 

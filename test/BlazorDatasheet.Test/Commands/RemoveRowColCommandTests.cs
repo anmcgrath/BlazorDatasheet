@@ -1,3 +1,4 @@
+using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -144,5 +145,41 @@ public class RemoveRowColCommandTests
         sheet.Commands.Undo();
         sheet.Rows.GetHeight(1).Should().Be(100);
         sheet.Rows.GetHeight(2).Should().Be(200);
+    }
+
+    [Test]
+    public void Remove_Row_At_End_Of_Format_region_Then_Undo_restores_Format()
+    {
+        var sheet = new Sheet(5, 5);
+        sheet.SetFormat(sheet.Range("A1:A5"), new CellFormat() { TextAlign = "centre" });
+        var cmd = new RemoveRowsCommand(4, 1);
+        cmd.Execute(sheet);
+        cmd.Undo(sheet);
+        sheet.GetFormat(4, 0).TextAlign.Should().Be("centre");
+    }
+
+    [Test]
+    public void Remove_Col_At_End_Of_Format_region_Then_Undo_restores_Format()
+    {
+        var sheet = new Sheet(5, 5);
+        sheet.SetFormat(sheet.Range("A1:D1"), new CellFormat() { TextAlign = "centre" });
+        var cmd = new RemoveColumnCommand(3, 1);
+        cmd.Execute(sheet);
+        cmd.Undo(sheet);
+        sheet.GetFormat(0, 3).TextAlign.Should().Be("centre");
+    }
+
+    [Test]
+    public void Remove_Col_Intersects_With_Edge_Of_region_Restores_On_Undo()
+    {
+        // <------>
+        // | 0 | 1 | 2 | 3 |
+        // |   | c | c | c |
+        var sheet = new Sheet(5, 5);
+        sheet.SetFormat(sheet.Range(0, 0, 1, 3), new CellFormat() { TextAlign = "centre" });
+        var cmd = new RemoveColumnCommand(0, 2);
+        cmd.Execute(sheet);
+        cmd.Undo(sheet);
+        sheet.GetFormat(0, 1).TextAlign.Should().Be("centre");
     }
 }
