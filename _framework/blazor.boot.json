@@ -7,9 +7,9 @@
   "linkerEnabled": true,
   "resources": {
     "assembly": {
-      "BlazorDatasheet.Core.dll": "sha256-mWNsOGMaqfoah3ZmXJh3w5oNkjqHO9hip1Q4bkuLaEY=",
-      "BlazorDatasheet.DataStructures.dll": "sha256-tKQ2mNbrHzU9GnVjr1JM1XBR\/5fhoR2NG\/jMEzIAGNU=",
-      "BlazorDatasheet.dll": "sha256-GtPCqH2H4BFjuCrLMqSg9infasu7tUfU2LY8XqzDBP8=",
+      "BlazorDatasheet.Core.dll": "sha256-b6y1ecarGWIMk7Am+FkDzb3qEMI\/kbmyethHpRKF97I=",
+      "BlazorDatasheet.DataStructures.dll": "sha256-KTW+Uv1mCo4oUigjz84PCa+YDy6sWhEy7jqlfRdiuPE=",
+      "BlazorDatasheet.dll": "sha256-BgkcIIaxBq5l02Kq2rQ5KgvBnIE18Utr\/Q9XLI+5ZHo=",
       "BlazorDatasheet.Formula.Core.dll": "sha256-esP7mGFkIe94iL58RazQwqYou6Gy5P48xCdOjbMFtWM=",
       "BlazorDatasheet.Formula.Functions.dll": "sha256-qbaHE3GcRzBPAK3fKCnJLcxVZ4yBS3gy58l95QvfEas=",
       "BlazorDatasheet.SharedPages.dll": "sha256-o\/hvKirTbo9kjmR33e5qlfrDTDLKB\/yE0wl66LnSw3I=",
