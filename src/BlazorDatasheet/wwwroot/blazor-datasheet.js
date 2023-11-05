@@ -46,7 +46,7 @@ function serializeMouseEvent(e) {
             offsetY: e.offsetY,
             pageX: e.pageX,
             screenX: e.screenX,
-            screenTop: e.screenY
+            screenY: e.screenY,
         }
     }
 }

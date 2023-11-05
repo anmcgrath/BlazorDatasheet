@@ -43,18 +43,18 @@ public class ConsolidatedDataStore<T> : RegionDataStore<T> where T : IEquatable<
         };
     }
 
-    public override (List<IRegion> regionsRemoved, List<IRegion> regionsAdded) Clear(IRegion region, T data)
+    public override RegionRestoreData<T> Clear(IRegion region, T data)
     {
         if (!_dataMaps.ContainsKey(data))
-            return (new List<IRegion>(), new List<IRegion>());
+            return new RegionRestoreData<T>();
 
-        var regionsRemoved = base.Clear(region, data);
-        foreach (var removed in regionsRemoved.regionsRemoved)
-            _dataMaps[data].Remove(removed);
-        foreach (var added in regionsRemoved.regionsAdded)
-            _dataMaps[data].Add(added);
+        var restoreData = base.Clear(region, data);
+        foreach (var removed in restoreData.RegionsRemoved)
+            _dataMaps[data].Remove(removed.Region);
+        foreach (var added in restoreData.RegionsAdded)
+            _dataMaps[data].Add(added.Region);
 
-        return regionsRemoved;
+        return restoreData;
     }
 
     /// <summary>

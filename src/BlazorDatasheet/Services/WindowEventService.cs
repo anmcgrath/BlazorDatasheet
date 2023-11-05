@@ -13,10 +13,10 @@ public class WindowEventService : IWindowEventService
     private readonly IJSRuntime _js;
     private DotNetObjectReference<WindowEventService> _dotNetHelper;
     private List<Tuple<string, string>> _fnStore = new List<Tuple<string, string>>();
-    public event Func<KeyboardEventArgs, bool?> OnKeyDown;
-    public event Func<MouseEventArgs, bool>? OnMouseDown;
-    public event Func<MouseEventArgs, bool>? OnMouseUp;
-    public event Func<MouseEventArgs, bool>? OnMouseMove;
+    public event Func<KeyboardEventArgs, Task<bool>>? OnKeyDown;
+    public event Func<MouseEventArgs, Task<bool>>? OnMouseDown;
+    public event Func<MouseEventArgs, Task<bool>>? OnMouseUp;
+    public event Func<MouseEventArgs, Task<bool>>? OnMouseMove;
     public event Func<PasteEventArgs, Task>? OnPaste;
 
     public WindowEventService(IJSRuntime js)
@@ -41,45 +41,52 @@ public class WindowEventService : IWindowEventService
     }
 
     [JSInvokable]
-    public bool? HandleWindowKeyDown(KeyboardEventArgs e)
+    public async Task<bool?> HandleWindowKeyDown(KeyboardEventArgs e)
     {
-        var result = OnKeyDown?.Invoke(e);
-        if (!result.HasValue)
+        if (OnKeyDown == null)
             return false;
-        return result.Value;
+        
+        var result = await OnKeyDown.Invoke(e);
+        return result;
     }
 
     [JSInvokable]
-    public bool HandleWindowMouseDown(MouseEventArgs e)
+    public async Task<bool> HandleWindowMouseDown(MouseEventArgs e)
     {
-        var result = OnMouseDown?.Invoke(e);
-        if (!result.HasValue)
+        if (OnMouseDown == null)
             return false;
-        return result.Value;
+        
+        var result = await OnMouseDown.Invoke(e);
+        return result;
     }
     
     [JSInvokable]
-    public bool HandleWindowMouseUp(MouseEventArgs e)
+    public async Task<bool> HandleWindowMouseUp(MouseEventArgs e)
     {
-        var result = OnMouseUp?.Invoke(e);
-        if (!result.HasValue)
+        if (OnMouseUp == null)
             return false;
-        return result.Value;
+        
+        var result = await OnMouseUp.Invoke(e);
+        return result;
     }
 
 
     [JSInvokable]
-    public bool HandleWindowMouseMove(MouseEventArgs e)
+    public async Task<bool> HandleWindowMouseMove(MouseEventArgs e)
     {
-        var result = OnMouseMove?.Invoke(e);
-        if (!result.HasValue)
+        if (OnMouseMove == null)
             return false;
-        return result.Value;
+        
+        var result = await OnMouseMove.Invoke(e);
+        return result;
     }
 
     [JSInvokable]
     public async Task HandleWindowPaste(PasteEventArgs e)
     {
+        if (OnPaste == null)
+            return;
+        
         if (OnPaste is not null)
         {
             await OnPaste.Invoke(e);

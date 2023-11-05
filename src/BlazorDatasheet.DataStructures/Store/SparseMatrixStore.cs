@@ -207,16 +207,59 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
         {
             if (kp.Key < c0 || kp.Key > c1)
                 continue;
-            var nonEmptyInRow = kp.Value.GetNonEmptyCellsBetween(r0, r1);
+            var nonEmptyInRow = kp.Value.GetNonEmptyRowsBetween(r0, r1);
             nonEmptyPositions.AddRange(nonEmptyInRow.Select(x => new CellPosition(x, kp.Key)));
         }
 
         return nonEmptyPositions;
     }
 
+    public IEnumerable<(int row, int col, T data)> GetNonEmptyData(IRegion region) =>
+        GetNonEmptyData(region.Top, region.Bottom, region.Left, region.Right);
+
+    /// <summary>
+    /// Get non empty data that exist in the bounds given
+    /// </summary>
+    /// <param name="r0">The lower row bound</param>
+    /// <param name="r1">The upper row bound</param>
+    /// <param name="c0">The lower col bound</param>
+    /// <param name="c1">The upper col bound</param>
+    /// <returns></returns>
+    public IEnumerable<(int row, int col, T data)> GetNonEmptyData(int r0, int r1, int c0, int c1)
+    {
+        List<(int row, int col, T data)> nonEmptyData = new();
+        foreach (var kp in _columns)
+        {
+            if (kp.Key < c0 || kp.Key > c1)
+                continue;
+            var nonEmptyInRow = kp.Value.GetNonEmptyDataBetween(r0, r1);
+            nonEmptyData.AddRange(nonEmptyInRow.Select(x => (x.row, kp.Key, x.data)));
+        }
+
+        return nonEmptyData;
+    }
+
     public IEnumerable<CellPosition> GetNonEmptyPositions(IRegion region)
     {
         return GetNonEmptyPositions(region.Top, region.Bottom, region.Left, region.Right);
+    }
+
+    public MatrixRestoreData<T> Copy(IRegion fromRegion, CellPosition toPosition)
+    {
+        var toRegion = new Region(
+            toPosition.row, toPosition.row + fromRegion.Height - 1,
+            toPosition.col, toPosition.col + fromRegion.Width - 1);
+
+        var nonEmptyCopyData = this.GetNonEmptyData(fromRegion).ToList();
+        var restoreData = this.Clear(toRegion);
+
+        var dr = toPosition.row - fromRegion.Top;
+        var dc = toPosition.col - fromRegion.Left;
+
+        foreach (var v in nonEmptyCopyData)
+            this.Set(v.row + dr, v.col + dc, v.data);
+
+        return restoreData;
     }
 
     public void Restore(MatrixRestoreData<T> restoreData)
@@ -305,7 +348,7 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
         /// <param name="r0"></param>
         /// <param name="r1"></param>
         /// <returns></returns>
-        public List<int> GetNonEmptyCellsBetween(int r0, int r1)
+        public List<int> GetNonEmptyRowsBetween(int r0, int r1)
         {
             var rows = new List<int>();
             if (!Values.Any())
@@ -319,6 +362,32 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
                 if (rowAtI < r0 || rowAtI > r1)
                     break;
                 rows.Add(rowAtI);
+            }
+
+            return rows;
+        }
+
+        /// <summary>
+        /// Returns the nonempty row numbers between & including rows r0 to r1
+        /// </summary>
+        /// <param name="r0"></param>
+        /// <param name="r1"></param>
+        /// <returns></returns>
+        public List<(int row, T data)> GetNonEmptyDataBetween(int r0, int r1)
+        {
+            var rows = new List<(int row, T data)>();
+            if (!Values.Any())
+                return rows;
+
+            var indexStart = Values.Keys.BinarySearchClosest(r0);
+            var index = indexStart;
+
+            for (int i = index; i < Values.Keys.Count; i++)
+            {
+                var rowAtI = Values.Keys[i];
+                if (rowAtI < r0 || rowAtI > r1)
+                    break;
+                rows.Add((rowAtI, Values[i]));
             }
 
             return rows;

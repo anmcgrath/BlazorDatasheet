@@ -4,6 +4,6 @@ public readonly record struct CellPosition(int row, int col)
 {
     public override string ToString()
     {
-        return $"({col}, {row})";
+        return $"({row}, {col})";
     }
 }

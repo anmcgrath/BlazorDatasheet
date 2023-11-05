@@ -31,7 +31,7 @@ public partial class CellStore
     /// <param name="col"></param>
     /// <param name="value"></param>
     /// <returns>Restore data that stores the changes made.</returns>
-    internal CellStoreRestoreData SetValueImpl(int row, int col, object value)
+    internal CellStoreRestoreData SetValueImpl(int row, int col, object? value)
     {
         var restoreData = new CellStoreRestoreData();
 

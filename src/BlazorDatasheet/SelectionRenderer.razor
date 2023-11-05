@@ -4,6 +4,11 @@
 @using System.ComponentModel
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Events
+@using BlazorDatasheet.Services
+@using Microsoft.JSInterop
+@inject IJSRuntime JS;
+@implements IDisposable
 
 <!-- Render the temp selection (currently selected region) -->
 @if (Sheet != null && BoundedSelectingRegion != null && BoundedSelectingRegion?.Area > 0)
@@ -72,6 +77,24 @@
     }
 }
 
+<!-- render dragger (bottom right corner) -->
+<div id="auto-filler"
+     @onpointerdown="DraggerMouseDown"
+     style="@GetDraggerStyleString();cursor:crosshair;pointer-events: all;">
+</div>
+
+<!-- drag preview -->
+@if (_isDragging && _dragPreviewRegion != null)
+{
+    <BoxOverlayRenderer
+        BackgroundVisible="false"
+        BorderThickness="1"
+        X="getLeft(_dragPreviewRegion)"
+        Y="getTop(_dragPreviewRegion)"
+        Width="getWidth(_dragPreviewRegion)"
+        Height="getHeight(_dragPreviewRegion)"/>
+}
+
 @code {
 
     [Parameter, EditorRequired]
@@ -82,7 +105,17 @@
     [Parameter, EditorRequired]
     public Sheet? Sheet { get; set; }
 
+    [Parameter]
+    public EventCallback<SelectionExpandedEventArgs> SelectionExpanded { get; set; }
+
+    private bool _isDragging = false;
+    private double _dragStartX;
+    private double _dragStartY;
+
+    private IRegion _dragPreviewRegion;
+
     private string bgStyle = "background:var(--selection-bg-color);";
+    private IWindowEventService _windowEventService;
 
     private IRegion? BoundedSelectingRegion => Sheet?.Selection.SelectingRegion?.GetIntersection(Sheet?.Region);
 
@@ -90,16 +123,6 @@
     private double getTop(IRegion region) => CellLayoutProvider.ComputeTopPosition(region) + 1;
     private double getWidth(IRegion region) => CellLayoutProvider.ComputeWidth(region) - 2;
     private double getHeight(IRegion region) => CellLayoutProvider.ComputeHeight(region) - 2;
-
-    // Returns the region that the position covers (may be > 1 because of merged cells)
-    private IRegion getRegion(CellPosition position)
-    {
-        var merge = Sheet.Cells?.GetMerge(position.row, position.col);
-        if (merge != null)
-            return merge;
-        else
-            return new Region(position.row, position.col);
-    }
 
     protected override void OnParametersSet()
     {
@@ -119,6 +142,46 @@
         }
     }
 
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _windowEventService = new WindowEventService(JS);
+            await _windowEventService.Init();
+            _windowEventService.OnMouseUp += WindowEventServiceOnOnMouseUp;
+            _windowEventService.OnMouseMove += WindowEventServiceOnOnMouseMove;
+        }
+    }
+
+    // Returns the region that the position covers (may be > 1 because of merged cells)
+    private IRegion getRegion(CellPosition position)
+    {
+        var merge = Sheet.Cells?.GetMerge(position.row, position.col);
+        if (merge != null)
+            return merge;
+        else
+            return new Region(position.row, position.col);
+    }
+
+    private string GetDraggerStyleString()
+    {
+        var region = Sheet.Selection.ActiveRegion ?? Sheet.Selection.SelectingRegion;
+        if (region == null)
+            return "display:none;";
+
+        var x = CellLayoutProvider.ComputeLeftPosition(region.Right + 1);
+        var y = CellLayoutProvider.ComputeTopPosition(region.Bottom + 1);
+        var w = 6d;
+        var h = 6d;
+        var sb = new StringBuilder();
+        sb.Append($"display:block;position:absolute;");
+        sb.Append($"left:{x - w / 2}px;top:{y - w / 2}px;");
+        sb.Append($"width:{w}px;height:{h}px;");
+        sb.Append("background:var(--selection-border-color);");
+        sb.Append("border:1px solid white;");
+        return sb.ToString();
+    }
+
     private void OnSelectionChanged(object? sender, IEnumerable<IRegion> regions)
     {
         StateHasChanged();
@@ -127,6 +190,86 @@
     private void OnSelectingChanged(object? sender, IRegion region)
     {
         StateHasChanged();
+    }
+
+    private void DraggerMouseDown(PointerEventArgs obj)
+    {
+        if (Sheet?.Selection.ActiveRegion == null)
+            return;
+
+        _isDragging = true;
+        _dragStartX = obj.ScreenX;
+        _dragStartY = obj.ScreenY;
+    }
+
+    private async Task<bool> WindowEventServiceOnOnMouseMove(MouseEventArgs arg)
+    {
+        _dragPreviewRegion = null;
+        if (!_isDragging || _sheet?.Selection.ActiveRegion == null)
+            return false;
+
+        var dx = (arg.ScreenX - _dragStartX);
+        var dy = (arg.ScreenY - _dragStartY);
+
+    // x y coord of cursor relative to sheet (0, 0)
+        var posn = new Point2d(CellLayoutProvider.ComputeRightPosition(_sheet.Selection.ActiveRegion.Right) + dx,
+            CellLayoutProvider.ComputeBottomPosition(_sheet.Selection.ActiveRegion.Bottom) + dy);
+
+        var cell = new CellPosition(CellLayoutProvider.ComputeRow(posn.Y), CellLayoutProvider.ComputeColumn(posn.X));
+    // x y coords of top-left of cell
+        var cellPosition = new Point2d(CellLayoutProvider.ComputeLeftPosition(cell.col), CellLayoutProvider.ComputeTopPosition(cell.row));
+        var cellHalfWidth = CellLayoutProvider.ComputeWidth(cell.col, 1) / 2;
+        var cellHalfHeight = CellLayoutProvider.ComputeHeight(cell.row, 1) / 2;
+    // if the posn is the top or left of the cell then we need to decrease cellPosn because we are using the centre
+    // of the cell to determine its position
+        var rowCorrection = 0;
+        var colCorrection = 0;
+
+        if (cell.col != _sheet.Selection.ActiveRegion.Right)
+        {
+            if (posn.X < cellPosition.X + cellHalfWidth)
+                colCorrection = -1;
+            if (posn.Y < cellPosition.Y + cellHalfHeight)
+                rowCorrection = -1;
+        }
+
+        var endCol = colCorrection + cell.col;
+        var endRow = rowCorrection + cell.row;
+
+        var axis = System.Math.Abs(dx) > Math.Abs(dy) ? Axis.Col : Axis.Row;
+
+        if (axis == Axis.Row)
+            endCol = _sheet.Selection.ActiveRegion.Right;
+        else
+            endRow = _sheet.Selection.ActiveRegion.Bottom;
+
+
+        _dragPreviewRegion = new Region(_sheet.Selection.ActiveRegion.Top,
+            endRow,
+            _sheet.Selection.ActiveRegion.Left,
+            endCol);
+
+        this.StateHasChanged();
+        return true;
+    }
+
+    public void Dispose()
+    {
+        _windowEventService?.Dispose();
+    }
+
+
+    private async Task<bool> WindowEventServiceOnOnMouseUp(MouseEventArgs arg)
+    {
+        if (_isDragging)
+        {
+            Console.WriteLine("ENDED");
+            await SelectionExpanded.InvokeAsync(new SelectionExpandedEventArgs(_sheet.Selection.ActiveRegion.Clone(), _dragPreviewRegion.Clone()));
+            _isDragging = false;
+            _dragPreviewRegion = null;
+            this.StateHasChanged();
+        }
+        return true;
     }
 
 }

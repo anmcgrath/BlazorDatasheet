@@ -129,28 +129,7 @@
         }
         base.OnParametersSet();
     }
-
-    [JSInvokable]
-    public bool WindowHandleMouseMove(MouseEventArgs arg)
-    {
-        MouseX = arg.PageX;
-        if (IsDragging)
-        {
-            CurrentColResizeAmount = MouseX - MouseXStart; // 10 being the minimum width we can resize to
-            StateHasChanged();
-            return true;
-        }
-        return false;
-    }
-
-    private void HandleMouseDownOnAdorner(int col)
-    {
-        MouseXStart = MouseX;
-        ActiveAdornerIndex = col;
-        CurrentColResizeAmount = 0;
-        IsDragging = true;
-    }
-
+    
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -162,21 +141,43 @@
         }
     }
 
-    private bool WindowEventServiceOnOnMouseUp(MouseEventArgs arg)
+    [JSInvokable]
+    public Task<bool> WindowHandleMouseMove(MouseEventArgs arg)
+    {
+        MouseX = arg.PageX;
+        if (IsDragging)
+        {
+            CurrentColResizeAmount = MouseX - MouseXStart; // 10 being the minimum width we can resize to
+            StateHasChanged();
+            return Task.FromResult(true);
+        }
+        return Task.FromResult(false);
+    }
+
+    private void HandleMouseDownOnAdorner(int col)
+    {
+        MouseXStart = MouseX;
+        ActiveAdornerIndex = col;
+        CurrentColResizeAmount = 0;
+        IsDragging = true;
+    }
+
+    private Task<bool> WindowEventServiceOnOnMouseUp(MouseEventArgs arg)
     {
         if (IsDragging)
         {
             IsDragging = false;
             var resizeWidth = Math.Max(_minResizeWidth, CellLayoutProvider.ComputeWidth(ActiveAdornerIndex, 1) + CurrentColResizeAmount);
             Sheet.Columns.SetWidth(ActiveAdornerIndex, resizeWidth);
-            return true;
+            return Task.FromResult(true);
         }
 
-        return false;
+        return Task.FromResult(false);
     }
 
     public void Dispose()
     {
+        _windowEventService?.Dispose();
     }
 
     private bool IsActive(int col)

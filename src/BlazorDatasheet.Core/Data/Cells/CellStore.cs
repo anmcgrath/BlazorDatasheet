@@ -158,6 +158,14 @@ public partial class CellStore
         return restoreData;
     }
 
+    internal CellStoreRestoreData Copy(IRegion fromRegion, CellPosition toPosition)
+    {
+        var restoreData = new CellStoreRestoreData();
+        restoreData.ValueRestoreData = _dataStore.Copy(fromRegion, toPosition);
+        restoreData.ValidRestoreData = _validStore.Copy(fromRegion, toPosition);
+        return restoreData;
+    }
+
     /// <summary>
     /// Restores the internal storage state by redoing any actions that caused the internal data to change.
     /// Fires events for the changed data.

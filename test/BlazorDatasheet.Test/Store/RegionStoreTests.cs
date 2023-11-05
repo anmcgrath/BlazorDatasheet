@@ -155,4 +155,32 @@ public class RegionStoreTests
         store.GetData(0, 0).Should().BeEmpty();
         store.GetData(0, 1).Should().ContainSingle(x => x == -1);
     }
+
+    [Test]
+    public void Copy_Region_With_Partial_Data_Copies_And_Restores()
+    {
+        var store = new RegionDataStore<int>();
+        var region = new Region(0, 5, 0, 5);
+        store.Add(region, -1);
+        var restoreData = store.Copy(new Region(2, 5, 2, 5), new CellPosition(0, 6));
+        store.GetData(0, 0).Should().ContainSingle(x => x == -1);
+        store.GetData(5, 5).Should().ContainSingle(x => x == -1);
+        store.GetData(0, 6).Should().ContainSingle(x => x == -1);
+        store.GetData(3, 6).Should().ContainSingle(x => x == -1);
+        store.GetData(3, 9).Should().ContainSingle(x => x == -1);
+        store.GetData(4, 10).Should().BeEmpty();
+
+        store.Restore(restoreData);
+        store.GetAllDataRegions().Should().ContainSingle(x => x.Region == region && x.Data == -1);
+    }
+
+    [Test]
+    public void Clear_All_Data_Clears_All_Data()
+    {
+        var store = new RegionDataStore<int>();
+        store.Add(new Region(0, 5, 0, 5), -1);
+        store.Add(new Region(2, 6, 2, 6), -1);
+        store.Clear(new Region(0, 5, 0, 5));
+        store.GetDataRegions(new Region(0, 5, 0, 5)).Should().BeEmpty();
+    }
 }

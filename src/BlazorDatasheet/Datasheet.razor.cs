@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
+using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Edit;
 using BlazorDatasheet.Core.Events;
@@ -427,7 +428,7 @@ public partial class Datasheet : IHandleEvent
         this.UpdateSelectingEndPosition(row, col);
     }
 
-    private bool HandleWindowMouseDown(MouseEventArgs e)
+    private Task<bool> HandleWindowMouseDown(MouseEventArgs e)
     {
         bool changed = IsDataSheetActive != IsMouseInsideSheet;
         IsDataSheetActive = IsMouseInsideSheet;
@@ -435,21 +436,21 @@ public partial class Datasheet : IHandleEvent
         if (changed)
             StateHasChanged();
 
-        return false;
+        return Task.FromResult(false);
     }
 
-    private bool? HandleWindowKeyDown(KeyboardEventArgs e)
+    private Task<bool> HandleWindowKeyDown(KeyboardEventArgs e)
     {
         if (!IsDataSheetActive)
-            return false;
+            return Task.FromResult(false);
 
         var editorHandled = _editorManager.HandleKeyDown(e.Key, e.CtrlKey, e.ShiftKey, e.AltKey, e.MetaKey);
         if (editorHandled)
-            return true;
+            return Task.FromResult(true);
 
         if (e.Key == "Escape")
         {
-            return CancelEdit();
+            return Task.FromResult(CancelEdit());
         }
 
         if (KeyUtil.IsEnter(e.Key))
@@ -458,7 +459,7 @@ public partial class Datasheet : IHandleEvent
             {
                 var movementDir = e.ShiftKey ? -1 : 1;
                 Sheet?.Selection?.MoveActivePositionByRow(movementDir);
-                return true;
+                return Task.FromResult(true);
             }
         }
 
@@ -468,7 +469,7 @@ public partial class Datasheet : IHandleEvent
             if (!Sheet.Editor.IsEditing || (_editorManager.IsSoftEdit && AcceptEdit()))
             {
                 this.collapseAndMoveSelection(direction.Item1, direction.Item2);
-                return true;
+                return Task.FromResult(true);
             }
         }
 
@@ -476,33 +477,33 @@ public partial class Datasheet : IHandleEvent
         {
             var movementDir = e.ShiftKey ? -1 : 1;
             Sheet?.Selection?.MoveActivePositionByCol(movementDir);
-            return true;
+            return Task.FromResult(true);
         }
 
         if (e.Code == "67" /*C*/ && (e.CtrlKey || e.MetaKey) && !Sheet.Editor.IsEditing)
         {
             CopySelectionToClipboard();
-            return true;
+            return Task.FromResult(true);
         }
 
         if (e.Code == "89" /*Y*/ && (e.CtrlKey || e.MetaKey) && !Sheet.Editor.IsEditing)
         {
-            return Sheet!.Commands.Redo();
+            return Task.FromResult(Sheet!.Commands.Redo());
         }
 
 
         if (e.Code == "90" /*Z*/ && (e.CtrlKey || e.MetaKey) && !Sheet.Editor.IsEditing)
         {
-            return Sheet!.Commands.Undo();
+            return Task.FromResult(Sheet!.Commands.Undo());
         }
 
         if ((e.Key == "Delete" || e.Key == "Backspace") && !Sheet.Editor.IsEditing)
         {
             if (!Sheet!.Selection.Regions.Any())
-                return true;
+                return Task.FromResult(true);
 
             Sheet.Selection.Clear();
-            return true;
+            return Task.FromResult(true);
         }
 
         // Single characters or numbers or symbols
@@ -510,23 +511,23 @@ public partial class Datasheet : IHandleEvent
         {
             // Don't input anything if we are currently selecting
             if (this.IsSelecting)
-                return false;
+                return Task.FromResult(false);
 
             // Capture commands and return early (mainly for paste)
             if (e.CtrlKey || e.MetaKey)
-                return false;
+                return Task.FromResult(false);
 
             char c = e.Key == "Space" ? ' ' : e.Key[0];
             if (char.IsLetterOrDigit(c) || char.IsPunctuation(c) || char.IsSymbol(c) || char.IsSeparator(c))
             {
                 if (Sheet == null || !Sheet.Selection.Regions.Any())
-                    return false;
+                    return Task.FromResult(false);
                 var inputPosition = Sheet.Selection.GetInputPosition();
 
                 BeginEdit(inputPosition.row, inputPosition.col, softEdit: true, EditEntryMode.Key, e.Key);
             }
 
-            return true;
+            return Task.FromResult(true);
         }
 
         // Ecxel like begin edit request by pressing F2
@@ -534,22 +535,22 @@ public partial class Datasheet : IHandleEvent
         {
             // Don't input anything if we are currently selecting
             if (this.IsSelecting)
-                return false;
+                return Task.FromResult(false);
 
             // Capture commands and return early (mainly for paste)
             if (e.CtrlKey || e.MetaKey)
-                return false;
+                return Task.FromResult(false);
 
 
             if (Sheet == null || !Sheet.Selection.Regions.Any())
-                return false;
+                return Task.FromResult(false);
             var inputPosition = Sheet.Selection.GetInputPosition();
             BeginEdit(inputPosition.row, inputPosition.col, softEdit: true, EditEntryMode.Key, e.Key);
 
-            return true;
+            return Task.FromResult(true);
         }
 
-        return false;
+        return Task.FromResult(false);
     }
 
     private void collapseAndMoveSelection(int drow, int dcol)
@@ -699,6 +700,11 @@ public partial class Datasheet : IHandleEvent
     {
         SheetIsDirty = true;
         StateHasChanged();
+    }
+
+    private void HandleSelectionExpanded(SelectionExpandedEventArgs e)
+    {
+        _sheetLocal?.Commands.ExecuteCommand(new AutoFillCommand(e.Original, e.Expanded));
     }
 
     private RenderFragment GetIconRenderFragment(string? cellIcon)

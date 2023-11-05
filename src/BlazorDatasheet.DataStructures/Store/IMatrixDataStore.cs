@@ -103,5 +103,13 @@ public interface IMatrixDataStore<T>
     /// <returns></returns>
     IEnumerable<CellPosition> GetNonEmptyPositions(IRegion region);
 
+    /// <summary>
+    /// Copy the data in <paramref name="fromRegion"/> to the position <paramref name="toPosition"/>
+    /// </summary>
+    /// <param name="fromRegion"></param>
+    /// <param name="toPosition"></param>
+    /// <returns></returns>
+    MatrixRestoreData<T> Copy(IRegion fromRegion, CellPosition toPosition);
+
     void Restore(MatrixRestoreData<T> restoreData);
 }

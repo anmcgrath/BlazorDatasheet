@@ -106,7 +106,7 @@ public class ValidationManager
         if (index == null)
             return;
 
-        var result = Store.Clear(region, index.Value);
+        var restoreData = Store.Clear(region, index.Value);
         var validatorsRemoved = new List<IDataValidator>();
 
         if (!Store.GetRegions(index.Value).Any())
@@ -116,7 +116,7 @@ public class ValidationManager
         }
 
         var args = new ValidatorChangedEventArgs(validatorsRemoved, Array.Empty<IDataValidator>(),
-            result.regionsRemoved.Concat(result.regionsAdded));
+            restoreData.RegionsRemoved.Concat(restoreData.RegionsAdded).Select(x=>x.Region));
         ValidatorChanged?.Invoke(this, args);
     }
 

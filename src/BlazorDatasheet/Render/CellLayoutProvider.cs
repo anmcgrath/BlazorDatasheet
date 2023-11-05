@@ -50,6 +50,11 @@ public class CellLayoutProvider
         return _sheet.Columns.GetLeft(col) + extra;
     }
 
+    public double ComputeRightPosition(int col)
+    {
+        return ComputeLeftPosition(col) + _sheet.Columns.GetWidth(col);
+    }
+
     public double ComputeTopPosition(IRegion region)
     {
         return ComputeTopPosition(region.TopLeft.row);
@@ -59,6 +64,11 @@ public class CellLayoutProvider
     {
         var extra = IncludeColHeadings ? ColHeadingHeight : 0;
         return _sheet.Rows.GetTop(row) + extra;
+    }
+
+    public double ComputeBottomPosition(int row)
+    {
+        return ComputeTopPosition(row) + _sheet.Rows.GetHeight(row);
     }
 
     public double ComputeWidth(int startCol, int colSpan)
@@ -152,7 +162,7 @@ public class CellLayoutProvider
         var topPos = _sheet.Rows.GetTop(startRow);
         var distRight = ComputeWidthBetween(endCol, _sheet.NumCols - 1);
         var distBottom = ComputeHeightBetween(endRow, _sheet.NumRows - 1);
-        
+
         return new Viewport()
         {
             VisibleRegion = region,

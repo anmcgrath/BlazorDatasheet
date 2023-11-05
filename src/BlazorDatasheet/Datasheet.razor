@@ -83,10 +83,10 @@
                                     var cell = _visualSheet.GetVisualCell(row, col);
                                     var colWidth = @cell.Width;
                                     <div
-                                        @onmouseup="e => HandleCellMouseUp(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
+                                        @onpointerup="e => HandleCellMouseUp(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
                                         @ondblclick="e => HandleCellDoubleClick(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
-                                        @onmouseover="e => HandleCellMouseOver(row, col)"
-                                        @onmousedown="e => HandleCellMouseDown(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
+                                        @onpointerenter="e => HandleCellMouseOver(row, col)"
+                                        @onpointerdown="e => HandleCellMouseDown(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
                                         @key="col"
                                         style="
                                             width:@(colWidth)px;
@@ -176,6 +176,7 @@
                      z-index: 0;">
 
         <SelectionRenderer
+            SelectionExpanded="HandleSelectionExpanded"
             Sheet="Sheet"
             CellLayoutProvider="_cellLayoutProvider"/>
     </div>

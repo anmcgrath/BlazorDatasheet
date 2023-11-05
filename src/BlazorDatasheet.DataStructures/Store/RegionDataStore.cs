@@ -299,18 +299,28 @@ public class RegionDataStore<T> where T : IEquatable<T>
     /// <param name="region"></param>
     /// <param name="data"></param>
     /// <returns></returns>
-    public virtual (List<IRegion> regionsRemoved, List<IRegion> regionsAdded) Clear(IRegion region, T data)
+    public virtual RegionRestoreData<T> Clear(IRegion region, T data)
     {
         var overlapping = GetDataRegions(region)
             .Where(x => x.Data.Equals(data));
+        return Clear(region, overlapping);
+    }
 
-        if (!overlapping.Any())
-            return (new List<IRegion>(), new List<IRegion>());
+    /// <summary>
+    /// Clears all data from a region.
+    /// </summary>
+    /// <param name="region"></param>
+    public virtual RegionRestoreData<T> Clear(IRegion region)
+    {
+        return Clear(region, GetDataRegions(region));
+    }
 
+    private RegionRestoreData<T> Clear(IRegion region, IEnumerable<DataRegion<T>> dataRegions)
+    {
         var dataRegionsToRemove = new List<DataRegion<T>>();
         var dataRegionsToAdd = new List<DataRegion<T>>();
 
-        foreach (var overlap in overlapping)
+        foreach (var overlap in dataRegions)
         {
             dataRegionsToRemove.Add(overlap);
             if (region.Contains(overlap.Region))
@@ -325,8 +335,53 @@ public class RegionDataStore<T> where T : IEquatable<T>
 
         _tree.BulkLoad(dataRegionsToAdd);
 
-        return (dataRegionsToRemove.Select(x => x.Region).ToList(),
-            dataRegionsToAdd.Select(x => x.Region).ToList());
+        return new RegionRestoreData<T>()
+        {
+            RegionsRemoved = dataRegionsToRemove,
+            RegionsAdded = dataRegionsToAdd
+        };
+    }
+
+    public RegionRestoreData<T> Copy(IRegion fromRegion, CellPosition toPosition)
+    {
+        var toRegion = new Region(
+            toPosition.row, toPosition.row + fromRegion.Height - 1,
+            toPosition.col, toPosition.col + fromRegion.Width - 1);
+
+        var dr = toRegion.Top - fromRegion.Top;
+        var dc = toRegion.Left - fromRegion.Left;
+
+        // collect the data that we need to add into our cleared region first because
+        // it may be need to be cleared.
+        var dataToCopy = Grab(fromRegion);
+        var restoreData = this.Clear(toRegion);
+        foreach (var d in dataToCopy)
+        {
+            d.Region.Shift(dr, dc);
+            d.UpdateEnvelope();
+        }
+
+        _tree.BulkLoad(dataToCopy);
+        restoreData.RegionsAdded.AddRange(dataToCopy);
+
+        return new RegionRestoreData<T>();
+    }
+
+    /// <summary>
+    /// Gets data regions inside the <paramref name="region"/> given, limited to those regions
+    /// </summary>
+    /// <param name="region"></param>
+    /// <returns></returns>
+    private List<DataRegion<T>> Grab(IRegion region)
+    {
+        var grabbedData = new List<DataRegion<T>>();
+        var data = this.GetDataRegions(region);
+        foreach (var r in data)
+        {
+            grabbedData.Add(new DataRegion<T>(r.Data, region.GetIntersection(r.Region)!));
+        }
+
+        return grabbedData;
     }
 
     /// <summary>

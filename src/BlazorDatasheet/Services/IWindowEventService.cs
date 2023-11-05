@@ -6,9 +6,9 @@ namespace BlazorDatasheet.Services;
 public interface IWindowEventService : IDisposable
 {
     Task Init();
-    event Func<KeyboardEventArgs, bool?> OnKeyDown;
-    event Func<MouseEventArgs, bool>? OnMouseDown;
-    event Func<MouseEventArgs, bool>? OnMouseUp;
+    event Func<KeyboardEventArgs, Task<bool>> OnKeyDown;
+    event Func<MouseEventArgs, Task<bool>>? OnMouseDown;
+    event Func<MouseEventArgs, Task<bool>>? OnMouseUp;
     event Func<PasteEventArgs, Task>? OnPaste;
-    event Func<MouseEventArgs, bool>? OnMouseMove;
+    event Func<MouseEventArgs, Task<bool>>? OnMouseMove;
 }
