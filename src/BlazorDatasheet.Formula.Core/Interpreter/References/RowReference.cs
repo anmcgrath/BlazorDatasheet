@@ -3,19 +3,19 @@
 public class RowReference : Reference
 {
     public int RowNumber { get; }
-    public bool IsAbsoluteReference { get; }
+    public bool IsFixedReference { get; }
 
-    public RowReference(int rowNumber, bool isAbsoluteReference)
+    public RowReference(int rowNumber, bool isFixedReference)
     {
         RowNumber = rowNumber;
-        IsAbsoluteReference = isAbsoluteReference;
+        IsFixedReference = isFixedReference;
     }
 
     public override ReferenceKind Kind => ReferenceKind.Row;
 
     public override string ToRefText()
     {
-        return (IsAbsoluteReference ? "$" : "") + (RowNumber + 1);
+        return (IsFixedReference ? "$" : "") + (RowNumber + 1);
     }
 
     public override bool SameAs(Reference reference)

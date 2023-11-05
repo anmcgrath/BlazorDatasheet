@@ -28,18 +28,21 @@ public class CopyRangeCommand : IUndoableCommand
             return false;
 
         foreach (var region in _toRange.Regions)
-            Copy(_fromRange.Regions.First(), region.TopLeft, sheet);
+            Copy(_fromRange.Regions.First(), region, sheet);
+        
+        sheet.MarkDirty(_toRange.Regions);
 
         return true;
     }
 
-    private void Copy(IRegion fromRegion, CellPosition toPosition, Sheet sheet)
+    private void Copy(IRegion fromRegion, IRegion toRegion, Sheet sheet)
     {
-        _cellStoreRestore = sheet.Cells.Copy(fromRegion, toPosition);
+        _cellStoreRestore = sheet.Cells.CopyImpl(fromRegion, toRegion);
     }
 
     public bool Undo(Sheet sheet)
     {
+        sheet.Cells.ClearCellsImpl(_toRange.Regions);
         sheet.Cells.Restore(_cellStoreRestore);
         return true;
     }

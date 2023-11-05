@@ -7,6 +7,7 @@ public class AutoFillCommand : IUndoableCommand
 {
     private IRegion _fromRegion;
     private IRegion _toRegion;
+    private List<CopyRangeCommand> _copyCommands = new();
 
     private ClearCellsCommand? _clearCellsCommand = null;
 
@@ -20,13 +21,23 @@ public class AutoFillCommand : IUndoableCommand
     {
         if (_fromRegion.Contains(_toRegion))
             DoCut(sheet);
+        else
+        {
+            var newRegion = _toRegion.Break(_fromRegion).First(); // will always be only one region
+            if (_fromRegion.Width == newRegion.Width) // vertical fill
+            {
+                var cmd = new CopyRangeCommand(sheet.Range(_fromRegion), sheet.Range(newRegion));
+                cmd.Execute(sheet);
+                _copyCommands.Add(cmd);
+            }
+        }
 
+        sheet.Selection.SetSingle(_toRegion);
         return true;
     }
 
     private void DoCut(Sheet sheet)
     {
-        Console.WriteLine("Cutting");
         _clearCellsCommand = new ClearCellsCommand(sheet.Range(_fromRegion.Break(_toRegion)));
         _clearCellsCommand.Execute(sheet);
     }
@@ -35,6 +46,9 @@ public class AutoFillCommand : IUndoableCommand
     {
         if (_clearCellsCommand != null)
             _clearCellsCommand.Undo(sheet);
+        
+        foreach (var cmd in _copyCommands)
+            cmd.Undo(sheet);
 
         return true;
     }

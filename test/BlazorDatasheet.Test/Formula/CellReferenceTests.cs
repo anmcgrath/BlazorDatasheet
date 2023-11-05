@@ -22,8 +22,8 @@ public class CellReferenceTests
         var cellRef = new CellReference(res.row, res.col, res.fixedCol, res.fixedRow);
         Assert.AreEqual(rowExpected, cellRef.Row.RowNumber);
         Assert.AreEqual(colExpected, cellRef.Col.ColNumber);
-        Assert.AreEqual(rowAbsExpected, cellRef.Row.IsAbsoluteReference);
-        Assert.AreEqual(colAbsExpected, cellRef.Col.IsAbsoluteReference);
+        Assert.AreEqual(rowAbsExpected, cellRef.Row.IsFixedReference);
+        Assert.AreEqual(colAbsExpected, cellRef.Col.IsFixedReference);
     }
 
     [Test]

@@ -263,7 +263,6 @@
     {
         if (_isDragging)
         {
-            Console.WriteLine("ENDED");
             await SelectionExpanded.InvokeAsync(new SelectionExpandedEventArgs(_sheet.Selection.ActiveRegion.Clone(), _dragPreviewRegion.Clone()));
             _isDragging = false;
             _dragPreviewRegion = null;

@@ -109,7 +109,7 @@ public interface IMatrixDataStore<T>
     /// <param name="fromRegion"></param>
     /// <param name="toPosition"></param>
     /// <returns></returns>
-    MatrixRestoreData<T> Copy(IRegion fromRegion, CellPosition toPosition);
+    MatrixRestoreData<T> Copy(IRegion fromRegion, IRegion toPosition);
 
     void Restore(MatrixRestoreData<T> restoreData);
 }

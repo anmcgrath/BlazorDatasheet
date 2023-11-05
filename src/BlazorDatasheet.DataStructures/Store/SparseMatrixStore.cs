@@ -244,17 +244,13 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
         return GetNonEmptyPositions(region.Top, region.Bottom, region.Left, region.Right);
     }
 
-    public MatrixRestoreData<T> Copy(IRegion fromRegion, CellPosition toPosition)
+    public MatrixRestoreData<T> Copy(IRegion fromRegion, IRegion toRegion)
     {
-        var toRegion = new Region(
-            toPosition.row, toPosition.row + fromRegion.Height - 1,
-            toPosition.col, toPosition.col + fromRegion.Width - 1);
-
         var nonEmptyCopyData = this.GetNonEmptyData(fromRegion).ToList();
         var restoreData = this.Clear(toRegion);
 
-        var dr = toPosition.row - fromRegion.Top;
-        var dc = toPosition.col - fromRegion.Left;
+        var dr = toRegion.Top - fromRegion.Top;
+        var dc = toRegion.Left - fromRegion.Left;
 
         foreach (var v in nonEmptyCopyData)
             this.Set(v.row + dr, v.col + dc, v.data);
@@ -387,7 +383,7 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
                 var rowAtI = Values.Keys[i];
                 if (rowAtI < r0 || rowAtI > r1)
                     break;
-                rows.Add((rowAtI, Values[i]));
+                rows.Add((rowAtI, Values[rowAtI]));
             }
 
             return rows;

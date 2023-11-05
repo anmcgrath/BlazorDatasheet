@@ -6,19 +6,19 @@ namespace BlazorDatasheet.Formula.Core.Interpreter.References;
 public class ColReference : Reference
 {
     public int ColNumber { get; }
-    public bool IsAbsoluteReference { get; }
+    public bool IsFixedReference { get; }
 
-    public ColReference(int colNumber, bool isAbsoluteReference)
+    public ColReference(int colNumber, bool isFixedReference)
     {
         ColNumber = colNumber;
-        IsAbsoluteReference = isAbsoluteReference;
+        IsFixedReference = isFixedReference;
     }
 
     public override ReferenceKind Kind => ReferenceKind.Column;
 
     public override string ToRefText()
     {
-        return (IsAbsoluteReference ? "$" : "") + RangeText.ColNumberToLetters(ColNumber);
+        return (IsFixedReference ? "$" : "") + RangeText.ColNumberToLetters(ColNumber);
     }
 
     public override bool SameAs(Reference reference)

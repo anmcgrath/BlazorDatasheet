@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Interfaces;
@@ -158,11 +159,12 @@ public partial class CellStore
         return restoreData;
     }
 
-    internal CellStoreRestoreData Copy(IRegion fromRegion, CellPosition toPosition)
+    internal CellStoreRestoreData CopyImpl(IRegion fromRegion, IRegion toRegion)
     {
+        Debug.Assert(fromRegion.Width == toRegion.Width && fromRegion.Height == toRegion.Height);
         var restoreData = new CellStoreRestoreData();
-        restoreData.ValueRestoreData = _dataStore.Copy(fromRegion, toPosition);
-        restoreData.ValidRestoreData = _validStore.Copy(fromRegion, toPosition);
+        restoreData.ValueRestoreData = _dataStore.Copy(fromRegion, toRegion);
+        restoreData.ValidRestoreData = _validStore.Copy(fromRegion, toRegion);
         return restoreData;
     }
 

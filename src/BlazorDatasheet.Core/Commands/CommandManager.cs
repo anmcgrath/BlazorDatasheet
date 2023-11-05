@@ -41,6 +41,7 @@ public class CommandManager
             return true;
         }
 
+        var selectionBeforeExecute = _sheet.Selection.Clone();
         var result = command.Execute(_sheet);
         if (result)
         {
@@ -49,7 +50,7 @@ public class CommandManager
                 _history.Push(new UndoCommandData()
                 {
                     Command = undoCommand,
-                    Selection = _sheet.Selection.Clone()
+                    Selection = selectionBeforeExecute
                 });
             }
         }
@@ -90,6 +91,7 @@ public class CommandManager
     /// <returns></returns>
     public bool Undo()
     {
+
         if (_isCollectingCommands)
             return false;
 
@@ -98,6 +100,9 @@ public class CommandManager
 
         var cmd = _history.Pop()!;
         var result = cmd.Command.Undo(_sheet);
+        
+        Console.WriteLine("cmd "+cmd.Command);
+        
         if (cmd.Selection != null)
             _sheet.Selection.Set(cmd.Selection);
 
@@ -124,6 +129,7 @@ public class CommandManager
         var cmd = _redos.Pop()!;
         var result = cmd.Execute(_sheet);
 
+        var selectionBeforeExecute = _sheet.Selection.Clone();
         if (result)
         {
             if (!HistoryPaused && cmd is IUndoableCommand undoCommand)
@@ -131,7 +137,7 @@ public class CommandManager
                 _history.Push(new UndoCommandData()
                 {
                     Command = undoCommand,
-                    Selection = _sheet.Selection.Clone()
+                    Selection = selectionBeforeExecute
                 });
             }
         }
