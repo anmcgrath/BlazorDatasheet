@@ -39,11 +39,13 @@ public class SheetCell : IReadOnlyCell
     {
         try
         {
-            if (Value == null && type == typeof(string))
+            // only get the value once from the sheet
+            var val = Value;
+            if (val == null && type == typeof(string))
                 return string.Empty;
 
-            if (this.Value?.GetType() == type)
-                return Value;
+            if (val?.GetType() == type)
+                return val;
             else
             {
                 var conversionType = type;
@@ -53,12 +55,12 @@ public class SheetCell : IReadOnlyCell
                 }
 
                 if (conversionType == typeof(string))
-                    return Value?.ToString();
+                    return val.ToString();
 
-                if (Value is IConvertible)
-                    return Convert.ChangeType(Value, conversionType);
+                if (val is IConvertible)
+                    return Convert.ChangeType(val, conversionType);
 
-                return Value;
+                return val;
             }
         }
         catch (Exception e)
