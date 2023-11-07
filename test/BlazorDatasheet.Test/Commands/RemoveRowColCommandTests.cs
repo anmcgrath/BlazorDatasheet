@@ -48,7 +48,7 @@ public class RemoveRowColCommandTests
     public void Remove_Row_Then_Undo_Restores_Formatting()
     {
         var sheet = new Sheet(3, 3);
-        sheet.SetFormat(sheet.Range(1, 1), new CellFormat() { BackgroundColor = "red" });
+        sheet.SetFormat(new Region(1, 1), new CellFormat() { BackgroundColor = "red" });
         sheet.Rows.RemoveAt(1);
         sheet.Commands.Undo();
         Assert.AreEqual("red", sheet.GetFormat(1, 1)?.BackgroundColor);
@@ -77,7 +77,7 @@ public class RemoveRowColCommandTests
          3 - | - | - | -
          */
         var sheet = new Sheet(4, 4);
-        sheet.SetFormat(sheet.Range(new RowRegion(1, 2)), new CellFormat() { BackgroundColor = "red" });
+        sheet.SetFormat(new RowRegion(1, 2), new CellFormat() { BackgroundColor = "red" });
         sheet.Rows.RemoveAt(1);
         Assert.AreEqual(new CellFormat(), sheet.GetFormat(0, 0));
         Assert.AreEqual("red", sheet.GetFormat(1, 0)?.BackgroundColor);
@@ -112,7 +112,7 @@ public class RemoveRowColCommandTests
            3 - | r | r | -
          */
         var sheet = new Sheet(4, 4);
-        sheet.SetFormat(sheet.Range(new ColumnRegion(1, 2)), new CellFormat() { BackgroundColor = "red" });
+        sheet.SetFormat(new ColumnRegion(1, 2), new CellFormat() { BackgroundColor = "red" });
         sheet.Columns.RemoveAt(1);
         Assert.AreEqual(new CellFormat(), sheet.GetFormat(0, 0));
         Assert.AreEqual("red", sheet.GetFormat(0, 1)?.BackgroundColor);
@@ -151,7 +151,7 @@ public class RemoveRowColCommandTests
     public void Remove_Row_At_End_Of_Format_region_Then_Undo_restores_Format()
     {
         var sheet = new Sheet(5, 5);
-        sheet.SetFormat(sheet.Range("A1:A5"), new CellFormat() { TextAlign = "centre" });
+        sheet.SetFormat(sheet.Range("A1:A5").Region, new CellFormat() { TextAlign = "centre" });
         var cmd = new RemoveRowsCommand(4, 1);
         cmd.Execute(sheet);
         cmd.Undo(sheet);
@@ -162,7 +162,7 @@ public class RemoveRowColCommandTests
     public void Remove_Col_At_End_Of_Format_region_Then_Undo_restores_Format()
     {
         var sheet = new Sheet(5, 5);
-        sheet.SetFormat(sheet.Range("A1:D1"), new CellFormat() { TextAlign = "centre" });
+        sheet.SetFormat(sheet.Range("A1:D1").Region, new CellFormat() { TextAlign = "centre" });
         var cmd = new RemoveColumnCommand(3, 1);
         cmd.Execute(sheet);
         cmd.Undo(sheet);
@@ -176,10 +176,10 @@ public class RemoveRowColCommandTests
         // | 0 | 1 | 2 | 3 |
         // |   | c | c | c |
         var sheet = new Sheet(5, 5);
-        sheet.SetFormat(sheet.Range(0, 0, 1, 3), new CellFormat() { TextAlign = "centre" });
+        sheet.SetFormat(new Region(0, 0, 1, 3), new CellFormat() { TextAlign = "centre" });
         var cmd = new RemoveColumnCommand(0, 2);
         cmd.Execute(sheet);
         cmd.Undo(sheet);
-        sheet.GetFormat(0, 1).TextAlign.Should().Be("centre");
+        sheet.GetFormat(0, 1)?.TextAlign.Should().Be("centre");
     }
 }

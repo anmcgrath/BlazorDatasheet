@@ -28,7 +28,7 @@ public class MergeCellsAndInsertColRowTests
         var sheet = new Sheet(5, 5);
         sheet.Cells.SetValue(1, 1, "U");
         sheet.Cells.SetValue(2, 2, "M");
-        sheet.Cells.Merge(sheet.Range(2, 3, 2, 3));
+        sheet.Cells.Merge(new Region(2, 3, 2, 3));
 
         /*
                0  1  2  3  4
@@ -96,7 +96,7 @@ public class MergeCellsAndInsertColRowTests
         sheet.Cells.SetValue(2, 2, "M");
         sheet.Cells.SetValue(1, 1, "U");
 
-        sheet.Cells.Merge(sheet.Range(2, 3, 2, 3));
+        sheet.Cells.Merge(new Region(2, 3, 2, 3));
 
         Assert.True(sheet.Cells.IsInsideMerge(2, 2));
         Assert.True(sheet.Cells.IsInsideMerge(2, 3));
@@ -145,7 +145,7 @@ public class MergeCellsAndInsertColRowTests
         sheet.Cells.SetValue(2, 2, "M");
         sheet.Cells.SetValue(1, 1, "U");
 
-        sheet.Cells.Merge(sheet.Range(2, 3, 2, 3));
+        sheet.Cells.Merge(new Region(2, 3, 2, 3));
 
         Assert.True(sheet.Cells.IsInsideMerge(2, 2));
         Assert.True(sheet.Cells.IsInsideMerge(2, 3));
@@ -203,7 +203,7 @@ public class MergeCellsAndInsertColRowTests
         sheet.Cells.SetValue(2, 2, "M");
         sheet.Cells.SetValue(1, 1, "U");
 
-        sheet.Cells.Merge(sheet.Range(2, 3, 2, 3));
+        sheet.Cells.Merge(new Region(2, 3, 2, 3));
 
         Assert.True(sheet.Cells.IsInsideMerge(2, 2));
         Assert.True(sheet.Cells.IsInsideMerge(2, 3));
@@ -263,7 +263,7 @@ public class MergeCellsAndInsertColRowTests
         sheet.Cells.SetValue(2, 2, "M");
         sheet.Cells.SetValue(1, 1, "U");
 
-        sheet.Cells.Merge(sheet.Range(2, 3, 2, 4));
+        sheet.Cells.Merge(new Region(2, 3, 2, 4));
 
         sheet.Columns.RemoveAt(3); 
 
@@ -356,7 +356,7 @@ public class MergeCellsAndInsertColRowTests
         sheet.Cells.SetValue(2, 2, "M");
         sheet.Cells.SetValue(1, 1, "U");
 
-        sheet.Cells.Merge(sheet.Range(2, 4, 2, 4));
+        sheet.Cells.Merge(new Region(2, 4, 2, 4));
 
         sheet.Rows.RemoveAt(3);
 
@@ -438,7 +438,7 @@ public class MergeCellsAndInsertColRowTests
         sheet.Cells.SetValue(2, 2, "M");
         sheet.Cells.SetValue(1, 1, "U");
 
-        sheet.Cells.Merge(sheet.Range(2, 2, 2, 3));
+        sheet.Cells.Merge(new Region(2, 2, 2, 3));
 
         /*
                 0  1  2  3  4
@@ -480,7 +480,7 @@ public class MergeCellsAndInsertColRowTests
         sheet.Cells.SetValue(2, 2, "M");
         sheet.Cells.SetValue(1, 1, "U");
 
-        sheet.Cells.Merge(sheet.Range(2, 3, 2, 2));
+        sheet.Cells.Merge(new Region(2, 3, 2, 2));
 
         /*
                 0  1  2  3  4

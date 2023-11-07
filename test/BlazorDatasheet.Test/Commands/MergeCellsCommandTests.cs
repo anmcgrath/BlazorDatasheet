@@ -1,4 +1,5 @@
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.DataStructures.Geometry;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Commands;
@@ -13,7 +14,7 @@ public class MergeCellsCommandTests
         sheet.Cells.SetValue(0, 0, "00");
         sheet.Cells.SetValue(2, 2, "22");
 
-        sheet.Cells.Merge(sheet.Range(0, 2, 0, 2));
+        sheet.Cells.Merge(new Region(0, 2, 0, 2));
 
         Assert.True(sheet.Cells.IsInsideMerge(0, 0));
         Assert.True(sheet.Cells.IsInsideMerge(2, 2));

@@ -1,6 +1,7 @@
 using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
+using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Core.Data.Cells
 {
@@ -26,30 +27,31 @@ namespace BlazorDatasheet.Core.Data.Cells
         /// will not happen.
         /// </summary>
         /// <param name="range"></param>
-        public void Merge(SheetRange range)
+        public void Merge(IRegion region)
         {
-            var merge = new MergeCellsCommand(range);
+            var merge = new MergeCellsCommand(region);
             _sheet.Commands.ExecuteCommand(merge);
         }
 
         /// <summary>
-        /// Add a region as a merged cell. If the range overlaps any existing merged cells, the merge
+        /// Adds regions as a merged cell. If the range overlaps any existing merged cells, the merge
         /// will not happen.
         /// </summary>
-        /// <param name="region"></param>
-        public void Merge(IRegion region) => Merge(new SheetRange(_sheet, region));
+        /// <param name="regions"></param>
+        public void Merge(IEnumerable<IRegion> regions)
+        {
+            _sheet.Commands.BeginCommandGroup();
+            foreach (var region in regions)
+            {
+                _sheet.Commands.ExecuteCommand(new MergeCellsCommand(region));
+            }
+
+            _sheet.Commands.EndCommandGroup();
+        }
 
         internal bool MergeImpl(SheetRange range)
         {
-            _sheet.BatchUpdates();
-            var isSuccess = true;
-            foreach (var region in range.Regions)
-            {
-                isSuccess &= MergeImpl(region);
-            }
-
-            _sheet.EndBatchUpdates();
-            return isSuccess;
+            return MergeImpl(range.Region);
         }
 
         internal bool MergeImpl(IRegion region)
@@ -85,10 +87,7 @@ namespace BlazorDatasheet.Core.Data.Cells
         /// <param name="region"></param>
         internal void UnMergeCellsImpl(SheetRange range)
         {
-            _sheet.BatchUpdates();
-            foreach (var region in range.Regions)
-                UnMergeCellsImpl((IRegion)region);
-            _sheet.EndBatchUpdates();
+            UnMergeCellsImpl(range.Region);
         }
 
         /// <summary>
@@ -125,7 +124,7 @@ namespace BlazorDatasheet.Core.Data.Cells
         {
             return _mergeStore.GetDataRegions(region).Select(x => x.Region);
         }
-        
+
         /// <summary>
         /// Returns all merged regions overlapping a list of regions.
         /// </summary>

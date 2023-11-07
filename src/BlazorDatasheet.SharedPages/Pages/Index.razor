@@ -33,10 +33,10 @@
     <button @onclick="() => Sheet.Commands.Undo()">Undo</button>
     <button @onclick="() => Sheet.Commands.Redo()">Redo</button>
     <button @onclick="@(() => Sheet.Selection.Value = "Bob")">Set to Bob</button>
-    <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection, new CellFormat() { BackgroundColor = "red" }))">Set bg to red</button>
-    <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection, new CellFormat() { BackgroundColor = "blue" }))">Set bg to blue</button>
-    <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection, new CellFormat() { ForegroundColor = "green" }))">Set font colour to green</button>
-    <button @onclick="@(() => Sheet.Cells.Merge(Sheet.Selection))">Merge cells</button>
+    <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { BackgroundColor = "red" }))">Set bg to red</button>
+    <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { BackgroundColor = "blue" }))">Set bg to blue</button>
+    <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { ForegroundColor = "green" }))">Set font colour to green</button>
+    <button @onclick="@(() => Sheet.Cells.Merge(Sheet.Selection.Regions))">Merge cells</button>
 </div>
 
 <div>
@@ -127,9 +127,9 @@
         Sheet.Cells[5, 0].Value = "Sum:";
         Sheet.Cells[5, 1].Formula = "=SUM(B2:B5)";
 
-        Sheet.SetFormat(Sheet.Range(8, 12, 0, 4), new CellFormat() { BackgroundColor = "#c8d9ed" });
+        Sheet.SetFormat(new Region(8, 12, 0, 4), new CellFormat() { BackgroundColor = "#c8d9ed" });
 
-        Sheet.SetFormat(Sheet.Range(new Region(3, 5, 3, 3)), new CellFormat() { TextAlign = "right" });
+        Sheet.SetFormat(new Region(3, 5, 3, 3), new CellFormat() { TextAlign = "right" });
 
         Sheet.Rows.SetHeadings(7, 7, "Custom Row");
         Sheet.Columns.SetHeadings(5, 5, "Custom Col");

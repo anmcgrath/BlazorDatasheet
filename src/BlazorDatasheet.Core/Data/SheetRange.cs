@@ -12,13 +12,8 @@ namespace BlazorDatasheet.Core.Data;
 public class SheetRange
 {
     internal readonly Sheet Sheet;
-    protected List<IRegion> _regions = new();
 
-    public IReadOnlyList<IRegion> Regions
-    {
-        get => _regions;
-        set => _regions = value.ToList();
-    }
+    public IRegion Region { get; private set; }
 
     /// <summary>
     /// Return the positions present in the range. May be non-unique & include empty position
@@ -28,40 +23,15 @@ public class SheetRange
 
     private readonly RangePositionEnumerator _rangePositionEnumerator;
 
-    internal SheetRange(Sheet sheet, List<IRegion> regions)
-    {
-        Sheet = sheet;
-        Regions = regions;
-        _rangePositionEnumerator = new RangePositionEnumerator(this);
-    }
-
     internal SheetRange(Sheet sheet, int row, int col) : this(sheet, new Region(row, col))
     {
     }
 
-    /// <summary>
-    /// Create a range with the expression e.g A1, A:B, A1:A5, Allows multiple regions by seperating with a ',' etc.
-    /// </summary>
-    /// <param name="rangeExpression"></param>
-    internal SheetRange(Sheet sheet, string rangeExpression)
+    internal SheetRange(Sheet sheet, IRegion region)
     {
         Sheet = sheet;
-        _rangePositionEnumerator = new RangePositionEnumerator(this);
-
-        if (string.IsNullOrEmpty(rangeExpression))
-            return;
-
-        foreach (var split in rangeExpression.Split(","))
-        {
-            var region = Region.FromString(split);
-            if (region != null)
-                _regions.Add(region);
-        }
-    }
-
-    internal SheetRange(Sheet sheet, IRegion region) :
-        this(sheet, new List<IRegion>() { region })
-    {
+        _rangePositionEnumerator = new(this);
+        Region = region;
     }
 
     /// <summary>
@@ -69,7 +39,7 @@ public class SheetRange
     /// </summary>
     public object? Value
     {
-        set => doSetValues(value);
+        set => DoSetValues(value);
     }
 
     /// <summary>
@@ -87,14 +57,17 @@ public class SheetRange
     /// <returns>A collection of (row, column) positions of all non-empty cells.</returns>
     internal IEnumerable<CellPosition> GetNonEmptyPositions()
     {
-        return Regions.SelectMany(Sheet.Cells.GetNonEmptyCellPositions);
+        if (Region == null)
+            return Enumerable.Empty<CellPosition>();
+
+        return Sheet.Cells.GetNonEmptyCellPositions(Region);
     }
 
     /// <summary>
     /// Sets all the cells in the range to the value specified.
     /// </summary>
     /// <param name="value"></param>
-    private void doSetValues(object? value)
+    private void DoSetValues(object? value)
     {
         Sheet.Cells.SetValues(Positions.Select(x => (x.row, x.col, value)).ToList());
     }
@@ -104,19 +77,9 @@ public class SheetRange
         Sheet.Cells.ClearCells(this);
     }
 
-    internal void AddRegion(IRegion region)
-    {
-        _regions.Add(region);
-    }
-
-    internal void RemoveRegion(IRegion region)
-    {
-        _regions.Remove(region);
-    }
-
     internal SheetRange Clone()
     {
-        return new SheetRange(this.Sheet, _regions.Select(x => x.Clone()).ToList());
+        return new SheetRange(this.Sheet, Region.Clone());
     }
 
     /// <summary>
@@ -125,7 +88,7 @@ public class SheetRange
     public void Select()
     {
         Sheet.Selection.ClearSelections();
-        Sheet.Selection.Set(this);
+        Sheet.Selection.SetSingle(this.Region);
     }
 
     public void SetMetaData(string name, object? value)
@@ -144,19 +107,18 @@ public class SheetRange
     /// </summary>
     public string Type
     {
-        set => Sheet.Cells.SetType(_regions, value);
+        set => Sheet.Cells.SetType(Region, value);
     }
 
     public CellFormat? Format
     {
-        set => Sheet.SetFormat(this, value);
+        set => Sheet.SetFormat(Region, value);
     }
 
     public void AddValidator(IDataValidator validator)
     {
         Sheet.BatchUpdates();
-        foreach (var region in _regions)
-            Sheet.Validators.AddImpl(validator, region);
+        Sheet.Validators.AddImpl(validator, Region);
         Sheet.EndBatchUpdates();
     }
 }

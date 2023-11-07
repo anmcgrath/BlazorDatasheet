@@ -7,9 +7,20 @@ namespace BlazorDatasheet.Core.Commands;
 public class CopyRangeCommand : IUndoableCommand
 {
     private SheetRange _fromRange;
-    private SheetRange _toRange;
+    private SheetRange[] _toRanges;
 
     private CellStoreRestoreData _cellStoreRestore;
+
+    /// <summary>
+    /// Copies data from one range to another. Only works if the range has a single region.
+    /// </summary>
+    /// <param name="fromRange"></param>
+    /// <param name="toRanges"></param>
+    public CopyRangeCommand(SheetRange fromRange, SheetRange[] toRanges)
+    {
+        _fromRange = fromRange;
+        _toRanges = toRanges;
+    }
 
     /// <summary>
     /// Copies data from one range to another. Only works if the range has a single region.
@@ -19,18 +30,15 @@ public class CopyRangeCommand : IUndoableCommand
     public CopyRangeCommand(SheetRange fromRange, SheetRange toRange)
     {
         _fromRange = fromRange;
-        _toRange = toRange;
+        _toRanges = new[] { toRange };
     }
 
     public bool Execute(Sheet sheet)
     {
-        if (_fromRange.Regions.Count != 1)
-            return false;
+        foreach (var range in _toRanges)
+            Copy(_fromRange.Region, range.Region, sheet);
 
-        foreach (var region in _toRange.Regions)
-            Copy(_fromRange.Regions.First(), region, sheet);
-        
-        sheet.MarkDirty(_toRange.Regions);
+        sheet.MarkDirty(_toRanges.Select(x => x.Region));
 
         return true;
     }
@@ -42,8 +50,12 @@ public class CopyRangeCommand : IUndoableCommand
 
     public bool Undo(Sheet sheet)
     {
-        sheet.Cells.ClearCellsImpl(_toRange.Regions);
-        sheet.Cells.Restore(_cellStoreRestore);
+        foreach (var toRange in _toRanges)
+        {
+            sheet.Cells.ClearCellsImpl(new List<IRegion>() { toRange.Region });
+            sheet.Cells.Restore(_cellStoreRestore);
+        }
+
         return true;
     }
 }

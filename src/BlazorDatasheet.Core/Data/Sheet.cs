@@ -194,16 +194,20 @@ public class Sheet
     /// <returns></returns>
     public SheetRange Range(IRegion region)
     {
-        return Range(new List<IRegion>() { region });
+        return Range(region);
     }
 
     /// <summary>
     /// The <see cref="SheetRange"/> specified by the string e.g A1, B1:B4, A:B, A:A, 2:4, etc.
     /// Multiple regions can be included by separating them with a ","
     /// </summary>
-    public SheetRange Range(string rangeStr)
+    public SheetRange? Range(string rangeStr)
     {
-        return new SheetRange(this, rangeStr);
+        if (string.IsNullOrEmpty(rangeStr))
+            return null;
+
+        var region = Region.FromString(rangeStr);
+        return new SheetRange(this, region);
     }
 
     /// <summary>
@@ -224,16 +228,6 @@ public class Sheet
         }
 
         throw new Exception("Cannot return a range for axis " + axis);
-    }
-
-    /// <summary>
-    /// Returns a new range that contains all the regions specified
-    /// </summary>
-    /// <param name="regions"></param>
-    /// <returns></returns>
-    public SheetRange Range(List<IRegion> regions)
-    {
-        return new SheetRange(this, regions);
     }
 
     /// <summary>
@@ -414,19 +408,21 @@ public class Sheet
     /// </summary>
     /// <param name="range"></param>
     /// <param name="cellFormat"></param>
-    public void SetFormat(SheetRange range, CellFormat cellFormat)
+    public void SetFormat(IRegion region, CellFormat cellFormat)
     {
-        BatchUpdates();
+        var cmd = new SetFormatCommand(region, cellFormat);
+        Commands.ExecuteCommand(cmd);
+    }
 
+    public void SetFormat(IEnumerable<IRegion> regions, CellFormat cellFormat)
+    {
         Commands.BeginCommandGroup();
-        foreach (var region in range.Regions)
+        foreach (var region in regions)
         {
-            var cmd = new SetFormatCommand(region, cellFormat);
-            Commands.ExecuteCommand(cmd);
+            Commands.ExecuteCommand(new SetFormatCommand(region, cellFormat));
         }
 
         Commands.EndCommandGroup();
-        EndBatchUpdates();
     }
 
     #endregion

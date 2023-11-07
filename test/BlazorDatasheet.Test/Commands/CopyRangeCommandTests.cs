@@ -20,7 +20,7 @@ public class CopyRangeCommandTests
     {
         _sheet.Range("A1:B2").Value = "test";
         _sheet.Range("C1:D2").Value = "prev";
-        var cmd = new CopyRangeCommand(_sheet.Range("A1:B2"), _sheet.Range("C1:D2"));
+        var cmd = new CopyRangeCommand(_sheet.Range("A1:B2")!, _sheet.Range("C1:D2"));
         
         cmd.Execute(_sheet);
         for (int r = 0; r < 2; r++)

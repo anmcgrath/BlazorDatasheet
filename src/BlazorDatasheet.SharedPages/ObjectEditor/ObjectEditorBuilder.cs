@@ -24,7 +24,7 @@ public class ObjectEditorBuilder<T>
         for (int i = 0; i < _properties.Count; i++)
         {
             if (_properties[i].CellFormat != null)
-                sheet.SetFormat(sheet.Range(new ColumnRegion(i)), _properties[i].CellFormat);
+                sheet.SetFormat(new ColumnRegion(i), _properties[i].CellFormat);
             foreach (var cf in _properties[i].ConditionalFormats)
                 sheet.ConditionalFormats.Apply(new ColumnRegion(i), cf);
             foreach (var validator in _properties[i].Validators)

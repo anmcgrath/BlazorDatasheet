@@ -63,7 +63,7 @@ public abstract class ConditionalFormatAbstractBase : IEquatable<ConditionalForm
             Positions.Add(position);
         }
 
-        emitRangeChanged(new List<IRegion>(), range.Regions.ToList());
+        emitRangeChanged(new List<IRegion>(), new[] { range.Region });
     }
 
     /// <summary>
@@ -97,47 +97,8 @@ public abstract class ConditionalFormatAbstractBase : IEquatable<ConditionalForm
     /// <param name="axis"></param>
     private void HandleInsert(int indexAfter, Axis axis)
     {
-        var regionsRemoved = new List<IRegion>();
-        var regionsAdded = new List<IRegion>();
-
-        foreach (var range in Ranges)
-        {
-            foreach (var region in range.Regions.ToArray())
-            {
-                // If the region is located after the row/col being added
-                if (region.GetLeadingEdgeOffset(axis) >= indexAfter + 1)
-                {
-                    // Add and remove the region after shifting
-                    range.RemoveRegion(region);
-                    var shiftedRegion = region.Copy();
-                    if (axis == Axis.Col)
-                        shiftedRegion.Shift(0, 1);
-                    else
-                        shiftedRegion.Shift(1, 0);
-                    range.AddRegion(shiftedRegion);
-                    regionsRemoved.Add(region);
-                    regionsAdded.Add(shiftedRegion);
-                }
-                // If the new row/col being added is inside the region or the one directly after
-                else if (region.Spans(indexAfter + 1, axis) && region.GetSize(axis) > 1)
-                {
-                    range.RemoveRegion(region);
-                    var expandedRegion = region.Copy();
-
-                    if (axis == Axis.Col)
-                        expandedRegion.Expand(Edge.Right, 1);
-                    else if (axis == Axis.Row)
-                        expandedRegion.Expand(Edge.Bottom, 1);
-
-                    range.AddRegion(expandedRegion);
-                    regionsRemoved.Add(region);
-                    regionsAdded.Add(expandedRegion);
-                }
-            }
-        }
-
         this.updatePositions();
-        emitRangeChanged(regionsRemoved, regionsAdded);
+        // emitRangeChanged(regionsRemoved, regionsAdded);
     }
 
     /// <summary>
@@ -149,40 +110,6 @@ public abstract class ConditionalFormatAbstractBase : IEquatable<ConditionalForm
     {
         var regionsRemoved = new List<IRegion>();
         var regionsAdded = new List<IRegion>();
-
-        foreach (var range in Ranges)
-        {
-            foreach (var region in range.Regions.ToArray())
-            {
-                if (region.GetLeadingEdgeOffset(axis) > index)
-                {
-                    // Add and remove the region after shifting
-                    range.RemoveRegion(region);
-                    var shiftedRegion = region.Copy();
-                    if (axis == Axis.Col)
-                        shiftedRegion.Shift(0, -1);
-                    else if (axis == Axis.Row)
-                        shiftedRegion.Shift(-1, 0);
-                    regionsRemoved.Add(region);
-                    range.AddRegion(shiftedRegion);
-                    regionsAdded.Add(shiftedRegion);
-                } // If the new row/col being added is inside the region or the one directly after
-                else if (region.Spans(index, axis))
-                {
-                    range.RemoveRegion(region);
-                    var expandedRegion = region.Copy();
-
-                    if (axis == Axis.Col)
-                        expandedRegion.Expand(Edge.Right, -1);
-                    else if (axis == Axis.Row)
-                        expandedRegion.Expand(Edge.Bottom, -1);
-
-                    range.AddRegion(expandedRegion);
-                    regionsRemoved.Add(region);
-                    regionsAdded.Add(expandedRegion);
-                }
-            }
-        }
 
         this.updatePositions();
         emitRangeChanged(regionsRemoved, regionsAdded);
@@ -198,7 +125,7 @@ public abstract class ConditionalFormatAbstractBase : IEquatable<ConditionalForm
     {
         Ranges.Remove(range);
         updatePositions();
-        emitRangeChanged(range.Regions.ToList(), new List<IRegion>());
+        emitRangeChanged(new[] { range.Region }, new List<IRegion>());
     }
 
     private void updatePositions()

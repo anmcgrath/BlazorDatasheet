@@ -32,10 +32,11 @@ public class VisualSheet
         if (e.DirtyRegions != null)
         {
             InvalidateRegions(e.DirtyRegions);
-            foreach (var position in _sheet
-                         .Range(e.DirtyRegions.Select(x => x.GetIntersection(_currentViewport.VisibleRegion))
-                             .Where(x => x != null).ToList())
-                         .Positions)
+            var invalidPositions = e.DirtyRegions.Select(x => x.GetIntersection(_currentViewport.VisibleRegion))
+                .Where(x => x != null)
+                .SelectMany(x => _sheet.Range(x).Positions);
+            
+            foreach (var position in invalidPositions)
                 set.Add(position);
         }
 
@@ -64,7 +65,8 @@ public class VisualSheet
             RemoveRegionsFromCache(oldRegions);
             // Store Visual Cells from the new regions that we just encountered.
             InvalidateRegions(newRegions);
-            Invalidated?.Invoke(this, new VisualSheetInvalidateArgs(_sheet.Range(newRegions).Positions.ToHashSet()));
+            Invalidated?.Invoke(this,
+                new VisualSheetInvalidateArgs(newRegions.SelectMany(x => _sheet.Range(x).Positions).ToHashSet()));
         }
     }
 
@@ -79,8 +81,8 @@ public class VisualSheet
     /// <param name="regions"></param>
     private void RemoveRegionsFromCache(IEnumerable<IRegion> regions)
     {
-        var range = _sheet.Range(regions.ToList());
-        foreach (var cellPosition in range.Positions)
+        var positions = regions.SelectMany(x => _sheet.Range(x).Positions);
+        foreach (var cellPosition in positions)
         {
             if (_visualCache.ContainsKey(cellPosition))
                 _visualCache.Remove(cellPosition);
@@ -90,14 +92,14 @@ public class VisualSheet
     private void InvalidateRegions(IEnumerable<IRegion> regions)
     {
         if (_currentViewport == null) // only happens when we are starting up
-            InvalidateCells(_sheet.Range(regions.ToList()).Positions);
+            InvalidateCells(regions.SelectMany(x => _sheet.Range(x).Positions));
         else
         {
             var regionsInViewport =
                 regions.Select(x => x.GetIntersection(_currentViewport.VisibleRegion))
                     .Where(x => x != null);
 
-            var cells = _sheet.Range(regionsInViewport!.ToList()).Positions;
+            var cells = regionsInViewport.SelectMany(x => _sheet.Range(x).Positions);
             InvalidateCells(cells);
         }
     }

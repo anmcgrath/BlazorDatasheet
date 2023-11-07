@@ -4,7 +4,7 @@ using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.Selecting;
 
-public class Selection : SheetRange
+public class Selection
 {
     private Sheet _sheet;
 
@@ -12,6 +12,15 @@ public class Selection : SheetRange
     /// The region that is active for accepting user input, usually the most recent region added
     /// </summary>
     public IRegion? ActiveRegion { get; private set; }
+
+    private List<IRegion> _regions = new();
+
+    /// <summary>
+    /// All regions in the selection.
+    /// </summary>
+    public IReadOnlyList<IRegion> Regions => _regions;
+
+    public IEnumerable<SheetRange> Ranges => _regions.Select(x => _sheet.Range(x));
 
     /// <summary>
     /// The position of the cell that is "active" in the selection.
@@ -48,7 +57,7 @@ public class Selection : SheetRange
 
     public event EventHandler<CellsSelectedEventArgs> CellsSelected;
 
-    public Selection(Sheet sheet) : base(sheet, new List<IRegion>())
+    public Selection(Sheet sheet)
     {
         _sheet = sheet;
     }
@@ -187,7 +196,7 @@ public class Selection : SheetRange
             var bottom = boundedRegion.GetEdge(Edge.Bottom);
 
             mergeOverlaps =
-                Sheet.Cells
+                _sheet.Cells
                     .GetMerges(new[] { top, right, left, bottom })
                     .Where(x => !boundedRegion.Contains(x))
                     .ToList();
@@ -252,15 +261,15 @@ public class Selection : SheetRange
         SetSingle(new Region(row, col));
     }
 
-    public void Set(SheetRange range)
+    public void Set(List<IRegion> regions)
     {
         _regions.Clear();
         this.EndSelecting();
-        if (!range.Regions.Any())
-            return;
-
-        this.ActiveCellPosition = range.Regions.Last().TopLeft;
-        this.AddRegionsToSelections(range.Regions);
+        if (regions.Any())
+        {
+            this.ActiveCellPosition = regions.First().TopLeft;
+            this.AddRegionsToSelections(regions);
+        }
     }
 
     /// <summary>
@@ -298,7 +307,7 @@ public class Selection : SheetRange
             return;
 
         // If it's currently inside a merged cell, find where it should next move to
-        var merge = Sheet.Cells.GetMerge(ActiveCellPosition.row, ActiveCellPosition.col);
+        var merge = _sheet.Cells.GetMerge(ActiveCellPosition.row, ActiveCellPosition.col);
         if (merge != null)
         {
             // Move multiple rows if the current position is on the edge away
@@ -379,7 +388,7 @@ public class Selection : SheetRange
             return;
 
         // If it's currently inside a merged cell, find where it should next move to
-        var merge = Sheet.Cells.GetMerge(ActiveCellPosition.row, ActiveCellPosition.col);
+        var merge = _sheet.Cells.GetMerge(ActiveCellPosition.row, ActiveCellPosition.col);
         if (merge != null)
         {
             // Move multiple rows if the current position is on the edge away
@@ -503,7 +512,7 @@ public class Selection : SheetRange
         // Check whether there are any merged regions at the ActiveCellPosition.
         // If there are, the input position is the top left of the merged,
         // Otherwise it corresponds to the active cell position.
-        var merged = Sheet.Cells.GetMerge(ActiveCellPosition.row, ActiveCellPosition.col);
+        var merged = _sheet.Cells.GetMerge(ActiveCellPosition.row, ActiveCellPosition.col);
         if (merged == null)
             return ActiveCellPosition;
         else
@@ -511,4 +520,13 @@ public class Selection : SheetRange
     }
 
     #endregion
+
+    public object Value
+    {
+        set
+        {
+            foreach (var range in Ranges)
+                range.Value = value;
+        }
+    }
 }

@@ -47,13 +47,13 @@ public class RangeTests
     {
         var sheet = new Sheet(3, 3);
         var rowRange = sheet.Range(Axis.Row, 1, 3);
-        Assert.AreEqual(typeof(RowRegion), rowRange.Regions.First().GetType());
-        Assert.AreEqual(1, rowRange.Regions.First().Start.row);
-        Assert.AreEqual(3, rowRange.Regions.First().End.row);
+        Assert.AreEqual(typeof(RowRegion), rowRange.Region.GetType());
+        Assert.AreEqual(1, rowRange.Region.Start.row);
+        Assert.AreEqual(3, rowRange.Region.End.row);
 
         var colRange = sheet.Range(Axis.Col, 1, 3);
-        Assert.AreEqual(typeof(ColumnRegion), colRange.Regions.First().GetType());
-        Assert.AreEqual(1, colRange.Regions.First().Start.col);
-        Assert.AreEqual(3, colRange.Regions.First().End.col);
+        Assert.AreEqual(typeof(ColumnRegion), colRange.Region.GetType());
+        Assert.AreEqual(1, colRange.Region.Start.col);
+        Assert.AreEqual(3, colRange.Region.End.col);
     }
 }

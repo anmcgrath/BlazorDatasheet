@@ -1,6 +1,7 @@
 ﻿using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Selecting;
 using BlazorDatasheet.Core.Util;
+using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.Commands;
 
@@ -41,7 +42,7 @@ public class CommandManager
             return true;
         }
 
-        var selectionBeforeExecute = _sheet.Selection.Clone();
+        var selectionBeforeExecute = _sheet.Selection.Regions.Select(x=>x.Clone()).ToList();
         var result = command.Execute(_sheet);
         if (result)
         {
@@ -50,7 +51,7 @@ public class CommandManager
                 _history.Push(new UndoCommandData()
                 {
                     Command = undoCommand,
-                    Selection = selectionBeforeExecute
+                    SelectedRegions = selectionBeforeExecute
                 });
             }
         }
@@ -103,8 +104,8 @@ public class CommandManager
         
         Console.WriteLine("cmd "+cmd.Command);
         
-        if (cmd.Selection != null)
-            _sheet.Selection.Set(cmd.Selection);
+        if (cmd.SelectedRegions.Any())
+            _sheet.Selection.Set(cmd.SelectedRegions);
 
         if (!HistoryPaused && result)
         {
@@ -129,7 +130,7 @@ public class CommandManager
         var cmd = _redos.Pop()!;
         var result = cmd.Execute(_sheet);
 
-        var selectionBeforeExecute = _sheet.Selection.Clone();
+        var selectionBeforeExecute = _sheet.Selection.Regions.Select(x=>x.Clone()).ToList();
         if (result)
         {
             if (!HistoryPaused && cmd is IUndoableCommand undoCommand)
@@ -137,7 +138,7 @@ public class CommandManager
                 _history.Push(new UndoCommandData()
                 {
                     Command = undoCommand,
-                    Selection = selectionBeforeExecute
+                    SelectedRegions = selectionBeforeExecute
                 });
             }
         }
@@ -207,5 +208,5 @@ internal class UndoCommandData
     /// <summary>
     /// The selected range at the time the command was run.
     /// </summary>
-    public SheetRange? Selection { get; init; }
+    public List<IRegion> SelectedRegions { get; init; }
 }

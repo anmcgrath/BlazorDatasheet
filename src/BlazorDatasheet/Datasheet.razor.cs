@@ -502,7 +502,7 @@ public partial class Datasheet : IHandleEvent
             if (!Sheet!.Selection.Regions.Any())
                 return Task.FromResult(true);
 
-            Sheet.Selection.Clear();
+            Sheet.Selection.ClearSelections();
             return Task.FromResult(true);
         }
 

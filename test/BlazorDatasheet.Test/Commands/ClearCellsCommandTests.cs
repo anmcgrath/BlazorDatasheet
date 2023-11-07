@@ -24,7 +24,7 @@ public class ClearCellsCommandTests
     public void Test_Clear_Then_Undo_Then_Redo()
     {
         _sheet.Selection.SetSingle(new Region(0, 1, 0, 1));
-        var cmd = new ClearCellsCommand(_sheet.Selection);
+        var cmd = new ClearCellsCommand(_sheet.Selection.Regions);
         _commandManager.ExecuteCommand(cmd);
         for (int i = 0; i < 3; i++)
         {

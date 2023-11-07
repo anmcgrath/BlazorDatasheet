@@ -58,20 +58,24 @@ public class SheetTests
     public void Range_String_Specification_Tests()
     {
         var sheet = new Sheet(1, 1); // size doesn't matter, could be anything
-        sheet.Range("a1").Regions.Should().ContainSingle(x => x.Left == 0 && x.Top == 0);
-        sheet.Range("b2").Regions.Should().ContainSingle(x => x.Left == 1 && x.Top == 1);
-        sheet.Range("2a").Regions.Should().BeEmpty();
+        sheet.Range("a1")!.Region.Should()
+            .BeEquivalentTo(new { Left = 0, Top = 0 }, options => options.ExcludingMissingMembers());
+        sheet.Range("b2")!.Region.Should()
+            .BeEquivalentTo(new { Left = 1, Top = 1 }, options => options.ExcludingMissingMembers());
+        sheet.Range("2a")?.Region.Should().BeNull();
 
-        sheet.Range("a1,b2").Regions.Should().HaveCount(2);
+        sheet.Range("A1:B2")!.Region.Should()
+            .BeEquivalentTo(new { Left = 0, Top = 0, Right = 1, Bottom = 1 },
+                options => options.ExcludingMissingMembers());
 
-        sheet.Range("A1:B2").Regions.Should()
-            .ContainSingle(x => x.Left == 0 && x.Right == 1 && x.Top == 0 && x.Bottom == 1);
+        sheet.Range("B:C")!.Region.Should().BeOfType<ColumnRegion>();
+        sheet.Range("B:C")!.Region.Should()
+            .BeOfType<ColumnRegion>().And
+            .BeEquivalentTo(new { Left = 1, Right = 2 }, options => options.ExcludingMissingMembers());
 
-        sheet.Range("B:C").Regions.First().Should().BeOfType<ColumnRegion>();
-        sheet.Range("B:C").Regions.Should().ContainSingle(x => x.Left == 1 && x.Right == 2);
-
-        sheet.Range("2:3").Regions.First().Should().BeOfType<RowRegion>();
-        sheet.Range("2:3").Regions.Should().ContainSingle(x => x.Top == 1 && x.Bottom == 2);
+        sheet.Range("2:3")!.Region.Should().BeOfType<RowRegion>();
+        sheet.Range("2:3")!.Region.Should()
+            .BeEquivalentTo(new { Top = 1, Bottom = 2 }, options => options.ExcludingMissingMembers());
     }
 
     [Test]
@@ -86,7 +90,7 @@ public class SheetTests
     public void Bad_Range_Strings_return_Empty(string badText)
     {
         var sheet = new Sheet(1, 1);
-        sheet.Range(badText).Regions.Should().BeEmpty();
+        sheet.Range(badText)?.Region.Should().BeNull();
     }
 
     [Test]
@@ -94,26 +98,20 @@ public class SheetTests
     {
         var sheet = new Sheet(10, 10);
         var posnsChanged = new List<CellPosition>();
-        sheet.Cells.CellsChanged += (sender, positions) =>
-        {
-            posnsChanged = positions.ToList();
-        };
+        sheet.Cells.CellsChanged += (sender, positions) => { posnsChanged = positions.ToList(); };
         sheet.BatchUpdates();
         sheet.Cells.SetValue(0, 0, 0);
         sheet.Cells.SetValue(1, 1, 1);
         sheet.EndBatchUpdates();
         posnsChanged.Should().HaveCount(2);
     }
-    
+
     [Test]
     public void Cell_Changes_Emits_Cell_ChangeEvent()
     {
         var sheet = new Sheet(10, 10);
         var posnsChanged = new List<CellPosition>();
-        sheet.Cells.CellsChanged += (sender, positions) =>
-        {
-            posnsChanged = positions.ToList();
-        };
+        sheet.Cells.CellsChanged += (sender, positions) => { posnsChanged = positions.ToList(); };
         sheet.Cells.SetValue(1, 1, 1);
         posnsChanged.Should().HaveCount(1);
         posnsChanged.First().col.Should().Be(1);

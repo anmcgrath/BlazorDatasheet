@@ -1,5 +1,6 @@
 ﻿using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
+using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core;
 
 namespace BlazorDatasheet.Core.Commands;
@@ -9,17 +10,22 @@ namespace BlazorDatasheet.Core.Commands;
 /// </summary>
 public class ClearCellsCommand : IUndoableCommand
 {
-    private readonly SheetRange _range;
+    private readonly IEnumerable<IRegion> _regions;
     private CellStoreRestoreData _restoreData;
 
     public ClearCellsCommand(SheetRange range)
     {
-        _range = range.Clone();
+        _regions = new[] { range.Region.Clone() };
+    }
+
+    public ClearCellsCommand(IEnumerable<IRegion> regions)
+    {
+        _regions = regions.Select(x=>x.Clone()).ToList();
     }
 
     public bool Execute(Sheet sheet)
     {
-        _restoreData = sheet.Cells.ClearCellsImpl(_range.Regions);
+        _restoreData = sheet.Cells.ClearCellsImpl(_regions);
         return true;
     }
 
