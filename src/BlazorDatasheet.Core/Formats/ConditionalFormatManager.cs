@@ -5,6 +5,7 @@ using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.RTree;
+using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.DataStructures.Util;
 
 namespace BlazorDatasheet.Core.Formats;
@@ -14,51 +15,13 @@ public class ConditionalFormatManager
     private readonly Sheet _sheet;
 
     private readonly List<ConditionalFormatAbstractBase> _registered = new();
+    private readonly ConsolidatedDataStore<ConditionalFormatAbstractBase> _appliedFormats = new();
 
-    private readonly RTree<ConditionalFormatSpatialData> _cfTree = new();
-
-    public event EventHandler<ConditionalFormatPreparedEventArgs> ConditionalFormatPrepared;
-
-    public ConditionalFormatManager(Sheet sheet, CellStore cellStore, RowInfoStore rowInfoStore, ColumnInfoStore columnInfoStore)
+    public ConditionalFormatManager(Sheet sheet,
+        CellStore cellStore)
     {
         _sheet = sheet;
         cellStore.CellsChanged += HandleCellsChanged;
-        rowInfoStore.RowInserted += HandleRowInserted;
-        rowInfoStore.RowRemoved += HandleRowRemoved;
-        columnInfoStore.ColumnRemoved += HandleColRemoved;
-        columnInfoStore.ColumnInserted += HandleColInserted;
-    }
-
-    private void HandleRowRemoved(object? sender, RowRemovedEventArgs e)
-    {
-        foreach (var cf in _registered)
-        {
-            cf.HandleRowRemoved(e.Index);
-        }
-    }
-
-    private void HandleRowInserted(object? sender, RowInsertedEventArgs e)
-    {
-        foreach (var cf in _registered)
-        {
-            cf.HandleRowInserted(e.Index);
-        }
-    }
-
-    private void HandleColRemoved(object? sender, ColumnRemovedEventArgs e)
-    {
-        foreach (var cf in _registered)
-        {
-            cf.HandleColRemoved(e.ColumnIndex);
-        }
-    }
-
-    private void HandleColInserted(object? sender, ColumnInsertedEventArgs e)
-    {
-        foreach (var cf in _registered)
-        {
-            cf.HandleColInserted(e.ColumnIndex);
-        }
     }
 
     /// <summary>
@@ -80,54 +43,43 @@ public class ConditionalFormatManager
     {
         if (range == null)
             return;
+
         if (!_registered.Contains(conditionalFormat))
         {
             _registered.Add(conditionalFormat);
             conditionalFormat.Order = _registered.Count - 1;
-            conditionalFormat.RegionsChanged += ConditionalFormatOnRegionsChanged;
         }
 
-        conditionalFormat.Add(range);
-        conditionalFormat.Prepare(_sheet);
+        _appliedFormats.Add(range.Region, conditionalFormat);
+        Prepare(new List<ConditionalFormatAbstractBase>() { conditionalFormat });
     }
 
-    private void ConditionalFormatOnRegionsChanged(object? sender, ConditionalFormatRegionsChangedEventArgs e)
+    private List<SheetRange> GetRangesAppliedToFormat(ConditionalFormatAbstractBase format)
     {
-        if (sender == null)
-            return;
-        var cf = (ConditionalFormatAbstractBase)sender;
-        // Update the cf tree with the new regions & remove old regions
-        foreach (var region in e.RegionsRemoved)
-        {
-            var env = region.ToEnvelope();
-            var spatialData = _cfTree.Search(env)
-                .FirstOrDefault(x => x.ConditionalFormat == cf && x.Envelope.IsSameAs(env));
-            if (spatialData != null)
-                _cfTree.Delete(spatialData);
-        }
-
-        _cfTree.BulkLoad(e.RegionsAdded.Select(x => new ConditionalFormatSpatialData(cf, x)));
+        var regions = _appliedFormats.GetRegions(format);
+        return regions.Select(x => new SheetRange(_sheet, x)).ToList();
     }
+
 
     private void HandleCellsChanged(object? sender, IEnumerable<CellPosition> args)
     {
         // Simply prepare all cells that the conditional format belongs to (if shared)
-        var handled = new HashSet<int>();
-        foreach (var arg in args)
-        {
-            var cfs = GetFormatsAppliedToPosition(arg.row, arg.col);
-            foreach (var format in cfs)
-            {
-                if (handled.Contains(format.Order))
-                    continue;
-                // prepare format (re-compute shared format cache etch.)
-                if (format.IsShared)
-                {
-                    format.Prepare(_sheet);
-                    _sheet.MarkDirty(format.GetPositions());
-                }
+        var cfs =
+            args.SelectMany(x => GetFormatsAppliedToPosition(x.row, x.col))
+                .Distinct()
+                .ToList();
+        Prepare(cfs);
+    }
 
-                handled.Add(format.Order);
+    private void Prepare(List<ConditionalFormatAbstractBase> formats)
+    {
+        foreach (var format in formats)
+        {
+            // prepare format (re-compute shared format cache etch.)
+            if (format.IsShared)
+            {
+                format.Prepare(GetRangesAppliedToFormat(format));
+                _sheet.MarkDirty(GetRangesAppliedToFormat(format).Select(x => x.Region));
             }
         }
     }
@@ -135,16 +87,16 @@ public class ConditionalFormatManager
     private IEnumerable<ConditionalFormatAbstractBase> GetFormatsAppliedToPosition(int row, int col)
     {
         var region = new Region(row, col);
-        return _cfTree.Search(region.ToEnvelope())
-            .Select(x => x.ConditionalFormat);
+        return _appliedFormats.GetData(row, col);
     }
 
     /// <summary>
     /// Applies the conditional format specified by "key" to a particular cell. If setting the format to a number of cells,
     /// prefer setting via a region.
+    /// <param name="format"></param>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
     /// </summary>
-    /// <param name="key"></param>
-    /// <param name="region"></param>
     public void Apply(ConditionalFormatAbstractBase format, int row, int col)
     {
         Apply(new Region(row, col), format);
@@ -179,17 +131,45 @@ public class ConditionalFormatManager
         return initialFormat;
     }
 
-    internal class ConditionalFormatSpatialData : ISpatialData
+    internal void InsertRowAt(int row, int nRows, bool expandNeighbouring = false)
     {
-        internal readonly ConditionalFormatAbstractBase _conditionalFormat;
-        public ref readonly ConditionalFormatAbstractBase ConditionalFormat => ref _conditionalFormat;
-        private readonly Envelope _envelope;
-        public ref readonly Envelope Envelope => ref _envelope;
+        _appliedFormats.InsertRows(row, nRows, expandNeighbouring);
+    }
 
-        internal ConditionalFormatSpatialData(ConditionalFormatAbstractBase cf, IRegion region)
-        {
-            _envelope = region.ToEnvelope();
-            _conditionalFormat = cf;
-        }
+    internal void InsertColAt(int row, int nRows, bool expandNeighbouring = false)
+    {
+        _appliedFormats.InsertCols(row, nRows, expandNeighbouring);
+    }
+
+    internal RegionRestoreData<ConditionalFormatAbstractBase> RemoveRowAt(int row, int nRows)
+    {
+        var restoreData = _appliedFormats.RemoveRows(row, row + nRows - 1);
+        var cfsAffected = restoreData.RegionsAdded
+            .Select(x => x.Data).Concat(restoreData.RegionsRemoved.Select(x => x.Data))
+            .Distinct()
+            .ToList();
+        Prepare(cfsAffected);
+        return restoreData;
+    }
+
+    internal RegionRestoreData<ConditionalFormatAbstractBase> RemoveColAt(int col, int nCols)
+    {
+        var restoreData = _appliedFormats.RemoveCols(col, col + nCols - 1);
+        var cfsAffected = restoreData.RegionsAdded
+            .Select(x => x.Data).Concat(restoreData.RegionsRemoved.Select(x => x.Data))
+            .Distinct()
+            .ToList();
+        Prepare(cfsAffected);
+        return restoreData;
+    }
+
+    internal void Restore(RegionRestoreData<ConditionalFormatAbstractBase> data)
+    {
+        _appliedFormats.Restore(data);
+        var cfsAffected = data.RegionsAdded
+            .Select(x => x.Data).Concat(data.RegionsRemoved.Select(x => x.Data))
+            .Distinct()
+            .ToList();
+        Prepare(cfsAffected);
     }
 }

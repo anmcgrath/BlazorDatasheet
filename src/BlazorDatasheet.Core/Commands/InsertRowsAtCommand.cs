@@ -26,6 +26,7 @@ internal class InsertRowsAtCommand : IUndoableCommand
         sheet.Validators.Store.InsertRows(_index, _nRows);
         sheet.Cells.InsertRowAt(_index, _nRows);
         sheet.InsertRowAtImpl(_index, _nRows);
+        sheet.ConditionalFormats.InsertRowAt(_index, _nRows);
         sheet.Rows.InsertImpl(_index, _nRows);
         return true;
     }
@@ -35,6 +36,7 @@ internal class InsertRowsAtCommand : IUndoableCommand
         sheet.Validators.Store.RemoveRows(_index, _index + _nRows - 1);
         sheet.Cells.RemoveRowAt(_index, _nRows);
         sheet.RemoveRowAtImpl(_index, _nRows);
+        sheet.ConditionalFormats.RemoveRowAt(_index, _nRows);
         sheet.Rows.RemoveRowsImpl(_index, _index + _nRows - 1);
         return true;
     }

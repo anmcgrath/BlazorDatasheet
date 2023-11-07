@@ -57,10 +57,12 @@ public class SheetRange
     /// <returns>A collection of (row, column) positions of all non-empty cells.</returns>
     internal IEnumerable<CellPosition> GetNonEmptyPositions()
     {
-        if (Region == null)
-            return Enumerable.Empty<CellPosition>();
-
         return Sheet.Cells.GetNonEmptyCellPositions(Region);
+    }
+
+    internal IEnumerable<IReadOnlyCell> GetCells()
+    {
+        return Sheet.Cells.GetCellsInRegion(Region);
     }
 
     /// <summary>

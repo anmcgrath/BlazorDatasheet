@@ -13,10 +13,9 @@ public class RemoveColumnCommand : IUndoableCommand
     private int _columnIndex;
     private readonly int _nCols;
 
-    private RegionRestoreData<bool> _mergeRestoreData;
     private RegionRestoreData<int> _validatorRestoreData;
     private CellStoreRestoreData _cellStoreRestoreData;
-    private List<OrderedInterval<CellFormat>> _colFormatRestoreData;
+    private RegionRestoreData<ConditionalFormatAbstractBase> _cfRestoreData;
     private int _nColsRemoved;
     private ColumnInfoRestoreData _columnInfoRestoreData;
 
@@ -44,6 +43,7 @@ public class RemoveColumnCommand : IUndoableCommand
         _cellStoreRestoreData = sheet.Cells.RemoveColAt(_columnIndex, _nColsRemoved);
         _columnInfoRestoreData = sheet.Columns.RemoveColumnsImpl(_columnIndex, _columnIndex + _nColsRemoved - 1);
         _validatorRestoreData = sheet.Validators.Store.RemoveCols(_columnIndex, _columnIndex + _nColsRemoved - 1);
+        _cfRestoreData = sheet.ConditionalFormats.RemoveColAt(_columnIndex, _nColsRemoved);
         return sheet.RemoveColImpl(_columnIndex, _nColsRemoved);
     }
 
@@ -59,6 +59,9 @@ public class RemoveColumnCommand : IUndoableCommand
 
         sheet.Columns.InsertImpl(_columnIndex, _nColsRemoved);
         sheet.Columns.Restore(_columnInfoRestoreData);
+
+        sheet.ConditionalFormats.InsertRowAt(_columnIndex, _nColsRemoved, false);
+        sheet.ConditionalFormats.Restore(_cfRestoreData);
 
         sheet.MarkDirty(new ColumnRegion(_columnIndex, sheet.NumCols));
 

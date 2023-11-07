@@ -4,7 +4,7 @@ using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.Formats;
 
-public class ConditionalFormat : ConditionalFormatAbstractBase
+public sealed class ConditionalFormat : ConditionalFormatAbstractBase
 {
     /// <summary>
     /// The function that returns the conditional format, based on the cell's value
@@ -16,6 +16,8 @@ public class ConditionalFormat : ConditionalFormatAbstractBase
     /// The function that returns the conditional format, based only on one cell's value
     /// </summary>
     public Func<IReadOnlyCell, CellFormat>? FormatFunc { get; }
+
+    private List<IReadOnlyCell> _cellCache;
 
     private ConditionalFormat()
     {
@@ -52,11 +54,9 @@ public class ConditionalFormat : ConditionalFormatAbstractBase
         FormatFunc = formatFunc;
     }
 
-    private IEnumerable<IReadOnlyCell> cellCache;
-
-    public override void Prepare(Sheet sheet)
+    public override void Prepare(List<SheetRange> ranges)
     {
-        cellCache = this.GetCells(sheet);
+        _cellCache = ranges.SelectMany(x => x.GetCells()).ToList();
     }
 
     public override CellFormat? CalculateFormat(int row, int col, Sheet sheet)
@@ -64,7 +64,7 @@ public class ConditionalFormat : ConditionalFormatAbstractBase
         var cell = sheet.Cells.GetCell(row, col);
         if (IsShared)
         {
-            var cells = cellCache;
+            var cells = _cellCache;
             if (FormatFuncDependent != null)
                 return FormatFuncDependent?.Invoke(cell, cells);
             return FormatFunc?.Invoke(cell);

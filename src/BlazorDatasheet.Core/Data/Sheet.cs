@@ -110,7 +110,7 @@ public class Sheet
         Rows = new RowInfoStore(25, this);
         Columns = new ColumnInfoStore(105, this);
         FormulaEngine = new FormulaEngine.FormulaEngine(this, Cells);
-        ConditionalFormats = new ConditionalFormatManager(this, Cells, Rows, Columns);
+        ConditionalFormats = new ConditionalFormatManager(this, Cells);
     }
 
     public Sheet(int numRows, int numCols) : this()

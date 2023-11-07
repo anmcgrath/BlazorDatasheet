@@ -32,12 +32,11 @@ public class NumberScaleConditionalFormat : ConditionalFormatAbstractBase
             var newColor = ColorConverter.HSVToRGB(h, s, v);
             _computedLut[i] = $"rgb({newColor.R},{newColor.G},{newColor.B})";
         }
-        
     }
 
-    public override void Prepare(Sheet sheet)
+    public override void Prepare(List<SheetRange> ranges)
     {
-        var cells = this.GetCells(sheet);
+        var cells = ranges.SelectMany(x => x.GetNonEmptyCells());
         double sum = 0;
         int count = 0;
         var max = double.MinValue;
@@ -59,8 +58,6 @@ public class NumberScaleConditionalFormat : ConditionalFormatAbstractBase
         cachedMax = max;
         cachedMean = sum / count;
         cachedMin = min;
-
-        base.Prepare(sheet);
     }
 
     private string GetColourString(double value, double min, double max, double mean)

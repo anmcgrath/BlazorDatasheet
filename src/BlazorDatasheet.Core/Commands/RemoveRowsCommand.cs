@@ -12,10 +12,9 @@ public class RemoveRowsCommand : IUndoableCommand
 {
     private readonly int _rowIndex;
     private readonly int _nRows;
-
-    private List<CellChangedFormat> _removedCellFormats;
-    private RegionRestoreData<bool> _mergeRestoreData;
+    
     private RegionRestoreData<int> _validatorRestoreData;
+    private RegionRestoreData<ConditionalFormatAbstractBase> _cfRestoreData;
     private RowInfoStoreRestoreData _rowInfoStoreRestore;
     private CellStoreRestoreData _cellStoreRestoreData;
 
@@ -44,6 +43,7 @@ public class RemoveRowsCommand : IUndoableCommand
         _cellStoreRestoreData = sheet.Cells.RemoveRowAt(_rowIndex, _nRowsRemoved);
         _rowInfoStoreRestore = sheet.Rows.RemoveRowsImpl(_rowIndex, _rowIndex + _nRowsRemoved - 1);
         _validatorRestoreData = sheet.Validators.Store.RemoveRows(_rowIndex, _rowIndex + _nRowsRemoved - 1);
+        _cfRestoreData = sheet.ConditionalFormats.RemoveRowAt(_rowIndex, _nRowsRemoved);
         return sheet.RemoveRowAtImpl(_rowIndex, _nRowsRemoved);
     }
 
@@ -57,6 +57,9 @@ public class RemoveRowsCommand : IUndoableCommand
 
         sheet.Rows.InsertImpl(_rowIndex, _nRowsRemoved);
         sheet.Rows.Restore(_rowInfoStoreRestore);
+
+        sheet.ConditionalFormats.InsertRowAt(_rowIndex, _nRowsRemoved, false);
+        sheet.ConditionalFormats.Restore(_cfRestoreData);
 
         sheet.InsertRowAtImpl(_rowIndex);
 

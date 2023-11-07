@@ -6,7 +6,9 @@
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Edit
 @using BlazorDatasheet.Core.Formats
+@using BlazorDatasheet.Core.Formats.DefaultConditionalFormats
 @using BlazorDatasheet.Core.Validation
+@using System.Drawing
 
 <PageTitle>Index</PageTitle>
 
@@ -101,7 +103,7 @@
         Sheet.Commands.PauseHistory();
         Sheet.Validators.Add(4, 0, new NumberValidator(true));
         Sheet.Validators.Add(1, 3, src);
-        
+
         Sheet.Cells[0, 0].Value = "Blazor datasheet";
 
         Sheet.Cells[3, 3].Value = "Date/Time:";
@@ -117,8 +119,8 @@
         Sheet.Cells[5, 4].Type = "boolean";
         Sheet.Cells[5, 4].Value = false;
 
-        Sheet.Cells.Merge(new Region(16, 17, 0, 2));
-        
+        Sheet.Cells.Merge(new Region(14, 15, 4, 5));
+
         for (int i = 1; i < 5; i++)
         {
             Sheet.Cells[i, 1].Value = i * 2;
@@ -127,9 +129,16 @@
         Sheet.Cells[5, 0].Value = "Sum:";
         Sheet.Cells[5, 1].Formula = "=SUM(B2:B5)";
 
-        Sheet.SetFormat(new Region(8, 12, 0, 4), new CellFormat() { BackgroundColor = "#c8d9ed" });
-
+        Sheet.SetFormat(new Region(8, 10, 0, 4), new CellFormat() { BackgroundColor = "#c8d9ed" });
         Sheet.SetFormat(new Region(3, 5, 3, 3), new CellFormat() { TextAlign = "right" });
+
+        for (int i = 14; i <= 17; i++)
+        {
+            for (int j = 0; j < 4; j++)
+                Sheet.Cells[i, j].Value = i + j;
+        }
+
+        Sheet.ConditionalFormats.Apply(new Region(14, 17, 0, 4), new NumberScaleConditionalFormat(Color.Aqua, Color.Chocolate));
 
         Sheet.Rows.SetHeadings(7, 7, "Custom Row");
         Sheet.Columns.SetHeadings(5, 5, "Custom Col");
