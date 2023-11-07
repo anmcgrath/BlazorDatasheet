@@ -97,7 +97,7 @@ public class ConditionalFormatManager
     /// <param name="row"></param>
     /// <param name="col"></param>
     /// </summary>
-    public void Apply(ConditionalFormatAbstractBase format, int row, int col)
+    public void Apply(int row, int col, ConditionalFormatAbstractBase format)
     {
         Apply(new Region(row, col), format);
     }
