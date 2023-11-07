@@ -44,7 +44,7 @@
 
         var values = new List<(int row, int col, object value)>();
 
-        var regionOfNumberScaleFormat = new Region(0, 99, 1, 4);
+        var regionOfNumberScaleFormat = new Region(0, sheet.NumRows-1, 1, sheet.NumRows-1);
         var rand = new Random();
         foreach (var posn in regionOfNumberScaleFormat)
         {

@@ -148,14 +148,26 @@ public class DataStoreTests
     }
 
     [Test]
+    public void Clear_Cells_Removes_Cells_From_Store()
+    {
+        var store = new SparseMatrixStore<string>();
+        store.Set(0, 0, "'0,0");
+        store.Set(0, 1, "'0,1");
+        store.Set(1, 0, "'1,0");
+        store.GetNonEmptyData(new Region(0, 1, 0, 1)).Count().Should().Be(3);
+        store.Clear(new Region(0, 1, 0, 1));
+        store.GetNonEmptyData(new Region(0, 1, 0, 1)).Count().Should().Be(0);
+    }
+
+    [Test]
     public void Remove_Region_Removes_Region()
     {
         var store = new SparseMatrixStore<string>();
-        store.Set(0,0,"0,0");
-        store.Set(0,1,"0,1");
-        store.Set(1,0,"1,0");
-        store.Set(1,1,"1,1");
-        store.Set(2,2,"2,2");
+        store.Set(0, 0, "0,0");
+        store.Set(0, 1, "0,1");
+        store.Set(1, 0, "1,0");
+        store.Set(1, 1, "1,1");
+        store.Set(2, 2, "2,2");
         store.Clear(new Region(0, 1, 0, 1));
         store.Get(0, 0).Should().BeNullOrEmpty();
         store.Get(0, 1).Should().BeNullOrEmpty();
