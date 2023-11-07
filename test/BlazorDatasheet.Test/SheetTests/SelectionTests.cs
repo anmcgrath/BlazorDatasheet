@@ -21,7 +21,7 @@ public class SelectionManagerTests
     {
         var selection = new Selection(_sheet);
         //Select all
-        selection.SetSingle(_sheet.Region);
+        selection.Set(_sheet.Region);
         var posns = selection.Ranges.SelectMany(x=>x.Positions).ToList();
         var cells = posns.Select(x => _sheet.Cells.GetCell(x.row, x.col)).ToList();
         Assert.AreEqual(_sheet.Region.Area, cells.Count);
@@ -31,7 +31,7 @@ public class SelectionManagerTests
     {
         var selection = new Selection(_sheet);
         var r = new Region(0, 0);
-        selection.SetSingle(r);
+        selection.Set(r);
         Assert.AreEqual(r, selection.ActiveRegion);
         Assert.AreEqual(r.TopLeft, selection.ActiveCellPosition);
         var r2 = new Region(1, 1);
@@ -42,7 +42,7 @@ public class SelectionManagerTests
     public void Add_Selection_Outside_Region_Constrains_Inside()
     {
         var selection = new Selection(_sheet);
-        selection.SetSingle(new Region(-1000, 1000, -1000, 1000));
+        selection.Set(new Region(-1000, 1000, -1000, 1000));
         Assert.AreEqual(_sheet.Region.Area, selection.ActiveRegion.GetIntersection(_sheet.Region).Area);
     }
 
@@ -50,7 +50,7 @@ public class SelectionManagerTests
     public void Cycle_Active_position_through_range()
     {
         var selection = new Selection(_sheet);
-        selection.SetSingle(new Region(0, 1, 0, 1));
+        selection.Set(new Region(0, 1, 0, 1));
 
 
         Assert.AreEqual(new CellPosition(0, 0), selection.ActiveCellPosition);
@@ -71,7 +71,7 @@ public class SelectionManagerTests
         var r1 = new Region(0, 0, 0, 0);
         var r2 = new Region(1, 1, 1, 1);
 
-        selection.SetSingle(0, 0);
+        selection.Set(0, 0);
         selection.BeginSelectingCell(1, 1);
         selection.EndSelecting();
 
@@ -91,8 +91,8 @@ public class SelectionManagerTests
         var selection = new Selection(_sheet);
         selection.SelectionChanged += (sender, ranges) => { nTimesChanged++; };
 
-        selection.SetSingle(new Region(1, 1));
-        selection.SetSingle(new Region(2, 2));
+        selection.Set(new Region(1, 1));
+        selection.Set(new Region(2, 2));
         selection.ClearSelections();
         Assert.AreEqual(3, nTimesChanged);
     }
@@ -100,7 +100,7 @@ public class SelectionManagerTests
     [Test]
     public void Moves_Input_Position_When_Selecting_Region_Is_One_Cell()
     {
-        _sheet.Selection.SetSingle(0, 0);
+        _sheet.Selection.Set(0, 0);
         _sheet.Selection.MoveActivePositionByRow(1);
         Assert.AreEqual(new CellPosition(1, 0), _sheet.Selection.GetInputPosition());
         Assert.AreEqual(new CellPosition(1, 0), _sheet.Selection.ActiveCellPosition);
@@ -110,7 +110,7 @@ public class SelectionManagerTests
     public void Active_Selection_Moves_Over_Merged_cells()
     {
         _sheet.Cells.Merge(new Region(0, 1, 0, 1));
-        _sheet.Selection.SetSingle(0, 0);
+        _sheet.Selection.Set(0, 0);
         Assert.AreEqual(4, _sheet.Selection.ActiveRegion.Area);
         _sheet.Selection.MoveActivePositionByRow(1);
         Assert.AreEqual(new CellPosition(2, 0), _sheet.Selection.ActiveCellPosition);

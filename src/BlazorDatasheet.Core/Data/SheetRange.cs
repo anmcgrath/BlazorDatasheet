@@ -88,7 +88,7 @@ public class SheetRange
     public void Select()
     {
         Sheet.Selection.ClearSelections();
-        Sheet.Selection.SetSingle(this.Region);
+        Sheet.Selection.Set(this.Region);
     }
 
     public void SetMetaData(string name, object? value)

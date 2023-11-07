@@ -13,14 +13,13 @@ public class ClearCellsCommand : IUndoableCommand
     private readonly IEnumerable<IRegion> _regions;
     private CellStoreRestoreData _restoreData;
 
-    public ClearCellsCommand(SheetRange range)
+    public ClearCellsCommand(SheetRange range) : this(new[] { range.Region })
     {
-        _regions = new[] { range.Region.Clone() };
     }
 
     public ClearCellsCommand(IEnumerable<IRegion> regions)
     {
-        _regions = regions.Select(x=>x.Clone()).ToList();
+        _regions = regions.Select(x => x.Clone()).ToList();
     }
 
     public bool Execute(Sheet sheet)

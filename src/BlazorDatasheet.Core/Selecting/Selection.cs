@@ -53,7 +53,7 @@ public class Selection
     /// <summary>
     /// Fired when the current selecting region changes
     /// </summary>
-    public event EventHandler<IRegion> SelectingChanged;
+    public event EventHandler<IRegion?> SelectingChanged;
 
     public event EventHandler<CellsSelectedEventArgs> CellsSelected;
 
@@ -70,7 +70,7 @@ public class Selection
         this.SelectingStartPosition = new CellPosition(row, col);
         this._selectingMode = SelectionMode.Cell;
         this.SelectingRegion = ExpandRegionOverMerged(SelectingRegion);
-        emitSelectingChanged();
+        EmitSelectingChanged();
     }
 
     public void BeginSelectingCol(int col)
@@ -79,7 +79,7 @@ public class Selection
         this.SelectingStartPosition = new CellPosition(0, col);
         this._selectingMode = SelectionMode.Column;
         this.SelectingRegion = ExpandRegionOverMerged(SelectingRegion);
-        emitSelectingChanged();
+        EmitSelectingChanged();
     }
 
     public void BeginSelectingRow(int row)
@@ -88,7 +88,7 @@ public class Selection
         this.SelectingStartPosition = new CellPosition(row, 0);
         this._selectingMode = SelectionMode.Row;
         this.SelectingRegion = ExpandRegionOverMerged(SelectingRegion);
-        emitSelectingChanged();
+        EmitSelectingChanged();
     }
 
     public void UpdateSelectingEndPosition(int row, int col)
@@ -110,13 +110,13 @@ public class Selection
         }
 
         SelectingRegion = ExpandRegionOverMerged(SelectingRegion);
-        emitSelectingChanged();
+        EmitSelectingChanged();
     }
 
     public void CancelSelecting()
     {
         SelectingRegion = null;
-        emitSelectingChanged();
+        EmitSelectingChanged();
     }
 
     public void EndSelecting()
@@ -124,12 +124,12 @@ public class Selection
         if (SelectingRegion == null)
             return;
         this.ActiveCellPosition = new CellPosition(SelectingStartPosition.row, SelectingStartPosition.col);
-        this.AddRegionToSelections(SelectingRegion);
+        this.Add(SelectingRegion);
         SelectingRegion = null;
-        emitSelectingChanged();
+        EmitSelectingChanged();
     }
 
-    private void emitSelectingChanged()
+    private void EmitSelectingChanged()
     {
         SelectingChanged?.Invoke(this, SelectingRegion);
     }
@@ -149,21 +149,23 @@ public class Selection
     }
 
     /// <summary>
+    /// Adds the cell position to the selection
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    internal void Add(int row, int col) => Add(new Region(row, col));
+
+    /// <summary>
     /// Adds the region to the selection
     /// </summary>
     /// <param name="region"></param>
-    internal void AddRegionToSelections(IRegion region)
-    {
-        _regions.Add(region);
-        ActiveRegion = ExpandRegionOverMerged(region);
-        emitSelectionChange();
-    }
+    internal void Add(IRegion region) => Add(new List<IRegion>() { region });
 
     /// <summary>
     /// Adds the region to the selection
     /// </summary>
     /// <param name="regions"></param>
-    internal void AddRegionsToSelections(IEnumerable<IRegion> regions)
+    internal void Add(List<IRegion> regions)
     {
         _regions.AddRange(regions);
         ActiveRegion = ExpandRegionOverMerged(regions.LastOrDefault());
@@ -182,7 +184,7 @@ public class Selection
         // If any of the sides are touching active regions, we check whether the selection
         // covers the region entirely. If not, expand the sides so that they cover.
         // Continue until there are no more merge intersections that we don't fully cover.
-        var boundedRegion = region.Copy();
+        var boundedRegion = region?.Copy();
 
         if (boundedRegion == null)
             return null;
@@ -236,29 +238,23 @@ public class Selection
     public void ExtendTo(int row, int col)
     {
         ActiveRegion?.ExtendTo(row, col);
-        emitSelectingChanged();
+        EmitSelectingChanged();
     }
 
     /// <summary>
     /// Clears any selections or active selections and sets the selection to the region specified
     /// </summary>
     /// <param name="region"></param>
-    public void SetSingle(IRegion region)
-    {
-        _regions.Clear();
-        this.EndSelecting();
-        this.ActiveCellPosition = region.Start;
-        this.AddRegionToSelections(region);
-    }
+    public void Set(IRegion region) => Set(new List<IRegion>() { region });
 
     /// <summary>
     /// Sets selection to a single cell and clears any current selections
     /// </summary>
     /// <param name="row"></param> 
     /// <param name="col"></param>
-    public void SetSingle(int row, int col)
+    public void Set(int row, int col)
     {
-        SetSingle(new Region(row, col));
+        Set(new Region(row, col));
     }
 
     public void Set(List<IRegion> regions)
@@ -268,7 +264,7 @@ public class Selection
         if (regions.Any())
         {
             this.ActiveCellPosition = regions.First().TopLeft;
-            this.AddRegionsToSelections(regions);
+            this.Add(regions);
         }
     }
 
@@ -321,6 +317,8 @@ public class Selection
 
         // Fix the active region to surrounds of the sheet
         var activeRegionFixed = ActiveRegion.GetIntersection(_sheet.Region);
+        if (activeRegionFixed == null)
+            return;
 
         // If the active region is only one cell and there are no other regions,
         // clear the regions and move the whole thing down
@@ -334,7 +332,7 @@ public class Selection
             var newRegion = new Region(offsetPosn.row, offsetPosn.col);
             newRegion = ExpandRegionOverMerged(newRegion) as Region;
             this.ActiveCellPosition = new CellPosition(offsetPosn.row, offsetPosn.col);
-            this.AddRegionToSelections(newRegion);
+            this.Add(newRegion);
 
             emitSelectionChange();
             return;
@@ -415,7 +413,7 @@ public class Selection
             var newRegion = new Region(offsetPosn.row, offsetPosn.col);
             newRegion = ExpandRegionOverMerged(newRegion) as Region;
             this.ActiveCellPosition = new CellPosition(offsetPosn.row, offsetPosn.col);
-            this.AddRegionToSelections(newRegion);
+            this.Add(newRegion);
 
             emitSelectionChange();
             return;
@@ -462,12 +460,12 @@ public class Selection
     /// </summary>
     /// <param name="row"></param>
     /// <param name="col"></param>
-    public void SetActivePosition(int row, int col)
+    internal void SetActivePosition(int row, int col)
     {
         if (IsEmpty())
             return;
         if (!ActiveRegion.Contains(row, col))
-            SetSingle(row, col);
+            Set(row, col);
         else // position within active selection
             ActiveCellPosition = new CellPosition(row, col);
     }
@@ -528,5 +526,11 @@ public class Selection
             foreach (var range in Ranges)
                 range.Value = value;
         }
+    }
+
+    public void Clear()
+    {
+        foreach (var range in Ranges)
+            range.Clear();
     }
 }

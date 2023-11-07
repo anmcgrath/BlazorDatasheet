@@ -194,7 +194,7 @@ public class Sheet
     /// <returns></returns>
     public SheetRange Range(IRegion region)
     {
-        return Range(region);
+        return new SheetRange(this, region);
     }
 
     /// <summary>

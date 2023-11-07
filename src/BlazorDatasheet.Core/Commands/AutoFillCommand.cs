@@ -33,7 +33,7 @@ public class AutoFillCommand : IUndoableCommand
             }
         }
 
-        sheet.Selection.SetSingle(_toRegion);
+        sheet.Selection.Set(_toRegion);
         return true;
     }
 
