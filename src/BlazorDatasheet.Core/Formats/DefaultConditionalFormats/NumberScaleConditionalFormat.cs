@@ -63,6 +63,9 @@ public class NumberScaleConditionalFormat : ConditionalFormatAbstractBase
     private string GetColourString(double value, double min, double max, double mean)
     {
         var size = Math.Abs(max - min);
+        if (size == 0)
+            return _computedLut.First();
+        
         var frac = (value - min) / size;
         var index = (int)(frac * _computedLut.Length);
         var color = _computedLut[Math.Min(index, _computedLut.Length - 1)];
