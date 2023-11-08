@@ -1,4 +1,5 @@
 using BlazorDatasheet.Core.Commands;
+using BlazorDatasheet.DataStructures.Cells;
 using BlazorDatasheet.DataStructures.Store;
 
 namespace BlazorDatasheet.Core.Data.Cells;
@@ -8,8 +9,7 @@ public partial class CellStore
     /// <summary>
     /// The cell DATA
     /// </summary>
-    private readonly IMatrixDataStore<object?> _dataStore = new SparseMatrixStore<object?>();
-
+    private readonly IMatrixDataStore<CellValue> _dataStore;
 
     /// <summary>
     /// Sets the cell value using <see cref="SetCellValueCommand"/>
@@ -48,7 +48,9 @@ public partial class CellStore
 
         // Save old validation result and current cell values.
         restoreData.ValidRestoreData = _validStore.Set(row, col, validationResult.IsValid);
-        restoreData.ValueRestoreData = _dataStore.Set(row, col, value);
+
+        var newCellValue = value == null ? _defaultCellValue : new CellValue(value);
+        restoreData.ValueRestoreData = _dataStore.Set(row, col, newCellValue);
 
         this.EmitCellChanged(row, col);
         _sheet.MarkDirty(row, col);
@@ -82,6 +84,6 @@ public partial class CellStore
     /// <returns></returns>
     public object? GetValue(int row, int col)
     {
-        return _dataStore.Get(row, col);
+        return _dataStore.Get(row, col)!.Data;
     }
 }

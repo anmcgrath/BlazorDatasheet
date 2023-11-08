@@ -1,4 +1,4 @@
-namespace BlazorDatasheet.Core.Util;
+namespace BlazorDatasheet.DataStructures.Util;
 
 public static class TypeExtensions
 {

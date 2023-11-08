@@ -3,6 +3,7 @@ using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Core.Validation;
+using BlazorDatasheet.DataStructures.Cells;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core;
@@ -12,10 +13,12 @@ namespace BlazorDatasheet.Core.Data.Cells;
 public partial class CellStore
 {
     private Sheet _sheet;
+    private readonly CellValue _defaultCellValue = new (null);
 
     public CellStore(Sheet sheet)
     {
         _sheet = sheet;
+        _dataStore = new SparseMatrixStore<CellValue>(_defaultCellValue);
     }
 
     /// <summary>

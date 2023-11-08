@@ -1,4 +1,5 @@
 using BlazorDatasheet.Core.Formats;
+using BlazorDatasheet.DataStructures.Cells;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core;
@@ -7,7 +8,7 @@ namespace BlazorDatasheet.Core.Data.Cells;
 
 internal class CellStoreRestoreData
 {
-    internal MatrixRestoreData<object?> ValueRestoreData { get; set; } = new();
+    internal MatrixRestoreData<CellValue> ValueRestoreData { get; set; } = new();
     internal MatrixRestoreData<CellFormula?> FormulaRestoreData { get; set; } = new();
     internal MatrixRestoreData<bool?> ValidRestoreData { get; set; } = new();
     internal RegionRestoreData<string> TypeRestoreData { get; set; } = new();
