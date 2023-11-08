@@ -76,7 +76,7 @@ public class SheetRange
 
     public void Clear()
     {
-        Sheet.Cells.ClearCells(this);
+        Sheet.Cells.ClearCells(this.Region);
     }
 
     internal SheetRange Clone()

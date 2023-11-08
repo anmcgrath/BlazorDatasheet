@@ -521,16 +521,11 @@ public class Selection
 
     public object Value
     {
-        set
-        {
-            foreach (var range in Ranges)
-                range.Value = value;
-        }
+        set { _sheet.Cells.SetValues(Ranges.SelectMany(x => x.Positions).Select(x => (x.row, x.col, value))); }
     }
 
     public void Clear()
     {
-        foreach (var range in Ranges)
-            range.Clear();
+        _sheet.Cells.ClearCells(this.Regions);
     }
 }

@@ -13,7 +13,7 @@ namespace BlazorDatasheet.Core.Data.Cells;
 public partial class CellStore
 {
     private Sheet _sheet;
-    private readonly CellValue _defaultCellValue = new (null);
+    private readonly CellValue _defaultCellValue = new(null);
 
     public CellStore(Sheet sheet)
     {
@@ -78,12 +78,14 @@ public partial class CellStore
     /// <summary>
     /// Clears all cell values in the region
     /// </summary>
-    /// <param name="range">The range in which to clear all cells</param>
-    public void ClearCells(SheetRange range)
+    /// <param name="regions"></param>
+    public void ClearCells(IEnumerable<IRegion> regions)
     {
-        var cmd = new ClearCellsCommand(range);
+        var cmd = new ClearCellsCommand(regions);
         _sheet.Commands.ExecuteCommand(cmd);
     }
+
+    public void ClearCells(IRegion region) => ClearCells(new[] { region });
 
     internal CellStoreRestoreData ClearCellsImpl(IEnumerable<IRegion> regionsToClear)
     {

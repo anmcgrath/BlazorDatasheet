@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.FormulaEngine;
+using BlazorDatasheet.DataStructures.Geometry;
 using FluentAssertions;
 using NUnit.Framework;
 
@@ -66,7 +67,7 @@ public class SheetFormulaIntegrationTests
     {
         _sheet.Cells.SetFormula(1, 1, "=A1");
         Assert.IsTrue(_sheet.Cells.HasFormula(1, 1));
-        _sheet.Cells.ClearCells(_sheet.Range(1, 1));
+        _sheet.Cells.ClearCells(new Region(1, 1));
         Assert.IsFalse(_sheet.Cells.HasFormula(1, 1));
     }
 

@@ -37,7 +37,7 @@ public class SheetTests
         Assert.AreNotEqual(String.Empty, copy);
 
         // Clear the sheet so we are pasting over empty data
-        sheet.Cells.ClearCells(sheet.Range(copyPasteRegion));
+        sheet.Cells.ClearCells(copyPasteRegion);
 
         var insertedRegions = sheet.InsertDelimitedText(copy, copyPasteRegion.TopLeft);
 

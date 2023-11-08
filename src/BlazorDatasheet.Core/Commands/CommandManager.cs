@@ -102,8 +102,6 @@ public class CommandManager
         var cmd = _history.Pop()!;
         var result = cmd.Command.Undo(_sheet);
         
-        Console.WriteLine("cmd "+cmd.Command);
-        
         if (cmd.SelectedRegions.Any())
             _sheet.Selection.Set(cmd.SelectedRegions);
 
