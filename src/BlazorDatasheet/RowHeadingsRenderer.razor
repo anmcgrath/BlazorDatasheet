@@ -53,30 +53,30 @@
     [Parameter, EditorRequired]
     public Sheet? Sheet { get; set; }
 
-    [Parameter]
+    [Parameter, EditorRequired]
     public CellLayoutProvider CellLayoutProvider { get; set; }
 
-    [Parameter]
+    [Parameter, EditorRequired]
     public EventCallback<RowMouseEventArgs> OnMouseUp { get; set; }
 
-    [Parameter]
+    [Parameter, EditorRequired]
     public EventCallback<RowMouseEventArgs> OnMouseOver { get; set; }
 
-    [Parameter]
+    [Parameter, EditorRequired]
     public EventCallback<RowMouseEventArgs> OnMouseDown { get; set; }
 
-    [Parameter]
+    [Parameter, EditorRequired]
     public int VisibleRowStart { get; set; }
 
-    [Parameter]
+    [Parameter, EditorRequired]
     public int NVisibleRows { get; set; }
 
-    public List<OrderedInterval> _selectionIntervals { get; set; } = new();
+    private List<OrderedInterval> _selectionIntervals = new();
 
     private bool IsActive(int row)
     {
         return (Sheet!.Selection.SelectingRegion?.SpansRow(row) == true)
-               || Sheet!.Selection!.Regions.Any(x => x.SpansRow(row));
+               || Sheet!.Selection.Regions.Any(x => x.SpansRow(row));
     }
 
     protected override void OnParametersSet()
@@ -101,7 +101,7 @@
 
     private void OnSelectionChanged(object? sender, IEnumerable<IRegion> e) => UpdateIntervals();
 
-    private void OnSelectingChanged(object? sender, IRegion region) => UpdateIntervals();
+    private void OnSelectingChanged(object? sender, IRegion? region) => UpdateIntervals();
 
     private void UpdateIntervals()
     {

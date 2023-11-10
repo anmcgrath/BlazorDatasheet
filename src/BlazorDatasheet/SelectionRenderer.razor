@@ -15,27 +15,27 @@
 {
     <!-- We split into regions around the cell's start position, so that the cell's 
     start position shows the renderer underneath it -->
-    var brokenRegions = BoundedSelectingRegion.Break(getRegion(Sheet.Selection.SelectingStartPosition));
+    var brokenRegions = BoundedSelectingRegion.Break(GetRegion(Sheet.Selection.SelectingStartPosition));
     foreach (var region in brokenRegions)
     {
         <BoxOverlayRenderer
             BackgroundVisible="@true"
-            BackgroundStyle="@bgStyle"
+            BackgroundStyle="@_bgStyle"
             BorderThickness="0"
-            X="getLeft(region)"
-            Y="getTop(region)"
-            Width="getWidth(region)"
-            Height="getHeight(region)"/>
+            X="GetLeft(region)"
+            Y="GetTop(region)"
+            Width="GetWidth(region)"
+            Height="GetHeight(region)"/>
     }
     <!-- now render the border around the whole thing -->
     <BoxOverlayRenderer
         BackgroundVisible="@false"
         BorderThickness="2"
-        BackgroundStyle="@bgStyle"
-        X="getLeft(BoundedSelectingRegion)"
-        Y="getTop(BoundedSelectingRegion)"
-        Width="getWidth(BoundedSelectingRegion)"
-        Height="getHeight(BoundedSelectingRegion)"/>
+        BackgroundStyle="@_bgStyle"
+        X="GetLeft(BoundedSelectingRegion)"
+        Y="GetTop(BoundedSelectingRegion)"
+        Width="GetWidth(BoundedSelectingRegion)"
+        Height="GetHeight(BoundedSelectingRegion)"/>
 }
 
 <!-- render the selections that exist in the sheet -->
@@ -51,17 +51,17 @@
         if (isActiveRegion)
         {
             var brokenRegions = boundedRegion
-                .Break(getRegion(Sheet.Selection.ActiveCellPosition));
+                .Break(GetRegion(Sheet.Selection.ActiveCellPosition));
             foreach (var brokenRegion in brokenRegions)
             {
                 <BoxOverlayRenderer
-                    BackgroundStyle="@bgStyle"
+                    BackgroundStyle="@_bgStyle"
                     BackgroundVisible="true"
                     BorderThickness="0"
-                    X="getLeft(brokenRegion)"
-                    Y="getTop(brokenRegion)"
-                    Width="getWidth(brokenRegion)"
-                    Height="getHeight(brokenRegion)"/>
+                    X="GetLeft(brokenRegion)"
+                    Y="GetTop(brokenRegion)"
+                    Width="GetWidth(brokenRegion)"
+                    Height="GetHeight(brokenRegion)"/>
             }
         }
 
@@ -69,11 +69,11 @@
         <BoxOverlayRenderer
             BackgroundVisible="@(!isActiveRegion)"
             BorderThickness="@(isActiveRegion ? 2 : 0)"
-            BackgroundStyle="@bgStyle"
-            X="getLeft(boundedRegion)"
-            Y="getTop(boundedRegion)"
-            Width="getWidth(boundedRegion)"
-            Height="getHeight(boundedRegion)"/>
+            BackgroundStyle="@_bgStyle"
+            X="GetLeft(boundedRegion)"
+            Y="GetTop(boundedRegion)"
+            Width="GetWidth(boundedRegion)"
+            Height="GetHeight(boundedRegion)"/>
     }
 }
 
@@ -89,10 +89,10 @@
     <BoxOverlayRenderer
         BackgroundVisible="false"
         BorderThickness="1"
-        X="getLeft(_dragPreviewRegion)"
-        Y="getTop(_dragPreviewRegion)"
-        Width="getWidth(_dragPreviewRegion)"
-        Height="getHeight(_dragPreviewRegion)"/>
+        X="GetLeft(_dragPreviewRegion)"
+        Y="GetTop(_dragPreviewRegion)"
+        Width="GetWidth(_dragPreviewRegion)"
+        Height="GetHeight(_dragPreviewRegion)"/>
 }
 
 @code {
@@ -112,17 +112,17 @@
     private double _dragStartX;
     private double _dragStartY;
 
-    private IRegion _dragPreviewRegion;
+    private IRegion? _dragPreviewRegion;
 
-    private string bgStyle = "background:var(--selection-bg-color);";
+    private string _bgStyle = "background:var(--selection-bg-color);";
     private IWindowEventService _windowEventService;
 
     private IRegion? BoundedSelectingRegion => Sheet?.Selection.SelectingRegion?.GetIntersection(Sheet?.Region);
 
-    private double getLeft(IRegion region) => CellLayoutProvider.ComputeLeftPosition(region) + 1;
-    private double getTop(IRegion region) => CellLayoutProvider.ComputeTopPosition(region) + 1;
-    private double getWidth(IRegion region) => CellLayoutProvider.ComputeWidth(region) - 2;
-    private double getHeight(IRegion region) => CellLayoutProvider.ComputeHeight(region) - 2;
+    private double GetLeft(IRegion region) => CellLayoutProvider.ComputeLeftPosition(region) + 1;
+    private double GetTop(IRegion region) => CellLayoutProvider.ComputeTopPosition(region) + 1;
+    private double GetWidth(IRegion region) => CellLayoutProvider.ComputeWidth(region) - 2;
+    private double GetHeight(IRegion region) => CellLayoutProvider.ComputeHeight(region) - 2;
 
     protected override void OnParametersSet()
     {
@@ -154,7 +154,7 @@
     }
 
     // Returns the region that the position covers (may be > 1 because of merged cells)
-    private IRegion getRegion(CellPosition position)
+    private IRegion GetRegion(CellPosition position)
     {
         var merge = Sheet.Cells?.GetMerge(position.row, position.col);
         if (merge != null)
@@ -165,6 +165,9 @@
 
     private string GetDraggerStyleString()
     {
+        if (Sheet == null)
+            return string.Empty;
+        
         var region = Sheet.Selection.ActiveRegion ?? Sheet.Selection.SelectingRegion;
         if (region == null)
             return "display:none;";
@@ -187,7 +190,7 @@
         StateHasChanged();
     }
 
-    private void OnSelectingChanged(object? sender, IRegion region)
+    private void OnSelectingChanged(object? sender, IRegion? region)
     {
         StateHasChanged();
     }
@@ -261,7 +264,7 @@
 
     private async Task<bool> WindowEventServiceOnOnMouseUp(MouseEventArgs arg)
     {
-        if (_isDragging)
+        if (_isDragging && _dragPreviewRegion != null && _sheet?.Selection.ActiveRegion != null)
         {
             await SelectionExpanded.InvokeAsync(new SelectionExpandedEventArgs(_sheet.Selection.ActiveRegion.Clone(), _dragPreviewRegion.Clone()));
             _isDragging = false;
