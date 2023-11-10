@@ -18,5 +18,4 @@ public interface ICellEditor
     void BeforeEdit(IReadOnlyCell cell, Sheet sheet);
     void BeginEdit(EditEntryMode entryMode, string? editValue, string key);
     bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey);
-    Task Focus();
 }

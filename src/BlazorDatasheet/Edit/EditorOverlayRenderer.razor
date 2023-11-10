@@ -7,6 +7,8 @@
 @using BlazorDatasheet.Core.Events.Edit
 @using BlazorDatasheet.Core.Interfaces
 @using BlazorDatasheet.Formula.Core
+@using Microsoft.JSInterop
+@inject IJSRuntime JS;
 
 @if (IsEditing)
 {
@@ -32,7 +34,7 @@
 
     private Sheet? _sheet;
 
-    [Parameter]
+    [Parameter, EditorRequired]
     public CellLayoutProvider CellLayoutProvider { get; set; }
 
     /// The type of the active editor, which is an ICellEditor
@@ -50,13 +52,13 @@
     internal bool IsSoftEdit { get; private set; }
 
     /// The current edit entry mode
-    private EditEntryMode EditEntryMode { get; set; }
+    private EditEntryMode _editEntryMode { get; set; }
 
     /// The key that was pressed to enter the edit
-    private string EditEntryKey { get; set; }
+    private string _editEntryKey;
 
     /// The current cell editor component
-    private BaseEditor ActiveCellEditor;
+    private BaseEditor? _activeCellEditor;
 
     private bool BeginningEdit { get; set; }
 
@@ -71,12 +73,20 @@
             {
                 _sheet.Editor.EditBegin -= EditorOnEditBegin;
                 _sheet.Editor.EditFinished -= EditorOnEditFinished;
+                _sheet.Editor.EditValueChanged -= EditorOnEditValueChanged;
             }
             _sheet = Sheet;
             _sheet.Editor.EditBegin += EditorOnEditBegin;
             _sheet.Editor.EditFinished += EditorOnEditFinished;
+            _sheet.Editor.EditValueChanged += EditorOnEditValueChanged;
         }
         base.OnParametersSet();
+    }
+
+    private void EditorOnEditValueChanged(object? sender, string? e)
+    {
+        if (_activeCellEditor != null)
+            _activeCellEditor.HandleEditValueChange(e);
     }
 
     private void EditorOnEditBegin(object? sender, EditBeginEventArgs e)
@@ -85,9 +95,9 @@
         ActiveEditorType = GetEditorType(e.Type);
         IsEditing = true;
         IsSoftEdit = e.IsSoftEdit;
-        EditEntryMode = e.Mode;
+        _editEntryMode = e.Mode;
         EditCell = e.Cell;
-        EditEntryKey = e.Key ?? string.Empty;
+        _editEntryKey = e.Key ?? string.Empty;
         BeginningEdit = true;
         StateHasChanged();
     }
@@ -115,16 +125,25 @@
             BeginningEdit = false;
             if (ActiveEditorContainer == null)
                 return;
-            ActiveCellEditor = (BaseEditor)(ActiveEditorContainer.Instance);
-            if (ActiveCellEditor == null)
+            _activeCellEditor = (BaseEditor)(ActiveEditorContainer.Instance);
+            if (_activeCellEditor == null)
                 return;
 
-            ActiveCellEditor.BeforeEdit(EditCell, Sheet);
-            ActiveCellEditor.RequestCancelEdit += HandleEditorRequestCancelEdit;
-            ActiveCellEditor.RequestAcceptEdit += HandleEditorRequestAcceptEdit;
-            ActiveCellEditor.BeginEdit(EditEntryMode, EditValue, EditEntryKey);
-            if (EditEntryMode != EditEntryMode.None)
-                await ActiveCellEditor.Focus();
+            _activeCellEditor.BeforeEdit(EditCell, Sheet);
+            _activeCellEditor.RequestCancelEdit += HandleEditorRequestCancelEdit;
+            _activeCellEditor.RequestAcceptEdit += HandleEditorRequestAcceptEdit;
+            _activeCellEditor.BeginEdit(_editEntryMode, EditValue, _editEntryKey);
+
+            if (_editEntryMode != EditEntryMode.None)
+            {
+                if (!EqualityComparer<ElementReference>.Default.Equals(_activeCellEditor.InputRef, default(ElementReference)))
+                {
+    // Request focus with a delay so that it the field doesn't capture any oninput events
+    // from the text field that is just rendered. If not, there's inconsistent behaviour between
+    // WASM and Server.
+                    await JS.InvokeVoidAsync("setFocusWithTimeout", _activeCellEditor.InputRef, 0);
+                }
+            }
         }
     }
 
@@ -133,10 +152,10 @@
         if (!IsEditing)
             return false;
 
-        if (ActiveCellEditor == null)
+        if (_activeCellEditor == null)
             return false;
 
-        return ActiveCellEditor.HandleKey(key, ctrlKey, shiftKey, altKey, metaKey);
+        return _activeCellEditor.HandleKey(key, ctrlKey, shiftKey, altKey, metaKey);
     }
 
     private void HandleEditorRequestCancelEdit(object? sender, EventArgs args)
@@ -151,10 +170,10 @@
 
     private void clearCurrentEdit()
     {
-        if (ActiveCellEditor != null)
+        if (_activeCellEditor != null)
         {
-            ActiveCellEditor.RequestCancelEdit -= HandleEditorRequestCancelEdit;
-            ActiveCellEditor.RequestAcceptEdit -= HandleEditorRequestAcceptEdit;
+            _activeCellEditor.RequestCancelEdit -= HandleEditorRequestCancelEdit;
+            _activeCellEditor.RequestAcceptEdit -= HandleEditorRequestAcceptEdit;
         }
 
         this.IsEditing = false;
@@ -182,7 +201,7 @@
         }
 
         var w = CellLayoutProvider.ComputeWidth(EditCell.Col, colSpan) - 1;
-        var h = CellLayoutProvider.ComputeHeight(EditCell.Row, rowSpan) -1;
+        var h = CellLayoutProvider.ComputeHeight(EditCell.Row, rowSpan) - 1;
 
         strBuilder.Append($"left:{left}px;");
         strBuilder.Append($"top:{top}px;");
@@ -198,7 +217,6 @@
     {
         return new Dictionary<string, object>()
         {
-            { "Value", _sheet.Editor.EditValue },
             { "OnValueChanged", EventCallback.Factory.Create<string>(this, HandleEditValueChanged) }
         };
     }

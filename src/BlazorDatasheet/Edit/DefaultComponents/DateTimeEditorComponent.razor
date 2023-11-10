@@ -21,7 +21,7 @@
     {
         get
         {
-            var parsed = DateTime.TryParse(Value, out var parsedDateTime);
+            var parsed = DateTime.TryParse(CurrentValue, out var parsedDateTime);
             if (parsed)
                 return parsedDateTime;
             else
