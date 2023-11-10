@@ -75,9 +75,8 @@ function serializeClipboardEvent(e) {
 // we can remove the events later
 window.setupBlazorWindowEvent = async function (dotNetHelper, evType, dotnetHandlerName) {
     let fn = async (ev) => {
-        // The response from calling the .net function
         let isHandledResponse = await dotNetHelper.invokeMethodAsync(dotnetHandlerName, serialize(evType, ev))
-        if (isHandledResponse == true) {
+        if (isHandledResponse === true) {
             ev.preventDefault()
             ev.stopImmediatePropagation()
         }
@@ -211,8 +210,7 @@ window.addVirtualisationHandlers = function (dotNetHelper, el, dotnetHandlerName
 
     // return initial scroll event to render the sheet
     let parent = findScrollableAncestor(el)
-    if (parent)
-    {
+    if (parent) {
         parent.style.willChange = 'transform' // improves scrolling performance in chrome/edge
     }
 

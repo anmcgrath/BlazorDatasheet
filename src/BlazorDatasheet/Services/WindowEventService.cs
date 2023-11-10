@@ -27,14 +27,14 @@ public class WindowEventService : IWindowEventService
     public async Task Init()
     {
         _dotNetHelper = DotNetObjectReference.Create(this);
-        _fnStore.Add(await addWindowEvent("keydown", nameof(HandleWindowKeyDown)));
-        _fnStore.Add(await addWindowEvent("mousedown", nameof(HandleWindowMouseDown)));
-        _fnStore.Add(await addWindowEvent("mouseup", nameof(HandleWindowMouseUp)));
-        _fnStore.Add(await addWindowEvent("mousemove", nameof(HandleWindowMouseMove)));
-        _fnStore.Add(await addWindowEvent("paste", nameof(HandleWindowPaste)));
+        _fnStore.Add(await AddWindowEvent("keydown", nameof(HandleWindowKeyDown)));
+        _fnStore.Add(await AddWindowEvent("mousedown", nameof(HandleWindowMouseDown)));
+        _fnStore.Add(await AddWindowEvent("mouseup", nameof(HandleWindowMouseUp)));
+        _fnStore.Add(await AddWindowEvent("mousemove", nameof(HandleWindowMouseMove)));
+        _fnStore.Add(await AddWindowEvent("paste", nameof(HandleWindowPaste)));
     }
 
-    private async Task<Tuple<string, string>> addWindowEvent(string evType, string jsInvokableName)
+    private async Task<Tuple<string, string>> AddWindowEvent(string evType, string jsInvokableName)
     {
         var fnId = await _js.InvokeAsync<string>("setupBlazorWindowEvent", _dotNetHelper, evType, jsInvokableName);
         return new Tuple<string, string>(evType, fnId);

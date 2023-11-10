@@ -123,7 +123,7 @@ public class Parser
                     Peek(1).Kind == SyntaxKind.ColonToken &&
                     (Peek(2).Kind is SyntaxKind.NumberToken or SyntaxKind.IdentifierToken))
                 {
-                    return parseRange();
+                    return ParseRange();
                 }
 
                 return new LiteralExpressionSyntax(MatchToken(SyntaxKind.NumberToken));
@@ -135,18 +135,18 @@ public class Parser
     {
         if (Peek(1).Kind == SyntaxKind.LeftParenthesisToken)
         {
-            return parseFunctionCall();
+            return ParseFunctionCall();
         }
 
         if (Peek(1).Kind == SyntaxKind.ColonToken &&
             (Peek(2).Kind == SyntaxKind.IdentifierToken ||
              Peek(2).Kind == SyntaxKind.NumberToken))
         {
-            return parseRange();
+            return ParseRange();
         }
 
         if (RangeText.IsValidCellReference(Current.Text))
-            return parseValidCell();
+            return ParseValidCell();
 
         var identifier = NextToken();
         _references.Add(new NamedReference(identifier.Text));
@@ -171,7 +171,7 @@ public class Parser
         return new NamedReference(rangeText);
     }
 
-    private ExpressionSyntax parseRange()
+    private ExpressionSyntax ParseRange()
     {
         var start = ParseRangePartAsReference(NextToken());
         var colon = NextToken();
@@ -187,7 +187,7 @@ public class Parser
         return ParseRangePartAsReference(token.Text);
     }
 
-    private ExpressionSyntax parseValidCell()
+    private ExpressionSyntax ParseValidCell()
     {
         var cellToken = NextToken();
         var res = RangeText.CellFromString(cellToken.Text);
@@ -196,7 +196,7 @@ public class Parser
         return new CellExpressionSyntax(cellReference);
     }
 
-    private ExpressionSyntax parseFunctionCall()
+    private ExpressionSyntax ParseFunctionCall()
     {
         // Consume left param
         var identifierToken = NextToken();
