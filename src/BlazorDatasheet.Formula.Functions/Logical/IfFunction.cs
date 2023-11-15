@@ -1,28 +1,47 @@
 ﻿using BlazorDatasheet.Formula.Core.Interpreter.Functions;
 
-namespace BlazorDatashet.Formula.Functions.Logical;
+namespace BlazorDatasheet.Formula.Functions.Logical;
 
-public class IfFunction : CallableFunctionDefinition
+public class IfFunction : ISheetFunction
 {
-    public IfFunction() : base(new[]
+    public ParameterDefinition[] GetParameterDefinitions()
     {
-        new Parameter("logical_test", ParameterType.Logical, ParameterRequirement.Required),
-        new Parameter("value_if_true", ParameterType.Any, ParameterRequirement.Required),
-        new Parameter("value_if_false", ParameterType.Any, ParameterRequirement.Optional)
-    })
-    {
+        return new[]
+        {
+            new ParameterDefinition(
+                "logical1",
+                ParameterType.Logical,
+                ParameterDimensionality.Scalar,
+                ParameterRequirement.Required
+            ),
+            new ParameterDefinition(
+                "val_if_true",
+                ParameterType.Any,
+                ParameterDimensionality.Scalar,
+                ParameterRequirement.Optional
+            ),
+            new ParameterDefinition(
+                "val_if_false",
+                ParameterType.Any,
+                ParameterDimensionality.Scalar,
+                ParameterRequirement.Optional
+            ),
+        };
     }
 
-    public override object Call(List<object> arguments)
+    public object Call(FuncArg[] args)
     {
-        var isTrue = (bool)arguments[0];
-        if (arguments.Count > 1 && isTrue)
-            return arguments[1];
-        if (arguments.Count > 2 && !isTrue)
-            return arguments[2];
+        var isTrue = args.First().AsScalar().GetValue<bool>();
+        if (args.Length > 1 && isTrue)
+        {
+            Console.WriteLine(args[1].Value);
+            return args[1].AsScalar().Data;
+        }
+
+        if (args.Length > 2 && !isTrue)
+            return args[2].AsScalar().Data;
         return isTrue;
     }
 
-    public override Type ReturnType { get; }
-    public override bool AcceptsErrors => false;
+    public bool AcceptsErrors => false;
 }

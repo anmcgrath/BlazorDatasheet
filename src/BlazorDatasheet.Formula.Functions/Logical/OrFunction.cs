@@ -1,24 +1,28 @@
 using BlazorDatasheet.Formula.Core.Interpreter.Functions;
 
-namespace BlazorDatashet.Formula.Functions.Logical;
+namespace BlazorDatasheet.Formula.Functions.Logical;
 
-public class OrFunction : CallableFunctionDefinition
+public class OrFunction : ISheetFunction
 {
-    public OrFunction() : base(new[]
+    public ParameterDefinition[] GetParameterDefinitions()
     {
-        new Parameter("logical1", ParameterType.Logical, ParameterRequirement.Required),
-        new Parameter("logical2", ParameterType.Logical, ParameterRequirement.Optional, isRepeating: true)
-    })
-    {
+        return new[]
+        {
+            new ParameterDefinition(
+                name: "logical",
+                ParameterType.Logical,
+                ParameterDimensionality.Range,
+                ParameterRequirement.Required,
+                isRepeating: true
+            )
+        };
     }
 
-    public override object Call(List<object> arguments)
+    public object Call(FuncArg[] args)
     {
-        var logical1 = (bool)arguments.First();
-        var rest = arguments.Skip(1).Take(arguments.Count - 1).Cast<bool>();
-        return logical1 || rest.Any(x => x);
+        var vals = args.First().Flatten();
+        return vals.Select(x => x.GetValue<bool>()).Any(x => x == true);
     }
 
-    public override Type ReturnType => typeof(bool);
-    public override bool AcceptsErrors => false;
+    public bool AcceptsErrors => false;
 }

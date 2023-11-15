@@ -7,7 +7,7 @@ namespace BlazorDatasheet.Formula.Core;
 public class FormulaEvaluator
 {
     private readonly IEnvironment _environment;
-    private readonly ParameterConverterNew _converter;
+    private readonly ParameterToArgConverter _toArgConverter;
 
     /// <summary>
     /// The row address of the currently evaluated formula. If null, then the formula is not associated with a row/col.
@@ -22,7 +22,7 @@ public class FormulaEvaluator
     public FormulaEvaluator(IEnvironment environment)
     {
         _environment = environment;
-        _converter = new ParameterConverterNew(environment);
+        _toArgConverter = new ParameterToArgConverter(environment);
     }
 
     internal object Evaluate(SyntaxTree tree)
@@ -123,16 +123,19 @@ public class FormulaEvaluator
 
         var repeatingCollection = new List<object>();
 
+        Console.WriteLine("nArgsProvided: " + nArgsProvided);
+
         while (paramIndex < paramDefinitions.Length &&
                argIndex < nArgsProvided)
         {
+            Console.WriteLine("arg index " + argIndex);
             var param = paramDefinitions[paramIndex];
             var arg = Evaluate(node.Args[argIndex]);
 
             if (arg is FormulaError &&
                 !func.AcceptsErrors)
                 return arg;
-            
+
             repeatingCollection.Add(arg);
 
             if (param.IsRepeating)
@@ -141,7 +144,7 @@ public class FormulaEvaluator
                 // if so, don't convert the arg yet and keep collecting them
                 if (argIndex == nArgsProvided - 1)
                 {
-                    convertedArgs[paramIndex] = _converter.ToArg(repeatingCollection.ToArray(), param);
+                    convertedArgs[paramIndex] = _toArgConverter.ToArg(repeatingCollection.ToArray(), param);
                     break;
                 }
 
@@ -149,7 +152,7 @@ public class FormulaEvaluator
                 continue;
             }
 
-            convertedArgs[paramIndex] = _converter.ToArg(repeatingCollection.ToArray(), param);
+            convertedArgs[paramIndex] = _toArgConverter.ToArg(repeatingCollection.First(), param);
             repeatingCollection.Clear();
             paramIndex++;
             argIndex++;

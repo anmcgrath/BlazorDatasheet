@@ -9,12 +9,12 @@ namespace BlazorDatasheet.Test.Formula;
 
 public class ParameterConverterTests
 {
-    private ParameterConverterNew _converter;
+    private ParameterToArgConverter _toArgConverter;
 
     [SetUp]
     public void Setup()
     {
-        _converter = new(new TestEnvironment());
+        _toArgConverter = new(new TestEnvironment());
     }
 
     [Test]
@@ -27,7 +27,7 @@ public class ParameterConverterTests
             ParameterRequirement.Required,
             false);
 
-        _converter.ToArg(2, paramDef).Value.Should().BeEquivalentTo(new CellValue(2));
+        _toArgConverter.ToArg(2, paramDef).Value.Should().BeEquivalentTo(new CellValue(2));
     }
 
     [Test]
@@ -40,7 +40,7 @@ public class ParameterConverterTests
             ParameterRequirement.Required,
             true);
 
-        _converter.ToArg(2, paramDef).Value.Should().BeEquivalentTo(new[] { new CellValue(2) });
+        _toArgConverter.ToArg(2, paramDef).Value.Should().BeEquivalentTo(new[] { new CellValue(2) });
     }
 
     [Test]
@@ -53,7 +53,7 @@ public class ParameterConverterTests
             ParameterRequirement.Required,
             false);
 
-        var arg = _converter.ToArg(2, paramDef);
+        var arg = _toArgConverter.ToArg(2, paramDef);
         arg.Value.Should().BeEquivalentTo(new[] { new[] { new CellValue(2) } });
     }
 }

@@ -5,11 +5,11 @@ using BlazorDatasheet.Formula.Core.Interpreter.Syntax;
 
 namespace BlazorDatasheet.Formula.Core.Interpreter.Functions;
 
-public class ParameterConverterNew
+public class ParameterToArgConverter
 {
     private readonly IEnvironment _environment;
 
-    public ParameterConverterNew(IEnvironment environment)
+    public ParameterToArgConverter(IEnvironment environment)
     {
         _environment = environment;
     }
