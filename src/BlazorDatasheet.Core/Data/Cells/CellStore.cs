@@ -18,7 +18,7 @@ public partial class CellStore
     public CellStore(Sheet sheet)
     {
         _sheet = sheet;
-        _dataStore = new SparseMatrixStore<CellValue>(_defaultCellValue);
+        _dataStore = new SparseMatrixStore2<CellValue>(_defaultCellValue);
     }
 
     /// <summary>
@@ -73,6 +73,11 @@ public partial class CellStore
             region.BottomRight.row,
             region.TopLeft.col,
             region.BottomRight.col);
+    }
+
+    internal IEnumerable<(int row, int col, CellValue value)> GetNonEmptyCellValues(IRegion region)
+    {
+        return _dataStore.GetNonEmptyData(region);
     }
 
     /// <summary>

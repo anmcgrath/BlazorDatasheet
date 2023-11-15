@@ -11,7 +11,7 @@ public class DataStoreTests
     [Test]
     public void Set_Get_Operations_Correct()
     {
-        IMatrixDataStore<string> store = new SparseMatrixStore<string>();
+        IMatrixDataStore<string> store = new SparseMatrixStore2<string>();
         Assert.AreEqual(default(string), store.Get(0, 0));
         store.Set(0, 0, "A");
         Assert.AreEqual("A", store.Get(0, 0));
@@ -24,7 +24,7 @@ public class DataStoreTests
     [Test]
     public void Insert_Row_At_Existing_Operations_Correct()
     {
-        IMatrixDataStore<string> store = new SparseMatrixStore<string>();
+        IMatrixDataStore<string> store = new SparseMatrixStore2<string>();
         store.Set(0, 0, "A");
         store.Set(1, 0, "B");
         store.Set(2, 0, "C");
@@ -41,7 +41,7 @@ public class DataStoreTests
     [Test]
     public void Insert_2_Rows_At_existing_Correct()
     {
-        IMatrixDataStore<string> store = new SparseMatrixStore<string>();
+        IMatrixDataStore<string> store = new SparseMatrixStore2<string>();
         store.Set(0, 0, "A");
         store.Set(1, 0, "B");
         store.Set(2, 0, "C");
@@ -59,7 +59,7 @@ public class DataStoreTests
     [Test]
     public void Insert_Row_After_Non_Existing_Operations_Correct()
     {
-        IMatrixDataStore<string> store = new SparseMatrixStore<string>();
+        IMatrixDataStore<string> store = new SparseMatrixStore2<string>();
         store.Set(0, 0, "A");
         store.Set(2, 0, "B");
         store.Set(3, 0, "C");
@@ -74,7 +74,7 @@ public class DataStoreTests
     [Test]
     public void Remove_NonEmpty_Row_Operations_Correct()
     {
-        IMatrixDataStore<string> store = new SparseMatrixStore<string>();
+        IMatrixDataStore<string> store = new SparseMatrixStore2<string>();
         store.Set(0, 0, "A");
         store.Set(1, 0, "B");
         store.Set(2, 0, "C");
@@ -89,7 +89,7 @@ public class DataStoreTests
     [Test]
     public void Remove_Two_Rows_Removes_Both()
     {
-        IMatrixDataStore<int> store = new SparseMatrixStore<int>();
+        IMatrixDataStore<int> store = new SparseMatrixStore2<int>();
         store.Set(0, 0, 0);
         store.Set(1, 0, 1);
         store.Set(2, 0, 2);
@@ -103,7 +103,7 @@ public class DataStoreTests
     [Test]
     public void Remove_Empty_Row_Operations_Correct()
     {
-        IMatrixDataStore<string> store = new SparseMatrixStore<string>();
+        IMatrixDataStore<string> store = new SparseMatrixStore2<string>();
         store.Set(0, 0, "A");
         store.Set(2, 0, "B");
         store.Set(3, 0, "C");
@@ -116,10 +116,10 @@ public class DataStoreTests
     [Test]
     public void Get_Next_Non_Empty_Row_Num_Correct()
     {
-        IMatrixDataStore<string> store = new SparseMatrixStore<string>();
+        IMatrixDataStore<string> store = new SparseMatrixStore2<string>();
         store.Set(5, 10, "A");
         store.Set(100, 10, "B");
-        var nextRow = store.GetNextNonBlankRow(10, 5);
+        var nextRow = store.GetNextNonBlankRow(5, 10);
         Assert.AreEqual(100, nextRow);
         Assert.AreEqual("B", store.Get(nextRow, 10));
     }
@@ -127,7 +127,7 @@ public class DataStoreTests
     [Test]
     public void Get_Non_Empty_Rows_Correct()
     {
-        IMatrixDataStore<string> store = new SparseMatrixStore<string>();
+        IMatrixDataStore<string> store = new SparseMatrixStore2<string>();
         store.Set(0, 0, "0,0");
         store.Set(2, 0, "0,0");
         var nonEmpty = store.GetNonEmptyPositions(0, 2, 0, 0);
@@ -137,7 +137,7 @@ public class DataStoreTests
     [Test]
     public void Clear_Cell_Clears_Cell_Correctly()
     {
-        var store = new SparseMatrixStore<string>();
+        var store = new SparseMatrixStore2<string>();
         store.Set(0, 0, "0,0");
         store.Set(0, 1, "0,1");
         store.Set(1, 0, "1,0");
@@ -150,7 +150,7 @@ public class DataStoreTests
     [Test]
     public void Clear_Cells_Removes_Cells_From_Store()
     {
-        var store = new SparseMatrixStore<string>();
+        var store = new SparseMatrixStore2<string>();
         store.Set(0, 0, "'0,0");
         store.Set(0, 1, "'0,1");
         store.Set(1, 0, "'1,0");
@@ -162,7 +162,7 @@ public class DataStoreTests
     [Test]
     public void Remove_Region_Removes_Region()
     {
-        var store = new SparseMatrixStore<string>();
+        var store = new SparseMatrixStore2<string>();
         store.Set(0, 0, "0,0");
         store.Set(0, 1, "0,1");
         store.Set(1, 0, "1,0");

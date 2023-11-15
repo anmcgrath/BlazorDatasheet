@@ -86,4 +86,20 @@ public partial class CellStore
     {
         return _dataStore.Get(row, col)!.Data;
     }
+
+    /// <summary>
+    /// Returns the raw <see cref="CellValue"/> stored at the <paramref name="row"/> and <paramref name="col"/>
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <returns></returns>
+    public CellValue GetCellValue(int row, int col)
+    {
+        return _dataStore.Get(row, col)!;
+    }
+
+    public IMatrixDataStore<CellValue> GetStore()
+    {
+        return _dataStore;
+    }
 }
