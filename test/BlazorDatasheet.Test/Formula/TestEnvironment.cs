@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.DataStructures.Cells;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.Functions;
@@ -8,8 +9,8 @@ namespace BlazorDatasheet.Test.Formula;
 
 public class TestEnvironment : IEnvironment
 {
-    private Dictionary<CellPosition, object> _cellValues = new();
-    private Dictionary<string, CallableFunctionDefinition> _functions = new();
+    private Dictionary<CellPosition, CellValue> _cellValues = new();
+    private Dictionary<string, ISheetFunction> _functions = new();
     private Dictionary<string, object> _variables = new();
 
     public void SetCellValue(int row, int col, object val)
@@ -19,11 +20,11 @@ public class TestEnvironment : IEnvironment
 
     public void SetCellValue(CellPosition position, object val)
     {
-        _cellValues.TryAdd(position, val);
-        _cellValues[position] = val;
+        _cellValues.TryAdd(position, new CellValue(val));
+        _cellValues[position] = new CellValue(val);
     }
 
-    public void SetFunction(string name, CallableFunctionDefinition functionDefinition)
+    public void SetFunction(string name, ISheetFunction functionDefinition)
     {
         if (!_functions.ContainsKey(name))
             _functions.Add(name, functionDefinition);
@@ -37,9 +38,24 @@ public class TestEnvironment : IEnvironment
         _variables[name] = variable;
     }
 
-    public object GetCellValue(int row, int col)
+    public CellValue GetCellValue(int row, int col)
     {
         return _cellValues[new CellPosition(row, col)];
+    }
+
+    public CellValue[][] GetRangeValues(RangeAddress rangeAddress)
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public CellValue[][] GetRangeValues(ColumnAddress rangeAddress)
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public CellValue[][] GetRangeValues(RowAddress rangeAddress)
+    {
+        throw new System.NotImplementedException();
     }
 
     public List<double> GetNumbersInRange(RangeAddress rangeAddress)
@@ -62,7 +78,7 @@ public class TestEnvironment : IEnvironment
         return _functions.ContainsKey(functionIdentifier);
     }
 
-    public CallableFunctionDefinition GetFunctionDefinition(string identifierText)
+    public ISheetFunction GetFunctionDefinition(string identifierText)
     {
         return _functions[identifierText];
     }

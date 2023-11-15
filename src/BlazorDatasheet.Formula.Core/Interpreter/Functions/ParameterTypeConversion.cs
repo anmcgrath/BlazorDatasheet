@@ -1,4 +1,5 @@
-﻿using BlazorDatasheet.Formula.Core.Interpreter.Syntax;
+﻿using BlazorDatasheet.DataStructures.Cells;
+using BlazorDatasheet.Formula.Core.Interpreter.Syntax;
 
 namespace BlazorDatasheet.Formula.Core.Interpreter.Functions;
 
@@ -17,8 +18,6 @@ public class ParameterTypeConversion
         {
             case ParameterType.Number:
                 return ToNumber(val);
-            case ParameterType.NumberSequence:
-                return ToNumberSequence(val);
             case ParameterType.Logical:
                 return ToLogical(val);
             case ParameterType.Any:
@@ -80,23 +79,8 @@ public class ParameterTypeConversion
         {
             var cellVal = _environment.GetCellValue(cellAddr.Row, cellAddr.Col);
 
-            if (cellVal is double value)
-                return new[] { value };
-        }
-
-        if (arg is RangeAddress rangeAddress)
-        {
-            return _environment.GetNumbersInRange(rangeAddress);
-        }
-
-        if (arg is ColumnAddress columnAddress)
-        {
-            return _environment.GetNumbersInRange(columnAddress);
-        }
-
-        if (arg is RowAddress rowAddress)
-        {
-            return _environment.GetNumbersInRange(rowAddress);
+            if (cellVal.ValueType == CellValueType.Number && !cellVal.IsEmpty)
+                return new[] { (double)cellVal.Data! };
         }
 
         return new FormulaError(ErrorType.Num);

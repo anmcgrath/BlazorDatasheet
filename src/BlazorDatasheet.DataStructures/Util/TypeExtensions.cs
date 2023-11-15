@@ -7,6 +7,12 @@ public static class TypeExtensions
         return System.Nullable.GetUnderlyingType(propType) != null;
     }
 
+    public static bool ConvertsToNumber(this object o)
+    {
+        var type = o.GetType();
+        return type.IsNumeric() || type == typeof(bool);
+    }
+
     public static bool IsNumeric(this Type propType)
     {
         var type = propType;

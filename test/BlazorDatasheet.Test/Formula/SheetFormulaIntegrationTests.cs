@@ -28,7 +28,8 @@ public class SheetFormulaIntegrationTests
 
         Assert.IsTrue(_sheet.Cells.HasFormula(1, 1));
         _sheet.Cells.SetValue(0, 0, 5);
-        Assert.AreEqual(15, _sheet.Cells.GetValue(1, 1));
+        var formulaVal = _sheet.Cells.GetValue(1, 1);
+        Assert.AreEqual(15, formulaVal);
     }
 
     [Test]
@@ -119,6 +120,7 @@ public class SheetFormulaIntegrationTests
         _sheet.Commands.Undo();
         _sheet.Cells.GetValue(0, 0).Should().Be(10);
     }
+    
 
     [Test]
     public void FormulaEngine_Set_Variable_Calculates()
@@ -136,11 +138,11 @@ public class SheetFormulaIntegrationTests
         // Cell A3 = Sum(A1:A2)
         // Cell A4 = Sum(A2:A3)
         // When we set A1 and A2, A3 should evaluate first and then A4 because the result of A4 depends on A3
-        _sheet.Cells.SetFormula(2, 0, "=SUM(A1:A2)");
-        _sheet.Cells.SetFormula(3, 0, "=SUM(A2:A3)");
+        _sheet.Cells.SetFormula(2, 0, "=AVERAGE(A1:A2)");
+        _sheet.Cells.SetFormula(3, 0, "=AVERAGE(A2:A3)");
         _sheet.Cells.SetValue(0, 0, 10);
         _sheet.Cells.SetValue(1, 0, 20);
-        _sheet.Cells.GetValue(2, 0).Should().Be(30);
-        _sheet.Cells.GetValue(3, 0).Should().Be(30 + 20);
+        _sheet.Cells.GetValue(2, 0).Should().Be((10 + 20) / 2d);
+        _sheet.Cells.GetValue(3, 0).Should().Be((15 + 20) / 2d);
     }
 }

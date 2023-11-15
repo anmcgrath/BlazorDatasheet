@@ -7,53 +7,83 @@ namespace BlazorDatasheet.Test.Formula;
 
 public class CustomFunctionTests
 {
+    private FunctionParameterValidator _validator;
+
+    [SetUp]
+    public void Setup()
+    {
+        _validator = new();
+    }
+
+
     [Test]
     public void Required_Args_After_Optional_Throws_Exception()
     {
-        Assert.Throws<InvalidFunctionDefinitionException>(() =>
+        var defns = new ParameterDefinition[]
         {
-            var func = new CustomFunctionDefinition(
-                new Parameter("number_opt", ParameterType.Number, ParameterRequirement.Optional),
-                new Parameter("number_opt", ParameterType.Number, ParameterRequirement.Required));
-        });
+            new ParameterDefinition("number_opt", ParameterType.Number, ParameterDimensionality.Scalar,
+                ParameterRequirement.Optional),
+            new ParameterDefinition("number_opt", ParameterType.Number, ParameterDimensionality.Scalar,
+                ParameterRequirement.Required)
+        };
+
+        Assert.Throws<InvalidFunctionDefinitionException>(() => { _validator.ValidateOrThrow(defns); });
     }
 
     [Test]
     public void Repeat_Args_Defined_Before_End_Throws_Exception()
     {
-        Assert.Throws<InvalidFunctionDefinitionException>(() =>
+        var defns = new ParameterDefinition[]
         {
-            var func = new CustomFunctionDefinition(
-                new Parameter("number_optional", ParameterType.NumberSequence, ParameterRequirement.Required, true),
-                new Parameter("number_optional", ParameterType.NumberSequence, ParameterRequirement.Optional));
-        });
+            new ParameterDefinition("number_optional",
+                ParameterType.Number,
+                ParameterDimensionality.Scalar,
+                ParameterRequirement.Required,
+                true),
+            new ParameterDefinition("number_optiona1",
+                ParameterType.Number,
+                ParameterDimensionality.Scalar,
+                ParameterRequirement.Required,
+                false),
+        };
+
+        Assert.Throws<InvalidFunctionDefinitionException>(() => { _validator.ValidateOrThrow(defns); });
     }
 
     [Test]
     public void Valid_Param_Definition_Does_Not_Throw_Exception()
     {
-        Assert.DoesNotThrow(() =>
+        var defns = new ParameterDefinition[]
         {
-            var func = new CustomFunctionDefinition(
-                new Parameter("number_required", ParameterType.Number, ParameterRequirement.Required),
-                new Parameter("number_optional", ParameterType.Number, ParameterRequirement.Optional),
-                new Parameter("number_repeating", ParameterType.NumberSequence, ParameterRequirement.Optional)
-            );
-        });
+            new ParameterDefinition("number_required", ParameterType.Number, ParameterDimensionality.Range,
+                ParameterRequirement.Required),
+            new ParameterDefinition("number_optional", ParameterType.Number, ParameterDimensionality.Range,
+                ParameterRequirement.Optional),
+            new ParameterDefinition("number_repeating", ParameterType.Number, ParameterDimensionality.Range,
+                ParameterRequirement.Optional)
+        };
+        Assert.DoesNotThrow(() => { _validator.ValidateOrThrow(defns); });
     }
 }
 
-public class CustomFunctionDefinition : CallableFunctionDefinition
+public class CustomFunctionDefinition : ISheetFunction
 {
-    public CustomFunctionDefinition(params Parameter[] parameters) : base(parameters)
+    private readonly ParameterDefinition[] _parameterDefinitions;
+
+    public CustomFunctionDefinition(params ParameterDefinition[] parameterDefinitions)
     {
+        _parameterDefinitions = parameterDefinitions;
     }
 
-    public override object Call(List<object> arguments)
+    public ParameterDefinition[] GetParameterDefinitions()
     {
-        throw new NotImplementedException();
+        return _parameterDefinitions;
     }
 
-    public override Type ReturnType => typeof(string);
-    public override bool AcceptsErrors => false;
+    public object Call(FuncArg[] args)
+    {
+        return null;
+    }
+
+    public bool AcceptsErrors => false;
 }

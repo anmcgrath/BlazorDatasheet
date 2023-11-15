@@ -8,13 +8,13 @@ public static class RegisterExtensions
 {
     public static void RegisterLogicalFunctions(this IEnvironment e)
     {
-        e.SetFunction("IF", new IfFunction());
-        e.SetFunction("AND", new AndFunction());
+
     }
 
     public static void RegisterMathFunctions(this IEnvironment e)
     {
-        e.SetFunction("SIN", new SinFunction());
+        e.SetFunction("AVERAGE", new AverageFunction());
         e.SetFunction("SUM", new SumFunction());
+        e.SetFunction("SIN", new SinFunction());
     }
 }

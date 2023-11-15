@@ -3,9 +3,7 @@
 public enum ParameterType
 {
     Number,
-    NumberSequence,
     Logical,
     Any,
-    Text,
-    Reference
+    Text
 }

@@ -2,20 +2,28 @@ using BlazorDatasheet.Formula.Core.Interpreter.Functions;
 
 namespace BlazorDatashet.Formula.Functions.Math;
 
-public class SinFunction : CallableFunctionDefinition
+public class SinFunction : ISheetFunction
 {
-    public SinFunction() : base(new[]
+    public ParameterDefinition[] GetParameterDefinitions()
     {
-        new Parameter("x", ParameterType.Number, ParameterRequirement.Required)
-    })
-    {
+        return new[]
+        {
+            new ParameterDefinition("x",
+                ParameterType.Number,
+                ParameterDimensionality.Scalar,
+                ParameterRequirement.Required,
+                false)
+        };
     }
 
-    public override object Call(List<object> arguments)
+    public object Call(FuncArg[] args)
     {
-        return System.Math.Sin((double)arguments[0]);
+        var val = (args.First().AsScalar());
+        if (val.IsEmpty)
+            return 0; // Math.Sin(0);
+        else
+            return System.Math.Sin(val.GetValue<double>());
     }
 
-    public override Type ReturnType => typeof(double);
-    public override bool AcceptsErrors => false;
+    public bool AcceptsErrors => false;
 }

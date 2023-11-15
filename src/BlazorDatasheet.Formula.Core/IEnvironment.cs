@@ -1,16 +1,24 @@
-﻿using BlazorDatasheet.Formula.Core.Interpreter.Functions;
+﻿using BlazorDatasheet.DataStructures.Cells;
+using BlazorDatasheet.Formula.Core.Interpreter.Functions;
 
 namespace BlazorDatasheet.Formula.Core;
 
 public interface IEnvironment
 {
-    object? GetCellValue(int row, int col);
-    List<double> GetNumbersInRange(RangeAddress rangeAddress);
-    List<double> GetNumbersInRange(ColumnAddress rangeAddress);
-    List<double> GetNumbersInRange(RowAddress rangeAddress);
+    CellValue GetCellValue(int row, int col);
+    public CellValue[][] GetRangeValues(RangeAddress rangeAddress);
+    public CellValue[][] GetRangeValues(ColumnAddress rangeAddress);
+    /// <summary>
+    /// Returns the row/column data in the range.
+    /// Accessible by data[row][col]
+    /// </summary>
+    /// <param name="rangeAddress"></param>
+    /// <returns></returns>
+    public CellValue[][] GetRangeValues(RowAddress rangeAddress);
+    
     bool FunctionExists(string functionIdentifier);
-    CallableFunctionDefinition GetFunctionDefinition(string identifierText);
+    ISheetFunction GetFunctionDefinition(string identifierText);
     bool VariableExists(string variableIdentifier);
     object GetVariable(string variableIdentifier);
-    void SetFunction(string name, CallableFunctionDefinition value);
+    void SetFunction(string name, ISheetFunction value);
 }

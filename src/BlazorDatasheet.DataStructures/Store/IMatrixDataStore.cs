@@ -27,7 +27,7 @@ public interface IMatrixDataStore<T>
     /// <param name="row"></param>
     /// <param name="col"></param>
     /// <param name="value"></param>
-    public MatrixRestoreData<T>  Set(int row, int col, T value);
+    public MatrixRestoreData<T> Set(int row, int col, T value);
 
     /// <summary>
     /// Removes the value at the row/column from the store but does not affect the rows/columns around it.
@@ -43,7 +43,7 @@ public interface IMatrixDataStore<T>
     /// </summary>
     /// <param name="region"></param>
     /// <returns></returns>
-    public MatrixRestoreData<T>  Clear(IRegion region);
+    public MatrixRestoreData<T> Clear(IRegion region);
 
     /// <summary>
     /// Clears data inside the specified regions but does not affect the rows/columsn around it.
@@ -69,22 +69,22 @@ public interface IMatrixDataStore<T>
     /// Removes the column specified from the store and returns the values that were removed.
     /// </summary>
     /// <param name="col">The index of the column to remove.</param>
-    public MatrixRestoreData<T>  RemoveColAt(int col, int nRow);
+    public MatrixRestoreData<T> RemoveColAt(int col, int nCols);
 
     /// <summary>
     /// Finds the next non-empty row number in the column. Returns -1 if no non-empty rows exist after the row
     /// </summary>
-    /// <param name="col"></param>
     /// <param name="row"></param>
+    /// <param name="col"></param>
     /// <returns>The next non-empty row number in the column. Equals -1 if no non-empty rows exist after the row.</returns>
-    public int GetNextNonBlankRow(int col, int row);
+    public int GetNextNonBlankRow(int row, int col);
 
     /// <summary>
     /// Removes the row specified from the store and returns the values that were removed.
     /// </summary>
     /// <param name="row"></param>
     /// <param name="nRows"></param>
-    public MatrixRestoreData<T>  RemoveRowAt(int row, int nRows);
+    public MatrixRestoreData<T> RemoveRowAt(int row, int nRows);
 
     /// <summary>
     /// Get non empty cells that exist in the bounds given
@@ -101,15 +101,24 @@ public interface IMatrixDataStore<T>
     /// </summary>
     /// <param name="region"></param>
     /// <returns></returns>
-    IEnumerable<CellPosition> GetNonEmptyPositions(IRegion region);
+    IEnumerable<CellPosition> GetNonEmptyPositions(IRegion region) =>
+        GetNonEmptyPositions(region.Top, region.Bottom, region.Left, region.Right);
 
     /// <summary>
-    /// Copy the data in <paramref name="fromRegion"/> to the position <paramref name="toPosition"/>
+    /// Copy the data in <paramref name="fromRegion"/> to the position <paramref name="toRegion"/>
     /// </summary>
     /// <param name="fromRegion"></param>
-    /// <param name="toPosition"></param>
+    /// <param name="toRegion"></param>
     /// <returns></returns>
-    MatrixRestoreData<T> Copy(IRegion fromRegion, IRegion toPosition);
+    MatrixRestoreData<T> Copy(IRegion fromRegion, IRegion toRegion);
 
     void Restore(MatrixRestoreData<T> restoreData);
+    public IEnumerable<(int row, int col, T data)> GetNonEmptyData(IRegion region);
+
+    /// <summary>
+    /// Returns a 2d array (accessed row, col) of data taken from the region
+    /// </summary>
+    /// <param name="region"></param>
+    /// <returns></returns>
+    public T[][] GetData(IRegion region);
 }

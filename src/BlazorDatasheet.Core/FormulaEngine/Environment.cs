@@ -1,4 +1,5 @@
 ﻿using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.DataStructures.Cells;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.Functions;
@@ -10,7 +11,7 @@ public class SheetEnvironment : IEnvironment
     // only one sheet for now...
     private readonly Sheet _sheet;
     private readonly Dictionary<string, object> _variables = new();
-    private readonly Dictionary<string, CallableFunctionDefinition> _functions = new();
+    private readonly Dictionary<string, ISheetFunction> _functions = new();
 
     public SheetEnvironment(Sheet sheet)
     {
@@ -38,12 +39,12 @@ public class SheetEnvironment : IEnvironment
         return _functions.ContainsKey(name.ToLower());
     }
 
-    public CallableFunctionDefinition GetFunctionDefinition(string name)
+    public ISheetFunction GetFunctionDefinition(string name)
     {
         return _functions[name.ToLower()];
     }
 
-    public void SetFunction(string name, CallableFunctionDefinition value)
+    public void SetFunction(string name, ISheetFunction value)
     {
         if (!_functions.ContainsKey(name.ToLower()))
             _functions.Add(name.ToLower(), value);
@@ -51,35 +52,26 @@ public class SheetEnvironment : IEnvironment
             _functions[name.ToLower()] = value;
     }
 
-    public object? GetCellValue(int row, int col) => _sheet.Cells.GetValue(row, col);
+    public CellValue GetCellValue(int row, int col) => _sheet.Cells.GetCellValue(row, col);
 
-    public List<double> GetNumbersInRange(RangeAddress rangeAddress)
+    public CellValue[][] GetRangeValues(RangeAddress rangeAddress)
     {
-        return GetNumbersInSheetRange(
+        return GetValuesInRange(
             _sheet.Range(rangeAddress.RowStart, rangeAddress.RowEnd, rangeAddress.ColStart, rangeAddress.ColEnd));
     }
 
-    public List<double> GetNumbersInRange(ColumnAddress rangeAddress)
+    public CellValue[][] GetRangeValues(ColumnAddress rangeAddress)
     {
-        return GetNumbersInSheetRange(_sheet.Range(Axis.Col, rangeAddress.Start, rangeAddress.End));
+        return GetValuesInRange(_sheet.Range(Axis.Col, rangeAddress.Start, rangeAddress.End));
     }
 
-    public List<double> GetNumbersInRange(RowAddress rangeAddress)
+    public CellValue[][] GetRangeValues(RowAddress rangeAddress)
     {
-        return GetNumbersInSheetRange(_sheet.Range(Axis.Row, rangeAddress.Start, rangeAddress.End));
+        return GetValuesInRange(_sheet.Range(Axis.Row, rangeAddress.Start, rangeAddress.End));
     }
 
-    private List<double> GetNumbersInSheetRange(SheetRange range)
+    private CellValue[][] GetValuesInRange(SheetRange range)
     {
-        var nonEmptyCells = range.GetNonEmptyCells();
-        var nums = new List<double>();
-        foreach (var cell in nonEmptyCells)
-        {
-            var val = cell.GetValue<double?>();
-            if (val != null)
-                nums.Add(val.Value);
-        }
-
-        return nums;
+        return range.Sheet.Cells.GetStore().GetData(range.Region);
     }
 }

@@ -7,7 +7,7 @@ namespace BlazorDatasheet.Formula.Core;
 public class FormulaEvaluator
 {
     private readonly IEnvironment _environment;
-    private readonly ParameterTypeConversion _converter;
+    private readonly ParameterConverterNew _converter;
 
     /// <summary>
     /// The row address of the currently evaluated formula. If null, then the formula is not associated with a row/col.
@@ -22,7 +22,7 @@ public class FormulaEvaluator
     public FormulaEvaluator(IEnvironment environment)
     {
         _environment = environment;
-        _converter = new ParameterTypeConversion(environment);
+        _converter = new ParameterConverterNew(environment);
     }
 
     internal object Evaluate(SyntaxTree tree)
@@ -60,7 +60,8 @@ public class FormulaEvaluator
         // evaluating a formula and end up with a cell address as the result.
         // In that case we want to get the cell's value
         if (result is CellAddress addr)
-            return _environment.GetCellValue(addr.Row, addr.Col);
+            return _environment.GetCellValue(addr.Row, addr.Col).Data;
+
         return result;
     }
 
@@ -89,6 +90,16 @@ public class FormulaEvaluator
         }
     }
 
+    private int MaxArity(ParameterDefinition[] parameterDefinitions)
+    {
+        return parameterDefinitions.Last().IsRepeating ? 128 : parameterDefinitions.Length;
+    }
+
+    private int MinArity(ParameterDefinition[] parameterDefinitions)
+    {
+        return parameterDefinitions.Count(x => x.Requirement == ParameterRequirement.Required);
+    }
+
     private object EvaluateFunctionExpression(FunctionCallExpressionSyntax node)
     {
         if (!_environment.FunctionExists(node.Identifier.Text))
@@ -97,8 +108,10 @@ public class FormulaEvaluator
         var func = _environment.GetFunctionDefinition(node.Identifier.Text);
         var nArgsProvided = node.Args.Count();
 
-        if (nArgsProvided < func.MinArity ||
-            nArgsProvided > func.MaxArity)
+        var paramDefinitions = func.GetParameterDefinitions();
+
+        if (nArgsProvided < MinArity(paramDefinitions) ||
+            nArgsProvided > MaxArity(paramDefinitions))
         {
             return new FormulaError(ErrorType.Na, "Incorrect number of function arguments");
         }
@@ -106,35 +119,46 @@ public class FormulaEvaluator
         int paramIndex = 0;
         int argIndex = 0;
 
-        List<object> convertedArgs = new List<object>();
+        FuncArg[] convertedArgs = new FuncArg[paramDefinitions.Length];
 
-        while (paramIndex < func.Parameters.Count &&
+        var repeatingCollection = new List<object>();
+
+        while (paramIndex < paramDefinitions.Length &&
                argIndex < nArgsProvided)
         {
-            var param = func.Parameters[paramIndex];
+            var param = paramDefinitions[paramIndex];
             var arg = Evaluate(node.Args[argIndex]);
 
             if (arg is FormulaError &&
                 !func.AcceptsErrors)
                 return arg;
+            
+            repeatingCollection.Add(arg);
 
-            var converted = _converter.ConvertTo(param.ParameterType, arg);
-            if (converted is FormulaError &&
-                !func.AcceptsErrors)
+            if (param.IsRepeating)
             {
-                return converted;
+                // if the arg is repeating, it must be the last argument
+                // if so, don't convert the arg yet and keep collecting them
+                if (argIndex == nArgsProvided - 1)
+                {
+                    convertedArgs[paramIndex] = _converter.ToArg(repeatingCollection.ToArray(), param);
+                    break;
+                }
+
+                argIndex++;
+                continue;
             }
 
-            convertedArgs.Add(converted);
-            if (isConsumable(param))
-                paramIndex++;
+            convertedArgs[paramIndex] = _converter.ToArg(repeatingCollection.ToArray(), param);
+            repeatingCollection.Clear();
+            paramIndex++;
             argIndex++;
         }
 
         return func.Call(convertedArgs);
     }
 
-    private bool isConsumable(Parameter param)
+    private bool IsConsumable(ParameterDefinition param)
     {
         return !param.IsRepeating;
     }
@@ -258,7 +282,7 @@ public class FormulaEvaluator
         var operand = Evaluate(syntax.Operand);
 
         if (operand is CellAddress addr)
-            operand = _environment.GetCellValue(addr.Row, addr.Col);
+            operand = _environment.GetCellValue(addr.Row, addr.Col).Data;
 
         if (operand is FormulaError)
             return operand;
@@ -291,28 +315,28 @@ public class FormulaEvaluator
             return right;
 
         if (left is CellAddress addrLeft)
-            left = _environment.GetCellValue(addrLeft.Row, addrLeft.Col);
+            left = _environment.GetCellValue(addrLeft.Row, addrLeft.Col).Data;
 
         if (right is CellAddress addrRight)
-            right = _environment.GetCellValue(addrRight.Row, addrRight.Col);
+            right = _environment.GetCellValue(addrRight.Row, addrRight.Col).Data;
 
         if (IsValid(left, right, syntax.OperatorToken))
         {
             switch (syntax.OperatorToken.Kind)
             {
                 case SyntaxKind.PlusToken:
-                    return convertToDouble(left) + convertToDouble(right);
+                    return ConvertToDouble(left) + ConvertToDouble(right);
                 case SyntaxKind.MinusToken:
-                    return convertToDouble(left) - convertToDouble(right);
+                    return ConvertToDouble(left) - ConvertToDouble(right);
                 case SyntaxKind.StarToken:
-                    return convertToDouble(left) * convertToDouble(right);
+                    return ConvertToDouble(left) * ConvertToDouble(right);
                 case SyntaxKind.SlashToken:
                 {
-                    var rightDouble = convertToDouble(right);
+                    var rightDouble = ConvertToDouble(right);
                     if (rightDouble == 0)
                         return new FormulaError(ErrorType.Div0);
 
-                    return convertToDouble(left) / convertToDouble(right);
+                    return ConvertToDouble(left) / ConvertToDouble(right);
                 }
                 case SyntaxKind.EqualsToken:
                     if (left == null && right == null)
@@ -352,7 +376,7 @@ public class FormulaEvaluator
             case SyntaxKind.StarToken:
             case SyntaxKind.SlashToken:
             case SyntaxKind.MinusToken:
-                return convertsToDouble(left) && convertsToDouble(right);
+                return ConvertsToDouble(left) && ConvertsToDouble(right);
             case SyntaxKind.GreaterThanToken:
             case SyntaxKind.GreaterThanEqualToToken:
             case SyntaxKind.LessThanToken:
@@ -370,7 +394,7 @@ public class FormulaEvaluator
         }
     }
 
-    private double convertToDouble(object? value)
+    private double ConvertToDouble(object? value)
     {
         if (value == null)
             return 0;
@@ -378,12 +402,15 @@ public class FormulaEvaluator
         return Convert.ToDouble(value);
     }
 
-    private bool convertsToDouble(object? value)
+    private bool ConvertsToDouble(object? value)
     {
         if (value == null)
             return true;
 
         if (value is double or decimal or int or float)
+            return true;
+
+        if (value is bool)
             return true;
 
         if (double.TryParse(value.ToString(), out var temp))

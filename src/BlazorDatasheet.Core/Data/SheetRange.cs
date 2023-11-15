@@ -1,6 +1,7 @@
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Core.Metadata;
+using BlazorDatasheet.DataStructures.Cells;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 
@@ -59,6 +60,7 @@ public class SheetRange
     {
         return Sheet.Cells.GetNonEmptyCellPositions(Region);
     }
+    
 
     internal IEnumerable<IReadOnlyCell> GetCells()
     {

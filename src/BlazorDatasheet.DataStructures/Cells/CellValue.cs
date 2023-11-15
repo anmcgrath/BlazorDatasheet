@@ -6,18 +6,22 @@ namespace BlazorDatasheet.DataStructures.Cells;
 public class CellValue
 {
     public object? Data { get; init; }
+
+    public bool IsEmpty { get; private set; }
     public CellValueType ValueType { get; init; }
 
     private CellValue()
     {
     }
 
-    public CellValue(object? data)
+    public CellValue(object? data, CellValueType cellValueType = CellValueType.Any)
     {
+        ValueType = cellValueType;
+
         if (data == null)
         {
             Data = null;
-            ValueType = CellValueType.Empty;
+            IsEmpty = true;
             return;
         }
 
@@ -43,8 +47,8 @@ public class CellValue
         }
         else
         {
-            Data = data;
-            ValueType = GetValueType(Data, valType, isNullable, nullableType);
+            ValueType = GetValueType(data, valType, isNullable, nullableType);
+            Data = (ValueType == CellValueType.Number) ? Convert.ToDouble(data) : data;
         }
     }
 
@@ -124,7 +128,7 @@ public class CellValue
     {
         try
         {
-            if (Data == null && type == typeof(string))
+            if (Data == null && ValueType == CellValueType.Text)
                 return string.Empty;
 
             if (this.Data?.GetType() == type)

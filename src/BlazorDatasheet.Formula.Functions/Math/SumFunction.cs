@@ -1,24 +1,37 @@
+using BlazorDatasheet.DataStructures.Cells;
 using BlazorDatasheet.Formula.Core.Interpreter.Functions;
 
 namespace BlazorDatashet.Formula.Functions.Math;
 
-public class SumFunction : CallableFunctionDefinition
+public class SumFunction : ISheetFunction
 {
-    public SumFunction() : base(
-        new Parameter("number", ParameterType.NumberSequence, ParameterRequirement.Required, isRepeating: false),
-        new Parameter("numbers", ParameterType.NumberSequence, ParameterRequirement.Optional, isRepeating: true))
+    public ParameterDefinition[] GetParameterDefinitions()
     {
+        return new[]
+        {
+            new ParameterDefinition(
+                "number",
+                ParameterType.Number,
+                ParameterDimensionality.Range,
+                ParameterRequirement.Required,
+                isRepeating: true)
+        };
     }
 
-    public override object Call(List<object> arguments)
+    public object Call(FuncArg[] args)
     {
-        var args = arguments.Cast<IEnumerable<double>>()
-            .ToList();
+        var nums = args.First().Flatten();
+        var total = 0d;
+        foreach (var val in nums)
+        {
+            if (val.ValueType == CellValueType.Error)
+                return val.Data;
+            else if (val.ValueType == CellValueType.Number)
+                total += val.GetValue<double>();
+        }
 
-        return args.Select(x => x.Sum()).Sum();
-        return 0;
+        return total;
     }
 
-    public override Type ReturnType => typeof(double);
-    public override bool AcceptsErrors => false;
+    public bool AcceptsErrors { get; }
 }
