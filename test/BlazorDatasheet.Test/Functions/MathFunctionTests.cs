@@ -14,63 +14,49 @@ namespace BlazorDatasheet.Test.Functions;
 
 public class MathFunctionTests
 {
-    [Test]
-    public void SinFunctionTests()
+    private TestEnvironment _env;
+
+    [SetUp]
+    public void Setup()
     {
-        var sinFunction = new SinFunction();
-        sinFunction.Call(new FuncArg[]
-                { new FuncArg(new CellValue(true), sinFunction.GetParameterDefinitions().First()) }).Should()
-            .Be(Math.Sin(1));
-        sinFunction.Call(new FuncArg[]
-                { new FuncArg(new CellValue(0.5), sinFunction.GetParameterDefinitions().First()) }).Should()
-            .Be(Math.Sin(0.5));
+        _env = new();
     }
 
-    [Test]
-    public void Test_Env_sin_function()
+    public object? Eval(string formulaString)
     {
-        var env = new TestEnvironment();
-        env.SetFunction("sin", new SinFunction());
+        var eval = new FormulaEvaluator(_env);
         var parser = new FormulaParser();
-        var formula1 = parser.FromString("=sin(true)");
-        var formula2 = parser.FromString("=sin(A1)");
-        var formula3 = parser.FromString("=sin(\"abc\")");
-        var eval = new FormulaEvaluator(env);
-        env.SetCellValue(0, 0, true);
-        eval.Evaluate(formula1).Should().Be(Math.Sin(1));
-        eval.Evaluate(formula2).Should().Be(Math.Sin(1));
-        eval.Evaluate(formula3).Should().BeOfType(typeof(FormulaError));
+        return eval.Evaluate(parser.FromString(formulaString));
     }
 
     [Test]
-    public void Test_Env_Sum_function()
+    public void Sin_Function_Tests()
     {
-        var env = new TestEnvironment();
-        env.SetFunction("sum", new SumFunction());
-        var parser = new FormulaParser();
-        var eval = new FormulaEvaluator(env);
-        eval.Evaluate(parser.FromString("=sum(1, 2)")).Should().Be(3);
-        eval.Evaluate(parser.FromString("=sum(true,true)")).Should().Be(2);
+        _env.SetFunction("sin", new SinFunction());
+        Eval("=sin(true)").Should().Be(Math.Sin(1));
+        _env.SetCellValue(0, 0, true);
+        Eval("=sin(A1)").Should().Be(Math.Sin(1));
+        Eval("=sin(\"abc\")").Should().BeOfType(typeof(FormulaError));
+        _env.SetCellValue(0, 0, "abc");
+        Eval("=sin(A1)").Should().BeOfType(typeof(FormulaError));
     }
 
     [Test]
-    public void SumFunctionTests()
+    public void Sum_Function_Tests()
     {
-        /*var sumFunction = new SumFunction();
-        sumFunction.Call(new List<object>()
-        {
-            new List<double>() { 0 }
-        }).Should().Be(0);
+        _env.SetFunction("sum", new SumFunction());
+        Eval("=sum(1, 2)").Should().Be(3);
+        Eval("=sum(5)").Should().Be(5);
+        Eval("=sum(true,true)").Should().Be(2);
+        Eval("=sum(\"ab\",true)").Should().BeOfType<FormulaError>();
 
-        sumFunction.Call(new List<object>()
-        {
-            new List<double>() { 1, 2 }
-        }).Should().Be(3);
+        var nums = new double[] { 0.5, 1, 1.5, 2 };
 
-        sumFunction.Call(new List<object>()
-        {
-            new List<double>() { 1, 2, },
-            new List<double>() { 3, 4 },
-        }).Should().Be(10);*/
+        _env.SetCellValue(0, 0, nums[0]);
+        _env.SetCellValue(1, 0, nums[1]);
+        _env.SetCellValue(0, 2, nums[2]);
+        _env.SetCellValue(1, 2, nums[3]);
+
+        Eval("=sum(A1:A2,C1:C2)").Should().Be(nums.Sum());
     }
 }

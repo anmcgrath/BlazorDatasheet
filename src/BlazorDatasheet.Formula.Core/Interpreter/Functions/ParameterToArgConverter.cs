@@ -81,63 +81,59 @@ public class ParameterToArgConverter
         if (obj is RangeAddress or ColumnAddress or RowAddress)
             return CellValue.Error(new FormulaError(ErrorType.Ref, "Expected a single value, got a range"));
 
-        object? convertedValue;
+        CellValue? convertedValue;
 
         switch (type)
         {
             case ParameterType.Logical:
-                convertedValue = ToLogical(obj);
-                break;
+                return ToLogical(obj);
             case ParameterType.Number:
-                convertedValue = ToNumber(obj);
-                break;
+                return ToNumber(obj);
             case ParameterType.Text:
-                convertedValue = ToText(obj);
-                break;
+                return ToText(obj);
             default:
-                convertedValue = obj;
-                break;
+                return new CellValue(obj);
         }
 
-        return new CellValue(convertedValue);
+        return convertedValue;
     }
 
-    private object ToLogical(object? arg)
+    private CellValue ToLogical(object? arg)
     {
         if (arg == null)
-            return false;
+            return new CellValue(false);
 
         if (arg is bool b)
-            return b;
+            return new CellValue(b);
 
         if (arg is double d)
-            return d != 0;
+            return new CellValue(d != 0);
 
         if (bool.TryParse(arg.ToString(), out var parsedBool))
-            return parsedBool;
+            return new CellValue(parsedBool);
 
-        return new FormulaError(ErrorType.Value);
+        return CellValue.Error(new FormulaError(ErrorType.Value));
     }
 
-    private object ToNumber(object? val)
+    private CellValue ToNumber(object? val)
     {
         if (val != null && val.ConvertsToNumber())
-            return Convert.ToDouble(val);
+            return new CellValue(Convert.ToDouble(val));
 
-        return new FormulaError(ErrorType.Value);
+        return CellValue.Error(new FormulaError(ErrorType.Value));
     }
 
-    private object ToText(object? val)
+    private CellValue ToText(object? val)
     {
         if (val == null)
-            return string.Empty;
+            return CellValue.Empty;
 
         if (val is FormulaError e)
-            return e;
+            return CellValue.Error(e);
 
         if (val is string t)
-            return t;
+            return new CellValue(t);
 
-        return val.ToString()!;
+        return new CellValue(val.ToString()!);
     }
 }

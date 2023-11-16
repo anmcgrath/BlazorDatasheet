@@ -10,6 +10,8 @@ public class CellValue
     public bool IsEmpty { get; private set; }
     public CellValueType ValueType { get; init; }
 
+    public static readonly CellValue Empty = new CellValue(null);
+
     private CellValue()
     {
     }
@@ -114,9 +116,12 @@ public class CellValue
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    public T GetValue<T>()
+    public T? GetValue<T>()
     {
-        return (T)GetValue(typeof(T));
+        var val = GetValue(typeof(T));
+        if (val == null)
+            return default(T);
+        return (T)val;
     }
 
     /// <summary>

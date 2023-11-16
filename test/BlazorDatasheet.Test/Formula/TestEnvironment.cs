@@ -40,37 +40,36 @@ public class TestEnvironment : IEnvironment
 
     public CellValue GetCellValue(int row, int col)
     {
-        return _cellValues[new CellPosition(row, col)];
+        var hasVal = _cellValues.TryGetValue(new CellPosition(row, col), out var val);
+        if (hasVal)
+            return val;
+        return CellValue.Empty;
     }
 
-    public CellValue[][] GetRangeValues(RangeAddress rangeAddress)
-    {
-        throw new System.NotImplementedException();
-    }
+    public CellValue[][] GetRangeValues(RangeAddress rangeAddress) => GetValuesInRange(rangeAddress.RowStart,
+        rangeAddress.RowEnd, rangeAddress.ColStart, rangeAddress.ColEnd);
 
-    public CellValue[][] GetRangeValues(ColumnAddress rangeAddress)
-    {
-        throw new System.NotImplementedException();
-    }
+    public CellValue[][] GetRangeValues(ColumnAddress colAddress) =>
+        GetValuesInRange(0, 1000, colAddress.Start, colAddress.End);
 
-    public CellValue[][] GetRangeValues(RowAddress rangeAddress)
-    {
-        throw new System.NotImplementedException();
-    }
+    public CellValue[][] GetRangeValues(RowAddress rowAddress) =>
+        GetValuesInRange(rowAddress.Start, rowAddress.End, 0, 1000);
 
-    public List<double> GetNumbersInRange(RangeAddress rangeAddress)
+    private CellValue[][] GetValuesInRange(int r0, int r1, int c0, int c1)
     {
-        throw new System.NotImplementedException();
-    }
+        var h = (r1 - r0) + 1;
+        var w = (c1 - c0) + 1;
+        var arr = new CellValue[h][];
+        for (int i = 0; i < h; i++)
+        {
+            arr[i] = new CellValue[w];
+            for (int j = 0; j < w; j++)
+            {
+                arr[i][j] = GetCellValue(r0 + i, c0 + j);
+            }
+        }
 
-    public List<double> GetNumbersInRange(ColumnAddress rangeAddress)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public List<double> GetNumbersInRange(RowAddress rangeAddress)
-    {
-        throw new System.NotImplementedException();
+        return arr;
     }
 
     public bool FunctionExists(string functionIdentifier)
