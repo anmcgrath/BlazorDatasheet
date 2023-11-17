@@ -1,4 +1,3 @@
-using BlazorDatasheet.DataStructures.Cells;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Util;
 using BlazorDatasheet.Formula.Core.Interpreter.Syntax;
@@ -75,7 +74,7 @@ public class ParameterToArgConverter
 
         if (obj is CellAddress cellAddress)
         {
-            return _environment.GetCellValue(cellAddress.Row, cellAddress.Col);
+            obj = _environment.GetCellValue(cellAddress.Row, cellAddress.Col).Data;
         }
 
         if (obj is RangeAddress or ColumnAddress or RowAddress)
@@ -86,54 +85,88 @@ public class ParameterToArgConverter
         switch (type)
         {
             case ParameterType.Logical:
-                return ToLogical(obj);
+                if (!TryConvertToLogical(obj, out convertedValue))
+                    convertedValue = CellValue.Error(new FormulaError(ErrorType.Value));
+                break;
             case ParameterType.Number:
-                return ToNumber(obj);
+                if (!TryConvertToNumber(obj, out convertedValue))
+                    convertedValue = CellValue.Error(new FormulaError(ErrorType.Value));
+                break;
             case ParameterType.Text:
-                return ToText(obj);
+                if (!TryConvertToText(obj, out convertedValue))
+                    convertedValue = CellValue.Error(new FormulaError(ErrorType.Value));
+                break;
             default:
-                return new CellValue(obj);
+                convertedValue = new CellValue(obj);
+                break;
         }
 
-        return convertedValue;
+        return convertedValue!;
     }
 
-    private CellValue ToLogical(object? arg)
+    private bool TryConvertToLogical(object? arg, out CellValue? converted)
     {
         if (arg == null)
-            return new CellValue(false);
+        {
+            converted = new CellValue(false);
+            return true;
+        }
 
         if (arg is bool b)
-            return new CellValue(b);
+        {
+            converted = new CellValue(b);
+            return true;
+        }
 
         if (arg is double d)
-            return new CellValue(d != 0);
+        {
+            converted = new CellValue(d != 0);
+            return true;
+        }
 
         if (bool.TryParse(arg.ToString(), out var parsedBool))
-            return new CellValue(parsedBool);
+        {
+            converted = new CellValue(parsedBool);
+            return false;
+        }
 
-        return CellValue.Error(new FormulaError(ErrorType.Value));
+        converted = null;
+        return false;
     }
 
-    private CellValue ToNumber(object? val)
+    private bool TryConvertToNumber(object? val, out CellValue? converted)
     {
         if (val != null && val.ConvertsToNumber())
-            return new CellValue(Convert.ToDouble(val));
+        {
+            converted = new CellValue(Convert.ToDouble(val));
+            return true;
+        }
 
-        return CellValue.Error(new FormulaError(ErrorType.Value));
+        converted = null;
+        return false;
     }
 
-    private CellValue ToText(object? val)
+    private bool TryConvertToText(object? val, out CellValue? converted)
     {
         if (val == null)
-            return CellValue.Empty;
+        {
+            converted = CellValue.Empty;
+            return true;
+        }
 
         if (val is FormulaError e)
-            return CellValue.Error(e);
+        {
+            converted = CellValue.Error(e);
+            return true;
+        }
 
         if (val is string t)
-            return new CellValue(t);
+        {
+            converted = new CellValue(t);
+            return true;
+        }
 
-        return new CellValue(val.ToString()!);
+        converted = new CellValue(val.ToString()!);
+        return true;
     }
 }

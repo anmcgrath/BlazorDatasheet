@@ -1,5 +1,6 @@
-using BlazorDatasheet.DataStructures.Cells;
+using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.Functions;
+using BlazorDatasheet.Formula.Core.Interpreter.Syntax;
 
 namespace BlazorDatashet.Formula.Functions.Math;
 
@@ -13,7 +14,7 @@ public class SinFunction : ISheetFunction
                 ParameterType.Number,
                 ParameterDimensionality.Scalar,
                 ParameterRequirement.Required,
-                false)
+                isRepeating: false)
         };
     }
 
@@ -25,11 +26,11 @@ public class SinFunction : ISheetFunction
 
         if (val.IsEmpty)
             return 0; // Math.Sin(0);
-        else
-        {
-            
-        }
-            return System.Math.Sin(val.GetValue<double>());
+
+        if (val.ValueType != CellValueType.Number)
+            return new FormulaError(ErrorType.Value);
+
+        return System.Math.Sin(val.GetValue<double>());
     }
 
     public bool AcceptsErrors => false;

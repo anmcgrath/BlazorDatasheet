@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using BlazorDatasheet.Core.Data;
-using BlazorDatasheet.DataStructures.Cells;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.Functions;

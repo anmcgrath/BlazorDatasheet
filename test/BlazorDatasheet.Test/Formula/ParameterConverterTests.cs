@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using BlazorDatasheet.DataStructures.Cells;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.Functions;
 using FluentAssertions;

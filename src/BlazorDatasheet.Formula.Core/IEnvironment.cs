@@ -1,5 +1,4 @@
-﻿using BlazorDatasheet.DataStructures.Cells;
-using BlazorDatasheet.Formula.Core.Interpreter.Functions;
+﻿using BlazorDatasheet.Formula.Core.Interpreter.Functions;
 
 namespace BlazorDatasheet.Formula.Core;
 

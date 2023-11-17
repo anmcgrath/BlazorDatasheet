@@ -1,7 +1,7 @@
-﻿using System.Globalization;
-using BlazorDatasheet.DataStructures.Util;
+﻿using BlazorDatasheet.DataStructures.Util;
+using BlazorDatasheet.Formula.Core.Interpreter.Syntax;
 
-namespace BlazorDatasheet.DataStructures.Cells;
+namespace BlazorDatasheet.Formula.Core;
 
 public class CellValue
 {
@@ -12,13 +12,22 @@ public class CellValue
 
     public static readonly CellValue Empty = new CellValue(null);
 
-    private CellValue()
+    /// <summary>
+    /// Creates a cell value type. If <paramref name="cellValueType"/> is set, this is used to determine the value type.
+    /// Otherwise, the value type is determined by looking at the type of <paramref name="data"/>.
+    /// </summary>
+    /// <param name="data"></param>
+    /// <param name="cellValueType"></param>
+    public CellValue(object? data, CellValueType? cellValueType = null)
     {
-    }
+        if (cellValueType.HasValue)
+        {
+            Data = data;
+            ValueType = cellValueType.Value;
+            return;
+        }
 
-    public CellValue(object? data, CellValueType cellValueType = CellValueType.Any)
-    {
-        ValueType = cellValueType;
+        ValueType = CellValueType.Any;
 
         if (data == null)
         {
@@ -94,6 +103,9 @@ public class CellValue
         if (value == null)
             return CellValueType.Empty;
 
+        if (value is FormulaError)
+            return CellValueType.Error;
+
         if (valType == typeof(string) || (isNullable && nullableType == typeof(string)))
         {
             return CellValueType.Text;
@@ -161,12 +173,8 @@ public class CellValue
         }
     }
 
-    public static CellValue Error(object? err)
+    public static CellValue Error(FormulaError err)
     {
-        return new CellValue()
-        {
-            Data = err,
-            ValueType = CellValueType.Error
-        };
+        return new CellValue(err, CellValueType.Error);
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace BlazorDatasheet.DataStructures.Cells;
+﻿namespace BlazorDatasheet.Formula.Core;
 
 public enum CellValueType
 {

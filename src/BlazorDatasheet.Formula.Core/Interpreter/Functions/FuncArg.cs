@@ -1,4 +1,3 @@
-using BlazorDatasheet.DataStructures.Cells;
 using BlazorDatasheet.DataStructures.Util;
 using BlazorDatasheet.Formula.Core.Interpreter.Syntax;
 
@@ -40,6 +39,11 @@ public class FuncArg
         return Array.Empty<CellValue>();
     }
 
+    /// <summary>
+    /// Returns a single CellValue. If the parameter dimensionality is a range, or the parameter is repeating,
+    /// returns a cell error.
+    /// </summary>
+    /// <returns></returns>
     public CellValue AsScalar()
     {
         if (ParameterDefinition.Dimensionality != ParameterDimensionality.Scalar ||

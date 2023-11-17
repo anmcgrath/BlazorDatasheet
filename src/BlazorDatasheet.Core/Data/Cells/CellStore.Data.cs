@@ -1,6 +1,6 @@
 using BlazorDatasheet.Core.Commands;
-using BlazorDatasheet.DataStructures.Cells;
 using BlazorDatasheet.DataStructures.Store;
+using BlazorDatasheet.Formula.Core;
 
 namespace BlazorDatasheet.Core.Data.Cells;
 
