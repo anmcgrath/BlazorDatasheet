@@ -1,4 +1,6 @@
+using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.Functions;
+using BlazorDatasheet.Formula.Core.Interpreter.Syntax;
 
 namespace BlazorDatasheet.Formula.Functions.Logical;
 
@@ -10,18 +12,31 @@ public class AndFunction : ISheetFunction
         {
             new ParameterDefinition(
                 name: "logical",
-                ParameterType.Logical,
-                ParameterDimensionality.Range,
-                ParameterRequirement.Required,
+                type: ParameterType.LogicalSequence,
+                requirement: ParameterRequirement.Required,
                 isRepeating: true
             )
         };
     }
 
-    public object Call(FuncArg[] args)
+    public object? Call(CellValue[] args, FunctionCallMetaData metaData)
     {
-        var vals = args.First().Flatten();
-        return vals.Select(x => x.GetValue<bool>()).All(x => x == true);
+        var isTrue = true;
+        foreach (var arg in args)
+        {
+            var seq = arg.GetValue<CellValue[]>()!;
+            if (seq.Length == 0)
+                return new FormulaError(ErrorType.Value);
+            foreach (var cv in seq)
+            {
+                if (cv.IsError())
+                    return cv.Data!;
+                else
+                    isTrue &= cv.GetValue<bool>();
+            }
+        }
+
+        return isTrue;
     }
 
     public bool AcceptsErrors => false;

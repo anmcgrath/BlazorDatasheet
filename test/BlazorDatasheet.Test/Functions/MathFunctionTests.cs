@@ -31,7 +31,7 @@ public class MathFunctionTests
     [Test]
     public void Sin_Function_Tests()
     {
-        _env.SetFunction("sin", new SinFunction());
+        _env.RegisterFunction("sin", new SinFunction());
         Eval("=sin(true)").Should().Be(Math.Sin(1));
         _env.SetCellValue(0, 0, true);
         Eval("=sin(A1)").Should().Be(Math.Sin(1));
@@ -43,7 +43,7 @@ public class MathFunctionTests
     [Test]
     public void Sum_Function_Tests()
     {
-        _env.SetFunction("sum", new SumFunction());
+        _env.RegisterFunction("sum", new SumFunction());
         Eval("=sum(1, 2)").Should().Be(3);
         Eval("=sum(5)").Should().Be(5);
         Eval("=sum(true,true)").Should().Be(2);
@@ -62,6 +62,9 @@ public class MathFunctionTests
         Eval("=sum(A1)").Should().Be(0);
 
         _env.SetCellValue(0, 0, "abc");
-        Eval("=sum(A1)").Should().BeOfType<FormulaError>();
+        Eval("=sum(A1)").Should().Be(0);
+
+        _env.SetCellValue(2, 1, 123);
+        Eval("=sum(B3)").Should().Be(123);
     }
 }

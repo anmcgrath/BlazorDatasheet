@@ -25,6 +25,11 @@ public class RangeReference : Reference
         End = end;
     }
 
+    protected RangeReference()
+    {
+        
+    }
+
     public override string ToRefText()
     {
         return Start.ToRefText() + ":" + End.ToRefText();

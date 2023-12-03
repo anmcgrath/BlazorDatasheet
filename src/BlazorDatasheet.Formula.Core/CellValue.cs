@@ -20,6 +20,7 @@ public class CellValue
     /// <param name="cellValueType"></param>
     public CellValue(object? data, CellValueType? cellValueType = null)
     {
+        // Set the type and trust it if the it i
         if (cellValueType.HasValue)
         {
             Data = data;
@@ -61,6 +62,15 @@ public class CellValue
             ValueType = GetValueType(data, valType, isNullable, nullableType);
             Data = (ValueType == CellValueType.Number) ? Convert.ToDouble(data) : data;
         }
+    }
+
+    /// <summary>
+    /// Whether the cell value held is an array - that is a 2d row/col array of cell values (CellValue[][])
+    /// </summary>
+    /// <returns></returns>
+    public bool IsArray()
+    {
+        return ValueType == CellValueType.Array;
     }
 
     private bool TryConvertFromString(string? value, out object? converted, out CellValueType? valueType)
@@ -176,5 +186,35 @@ public class CellValue
     public static CellValue Error(FormulaError err)
     {
         return new CellValue(err, CellValueType.Error);
+    }
+
+    public static CellValue Number(double num)
+    {
+        return new CellValue(num, CellValueType.Number);
+    }
+
+    public static CellValue Logical(bool val)
+    {
+        return new CellValue(val, CellValueType.Logical);
+    }
+
+    public static CellValue Text(string text)
+    {
+        return new CellValue(text, CellValueType.Text);
+    }
+
+    public static CellValue Array(CellValue[][] array)
+    {
+        return new CellValue(array, CellValueType.Array);
+    }
+
+    public static CellValue Sequence(CellValue[] sequence)
+    {
+        return new CellValue(sequence, CellValueType.Sequence);
+    }
+
+    public bool IsError()
+    {
+        return ValueType == CellValueType.Error;
     }
 }

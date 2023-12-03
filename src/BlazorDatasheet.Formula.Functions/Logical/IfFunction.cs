@@ -1,4 +1,6 @@
-﻿using BlazorDatasheet.Formula.Core.Interpreter.Functions;
+﻿using BlazorDatasheet.Formula.Core;
+using BlazorDatasheet.Formula.Core.Interpreter.Functions;
+using BlazorDatasheet.Formula.Core.Interpreter.Syntax;
 
 namespace BlazorDatasheet.Formula.Functions.Logical;
 
@@ -11,35 +13,34 @@ public class IfFunction : ISheetFunction
             new ParameterDefinition(
                 "logical1",
                 ParameterType.Logical,
-                ParameterDimensionality.Scalar,
                 ParameterRequirement.Required
             ),
             new ParameterDefinition(
                 "val_if_true",
                 ParameterType.Any,
-                ParameterDimensionality.Scalar,
                 ParameterRequirement.Optional
             ),
             new ParameterDefinition(
                 "val_if_false",
                 ParameterType.Any,
-                ParameterDimensionality.Scalar,
                 ParameterRequirement.Optional
             ),
         };
     }
 
-    public object Call(FuncArg[] args)
+    public object? Call(CellValue[] args, FunctionCallMetaData metaData)
     {
-        var isTrue = args.First().AsScalar().GetValue<bool>();
+        if (args[0].IsError())
+            return args[0].Data;
+
+        var isTrue = args.First().GetValue<bool>();
         if (args.Length > 1 && isTrue)
         {
-            Console.WriteLine(args[1].Value);
-            return args[1].AsScalar().Data;
+            return args[1].Data;
         }
 
         if (args.Length > 2 && !isTrue)
-            return args[2].AsScalar().Data;
+            return args[2].Data;
         return isTrue;
     }
 

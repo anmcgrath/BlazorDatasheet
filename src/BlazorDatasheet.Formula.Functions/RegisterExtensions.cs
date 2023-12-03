@@ -8,15 +8,15 @@ public static class RegisterExtensions
 {
     public static void RegisterLogicalFunctions(this IEnvironment e)
     {
-        e.SetFunction("AND", new AndFunction());
-        e.SetFunction("IF", new IfFunction());
-        e.SetFunction("OR", new OrFunction());
+        e.RegisterFunction("AND", new AndFunction());
+        e.RegisterFunction("IF", new IfFunction());
+        e.RegisterFunction("OR", new OrFunction());
     }
 
     public static void RegisterMathFunctions(this IEnvironment e)
     {
-        e.SetFunction("AVERAGE", new AverageFunction());
-        e.SetFunction("SUM", new SumFunction());
-        e.SetFunction("SIN", new SinFunction());
+        e.RegisterFunction("AVERAGE", new AverageFunction());
+        e.RegisterFunction("SUM", new SumFunction());
+        e.RegisterFunction("SIN", new SinFunction());
     }
 }

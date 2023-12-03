@@ -3,7 +3,12 @@
 public enum ParameterType
 {
     Number,
+    Integer,
     Logical,
     Any,
-    Text
+    Text,
+    NumberSequence,
+    NumberSequenceList,
+    LogicalSequence,
+    DateSequence,
 }

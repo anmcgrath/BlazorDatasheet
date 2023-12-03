@@ -23,8 +23,11 @@ public class TestEnvironment : IEnvironment
         _cellValues[position] = new CellValue(val);
     }
 
-    public void SetFunction(string name, ISheetFunction functionDefinition)
+    public void RegisterFunction(string name, ISheetFunction functionDefinition)
     {
+        var validator = new FunctionParameterValidator();
+        validator.ValidateOrThrow(functionDefinition.GetParameterDefinitions());
+        
         if (!_functions.ContainsKey(name))
             _functions.Add(name, functionDefinition);
         _functions[name] = functionDefinition;
@@ -47,12 +50,6 @@ public class TestEnvironment : IEnvironment
 
     public CellValue[][] GetRangeValues(RangeAddress rangeAddress) => GetValuesInRange(rangeAddress.RowStart,
         rangeAddress.RowEnd, rangeAddress.ColStart, rangeAddress.ColEnd);
-
-    public CellValue[][] GetRangeValues(ColumnAddress colAddress) =>
-        GetValuesInRange(0, 1000, colAddress.Start, colAddress.End);
-
-    public CellValue[][] GetRangeValues(RowAddress rowAddress) =>
-        GetValuesInRange(rowAddress.Start, rowAddress.End, 0, 1000);
 
     private CellValue[][] GetValuesInRange(int r0, int r1, int c0, int c1)
     {

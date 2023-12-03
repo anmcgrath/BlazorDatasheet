@@ -11,27 +11,27 @@ public class SumFunction : ISheetFunction
         {
             new ParameterDefinition(
                 "number",
-                ParameterType.Number,
-                ParameterDimensionality.Range,
+                ParameterType.NumberSequence,
                 ParameterRequirement.Required,
                 isRepeating: true)
         };
     }
 
-    public object Call(FuncArg[] args)
+    public object? Call(CellValue[] args, FunctionCallMetaData metaData)
     {
-        var nums = args.First().Flatten();
-        var total = 0d;
-        foreach (var val in nums)
+        var sum = 0d;
+        foreach (var arg in args)
         {
-            if (val.ValueType == CellValueType.Error)
-                return val.Data;
-            else if (val.ValueType == CellValueType.Number)
-                total += val.GetValue<double>();
+            var seq = arg.GetValue<CellValue[]>()!;
+            foreach (var item in seq)
+                if (item.IsError())
+                    return item.Data;
+                else
+                    sum += item.GetValue<double>();
         }
 
-        return total;
+        return sum;
     }
 
-    public bool AcceptsErrors { get; }
+    public bool AcceptsErrors => true;
 }

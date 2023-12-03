@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.Functions;
 using NUnit.Framework;
 
@@ -21,9 +22,9 @@ public class CustomFunctionTests
     {
         var defns = new ParameterDefinition[]
         {
-            new ParameterDefinition("number_opt", ParameterType.Number, ParameterDimensionality.Scalar,
+            new ParameterDefinition("number_opt", ParameterType.Number,
                 ParameterRequirement.Optional),
-            new ParameterDefinition("number_opt", ParameterType.Number, ParameterDimensionality.Scalar,
+            new ParameterDefinition("number_opt", ParameterType.Number,
                 ParameterRequirement.Required)
         };
 
@@ -37,12 +38,10 @@ public class CustomFunctionTests
         {
             new ParameterDefinition("number_optional",
                 ParameterType.Number,
-                ParameterDimensionality.Scalar,
                 ParameterRequirement.Required,
                 true),
             new ParameterDefinition("number_optiona1",
                 ParameterType.Number,
-                ParameterDimensionality.Scalar,
                 ParameterRequirement.Required,
                 false),
         };
@@ -55,11 +54,11 @@ public class CustomFunctionTests
     {
         var defns = new ParameterDefinition[]
         {
-            new ParameterDefinition("number_required", ParameterType.Number, ParameterDimensionality.Range,
+            new ParameterDefinition("number_required", ParameterType.Number,
                 ParameterRequirement.Required),
-            new ParameterDefinition("number_optional", ParameterType.Number, ParameterDimensionality.Range,
+            new ParameterDefinition("number_optional", ParameterType.Number,
                 ParameterRequirement.Optional),
-            new ParameterDefinition("number_repeating", ParameterType.Number, ParameterDimensionality.Range,
+            new ParameterDefinition("number_repeating", ParameterType.Number,
                 ParameterRequirement.Optional)
         };
         Assert.DoesNotThrow(() => { _validator.ValidateOrThrow(defns); });
@@ -80,7 +79,7 @@ public class CustomFunctionDefinition : ISheetFunction
         return _parameterDefinitions;
     }
 
-    public object Call(FuncArg[] args)
+    public object? Call(CellValue[] args, FunctionCallMetaData metaData)
     {
         return null;
     }

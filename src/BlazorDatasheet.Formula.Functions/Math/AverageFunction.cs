@@ -11,23 +11,32 @@ public class AverageFunction : ISheetFunction
         return new[]
         {
             new ParameterDefinition(
-                name: "number1",
-                dimensionality: ParameterDimensionality.Range,
-                isRepeating: true,
-                requirement: ParameterRequirement.Required,
-                type: ParameterType.Number
+                "number",
+                ParameterType.NumberSequence,
+                ParameterRequirement.Required,
+                isRepeating: true
             )
         };
     }
 
-    public object Call(FuncArg[] args)
+    public object? Call(CellValue[] args, FunctionCallMetaData metaData)
     {
-        var vals = args[0].Flatten().Where(x => x.ValueType == CellValueType.Number).Select(x => x.Data).Cast<double>()
-            .ToArray();
-        if (vals.Length == 0)
-            return new FormulaError(ErrorType.Div0);
+        var sum = 0d;
+        var count = 0d;
+        foreach (var arg in args)
+        {
+            var seq = arg.GetValue<CellValue[]>()!;
+            foreach (var item in seq)
+                if (item.IsError())
+                    return item.Data!;
+                else
+                {
+                    sum += item.GetValue<double>();
+                    count++;
+                }
+        }
 
-        return vals.Average();
+        return sum / count;
     }
 
     public bool AcceptsErrors => false;

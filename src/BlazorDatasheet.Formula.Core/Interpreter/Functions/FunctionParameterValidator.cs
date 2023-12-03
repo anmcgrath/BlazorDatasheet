@@ -17,12 +17,17 @@ public class FunctionParameterValidator
         for (int i = 0; i < parameters.Length; i++)
         {
             if (hasOptional && parameters[i].Requirement == ParameterRequirement.Required)
-                throw new InvalidFunctionDefinitionException("Required parameters cannot be defined after optional.",
-                    parameters[i].Name);
-            if (parameters[i].IsRepeating && i != parameters.Length - 1)
-                throw new InvalidFunctionDefinitionException(
-                    "Repeating parameters must be defined as the last parameter", parameters[i].Name);
+            {
+                string message = "Required parameters cannot be defined after optional.";
+                throw new InvalidFunctionDefinitionException(message, parameters[i].Name);
+            }
 
+            if (parameters[i].IsRepeating && i != parameters.Length - 1)
+            {
+                string message = "Repeating parameters must be defined as the last parameter";
+                throw new InvalidFunctionDefinitionException(message, parameters[i].Name);
+            }
+            
             hasOptional = hasOptional ||
                           parameters[i].Requirement == ParameterRequirement.Optional ||
                           parameters[i].IsRepeating;

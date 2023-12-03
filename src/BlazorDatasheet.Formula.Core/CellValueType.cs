@@ -9,5 +9,6 @@ public enum CellValueType
     Date,
     Error,
     Any,
-    Array
+    Array,
+    Sequence,
 }

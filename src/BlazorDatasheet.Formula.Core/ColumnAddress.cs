@@ -1,13 +1,8 @@
 ﻿namespace BlazorDatasheet.Formula.Core;
 
-public class ColumnAddress
+public class ColumnAddress : RangeAddress
 {
-    public ColumnAddress(int start, int end)
+    public ColumnAddress(int start, int end) : base(0, int.MaxValue, start, end)
     {
-        Start = start;
-        End = end;
     }
-
-    public int Start { get; }
-    public int End { get; }
 }

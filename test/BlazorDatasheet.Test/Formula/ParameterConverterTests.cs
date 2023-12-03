@@ -8,7 +8,7 @@ namespace BlazorDatasheet.Test.Formula;
 
 public class ParameterConverterTests
 {
-    private ParameterToArgConverter _toArgConverter;
+    private ParameterTypeConverter _toArgConverter;
 
     [SetUp]
     public void Setup()
@@ -22,37 +22,9 @@ public class ParameterConverterTests
         var paramDef = new ParameterDefinition(
             "test",
             ParameterType.Number,
-            ParameterDimensionality.Scalar,
             ParameterRequirement.Required,
             false);
 
-        _toArgConverter.ToArg(2, paramDef).Value.Should().BeEquivalentTo(new CellValue(2));
-    }
-
-    [Test]
-    public void Repeating_Scalar_Param_Converts_To_Array()
-    {
-        var paramDef = new ParameterDefinition(
-            "test",
-            ParameterType.Number,
-            ParameterDimensionality.Scalar,
-            ParameterRequirement.Required,
-            true);
-
-        _toArgConverter.ToArg(2, paramDef).Value.Should().BeEquivalentTo(new[] { new CellValue(2) });
-    }
-
-    [Test]
-    public void Range_Param_Converts_Single_Number_To_Range()
-    {
-        var paramDef = new ParameterDefinition(
-            "test",
-            ParameterType.Number,
-            ParameterDimensionality.Range,
-            ParameterRequirement.Required,
-            false);
-
-        var arg = _toArgConverter.ToArg(2, paramDef);
-        arg.Value.Should().BeEquivalentTo(new[] { new[] { new CellValue(2) } });
+        _toArgConverter.ConvertVal(2, paramDef).Should().BeEquivalentTo(new CellValue(2));
     }
 }

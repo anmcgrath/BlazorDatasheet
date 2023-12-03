@@ -3,14 +3,9 @@
 /// <summary>
 /// Evaluated cell address - not relative.
 /// </summary>
-public class CellAddress
+public class CellAddress : RangeAddress
 {
-    public CellAddress(int row, int col)
+    public CellAddress(int rowStart, int colStart) : base(rowStart, rowStart, colStart, colStart)
     {
-        Row = row;
-        Col = col;
     }
-
-    public int Row { get; }
-    public int Col { get; }
 }

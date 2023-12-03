@@ -43,7 +43,7 @@ public class SheetEnvironment : IEnvironment
         return _functions[name.ToLower()];
     }
 
-    public void SetFunction(string name, ISheetFunction value)
+    public void RegisterFunction(string name, ISheetFunction value)
     {
         if (!_functions.ContainsKey(name.ToLower()))
             _functions.Add(name.ToLower(), value);
@@ -57,16 +57,6 @@ public class SheetEnvironment : IEnvironment
     {
         return GetValuesInRange(
             _sheet.Range(rangeAddress.RowStart, rangeAddress.RowEnd, rangeAddress.ColStart, rangeAddress.ColEnd));
-    }
-
-    public CellValue[][] GetRangeValues(ColumnAddress rangeAddress)
-    {
-        return GetValuesInRange(_sheet.Range(Axis.Col, rangeAddress.Start, rangeAddress.End));
-    }
-
-    public CellValue[][] GetRangeValues(RowAddress rangeAddress)
-    {
-        return GetValuesInRange(_sheet.Range(Axis.Row, rangeAddress.Start, rangeAddress.End));
     }
 
     private CellValue[][] GetValuesInRange(SheetRange range)

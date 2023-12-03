@@ -5,7 +5,6 @@ namespace BlazorDatasheet.Formula.Core.Interpreter.References;
 
 public class CellReference : Reference
 {
-
     private readonly ColReference _col;
     private readonly RowReference _row;
     public ColReference Col => _col;

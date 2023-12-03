@@ -7,7 +7,7 @@ namespace BlazorDatasheet.Formula.Core;
 public class FormulaEvaluator
 {
     private readonly IEnvironment _environment;
-    private readonly ParameterToArgConverter _toArgConverter;
+    private readonly ParameterTypeConverter _typeConverter;
 
     /// <summary>
     /// The row address of the currently evaluated formula. If null, then the formula is not associated with a row/col.
@@ -22,7 +22,7 @@ public class FormulaEvaluator
     public FormulaEvaluator(IEnvironment environment)
     {
         _environment = environment;
-        _toArgConverter = new ParameterToArgConverter(environment);
+        _typeConverter = new ParameterTypeConverter(environment);
     }
 
     internal object Evaluate(SyntaxTree tree)
@@ -60,7 +60,7 @@ public class FormulaEvaluator
         // evaluating a formula and end up with a cell address as the result.
         // In that case we want to get the cell's value
         if (result is CellAddress addr)
-            return _environment.GetCellValue(addr.Row, addr.Col).Data;
+            return _environment.GetCellValue(addr.RowStart, addr.ColStart).Data;
 
         return result;
     }
@@ -100,7 +100,7 @@ public class FormulaEvaluator
         return parameterDefinitions.Count(x => x.Requirement == ParameterRequirement.Required);
     }
 
-    private object EvaluateFunctionExpression(FunctionCallExpressionSyntax node)
+    private object? EvaluateFunctionExpression(FunctionCallExpressionSyntax node)
     {
         if (!_environment.FunctionExists(node.Identifier.Text))
             return new FormulaError(ErrorType.Name, $"Function {node.Identifier.Text} not found");
@@ -119,46 +119,31 @@ public class FormulaEvaluator
         int paramIndex = 0;
         int argIndex = 0;
 
-        FuncArg[] convertedArgs = new FuncArg[paramDefinitions.Length];
+        CellValue[] convertedArgs = new CellValue[nArgsProvided];
 
         var repeatingCollection = new List<object>();
-
-        Console.WriteLine("nArgsProvided: " + nArgsProvided);
 
         while (paramIndex < paramDefinitions.Length &&
                argIndex < nArgsProvided)
         {
-            Console.WriteLine("arg index " + argIndex);
-            var param = paramDefinitions[paramIndex];
+            var paramDefinition = paramDefinitions[paramIndex];
             var arg = Evaluate(node.Args[argIndex]);
 
             if (arg is FormulaError &&
                 !func.AcceptsErrors)
                 return arg;
 
-            repeatingCollection.Add(arg);
+            convertedArgs[argIndex] = _typeConverter.ConvertVal(arg, paramDefinition);
 
-            if (param.IsRepeating)
+            if (IsConsumable(paramDefinition))
             {
-                // if the arg is repeating, it must be the last argument
-                // if so, don't convert the arg yet and keep collecting them
-                if (argIndex == nArgsProvided - 1)
-                {
-                    convertedArgs[paramIndex] = _toArgConverter.ToArg(repeatingCollection.ToArray(), param);
-                    break;
-                }
-
-                argIndex++;
-                continue;
+                paramIndex++;
             }
 
-            convertedArgs[paramIndex] = _toArgConverter.ToArg(repeatingCollection.First(), param);
-            repeatingCollection.Clear();
-            paramIndex++;
             argIndex++;
         }
 
-        return func.Call(convertedArgs);
+        return func.Call(convertedArgs, new FunctionCallMetaData(paramDefinitions));
     }
 
     private bool IsConsumable(ParameterDefinition param)
@@ -206,7 +191,7 @@ public class FormulaEvaluator
             ? end.RowNumber + _currentRow!.Value
             : end.RowNumber;
 
-        return new ColumnAddress(Math.Min(colStart, colEnd), Math.Max(colStart, colEnd));
+        return new RowAddress(Math.Min(colStart, colEnd), Math.Max(colStart, colEnd));
     }
 
     private ColumnAddress ToColumnAddress(ColReference colStartRef, ColReference colEndRef)
@@ -285,7 +270,7 @@ public class FormulaEvaluator
         var operand = Evaluate(syntax.Operand);
 
         if (operand is CellAddress addr)
-            operand = _environment.GetCellValue(addr.Row, addr.Col).Data;
+            operand = _environment.GetCellValue(addr.RowStart, addr.ColStart).Data;
 
         if (operand is FormulaError)
             return operand;
@@ -318,10 +303,10 @@ public class FormulaEvaluator
             return right;
 
         if (left is CellAddress addrLeft)
-            left = _environment.GetCellValue(addrLeft.Row, addrLeft.Col).Data;
+            left = _environment.GetCellValue(addrLeft.RowStart, addrLeft.ColStart).Data;
 
         if (right is CellAddress addrRight)
-            right = _environment.GetCellValue(addrRight.Row, addrRight.Col).Data;
+            right = _environment.GetCellValue(addrRight.RowStart, addrRight.ColStart).Data;
 
         if (IsValid(left, right, syntax.OperatorToken))
         {

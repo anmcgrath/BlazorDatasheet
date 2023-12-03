@@ -12,15 +12,14 @@ public class SinFunction : ISheetFunction
         {
             new ParameterDefinition("x",
                 ParameterType.Number,
-                ParameterDimensionality.Scalar,
                 ParameterRequirement.Required,
                 isRepeating: false)
         };
     }
 
-    public object Call(FuncArg[] args)
+    public object? Call(CellValue[] args, FunctionCallMetaData metaData)
     {
-        var val = (args.First().AsScalar());
+        var val = args[0];
         if (val.ValueType == CellValueType.Error)
             return val.Data;
 

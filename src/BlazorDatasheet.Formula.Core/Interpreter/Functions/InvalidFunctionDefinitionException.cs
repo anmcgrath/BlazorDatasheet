@@ -2,14 +2,14 @@
 
 public class InvalidFunctionDefinitionException : Exception
 {
-    public string RequiredParametersCannotBeDefinedAfterOptional { get; }
+    public string ParameterMessage { get; }
     public string ParameterName { get; }
 
     public InvalidFunctionDefinitionException(
-        string requiredParametersCannotBeDefinedAfterOptional,
+        string parameterMessage,
         string parameterName)
     {
-        RequiredParametersCannotBeDefinedAfterOptional = requiredParametersCannotBeDefinedAfterOptional;
+        ParameterMessage = parameterMessage;
         ParameterName = parameterName;
     }
 }

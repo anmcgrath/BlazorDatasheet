@@ -1,15 +1,8 @@
 ﻿namespace BlazorDatasheet.Formula.Core;
 
-public class RowAddress
+public class RowAddress : RangeAddress
 {
-    private readonly int _end;
-
-    public RowAddress(int start)
+    public RowAddress(int start, int end) : base(start, end, 0, int.MaxValue)
     {
-        Start = start;
     }
-
-    public int Start { get; }
-
-    public int End => _end;
 }
