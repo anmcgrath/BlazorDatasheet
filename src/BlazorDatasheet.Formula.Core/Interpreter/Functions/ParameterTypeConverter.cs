@@ -66,7 +66,7 @@ public class ParameterTypeConverter
         if (o is FormulaError)
             return new CellValue(o, CellValueType.Error);
 
-        if (o.ConvertsToNumber())
+        if (ConvertsToNumber(o))
             return new CellValue(Convert.ToDouble(o), CellValueType.Number);
 
         if (o is bool oBool)
@@ -150,7 +150,7 @@ public class ParameterTypeConverter
         if (o == null)
             return CellValue.Logical(false);
 
-        if (o.ConvertsToNumber())
+        if (ConvertsToNumber(o))
             return CellValue.Logical(Convert.ToDouble(o) != 0);
 
         if (o is FormulaError error)
@@ -242,5 +242,11 @@ public class ParameterTypeConverter
         }
 
         return CellValue.Array(new[] { new[] { new CellValue(o) } });
+    }
+
+    private bool ConvertsToNumber(object o)
+    {
+        var type = o.GetType();
+        return type.IsNumeric() || type == typeof(bool);
     }
 }
