@@ -16,7 +16,9 @@ public static class RegisterExtensions
     public static void RegisterMathFunctions(this IEnvironment e)
     {
         e.RegisterFunction("AVERAGE", new AverageFunction());
+        e.RegisterFunction("INTERCEPT", new InterceptFunction());
         e.RegisterFunction("SUM", new SumFunction());
         e.RegisterFunction("SIN", new SinFunction());
+        e.RegisterFunction("SLOPE", new SlopeFunction());
     }
 }

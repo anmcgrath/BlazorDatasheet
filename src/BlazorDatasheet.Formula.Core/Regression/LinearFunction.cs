@@ -2,24 +2,24 @@ namespace BlazorDatasheet.Formula.Core.Regression;
 
 public class LinearFunction
 {
-    public double M { get; init; }
-    public double C { get; init; }
+    public double Gradient { get; init; }
+    public double YIntercept { get; init; }
 
-    public LinearFunction(double m, double c)
+    public LinearFunction(double gradient, double yIntercept)
     {
-        M = m;
-        C = c;
+        Gradient = gradient;
+        YIntercept = yIntercept;
     }
 
     public double ComputeY(double x)
     {
-        return M * x + C;
+        return Gradient * x + YIntercept;
     }
 
     public double ComputeX(double y)
     {
-        if (M == 0)
+        if (Gradient == 0)
             return double.NaN;
-        return (y - C) / M;
+        return (y - YIntercept) / Gradient;
     }
 }

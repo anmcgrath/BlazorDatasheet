@@ -5,7 +5,7 @@ using BlazorDatasheet.Formula.Core.Regression;
 
 namespace BlazorDatashet.Formula.Functions.Math;
 
-public class InterceptFunction : ISheetFunction
+public class SlopeFunction : ISheetFunction
 {
     public ParameterDefinition[] GetParameterDefinitions()
     {
@@ -52,7 +52,7 @@ public class InterceptFunction : ISheetFunction
         var regression = new LinearRegression();
         var fun = regression.Calculate(x, y);
 
-        return fun.YIntercept;
+        return fun.Gradient;
     }
 
     public bool AcceptsErrors => false;
