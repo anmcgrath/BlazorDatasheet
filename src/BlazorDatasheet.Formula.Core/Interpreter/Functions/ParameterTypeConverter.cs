@@ -44,6 +44,10 @@ public class ParameterTypeConverter
                 return ToLogicalSequence(value, definition);
             case ParameterType.Text:
                 return ToText(value, definition);
+            case ParameterType.Date:
+                return ToDate(value, definition);
+            case ParameterType.Array:
+                return ToArray(value, definition);
             default:
                 return CellValue.Error(new FormulaError(ErrorType.Value));
         }
@@ -76,6 +80,31 @@ public class ParameterTypeConverter
         }
 
         return CellValue.Error(new FormulaError(ErrorType.Value));
+    }
+
+    public CellValue ToDate(object? o, ParameterDefinition defn)
+    {
+        if (o is CellAddress cellRef)
+            return ToDate(_environment.GetCellValue(
+                cellRef.RowStart,
+                cellRef.ColStart).Data, defn);
+
+        if (o == null)
+            return CellValue.Empty;
+
+        if (o is FormulaError error)
+            return CellValue.Error(error);
+
+        if (o is double n)
+            return CellValue.Date((new DateTime(1900, 1, 1).AddDays(n)));
+
+        if (o is string s)
+        {
+            if (DateTime.TryParse(s, out var parsedDateTime))
+                return CellValue.Date(parsedDateTime);
+        }
+
+        return CellValue.Error(new FormulaError(ErrorType.Value, $"Expected a data, but got {o}"));
     }
 
     /// <summary>
@@ -176,5 +205,42 @@ public class ParameterTypeConverter
             return ToText(_environment.GetCellValue(cellAddress.RowStart, cellAddress.ColStart).Data, defn);
 
         return CellValue.Text(o.ToString() ?? string.Empty);
+    }
+
+    public CellValue ToArray(object? o, ParameterDefinition defn)
+    {
+        if (o == null)
+            return CellValue.Array(Array.Empty<CellValue[]>());
+
+        if (o is RangeAddress rangeAddress)
+            return CellValue.Array(_environment.GetRangeValues(rangeAddress));
+
+        if (o is Array arr)
+        {
+            if (arr.Rank == 1)
+            {
+                var array1d = new CellValue[arr.Length];
+                for (int i = 0; i < arr.Length; i++)
+                    array1d[i] = new CellValue(arr.GetValue(i));
+
+                return CellValue.Array(new[] { array1d });
+            }
+
+            if (arr.Rank == 2)
+            {
+                var arrResult = new CellValue[arr.Length][];
+                for (int i = 0; i < arr.Length; i++)
+                {
+                    var a = arr.GetValue(i) as Array;
+                    arrResult[i] = new CellValue[a!.Length];
+                    for (int j = 0; j < a.Length; j++)
+                        arrResult[i][j] = new CellValue(a.GetValue(j));
+                }
+
+                return CellValue.Array(arrResult);
+            }
+        }
+
+        return CellValue.Array(new[] { new[] { new CellValue(o) } });
     }
 }

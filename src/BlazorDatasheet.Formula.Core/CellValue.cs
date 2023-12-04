@@ -213,6 +213,11 @@ public class CellValue
         return new CellValue(sequence, CellValueType.Sequence);
     }
 
+    public static CellValue Date(DateTime date)
+    {
+        return new CellValue(date, CellValueType.Date);
+    }
+
     public bool IsError()
     {
         return ValueType == CellValueType.Error;

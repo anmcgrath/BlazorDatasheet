@@ -8,7 +8,8 @@ public enum ParameterType
     Any,
     Text,
     NumberSequence,
-    NumberSequenceList,
     LogicalSequence,
+    Date,
     DateSequence,
+    Array,
 }
