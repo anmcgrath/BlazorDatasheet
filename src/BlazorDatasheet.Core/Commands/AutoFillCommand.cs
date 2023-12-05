@@ -19,15 +19,18 @@ public class AutoFillCommand : IUndoableCommand
 
     public bool Execute(Sheet sheet)
     {
+        // Shrink/cut the content if the new region is smaller than the selection
         if (_fromRegion.Contains(_toRegion))
             DoCut(sheet);
         else
         {
-            var newRegion = _toRegion.Break(_fromRegion).First(); // will always be only one region
-            if (_fromRegion.Width == newRegion.Width) // vertical fill
+            // Expand / do pattern fill.
+            
+            var fillRegion = _toRegion.Break(_fromRegion).First(); // will always be only one region
+            if (_fromRegion.Width == fillRegion.Width) // vertical fill
             {
                 var cmd = new CopyRangeCommand(sheet.Range(_fromRegion),
-                    new[] { sheet.Range(newRegion) });
+                    new[] { sheet.Range(fillRegion) });
                 cmd.Execute(sheet);
                 _copyCommands.Add(cmd);
             }
