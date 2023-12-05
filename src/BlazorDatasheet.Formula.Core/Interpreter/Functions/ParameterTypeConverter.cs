@@ -136,6 +136,13 @@ public class ParameterTypeConverter
             return CellValue.Sequence(results.ToArray());
         }
 
+        if (o is CellValue[][] array)
+        {
+            var cellValueNumOrErr = array.SelectMany(x => x)
+                .Where(y => y.ValueType == CellValueType.Number || y.ValueType == CellValueType.Error);
+            return CellValue.Sequence(cellValueNumOrErr.ToArray());
+        }
+
         return CellValue.Sequence(new[] { ToNumber(o, defn) });
     }
 
@@ -190,6 +197,13 @@ public class ParameterTypeConverter
             return CellValue.Sequence(results.ToArray());
         }
 
+        if (o is CellValue[][] array)
+        {
+            var cellValueLogOrError = array.SelectMany(x => x)
+                .Where(y => y.ValueType == CellValueType.Logical || y.ValueType == CellValueType.Error);
+            return CellValue.Sequence(cellValueLogOrError.ToArray());
+        }
+
         return CellValue.Sequence(new[] { ToLogical(o, defn) });
     }
 
@@ -215,31 +229,9 @@ public class ParameterTypeConverter
         if (o is RangeAddress rangeAddress)
             return CellValue.Array(_environment.GetRangeValues(rangeAddress));
 
-        if (o is Array arr)
-        {
-            if (arr.Rank == 1)
-            {
-                var array1d = new CellValue[arr.Length];
-                for (int i = 0; i < arr.Length; i++)
-                    array1d[i] = new CellValue(arr.GetValue(i));
 
-                return CellValue.Array(new[] { array1d });
-            }
-
-            if (arr.Rank == 2)
-            {
-                var arrResult = new CellValue[arr.Length][];
-                for (int i = 0; i < arr.Length; i++)
-                {
-                    var a = arr.GetValue(i) as Array;
-                    arrResult[i] = new CellValue[a!.Length];
-                    for (int j = 0; j < a.Length; j++)
-                        arrResult[i][j] = new CellValue(a.GetValue(j));
-                }
-
-                return CellValue.Array(arrResult);
-            }
-        }
+        if (o is CellValue[][] arr)
+            return CellValue.Array(arr);
 
         return CellValue.Array(new[] { new[] { new CellValue(o) } });
     }

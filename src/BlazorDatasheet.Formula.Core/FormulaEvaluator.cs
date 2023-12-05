@@ -83,11 +83,26 @@ public class FormulaEvaluator
                 return EvaluateParenthesizedExpression((ParenthesizedExpressionSyntax)node);
             case SyntaxKind.UnaryExpression:
                 return EvaluateUnaryExpression((UnaryExpressionSyntax)node);
+            case SyntaxKind.ArrayConstantExpression:
+                return EvaluateArrayConstantExpression((ArrayConstantExpressionSyntax)node);
             case SyntaxKind.FunctionCallExpression:
                 return EvaluateFunctionExpression((FunctionCallExpressionSyntax)node);
             default:
                 return new FormulaError(ErrorType.Na, $"Unknown expression {node.Kind}");
         }
+    }
+
+    private CellValue[][] EvaluateArrayConstantExpression(ArrayConstantExpressionSyntax node)
+    {
+        var result = new CellValue[node.Rows.Count][];
+        for (int i = 0; i < node.Rows.Count; i++)
+        {
+            result[i] = node.Rows[i].Select(x =>
+                    new CellValue(EvaluateLiteralExpression((LiteralExpressionSyntax)x)))
+                .ToArray();
+        }
+
+        return result;
     }
 
     private int MaxArity(ParameterDefinition[] parameterDefinitions)

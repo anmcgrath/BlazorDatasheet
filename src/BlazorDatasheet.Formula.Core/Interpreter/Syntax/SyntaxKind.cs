@@ -10,6 +10,9 @@ public enum SyntaxKind
     ColonToken,
     CommaToken,
     StringToken,
+    LeftCurlyBracketToken,
+    RightCurlyBracketToken,
+    SemiColonToken,
 
     // Operators
     PlusToken,
@@ -44,5 +47,6 @@ public enum SyntaxKind
     FunctionCallExpression,
     RangeReferenceExpression,
     CellReferenceExpression,
+    ArrayConstantExpression,
     ErrorExpression,
 }

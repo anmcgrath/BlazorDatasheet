@@ -104,16 +104,29 @@ public class Parser
                 var right = MatchToken(SyntaxKind.RightParenthesisToken);
                 return new ParenthesizedExpressionSyntax(left, expression, right);
             }
+            case SyntaxKind.LeftCurlyBracketToken:
+            {
+                return ParseArrayConstant();
+            }
+            case SyntaxKind.IdentifierToken:
+            {
+                return ParseIdentifierToken();
+            }
+            default:
+                return ParseLiteral();
+        }
+    }
+
+    private ExpressionSyntax ParseLiteral()
+    {
+        switch (Current.Kind)
+        {
             case SyntaxKind.TrueKeyword:
             case SyntaxKind.FalseKeyword:
             {
                 var keywordToken = NextToken();
                 var value = keywordToken.Kind == SyntaxKind.TrueKeyword;
                 return new LiteralExpressionSyntax(keywordToken, value);
-            }
-            case SyntaxKind.IdentifierToken:
-            {
-                return parseIdentifierToken();
             }
             case SyntaxKind.StringToken:
                 return new LiteralExpressionSyntax(NextToken());
@@ -131,7 +144,62 @@ public class Parser
         }
     }
 
-    private ExpressionSyntax parseIdentifierToken()
+    private ExpressionSyntax ParseArrayConstant()
+    {
+        // Consume left bracket
+        var leftBracket = MatchToken(SyntaxKind.LeftCurlyBracketToken);
+
+        // Collect array items
+        var rows = new List<List<ExpressionSyntax>>();
+        var currentRow = new List<ExpressionSyntax>();
+
+        // If no args
+        if (Current.Kind != SyntaxKind.RightCurlyBracketToken)
+        {
+            while (true)
+            {
+                currentRow.Add(ParseLiteral());
+                if (Current.Kind == SyntaxKind.CommaToken)
+                {
+                    NextToken();
+                    continue;
+                }
+
+                if (Current.Kind == SyntaxKind.SemiColonToken)
+                {
+                    NextToken();
+                    rows.Add(new List<ExpressionSyntax>());
+                    rows.Last().AddRange(currentRow);
+                    currentRow.Clear();
+                    continue;
+                }
+
+                break;
+            }
+        }
+
+        rows.Add(currentRow);
+
+        var isValid = true;
+        // check all row lengths are the same
+        for (int i = 1; i < rows.Count; i++)
+        {
+            if (rows[i].Count != rows[i - 1].Count)
+            {
+                isValid = false;
+                break;
+            }
+        }
+
+        if (!isValid)
+            Errors.Add("Row lengths are not equal");
+
+        MatchToken(SyntaxKind.RightCurlyBracketToken);
+
+        return new ArrayConstantExpressionSyntax(rows);
+    }
+
+    private ExpressionSyntax ParseIdentifierToken()
     {
         if (Peek(1).Kind == SyntaxKind.LeftParenthesisToken)
         {
@@ -152,7 +220,7 @@ public class Parser
         _references.Add(new NamedReference(identifier.Text));
         return new NameExpressionSyntax(identifier);
     }
-    
+
     public Reference ParseRangePartAsReference(string rangeText)
     {
         if (RangeText.IsValidCellReference(rangeText))

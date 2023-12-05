@@ -98,6 +98,12 @@ internal class Lexer
                 return new SyntaxToken(SyntaxKind.RightParenthesisToken, _position++, ")", null);
             case '!':
                 return new SyntaxToken(SyntaxKind.BangToken, _position++, "!", null);
+            case '{':
+                return new SyntaxToken(SyntaxKind.LeftCurlyBracketToken, _position++, "{", null);
+            case '}':
+                return new SyntaxToken(SyntaxKind.RightCurlyBracketToken, _position++, "}", null);
+            case ';':
+                return new SyntaxToken(SyntaxKind.SemiColonToken, _position++, ";", null);
             case '<':
                 if (Lookahead == '>')
                 {
