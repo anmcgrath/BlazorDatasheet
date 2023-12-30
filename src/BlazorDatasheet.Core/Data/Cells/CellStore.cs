@@ -93,7 +93,9 @@ public partial class CellStore
 
     internal CellStoreRestoreData ClearCellsImpl(IEnumerable<IRegion> regionsToClear)
     {
-        _sheet.BatchUpdates();
+        var batching = _sheet.BatchUpdates();
+
+
         var restoreData = new CellStoreRestoreData();
         var toClear = regionsToClear.ToList();
         restoreData.ValueRestoreData = _dataStore.Clear(toClear);
@@ -104,7 +106,8 @@ public partial class CellStore
         EmitCellsChanged(affected);
         _sheet.MarkDirty(affected);
 
-        _sheet.EndBatchUpdates();
+        if (batching)
+            _sheet.EndBatchUpdates();
         return restoreData;
     }
 
@@ -207,7 +210,7 @@ public partial class CellStore
             _sheet.MarkDirty(region);
         }
 
-        if (batches) // if this is false, a higher power is batching changes.
+        if (batches) // if this is false, some other function is already batching changes
             _sheet.EndBatchUpdates();
     }
 
