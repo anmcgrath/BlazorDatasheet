@@ -28,14 +28,15 @@ public class CellValue
             return;
         }
 
-        ValueType = CellValueType.Any;
-
         if (data == null)
         {
             Data = null;
             IsEmpty = true;
+            ValueType = CellValueType.Empty;
             return;
         }
+        
+        ValueType = CellValueType.Any;
 
         var valType = data.GetType();
         var isNullable = valType.IsNullable();
