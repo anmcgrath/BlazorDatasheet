@@ -97,6 +97,8 @@ public class SheetCell : IReadOnlyCell
         set => _sheet.Cells.SetValueImpl(Row, Col, value);
     }
 
+    public CellValueType ValueType => _sheet.Cells.GetCellValue(Row, Col).ValueType;
+
     public object? GetMetaData(string name)
     {
         return _sheet.Cells.GetMetaData(Row, Col, name);
@@ -105,5 +107,10 @@ public class SheetCell : IReadOnlyCell
     public void Clear()
     {
         _sheet.Cells.ClearCellsImpl(new[] { new Region(Row, Col) });
+    }
+
+    public bool HasFormula()
+    {
+        return _sheet.Cells.HasFormula(Row, Col);
     }
 }
