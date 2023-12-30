@@ -35,7 +35,7 @@ public class VisualSheet
             var invalidPositions = e.DirtyRegions.Select(x => x.GetIntersection(_currentViewport.VisibleRegion))
                 .Where(x => x != null)
                 .SelectMany(x => _sheet.Range(x).Positions);
-            
+
             foreach (var position in invalidPositions)
                 set.Add(position);
         }

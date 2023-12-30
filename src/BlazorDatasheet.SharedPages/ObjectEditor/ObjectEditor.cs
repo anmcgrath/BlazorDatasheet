@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Diagnostics;
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Events;
 using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.ObjectEditor;
@@ -41,9 +42,9 @@ public class ObjectEditor<T>
         SetPageSize(pageSize);
     }
 
-    private void SheetOnCellsChanged(object? sender, IEnumerable<CellPosition> e)
+    private void SheetOnCellsChanged(object? sender, CellDataChangedEventArgs args)
     {
-        foreach (var pos in e)
+        foreach (var pos in args.Positions)
         {
             var value = Sheet.Cells.GetValue(pos.row, pos.col);
             var item = (T?)Sheet.Cells.GetMetaData(pos.row, pos.col, ItemMetaData);

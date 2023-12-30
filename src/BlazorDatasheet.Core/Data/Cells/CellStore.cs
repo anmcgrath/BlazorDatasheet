@@ -173,10 +173,11 @@ public partial class CellStore
 
     internal CellStoreRestoreData CopyImpl(IRegion fromRegion, IRegion toRegion)
     {
-        Debug.Assert(fromRegion.Width == toRegion.Width && fromRegion.Height == toRegion.Height);
         var restoreData = new CellStoreRestoreData();
         restoreData.ValueRestoreData = _dataStore.Copy(fromRegion, toRegion);
         restoreData.ValidRestoreData = _validStore.Copy(fromRegion, toRegion);
+        _sheet.MarkDirty(toRegion);
+        EmitCellsChanged(toRegion);
         return restoreData;
     }
 

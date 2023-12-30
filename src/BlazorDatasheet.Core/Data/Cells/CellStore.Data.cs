@@ -70,7 +70,6 @@ public partial class CellStore
         {
             _sheet.Commands.ExecuteCommand(new SetCellValueCommand(change.row, change.col, change.value));
         }
-
         _sheet.Commands.EndCommandGroup();
 
         return true;

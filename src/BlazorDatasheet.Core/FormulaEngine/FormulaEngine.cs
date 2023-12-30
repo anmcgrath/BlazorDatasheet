@@ -1,5 +1,6 @@
 ﻿using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
+using BlazorDatasheet.Core.Events;
 using BlazorDatasheet.Core.Events.Edit;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Graph;
@@ -42,18 +43,30 @@ public class FormulaEngine
         RegisterDefaultFunctions();
     }
 
-    private void SheetOnCellsChanged(object? sender, IEnumerable<CellPosition> e)
+    private void SheetOnCellsChanged(object? sender, CellDataChangedEventArgs e)
     {
         if (this.IsCalculating)
             return;
 
         var cellsReferenced = false;
-        foreach (var cell in e)
+        foreach (var cell in e.Positions)
         {
             if (IsCellReferenced(cell.row, cell.col))
             {
                 cellsReferenced = true;
                 break;
+            }
+        }
+
+        if (!cellsReferenced)
+        {
+            foreach (var region in e.Regions)
+            {
+                if (IsRegionReferenced(region))
+                {
+                    cellsReferenced = true;
+                    break;
+                }
             }
         }
 
@@ -67,6 +80,11 @@ public class FormulaEngine
     {
         return _dependencyGraph.HasVertex(new CellVertex(row, col).Key) ||
                _observedRanges.Any(row, col);
+    }
+
+    private bool IsRegionReferenced(IRegion region)
+    {
+        return _observedRanges.Any(region);
     }
 
     private void RegisterDefaultFunctions()

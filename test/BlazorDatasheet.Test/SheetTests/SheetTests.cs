@@ -98,7 +98,7 @@ public class SheetTests
     {
         var sheet = new Sheet(10, 10);
         var posnsChanged = new List<CellPosition>();
-        sheet.Cells.CellsChanged += (sender, positions) => { posnsChanged = positions.ToList(); };
+        sheet.Cells.CellsChanged += (sender, args) => { posnsChanged = args.Positions.ToList(); };
         sheet.BatchUpdates();
         sheet.Cells.SetValue(0, 0, 0);
         sheet.Cells.SetValue(1, 1, 1);
@@ -111,7 +111,11 @@ public class SheetTests
     {
         var sheet = new Sheet(10, 10);
         var posnsChanged = new List<CellPosition>();
-        sheet.Cells.CellsChanged += (sender, positions) => { posnsChanged = positions.ToList(); };
+        sheet.Cells.CellsChanged += (sender,
+            args) =>
+        {
+            posnsChanged = args.Positions.ToList();
+        };
         sheet.Cells.SetValue(1, 1, 1);
         posnsChanged.Should().HaveCount(1);
         posnsChanged.First().col.Should().Be(1);

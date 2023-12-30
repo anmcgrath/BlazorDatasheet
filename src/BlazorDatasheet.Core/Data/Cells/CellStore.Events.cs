@@ -8,16 +8,21 @@ public partial class CellStore
 {
     public event EventHandler<CellMetaDataChangeEventArgs>? MetaDataChanged;
     public event EventHandler<CellFormulaChangeEventArgs>? FormulaChanged;
-    
+
     /// <summary>
     /// If batching changes, they are stored here.
     /// </summary>
     private readonly HashSet<CellPosition> _cellsChanged = new();
 
     /// <summary>
+    /// If batching data changes, the changed regions are stored here.
+    /// </summary>
+    private readonly List<IRegion> _regionsChanged = new();
+
+    /// <summary>
     /// Fired when one or more cells are changed
     /// </summary>
-    public event EventHandler<IEnumerable<CellPosition>>? CellsChanged;
+    public event EventHandler<CellDataChangedEventArgs>? CellsChanged;
 
     private bool _isBatchingChanges = false;
 
@@ -26,6 +31,7 @@ public partial class CellStore
         if (!_isBatchingChanges)
         {
             _cellsChanged.Clear();
+            _regionsChanged.Clear();
         }
 
         _isBatchingChanges = true;
@@ -33,8 +39,11 @@ public partial class CellStore
 
     internal void EndBatchChanges()
     {
-        if (_cellsChanged.Any() && _isBatchingChanges)
-            CellsChanged?.Invoke(this, _cellsChanged.AsEnumerable());
+        if (_cellsChanged.Any() || _regionsChanged.Any() && _isBatchingChanges)
+        {
+            var args = new CellDataChangedEventArgs(_regionsChanged, _cellsChanged);
+            CellsChanged?.Invoke(this, args);
+        }
 
         _isBatchingChanges = false;
     }
@@ -53,7 +62,20 @@ public partial class CellStore
         }
         else
         {
-            CellsChanged?.Invoke(this, positions);
+            CellsChanged?.Invoke(this, new CellDataChangedEventArgs(Enumerable.Empty<IRegion>(), positions));
+        }
+    }
+
+    private void EmitCellsChanged(IRegion region)
+    {
+        if (_isBatchingChanges)
+        {
+            _regionsChanged.Add(region);
+        }
+        else
+        {
+            CellsChanged?.Invoke(this,
+                new CellDataChangedEventArgs(new[] { region }, Enumerable.Empty<CellPosition>()));
         }
     }
 }

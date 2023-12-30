@@ -38,8 +38,6 @@ public class CopyRangeCommand : IUndoableCommand
         foreach (var range in _toRanges)
             Copy(_fromRange.Region, range.Region, sheet);
 
-        sheet.MarkDirty(_toRanges.Select(x => x.Region));
-
         return true;
     }
 

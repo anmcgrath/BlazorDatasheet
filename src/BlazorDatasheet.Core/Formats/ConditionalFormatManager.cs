@@ -61,13 +61,20 @@ public class ConditionalFormatManager
     }
 
 
-    private void HandleCellsChanged(object? sender, IEnumerable<CellPosition> args)
+    private void HandleCellsChanged(object? sender, CellDataChangedEventArgs args)
     {
         // Simply prepare all cells that the conditional format belongs to (if shared)
-        var cfs =
-            args.SelectMany(x => GetFormatsAppliedToPosition(x.row, x.col))
-                .Distinct()
-                .ToList();
+        var cellCfs =
+            args.Positions
+                .SelectMany(x => GetFormatsAppliedToPosition(x.row, x.col));
+
+        var rangeCfs = args.Regions
+            .SelectMany(x => GetFormatsAppliedToRegion(x));
+
+        var cfs = cellCfs.Concat(rangeCfs)
+            .Distinct()
+            .ToList();
+
         Prepare(cfs);
     }
 
@@ -86,8 +93,12 @@ public class ConditionalFormatManager
 
     private IEnumerable<ConditionalFormatAbstractBase> GetFormatsAppliedToPosition(int row, int col)
     {
-        var region = new Region(row, col);
         return _appliedFormats.GetData(row, col);
+    }
+
+    private IEnumerable<ConditionalFormatAbstractBase> GetFormatsAppliedToRegion(IRegion region)
+    {
+        return _appliedFormats.GetData(region);
     }
 
     /// <summary>
@@ -112,6 +123,7 @@ public class ConditionalFormatManager
     {
         if (!_sheet.Region.Contains(row, col))
             return null;
+        
         var cfs = GetFormatsAppliedToPosition(row, col);
         CellFormat? initialFormat = null;
         foreach (var format in cfs)
