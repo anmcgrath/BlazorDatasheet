@@ -60,7 +60,7 @@ public class RemoveColumnCommand : IUndoableCommand
         sheet.Columns.InsertImpl(_columnIndex, _nColsRemoved);
         sheet.Columns.Restore(_columnInfoRestoreData);
 
-        sheet.ConditionalFormats.InsertRowAt(_columnIndex, _nColsRemoved, false);
+        sheet.ConditionalFormats.InsertColAt(_columnIndex, _nColsRemoved, false);
         sheet.ConditionalFormats.Restore(_cfRestoreData);
 
         sheet.MarkDirty(new ColumnRegion(_columnIndex, sheet.NumCols));
