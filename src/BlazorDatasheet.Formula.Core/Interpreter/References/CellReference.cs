@@ -46,4 +46,12 @@ public class CellReference : Reference
 
         return false;
     }
+
+    public override void Shift(int offsetRow, int offsetCol)
+    {
+        _col.Shift(offsetRow, offsetCol);
+        _row.Shift(offsetRow, offsetCol);
+    }
+
+    public override string ToString() => ToRefText();
 }

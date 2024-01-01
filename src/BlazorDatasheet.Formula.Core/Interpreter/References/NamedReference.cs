@@ -18,4 +18,8 @@ public class NamedReference : Reference
         return reference.Kind == ReferenceKind.Named &&
                ((NamedReference)reference).Name == Name;
     }
+
+    public override void Shift(int offsetRow, int offsetCol)
+    {
+    }
 }

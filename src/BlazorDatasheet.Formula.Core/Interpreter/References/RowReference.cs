@@ -2,7 +2,7 @@
 
 public class RowReference : Reference
 {
-    public int RowNumber { get; }
+    public int RowNumber { get; private set; }
     public bool IsFixedReference { get; }
 
     public RowReference(int rowNumber, bool isFixedReference)
@@ -22,5 +22,11 @@ public class RowReference : Reference
     {
         return reference.Kind == Kind &&
                ((RowReference)reference).RowNumber == RowNumber;
+    }
+
+    public override void Shift(int offsetRow, int offsetCol)
+    {
+        if (!IsFixedReference)
+            RowNumber += offsetRow;
     }
 }

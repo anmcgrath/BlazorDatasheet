@@ -12,10 +12,32 @@ public class RangeReference : Reference
         {
             var cellStart = (CellReference)start;
             var cellEnd = (CellReference)end;
-            var colStart = cellStart.Col.ColNumber < cellEnd.Col.ColNumber ? cellStart.Col : cellEnd.Col;
-            var colEnd = cellStart.Col.ColNumber > cellEnd.Col.ColNumber ? cellStart.Col : cellEnd.Col;
-            var rowStart = cellStart.Row.RowNumber < cellEnd.Row.RowNumber ? cellStart.Row : cellEnd.Row;
-            var rowEnd = cellStart.Row.RowNumber > cellEnd.Row.RowNumber ? cellStart.Row : cellEnd.Row;
+
+            ColReference colStart, colEnd;
+            RowReference rowStart, rowEnd;
+
+            if (cellStart.Col.ColNumber < cellEnd.Col.ColNumber)
+            {
+                colStart = cellStart.Col;
+                colEnd = cellEnd.Col;
+            }
+            else
+            {
+                colStart = cellEnd.Col;
+                colEnd = cellStart.Col;
+            }
+
+            if (cellStart.Row.RowNumber < cellEnd.Row.RowNumber)
+            {
+                rowStart = cellStart.Row;
+                rowEnd = cellEnd.Row;
+            }
+            else
+            {
+                rowStart = cellEnd.Row;
+                rowEnd = cellStart.Row;
+            }
+
             Start = new CellReference(rowStart, colStart);
             End = new CellReference(rowEnd, colEnd);
             return;
@@ -27,7 +49,6 @@ public class RangeReference : Reference
 
     protected RangeReference()
     {
-        
     }
 
     public override string ToRefText()
@@ -53,4 +74,12 @@ public class RangeReference : Reference
 
         return false;
     }
+
+    public override void Shift(int offsetRow, int offsetCol)
+    {
+        Start.Shift(offsetRow, offsetCol);
+        End.Shift(offsetRow, offsetCol);
+    }
+
+    public override string ToString() => ToRefText();
 }

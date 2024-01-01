@@ -2,10 +2,9 @@
 
 namespace BlazorDatasheet.Formula.Core.Interpreter.References;
 
-
 public class ColReference : Reference
 {
-    public int ColNumber { get; }
+    public int ColNumber { get; private set; }
     public bool IsFixedReference { get; }
 
     public ColReference(int colNumber, bool isFixedReference)
@@ -25,5 +24,11 @@ public class ColReference : Reference
     {
         return reference.Kind == Kind &&
                ((ColReference)reference).ColNumber == ColNumber;
+    }
+
+    public override void Shift(int offsetRow, int offsetCol)
+    {
+        if(!IsFixedReference)
+            ColNumber += offsetCol;
     }
 }

@@ -23,4 +23,5 @@ public abstract class Reference
     /// </summary>
     public bool IsRelativeReference { get; set; }
 
+    public abstract void Shift(int offsetRow, int offsetCol);
 }

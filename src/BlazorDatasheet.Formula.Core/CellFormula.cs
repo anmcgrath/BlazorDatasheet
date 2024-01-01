@@ -19,4 +19,17 @@ public class CellFormula
     }
 
     public string ToFormulaString() => "=" + ExpressionTree.Root.ToExpressionText();
+
+    public void ShiftReferences(int offsetRow, int offsetCol)
+    {
+        foreach (var reference in References)
+        {
+            reference.Shift(offsetRow, offsetCol);
+        }
+    }
+
+    public CellFormula Clone()
+    {
+        return new CellFormula(ExpressionTree.Clone());
+    }
 }
