@@ -123,7 +123,7 @@ public class ConditionalFormatManager
     {
         if (!_sheet.Region.Contains(row, col))
             return null;
-        
+
         var cfs = GetFormatsAppliedToPosition(row, col);
         CellFormat? initialFormat = null;
         foreach (var format in cfs)
@@ -156,6 +156,7 @@ public class ConditionalFormatManager
     internal RegionRestoreData<ConditionalFormatAbstractBase> RemoveRowAt(int row, int nRows)
     {
         var restoreData = _appliedFormats.RemoveRows(row, row + nRows - 1);
+
         var cfsAffected = restoreData.RegionsAdded
             .Select(x => x.Data).Concat(restoreData.RegionsRemoved.Select(x => x.Data))
             .Distinct()
@@ -178,6 +179,7 @@ public class ConditionalFormatManager
     internal void Restore(RegionRestoreData<ConditionalFormatAbstractBase> data)
     {
         _appliedFormats.Restore(data);
+
         var cfsAffected = data.RegionsAdded
             .Select(x => x.Data).Concat(data.RegionsRemoved.Select(x => x.Data))
             .Distinct()

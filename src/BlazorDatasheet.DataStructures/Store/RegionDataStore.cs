@@ -67,6 +67,11 @@ public class RegionDataStore<T> where T : IEquatable<T>
         return GetDataRegions(row, col).Select(x => x.Data);
     }
 
+    public IEnumerable<T> GetData(IRegion region)
+    {
+        return GetDataRegions(region).Select(x => x.Data);
+    }
+
     /// <summary>
     /// Returns the data regions that are contained inside the region.
     /// </summary>
@@ -364,7 +369,7 @@ public class RegionDataStore<T> where T : IEquatable<T>
         _tree.BulkLoad(dataToCopy);
         restoreData.RegionsAdded.AddRange(dataToCopy);
 
-        return new RegionRestoreData<T>();
+        return restoreData;
     }
 
     /// <summary>
@@ -389,10 +394,13 @@ public class RegionDataStore<T> where T : IEquatable<T>
     /// Overlapping regions are not removed.
     /// </summary>
     /// <param name="dataRegion"></param>
-    internal virtual RegionRestoreData<T> Add(DataRegion<T> dataRegion)
+    protected virtual RegionRestoreData<T> Add(DataRegion<T> dataRegion)
     {
         _tree.Insert(dataRegion);
-        return new RegionRestoreData<T>();
+        return new RegionRestoreData<T>()
+        {
+            RegionsAdded = new List<DataRegion<T>>() { dataRegion }
+        };
     }
 
     public void Delete(DataRegion<T> dataRegion)
@@ -407,7 +415,12 @@ public class RegionDataStore<T> where T : IEquatable<T>
         return GetDataRegions(row, col).Any();
     }
 
-    public void AddRange(List<DataRegion<T>> dataRegions)
+    public bool Any(IRegion region)
+    {
+        return GetDataRegions(region).Any();
+    }
+
+    protected void AddRange(List<DataRegion<T>> dataRegions)
     {
         _tree.BulkLoad(dataRegions);
     }

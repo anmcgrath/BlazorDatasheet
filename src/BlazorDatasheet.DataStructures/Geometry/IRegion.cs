@@ -170,6 +170,13 @@ public interface IRegion : IEquatable<IRegion>
     public int GetSize(Axis axis);
 
     /// <summary>
+    /// Returns the width or height, depending on the direction given
+    /// </summary>
+    /// <param name="direction"></param>
+    /// <returns></returns>
+    public int GetSize(Direction direction);
+
+    /// <summary>
     /// Returns the position of the leading edge.
     /// The leading edge is the first edge for the particular reading order
     /// The position is either row or col depending on the axis
@@ -221,5 +228,4 @@ public interface IRegion : IEquatable<IRegion>
     /// <param name="position"></param>
     /// <returns></returns>
     bool Contains(CellPosition position);
-    
 }

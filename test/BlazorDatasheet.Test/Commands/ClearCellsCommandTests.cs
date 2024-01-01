@@ -1,6 +1,8 @@
 ﻿using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.Formula.Core;
+using FluentAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Commands;
@@ -30,6 +32,7 @@ public class ClearCellsCommandTests
         {
             Assert.Null(_sheet.Cells.GetValue(0, 0));
             Assert.Null(_sheet.Cells.GetValue(0, 0));
+            _sheet.Cells.GetCellValue(0, 0).ValueType.Should().Be(CellValueType.Empty);
             _commandManager.Undo();
             Assert.AreEqual(1, _sheet.Cells.GetValue(0, 0));
             Assert.AreEqual(2, _sheet.Cells.GetValue(0, 1));

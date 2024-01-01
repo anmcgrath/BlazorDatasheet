@@ -219,6 +219,12 @@ public class Region : IRegion
         return axis == Axis.Col ? Width : Height;
     }
 
+    public int GetSize(Direction direction)
+    {
+        var axis = (direction == Direction.Down || direction == Direction.Up) ? Axis.Row : Axis.Col;
+        return GetSize(axis);
+    }
+
     public int GetLeadingEdgeOffset(Axis axis)
     {
         return axis == Axis.Col ? this.GetEdge(Edge.Left).Left : this.GetEdge(Edge.Top).Top;

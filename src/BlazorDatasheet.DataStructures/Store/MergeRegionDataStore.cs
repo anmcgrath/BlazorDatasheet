@@ -13,7 +13,7 @@ public class MergeRegionDataStore<T> : RegionDataStore<T> where T : IMergeable<T
     {
     }
 
-    internal override RegionRestoreData<T> Add(DataRegion<T> dataRegion)
+    protected override RegionRestoreData<T> Add(DataRegion<T> dataRegion)
     {
         // we have the valid assumption that only one region will exist at each position
         // because we are always merging regions when adding.

@@ -20,7 +20,7 @@ public class ConsolidatedDataStore<T> : RegionDataStore<T> where T : IEquatable<
         _dataMaps = new Dictionary<T, List<IRegion>>();
     }
 
-    internal override RegionRestoreData<T> Add(DataRegion<T> dataRegion)
+    protected override RegionRestoreData<T> Add(DataRegion<T> dataRegion)
     {
         var (regionsToRemove, regionsToAdd) = Consolidate(dataRegion);
         foreach (var removal in regionsToRemove)

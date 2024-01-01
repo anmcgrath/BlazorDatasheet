@@ -82,6 +82,15 @@ public class Range1DStore<T>
     {
         return _intervals.GetAllIntervals().Select(x => (x.Start, x.End, x.Data.Value)).ToList();
     }
+
+    public (int start, int end, T? data) GetInterval(int position)
+    {
+        var interval = _intervals.GetIntervals(new OrderedInterval(position, position)).FirstOrDefault();
+        if (interval == null)
+            return (-1, -1, _defaultIfNotFound);
+
+        return (interval.Start, interval.End, interval.Data.Value);
+    }
 }
 
 public class OverwritingValue<R> : IMergeable<OverwritingValue<R>>
