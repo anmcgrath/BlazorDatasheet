@@ -93,9 +93,6 @@ public partial class CellStore
 
     internal CellStoreRestoreData ClearCellsImpl(IEnumerable<IRegion> regionsToClear)
     {
-        var batching = _sheet.BatchUpdates();
-
-
         var restoreData = new CellStoreRestoreData();
         var toClear = regionsToClear.ToList();
         restoreData.ValueRestoreData = _dataStore.Clear(toClear);
@@ -103,11 +100,10 @@ public partial class CellStore
         restoreData.FormulaRestoreData = ClearFormulaImpl(toClear).FormulaRestoreData;
 
         var affected = restoreData.GetAffectedPositions().ToList();
+        _sheet.BatchUpdates();
         EmitCellsChanged(affected);
         _sheet.MarkDirty(affected);
-
-        if (batching)
-            _sheet.EndBatchUpdates();
+        _sheet.EndBatchUpdates();
         return restoreData;
     }
 
@@ -226,8 +222,6 @@ public partial class CellStore
     /// <param name="restoreData"></param>
     internal void Restore(CellStoreRestoreData restoreData)
     {
-        var batches = _sheet.BatchUpdates();
-
         // Set formula through this function so we add the formula back in to the dependency graph
         foreach (var data in restoreData.FormulaRestoreData.DataRemoved)
             this.SetFormulaImpl(data.row, data.col, data.data);
@@ -237,6 +231,8 @@ public partial class CellStore
         _dataStore.Restore(restoreData.ValueRestoreData);
         _formatStore.Restore(restoreData.FormatRestoreData);
         _mergeStore.Restore(restoreData.MergeRestoreData);
+
+        _sheet.BatchUpdates();
 
         foreach (var pt in restoreData.ValueRestoreData.DataRemoved)
         {
@@ -249,8 +245,7 @@ public partial class CellStore
             _sheet.MarkDirty(region);
         }
 
-        if (batches) // if this is false, some other function is already batching changes
-            _sheet.EndBatchUpdates();
+        _sheet.EndBatchUpdates();
     }
 
 

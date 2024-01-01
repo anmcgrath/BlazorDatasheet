@@ -286,25 +286,24 @@ public class Sheet
                 this, new DirtySheetEventArgs() { DirtyRegions = regions, DirtyPositions = _dirtyPositions });
     }
 
+    private int _batchRequestNo = 0;
+
     /// <summary>
     /// Batches dirty cell and region additions, as well as cell value changes to emit events once rather
     /// than every time a cell is dirty or a value is changed.
     /// <returns>Returns false if the sheet was already batching, true otherwise.</returns>
     /// </summary>
-    public bool BatchUpdates()
+    public void BatchUpdates()
     {
-        var hasChanged = false;
+        _batchRequestNo++;
         if (!_isBatchingChanges)
         {
             _dirtyPositions.Clear();
             _dirtyRegions.Clear();
-            hasChanged = true;
         }
 
         Cells.BatchChanges();
         _isBatchingChanges = true;
-
-        return hasChanged;
     }
 
     /// <summary>
@@ -312,6 +311,11 @@ public class Sheet
     /// </summary>
     public void EndBatchUpdates()
     {
+        _batchRequestNo--;
+
+        if (_batchRequestNo > 0)
+            return;
+        
         Cells.EndBatchChanges();
 
         // Checks for batching changes here, because the cells changed event
