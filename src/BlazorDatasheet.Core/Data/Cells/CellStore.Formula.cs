@@ -42,13 +42,12 @@ public partial class CellStore
         restoreData.FormulaRestoreData = _formulaStore.Set(row, col, formula);
         if (formula != null)
             _sheet.FormulaEngine.AddToDependencyGraph(row, col, formula);
-        
+
         FormulaChanged?.Invoke(this,
             new CellFormulaChangeEventArgs(row, col,
                 restoreData.FormulaRestoreData.DataRemoved.FirstOrDefault().data,
                 formula));
         EmitCellChanged(row, col);
-        
         _sheet.MarkDirty(row, col);
         return restoreData;
     }
@@ -59,6 +58,26 @@ public partial class CellStore
         if (parsedFormula.IsValid())
             return SetFormulaImpl(row, col, parsedFormula);
         return new CellStoreRestoreData();
+    }
+
+    private CellStoreRestoreData CopyFormula(IRegion fromRegion, IRegion toRegion)
+    {
+        var offset = new CellPosition(
+            toRegion.TopLeft.row - fromRegion.TopLeft.row,
+            toRegion.TopLeft.col - fromRegion.TopLeft.col);
+
+        var restoreData = new CellStoreRestoreData();
+
+        var formulaToCopy = _formulaStore.GetNonEmptyData(fromRegion);
+
+        foreach (var formula in formulaToCopy)
+        {
+            var clonedFormula = formula.data!.Clone();
+            clonedFormula.ShiftReferences(offset.row, offset.col);
+            restoreData.Merge(SetFormulaImpl(formula.row + offset.row, formula.col + offset.col, clonedFormula));
+        }
+
+        return restoreData;
     }
 
     internal CellStoreRestoreData ClearFormulaImpl(int row, int col)

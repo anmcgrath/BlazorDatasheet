@@ -171,13 +171,51 @@ public partial class CellStore
         return restoreData;
     }
 
-    internal CellStoreRestoreData CopyImpl(IRegion fromRegion, IRegion toRegion)
+    internal CellStoreRestoreData CopyImpl(IRegion fromRegion, IRegion toRegion, CopyOptions options)
     {
         var restoreData = new CellStoreRestoreData();
-        restoreData.ValueRestoreData = _dataStore.Copy(fromRegion, toRegion);
-        restoreData.ValidRestoreData = _validStore.Copy(fromRegion, toRegion);
+        if (options.CopyValues)
+        {
+            restoreData.ValueRestoreData = _dataStore.Copy(fromRegion, toRegion);
+            restoreData.ValidRestoreData = _validStore.Copy(fromRegion, toRegion);
+        }
+
+        if (options.CopyFormula)
+            restoreData.Merge(CopyFormula(fromRegion, toRegion));
+
+        if (options.CopyFormat)
+            restoreData.Merge(CopyFormatImpl(fromRegion, toRegion));
+
         _sheet.MarkDirty(toRegion);
         EmitCellsChanged(toRegion);
+        return restoreData;
+    }
+
+    internal CellStoreRestoreData CopyFormatImpl(IRegion fromRegion, IRegion toRegion)
+    {
+        // Here we create a blank format store and then fill it with the 
+        // values that we sample from the sheet.
+        // We then perform the copy inside this new format store and remove the original data.
+        // This is then added to the sheet's format store.
+        var emptyPalette = new MergeRegionDataStore<CellFormat>();
+        var fixedFromRegion = fromRegion.GetIntersection(_sheet.Region) as Region;
+        foreach (var position in fixedFromRegion!)
+        {
+            emptyPalette.Add(new Region(position.row, position.col), _sheet.GetFormat(position.row, position.col));
+        }
+
+        emptyPalette.Copy(fromRegion, toRegion.TopLeft);
+        var toClear = fromRegion.Break(toRegion);
+        foreach (var region in toClear)
+            emptyPalette.Clear(region);
+
+
+        var restoreData = CutFormatImpl(toRegion);
+        foreach (var data in emptyPalette.GetAllDataRegions())
+        {
+            restoreData.Merge(MergeFormatImpl(data.Region, data.Data));
+        }
+
         return restoreData;
     }
 

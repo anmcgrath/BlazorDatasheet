@@ -8,18 +8,20 @@ public class CopyRangeCommand : IUndoableCommand
 {
     private SheetRange _fromRange;
     private SheetRange[] _toRanges;
+    private readonly CopyOptions _copyOptions;
 
     private CellStoreRestoreData _cellStoreRestore;
 
     /// <summary>
-    /// Copies data from one range to another. Only works if the range has a single region.
+    /// Copies data from one range to another. The from range must only have a single region.
     /// </summary>
     /// <param name="fromRange"></param>
     /// <param name="toRanges"></param>
-    public CopyRangeCommand(SheetRange fromRange, SheetRange[] toRanges)
+    public CopyRangeCommand(SheetRange fromRange, SheetRange[] toRanges, CopyOptions copyOptions)
     {
         _fromRange = fromRange;
         _toRanges = toRanges;
+        _copyOptions = copyOptions;
     }
 
     /// <summary>
@@ -27,9 +29,10 @@ public class CopyRangeCommand : IUndoableCommand
     /// </summary>
     /// <param name="fromRange"></param>
     /// <param name="toRange"></param>
-    public CopyRangeCommand(SheetRange fromRange, SheetRange toRange)
+    public CopyRangeCommand(SheetRange fromRange, SheetRange toRange, CopyOptions copyOptions)
     {
         _fromRange = fromRange;
+        _copyOptions = copyOptions;
         _toRanges = new[] { toRange };
     }
 
@@ -43,7 +46,7 @@ public class CopyRangeCommand : IUndoableCommand
 
     private void Copy(IRegion fromRegion, IRegion toRegion, Sheet sheet)
     {
-        _cellStoreRestore = sheet.Cells.CopyImpl(fromRegion, toRegion);
+        _cellStoreRestore = sheet.Cells.CopyImpl(fromRegion, toRegion, _copyOptions);
     }
 
     public bool Undo(Sheet sheet)

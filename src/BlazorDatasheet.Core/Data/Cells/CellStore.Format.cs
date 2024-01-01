@@ -26,6 +26,14 @@ public partial class CellStore
         };
     }
 
+    internal CellStoreRestoreData CutFormatImpl(IRegion region)
+    {
+        return new CellStoreRestoreData()
+        {
+            FormatRestoreData = _formatStore.Clear(region)
+        };
+    }
+
     /// <summary>
     /// Returns the CELL format that is assigned to the cell.
     /// Note this is not the visual format, because that will be merged with row/column formats.
@@ -38,6 +46,7 @@ public partial class CellStore
     {
         return _formatStore.GetData(row, col).FirstOrDefault() ?? new CellFormat();
     }
+
 
     internal IEnumerable<DataRegion<CellFormat>> GetFormatData(IRegion region)
     {
