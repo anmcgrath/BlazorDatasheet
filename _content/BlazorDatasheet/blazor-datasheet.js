@@ -46,7 +46,7 @@ function serializeMouseEvent(e) {
             offsetY: e.offsetY,
             pageX: e.pageX,
             screenX: e.screenX,
-            screenTop: e.screenY
+            screenY: e.screenY,
         }
     }
 }
@@ -75,9 +75,8 @@ function serializeClipboardEvent(e) {
 // we can remove the events later
 window.setupBlazorWindowEvent = async function (dotNetHelper, evType, dotnetHandlerName) {
     let fn = async (ev) => {
-        // The response from calling the .net function
         let isHandledResponse = await dotNetHelper.invokeMethodAsync(dotnetHandlerName, serialize(evType, ev))
-        if (isHandledResponse == true) {
+        if (isHandledResponse === true) {
             ev.preventDefault()
             ev.stopImmediatePropagation()
         }
@@ -96,6 +95,11 @@ window.writeTextToClipboard = async function (text) {
     await window.navigator.clipboard.writeText(text)
 }
 
+window.setFocusWithTimeout = function (el, timeout) {
+    setTimeout(() => {
+        el.focus()
+    }, timeout)
+}
 
 // Mouse move events
 function onThrottledMouseMove(component, interval) {
@@ -211,8 +215,7 @@ window.addVirtualisationHandlers = function (dotNetHelper, el, dotnetHandlerName
 
     // return initial scroll event to render the sheet
     let parent = findScrollableAncestor(el)
-    if (parent)
-    {
+    if (parent) {
         parent.style.willChange = 'transform' // improves scrolling performance in chrome/edge
     }
 
@@ -252,30 +255,7 @@ window.addVirtualisationHandlers = function (dotNetHelper, el, dotnetHandlerName
 
 }
 
-last_page_posns_map = {}
-resize_map = {}
 dotNetHelperMap = {}
-
-// adds listeners to determine when the scroll container is moved
-// on the page, so that we can update the pageX and pageY coordinates stored for the element.
-// these are used for determining row/column positions in mouse events
-window.addPageMoveListener = function (dotNetHelper, el, dotnetFunctionName) {
-    console.log('addPageMoveListener')
-    let parent = findScrollableAncestor(el)
-    if (!parent) parent = el
-    // parent is scrollable, parent of parent is the container of the scroll.
-    let resizeable = document.documentElement
-
-    last_page_posns_map[el] = {pageX: getPageX(el), pageY: getPageY(el)}
-    let res = new ResizeObserver((r, o) => {
-        invokeIfPageXYNew(parent, dotNetHelper, dotnetFunctionName)
-        //console.log(parent.getBoundingClientRect())
-    })
-
-    res.observe(resizeable)
-    resize_map[el] = res
-}
-
 function createMutationObserver(filler, interactionObserver) {
     // if we are scrolling too fast (or rendering too slow) we may have a situation where
     // the filler elements get resized and end up in the observable scroll area which won't re-trigger
