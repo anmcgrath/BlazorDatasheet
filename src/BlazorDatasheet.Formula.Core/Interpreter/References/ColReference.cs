@@ -1,4 +1,5 @@
-﻿using BlazorDatasheet.DataStructures.Util;
+﻿using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.DataStructures.Util;
 
 namespace BlazorDatasheet.Formula.Core.Interpreter.References;
 
@@ -30,5 +31,10 @@ public class ColReference : Reference
     {
         if(!IsFixedReference)
             ColNumber += offsetCol;
+    }
+
+    public override IRegion ToRegion()
+    {
+        return new ColumnRegion(ColNumber);
     }
 }

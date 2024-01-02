@@ -2,7 +2,7 @@
 
 namespace BlazorDatasheet.Formula.Core.Interpreter.Syntax;
 
-internal class Lexer
+public class Lexer
 {
     private string _text;
     private readonly List<string> _errors = new();
@@ -156,14 +156,14 @@ internal class Lexer
             case ',':
                 return new SyntaxToken(SyntaxKind.CommaToken, _position++, ",", null);
             case '"':
-                return readString();
+                return ReadString();
         }
 
         _errors.Add($"ERROR: bad character input: {Current} at position {_position + 1}");
         return new SyntaxToken(SyntaxKind.BadToken, _position++, _text.Substring(_position - 1), 1);
     }
 
-    private SyntaxToken readString()
+    private SyntaxToken ReadString()
     {
         // Move to letter after first quote
         var start = ++_position;

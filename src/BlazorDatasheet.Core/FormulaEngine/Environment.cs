@@ -61,6 +61,9 @@ public class SheetEnvironment : IEnvironment
 
     private CellValue[][] GetValuesInRange(SheetRange range)
     {
-        return range.Sheet.Cells.GetStore().GetData(range.Region);
+        var region = range.Region.GetIntersection(range.Sheet.Region);
+        if (region == null)
+            return Array.Empty<CellValue[]>();
+        return range.Sheet.Cells.GetStore().GetData(region);
     }
 }

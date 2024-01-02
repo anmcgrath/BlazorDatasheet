@@ -1,4 +1,6 @@
-﻿namespace BlazorDatasheet.Formula.Core.Interpreter.References;
+﻿using BlazorDatasheet.DataStructures.Geometry;
+
+namespace BlazorDatasheet.Formula.Core.Interpreter.References;
 
 public class RowReference : Reference
 {
@@ -28,5 +30,10 @@ public class RowReference : Reference
     {
         if (!IsFixedReference)
             RowNumber += offsetRow;
+    }
+
+    public override IRegion ToRegion()
+    {
+        return new RowRegion(RowNumber);
     }
 }

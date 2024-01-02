@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core;
@@ -56,6 +57,7 @@ public class TestEnvironment : IEnvironment
         var h = (r1 - r0) + 1;
         var w = (c1 - c0) + 1;
         var arr = new CellValue[h][];
+        
         for (int i = 0; i < h; i++)
         {
             arr[i] = new CellValue[w];

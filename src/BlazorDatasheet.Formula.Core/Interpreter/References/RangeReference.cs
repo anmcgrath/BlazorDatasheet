@@ -1,4 +1,6 @@
-﻿namespace BlazorDatasheet.Formula.Core.Interpreter.References;
+﻿using BlazorDatasheet.DataStructures.Geometry;
+
+namespace BlazorDatasheet.Formula.Core.Interpreter.References;
 
 public class RangeReference : Reference
 {
@@ -79,6 +81,11 @@ public class RangeReference : Reference
     {
         Start.Shift(offsetRow, offsetCol);
         End.Shift(offsetRow, offsetCol);
+    }
+
+    public override IRegion ToRegion()
+    {
+        return Start.ToRegion().GetBoundingRegion(End.ToRegion());
     }
 
     public override string ToString() => ToRefText();

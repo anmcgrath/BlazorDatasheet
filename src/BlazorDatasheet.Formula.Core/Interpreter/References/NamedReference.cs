@@ -1,4 +1,6 @@
-﻿namespace BlazorDatasheet.Formula.Core.Interpreter.References;
+﻿using BlazorDatasheet.DataStructures.Geometry;
+
+namespace BlazorDatasheet.Formula.Core.Interpreter.References;
 
 public class NamedReference : Reference
 {
@@ -21,5 +23,10 @@ public class NamedReference : Reference
 
     public override void Shift(int offsetRow, int offsetCol)
     {
+    }
+
+    public override IRegion ToRegion()
+    {
+        return new AllRegion();
     }
 }

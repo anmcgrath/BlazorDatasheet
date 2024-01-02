@@ -6,6 +6,8 @@ namespace BlazorDatasheet.Formula.Core.Interpreter.Syntax;
 public class Parser
 {
     private SyntaxToken[] _tokens;
+    public IReadOnlyCollection<SyntaxToken> GetTokens() => _tokens;
+
     private int _position;
 
     public List<string> Errors;
@@ -17,7 +19,7 @@ public class Parser
 
     private SyntaxToken Current => Peek(0);
 
-    internal SyntaxTree Parse(Lexer lexer, string text)
+    public SyntaxTree Parse(Lexer lexer, string text)
     {
         Errors = new List<string>();
         _references = new List<Reference>();
@@ -221,7 +223,7 @@ public class Parser
         return new NameExpressionSyntax(identifier);
     }
 
-    public Reference ParseRangePartAsReference(string rangeText)
+    private Reference ParseRangePartAsReference(string rangeText)
     {
         if (RangeText.IsValidCellReference(rangeText))
         {

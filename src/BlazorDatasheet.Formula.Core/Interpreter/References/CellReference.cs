@@ -1,4 +1,5 @@
 ﻿using System.Text.RegularExpressions;
+using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Util;
 
 namespace BlazorDatasheet.Formula.Core.Interpreter.References;
@@ -51,6 +52,11 @@ public class CellReference : Reference
     {
         _col.Shift(offsetRow, offsetCol);
         _row.Shift(offsetRow, offsetCol);
+    }
+
+    public override IRegion ToRegion()
+    {
+        return new Region(_row.RowNumber, _col.ColNumber);
     }
 
     public override string ToString() => ToRefText();

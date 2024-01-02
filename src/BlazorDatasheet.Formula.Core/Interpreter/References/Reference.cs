@@ -1,4 +1,6 @@
-﻿namespace BlazorDatasheet.Formula.Core.Interpreter.References;
+﻿using BlazorDatasheet.DataStructures.Geometry;
+
+namespace BlazorDatasheet.Formula.Core.Interpreter.References;
 
 public abstract class Reference
 {
@@ -24,4 +26,9 @@ public abstract class Reference
     public bool IsRelativeReference { get; set; }
 
     public abstract void Shift(int offsetRow, int offsetCol);
+    /// <summary>
+    /// Returns a region that is the size of the reference.
+    /// </summary>
+    /// <returns></returns>
+    public abstract IRegion ToRegion();
 }

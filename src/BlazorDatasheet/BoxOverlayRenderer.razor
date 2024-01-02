@@ -4,35 +4,28 @@
 <!--Renders a box at a particular row/column with a width & height -->
 
 <div style="@GetSizeStyleString(); position: absolute; pointer-events: none;"/>
-    
+
 @code {
 
-    [Parameter]
-    public double X { get; set; }
+    [Parameter] public double X { get; set; }
 
-    [Parameter]
-    public double Y { get; set; }
+    [Parameter] public double Y { get; set; }
 
-    [Parameter]
-    public double Width { get; set; }
+    [Parameter] public double Width { get; set; }
 
-    [Parameter]
-    public double Height { get; set; }
+    [Parameter] public double Height { get; set; }
 
-    [Parameter]
-    public int ZIndex { get; set; }
+    [Parameter] public int ZIndex { get; set; }
 
-    [Parameter]
-    public double BorderThickness { get; set; }
+    [Parameter] public double BorderThickness { get; set; }
 
-    [Parameter]
-    public string BackgroundStyle { get; set; }
+    [Parameter] public string BackgroundStyle { get; set; }
 
-    [Parameter]
-    public string BorderColor { get; set; } = "var(--selection-border-color);";
+    [Parameter] public string BorderColor { get; set; } = "var(--selection-border-color);";
 
-    [Parameter]
-    public bool BackgroundVisible { get; set; }
+    [Parameter] public bool BackgroundVisible { get; set; }
+
+    [Parameter] public string BorderStyle { get; set; } = "solid";
 
     private string GetSizeStyleString()
     {
@@ -46,7 +39,7 @@
         strBuilder.Append($"z-index:{ZIndex};");
         if (BorderThickness != 0)
         {
-            strBuilder.Append($"outline: {BorderThickness}px solid {BorderColor};");
+            strBuilder.Append($"outline: {BorderThickness}px {BorderStyle} {BorderColor};");
         }
 
         if (BackgroundVisible)
