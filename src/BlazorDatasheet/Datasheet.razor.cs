@@ -148,6 +148,11 @@ public partial class Datasheet : IHandleEvent
     private ElementReference _fillerRight;
 
     /// <summary>
+    /// Sheet cell renderer
+    /// </summary>
+    private ElementReference _innerSheet;
+
+    /// <summary>
     /// Whether the entire sheet is dirty
     /// </summary>
     public bool SheetIsDirty { get; set; } = true;
@@ -182,6 +187,11 @@ public partial class Datasheet : IHandleEvent
     /// </summary>
     private VisualSheet _visualSheet;
 
+    /// <summary>
+    /// Handles passing mouse events to the sheet's input service
+    /// </summary>
+    private MouseInputService _mouseInputService = new();
+
     // This ensures that the sheet is not re-rendered when mouse events are handled inside the sheet.
     // Performance is improved dramatically when this is used.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
@@ -202,6 +212,7 @@ public partial class Datasheet : IHandleEvent
         {
             _sheetLocal = Sheet;
             _sheetLocal?.SetDialogService(new SimpleDialogService(this.JS));
+            _sheetLocal?.SetInputService(_mouseInputService);
             _cellLayoutProvider = new CellLayoutProvider(_sheetLocal);
             _visualSheet = new VisualSheet(_sheetLocal);
             _visualSheet.Invalidated += (sender, args) =>
@@ -272,10 +283,24 @@ public partial class Datasheet : IHandleEvent
                 _fillerTop,
                 _fillerRight,
                 _fillerBottom);
+
+            await JS.InvokeVoidAsync("createSheetMousePositionListener", _dotnetHelper, _innerSheet,
+                nameof(HandleSheetMouseMove));
         }
 
         SheetIsDirty = false;
         DirtyCells.Clear();
+    }
+
+    [JSInvokable("HandleSheetMouseMove")]
+    public void HandleSheetMouseMove(InnerSheetMouseEventArgs args)
+    {
+        var x = args.X + Viewport.Left;
+        var y = args.Y + Viewport.Top;
+        var row = _sheetLocal.Rows.GetRow(y);
+        var col = _sheetLocal.Columns.GetColumn(x);
+        _mouseInputService.UpdateCurrentMousePosition(x, y);
+        _mouseInputService.UpdateCurrentRowCol(row, col);
     }
 
     /// <summary>
@@ -425,6 +450,10 @@ public partial class Datasheet : IHandleEvent
 
     private void HandleCellMouseOver(int row, int col)
     {
+        var e = _mouseInputService.OnMouseOverCell(row, col);
+        if (e.PreventDefault)
+            return;
+
         this.UpdateSelectingEndPosition(row, col);
     }
 
@@ -504,7 +533,7 @@ public partial class Datasheet : IHandleEvent
         {
             if (!Sheet!.Selection.Regions.Any())
                 return true;
-            
+
             Sheet.Selection.Clear();
             return true;
         }
@@ -593,6 +622,7 @@ public partial class Datasheet : IHandleEvent
         try
         {
             await JS.InvokeAsync<string>("disposeVirtualisationHandlers", _wholeSheetDiv);
+            await JS.InvokeAsync<string>("removeSheetMousePositionListener", _innerSheet);
         }
         catch (Exception e)
         {

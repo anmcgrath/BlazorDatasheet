@@ -76,6 +76,8 @@ public class Sheet
 
     internal IDialogService? Dialog { get; private set; }
 
+    public IInputService InputService { get; private set; }
+
     #region EVENTS
 
     /// <summary>
@@ -315,7 +317,7 @@ public class Sheet
 
         if (_batchRequestNo > 0)
             return;
-        
+
         Cells.EndBatchChanges();
 
         // Checks for batching changes here, because the cells changed event
@@ -482,5 +484,10 @@ public class Sheet
     public void SetDialogService(IDialogService? service)
     {
         Dialog = service;
+    }
+
+    public void SetInputService(IInputService service)
+    {
+        InputService = service;
     }
 }

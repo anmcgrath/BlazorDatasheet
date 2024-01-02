@@ -103,9 +103,9 @@ window.setFocusWithTimeout = function (el, timeout) {
 
 // Mouse move events
 function onThrottledMouseMove(component, interval) {
-    window.addEventListener('mousemove', e => {
+    window.addEventListener('mousemove', throttle(e => {
         component.invokeMethodAsync('HandleMouseMove', e.pageX, e.pageY);
-    }, interval);
+    }, interval));
 }
 
 
@@ -251,11 +251,10 @@ window.addVirtualisationHandlers = function (dotNetHelper, el, dotnetHandlerName
     leftHandlerMutMap[el] = createMutationObserver(fillerLeft, observer)
     rightHandlerMutMap[el] = createMutationObserver(fillerRight, observer)
 
-    dotNetHelperMap = {}
-
 }
 
 dotNetHelperMap = {}
+
 function createMutationObserver(filler, interactionObserver) {
     // if we are scrolling too fast (or rendering too slow) we may have a situation where
     // the filler elements get resized and end up in the observable scroll area which won't re-trigger
@@ -268,4 +267,32 @@ function createMutationObserver(filler, interactionObserver) {
 
     mutationObserver.observe(filler, {attributes: true})
     return mutationObserver
+}
+
+sheetMousePositionListeners = {}
+
+function createSheetMousePositionListener(dotnetHelper, innerSheetEl, dotnetHandlerName) {
+    let f = throttle(e => {
+        const rect = innerSheetEl.getBoundingClientRect()
+        let x = e.clientX - rect.x
+        let y = e.clientY - rect.y
+        dotnetHelper.invokeMethodAsync(dotnetHandlerName,
+            {
+                x: x,
+                y: y
+            });
+    }, 30)
+
+    if (innerSheetEl) {
+        window.addEventListener("mousemove", f)
+        sheetMousePositionListeners[innerSheetEl] = f
+    }
+}
+
+function removeSheetMousePositionListener(innerSheetEl) {
+    if (sheetMousePositionListeners) {
+        let v = sheetMousePositionListeners[innerSheetEl]
+        window.removeEventListener("mousemove", v)
+        delete sheetMousePositionListeners[innerSheetEl]
+    }
 }
