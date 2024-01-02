@@ -1,7 +1,7 @@
 using BlazorDatasheet.Core.Interfaces;
 using Microsoft.JSInterop;
 
-namespace BlazorDatasheet;
+namespace BlazorDatasheet.Services;
 
 public class SimpleDialogService : IDialogService
 {
