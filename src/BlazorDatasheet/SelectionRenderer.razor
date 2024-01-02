@@ -3,6 +3,7 @@
 @using Region = BlazorDatasheet.DataStructures.Geometry.Region
 @using System.ComponentModel
 @using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events.Input
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Events
 @using BlazorDatasheet.Services
@@ -109,10 +110,11 @@
     public EventCallback<SelectionExpandedEventArgs> SelectionExpanded { get; set; }
 
     private bool _isDragging = false;
-    private double _dragStartX;
-    private double _dragStartY;
+    private CellPosition? _dragStartPosition;
 
     private IRegion? _dragPreviewRegion;
+    private double _dragStartX;
+    private double _dragStartY;
 
     private string _bgStyle = "background:var(--selection-bg-color);";
     private IWindowEventService _windowEventService;
@@ -149,7 +151,7 @@
             _windowEventService = new WindowEventService(JS);
             await _windowEventService.Init();
             _windowEventService.OnMouseUp += WindowEventServiceOnOnMouseUp;
-            _windowEventService.OnMouseMove += WindowEventServiceOnOnMouseMove;
+            _windowEventService.OnMouseMove += WindowEventServiceOnMouseMove;
         }
     }
 
@@ -167,7 +169,7 @@
     {
         if (Sheet == null)
             return string.Empty;
-        
+
         var region = Sheet.Selection.ActiveRegion ?? Sheet.Selection.SelectingRegion;
         if (region == null)
             return "display:none;";
@@ -201,66 +203,56 @@
             return;
 
         _isDragging = true;
-        _dragStartX = obj.ScreenX;
-        _dragStartY = obj.ScreenY;
+        _dragStartPosition = Sheet.Selection.ActiveRegion.TopLeft;
+        _dragStartX = Sheet.InputService.CurrentX;
+        _dragStartY = Sheet.InputService.CurrentY;
     }
 
-    private async Task<bool> WindowEventServiceOnOnMouseMove(MouseEventArgs arg)
+    private Task<bool> WindowEventServiceOnMouseMove(MouseEventArgs arg)
     {
-        _dragPreviewRegion = null;
-        if (!_isDragging || _sheet?.Selection.ActiveRegion == null)
-            return false;
-
-        var dx = (arg.ScreenX - _dragStartX);
-        var dy = (arg.ScreenY - _dragStartY);
-
-    // x y coord of cursor relative to sheet (0, 0)
-        var posn = new Point2d(CellLayoutProvider.ComputeRightPosition(_sheet.Selection.ActiveRegion.Right) + dx,
-            CellLayoutProvider.ComputeBottomPosition(_sheet.Selection.ActiveRegion.Bottom) + dy);
-
-        var cell = new CellPosition(CellLayoutProvider.ComputeRow(posn.Y), CellLayoutProvider.ComputeColumn(posn.X));
-    // x y coords of top-left of cell
-        var cellPosition = new Point2d(CellLayoutProvider.ComputeLeftPosition(cell.col), CellLayoutProvider.ComputeTopPosition(cell.row));
-        var cellHalfWidth = CellLayoutProvider.ComputeWidth(cell.col, 1) / 2;
-        var cellHalfHeight = CellLayoutProvider.ComputeHeight(cell.row, 1) / 2;
-    // if the posn is the top or left of the cell then we need to decrease cellPosn because we are using the centre
-    // of the cell to determine its position
-        var rowCorrection = 0;
-        var colCorrection = 0;
-
-        if (cell.col != _sheet.Selection.ActiveRegion.Right)
+        if (_isDragging)
         {
-            if (posn.X < cellPosition.X + cellHalfWidth)
-                colCorrection = -1;
-            if (posn.Y < cellPosition.Y + cellHalfHeight)
-                rowCorrection = -1;
+            var x = _sheet!.InputService.CurrentX;
+            var y = _sheet!.InputService.CurrentY;
+            var dx = Math.Abs(x - _dragStartX);
+            var dy = Math.Abs(y - _dragStartY);
+
+            var fillDirection = Direction.None;
+            if (dx > dy && x >= _dragStartX)
+                fillDirection = Direction.Right;
+            else if (dx > dy && x < _dragStartX)
+                fillDirection = Direction.Left;
+            else if (dy > dx && y >= _dragStartY)
+                fillDirection = Direction.Down;
+            else if (dy > dx && y < _dragStartY)
+                fillDirection = Direction.Up;
+
+            var endPosition = GetCurrentDragEndPosition(fillDirection);
+            _dragPreviewRegion = new Region(_dragStartPosition!.Value.row,
+                endPosition.row,
+                _dragStartPosition!.Value.col,
+                endPosition.col);
+
+
+            StateHasChanged();
         }
-
-        var endCol = colCorrection + cell.col;
-        var endRow = rowCorrection + cell.row;
-
-        var axis = System.Math.Abs(dx) > Math.Abs(dy) ? Axis.Col : Axis.Row;
-
-        if (axis == Axis.Row)
-            endCol = _sheet.Selection.ActiveRegion.Right;
-        else
-            endRow = _sheet.Selection.ActiveRegion.Bottom;
-
-
-        _dragPreviewRegion = new Region(_sheet.Selection.ActiveRegion.Top,
-            endRow,
-            _sheet.Selection.ActiveRegion.Left,
-            endCol);
-
-        this.StateHasChanged();
-        return true;
+        return Task.FromResult(true);
     }
 
-    public void Dispose()
+    private CellPosition GetCurrentDragEndPosition(Direction direction)
     {
-        _windowEventService?.Dispose();
+        switch (direction)
+        {
+            case Direction.Right:
+            case Direction.Left:
+                return new(_sheet!.Selection!.ActiveRegion!.Bottom, _sheet.InputService.CurrentCol);
+            case Direction.Up:
+            case Direction.Down:
+                return new(_sheet!.InputService.CurrentRow, _sheet!.Selection!.ActiveRegion!.Right);
+            default:
+                return new(_dragStartPosition!.Value.row, _dragStartPosition!.Value.col);
+        }
     }
-
 
     private async Task<bool> WindowEventServiceOnOnMouseUp(MouseEventArgs arg)
     {
@@ -272,6 +264,11 @@
             this.StateHasChanged();
         }
         return true;
+    }
+
+    public void Dispose()
+    {
+        _windowEventService?.Dispose();
     }
 
 }
