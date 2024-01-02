@@ -28,6 +28,7 @@
             Width="GetWidth(region)"
             Height="GetHeight(region)"/>
     }
+
     <!-- now render the border around the whole thing -->
     <BoxOverlayRenderer
         BackgroundVisible="@false"
@@ -98,16 +99,13 @@
 
 @code {
 
-    [Parameter, EditorRequired]
-    public CellLayoutProvider CellLayoutProvider { get; set; }
+    [Parameter, EditorRequired] public CellLayoutProvider CellLayoutProvider { get; set; }
 
     private Sheet? _sheet;
 
-    [Parameter, EditorRequired]
-    public Sheet? Sheet { get; set; }
+    [Parameter, EditorRequired] public Sheet? Sheet { get; set; }
 
-    [Parameter]
-    public EventCallback<SelectionExpandedEventArgs> SelectionExpanded { get; set; }
+    [Parameter] public EventCallback<SelectionExpandedEventArgs> SelectionExpanded { get; set; }
 
     private bool _isDragging = false;
     private CellPosition? _dragStartPosition;
@@ -117,7 +115,7 @@
     private double _dragStartY;
 
     private string _bgStyle = "background:var(--selection-bg-color);";
-    private IWindowEventService _windowEventService;
+    private IWindowEventService _windowEventService = null!;
 
     private IRegion? BoundedSelectingRegion => Sheet?.Selection.SelectingRegion?.GetIntersection(Sheet?.Region);
 
@@ -135,6 +133,7 @@
                 _sheet.Selection.SelectionChanged -= OnSelectionChanged;
                 _sheet.Selection.SelectingChanged -= OnSelectingChanged;
             }
+
             _sheet = Sheet;
 
             if (_sheet == null) return;
@@ -144,7 +143,7 @@
         }
     }
 
-    protected async override Task OnAfterRenderAsync(bool firstRender)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
@@ -197,23 +196,25 @@
         StateHasChanged();
     }
 
-    private void DraggerMouseDown(PointerEventArgs obj)
+    private async Task DraggerMouseDown(PointerEventArgs obj)
     {
         if (Sheet?.Selection.ActiveRegion == null)
             return;
 
         _isDragging = true;
         _dragStartPosition = Sheet.Selection.ActiveRegion.TopLeft;
-        _dragStartX = Sheet.InputService.CurrentX;
-        _dragStartY = Sheet.InputService.CurrentY;
+        var position = await Sheet.InputService.GetInputPositionAsync();
+        _dragStartX = position.X;
+        _dragStartY = position.Y;
     }
 
-    private Task<bool> WindowEventServiceOnMouseMove(MouseEventArgs arg)
+    private async Task<bool> WindowEventServiceOnMouseMove(MouseEventArgs arg)
     {
         if (_isDragging)
         {
-            var x = _sheet!.InputService.CurrentX;
-            var y = _sheet!.InputService.CurrentY;
+            var position = await _sheet!.InputService.GetInputPositionAsync();
+            var x = position.X;
+            var y = position.Y;
             var dx = Math.Abs(x - _dragStartX);
             var dy = Math.Abs(y - _dragStartY);
 
@@ -227,7 +228,7 @@
             else if (dy > dx && y < _dragStartY)
                 fillDirection = Direction.Up;
 
-            var endPosition = GetCurrentDragEndPosition(fillDirection);
+            var endPosition = GetCurrentDragEndPosition(fillDirection, x, y);
             _dragPreviewRegion = new Region(_dragStartPosition!.Value.row,
                 endPosition.row,
                 _dragStartPosition!.Value.col,
@@ -236,19 +237,25 @@
 
             StateHasChanged();
         }
-        return Task.FromResult(true);
+
+        return true;
     }
 
-    private CellPosition GetCurrentDragEndPosition(Direction direction)
+    private CellPosition GetCurrentDragEndPosition(Direction direction, double x, double y)
     {
+        if (_sheet == null)
+            return new CellPosition();
+
+        var row = _sheet.Rows.GetRow(y);
+        var col = _sheet.Columns.GetColumn(x);
         switch (direction)
         {
             case Direction.Right:
             case Direction.Left:
-                return new(_sheet!.Selection!.ActiveRegion!.Bottom, _sheet.InputService.CurrentCol);
+                return new(_sheet!.Selection!.ActiveRegion!.Bottom, col);
             case Direction.Up:
             case Direction.Down:
-                return new(_sheet!.InputService.CurrentRow, _sheet!.Selection!.ActiveRegion!.Right);
+                return new(row, _sheet!.Selection!.ActiveRegion!.Right);
             default:
                 return new(_dragStartPosition!.Value.row, _dragStartPosition!.Value.col);
         }
@@ -263,6 +270,7 @@
             _dragPreviewRegion = null;
             this.StateHasChanged();
         }
+
         return true;
     }
 

@@ -1,6 +1,12 @@
 let fnDict = {}
 let id = 0
 
+let currentClientPosition = {x: 0, y: 0}
+window.addEventListener('mousemove', e => {
+    currentClientPosition.x = e.clientX
+    currentClientPosition.y = e.clientY
+})
+
 function genFnId() {
     return 'f' + id++
 }
@@ -295,4 +301,16 @@ function removeSheetMousePositionListener(innerSheetEl) {
         window.removeEventListener("mousemove", v)
         delete sheetMousePositionListeners[innerSheetEl]
     }
+}
+
+function getRelativeMousePosition(el) {
+    if (el) {
+        let r = el.getBoundingClientRect()
+        let d = currentClientPosition
+        return {
+            x: d.x - r.x,
+            y: d.y - r.y
+        }
+    }
+
 }

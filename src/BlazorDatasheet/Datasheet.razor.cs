@@ -103,7 +103,7 @@ public partial class Datasheet : IHandleEvent
     /// <summary>
     /// The Viewport
     /// </summary>
-    public Viewport? Viewport { get; private set; } = new();
+    public readonly Viewport Viewport = new();
 
     /// <summary>
     /// The total height of the VISIBLE sheet. This changes when the user scrolls or the parent scroll element is resized.
@@ -190,7 +190,7 @@ public partial class Datasheet : IHandleEvent
     /// <summary>
     /// Handles passing mouse events to the sheet's input service
     /// </summary>
-    private MouseInputService _mouseInputService = new();
+    private MouseInputService _mouseInputService;
 
     // This ensures that the sheet is not re-rendered when mouse events are handled inside the sheet.
     // Performance is improved dramatically when this is used.
@@ -212,7 +212,6 @@ public partial class Datasheet : IHandleEvent
         {
             _sheetLocal = Sheet;
             _sheetLocal?.SetDialogService(new SimpleDialogService(this.JS));
-            _sheetLocal?.SetInputService(_mouseInputService);
             _cellLayoutProvider = new CellLayoutProvider(_sheetLocal);
             _visualSheet = new VisualSheet(_sheetLocal);
             _visualSheet.Invalidated += (sender, args) =>
@@ -284,23 +283,13 @@ public partial class Datasheet : IHandleEvent
                 _fillerRight,
                 _fillerBottom);
 
-            await JS.InvokeVoidAsync("createSheetMousePositionListener", _dotnetHelper, _innerSheet,
-                nameof(HandleSheetMouseMove));
+            _mouseInputService = new MouseInputService(_sheetLocal!, _innerSheet, JS, Viewport!);
+            _sheetLocal!.SetInputService(_mouseInputService);
+            await _mouseInputService.Init();
         }
 
         SheetIsDirty = false;
         DirtyCells.Clear();
-    }
-
-    [JSInvokable("HandleSheetMouseMove")]
-    public void HandleSheetMouseMove(InnerSheetMouseEventArgs args)
-    {
-        var x = args.X + Viewport.Left;
-        var y = args.Y + Viewport.Top;
-        var row = _sheetLocal.Rows.GetRow(y);
-        var col = _sheetLocal.Columns.GetColumn(x);
-        _mouseInputService.UpdateCurrentMousePosition(x, y);
-        _mouseInputService.UpdateCurrentRowCol(row, col);
     }
 
     /// <summary>
@@ -320,8 +309,8 @@ public partial class Datasheet : IHandleEvent
                 OverflowX,
                 OverflowY);
 
-        Viewport = newViewport;
-        _visualSheet.UpdateViewport(_sheetLocal, newViewport);
+        Viewport.Update(newViewport);
+        _visualSheet.UpdateViewport(_sheetLocal!, newViewport);
     }
 
     private string GetAbsoluteCellPositionStyles(int row, int col, int rowSpan, int colSpan)
@@ -622,7 +611,7 @@ public partial class Datasheet : IHandleEvent
         try
         {
             await JS.InvokeAsync<string>("disposeVirtualisationHandlers", _wholeSheetDiv);
-            await JS.InvokeAsync<string>("removeSheetMousePositionListener", _innerSheet);
+            await _mouseInputService.DisposeAsync();
         }
         catch (Exception e)
         {
