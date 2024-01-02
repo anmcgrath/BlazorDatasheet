@@ -222,6 +222,8 @@ public partial class CellStore
     /// <param name="restoreData"></param>
     internal void Restore(CellStoreRestoreData restoreData)
     {
+        _sheet.BatchUpdates();
+        
         // Set formula through this function so we add the formula back in to the dependency graph
         foreach (var data in restoreData.FormulaRestoreData.DataRemoved)
             this.SetFormulaImpl(data.row, data.col, data.data);
@@ -231,8 +233,6 @@ public partial class CellStore
         _dataStore.Restore(restoreData.ValueRestoreData);
         _formatStore.Restore(restoreData.FormatRestoreData);
         _mergeStore.Restore(restoreData.MergeRestoreData);
-
-        _sheet.BatchUpdates();
 
         foreach (var pt in restoreData.ValueRestoreData.DataRemoved)
         {
