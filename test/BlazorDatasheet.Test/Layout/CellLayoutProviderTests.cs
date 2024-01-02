@@ -103,4 +103,13 @@ public class CellLayoutProviderTests
         p.ComputeColumn(dw + nw + 1).Should().Be(2);
         p.ComputeColumn(dw + nw + dw - 1).Should().Be(2);
     }
+
+    [Test]
+    public void Set_Multi_Column_Widths_Gets_Correct_Column()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Columns.SetWidth(0, 5, 40);
+        sheet.Columns.GetColumn(0).Should().Be(0);
+        sheet.Columns.GetColumn(41).Should().Be(1);
+    }
 }

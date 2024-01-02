@@ -155,4 +155,17 @@ public class CumulativeRangeStoreTests
         changed[0].end.Should().Be(5);
         changed[0].value.Should().Be(store.Default);
     }
+
+    [Test]
+    public void Set_Cumulative_Values_Over_Multiple_Positions_Sets_Correctly()
+    {
+        int length = 5;
+        double size = 40;
+        store.Set(0, length - 1, size);
+        for (int i = 0; i < length; i++)
+        {
+            store.GetCumulative(i).Should().Be(i * size);
+            store.GetPosition(i * size + 1).Should().Be(i);
+        }
+    }
 }

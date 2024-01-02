@@ -65,7 +65,7 @@ public class CumulativeRange1DStore : Range1DStore<double>
             var newPosition = _storedPositionStarts[Math.Max(0, index)];
             if (newPosition < position)
                 position = newPosition;
-            
+
             ClearCumulativeData(index);
         }
 
@@ -228,7 +228,7 @@ public class CumulativeRange1DStore : Range1DStore<double>
 
         var oi = _intervals.Get(_storedPositionStarts[searchIndexStart - 1]);
         return _storedPositionStarts[searchIndexStart - 1] +
-               (int)((cumulative - _cumulativeValuesAtStart[searchIndexStart - 1]) / Default);
+               (int)((cumulative - _cumulativeValuesAtStart[searchIndexStart - 1]) / oi.Value);
     }
 
     /// <summary>
