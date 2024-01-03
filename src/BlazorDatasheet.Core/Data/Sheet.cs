@@ -298,12 +298,12 @@ public class Sheet
     public void BatchUpdates()
     {
         _batchRequestNo++;
-        if (!_isBatchingChanges)
-        {
-            _dirtyPositions.Clear();
-            _dirtyRegions.Clear();
-        }
 
+        if (_isBatchingChanges)
+            return;
+
+        _dirtyPositions.Clear();
+        _dirtyRegions.Clear();
         Cells.BatchChanges();
         _isBatchingChanges = true;
     }
