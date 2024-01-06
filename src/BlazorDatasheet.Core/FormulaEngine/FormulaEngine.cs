@@ -4,6 +4,7 @@ using BlazorDatasheet.Core.Events;
 using BlazorDatasheet.Core.Events.Edit;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Graph;
+using BlazorDatasheet.DataStructures.References;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.References;

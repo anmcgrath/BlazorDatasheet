@@ -8,7 +8,8 @@ public enum CellValueType
     Logical,
     Date,
     Error,
-    Any,
     Array,
+    Unknown,
     Sequence,
+    Reference
 }

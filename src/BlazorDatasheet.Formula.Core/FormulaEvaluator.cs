@@ -1,4 +1,5 @@
-﻿using BlazorDatasheet.Formula.Core.Interpreter.Functions;
+﻿using BlazorDatasheet.DataStructures.References;
+using BlazorDatasheet.Formula.Core.Interpreter.Functions;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 using BlazorDatasheet.Formula.Core.Interpreter.Syntax;
 
@@ -25,7 +26,7 @@ public class FormulaEvaluator
         _typeConverter = new ParameterTypeConverter(environment);
     }
 
-    internal object Evaluate(SyntaxTree tree)
+    public object Evaluate(SyntaxTree tree)
     {
         if (tree.Diagnostics.Any())
             return new FormulaError(ErrorType.Na);
@@ -135,8 +136,6 @@ public class FormulaEvaluator
         int argIndex = 0;
 
         CellValue[] convertedArgs = new CellValue[nArgsProvided];
-
-        var repeatingCollection = new List<object>();
 
         while (paramIndex < paramDefinitions.Length &&
                argIndex < nArgsProvided)
@@ -275,7 +274,7 @@ public class FormulaEvaluator
     private object EvaluateNameExpression(NameExpressionSyntax syntax)
     {
         if (_environment.VariableExists(syntax.IdentifierToken.Text))
-            return _environment.GetVariable(syntax.IdentifierToken.Text);
+            return _environment.GetVariable(syntax.IdentifierToken.Text).Data!;
 
         return new FormulaError(ErrorType.Ref, $"Variable {syntax.IdentifierToken.Text} does not exist.");
     }

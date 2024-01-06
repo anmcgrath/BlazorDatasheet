@@ -80,8 +80,7 @@ public class InterpreterTests
     public void Divide_By_Zero_Returns_Formula_Error()
     {
         var formula = _parser.FromString("=10/0");
-        var res = _evaluator.Evaluate(formula);
-        var resError = res as FormulaError;
+        var resError = (FormulaError)_evaluator.Evaluate(formula)!;
         Assert.NotNull(resError);
         Assert.AreEqual(ErrorType.Div0, resError!.ErrorType);
     }

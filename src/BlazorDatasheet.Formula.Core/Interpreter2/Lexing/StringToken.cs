@@ -1,0 +1,16 @@
+namespace BlazorDatasheet.Formula.Core.Interpreter2.Lexing;
+
+public class StringToken : Token
+{
+    public string Value { get; }
+
+    public StringToken(string value, int startPosition) : base(Tag.StringToken, startPosition)
+    {
+        Value = value;
+    }
+
+    public override string ToString()
+    {
+        return base.ToString() + " = " + Value;
+    }
+}

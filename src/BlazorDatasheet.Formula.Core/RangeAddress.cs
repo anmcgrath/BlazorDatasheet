@@ -1,4 +1,6 @@
-﻿namespace BlazorDatasheet.Formula.Core;
+﻿using BlazorDatasheet.DataStructures.References;
+
+namespace BlazorDatasheet.Formula.Core;
 
 /// <summary>
 /// Evaluated range address - non-relative.

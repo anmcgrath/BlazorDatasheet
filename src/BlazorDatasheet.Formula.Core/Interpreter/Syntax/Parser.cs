@@ -1,4 +1,5 @@
-﻿using BlazorDatasheet.DataStructures.Util;
+﻿using BlazorDatasheet.DataStructures.References;
+using BlazorDatasheet.DataStructures.Util;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Formula.Core.Interpreter.Syntax;
@@ -90,6 +91,8 @@ public class Parser
 
         return left;
     }
+    
+    
 
     /// <summary>
     /// Parse primary expression (true, false, identifier)

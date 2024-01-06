@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Linq;
+using BlazorDatasheet.DataStructures.References;
 using BlazorDatasheet.DataStructures.Util;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
+using FluentAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Formula;
@@ -64,5 +67,33 @@ public class CellReferenceTests
         Assert.True(c1.SameAs(c2));
         Assert.False(c1.SameAs(c3));
         Assert.False(c1.SameAs(c4));
+    }
+
+    [Test]
+    [TestCase("$A1:A2", true, false)]
+    [TestCase("B$2:$A1$", false, false)]
+    [TestCase("namedRange", true, true)]
+    [TestCase("namedRange$", false, false)]
+    [TestCase("$2:$3", true, false)]
+    [TestCase("$C:$D", true, false)]
+    [TestCase("C:D$", false, false)]
+    [TestCase("A:B:C", true, false)]
+    public void Parse_Ranges(string refStr, bool isValid, bool isNamedRef)
+    {
+        var res1 = RangeText2.TryParseReference(refStr.AsSpan(), out var reference);
+        res1.Should().Be(isValid);
+
+        if (!isValid)
+            return;
+
+        if (isNamedRef)
+            reference.Should().BeOfType<NamedReference>();
+        else
+        {
+            reference.Should().NotBeOfType<NamedReference>();
+        }
+
+        var resultStr = reference!.ToRefText();
+        resultStr.Should().Be(refStr);
     }
 }
