@@ -1,4 +1,5 @@
-﻿using BlazorDatasheet.DataStructures.Util;
+﻿using BlazorDatasheet.DataStructures.References;
+using BlazorDatasheet.DataStructures.Util;
 using BlazorDatasheet.Formula.Core.Interpreter.Functions;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 using BlazorDatasheet.Formula.Core.Interpreter.Syntax;
@@ -243,6 +244,12 @@ public class CellValue
     public override string ToString()
     {
         return this.Data?.ToString() ?? string.Empty;
+    }
+
+    public bool IsCellReference()
+    {
+        return ValueType == CellValueType.Reference &&
+               ((Reference)Data!).Kind == ReferenceKind.Cell;
     }
 
     public bool IsEqualTo(CellValue value)

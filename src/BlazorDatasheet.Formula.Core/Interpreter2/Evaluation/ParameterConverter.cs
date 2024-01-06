@@ -26,6 +26,9 @@ public class ParameterConverter
     /// <returns></returns>
     public CellValue ConvertVal(CellValue value, ParameterDefinition definition)
     {
+        if (value.IsCellReference() && definition.Type.IsScalar())
+            value = GetCellReferenceValue(value);
+
         if (value.IsError())
             return value;
 
@@ -188,5 +191,17 @@ public class ParameterConverter
         if (coerceText)
             return CellValue.Text(val);
         return CellValue.Error(ErrorType.Value);
+    }
+
+    private CellValue GetCellReferenceValue(CellValue value)
+    {
+        var reference = ((Reference)value.Data!);
+        if (reference.Kind == ReferenceKind.Cell)
+        {
+            var cellRef = (CellReference)reference;
+            return _environment.GetCellValue(cellRef.Row.RowNumber, cellRef.Col.ColNumber);
+        }
+
+        return CellValue.Error(ErrorType.Na);
     }
 }

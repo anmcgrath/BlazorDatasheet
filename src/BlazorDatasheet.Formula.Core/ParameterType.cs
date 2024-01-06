@@ -13,3 +13,15 @@ public enum ParameterType
     DateSequence,
     Array,
 }
+
+public static class ParameterTypExtensions
+{
+    public static bool IsScalar(this ParameterType type)
+    {
+        return type == ParameterType.Date ||
+               type == ParameterType.Number ||
+               type == ParameterType.Text ||
+               type == ParameterType.Integer ||
+               type == ParameterType.Logical;
+    }
+}
