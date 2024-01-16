@@ -298,12 +298,12 @@ public class Sheet
     public void BatchUpdates()
     {
         _batchRequestNo++;
-        if (!_isBatchingChanges)
-        {
-            _dirtyPositions.Clear();
-            _dirtyRegions.Clear();
-        }
 
+        if (_isBatchingChanges)
+            return;
+
+        _dirtyPositions.Clear();
+        _dirtyRegions.Clear();
         Cells.BatchChanges();
         _isBatchingChanges = true;
     }
@@ -343,14 +343,14 @@ public class Sheet
     /// <param name="inputPosition">The position where the insertion starts</param>
     /// <param name="newLineDelim">The delimiter that specifies a new-line</param>
     /// <returns>The region of cells that were affected</returns>
-    public Region? InsertDelimitedText(string text, CellPosition inputPosition, string newLineDelim = "\n")
+    public Region? InsertDelimitedText(string text, CellPosition inputPosition)
     {
         if (!Region.Contains(inputPosition))
             return null;
 
-        if (text.EndsWith('\n'))
-            text = text.Substring(0, text.Length - 1);
-        var lines = text.Split(newLineDelim);
+        ReadOnlySpan<string> lines = text.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+        if (lines[^1] is [])
+            lines = lines[..^1];
 
         // We may reach the end of the sheet, so we only need to paste the rows up until the end.
         var endRow = Math.Min(inputPosition.row + lines.Length - 1, NumRows - 1);
