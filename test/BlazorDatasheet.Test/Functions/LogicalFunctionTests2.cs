@@ -30,13 +30,13 @@ public class LogicalFunctionTests2
     public void If_Function_Tests()
     {
         _env.RegisterFunction("IF", new IfFunction());
-        /*Eval("=IF(true,5,4)").Should().Be(5);
+        Eval("=IF(true,5,4)").Should().Be(5);
         Eval("=IF(false,5,4)").Should().Be(4);
         Eval("=IF(\"s\",5,4)").Should().BeOfType<FormulaError>();
         Eval("=IF(\"true\",5,4)").Should().Be(5);
         Eval("=IF(\"false\",5,4)").Should().Be(4);
         Eval("=IF(2,5,4)").Should().Be(5);
-        Eval("=IF(0,5,4)").Should().Be(4);*/
+        Eval("=IF(0,5,4)").Should().Be(4);
 
         // errors propagate
         _env.SetCellValue(0, 0, new FormulaError(ErrorType.Div0));

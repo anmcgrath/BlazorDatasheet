@@ -46,7 +46,7 @@ public class MathFunctionTests2
     public void Sum_Function_Tests()
     {
         _env.RegisterFunction("sum", new SumFunction());
-        /*var res1 = Eval("=sum(1, 2)");
+        var res1 = Eval("=sum(1, 2)");
         res1.Should().Be(3);
         Eval("=sum(5)").Should().Be(5);
         Eval("=sum(true,true)").Should().Be(2);
@@ -65,7 +65,7 @@ public class MathFunctionTests2
         Eval("=sum(A1)").Should().Be(0);
 
         _env.SetCellValue(0, 0, "abc");
-        Eval("=sum(A1)").Should().Be(0);*/
+        Eval("=sum(A1)").Should().Be(0);
 
         _env.SetCellValue(2, 1, 123);
         Eval("=sum(B3)").Should().Be(123);
