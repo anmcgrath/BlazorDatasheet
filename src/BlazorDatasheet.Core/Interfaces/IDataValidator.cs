@@ -1,3 +1,5 @@
+using BlazorDatasheet.Formula.Core;
+
 namespace BlazorDatasheet.Core.Interfaces;
 
 public interface IDataValidator
@@ -7,7 +9,7 @@ public interface IDataValidator
     /// </summary>
     /// <param name="value"></param>
     /// <returns></returns>
-    public bool IsValid(object? value);
+    public bool IsValid(CellValue value);
 
     /// <summary>
     /// If IsStrict, the cell's value won't be changed if the validation fails during editing.

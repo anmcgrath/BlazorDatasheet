@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Validation;
+using BlazorDatasheet.Formula.Core;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Validation;
@@ -17,7 +18,7 @@ public class DefaultValidators
     public void Number_Validator_Validates_Numbers(object value)
     {
         var validator = new NumberValidator(true);
-        Assert.IsTrue(validator.IsValid(value));
+        Assert.IsTrue(validator.IsValid(new CellValue(value)));
     }
 
     [Test]
@@ -27,7 +28,7 @@ public class DefaultValidators
     public void Number_Validator_Validates_Strings(object val)
     {
         var validator = new NumberValidator(true);
-        Assert.IsTrue(validator.IsValid(val));
+        Assert.IsTrue(validator.IsValid(new CellValue(val)));
     }
 
     [Test]
@@ -36,7 +37,7 @@ public class DefaultValidators
     public void Number_Validator_Invalidates_Incorrect_Strings(object val)
     {
         var validator = new NumberValidator(true);
-        Assert.IsFalse(validator.IsValid(val));
+        Assert.IsFalse(validator.IsValid(new CellValue(val)));
     }
 
     [Test]
@@ -46,14 +47,14 @@ public class DefaultValidators
     public void Number_Validator_Invalidates_Incorrect_Objects(object val)
     {
         var validator = new NumberValidator(true);
-        Assert.IsFalse(validator.IsValid(new char()));
+        Assert.IsFalse(validator.IsValid(new CellValue(new char())));
     }
 
     [Test]
     public void Number_Validator_Invalidates_Date()
     {
         var validator = new NumberValidator(true);
-        Assert.IsFalse(validator.IsValid(DateTime.MinValue));
+        Assert.IsFalse(validator.IsValid(new CellValue(DateTime.MinValue)));
     }
 
     [Test]
@@ -61,10 +62,10 @@ public class DefaultValidators
     {
         var items = new List<string>() { "Item1", "Item2" };
         var validator = new SourceValidator(items, false);
-        Assert.IsTrue(validator.IsValid("Item1"));
-        Assert.IsFalse(validator.IsValid("Item3"));
-        Assert.IsTrue(validator.IsValid("Item2"));
-        Assert.IsFalse(validator.IsValid(100));
+        Assert.IsTrue(validator.IsValid(new CellValue("Item1")));
+        Assert.IsFalse(validator.IsValid(new CellValue("Item3")));
+        Assert.IsTrue(validator.IsValid(new CellValue("Item2")));
+        Assert.IsFalse(validator.IsValid(new CellValue(100)));
     }
 
     [Test]
@@ -72,8 +73,8 @@ public class DefaultValidators
     {
         var items = new List<string>() { "1", "2", "100.2" };
         var validator = new SourceValidator(items, false);
-        Assert.IsFalse(validator.IsValid("a"));
-        Assert.IsTrue(validator.IsValid(100.2));
-        Assert.IsFalse(validator.IsValid(5));
+        Assert.IsFalse(validator.IsValid(new CellValue("a")));
+        Assert.IsTrue(validator.IsValid(new CellValue(100.2)));
+        Assert.IsFalse(validator.IsValid(new CellValue(5)));
     }
 }

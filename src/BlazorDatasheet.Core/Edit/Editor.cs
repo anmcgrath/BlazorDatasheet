@@ -2,6 +2,7 @@ using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Events.Edit;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Formula.Core;
+using CellFormula = BlazorDatasheet.Formula.Core.Interpreter2.CellFormula;
 
 namespace BlazorDatasheet.Core.Edit;
 
@@ -133,7 +134,7 @@ public class Editor
 
         if (isFormula)
         {
-            parsedFormula = Sheet.FormulaEngine.ParseFormula(formulaString);
+            parsedFormula = Sheet.FormulaEngine.ParseFormula(formulaString!);
             if (!parsedFormula.IsValid())
             {
                 Sheet.Dialog.Alert("Invalid formula");
@@ -141,8 +142,8 @@ public class Editor
             }
         }
 
-        object? formulaResult = isFormula ? Sheet.FormulaEngine.Evaluate(parsedFormula) : null;
-        var editValue = isFormula ? formulaResult : this.EditValue;
+        var formulaResult = isFormula ? Sheet.FormulaEngine.Evaluate(parsedFormula) : CellValue.Empty;
+        var editValue = isFormula ? formulaResult : new CellValue(this.EditValue);
 
         var beforeAcceptEdit = new BeforeAcceptEditEventArgs(EditCell, editValue, parsedFormula, formulaString);
         BeforeEditAccepted?.Invoke(this, beforeAcceptEdit);
