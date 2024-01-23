@@ -3,6 +3,7 @@ using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Intervals;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core;
+using CellFormula = BlazorDatasheet.Formula.Core.Interpreter2.CellFormula;
 
 namespace BlazorDatasheet.Core.Data.Cells;
 

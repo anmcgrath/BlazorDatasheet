@@ -21,12 +21,13 @@ public class CellReferenceTests
     public void Cell_Str_Parses_Correctly(string cellStr, int rowExpected, int colExpected, bool rowAbsExpected,
         bool colAbsExpected)
     {
-        var res = RangeText.CellFromString(cellStr);
-        var cellRef = new CellReference(res.row, res.col, res.fixedCol, res.fixedRow);
-        Assert.AreEqual(rowExpected, cellRef.Row.RowNumber);
-        Assert.AreEqual(colExpected, cellRef.Col.ColNumber);
-        Assert.AreEqual(rowAbsExpected, cellRef.Row.IsFixedReference);
-        Assert.AreEqual(colAbsExpected, cellRef.Col.IsFixedReference);
+        var parsed = RangeText2.TryParseSingleCellReference(cellStr, out var refr);
+        parsed.Should().Be(true);
+        var cellRef = (CellReference)refr!;
+        rowExpected.Should().Be(cellRef.Row.RowNumber);
+        colExpected.Should().Be(cellRef.Col.ColNumber);
+        rowAbsExpected.Should().Be(cellRef.Row.IsFixedReference);
+        colAbsExpected.Should().Be(cellRef.Col.IsFixedReference);
     }
 
     [Test]

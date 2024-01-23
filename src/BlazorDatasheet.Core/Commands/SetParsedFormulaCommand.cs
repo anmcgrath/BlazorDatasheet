@@ -1,6 +1,6 @@
 ﻿using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
-using BlazorDatasheet.Formula.Core;
+using BlazorDatasheet.Formula.Core.Interpreter2;
 
 namespace BlazorDatasheet.Core.Commands;
 

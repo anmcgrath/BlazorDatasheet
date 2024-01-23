@@ -1,13 +1,12 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using BlazorDatasheet.Formula.Core;
-using BlazorDatasheet.Formula.Core.Interpreter.Functions;
-using BlazorDatasheet.Formula.Core.Interpreter.Syntax;
+using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 using BlazorDatasheet.Test.Formula;
 using BlazorDatashet.Formula.Functions.Math;
 using FluentAssertions;
 using NUnit.Framework;
+using Parser = BlazorDatasheet.Formula.Core.Interpreter.Parsing.Parser;
 
 namespace BlazorDatasheet.Test.Functions;
 
@@ -23,9 +22,9 @@ public class MathFunctionTests
 
     public object? Eval(string formulaString)
     {
-        var eval = new FormulaEvaluator(_env);
-        var parser = new FormulaParser();
-        return eval.Evaluate(parser.FromString(formulaString));
+        var eval = new Evaluator(_env);
+        var parser = new Parser();
+        return eval.Evaluate(parser.Parse(formulaString)).Data;
     }
 
     [Test]
@@ -44,10 +43,12 @@ public class MathFunctionTests
     public void Sum_Function_Tests()
     {
         _env.RegisterFunction("sum", new SumFunction());
-        Eval("=sum(1, 2)").Should().Be(3);
+        var res1 = Eval("=sum(1, 2)");
+        res1.Should().Be(3);
         Eval("=sum(5)").Should().Be(5);
         Eval("=sum(true,true)").Should().Be(2);
         Eval("=sum(\"ab\",true)").Should().BeOfType<FormulaError>();
+        Eval("=sum({1,2,3},4").Should().Be(10);
 
         var nums = new double[] { 0.5, 1, 1.5, 2 };
 

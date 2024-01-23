@@ -1,5 +1,4 @@
-﻿using BlazorDatasheet.Formula.Core.Interpreter.Functions;
-using BlazorDatasheet.Formula.Core.Interpreter.References;
+﻿using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Formula.Core;
 

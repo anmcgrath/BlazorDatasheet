@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.References;
 using BlazorDatasheet.Formula.Core;
-using BlazorDatasheet.Formula.Core.Interpreter.Functions;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Test.Formula;

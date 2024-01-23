@@ -1,13 +1,12 @@
 ﻿using BlazorDatasheet.Formula.Core;
-using BlazorDatasheet.Formula.Core.Interpreter.Syntax;
-using BlazorDatasheet.Formula.Core.Interpreter2.Evaluation;
+using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 using FluentAssertions;
 using NUnit.Framework;
-using Parser = BlazorDatasheet.Formula.Core.Interpreter2.Parsing.Parser;
+using Parser = BlazorDatasheet.Formula.Core.Interpreter.Parsing.Parser;
 
 namespace BlazorDatasheet.Test.Formula;
 
-public class InterpreterTests2
+public class InterpreterTests
 {
     private Evaluator _evaluator;
     private TestEnvironment _env;

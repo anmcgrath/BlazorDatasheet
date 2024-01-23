@@ -3,6 +3,7 @@ using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.FormulaEngine;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.Formula.Core;
 using FluentAssertions;
 using NUnit.Framework;
 
@@ -109,7 +110,8 @@ public class SheetFormulaIntegrationTests
     public void Sum_On_Empty_Cell_Treats_Empty_Cell_As_Zero()
     {
         _sheet.Cells.SetFormula(1, 1, "=A1 + 5");
-        Assert.AreEqual(5, _sheet.Cells.GetValue(1, 1));
+        var val = _sheet.Cells.GetValue(1, 1);
+        val.Should().Be(5);
     }
 
     [Test]
@@ -120,7 +122,7 @@ public class SheetFormulaIntegrationTests
         _sheet.Commands.Undo();
         _sheet.Cells.GetValue(0, 0).Should().Be(10);
     }
-    
+
 
     [Test]
     public void FormulaEngine_Set_Variable_Calculates()

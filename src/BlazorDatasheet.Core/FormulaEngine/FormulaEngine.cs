@@ -7,8 +7,11 @@ using BlazorDatasheet.DataStructures.Graph;
 using BlazorDatasheet.DataStructures.References;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core;
+using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
+using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 using BlazorDatashet.Formula.Functions;
+using CellFormula = BlazorDatasheet.Formula.Core.Interpreter2.CellFormula;
 
 namespace BlazorDatasheet.Core.FormulaEngine;
 
@@ -17,8 +20,8 @@ public class FormulaEngine
     private readonly Sheet _sheet;
     private readonly CellStore _cells;
     private SheetEnvironment _environment;
-    private readonly FormulaParser _parser = new();
-    private readonly FormulaEvaluator _evaluator;
+    private readonly Parser _parser = new();
+    private readonly Evaluator _evaluator;
     private readonly DependencyGraph _dependencyGraph;
 
     /// <summary>
@@ -38,7 +41,7 @@ public class FormulaEngine
         _cells.CellsChanged += SheetOnCellsChanged;
 
         _environment = new SheetEnvironment(sheet);
-        _evaluator = new FormulaEvaluator(_environment);
+        _evaluator = new Evaluator(_environment);
         _dependencyGraph = new DependencyGraph();
 
         RegisterDefaultFunctions();
@@ -151,10 +154,10 @@ public class FormulaEngine
         return _parser.FromString(formulaString);
     }
 
-    public object? Evaluate(CellFormula? formula)
+    public CellValue Evaluate(CellFormula? formula)
     {
         if (formula == null)
-            return null;
+            return CellValue.Empty;
         return _evaluator.Evaluate(formula);
     }
 
@@ -198,8 +201,6 @@ public class FormulaEngine
             _dependencyGraph
                 .TopologicalSort();
 
-        var changedValuePositions = new List<CellPosition>();
-
         foreach (var vertex in order)
         {
             if (vertex is CellVertex cellVertex)
@@ -210,7 +211,6 @@ public class FormulaEngine
                     var value = this.Evaluate(formula);
                     _sheet.Cells.SetValueImpl(cellVertex.Row, cellVertex.Col, value);
                     _sheet.MarkDirty(cellVertex.Row, cellVertex.Col);
-                    changedValuePositions.Add(new CellPosition(cellVertex.Row, cellVertex.Col));
                 }
             }
         }

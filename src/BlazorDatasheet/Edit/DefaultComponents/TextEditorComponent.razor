@@ -6,6 +6,7 @@
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.DataStructures.Store
 @using BlazorDatasheet.Formula.Core
+@using BlazorDatasheet.Formula.Core.Interpreter.Parsing
 
 <input
     type="text"
@@ -63,9 +64,9 @@
     {
         if (CurrentValue.StartsWith("="))
         {
-            var parser = new FormulaParser();
+            var parser = new Parser();
             var formula = parser.FromString(CurrentValue);
-            if (formula.References == null)
+            if (!formula.References.Any())
                 return;
 
             _colorRegions = formula.References
