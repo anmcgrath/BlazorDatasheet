@@ -1,6 +1,7 @@
 using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Regression;
 
 namespace BlazorDatasheet.Core.Patterns;
@@ -29,7 +30,7 @@ public class NumberRegressionPattern : IAutoFillPattern
     {
         var regressionOffset = offset + (repeatNo + 1) * Offsets.Count + 1;
         var val = LinearFunction.ComputeY(regressionOffset);
-        var setNumCommand = new SetCellValueCommand(newDataPosition.row, newDataPosition.col, val);
+        var setNumCommand = new SetCellValueCommand(newDataPosition.row, newDataPosition.col, CellValue.Number(val));
         return setNumCommand;
     }
 }

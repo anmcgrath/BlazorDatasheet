@@ -62,13 +62,25 @@ public partial class CellStore
         // Save old validation result and current cell values.
         restoreData.ValidRestoreData = _validStore.Set(row, col, validationResult.IsValid);
 
-        var newCellValue = value == null ? _defaultCellValue : new CellValue(value);
+        var newCellValue = value.IsEmpty ? _defaultCellValue : value;
         restoreData.ValueRestoreData = _dataStore.Set(row, col, newCellValue);
 
         this.EmitCellChanged(row, col);
         _sheet.MarkDirty(row, col);
 
         return restoreData;
+    }
+
+    /// <summary>
+    /// Sets a cell value to the value specified and raises the appropriate events.
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <param name="value"></param>
+    /// <returns>Restore data that stores the changes made.</returns>
+    internal CellStoreRestoreData SetValueImpl(int row, int col, object? value)
+    {
+        return SetValueImpl(row, col, new CellValue(value));
     }
 
     /// <summary>
