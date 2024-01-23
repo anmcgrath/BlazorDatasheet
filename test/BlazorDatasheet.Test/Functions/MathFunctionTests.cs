@@ -48,7 +48,7 @@ public class MathFunctionTests
         Eval("=sum(5)").Should().Be(5);
         Eval("=sum(true,true)").Should().Be(2);
         Eval("=sum(\"ab\",true)").Should().BeOfType<FormulaError>();
-        Eval("=sum({1,2,3},4").Should().Be(10);
+        Eval("=sum({1,2,3},4)").Should().Be(10);
 
         var nums = new double[] { 0.5, 1, 1.5, 2 };
 
