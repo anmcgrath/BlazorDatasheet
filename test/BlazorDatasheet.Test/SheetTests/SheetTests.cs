@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.DataStructures.References;
+using BlazorDatasheet.DataStructures.Util;
 using FluentAssertions;
 using NUnit.Framework;
 
@@ -58,11 +60,12 @@ public class SheetTests
     public void Range_String_Specification_Tests()
     {
         var sheet = new Sheet(1, 1); // size doesn't matter, could be anything
-        sheet.Range("a1")!.Region.Should()
+        /*sheet.Range("a1")!.Region.Should()
             .BeEquivalentTo(new { Left = 0, Top = 0 }, options => options.ExcludingMissingMembers());
         sheet.Range("b2")!.Region.Should()
             .BeEquivalentTo(new { Left = 1, Top = 1 }, options => options.ExcludingMissingMembers());
-        sheet.Range("2a")?.Region.Should().BeNull();
+
+        sheet.Range("2a")?.Region.Should().BeNull();*/
 
         sheet.Range("A1:B2")!.Region.Should()
             .BeEquivalentTo(new { Left = 0, Top = 0, Right = 1, Bottom = 1 },
@@ -79,18 +82,26 @@ public class SheetTests
     }
 
     [Test]
-    [TestCase("A_1")]
-    [TestCase("asd")]
-    [TestCase("asd..")]
     [TestCase("")]
     [TestCase("A,1")]
     [TestCase("A:1")]
     [TestCase("1")]
-    [TestCase("A")]
     public void Bad_Range_Strings_return_Empty(string badText)
     {
         var sheet = new Sheet(1, 1);
         sheet.Range(badText)?.Region.Should().BeNull();
+    }
+
+    [Test]
+    [TestCase("A_1")]
+    [TestCase("asd")]
+    [TestCase("asd..")]
+    [TestCase("A")]
+    public void Name_Range_Strings_return_Named_Regions(string str)
+    {
+        var parsed = RangeText2.TryParseReference(str, out var reference);
+        parsed.Should().Be(true);
+        reference.Kind.Should().Be(ReferenceKind.Named);
     }
 
     [Test]

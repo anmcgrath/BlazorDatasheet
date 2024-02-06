@@ -94,7 +94,7 @@ public static class RangeText2
 
     /// <summary>
     /// Tries to parse a reference of the form A1:A3 etc.
-    /// This reference string expects a colon to seperate.
+    /// This reference string expects zero or more colons as separators.
     /// There may be more than one part e.g A1:A2:A4
     /// </summary>
     /// <param name="refStr"></param>
@@ -102,18 +102,13 @@ public static class RangeText2
     /// <returns></returns>
     public static bool TryParseReference(ReadOnlySpan<char> refStr, out Reference? reference)
     {
-        if (refStr.Length < 3)
-        {
-            reference = null;
-            return false;
-        }
-
         var parsedRefs = new List<Reference>();
 
         int pos = 0;
         int start = 0;
         while (pos <= refStr.Length - 1)
         {
+            // look for range strings between colons
             while (refStr[pos] != ':')
             {
                 pos++;
@@ -217,10 +212,12 @@ public static class RangeText2
         // if there are more chars after the row number it's got to be a named reference
         if (pos <= str.Length - 1)
         {
-            var rest = str.Slice(pos, str.Length - pos);
-            for (int i = 0; i < rest.Length; i++)
+            if (!IsValidStartOfName(str[0]))
+                return false;
+
+            for (int i = 0; i < str.Length; i++)
             {
-                if (IsInvalidNameChar(rest[i]))
+                if (!IsValidNameChar(str[i]))
                 {
                     return false;
                 }
@@ -250,9 +247,18 @@ public static class RangeText2
         return true;
     }
 
-    private static bool IsInvalidNameChar(char c)
+    private static bool IsValidNameChar(char c)
     {
-        return c == '$';
+        return char.IsLetterOrDigit(c) ||
+               c == '_' ||
+               c == '?' ||
+               c == '.' ||
+               c == '\\';
+    }
+
+    private static bool IsValidStartOfName(char c)
+    {
+        return char.IsLetter(c) || c == '_';
     }
 
 

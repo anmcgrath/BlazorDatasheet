@@ -539,29 +539,11 @@ public class Region : IRegion
     /// <returns></returns>
     public static IRegion? FromString(string regionString)
     {
-        if (string.IsNullOrEmpty(regionString))
+        var parsed = RangeText2.TryParseReference(regionString.AsSpan(), out var reference);
+        if (!parsed)
             return null;
 
-        // probably could be more efficient
-        var split = regionString.Split(':');
-        if (split.Length == 1 && RangeText.IsValidCellReference(split[0]))
-            return new Region(ParseCellPosition(split[0]));
-        if (split.Length == 2)
-        {
-            if (RangeText.IsValidCellReference(split[0]) &&
-                RangeText.IsValidCellReference(split[1]))
-                return new Region(ParseCellPosition(split[0]), ParseCellPosition(split[1]));
-
-            if (RangeText.IsValidColReference(split[0]) &&
-                RangeText.IsValidColReference(split[1]))
-                return new ColumnRegion(RangeText.ColStrToNumber(split[0]), RangeText.ColStrToNumber(split[1]));
-
-            if (RangeText.IsValidRowReference(split[0]) &&
-                RangeText.IsValidRowReference(split[1]))
-                return new RowRegion(RangeText.RowStrToNumber(split[0]), RangeText.RowStrToNumber(split[1]));
-        }
-
-        return null;
+        return reference!.ToRegion();
     }
 
     private static CellPosition ParseCellPosition(string cellText)
