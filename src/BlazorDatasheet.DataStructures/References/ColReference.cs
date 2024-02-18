@@ -30,7 +30,7 @@ public class ColReference : Reference
 
     public override void Shift(int offsetRow, int offsetCol)
     {
-        if(!IsFixedReference)
+        if (!IsFixedReference)
             ColNumber += offsetCol;
     }
 

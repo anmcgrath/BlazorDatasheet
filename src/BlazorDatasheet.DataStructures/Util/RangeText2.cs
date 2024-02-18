@@ -139,8 +139,25 @@ public static class RangeText2
 
         if (parsedRefs.Count == 1)
         {
-            reference = parsedRefs[0];
-            return true;
+            var singleRef = parsedRefs[0];
+
+            // the only way a single reference is valid is if it's a named reference
+            // that may be a column reference or a named reference
+            if (singleRef.Kind == ReferenceKind.Named)
+            {
+                reference = singleRef;
+                return true;
+            }
+
+            if (singleRef.Kind == ReferenceKind.Column)
+            {
+                var colRef = (ColReference)singleRef;
+                reference = new NamedReference(ColNumberToLetters(colRef.ColNumber));
+                return true;
+            }
+
+            reference = null;
+            return false;
         }
 
         reference = new MultiReference(parsedRefs.ToArray());
@@ -276,5 +293,19 @@ public static class RangeText2
         }
 
         return result - 1;
+    }
+
+    public static string ColNumberToLetters(int n)
+    {
+        var N = n + 1;
+        string str = "";
+        while (N > 0)
+        {
+            int m = (N - 1) % 26;
+            str = Convert.ToChar('A' + m) + str;
+            N = (N - m) / 26;
+        }
+
+        return str;
     }
 }
