@@ -209,7 +209,7 @@ public class Sheet
             return null;
 
         var region = Region.FromString(rangeStr);
-        return new SheetRange(this, region);
+        return region == null ? null : new SheetRange(this, region);
     }
 
     /// <summary>
