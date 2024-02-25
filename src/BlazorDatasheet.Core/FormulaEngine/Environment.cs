@@ -58,12 +58,6 @@ public class SheetEnvironment : IEnvironment
 
     public CellValue GetCellValue(int row, int col) => _sheet.Cells.GetCellValue(row, col);
 
-    public CellValue[][] GetRangeValues(RangeAddress rangeAddress)
-    {
-        return GetValuesInRange(
-            _sheet.Range(rangeAddress.RowStart, rangeAddress.RowEnd, rangeAddress.ColStart, rangeAddress.ColEnd));
-    }
-
     public CellValue[][] GetRangeValues(Reference reference)
     {
         if (reference.Kind == ReferenceKind.Range)

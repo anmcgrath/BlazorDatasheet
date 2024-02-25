@@ -531,21 +531,6 @@ public class Region : IRegion
         return false;
     }
 
-    /// <summary>
-    /// Returns a new region from the region string, e.g A1, A1:A4, A:A, 4:5, etc.
-    /// The string may contain $ but they are ignored.
-    /// </summary>
-    /// <param name="regionString"></param>
-    /// <returns></returns>
-    public static IRegion? FromString(string regionString)
-    {
-        var parsed = RangeText2.TryParseReference(regionString.AsSpan(), out var reference);
-        if (!parsed)
-            return null;
-
-        return reference!.ToRegion();
-    }
-
     private static CellPosition ParseCellPosition(string cellText)
     {
         var result = RangeText.CellFromString(cellText)!;

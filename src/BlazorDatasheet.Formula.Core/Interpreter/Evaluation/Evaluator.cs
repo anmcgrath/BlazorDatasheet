@@ -22,19 +22,26 @@ public class Evaluator
         _uOp = new UnaryOpEvaluator(cellValueCoercer);
     }
 
-    public CellValue Evaluate(CellFormula cellFormula)
+    public CellValue Evaluate(CellFormula cellFormula, bool resolveReferences = true)
     {
-        return Evaluate(cellFormula.ExpressionTree);
+        return Evaluate(cellFormula.ExpressionTree, resolveReferences);
     }
 
-    public CellValue Evaluate(SyntaxTree tree)
+    /// <summary>
+    /// Evaluates a syntax tree
+    /// </summary>
+    /// <param name="tree"></param>
+    /// <param name="resolveReferences">Whether or not to resolve any CellValues that are references. If set to false,
+    /// a CellValue will be returned with a ValueType Reference, otherwise the value will be looked up in the sheet.</param>
+    /// <returns></returns>
+    public CellValue Evaluate(SyntaxTree tree, bool resolveReferences = true)
     {
         if (tree.Errors.Any())
             return CellValue.Error(ErrorType.Na);
         var result = EvaluateExpression(tree.Root);
 
         // If we haven't resolved references yet, do that.
-        if (result.ValueType == CellValueType.Reference)
+        if (resolveReferences && result.ValueType == CellValueType.Reference)
         {
             var r = (Reference)result.Data!;
             if (r.Kind == ReferenceKind.Cell)

@@ -33,10 +33,10 @@ public class FormulaEngine
 
     public bool IsCalculating { get; private set; }
 
-    public FormulaEngine(Sheet sheet, CellStore cells)
+    public FormulaEngine(Sheet sheet)
     {
         _sheet = sheet;
-        _cells = cells;
+        _cells = sheet.Cells;
         _sheet.Editor.BeforeCellEdit += SheetOnBeforeCellEdit;
         _cells.CellsChanged += SheetOnCellsChanged;
 
@@ -154,11 +154,11 @@ public class FormulaEngine
         return _parser.FromString(formulaString);
     }
 
-    public CellValue Evaluate(CellFormula? formula)
+    public CellValue Evaluate(CellFormula? formula, bool resolveReferences = true)
     {
         if (formula == null)
             return CellValue.Empty;
-        return _evaluator.Evaluate(formula);
+        return _evaluator.Evaluate(formula, resolveReferences);
     }
 
     /// <summary>

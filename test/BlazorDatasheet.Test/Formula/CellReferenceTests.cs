@@ -1,7 +1,11 @@
 ﻿using System;
 using System.Linq;
+using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Data.Cells;
+using BlazorDatasheet.Core.FormulaEngine;
 using BlazorDatasheet.DataStructures.References;
 using BlazorDatasheet.DataStructures.Util;
+using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 using FluentAssertions;
 using NUnit.Framework;
@@ -71,30 +75,26 @@ public class CellReferenceTests
     }
 
     [Test]
-    [TestCase("$A1:A2", true, false)]
-    [TestCase("B$2:$A1$", false, false)]
-    [TestCase("namedRange", true, true)]
-    [TestCase("namedRange$", false, false)]
-    [TestCase("$2:$3", true, false)]
-    [TestCase("$C:$D", true, false)]
-    [TestCase("C:D$", false, false)]
-    [TestCase("A:B:C", true, false)]
-    public void Parse_Ranges(string refStr, bool isValid, bool isNamedRef)
+    [TestCase("$A1:A2", true)]
+    [TestCase("B$2:$A1$", false)]
+    [TestCase("namedRange", false)]
+    [TestCase("namedRange$", false)]
+    [TestCase("$2:$3", true)]
+    [TestCase("$C:$D", true)]
+    [TestCase("C:D$", false)]
+    [TestCase("A:B:C", false)]
+    public void Parse_Ranges(string refStr, bool isValid)
     {
-        var res1 = RangeText2.TryParseReference(refStr.AsSpan(), out var reference);
-        res1.Should().Be(isValid);
+        var formulaEngine = new FormulaEngine(new Sheet(1, 1));
+        var refCellValue = formulaEngine.Evaluate(formulaEngine.ParseFormula($"={refStr}"), resolveReferences: false);
+        var isReferenceType = refCellValue.ValueType == CellValueType.Reference;
+        isReferenceType.Should().Be(isValid);
 
-        if (!isValid)
-            return;
-
-        if (isNamedRef)
-            reference.Should().BeOfType<NamedReference>();
-        else
+        if (isReferenceType)
         {
-            reference.Should().NotBeOfType<NamedReference>();
+            var reference = (Reference)refCellValue.Data;
+            reference.ToRefText().Should().Be(refStr);
         }
 
-        var resultStr = reference!.ToRefText();
-        resultStr.Should().Be(refStr);
     }
 }

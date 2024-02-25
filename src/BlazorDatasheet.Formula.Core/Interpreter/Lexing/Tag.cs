@@ -25,5 +25,6 @@ public enum Tag
     LeftCurlyBracketToken,
     RightCurlyBracketToken,
     AmpersandToken,
-    ColonToken
+    ColonToken,
+    ReferenceToken
 }

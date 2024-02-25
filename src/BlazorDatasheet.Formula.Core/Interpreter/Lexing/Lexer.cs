@@ -1,3 +1,6 @@
+using BlazorDatasheet.DataStructures.References;
+using BlazorDatasheet.DataStructures.Util;
+
 namespace BlazorDatasheet.Formula.Core.Interpreter.Lexing;
 
 public ref struct Lexer
@@ -50,7 +53,7 @@ public ref struct Lexer
             return ReadIdentifier();
 
         if (_current == '"')
-            return ReadString(_string);
+            return ReadStringLiteral();
 
         Token token;
         switch (_current)
@@ -162,19 +165,62 @@ public ref struct Lexer
         return new BadToken(_position);
     }
 
-    private IdentifierToken ReadIdentifier()
+    private Token ReadIdentifier()
     {
         int start = _position;
         Next(); // consume start character
         while (char.IsLetterOrDigit(_current) || _current == '$')
             Next();
-        int length = _position - start;
 
-        var identifier = _string.Slice(start, length).ToString();
+
+        int length = _position - start;
+        var idSlice = _string.Slice(start, length);
+
+        // if the current identifier is a valid row, column or cell reference then
+        // we look to see if it is part of a range (e.g 1:2, a:2, b2:b3 etc.)
+        var canParseRef = RangeText2.TryParseSingleReference(idSlice, out var parsedLeftRef);
+        if (canParseRef)
+        {
+            // store temp position so we can come back to it
+            var tempPosition = _position;
+            if (_current == ':')
+            {
+                var next = ReadToken();
+                if (next.Tag == Tag.IdentifierToken && parsedLeftRef!.Kind != ReferenceKind.Named)
+                {
+                    var nextIdSlice = ((IdentifierToken)next).Value.AsSpan();
+                    var canParsedRightRef = RangeText2.TryParseSingleReference(nextIdSlice, out var parsedRightRef);
+                    if (canParsedRightRef && parsedLeftRef.Kind == parsedRightRef!.Kind)
+                    {
+                        return new ReferenceToken(new RangeReference(parsedLeftRef, parsedRightRef), start);
+                    }
+                }
+
+                // in this case we know the second row is not absolute reference
+                if (next.Tag == Tag.Number && parsedLeftRef!.Kind == ReferenceKind.Row)
+                {
+                    var nextTokenAsNum = (NumberToken)next;
+                    if (nextTokenAsNum.IsInteger)
+                    {
+                        var rowRefRight = new RowReference((int)nextTokenAsNum.Value, false);
+                        return new ReferenceToken(new RangeReference(parsedLeftRef, rowRefRight), start);
+                    }
+                }
+
+                // otherwise reset our position
+                _position = tempPosition;
+            }
+            else if (parsedLeftRef!.Kind == ReferenceKind.Cell)
+            {
+                return new ReferenceToken(parsedLeftRef, start);
+            }
+        }
+
+        var identifier = idSlice.ToString();
         return new IdentifierToken(identifier, start);
     }
 
-    private Token ReadString(ReadOnlySpan<char> str)
+    private Token ReadStringLiteral()
     {
         int start = _position;
         // Consume first ""
@@ -198,7 +244,7 @@ public ref struct Lexer
         }
 
         int length = _position - start - 1;
-        var stringValue = str.Slice(start + 1, length).ToString();
+        var stringValue = _string.Slice(start + 1, length).ToString();
 
         // consume the last ""
         Next();

@@ -93,18 +93,6 @@ public class SheetTests
     }
 
     [Test]
-    [TestCase("A_1")]
-    [TestCase("asd")]
-    [TestCase("asd..")]
-    [TestCase("A")]
-    public void Name_Range_Strings_return_Named_Regions(string str)
-    {
-        var parsed = RangeText2.TryParseReference(str, out var reference);
-        parsed.Should().Be(true);
-        reference.Kind.Should().Be(ReferenceKind.Named);
-    }
-
-    [Test]
     public void BatchChanges_Batches_Changes()
     {
         var sheet = new Sheet(10, 10);

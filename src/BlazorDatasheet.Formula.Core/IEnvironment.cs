@@ -5,7 +5,6 @@ namespace BlazorDatasheet.Formula.Core;
 public interface IEnvironment
 {
     CellValue GetCellValue(int row, int col);
-    public CellValue[][] GetRangeValues(RangeAddress rangeAddress);
     public CellValue[][] GetRangeValues(Reference reference);
     bool FunctionExists(string functionIdentifier);
     ISheetFunction GetFunctionDefinition(string identifierText);

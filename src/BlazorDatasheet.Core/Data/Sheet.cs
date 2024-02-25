@@ -9,6 +9,8 @@ using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Core.Selecting;
 using BlazorDatasheet.Core.Validation;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.Formula.Core;
+using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Core.Data;
 
@@ -111,7 +113,7 @@ public class Sheet
         Validators = new ValidationManager(this);
         Rows = new RowInfoStore(25, this);
         Columns = new ColumnInfoStore(105, this);
-        FormulaEngine = new FormulaEngine.FormulaEngine(this, Cells);
+        FormulaEngine = new FormulaEngine.FormulaEngine(this);
         ConditionalFormats = new ConditionalFormatManager(this, Cells);
     }
 
@@ -208,8 +210,16 @@ public class Sheet
         if (string.IsNullOrEmpty(rangeStr))
             return null;
 
-        var region = Region.FromString(rangeStr);
-        return region == null ? null : new SheetRange(this, region);
+        var rangeStrFormula = $"={rangeStr}";
+        var evaluatedValue =
+            FormulaEngine.Evaluate(FormulaEngine.ParseFormula(rangeStrFormula), resolveReferences: false);
+        if (evaluatedValue.ValueType == CellValueType.Reference)
+        {
+            var reference = evaluatedValue.GetValue<Reference>();
+            return Range(reference!.ToRegion());
+        }
+
+        return null;
     }
 
     /// <summary>

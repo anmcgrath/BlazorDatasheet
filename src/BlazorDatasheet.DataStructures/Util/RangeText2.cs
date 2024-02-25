@@ -226,22 +226,10 @@ public static class RangeText2
             pos++;
 
         int rowStrLen = pos - startRowStr;
-        // if there are more chars after the row number it's got to be a named reference
+        // if there are more chars after the row number it's got to be invalid
         if (pos <= str.Length - 1)
         {
-            if (!IsValidStartOfName(str[0]))
-                return false;
-
-            for (int i = 0; i < str.Length; i++)
-            {
-                if (!IsValidNameChar(str[i]))
-                {
-                    return false;
-                }
-            }
-
-            reference = new NamedReference(str.ToString());
-            return true;
+            return false;
         }
 
         if (rowStrLen == 0) // bad parse somehow - shouldn't be possible

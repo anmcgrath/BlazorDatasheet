@@ -54,9 +54,6 @@ public class TestEnvironment : IEnvironment
         return CellValue.Empty;
     }
 
-    public CellValue[][] GetRangeValues(RangeAddress rangeAddress) => GetValuesInRange(rangeAddress.RowStart,
-        rangeAddress.RowEnd, rangeAddress.ColStart, rangeAddress.ColEnd);
-
     public CellValue[][] GetRangeValues(Reference reference)
     {
         if (reference.Kind == ReferenceKind.Range)
