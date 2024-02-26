@@ -1,6 +1,4 @@
 using BlazorDatasheet.Formula.Core;
-using BlazorDatasheet.Formula.Core.Interpreter.Functions;
-using BlazorDatasheet.Formula.Core.Interpreter.Syntax;
 
 namespace BlazorDatashet.Formula.Functions.Math;
 
@@ -29,7 +27,7 @@ public class SinFunction : ISheetFunction
         if (val.ValueType != CellValueType.Number)
             return new FormulaError(ErrorType.Value);
 
-        return System.Math.Sin(val.GetValue<double>());
+        return System.Math.Sin((double)val.Data!);
     }
 
     public bool AcceptsErrors => false;

@@ -2,6 +2,7 @@
 @using BlazorDatasheet.Core.Interfaces
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Validation
+@using BlazorDatasheet.Formula.Core
 
 <PageTitle>Data validation</PageTitle>
 
@@ -45,11 +46,11 @@
             _word = word;
         }
 
-        public bool IsValid(object? value)
+        public bool IsValid(CellValue value)
         {
-            if (value == null)
+            if (value.ValueType != CellValueType.Text)
                 return false;
-            var str = value.ToString();
+            var str = (string)value.Data!;
             return str.Contains(_word);
         }
     }

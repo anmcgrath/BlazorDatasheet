@@ -4,6 +4,7 @@
 @using BlazorDatasheet.Core.Interfaces
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Formula.Core
 
 <PageTitle>Custom Renderer</PageTitle>
 <h1>CustomRenderer</h1>
@@ -13,7 +14,7 @@
 <Datasheet Sheet="sheet" CustomCellTypeDefinitions="CustomTypes"></Datasheet>
 
 @code {
-    
+
     private Sheet sheet;
     private Dictionary<string, CellTypeDefinition> CustomTypes { get; } = new();
 
@@ -32,14 +33,12 @@
 
     private class NumBetweenZeroAndTwoHundredValidator : IDataValidator
     {
-        public bool IsValid(object? value)
+        public bool IsValid(CellValue value)
         {
-            if (value == null)
+            if (value.ValueType != CellValueType.Number)
                 return false;
-            if (double.TryParse(value.ToString(), out double num))
-                return num >= 0 && num <= 200;
-            else
-                return false;
+            var num = (double)value.Data!;
+            return num >= 0 && num <= 200;
         }
 
         public bool IsStrict { get; } = true;

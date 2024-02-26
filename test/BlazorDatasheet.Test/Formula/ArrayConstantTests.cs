@@ -1,6 +1,6 @@
-using System.Collections.Generic;
 using BlazorDatasheet.Formula.Core;
-using BlazorDatasheet.Formula.Core.Interpreter.References;
+using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
+using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
 using FluentAssertions;
 using NUnit.Framework;
 
@@ -8,23 +8,23 @@ namespace BlazorDatasheet.Test.Formula;
 
 public class ArrayConstantTests
 {
-    private FormulaEvaluator _evaluator;
+    private Evaluator _evaluator;
     private TestEnvironment _env;
-    private FormulaParser _parser;
+    private Parser _parser;
 
     [SetUp]
     public void Setup()
     {
         _env = new TestEnvironment();
-        _evaluator = new FormulaEvaluator(_env);
-        _parser = new FormulaParser();
+        _evaluator = new Evaluator(_env);
+        _parser = new Parser();
     }
 
     [Test]
     public void Array_Constant_Parses_As_Array_Expression()
     {
-        var formula = _parser.FromString("={1,2,3}");
-        var res = (CellValue[][])_evaluator.Evaluate(formula)!;
+        var formula = _parser.Parse("={1,2,3}");
+        var res = (CellValue[][])_evaluator.Evaluate(formula).Data!;
         res.Should().BeOfType<CellValue[][]>();
         res.Length.Should().Be(1);
         res[0].Length.Should().Be(3);
@@ -36,8 +36,8 @@ public class ArrayConstantTests
     [Test]
     public void Multi_Row_Array_Constant_Parses_As_Array_Expression()
     {
-        var formula = _parser.FromString("={1,2;3,4}");
-        var res = (CellValue[][])_evaluator.Evaluate(formula)!;
+        var formula = _parser.Parse("={1,2;3,4}");
+        var res = (CellValue[][])_evaluator.Evaluate(formula).Data!;
         res.Should().BeOfType<CellValue[][]>();
         res.Length.Should().Be(2);
         res[0].Length.Should().Be(2);
@@ -51,7 +51,7 @@ public class ArrayConstantTests
     [Test]
     public void Invalid_Row_Length_Fails_Validation()
     {
-        var formula = _parser.FromString("={1,2;3,4,5}");
-        formula.IsValid().Should().Be(false);
+        var formula = _parser.Parse("={1,2;3,4,5}");
+        formula.Errors.Should().HaveCountGreaterThan(0);
     }
 }

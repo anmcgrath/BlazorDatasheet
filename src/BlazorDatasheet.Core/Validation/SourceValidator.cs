@@ -1,4 +1,5 @@
 using BlazorDatasheet.Core.Interfaces;
+using BlazorDatasheet.Formula.Core;
 
 namespace BlazorDatasheet.Core.Validation;
 
@@ -19,13 +20,13 @@ public class SourceValidator : IDataValidator
         IsStrict = isStrict;
     }
 
-    public bool IsValid(object? val)
+    public bool IsValid(CellValue value)
     {
         try
         {
-            if (val == null)
+            if (value.IsEmpty || value.IsError())
                 return false;
-            var valStr = val.ToString();
+            var valStr = value.GetValue<string>();
             var isValid = ValidationSource.Any(x => string.Compare(x, valStr, StringComparison.Ordinal) == 0);
             return isValid;
         }

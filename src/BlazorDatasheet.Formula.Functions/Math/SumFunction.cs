@@ -1,5 +1,4 @@
 using BlazorDatasheet.Formula.Core;
-using BlazorDatasheet.Formula.Core.Interpreter.Functions;
 
 namespace BlazorDatashet.Formula.Functions.Math;
 
@@ -22,7 +21,7 @@ public class SumFunction : ISheetFunction
         var sum = 0d;
         foreach (var arg in args)
         {
-            var seq = arg.GetValue<CellValue[]>()!;
+            var seq = (CellValue[])arg.Data!;
             foreach (var item in seq)
                 if (item.IsError())
                     return item.Data;

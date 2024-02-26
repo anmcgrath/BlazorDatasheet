@@ -1,6 +1,4 @@
 using BlazorDatasheet.Formula.Core;
-using BlazorDatasheet.Formula.Core.Interpreter.Functions;
-using BlazorDatasheet.Formula.Core.Interpreter.Syntax;
 using BlazorDatasheet.Formula.Core.Regression;
 
 namespace BlazorDatashet.Formula.Functions.Math;

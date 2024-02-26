@@ -1,12 +1,13 @@
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Formula.Core;
+using CellFormula = BlazorDatasheet.Formula.Core.Interpreter.CellFormula;
 
 namespace BlazorDatasheet.Core.Events.Edit;
 
 public class BeforeAcceptEditEventArgs
 {
     public IReadOnlyCell Cell { get; }
-    public object? EditValue { get; }
+    public CellValue EditValue { get; }
     public CellFormula? Formula { get; }
 
     public string? FormulaString { get; }
@@ -21,7 +22,8 @@ public class BeforeAcceptEditEventArgs
     /// </summary>
     public bool StopEdit { get; private set; }
 
-    public BeforeAcceptEditEventArgs(IReadOnlyCell cell, object? editValue, CellFormula? formula, string? formulaString)
+    public BeforeAcceptEditEventArgs(IReadOnlyCell cell, CellValue editValue, CellFormula? formula,
+        string? formulaString)
     {
         Cell = cell;
         EditValue = editValue;

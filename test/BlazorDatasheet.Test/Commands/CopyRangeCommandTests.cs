@@ -91,7 +91,8 @@ public class CopyRangeCommandTests
 
         var colCopy = new CopyRangeCommand(_sheet.Range(0, 1), _sheet.Range(0, 2), CopyOptions.DefaultCopyOptions);
         var rowCopy = new CopyRangeCommand(_sheet.Range(1, 0), _sheet.Range(2, 0), CopyOptions.DefaultCopyOptions);
-        var intersectCopy = new CopyRangeCommand(_sheet.Range(1, 1), _sheet.Range(2, 2), CopyOptions.DefaultCopyOptions);
+        var intersectCopy =
+            new CopyRangeCommand(_sheet.Range(1, 1), _sheet.Range(2, 2), CopyOptions.DefaultCopyOptions);
 
         colCopy.Execute(_sheet);
         rowCopy.Execute(_sheet);

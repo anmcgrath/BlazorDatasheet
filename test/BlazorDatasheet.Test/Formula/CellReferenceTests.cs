@@ -1,6 +1,13 @@
 ﻿using System;
+using System.Linq;
+using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Data.Cells;
+using BlazorDatasheet.Core.FormulaEngine;
+using BlazorDatasheet.DataStructures.References;
 using BlazorDatasheet.DataStructures.Util;
+using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
+using FluentAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Formula;
@@ -18,12 +25,13 @@ public class CellReferenceTests
     public void Cell_Str_Parses_Correctly(string cellStr, int rowExpected, int colExpected, bool rowAbsExpected,
         bool colAbsExpected)
     {
-        var res = RangeText.CellFromString(cellStr);
-        var cellRef = new CellReference(res.row, res.col, res.fixedCol, res.fixedRow);
-        Assert.AreEqual(rowExpected, cellRef.Row.RowNumber);
-        Assert.AreEqual(colExpected, cellRef.Col.ColNumber);
-        Assert.AreEqual(rowAbsExpected, cellRef.Row.IsFixedReference);
-        Assert.AreEqual(colAbsExpected, cellRef.Col.IsFixedReference);
+        var parsed = RangeText.TryParseSingleCellReference(cellStr, out var refr);
+        parsed.Should().Be(true);
+        var cellRef = (CellReference)refr!;
+        rowExpected.Should().Be(cellRef.Row.RowNumber);
+        colExpected.Should().Be(cellRef.Col.ColNumber);
+        rowAbsExpected.Should().Be(cellRef.Row.IsFixedReference);
+        colAbsExpected.Should().Be(cellRef.Col.IsFixedReference);
     }
 
     [Test]
@@ -64,5 +72,29 @@ public class CellReferenceTests
         Assert.True(c1.SameAs(c2));
         Assert.False(c1.SameAs(c3));
         Assert.False(c1.SameAs(c4));
+    }
+
+    [Test]
+    [TestCase("$A1:A2", true)]
+    [TestCase("B$2:$A1$", false)]
+    [TestCase("namedRange", false)]
+    [TestCase("namedRange$", false)]
+    [TestCase("$2:$3", true)]
+    [TestCase("$C:$D", true)]
+    [TestCase("C:D$", false)]
+    [TestCase("A:B:C", false)]
+    public void Parse_Ranges(string refStr, bool isValid)
+    {
+        var formulaEngine = new FormulaEngine(new Sheet(1, 1));
+        var refCellValue = formulaEngine.Evaluate(formulaEngine.ParseFormula($"={refStr}"), resolveReferences: false);
+        var isReferenceType = refCellValue.ValueType == CellValueType.Reference;
+        isReferenceType.Should().Be(isValid);
+
+        if (isReferenceType)
+        {
+            var reference = (Reference)refCellValue.Data;
+            reference.ToRefText().Should().Be(refStr);
+        }
+
     }
 }

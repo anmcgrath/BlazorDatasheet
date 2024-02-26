@@ -16,7 +16,10 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\test\BlazorDatasheet.Test\BlazorDatasheet.Test.csproj" />
       <ProjectReference Include="..\BlazorDatasheet.DataStructures\BlazorDatasheet.DataStructures.csproj" />
+      <ProjectReference Include="..\BlazorDatasheet.Formula.Core\BlazorDatasheet.Formula.Core.csproj" />
+      <ProjectReference Include="..\BlazorDatasheet.Formula.Functions\BlazorDatasheet.Formula.Functions.csproj" />
     </ItemGroup>
 
 </Project>

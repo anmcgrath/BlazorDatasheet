@@ -17,7 +17,7 @@ public partial class CellStore
         var cellsAffected = _dataStore.GetNonEmptyPositions(region).ToList();
         foreach (var (row, col) in cellsAffected)
         {
-            var cellData = this.GetValue(row, col);
+            var cellData = this.GetCellValue(row, col);
             var result = _sheet.Validators.Validate(cellData, row, col);
             _validStore.Set(row, col, result.IsValid);
         }

@@ -1,5 +1,6 @@
-﻿using BlazorDatasheet.DataStructures.Util;
-using BlazorDatasheet.Formula.Core.Interpreter.Syntax;
+﻿using BlazorDatasheet.DataStructures.References;
+using BlazorDatasheet.DataStructures.Util;
+using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Formula.Core;
 
@@ -12,22 +13,8 @@ public class CellValue
 
     public static readonly CellValue Empty = new CellValue(null);
 
-    /// <summary>
-    /// Creates a cell value type. If <paramref name="cellValueType"/> is set, this is used to determine the value type.
-    /// Otherwise, the value type is determined by looking at the type of <paramref name="data"/>.
-    /// </summary>
-    /// <param name="data"></param>
-    /// <param name="cellValueType"></param>
-    public CellValue(object? data, CellValueType? cellValueType = null)
+    public CellValue(object? data)
     {
-        // Set the type and trust it if the it i
-        if (cellValueType.HasValue)
-        {
-            Data = data;
-            ValueType = cellValueType.Value;
-            return;
-        }
-
         if (data == null)
         {
             Data = null;
@@ -35,12 +22,19 @@ public class CellValue
             ValueType = CellValueType.Empty;
             return;
         }
-        
-        ValueType = CellValueType.Any;
+
+        ValueType = CellValueType.Unknown;
 
         var valType = data.GetType();
         var isNullable = valType.IsNullable();
         var nullableType = System.Nullable.GetUnderlyingType(valType);
+
+        if (valType.IsAssignableTo(typeof(Reference)))
+        {
+            Data = data;
+            ValueType = CellValueType.Reference;
+            return;
+        }
 
         // If object is a string then either set the value type as string or 
         // try to convert to one of the 
@@ -63,6 +57,19 @@ public class CellValue
             ValueType = GetValueType(data, valType, isNullable, nullableType);
             Data = (ValueType == CellValueType.Number) ? Convert.ToDouble(data) : data;
         }
+    }
+
+    /// <summary>
+    /// Creates a cell value type. If <paramref name="cellValueType"/> is set, this is used to determine the value type.
+    /// Otherwise, the value type is determined by looking at the type of <paramref name="data"/>.
+    /// </summary>
+    /// <param name="data"></param>
+    /// <param name="cellValueType"></param>
+    internal CellValue(object? data, CellValueType cellValueType)
+    {
+        // Set the type and trust it if the it i
+        Data = data;
+        ValueType = cellValueType;
     }
 
     /// <summary>
@@ -131,7 +138,7 @@ public class CellValue
         if (valType == typeof(DateTime) || (isNullable && nullableType == typeof(DateTime)))
             return CellValueType.Date;
 
-        return CellValueType.Any;
+        return CellValueType.Unknown;
     }
 
     /// <summary>
@@ -189,6 +196,16 @@ public class CellValue
         return new CellValue(err, CellValueType.Error);
     }
 
+    public static CellValue Error(ErrorType type)
+    {
+        return new CellValue(new FormulaError(type), CellValueType.Error);
+    }
+
+    public static CellValue Error(ErrorType type, string msg)
+    {
+        return new CellValue(new FormulaError(type, msg), CellValueType.Error);
+    }
+
     public static CellValue Number(double num)
     {
         return new CellValue(num, CellValueType.Number);
@@ -219,8 +236,35 @@ public class CellValue
         return new CellValue(date, CellValueType.Date);
     }
 
+    public static CellValue Reference(Reference reference)
+    {
+        return new CellValue(reference, CellValueType.Reference);
+    }
+
     public bool IsError()
     {
         return ValueType == CellValueType.Error;
+    }
+
+    public override string ToString()
+    {
+        return this.Data?.ToString() ?? string.Empty;
+    }
+
+    public bool IsCellReference()
+    {
+        return ValueType == CellValueType.Reference &&
+               ((Reference)Data!).Kind == ReferenceKind.Cell;
+    }
+
+    public bool IsEqualTo(CellValue value)
+    {
+        if (ValueType != value.ValueType)
+            return false;
+
+        if (ValueType == CellValueType.Empty || ValueType == CellValueType.Empty)
+            return value.Data == null && Data == null;
+
+        return ((IComparable)Data!).CompareTo(value.Data) == 0;
     }
 }

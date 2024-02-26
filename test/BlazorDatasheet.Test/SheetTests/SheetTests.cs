@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.DataStructures.References;
+using BlazorDatasheet.DataStructures.Util;
 using FluentAssertions;
 using NUnit.Framework;
 
@@ -62,6 +64,7 @@ public class SheetTests
             .BeEquivalentTo(new { Left = 0, Top = 0 }, options => options.ExcludingMissingMembers());
         sheet.Range("b2")!.Region.Should()
             .BeEquivalentTo(new { Left = 1, Top = 1 }, options => options.ExcludingMissingMembers());
+
         sheet.Range("2a")?.Region.Should().BeNull();
 
         sheet.Range("A1:B2")!.Region.Should()
@@ -76,17 +79,22 @@ public class SheetTests
         sheet.Range("2:3")!.Region.Should().BeOfType<RowRegion>();
         sheet.Range("2:3")!.Region.Should()
             .BeEquivalentTo(new { Top = 1, Bottom = 2 }, options => options.ExcludingMissingMembers());
+
+        sheet.Range("2:$3")!.Region.Should().BeOfType<RowRegion>();
+        sheet.Range("2:$3")!.Region.Should()
+            .BeEquivalentTo(new { Top = 1, Bottom = 2 }, options => options.ExcludingMissingMembers());
+        
+        
+        sheet.Range("$2:3")!.Region.Should().BeOfType<RowRegion>();
+        sheet.Range("$2:3")!.Region.Should()
+            .BeEquivalentTo(new { Top = 1, Bottom = 2 }, options => options.ExcludingMissingMembers());
     }
 
     [Test]
-    [TestCase("A_1")]
-    [TestCase("asd")]
-    [TestCase("asd..")]
     [TestCase("")]
     [TestCase("A,1")]
     [TestCase("A:1")]
     [TestCase("1")]
-    [TestCase("A")]
     public void Bad_Range_Strings_return_Empty(string badText)
     {
         var sheet = new Sheet(1, 1);

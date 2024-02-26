@@ -1,14 +1,15 @@
-﻿using BlazorDatasheet.Formula.Core.Interpreter.Functions;
+﻿using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Formula.Core;
 
 public interface IEnvironment
 {
     CellValue GetCellValue(int row, int col);
-    public CellValue[][] GetRangeValues(RangeAddress rangeAddress);
+    public CellValue[][] GetRangeValues(Reference reference);
     bool FunctionExists(string functionIdentifier);
     ISheetFunction GetFunctionDefinition(string identifierText);
     bool VariableExists(string variableIdentifier);
-    object GetVariable(string variableIdentifier);
+    CellValue GetVariable(string variableIdentifier);
+    void SetVariable(string name, CellValue value);
     void RegisterFunction(string name, ISheetFunction value);
 }

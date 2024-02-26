@@ -1,4 +1,5 @@
 using BlazorDatasheet.Core.Interfaces;
+using BlazorDatasheet.Formula.Core;
 
 namespace BlazorDatasheet.Core.Validation;
 
@@ -9,12 +10,9 @@ public class NumberValidator : IDataValidator
         IsStrict = isStrict;
     }
 
-    public bool IsValid(object? value)
+    public bool IsValid(CellValue value)
     {
-        if (value == null)
-            return false;
-        var val = value.ToString();
-        return double.TryParse(val, out double res);
+        return value.ValueType == CellValueType.Number;
     }
 
     public bool IsStrict { get; }

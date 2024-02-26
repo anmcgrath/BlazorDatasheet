@@ -4,6 +4,7 @@ using BlazorDatasheet.Core.Events.Validation;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
+using BlazorDatasheet.Formula.Core;
 
 namespace BlazorDatasheet.Core.Validation;
 
@@ -116,7 +117,7 @@ public class ValidationManager
         }
 
         var args = new ValidatorChangedEventArgs(validatorsRemoved, Array.Empty<IDataValidator>(),
-            restoreData.RegionsRemoved.Concat(restoreData.RegionsAdded).Select(x=>x.Region));
+            restoreData.RegionsRemoved.Concat(restoreData.RegionsAdded).Select(x => x.Region));
         ValidatorChanged?.Invoke(this, args);
     }
 
@@ -140,7 +141,7 @@ public class ValidationManager
     /// <param name="row"></param>
     /// <param name="col"></param>
     /// <returns></returns>
-    public ValidationResult Validate(object? value, int row, int col)
+    public ValidationResult Validate(CellValue value, int row, int col)
     {
         var validators = Get(row, col);
         bool isStrict = false;

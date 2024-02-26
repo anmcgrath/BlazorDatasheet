@@ -4,6 +4,7 @@ using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Core.Validation;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.Formula.Core;
 using FluentAssertions;
 using NUnit.Framework;
 
@@ -36,12 +37,12 @@ public class ValidationManagerTests
     {
         var validator = new AlwaysFalseValidator(true);
         _validationManager.Add(new Region(0, 2, 0, 2), validator);
-        var validationInside = _validationManager.Validate(0, 0, 0);
+        var validationInside = _validationManager.Validate(CellValue.Number(0), 0, 0);
         validationInside.IsValid.Should().BeFalse();
         validationInside.IsStrictFail.Should().Be(validator.IsStrict);
         validationInside.FailMessages.Should().ContainSingle(validator.Message);
 
-        var validationOutside = _validationManager.Validate(0, 3, 0);
+        var validationOutside = _validationManager.Validate(CellValue.Number(0), 3, 0);
         validationOutside.IsValid.Should().BeTrue();
         validationOutside.IsStrictFail.Should().BeFalse();
         validationOutside.FailMessages.Should().BeEmpty();
@@ -53,8 +54,8 @@ public class ValidationManagerTests
         var falseValidator = new AlwaysFalseValidator(true);
         _validationManager.Add(new Region(0, 5, 0, 5), falseValidator);
         _validationManager.Clear(falseValidator, new Region(2, 3, 2, 3));
-        _validationManager.Validate(-1, 0, 0).IsValid.Should().BeFalse();
-        _validationManager.Validate(-1, 2, 2).IsValid.Should().BeTrue();
+        _validationManager.Validate(CellValue.Number(-1), 0, 0).IsValid.Should().BeFalse();
+        _validationManager.Validate(CellValue.Number(-1), 2, 2).IsValid.Should().BeTrue();
     }
 
     [Test]
@@ -111,7 +112,7 @@ public class ValidationManagerTests
             IsStrict = isStrict;
         }
 
-        public bool IsValid(object? value)
+        public bool IsValid(CellValue value)
         {
             return false;
         }
@@ -127,7 +128,7 @@ public class ValidationManagerTests
             IsStrict = isStrict;
         }
 
-        public bool IsValid(object? value)
+        public bool IsValid(CellValue value)
         {
             return false;
         }
