@@ -50,6 +50,7 @@ public class CellValueCoercer
         {
             var epoch = new DateTime(1900, 1, 1);
             val = (((DateTime)cellValue.Data!) - epoch).Days;
+            return true;
         }
 
         if (cellValue.ValueType == CellValueType.Logical)

@@ -90,17 +90,17 @@ public class CellValue
             return false;
         }
 
-        if (DateTime.TryParse(value, out var valDate))
-        {
-            valueType = CellValueType.Date;
-            converted = valDate;
-            return true;
-        }
-
         if (double.TryParse(value, out var valNum))
         {
             converted = valNum;
             valueType = CellValueType.Number;
+            return true;
+        }
+
+        if (DateTime.TryParse(value, out var valDate))
+        {
+            valueType = CellValueType.Date;
+            converted = valDate;
             return true;
         }
 
