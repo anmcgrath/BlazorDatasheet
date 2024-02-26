@@ -35,7 +35,7 @@ public class MouseInputService : IInputService, IAsyncDisposable
     public async Task<Point2d> GetInputPositionAsync()
     {
         var res = await _js.InvokeAsync<InnerSheetMouseEventArgs>("getRelativeMousePosition", _innerSheetRef);
-        return new Point2d(res.X, res.Y);
+        return new Point2d(res.X + _viewport.Left, res.Y + _viewport.Top);
     }
 
     public InputOverCellEventArgs OnMouseOverCell(int row, int col)
