@@ -179,15 +179,6 @@ public class Parser
 
         var identifierToken = (IdentifierToken)NextToken();
 
-        // If it's a single cell ref then return the range expression for it.
-        // We have already checked in ParsePrimaryExpression that the next token is not a colon and so it's not part of a range.
-        var isCellRef = RangeText2.TryParseSingleCellReference(identifierToken.Value.AsSpan(), out var cellRef);
-        if (isCellRef)
-        {
-            _references.Add(cellRef!);
-            return new ReferenceExpression(cellRef!);
-        }
-
         if (bool.TryParse(identifierToken.Value.ToLower(), out var parsedBool))
             return new LiteralExpression(CellValue.Logical(parsedBool));
 

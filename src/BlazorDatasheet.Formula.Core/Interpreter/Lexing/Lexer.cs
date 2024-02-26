@@ -220,7 +220,7 @@ public ref struct Lexer
 
         // if the current identifier is a valid row, column or cell reference then
         // we look to see if it is part of a range (e.g 1:2, a:2, b2:b3 etc.)
-        var canParseRef = RangeText2.TryParseSingleReference(idSlice, out var parsedLeftRef);
+        var canParseRef = RangeText.TryParseSingleReference(idSlice, out var parsedLeftRef);
         if (!canParseRef)
             return new IdentifierToken(idSlice.ToString(), start);
 

@@ -77,11 +77,11 @@ public class TestEnvironment : IEnvironment
 
     private CellValue[][] GetValuesInRange(int r0, int r1, int c0, int c1)
     {
-        r0 = Math.Clamp(r0, 0, RangeText2.MaxRows);
-        r1 = Math.Clamp(r1, 0, RangeText2.MaxRows);
+        r0 = Math.Clamp(r0, 0, RangeText.MaxRows);
+        r1 = Math.Clamp(r1, 0, RangeText.MaxRows);
 
-        c0 = Math.Clamp(c0, 0, RangeText2.MaxCols);
-        c1 = Math.Clamp(c1, 0, RangeText2.MaxCols);
+        c0 = Math.Clamp(c0, 0, RangeText.MaxCols);
+        c1 = Math.Clamp(c1, 0, RangeText.MaxCols);
 
         var h = (r1 - r0) + 1;
         var w = (c1 - c0) + 1;

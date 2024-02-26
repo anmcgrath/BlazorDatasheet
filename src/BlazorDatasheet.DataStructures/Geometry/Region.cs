@@ -530,10 +530,4 @@ public class Region : IRegion
 
         return false;
     }
-
-    private static CellPosition ParseCellPosition(string cellText)
-    {
-        var result = RangeText.CellFromString(cellText)!;
-        return new CellPosition(result.row, result.col);
-    }
 }

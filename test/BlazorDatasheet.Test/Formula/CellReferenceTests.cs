@@ -25,7 +25,7 @@ public class CellReferenceTests
     public void Cell_Str_Parses_Correctly(string cellStr, int rowExpected, int colExpected, bool rowAbsExpected,
         bool colAbsExpected)
     {
-        var parsed = RangeText2.TryParseSingleCellReference(cellStr, out var refr);
+        var parsed = RangeText.TryParseSingleCellReference(cellStr, out var refr);
         parsed.Should().Be(true);
         var cellRef = (CellReference)refr!;
         rowExpected.Should().Be(cellRef.Row.RowNumber);
