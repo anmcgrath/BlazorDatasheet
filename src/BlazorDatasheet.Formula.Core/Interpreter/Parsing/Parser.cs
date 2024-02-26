@@ -251,6 +251,6 @@ public class Parser
             return NextToken();
 
         _errors.Add($"ERROR: Unexpected token: <{Current.Tag}>. Expected {tag}");
-        return new Token(tag, Current.PositionStart);
+        return new Token(tag, "", Current.PositionStart);
     }
 }

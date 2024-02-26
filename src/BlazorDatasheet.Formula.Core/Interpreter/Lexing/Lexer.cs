@@ -60,71 +60,71 @@ public ref struct Lexer
         switch (_current)
         {
             case '=':
-                token = new Token(Tag.EqualsToken, _position);
+                token = new Token(Tag.EqualsToken, "=", _position);
                 break;
             case '+':
-                token = new Token(Tag.PlusToken, _position);
+                token = new Token(Tag.PlusToken, "+", _position);
                 break;
             case '-':
-                token = new Token(Tag.MinusToken, _position);
+                token = new Token(Tag.MinusToken, "-", _position);
                 break;
             case '/':
-                token = new Token(Tag.SlashToken, _position);
+                token = new Token(Tag.SlashToken, "/", _position);
                 break;
             case '*':
-                token = new Token(Tag.StarToken, _position);
+                token = new Token(Tag.StarToken, "*", _position);
                 break;
             case ':':
-                token = new Token(Tag.ColonToken, _position);
+                token = new Token(Tag.ColonToken, ":", _position);
                 break;
             case '&':
-                token = new Token(Tag.AmpersandToken, _position);
+                token = new Token(Tag.AmpersandToken, "&", _position);
                 break;
             case '>':
                 if (Peek(1) == '=')
                 {
-                    token = new Token(Tag.GreaterThanOrEqualToToken, _position);
+                    token = new Token(Tag.GreaterThanOrEqualToToken, ">=", _position);
                     Next();
                 }
                 else
-                    token = new Token(Tag.GreaterThanToken, _position - 1);
+                    token = new Token(Tag.GreaterThanToken, ">", _position - 1);
 
                 break;
             case '<':
                 if (Peek(1) == '=')
                 {
-                    token = new Token(Tag.LessThanOrEqualToToken, _position);
+                    token = new Token(Tag.LessThanOrEqualToToken, "<=", _position);
                     Next();
                 }
                 else if (Peek(1) == '>')
                 {
-                    token = new Token(Tag.NotEqualToToken, _position);
+                    token = new Token(Tag.NotEqualToToken, "<>", _position);
                     Next();
                 }
                 else
-                    token = new Token(Tag.LessThanToken, _position - 1);
+                    token = new Token(Tag.LessThanToken, "<", _position - 1);
 
                 break;
             case '(':
-                token = new Token(Tag.LeftParenthToken, _position);
+                token = new Token(Tag.LeftParenthToken, "(", _position);
                 break;
             case ')':
-                token = new Token(Tag.RightParenthToken, _position);
+                token = new Token(Tag.RightParenthToken, ")", _position);
                 break;
             case ',':
-                token = new Token(Tag.CommaToken, _position);
+                token = new Token(Tag.CommaToken, ",", _position);
                 break;
             case '{':
-                token = new Token(Tag.LeftCurlyBracketToken, _position);
+                token = new Token(Tag.LeftCurlyBracketToken, "{", _position);
                 break;
             case '}':
-                token = new Token(Tag.RightCurlyBracketToken, _position);
+                token = new Token(Tag.RightCurlyBracketToken, "}", _position);
                 break;
             case '!':
-                token = new Token(Tag.BangToken, _position);
+                token = new Token(Tag.BangToken, "!", _position);
                 break;
             case ';':
-                token = new Token(Tag.SemiColonToken, _position);
+                token = new Token(Tag.SemiColonToken, ";", _position);
                 break;
             default:
                 token = new BadToken(_position);

@@ -19,6 +19,6 @@ public class BinaryOperationExpression : Expression
 
     public override string ToExpressionText()
     {
-        return Left.ToExpressionText() + OpToken.Tag + Right.ToExpressionText();
+        return Left.ToExpressionText() + OpToken.Text + Right.ToExpressionText();
     }
 }

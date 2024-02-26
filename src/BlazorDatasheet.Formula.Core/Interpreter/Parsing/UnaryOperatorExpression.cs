@@ -14,8 +14,9 @@ public class UnaryOperatorExpression : Expression
         OperatorToken = operatorToken;
         Expression = expression;
     }
+
     public override string ToExpressionText()
     {
-        return OperatorToken.Tag + Expression.ToExpressionText();
+        return OperatorToken.Text + Expression.ToExpressionText();
     }
 }
