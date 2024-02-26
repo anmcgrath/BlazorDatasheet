@@ -161,7 +161,8 @@ public class Evaluator
             argIndex++;
         }
 
-        return new CellValue(func.Call(convertedArgs, new FunctionCallMetaData(paramDefinitions)));
+        var funcResult = func.Call(convertedArgs, new FunctionCallMetaData(paramDefinitions));
+        return new CellValue(funcResult);
     }
 
     private bool IsConsumable(ParameterDefinition param)
