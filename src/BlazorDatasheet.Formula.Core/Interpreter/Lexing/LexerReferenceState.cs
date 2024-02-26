@@ -3,7 +3,5 @@
 public enum LexerReferenceState
 {
     None,
-    ValidCellRange,
-    ValidRowRange,
-    ValidColRange
+    ReadingReference,
 }

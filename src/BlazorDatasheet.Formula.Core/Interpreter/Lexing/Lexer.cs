@@ -8,6 +8,7 @@ public ref struct Lexer
     private int _position;
     private ReadOnlySpan<char> _string;
     private char _current;
+    private LexerReferenceState _referenceState = LexerReferenceState.None;
     public List<string> Errors { get; private set; } = null!;
 
     public Lexer()
@@ -159,6 +160,47 @@ public ref struct Lexer
 
         if (int.TryParse(_string.Slice(start, length), out var parsedInt))
         {
+            // if we are in the second part of a range parsing...
+            if (_referenceState == LexerReferenceState.ReadingReference)
+            {
+                return new ReferenceToken(new RowReference(parsedInt - 1, false), start);
+            }
+
+            // otherwise check if we are going to parse a range
+            if (_current == ':' && _referenceState == LexerReferenceState.None)
+            {
+                _referenceState = LexerReferenceState.ReadingReference;
+                // store posn just in case
+                var tempPosition = _position;
+                Next(); // consume colon
+
+                var rightToken = ReadToken();
+                _referenceState = LexerReferenceState.None;
+
+                var rowStartRef = new RowReference(parsedInt - 1, false);
+
+                if (rightToken.Tag == Tag.Number)
+                {
+                    var rightNumToken = (NumberToken)rightToken;
+                    if (rightNumToken.IsInteger)
+                    {
+                        var rowEnd = new RowReference((int)rightNumToken.Value - 1, false);
+                        return new ReferenceToken(new RangeReference(rowStartRef, rowEnd), start);
+                    }
+                }
+
+                if (rightToken.Tag == Tag.ReferenceToken)
+                {
+                    var rightRefToken = (ReferenceToken)rightToken;
+                    if (rightRefToken.Reference.Kind == ReferenceKind.Row)
+                    {
+                        return new ReferenceToken(new RangeReference(rowStartRef, rightRefToken.Reference), start);
+                    }
+                }
+
+                _position = tempPosition;
+            }
+
             return new NumberToken(parsedInt, start);
         }
 
@@ -179,45 +221,53 @@ public ref struct Lexer
         // if the current identifier is a valid row, column or cell reference then
         // we look to see if it is part of a range (e.g 1:2, a:2, b2:b3 etc.)
         var canParseRef = RangeText2.TryParseSingleReference(idSlice, out var parsedLeftRef);
-        if (canParseRef)
+        if (!canParseRef)
+            return new IdentifierToken(idSlice.ToString(), start);
+
+        if (parsedLeftRef!.Kind == ReferenceKind.Named)
+            return new IdentifierToken(idSlice.ToString(), start);
+
+        if (canParseRef && _referenceState == LexerReferenceState.ReadingReference)
         {
-            // store temp position so we can come back to it
-            var tempPosition = _position;
-            if (_current == ':')
-            {
-                var next = ReadToken();
-                if (next.Tag == Tag.IdentifierToken && parsedLeftRef!.Kind != ReferenceKind.Named)
-                {
-                    var nextIdSlice = ((IdentifierToken)next).Value.AsSpan();
-                    var canParsedRightRef = RangeText2.TryParseSingleReference(nextIdSlice, out var parsedRightRef);
-                    if (canParsedRightRef && parsedLeftRef.Kind == parsedRightRef!.Kind)
-                    {
-                        return new ReferenceToken(new RangeReference(parsedLeftRef, parsedRightRef), start);
-                    }
-                }
-
-                // in this case we know the second row is not absolute reference
-                if (next.Tag == Tag.Number && parsedLeftRef!.Kind == ReferenceKind.Row)
-                {
-                    var nextTokenAsNum = (NumberToken)next;
-                    if (nextTokenAsNum.IsInteger)
-                    {
-                        var rowRefRight = new RowReference((int)nextTokenAsNum.Value, false);
-                        return new ReferenceToken(new RangeReference(parsedLeftRef, rowRefRight), start);
-                    }
-                }
-
-                // otherwise reset our position
-                _position = tempPosition;
-            }
-            else if (parsedLeftRef!.Kind == ReferenceKind.Cell)
-            {
-                return new ReferenceToken(parsedLeftRef, start);
-            }
+            return new ReferenceToken(parsedLeftRef, start);
         }
 
-        var identifier = idSlice.ToString();
-        return new IdentifierToken(identifier, start);
+        if (_current == ':' && _referenceState == LexerReferenceState.None) // so we only look ahead one at most
+        {
+            _referenceState = LexerReferenceState.ReadingReference;
+
+            // store temp position so we can come back to it
+            var tempPosition = _position;
+            var colon = ReadToken();
+            var next = ReadToken();
+
+            _referenceState = LexerReferenceState.None;
+
+            if (next.Tag == Tag.ReferenceToken)
+            {
+                var rightToken = (ReferenceToken)next;
+                return new ReferenceToken(new RangeReference(parsedLeftRef, rightToken.Reference), start);
+            }
+
+            // in this case we know the second row is not absolute reference
+            if (next.Tag == Tag.Number && parsedLeftRef.Kind == ReferenceKind.Row)
+            {
+                var nextTokenAsNum = (NumberToken)next;
+                if (nextTokenAsNum.IsInteger)
+                {
+                    var rowRefRight = new RowReference((int)nextTokenAsNum.Value - 1, false);
+                    return new ReferenceToken(new RangeReference(parsedLeftRef, rowRefRight), start);
+                }
+            }
+
+            // otherwise reset our position
+            _position = tempPosition;
+        }
+
+        if (canParseRef && parsedLeftRef!.Kind == ReferenceKind.Cell)
+            return new ReferenceToken(parsedLeftRef, start);
+
+        return new IdentifierToken(idSlice.ToString(), start);
     }
 
     private Token ReadStringLiteral()

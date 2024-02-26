@@ -1,4 +1,6 @@
+using BlazorDatasheet.DataStructures.References;
 using BlazorDatasheet.Formula.Core.Interpreter.Lexing;
+using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 
@@ -41,9 +43,26 @@ public class BinaryOpEvaluator
                 return EvaluateLessThan(left, right);
             case Tag.LessThanOrEqualToToken:
                 return EvaluateLessThanOreEqualTo(left, right);
+            case Tag.ColonToken:
+                return EvaluateRangeOperator(left, right);
         }
 
         return CellValue.Error(new FormulaError(ErrorType.Na));
+    }
+
+    private CellValue EvaluateRangeOperator(CellValue left, CellValue right)
+    {
+        if (left.ValueType != CellValueType.Reference || right.ValueType != CellValueType.Reference)
+            return CellValue.Error(ErrorType.Na);
+
+        var leftRef = (Reference)left.Data!;
+        var rightRef = (Reference)right.Data!;
+
+        var regJoined = leftRef.ToRegion().GetBoundingRegion(rightRef.ToRegion());
+        var c1 = new CellReference(regJoined.Top, regJoined.Left, false, false);
+        var c2 = new CellReference(regJoined.Bottom, regJoined.Right, false, false);
+
+        return CellValue.Reference(new RangeReference(c1, c2));
     }
 
     private CellValue EvaluateLessThanOreEqualTo(CellValue left, CellValue right)

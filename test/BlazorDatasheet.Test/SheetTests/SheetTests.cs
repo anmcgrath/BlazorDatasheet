@@ -60,12 +60,12 @@ public class SheetTests
     public void Range_String_Specification_Tests()
     {
         var sheet = new Sheet(1, 1); // size doesn't matter, could be anything
-        /*sheet.Range("a1")!.Region.Should()
+        sheet.Range("a1")!.Region.Should()
             .BeEquivalentTo(new { Left = 0, Top = 0 }, options => options.ExcludingMissingMembers());
         sheet.Range("b2")!.Region.Should()
             .BeEquivalentTo(new { Left = 1, Top = 1 }, options => options.ExcludingMissingMembers());
 
-        sheet.Range("2a")?.Region.Should().BeNull();*/
+        sheet.Range("2a")?.Region.Should().BeNull();
 
         sheet.Range("A1:B2")!.Region.Should()
             .BeEquivalentTo(new { Left = 0, Top = 0, Right = 1, Bottom = 1 },
@@ -78,6 +78,15 @@ public class SheetTests
 
         sheet.Range("2:3")!.Region.Should().BeOfType<RowRegion>();
         sheet.Range("2:3")!.Region.Should()
+            .BeEquivalentTo(new { Top = 1, Bottom = 2 }, options => options.ExcludingMissingMembers());
+
+        sheet.Range("2:$3")!.Region.Should().BeOfType<RowRegion>();
+        sheet.Range("2:$3")!.Region.Should()
+            .BeEquivalentTo(new { Top = 1, Bottom = 2 }, options => options.ExcludingMissingMembers());
+        
+        
+        sheet.Range("$2:3")!.Region.Should().BeOfType<RowRegion>();
+        sheet.Range("$2:3")!.Region.Should()
             .BeEquivalentTo(new { Top = 1, Bottom = 2 }, options => options.ExcludingMissingMembers());
     }
 

@@ -10,4 +10,9 @@ public class ReferenceToken : Token
     {
         Reference = reference;
     }
+
+    public override string ToString()
+    {
+        return Reference.ToRefText();
+    }
 }

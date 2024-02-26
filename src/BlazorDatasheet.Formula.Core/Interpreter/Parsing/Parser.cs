@@ -83,16 +83,13 @@ public class Parser
             case Tag.LeftParenthToken:
                 return ParseParenthExpression();
             case Tag.IdentifierToken:
-                if (Peek(1).Tag == Tag.ColonToken)
-                    return ParseRangeExpression();
                 return ParseIdentifierExpression();
             case Tag.LeftCurlyBracketToken:
                 return ParseArrayConstant();
-            case Tag.Number: // special case for integer expression
-                var numToken = (NumberToken)Current;
-                if (numToken.IsInteger && Peek(1).Tag == Tag.ColonToken)
-                    return ParseRangeExpression();
-                break;
+            case Tag.ReferenceToken:
+                var refToken = (ReferenceToken)NextToken();
+                _references.Add(refToken.Reference);
+                return new ReferenceExpression(refToken.Reference);
         }
 
         return ParseLiteralExpression();
@@ -151,63 +148,6 @@ public class Parser
         MatchToken(Tag.RightCurlyBracketToken);
 
         return new ArrayConstantExpression(rows);
-    }
-
-    private Expression ParseRangeExpression()
-    {
-        bool isValidRef = true;
-        var rangeParts = new List<Reference>();
-        while (true)
-        {
-            var rangePartToken = NextToken();
-            if (rangePartToken.Tag == Tag.Number)
-            {
-                var numToken = (NumberToken)rangePartToken;
-                if (numToken.IsInteger && numToken.Value < RangeText2.MaxRows)
-                {
-                    rangeParts.Add(new RowReference((int)numToken.Value, false));
-                }
-                else
-                    isValidRef = false;
-            }
-            else if (rangePartToken.Tag == Tag.IdentifierToken)
-            {
-                var idToken = (IdentifierToken)rangePartToken;
-                var validParse = RangeText2.TryParseSingleReference(idToken.Value, out var parsedRef);
-                if (validParse)
-                    rangeParts.Add(parsedRef!);
-                else
-                    isValidRef = false;
-            }
-
-            if (Current.Tag == Tag.ColonToken)
-            {
-                // consume colon token
-                NextToken();
-            }
-            else
-            {
-                break;
-            }
-        }
-
-        // check if valid range ref
-        if (!isValidRef || rangeParts.Count < 2)
-        {
-            Error($"Bad reference found");
-            return new LiteralExpression(CellValue.Error(new FormulaError(ErrorType.Ref)));
-        }
-
-        if (rangeParts.Count == 2)
-        {
-            var rangeRef = new RangeReference(rangeParts[0], rangeParts[1]);
-            _references.Add(rangeRef);
-            return new ReferenceExpression(rangeRef);
-        }
-
-        var multiRef = new MultiReference(rangeParts.ToArray());
-        _references.Add(multiRef);
-        return new ReferenceExpression(multiRef);
     }
 
     private LiteralExpression ParseLiteralExpression()

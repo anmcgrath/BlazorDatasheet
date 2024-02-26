@@ -6,6 +6,8 @@ public static class Extensions
     {
         switch (tag)
         {
+            case Tag.ColonToken:
+                return 8;
             case Tag.AmpersandToken:
                 return 7;
             case Tag.StarToken:
