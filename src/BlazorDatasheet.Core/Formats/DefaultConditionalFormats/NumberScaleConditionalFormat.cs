@@ -1,5 +1,6 @@
 using System.Drawing;
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Formula.Core;
 using ColorConverter = BlazorDatasheet.Core.Color.ColorConverter;
 
 namespace BlazorDatasheet.Core.Formats.DefaultConditionalFormats;
@@ -44,6 +45,9 @@ public class NumberScaleConditionalFormat : ConditionalFormatAbstractBase
 
         foreach (var cell in cells)
         {
+            if (cell.ValueType != CellValueType.Number)
+                continue;
+
             var val = cell.GetValue<double?>();
             if (val == null)
                 continue;
@@ -65,7 +69,7 @@ public class NumberScaleConditionalFormat : ConditionalFormatAbstractBase
         var size = Math.Abs(max - min);
         if (size == 0)
             return _computedLut.First();
-        
+
         var frac = (value - min) / size;
         var index = (int)(frac * _computedLut.Length);
         var color = _computedLut[Math.Min(index, _computedLut.Length - 1)];
@@ -75,6 +79,9 @@ public class NumberScaleConditionalFormat : ConditionalFormatAbstractBase
     public override CellFormat? CalculateFormat(int row, int col, Sheet sheet)
     {
         var cell = sheet.Cells.GetCell(row, col);
+        if (cell.ValueType != CellValueType.Number)
+            return null;
+
         var value = cell.GetValue<double?>();
         if (value == null)
             return null;

@@ -145,9 +145,6 @@ public class BinaryOpEvaluator
         if (numPair.HasError)
             return CellValue.Error(ErrorType.Value);
 
-        if (numPair.Value2 == 0)
-            return CellValue.Error(ErrorType.Div0);
-
         return CellValue.Number(numPair.Value1 + numPair.Value2);
     }
 
@@ -156,9 +153,6 @@ public class BinaryOpEvaluator
         var numPair = CoercedPair.AsNumbers(left, right, _cellValueCoercer);
         if (numPair.HasError)
             return CellValue.Error(ErrorType.Value);
-
-        if (numPair.Value2 == 0)
-            return CellValue.Error(ErrorType.Div0);
 
         return CellValue.Number(numPair.Value1 - numPair.Value2);
     }
@@ -169,9 +163,6 @@ public class BinaryOpEvaluator
         var numPair = CoercedPair.AsNumbers(left, right, _cellValueCoercer);
         if (numPair.HasError)
             return CellValue.Error(ErrorType.Value);
-
-        if (numPair.Value2 == 0)
-            return CellValue.Error(ErrorType.Div0);
 
         return CellValue.Number(numPair.Value1 * numPair.Value2);
     }
