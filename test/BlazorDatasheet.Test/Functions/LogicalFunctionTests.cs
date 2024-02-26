@@ -1,7 +1,9 @@
 using System.Collections.Generic;
+using BlazorDatasheet.DataStructures.References;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
+using BlazorDatasheet.Formula.Core.Interpreter.References;
 using BlazorDatasheet.Formula.Functions.Logical;
 using BlazorDatasheet.Test.Formula;
 using FluentAssertions;
@@ -19,11 +21,11 @@ public class LogicalFunctionTests
         _env = new();
     }
 
-    public object? Eval(string formulaString)
+    public object? Eval(string formulaString, bool resolveReferences = false)
     {
         var eval = new Evaluator(_env);
         var parser = new Parser();
-        return eval.Evaluate(parser.Parse(formulaString)).Data;
+        return eval.Evaluate(parser.Parse(formulaString), resolveReferences).Data;
     }
 
     [Test]
@@ -45,6 +47,8 @@ public class LogicalFunctionTests
 
         _env.SetCellValue(6, 4, true);
         Eval("=IF(E7,5,4)").Should().Be(5);
+
+        Eval("=IF(true,A1):A2").Should().BeOfType<RangeReference>();
     }
 
     [Test]

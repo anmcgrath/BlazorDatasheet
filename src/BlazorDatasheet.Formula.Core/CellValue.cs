@@ -29,6 +29,13 @@ public class CellValue
         var isNullable = valType.IsNullable();
         var nullableType = System.Nullable.GetUnderlyingType(valType);
 
+        if (valType.IsAssignableTo(typeof(Reference)))
+        {
+            Data = data;
+            ValueType = CellValueType.Reference;
+            return;
+        }
+
         // If object is a string then either set the value type as string or 
         // try to convert to one of the 
         if (valType == typeof(string) || (isNullable && nullableType == typeof(string)))
