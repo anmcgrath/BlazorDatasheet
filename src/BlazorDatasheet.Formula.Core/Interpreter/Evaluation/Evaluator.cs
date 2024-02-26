@@ -1,7 +1,6 @@
 using BlazorDatasheet.DataStructures.References;
 using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
-using BlazorDatasheet.Formula.Core.Interpreter2;
 using SyntaxTree = BlazorDatasheet.Formula.Core.Interpreter.Parsing.SyntaxTree;
 
 namespace BlazorDatasheet.Formula.Core.Interpreter.Evaluation;

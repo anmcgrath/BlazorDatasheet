@@ -2,7 +2,6 @@ using BlazorDatasheet.DataStructures.References;
 using BlazorDatasheet.DataStructures.Util;
 using BlazorDatasheet.Formula.Core.Interpreter.Lexing;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
-using BlazorDatasheet.Formula.Core.Interpreter2;
 using Lexer = BlazorDatasheet.Formula.Core.Interpreter.Lexing.Lexer;
 
 namespace BlazorDatasheet.Formula.Core.Interpreter.Parsing;

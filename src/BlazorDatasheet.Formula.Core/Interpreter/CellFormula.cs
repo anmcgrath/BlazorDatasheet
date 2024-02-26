@@ -1,7 +1,7 @@
 using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 
-namespace BlazorDatasheet.Formula.Core.Interpreter2;
+namespace BlazorDatasheet.Formula.Core.Interpreter;
 
 public class CellFormula
 {

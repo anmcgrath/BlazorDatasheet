@@ -2,7 +2,7 @@ using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Events.Formula;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
-using BlazorDatasheet.Formula.Core.Interpreter2;
+using BlazorDatasheet.Formula.Core.Interpreter;
 
 namespace BlazorDatasheet.Core.Data.Cells;
 

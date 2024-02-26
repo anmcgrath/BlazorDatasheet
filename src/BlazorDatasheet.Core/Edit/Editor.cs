@@ -2,7 +2,7 @@ using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Events.Edit;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Formula.Core;
-using CellFormula = BlazorDatasheet.Formula.Core.Interpreter2.CellFormula;
+using CellFormula = BlazorDatasheet.Formula.Core.Interpreter.CellFormula;
 
 namespace BlazorDatasheet.Core.Edit;
 

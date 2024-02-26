@@ -11,7 +11,7 @@ using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 using BlazorDatashet.Formula.Functions;
-using CellFormula = BlazorDatasheet.Formula.Core.Interpreter2.CellFormula;
+using CellFormula = BlazorDatasheet.Formula.Core.Interpreter.CellFormula;
 
 namespace BlazorDatasheet.Core.FormulaEngine;
 

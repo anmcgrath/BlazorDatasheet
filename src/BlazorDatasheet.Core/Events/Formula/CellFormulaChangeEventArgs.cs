@@ -1,4 +1,4 @@
-using BlazorDatasheet.Formula.Core.Interpreter2;
+using BlazorDatasheet.Formula.Core.Interpreter;
 
 namespace BlazorDatasheet.Core.Events.Formula;
 

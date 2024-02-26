@@ -1,5 +1,5 @@
 using BlazorDatasheet.Formula.Core;
-using CellFormula = BlazorDatasheet.Formula.Core.Interpreter2.CellFormula;
+using CellFormula = BlazorDatasheet.Formula.Core.Interpreter.CellFormula;
 
 namespace BlazorDatasheet.Core.Events.Edit;
 
