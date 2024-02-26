@@ -45,9 +45,24 @@ public class BinaryOpEvaluator
                 return EvaluateLessThanOreEqualTo(left, right);
             case Tag.ColonToken:
                 return EvaluateRangeOperator(left, right);
+            case Tag.AmpersandToken:
+                return EvaluateConcatOperator(left, right);
         }
 
         return CellValue.Error(new FormulaError(ErrorType.Na));
+    }
+
+    private CellValue EvaluateConcatOperator(CellValue left, CellValue right)
+    {
+        var parseLeftStr = _cellValueCoercer.TryCoerceString(left, out var leftStr);
+        if (!parseLeftStr)
+            return CellValue.Error(ErrorType.Value);
+
+        var parseRightStr = _cellValueCoercer.TryCoerceString(right, out var rightStr);
+        if (!parseRightStr)
+            return CellValue.Error(ErrorType.Value);
+
+        return CellValue.Text(leftStr + rightStr);
     }
 
     private CellValue EvaluateRangeOperator(CellValue left, CellValue right)

@@ -153,7 +153,6 @@ public class InterpreterTests
 
     private CellValue EvalExpression(string expr)
     {
-        var formula = _parser.Parse(expr);
         return _evaluator.Evaluate(_parser.Parse(expr));
     }
 
@@ -167,5 +166,18 @@ public class InterpreterTests
     {
         _env.SetVariable("x", 10);
         EvalExpression("=x").Data.Should().Be(10);
+    }
+
+    [Test]
+    public void Str_Concat_Binary_Op_Concats_Two_Strings()
+    {
+        EvalExpression($$"""="A"&"B" """).Data.Should().Be("AB");
+    }
+
+    [Test]
+    public void Str_Concat_Binary_Op_Concats_Non_Strings()
+    {
+        EvalExpression($$"""="A"&2 """).Data.Should().Be("A2");
+        EvalExpression($$"""="2"&"B" """).Data.Should().Be("2B");
     }
 }
