@@ -95,6 +95,7 @@ public class FormulaEngine
     {
         _environment.RegisterLogicalFunctions();
         _environment.RegisterMathFunctions();
+        _environment.RegisterLookupFunctions();
     }
 
     private void SheetOnBeforeCellEdit(object? sender, BeforeCellEditEventArgs e)

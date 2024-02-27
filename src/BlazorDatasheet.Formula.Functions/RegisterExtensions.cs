@@ -1,5 +1,6 @@
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Functions.Logical;
+using BlazorDatashet.Formula.Functions.Lookup;
 using BlazorDatashet.Formula.Functions.Math;
 
 namespace BlazorDatashet.Formula.Functions;
@@ -20,5 +21,10 @@ public static class RegisterExtensions
         e.RegisterFunction("SUM", new SumFunction());
         e.RegisterFunction("SIN", new SinFunction());
         e.RegisterFunction("SLOPE", new SlopeFunction());
+    }
+
+    public static void RegisterLookupFunctions(this IEnvironment e)
+    {
+        e.RegisterFunction("VLOOKUP", new VLookupFunction());
     }
 }
