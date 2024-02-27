@@ -76,9 +76,9 @@ public class CustomFunctionDefinition : ISheetFunction
         return _parameterDefinitions;
     }
 
-    public object? Call(CellValue[] args, FunctionCallMetaData metaData)
+    public CellValue Call(CellValue[] args, FunctionCallMetaData metaData)
     {
-        return null;
+        return CellValue.Empty;
     }
 
     public bool AcceptsErrors => false;

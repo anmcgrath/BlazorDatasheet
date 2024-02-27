@@ -16,7 +16,7 @@ public class SumFunction : ISheetFunction
         };
     }
 
-    public object? Call(CellValue[] args, FunctionCallMetaData metaData)
+    public CellValue Call(CellValue[] args, FunctionCallMetaData metaData)
     {
         var sum = 0d;
         foreach (var arg in args)
@@ -24,12 +24,12 @@ public class SumFunction : ISheetFunction
             var seq = (CellValue[])arg.Data!;
             foreach (var item in seq)
                 if (item.IsError())
-                    return item.Data;
+                    return item;
                 else
                     sum += item.GetValue<double>();
         }
 
-        return sum;
+        return CellValue.Number(sum);
     }
 
     public bool AcceptsErrors => true;

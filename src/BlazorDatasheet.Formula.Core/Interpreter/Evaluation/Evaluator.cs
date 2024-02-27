@@ -162,7 +162,7 @@ public class Evaluator
         }
 
         var funcResult = func.Call(convertedArgs, new FunctionCallMetaData(paramDefinitions));
-        return new CellValue(funcResult);
+        return funcResult;
     }
 
     private bool IsConsumable(ParameterDefinition param)

@@ -17,7 +17,7 @@ public class AverageFunction : ISheetFunction
         };
     }
 
-    public object? Call(CellValue[] args, FunctionCallMetaData metaData)
+    public CellValue Call(CellValue[] args, FunctionCallMetaData metaData)
     {
         var sum = 0d;
         var count = 0d;
@@ -26,7 +26,7 @@ public class AverageFunction : ISheetFunction
             var seq = arg.GetValue<CellValue[]>()!;
             foreach (var item in seq)
                 if (item.IsError())
-                    return item.Data!;
+                    return item;
                 else
                 {
                     sum += item.GetValue<double>();
@@ -34,7 +34,7 @@ public class AverageFunction : ISheetFunction
                 }
         }
 
-        return sum / count;
+        return CellValue.Number(sum / count);
     }
 
     public bool AcceptsErrors => false;

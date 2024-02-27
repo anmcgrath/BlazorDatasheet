@@ -14,19 +14,19 @@ public class SlopeFunction : ISheetFunction
         };
     }
 
-    public object? Call(CellValue[] args, FunctionCallMetaData metaData)
+    public CellValue Call(CellValue[] args, FunctionCallMetaData metaData)
     {
         var allY = args[0].GetValue<CellValue[][]>()!;
         var allX = args[1].GetValue<CellValue[][]>()!;
 
         if (!allX.Any() || !allY.Any())
-            return new FormulaError(ErrorType.Na, "Empty array");
+            return CellValue.Error(ErrorType.Na, "Empty array");
 
         if (allX.Length != allY.Length)
-            return new FormulaError(ErrorType.Na, "X and Y number of rows must be the same");
+            return CellValue.Error(ErrorType.Na, "X and Y number of rows must be the same");
 
         if (allX[0].Length != allY[0].Length)
-            return new FormulaError(ErrorType.Na, "X and Y number of columns must be the same");
+            return CellValue.Error(ErrorType.Na, "X and Y number of columns must be the same");
 
         var x = new List<double>();
         var y = new List<double>();
@@ -45,12 +45,12 @@ public class SlopeFunction : ISheetFunction
         }
 
         if (x.Count <= 1)
-            return new FormulaError(ErrorType.Div0);
+            return CellValue.Error(ErrorType.Div0);
 
         var regression = new LinearRegression();
         var fun = regression.Calculate(x, y);
 
-        return fun.Gradient;
+        return CellValue.Number(fun.Gradient);
     }
 
     public bool AcceptsErrors => false;

@@ -26,20 +26,21 @@ public class IfFunction : ISheetFunction
         };
     }
 
-    public object? Call(CellValue[] args, FunctionCallMetaData metaData)
+    public CellValue Call(CellValue[] args, FunctionCallMetaData metaData)
     {
         if (args[0].IsError())
-            return args[0].Data;
+            return args[0];
 
         var isTrue = args.First().GetValue<bool>();
         if (args.Length > 1 && isTrue)
         {
-            return args[1].Data;
+            return args[1];
         }
 
         if (args.Length > 2 && !isTrue)
-            return args[2].Data;
-        return isTrue;
+            return args[2];
+
+        return CellValue.Logical(isTrue);
     }
 
     public bool AcceptsErrors => false;

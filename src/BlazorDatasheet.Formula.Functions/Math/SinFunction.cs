@@ -15,19 +15,19 @@ public class SinFunction : ISheetFunction
         };
     }
 
-    public object? Call(CellValue[] args, FunctionCallMetaData metaData)
+    public CellValue Call(CellValue[] args, FunctionCallMetaData metaData)
     {
         var val = args[0];
         if (val.ValueType == CellValueType.Error)
-            return val.Data;
+            return val;
 
         if (val.IsEmpty)
-            return 0; // Math.Sin(0);
+            return CellValue.Number(0); // Math.Sin(0);
 
         if (val.ValueType != CellValueType.Number)
-            return new FormulaError(ErrorType.Value);
+            return CellValue.Error(ErrorType.Value);
 
-        return System.Math.Sin((double)val.Data!);
+        return CellValue.Number(System.Math.Sin((double)val.Data!));
     }
 
     public bool AcceptsErrors => false;
