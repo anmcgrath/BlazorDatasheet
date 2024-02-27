@@ -90,7 +90,7 @@ public class BinaryOpEvaluator
         => CellValue.Logical(left.IsGreaterThan(right));
 
     private CellValue EvaluateGreaterThanOrEqualTo(CellValue left, CellValue right)
-        => CellValue.Logical(left.IsLessThanOrEqualTo(right));
+        => CellValue.Logical(left.IsGreaterThanOrEqualTo(right));
 
     private CellValue EvaluateEqual(CellValue left, CellValue right)
     {
