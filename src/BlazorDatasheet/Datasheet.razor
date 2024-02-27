@@ -122,12 +122,16 @@
                         var mergesInView = Sheet.Cells.GetMerges(this.Viewport.VisibleRegion);
                         @foreach (var merge in mergesInView)
                         {
-                            var row = merge.Top;
-                            var col = merge.Left;
+                            var constrainedMerge = merge.GetIntersection(_sheetLocal.Region);
+                            if (constrainedMerge == null)
+                                continue;
+
+                            var row = constrainedMerge.Top;
+                            var col = constrainedMerge.Left;
                             var cell = _visualSheet.GetVisualCell(row, col);
 
                             <div id="merge"
-                                 style="@GetAbsoluteCellPositionStyles(row, col, merge.Height, merge.Width)"
+                                 style="@GetAbsoluteCellPositionStyles(row, col, constrainedMerge.Height, constrainedMerge.Width)"
                                  class="sheet-cell"
                                  @onmouseup="e => HandleCellMouseUp(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
                                  @ondblclick="e => HandleCellDoubleClick(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
