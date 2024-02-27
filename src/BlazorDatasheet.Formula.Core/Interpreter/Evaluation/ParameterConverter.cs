@@ -49,9 +49,20 @@ public class ParameterConverter
                 return ToDate(value, definition);
             case ParameterType.Array:
                 return ToArray(value, definition);
+            case ParameterType.Integer:
+                return ToInteger(value, definition);
             default:
                 return CellValue.Error(ErrorType.Value);
         }
+    }
+
+    private CellValue ToInteger(CellValue value, ParameterDefinition definition)
+    {
+        var asNumber = ToNumber(value, definition);
+        if (asNumber.IsError())
+            return asNumber;
+        
+        return CellValue.Number(Convert.ToInt32(asNumber.Data!));
     }
 
     private CellValue ToLogicalSequence(CellValue value, ParameterDefinition definition)
