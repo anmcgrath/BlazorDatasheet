@@ -34,7 +34,7 @@ public class LookupFunctionTests
         // a lookup value outside of the array should be false
         Eval("=VLOOKUP(2,{1;3},1,false)").Should().BeOfType<FormulaError>();
         //lookup column 2
-        Eval("=VLOOKUP(5,{1,3;4,5},2,false)").Should().Be(5);
+        Eval("=VLOOKUP(4,{1,3;4,5},2,false)").Should().Be(5);
     }
     
     [Test]
@@ -46,6 +46,6 @@ public class LookupFunctionTests
         // a lookup value outside of the array should be false
         Eval("=VLOOKUP(5,{1;3;4},1,true)").Should().BeOfType<FormulaError>();
         //lookup column 2
-        Eval("=VLOOKUP(5,{1,3;4,5},2,true)").Should().Be(5);
+        Eval("=VLOOKUP(3,{1,3;4,5},2,true)").Should().Be(5);
     }
 }
