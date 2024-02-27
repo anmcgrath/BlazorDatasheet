@@ -19,7 +19,7 @@ public class VLookupFunction : ISheetFunction
 
     public CellValue Call(CellValue[] args, FunctionCallMetaData metaData)
     {
-        var isRangeLookup = args.Length > 3 ? args[4].GetValue<bool>() : true;
+        var isRangeLookup = args.Length > 3 ? args[3].GetValue<bool>() : true;
 
         for (int i = 1; i < args.Length; i++)
             if (args[i].IsError())
