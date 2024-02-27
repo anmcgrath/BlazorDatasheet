@@ -23,19 +23,15 @@
 
 @code {
 
-    [Parameter, EditorRequired]
-    public Sheet Sheet { get; set; }
+    [Parameter, EditorRequired] public Sheet Sheet { get; set; }
 
-    [Parameter, EditorRequired]
-    public Dictionary<string, CellTypeDefinition> CustomCellTypes { get; set; }
+    [Parameter, EditorRequired] public Dictionary<string, CellTypeDefinition> CustomCellTypes { get; set; }
 
-    [Parameter, EditorRequired]
-    public Dictionary<string, CellTypeDefinition> DefaultCellTypes { get; set; }
+    [Parameter, EditorRequired] public Dictionary<string, CellTypeDefinition> DefaultCellTypes { get; set; }
 
     private Sheet? _sheet;
 
-    [Parameter, EditorRequired]
-    public CellLayoutProvider CellLayoutProvider { get; set; }
+    [Parameter, EditorRequired] public CellLayoutProvider CellLayoutProvider { get; set; }
 
     /// The type of the active editor, which is an ICellEditor
     private Type? ActiveEditorType { get; set; } = typeof(TextEditorComponent);
@@ -75,11 +71,13 @@
                 _sheet.Editor.EditFinished -= EditorOnEditFinished;
                 _sheet.Editor.EditValueChanged -= EditorOnEditValueChanged;
             }
+
             _sheet = Sheet;
             _sheet.Editor.EditBegin += EditorOnEditBegin;
             _sheet.Editor.EditFinished += EditorOnEditFinished;
             _sheet.Editor.EditValueChanged += EditorOnEditValueChanged;
         }
+
         base.OnParametersSet();
     }
 
@@ -138,9 +136,9 @@
             {
                 if (!EqualityComparer<ElementReference>.Default.Equals(_activeCellEditor.InputRef, default(ElementReference)))
                 {
-    // Request focus with a delay so that it the field doesn't capture any oninput events
-    // from the text field that is just rendered. If not, there's inconsistent behaviour between
-    // WASM and Server.
+                    // Request focus with a delay so that it the field doesn't capture any oninput events
+                    // from the text field that is just rendered. If not, there's inconsistent behaviour between
+                    // WASM and Server.
                     await JS.InvokeVoidAsync("setFocusWithTimeout", _activeCellEditor.InputRef, 0);
                 }
             }
@@ -190,7 +188,9 @@
         var left = CellLayoutProvider.ComputeLeftPosition(EditCell.Col);
         var top = CellLayoutProvider.ComputeTopPosition(EditCell.Row);
 
-        var mergedPosn = Sheet.Cells.GetMerge(EditCell.Row, EditCell.Col);
+        var mergedPosn = Sheet.Cells.GetMerge(EditCell.Row, EditCell.Col)?
+            .GetIntersection(Sheet.Region);
+        
         int colSpan = 1;
         int rowSpan = 1;
 

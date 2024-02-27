@@ -174,6 +174,7 @@ public partial class CellStore
         {
             restoreData.ValueRestoreData = _dataStore.Copy(fromRegion, toRegion);
             restoreData.ValidRestoreData = _validStore.Copy(fromRegion, toRegion);
+            restoreData.FormulaRestoreData = _formulaStore.Clear(toRegion);
         }
 
         if (options.CopyFormula)

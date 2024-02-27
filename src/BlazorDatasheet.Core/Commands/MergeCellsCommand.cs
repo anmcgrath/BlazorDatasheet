@@ -25,6 +25,7 @@ public class MergeCellsCommand : IUndoableCommand
 
     public bool Execute(Sheet sheet)
     {
+        sheet.Cells.BatchChanges();
         _overridenMergedRegions.Clear();
         _mergesPerformed.Clear();
 
@@ -53,16 +54,14 @@ public class MergeCellsCommand : IUndoableCommand
         // Store the merge that we are doing and perform the actual merge
         _mergesPerformed.Add(region);
         sheet.Cells.MergeImpl(region);
+        sheet.Cells.EndBatchChanges();
         return true;
-    }
-
-    private CellValueChange getValueChangeOnClear(int row, int col, Sheet sheet)
-    {
-        return new CellValueChange(row, col, sheet.Cells.GetValue(row, col));
     }
 
     public bool Undo(Sheet sheet)
     {
+        sheet.Cells.BatchChanges();
+        
         // Undo the merge we performed
         foreach (var merge in _mergesPerformed)
             sheet.Cells.UnMergeCellsImpl(merge);
@@ -72,6 +71,7 @@ public class MergeCellsCommand : IUndoableCommand
 
         // Restore all the cell values that were lost when merging
         sheet.Cells.Restore(_restoreData);
+        sheet.Cells.EndBatchChanges();
 
         return true;
     }
