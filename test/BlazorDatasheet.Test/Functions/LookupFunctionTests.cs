@@ -36,16 +36,19 @@ public class LookupFunctionTests
         //lookup column 2
         Eval("=VLOOKUP(4,{1,3;4,5},2,false)").Should().Be(5);
     }
-    
+
     [Test]
     public void VLookup_With_Range_True_Tests()
     {
         _env.RegisterFunction("VLOOKUP", new VLookupFunction());
-        Eval("=VLOOKUP(3,{1;2;4},1)").Should().Be(4);
-        Eval("=VLOOKUP(0,{1;2;4},1,true)").Should().Be(1);
+        Eval("=VLOOKUP(3,{1;2;4},1)").Should().Be(2);
+        Eval("=VLOOKUP(5,{1;2;4},1,true)").Should().Be(4);
         // a lookup value outside of the array should be false
-        Eval("=VLOOKUP(5,{1;3;4},1,true)").Should().BeOfType<FormulaError>();
+        Eval("=VLOOKUP(0,{1;3;4},1,true)").Should().BeOfType<FormulaError>();
         //lookup column 2
-        Eval("=VLOOKUP(3,{1,3;4,5},2,true)").Should().Be(5);
+        // data:
+        // 1  3
+        // 4  5
+        Eval("=VLOOKUP(4,{1,3;4,5},2,true)").Should().Be(5);
     }
 }

@@ -40,20 +40,20 @@ public class VLookupFunction : ISheetFunction
             for (int row = 0; row < nRows; row++)
             {
                 if (dataArr[row][0].IsEqualTo(lookupValue))
-                {
                     return dataArr[row][column];
-                }
-                else
-                {
-                    Console.WriteLine($"{dataArr[row][0]} not equal to {lookupValue}");
-                }
             }
 
             return CellValue.Error(ErrorType.Na);
         }
 
         var arrAsList = dataArr.Select(x => x[0]).ToList()!;
-        var indexSearched = arrAsList.BinarySearchClosest(lookupValue);
+        
+        var indexSearched = arrAsList.BinarySearchIndexOf(lookupValue);
+        if (indexSearched >= 0)
+            return dataArr[indexSearched][column];
+        else
+            indexSearched = ~indexSearched - 1;
+
         if (indexSearched < 0 || indexSearched > arrAsList.Count - 1)
             return CellValue.Error(ErrorType.Na);
 
