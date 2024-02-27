@@ -4,7 +4,7 @@ using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Formula.Core;
 
-public class CellValue
+public class CellValue : IComparable, IComparable<CellValue>
 {
     public object? Data { get; init; }
 
@@ -246,9 +246,27 @@ public class CellValue
         return ValueType == CellValueType.Error;
     }
 
+    public int CompareTo(CellValue? other)
+    {
+        if (other == null)
+            return -1;
+        if (this.Data == null || other.Data == null)
+            return -1;
+
+        return ((IComparable)this.Data).CompareTo((IComparable)other.Data);
+    }
+
     public override string ToString()
     {
         return this.Data?.ToString() ?? string.Empty;
+    }
+
+    public int CompareTo(object? obj)
+    {
+        if (obj is CellValue value)
+            return CompareTo(value);
+
+        return -1;
     }
 
     public bool IsCellReference()
@@ -266,5 +284,67 @@ public class CellValue
             return value.Data == null && Data == null;
 
         return ((IComparable)Data!).CompareTo(value.Data) == 0;
+    }
+
+    public bool IsLessThan(CellValue value)
+    {
+        if (this.Data == null || value.Data == null)
+            return false;
+
+        var compareResult = ((IComparable)this.Data).CompareTo(value.Data);
+        return compareResult < 0;
+    }
+
+    public bool IsGreaterThan(CellValue value)
+    {
+        if (this.Data == null || value.Data == null)
+            return false;
+
+        var compareResult = ((IComparable)this.Data).CompareTo(value.Data);
+        return compareResult > 0;
+    }
+
+    public bool IsLessThanOrEqualTo(CellValue value)
+    {
+        if (this.Data == null || value.Data == null)
+            return false;
+
+        var compareResult = ((IComparable)this.Data).CompareTo(value.Data);
+        return compareResult <= 0;
+    }
+
+    public bool IsGreaterThanOrEqualTo(CellValue value)
+    {
+        if (this.Data == null || value.Data == null)
+            return false;
+
+        var compareResult = ((IComparable)this.Data).CompareTo(value.Data);
+        return compareResult >= 0;
+    }
+
+    /// <summary>
+    /// If the cell value is an array, returns the number of columns, otherwise returns 0
+    /// </summary>
+    /// <returns></returns>
+    public int Columns()
+    {
+        if (ValueType != CellValueType.Array)
+            return 0;
+        var data = (CellValue[][])Data!;
+        if (data.Length == 0)
+            return 0;
+        return data[0].Length;
+    }
+
+    /// <summary>
+    /// If the cell value is an array, returns the number of rows, otherwise returns 0
+    /// </summary>
+    /// <returns></returns>
+    public int Rows()
+    {
+        if (ValueType != CellValueType.Array)
+            return 0;
+        var data = (CellValue[][])Data!;
+        return data.Length;
     }
 }

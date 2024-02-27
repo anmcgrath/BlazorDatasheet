@@ -42,7 +42,7 @@ public class BinaryOpEvaluator
             case Tag.LessThanToken:
                 return EvaluateLessThan(left, right);
             case Tag.LessThanOrEqualToToken:
-                return EvaluateLessThanOreEqualTo(left, right);
+                return EvaluateLessThanOrEqualTo(left, right);
             case Tag.ColonToken:
                 return EvaluateRangeOperator(left, right);
             case Tag.AmpersandToken:
@@ -80,41 +80,17 @@ public class BinaryOpEvaluator
         return CellValue.Reference(new RangeReference(c1, c2));
     }
 
-    private CellValue EvaluateLessThanOreEqualTo(CellValue left, CellValue right)
-    {
-        if (left.Data == null || right.Data == null)
-            return CellValue.Logical(false);
-
-        var compareResult = ((IComparable)left.Data).CompareTo(right.Data);
-        return CellValue.Logical(compareResult <= 0);
-    }
-
     private CellValue EvaluateLessThan(CellValue left, CellValue right)
-    {
-        if (left.Data == null || right.Data == null)
-            return CellValue.Logical(false);
+        => CellValue.Logical(left.IsLessThan(right));
 
-        var compareResult = ((IComparable)left.Data).CompareTo(right.Data);
-        return CellValue.Logical(compareResult < 0);
-    }
-
-    private CellValue EvaluateGreaterThanOrEqualTo(CellValue left, CellValue right)
-    {
-        if (left.Data == null || right.Data == null)
-            return CellValue.Logical(false);
-
-        var compareResult = ((IComparable)left.Data).CompareTo(right.Data);
-        return CellValue.Logical(compareResult >= 0);
-    }
+    private CellValue EvaluateLessThanOrEqualTo(CellValue left, CellValue right)
+        => CellValue.Logical(left.IsLessThanOrEqualTo(right));
 
     private CellValue EvaluateGreaterThan(CellValue left, CellValue right)
-    {
-        if (left.Data == null || right.Data == null)
-            return CellValue.Logical(false);
+        => CellValue.Logical(left.IsGreaterThan(right));
 
-        var compareResult = ((IComparable)left.Data).CompareTo(right.Data);
-        return CellValue.Logical(compareResult > 0);
-    }
+    private CellValue EvaluateGreaterThanOrEqualTo(CellValue left, CellValue right)
+        => CellValue.Logical(left.IsLessThanOrEqualTo(right));
 
     private CellValue EvaluateEqual(CellValue left, CellValue right)
     {
