@@ -2,6 +2,7 @@
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Events;
 using BlazorDatasheet.Core.Events.Edit;
+using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Graph;
 using BlazorDatasheet.DataStructures.References;
@@ -29,7 +30,7 @@ public class FormulaEngine
     /// This should ideally keep track of the formula that reference the range also,
     /// but for now it's just whether it's referenced or not.
     /// </summary>
-    private RegionDataStore<bool> _observedRanges = new();
+    private readonly RegionDataStore<bool> _observedRanges;
 
     public bool IsCalculating { get; private set; }
 
@@ -43,6 +44,7 @@ public class FormulaEngine
         _environment = new SheetEnvironment(sheet);
         _evaluator = new Evaluator(_environment);
         _dependencyGraph = new DependencyGraph();
+        _observedRanges = new RegionDataStore<bool>();
 
         RegisterDefaultFunctions();
     }
