@@ -41,7 +41,7 @@ public class VisualCell
         Format = format;
     }
 
-    internal VisualCell()
+    private VisualCell()
     {
     }
 

@@ -5,7 +5,10 @@ using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Render;
 
-public class VisualSheet
+/// <summary>
+/// Stores a cache of sheet cell's that are within the render viewport.
+/// </summary>
+internal class VisualSheet
 {
     private readonly Sheet _sheet;
     private readonly Dictionary<CellPosition, VisualCell> _visualCache = new();
@@ -13,7 +16,7 @@ public class VisualSheet
     private Viewport? _currentViewport = null;
 
     public event EventHandler<VisualSheetInvalidateArgs> Invalidated;
-
+    
     public VisualSheet(Sheet sheet)
     {
         _sheet = sheet;

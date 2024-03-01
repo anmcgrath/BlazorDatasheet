@@ -495,7 +495,7 @@ public partial class Datasheet : IHandleEvent
             var direction = KeyUtil.GetKeyMovementDirection(e.Key);
             if (!Sheet.Editor.IsEditing || (_editorManager.IsSoftEdit && AcceptEdit()))
             {
-                this.collapseAndMoveSelection(direction.Item1, direction.Item2);
+                this.CollapseAndMoveSelection(direction.Item1, direction.Item2);
                 return true;
             }
         }
@@ -580,7 +580,7 @@ public partial class Datasheet : IHandleEvent
         return false;
     }
 
-    private void collapseAndMoveSelection(int drow, int dcol)
+    private void CollapseAndMoveSelection(int drow, int dcol)
     {
         if (Sheet?.Selection?.ActiveRegion == null)
             return;
@@ -656,6 +656,9 @@ public partial class Datasheet : IHandleEvent
 
         // Can only handle single selections for now
         var region = Sheet.Selection.ActiveRegion;
+        if (region == null)
+            return;
+        
         await _clipboard.Copy(region, Sheet);
     }
 

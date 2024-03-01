@@ -1,7 +1,7 @@
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace BlazorDatasheet.Core.Util;
+namespace BlazorDatasheet.SharedPages.ObjectEditor;
 
 public static class Properties
 {

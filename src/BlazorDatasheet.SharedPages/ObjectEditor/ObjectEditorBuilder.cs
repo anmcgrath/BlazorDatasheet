@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Util;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.SharedPages.ObjectEditor;
 
 namespace BlazorDatasheet.Core.ObjectEditor;
 
