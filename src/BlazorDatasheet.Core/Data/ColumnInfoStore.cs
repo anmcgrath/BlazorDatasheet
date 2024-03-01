@@ -40,19 +40,6 @@ public class ColumnInfoStore
     }
 
     /// <summary>
-    /// Sets column width of one column and returns any column widths that were modified when set.
-    /// </summary>
-    /// <param name="col"></param>
-    /// <param name="width"></param>
-    /// <returns></returns>
-    internal List<(int start, int end, double width)> SetColumnWidthImpl(int col, double width)
-    {
-        var restoreData = _widthStore.Set(col, width);
-        _sheet.MarkDirty(new ColumnRegion(col, _sheet.NumCols));
-        return restoreData;
-    }
-
-    /// <summary>
     /// Sets the column widths of all columns between (and including) the columns specified, to the value given.
     /// Returns any column ranges that were modified.
     /// </summary>
@@ -65,19 +52,6 @@ public class ColumnInfoStore
         var restoreData = _widthStore.Set(colStart, colEnd, width);
         ColumnWidthChanged?.Invoke(this, new ColumnWidthChangedEventArgs(colStart, colEnd, width));
         _sheet.MarkDirty(new ColumnRegion(colStart, _sheet.NumCols));
-        return restoreData;
-    }
-
-    /// <summary>
-    /// Sets the hae
-    /// </summary>
-    /// <param name="col"></param>
-    /// <param name="heading"></param>
-    /// <returns></returns>
-    internal List<(int start, int end, string heading)> SetColumnHeadingImpl(int col, string heading)
-    {
-        var restoreData = _headingStore.Set(col, heading);
-        _sheet.MarkDirty(new ColumnRegion(col));
         return restoreData;
     }
 
@@ -206,8 +180,8 @@ public class ColumnInfoStore
         foreach (var added in data.ColFormatRestoreData.IntervalsAdded)
             ColFormats.Clear(added);
         ColFormats.AddRange(data.ColFormatRestoreData.IntervalsRemoved);
-        
-        foreach(var change in data.WidthsModified)
+
+        foreach (var change in data.WidthsModified)
             ColumnWidthChanged?.Invoke(this, new ColumnWidthChangedEventArgs(change.start, change.end, change.width));
     }
 

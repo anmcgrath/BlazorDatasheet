@@ -78,6 +78,14 @@ public class Editor
         Sheet = sheet;
     }
 
+    /// <summary>
+    /// Begins an edit at the row/column specified.
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <param name="isSoftEdit">If true, the editor should hold on to the edit when arrow keys are pressed.</param>
+    /// <param name="mode">Details on the method that was used to begin the edit.</param>
+    /// <param name="key">The key that was used to begin the edit, if the entry mode was using the keyboard</param>
     public void BeginEdit(int row, int col, bool isSoftEdit = true, EditEntryMode mode = EditEntryMode.None,
         string? key = null)
     {
@@ -106,6 +114,10 @@ public class Editor
                 key));
     }
 
+    /// <summary>
+    /// Cancels the edit without setting the cell value.
+    /// </summary>
+    /// <returns></returns>
     public bool CancelEdit()
     {
         if (this.IsEditing && EditCell != null)
@@ -120,7 +132,7 @@ public class Editor
     }
 
     /// <summary>
-    /// Accepts the edit and sets the cell value with a set value command.
+    /// Accepts the edit and sets the cell value.
     /// </summary>
     public bool AcceptEdit()
     {
@@ -137,7 +149,7 @@ public class Editor
             parsedFormula = Sheet.FormulaEngine.ParseFormula(formulaString!);
             if (!parsedFormula.IsValid())
             {
-                Sheet.Dialog.Alert("Invalid formula");
+                Sheet?.Dialog?.Alert("Invalid formula");
                 return false;
             }
         }

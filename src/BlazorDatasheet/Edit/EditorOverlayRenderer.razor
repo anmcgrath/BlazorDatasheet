@@ -113,7 +113,7 @@
 
     private void EditorOnEditFinished(object? sender, EditFinishedEventArgs e)
     {
-        clearCurrentEdit();
+        ClearCurrentEdit();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -121,7 +121,7 @@
         if (BeginningEdit)
         {
             BeginningEdit = false;
-            if (ActiveEditorContainer == null)
+            if (ActiveEditorContainer?.Instance == null)
                 return;
             _activeCellEditor = (BaseEditor)(ActiveEditorContainer.Instance);
             if (_activeCellEditor == null)
@@ -166,7 +166,7 @@
         _sheet?.Editor.AcceptEdit();
     }
 
-    private void clearCurrentEdit()
+    private void ClearCurrentEdit()
     {
         if (_activeCellEditor != null)
         {

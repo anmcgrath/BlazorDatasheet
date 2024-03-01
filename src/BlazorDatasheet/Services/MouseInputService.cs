@@ -47,7 +47,7 @@ public class MouseInputService : IInputService, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        _dotnetHelper.Dispose();
         await _js.InvokeAsync<string>("removeSheetMousePositionListener", _innerSheetRef);
+        _dotnetHelper.Dispose();
     }
 }

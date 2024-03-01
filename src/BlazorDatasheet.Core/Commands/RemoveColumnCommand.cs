@@ -44,7 +44,8 @@ public class RemoveColumnCommand : IUndoableCommand
         _columnInfoRestoreData = sheet.Columns.RemoveColumnsImpl(_columnIndex, _columnIndex + _nColsRemoved - 1);
         _validatorRestoreData = sheet.Validators.Store.RemoveCols(_columnIndex, _columnIndex + _nColsRemoved - 1);
         _cfRestoreData = sheet.ConditionalFormats.RemoveColAt(_columnIndex, _nColsRemoved);
-        return sheet.RemoveColImpl(_columnIndex, _nColsRemoved);
+        sheet.RemoveCols(_nColsRemoved);
+        return true;
     }
 
     public bool Undo(Sheet sheet)
@@ -52,7 +53,7 @@ public class RemoveColumnCommand : IUndoableCommand
         UndoValidation(sheet);
 
         // Insert column back in and set all the values that we removed
-        sheet.InsertColAtImpl(_columnIndex, _nColsRemoved);
+        sheet.AddCols(_nColsRemoved);
 
         sheet.Cells.InsertColAt(_columnIndex, _nColsRemoved, false);
         sheet.Cells.Restore(_cellStoreRestoreData);

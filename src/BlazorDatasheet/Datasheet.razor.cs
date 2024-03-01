@@ -160,7 +160,7 @@ public partial class Datasheet : IHandleEvent
     /// <summary>
     /// Contains positioning calculations
     /// </summary>
-    private CellLayoutProvider _cellLayoutProvider { get; set; }
+    private CellLayoutProvider? _cellLayoutProvider;
 
     /// <summary>
     /// Whether the user is actively selecting cells/rows/columns in the sheet.
@@ -219,6 +219,9 @@ public partial class Datasheet : IHandleEvent
                 DirtyCells.UnionWith(args.DirtyCells);
                 this.StateHasChanged();
             };
+
+            _cellLayoutProvider.IncludeColHeadings = ShowColHeadings;
+            _cellLayoutProvider.IncludeRowHeadings = ShowRowHeadings;
         }
 
         if (_cellLayoutProvider != null)
@@ -399,7 +402,7 @@ public partial class Datasheet : IHandleEvent
         this.HandleCellMouseOver(args.RowIndex, -1);
     }
 
-    private async void HandleCellDoubleClick(int row, int col, bool MetaKey, bool CtrlKey, bool ShiftKey)
+    private async void HandleCellDoubleClick(int row, int col, bool metaKey, bool ctrlKey, bool shiftKey)
     {
         await BeginEdit(row, col, softEdit: false, EditEntryMode.Mouse);
     }

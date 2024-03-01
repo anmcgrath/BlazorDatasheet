@@ -31,7 +31,7 @@ internal class CellStoreRestoreData
             .Concat(FormatRestoreData.RegionsRemoved.Select(x => x.Region));
     }
 
-    public void Merge(CellStoreRestoreData item)
+    internal void Merge(CellStoreRestoreData item)
     {
         ValueRestoreData.Merge(item.ValueRestoreData);
         FormulaRestoreData.Merge(item.FormulaRestoreData);

@@ -126,43 +126,28 @@ public class Sheet
 
     #region COLS
 
-    internal void InsertColAtImpl(int colIndex, int nCols = 1)
+    internal void AddCols(int nCols = 1)
     {
         NumCols += nCols;
     }
 
-    /// <summary>
-    /// Internal implementation that reduces number of cols and invokes event.
-    /// </summary>
-    /// <param name="colIndex"></param>
-    /// <returns>Whether the column at index colIndex was removed</returns>
-    internal bool RemoveColImpl(int colIndex, int nCols = 1)
+    internal void RemoveCols(int nCols = 1)
     {
         NumCols -= nCols;
-        return true;
     }
 
     #endregion
 
     #region ROWS
 
-    /// <summary>
-    /// Internal implementation that increases number of rows and invokes event.
-    /// </summary>
-    /// <param name="rowIndex"></param>
-    /// <param name="nRows">The number of rows to insert</param>
-    /// <param name="height">The height of each row that is inserted. Default is the default row height</param>
-    /// <returns></returns>
-    internal bool InsertRowAtImpl(int rowIndex, int nRows = 1)
+    internal void AddRows(int nRows = 1)
     {
         NumRows += nRows;
-        return true;
     }
 
-    internal bool RemoveRowAtImpl(int rowIndex, int nRows)
+    internal void RemoveRows(int nRows)
     {
         NumRows -= nRows;
-        return true;
     }
 
     #endregion
@@ -229,7 +214,7 @@ public class Sheet
     /// <param name="start">The start row/column index</param>
     /// <param name="end">The end row/column index</param>
     /// <returns></returns>
-    public SheetRange Range(Axis axis, int start, int end)
+    public SheetRange? Range(Axis axis, int start, int end)
     {
         switch (axis)
         {
@@ -239,7 +224,7 @@ public class Sheet
                 return Range(new RowRegion(start, end));
         }
 
-        throw new Exception("Cannot return a range for axis " + axis);
+        return null;
     }
 
     /// <summary>

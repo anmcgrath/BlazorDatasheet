@@ -12,7 +12,7 @@ public class RemoveRowsCommand : IUndoableCommand
 {
     private readonly int _rowIndex;
     private readonly int _nRows;
-    
+
     private RegionRestoreData<int> _validatorRestoreData;
     private RegionRestoreData<ConditionalFormatAbstractBase> _cfRestoreData;
     private RowInfoStoreRestoreData _rowInfoStoreRestore;
@@ -44,7 +44,8 @@ public class RemoveRowsCommand : IUndoableCommand
         _rowInfoStoreRestore = sheet.Rows.RemoveRowsImpl(_rowIndex, _rowIndex + _nRowsRemoved - 1);
         _validatorRestoreData = sheet.Validators.Store.RemoveRows(_rowIndex, _rowIndex + _nRowsRemoved - 1);
         _cfRestoreData = sheet.ConditionalFormats.RemoveRowAt(_rowIndex, _nRowsRemoved);
-        return sheet.RemoveRowAtImpl(_rowIndex, _nRowsRemoved);
+        sheet.RemoveRows(_nRowsRemoved);
+        return true;
     }
 
     public bool Undo(Sheet sheet)
@@ -61,7 +62,7 @@ public class RemoveRowsCommand : IUndoableCommand
         sheet.ConditionalFormats.InsertRowAt(_rowIndex, _nRowsRemoved, false);
         sheet.ConditionalFormats.Restore(_cfRestoreData);
 
-        sheet.InsertRowAtImpl(_rowIndex);
+        sheet.AddRows();
 
         sheet.MarkDirty(new RowRegion(_rowIndex, sheet.NumRows));
         return true;

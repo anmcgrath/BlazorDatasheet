@@ -49,11 +49,6 @@ namespace BlazorDatasheet.Core.Data.Cells
             _sheet.Commands.EndCommandGroup();
         }
 
-        internal bool MergeImpl(SheetRange range)
-        {
-            return MergeImpl(range.Region);
-        }
-
         internal bool MergeImpl(IRegion region)
         {
             _mergeStore.Add(region, true);

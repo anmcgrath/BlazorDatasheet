@@ -29,26 +29,13 @@ public class RowInfoStore
     /// <summary>
     /// Fired when a row height is changed.
     /// </summary>
-    public event EventHandler<RowHeightChangedEventArgs> RowHeightChanged;
+    public event EventHandler<RowHeightChangedEventArgs>? RowHeightChanged;
 
     public RowInfoStore(double defaultHeight, Sheet sheet)
     {
         _sheet = sheet;
         DefaultHeight = defaultHeight;
         _heightStore = new CumulativeRange1DStore(defaultHeight);
-    }
-
-    /// <summary>
-    /// Sets row height of one row and returns any row widths that were modified when set.
-    /// </summary>
-    /// <param name="row"></param>
-    /// <param name="height"></param>
-    /// <returns></returns>
-    internal List<(int start, int end, double width)> SetRowHeightImpl(int row, double height)
-    {
-        var restoreData = _heightStore.Set(row, height);
-        _sheet.MarkDirty(new RowRegion(row, _sheet.NumRows));
-        return restoreData;
     }
 
     /// <summary>
@@ -64,19 +51,6 @@ public class RowInfoStore
         var restoreData = _heightStore.Set(rowStart, rowEnd, height);
         RowHeightChanged?.Invoke(this, new RowHeightChangedEventArgs(rowStart, rowEnd, height));
         _sheet.MarkDirty(new RowRegion(rowStart, rowEnd));
-        return restoreData;
-    }
-
-    /// <summary>
-    /// Sets the heading for a row.
-    /// </summary>
-    /// <param name="row"></param>
-    /// <param name="heading"></param>
-    /// <returns></returns>
-    internal List<(int start, int end, string heading)> SetRowHeadingImpl(int row, string heading)
-    {
-        var restoreData = _headingStore.Set(row, heading);
-        _sheet.MarkDirty(new RowRegion(row));
         return restoreData;
     }
 
