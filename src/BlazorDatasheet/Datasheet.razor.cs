@@ -404,21 +404,24 @@ public partial class Datasheet : IHandleEvent
 
     private async void HandleCellDoubleClick(int row, int col, bool metaKey, bool ctrlKey, bool shiftKey)
     {
-        await BeginEdit(row, col, softEdit: false, EditEntryMode.Mouse);
+        await BeginEdit(row, col, EditEntryMode.Mouse);
     }
 
-    private async Task BeginEdit(int row, int col, bool softEdit, EditEntryMode mode, string entryChar = "")
+    private async Task BeginEdit(int row, int col, EditEntryMode mode, string entryChar = "")
     {
         if (this.IsReadOnly)
             return;
 
         this.CancelSelecting();
 
-        var cell = Sheet.Cells?.GetCell(row, col);
-        if (cell == null || cell?.Format?.IsReadOnly == true)
+        var cell = Sheet?.Cells?.GetCell(row, col);
+
+        if (cell == null || cell.Format?.IsReadOnly == true)
             return;
 
-        Sheet.Editor.BeginEdit(row, col, softEdit, mode, entryChar);
+        var softEdit = mode == EditEntryMode.Key || mode == EditEntryMode.None || cell.Value == null;
+
+        Sheet?.Editor.BeginEdit(row, col, softEdit, mode, entryChar);
     }
 
     /// <summary>
@@ -548,7 +551,7 @@ public partial class Datasheet : IHandleEvent
                     return false;
                 var inputPosition = Sheet.Selection.GetInputPosition();
 
-                BeginEdit(inputPosition.row, inputPosition.col, softEdit: true, EditEntryMode.Key, e.Key);
+                BeginEdit(inputPosition.row, inputPosition.col, EditEntryMode.Key, e.Key);
             }
 
             return true;
@@ -569,7 +572,7 @@ public partial class Datasheet : IHandleEvent
             if (Sheet == null || !Sheet.Selection.Regions.Any())
                 return false;
             var inputPosition = Sheet.Selection.GetInputPosition();
-            BeginEdit(inputPosition.row, inputPosition.col, softEdit: true, EditEntryMode.Key, e.Key);
+            BeginEdit(inputPosition.row, inputPosition.col, EditEntryMode.Key, e.Key);
 
             return true;
         }
@@ -631,7 +634,7 @@ public partial class Datasheet : IHandleEvent
     /// <param name="args"></param>
     private async void HandleCellRequestBeginEdit(CellEditRequest args)
     {
-        await BeginEdit(args.Row, args.Col, args.IsSoftEdit, args.EntryMode);
+        await BeginEdit(args.Row, args.Col, args.EntryMode);
     }
 
     /// <summary>

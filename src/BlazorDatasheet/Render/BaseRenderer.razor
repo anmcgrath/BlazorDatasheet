@@ -43,9 +43,9 @@
     /// </summary>
     /// <param name="isSoftEdit">Whether the edit is a "soft edit"</param>
     /// <param name="mode">The mode used to enter the edit</param>
-    protected void RequestEdit(bool isSoftEdit, EditEntryMode mode)
+    protected void RequestEdit(EditEntryMode mode)
     {
-        OnBeginEditRequest?.Invoke(new CellEditRequest(Cell.Row, Cell.Col, isSoftEdit, mode));
+        OnBeginEditRequest?.Invoke(new CellEditRequest(Cell.Row, Cell.Col, mode));
     }
 
 }

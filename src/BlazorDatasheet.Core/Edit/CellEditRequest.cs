@@ -14,19 +14,14 @@ public class CellEditRequest
     /// </summary>
     public int Col { get; }
     /// <summary>
-    /// Whether the edit is a "soft edit"
-    /// </summary>
-    public bool IsSoftEdit { get; }
-    /// <summary>
     /// The mode of entry for the editor
     /// </summary>
     public EditEntryMode EntryMode { get; }
 
-    public CellEditRequest(int row, int col, bool isSoftEdit, EditEntryMode entryMode)
+    public CellEditRequest(int row, int col, EditEntryMode entryMode)
     {
         Row = row;
         Col = col;
-        IsSoftEdit = isSoftEdit;
         EntryMode = entryMode;
     }
 }
