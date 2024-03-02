@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace BlazorDatasheet.Formula.Core.Interpreter.Lexing;
 
 public class NumberToken : Token
@@ -18,6 +20,6 @@ public class NumberToken : Token
 
     public override string ToString()
     {
-        return base.ToString() + " = " + Value;
+        return Value.ToString(CultureInfo.InvariantCulture);
     }
 }

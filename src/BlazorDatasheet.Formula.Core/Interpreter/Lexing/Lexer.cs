@@ -7,6 +7,7 @@ public ref struct Lexer
 {
     private int _position;
     private ReadOnlySpan<char> _string;
+    private WhiteSpaceOptions _whiteSpaceOptions = WhiteSpaceOptions.RemoveWhitespace;
     private char _current;
     private LexerReferenceState _referenceState = LexerReferenceState.None;
     public List<string> Errors { get; private set; } = null!;
@@ -18,11 +19,15 @@ public ref struct Lexer
         _current = '\0';
     }
 
-    public Token[] Lex(string text)
+    public Token[] Lex(string text, WhiteSpaceOptions whiteSpaceOptions = WhiteSpaceOptions.RemoveWhitespace)
     {
+        if (string.IsNullOrEmpty(text))
+            return Array.Empty<Token>();
+
         _string = text.AsSpan();
         _position = 0;
         _current = _string[0];
+        _whiteSpaceOptions = whiteSpaceOptions;
         Errors = new();
 
         var tokens = new List<Token>();
@@ -39,8 +44,20 @@ public ref struct Lexer
 
     private Token ReadToken()
     {
-        while (char.IsWhiteSpace(_current))
+        if (char.IsWhiteSpace(_current))
+        {
+            int start = _position;
             Next();
+            while (char.IsWhiteSpace(_current))
+            {
+                Next();
+            }
+
+            var len = _position - start;
+
+            if (_whiteSpaceOptions == WhiteSpaceOptions.PreserveAll)
+                return new WhitespaceToken(_string.Slice(start, len).ToString(), start);
+        }
 
         if (_current == '\0')
             return new EndOfFileToken(_position);
@@ -198,7 +215,7 @@ public ref struct Lexer
                     }
                 }
 
-                _position = tempPosition;
+                ResetPosition(tempPosition);
             }
 
             return new NumberToken(parsedInt, start);
@@ -246,7 +263,10 @@ public ref struct Lexer
             if (next.Tag == Tag.ReferenceToken)
             {
                 var rightToken = (ReferenceToken)next;
-                return new ReferenceToken(new RangeReference(parsedLeftRef, rightToken.Reference), start);
+                if (rightToken.Reference.Kind == parsedLeftRef.Kind)
+                {
+                    return new ReferenceToken(new RangeReference(parsedLeftRef, rightToken.Reference), start);
+                }
             }
 
             // in this case we know the second row is not absolute reference
@@ -261,7 +281,7 @@ public ref struct Lexer
             }
 
             // otherwise reset our position
-            _position = tempPosition;
+            ResetPosition(tempPosition);
         }
 
         if (canParseRef && parsedLeftRef!.Kind == ReferenceKind.Cell)
@@ -310,6 +330,15 @@ public ref struct Lexer
     private void Next()
     {
         _position++;
+        if (_position > _string.Length - 1)
+            _current = '\0';
+        else
+            _current = _string[_position];
+    }
+
+    private void ResetPosition(int position)
+    {
+        _position = position;
         if (_position > _string.Length - 1)
             _current = '\0';
         else

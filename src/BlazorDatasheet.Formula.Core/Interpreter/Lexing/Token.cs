@@ -21,6 +21,6 @@ public class Token
 
     public override string ToString()
     {
-        return $"{Tag}@{PositionStart}";
+        return this.Text;
     }
 }

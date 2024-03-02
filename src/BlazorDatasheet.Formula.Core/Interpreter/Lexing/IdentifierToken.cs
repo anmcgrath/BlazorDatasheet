@@ -16,6 +16,6 @@ public class IdentifierToken : Token
 
     public override string ToString()
     {
-        return base.ToString() + " = " + Value;
+        return Value;
     }
 }
