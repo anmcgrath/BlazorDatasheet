@@ -87,7 +87,7 @@ public ref struct Lexer
                     Next();
                 }
                 else
-                    token = new Token(Tag.GreaterThanToken, ">", _position - 1);
+                    token = new Token(Tag.GreaterThanToken, ">", _position);
 
                 break;
             case '<':
@@ -102,7 +102,7 @@ public ref struct Lexer
                     Next();
                 }
                 else
-                    token = new Token(Tag.LessThanToken, "<", _position - 1);
+                    token = new Token(Tag.LessThanToken, "<", _position);
 
                 break;
             case '(':
