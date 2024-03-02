@@ -17,7 +17,7 @@ public class Evaluator
         _environment = environment;
         var cellValueCoercer = new CellValueCoercer(_environment);
         _parameterConverter = new ParameterConverter(_environment, cellValueCoercer);
-        _bOp = new BinaryOpEvaluator(cellValueCoercer);
+        _bOp = new BinaryOpEvaluator(cellValueCoercer, _environment);
         _uOp = new UnaryOpEvaluator(cellValueCoercer);
     }
 
@@ -184,6 +184,7 @@ public class Evaluator
     {
         var left = EvaluateExpression(expression.Left);
         var right = EvaluateExpression(expression.Right);
+
         return _bOp.Evaluate(left, expression.OpToken.Tag, right);
     }
 

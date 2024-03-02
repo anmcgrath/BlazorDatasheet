@@ -7,10 +7,12 @@ namespace BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 public class BinaryOpEvaluator
 {
     private readonly CellValueCoercer _cellValueCoercer;
+    private readonly IEnvironment _environment;
 
-    public BinaryOpEvaluator(CellValueCoercer cellValueCoercer)
+    public BinaryOpEvaluator(CellValueCoercer cellValueCoercer, IEnvironment environment)
     {
         _cellValueCoercer = cellValueCoercer;
+        _environment = environment;
     }
 
     public CellValue Evaluate(CellValue left, Tag op, CellValue right)
@@ -81,25 +83,44 @@ public class BinaryOpEvaluator
     }
 
     private CellValue EvaluateLessThan(CellValue left, CellValue right)
-        => CellValue.Logical(left.IsLessThan(right));
+    {
+        left = EvalIfReference(left);
+        right = EvalIfReference(right);
+        return CellValue.Logical(left.IsLessThan(right));
+    }
 
     private CellValue EvaluateLessThanOrEqualTo(CellValue left, CellValue right)
-        => CellValue.Logical(left.IsLessThanOrEqualTo(right));
+    {
+        left = EvalIfReference(left);
+        right = EvalIfReference(right);
+        return CellValue.Logical(left.IsLessThanOrEqualTo(right));
+    }
 
     private CellValue EvaluateGreaterThan(CellValue left, CellValue right)
-        => CellValue.Logical(left.IsGreaterThan(right));
+    {
+        left = EvalIfReference(left);
+        right = EvalIfReference(right);
+        return CellValue.Logical(left.IsGreaterThan(right));
+    }
 
     private CellValue EvaluateGreaterThanOrEqualTo(CellValue left, CellValue right)
-        => CellValue.Logical(left.IsGreaterThanOrEqualTo(right));
+    {
+        left = EvalIfReference(left);
+        right = EvalIfReference(right);
+        return CellValue.Logical(left.IsGreaterThanOrEqualTo(right));
+    }
 
     private CellValue EvaluateEqual(CellValue left, CellValue right)
     {
-        var equal = left.IsEqualTo(right);
+        left = EvalIfReference(left);
+        right = EvalIfReference(right);
         return CellValue.Logical(left.IsEqualTo(right));
     }
 
     private CellValue EvaluateNotEqual(CellValue left, CellValue right)
     {
+        left = EvalIfReference(left);
+        right = EvalIfReference(right);
         return CellValue.Logical(!left.IsEqualTo(right));
     }
 
@@ -141,5 +162,16 @@ public class BinaryOpEvaluator
             return CellValue.Error(ErrorType.Value);
 
         return CellValue.Number(numPair.Value1 * numPair.Value2);
+    }
+
+    private CellValue EvalIfReference(CellValue value)
+    {
+        if (value.IsCellReference())
+        {
+            var cellRef = (CellReference)value.Data!;
+            return _environment.GetCellValue(cellRef.Row.RowNumber, cellRef.Col.ColNumber);
+        }
+
+        return value;
     }
 }
