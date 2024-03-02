@@ -23,6 +23,8 @@
 
     [Parameter] public string? Style { get; set; }
 
+    [Parameter] public List<string> RangeColors { get; set; } = new();
+
     private ElementReference _highlightInputEl;
     private ElementReference _highlightResultEl;
 
@@ -71,15 +73,24 @@
 
         var sb = new StringBuilder();
         var span = text.AsSpan();
+        int refCount = 0;
 
         for (int i = 0; i < tokens.Length - 1; i++)
         {
-            Console.WriteLine(tokens[i].Tag);
-            var c = GetClass(tokens[i].Tag);
             var start = tokens[i].PositionStart;
             var len = tokens[i + 1].PositionStart - start;
             var section = span.Slice(start, len);
-            sb.Append($"<span class=\"{c}\">");
+            sb.Append($"<span ");
+            sb.Append($"class=\"{GetClass(tokens[i].Tag)}\" ");
+            if (tokens[i].Tag == Tag.ReferenceToken)
+            {
+                var colorIndex = (refCount % RangeColors.Count);
+                var color = RangeColors[colorIndex];
+                sb.Append($"style=\"color:{color}\"");
+                refCount++;
+            }
+
+            sb.Append(">");
             sb.Append(section);
             sb.Append($"</span>");
         }
