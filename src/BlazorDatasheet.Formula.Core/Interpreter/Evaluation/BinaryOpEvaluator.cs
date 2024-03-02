@@ -84,43 +84,43 @@ public class BinaryOpEvaluator
 
     private CellValue EvaluateLessThan(CellValue left, CellValue right)
     {
-        left = EvalIfReference(left);
-        right = EvalIfReference(right);
+        left = EvalCellValueIfItIsReference(left);
+        right = EvalCellValueIfItIsReference(right);
         return CellValue.Logical(left.IsLessThan(right));
     }
 
     private CellValue EvaluateLessThanOrEqualTo(CellValue left, CellValue right)
     {
-        left = EvalIfReference(left);
-        right = EvalIfReference(right);
+        left = EvalCellValueIfItIsReference(left);
+        right = EvalCellValueIfItIsReference(right);
         return CellValue.Logical(left.IsLessThanOrEqualTo(right));
     }
 
     private CellValue EvaluateGreaterThan(CellValue left, CellValue right)
     {
-        left = EvalIfReference(left);
-        right = EvalIfReference(right);
+        left = EvalCellValueIfItIsReference(left);
+        right = EvalCellValueIfItIsReference(right);
         return CellValue.Logical(left.IsGreaterThan(right));
     }
 
     private CellValue EvaluateGreaterThanOrEqualTo(CellValue left, CellValue right)
     {
-        left = EvalIfReference(left);
-        right = EvalIfReference(right);
+        left = EvalCellValueIfItIsReference(left);
+        right = EvalCellValueIfItIsReference(right);
         return CellValue.Logical(left.IsGreaterThanOrEqualTo(right));
     }
 
     private CellValue EvaluateEqual(CellValue left, CellValue right)
     {
-        left = EvalIfReference(left);
-        right = EvalIfReference(right);
+        left = EvalCellValueIfItIsReference(left);
+        right = EvalCellValueIfItIsReference(right);
         return CellValue.Logical(left.IsEqualTo(right));
     }
 
     private CellValue EvaluateNotEqual(CellValue left, CellValue right)
     {
-        left = EvalIfReference(left);
-        right = EvalIfReference(right);
+        left = EvalCellValueIfItIsReference(left);
+        right = EvalCellValueIfItIsReference(right);
         return CellValue.Logical(!left.IsEqualTo(right));
     }
 
@@ -164,7 +164,7 @@ public class BinaryOpEvaluator
         return CellValue.Number(numPair.Value1 * numPair.Value2);
     }
 
-    private CellValue EvalIfReference(CellValue value)
+    private CellValue EvalCellValueIfItIsReference(CellValue value)
     {
         if (value.IsCellReference())
         {

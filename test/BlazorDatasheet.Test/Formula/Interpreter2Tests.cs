@@ -180,4 +180,17 @@ public class InterpreterTests
         EvalExpression($$"""="A"&2 """).Data.Should().Be("A2");
         EvalExpression($$"""="2"&"B" """).Data.Should().Be("2B");
     }
+
+    [Test]
+    public void Equality_Binary_Operations_With_Cell_References_Correctly_Works()
+    {
+        _env.SetCellValue(0, 0, 5);
+        _env.SetCellValue(1, 0, 10);
+        EvalExpression("=A1<A2").Data.Should().Be(true);
+        EvalExpression("=A1>A2").Data.Should().Be(false);
+        EvalExpression("=A1>=A2").Data.Should().Be(false);
+        EvalExpression("=A1<=A2").Data.Should().Be(true);
+        EvalExpression("=A1=A2").Data.Should().Be(false);
+        EvalExpression("=A1<>A2").Data.Should().Be(true);
+    }
 }
