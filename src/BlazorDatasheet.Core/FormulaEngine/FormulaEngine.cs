@@ -161,7 +161,14 @@ public class FormulaEngine
     {
         if (formula == null)
             return CellValue.Empty;
-        return _evaluator.Evaluate(formula, resolveReferences);
+        try
+        {
+            return _evaluator.Evaluate(formula, resolveReferences);
+        }
+        catch (Exception e)
+        {
+            return CellValue.Error(ErrorType.Na, "Error running formula");
+        }
     }
 
     /// <summary>
