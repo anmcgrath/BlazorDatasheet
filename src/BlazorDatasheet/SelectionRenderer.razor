@@ -79,12 +79,16 @@
     }
 }
 
-<!-- render dragger (bottom right corner) -->
-<div id="auto-filler"
-     class="unselectable"
-     @onpointerdown="DraggerMouseDown"
-     style="@GetDraggerStyleString();cursor:crosshair;pointer-events: all;">
-</div>
+@if (!Sheet.Editor.IsEditing)
+{
+    <!-- render dragger (bottom right corner) -->
+    <div id="auto-filler"
+         class="unselectable"
+         @onpointerdown="DraggerMouseDown"
+         style="@GetDraggerStyleString();cursor:crosshair;pointer-events: all;">
+    </div>
+}
+
 
 <!-- drag preview -->
 @if (_isDragging && _dragPreviewRegion != null)
@@ -141,6 +145,7 @@
 
             _sheet.Selection.SelectionChanged += OnSelectionChanged;
             _sheet.Selection.SelectingChanged += OnSelectingChanged;
+            _sheet.Editor.EditBegin += (sender, args) => StateHasChanged();
         }
     }
 

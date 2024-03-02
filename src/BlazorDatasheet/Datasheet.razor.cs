@@ -482,7 +482,10 @@ public partial class Datasheet : IHandleEvent
 
         if (KeyUtil.IsEnter(e.Key))
         {
-            if (!Sheet.Editor.IsEditing || this.AcceptEdit())
+            if (!_sheetLocal.Editor.IsEditing)
+                return true;
+
+            if (AcceptEdit())
             {
                 var movementDir = e.ShiftKey ? -1 : 1;
                 Sheet?.Selection?.MoveActivePositionByRow(movementDir);
@@ -661,7 +664,7 @@ public partial class Datasheet : IHandleEvent
         var region = Sheet.Selection.ActiveRegion;
         if (region == null)
             return;
-        
+
         await _clipboard.Copy(region, Sheet);
     }
 

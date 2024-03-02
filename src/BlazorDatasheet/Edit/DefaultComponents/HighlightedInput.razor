@@ -1,0 +1,114 @@
+﻿@using Microsoft.JSInterop
+@using System.Diagnostics
+@using System.Text
+@using BlazorDatasheet.Formula.Core.Interpreter.Lexing
+@implements IAsyncDisposable
+@inject IJSRuntime Js;
+
+<div spellcheck="false" style="display: block;height: 100%; @Style">
+    <span class="highlight-result"
+          @ref="_highlightResultEl">
+    </span>
+
+    <span contenteditable="true"
+          class="highlight-input"
+          @ref="_highlightInputEl">
+    </span>
+</div>
+
+@code {
+    [Parameter] public string Value { get; set; }
+
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+
+    [Parameter] public string? Style { get; set; }
+
+    private ElementReference _highlightInputEl;
+    private ElementReference _highlightResultEl;
+
+    private IJSObjectReference? _highlightJs;
+    private DotNetObjectReference<HighlightedInput>? _dotnetRef;
+
+    private bool _isDisposing;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var module = await Js.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/Edit/DefaultComponents/HighlightedInput.razor.js");
+            _dotnetRef = DotNetObjectReference.Create(this);
+            var options = new HighlighterOptions()
+            {
+                InitialText = Value,
+                InitialHtml = GetHighlightedHtmlValue(Value),
+                DotnetHelper = _dotnetRef,
+                InputEl = _highlightInputEl,
+                HighlightResultEl = _highlightResultEl
+            };
+            _highlightJs = await module.InvokeAsync<IJSObjectReference>("createHighlighter", options);
+            await module.DisposeAsync();
+        }
+    }
+
+    [JSInvokable]
+    public async Task UpdateInput(string input)
+    {
+        await ValueChanged.InvokeAsync(input);
+        if (_highlightJs != null && !_isDisposing)
+            await _highlightJs.InvokeVoidAsync("setHighlightHtml", GetHighlightedHtmlValue(input));
+    }
+
+    private string GetHighlightedHtmlValue(string? text)
+    {
+        if (text == null)
+            return string.Empty;
+
+        if (!text.StartsWith("="))
+            return text;
+
+        var lexer = new Lexer();
+        var tokens = lexer.Lex(text);
+
+        var sb = new StringBuilder();
+        var span = text.AsSpan();
+
+        for (int i = 0; i < tokens.Length - 1; i++)
+        {
+            Console.WriteLine(tokens[i].Tag);
+            var c = GetClass(tokens[i].Tag);
+            var start = tokens[i].PositionStart;
+            var len = tokens[i + 1].PositionStart - start;
+            var section = span.Slice(start, len);
+            sb.Append($"<span class=\"{c}\">");
+            sb.Append(section);
+            sb.Append($"</span>");
+        }
+
+        return sb.ToString();
+    }
+
+    private string GetClass(Tag tokenTag)
+    {
+        switch (tokenTag)
+        {
+            case Tag.Number:
+                return "number-highlight";
+            case Tag.StringToken:
+                return "string-highlight";
+            default:
+                return "default-highlight";
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _isDisposing = true;
+        if (_highlightJs != null)
+        {
+            await _highlightJs.DisposeAsync();
+        }
+
+        _dotnetRef?.Dispose();
+    }
+
+}

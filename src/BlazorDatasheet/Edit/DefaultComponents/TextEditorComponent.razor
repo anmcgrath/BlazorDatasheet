@@ -8,14 +8,10 @@
 @using BlazorDatasheet.Formula.Core
 @using BlazorDatasheet.Formula.Core.Interpreter.Parsing
 
-<input
-    type="text"
-    class="text-input"
-    @bind:get="CurrentValue"
-    @bind:set="OnInput"
-    @bind:event="oninput"
-    style="@CssUtil.GetStyledInput(Cell)"
-    @ref="InputRef"/>
+<HighlightedInput
+    Style="@CssUtil.GetStyledInput(Cell)"
+    @bind-Value:set="OnInput"
+    @bind-Value:get="CurrentValue"/>
 
 @foreach (var cr in _colorRegions)
 {
@@ -31,9 +27,10 @@
         Height="h"
         X="x"
         Y="y"
+        ZIndex="12"
         BorderStyle="dashed"
         BorderColor="@cr.Data"
-        BorderThickness="1"/>
+        BorderThickness="2"/>
 }
 
 @code {
