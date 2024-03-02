@@ -603,6 +603,9 @@ public partial class Datasheet : IHandleEvent
         if (Sheet == null || !Sheet.Selection.Regions.Any())
             return;
 
+        if (Sheet.Editor.IsEditing)
+            return;
+
         var posnToInput = Sheet.Selection.GetInputPosition();
 
         var range = Sheet.InsertDelimitedText(arg.Text, posnToInput);
