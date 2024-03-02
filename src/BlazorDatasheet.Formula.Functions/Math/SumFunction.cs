@@ -32,5 +32,5 @@ public class SumFunction : ISheetFunction
         return CellValue.Number(sum);
     }
 
-    public bool AcceptsErrors => true;
+    public bool AcceptsErrors => false;
 }

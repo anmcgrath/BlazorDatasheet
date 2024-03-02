@@ -45,6 +45,7 @@ public class MathFunctionTests
         _env.RegisterFunction("sum", new SumFunction());
         var res1 = Eval("=sum(1, 2)");
         res1.Should().Be(3);
+        Eval("=sum(1/0)").Should().BeOfType<FormulaError>();
         Eval("=sum(5)").Should().Be(5);
         Eval("=sum(true,true)").Should().Be(2);
         Eval("=sum(\"ab\",true)").Should().BeOfType<FormulaError>();
