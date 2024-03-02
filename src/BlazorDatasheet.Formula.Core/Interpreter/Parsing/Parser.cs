@@ -155,7 +155,7 @@ public class Parser
         {
             case Tag.StringToken:
                 var strToken = (StringToken)NextToken();
-                return new LiteralExpression(CellValue.Text(strToken.Value));
+                return new StringLiteralExpression(CellValue.Text(strToken.Value));
             case Tag.Number:
                 var nToken = (NumberToken)NextToken();
                 return new LiteralExpression(CellValue.Number(nToken.Value));
