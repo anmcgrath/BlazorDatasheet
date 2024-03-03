@@ -69,7 +69,10 @@
             var parser = new Parser();
             var formula = parser.FromString(CurrentValue);
             if (!formula.References.Any())
+            {
+                _colorRegions = new List<DataRegion<string>>();
                 return;
+            }
 
             _colorRegions = formula.References
                 .Select((r, i) =>
