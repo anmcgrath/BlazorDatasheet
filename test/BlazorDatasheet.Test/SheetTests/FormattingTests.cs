@@ -56,7 +56,7 @@ public class FormattingTests
         var colFormat = new CellFormat() { BackgroundColor = "col-format-bg" };
         var cellRegion = new Region(2, 4, 2, 4);
         var colRegion = new ColumnRegion(2);
-        
+
         _sheet.SetFormat(cellRegion, cellFormat);
         _sheet.SetFormat(colRegion, colFormat);
 
@@ -163,5 +163,54 @@ public class FormattingTests
         _sheet.GetFormat(2, 0)?.BackgroundColor.Should().Be("blue");
         _sheet.GetFormat(3, 0)?.BackgroundColor?.Should().BeNullOrEmpty();
     }
+
+    [Test]
+    public void Set_Left_Border_Sets_Cell_To_Lefts_Right_Border()
+    {
+        _sheet.SetFormat(new Region(1, 2),
+            new CellFormat()
+            {
+                BorderLeft = new Border() { Width = 1, Color = "black" },
+                BorderRight = new Border() { Width = 1, Color = "black" },
+                BorderBottom = new Border() { Width = 1, Color = "black" },
+                BorderTop = new Border() { Width = 1, Color = "black" }
+            });
+
+        _sheet.GetFormat(1, 2)?.BorderLeft?.Width.Should().Be(1);
+        _sheet.GetFormat(1, 2)?.BorderRight?.Width.Should().Be(1);
+        _sheet.GetFormat(1, 2)?.BorderBottom?.Width.Should().Be(1);
+        _sheet.GetFormat(1, 2)?.BorderTop?.Width.Should().Be(1);
+        
+        _sheet.GetFormat(1, 1)?.BorderRight?.Width.Should().Be(1);
+        _sheet.GetFormat(1, 1)?.BorderLeft?.Width.Should().Be(0);
+        _sheet.GetFormat(1, 1)?.BorderBottom?.Width.Should().Be(0);
+        _sheet.GetFormat(1, 1)?.BorderTop?.Width.Should().Be(0);
+    }
     
+    [Test]
+    public void Override_Cell_Border_Overrides_Border()
+    {
+        _sheet.SetFormat(new Region(1, 1),
+            new CellFormat()
+            {
+                BorderLeft = new Border() { Width = 1, Color = "black" },
+                BorderRight = new Border() { Width = 1, Color = "black" },
+                BorderBottom = new Border() { Width = 1, Color = "black" },
+                BorderTop = new Border() { Width = 1, Color = "black" }
+            });
+        
+        _sheet.SetFormat(new Region(1, 1),
+            new CellFormat()
+            {
+                BorderLeft = new Border() { Width = 2, Color = "black" },
+                BorderRight = new Border() { Width = 2, Color = "black" },
+                BorderBottom = new Border() { Width = 2, Color = "black" },
+                BorderTop = new Border() { Width = 2, Color = "black" }
+            });
+
+        _sheet.GetFormat(1, 1).BorderLeft.Width.Should().Be(2);
+        _sheet.GetFormat(1, 1).BorderRight.Width.Should().Be(2);
+        _sheet.GetFormat(1, 1).BorderBottom.Width.Should().Be(2);
+        _sheet.GetFormat(1, 1).BorderTop.Width.Should().Be(2);
+    }
 }

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using BlazorDatasheet.DataStructures.Intervals;
 using BlazorDatasheet.Formula.Core;
 
@@ -40,11 +41,30 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>
     /// </summary>
     public bool? IsReadOnly { get; set; }
 
-
     /// <summary>
     /// CSS text align
     /// </summary>
     public string? TextAlign { get; set; }
+
+    /// <summary>
+    /// Left border
+    /// </summary>
+    public Border? BorderLeft { get; set; }
+
+    /// <summary>
+    /// Right border
+    /// </summary>
+    public Border? BorderRight { get; set; }
+
+    /// <summary>
+    /// Top border
+    /// </summary>
+    public Border? BorderTop { get; set; }
+
+    /// <summary>
+    /// Bottom border
+    /// </summary>
+    public Border? BorderBottom { get; set; }
 
     /// <summary>
     /// Returns a new Format object with cloned properties
@@ -61,7 +81,11 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>
             StringFormat = StringFormat,
             IconColor = IconColor,
             TextAlign = TextAlign,
-            IsReadOnly = IsReadOnly
+            IsReadOnly = IsReadOnly,
+            BorderBottom = BorderBottom?.Clone(),
+            BorderLeft = BorderLeft?.Clone(),
+            BorderRight = BorderRight?.Clone(),
+            BorderTop = BorderTop?.Clone()
         };
     }
 
@@ -90,7 +114,47 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>
             this.IconColor = format.IconColor;
         if (format.IsReadOnly.HasValue)
             this.IsReadOnly = format.IsReadOnly;
+
+        MergeBorders(format);
+        Console.WriteLine("Border bottom " + format.BorderBottom + (new StackFrame(3)).GetMethod().Name);
     }
+
+    private void MergeBorders(CellFormat format)
+    {
+        if (format.BorderBottom != null)
+        {
+            Console.WriteLine($"Merging border bottom {format.BorderBottom.Width}");
+            if (this.BorderBottom == null)
+                this.BorderBottom = format.BorderBottom.Clone();
+            else
+                this.BorderBottom?.Merge(format.BorderBottom);
+        }
+
+        if (format.BorderLeft != null)
+        {
+            if (this.BorderLeft == null)
+                this.BorderLeft = format.BorderLeft.Clone();
+            else
+                this.BorderLeft?.Merge(format.BorderLeft);
+        }
+
+        if (format.BorderRight != null)
+        {
+            if (this.BorderRight == null)
+                this.BorderRight = format.BorderRight.Clone();
+            else
+                this.BorderRight?.Merge(format.BorderRight);
+        }
+
+        if (format.BorderTop != null)
+        {
+            if (this.BorderTop == null)
+                this.BorderTop = format.BorderTop.Clone();
+            else
+                this.BorderTop?.Merge(format.BorderTop);
+        }
+    }
+
 
     public bool Equals(CellFormat? other)
     {
@@ -101,6 +165,10 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>
                this.ForegroundColor == other?.ForegroundColor &&
                this.StringFormat == other?.StringFormat &&
                this.TextAlign == other?.TextAlign &&
-               this.Icon == other?.Icon;
+               this.Icon == other?.Icon &&
+               this.BorderBottom == other?.BorderBottom &&
+               this.BorderLeft == other?.BorderLeft &&
+               this.BorderRight == other?.BorderRight &&
+               this.BorderTop == other?.BorderTop;
     }
 }

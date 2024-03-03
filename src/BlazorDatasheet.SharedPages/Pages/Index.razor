@@ -38,6 +38,8 @@
     <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { BackgroundColor = "red" }))">Set bg to red</button>
     <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { BackgroundColor = "blue" }))">Set bg to blue</button>
     <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { ForegroundColor = "green" }))">Set font colour to green</button>
+    <button @onclick="@(() => SetBorder(Sheet.Selection.Regions, 2, "black"))">Thick border</button>
+    <button @onclick="@(() => SetBorder(Sheet.Selection.Regions, 1, "black"))">Thin border</button>
     <button @onclick="@(() => Sheet.Cells.Merge(Sheet.Selection.Regions))">Merge cells</button>
 </div>
 
@@ -59,6 +61,7 @@
         {
             return;
         }
+
         Sheet.Rows.InsertRowAt(Sheet.Selection.ActiveRegion.TopLeft.row);
     }
 
@@ -68,6 +71,7 @@
         {
             return;
         }
+
         Sheet.Columns.InsertAt(Sheet.Selection.ActiveRegion.TopLeft.col);
     }
 
@@ -77,6 +81,7 @@
         {
             return;
         }
+
         Sheet.Columns.RemoveAt(Sheet.Selection.ActiveRegion.Left);
     }
 
@@ -86,6 +91,7 @@
         {
             return;
         }
+
         Sheet.Rows.RemoveAt(Sheet.Selection.ActiveRegion.Top);
     }
 
@@ -145,6 +151,34 @@
 
         Sheet.EndBatchUpdates();
         Sheet.Commands.ResumeHistory();
+    }
+
+    private void SetBorder(IReadOnlyList<IRegion> selectionRegions, int width, string color)
+    {
+        var format = new CellFormat()
+        {
+            BorderBottom = new Border()
+            {
+                Width = width,
+                Color = color
+            },
+            BorderLeft = new Border()
+            {
+                Width = width,
+                Color = color
+            },
+            BorderRight = new Border()
+            {
+                Width = width,
+                Color = color
+            },
+            BorderTop = new Border()
+            {
+                Width = width,
+                Color = color
+            }
+        };
+        Sheet.SetFormat(selectionRegions, format);
     }
 
 }

@@ -36,7 +36,36 @@ public class SetFormatCommand : IUndoableCommand
         else if (_region is RowRegion rowRegion)
             _rowFormatRestoreData = sheet.Rows.SetRowFormatImpl(_cellFormat, rowRegion);
         else
+        {
+            Console.WriteLine("Executing setCellFormat");
             _cellFormatRestoreData = sheet.Cells.MergeFormatImpl(_region, _cellFormat);
+        }
+
+        // left
+        IRegion leftRegion = new Region(_region.Top, _region.Bottom, _region.Left - 1, _region.Left - 1);
+        leftRegion = sheet.Region.GetIntersection(leftRegion);
+        if (leftRegion != null)
+        {
+            var cf = new CellFormat()
+            {
+                BorderRight = _cellFormat.BorderLeft?.Clone()
+            };
+            var newRestoreData = sheet.Cells.MergeFormatImpl(leftRegion, cf);
+            _cellFormatRestoreData?.Merge(newRestoreData);
+        }
+        
+        IRegion topRegion = new Region(_region.Top - 1, _region.Top - 1, _region.Left, _region.Right);
+        topRegion = sheet.Region.GetIntersection(topRegion);
+        if (topRegion != null)
+        {
+            var cf = new CellFormat()
+            {
+                BorderBottom = _cellFormat.BorderTop?.Clone()
+            };
+            var newRestoreData = sheet.Cells.MergeFormatImpl(topRegion, cf);
+            _cellFormatRestoreData?.Merge(newRestoreData);
+        }
+
         return true;
     }
 

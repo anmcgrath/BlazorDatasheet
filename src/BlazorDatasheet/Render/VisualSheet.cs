@@ -16,7 +16,7 @@ internal class VisualSheet
     private Viewport? _currentViewport = null;
 
     public event EventHandler<VisualSheetInvalidateArgs> Invalidated;
-    
+
     public VisualSheet(Sheet sheet)
     {
         _sheet = sheet;
