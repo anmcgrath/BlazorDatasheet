@@ -21,6 +21,8 @@
 
     [Parameter] public EventCallback<string> ValueChanged { get; set; }
 
+    [Parameter] public EventCallback<int> CarePositionChanged { get; set; }
+
     [Parameter] public string? Style { get; set; }
 
     [Parameter] public List<string> RangeColors { get; set; } = new();
@@ -58,6 +60,12 @@
         await ValueChanged.InvokeAsync(input);
         if (_highlightJs != null && !_isDisposing)
             await _highlightJs.InvokeVoidAsync("setHighlightHtml", GetHighlightedHtmlValue(input));
+    }
+
+    [JSInvokable]
+    public async Task UpdateCaretPosition(int position)
+    {
+        await CarePositionChanged.InvokeAsync(position);
     }
 
     private string GetHighlightedHtmlValue(string? text)
@@ -116,6 +124,7 @@
         _isDisposing = true;
         if (_highlightJs != null)
         {
+            await _highlightJs.InvokeVoidAsync("dispose");
             await _highlightJs.DisposeAsync();
         }
 

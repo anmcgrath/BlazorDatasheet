@@ -3,6 +3,7 @@
 @using BlazorDatasheet.Core.Interfaces
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Edit
+@using BlazorDatasheet.Core.Util
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.DataStructures.Store
 @using BlazorDatasheet.Formula.Core
@@ -11,6 +12,7 @@
 <HighlightedInput
     Style="@CssUtil.GetStyledInput(Cell)"
     RangeColors="_colors"
+    CarePositionChanged="OnCaretPositionChanged"
     @bind-Value:set="OnInput"
     @bind-Value:get="CurrentValue"/>
 
@@ -55,10 +57,10 @@
     {
         var newValue = value ?? string.Empty;
         CurrentValue = newValue;
-        Highlight();
+        HighlightRanges();
     }
 
-    private void Highlight()
+    private void HighlightRanges()
     {
         if (CurrentValue.StartsWith("="))
         {
@@ -107,8 +109,12 @@
             CurrentValue = editValue?.ToString() ?? string.Empty;
         }
 
-        Highlight();
+        HighlightRanges();
         StateHasChanged();
+    }
+
+    private void OnCaretPositionChanged(int position)
+    {
     }
 
 }
