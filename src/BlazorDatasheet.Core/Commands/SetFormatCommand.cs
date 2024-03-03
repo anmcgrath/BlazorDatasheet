@@ -11,66 +11,83 @@ namespace BlazorDatasheet.Core.Commands;
 public class SetFormatCommand : IUndoableCommand
 {
     private readonly CellFormat _cellFormat;
+    private readonly bool _clearSurroundingBorders;
     private readonly IRegion _region;
 
     private RowColFormatRestoreData? _colFormatRestoreData;
     private RowColFormatRestoreData? _rowFormatRestoreData;
     private CellStoreRestoreData? _cellFormatRestoreData;
+    private List<IUndoableCommand> _borderCommands = new();
 
     /// <summary>
     /// Command to set the format of the range given. The cell format is merged into the existing format, so that
     /// only properties that are specifically defined in cellFormat are changed.
     /// </summary>
-    /// <param name="range">The range to set the format for. Can be a cell, column or row range.</param>
+    /// <param name="region">The region to set the format for. Can be a cell, column or row range.</param>
     /// <param name="cellFormat">The new cell format.</param>
-    public SetFormatCommand(IRegion region, CellFormat cellFormat)
+    /// <param name="clearSurroundingBorders">Whether to clear surrounding borders when setting this format</param>
+    public SetFormatCommand(IRegion region, CellFormat cellFormat, bool clearSurroundingBorders = true)
     {
         _cellFormat = cellFormat;
+        _clearSurroundingBorders = clearSurroundingBorders;
         _region = region.Clone();
     }
 
     public bool Execute(Sheet sheet)
     {
+        sheet.BatchUpdates();
+        _borderCommands = new();
+
         if (_region is ColumnRegion columnRegion)
             _colFormatRestoreData = sheet.Columns.SetColumnFormatImpl(_cellFormat, columnRegion);
         else if (_region is RowRegion rowRegion)
             _rowFormatRestoreData = sheet.Rows.SetRowFormatImpl(_cellFormat, rowRegion);
         else
         {
-            Console.WriteLine("Executing setCellFormat");
             _cellFormatRestoreData = sheet.Cells.MergeFormatImpl(_region, _cellFormat);
+
+            if (_clearSurroundingBorders)
+            {
+                // left
+                IRegion leftRegion = new Region(_region.Top, _region.Bottom, _region.Left - 1, _region.Left - 1);
+                leftRegion = sheet.Region.GetIntersection(leftRegion);
+                if (leftRegion != null)
+                {
+                    var cf = new CellFormat()
+                    {
+                        BorderRight = _cellFormat.BorderLeft?.Clone()
+                    };
+                    var cmd = new SetFormatCommand(leftRegion, cf, false);
+                    cmd.Execute(sheet);
+                    _borderCommands.Add(cmd);
+                }
+
+                IRegion topRegion = new Region(_region.Top - 1, _region.Top - 1, _region.Left, _region.Right);
+                topRegion = sheet.Region.GetIntersection(topRegion);
+                if (topRegion != null)
+                {
+                    var cf = new CellFormat()
+                    {
+                        BorderBottom = _cellFormat.BorderTop?.Clone()
+                    };
+                    var cmd = new SetFormatCommand(topRegion, cf, false);
+                    cmd.Execute(sheet);
+                    _borderCommands.Add(cmd);
+                }
+            }
         }
 
-        // left
-        IRegion leftRegion = new Region(_region.Top, _region.Bottom, _region.Left - 1, _region.Left - 1);
-        leftRegion = sheet.Region.GetIntersection(leftRegion);
-        if (leftRegion != null)
-        {
-            var cf = new CellFormat()
-            {
-                BorderRight = _cellFormat.BorderLeft?.Clone()
-            };
-            var newRestoreData = sheet.Cells.MergeFormatImpl(leftRegion, cf);
-            _cellFormatRestoreData?.Merge(newRestoreData);
-        }
-        
-        IRegion topRegion = new Region(_region.Top - 1, _region.Top - 1, _region.Left, _region.Right);
-        topRegion = sheet.Region.GetIntersection(topRegion);
-        if (topRegion != null)
-        {
-            var cf = new CellFormat()
-            {
-                BorderBottom = _cellFormat.BorderTop?.Clone()
-            };
-            var newRestoreData = sheet.Cells.MergeFormatImpl(topRegion, cf);
-            _cellFormatRestoreData?.Merge(newRestoreData);
-        }
+        sheet.EndBatchUpdates();
 
         return true;
     }
 
     public bool Undo(Sheet sheet)
     {
+        sheet.BatchUpdates();
+        foreach (var cmd in _borderCommands)
+            cmd.Undo(sheet);
+
         if (_colFormatRestoreData != null)
             Restore(sheet, _colFormatRestoreData, sheet.Columns.ColFormats);
         if (_rowFormatRestoreData != null)
@@ -79,6 +96,7 @@ public class SetFormatCommand : IUndoableCommand
             sheet.Cells.Restore(_cellFormatRestoreData);
 
         sheet.MarkDirty(_region);
+        sheet.EndBatchUpdates();
         return true;
     }
 

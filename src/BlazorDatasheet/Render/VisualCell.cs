@@ -79,7 +79,10 @@ public class VisualCell
             if (format?.BorderBottom == null)
                 sb.Append($"border-bottom: var(--sheet-border-style);");
             if (format?.BorderRight == null)
-                sb.Append($"border-right: var(--sheet-border-style);");
+                sb.Append($"border-right: var(--sheet-border-style);" +
+                          $"" +
+                          $"" +
+                          $"");
         }
 
         if (format?.BorderBottom != null)
@@ -88,7 +91,9 @@ public class VisualCell
             sb.Append($"border-right: {format.BorderRight.Width}px solid {format.BorderRight.Color};");
         if (format?.BorderLeft != null && col == 0)
             sb.Append($"border-left: {format.BorderLeft.Width}px solid {format.BorderLeft.Color};");
-
+        if (format?.BorderTop != null && row == 0)
+            sb.Append($"border-top: {format.BorderTop.Width}px solid {format.BorderTop.Color};");
+        
         if (!string.IsNullOrWhiteSpace(format?.TextAlign))
         {
             sb.Append($"text-align: {format.TextAlign};");

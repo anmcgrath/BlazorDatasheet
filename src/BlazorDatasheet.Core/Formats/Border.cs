@@ -9,7 +9,6 @@ public class Border : IMergeable<Border>, IEquatable<Border>
 
     public void Merge(Border item)
     {
-        Console.WriteLine("Merging");
         if (!string.IsNullOrEmpty(item.Color))
             Color = item.Color;
         if (item.Width.HasValue)

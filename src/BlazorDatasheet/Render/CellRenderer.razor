@@ -20,20 +20,15 @@
 @code {
 
 
-    [Parameter, EditorRequired]
-    public string CellFormatStyleString { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string CellFormatStyleString { get; set; } = string.Empty;
 
-    [Parameter, EditorRequired]
-    public RenderFragment ItemTemplate { get; set; }
+    [Parameter, EditorRequired] public RenderFragment ItemTemplate { get; set; }
 
-    [Parameter, EditorRequired]
-    public bool IsDirty { get; set; }
+    [Parameter, EditorRequired] public bool IsDirty { get; set; }
 
-    [Parameter]
-    public RenderFragment? Icon { get; set; }
+    [Parameter] public RenderFragment? Icon { get; set; }
 
-    [Parameter]
-    public string IconColor { get; set; } = "black";
+    [Parameter] public string IconColor { get; set; } = "black";
 
 
     protected override bool ShouldRender()

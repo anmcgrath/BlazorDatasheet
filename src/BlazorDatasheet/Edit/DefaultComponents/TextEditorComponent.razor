@@ -10,7 +10,7 @@
 @using BlazorDatasheet.Formula.Core.Interpreter.Parsing
 
 <HighlightedInput
-    Style="@CssUtil.GetStyledInput(Cell)"
+    Style="@_editorStyle"
     RangeColors="_colors"
     CarePositionChanged="OnCaretPositionChanged"
     @bind-Value:set="OnInput"
@@ -44,6 +44,7 @@
     private List<string> _colors = new List<string>() { "blue", "green", "red", "purple" };
     private double _editX;
     private double _editY;
+    private string _editorStyle;
 
     public override void BeforeEdit(IReadOnlyCell cell, Sheet sheet)
     {
@@ -51,6 +52,7 @@
         _sheet = sheet;
         _editX = sheet.Columns.GetWidthBetween(0, cell.Col);
         _editY = sheet.Rows.GetHeightBetween(0, cell.Row);
+        _editorStyle = CssUtil.GetStyledInput(cell);
     }
 
     private void OnInput(string value)
@@ -110,7 +112,6 @@
         }
 
         HighlightRanges();
-        StateHasChanged();
     }
 
     private void OnCaretPositionChanged(int position)

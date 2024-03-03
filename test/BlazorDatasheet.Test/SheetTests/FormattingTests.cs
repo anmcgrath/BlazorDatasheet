@@ -180,13 +180,13 @@ public class FormattingTests
         _sheet.GetFormat(1, 2)?.BorderRight?.Width.Should().Be(1);
         _sheet.GetFormat(1, 2)?.BorderBottom?.Width.Should().Be(1);
         _sheet.GetFormat(1, 2)?.BorderTop?.Width.Should().Be(1);
-        
+
         _sheet.GetFormat(1, 1)?.BorderRight?.Width.Should().Be(1);
         _sheet.GetFormat(1, 1)?.BorderLeft?.Width.Should().Be(0);
         _sheet.GetFormat(1, 1)?.BorderBottom?.Width.Should().Be(0);
         _sheet.GetFormat(1, 1)?.BorderTop?.Width.Should().Be(0);
     }
-    
+
     [Test]
     public void Override_Cell_Border_Overrides_Border()
     {
@@ -198,7 +198,7 @@ public class FormattingTests
                 BorderBottom = new Border() { Width = 1, Color = "black" },
                 BorderTop = new Border() { Width = 1, Color = "black" }
             });
-        
+
         _sheet.SetFormat(new Region(1, 1),
             new CellFormat()
             {
@@ -212,5 +212,17 @@ public class FormattingTests
         _sheet.GetFormat(1, 1).BorderRight.Width.Should().Be(2);
         _sheet.GetFormat(1, 1).BorderBottom.Width.Should().Be(2);
         _sheet.GetFormat(1, 1).BorderTop.Width.Should().Be(2);
+    }
+
+    [Test]
+    public void Set_Format_Undo_Bug()
+    {
+        _sheet.Range("A1:D7")!.Format = new CellFormat() { BackgroundColor = "red" };
+        _sheet.Range("C6:E9")!.Format = new CellFormat() { BackgroundColor = "blue" };
+        _sheet.Range("C6")!.Format = new CellFormat() { BackgroundColor = "red" };
+        _sheet.Commands.Undo();
+        _sheet.Commands.Undo();
+        _sheet.Commands.Undo();
+        _sheet.GetFormat(0, 0)?.BackgroundColor.Should().Be(null);
     }
 }

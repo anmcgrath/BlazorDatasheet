@@ -116,14 +116,12 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>
             this.IsReadOnly = format.IsReadOnly;
 
         MergeBorders(format);
-        Console.WriteLine("Border bottom " + format.BorderBottom + (new StackFrame(3)).GetMethod().Name);
     }
 
     private void MergeBorders(CellFormat format)
     {
         if (format.BorderBottom != null)
         {
-            Console.WriteLine($"Merging border bottom {format.BorderBottom.Width}");
             if (this.BorderBottom == null)
                 this.BorderBottom = format.BorderBottom.Clone();
             else
