@@ -145,6 +145,14 @@ public class SparseMatrixStore2<T> : IMatrixDataStore<T>
         return -1;
     }
 
+    public int GetNextNonBlankColumn(int row, int col)
+    {
+        if (!_rows.ContainsIndex(row))
+            return -1;
+
+        return _rows.Get(row).GetNextNonEmptyItemIndex(col + 1);
+    }
+
     public MatrixRestoreData<T> RemoveRowAt(int row, int nRows)
     {
         var removedRows = _rows.DeleteAt(row, nRows);

@@ -187,6 +187,11 @@ public class SparseList<T>
         return deleted;
     }
 
+    /// <summary>
+    /// Returns the next non-empty item index after & including the index given. If none found, returns -1
+    /// </summary>
+    /// <param name="itemIndex"></param>
+    /// <returns></returns>
     public int GetNextNonEmptyItemIndex(int itemIndex)
     {
         if (!Values.Any())

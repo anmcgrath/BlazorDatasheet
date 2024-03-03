@@ -187,6 +187,17 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
         return _columns[col].GetNextNonEmptyRow(row);
     }
 
+    public int GetNextNonBlankColumn(int row, int col)
+    {
+        var cols = _columns.Where(x => x.Key > col)
+            .OrderBy(x => x.Key);
+        foreach (var kp in cols)
+            if (kp.Value.ContainsRow(row))
+                return kp.Key;
+
+        return -1;
+    }
+
     public MatrixRestoreData<T> RemoveRowAt(int row, int nRows)
     {
         var deleted = new List<(int row, int col, T?)>();
