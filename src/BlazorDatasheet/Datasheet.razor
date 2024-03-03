@@ -128,11 +128,16 @@
 
                             var row = constrainedMerge.Top;
                             var col = constrainedMerge.Left;
+
                             var cell = _visualSheet.GetVisualCell(row, col);
+                            var cellFormatString = cell.FormatStyleString;
+                            
+                            var k = row + "," + col;
 
                             <div id="merge"
                                  style="@GetAbsoluteCellPositionStyles(row, col, constrainedMerge.Height, constrainedMerge.Width)"
                                  class="sheet-cell"
+                                 @key="k"
                                  @onmouseup="e => HandleCellMouseUp(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
                                  @ondblclick="e => HandleCellDoubleClick(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
                                  @onmouseover="e => HandleCellMouseOver(row, col)"
@@ -140,12 +145,12 @@
                                 <CascadingValue Value="Sheet" IsFixed="true">
                                     <CellRenderer
                                         IconColor="@cell.Format?.IconColor"
-                                        CellFormatStyleString="@cell.FormatStyleString"
+                                        CellFormatStyleString="@cellFormatString"
                                         IsDirty="SheetIsDirty || DirtyCells.Contains(new CellPosition(row, col))">
                                         <ItemTemplate>
                                             <DynamicComponent
                                                 Type="@GetCellRendererType(cell.CellType)"
-                                                Parameters="@getCellRendererParameters(Sheet, new VisualCell(row, col, Sheet))">
+                                                Parameters="@getCellRendererParameters(Sheet, cell)">
                                             </DynamicComponent>
                                         </ItemTemplate>
                                     </CellRenderer>
