@@ -39,6 +39,7 @@
     protected override void OnInitialized()
     {
         sheet = new Sheet(15, 5);
+        sheet.Commands.PauseHistory();
         var numberScaleConditionalFormat = new NumberScaleConditionalFormat(Color.YellowGreen, Color.IndianRed);
         var checkConditionalFormat = new CustomCheckConditionalFormat("check");
 
@@ -52,10 +53,12 @@
         }
 
         sheet.Cells.SetValues(values);
+        sheet.Range("A1:A3")!.Value = "check";
+        sheet.Range("A4")!.Value = "chck";
 
         sheet.ConditionalFormats.Apply(new Region(0, 99, 1, 4), numberScaleConditionalFormat);
         sheet.ConditionalFormats.Apply(new Region(0, 99, 0, 0), checkConditionalFormat);
-
+        sheet.Commands.ResumeHistory();
         base.OnInitialized();
     }
 
