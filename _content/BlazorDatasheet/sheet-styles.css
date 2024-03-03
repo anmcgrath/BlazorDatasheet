@@ -13,6 +13,8 @@
     --selection-bg-color: rgba(163, 188, 213, 0.18);
     --selection-border-color: #0998e5;
     --cell-highlight-bg-color: #a9e5b6;
+    --num-highlight-color: #43a3b4;
+    --string-highlight-color: #1a6206;
 }
 
 .vars[theme='dark'] {
@@ -30,6 +32,8 @@
     --selection-bg-color: rgba(83, 101, 121, 0.18);
     --selection-border-color: #1c6f9a;
     --cell-highlight-bg-color: #456b4d;
+    --num-highlight-color: #d4d6ec;
+    --string-highlight-color: #79a16a;
 }
 
 .active-sheet {
@@ -149,3 +153,18 @@
     -ms-user-select: none;
 }
 
+.number-highlight {
+    color: var(--num-highlight-color)
+}
+
+.string-highlight {
+    color: var(--string-highlight-color)
+}
+
+.default-highlight {
+    color: var(--sheet-foreground-color)
+}
+
+.editor-overlay {
+    box-shadow: 0px 0px 4px var(--shadow-overlay-color);
+}
