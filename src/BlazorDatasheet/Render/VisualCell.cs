@@ -35,7 +35,7 @@ public class VisualCell
 
         X = sheet.Columns.GetLeft(col);
         Y = sheet.Rows.GetTop(row);
-        FormatStyleString = GetCellFormatStyleString(format, cell.IsValid);
+        FormatStyleString = GetCellFormatStyleString(Row, Col, format, cell.IsValid);
         Icon = format?.Icon;
         CellType = cell.Type;
         Format = format;
@@ -51,7 +51,7 @@ public class VisualCell
         {
             Row = row,
             Col = col,
-            FormatStyleString = GetCellFormatStyleString(defaultFormat, true),
+            FormatStyleString = GetCellFormatStyleString(row, col, defaultFormat, true),
             Width = sheet.Columns.GetWidth(col),
             Height = sheet.Rows.GetHeight(row),
             X = sheet.Columns.GetLeft(col),
@@ -61,7 +61,7 @@ public class VisualCell
         };
     }
 
-    private static string GetCellFormatStyleString(CellFormat? format, bool isCellValid)
+    private static string GetCellFormatStyleString(int row, int col, CellFormat? format, bool isCellValid)
     {
         if (format == null)
             return string.Empty;
@@ -76,10 +76,24 @@ public class VisualCell
 
         if (format?.BackgroundColor == null)
         {
-            sb.Append($"border-right: var(--sheet-border-style);");
-            sb.Append($"border-bottom: var(--sheet-border-style);");
+            if (format?.BorderBottom == null)
+                sb.Append($"border-bottom: var(--sheet-border-style);");
+            if (format?.BorderRight == null)
+                sb.Append($"border-right: var(--sheet-border-style);" +
+                          $"" +
+                          $"" +
+                          $"");
         }
 
+        if (format?.BorderBottom != null)
+            sb.Append($"border-bottom: {format.BorderBottom.Width}px solid {format.BorderBottom.Color};");
+        if (format?.BorderRight != null)
+            sb.Append($"border-right: {format.BorderRight.Width}px solid {format.BorderRight.Color};");
+        if (format?.BorderLeft != null && col == 0)
+            sb.Append($"border-left: {format.BorderLeft.Width}px solid {format.BorderLeft.Color};");
+        if (format?.BorderTop != null && row == 0)
+            sb.Append($"border-top: {format.BorderTop.Width}px solid {format.BorderTop.Color};");
+        
         if (!string.IsNullOrWhiteSpace(format?.TextAlign))
         {
             sb.Append($"text-align: {format.TextAlign};");

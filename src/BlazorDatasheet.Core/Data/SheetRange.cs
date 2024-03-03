@@ -59,7 +59,7 @@ public class SheetRange
     {
         return Sheet.Cells.GetNonEmptyCellPositions(Region);
     }
-    
+
 
     internal IEnumerable<IReadOnlyCell> GetCells()
     {
@@ -123,5 +123,10 @@ public class SheetRange
         Sheet.BatchUpdates();
         Sheet.Validators.AddImpl(validator, Region);
         Sheet.EndBatchUpdates();
+    }
+
+    public void Merge()
+    {
+        Sheet.Cells.Merge(this.Region);
     }
 }

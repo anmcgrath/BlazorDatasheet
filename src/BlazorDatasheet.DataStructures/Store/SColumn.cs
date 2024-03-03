@@ -225,4 +225,9 @@ internal class SColumn<T>
 
         return cleared;
     }
+
+    public bool ContainsRow(int row)
+    {
+        return Values.ContainsKey(row);
+    }
 }

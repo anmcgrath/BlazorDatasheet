@@ -76,10 +76,11 @@
             if (!string.IsNullOrWhiteSpace(currentSelected))
             {
                 selectItem(currentSelected);
+                return true;
             }
             else
             {
-                return true;
+                return false;
             }
         }
 

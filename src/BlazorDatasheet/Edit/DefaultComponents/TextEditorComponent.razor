@@ -3,19 +3,18 @@
 @using BlazorDatasheet.Core.Interfaces
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Edit
+@using BlazorDatasheet.Core.Util
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.DataStructures.Store
 @using BlazorDatasheet.Formula.Core
 @using BlazorDatasheet.Formula.Core.Interpreter.Parsing
 
-<input
-    type="text"
-    class="text-input"
-    @bind:get="CurrentValue"
-    @bind:set="OnInput"
-    @bind:event="oninput"
-    style="@CssUtil.GetStyledInput(Cell)"
-    @ref="InputRef"/>
+<HighlightedInput
+    Style="@_editorStyle"
+    RangeColors="_colors"
+    CarePositionChanged="OnCaretPositionChanged"
+    @bind-Value:set="OnInput"
+    @bind-Value:get="CurrentValue"/>
 
 @foreach (var cr in _colorRegions)
 {
@@ -31,9 +30,10 @@
         Height="h"
         X="x"
         Y="y"
+        ZIndex="12"
         BorderStyle="dashed"
         BorderColor="@cr.Data"
-        BorderThickness="1"/>
+        BorderThickness="2"/>
 }
 
 @code {
@@ -44,6 +44,7 @@
     private List<string> _colors = new List<string>() { "blue", "green", "red", "purple" };
     private double _editX;
     private double _editY;
+    private string _editorStyle;
 
     public override void BeforeEdit(IReadOnlyCell cell, Sheet sheet)
     {
@@ -51,16 +52,17 @@
         _sheet = sheet;
         _editX = sheet.Columns.GetWidthBetween(0, cell.Col);
         _editY = sheet.Rows.GetHeightBetween(0, cell.Row);
+        _editorStyle = CssUtil.GetStyledInput(cell);
     }
 
     private void OnInput(string value)
     {
         var newValue = value ?? string.Empty;
         CurrentValue = newValue;
-        Highlight();
+        HighlightRanges();
     }
 
-    private void Highlight()
+    private void HighlightRanges()
     {
         if (CurrentValue.StartsWith("="))
         {
@@ -109,8 +111,11 @@
             CurrentValue = editValue?.ToString() ?? string.Empty;
         }
 
-        Highlight();
-        StateHasChanged();
+        HighlightRanges();
+    }
+
+    private void OnCaretPositionChanged(int position)
+    {
     }
 
 }

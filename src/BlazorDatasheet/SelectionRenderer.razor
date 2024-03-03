@@ -79,12 +79,16 @@
     }
 }
 
-<!-- render dragger (bottom right corner) -->
-<div id="auto-filler"
-     class="unselectable"
-     @onpointerdown="DraggerMouseDown"
-     style="@GetDraggerStyleString();cursor:crosshair;pointer-events: all;">
-</div>
+@if (!Sheet.Editor.IsEditing)
+{
+    <!-- render dragger (bottom right corner) -->
+    <div id="auto-filler"
+         class="unselectable"
+         @onpointerdown="DraggerMouseDown"
+         style="@GetDraggerStyleString();cursor:crosshair;pointer-events: all;">
+    </div>
+}
+
 
 <!-- drag preview -->
 @if (_isDragging && _dragPreviewRegion != null)
@@ -120,10 +124,10 @@
 
     private IRegion? BoundedSelectingRegion => Sheet?.Selection.SelectingRegion?.GetIntersection(Sheet?.Region);
 
-    private double GetLeft(IRegion region) => CellLayoutProvider.ComputeLeftPosition(region) + 1;
-    private double GetTop(IRegion region) => CellLayoutProvider.ComputeTopPosition(region) + 1;
-    private double GetWidth(IRegion region) => CellLayoutProvider.ComputeWidth(region) - 2;
-    private double GetHeight(IRegion region) => CellLayoutProvider.ComputeHeight(region) - 2;
+    private double GetLeft(IRegion region) => CellLayoutProvider.ComputeLeftPosition(region);
+    private double GetTop(IRegion region) => CellLayoutProvider.ComputeTopPosition(region);
+    private double GetWidth(IRegion region) => CellLayoutProvider.ComputeWidth(region);
+    private double GetHeight(IRegion region) => CellLayoutProvider.ComputeHeight(region);
 
     protected override void OnParametersSet()
     {
@@ -141,6 +145,7 @@
 
             _sheet.Selection.SelectionChanged += OnSelectionChanged;
             _sheet.Selection.SelectingChanged += OnSelectingChanged;
+            _sheet.Editor.EditBegin += (sender, args) => StateHasChanged();
         }
     }
 
@@ -180,7 +185,7 @@
         var h = 6d;
         var sb = new StringBuilder();
         sb.Append($"display:block;position:absolute;");
-        sb.Append($"left:{x - w / 2}px;top:{y - w / 2}px;");
+        sb.Append($"left:{x - w / 2}px; top:{y - w / 2}px;");
         sb.Append($"width:{w}px;height:{h}px;");
         sb.Append("background:var(--selection-border-color);");
         sb.Append("border:1px solid white;");

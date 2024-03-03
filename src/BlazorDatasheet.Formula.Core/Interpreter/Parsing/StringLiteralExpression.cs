@@ -4,7 +4,6 @@ public class StringLiteralExpression : LiteralExpression
 {
     public StringLiteralExpression(CellValue value) : base(value)
     {
-        Console.WriteLine("str lit creaed");
     }
 
     public override string ToExpressionText()

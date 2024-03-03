@@ -12,7 +12,8 @@
 
 @if (IsEditing)
 {
-    <div id="editor" style="position:absolute; @GetEditorSizeStyling()">
+    <div id="editor" class="editor-overlay"
+         style="position:absolute; display: inline-block; @GetEditorSizeStyling()">
         <DynamicComponent
             Type="@ActiveEditorType"
             Parameters="@GetDynamicEditorParameters()"
@@ -205,9 +206,9 @@
 
         strBuilder.Append($"left:{left}px;");
         strBuilder.Append($"top:{top}px;");
-        strBuilder.Append($"width:{w}px;");
+        strBuilder.Append($"min-width:{w}px;");
+        strBuilder.Append($"max-width:{w}px;");
         strBuilder.Append($"height:{h}px;");
-        strBuilder.Append("box-shadow: 0px 0px 4px var(--shadow-overlay-color)");
         var style = strBuilder.ToString();
         return style;
     }

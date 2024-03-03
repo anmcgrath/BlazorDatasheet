@@ -6,9 +6,9 @@
     box-sizing: border-box;
 }
 
-    .text-input:focus {
-        outline: none;
-    }
+.text-input:focus {
+    outline: none;
+}
 
 .select-list {
     min-width: 10rem;
@@ -29,7 +29,7 @@
     padding-left: 0.2rem;
 }
 
-    .select-item:hover,
-    .select-item.active {
-        background: var(--selection-bg-color)
-    }
+.select-item:hover,
+.select-item.active {
+    background: var(--selection-bg-color)
+}

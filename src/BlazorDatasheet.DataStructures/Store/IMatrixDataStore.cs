@@ -80,6 +80,14 @@ public interface IMatrixDataStore<T>
     public int GetNextNonBlankRow(int row, int col);
 
     /// <summary>
+    /// Finds the next non-empty row number in the column. Returns -1 if no non-empty rows exist after the row
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <returns>The next non-empty row number in the column. Equals -1 if no non-empty rows exist after the row.</returns>
+    public int GetNextNonBlankColumn(int row, int col);
+
+    /// <summary>
     /// Removes the row specified from the store and returns the values that were removed.
     /// </summary>
     /// <param name="row"></param>
