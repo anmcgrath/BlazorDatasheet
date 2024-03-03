@@ -44,42 +44,45 @@ public class SetFormatCommand : IUndoableCommand
             _rowFormatRestoreData = sheet.Rows.SetRowFormatImpl(_cellFormat, rowRegion);
         else
         {
-            _cellFormatRestoreData = sheet.Cells.MergeFormatImpl(_region, _cellFormat);
-
-            if (_clearSurroundingBorders)
-            {
-                // left
-                IRegion leftRegion = new Region(_region.Top, _region.Bottom, _region.Left - 1, _region.Left - 1);
-                leftRegion = sheet.Region.GetIntersection(leftRegion);
-                if (leftRegion != null)
-                {
-                    var cf = new CellFormat()
-                    {
-                        BorderRight = _cellFormat.BorderLeft?.Clone()
-                    };
-                    var cmd = new SetFormatCommand(leftRegion, cf, false);
-                    cmd.Execute(sheet);
-                    _borderCommands.Add(cmd);
-                }
-
-                IRegion topRegion = new Region(_region.Top - 1, _region.Top - 1, _region.Left, _region.Right);
-                topRegion = sheet.Region.GetIntersection(topRegion);
-                if (topRegion != null)
-                {
-                    var cf = new CellFormat()
-                    {
-                        BorderBottom = _cellFormat.BorderTop?.Clone()
-                    };
-                    var cmd = new SetFormatCommand(topRegion, cf, false);
-                    cmd.Execute(sheet);
-                    _borderCommands.Add(cmd);
-                }
-            }
+            var region = sheet.Region.GetIntersection(_region);
+            if (region != null)
+                _cellFormatRestoreData = sheet.Cells.MergeFormatImpl(region, _cellFormat);
         }
 
+        UpdateSurroundingBorders(sheet);
         sheet.EndBatchUpdates();
 
         return true;
+    }
+
+    private void UpdateSurroundingBorders(Sheet sheet)
+    {
+        if (!_clearSurroundingBorders)
+            return;
+
+        IRegion? above = null;
+        IRegion? left = null;
+
+        if (_region is ColumnRegion columnRegion)
+            left = new ColumnRegion(_region.Left - 1);
+        else if (_region is RowRegion rowRegion)
+            above = new RowRegion(_region.Top - 1);
+        else
+        {
+            left = new Region(_region.Top, _region.Bottom, _region.Left - 1, _region.Left - 1);
+            above = new Region(_region.Top - 1, _region.Top - 1, _region.Left, _region.Right);
+        }
+
+        var cfLeft = new CellFormat() { BorderRight = _cellFormat?.BorderLeft?.Clone() };
+        var cfAbove = new CellFormat() { BorderBottom = _cellFormat?.BorderTop?.Clone() };
+
+        if (left != null)
+            _borderCommands.Add(new SetFormatCommand(left, cfLeft, false));
+        if (above != null)
+            _borderCommands.Add(new SetFormatCommand(above, cfAbove, false));
+
+        foreach (var cmd in _borderCommands)
+            cmd.Execute(sheet);
     }
 
     public bool Undo(Sheet sheet)
