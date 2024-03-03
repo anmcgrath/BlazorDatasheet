@@ -44,7 +44,7 @@
 </div>
 
 <div>
-    <input id="darkmode-toggle" @onclick="() => _datasheet.ForceReRender()" type="checkbox" @bind="IsDarkMode"/>
+    <input id="darkmode-toggle" type="checkbox" @bind="IsDarkMode"/>
     <label for="darkmode-toggle">Darkmode</label>
 </div>
 
@@ -52,7 +52,18 @@
 
     private Sheet Sheet;
     private string Theme => IsDarkMode ? "dark" : "default";
-    private bool IsDarkMode { get; set; }
+    private bool _isDarkMode;
+
+    private bool IsDarkMode
+    {
+        get => _isDarkMode;
+        set
+        {
+            _isDarkMode = value;
+            _datasheet.ForceReRender();
+        }
+    }
+
     private Datasheet _datasheet;
 
     private void InsertRowAfterSelection()
