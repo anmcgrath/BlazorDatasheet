@@ -18,7 +18,8 @@
     top: 0;
     left: 0;
     white-space: pre;
-    outline: 0 solid transparent;
+    outline:2px solid var(--selection-border-color);
+    z-index: 2;
 }
 
 .highlight-result {
