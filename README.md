@@ -2,7 +2,7 @@
 
 A simple datasheet component for editing tabular data.
 
-<img width="820" alt="Screenshot 2023-11-02 at 5 58 45 pm" src="https://github.com/anmcgrath/BlazorDatasheet/assets/34253568/10f70492-0d95-4ce2-bcbb-009b6a3976bd">
+<img width="512" alt="DatasheetScreenshot" src="https://github.com/anmcgrath/BlazorDatasheet/assets/34253568/afb4fd86-f082-4cdf-bac9-5d4f777c7dcc">
 
 #### Features
 - Data editing
