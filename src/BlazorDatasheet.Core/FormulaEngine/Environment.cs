@@ -56,6 +56,12 @@ public class SheetEnvironment : IEnvironment
             _functions[name.ToLower()] = value;
     }
 
+    public IEnumerable<CellValue> GetNonEmptyInRange(Reference reference)
+    {
+        return _sheet.Cells.GetNonEmptyCellValues(reference.ToRegion())
+            .Select(x => x.value).ToArray();
+    }
+
     public CellValue GetCellValue(int row, int col) => _sheet.Cells.GetCellValue(row, col);
 
     public CellValue[][] GetRangeValues(Reference reference)

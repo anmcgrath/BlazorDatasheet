@@ -49,6 +49,10 @@ public class LogicalFunctionTests
         Eval("=IF(E7,5,4)").Should().Be(5);
 
         Eval("=IF(true,A1):A2").Should().BeOfType<RangeReference>();
+        Eval("=IF(\"asda\")").Should().BeOfType<FormulaError>();
+
+        _env.SetCellValue(0, 0,"Aasd");
+        Eval("=IF(A1)").Should().BeOfType<FormulaError>();
     }
 
     [Test]

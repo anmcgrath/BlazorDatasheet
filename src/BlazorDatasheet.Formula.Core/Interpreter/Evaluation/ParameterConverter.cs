@@ -23,126 +23,108 @@ public class ParameterConverter
     /// <param name="value"></param>
     /// <param name="definition"></param>
     /// <returns></returns>
-    public CellValue ConvertVal(CellValue value, ParameterDefinition definition)
+    public CellValue ConvertVal(CellValue value, ParameterType type)
     {
-        if (value.IsCellReference() && definition.Type.IsScalar())
+        if (value.IsCellReference() && type.IsScalar())
             value = GetCellReferenceValue(value);
 
         if (value.IsError())
             return value;
 
-        switch (definition.Type)
+        switch (type)
         {
             case ParameterType.Any:
                 return value;
             case ParameterType.Number:
-                return ToNumber(value, definition);
+                return ToNumber(value);
             case ParameterType.NumberSequence:
-                return ToNumberSequence(value, definition);
+                return ToNumberSequence(value);
             case ParameterType.Logical:
-                return ToLogical(value, definition);
+                return ToLogical(value);
             case ParameterType.LogicalSequence:
-                return ToLogicalSequence(value, definition);
+                return ToLogicalSequence(value);
             case ParameterType.Text:
-                return ToText(value, definition);
+                return ToText(value);
             case ParameterType.Date:
-                return ToDate(value, definition);
+                return ToDate(value);
             case ParameterType.Array:
-                return ToArray(value, definition);
+                return ToArray(value);
             case ParameterType.Integer:
-                return ToInteger(value, definition);
+                return ToInteger(value);
             default:
                 return CellValue.Error(ErrorType.Value);
         }
     }
 
-    private CellValue ToInteger(CellValue value, ParameterDefinition definition)
+    private CellValue ToInteger(CellValue value)
     {
-        var asNumber = ToNumber(value, definition);
+        var asNumber = ToNumber(value);
         if (asNumber.IsError())
             return asNumber;
-        
+
         return CellValue.Number(Convert.ToInt32(asNumber.Data!));
     }
 
-    private CellValue ToLogicalSequence(CellValue value, ParameterDefinition definition)
+    private CellValue ToLogicalSequence(CellValue value)
     {
+        CellValue[]? values = null;
+
         if (value.ValueType == CellValueType.Reference)
+            values = _environment.GetNonEmptyInRange((Reference)value.Data!).ToArray();
+        else if (value.ValueType == CellValueType.Array)
+            values = value.GetValue<CellValue[][]>()!.SelectMany(x => x).ToArray();
+
+        if (values == null) return CellValue.Sequence(new[] { ToLogical(value) });
+
+        var results = new List<CellValue>();
+        foreach (var val in values)
         {
-            List<CellValue> results = new List<CellValue>();
-            var range = _environment.GetRangeValues(value.GetValue<Reference>()!);
-            for (int i = 0; i < range.Length; i++)
-            {
-                for (int j = 0; j < range[i].Length; j++)
-                {
-                    if (range[i][j].ValueType == CellValueType.Logical ||
-                        range[i][j].ValueType == CellValueType.Error)
-                    {
-                        results.Add(range[i][j]);
-                    }
-
-                    if (range[i][j].ValueType == CellValueType.Number)
-                        results.Add(ToLogical(range[i][j], definition));
-                }
-            }
-
-            return CellValue.Sequence(results.ToArray());
+            if (val.IsEmpty)
+                continue;
+            if (val.ValueType == CellValueType.Logical || val.ValueType == CellValueType.Error)
+                results.Add(val);
+            else if (val.ValueType == CellValueType.Number)
+                results.Add(ToLogical(val));
         }
 
-        if (value.ValueType == CellValueType.Array)
-        {
-            var array = value.GetValue<CellValue[][]>()!;
-            var cellValueLogOrError = array.SelectMany(x => x)
-                .Where(y => y.ValueType == CellValueType.Logical || y.ValueType == CellValueType.Error);
-            return CellValue.Sequence(cellValueLogOrError.ToArray());
-        }
-
-        return CellValue.Sequence(new[] { ToLogical(value, definition) });
+        return CellValue.Sequence(results.ToArray());
     }
 
-    private CellValue ToNumberSequence(CellValue value, ParameterDefinition definition)
+    private bool IsLogicalOrError(CellValue value)
     {
-        if (value.ValueType == CellValueType.Reference)
-        {
-            List<CellValue> results = new List<CellValue>();
-            var valAsREf = (Reference)value.Data!;
-            var range = _environment.GetRangeValues(valAsREf);
-            for (int i = 0; i < range.Length; i++)
-            {
-                for (int j = 0; j < range[i].Length; j++)
-                {
-                    if (range[i][j].ValueType == CellValueType.Number ||
-                        range[i][j].ValueType == CellValueType.Error)
-                    {
-                        results.Add(range[i][j]);
-                    }
-                }
-            }
-
-            return CellValue.Sequence(results.ToArray());
-        }
-
-        if (value.ValueType == CellValueType.Array)
-        {
-            var array = value.GetValue<CellValue[][]>()!;
-            var vals = new List<CellValue>();
-            foreach (var row in array)
-            {
-                foreach (var col in row)
-                {
-                    if (col.ValueType == CellValueType.Number || col.IsError())
-                        vals.Add(col);
-                }
-            }
-
-            return CellValue.Sequence(vals.ToArray());
-        }
-
-        // single value
-        return CellValue.Sequence(new[] { ToNumber(value, definition) });
+        return value.ValueType == CellValueType.Logical ||
+               value.ValueType == CellValueType.Error;
     }
 
-    private CellValue ToArray(CellValue value, ParameterDefinition definition)
+    private CellValue ToNumberSequence(CellValue value)
+    {
+        CellValue[]? values = null;
+
+        if (value.ValueType == CellValueType.Reference)
+            values = _environment.GetNonEmptyInRange((Reference)value.Data!).ToArray();
+        else if (value.ValueType == CellValueType.Array)
+            values = value.GetValue<CellValue[][]>()!.SelectMany(x => x).ToArray();
+
+        if (values == null) return CellValue.Sequence(new[]
+        {
+            ToNumber(value)
+        });
+
+        var results = new List<CellValue>();
+        foreach (var val in values)
+        {
+            if (val.IsEmpty)
+                continue;
+            if (val.ValueType == CellValueType.Error)
+                results.Add(val);
+            else if (val.ValueType == CellValueType.Number)
+                results.Add(ToNumber(val));
+        }
+
+        return CellValue.Sequence(results.ToArray());
+    }
+
+    private CellValue ToArray(CellValue value)
     {
         if (value.IsEmpty)
             return CellValue.Array(Array.Empty<CellValue[]>());
@@ -168,7 +150,7 @@ public class ParameterConverter
         return CellValue.Array(new[] { new[] { value } });
     }
 
-    private CellValue ToDate(CellValue value, ParameterDefinition definition)
+    private CellValue ToDate(CellValue value)
     {
         var coerceDate = _cellValueCoercer.TryCoerceDate(value, out var val);
         if (coerceDate)
@@ -176,7 +158,7 @@ public class ParameterConverter
         return CellValue.Error(ErrorType.Value);
     }
 
-    private CellValue ToNumber(CellValue value, ParameterDefinition definition)
+    private CellValue ToNumber(CellValue value)
     {
         var coerceNum = _cellValueCoercer.TryCoerceNumber(value, out var val);
         if (coerceNum)
@@ -184,7 +166,7 @@ public class ParameterConverter
         return CellValue.Error(ErrorType.Value);
     }
 
-    private CellValue ToLogical(CellValue value, ParameterDefinition definition)
+    private CellValue ToLogical(CellValue value)
     {
         var corceBool = _cellValueCoercer.TryCoerceBool(value, out var val);
         if (corceBool)
@@ -192,7 +174,7 @@ public class ParameterConverter
         return CellValue.Error(ErrorType.Value);
     }
 
-    private CellValue ToText(CellValue value, ParameterDefinition definition)
+    private CellValue ToText(CellValue value)
     {
         var coerceText = _cellValueCoercer.TryCoerceString(value, out var val);
         if (coerceText)
