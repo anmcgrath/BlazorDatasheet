@@ -151,7 +151,7 @@ public class Evaluator
             if (arg.IsError() && !func.AcceptsErrors)
                 return arg;
 
-            convertedArgs[argIndex] = _parameterConverter.ConvertVal(arg, paramDefinition);
+            convertedArgs[argIndex] = _parameterConverter.ConvertVal(arg, paramDefinition.Type);
 
             if (IsConsumable(paramDefinition))
             {

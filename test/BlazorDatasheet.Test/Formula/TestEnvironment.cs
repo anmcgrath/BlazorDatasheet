@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.References;
 using BlazorDatasheet.DataStructures.Util;
@@ -33,6 +34,12 @@ public class TestEnvironment : IEnvironment
         if (!_functions.ContainsKey(name))
             _functions.Add(name, functionDefinition);
         _functions[name] = functionDefinition;
+    }
+
+    public IEnumerable<CellValue> GetNonEmptyInRange(Reference reference)
+    {
+        return GetRangeValues(reference)
+            .SelectMany(x => x);
     }
 
     public void SetVariable(string name, object variable)
