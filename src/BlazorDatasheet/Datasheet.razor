@@ -78,47 +78,8 @@
                     <div id="filler-left-1" @ref="_fillerLeft1" style="float:right; min-width: @(Viewport.Left)px; height: @(RenderedInnerSheetHeight)px;"></div>
 
                     <div @ref="_innerSheet" style="width:@(RenderedInnerSheetWidth)px;height: @(RenderedInnerSheetHeight)px;display: block;">
-                        @for (int rowIndex = Viewport.VisibleRegion.Top; rowIndex <= Viewport.VisibleRegion.Bottom; rowIndex++)
-                        {
-                            var row = rowIndex;
-                            var rowHeight = @_cellLayoutProvider.ComputeHeight(row, 1);
-                            <div @key="row" style="height:@(rowHeight)px">
-                                @for (int j = Viewport.VisibleRegion.Left; j <= Viewport.VisibleRegion.Right; j++)
-                                {
-                                    var col = j;
-                                    var cell = _visualSheet.GetVisualCell(row, col);
-                                    var cellValue = cell?.Value?.ToString() ?? "";
-                                    var colWidth = @cell.Width;
-                                    <div
-                                        @onpointerup="e => HandleCellMouseUp(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
-                                        @ondblclick="e => HandleCellDoubleClick(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
-                                        @onpointerenter="e => HandleCellMouseOver(row, col)"
-                                        @onpointerdown="e => HandleCellMouseDown(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
-                                        @key="col"
-                                        style="
-                                            width:@(colWidth)px;
-                                            max-width:@(colWidth)px;
-                                            height:@(rowHeight)px;
-                                            max-height:@(rowHeight)px;"
-                                        class="sheet-cell">
-                                        <CascadingValue Value="Sheet" IsFixed="true">
-                                            <CellRenderer
-                                                IconColor="@cell.Format?.IconColor"
-                                                CellFormatStyleString="@cell.FormatStyleString"
-                                                Icon="@GetIconRenderFragment(cell.Icon)"
-                                                IsDirty="SheetIsDirty || DirtyCells.Contains(new CellPosition(row, col))">
-                                                <ItemTemplate>
-                                                    <DynamicComponent
-                                                        Type="@GetCellRendererType(cell.CellType)"
-                                                        Parameters="@getCellRendererParameters(Sheet, cell)">
-                                                    </DynamicComponent>
-                                                </ItemTemplate>
-                                            </CellRenderer>
-                                        </CascadingValue>
-                                    </div>
-                                }
-                            </div>
-                        }
+                        <canvas 
+                            @ref="_gridCanvas"></canvas>
                     </div>
 
                     <div id="filler-right" @ref="_fillerRight" style="float:left;min-width: @(Viewport.DistanceRight)px; height:@(RenderedInnerSheetHeight)px;"></div>

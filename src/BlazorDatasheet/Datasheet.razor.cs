@@ -155,6 +155,8 @@ public partial class Datasheet : IHandleEvent
     /// </summary>
     private ElementReference _innerSheet;
 
+    private ElementReference _gridCanvas;
+
     /// <summary>
     /// Whether the entire sheet is dirty
     /// </summary>
@@ -200,6 +202,7 @@ public partial class Datasheet : IHandleEvent
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
 
     private IJSObjectReference _virtualizer = null!;
+    private IJSObjectReference _canvas = null!;
 
     protected override void OnInitialized()
     {
@@ -283,12 +286,13 @@ public partial class Datasheet : IHandleEvent
             _dotnetHelper = DotNetObjectReference.Create(this);
             await AddWindowEventsAsync();
 
-            var module = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/js/virtualize.js");
+            var module =
+                await JS.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/js/virtualize.js");
             _virtualizer = await module.InvokeAsync<IJSObjectReference>("getVirtualizer");
             await _virtualizer.InvokeVoidAsync("addVirtualisationHandlers",
                 _dotnetHelper,
                 _wholeSheetDiv,
-                nameof(HandleScroll),
+                nameof(HandleScrollAsync),
                 _fillerLeft1,
                 _fillerTop,
                 _fillerRight,
@@ -298,6 +302,10 @@ public partial class Datasheet : IHandleEvent
             _mouseInputService = new MouseInputService(_sheetLocal!, _innerSheet, JS, Viewport!);
             _sheetLocal!.SetInputService(_mouseInputService);
             await _mouseInputService.Init();
+
+            module = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/js/canvas.js");
+            _canvas = await module.InvokeAsync<IJSObjectReference>("getSheetCanvas", _gridCanvas);
+            await DrawGrid();
         }
 
         SheetIsDirty = false;
@@ -309,8 +317,8 @@ public partial class Datasheet : IHandleEvent
     /// </summary>
     /// <param name="e"></param>
     /// <returns></returns>
-    [JSInvokable("HandleScroll")]
-    public void HandleScroll(ScrollEvent e)
+    [JSInvokable("HandleScrollAsync")]
+    public async Task HandleScrollAsync(ScrollEvent e)
     {
         var newViewport = _cellLayoutProvider
             .GetViewPort(
@@ -325,8 +333,44 @@ public partial class Datasheet : IHandleEvent
         sw.Start();
         Viewport.Update(newViewport);
         _visualSheet.UpdateViewport(_sheetLocal!, newViewport);
+
+        await DrawGrid();
+
         lastRenderTime = sw.ElapsedMilliseconds;
         Console.WriteLine($"\"Render\" took {sw.ElapsedMilliseconds} ms");
+    }
+
+    private async Task DrawGrid()
+    {
+        if (_canvas == null)
+            return;
+
+        await _canvas.InvokeVoidAsync("setCanvasSize", RenderedInnerSheetWidth, RenderedInnerSheetHeight);
+        var colWidths = new List<double>();
+        var rowHeights = new List<double>();
+        var text = new List<string>();
+
+        for (var i = Viewport.VisibleRegion.Left; i <= Viewport.VisibleRegion.Right; i++)
+        {
+            colWidths.Add(_cellLayoutProvider.ComputeLeftPosition(i));
+        }
+
+        for (var j = Viewport.VisibleRegion.Top; j <= Viewport.VisibleRegion.Bottom; j++)
+        {
+            rowHeights.Add(_cellLayoutProvider.ComputeTopPosition(j));
+        }
+
+        for (var j = Viewport.VisibleRegion.Top; j <= Viewport.VisibleRegion.Bottom; j++)
+        {
+            for (var i = Viewport.VisibleRegion.Left; i <= Viewport.VisibleRegion.Right; i++)
+            {
+                var vc = _visualSheet.GetVisualCell(j, i);
+                text.Add(vc.Value?.ToString() ?? "");
+            }
+        }
+
+
+        await _canvas.InvokeVoidAsync("drawGrid", rowHeights, colWidths, text);
     }
 
     private string GetAbsoluteCellPositionStyles(int row, int col, int rowSpan, int colSpan)
@@ -636,6 +680,8 @@ public partial class Datasheet : IHandleEvent
         try
         {
             await _virtualizer.InvokeAsync<string>("disposeVirtualisationHandlers", _wholeSheetDiv);
+            await _virtualizer.DisposeAsync();
+            await _canvas.DisposeAsync();
             await _mouseInputService.DisposeAsync();
         }
         catch (Exception e)
