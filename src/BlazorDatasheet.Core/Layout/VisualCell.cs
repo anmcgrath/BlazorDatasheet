@@ -1,9 +1,8 @@
 using System.Text;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Formats;
-using Microsoft.Extensions.Primitives;
 
-namespace BlazorDatasheet.Render;
+namespace BlazorDatasheet.Core.Layout;
 
 public class VisualCell
 {

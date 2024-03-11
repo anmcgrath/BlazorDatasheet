@@ -7,6 +7,7 @@ using BlazorDatasheet.Core.Edit;
 using BlazorDatasheet.Core.Events;
 using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.Core.Interfaces;
+using BlazorDatasheet.Core.Layout;
 using BlazorDatasheet.Core.Util;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Edit;
@@ -26,6 +27,8 @@ namespace BlazorDatasheet;
 
 public partial class Datasheet : IHandleEvent
 {
+    private double lastRenderTime;
+
     /// <summary>
     /// The Sheet holding the data for the datasheet.
     /// </summary>
@@ -196,6 +199,8 @@ public partial class Datasheet : IHandleEvent
     // Performance is improved dramatically when this is used.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
 
+    private IJSObjectReference _virtualizer = null!;
+
     protected override void OnInitialized()
     {
         _windowEventService = new WindowEventService(JS);
@@ -277,7 +282,10 @@ public partial class Datasheet : IHandleEvent
         {
             _dotnetHelper = DotNetObjectReference.Create(this);
             await AddWindowEventsAsync();
-            await JS.InvokeVoidAsync("addVirtualisationHandlers",
+
+            var module = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/js/virtualize.js");
+            _virtualizer = await module.InvokeAsync<IJSObjectReference>("getVirtualizer");
+            await _virtualizer.InvokeVoidAsync("addVirtualisationHandlers",
                 _dotnetHelper,
                 _wholeSheetDiv,
                 nameof(HandleScroll),
@@ -285,6 +293,7 @@ public partial class Datasheet : IHandleEvent
                 _fillerTop,
                 _fillerRight,
                 _fillerBottom);
+            await module.DisposeAsync();
 
             _mouseInputService = new MouseInputService(_sheetLocal!, _innerSheet, JS, Viewport!);
             _sheetLocal!.SetInputService(_mouseInputService);
@@ -312,8 +321,12 @@ public partial class Datasheet : IHandleEvent
                 OverflowX,
                 OverflowY);
 
+        var sw = new Stopwatch();
+        sw.Start();
         Viewport.Update(newViewport);
         _visualSheet.UpdateViewport(_sheetLocal!, newViewport);
+        lastRenderTime = sw.ElapsedMilliseconds;
+        Console.WriteLine($"\"Render\" took {sw.ElapsedMilliseconds} ms");
     }
 
     private string GetAbsoluteCellPositionStyles(int row, int col, int rowSpan, int colSpan)
@@ -617,7 +630,7 @@ public partial class Datasheet : IHandleEvent
     {
         try
         {
-            await JS.InvokeAsync<string>("disposeVirtualisationHandlers", _wholeSheetDiv);
+            await _virtualizer.InvokeAsync<string>("disposeVirtualisationHandlers", _wholeSheetDiv);
             await _mouseInputService.DisposeAsync();
         }
         catch (Exception e)

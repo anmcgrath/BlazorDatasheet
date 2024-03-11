@@ -3,12 +3,12 @@ using BlazorDatasheet.Core.Events.Visual;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
 
-namespace BlazorDatasheet.Render;
+namespace BlazorDatasheet.Core.Layout;
 
 /// <summary>
 /// Stores a cache of sheet cell's that are within the render viewport.
 /// </summary>
-internal class VisualSheet
+public class VisualSheet
 {
     private readonly Sheet _sheet;
     private readonly Dictionary<CellPosition, VisualCell> _visualCache = new();

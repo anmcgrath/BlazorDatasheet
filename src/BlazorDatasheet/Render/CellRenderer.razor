@@ -30,6 +30,33 @@
 
     [Parameter] public string IconColor { get; set; } = "black";
 
+    public override Task SetParametersAsync(ParameterView parameters)
+    {
+        foreach (var parameter in parameters)
+        {
+            switch (parameter.Name)
+            {
+                case nameof(CellFormatStyleString):
+                    CellFormatStyleString = (string)parameter.Value;
+                    break;
+                case nameof(ItemTemplate):
+                    ItemTemplate = (RenderFragment)parameter.Value;
+                    break;
+                case nameof(IsDirty):
+                    IsDirty = (bool)parameter.Value;
+                    break;
+                case nameof(IconColor):
+                    IconColor = (string)parameter.Value;
+                    break;
+                case nameof(Icon):
+                    Icon = (RenderFragment)parameter.Value;
+                    break;
+            }
+        }
+
+        return base.SetParametersAsync(ParameterView.Empty);
+    }
+
 
     protected override bool ShouldRender()
     {

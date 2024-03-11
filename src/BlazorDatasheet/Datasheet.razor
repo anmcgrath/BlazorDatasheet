@@ -11,12 +11,18 @@
 @using BlazorDatasheet.DataStructures.Util
 @using BlazorDatasheet.Util
 @using Microsoft.Extensions.Primitives
+
+
 <div
     style="height:@(_cellLayoutProvider.TotalHeight)px; width: @(_cellLayoutProvider.TotalWidth)px;"
     class="@GetContainerClassString()"
     theme="@Theme"
     @onmouseover="() => IsMouseInsideSheet = true"
     @onmouseout="() => IsMouseInsideSheet = false">
+
+    <div style="position: sticky; top: 0; left: 0; z-index:100000">
+        <div>Last render time @lastRenderTime ms</div>
+    </div>
 
     @if (Sheet != null)
     {
@@ -82,6 +88,7 @@
                                 {
                                     var col = j;
                                     var cell = _visualSheet.GetVisualCell(row, col);
+                                    var cellValue = cell?.Value?.ToString() ?? "";
                                     var colWidth = @cell.Width;
                                     var k = $"{row},{col}";
                                     <div
@@ -135,7 +142,7 @@
 
                             var cell = _visualSheet.GetVisualCell(row, col);
                             var cellFormatString = cell.FormatStyleString;
-                            
+
                             var k = row + "," + col;
 
                             <div id="merge"

@@ -1,4 +1,5 @@
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Layout;
 using BlazorDatasheet.Render;
 using FluentAssertions;
 using NUnit.Framework;
