@@ -39,7 +39,7 @@
     {
         if (firstRender)
         {
-            var module = await Js.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/highlighter.js");
+            var module = await Js.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/js/highlighter.js");
             _dotnetRef = DotNetObjectReference.Create(this);
             var options = new HighlighterOptions()
             {

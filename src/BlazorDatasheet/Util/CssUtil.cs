@@ -1,5 +1,6 @@
 using System.Text;
 using BlazorDatasheet.Core.Interfaces;
+using BlazorDatasheet.Core.Layout;
 using BlazorDatasheet.Render;
 
 namespace BlazorDatasheet.Util;

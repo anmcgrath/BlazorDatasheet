@@ -1,13 +1,13 @@
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.DataStructures.Geometry;
 
-namespace BlazorDatasheet.Render;
+namespace BlazorDatasheet.Core.Layout;
 
 /// <summary>
 /// Provides useful functions for computing actual pixel widths of
 /// cells in the sheet based on the region.
 /// </summary>
-public class CellLayoutProvider
+public class CellLayoutProvider : IGridLayoutProvider
 {
     private Sheet _sheet;
 
