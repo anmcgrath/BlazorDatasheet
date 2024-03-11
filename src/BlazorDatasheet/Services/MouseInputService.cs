@@ -1,6 +1,7 @@
 ﻿using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Events.Input;
 using BlazorDatasheet.Core.Interfaces;
+using BlazorDatasheet.Core.Layout;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Events;
 using BlazorDatasheet.Render;
