@@ -71,7 +71,8 @@
 
                     <div id="filler-left-1" @ref="_fillerLeft1" style="float:right; min-width: @(Viewport.Left)px; height: @(RenderedInnerSheetHeight)px;"></div>
 
-                    <div @ref="_innerSheet" style="width:@(RenderedInnerSheetWidth)px;height: @(RenderedInnerSheetHeight)px;display: block;">
+                    <div @ref="_innerSheet" 
+                         style="width:@(RenderedInnerSheetWidth)px;height: @(RenderedInnerSheetHeight)px;display: block;">
                         @for (int rowIndex = Viewport.VisibleRegion.Top; rowIndex <= Viewport.VisibleRegion.Bottom; rowIndex++)
                         {
                             var row = rowIndex;
@@ -82,12 +83,15 @@
                                     var col = j;
                                     var cell = _visualSheet.GetVisualCell(row, col);
                                     var colWidth = @cell.Width;
+                                    var k = $"{row},{col}";
                                     <div
                                         @onpointerup="e => HandleCellMouseUp(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
                                         @ondblclick="e => HandleCellDoubleClick(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
                                         @onpointerenter="e => HandleCellMouseOver(row, col)"
                                         @onpointerdown="e => HandleCellMouseDown(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
-                                        @key="col"
+                                        @key="k"
+                                        data-row="@row"
+                                        data-col="@col"
                                         style="
                                             width:@(colWidth)px;
                                             max-width:@(colWidth)px;
