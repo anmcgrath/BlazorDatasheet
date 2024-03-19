@@ -197,6 +197,9 @@ public partial class Datasheet : IHandleEvent
 
     // This ensures that the sheet is not re-rendered when mouse events are handled inside the sheet.
     // Performance is improved dramatically when this is used.
+
+    private SheetPointerInputService _sheetPointerInputService;
+
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
 
     private IJSObjectReference _virtualizer = null!;
@@ -281,10 +284,25 @@ public partial class Datasheet : IHandleEvent
         if (firstRender)
         {
             _dotnetHelper = DotNetObjectReference.Create(this);
+
             await AddWindowEventsAsync();
 
-            var module = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/js/virtualize.js");
+            _sheetPointerInputService = new SheetPointerInputService(JS, _innerSheet);
+            await _sheetPointerInputService.Init();
+
+            _sheetPointerInputService.PointerDown += (sender, args) =>
+                this.HandleCellMouseDown(args.Row, args.Col, args.MetaKey, args.CtrlKey, args.ShiftKey);
+            _sheetPointerInputService.PointerUp += (sender, args) =>
+                this.HandleCellMouseUp(args.Row, args.Col, args.MetaKey, args.CtrlKey, args.ShiftKey);
+            _sheetPointerInputService.PointerEnter += (sender, args) =>
+                this.HandleCellMouseOver(args.Row, args.Col);
+            _sheetPointerInputService.PointerDoubleClick += (sender, args) =>
+                this.HandleCellDoubleClick(args.Row, args.Col, args.MetaKey, args.CtrlKey, args.ShiftKey);
+
+            var module =
+                await JS.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/js/virtualize.js");
             _virtualizer = await module.InvokeAsync<IJSObjectReference>("getVirtualizer");
+
             await _virtualizer.InvokeVoidAsync("addVirtualisationHandlers",
                 _dotnetHelper,
                 _wholeSheetDiv,
@@ -637,6 +655,7 @@ public partial class Datasheet : IHandleEvent
         {
             await _virtualizer.InvokeAsync<string>("disposeVirtualisationHandlers", _wholeSheetDiv);
             await _mouseInputService.DisposeAsync();
+            await _sheetPointerInputService.DisposeAsync();
         }
         catch (Exception e)
         {
