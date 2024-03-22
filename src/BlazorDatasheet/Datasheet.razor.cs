@@ -482,15 +482,10 @@ public partial class Datasheet : IHandleEvent
 
         if (KeyUtil.IsEnter(e.Key))
         {
-            if (!_sheetLocal.Editor.IsEditing)
-                return true;
-
-            if (AcceptEdit())
-            {
-                var movementDir = e.ShiftKey ? -1 : 1;
-                Sheet?.Selection?.MoveActivePositionByRow(movementDir);
-                return true;
-            }
+            var acceptEdit = Sheet.Editor.IsEditing && AcceptEdit();
+            var movementDir = e.ShiftKey ? -1 : 1;
+            Sheet?.Selection?.MoveActivePositionByRow(movementDir);
+            return acceptEdit;
         }
 
         if (KeyUtil.IsArrowKey(e.Key))
