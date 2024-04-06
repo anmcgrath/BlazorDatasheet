@@ -72,7 +72,9 @@ public partial class CellStore
 
         foreach (var formula in formulaToCopy)
         {
-            var clonedFormula = formula.data!.Clone();
+            if(formula.data == null)
+                continue;
+            var clonedFormula = formula.data.Clone();
             clonedFormula.ShiftReferences(offset.row, offset.col);
             restoreData.Merge(SetFormulaImpl(formula.row + offset.row, formula.col + offset.col, clonedFormula));
         }
