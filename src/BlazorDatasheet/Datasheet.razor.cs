@@ -190,11 +190,6 @@ public partial class Datasheet : IHandleEvent
     /// </summary>
     private VisualSheet _visualSheet;
 
-    /// <summary>
-    /// Handles passing mouse events to the sheet's input service
-    /// </summary>
-    private MouseInputService _mouseInputService;
-
     // This ensures that the sheet is not re-rendered when mouse events are handled inside the sheet.
     // Performance is improved dramatically when this is used.
 
@@ -312,10 +307,6 @@ public partial class Datasheet : IHandleEvent
                 _fillerRight,
                 _fillerBottom);
             await module.DisposeAsync();
-
-            _mouseInputService = new MouseInputService(_sheetLocal!, _innerSheet, JS, Viewport!);
-            _sheetLocal!.SetInputService(_mouseInputService);
-            await _mouseInputService.Init();
         }
 
         SheetIsDirty = false;
@@ -476,10 +467,6 @@ public partial class Datasheet : IHandleEvent
 
     private void HandleCellMouseOver(int row, int col)
     {
-        var e = _mouseInputService.OnMouseOverCell(row, col);
-        if (e.PreventDefault)
-            return;
-
         this.UpdateSelectingEndPosition(row, col);
     }
 
@@ -649,7 +636,6 @@ public partial class Datasheet : IHandleEvent
         try
         {
             await _virtualizer.InvokeAsync<string>("disposeVirtualisationHandlers", _wholeSheetDiv);
-            await _mouseInputService.DisposeAsync();
             await _sheetPointerInputService.DisposeAsync();
         }
         catch (Exception e)

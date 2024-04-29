@@ -14,15 +14,12 @@
 
 
 <div
+    @ref="_innerSheet"
     style="height:@(_cellLayoutProvider.TotalHeight)px; width: @(_cellLayoutProvider.TotalWidth)px;"
     class="@GetContainerClassString()"
     theme="@Theme"
     @onmouseover="() => IsMouseInsideSheet = true"
     @onmouseout="() => IsMouseInsideSheet = false">
-
-    <!--<div style="position: sticky; top: 0; left: 0; z-index:100000">
-        <div>Last render time @lastRenderTime ms</div>
-    </div>-->
 
     @if (Sheet != null)
     {
@@ -77,8 +74,8 @@
 
                     <div id="filler-left-1" @ref="_fillerLeft1" style="float:right; min-width: @(Viewport.Left)px; height: @(RenderedInnerSheetHeight)px;"></div>
 
-                    <div @ref="_innerSheet"
-                         style="width:@(RenderedInnerSheetWidth)px;height: @(RenderedInnerSheetHeight)px;display: block;">
+                    <div
+                        style="width:@(RenderedInnerSheetWidth)px;height: @(RenderedInnerSheetHeight)px;display: block;">
 
                         <!-- Merged cells -->
                         @if (Sheet.Cells.AnyMerges() && this.Viewport is not null)
@@ -192,6 +189,7 @@
                      z-index: 0;">
 
         <SelectionRenderer
+            InputService="_sheetPointerInputService"
             SelectionExpanded="HandleSelectionExpanded"
             Sheet="Sheet"
             CellLayoutProvider="_cellLayoutProvider"/>

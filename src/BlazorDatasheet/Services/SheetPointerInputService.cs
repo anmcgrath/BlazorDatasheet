@@ -26,18 +26,23 @@ public class SheetPointerInputService : IAsyncDisposable
 
     public async Task Init()
     {
+        Console.WriteLine("InitSheetPointerService");
+
         _dotNetObjectReference = DotNetObjectReference.Create(this);
         var module =
-            await Js.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/js/input.js");
+            await Js.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/js/sheet-pointer-input.js");
 
         _inputJs = await module.InvokeAsync<IJSObjectReference>(
             "getInputService",
             _sheetElement,
-            _dotNetObjectReference,
+            _dotNetObjectReference);
+
+        await _inputJs.InvokeVoidAsync(
+            "registerPointerEvents",
             nameof(HandlePointerUp),
             nameof(HandlePointerDown),
             nameof(HandlePointerMove),
-            nameof(HandlePointerEnter),
+            nameof(HandlePointerCellEnter),
             nameof(HandlePointerDoubleClick));
 
         await module.DisposeAsync();
@@ -61,8 +66,8 @@ public class SheetPointerInputService : IAsyncDisposable
         PointerUp?.Invoke(this, args);
     }
 
-    [JSInvokable(nameof(HandlePointerEnter))]
-    public void HandlePointerEnter(SheetPointerEventArgs args)
+    [JSInvokable(nameof(HandlePointerCellEnter))]
+    public void HandlePointerCellEnter(SheetPointerEventArgs args)
     {
         PointerEnter?.Invoke(this, args);
     }
@@ -77,6 +82,7 @@ public class SheetPointerInputService : IAsyncDisposable
     {
         try
         {
+            await _inputJs.InvokeVoidAsync("dispose");
             await _inputJs.DisposeAsync();
             _dotNetObjectReference.Dispose();
         }

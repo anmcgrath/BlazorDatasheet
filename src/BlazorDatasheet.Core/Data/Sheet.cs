@@ -78,8 +78,6 @@ public class Sheet
 
     internal IDialogService? Dialog { get; private set; }
 
-    public IInputService InputService { get; private set; }
-
     #region EVENTS
 
     /// <summary>
@@ -479,10 +477,5 @@ public class Sheet
     public void SetDialogService(IDialogService? service)
     {
         Dialog = service;
-    }
-
-    public void SetInputService(IInputService service)
-    {
-        InputService = service;
     }
 }

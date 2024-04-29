@@ -5,65 +5,60 @@
 class SheetPointerEventArgs {
     sheetX;
     sheetY;
+    pageX;
+    pageY;
     row;
     col;
+    altKey;
+    ctrlKey;
+    shiftKey;
+    metaKey;
 }
 
 class PointerInputService {
     pointerEnterCallbackName;
     pointerDoubleClickCallbackName;
 
-    /**
-     *
-     * @param {HTMLElement} sheetElement
-     * @param dotnetHelper
-     * @param {string} pointerUpCallbackName
-     * @param {string} pointerDownCallbackName
-     * @param {string} pointerMoveCallbackName
-     * @param {string} pointerEnterCallbackName
-     * @param {string} pointerDoubleClickCallbackName
-     * @param {string} pointerEnterCallbackName
-     * @param {string} pointerDoubleClickCallbackName
-     */
-    constructor(sheetElement,
-                dotnetHelper,
-                pointerUpCallbackName,
-                pointerDownCallbackName,
-                pointerMoveCallbackName,
-                pointerEnterCallbackName,
-                pointerDoubleClickCallbackName) {
+    constructor(sheetElement, dotnetHelper) {
+        this.dotnetHelper = dotnetHelper;
         this.sheetElement = sheetElement;
+        this.currentRow = -1
+        this.currentCol = -1
+    }
+
+    registerPointerEvents(pointerUpCallbackName, pointerDownCallbackName, pointerMoveCallbackName, pointerEnterCallbackName, pointerDoubleClickCallbackName) {
         this.pointerUpCallbackName = pointerUpCallbackName;
         this.pointerDownCallbackName = pointerDownCallbackName;
         this.pointerMoveCallbackName = pointerMoveCallbackName;
-        this.dotnetHelper = dotnetHelper
         this.pointerEnterCallbackName = pointerEnterCallbackName;
         this.pointerDoubleClickCallbackName = pointerDoubleClickCallbackName;
 
         this.sheetElement.addEventListener('pointerup', this.onPointerUp.bind(this));
         this.sheetElement.addEventListener('pointerdown', this.onPointerDown.bind(this));
-        this.sheetElement.addEventListener('pointermove', this.onPointerMove.bind(this));
         this.sheetElement.addEventListener('dblclick', this.onDoubleClick.bind(this));
-        
-        this.currentRow = -1
-        this.currentCol = -1
+        this.sheetElement.addEventListener('pointermove', this.onPointerMove.bind(this));
     }
 
-    /**
-     *
-     * @param {PointerEvent} e
-     */
     onPointerUp(e) {
-        this.dotnetHelper.invokeMethodAsync(this.pointerUpCallbackName, this.getSheetPointerEventArgs(e));
+        let args = this.getSheetPointerEventArgs(e)
+        if (!args)
+            return
+        
+        this.dotnetHelper.invokeMethodAsync(this.pointerUpCallbackName, args);
     }
 
     onPointerDown(e) {
-        console.log(e)
-        this.dotnetHelper.invokeMethodAsync(this.pointerDownCallbackName, this.getSheetPointerEventArgs(e));
+        let args = this.getSheetPointerEventArgs(e)
+        if (!args)
+            return
+        this.dotnetHelper.invokeMethodAsync(this.pointerDownCallbackName, args);
     }
 
     onPointerMove(e) {
         let args = this.getSheetPointerEventArgs(e)
+        if (!args)
+            return
+        
         if (args.row !== this.currentRow || args.col !== this.currentCol) {
             this.onCellEnter(args)
         }
@@ -76,16 +71,31 @@ class PointerInputService {
 
     onDoubleClick(e) {
         let args = this.getSheetPointerEventArgs(e)
+        if (!args)
+            return
+
         this.dotnetHelper.invokeMethodAsync(this.pointerDoubleClickCallbackName, args);
     }
 
     onCellEnter(args) {
+        if (!args)
+            return
+
         this.dotnetHelper.invokeMethodAsync(this.pointerEnterCallbackName, args);
+    }
+
+    dispose() {
+        this.sheetElement.removeEventListener('pointerup', this.onPointerUp);
+        this.sheetElement.removeEventListener('pointerdown', this.onPointerDown);
+        window.removeEventListener('pointermove', this.onPointerMove);
+        this.sheetElement.removeEventListener('dblclick', this.onDoubleClick);
+        console.log('disposeing')
     }
 
 
     /**
      * @param {MouseEvent} e
+     * @returns {SheetPointerEventArgs}
      */
     getSheetPointerEventArgs(e) {
         let rect = this.sheetElement.getBoundingClientRect();
@@ -94,7 +104,11 @@ class PointerInputService {
         let targetClassList = e.target.classList;
         let row, col = -1
         let cell = e.target.closest('.sheet-cell')
-        if (cell) {
+
+        if (!cell)
+            return null
+
+        if (cell && cell.dataset.row && cell.dataset.col) {
             row = parseInt(cell.dataset.row)
             col = parseInt(cell.dataset.col)
         }
@@ -102,6 +116,8 @@ class PointerInputService {
         return {
             sheetX: x,
             sheetY: y,
+            pageX: e.pageX,
+            pageY: e.pageY,
             row: row,
             col: col,
             altKey: e.altKey,
@@ -113,6 +129,6 @@ class PointerInputService {
 
 }
 
-export function getInputService(sheetElement, dotnetHelper, pointerUpCallbackName, pointerDownCallbackName, pointerMoveCallbackName, pointerEnterCallbackName, pointerDoubleClickCallbackName) {
-    return new PointerInputService(sheetElement, dotnetHelper, pointerUpCallbackName, pointerDownCallbackName, pointerMoveCallbackName, pointerEnterCallbackName, pointerDoubleClickCallbackName);
+export function getInputService(sheetElement, dotnetHelper) {
+    return new PointerInputService(sheetElement, dotnetHelper);
 }
