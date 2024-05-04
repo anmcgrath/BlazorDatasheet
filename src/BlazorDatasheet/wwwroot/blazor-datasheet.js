@@ -1,12 +1,6 @@
 let fnDict = {}
 let id = 0
 
-let currentClientPosition = {x: 0, y: 0}
-window.addEventListener('mousemove', e => {
-    currentClientPosition.x = e.clientX
-    currentClientPosition.y = e.clientY
-})
-
 function genFnId() {
     return 'f' + id++
 }
@@ -106,14 +100,6 @@ window.setFocusWithTimeout = function (el, timeout) {
         el.focus()
     }, timeout)
 }
-
-// Mouse move events
-function onThrottledMouseMove(component, interval) {
-    window.addEventListener('mousemove', throttle(e => {
-        component.invokeMethodAsync('HandleMouseMove', e.pageX, e.pageY);
-    }, interval));
-}
-
 
 // https://stackoverflow.com/questions/27078285/simple-throttle-in-javascript
 // Returns a function, that, when invoked, will only be triggered at most once
