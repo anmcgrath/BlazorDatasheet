@@ -325,7 +325,7 @@ public partial class Datasheet : IHandleEvent
                 e.ContainerHeight,
                 OverflowX,
                 OverflowY);
-        
+
         Viewport.Update(newViewport);
         _visualSheet.UpdateViewport(_sheetLocal!, newViewport);
     }
@@ -417,6 +417,12 @@ public partial class Datasheet : IHandleEvent
 
     private async void HandleCellDoubleClick(int row, int col, bool metaKey, bool ctrlKey, bool shiftKey)
     {
+        if (Sheet == null)
+            return;
+
+        if (row < 0 || col < 0 || row >= Sheet.NumRows || col >= Sheet.NumCols)
+            return;
+        
         await BeginEdit(row, col, EditEntryMode.Mouse);
     }
 
