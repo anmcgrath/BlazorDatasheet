@@ -19,6 +19,12 @@ Demo: https://anmcgrath.github.io/BlazorDatasheet/
 
 ### Getting Started
 
+#### Install the NuGet package
+
+```bash
+dotnet add package BlazorDatasheet --version 0.2.0
+```
+
 #### Configure Program.cs
 
 In Program.cs, add the required services:
