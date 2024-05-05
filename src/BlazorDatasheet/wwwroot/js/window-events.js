@@ -80,6 +80,7 @@
                 offsetX: e.offsetX,
                 offsetY: e.offsetY,
                 pageX: e.pageX,
+                pageY: e.pageY,
                 screenX: e.screenX,
                 screenY: e.screenY,
             }

@@ -7,6 +7,7 @@
 @using Microsoft.JSInterop
 @implements IDisposable
 @inject IJSRuntime JS;
+@inject IWindowEventService WindowEventService
 
 @if (!Sheet!.Editor.IsEditing)
 {
@@ -39,17 +40,14 @@
 
     [Parameter, EditorRequired] public SheetPointerInputService? InputService { get; set; }
 
-    private bool _isDragging = false;
-    private CellPosition? _dragStartPosition;
 
     [Parameter] public EventCallback<SelectionExpandedEventArgs> SelectionExpanded { get; set; }
 
-    private IRegion? _dragPreviewRegion;
-    private double _dragStartX;
-    private double _dragStartY;
+    private bool _isDragging = false;
 
-    private double _pointerPositionX;
-    private double _pointerPositionY;
+    // Document start position of the pointer
+    private Point2d _dragStartDocumentPosition = new Point2d();
+    private IRegion? _dragPreviewRegion;
 
     private double GetLeft(IRegion region) => CellLayoutProvider.ComputeLeftPosition(region);
     private double GetTop(IRegion region) => CellLayoutProvider.ComputeTopPosition(region);
@@ -58,14 +56,6 @@
 
     protected override void OnParametersSet()
     {
-        if (InputService != null)
-        {
-            InputService.PointerMove -= PointerMove;
-            InputService.PointerMove += PointerMove;
-            InputService.PointerUp -= PointerMouseUp;
-            InputService.PointerUp += PointerMouseUp;
-        }
-
         if (Sheet != null)
         {
             Sheet.Selection.SelectingChanged -= SelectionOnSelectingChanged;
@@ -75,6 +65,134 @@
             Sheet.Selection.SelectionChanged += SelectionOnSelectionChanged;
         }
     }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await WindowEventService.RegisterMouseEvent("mousemove", HandleWindowMouseMove);
+            await WindowEventService.RegisterMouseEvent("mouseup", HandleWindowMouseUp);
+        }
+    }
+
+    private async Task<bool> HandleWindowMouseUp(MouseEventArgs arg)
+    {
+        if (!_isDragging || _dragPreviewRegion == null)
+            return false;
+
+        await SelectionExpanded.InvokeAsync(new SelectionExpandedEventArgs(
+            Sheet!.Selection.ActiveRegion!.Clone(),
+            _dragPreviewRegion.Clone()));
+
+        _isDragging = false;
+        _dragPreviewRegion = null;
+
+        return true;
+    }
+
+    private async Task<bool> HandleWindowMouseMove(MouseEventArgs e)
+    {
+        if (!_isDragging)
+            return false;
+
+        if (Sheet?.Selection.ActiveRegion == null)
+            return false;
+
+        var dx = e.PageX - _dragStartDocumentPosition.X;
+        var dy = e.PageY - _dragStartDocumentPosition.Y;
+
+        Console.WriteLine("HandleWindowMouseMove " + e.PageY);
+
+        _dragPreviewRegion = CalculateDragPreviewRegion(dx, dy);
+        this.StateHasChanged();
+
+        return true;
+    }
+
+    private IRegion? CalculateDragPreviewRegion(double dx, double dy)
+    {
+        if (!_isDragging || Sheet.Selection.ActiveRegion == null)
+            return null;
+
+        if (dx == 0 || dy == 0)
+            return null;
+
+        var selRect = CellLayoutProvider.ComputeRect(Sheet.Selection.ActiveRegion);
+
+        var sheetX = selRect.X + selRect.Width + dx;
+        var sheetY = selRect.Y + selRect.Height + dy;
+
+        var cellAtMouse = CellLayoutProvider.ComputeCell(sheetX, sheetY);
+
+        var cellRect = CellLayoutProvider.ComputeRect(cellAtMouse);
+        var dirMoved = GetDirection(dx, dy);
+        var passesMidway = PassesMidway(cellRect, new Point2d(sheetX, sheetY), dirMoved);
+
+        Console.WriteLine(cellAtMouse);
+        Console.WriteLine(passesMidway);
+
+        int colTo, rowTo;
+
+        if (Math.Abs(dx) > Math.Abs(dy))
+        {
+            var dxDir = (int)(dx / Math.Abs(dx));
+            colTo = cellAtMouse.col;
+            rowTo = Sheet.Selection.ActiveRegion.Bottom;
+            if (!passesMidway)
+                colTo -= dxDir;
+        }
+        else
+        {
+            var dyDir = (int)(dy / Math.Abs(dy));
+            rowTo = cellAtMouse.row;
+            colTo = Sheet.Selection.ActiveRegion.Right;
+            if (!passesMidway)
+                rowTo -= dyDir;
+        }
+
+        return Sheet.Selection.ActiveRegion.GetBoundingRegion(new Region(rowTo, colTo));
+    }
+
+    private bool PassesMidway(Rect rect, Point2d pt, Direction direction)
+    {
+        switch (direction)
+        {
+            case Direction.None:
+                return false;
+            case Direction.Left:
+                return pt.X < rect.X + rect.Width / 2;
+            case Direction.Right:
+                return pt.X > rect.X + rect.Width / 2;
+            case Direction.Down:
+                return pt.Y > rect.Y + rect.Height / 2;
+            case Direction.Up:
+                return pt.Y < rect.Y + rect.Height / 2;
+        }
+
+        return false;
+    }
+
+    private Direction GetDirection(double dx, double dy)
+    {
+        if (dx >= dy)
+        {
+            if (dx > 0)
+                return Direction.Right;
+            if (dx < 0)
+                return Direction.Left;
+            return Direction.None;
+        }
+        else
+        {
+            if (dy > 0)
+                return Direction.Down;
+            if (dy < 0)
+                return Direction.Up;
+        }
+
+        return Direction.None;
+    }
+
 
     private void SelectionOnSelectionChanged(object? sender, IEnumerable<IRegion> e)
     {
@@ -86,20 +204,16 @@
         StateHasChanged();
     }
 
-    private async Task DraggerMouseDown(PointerEventArgs obj)
+    private async Task DraggerMouseDown(PointerEventArgs e)
     {
         if (Sheet?.Selection.ActiveRegion == null)
             return;
 
         _isDragging = true;
-        _dragStartPosition = Sheet.Selection.ActiveRegion.TopLeft;
 
-        _dragStartX = _pointerPositionX;
-        _dragStartY = _pointerPositionY;
-        
-        Console.WriteLine(_dragStartX + " " + _dragStartY);
+        _dragStartDocumentPosition = new Point2d(e.PageX, e.PageY);
     }
-    
+
     private void DraggerMouseUp(PointerEventArgs obj)
     {
         // if the user mouses up on the dragger (which doesn't move)
@@ -109,66 +223,11 @@
         this.StateHasChanged();
     }
 
-    private void PointerMove(object? sender, SheetPointerEventArgs e)
-    {
-        _pointerPositionX = e.SheetX;
-        _pointerPositionY = e.SheetY;
-
-        if (_isDragging)
-        {
-            Console.WriteLine(e.Row + " " + e.Col);
-            
-            var x = e.SheetX;
-            var y = e.SheetY;
-            var dx = Math.Abs(x - _dragStartX);
-            var dy = Math.Abs(y - _dragStartY);
-
-            var fillDirection = Direction.None;
-            if (dx > dy && x >= _dragStartX)
-                fillDirection = Direction.Right;
-            else if (dx > dy && x < _dragStartX)
-                fillDirection = Direction.Left;
-            else if (dy > dx && y >= _dragStartY)
-                fillDirection = Direction.Down;
-            else if (dy > dx && y < _dragStartY)
-                fillDirection = Direction.Up;
-
-            var endPosition = GetCurrentDragEndPosition(fillDirection, x, y);
-            _dragPreviewRegion = new Region(_dragStartPosition!.Value.row,
-                endPosition.row,
-                _dragStartPosition!.Value.col,
-                endPosition.col);
-
-
-            StateHasChanged();
-        }
-    }
-
-    private CellPosition GetCurrentDragEndPosition(Direction direction, double x, double y)
-    {
-        if (Sheet == null)
-            return new CellPosition();
-
-        var row = Sheet.Rows.GetRow(y);
-        var col = Sheet.Columns.GetColumn(x);
-        switch (direction)
-        {
-            case Direction.Right:
-            case Direction.Left:
-                return new(Sheet!.Selection!.ActiveRegion!.Bottom, col);
-            case Direction.Up:
-            case Direction.Down:
-                return new(row, Sheet!.Selection!.ActiveRegion!.Right);
-            default:
-                return new(_dragStartPosition!.Value.row, _dragStartPosition!.Value.col);
-        }
-    }
-
     private async void PointerMouseUp(object? sender, SheetPointerEventArgs? arg)
     {
         if (_isDragging && _dragPreviewRegion != null && Sheet?.Selection.ActiveRegion != null)
             await SelectionExpanded.InvokeAsync(new SelectionExpandedEventArgs(Sheet.Selection.ActiveRegion.Clone(), _dragPreviewRegion.Clone()));
-        
+
         _isDragging = false;
         _dragPreviewRegion = null;
         this.StateHasChanged();
@@ -176,8 +235,6 @@
 
     public void Dispose()
     {
-        if (InputService != null)
-            InputService.PointerMove -= PointerMove;
     }
 
     private string GetDraggerStyleString()

@@ -14,4 +14,9 @@ public struct Rect
         Y = y;
         Width = width;
     }
+
+    public override string ToString()
+    {
+        return $"X: {X}, Y: {Y}, Width: {Width}, Height: {Height}";
+    }
 }

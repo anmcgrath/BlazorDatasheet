@@ -39,6 +39,29 @@ public class CellLayoutProvider : IGridLayoutProvider
         _sheet = sheet;
     }
 
+    public CellPosition ComputeCell(double x, double y)
+    {
+        return new CellPosition(ComputeRow(y), ComputeColumn(x));
+    }
+
+    public Rect ComputeRect(CellPosition position)
+    {
+        var l = ComputeLeftPosition(position.col);
+        var t = ComputeTopPosition(position.row);
+        var w = ComputeWidth(position.col, 1);
+        var h = ComputeHeight(position.row, 1);
+        return new Rect(l, t, w, h);
+    }
+
+    public Rect ComputeRect(IRegion r)
+    {
+        var l = ComputeLeftPosition(r.Left);
+        var t = ComputeTopPosition(r.Top);
+        var w = ComputeWidth(r.Left, r.Width);
+        var h = ComputeHeight(r.Top, r.Height);
+        return new Rect(l, t, w, h);
+    }
+
     public double ComputeLeftPosition(IRegion region)
     {
         return ComputeLeftPosition(region.TopLeft.col);
