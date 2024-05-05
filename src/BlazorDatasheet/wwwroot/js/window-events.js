@@ -5,10 +5,16 @@
     }
 
     registerEvent(eventName, handlerName) {
-        if (this.handlerMap[eventName])
-            window.removeEventListener(eventName, this.handleWindowEvent)
-        this.handlerMap[eventName] = handlerName;
-        window.addEventListener(eventName, this.handleWindowEvent.bind(this))
+        try {
+            if (this.handlerMap[eventName])
+                window.removeEventListener(eventName, this.handleWindowEvent)
+
+            this.handlerMap[eventName] = handlerName;
+            window.addEventListener(eventName, this.handleWindowEvent.bind(this))
+        } catch (ex) {
+            return false
+        }
+
     }
 
     /**
@@ -63,6 +69,7 @@
     serializeMouseEvent(e) {
         if (e) {
             return {
+                type: e.type,
                 button: e.button,
                 buttons: e.buttons,
                 clientX: e.clientX,
@@ -89,12 +96,14 @@
                     pasteText = ""
                 }
                 return {
-                    text: pasteText
+                    text: pasteText,
+                    type: e.type
                 }
             }
         }
         return {
             text: "",
+            type: e.type
         }
     }
 

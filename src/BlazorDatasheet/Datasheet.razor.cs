@@ -22,6 +22,7 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.Web.Virtualization;
 using ChangeEventArgs = Microsoft.AspNetCore.Components.ChangeEventArgs;
 using Microsoft.JSInterop;
+using ClipboardEventArgs = BlazorDatasheet.Core.Events.ClipboardEventArgs;
 
 namespace BlazorDatasheet;
 
@@ -174,11 +175,6 @@ public partial class Datasheet : IHandleEvent
     /// Manages the display of the editor, which is rendered using absolute coordinates over the top of the sheet.
     /// </summary>
     private EditorOverlayRenderer _editorManager;
-
-    /// <summary>
-    /// Mouse/keyboard window events registration/handling.
-    /// </summary>
-    private IWindowEventService _windowEventService;
 
     /// <summary>
     /// Clipboard service that provides copy/paste functionality.
@@ -353,10 +349,9 @@ public partial class Datasheet : IHandleEvent
 
     private async Task AddWindowEventsAsync()
     {
-        await _windowEventService.Init();
-        _windowEventService.OnKeyDown += HandleWindowKeyDown;
-        _windowEventService.OnMouseDown += HandleWindowMouseDown;
-        _windowEventService.OnPaste += HandleWindowPaste;
+        await _windowEventService.RegisterMouseEvent("mousedown", HandleWindowMouseDown);
+        await _windowEventService.RegisterKeyEvent("keydown", HandleWindowKeyDown);
+        await _windowEventService.RegisterClipboardEvent("paste", HandleWindowPaste);
     }
 
     private void HandleCellMouseUp(int row, int col, bool MetaKey, bool CtrlKey, bool ShiftKey)
@@ -611,24 +606,25 @@ public partial class Datasheet : IHandleEvent
         Sheet.Selection.MoveActivePositionByCol(dcol);
     }
 
-    private async Task HandleWindowPaste(PasteEventArgs arg)
+    private async Task<bool> HandleWindowPaste(ClipboardEventArgs arg)
     {
         if (!IsDataSheetActive)
-            return;
+            return false;
 
         if (Sheet == null || !Sheet.Selection.Regions.Any())
-            return;
+            return false;
 
         if (Sheet.Editor.IsEditing)
-            return;
+            return false;
 
         var posnToInput = Sheet.Selection.GetInputPosition();
 
         var range = Sheet.InsertDelimitedText(arg.Text, posnToInput);
         if (range == null)
-            return;
+            return false;
 
         Sheet.Selection.Set(range);
+        return true;
     }
 
     public async void Dispose()
@@ -643,7 +639,6 @@ public partial class Datasheet : IHandleEvent
             Console.WriteLine(e.Message);
         }
 
-        _windowEventService.Dispose();
         _dotnetHelper?.Dispose();
     }
 
