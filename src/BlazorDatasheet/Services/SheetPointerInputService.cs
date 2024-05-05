@@ -26,8 +26,6 @@ public class SheetPointerInputService : IAsyncDisposable
 
     public async Task Init()
     {
-        Console.WriteLine("InitSheetPointerService");
-
         _dotNetObjectReference = DotNetObjectReference.Create(this);
         var module =
             await Js.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/js/sheet-pointer-input.js");

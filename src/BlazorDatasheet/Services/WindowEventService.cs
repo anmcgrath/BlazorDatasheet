@@ -11,8 +11,9 @@ namespace BlazorDatasheet.Services;
 public class WindowEventService : IWindowEventService
 {
     private readonly IJSRuntime _js;
+    private IJSObjectReference _windowEventObj = null!;
+
     private DotNetObjectReference<WindowEventService> _dotNetHelper;
-    private List<Tuple<string, string>> _fnStore = new List<Tuple<string, string>>();
     public event Func<KeyboardEventArgs, Task<bool>>? OnKeyDown;
     public event Func<MouseEventArgs, Task<bool>>? OnMouseDown;
     public event Func<MouseEventArgs, Task<bool>>? OnMouseUp;
@@ -27,17 +28,22 @@ public class WindowEventService : IWindowEventService
     public async Task Init()
     {
         _dotNetHelper = DotNetObjectReference.Create(this);
-        _fnStore.Add(await AddWindowEvent("keydown", nameof(HandleWindowKeyDown)));
-        _fnStore.Add(await AddWindowEvent("mousedown", nameof(HandleWindowMouseDown)));
-        _fnStore.Add(await AddWindowEvent("mouseup", nameof(HandleWindowMouseUp)));
-        _fnStore.Add(await AddWindowEvent("mousemove", nameof(HandleWindowMouseMove)));
-        _fnStore.Add(await AddWindowEvent("paste", nameof(HandleWindowPaste)));
+        var module =
+            await _js.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/js/window-events.js");
+        _windowEventObj = await module.InvokeAsync<IJSObjectReference>("createWindowEvents", _dotNetHelper);
+
+        await AddWindowEvent("keydown", nameof(HandleWindowKeyDown));
+        await AddWindowEvent("mousedown", nameof(HandleWindowMouseDown));
+        await AddWindowEvent("mouseup", nameof(HandleWindowMouseUp));
+        await AddWindowEvent("mousemove", nameof(HandleWindowMouseMove));
+        await AddWindowEvent("paste", nameof(HandleWindowPaste));
+
+        await module.DisposeAsync();
     }
 
-    private async Task<Tuple<string, string>> AddWindowEvent(string evType, string jsInvokableName)
+    private async ValueTask AddWindowEvent(string evType, string jsInvokableName)
     {
-        var fnId = await _js.InvokeAsync<string>("setupBlazorWindowEvent", _dotNetHelper, evType, jsInvokableName);
-        return new Tuple<string, string>(evType, fnId);
+        await _windowEventObj.InvokeVoidAsync("registerEvent", evType, jsInvokableName);
     }
 
     [JSInvokable]
@@ -45,7 +51,7 @@ public class WindowEventService : IWindowEventService
     {
         if (OnKeyDown == null)
             return false;
-        
+
         var result = await OnKeyDown.Invoke(e);
         return result;
     }
@@ -55,17 +61,17 @@ public class WindowEventService : IWindowEventService
     {
         if (OnMouseDown == null)
             return false;
-        
+
         var result = await OnMouseDown.Invoke(e);
         return result;
     }
-    
+
     [JSInvokable]
     public async Task<bool> HandleWindowMouseUp(MouseEventArgs e)
     {
         if (OnMouseUp == null)
             return false;
-        
+
         var result = await OnMouseUp.Invoke(e);
         return result;
     }
@@ -76,7 +82,7 @@ public class WindowEventService : IWindowEventService
     {
         if (OnMouseMove == null)
             return false;
-        
+
         var result = await OnMouseMove.Invoke(e);
         return result;
     }
@@ -86,7 +92,7 @@ public class WindowEventService : IWindowEventService
     {
         if (OnPaste == null)
             return;
-        
+
         if (OnPaste is not null)
         {
             await OnPaste.Invoke(e);
@@ -97,21 +103,27 @@ public class WindowEventService : IWindowEventService
     {
         try
         {
-            foreach (var fn in _fnStore)
-            {
-                await _js.InvokeAsync<Task>("removeBlazorWindowEvent", fn.Item1, fn.Item2);
-            }
+            await _windowEventObj.InvokeVoidAsync("dispose");
+            await _windowEventObj.DisposeAsync();
+            _dotNetHelper?.Dispose();
         }
         catch (Exception e)
         {
             Console.WriteLine(e.Message);
         }
-
-        _dotNetHelper?.Dispose();
     }
 
     public async void Dispose()
     {
         await DisposeAsync();
     }
+}
+
+internal class WindowEventOptions
+{
+    public string MouseDownCallbackName { get; set; }
+    public string MouseUpCallbackName { get; set; }
+    public string MouseMoveCallbackName { get; set; }
+    public string KeyDownCallbackName { get; set; }
+    public string PasteCallbackName { get; set; }
 }

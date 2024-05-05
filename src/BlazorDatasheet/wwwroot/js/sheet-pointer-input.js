@@ -89,7 +89,6 @@ class PointerInputService {
         this.sheetElement.removeEventListener('pointerdown', this.onPointerDown);
         window.removeEventListener('pointermove', this.onPointerMove);
         this.sheetElement.removeEventListener('dblclick', this.onDoubleClick);
-        console.log('disposeing')
     }
 
 
