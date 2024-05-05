@@ -14,6 +14,7 @@
     <div id="auto-filler"
          class="unselectable"
          @onpointerdown="DraggerMouseDown"
+         @onpointerup="DraggerMouseUp"
          style="@GetDraggerStyleString();cursor:crosshair;pointer-events: all;">
     </div>
 }
@@ -69,7 +70,7 @@
         {
             Sheet.Selection.SelectingChanged -= SelectionOnSelectingChanged;
             Sheet.Selection.SelectingChanged += SelectionOnSelectingChanged;
-            
+
             Sheet.Selection.SelectionChanged -= SelectionOnSelectionChanged;
             Sheet.Selection.SelectionChanged += SelectionOnSelectionChanged;
         }
@@ -95,6 +96,17 @@
 
         _dragStartX = _pointerPositionX;
         _dragStartY = _pointerPositionY;
+        
+        Console.WriteLine(_dragStartX + " " + _dragStartY);
+    }
+    
+    private void DraggerMouseUp(PointerEventArgs obj)
+    {
+        // if the user mouses up on the dragger (which doesn't move)
+        // then we should just cancel out of the drag
+        _isDragging = false;
+        _dragPreviewRegion = null;
+        this.StateHasChanged();
     }
 
     private void PointerMove(object? sender, SheetPointerEventArgs e)
@@ -104,6 +116,8 @@
 
         if (_isDragging)
         {
+            Console.WriteLine(e.Row + " " + e.Col);
+            
             var x = e.SheetX;
             var y = e.SheetY;
             var dx = Math.Abs(x - _dragStartX);
@@ -153,12 +167,11 @@
     private async void PointerMouseUp(object? sender, SheetPointerEventArgs? arg)
     {
         if (_isDragging && _dragPreviewRegion != null && Sheet?.Selection.ActiveRegion != null)
-        {
             await SelectionExpanded.InvokeAsync(new SelectionExpandedEventArgs(Sheet.Selection.ActiveRegion.Clone(), _dragPreviewRegion.Clone()));
-            _isDragging = false;
-            _dragPreviewRegion = null;
-            this.StateHasChanged();
-        }
+        
+        _isDragging = false;
+        _dragPreviewRegion = null;
+        this.StateHasChanged();
     }
 
     public void Dispose()
