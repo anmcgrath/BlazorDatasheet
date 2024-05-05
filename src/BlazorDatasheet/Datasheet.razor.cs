@@ -325,13 +325,9 @@ public partial class Datasheet : IHandleEvent
                 e.ContainerHeight,
                 OverflowX,
                 OverflowY);
-
-        var sw = new Stopwatch();
-        sw.Start();
+        
         Viewport.Update(newViewport);
         _visualSheet.UpdateViewport(_sheetLocal!, newViewport);
-        lastRenderTime = sw.ElapsedMilliseconds;
-        Console.WriteLine($"\"Render\" took {sw.ElapsedMilliseconds} ms");
     }
 
     private string GetAbsoluteCellPositionStyles(int row, int col, int rowSpan, int colSpan)
