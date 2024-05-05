@@ -1,6 +1,6 @@
 ﻿using BlazorDatasheet.DataStructures.Geometry;
 
-namespace BlazorDatasheet.Render;
+namespace BlazorDatasheet.Core.Layout;
 
 /// <summary>
 /// Provides information about the current "View" of the datasheet.

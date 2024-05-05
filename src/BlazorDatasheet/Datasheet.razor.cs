@@ -7,6 +7,7 @@ using BlazorDatasheet.Core.Edit;
 using BlazorDatasheet.Core.Events;
 using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.Core.Interfaces;
+using BlazorDatasheet.Core.Layout;
 using BlazorDatasheet.Core.Util;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Edit;
@@ -21,11 +22,14 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.Web.Virtualization;
 using ChangeEventArgs = Microsoft.AspNetCore.Components.ChangeEventArgs;
 using Microsoft.JSInterop;
+using ClipboardEventArgs = BlazorDatasheet.Core.Events.ClipboardEventArgs;
 
 namespace BlazorDatasheet;
 
 public partial class Datasheet : IHandleEvent
 {
+    private double lastRenderTime;
+
     /// <summary>
     /// The Sheet holding the data for the datasheet.
     /// </summary>
@@ -173,11 +177,6 @@ public partial class Datasheet : IHandleEvent
     private EditorOverlayRenderer _editorManager;
 
     /// <summary>
-    /// Mouse/keyboard window events registration/handling.
-    /// </summary>
-    private IWindowEventService _windowEventService;
-
-    /// <summary>
     /// Clipboard service that provides copy/paste functionality.
     /// </summary>
     private IClipboard _clipboard;
@@ -187,14 +186,14 @@ public partial class Datasheet : IHandleEvent
     /// </summary>
     private VisualSheet _visualSheet;
 
-    /// <summary>
-    /// Handles passing mouse events to the sheet's input service
-    /// </summary>
-    private MouseInputService _mouseInputService;
-
     // This ensures that the sheet is not re-rendered when mouse events are handled inside the sheet.
     // Performance is improved dramatically when this is used.
+
+    private SheetPointerInputService _sheetPointerInputService;
+
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+
+    private IJSObjectReference _virtualizer = null!;
 
     protected override void OnInitialized()
     {
@@ -276,8 +275,26 @@ public partial class Datasheet : IHandleEvent
         if (firstRender)
         {
             _dotnetHelper = DotNetObjectReference.Create(this);
+
             await AddWindowEventsAsync();
-            await JS.InvokeVoidAsync("addVirtualisationHandlers",
+
+            _sheetPointerInputService = new SheetPointerInputService(JS, _innerSheet);
+            await _sheetPointerInputService.Init();
+
+            _sheetPointerInputService.PointerDown += (sender, args) =>
+                this.HandleCellMouseDown(args.Row, args.Col, args.MetaKey, args.CtrlKey, args.ShiftKey);
+            _sheetPointerInputService.PointerUp += (sender, args) =>
+                this.HandleCellMouseUp(args.Row, args.Col, args.MetaKey, args.CtrlKey, args.ShiftKey);
+            _sheetPointerInputService.PointerEnter += (sender, args) =>
+                this.HandleCellMouseOver(args.Row, args.Col);
+            _sheetPointerInputService.PointerDoubleClick += (sender, args) =>
+                this.HandleCellDoubleClick(args.Row, args.Col, args.MetaKey, args.CtrlKey, args.ShiftKey);
+
+            var module =
+                await JS.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/js/virtualize.js");
+            _virtualizer = await module.InvokeAsync<IJSObjectReference>("getVirtualizer");
+
+            await _virtualizer.InvokeVoidAsync("addVirtualisationHandlers",
                 _dotnetHelper,
                 _wholeSheetDiv,
                 nameof(HandleScroll),
@@ -285,10 +302,7 @@ public partial class Datasheet : IHandleEvent
                 _fillerTop,
                 _fillerRight,
                 _fillerBottom);
-
-            _mouseInputService = new MouseInputService(_sheetLocal!, _innerSheet, JS, Viewport!);
-            _sheetLocal!.SetInputService(_mouseInputService);
-            await _mouseInputService.Init();
+            await module.DisposeAsync();
         }
 
         SheetIsDirty = false;
@@ -311,7 +325,7 @@ public partial class Datasheet : IHandleEvent
                 e.ContainerHeight,
                 OverflowX,
                 OverflowY);
-
+        
         Viewport.Update(newViewport);
         _visualSheet.UpdateViewport(_sheetLocal!, newViewport);
     }
@@ -331,10 +345,9 @@ public partial class Datasheet : IHandleEvent
 
     private async Task AddWindowEventsAsync()
     {
-        await _windowEventService.Init();
-        _windowEventService.OnKeyDown += HandleWindowKeyDown;
-        _windowEventService.OnMouseDown += HandleWindowMouseDown;
-        _windowEventService.OnPaste += HandleWindowPaste;
+        await _windowEventService.RegisterMouseEvent("mousedown", HandleWindowMouseDown);
+        await _windowEventService.RegisterKeyEvent("keydown", HandleWindowKeyDown);
+        await _windowEventService.RegisterClipboardEvent("paste", HandleWindowPaste);
     }
 
     private void HandleCellMouseUp(int row, int col, bool MetaKey, bool CtrlKey, bool ShiftKey)
@@ -445,10 +458,6 @@ public partial class Datasheet : IHandleEvent
 
     private void HandleCellMouseOver(int row, int col)
     {
-        var e = _mouseInputService.OnMouseOverCell(row, col);
-        if (e.PreventDefault)
-            return;
-
         this.UpdateSelectingEndPosition(row, col);
     }
 
@@ -593,39 +602,39 @@ public partial class Datasheet : IHandleEvent
         Sheet.Selection.MoveActivePositionByCol(dcol);
     }
 
-    private async Task HandleWindowPaste(PasteEventArgs arg)
+    private async Task<bool> HandleWindowPaste(ClipboardEventArgs arg)
     {
         if (!IsDataSheetActive)
-            return;
+            return false;
 
         if (Sheet == null || !Sheet.Selection.Regions.Any())
-            return;
+            return false;
 
         if (Sheet.Editor.IsEditing)
-            return;
+            return false;
 
         var posnToInput = Sheet.Selection.GetInputPosition();
 
         var range = Sheet.InsertDelimitedText(arg.Text, posnToInput);
         if (range == null)
-            return;
+            return false;
 
         Sheet.Selection.Set(range);
+        return true;
     }
 
     public async void Dispose()
     {
         try
         {
-            await JS.InvokeAsync<string>("disposeVirtualisationHandlers", _wholeSheetDiv);
-            await _mouseInputService.DisposeAsync();
+            await _virtualizer.InvokeAsync<string>("disposeVirtualisationHandlers", _wholeSheetDiv);
+            await _sheetPointerInputService.DisposeAsync();
         }
         catch (Exception e)
         {
             Console.WriteLine(e.Message);
         }
 
-        _windowEventService.Dispose();
         _dotnetHelper?.Dispose();
     }
 

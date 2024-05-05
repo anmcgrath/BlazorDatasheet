@@ -5,6 +5,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <RootNamespace>BlazorDatashet.Formula.Functions</RootNamespace>
+        <Version>0.2.0</Version>
     </PropertyGroup>
 
     <ItemGroup>

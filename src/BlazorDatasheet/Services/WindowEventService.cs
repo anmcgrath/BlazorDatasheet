@@ -2,6 +2,7 @@ using BlazorDatasheet.Core.Events;
 using BlazorDatasheet.Core.Interfaces;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
+using ClipboardEventArgs = BlazorDatasheet.Core.Events.ClipboardEventArgs;
 
 namespace BlazorDatasheet.Services;
 
@@ -11,107 +12,129 @@ namespace BlazorDatasheet.Services;
 public class WindowEventService : IWindowEventService
 {
     private readonly IJSRuntime _js;
+    private IJSObjectReference _windowEventObj = null!;
+
     private DotNetObjectReference<WindowEventService> _dotNetHelper;
-    private List<Tuple<string, string>> _fnStore = new List<Tuple<string, string>>();
-    public event Func<KeyboardEventArgs, Task<bool>>? OnKeyDown;
-    public event Func<MouseEventArgs, Task<bool>>? OnMouseDown;
-    public event Func<MouseEventArgs, Task<bool>>? OnMouseUp;
-    public event Func<MouseEventArgs, Task<bool>>? OnMouseMove;
-    public event Func<PasteEventArgs, Task>? OnPaste;
+
+    private Dictionary<string, Func<MouseEventArgs, Task<bool>>>? _mouseEventListeners;
+    private Dictionary<string, Func<KeyboardEventArgs, Task<bool>>>? _keyEventListeners;
+    private Dictionary<string, Func<ClipboardEventArgs, Task<bool>>>? _clipboardEventListeners;
 
     public WindowEventService(IJSRuntime js)
     {
         _js = js;
     }
 
-    public async Task Init()
+    public async Task RegisterMouseEvent(string eventType, Func<MouseEventArgs, Task<bool>> handler)
     {
-        _dotNetHelper = DotNetObjectReference.Create(this);
-        _fnStore.Add(await AddWindowEvent("keydown", nameof(HandleWindowKeyDown)));
-        _fnStore.Add(await AddWindowEvent("mousedown", nameof(HandleWindowMouseDown)));
-        _fnStore.Add(await AddWindowEvent("mouseup", nameof(HandleWindowMouseUp)));
-        _fnStore.Add(await AddWindowEvent("mousemove", nameof(HandleWindowMouseMove)));
-        _fnStore.Add(await AddWindowEvent("paste", nameof(HandleWindowPaste)));
+        if (_mouseEventListeners == null)
+            _mouseEventListeners = new();
+
+        _mouseEventListeners.TryAdd(eventType, handler);
+        await AddWindowEvent(eventType, nameof(HandleWindowMouseEvent));
     }
 
-    private async Task<Tuple<string, string>> AddWindowEvent(string evType, string jsInvokableName)
+    public async Task RegisterKeyEvent(string eventType, Func<KeyboardEventArgs, Task<bool>> handler)
     {
-        var fnId = await _js.InvokeAsync<string>("setupBlazorWindowEvent", _dotNetHelper, evType, jsInvokableName);
-        return new Tuple<string, string>(evType, fnId);
+        if (_keyEventListeners == null)
+            _keyEventListeners = new();
+
+        _keyEventListeners.TryAdd(eventType, handler);
+        await AddWindowEvent(eventType, nameof(HandleWindowKeyEvent));
     }
 
-    [JSInvokable]
-    public async Task<bool?> HandleWindowKeyDown(KeyboardEventArgs e)
+    public async Task RegisterClipboardEvent(string eventType, Func<ClipboardEventArgs, Task<bool>> handler)
     {
-        if (OnKeyDown == null)
-            return false;
-        
-        var result = await OnKeyDown.Invoke(e);
-        return result;
-    }
+        if (_clipboardEventListeners == null)
+            _clipboardEventListeners = new();
 
-    [JSInvokable]
-    public async Task<bool> HandleWindowMouseDown(MouseEventArgs e)
-    {
-        if (OnMouseDown == null)
-            return false;
-        
-        var result = await OnMouseDown.Invoke(e);
-        return result;
-    }
-    
-    [JSInvokable]
-    public async Task<bool> HandleWindowMouseUp(MouseEventArgs e)
-    {
-        if (OnMouseUp == null)
-            return false;
-        
-        var result = await OnMouseUp.Invoke(e);
-        return result;
+        _clipboardEventListeners.TryAdd(eventType, handler);
+        await AddWindowEvent(eventType, nameof(HandleWindowClipboardEvent));
     }
 
 
-    [JSInvokable]
-    public async Task<bool> HandleWindowMouseMove(MouseEventArgs e)
+    private async ValueTask AddWindowEvent(string evType, string jsInvokableName)
     {
-        if (OnMouseMove == null)
-            return false;
-        
-        var result = await OnMouseMove.Invoke(e);
-        return result;
-    }
-
-    [JSInvokable]
-    public async Task HandleWindowPaste(PasteEventArgs e)
-    {
-        if (OnPaste == null)
-            return;
-        
-        if (OnPaste is not null)
+        if (_windowEventObj == null)
         {
-            await OnPaste.Invoke(e);
+            _dotNetHelper = DotNetObjectReference.Create(this);
+            var module =
+                await _js.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/js/window-events.js");
+            _windowEventObj = await module.InvokeAsync<IJSObjectReference>("createWindowEvents", _dotNetHelper);
+            await module.DisposeAsync();
         }
+
+        await _windowEventObj.InvokeVoidAsync("registerEvent", evType, jsInvokableName);
     }
+
+    [JSInvokable]
+    public async Task<bool> HandleWindowMouseEvent(MouseEventArgs e)
+    {
+        if (_mouseEventListeners == null)
+            return false;
+
+        var hasListener = _mouseEventListeners.TryGetValue(e.Type, out var listener);
+        if (!hasListener)
+            return false;
+
+        var result = await listener!.Invoke(e);
+        return result;
+    }
+
+    [JSInvokable]
+    public async Task<bool> HandleWindowKeyEvent(KeyboardEventArgs e)
+    {
+        if (_keyEventListeners == null)
+            return false;
+
+        var hasListener = _keyEventListeners.TryGetValue(e.Type, out var listener);
+        if (!hasListener)
+            return false;
+
+        var result = await listener!.Invoke(e);
+        return result;
+    }
+
+    [JSInvokable]
+    public async Task<bool> HandleWindowClipboardEvent(ClipboardEventArgs e)
+    {
+        if (_clipboardEventListeners == null)
+            return false;
+
+        var hasListener = _clipboardEventListeners.TryGetValue(e.Type, out var listener);
+        if (!hasListener)
+            return false;
+
+        var result = await listener!.Invoke(e);
+        return result;
+    }
+
 
     public async Task DisposeAsync()
     {
         try
         {
-            foreach (var fn in _fnStore)
-            {
-                await _js.InvokeAsync<Task>("removeBlazorWindowEvent", fn.Item1, fn.Item2);
-            }
+            await _windowEventObj.InvokeVoidAsync("dispose");
+            await _windowEventObj.DisposeAsync();
+            _dotNetHelper?.Dispose();
         }
         catch (Exception e)
         {
             Console.WriteLine(e.Message);
         }
-
-        _dotNetHelper?.Dispose();
     }
 
     public async void Dispose()
     {
         await DisposeAsync();
     }
+}
+
+internal class WindowEventOptions
+{
+    public string MouseDownCallbackName { get; set; }
+    public string MouseUpCallbackName { get; set; }
+    public string MouseMoveCallbackName { get; set; }
+    public string KeyDownCallbackName { get; set; }
+    public string PasteCallbackName { get; set; }
 }

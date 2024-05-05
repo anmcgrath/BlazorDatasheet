@@ -7,11 +7,13 @@
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Events.Layout
 @using BlazorDatasheet.Core.Interfaces
+@using BlazorDatasheet.Core.Layout
 @using BlazorDatasheet.DataStructures.Intervals
 @using BlazorDatasheet.DataStructures.Util
 @using BlazorDatasheet.Events
 @using BlazorDatasheet.Formula.Core.Interpreter.References
 @inject IJSRuntime JS;
+@inject IWindowEventService _windowEventService;
 @implements IDisposable
 
 
@@ -79,28 +81,19 @@
 
     private Sheet? _sheet;
 
-    [Parameter, EditorRequired]
-    public Sheet? Sheet { get; set; }
+    [Parameter, EditorRequired] public Sheet? Sheet { get; set; }
 
-    [Parameter]
-    public CellLayoutProvider CellLayoutProvider { get; set; }
+    [Parameter] public CellLayoutProvider CellLayoutProvider { get; set; }
 
-    [Parameter]
-    public EventCallback<ColumnMouseEventArgs> OnMouseUp { get; set; }
+    [Parameter] public EventCallback<ColumnMouseEventArgs> OnMouseUp { get; set; }
 
-    [Parameter]
-    public EventCallback<ColumnMouseEventArgs> OnMouseOver { get; set; }
+    [Parameter] public EventCallback<ColumnMouseEventArgs> OnMouseOver { get; set; }
 
-    [Parameter]
-    public EventCallback<ColumnMouseEventArgs> OnMouseDown { get; set; }
+    [Parameter] public EventCallback<ColumnMouseEventArgs> OnMouseDown { get; set; }
 
-    [Parameter]
-    public int NVisibleCols { get; set; }
+    [Parameter] public int NVisibleCols { get; set; }
 
-    [Parameter]
-    public int VisibleColStart { get; set; }
-
-    private IWindowEventService _windowEventService;
+    [Parameter] public int VisibleColStart { get; set; }
 
     private double MouseX { get; set; }
     private double MouseXStart { get; set; }
@@ -118,27 +111,28 @@
             if (_sheet != null)
             {
                 _sheet.Selection.SelectingChanged -= OnSelectingChanged;
-                _sheet.Selection.SelectionChanged -= SelectionOnSelectionChanged;;
+                _sheet.Selection.SelectionChanged -= SelectionOnSelectionChanged;
+                ;
             }
+
             _sheet = Sheet;
             if (_sheet == null)
                 return;
-            
-            _sheet.Selection.SelectingChanged += OnSelectingChanged;                
-            _sheet.Selection.SelectionChanged += SelectionOnSelectionChanged;;
 
+            _sheet.Selection.SelectingChanged += OnSelectingChanged;
+            _sheet.Selection.SelectionChanged += SelectionOnSelectionChanged;
+            ;
         }
+
         base.OnParametersSet();
     }
-    
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            _windowEventService = new WindowEventService(JS);
-            await _windowEventService.Init();
-            _windowEventService.OnMouseUp += WindowEventServiceOnOnMouseUp;
-            _windowEventService.OnMouseMove += WindowHandleMouseMove;
+            await _windowEventService.RegisterMouseEvent("mouseup", WindowEventServiceOnOnMouseUp);
+            await _windowEventService.RegisterMouseEvent("mousemove", WindowHandleMouseMove);
         }
     }
 
@@ -152,6 +146,7 @@
             StateHasChanged();
             return Task.FromResult(true);
         }
+
         return Task.FromResult(false);
     }
 
@@ -178,7 +173,6 @@
 
     public void Dispose()
     {
-        _windowEventService?.Dispose();
     }
 
     private bool IsActive(int col)

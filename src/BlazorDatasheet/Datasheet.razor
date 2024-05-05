@@ -1,6 +1,7 @@
 @using System.Text.Encodings.Web
 @using Microsoft.JSInterop;
 @inject IJSRuntime JS
+@inject IWindowEventService _windowEventService;
 @using BlazorDatasheet.Render;
 @implements IDisposable;
 @using Microsoft.AspNetCore.Components.Web.Virtualization;
@@ -9,9 +10,13 @@
 @using System.Text
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.DataStructures.Util
+@using BlazorDatasheet.Services
 @using BlazorDatasheet.Util
 @using Microsoft.Extensions.Primitives
+
+
 <div
+    @ref="_innerSheet"
     style="height:@(_cellLayoutProvider.TotalHeight)px; width: @(_cellLayoutProvider.TotalWidth)px;"
     class="@GetContainerClassString()"
     theme="@Theme"
@@ -71,7 +76,51 @@
 
                     <div id="filler-left-1" @ref="_fillerLeft1" style="float:right; min-width: @(Viewport.Left)px; height: @(RenderedInnerSheetHeight)px;"></div>
 
-                    <div @ref="_innerSheet" style="width:@(RenderedInnerSheetWidth)px;height: @(RenderedInnerSheetHeight)px;display: block;">
+                    <div
+                        style="width:@(RenderedInnerSheetWidth)px;height: @(RenderedInnerSheetHeight)px;display: block;">
+
+                        <!-- Merged cells -->
+                        @if (Sheet.Cells.AnyMerges() && this.Viewport is not null)
+                        {
+                            var mergesInView = Sheet.Cells.GetMerges(this.Viewport.VisibleRegion);
+                            @foreach (var merge in mergesInView)
+                            {
+                                var constrainedMerge = merge.GetIntersection(_sheetLocal.Region);
+                                if (constrainedMerge == null)
+                                    continue;
+
+                                var row = constrainedMerge.Top;
+                                var col = constrainedMerge.Left;
+
+                                var cell = _visualSheet.GetVisualCell(row, col);
+                                var cellFormatString = cell.FormatStyleString;
+
+                                var k = row + "," + col;
+
+                                <div
+                                    style="@GetAbsoluteCellPositionStyles(row, col, constrainedMerge.Height, constrainedMerge.Width);"
+                                    class="sheet-cell"
+                                    data-row="@row"
+                                    data-col="@col"
+                                    @key="k">
+                                    <CascadingValue Value="Sheet" IsFixed="true">
+                                        <CellRenderer
+                                            IconColor="@cell.Format?.IconColor"
+                                            CellFormatStyleString="@cellFormatString"
+                                            IsDirty="SheetIsDirty || DirtyCells.Contains(new CellPosition(row, col))">
+                                            <ItemTemplate>
+                                                <DynamicComponent
+                                                    Type="@GetCellRendererType(cell.CellType)"
+                                                    Parameters="@getCellRendererParameters(Sheet, cell)">
+                                                </DynamicComponent>
+                                            </ItemTemplate>
+                                        </CellRenderer>
+                                    </CascadingValue>
+                                </div>
+                            }
+                        }
+
+
                         @for (int rowIndex = Viewport.VisibleRegion.Top; rowIndex <= Viewport.VisibleRegion.Bottom; rowIndex++)
                         {
                             var row = rowIndex;
@@ -81,13 +130,13 @@
                                 {
                                     var col = j;
                                     var cell = _visualSheet.GetVisualCell(row, col);
+                                    var cellValue = cell?.Value?.ToString() ?? "";
                                     var colWidth = @cell.Width;
+                                    var k = $"{row},{col}";
                                     <div
-                                        @onpointerup="e => HandleCellMouseUp(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
-                                        @ondblclick="e => HandleCellDoubleClick(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
-                                        @onpointerenter="e => HandleCellMouseOver(row, col)"
-                                        @onpointerdown="e => HandleCellMouseDown(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
-                                        @key="col"
+                                        @key="k"
+                                        data-row="@row"
+                                        data-col="@col"
                                         style="
                                             width:@(colWidth)px;
                                             max-width:@(colWidth)px;
@@ -116,49 +165,6 @@
 
                     <div id="filler-right" @ref="_fillerRight" style="float:left;min-width: @(Viewport.DistanceRight)px; height:@(RenderedInnerSheetHeight)px;"></div>
 
-                    <!-- Merged cells -->
-                    @if (Sheet.Cells.AnyMerges() && this.Viewport is not null)
-                    {
-                        var mergesInView = Sheet.Cells.GetMerges(this.Viewport.VisibleRegion);
-                        @foreach (var merge in mergesInView)
-                        {
-                            var constrainedMerge = merge.GetIntersection(_sheetLocal.Region);
-                            if (constrainedMerge == null)
-                                continue;
-
-                            var row = constrainedMerge.Top;
-                            var col = constrainedMerge.Left;
-
-                            var cell = _visualSheet.GetVisualCell(row, col);
-                            var cellFormatString = cell.FormatStyleString;
-                            
-                            var k = row + "," + col;
-
-                            <div id="merge"
-                                 style="@GetAbsoluteCellPositionStyles(row, col, constrainedMerge.Height, constrainedMerge.Width)"
-                                 class="sheet-cell"
-                                 @key="k"
-                                 @onmouseup="e => HandleCellMouseUp(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
-                                 @ondblclick="e => HandleCellDoubleClick(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)"
-                                 @onmouseover="e => HandleCellMouseOver(row, col)"
-                                 @onmousedown="e => HandleCellMouseDown(row, col, e.MetaKey, e.CtrlKey, e.ShiftKey)">
-                                <CascadingValue Value="Sheet" IsFixed="true">
-                                    <CellRenderer
-                                        IconColor="@cell.Format?.IconColor"
-                                        CellFormatStyleString="@cellFormatString"
-                                        IsDirty="SheetIsDirty || DirtyCells.Contains(new CellPosition(row, col))">
-                                        <ItemTemplate>
-                                            <DynamicComponent
-                                                Type="@GetCellRendererType(cell.CellType)"
-                                                Parameters="@getCellRendererParameters(Sheet, cell)">
-                                            </DynamicComponent>
-                                        </ItemTemplate>
-                                    </CellRenderer>
-                                </CascadingValue>
-                            </div>
-                        }
-                    }
-
                     <EditorOverlayRenderer
                         @ref="_editorManager"
                         Sheet="Sheet"
@@ -185,6 +191,7 @@
                      z-index: 0;">
 
         <SelectionRenderer
+            InputService="_sheetPointerInputService"
             SelectionExpanded="HandleSelectionExpanded"
             Sheet="Sheet"
             CellLayoutProvider="_cellLayoutProvider"/>

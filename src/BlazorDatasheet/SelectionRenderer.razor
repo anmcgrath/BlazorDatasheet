@@ -4,6 +4,7 @@
 @using System.ComponentModel
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Events.Input
+@using BlazorDatasheet.Core.Layout
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Events
 @using BlazorDatasheet.Services
@@ -104,7 +105,9 @@
 
 @code {
 
-    [Parameter, EditorRequired] public CellLayoutProvider CellLayoutProvider { get; set; }
+    [Parameter, EditorRequired] public CellLayoutProvider CellLayoutProvider { get; set; } = null!;
+
+    [Parameter, EditorRequired] public SheetPointerInputService? InputService { get; set; }
 
     private Sheet? _sheet;
 
@@ -119,8 +122,11 @@
     private double _dragStartX;
     private double _dragStartY;
 
+    private double _pointerPositionX;
+    private double _pointerPositionY;
+
     private string _bgStyle = "background:var(--selection-bg-color);";
-    private IWindowEventService _windowEventService = null!;
+    private SheetPointerInputService _inputService = null!;
 
     private IRegion? BoundedSelectingRegion => Sheet?.Selection.SelectingRegion?.GetIntersection(Sheet?.Region);
 
@@ -128,6 +134,7 @@
     private double GetTop(IRegion region) => CellLayoutProvider.ComputeTopPosition(region);
     private double GetWidth(IRegion region) => CellLayoutProvider.ComputeWidth(region);
     private double GetHeight(IRegion region) => CellLayoutProvider.ComputeHeight(region);
+
 
     protected override void OnParametersSet()
     {
@@ -147,16 +154,13 @@
             _sheet.Selection.SelectingChanged += OnSelectingChanged;
             _sheet.Editor.EditBegin += (sender, args) => StateHasChanged();
         }
-    }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
+        if (InputService != null)
         {
-            _windowEventService = new WindowEventService(JS);
-            await _windowEventService.Init();
-            _windowEventService.OnMouseUp += WindowEventServiceOnOnMouseUp;
-            _windowEventService.OnMouseMove += WindowEventServiceOnMouseMove;
+            InputService.PointerMove -= PointerMove;
+            InputService.PointerMove += PointerMove;
+            InputService.PointerUp -= PointerMouseUp;
+            InputService.PointerUp += PointerMouseUp;
         }
     }
 
@@ -188,7 +192,7 @@
         sb.Append($"left:{x - w / 2}px; top:{y - w / 2}px;");
         sb.Append($"width:{w}px;height:{h}px;");
         sb.Append("background:var(--selection-border-color);");
-        sb.Append("border:1px solid white;");
+        sb.Append("border:1px solid var(--sheet-bg-color);");
         return sb.ToString();
     }
 
@@ -209,18 +213,20 @@
 
         _isDragging = true;
         _dragStartPosition = Sheet.Selection.ActiveRegion.TopLeft;
-        var position = await Sheet.InputService.GetInputPositionAsync();
-        _dragStartX = position.X;
-        _dragStartY = position.Y;
+
+        _dragStartX = _pointerPositionX;
+        _dragStartY = _pointerPositionY;
     }
 
-    private async Task<bool> WindowEventServiceOnMouseMove(MouseEventArgs arg)
+    private void PointerMove(object? sender, SheetPointerEventArgs e)
     {
+        _pointerPositionX = e.SheetX;
+        _pointerPositionY = e.SheetY;
+        
         if (_isDragging)
         {
-            var position = await _sheet!.InputService.GetInputPositionAsync();
-            var x = position.X;
-            var y = position.Y;
+            var x = e.SheetX;
+            var y = e.SheetY;
             var dx = Math.Abs(x - _dragStartX);
             var dy = Math.Abs(y - _dragStartY);
 
@@ -243,8 +249,6 @@
 
             StateHasChanged();
         }
-
-        return true;
     }
 
     private CellPosition GetCurrentDragEndPosition(Direction direction, double x, double y)
@@ -267,7 +271,7 @@
         }
     }
 
-    private async Task<bool> WindowEventServiceOnOnMouseUp(MouseEventArgs arg)
+    private async void PointerMouseUp(object? sender, SheetPointerEventArgs? arg)
     {
         if (_isDragging && _dragPreviewRegion != null && _sheet?.Selection.ActiveRegion != null)
         {
@@ -276,13 +280,12 @@
             _dragPreviewRegion = null;
             this.StateHasChanged();
         }
-
-        return true;
     }
 
     public void Dispose()
     {
-        _windowEventService?.Dispose();
+        if(InputService != null)
+            InputService.PointerMove -= PointerMove;
     }
 
 }
