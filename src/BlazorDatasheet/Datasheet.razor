@@ -191,9 +191,13 @@
                      z-index: 0;">
 
         <SelectionRenderer
-            InputService="_sheetPointerInputService"
-            SelectionExpanded="HandleSelectionExpanded"
             Sheet="Sheet"
             CellLayoutProvider="_cellLayoutProvider"/>
+
+        <AutofillRenderer
+            Sheet="Sheet"
+            InputService="_sheetPointerInputService"
+            CellLayoutProvider="_cellLayoutProvider"
+            SelectionExpanded="HandleSelectionExpanded"/>
     </div>
 </div>
