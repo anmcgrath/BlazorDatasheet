@@ -34,14 +34,19 @@
 }
 
 @code {
-    [Parameter, EditorRequired] public Sheet? Sheet { get; set; }
 
-    [Parameter, EditorRequired] public CellLayoutProvider CellLayoutProvider { get; set; } = null!;
+    [Parameter, EditorRequired]
+    public Sheet? Sheet { get; set; }
 
-    [Parameter, EditorRequired] public SheetPointerInputService? InputService { get; set; }
+    [Parameter, EditorRequired]
+    public CellLayoutProvider CellLayoutProvider { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public SheetPointerInputService? InputService { get; set; }
 
 
-    [Parameter] public EventCallback<SelectionExpandedEventArgs> SelectionExpanded { get; set; }
+    [Parameter]
+    public EventCallback<SelectionExpandedEventArgs> SelectionExpanded { get; set; }
 
     private bool _isDragging = false;
 
@@ -101,75 +106,87 @@
         var dx = e.PageX - _dragStartDocumentPosition.X;
         var dy = e.PageY - _dragStartDocumentPosition.Y;
 
-        Console.WriteLine("HandleWindowMouseMove " + e.PageY);
+        if (Math.Abs(dx) < 5 && Math.Abs(dy) < 5)
+            return true;
 
-        _dragPreviewRegion = CalculateDragPreviewRegion(dx, dy);
+        var selRect = CellLayoutProvider.ComputeRect(Sheet.Selection.ActiveRegion);
+        var sheetX = selRect.X + selRect.Width + dx;
+        var sheetY = selRect.Y + selRect.Height + dy;
+        var cellAtMouse = CellLayoutProvider.ComputeCell(sheetX, sheetY);
+
+        if (Sheet.Selection.ActiveRegion.Contains(cellAtMouse))
+            _dragPreviewRegion = CalculateContractRegion(dx, dy, cellAtMouse);
+        else
+            _dragPreviewRegion = CalculateExpandRegion(sheetX, sheetY, cellAtMouse);
+
         this.StateHasChanged();
 
         return true;
     }
 
-    private IRegion? CalculateDragPreviewRegion(double dx, double dy)
+    private IRegion? CalculateContractRegion(double dx, double dy, CellPosition cellMousePosition)
     {
-        if (!_isDragging || Sheet.Selection.ActiveRegion == null)
-            return null;
-
-        if (dx == 0 || dy == 0)
-            return null;
-
-        var selRect = CellLayoutProvider.ComputeRect(Sheet.Selection.ActiveRegion);
-
-        var sheetX = selRect.X + selRect.Width + dx;
-        var sheetY = selRect.Y + selRect.Height + dy;
-
-        var cellAtMouse = CellLayoutProvider.ComputeCell(sheetX, sheetY);
-
-        var cellRect = CellLayoutProvider.ComputeRect(cellAtMouse);
-        var dirMoved = GetDirection(dx, dy);
-        var passesMidway = PassesMidway(cellRect, new Point2d(sheetX, sheetY), dirMoved);
-
-        Console.WriteLine(cellAtMouse);
-        Console.WriteLine(passesMidway);
-
-        int colTo, rowTo;
-
-        if (Math.Abs(dx) > Math.Abs(dy))
-        {
-            var dxDir = (int)(dx / Math.Abs(dx));
-            colTo = cellAtMouse.col;
-            rowTo = Sheet.Selection.ActiveRegion.Bottom;
-            if (!passesMidway)
-                colTo -= dxDir;
-        }
-        else
-        {
-            var dyDir = (int)(dy / Math.Abs(dy));
-            rowTo = cellAtMouse.row;
-            colTo = Sheet.Selection.ActiveRegion.Right;
-            if (!passesMidway)
-                rowTo -= dyDir;
-        }
-
-        return Sheet.Selection.ActiveRegion.GetBoundingRegion(new Region(rowTo, colTo));
+        var left = Sheet.Selection.ActiveRegion.Left;
+        var top = Sheet.Selection.ActiveRegion.Top;
+        var axis = Math.Abs(dx) >= Math.Abs(dy) ? Axis.Col : Axis.Row;
+        var right = axis == Axis.Col ? cellMousePosition.col : Sheet.Selection.ActiveRegion.Right;
+        var bottom = axis == Axis.Row ? cellMousePosition.row : Sheet.Selection.ActiveRegion.Bottom;
+        return new Region(top, bottom, left, right);
     }
 
-    private bool PassesMidway(Rect rect, Point2d pt, Direction direction)
+    private IRegion? CalculateExpandRegion(double sheetX, double sheetY, CellPosition cellMousePosition)
     {
-        switch (direction)
-        {
-            case Direction.None:
-                return false;
-            case Direction.Left:
-                return pt.X < rect.X + rect.Width / 2;
-            case Direction.Right:
-                return pt.X > rect.X + rect.Width / 2;
-            case Direction.Down:
-                return pt.Y > rect.Y + rect.Height / 2;
-            case Direction.Up:
-                return pt.Y < rect.Y + rect.Height / 2;
-        }
+        var selRect = CellLayoutProvider.ComputeRect(Sheet.Selection.ActiveRegion);
+        var axis = GetExpansionAxis(sheetX, sheetY, selRect);
 
-        return false;
+        var expandTo = axis == Axis.Col ?
+            new Region(Sheet.Selection.ActiveRegion.Bottom, cellMousePosition.col) :
+            new Region(cellMousePosition.row, Sheet.Selection.ActiveRegion.Left);
+
+        var expandedRegion = Sheet.Selection.ActiveRegion.GetBoundingRegion(expandTo);
+        return expandedRegion;
+    }
+
+    private Axis GetExpansionAxis(double sheetX, double sheetY, Rect selectionRect)
+    {
+        var containsX = sheetX >= selectionRect.X && sheetX <= selectionRect.X + selectionRect.Width;
+        var containsY = sheetY >= selectionRect.Y && sheetY <= selectionRect.Y + selectionRect.Height;
+
+        if (containsY && !containsX)
+            return Axis.Col;
+
+        if (containsX && !containsY)
+            return Axis.Row;
+
+        var p = new Point2d(sheetX, sheetY);
+
+        var closestCorner = GetCorners(selectionRect)
+            .Select<Point2d, (Point2d p, double dist)>(x => ((x,GetDistSq(x, p))))
+            .MinBy(x => x.dist);
+
+        var dx = sheetX - closestCorner.p.X;
+        var dy = sheetY - closestCorner.p.Y;
+
+        if (Math.Abs(dx) >= Math.Abs(dy))
+            return Axis.Col;
+        else
+            return Axis.Row;
+    }
+
+    private double GetDistSq(Point2d p1, Point2d p2)
+    {
+        return Math.Pow(p1.X - p2.X, 2) + Math.Pow(p1.Y - p2.Y, 2);
+    }
+
+    private List<Point2d> GetCorners(Rect rect)
+    {
+        return new List<Point2d>()
+        {
+            new Point2d(rect.X, rect.Y),
+            new Point2d(rect.X + rect.Width, rect.Y),
+            new Point2d(rect.X + rect.Width, rect.Y + rect.Height),
+            new Point2d(rect.X, rect.Y + rect.Height),
+        };
     }
 
     private Direction GetDirection(double dx, double dy)
@@ -216,8 +233,8 @@
 
     private void DraggerMouseUp(PointerEventArgs obj)
     {
-        // if the user mouses up on the dragger (which doesn't move)
-        // then we should just cancel out of the drag
+    // if the user mouses up on the dragger (which doesn't move)
+    // then we should just cancel out of the drag
         _isDragging = false;
         _dragPreviewRegion = null;
         this.StateHasChanged();
