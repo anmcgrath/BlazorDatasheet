@@ -17,7 +17,7 @@ public partial class CellStore
     public CellStore(Sheet sheet)
     {
         _sheet = sheet;
-        _dataStore = new SparseMatrixStore2<CellValue>(_defaultCellValue);
+        _dataStore = new SparseMatrixStoreByRows<CellValue>(_defaultCellValue);
     }
 
     /// <summary>

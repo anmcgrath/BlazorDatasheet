@@ -11,7 +11,7 @@ public partial class CellStore
     /// <summary>
     /// Cell FORMULA
     /// </summary>
-    private readonly IMatrixDataStore<CellFormula?> _formulaStore = new SparseMatrixStore<CellFormula?>();
+    private readonly IMatrixDataStore<CellFormula?> _formulaStore = new SparseMatrixStoreByRows<CellFormula?>();
 
     /// <summary>
     /// Set the formula string for a row and col, and calculate the sheet.
@@ -72,7 +72,7 @@ public partial class CellStore
 
         foreach (var formula in formulaToCopy)
         {
-            if(formula.data == null)
+            if (formula.data == null)
                 continue;
             var clonedFormula = formula.data.Clone();
             clonedFormula.ShiftReferences(offset.row, offset.col);

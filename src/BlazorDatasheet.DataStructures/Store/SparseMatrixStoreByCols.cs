@@ -3,7 +3,7 @@ using BlazorDatasheet.DataStructures.Search;
 
 namespace BlazorDatasheet.DataStructures.Store;
 
-public class SparseMatrixStore<T> : IMatrixDataStore<T>
+public class SparseMatrixStoreByCols<T> : IMatrixDataStore<T>
 {
     private readonly T _defaultValueIfEmpty;
 
@@ -12,7 +12,7 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
     /// </summary>
     private readonly Dictionary<int, SColumn<T>> _columns = new();
 
-    public SparseMatrixStore(T defaultValueIfEmpty = default(T))
+    public SparseMatrixStoreByCols(T defaultValueIfEmpty = default(T))
     {
         _defaultValueIfEmpty = defaultValueIfEmpty;
     }

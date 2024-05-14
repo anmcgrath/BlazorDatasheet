@@ -8,9 +8,9 @@ namespace BlazorDatasheet.Test.Store;
 
 public class DataStoreByColsTests
 {
-    private SparseMatrixStore<T> GetStore<T>()
+    private SparseMatrixStoreByCols<T> GetStore<T>()
     {
-        return new SparseMatrixStore<T>();
+        return new SparseMatrixStoreByCols<T>();
     }
 
     [Test]
