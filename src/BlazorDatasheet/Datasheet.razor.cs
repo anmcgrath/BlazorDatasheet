@@ -326,7 +326,7 @@ public partial class Datasheet : IHandleEvent
                 OverflowX,
                 OverflowY);
 
-        Viewport.Update(newViewport);
+        Viewport.SetFromViewPort(newViewport);
         _visualSheet.UpdateViewport(_sheetLocal!, newViewport);
     }
 

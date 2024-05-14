@@ -32,7 +32,7 @@ public class Viewport
     /// </summary>
     public double DistanceBottom { get; set; }
 
-    public void Update(Viewport newViewport)
+    public void SetFromViewPort(Viewport newViewport)
     {
         VisibleRegion = newViewport.VisibleRegion;
         Left = newViewport.Left;
