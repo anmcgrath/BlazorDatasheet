@@ -105,21 +105,16 @@ public partial class Datasheet : IHandleEvent
     private bool IsMouseInsideSheet { get; set; }
 
     /// <summary>
-    /// The Viewport
-    /// </summary>
-    public readonly Viewport Viewport = new();
-
-    /// <summary>
     /// The total height of the VISIBLE sheet. This changes when the user scrolls or the parent scroll element is resized.
     /// </summary>
     public double RenderedInnerSheetHeight => _cellLayoutProvider
-        .ComputeHeightBetween(Viewport.VisibleRegion.Top, Viewport.VisibleRegion.Bottom);
+        .ComputeHeightBetween(_visualSheet.Viewport.VisibleRegion.Top, _visualSheet.Viewport.VisibleRegion.Bottom);
 
     /// <summary>
     /// The total width of the VISIBLE sheet. This changes when the user scrolls or the parent scroll element is resized.
     /// </summary>
     public double RenderedInnerSheetWidth => _cellLayoutProvider
-        .ComputeWidthBetween(Viewport.VisibleRegion.Left, Viewport.VisibleRegion.Right);
+        .ComputeWidthBetween(_visualSheet.Viewport.VisibleRegion.Left, _visualSheet.Viewport.VisibleRegion.Right);
 
     /// <summary>
     /// Store any cells that are dirty here
@@ -325,9 +320,8 @@ public partial class Datasheet : IHandleEvent
                 e.ContainerHeight,
                 OverflowX,
                 OverflowY);
-
-        Viewport.SetFromViewPort(newViewport);
-        _visualSheet.UpdateViewport(_sheetLocal!, newViewport);
+        
+        _visualSheet.UpdateViewport(newViewport);
     }
 
     private string GetAbsoluteCellPositionStyles(int row, int col, int rowSpan, int colSpan)
