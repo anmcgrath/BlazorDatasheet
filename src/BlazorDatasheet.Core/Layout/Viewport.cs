@@ -32,6 +32,16 @@ public class Viewport
     /// </summary>
     public double DistanceBottom { get; set; }
 
+    /// <summary>
+    /// The width (in px) of the rendered area - includes overflow
+    /// </summary>
+    public double VisibleWidth { get; set; }
+
+    /// <summary>
+    /// The height (in px) of the rendered area - includes overflow
+    /// </summary>
+    public double VisibleHeight { get; set; }
+
     public void SetFromViewPort(Viewport newViewport)
     {
         VisibleRegion = newViewport.VisibleRegion;
@@ -39,5 +49,7 @@ public class Viewport
         Top = newViewport.Top;
         DistanceRight = newViewport.DistanceRight;
         DistanceBottom = newViewport.DistanceBottom;
+        VisibleWidth = newViewport.VisibleWidth;
+        VisibleHeight = newViewport.VisibleHeight;
     }
 }

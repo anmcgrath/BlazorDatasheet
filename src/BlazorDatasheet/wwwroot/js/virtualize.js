@@ -15,28 +15,26 @@
         return this.findScrollableAncestor(parent)
     }
 
-    getScrollOffsetSizes(el, parent) {
+    getViewportInfo(wholeSheetEl) {
+        let parent = this.findScrollableAncestor(wholeSheetEl) || document.documentElement
         // how much of the element has disappeared above the parent's scroll area?
         // if the parent is an element, it is equal to scroll height
         // otherwise if the parent is the document, it is equal to the top of the document - top of element.
-        let docRect = document.documentElement.getBoundingClientRect()
-        let elRect = el.getBoundingClientRect()
+        let wholeSheetRect = wholeSheetEl.getBoundingClientRect()
 
-        let scrollTop = parent === document ? Math.max(0, -elRect.top) : parent.scrollTop
-        let scrollLeft = parent === document ? Math.max(0, -elRect.left) : parent.scrollLeft
+        let scrollTop = parent === document.documentElement ? Math.max(0, -wholeSheetRect.top) : parent.scrollTop
+        let scrollLeft = parent === document.documentElement ? Math.max(0, -wholeSheetRect.left) : parent.scrollLeft
 
         // if the parent is the document, the client height is the visible height of the element in the window
         // otherwise it is the height of the parent
-        let clientHeight = parent === document ? window.innerHeight : parent.clientHeight
-        let clientWidth = parent === document ? window.innerWidth : parent.clientWidth
+        let clientHeight = parent === document.documentElement ? window.innerHeight : parent.clientHeight
+        let clientWidth = parent === document.documentElement ? window.innerWidth : parent.clientWidth
 
         // scroll height/width is always the height/width of the element
-        let scrollHeight = elRect.height
-        let scrollWidth = elRect.width
-
+        let scrollHeight = wholeSheetRect.height
+        let scrollWidth = wholeSheetRect.width
+        
         return {
-            scrollWidth: scrollWidth,
-            scrollHeight: scrollHeight,
             scrollLeft: scrollLeft,
             scrollTop: scrollTop,
             containerWidth: clientWidth,
@@ -63,8 +61,9 @@
     topHandlerMutMap = {}
     bottomHandlerMutMap = {}
     interactionMap = {}
+    resizeMap = {}
 
-    addVirtualisationHandlers(dotNetHelper, el, dotnetHandlerName, fillerLeft, fillerTop, fillerRight, fillerBottom) {
+    addVirtualisationHandlers(dotNetHelper, el, dotnetScrollHandlerName, fillerLeft, fillerTop, fillerRight, fillerBottom) {
 
         // return initial scroll event to render the sheet
         let parent = this.findScrollableAncestor(el)
@@ -75,8 +74,10 @@
         // fixes scroll jankiness with chrome and firefox.
         (parent ?? document.documentElement).style.overflowAnchor = 'none'
 
-        let offset = this.getScrollOffsetSizes(el, parent || document.documentElement)
-        dotNetHelper.invokeMethodAsync(dotnetHandlerName, offset);
+        let getViewPort = this.getViewportInfo.bind(this)
+
+        let offset = getViewPort(el)
+        dotNetHelper.invokeMethodAsync(dotnetScrollHandlerName, offset);
 
         let self = this
         let observer = new IntersectionObserver((entries, observer) => {
@@ -87,8 +88,8 @@
                     entries[i].target.getBoundingClientRect().height <= 0)
                     continue
 
-                let offset = self.getScrollOffsetSizes(el, parent || document.documentElement)
-                dotNetHelper.invokeMethodAsync(dotnetHandlerName, offset);
+                let offset = getViewPort(el)
+                dotNetHelper.invokeMethodAsync(dotnetScrollHandlerName, offset);
             }
 
         }, {root: parent, threshold: 0})
@@ -105,6 +106,21 @@
         this.leftHandlerMutMap[el] = this.createMutationObserver(fillerLeft, observer)
         this.rightHandlerMutMap[el] = this.createMutationObserver(fillerRight, observer)
 
+    }
+
+    /***
+     * @param {DOMRect} rect1
+     * @param {DOMRect} rect2
+     * @returns {DOMRect}
+     */
+    rectIntersection(rect1, rect2) {
+        let left = Math.max(rect1.left, rect2.left)
+        let right = Math.min(rect1.right, rect2.right)
+        if (right <= left)
+            return null
+        let top = Math.max(rect1.top, rect2.top)
+        let bottom = Math.min(rect1.bottom, rect2.bottom)
+        return new DOMRect(left, top, right - left, bottom - top)
     }
 
     dotNetHelperMap = {}
@@ -126,6 +142,8 @@
     sheetMousePositionListeners = {}
 }
 
-export function getVirtualizer() {
+export function
+
+getVirtualizer() {
     return new Virtualizer()
 }

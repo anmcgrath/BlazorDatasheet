@@ -15,6 +15,11 @@ public class VisualSheet
     private readonly Dictionary<CellPosition, VisualCell> _visualCache = new();
     private CellFormat _defaultFormat = new CellFormat();
     public Viewport Viewport { get; private set; } = new();
+    
+    /// <summary>
+    /// The "visible" bounds of the sheet, shown in the scroll container
+    /// </summary>
+    public Rect ContainerBounds { get; private set; }
 
     public event EventHandler<VisualSheetInvalidateArgs>? Invalidated;
 
@@ -49,9 +54,6 @@ public class VisualSheet
 
     public void UpdateViewport(Viewport newViewport)
     {
-        if (Viewport.VisibleRegion.Contains(newViewport.VisibleRegion))
-            return;
-
         var oldRegions = Viewport.VisibleRegion.Break(newViewport.VisibleRegion);
         var newRegions = newViewport.VisibleRegion.Break(Viewport.VisibleRegion);
 
