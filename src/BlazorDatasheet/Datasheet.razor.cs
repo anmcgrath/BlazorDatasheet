@@ -105,21 +105,16 @@ public partial class Datasheet : IHandleEvent
     private bool IsMouseInsideSheet { get; set; }
 
     /// <summary>
-    /// The Viewport
-    /// </summary>
-    public readonly Viewport Viewport = new();
-
-    /// <summary>
     /// The total height of the VISIBLE sheet. This changes when the user scrolls or the parent scroll element is resized.
     /// </summary>
     public double RenderedInnerSheetHeight => _cellLayoutProvider
-        .ComputeHeightBetween(Viewport.VisibleRegion.Top, Viewport.VisibleRegion.Bottom);
+        .ComputeHeightBetween(_visualSheet.Viewport.VisibleRegion.Top, _visualSheet.Viewport.VisibleRegion.Bottom);
 
     /// <summary>
     /// The total width of the VISIBLE sheet. This changes when the user scrolls or the parent scroll element is resized.
     /// </summary>
     public double RenderedInnerSheetWidth => _cellLayoutProvider
-        .ComputeWidthBetween(Viewport.VisibleRegion.Left, Viewport.VisibleRegion.Right);
+        .ComputeWidthBetween(_visualSheet.Viewport.VisibleRegion.Left, _visualSheet.Viewport.VisibleRegion.Right);
 
     /// <summary>
     /// Store any cells that are dirty here
@@ -210,7 +205,16 @@ public partial class Datasheet : IHandleEvent
         if (_sheetLocal != Sheet)
         {
             _sheetLocal = Sheet;
-            _sheetLocal?.SetDialogService(new SimpleDialogService(this.JS));
+
+            if (_sheetLocal == null)
+                return;
+
+            _sheetLocal.SetDialogService(new SimpleDialogService(this.JS));
+            _sheetLocal.Rows.RowInserted += async (sender, args) => await RefreshViewport();
+            _sheetLocal.Columns.ColumnInserted += async (sender, args) => await RefreshViewport();
+            _sheetLocal.Rows.RowRemoved += async (sender, args) => await RefreshViewport();
+            _sheetLocal.Columns.ColumnRemoved += async (sender, args) => await RefreshViewport();
+            
             _cellLayoutProvider = new CellLayoutProvider(_sheetLocal);
             _visualSheet = new VisualSheet(_sheetLocal);
             _visualSheet.Invalidated += (sender, args) =>
@@ -302,6 +306,7 @@ public partial class Datasheet : IHandleEvent
                 _fillerTop,
                 _fillerRight,
                 _fillerBottom);
+            
             await module.DisposeAsync();
         }
 
@@ -315,7 +320,7 @@ public partial class Datasheet : IHandleEvent
     /// <param name="e"></param>
     /// <returns></returns>
     [JSInvokable("HandleScroll")]
-    public void HandleScroll(ScrollEvent e)
+    public void HandleScroll(ViewportScrollInfo e)
     {
         var newViewport = _cellLayoutProvider
             .GetViewPort(
@@ -326,8 +331,26 @@ public partial class Datasheet : IHandleEvent
                 OverflowX,
                 OverflowY);
 
-        Viewport.Update(newViewport);
-        _visualSheet.UpdateViewport(_sheetLocal!, newViewport);
+        _visualSheet.UpdateViewport(newViewport);
+    }
+
+    private async Task RefreshViewport()
+    {
+        // Get the most up-to-date positioning of the visible sheet region in the
+        // scroll container, then update the viewport to include overflows
+        var vInfo =
+            await _virtualizer.InvokeAsync<ViewportScrollInfo>("getViewportInfo", _wholeSheetDiv);
+
+        var newViewport = _cellLayoutProvider
+            .GetViewPort(
+                vInfo.ScrollLeft,
+                vInfo.ScrollTop,
+                vInfo.ContainerWidth,
+                vInfo.ContainerHeight,
+                OverflowX,
+                OverflowY);
+
+        _visualSheet.UpdateViewport(newViewport);
     }
 
     private string GetAbsoluteCellPositionStyles(int row, int col, int rowSpan, int colSpan)
@@ -422,7 +445,7 @@ public partial class Datasheet : IHandleEvent
 
         if (row < 0 || col < 0 || row >= Sheet.NumRows || col >= Sheet.NumCols)
             return;
-        
+
         await BeginEdit(row, col, EditEntryMode.Mouse);
     }
 

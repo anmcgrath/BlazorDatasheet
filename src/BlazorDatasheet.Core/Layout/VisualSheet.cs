@@ -1,4 +1,5 @@
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.Core.Events.Visual;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -13,9 +14,14 @@ public class VisualSheet
     private readonly Sheet _sheet;
     private readonly Dictionary<CellPosition, VisualCell> _visualCache = new();
     private CellFormat _defaultFormat = new CellFormat();
-    private Viewport? _currentViewport = null;
+    public Viewport Viewport { get; private set; } = new();
+    
+    /// <summary>
+    /// The "visible" bounds of the sheet, shown in the scroll container
+    /// </summary>
+    public Rect ContainerBounds { get; private set; }
 
-    public event EventHandler<VisualSheetInvalidateArgs> Invalidated;
+    public event EventHandler<VisualSheetInvalidateArgs>? Invalidated;
 
     public VisualSheet(Sheet sheet)
     {
@@ -35,7 +41,7 @@ public class VisualSheet
         if (e.DirtyRegions != null)
         {
             InvalidateRegions(e.DirtyRegions);
-            var invalidPositions = e.DirtyRegions.Select(x => x.GetIntersection(_currentViewport.VisibleRegion))
+            var invalidPositions = e.DirtyRegions.Select(x => x.GetIntersection(Viewport.VisibleRegion))
                 .Where(x => x != null)
                 .SelectMany(x => _sheet.Range(x).Positions);
 
@@ -46,31 +52,19 @@ public class VisualSheet
         Invalidated?.Invoke(this, new VisualSheetInvalidateArgs(set));
     }
 
-    public void UpdateViewport(Sheet sheet, Viewport viewport)
+    public void UpdateViewport(Viewport newViewport)
     {
-        if (_currentViewport == null)
-        {
-            InvalidateRegion(viewport.VisibleRegion);
-            _currentViewport = viewport;
-            Invalidated?.Invoke(
-                this, new VisualSheetInvalidateArgs(_sheet.Range(viewport.VisibleRegion).Positions.ToHashSet()));
-        }
-        else
-        {
-            if (_currentViewport.VisibleRegion.Contains(viewport.VisibleRegion))
-                return;
+        var oldRegions = Viewport.VisibleRegion.Break(newViewport.VisibleRegion);
+        var newRegions = newViewport.VisibleRegion.Break(Viewport.VisibleRegion);
 
-            var oldRegions = _currentViewport.VisibleRegion.Break(viewport.VisibleRegion);
-            var newRegions = viewport.VisibleRegion.Break(_currentViewport.VisibleRegion);
+        Viewport = newViewport;
+        // Clear where we don't need to store anymore.
+        RemoveRegionsFromCache(oldRegions);
+        // Store Visual Cells from the new regions that we just encountered.
+        InvalidateRegions(newRegions);
 
-            _currentViewport = viewport;
-            // Clear where we don't need to store anymore.
-            RemoveRegionsFromCache(oldRegions);
-            // Store Visual Cells from the new regions that we just encountered.
-            InvalidateRegions(newRegions);
-            Invalidated?.Invoke(this,
-                new VisualSheetInvalidateArgs(newRegions.SelectMany(x => _sheet.Range(x).Positions).ToHashSet()));
-        }
+        Invalidated?.Invoke(this,
+            new VisualSheetInvalidateArgs(newRegions.SelectMany(x => _sheet.Range(x).Positions).ToHashSet()));
     }
 
     public void InvalidateRegion(IRegion region)
@@ -94,12 +88,12 @@ public class VisualSheet
 
     private void InvalidateRegions(IEnumerable<IRegion> regions)
     {
-        if (_currentViewport == null) // only happens when we are starting up
+        if (Viewport == null) // only happens when we are starting up
             InvalidateCells(regions.SelectMany(x => _sheet.Range(x).Positions));
         else
         {
             var regionsInViewport =
-                regions.Select(x => x.GetIntersection(_currentViewport.VisibleRegion))
+                regions.Select(x => x.GetIntersection(Viewport.VisibleRegion))
                     .Where(x => x != null);
 
             var cells = regionsInViewport.SelectMany(x => _sheet.Range(x).Positions);

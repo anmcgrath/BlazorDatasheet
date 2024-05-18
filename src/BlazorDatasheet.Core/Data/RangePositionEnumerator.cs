@@ -15,6 +15,9 @@ internal class RangePositionEnumerator : IEnumerable<CellPosition>
     public IEnumerator<CellPosition> GetEnumerator()
     {
         var fixedRegion = _range.Sheet.Region.GetIntersection(_range.Region);
+        if(fixedRegion == null)
+            yield break;
+        
         var row = fixedRegion.TopLeft.row;
         var col = fixedRegion.TopLeft.col;
         var w = fixedRegion.Width;

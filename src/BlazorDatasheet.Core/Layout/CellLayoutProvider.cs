@@ -183,6 +183,8 @@ public class CellLayoutProvider : IGridLayoutProvider
         var region = new Region(startRow, endRow, startCol, endCol);
         var leftPos = _sheet.Columns.GetLeft(startCol);
         var topPos = _sheet.Rows.GetTop(startRow);
+        var visibleWidth = ComputeWidthBetween(startCol, endCol);
+        var visibleHeight = ComputeHeightBetween(startRow, endRow);
         var distRight = ComputeWidthBetween(endCol, _sheet.NumCols - 1);
         var distBottom = ComputeHeightBetween(endRow, _sheet.NumRows - 1);
 
@@ -192,7 +194,9 @@ public class CellLayoutProvider : IGridLayoutProvider
             Left = leftPos,
             Top = topPos,
             DistanceBottom = distBottom,
-            DistanceRight = distRight
+            DistanceRight = distRight,
+            VisibleWidth = visibleWidth,
+            VisibleHeight = visibleHeight
         };
     }
 }
