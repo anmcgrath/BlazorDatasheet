@@ -16,7 +16,9 @@ public class SortRangeCommandTests
         var sheet = new Sheet(10, 10);
         for (int row = 0; row < sheet.NumRows; row++)
         {
+            // set first row to descending e.g 9, 8, 7, ...
             sheet.Cells[row, 0].Value = sheet.NumRows - row - 1;
+            // set second row to ascending e.g 0,1,2...
             sheet.Cells[row, 1].Value = row;
         }
 

@@ -32,24 +32,38 @@ public class SortRangeCommand : IUndoableCommand
         var rowData = new Span<RowData<CellValue>>(rowCollection.Rows);
         rowData.Sort(rowIndices, Comparison);
 
+        _sortedRegion = new Region(_region.Top, _region.Top + rowIndices.Length, _region.Left, _region.Right);
+        _sortedRegion = _sortedRegion.GetIntersection(sheet.Region);
+
+        if (_sortedRegion == null)
+            return true;
+
         sheet.BatchUpdates();
+
+        // clear any row data that has been shifted
+        for (int i = 0; i < rowData.Length; i++)
+        {
+            var row = rowData[i].Row;
+            var rowReg = new Region(row, row, _region.Left, _region.Right);
+            sheet.Cells.ClearCellsImpl(new[] { rowReg });
+        }
 
         for (int i = 0; i < rowData.Length; i++)
         {
             var newRowNo = _region.Top + i;
+            var oldRowNo = rowData[i].Row;
+
             for (int j = 0; j < rowData[i].ColumnIndices.Length; j++)
             {
                 var col = rowData[i].ColumnIndices[j];
                 var val = rowData[i].Values[j];
-                sheet.Cells.SetValue(newRowNo, col, val);
+                sheet.Cells.SetValueImpl(newRowNo, col, val);
             }
         }
 
         sheet.EndBatchUpdates();
 
         oldIndices = rowIndices.ToArray();
-        _sortedRegion = new Region(_region.Top, _region.Top + oldIndices.Length, _region.Left, _region.Right);
-        _sortedRegion = _sortedRegion.GetIntersection(sheet.Region);
 
         return true;
     }
@@ -59,17 +73,24 @@ public class SortRangeCommand : IUndoableCommand
         for (int i = 0; i < _sortOptions.Count; i++)
         {
             var sortOption = _sortOptions[i];
-            var xValue = x.GetColumnData(sortOption.ColumnIndex);
-            var yValue = y.GetColumnData(sortOption.ColumnIndex);
+            var xValue = x.GetColumnData(sortOption.ColumnIndex + _region.Left);
+            var yValue = y.GetColumnData(sortOption.ColumnIndex + _region.Left);
 
-            int comparison = 0;
-            if (xValue != null && yValue != null)
+            int comparison;
+
+            if(xValue == null && yValue == null)
+                comparison = 0;
+            else if (xValue != null && yValue != null)
                 comparison = xValue.CompareTo(yValue);
             else
-                comparison = xValue == null ? -1 : 1;
+                comparison = xValue == null ? 1 : -1;
 
-            if (comparison != 0)
-                return sortOption.Ascending ? comparison : -comparison;
+            if (comparison == 0)
+                return comparison;
+
+            comparison = sortOption.Ascending ? comparison : -comparison;
+            
+            return comparison;
         }
 
         return 0;
@@ -83,21 +104,17 @@ public class SortRangeCommand : IUndoableCommand
         var rowCollection = sheet.Cells.GetCellDataStore().GetRowData(_sortedRegion);
         sheet.BatchUpdates();
 
-        sheet.Cells.GetCellDataStore().Clear(new Region(
-            _sortedRegion.Top,
-            _sortedRegion.Top + oldIndices.Length,
-            _sortedRegion.Left,
-            _sortedRegion.Right));
+        sheet.Cells.ClearCellsImpl(new[] { _sortedRegion });
 
         var rowData = rowCollection.Rows;
         for (int i = 0; i < oldIndices.Length; i++)
         {
-            var newRowNo = oldIndices[i] + _region.Top;
+            var newRowNo = oldIndices[i];
             for (int j = 0; j < rowData[i].ColumnIndices.Length; j++)
             {
                 var col = rowData[i].ColumnIndices[j];
                 var val = rowData[i].Values[j];
-                sheet.Cells.SetValue(newRowNo, col, val);
+                sheet.Cells.SetValueImpl(newRowNo, col, val);
             }
         }
 
