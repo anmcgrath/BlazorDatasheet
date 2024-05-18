@@ -113,6 +113,14 @@ public interface IMatrixDataStore<T>
         GetNonEmptyPositions(region.Top, region.Bottom, region.Left, region.Right);
 
     /// <summary>
+    /// Returns the collection of non-empty rows in the region given.
+    /// Data in the rows is limited to within the region start and end positions
+    /// </summary>
+    /// <param name="region"></param>
+    /// <returns></returns>
+    RowDataCollection<T> GetNonEmptyRowData(IRegion region);
+
+    /// <summary>
     /// Copy the data in <paramref name="fromRegion"/> to the position <paramref name="toRegion"/>
     /// </summary>
     /// <param name="fromRegion"></param>

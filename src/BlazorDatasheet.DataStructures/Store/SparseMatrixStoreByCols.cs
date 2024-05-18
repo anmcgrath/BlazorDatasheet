@@ -276,6 +276,11 @@ public class SparseMatrixStoreByCols<T> : IMatrixDataStore<T>
         return GetNonEmptyPositions(region.Top, region.Bottom, region.Left, region.Right);
     }
 
+    public RowDataCollection<T> GetNonEmptyRowData(IRegion region)
+    {
+        throw new NotImplementedException();
+    }
+
     public MatrixRestoreData<T> Copy(IRegion fromRegion, IRegion toRegion)
     {
         var nonEmptyCopyData = this.GetNonEmptyData(fromRegion).ToList();

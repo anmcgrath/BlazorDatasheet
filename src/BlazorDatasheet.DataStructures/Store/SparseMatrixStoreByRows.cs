@@ -250,4 +250,23 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
 
         return store;
     }
+
+    public RowDataCollection<T> GetNonEmptyRowData(IRegion region)
+    {
+        var nonEmptyRows = _rows.GetNonEmptyDataBetween(region.Top, region.Bottom);
+        var rowIndices = new int[nonEmptyRows.Count];
+        var rowDataArray = new RowData<T>[nonEmptyRows.Count];
+        for (int i = 0; i < nonEmptyRows.Count; i++)
+        {
+            var row = nonEmptyRows[i];
+            rowIndices[i] = row.itemIndex;
+            var nonEmptyCols = row.data.GetNonEmptyDataBetween(region.Left, region.Right);
+            var colIndices = nonEmptyCols.Select(x => x.itemIndex).ToArray();
+            var colData = nonEmptyCols.Select(x => x.data).ToArray();
+            var rowData = new RowData<T>(colIndices, colData);
+            rowDataArray[i] = rowData;
+        }
+
+        return new RowDataCollection<T>(rowIndices, rowDataArray);
+    }
 }
