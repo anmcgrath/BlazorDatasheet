@@ -2,13 +2,15 @@
 
 public class RowData<T>
 {
-    private int[] ColumnIndices { get; set; }
-    private T[] Values { get; set; }
+    public int Row { get; private set; }
+    public int[] ColumnIndices { get; set; }
+    public T[] Values { get; set; }
 
-    public RowData(int[] columnIndices, T[] values)
+    public RowData(int row, int[] columnIndices, T[] values)
     {
         ColumnIndices = columnIndices;
         Values = values;
+        Row = row;
     }
 
     public T? GetColumnData(int columnIndex)

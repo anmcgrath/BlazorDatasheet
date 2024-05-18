@@ -281,6 +281,11 @@ public class SparseMatrixStoreByCols<T> : IMatrixDataStore<T>
         throw new NotImplementedException();
     }
 
+    public RowDataCollection<T> GetRowData(IRegion region)
+    {
+        throw new NotImplementedException();
+    }
+
     public MatrixRestoreData<T> Copy(IRegion fromRegion, IRegion toRegion)
     {
         var nonEmptyCopyData = this.GetNonEmptyData(fromRegion).ToList();

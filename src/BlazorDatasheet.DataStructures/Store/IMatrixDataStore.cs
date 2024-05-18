@@ -121,6 +121,14 @@ public interface IMatrixDataStore<T>
     RowDataCollection<T> GetNonEmptyRowData(IRegion region);
 
     /// <summary>
+    /// Returns the collection of rows in the region given.
+    /// Data in the rows is limited to within the region start and end positions
+    /// </summary>
+    /// <param name="region"></param>
+    /// <returns></returns>
+    RowDataCollection<T> GetRowData(IRegion region);
+
+    /// <summary>
     /// Copy the data in <paramref name="fromRegion"/> to the position <paramref name="toRegion"/>
     /// </summary>
     /// <param name="fromRegion"></param>

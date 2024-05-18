@@ -6,9 +6,9 @@ using BlazorDatasheet.DataStructures.Geometry;
 using FluentAssertions;
 using NUnit.Framework;
 
-namespace BlazorDatasheet.Test.SheetTests;
+namespace BlazorDatasheet.Test.Commands;
 
-public class RangeSortingTests
+public class SortRangeCommandTests
 {
     [Test]
     public void Sort_Range_Values_Only_Sorts()
@@ -16,7 +16,7 @@ public class RangeSortingTests
         var sheet = new Sheet(10, 10);
         for (int row = 0; row < sheet.NumRows; row++)
         {
-            sheet.Cells[row, 0].Value = sheet.NumRows - row;
+            sheet.Cells[row, 0].Value = sheet.NumRows - row - 1;
             sheet.Cells[row, 1].Value = row;
         }
 
@@ -32,13 +32,13 @@ public class RangeSortingTests
         for (int row = 0; row < sheet.NumRows; row++)
         {
             sheet.Cells[row, 0].Value.Should().Be(row);
-            sheet.Cells[row, 1].Value.Should().Be(sheet.NumRows - row);
+            sheet.Cells[row, 1].Value.Should().Be(sheet.NumRows - row - 1);
         }
 
         sortRangeCommand.Undo(sheet);
         for (int row = 0; row < sheet.NumRows; row++)
         {
-            sheet.Cells[row, 0].Value.Should().Be(sheet.NumRows - row);
+            sheet.Cells[row, 0].Value.Should().Be(sheet.NumRows - row - 1);
             sheet.Cells[row, 1].Value.Should().Be(row);
         }
     }

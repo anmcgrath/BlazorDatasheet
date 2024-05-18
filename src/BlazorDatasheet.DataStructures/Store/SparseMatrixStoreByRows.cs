@@ -263,10 +263,28 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
             var nonEmptyCols = row.data.GetNonEmptyDataBetween(region.Left, region.Right);
             var colIndices = nonEmptyCols.Select(x => x.itemIndex).ToArray();
             var colData = nonEmptyCols.Select(x => x.data).ToArray();
-            var rowData = new RowData<T>(colIndices, colData);
+            var rowData = new RowData<T>(rowIndices[i], colIndices, colData);
             rowDataArray[i] = rowData;
         }
 
         return new RowDataCollection<T>(rowIndices, rowDataArray);
+    }
+
+    public RowDataCollection<T> GetRowData(IRegion region)
+    {
+        var indices = new int[region.Height];
+        var rows = new RowData<T>[region.Height];
+
+        for (int i = 0; i < region.Height; i++)
+        {
+            var row = _rows.Get(i + region.Top);
+            var nonEmptyCols = row.GetNonEmptyDataBetween(region.Left, region.Right);
+            var colIndices = nonEmptyCols.Select(x => x.itemIndex).ToArray();
+            var colData = nonEmptyCols.Select(x => x.data).ToArray();
+            indices[i] = i + region.Top;
+            rows[i] = new RowData<T>(i + region.Top, colIndices, colData);
+        }
+
+        return new RowDataCollection<T>(indices, rows);
     }
 }
