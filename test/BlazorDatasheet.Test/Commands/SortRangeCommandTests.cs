@@ -79,22 +79,22 @@ public class SortRangeCommandTests
     public void Sort_Formula_Adjusts_References()
     {
         var sheet = new Sheet(10, 10);
-        sheet.Cells.SetFormula(0, 0, "=B1+3");
-        sheet.Cells.SetFormula(1, 0, "=B2+2");
-        sheet.Cells.SetFormula(2, 0, "=B3+1");
+        sheet.Cells.SetFormula(0, 0, "=B4+3");
+        sheet.Cells.SetFormula(1, 0, "=B6+2");
+        sheet.Cells.SetFormula(2, 0, "=B7+1");
 
         var cmd = new SortRangeCommand(new ColumnRegion(0), new ColumnSortOptions(0, true));
         cmd.Execute(sheet);
 
-        sheet.Cells.GetFormulaString(0, 0).Should().Be("=B3+1");
-        sheet.Cells.GetFormulaString(1, 0).Should().Be("=B2+2");
-        sheet.Cells.GetFormulaString(2, 0).Should().Be("=B1+3");
+        sheet.Cells.GetFormulaString(0, 0).Should().Be("=B5+1");
+        sheet.Cells.GetFormulaString(1, 0).Should().Be("=B6+2");
+        sheet.Cells.GetFormulaString(2, 0).Should().Be("=B6+3");
 
         cmd.Undo(sheet);
 
-        sheet.Cells.GetFormulaString(0, 0).Should().Be("=B1+3");
-        sheet.Cells.GetFormulaString(1, 0).Should().Be("=B2+2");
-        sheet.Cells.GetFormulaString(2, 0).Should().Be("=B3+1");
+        sheet.Cells.GetFormulaString(0, 0).Should().Be("=B4+3");
+        sheet.Cells.GetFormulaString(1, 0).Should().Be("=B6+2");
+        sheet.Cells.GetFormulaString(2, 0).Should().Be("=B7+1");
     }
 
     [Test]

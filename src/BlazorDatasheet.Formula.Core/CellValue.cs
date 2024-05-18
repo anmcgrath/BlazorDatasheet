@@ -249,7 +249,7 @@ public class CellValue : IComparable, IComparable<CellValue>
     public int CompareTo(CellValue? other)
     {
         if (other == null)
-            return -1;
+            return 1;
         if (this.Data == null || other.Data == null)
             return -1;
 

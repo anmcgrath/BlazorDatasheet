@@ -51,7 +51,9 @@ public class SortRangeCommand : IUndoableCommand
 
         sheet.BatchUpdates();
 
-        // clear any row data that has been shifted
+        var formulaData = sheet.Cells.GetFormulaStore().GetNonEmptyRowData(_region);
+
+        // clear any row data that has been shifted (which should be all non-empty rows)
         for (int i = 0; i < rowData.Length; i++)
         {
             var row = rowData[i].Row;
@@ -68,7 +70,14 @@ public class SortRangeCommand : IUndoableCommand
             {
                 var col = rowData[i].ColumnIndices[j];
                 var val = rowData[i].Values[j];
-                sheet.Cells.SetValueImpl(newRowNo, col, val);
+                var formula = formulaData.GetValue(oldRowNo, col);
+                if (formula == null)
+                    sheet.Cells.SetValueImpl(newRowNo, col, val);
+                else
+                {
+                    formula.ShiftReferences((newRowNo - oldRowNo), 0);
+                    sheet.Cells.SetFormulaImpl(newRowNo, col, formula);
+                }
             }
         }
 
@@ -113,19 +122,30 @@ public class SortRangeCommand : IUndoableCommand
             return true;
 
         var rowCollection = sheet.Cells.GetCellDataStore().GetRowData(_sortedRegion);
+        var formulaCollection = sheet.Cells.GetFormulaStore().GetRowData(_sortedRegion);
         sheet.BatchUpdates();
 
         sheet.Cells.ClearCellsImpl(new[] { _sortedRegion });
 
         var rowData = rowCollection.Rows;
+        var rowIndices = rowCollection.RowIndicies;
         for (int i = 0; i < oldIndices.Length; i++)
         {
             var newRowNo = oldIndices[i];
             for (int j = 0; j < rowData[i].ColumnIndices.Length; j++)
             {
                 var col = rowData[i].ColumnIndices[j];
-                var val = rowData[i].Values[j];
-                sheet.Cells.SetValueImpl(newRowNo, col, val);
+                var formula = formulaCollection.GetValue(rowIndices[i], col);
+                if (formula == null)
+                {
+                    var val = rowData[i].Values[j];
+                    sheet.Cells.SetValueImpl(newRowNo, col, val);
+                }
+                else
+                {
+                    formula.ShiftReferences((newRowNo - rowIndices[i]), 0);
+                    sheet.Cells.SetFormulaImpl(newRowNo, col, formula);
+                }
             }
         }
 
