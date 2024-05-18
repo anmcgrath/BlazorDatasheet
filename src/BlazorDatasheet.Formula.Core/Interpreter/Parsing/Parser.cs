@@ -11,7 +11,7 @@ public class Parser
     private int _position;
     private Token[] _tokens = null!;
     private List<string> _errors = null!;
-    private readonly List<Reference> _references = new();
+    private List<Reference> _references = new();
 
     public SyntaxTree Parse(Token[] tokens, List<string>? lexErrors = null)
     {
@@ -29,6 +29,7 @@ public class Parser
     {
         var lexer = new Lexer();
         var tokens = lexer.Lex(formulaString);
+        _references = new();
         return Parse(tokens, lexer.Errors);
     }
 

@@ -147,4 +147,47 @@ public class SheetFormulaIntegrationTests
         _sheet.Cells.GetValue(2, 0).Should().Be((10 + 20) / 2d);
         _sheet.Cells.GetValue(3, 0).Should().Be((15 + 20) / 2d);
     }
+
+    [Test]
+    public void Formula_Referencing_Deleted_Formula_Updates_When_Formula_Is_Cleared_Then_Value_Changes()
+    {
+        _sheet.Cells.SetFormula(0, 0, "=A2");
+        _sheet.Cells.SetFormula(0, 1, "=A1");
+        _sheet.Cells.ClearCells(new Region(0, 0));
+        _sheet.Cells.SetValue(0, 0, 10);
+        _sheet.Cells.GetCellValue(0, 1).GetValue<int>().Should().Be(10);
+    }
+
+    [Test]
+    public void Formula_Referencing_Deleted_Formula_Updates_When_Formula_Has_Value_Set_Over_It()
+    {
+        _sheet.Cells.SetFormula(0, 0, "=A2");
+        _sheet.Cells.SetFormula(0, 1, "=A1");
+
+        // now override the formula in A1, the formula in B1 (0,1) should update to the new value
+        _sheet.Cells.SetValue(0, 0, 10);
+
+        _sheet.Cells.GetCellValue(0, 1).GetValue<int>().Should().Be(10);
+    }
+
+    [Test]
+    public void Sheet_Should_Not_Recalculate_If_Formula_Removed_From_Sheet()
+    {
+        _sheet.Cells[0, 0].Formula = "=B1"; // set A1 = B1
+        _sheet.Cells[1, 0].Formula = "=A1"; // set A2 = A1
+        // override formula at A1 - should remove links from A1 -> B1
+        _sheet.Cells.SetValue(0, 0, string.Empty);
+        // set value at b1 and ensure sheet doesn't calculate
+
+        int changeCount = 0;
+
+        _sheet.Cells.CellsChanged += (sender, args) =>
+        {
+            changeCount++;
+        };
+        // change B1
+        _sheet.Cells[0, 1].Value = 2;
+        
+        changeCount.Should().Be(1);
+    }
 }

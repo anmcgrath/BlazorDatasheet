@@ -85,7 +85,7 @@ public partial class CellStore
     internal CellStoreRestoreData ClearFormulaImpl(int row, int col)
     {
         var restoreData = _formulaStore.Clear(row, col);
-        _sheet.FormulaEngine.RemoveFromDependencyGraph(row, col);
+        _sheet.FormulaEngine.RemoveFormula(row, col);
         return new CellStoreRestoreData() { FormulaRestoreData = restoreData };
     }
 
@@ -94,7 +94,7 @@ public partial class CellStore
         var clearedData = _formulaStore.Clear(regions);
         foreach (var clearedFormula in clearedData.DataRemoved)
         {
-            _sheet.FormulaEngine.RemoveFromDependencyGraph(clearedFormula.row, clearedFormula.col);
+            _sheet.FormulaEngine.RemoveFormula(clearedFormula.row, clearedFormula.col);
         }
 
         return new CellStoreRestoreData()
