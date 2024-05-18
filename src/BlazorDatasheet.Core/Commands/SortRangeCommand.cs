@@ -24,6 +24,17 @@ public class SortRangeCommand : IUndoableCommand
             { new(0, true) };
     }
 
+    /// <summary>
+    /// Sorts the specified region on values using the specified sort options.
+    /// </summary>
+    /// <param name="region">The region to sort</param>
+    /// <param name="sortOption">The column sort options, if null the default sort (sort on column 0 ascending) will be used.</param>
+    public SortRangeCommand(IRegion region, ColumnSortOptions sortOption)
+    {
+        _region = region;
+        _sortOptions = new List<ColumnSortOptions> { sortOption };
+    }
+
     public bool Execute(Sheet sheet)
     {
         var store = sheet.Cells.GetCellDataStore();
@@ -78,7 +89,7 @@ public class SortRangeCommand : IUndoableCommand
 
             int comparison;
 
-            if(xValue == null && yValue == null)
+            if (xValue == null && yValue == null)
                 comparison = 0;
             else if (xValue != null && yValue != null)
                 comparison = xValue.CompareTo(yValue);
@@ -89,7 +100,7 @@ public class SortRangeCommand : IUndoableCommand
                 return comparison;
 
             comparison = sortOption.Ascending ? comparison : -comparison;
-            
+
             return comparison;
         }
 
