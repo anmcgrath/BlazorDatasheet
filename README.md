@@ -22,7 +22,7 @@ Demo: https://anmcgrath.github.io/BlazorDatasheet/
 #### Install the NuGet package
 
 ```bash
-dotnet add package BlazorDatasheet --version 0.2.0
+dotnet add package BlazorDatasheet
 ```
 
 #### Configure Program.cs
