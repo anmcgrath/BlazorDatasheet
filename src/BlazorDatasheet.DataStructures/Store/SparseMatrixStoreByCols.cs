@@ -3,7 +3,7 @@ using BlazorDatasheet.DataStructures.Search;
 
 namespace BlazorDatasheet.DataStructures.Store;
 
-public class SparseMatrixStore<T> : IMatrixDataStore<T>
+public class SparseMatrixStoreByCols<T> : IMatrixDataStore<T>
 {
     private readonly T _defaultValueIfEmpty;
 
@@ -12,7 +12,7 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
     /// </summary>
     private readonly Dictionary<int, SColumn<T>> _columns = new();
 
-    public SparseMatrixStore(T defaultValueIfEmpty = default(T))
+    public SparseMatrixStoreByCols(T defaultValueIfEmpty = default(T))
     {
         _defaultValueIfEmpty = defaultValueIfEmpty;
     }
@@ -249,6 +249,11 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
         return result;
     }
 
+    public IMatrixDataStore<T> GetSubStore(IRegion region, bool newStoreResetsOffsets = true)
+    {
+        throw new NotImplementedException();
+    }
+
     /// <summary>
     /// Get non empty data that exist in the bounds given
     /// </summary>
@@ -274,6 +279,16 @@ public class SparseMatrixStore<T> : IMatrixDataStore<T>
     public IEnumerable<CellPosition> GetNonEmptyPositions(IRegion region)
     {
         return GetNonEmptyPositions(region.Top, region.Bottom, region.Left, region.Right);
+    }
+
+    public RowDataCollection<T> GetNonEmptyRowData(IRegion region)
+    {
+        throw new NotImplementedException();
+    }
+
+    public RowDataCollection<T> GetRowData(IRegion region)
+    {
+        throw new NotImplementedException();
     }
 
     public MatrixRestoreData<T> Copy(IRegion fromRegion, IRegion toRegion)

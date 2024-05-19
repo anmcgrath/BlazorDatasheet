@@ -1,4 +1,5 @@
 using BlazorDatasheet.DataStructures.References;
+using BlazorDatasheet.Formula.Core.Extensions;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
@@ -48,8 +49,7 @@ public class CellValueCoercer
 
         if (cellValue.ValueType == CellValueType.Date)
         {
-            var epoch = new DateTime(1900, 1, 1);
-            val = (((DateTime)cellValue.Data!) - epoch).Days;
+            val = ((DateTime)cellValue.Data!).ToNumber();
             return true;
         }
 

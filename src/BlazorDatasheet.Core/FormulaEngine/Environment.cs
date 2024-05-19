@@ -89,6 +89,6 @@ public class SheetEnvironment : IEnvironment
         var region = range.Region.GetIntersection(range.Sheet.Region);
         if (region == null)
             return Array.Empty<CellValue[]>();
-        return range.Sheet.Cells.GetStore().GetData(region);
+        return range.Sheet.Cells.GetCellDataStore().GetData(region);
     }
 }

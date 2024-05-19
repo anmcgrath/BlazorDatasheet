@@ -132,7 +132,18 @@ public class DependencyGraph
                 _adj[v.Key].Remove(w.Key);
                 _prec[w.Key].Remove(v.Key);
                 _numEdges--;
+
+                RemoveIfNoDependents(v);
+                RemoveIfNoDependents(w);
             }
+        }
+    }
+
+    private void RemoveIfNoDependents(Vertex v)
+    {
+        if (!IsDependedOn(v) && !HasDependents(v))
+        {
+            RemoveVertex(v);
         }
     }
 
@@ -162,6 +173,11 @@ public class DependencyGraph
     public bool IsDependedOn(Vertex v)
     {
         return Adj(v).Any();
+    }
+
+    public bool HasDependents(Vertex v)
+    {
+        return Prec(v).Any();
     }
 
     /// <summary>

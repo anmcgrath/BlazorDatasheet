@@ -11,7 +11,7 @@ public partial class CellStore
     /// <summary>
     /// Cell FORMULA
     /// </summary>
-    private readonly IMatrixDataStore<CellFormula?> _formulaStore = new SparseMatrixStore<CellFormula?>();
+    private readonly IMatrixDataStore<CellFormula?> _formulaStore = new SparseMatrixStoreByRows<CellFormula?>();
 
     /// <summary>
     /// Set the formula string for a row and col, and calculate the sheet.
@@ -72,7 +72,7 @@ public partial class CellStore
 
         foreach (var formula in formulaToCopy)
         {
-            if(formula.data == null)
+            if (formula.data == null)
                 continue;
             var clonedFormula = formula.data.Clone();
             clonedFormula.ShiftReferences(offset.row, offset.col);
@@ -85,7 +85,7 @@ public partial class CellStore
     internal CellStoreRestoreData ClearFormulaImpl(int row, int col)
     {
         var restoreData = _formulaStore.Clear(row, col);
-        _sheet.FormulaEngine.RemoveFromDependencyGraph(row, col);
+        _sheet.FormulaEngine.RemoveFormula(row, col);
         return new CellStoreRestoreData() { FormulaRestoreData = restoreData };
     }
 
@@ -94,7 +94,7 @@ public partial class CellStore
         var clearedData = _formulaStore.Clear(regions);
         foreach (var clearedFormula in clearedData.DataRemoved)
         {
-            _sheet.FormulaEngine.RemoveFromDependencyGraph(clearedFormula.row, clearedFormula.col);
+            _sheet.FormulaEngine.RemoveFormula(clearedFormula.row, clearedFormula.col);
         }
 
         return new CellStoreRestoreData()
@@ -134,4 +134,6 @@ public partial class CellStore
     {
         _sheet.Commands.ExecuteCommand(new SetParsedFormulaCommand(row, col, parsedFormula));
     }
+
+    internal IMatrixDataStore<CellFormula?> GetFormulaStore() => _formulaStore;
 }

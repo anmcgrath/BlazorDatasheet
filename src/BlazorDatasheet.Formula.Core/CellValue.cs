@@ -1,5 +1,6 @@
 ﻿using BlazorDatasheet.DataStructures.References;
 using BlazorDatasheet.DataStructures.Util;
+using BlazorDatasheet.Formula.Core.Extensions;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Formula.Core;
@@ -249,11 +250,25 @@ public class CellValue : IComparable, IComparable<CellValue>
     public int CompareTo(CellValue? other)
     {
         if (other == null)
+            return 1;
+        if (this.Data == null && other.Data == null)
+            return 0;
+        if (this.Data == null)
             return -1;
-        if (this.Data == null || other.Data == null)
-            return -1;
+        if (other.Data == null)
+            return 1;
 
-        return ((IComparable)this.Data).CompareTo((IComparable)other.Data);
+        // special consideration for comparing dates to numbers
+        if (this.ValueType == CellValueType.Number && other.ValueType == CellValueType.Date)
+            return ((IComparable)this.Data).CompareTo(((DateTime)other.Data).ToNumber());
+
+        if (this.ValueType == CellValueType.Date && other.ValueType == CellValueType.Number)
+            return ((DateTime)this.Data).ToNumber().CompareTo((IComparable)other.Data);
+
+        if (this.ValueType == other.ValueType)
+            return ((IComparable)this.Data).CompareTo((IComparable)other.Data);
+
+        return this.ValueType.CompareTo(other.ValueType);
     }
 
     public override string ToString()

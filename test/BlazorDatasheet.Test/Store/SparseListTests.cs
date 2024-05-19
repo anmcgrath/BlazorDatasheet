@@ -72,8 +72,8 @@ public class SparseListTests
     {
         _list.Set(10, 2);
         _list.Set(15, 3);
-        _list.GetNextNonEmptyItemIndex(0).Should().Be(10);
-        _list.GetNextNonEmptyItemIndex(11).Should().Be(15);
-        _list.GetNextNonEmptyItemIndex(11).Should().Be(15);
+        _list.GetNextNonEmptyItemKey(0).Should().Be(10);
+        _list.GetNextNonEmptyItemKey(11).Should().Be(15);
+        _list.GetNextNonEmptyItemKey(11).Should().Be(15);
     }
 }

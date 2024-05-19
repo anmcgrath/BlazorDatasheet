@@ -2,20 +2,20 @@ using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.DataStructures.Store;
 
-public class SparseMatrixStore2<T> : IMatrixDataStore<T>
+public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
 {
     private SparseList<SparseList<T>> _rows;
     private readonly T? _defaultIfEmpty;
     private readonly SparseList<T> _emptyRow;
 
-    public SparseMatrixStore2(T defaultIfEmpty)
+    public SparseMatrixStoreByRows(T defaultIfEmpty)
     {
         _defaultIfEmpty = defaultIfEmpty;
         _emptyRow = new SparseList<T>(defaultIfEmpty);
         _rows = new SparseList<SparseList<T>>(_emptyRow);
     }
 
-    public SparseMatrixStore2() : this(default(T))
+    public SparseMatrixStoreByRows() : this(default(T))
     {
     }
 
@@ -134,12 +134,12 @@ public class SparseMatrixStore2<T> : IMatrixDataStore<T>
 
     public int GetNextNonBlankRow(int row, int col)
     {
-        var rowIndex = _rows.GetNextNonEmptyItemIndex(row + 1);
+        var rowIndex = _rows.GetNextNonEmptyItemKey(row + 1);
         while (rowIndex != -1)
         {
             if (_rows.Get(rowIndex).ContainsIndex(col))
                 return rowIndex;
-            rowIndex = _rows.GetNextNonEmptyItemIndex(rowIndex + 1);
+            rowIndex = _rows.GetNextNonEmptyItemKey(rowIndex + 1);
         }
 
         return -1;
@@ -150,7 +150,7 @@ public class SparseMatrixStore2<T> : IMatrixDataStore<T>
         if (!_rows.ContainsIndex(row))
             return -1;
 
-        return _rows.Get(row).GetNextNonEmptyItemIndex(col + 1);
+        return _rows.Get(row).GetNextNonEmptyItemKey(col + 1);
     }
 
     public MatrixRestoreData<T> RemoveRowAt(int row, int nRows)
@@ -227,5 +227,62 @@ public class SparseMatrixStore2<T> : IMatrixDataStore<T>
         }
 
         return res;
+    }
+
+    public IMatrixDataStore<T> GetSubStore(IRegion region, bool newStoreResetsOffsets = true)
+    {
+        var store = new SparseMatrixStoreByRows<T>(_defaultIfEmpty);
+        int r0 = region.Top;
+        int r1 = region.Bottom;
+        int c0 = region.Left;
+        int c1 = region.Right;
+
+        int rowOffset = newStoreResetsOffsets ? r0 : 0;
+
+        var nonEmptyRows = _rows.GetNonEmptyDataBetween(r0, r1);
+        foreach (var row in nonEmptyRows)
+        {
+            var subList = row.data.GetSubList(c0, c1, newStoreResetsOffsets);
+            store._rows.Set(row.itemIndex - rowOffset, subList);
+        }
+
+        return store;
+    }
+
+    public RowDataCollection<T> GetNonEmptyRowData(IRegion region)
+    {
+        var nonEmptyRows = _rows.GetNonEmptyDataBetween(region.Top, region.Bottom);
+        var rowIndices = new int[nonEmptyRows.Count];
+        var rowDataArray = new RowData<T>[nonEmptyRows.Count];
+        for (int i = 0; i < nonEmptyRows.Count; i++)
+        {
+            var row = nonEmptyRows[i];
+            rowIndices[i] = row.itemIndex;
+            var nonEmptyCols = row.data.GetNonEmptyDataBetween(region.Left, region.Right);
+            var colIndices = nonEmptyCols.Select(x => x.itemIndex).ToArray();
+            var colData = nonEmptyCols.Select(x => x.data).ToArray();
+            var rowData = new RowData<T>(rowIndices[i], colIndices, colData);
+            rowDataArray[i] = rowData;
+        }
+
+        return new RowDataCollection<T>(rowIndices, rowDataArray);
+    }
+
+    public RowDataCollection<T> GetRowData(IRegion region)
+    {
+        var indices = new int[region.Height];
+        var rows = new RowData<T>[region.Height];
+
+        for (int i = 0; i < region.Height; i++)
+        {
+            var row = _rows.Get(i + region.Top);
+            var nonEmptyCols = row.GetNonEmptyDataBetween(region.Left, region.Right);
+            var colIndices = nonEmptyCols.Select(x => x.itemIndex).ToArray();
+            var colData = nonEmptyCols.Select(x => x.data).ToArray();
+            indices[i] = i + region.Top;
+            rows[i] = new RowData<T>(i + region.Top, colIndices, colData);
+        }
+
+        return new RowDataCollection<T>(indices, rows);
     }
 }

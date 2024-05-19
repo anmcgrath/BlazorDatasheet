@@ -20,10 +20,13 @@ public partial class CellStore
     /// <param name="region"></param>
     /// <param name="type"></param>
     /// <returns></returns>
-    internal CellStoreRestoreData SetCellTypeImpl(IRegion region, string type)
+    internal CellStoreRestoreData SetCellTypeImpl(IRegion region, string? type)
     {
         var restoreData = new CellStoreRestoreData();
-        restoreData.TypeRestoreData = _typeStore.Add(region, type);
+        if (string.IsNullOrEmpty(type))
+            restoreData.TypeRestoreData = _typeStore.Clear(region);
+        else
+            restoreData.TypeRestoreData = _typeStore.Add(region, type);
         _sheet.MarkDirty(region);
         return restoreData;
     }
@@ -64,4 +67,6 @@ public partial class CellStore
     /// <param name="type"></param>
     /// <returns></returns>
     public void SetType(int row, int col, string type) => SetType(new Region(row, col), type);
+
+    internal ConsolidatedDataStore<string> GetTypeStore() => _typeStore;
 }

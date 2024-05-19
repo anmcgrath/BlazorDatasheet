@@ -3,6 +3,7 @@ using System.Text;
 using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Edit;
+using BlazorDatasheet.Core.Events;
 using BlazorDatasheet.Core.Events.Visual;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Interfaces;
@@ -84,6 +85,10 @@ public class Sheet
     /// Fired when a portion of the sheet is marked as dirty.
     /// </summary>
     public event EventHandler<DirtySheetEventArgs>? SheetDirty;
+
+    public event EventHandler<BeforeRangeSortEventArgs>? BeforeRangeSort;
+
+    public event EventHandler<RangeSortedEventArgs>? RangeSorted;
 
     #endregion
 
@@ -299,6 +304,17 @@ public class Sheet
         _dirtyRegions.Clear();
         Cells.BatchChanges();
         _isBatchingChanges = true;
+    }
+
+    public void SortRange(IRegion region, List<ColumnSortOptions>? sortOptions = null)
+    {
+        var beforeArgs = new BeforeRangeSortEventArgs(region, sortOptions);
+        BeforeRangeSort?.Invoke(this, beforeArgs);
+        var cmd = new SortRangeCommand(region, sortOptions);
+        if (!beforeArgs.Cancel)
+            Commands.ExecuteCommand(cmd);
+        var afterArgs = new RangeSortedEventArgs(region, cmd.SortedRegion, cmd.OldIndices);
+        RangeSorted?.Invoke(this, afterArgs);
     }
 
     /// <summary>

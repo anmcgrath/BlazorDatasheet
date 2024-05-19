@@ -13,6 +13,11 @@ public class MergeRegionDataStore<T> : RegionDataStore<T> where T : IMergeable<T
     {
     }
 
+    protected override RegionDataStore<T> GetEmptyClone()
+    {
+        return new MergeRegionDataStore<T>(MinArea, ExpandWhenInsertAfter);
+    }
+
     protected override RegionRestoreData<T> Add(DataRegion<T> dataRegion)
     {
         // we have the valid assumption that only one region will exist at each position
@@ -68,9 +73,9 @@ public class MergeRegionDataStore<T> : RegionDataStore<T> where T : IMergeable<T
         toAdd.AddRange(breakNewData.Select(x => new DataRegion<T>(dataRegion.Data, x)));
 
         foreach (var r in toRemove)
-            _tree.Delete(r);
+            Tree.Delete(r);
 
-        _tree.BulkLoad(toAdd);
+        Tree.BulkLoad(toAdd);
 
         return new RegionRestoreData<T>()
         {

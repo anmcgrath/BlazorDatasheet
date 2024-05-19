@@ -2,7 +2,7 @@ using BlazorDatasheet.DataStructures.Search;
 
 namespace BlazorDatasheet.DataStructures.Store;
 
-public class SparseList<T>
+internal class SparseList<T>
 {
     private readonly T _defaultValueIfEmpty;
 
@@ -21,19 +21,14 @@ public class SparseList<T>
         return Values.ContainsKey(itemIndex);
     }
 
-    public T Get(int itemIndex)
+    public T Get(int key)
     {
-        if (Values.TryGetValue(itemIndex, out var value))
-            return value;
-        return _defaultValueIfEmpty;
+        return Values.GetValueOrDefault(key, _defaultValueIfEmpty);
     }
 
     public void Set(int itemIndex, T value)
     {
-        if (!Values.ContainsKey(itemIndex))
-            Values.Add(itemIndex, value);
-        else
-            Values[itemIndex] = value;
+        Values[itemIndex] = value;
     }
 
     /// <summary>
@@ -113,9 +108,10 @@ public class SparseList<T>
     /// <returns></returns>
     public List<(int itemIndex, T data)> GetNonEmptyDataBetween(int r0, int r1)
     {
-        var items = new List<(int itemIndex, T data)>();
         if (!Values.Any())
-            return items;
+            return new List<(int itemIndex, T data)>();
+
+        var items = new List<(int itemIndex, T data)>();
 
         var indexStart = Values.Keys.BinarySearchClosest(r0);
         var index = indexStart;
@@ -190,14 +186,14 @@ public class SparseList<T>
     /// <summary>
     /// Returns the next non-empty item index after & including the index given. If none found, returns -1
     /// </summary>
-    /// <param name="itemIndex"></param>
+    /// <param name="key"></param>
     /// <returns></returns>
-    public int GetNextNonEmptyItemIndex(int itemIndex)
+    public int GetNextNonEmptyItemKey(int key)
     {
         if (!Values.Any())
             return -1;
 
-        var index = Values.Keys.BinarySearchIndexOf(itemIndex, Comparer<int>.Default);
+        var index = Values.Keys.BinarySearchIndexOf(key, Comparer<int>.Default);
         if (index < 0)
             index = ~index;
 
@@ -208,11 +204,31 @@ public class SparseList<T>
     }
 
     /// <summary>
+    /// Returns the next non-empty value pair after & including the index given. If none found, returns null
+    /// </summary>
+    /// <param name="key"></param>
+    /// <returns></returns>
+    public (int Key, T Value)? GetNextNonEmptyItemValuePair(int key)
+    {
+        if (!Values.Any())
+            return null;
+
+        var index = Values.Keys.BinarySearchIndexOf(key, Comparer<int>.Default);
+        if (index < 0)
+            index = ~index;
+
+        if (index >= Values.Keys.Count)
+            return null;
+
+        return (Values.Keys[index], Values.Values[index]);
+    }
+
+    /// <summary>
     /// Removes all items in list, between (and including) r0 and r1. Does not affect those around it.
     /// </summary>
     /// <param name="r0"></param>
     /// <param name="r1"></param>
-    /// <returns></returns>
+    /// <returns>The cleared items</returns>
     public List<(int itemIndexCleared, T)> ClearBetween(int r0, int r1)
     {
         var cleared = new List<(int itemIndexCleared, T val)>();
@@ -251,5 +267,22 @@ public class SparseList<T>
         foreach (var p in nonEmpty)
             res[p.itemIndex - i0] = p.data;
         return res;
+    }
+
+    public SparseList<T> GetSubList(int i0, int i1, bool resetIndicesInNewList)
+    {
+        var vals = new SortedList<int, T>();
+        var nonEmpty = GetNonEmptyDataBetween(i0, i1);
+
+        foreach (var dp in nonEmpty)
+        {
+            var newIndex = resetIndicesInNewList ? dp.itemIndex - i0 : dp.itemIndex;
+            vals.Add(newIndex, dp.data);
+        }
+
+        return new SparseList<T>(_defaultValueIfEmpty)
+        {
+            Values = vals
+        };
     }
 }

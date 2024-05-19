@@ -129,4 +129,22 @@ public class SheetTests
         posnsChanged.First().col.Should().Be(1);
         posnsChanged.First().row.Should().Be(1);
     }
+
+    [Test]
+    public void Cancel_Before_Range_Sort_Cancels_Sorting()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Range("A1")!.Value = 2;
+        sheet.Range("A2")!.Value = 1;
+
+        // disable default sort
+        sheet.BeforeRangeSort += (sender, args) =>
+        {
+            args.Cancel = true;
+        };
+        
+        sheet.SortRange(new ColumnRegion(0));
+        sheet.Cells[0, 0].Value.Should().Be(2);
+        sheet.Cells[1, 0].Value.Should().Be(1);
+    }
 }

@@ -172,30 +172,17 @@ public class FormulaEngine
     }
 
     /// <summary>
-    /// Deletes a formula if it exists.
+    /// Removes any vertices that the formula in this cell is dependent on
     /// </summary>
     /// <param name="row"></param>
     /// <param name="col"></param>
-    public void RemoveFromDependencyGraph(int row, int col)
+    public void RemoveFormula(int row, int col)
     {
         var vertex = new CellVertex(row, col);
-        var dependent = _dependencyGraph.Prec(vertex);
-        _dependencyGraph.RemoveVertex(vertex);
-
-        foreach (var d in dependent)
+        var dependsOn = _dependencyGraph.Prec(vertex);
+        foreach (var dependent in dependsOn)
         {
-            if (!_dependencyGraph.IsDependedOn(d))
-            {
-                _dependencyGraph.RemoveVertex(d);
-            }
-
-            if (d is RegionVertex r)
-            {
-                var equalRegions = _observedRanges.GetDataRegions(r.Region)
-                    .Where(x => x.Region.Equals(r.Region)).ToList();
-                if (equalRegions.Any())
-                    _observedRanges.Delete(equalRegions.First());
-            }
+            _dependencyGraph.RemoveEdge(dependent, vertex);
         }
     }
 

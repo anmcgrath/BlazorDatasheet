@@ -10,7 +10,7 @@ public partial class CellStore
     /// <summary>
     /// Stores whether cells are valid.
     /// </summary>
-    private readonly IMatrixDataStore<bool?> _validStore = new SparseMatrixStore<bool?>();
+    private readonly IMatrixDataStore<bool?> _validStore = new SparseMatrixStoreByRows<bool?>();
 
     internal void ValidateRegion(IRegion region)
     {
