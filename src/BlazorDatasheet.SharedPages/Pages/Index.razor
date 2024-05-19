@@ -9,6 +9,7 @@
 @using BlazorDatasheet.Core.Formats.DefaultConditionalFormats
 @using BlazorDatasheet.Core.Validation
 @using System.Drawing
+@using BlazorDatasheet.Core.Commands
 
 <PageTitle>Index</PageTitle>
 
@@ -41,6 +42,8 @@
     <button @onclick="@(() => SetBorder(Sheet.Selection.Regions, 2, "black"))">Thick border</button>
     <button @onclick="@(() => SetBorder(Sheet.Selection.Regions, 1, "black"))">Thin border</button>
     <button @onclick="@(() => Sheet.Cells.Merge(Sheet.Selection.Regions))">Merge cells</button>
+    <button @onclick="@(SortSelectionDesc)">Sort Desc</button>
+    <button @onclick="@(SortSelectionAsc)">Sort ASc</button>
 </div>
 
 <div>
@@ -65,6 +68,24 @@
     }
 
     private Datasheet _datasheet;
+
+    private void SortSelectionDesc()
+    {
+        if (Sheet.Selection.ActiveRegion == null)
+            return;
+        Sheet.Commands.ExecuteCommand(
+            new SortRangeCommand(Sheet.Selection.ActiveRegion, new ColumnSortOptions(0, false))
+        );
+    }
+
+    private void SortSelectionAsc()
+    {
+        if (Sheet.Selection.ActiveRegion == null)
+            return;
+        Sheet.Commands.ExecuteCommand(
+            new SortRangeCommand(Sheet.Selection.ActiveRegion, new ColumnSortOptions(0, true))
+        );
+    }
 
     private void InsertRowAfterSelection()
     {
