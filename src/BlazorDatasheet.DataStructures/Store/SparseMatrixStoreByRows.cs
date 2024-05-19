@@ -229,7 +229,7 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
         return res;
     }
 
-    public IMatrixDataStore<T> GetSubMatrix(IRegion region, bool newStoreResetsOffsets = true)
+    public IMatrixDataStore<T> GetSubStore(IRegion region, bool newStoreResetsOffsets = true)
     {
         var store = new SparseMatrixStoreByRows<T>(_defaultIfEmpty);
         int r0 = region.Top;

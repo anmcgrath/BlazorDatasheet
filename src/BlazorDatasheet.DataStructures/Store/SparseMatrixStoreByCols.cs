@@ -249,7 +249,7 @@ public class SparseMatrixStoreByCols<T> : IMatrixDataStore<T>
         return result;
     }
 
-    public IMatrixDataStore<T> GetSubMatrix(IRegion region, bool newStoreResetsOffsets = true)
+    public IMatrixDataStore<T> GetSubStore(IRegion region, bool newStoreResetsOffsets = true)
     {
         throw new NotImplementedException();
     }

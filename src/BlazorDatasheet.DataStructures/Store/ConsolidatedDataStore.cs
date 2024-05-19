@@ -13,9 +13,14 @@ public class ConsolidatedDataStore<T> : RegionDataStore<T> where T : IEquatable<
     /// <summary>
     /// Keeps track of the regions that each data apply to.
     /// </summary>
-    private Dictionary<T, List<IRegion>> _dataMaps { get; }
+    private readonly Dictionary<T, List<IRegion>> _dataMaps;
 
     public ConsolidatedDataStore() : base()
+    {
+        _dataMaps = new Dictionary<T, List<IRegion>>();
+    }
+    
+    public ConsolidatedDataStore(int minArea, bool expandWhenInsertAfter) : base(minArea, expandWhenInsertAfter)
     {
         _dataMaps = new Dictionary<T, List<IRegion>>();
     }
@@ -24,8 +29,8 @@ public class ConsolidatedDataStore<T> : RegionDataStore<T> where T : IEquatable<
     {
         var (regionsToRemove, regionsToAdd) = Consolidate(dataRegion);
         foreach (var removal in regionsToRemove)
-            _tree.Delete(removal);
-        _tree.BulkLoad(regionsToAdd);
+            Tree.Delete(removal);
+        Tree.BulkLoad(regionsToAdd);
 
         _dataMaps.TryAdd(dataRegion.Data, regionsToAdd.Select(x => x.Region).ToList());
 
@@ -57,6 +62,11 @@ public class ConsolidatedDataStore<T> : RegionDataStore<T> where T : IEquatable<
         return restoreData;
     }
 
+    protected override RegionDataStore<T> GetEmptyClone()
+    {
+        return new ConsolidatedDataStore<T>();
+    }
+
     /// <summary>
     /// Returns the regions associated with the given data.
     /// </summary>
@@ -66,7 +76,7 @@ public class ConsolidatedDataStore<T> : RegionDataStore<T> where T : IEquatable<
     {
         //TODO use data maps... or delete them
         // since we won't be calling this very often it doesn't have to be efficient?
-        return _tree.Search().Where(x => x.Data.Equals(data)).Select(x => x.Region);
+        return Tree.Search().Where(x => x.Data.Equals(data)).Select(x => x.Region);
     }
 
     /// <summary>

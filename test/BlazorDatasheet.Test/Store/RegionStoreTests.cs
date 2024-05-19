@@ -183,4 +183,28 @@ public class RegionStoreTests
         store.Clear(new Region(0, 5, 0, 5));
         store.GetDataRegions(new Region(0, 5, 0, 5)).Should().BeEmpty();
     }
+
+    [Test]
+    public void Get_Sub_Store_Gets_Sub_Storage_Works_When_Not_Resetting_Indices()
+    {
+        var store = new RegionDataStore<int>();
+        store.Add(new ColumnRegion(1), 1);
+        store.Add(new ColumnRegion(2), 2);
+
+        var subStore = store.GetSubStore(new RowRegion(3, 4), false);
+        subStore.GetData(3, 1).Should().BeEquivalentTo(new int[] { 1 });
+        subStore.GetData(4, 2).Should().BeEquivalentTo(new int[] { 2 });
+    }
+    
+    [Test]
+    public void Get_Sub_Store_Gets_Sub_Storage_Works_When_Resetting_Indices()
+    {
+        var store = new RegionDataStore<int>();
+        store.Add(new ColumnRegion(1), 1);
+        store.Add(new ColumnRegion(2), 2);
+
+        var subStore = store.GetSubStore(new RowRegion(3, 4), newStoreResetsOffsets: true);
+        subStore.GetData(0, 1).Should().BeEquivalentTo(new int[] { 1 });
+        subStore.GetData(1, 2).Should().BeEquivalentTo(new int[] { 2 });
+    }
 }

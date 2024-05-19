@@ -226,7 +226,7 @@ public class DataStoreByRowsTests
         var r0 = 2;
         var colLen = 5;
         var c0 = 3;
-        var subMatrix = store.GetSubMatrix(new Region(r0, r0 + rowLen - 1, c0, c0 + colLen - 1),
+        var subMatrix = store.GetSubStore(new Region(r0, r0 + rowLen - 1, c0, c0 + colLen - 1),
             newStoreResetsOffsets: true);
         for (int row = 0; row < rowLen; row++)
         {
@@ -253,7 +253,7 @@ public class DataStoreByRowsTests
         var r0 = 2;
         var colLen = 5;
         var c0 = 3;
-        var subMatrix = store.GetSubMatrix(new Region(r0, r0 + rowLen - 1, c0, c0 + colLen - 1),
+        var subMatrix = store.GetSubStore(new Region(r0, r0 + rowLen - 1, c0, c0 + colLen - 1),
             newStoreResetsOffsets: false);
         for (int row = 0; row < rowLen; row++)
         {

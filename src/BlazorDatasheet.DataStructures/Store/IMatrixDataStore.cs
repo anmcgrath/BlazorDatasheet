@@ -3,16 +3,8 @@ using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.DataStructures.Store;
 
-public interface IMatrixDataStore<T>
+public interface IMatrixDataStore<T> : IStore<T, MatrixRestoreData<T>>
 {
-    /// <summary>
-    /// Returns whether the the store contains any non-empty data at the row, column specified.
-    /// </summary>
-    /// <param name="row"></param>
-    /// <param name="col"></param>
-    /// <returns></returns>
-    public bool Contains(int row, int col);
-
     /// <summary>
     /// Returns the data at the row, column specified. If it is empty, returns the default of T.
     /// </summary>
@@ -22,14 +14,6 @@ public interface IMatrixDataStore<T>
     public T? Get(int row, int col);
 
     /// <summary>
-    /// Sets the data at the row, column specified.
-    /// </summary>
-    /// <param name="row"></param>
-    /// <param name="col"></param>
-    /// <param name="value"></param>
-    public MatrixRestoreData<T> Set(int row, int col, T value);
-
-    /// <summary>
     /// Removes the value at the row/column from the store but does not affect the rows/columns around it.
     /// </summary>
     /// <param name="row"></param>
@@ -37,13 +21,6 @@ public interface IMatrixDataStore<T>
     public MatrixRestoreData<T> Clear(int row, int col);
 
     public MatrixRestoreData<T> Clear(IEnumerable<CellPosition> positions);
-
-    /// <summary>
-    /// Clears data inside the given region but does not affect the rows/columns arround it.
-    /// </summary>
-    /// <param name="region"></param>
-    /// <returns></returns>
-    public MatrixRestoreData<T> Clear(IRegion region);
 
     /// <summary>
     /// Clears data inside the specified regions but does not affect the rows/columsn around it.
@@ -145,13 +122,13 @@ public interface IMatrixDataStore<T>
     /// <param name="region"></param>
     /// <returns></returns>
     public T[][] GetData(IRegion region);
-
+    
     /// <summary>
-    /// Returns a sub-matrix containing only the data in the region specified.
+    /// Returns a sub-store containing only the data in the region specified.
     /// If the <paramref name="newStoreResetsOffsets"/> is true, the new store will have the top-left corner at 0,0.
     /// </summary>
     /// <param name="region">The region to extract data from</param>
     /// <param name="newStoreResetsOffsets">If true, the new store will have the top-left corner at 0,0</param>
     /// <returns></returns>
-    IMatrixDataStore<T> GetSubMatrix(IRegion region, bool newStoreResetsOffsets = true);
+    IMatrixDataStore<T> GetSubStore(IRegion region, bool newStoreResetsOffsets = true);
 }

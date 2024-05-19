@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Data.SqlTypes;
+using System.Net;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.RTree;
 using BlazorDatasheet.DataStructures.Util;
@@ -10,11 +11,11 @@ namespace BlazorDatasheet.DataStructures.Store;
 /// A wrapper around an RTree enabling storing data in regions.
 /// </summary>
 /// <typeparam name="T">Data type</typeparam>
-public class RegionDataStore<T> where T : IEquatable<T>
+public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEquatable<T>
 {
-    private readonly int _minArea;
-    private readonly bool _expandWhenInsertAfter;
-    protected RTree<DataRegion<T>> _tree;
+    protected readonly int MinArea;
+    protected readonly bool ExpandWhenInsertAfter;
+    protected readonly RTree<DataRegion<T>> Tree;
 
     /// <summary>
     /// 
@@ -24,9 +25,14 @@ public class RegionDataStore<T> where T : IEquatable<T>
     /// <param name="expandWhenInsertAfter">When set to true, when a row or column is inserted just below/right of a region, the region is expanded</param>
     public RegionDataStore(int minArea = 0, bool expandWhenInsertAfter = true)
     {
-        _minArea = minArea;
-        _expandWhenInsertAfter = expandWhenInsertAfter;
-        _tree = new RTree<DataRegion<T>>();
+        MinArea = minArea;
+        ExpandWhenInsertAfter = expandWhenInsertAfter;
+        Tree = new RTree<DataRegion<T>>();
+    }
+
+    public bool Contains(int row, int col)
+    {
+        return GetDataRegions(row, col).Any();
     }
 
     /// <summary>
@@ -35,7 +41,7 @@ public class RegionDataStore<T> where T : IEquatable<T>
     /// <returns></returns>
     public IEnumerable<DataRegion<T>> GetAllDataRegions()
     {
-        return _tree.Search();
+        return Tree.Search();
     }
 
     public IEnumerable<DataRegion<T>> GetDataRegions(int row, int col)
@@ -59,7 +65,7 @@ public class RegionDataStore<T> where T : IEquatable<T>
     public IEnumerable<DataRegion<T>> GetDataRegions(IRegion region)
     {
         var env = region.ToEnvelope();
-        return _tree.Search(env);
+        return Tree.Search(env);
     }
 
     public IEnumerable<T> GetData(int row, int col)
@@ -79,7 +85,7 @@ public class RegionDataStore<T> where T : IEquatable<T>
     /// <returns></returns>
     internal IEnumerable<DataRegion<T>> GetContainedRegions(IRegion region)
     {
-        return _tree.Search(region.ToEnvelope())
+        return Tree.Search(region.ToEnvelope())
             .Where(x => region.Contains(x.Region));
     }
 
@@ -114,7 +120,7 @@ public class RegionDataStore<T> where T : IEquatable<T>
 
     private void InsertRowsOrColumnAndShift(int index, int nRowsOrCol, Axis axis, bool? expandNeighbouring)
     {
-        var expand = expandNeighbouring ?? _expandWhenInsertAfter;
+        var expand = expandNeighbouring ?? ExpandWhenInsertAfter;
 
         // As an example for inserting rows, there are three things that can happen
         // 1. Any regions that intersect the index should be expanded by nRows
@@ -135,7 +141,7 @@ public class RegionDataStore<T> where T : IEquatable<T>
             var clonedRegion = r.Region.Clone();
             clonedRegion.Expand(axis == Axis.Row ? Edge.Bottom : Edge.Right, nRowsOrCol);
             dataRegionsToAdd.Add(new DataRegion<T>(r.Data, clonedRegion));
-            _tree.Delete(r);
+            Tree.Delete(r);
         }
 
         // index - 1 because the top of the region has to be above the region to shift it down
@@ -147,12 +153,12 @@ public class RegionDataStore<T> where T : IEquatable<T>
             var dCol = axis == Axis.Col ? nRowsOrCol : 0;
             clonedRegion.Shift(dRow, dCol);
             dataRegionsToAdd.Add(new DataRegion<T>(r.Data, clonedRegion));
-            _tree.Delete(r);
+            Tree.Delete(r);
         }
 
         foreach (var dr in dataRegionsToAdd)
         {
-            _tree.Insert(dr);
+            Tree.Insert(dr);
         }
     }
 
@@ -197,9 +203,9 @@ public class RegionDataStore<T> where T : IEquatable<T>
             // if we remove top two rows there is a width of 1 and if the min area is less than one, it should be removed.
             var cuts = r.Region.Break(region);
             var cutArea = cuts.Sum(x => x.Area);
-            if (cutArea <= _minArea)
+            if (cutArea <= MinArea)
             {
-                _tree.Delete(r);
+                Tree.Delete(r);
                 removed.Add(r);
                 continue;
             }
@@ -216,7 +222,7 @@ public class RegionDataStore<T> where T : IEquatable<T>
                 var clonedRegion = r.Region.Clone();
                 clonedRegion.Contract(axis == Axis.Row ? Edge.Bottom : Edge.Right, nOverlapping);
                 newDataRegions.Add(new DataRegion<T>(r.Data, clonedRegion));
-                _tree.Delete(r);
+                Tree.Delete(r);
             }
             else // Add the bits that aren't intersecting back in only
             {
@@ -231,7 +237,7 @@ public class RegionDataStore<T> where T : IEquatable<T>
                 }
 
                 removed.Add(r);
-                _tree.Delete(r);
+                Tree.Delete(r);
             }
         }
 
@@ -239,7 +245,7 @@ public class RegionDataStore<T> where T : IEquatable<T>
         var next = GetAfter(end, axis);
         foreach (var dataRegion in next)
         {
-            _tree.Delete(dataRegion);
+            Tree.Delete(dataRegion);
             var copiedRegion = dataRegion.Region.Clone();
             var nRows = axis == Axis.Row ? (end - start) + 1 : 0;
             var nCols = axis == Axis.Col ? (end - start) + 1 : 0;
@@ -247,7 +253,7 @@ public class RegionDataStore<T> where T : IEquatable<T>
             newDataRegions.Add(new DataRegion<T>(dataRegion.Data, copiedRegion));
         }
 
-        _tree.BulkLoad(newDataRegions);
+        Tree.BulkLoad(newDataRegions);
 
         return new RegionRestoreData<T>()
         {
@@ -320,6 +326,38 @@ public class RegionDataStore<T> where T : IEquatable<T>
         return Clear(region, GetDataRegions(region));
     }
 
+    /// <summary>
+    /// Returns a sub-store containing only the data in the region specified.
+    /// If the <paramref name="newStoreResetsOffsets"/> is true, the new store will have the top-left corner at 0,0.
+    /// </summary>
+    /// <param name="region">The region to extract data from</param>
+    /// <param name="newStoreResetsOffsets">If true, the new store will have the top-left corner at 0,0</param>
+    /// <returns></returns>
+    public RegionDataStore<T> GetSubStore(IRegion region, bool newStoreResetsOffsets = true)
+    {
+        var store = GetEmptyClone();
+        var data =
+            GetDataRegions(region)
+                .Select(x =>
+                {
+                    var newRegion = x.Region.GetIntersection(region)!;
+                    if (newStoreResetsOffsets)
+                    {
+                        newRegion.Shift(-region.Top, -region.Left);
+                    }
+
+                    return new DataRegion<T>(x.Data, newRegion);
+                });
+
+        store.AddRange(data);
+        return store;
+    }
+
+    protected virtual RegionDataStore<T> GetEmptyClone()
+    {
+        return new RegionDataStore<T>(MinArea, ExpandWhenInsertAfter);
+    }
+
     private RegionRestoreData<T> Clear(IRegion region, IEnumerable<DataRegion<T>> dataRegions)
     {
         var dataRegionsToRemove = new List<DataRegion<T>>();
@@ -336,9 +374,9 @@ public class RegionDataStore<T> where T : IEquatable<T>
         }
 
         foreach (var regionToRemove in dataRegionsToRemove)
-            _tree.Delete(regionToRemove);
+            Tree.Delete(regionToRemove);
 
-        _tree.BulkLoad(dataRegionsToAdd);
+        Tree.BulkLoad(dataRegionsToAdd);
 
         return new RegionRestoreData<T>()
         {
@@ -366,7 +404,7 @@ public class RegionDataStore<T> where T : IEquatable<T>
             d.UpdateEnvelope();
         }
 
-        _tree.BulkLoad(dataToCopy);
+        Tree.BulkLoad(dataToCopy);
         restoreData.RegionsAdded.AddRange(dataToCopy);
 
         return restoreData;
@@ -396,19 +434,27 @@ public class RegionDataStore<T> where T : IEquatable<T>
     /// <param name="dataRegion"></param>
     protected virtual RegionRestoreData<T> Add(DataRegion<T> dataRegion)
     {
-        _tree.Insert(dataRegion);
+        Tree.Insert(dataRegion);
         return new RegionRestoreData<T>()
         {
             RegionsAdded = new List<DataRegion<T>>() { dataRegion }
         };
     }
 
-    public void Delete(DataRegion<T> dataRegion)
+    public virtual RegionRestoreData<T> Set(int row, int col, T value)
     {
-        _tree.Delete(dataRegion);
+        var region = new Region(row, col);
+        var restoreData = Clear(region);
+        restoreData.Merge(this.Add(new DataRegion<T>(value, region)));
+        return restoreData;
     }
 
-    public bool Any() => _tree.Count > 0;
+    public void Delete(DataRegion<T> dataRegion)
+    {
+        Tree.Delete(dataRegion);
+    }
+
+    public bool Any() => Tree.Count > 0;
 
     public bool Any(int row, int col)
     {
@@ -420,18 +466,18 @@ public class RegionDataStore<T> where T : IEquatable<T>
         return GetDataRegions(region).Any();
     }
 
-    protected void AddRange(List<DataRegion<T>> dataRegions)
+    protected void AddRange(IEnumerable<DataRegion<T>> dataRegions)
     {
-        _tree.BulkLoad(dataRegions);
+        Tree.BulkLoad(dataRegions);
     }
 
     public virtual void Restore(RegionRestoreData<T> restoreData)
     {
         foreach (var added in restoreData.RegionsAdded)
         {
-            _tree.Delete(added);
+            Tree.Delete(added);
         }
 
-        _tree.BulkLoad(restoreData.RegionsRemoved);
+        Tree.BulkLoad(restoreData.RegionsRemoved);
     }
 }
