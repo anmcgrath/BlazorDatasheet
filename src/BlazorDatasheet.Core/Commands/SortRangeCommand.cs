@@ -10,7 +10,7 @@ public class SortRangeCommand : IUndoableCommand
     private readonly IRegion _region;
     private IRegion? _sortedRegion;
     private readonly List<ColumnSortOptions> _sortOptions;
-    private int[] oldIndices = Array.Empty<int>();
+    private int[] _oldIndices = Array.Empty<int>();
 
     /// <summary>
     /// Sorts the specified region on values using the specified sort options.
@@ -55,7 +55,7 @@ public class SortRangeCommand : IUndoableCommand
 
         sheet.BatchUpdates();
 
-        var formulaData = sheet.Cells.GetFormulaStore().GetSubMatrix(_region, false);
+        var formulaData = sheet.Cells.GetFormulaStore().GetSubStore(_region, false);
 
         // clear any row data that has been shifted (which should be all non-empty rows)
         for (int i = 0; i < rowData.Length; i++)
@@ -87,7 +87,7 @@ public class SortRangeCommand : IUndoableCommand
 
         sheet.EndBatchUpdates();
 
-        oldIndices = rowIndices.ToArray();
+        _oldIndices = rowIndices.ToArray();
 
         return true;
     }
@@ -101,7 +101,7 @@ public class SortRangeCommand : IUndoableCommand
             var yValue = y.GetColumnData(sortOption.ColumnIndex + _region.Left);
 
             if (xValue?.Data == null && yValue?.Data == null)
-                return 0;
+                continue;
 
             // null comparisons shouldn't depend on the sort order -
             // null values always end up last.
@@ -111,6 +111,10 @@ public class SortRangeCommand : IUndoableCommand
                 return -1;
 
             int comparison = xValue.CompareTo(yValue);
+            
+            if(comparison == 0)
+                continue;
+            
             comparison = sortOption.Ascending ? comparison : -comparison;
 
             return comparison;
@@ -125,7 +129,7 @@ public class SortRangeCommand : IUndoableCommand
             return true;
 
         var rowCollection = sheet.Cells.GetCellDataStore().GetRowData(_sortedRegion);
-        var formulaCollection = sheet.Cells.GetFormulaStore().GetSubMatrix(_sortedRegion, false);
+        var formulaCollection = sheet.Cells.GetFormulaStore().GetSubStore(_sortedRegion, false);
 
         sheet.BatchUpdates();
 
@@ -133,9 +137,9 @@ public class SortRangeCommand : IUndoableCommand
 
         var rowData = rowCollection.Rows;
         var rowIndices = rowCollection.RowIndicies;
-        for (int i = 0; i < oldIndices.Length; i++)
+        for (int i = 0; i < _oldIndices.Length; i++)
         {
-            var newRowNo = oldIndices[i];
+            var newRowNo = _oldIndices[i];
             for (int j = 0; j < rowData[i].ColumnIndices.Length; j++)
             {
                 var col = rowData[i].ColumnIndices[j];

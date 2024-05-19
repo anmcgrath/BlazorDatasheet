@@ -149,5 +149,26 @@ public class SortRangeCommandTests
         sheet.Cells[1, 0].Type.Should().Be("bool");
         sheet.Cells[0, 0].Type.Should().Be("text");
     }
+
+    [Test]
+    public void Sort_On_Multiple_Columns_Sorts_Correctly()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Range("A1:A4")!.Value = 5;
+        sheet.Range("B1")!.Value = 2;
+        sheet.Range("B4")!.Value = 1;
+
+        var options = new List<ColumnSortOptions>()
+        {
+            new ColumnSortOptions(0, true),
+            new ColumnSortOptions(1, true)
+        };
+        
+        var cmd = new SortRangeCommand(new ColumnRegion(0, 1), options);
+        cmd.Execute(sheet);
+        
+        sheet.Cells[0, 1].Value.Should().Be(1);
+        sheet.Cells[1, 1].Value.Should().Be(2);
+    }
     
 }
