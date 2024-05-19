@@ -40,9 +40,11 @@ public class SortRangeCommand : IUndoableCommand
     public bool Execute(Sheet sheet)
     {
         var store = sheet.Cells.GetCellDataStore();
+
         var rowCollection = store.GetNonEmptyRowData(_region);
         var rowIndices = new Span<int>(rowCollection.RowIndicies);
         var rowData = new Span<RowData<CellValue>>(rowCollection.Rows);
+
         rowData.Sort(rowIndices, Comparison);
 
         _sortedRegion = new Region(_region.Top, _region.Top + rowIndices.Length, _region.Left, _region.Right);
@@ -53,7 +55,7 @@ public class SortRangeCommand : IUndoableCommand
 
         sheet.BatchUpdates();
 
-        var formulaData = sheet.Cells.GetFormulaStore().GetNonEmptyRowData(_region);
+        var formulaData = sheet.Cells.GetFormulaStore().GetSubMatrix(_region, false);
 
         // clear any row data that has been shifted (which should be all non-empty rows)
         for (int i = 0; i < rowData.Length; i++)
@@ -72,7 +74,7 @@ public class SortRangeCommand : IUndoableCommand
             {
                 var col = rowData[i].ColumnIndices[j];
                 var val = rowData[i].Values[j];
-                var formula = formulaData.GetValue(oldRowNo, col);
+                var formula = formulaData.Get(oldRowNo, col);
                 if (formula == null)
                     sheet.Cells.SetValueImpl(newRowNo, col, val);
                 else
@@ -123,7 +125,8 @@ public class SortRangeCommand : IUndoableCommand
             return true;
 
         var rowCollection = sheet.Cells.GetCellDataStore().GetRowData(_sortedRegion);
-        var formulaCollection = sheet.Cells.GetFormulaStore().GetRowData(_sortedRegion);
+        var formulaCollection = sheet.Cells.GetFormulaStore().GetSubMatrix(_sortedRegion, false);
+
         sheet.BatchUpdates();
 
         sheet.Cells.ClearCellsImpl(new[] { _sortedRegion });
@@ -136,7 +139,7 @@ public class SortRangeCommand : IUndoableCommand
             for (int j = 0; j < rowData[i].ColumnIndices.Length; j++)
             {
                 var col = rowData[i].ColumnIndices[j];
-                var formula = formulaCollection.GetValue(rowIndices[i], col);
+                var formula = formulaCollection.Get(rowIndices[i], col);
                 if (formula == null)
                 {
                     var val = rowData[i].Values[j];

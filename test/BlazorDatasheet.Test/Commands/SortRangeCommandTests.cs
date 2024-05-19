@@ -131,4 +131,23 @@ public class SortRangeCommandTests
         sheet.Cells[3, 0].Value.Should().BeNull();
         sheet.Cells[4, 0].Value.Should().BeNull();
     }
+
+    [Test]
+    public void Sort_Command_Moves_Cell_Types()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Cells[0, 0].Value = 2;
+        sheet.Cells[1, 0].Value = 1;
+        sheet.Cells[1, 0].Type = "bool";
+
+        var cmd = new SortRangeCommand(new ColumnRegion(0));
+        cmd.Execute(sheet);
+
+        sheet.Cells[0, 0].Type.Should().Be("bool");
+        cmd.Undo(sheet);
+
+        sheet.Cells[1, 0].Type.Should().Be("bool");
+        sheet.Cells[0, 0].Type.Should().Be("text");
+    }
+    
 }

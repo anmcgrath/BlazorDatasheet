@@ -211,7 +211,7 @@ public class DataStoreByRowsTests
     }
 
     [Test]
-    public void Sub_Matrix_Tests()
+    public void Sub_Matrix_Tests_With_Reset_Offsets()
     {
         var store = (SparseMatrixStoreByRows<string>)GetStore<string>();
         for (int row = 0; row < 10; row++)
@@ -233,6 +233,33 @@ public class DataStoreByRowsTests
             for (int col = 0; col < colLen; col++)
             {
                 subMatrix.Get(row, col).Should().Be($"{row + r0},{col + c0}");
+            }
+        }
+    }
+    
+    [Test]
+    public void Sub_Matrix_Tests_With_No_Reset_Offsets()
+    {
+        var store = (SparseMatrixStoreByRows<string>)GetStore<string>();
+        for (int row = 0; row < 10; row++)
+        {
+            for (int col = 0; col < 10; col++)
+            {
+                store.Set(row, col, $"{row},{col}");
+            }
+        }
+
+        var rowLen = 4;
+        var r0 = 2;
+        var colLen = 5;
+        var c0 = 3;
+        var subMatrix = store.GetSubMatrix(new Region(r0, r0 + rowLen - 1, c0, c0 + colLen - 1),
+            newStoreResetsOffsets: false);
+        for (int row = 0; row < rowLen; row++)
+        {
+            for (int col = 0; col < colLen; col++)
+            {
+                subMatrix.Get(row + r0, col + c0).Should().Be($"{row + r0},{col + c0}");
             }
         }
     }

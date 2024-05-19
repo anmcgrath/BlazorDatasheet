@@ -238,14 +238,12 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
         int c1 = region.Right;
 
         int rowOffset = newStoreResetsOffsets ? r0 : 0;
-        int colOffset = newStoreResetsOffsets ? c0 : 0;
 
         var nonEmptyRows = _rows.GetNonEmptyDataBetween(r0, r1);
         foreach (var row in nonEmptyRows)
         {
-            var data = row.data.GetNonEmptyDataBetween(c0, c1);
-            foreach (var col in data)
-                store.Set(row.itemIndex - rowOffset, col.itemIndex - colOffset, col.data);
+            var subList = row.data.GetSubList(c0, c1, newStoreResetsOffsets);
+            store._rows.Set(row.itemIndex - rowOffset, subList);
         }
 
         return store;

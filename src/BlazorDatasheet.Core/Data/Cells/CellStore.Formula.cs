@@ -135,5 +135,5 @@ public partial class CellStore
         _sheet.Commands.ExecuteCommand(new SetParsedFormulaCommand(row, col, parsedFormula));
     }
 
-    public IMatrixDataStore<CellFormula?> GetFormulaStore() => _formulaStore;
+    internal IMatrixDataStore<CellFormula?> GetFormulaStore() => _formulaStore;
 }

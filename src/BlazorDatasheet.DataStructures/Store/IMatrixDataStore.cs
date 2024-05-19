@@ -145,4 +145,13 @@ public interface IMatrixDataStore<T>
     /// <param name="region"></param>
     /// <returns></returns>
     public T[][] GetData(IRegion region);
+
+    /// <summary>
+    /// Returns a sub-matrix containing only the data in the region specified.
+    /// If the <paramref name="newStoreResetsOffsets"/> is true, the new store will have the top-left corner at 0,0.
+    /// </summary>
+    /// <param name="region">The region to extract data from</param>
+    /// <param name="newStoreResetsOffsets">If true, the new store will have the top-left corner at 0,0</param>
+    /// <returns></returns>
+    IMatrixDataStore<T> GetSubMatrix(IRegion region, bool newStoreResetsOffsets = true);
 }

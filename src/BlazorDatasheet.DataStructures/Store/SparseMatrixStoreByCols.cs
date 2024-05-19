@@ -249,6 +249,11 @@ public class SparseMatrixStoreByCols<T> : IMatrixDataStore<T>
         return result;
     }
 
+    public IMatrixDataStore<T> GetSubMatrix(IRegion region, bool newStoreResetsOffsets = true)
+    {
+        throw new NotImplementedException();
+    }
+
     /// <summary>
     /// Get non empty data that exist in the bounds given
     /// </summary>

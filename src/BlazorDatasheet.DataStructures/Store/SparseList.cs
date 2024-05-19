@@ -202,7 +202,7 @@ internal class SparseList<T>
 
         return Values.Keys[index];
     }
-    
+
     /// <summary>
     /// Returns the next non-empty value pair after & including the index given. If none found, returns null
     /// </summary>
@@ -269,5 +269,20 @@ internal class SparseList<T>
         return res;
     }
 
-    
+    public SparseList<T> GetSubList(int i0, int i1, bool resetIndicesInNewList)
+    {
+        var vals = new SortedList<int, T>();
+        var nonEmpty = GetNonEmptyDataBetween(i0, i1);
+
+        foreach (var dp in nonEmpty)
+        {
+            var newIndex = resetIndicesInNewList ? dp.itemIndex - i0 : dp.itemIndex;
+            vals.Add(newIndex, dp.data);
+        }
+
+        return new SparseList<T>(_defaultValueIfEmpty)
+        {
+            Values = vals
+        };
+    }
 }
