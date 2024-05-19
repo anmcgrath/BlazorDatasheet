@@ -16,7 +16,8 @@ public class SortRangeCommand : IUndoableCommand
     /// Sorts the specified region on values using the specified sort options.
     /// </summary>
     /// <param name="region">The region to sort</param>
-    /// <param name="sortOptions">The column sort options, if null the default sort (sort on column 0 ascending) will be used.</param>
+    /// <param name="sortOptions">The column sort options, if null the default sort (sort on column 0 ascending) will be used.
+    /// If two column values are equal, then the next option will be used for the sort, equivalent to a ThenBy</param>
     public SortRangeCommand(IRegion region, List<ColumnSortOptions>? sortOptions = null)
     {
         _region = region;
@@ -28,7 +29,8 @@ public class SortRangeCommand : IUndoableCommand
     /// Sorts the specified region on values using the specified sort options.
     /// </summary>
     /// <param name="region">The region to sort</param>
-    /// <param name="sortOption">The column sort options, if null the default sort (sort on column 0 ascending) will be used.</param>
+    /// <param name="sortOption">The column sort options, if null the default sort (sort on column 0 ascending) will be used.
+    /// If two column values are equal, then the next option will be used for the sort, equivalent to a ThenBy</param>
     public SortRangeCommand(IRegion region, ColumnSortOptions sortOption)
     {
         _region = region;
@@ -95,7 +97,7 @@ public class SortRangeCommand : IUndoableCommand
             var sortOption = _sortOptions[i];
             var xValue = x.GetColumnData(sortOption.ColumnIndex + _region.Left);
             var yValue = y.GetColumnData(sortOption.ColumnIndex + _region.Left);
-            
+
             if (xValue?.Data == null && yValue?.Data == null)
                 return 0;
 
