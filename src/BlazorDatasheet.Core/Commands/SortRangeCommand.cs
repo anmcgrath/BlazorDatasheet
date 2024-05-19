@@ -9,9 +9,9 @@ namespace BlazorDatasheet.Core.Commands;
 public class SortRangeCommand : IUndoableCommand
 {
     private readonly IRegion _region;
-    private IRegion? _sortedRegion;
+    public IRegion? SortedRegion;
     private readonly List<ColumnSortOptions> _sortOptions;
-    private int[] _oldIndices = Array.Empty<int>();
+    public int[] OldIndices = Array.Empty<int>();
     private readonly RegionRestoreData<string> _typeRestoreData = new();
 
     /// <summary>
@@ -49,10 +49,10 @@ public class SortRangeCommand : IUndoableCommand
 
         rowData.Sort(rowIndices, Comparison);
 
-        _sortedRegion = new Region(_region.Top, _region.Top + rowIndices.Length, _region.Left, _region.Right);
-        _sortedRegion = _sortedRegion.GetIntersection(sheet.Region);
+        SortedRegion = new Region(_region.Top, _region.Top + rowIndices.Length, _region.Left, _region.Right);
+        SortedRegion = SortedRegion.GetIntersection(sheet.Region);
 
-        if (_sortedRegion == null)
+        if (SortedRegion == null)
             return true;
 
         sheet.BatchUpdates();
@@ -96,7 +96,7 @@ public class SortRangeCommand : IUndoableCommand
 
         sheet.EndBatchUpdates();
 
-        _oldIndices = rowIndices.ToArray();
+        OldIndices = rowIndices.ToArray();
 
         return true;
     }
@@ -134,22 +134,22 @@ public class SortRangeCommand : IUndoableCommand
 
     public bool Undo(Sheet sheet)
     {
-        if (_sortedRegion == null)
+        if (SortedRegion == null)
             return true;
 
-        var rowCollection = sheet.Cells.GetCellDataStore().GetRowData(_sortedRegion);
-        var formulaCollection = sheet.Cells.GetFormulaStore().GetSubStore(_sortedRegion, false);
-        var typeCollection = (ConsolidatedDataStore<string>)sheet.Cells.GetTypeStore().GetSubStore(_sortedRegion);
+        var rowCollection = sheet.Cells.GetCellDataStore().GetRowData(SortedRegion);
+        var formulaCollection = sheet.Cells.GetFormulaStore().GetSubStore(SortedRegion, false);
+        var typeCollection = (ConsolidatedDataStore<string>)sheet.Cells.GetTypeStore().GetSubStore(SortedRegion);
 
         sheet.BatchUpdates();
-        sheet.Cells.ClearCellsImpl(new[] { _sortedRegion });
-        sheet.Cells.GetTypeStore().Clear(_sortedRegion);
+        sheet.Cells.ClearCellsImpl(new[] { SortedRegion });
+        sheet.Cells.GetTypeStore().Clear(SortedRegion);
 
         var rowData = rowCollection.Rows;
         var rowIndices = rowCollection.RowIndicies;
-        for (int i = 0; i < _oldIndices.Length; i++)
+        for (int i = 0; i < OldIndices.Length; i++)
         {
-            var newRowNo = _oldIndices[i];
+            var newRowNo = OldIndices[i];
             for (int j = 0; j < rowData[i].ColumnIndices.Length; j++)
             {
                 var col = rowData[i].ColumnIndices[j];
