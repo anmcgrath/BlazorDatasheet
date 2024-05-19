@@ -12,7 +12,7 @@ public class SortRangeCommand : IUndoableCommand
     private IRegion? _sortedRegion;
     private readonly List<ColumnSortOptions> _sortOptions;
     private int[] _oldIndices = Array.Empty<int>();
-    private RegionRestoreData<string> _typeRestoreData = new();
+    private readonly RegionRestoreData<string> _typeRestoreData = new();
 
     /// <summary>
     /// Sorts the specified region on values using the specified sort options.
