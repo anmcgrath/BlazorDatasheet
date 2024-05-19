@@ -250,8 +250,12 @@ public class CellValue : IComparable, IComparable<CellValue>
     {
         if (other == null)
             return 1;
-        if (this.Data == null || other.Data == null)
+        if(this.Data == null && other.Data == null)
+            return 0;
+        if (this.Data == null)
             return -1;
+        if (other.Data == null)
+            return 1;
 
         return ((IComparable)this.Data).CompareTo((IComparable)other.Data);
     }

@@ -95,19 +95,18 @@ public class SortRangeCommand : IUndoableCommand
             var sortOption = _sortOptions[i];
             var xValue = x.GetColumnData(sortOption.ColumnIndex + _region.Left);
             var yValue = y.GetColumnData(sortOption.ColumnIndex + _region.Left);
+            
+            if (xValue?.Data == null && yValue?.Data == null)
+                return 0;
 
-            int comparison;
+            // null comparisons shouldn't depend on the sort order -
+            // null values always end up last.
+            if (xValue?.Data == null)
+                return 1;
+            if (yValue?.Data == null)
+                return -1;
 
-            if (xValue == null && yValue == null)
-                comparison = 0;
-            else if (xValue != null && yValue != null)
-                comparison = xValue.CompareTo(yValue);
-            else
-                comparison = xValue == null ? 1 : -1;
-
-            if (comparison == 0)
-                return comparison;
-
+            int comparison = xValue.CompareTo(yValue);
             comparison = sortOption.Ascending ? comparison : -comparison;
 
             return comparison;

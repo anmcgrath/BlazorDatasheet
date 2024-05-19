@@ -113,4 +113,22 @@ public class SortRangeCommandTests
         Action act = () => sortRangeCommand.Execute(sheet);
         act.Should().NotThrow();
     }
+
+    [Test]
+    public void Sort_Descending_With_Empty_Cells_Puts_Empty_At_End()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Cells[0, 0].Value = 1;
+        sheet.Cells[2, 0].Value = 2;
+        sheet.Cells[4, 0].Value = 4;
+
+        var so = new ColumnSortOptions(0, false);
+        var cmd = new SortRangeCommand(new ColumnRegion(0), so);
+        cmd.Execute(sheet);
+        sheet.Cells[0, 0].Value.Should().Be(4);
+        sheet.Cells[1, 0].Value.Should().Be(2);
+        sheet.Cells[2, 0].Value.Should().Be(1);
+        sheet.Cells[3, 0].Value.Should().BeNull();
+        sheet.Cells[4, 0].Value.Should().BeNull();
+    }
 }
