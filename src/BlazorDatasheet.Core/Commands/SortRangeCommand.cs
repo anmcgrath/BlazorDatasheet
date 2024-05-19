@@ -1,4 +1,5 @@
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core;
@@ -11,6 +12,7 @@ public class SortRangeCommand : IUndoableCommand
     private IRegion? _sortedRegion;
     private readonly List<ColumnSortOptions> _sortOptions;
     private int[] _oldIndices = Array.Empty<int>();
+    private RegionRestoreData<string> _typeRestoreData = new();
 
     /// <summary>
     /// Sorts the specified region on values using the specified sort options.
@@ -56,6 +58,8 @@ public class SortRangeCommand : IUndoableCommand
         sheet.BatchUpdates();
 
         var formulaData = sheet.Cells.GetFormulaStore().GetSubStore(_region, false);
+        var typeData =
+            (ConsolidatedDataStore<string>)sheet.Cells.GetTypeStore().GetSubStore(_region, false);
 
         // clear any row data that has been shifted (which should be all non-empty rows)
         for (int i = 0; i < rowData.Length; i++)
@@ -63,6 +67,7 @@ public class SortRangeCommand : IUndoableCommand
             var row = rowData[i].Row;
             var rowReg = new Region(row, row, _region.Left, _region.Right);
             sheet.Cells.ClearCellsImpl(new[] { rowReg });
+            _typeRestoreData.Merge(sheet.Cells.GetTypeStore().Clear(rowReg));
         }
 
         for (int i = 0; i < rowData.Length; i++)
@@ -75,6 +80,10 @@ public class SortRangeCommand : IUndoableCommand
                 var col = rowData[i].ColumnIndices[j];
                 var val = rowData[i].Values[j];
                 var formula = formulaData.Get(oldRowNo, col);
+                var type = typeData.Get(oldRowNo, col);
+
+                sheet.Cells.SetCellTypeImpl(new Region(newRowNo, col), type);
+
                 if (formula == null)
                     sheet.Cells.SetValueImpl(newRowNo, col, val);
                 else
@@ -111,10 +120,10 @@ public class SortRangeCommand : IUndoableCommand
                 return -1;
 
             int comparison = xValue.CompareTo(yValue);
-            
-            if(comparison == 0)
+
+            if (comparison == 0)
                 continue;
-            
+
             comparison = sortOption.Ascending ? comparison : -comparison;
 
             return comparison;
@@ -130,10 +139,11 @@ public class SortRangeCommand : IUndoableCommand
 
         var rowCollection = sheet.Cells.GetCellDataStore().GetRowData(_sortedRegion);
         var formulaCollection = sheet.Cells.GetFormulaStore().GetSubStore(_sortedRegion, false);
+        var typeCollection = (ConsolidatedDataStore<string>)sheet.Cells.GetTypeStore().GetSubStore(_sortedRegion);
 
         sheet.BatchUpdates();
-
         sheet.Cells.ClearCellsImpl(new[] { _sortedRegion });
+        sheet.Cells.GetTypeStore().Clear(_sortedRegion);
 
         var rowData = rowCollection.Rows;
         var rowIndices = rowCollection.RowIndicies;
@@ -144,6 +154,7 @@ public class SortRangeCommand : IUndoableCommand
             {
                 var col = rowData[i].ColumnIndices[j];
                 var formula = formulaCollection.Get(rowIndices[i], col);
+                var type = typeCollection.Get(rowIndices[i], col);
                 if (formula == null)
                 {
                     var val = rowData[i].Values[j];
@@ -154,9 +165,17 @@ public class SortRangeCommand : IUndoableCommand
                     formula.ShiftReferences((newRowNo - rowIndices[i]), 0);
                     sheet.Cells.SetFormulaImpl(newRowNo, col, formula);
                 }
+
+                sheet.Cells.SetCellTypeImpl(new Region(newRowNo, col), type);
             }
         }
 
+        var restoreData = new CellStoreRestoreData()
+        {
+            TypeRestoreData = _typeRestoreData
+        };
+
+        sheet.Cells.Restore(restoreData);
         sheet.EndBatchUpdates();
 
         return true;

@@ -57,7 +57,7 @@ public class SortRangeCommandTests
         var region = new ColumnRegion(0, 0);
         var options = new List<ColumnSortOptions>
         {
-            new ColumnSortOptions(0, true)
+            new (0, true)
         };
 
         var cmd = new SortRangeCommand(region, options);
@@ -136,9 +136,9 @@ public class SortRangeCommandTests
     public void Sort_Command_Moves_Cell_Types()
     {
         var sheet = new Sheet(10, 10);
-        sheet.Cells[0, 0].Value = 2;
-        sheet.Cells[1, 0].Value = 1;
-        sheet.Cells[1, 0].Type = "bool";
+        sheet.Cells[1, 0].Value = 2;
+        sheet.Cells[2, 0].Value = 1;
+        sheet.Cells[2, 0].Type = "bool";
 
         var cmd = new SortRangeCommand(new ColumnRegion(0));
         cmd.Execute(sheet);
@@ -146,8 +146,9 @@ public class SortRangeCommandTests
         sheet.Cells[0, 0].Type.Should().Be("bool");
         cmd.Undo(sheet);
 
-        sheet.Cells[1, 0].Type.Should().Be("bool");
+        sheet.Cells[2, 0].Type.Should().Be("bool");
         sheet.Cells[0, 0].Type.Should().Be("text");
+        sheet.Cells[1, 0].Type.Should().Be("text");
     }
 
     [Test]
