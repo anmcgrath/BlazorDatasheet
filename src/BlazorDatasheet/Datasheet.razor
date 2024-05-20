@@ -16,90 +16,129 @@
     @onmouseover="() => IsMouseInsideSheet = true"
     @onmouseout="() => IsMouseInsideSheet = false">
 
-    @if (Sheet != null)
-    {
-        <div>
-            <!-- Column headers -->
-            <div style="display: flex; flex-direction: column; justify-content: start;">
+    <div>
+        <!-- Column headers -->
+        <div style="display: flex; flex-direction: column; justify-content: start;">
 
-                @if (ShowColHeadings)
-                {
-                    <div style="display: flex; flex-direction: row;" class="sheet-row @(StickyHeadings ? "col-sticky" : "col-nonsticky")">
-                        @if (ShowRowHeadings)
-                        {
-                            <!-- the little bit outside to the left of first col header -->
-                            <div class="sheet-cell row-head column-head"
-                                 style="@CssUtil.GetCellWidthStyles(-1, 1, _cellLayoutProvider); height: @(_cellLayoutProvider.ColHeadingHeight)px;
+            @if (ShowColHeadings)
+            {
+                <div style="display: flex; flex-direction: row;" class="sheet-row @(StickyHeadings ? "col-sticky" : "col-nonsticky")">
+                    @if (ShowRowHeadings)
+                    {
+                        <!-- the little bit outside to the left of first col header -->
+                        <div class="sheet-cell row-head column-head"
+                             style="@CssUtil.GetCellWidthStyles(-1, 1, _cellLayoutProvider); height: @(_cellLayoutProvider.ColHeadingHeight)px;
                                  display: inline-block;@(StickyHeadings ? "position: sticky; left: 0; z-index:2;" : "")">
-                                <div class="cell"></div>
-                            </div>
-                        }
-                        <div id="filler-left-0" style="min-width: @(_visualSheet.Viewport.Left)px; display: block; float: left; height: 1px;"></div>
+                            <div class="cell"></div>
+                        </div>
+                    }
+                    <div id="filler-left-0" style="min-width: @(_visualSheet.Viewport.Left)px; display: block; float: left; height: 1px;"></div>
 
-                        <ColumnHeadingsRenderer
-                            OnMouseDown="HandleColumnHeaderMouseDown"
-                            OnMouseUp="HandleColumnHeaderMouseUp"
-                            OnMouseOver="HandleColumnHeaderMouseOver"
-                            NVisibleCols="_visualSheet.Viewport.VisibleRegion.Width"
-                            VisibleColStart="_visualSheet.Viewport.VisibleRegion.Left"
-                            CellLayoutProvider="_cellLayoutProvider"
-                            Sheet="Sheet"/>
+                    <ColumnHeadingsRenderer
+                        OnMouseDown="HandleColumnHeaderMouseDown"
+                        OnMouseUp="HandleColumnHeaderMouseUp"
+                        OnMouseOver="HandleColumnHeaderMouseOver"
+                        NVisibleCols="_visualSheet.Viewport.VisibleRegion.Width"
+                        VisibleColStart="_visualSheet.Viewport.VisibleRegion.Left"
+                        CellLayoutProvider="_cellLayoutProvider"
+                        Sheet="Sheet"/>
 
+                </div>
+            }
+
+            <div id="filler-top" @ref="_fillerTop" style="min-height: @(_visualSheet.Viewport?.Top)px; min-width:@(_cellLayoutProvider.TotalWidth)px; display: block;"></div>
+
+            <div id="last-row" style="display: flex; flex-direction: row;">
+
+                @if (ShowRowHeadings)
+                {
+                    <div id="rowHeadings" class="@(StickyHeadings ? "row-sticky" : "")">
+                        <RowHeadingsRenderer
+                            OnMouseDown="HandleRowHeaderMouseDown"
+                            OnMouseUp="HandleRowHeaderMouseUp"
+                            OnMouseOver="HandleRowHeaderMouseOver"
+                            NVisibleRows="_visualSheet.Viewport.VisibleRegion.Height"
+                            VisibleRowStart="_visualSheet.Viewport.VisibleRegion.Top"
+                            Sheet="Sheet"
+                            CellLayoutProvider="_cellLayoutProvider"/>
                     </div>
                 }
 
-                <div id="filler-top" @ref="_fillerTop" style="min-height: @(_visualSheet.Viewport?.Top)px; min-width:@(_cellLayoutProvider.TotalWidth)px; display: block;"></div>
 
-                <div id="last-row" style="display: flex; flex-direction: row;">
+                <div id="filler-left-1" @ref="_fillerLeft1" style="float:right; min-width: @(_visualSheet.Viewport.Left)px; height: @(RenderedInnerSheetHeight)px;"></div>
 
-                    @if (ShowRowHeadings)
+                <div
+                    style="width:@(RenderedInnerSheetWidth)px;height: @(RenderedInnerSheetHeight)px;display: block;">
+
+                    <!-- Merged cells -->
+                    @if (Sheet.Cells.AnyMerges() && _visualSheet.Viewport is not null)
                     {
-                        <div id="rowHeadings" class="@(StickyHeadings ? "row-sticky" : "")">
-                            <RowHeadingsRenderer
-                                OnMouseDown="HandleRowHeaderMouseDown"
-                                OnMouseUp="HandleRowHeaderMouseUp"
-                                OnMouseOver="HandleRowHeaderMouseOver"
-                                NVisibleRows="_visualSheet.Viewport.VisibleRegion.Height"
-                                VisibleRowStart="_visualSheet.Viewport.VisibleRegion.Top"
-                                Sheet="Sheet"
-                                CellLayoutProvider="_cellLayoutProvider"/>
-                        </div>
+                        var mergesInView = Sheet.Cells.GetMerges(_visualSheet.Viewport.VisibleRegion);
+                        @foreach (var merge in mergesInView)
+                        {
+                            var constrainedMerge = merge.GetIntersection(_sheetLocal.Region);
+                            if (constrainedMerge == null)
+                                continue;
+
+                            var row = constrainedMerge.Top;
+                            var col = constrainedMerge.Left;
+
+                            var cell = _visualSheet.GetVisualCell(row, col);
+                            var cellFormatString = cell.FormatStyleString;
+
+                            var k = row + "," + col;
+
+                            <div
+                                style="@GetAbsoluteCellPositionStyles(row, col, constrainedMerge.Height, constrainedMerge.Width);"
+                                class="sheet-cell"
+                                data-row="@row"
+                                data-col="@col"
+                                @key="k">
+                                <CascadingValue Value="Sheet" IsFixed="true">
+                                    <CellRenderer
+                                        IconColor="@cell.Format?.IconColor"
+                                        CellFormatStyleString="@cellFormatString"
+                                        IsDirty="SheetIsDirty || DirtyCells.Contains(new CellPosition(row, col))">
+                                        <ItemTemplate>
+                                            <DynamicComponent
+                                                Type="@GetCellRendererType(cell.CellType)"
+                                                Parameters="@GetCellRendererParameters(Sheet, cell)">
+                                            </DynamicComponent>
+                                        </ItemTemplate>
+                                    </CellRenderer>
+                                </CascadingValue>
+                            </div>
+                        }
                     }
 
 
-                    <div id="filler-left-1" @ref="_fillerLeft1" style="float:right; min-width: @(_visualSheet.Viewport.Left)px; height: @(RenderedInnerSheetHeight)px;"></div>
-
-                    <div
-                        style="width:@(RenderedInnerSheetWidth)px;height: @(RenderedInnerSheetHeight)px;display: block;">
-
-                        <!-- Merged cells -->
-                        @if (Sheet.Cells.AnyMerges() && _visualSheet.Viewport is not null)
-                        {
-                            var mergesInView = Sheet.Cells.GetMerges(_visualSheet.Viewport.VisibleRegion);
-                            @foreach (var merge in mergesInView)
+                    @for (int rowIndex = _visualSheet.Viewport.VisibleRegion.Top; rowIndex <= _visualSheet.Viewport.VisibleRegion.Bottom; rowIndex++)
+                    {
+                        var row = rowIndex;
+                        var rowHeight = @_cellLayoutProvider.ComputeHeight(row, 1);
+                        <div @key="row" style="height:@(rowHeight)px">
+                            @for (int j = _visualSheet.Viewport.VisibleRegion.Left; j <= _visualSheet.Viewport.VisibleRegion.Right; j++)
                             {
-                                var constrainedMerge = merge.GetIntersection(_sheetLocal.Region);
-                                if (constrainedMerge == null)
-                                    continue;
-
-                                var row = constrainedMerge.Top;
-                                var col = constrainedMerge.Left;
-
+                                var col = j;
                                 var cell = _visualSheet.GetVisualCell(row, col);
-                                var cellFormatString = cell.FormatStyleString;
-
-                                var k = row + "," + col;
-
+                                var cellValue = cell?.Value?.ToString() ?? "";
+                                var colWidth = @cell.Width;
+                                var k = $"{row},{col}";
                                 <div
-                                    style="@GetAbsoluteCellPositionStyles(row, col, constrainedMerge.Height, constrainedMerge.Width);"
-                                    class="sheet-cell"
+                                    @key="k"
                                     data-row="@row"
                                     data-col="@col"
-                                    @key="k">
+                                    style="
+                                            width:@(colWidth)px;
+                                            max-width:@(colWidth)px;
+                                            height:@(rowHeight)px;
+                                            max-height:@(rowHeight)px;"
+                                    class="sheet-cell">
                                     <CascadingValue Value="Sheet" IsFixed="true">
                                         <CellRenderer
                                             IconColor="@cell.Format?.IconColor"
-                                            CellFormatStyleString="@cellFormatString"
+                                            CellFormatStyleString="@cell.FormatStyleString"
+                                            Icon="@GetIconRenderFragment(cell.Icon)"
                                             IsDirty="SheetIsDirty || DirtyCells.Contains(new CellPosition(row, col))">
                                             <ItemTemplate>
                                                 <DynamicComponent
@@ -111,65 +150,23 @@
                                     </CascadingValue>
                                 </div>
                             }
-                        }
-
-
-                        @for (int rowIndex = _visualSheet.Viewport.VisibleRegion.Top; rowIndex <= _visualSheet.Viewport.VisibleRegion.Bottom; rowIndex++)
-                        {
-                            var row = rowIndex;
-                            var rowHeight = @_cellLayoutProvider.ComputeHeight(row, 1);
-                            <div @key="row" style="height:@(rowHeight)px">
-                                @for (int j = _visualSheet.Viewport.VisibleRegion.Left; j <= _visualSheet.Viewport.VisibleRegion.Right; j++)
-                                {
-                                    var col = j;
-                                    var cell = _visualSheet.GetVisualCell(row, col);
-                                    var cellValue = cell?.Value?.ToString() ?? "";
-                                    var colWidth = @cell.Width;
-                                    var k = $"{row},{col}";
-                                    <div
-                                        @key="k"
-                                        data-row="@row"
-                                        data-col="@col"
-                                        style="
-                                            width:@(colWidth)px;
-                                            max-width:@(colWidth)px;
-                                            height:@(rowHeight)px;
-                                            max-height:@(rowHeight)px;"
-                                        class="sheet-cell">
-                                        <CascadingValue Value="Sheet" IsFixed="true">
-                                            <CellRenderer
-                                                IconColor="@cell.Format?.IconColor"
-                                                CellFormatStyleString="@cell.FormatStyleString"
-                                                Icon="@GetIconRenderFragment(cell.Icon)"
-                                                IsDirty="SheetIsDirty || DirtyCells.Contains(new CellPosition(row, col))">
-                                                <ItemTemplate>
-                                                    <DynamicComponent
-                                                        Type="@GetCellRendererType(cell.CellType)"
-                                                        Parameters="@GetCellRendererParameters(Sheet, cell)">
-                                                    </DynamicComponent>
-                                                </ItemTemplate>
-                                            </CellRenderer>
-                                        </CascadingValue>
-                                    </div>
-                                }
-                            </div>
-                        }
-                    </div>
-
-                    <div id="filler-right" @ref="_fillerRight" style="float:left;min-width: @(_visualSheet.Viewport.DistanceRight)px; height:@(RenderedInnerSheetHeight)px;"></div>
-
-                    <EditorOverlayRenderer
-                        @ref="_editorManager"
-                        Sheet="Sheet"
-                        DefaultCellTypes="_defaultCellTypeDefinitions"
-                        CustomCellTypes="CustomCellTypeDefinitions"
-                        CellLayoutProvider="_cellLayoutProvider"/>
+                        </div>
+                    }
                 </div>
 
-                <div id="filler-bottom" @ref="_fillerBottom" style="min-height: @(_visualSheet.Viewport?.DistanceBottom)px; min-width:@(1)px;"></div>
+                <div id="filler-right" @ref="_fillerRight" style="float:left;min-width: @(_visualSheet.Viewport.DistanceRight)px; height:@(RenderedInnerSheetHeight)px;"></div>
+
+                <EditorOverlayRenderer
+                    @ref="_editorManager"
+                    Sheet="Sheet"
+                    DefaultCellTypes="_defaultCellTypeDefinitions"
+                    CustomCellTypes="CustomCellTypeDefinitions"
+                    CellLayoutProvider="_cellLayoutProvider"/>
             </div>
+
+            <div id="filler-bottom" @ref="_fillerBottom" style="min-height: @(_visualSheet.Viewport?.DistanceBottom)px; min-width:@(1)px;"></div>
         </div>
-    }
+    </div>
 
     <!-- entire size of sheet to force scrollbars. Includes width of row headers/columns-->
     <div id="sheet_whole"

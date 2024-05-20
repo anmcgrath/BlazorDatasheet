@@ -25,7 +25,7 @@ public partial class Datasheet : IHandleEvent
     /// <summary>
     /// The Sheet holding the data for the datasheet.
     /// </summary>
-    [Parameter]
+    [Parameter, EditorRequired]
     public Sheet Sheet { get; set; } = default!;
 
     /// <summary>
