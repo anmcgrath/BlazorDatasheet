@@ -1,11 +1,8 @@
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Text;
 using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Edit;
 using BlazorDatasheet.Core.Events;
-using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Core.Layout;
 using BlazorDatasheet.Core.Util;
@@ -16,11 +13,8 @@ using BlazorDatasheet.Events;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Render.DefaultComponents;
 using BlazorDatasheet.Services;
-using BlazorDatasheet.Util;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using Microsoft.AspNetCore.Components.Web.Virtualization;
-using ChangeEventArgs = Microsoft.AspNetCore.Components.ChangeEventArgs;
 using Microsoft.JSInterop;
 using ClipboardEventArgs = BlazorDatasheet.Core.Events.ClipboardEventArgs;
 
@@ -28,13 +22,11 @@ namespace BlazorDatasheet;
 
 public partial class Datasheet : IHandleEvent
 {
-    private double lastRenderTime;
-
     /// <summary>
     /// The Sheet holding the data for the datasheet.
     /// </summary>
     [Parameter]
-    public Sheet? Sheet { get; set; }
+    public Sheet Sheet { get; set; } = default!;
 
     /// <summary>
     /// Whether to show the row headings.
@@ -76,13 +68,13 @@ public partial class Datasheet : IHandleEvent
     /// <summary>
     /// Default editors for cell types.
     /// </summary>
-    private Dictionary<string, CellTypeDefinition> _defaultCellTypeDefinitions { get; } = new();
+    private Dictionary<string, CellTypeDefinition> _defaultCellTypeDefinitions = new();
 
     /// <summary>
     /// Exists so that we can determine whether the sheet has changed
     /// during parameter set
     /// </summary>
-    private Sheet? _sheetLocal;
+    private Sheet _sheetLocal = default!;
 
     /// <summary>
     /// Set to true when the datasheet should not be edited
@@ -159,32 +151,34 @@ public partial class Datasheet : IHandleEvent
     /// <summary>
     /// Contains positioning calculations
     /// </summary>
-    private CellLayoutProvider? _cellLayoutProvider;
+    private CellLayoutProvider _cellLayoutProvider = default!;
 
     /// <summary>
     /// Whether the user is actively selecting cells/rows/columns in the sheet.
     /// </summary>
-    internal bool IsSelecting => Sheet != null && Sheet.Selection.IsSelecting;
+    private bool IsSelecting => Sheet.Selection.IsSelecting;
 
     /// <summary>
     /// Manages the display of the editor, which is rendered using absolute coordinates over the top of the sheet.
     /// </summary>
-    private EditorOverlayRenderer _editorManager;
+    private EditorOverlayRenderer _editorManager = default!;
 
     /// <summary>
     /// Clipboard service that provides copy/paste functionality.
     /// </summary>
-    private IClipboard _clipboard;
+    private IClipboard _clipboard = default!;
 
     /// <summary>
     /// Holds visual cache information.
     /// </summary>
-    private VisualSheet _visualSheet;
+    private VisualSheet _visualSheet = default!;
 
     // This ensures that the sheet is not re-rendered when mouse events are handled inside the sheet.
     // Performance is improved dramatically when this is used.
 
-    private SheetPointerInputService _sheetPointerInputService;
+    private SheetPointerInputService _sheetPointerInputService = null!;
+
+    private DotNetObjectReference<Datasheet> _dotnetHelper = default!;
 
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
 
@@ -206,29 +200,20 @@ public partial class Datasheet : IHandleEvent
         {
             _sheetLocal = Sheet;
 
-            if (_sheetLocal == null)
-                return;
-
             _sheetLocal.SetDialogService(new SimpleDialogService(this.JS));
-            _sheetLocal.Rows.RowInserted += async (sender, args) => await RefreshViewport();
-            _sheetLocal.Columns.ColumnInserted += async (sender, args) => await RefreshViewport();
-            _sheetLocal.Rows.RowRemoved += async (sender, args) => await RefreshViewport();
-            _sheetLocal.Columns.ColumnRemoved += async (sender, args) => await RefreshViewport();
-            
+            _sheetLocal.Rows.RowInserted += async (_, _) => await RefreshViewport();
+            _sheetLocal.Columns.ColumnInserted += async (_, _) => await RefreshViewport();
+            _sheetLocal.Rows.RowRemoved += async (_, _) => await RefreshViewport();
+            _sheetLocal.Columns.ColumnRemoved += async (_, _) => await RefreshViewport();
+
             _cellLayoutProvider = new CellLayoutProvider(_sheetLocal);
             _visualSheet = new VisualSheet(_sheetLocal);
-            _visualSheet.Invalidated += (sender, args) =>
+            _visualSheet.Invalidated += (_, args) =>
             {
                 DirtyCells.UnionWith(args.DirtyCells);
                 this.StateHasChanged();
             };
 
-            _cellLayoutProvider.IncludeColHeadings = ShowColHeadings;
-            _cellLayoutProvider.IncludeRowHeadings = ShowRowHeadings;
-        }
-
-        if (_cellLayoutProvider != null)
-        {
             _cellLayoutProvider.IncludeColHeadings = ShowColHeadings;
             _cellLayoutProvider.IncludeRowHeadings = ShowRowHeadings;
         }
@@ -257,7 +242,7 @@ public partial class Datasheet : IHandleEvent
         return typeof(TextRenderer);
     }
 
-    private Dictionary<string, object> getCellRendererParameters(Sheet sheet, VisualCell visualCell)
+    private Dictionary<string, object> GetCellRendererParameters(Sheet sheet, VisualCell visualCell)
     {
         return new Dictionary<string, object>()
         {
@@ -272,8 +257,6 @@ public partial class Datasheet : IHandleEvent
         return SheetIsDirty || DirtyCells.Any();
     }
 
-    private DotNetObjectReference<Datasheet> _dotnetHelper;
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -285,13 +268,13 @@ public partial class Datasheet : IHandleEvent
             _sheetPointerInputService = new SheetPointerInputService(JS, _innerSheet);
             await _sheetPointerInputService.Init();
 
-            _sheetPointerInputService.PointerDown += (sender, args) =>
+            _sheetPointerInputService.PointerDown += (_, args) =>
                 this.HandleCellMouseDown(args.Row, args.Col, args.MetaKey, args.CtrlKey, args.ShiftKey);
-            _sheetPointerInputService.PointerUp += (sender, args) =>
+            _sheetPointerInputService.PointerUp += (_, args) =>
                 this.HandleCellMouseUp(args.Row, args.Col, args.MetaKey, args.CtrlKey, args.ShiftKey);
-            _sheetPointerInputService.PointerEnter += (sender, args) =>
+            _sheetPointerInputService.PointerEnter += (_, args) =>
                 this.HandleCellMouseOver(args.Row, args.Col);
-            _sheetPointerInputService.PointerDoubleClick += (sender, args) =>
+            _sheetPointerInputService.PointerDoubleClick += (_, args) =>
                 this.HandleCellDoubleClick(args.Row, args.Col, args.MetaKey, args.CtrlKey, args.ShiftKey);
 
             var module =
@@ -306,7 +289,7 @@ public partial class Datasheet : IHandleEvent
                 _fillerTop,
                 _fillerRight,
                 _fillerBottom);
-            
+
             await module.DisposeAsync();
         }
 
@@ -373,12 +356,12 @@ public partial class Datasheet : IHandleEvent
         await _windowEventService.RegisterClipboardEvent("paste", HandleWindowPaste);
     }
 
-    private void HandleCellMouseUp(int row, int col, bool MetaKey, bool CtrlKey, bool ShiftKey)
+    private void HandleCellMouseUp(int row, int col, bool metaKey, bool ctrlKey, bool shiftKey)
     {
         this.EndSelecting();
     }
 
-    private void HandleCellMouseDown(int row, int col, bool MetaKey, bool CtrlKey, bool ShiftKey)
+    private void HandleCellMouseDown(int row, int col, bool metaKey, bool ctrlKey, bool ShiftKey)
     {
         if (_sheetLocal.Editor.IsEditing)
         {
@@ -393,7 +376,7 @@ public partial class Datasheet : IHandleEvent
             Sheet?.Selection?.ExtendTo(row, col);
         else
         {
-            if (!MetaKey && !CtrlKey)
+            if (!metaKey && !ctrlKey)
             {
                 Sheet?.Selection?.ClearSelections();
             }
@@ -456,20 +439,19 @@ public partial class Datasheet : IHandleEvent
 
         this.CancelSelecting();
 
-        var cell = Sheet?.Cells?.GetCell(row, col);
+        var cell = Sheet.Cells.GetCell(row, col);
 
-        if (cell == null || cell.Format?.IsReadOnly == true)
+        if (cell.Format.IsReadOnly == true)
             return;
 
         var softEdit = mode == EditEntryMode.Key || mode == EditEntryMode.None || cell.Value == null;
 
-        Sheet?.Editor.BeginEdit(row, col, softEdit, mode, entryChar);
+        Sheet.Editor.BeginEdit(row, col, softEdit, mode, entryChar);
     }
 
     /// <summary>
     /// Accepts the current edit returning whether the edit was successful
     /// </summary>
-    /// <param name="dRow"></param>
     /// <returns></returns>
     private bool AcceptEdit()
     {
@@ -503,9 +485,6 @@ public partial class Datasheet : IHandleEvent
 
     private async Task<bool> HandleWindowKeyDown(KeyboardEventArgs e)
     {
-        if (Sheet == null)
-            return false;
-
         if (!IsDataSheetActive)
             return false;
 
@@ -522,7 +501,7 @@ public partial class Datasheet : IHandleEvent
         {
             var acceptEdit = Sheet.Editor.IsEditing && AcceptEdit();
             var movementDir = e.ShiftKey ? -1 : 1;
-            Sheet?.Selection?.MoveActivePositionByRow(movementDir);
+            Sheet.Selection.MoveActivePositionByRow(movementDir);
             return acceptEdit;
         }
 
@@ -539,7 +518,7 @@ public partial class Datasheet : IHandleEvent
         if (e.Key == "Tab" && (!Sheet.Editor.IsEditing || AcceptEdit()))
         {
             var movementDir = e.ShiftKey ? -1 : 1;
-            Sheet?.Selection?.MoveActivePositionByCol(movementDir);
+            Sheet.Selection.MoveActivePositionByCol(movementDir);
             return true;
         }
 
@@ -551,18 +530,18 @@ public partial class Datasheet : IHandleEvent
 
         if (e.Code == "89" /*Y*/ && (e.CtrlKey || e.MetaKey) && !Sheet.Editor.IsEditing)
         {
-            return Sheet!.Commands.Redo();
+            return Sheet.Commands.Redo();
         }
 
 
         if (e.Code == "90" /*Z*/ && (e.CtrlKey || e.MetaKey) && !Sheet.Editor.IsEditing)
         {
-            return Sheet!.Commands.Undo();
+            return Sheet.Commands.Undo();
         }
 
         if ((e.Key == "Delete" || e.Key == "Backspace") && !Sheet.Editor.IsEditing)
         {
-            if (!Sheet!.Selection.Regions.Any())
+            if (!Sheet.Selection.Regions.Any())
                 return true;
 
             Sheet.Selection.Clear();
@@ -583,11 +562,11 @@ public partial class Datasheet : IHandleEvent
             char c = e.Key == "Space" ? ' ' : e.Key[0];
             if (char.IsLetterOrDigit(c) || char.IsPunctuation(c) || char.IsSymbol(c) || char.IsSeparator(c))
             {
-                if (Sheet == null || !Sheet.Selection.Regions.Any())
+                if (!Sheet.Selection.Regions.Any())
                     return false;
                 var inputPosition = Sheet.Selection.GetInputPosition();
 
-                BeginEdit(inputPosition.row, inputPosition.col, EditEntryMode.Key, e.Key);
+                await BeginEdit(inputPosition.row, inputPosition.col, EditEntryMode.Key, e.Key);
             }
 
             return true;
@@ -605,10 +584,10 @@ public partial class Datasheet : IHandleEvent
                 return false;
 
 
-            if (Sheet == null || !Sheet.Selection.Regions.Any())
+            if (!Sheet.Selection.Regions.Any())
                 return false;
             var inputPosition = Sheet.Selection.GetInputPosition();
-            BeginEdit(inputPosition.row, inputPosition.col, EditEntryMode.Key, e.Key);
+            await BeginEdit(inputPosition.row, inputPosition.col, EditEntryMode.Key, e.Key);
 
             return true;
         }
@@ -690,7 +669,7 @@ public partial class Datasheet : IHandleEvent
     /// </summary>
     public async Task CopySelectionToClipboard()
     {
-        if (this.IsSelecting || Sheet == null)
+        if (this.IsSelecting)
             return;
 
         // Can only handle single selections for now
@@ -709,22 +688,22 @@ public partial class Datasheet : IHandleEvent
     /// <param name="col">The col where the selection should start</param>
     private void BeginSelectingCell(int row, int col)
     {
-        Sheet?.Selection.BeginSelectingCell(row, col);
+        Sheet.Selection.BeginSelectingCell(row, col);
     }
 
     private void CancelSelecting()
     {
-        Sheet?.Selection.CancelSelecting();
+        Sheet.Selection.CancelSelecting();
     }
 
     private void BeginSelectingRow(int row)
     {
-        Sheet?.Selection.BeginSelectingRow(row);
+        Sheet.Selection.BeginSelectingRow(row);
     }
 
     private void BeginSelectingCol(int col)
     {
-        Sheet?.Selection.BeginSelectingCol(col);
+        Sheet.Selection.BeginSelectingCol(col);
     }
 
     /// <summary>

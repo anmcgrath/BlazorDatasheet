@@ -41,15 +41,4 @@ public class Viewport
     /// The height (in px) of the rendered area - includes overflow
     /// </summary>
     public double VisibleHeight { get; set; }
-
-    public void SetFromViewPort(Viewport newViewport)
-    {
-        VisibleRegion = newViewport.VisibleRegion;
-        Left = newViewport.Left;
-        Top = newViewport.Top;
-        DistanceRight = newViewport.DistanceRight;
-        DistanceBottom = newViewport.DistanceBottom;
-        VisibleWidth = newViewport.VisibleWidth;
-        VisibleHeight = newViewport.VisibleHeight;
-    }
 }
