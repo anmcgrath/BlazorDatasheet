@@ -47,9 +47,12 @@ public class SortRangeCommand : IUndoableCommand
         var rowIndices = new Span<int>(rowCollection.RowIndicies);
         var rowData = new Span<RowData<CellValue>>(rowCollection.Rows);
 
+        if (rowIndices.Length == 0)
+            return true;
+
         rowData.Sort(rowIndices, Comparison);
 
-        SortedRegion = new Region(_region.Top, _region.Top + rowIndices.Length, _region.Left, _region.Right);
+        SortedRegion = new Region(_region.Top, _region.Top + rowIndices.Length - 1, _region.Left, _region.Right);
         SortedRegion = SortedRegion.GetIntersection(sheet.Region);
 
         if (SortedRegion == null)
@@ -136,7 +139,7 @@ public class SortRangeCommand : IUndoableCommand
     {
         if (SortedRegion == null)
             return true;
-
+        
         var rowCollection = sheet.Cells.GetCellDataStore().GetRowData(SortedRegion);
         var formulaCollection = sheet.Cells.GetFormulaStore().GetSubStore(SortedRegion, false);
         var typeCollection = (ConsolidatedDataStore<string>)sheet.Cells.GetTypeStore().GetSubStore(SortedRegion);
