@@ -31,9 +31,9 @@
         X="x"
         Y="y"
         ZIndex="12"
-        BorderStyle="dashed"
+        BorderStyle="solid"
         BorderColor="@cr.Data"
-        BorderThickness="2"/>
+        BorderThickness="1"/>
 }
 
 @code {
@@ -85,22 +85,22 @@
 
     private double GetX(IRegion region)
     {
-        return _sheet.Columns.GetWidthBetween(0, region.Left) - _editX + 1;
+        return _sheet.Columns.GetWidthBetween(0, region.Left) - _editX;
     }
 
     private double GetY(IRegion region)
     {
-        return _sheet.Rows.GetHeightBetween(0, region.Top) - _editY + 1;
+        return _sheet.Rows.GetHeightBetween(0, region.Top) - _editY;
     }
 
     private double GetWidth(IRegion region)
     {
-        return _sheet.Columns.GetWidthBetween(region.Left, region.Right + 1) - 2;
+        return _sheet.Columns.GetWidthBetween(region.Left, region.Right + 1);
     }
 
     private double GetHeight(IRegion region)
     {
-        return _sheet.Rows.GetHeightBetween(region.Top, region.Bottom + 1) - 2;
+        return _sheet.Rows.GetHeightBetween(region.Top, region.Bottom + 1);
     }
 
     public override void BeginEdit(EditEntryMode entryMode, string? editValue, string key)

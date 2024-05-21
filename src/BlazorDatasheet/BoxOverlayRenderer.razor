@@ -3,7 +3,7 @@
 @using BlazorDatasheet.Render
 <!--Renders a box at a particular row/column with a width & height -->
 
-<div style="@GetSizeStyleString(); position: absolute; pointer-events: none;"/>
+<div style="@GetSizeStyleString(); box-sizing: border-box; position: absolute; pointer-events: none;"></div>
 
 @code {
 
@@ -31,15 +31,15 @@
     {
         var strBuilder = new StringBuilder();
 
-        strBuilder.Append($"left:{X}px;");
-        strBuilder.Append($"top:{Y}px;");
-        strBuilder.Append($"width:{Width - 1}px;");
-        strBuilder.Append($"height:{Height - 1}px;");
+        strBuilder.Append($"left:{X-1}px;");
+        strBuilder.Append($"top:{Y-1}px;");
+        strBuilder.Append($"width:{Width+1}px;");
+        strBuilder.Append($"height:{Height+1}px;");
         strBuilder.Append($"position:relative;");
         strBuilder.Append($"z-index:{ZIndex};");
         if (BorderThickness != 0)
         {
-            strBuilder.Append($"outline: {BorderThickness}px {BorderStyle} {BorderColor};");
+            strBuilder.Append($"border: {BorderThickness}px {BorderStyle} {BorderColor};");
         }
 
         if (BackgroundVisible)
