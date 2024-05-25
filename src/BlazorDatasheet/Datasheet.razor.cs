@@ -86,6 +86,8 @@ public partial class Datasheet : IHandleEvent
 
     [Parameter] public Dictionary<string, RenderFragment> Icons { get; set; } = new();
 
+    [Parameter] public RenderFragment<HeadingContext>? ColumnHeaderTemplate { get; set; } = null;
+
     /// <summary>
     /// Whether the user is focused on the datasheet.
     /// </summary>

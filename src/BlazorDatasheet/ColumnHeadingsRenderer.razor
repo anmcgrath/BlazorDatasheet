@@ -5,13 +5,10 @@
 @using Microsoft.JSInterop
 @using System.Text
 @using BlazorDatasheet.Core.Data
-@using BlazorDatasheet.Core.Events.Layout
-@using BlazorDatasheet.Core.Interfaces
 @using BlazorDatasheet.Core.Layout
 @using BlazorDatasheet.DataStructures.Intervals
 @using BlazorDatasheet.DataStructures.Util
 @using BlazorDatasheet.Events
-@using BlazorDatasheet.Formula.Core.Interpreter.References
 @inject IJSRuntime JS;
 @inject IWindowEventService _windowEventService;
 @implements IDisposable
@@ -72,7 +69,7 @@
         @onmouseover="e => HandleMouseOver(col, e)"
         @onmousedown="e => HandleMouseDown(col, e)">
         <div class="cell">
-            @colHeading
+            @HeadingRenderer(new HeadingContext(col, colHeading))
         </div>
     </div>
 }
@@ -82,24 +79,20 @@
     private Sheet? _sheet;
 
     [Parameter, EditorRequired] public Sheet? Sheet { get; set; }
-
     [Parameter] public CellLayoutProvider CellLayoutProvider { get; set; }
-
     [Parameter] public EventCallback<ColumnMouseEventArgs> OnMouseUp { get; set; }
-
     [Parameter] public EventCallback<ColumnMouseEventArgs> OnMouseOver { get; set; }
-
     [Parameter] public EventCallback<ColumnMouseEventArgs> OnMouseDown { get; set; }
-
+    [Parameter, EditorRequired] public RenderFragment<HeadingContext> HeadingRenderer { get; set; } = default!;
     [Parameter] public int NVisibleCols { get; set; }
 
     [Parameter] public int VisibleColStart { get; set; }
 
     private double MouseX { get; set; }
     private double MouseXStart { get; set; }
-    public int ActiveAdornerIndex { get; set; }
-    public bool IsDragging { get; set; }
-    public double CurrentColResizeAmount { get; set; }
+    private int ActiveAdornerIndex { get; set; }
+    private bool IsDragging { get; set; }
+    private double CurrentColResizeAmount { get; set; }
     private int _minResizeWidth = 15;
 
     public List<OrderedInterval> _selectionIntervals { get; set; } = new();

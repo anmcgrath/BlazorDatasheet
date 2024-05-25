@@ -41,7 +41,18 @@
                         NVisibleCols="_visualSheet.Viewport.VisibleRegion.Width"
                         VisibleColStart="_visualSheet.Viewport.VisibleRegion.Left"
                         CellLayoutProvider="_cellLayoutProvider"
-                        Sheet="Sheet"/>
+                        Sheet="Sheet">
+                        <HeadingRenderer>
+                            @if (ColumnHeaderTemplate != null)
+                            {
+                                @ColumnHeaderTemplate(context)
+                            }
+                            else
+                            {
+                                @context.Heading?.ToString()
+                            }
+                        </HeadingRenderer>
+                    </ColumnHeadingsRenderer>
 
                 </div>
             }
