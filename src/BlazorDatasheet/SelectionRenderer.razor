@@ -10,6 +10,7 @@
 @using BlazorDatasheet.Services
 @using BlazorDatasheet.Services
 @using Microsoft.JSInterop
+@inherits SheetComponentBase
 
 <!-- Render the temp selection (currently selected region) -->
 @if (Sheet != null && BoundedSelectingRegion != null && BoundedSelectingRegion?.Area > 0)

@@ -1,6 +1,8 @@
 @using System.ComponentModel
 @using System.Text
 @using BlazorDatasheet.Render
+@inherits SheetComponentBase
+
 <!--Renders a box at a particular row/column with a width & height -->
 
 <div style="@GetSizeStyleString(); box-sizing: border-box; position: absolute; pointer-events: none;"></div>

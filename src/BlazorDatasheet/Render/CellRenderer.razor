@@ -1,6 +1,6 @@
 @using System.Text
 @using BlazorDatasheet.Util
-@implements IHandleEvent
+@inherits SheetComponentBase
 
 <!-- The cell content -->
 
@@ -67,7 +67,5 @@
     {
         base.OnAfterRender(firstRender);
     }
-
-    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
 
 }

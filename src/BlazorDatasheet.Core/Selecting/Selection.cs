@@ -250,7 +250,7 @@ public class Selection
     /// <param name="row"></param>
     /// <param name="col"></param>
     /// <returns></returns>
-    public bool IsSelected(int row, int col)
+    public bool Contains(int row, int col)
     {
         if (!_regions.Any())
             return false;

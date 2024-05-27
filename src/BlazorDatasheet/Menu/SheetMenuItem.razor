@@ -1,5 +1,6 @@
 @using BlazorDatasheet.Services
 @inject IMenuService MenuService
+@inherits SheetComponentBase
 
 <div class="sheet-menu-item" @onmouseup="HandleMouseUp" @onmouseover="HandleMouseOver">
     @ChildContent

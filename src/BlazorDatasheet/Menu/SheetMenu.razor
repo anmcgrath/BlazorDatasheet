@@ -1,5 +1,6 @@
 @using BlazorDatasheet.Services
 @inject IMenuService MenuService
+@inherits SheetComponentBase
 
 <CascadingValue Value="@MenuId">
     <div id="@MenuId" popover="manual" class="sheetPopover">

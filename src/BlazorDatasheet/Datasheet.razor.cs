@@ -20,7 +20,7 @@ using ClipboardEventArgs = BlazorDatasheet.Core.Events.ClipboardEventArgs;
 
 namespace BlazorDatasheet;
 
-public partial class Datasheet : IHandleEvent
+public partial class Datasheet : SheetComponentBase
 {
     /// <summary>
     /// The Sheet holding the data for the datasheet.
@@ -182,8 +182,6 @@ public partial class Datasheet : IHandleEvent
 
     private DotNetObjectReference<Datasheet> _dotnetHelper = default!;
 
-    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
-
     private IJSObjectReference _virtualizer = null!;
 
     protected override void OnInitialized()
@@ -270,14 +268,10 @@ public partial class Datasheet : IHandleEvent
             _sheetPointerInputService = new SheetPointerInputService(JS, _innerSheet);
             await _sheetPointerInputService.Init();
 
-            _sheetPointerInputService.PointerDown += (_, args) =>
-                this.HandleCellMouseDown(args.Row, args.Col, args.MetaKey, args.CtrlKey, args.ShiftKey);
-            _sheetPointerInputService.PointerUp += (_, args) =>
-                this.HandleCellMouseUp(args.Row, args.Col, args.MetaKey, args.CtrlKey, args.ShiftKey);
-            _sheetPointerInputService.PointerEnter += (_, args) =>
-                this.HandleCellMouseOver(args.Row, args.Col);
-            _sheetPointerInputService.PointerDoubleClick += (_, args) =>
-                this.HandleCellDoubleClick(args.Row, args.Col, args.MetaKey, args.CtrlKey, args.ShiftKey);
+            _sheetPointerInputService.PointerDown += this.HandleCellMouseDown;
+            _sheetPointerInputService.PointerUp += this.HandleCellMouseUp;
+            _sheetPointerInputService.PointerEnter += HandleCellMouseOver;
+            _sheetPointerInputService.PointerDoubleClick += HandleCellDoubleClick;
 
             var module =
                 await JS.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/js/virtualize.js");
@@ -358,80 +352,85 @@ public partial class Datasheet : IHandleEvent
         await _windowEventService.RegisterClipboardEvent("paste", HandleWindowPaste);
     }
 
-    private void HandleCellMouseUp(int row, int col, bool metaKey, bool ctrlKey, bool shiftKey)
+    private void HandleCellMouseUp(object? sender, SheetPointerEventArgs args)
     {
         this.EndSelecting();
     }
 
-    private void HandleCellMouseDown(int row, int col, bool metaKey, bool ctrlKey, bool ShiftKey)
+    private void HandleCellMouseDown(object? sender, SheetPointerEventArgs args)
     {
+        // if rmc and inside a selection, don't do anything
+        if (args.MouseButton == 2 && Sheet.Selection.Contains(args.Row, args.Col))
+            return;
+
         if (_sheetLocal.Editor.IsEditing)
         {
-            if (!(Sheet.Editor.EditCell.Row == row && Sheet.Editor.EditCell.Col == col))
+            if (!(Sheet.Editor.EditCell!.Row == args.Row && Sheet.Editor.EditCell!.Col == args.Col))
             {
                 if (!AcceptEdit())
                     return;
             }
         }
 
-        if (ShiftKey && Sheet?.Selection?.ActiveRegion != null)
-            Sheet?.Selection?.ExtendTo(row, col);
+        if (args.ShiftKey && Sheet.Selection.ActiveRegion != null)
+            Sheet.Selection.ExtendTo(args.Row, args.Col);
         else
         {
-            if (!metaKey && !ctrlKey)
+            if (!args.MetaKey && !args.CtrlKey)
             {
-                Sheet?.Selection?.ClearSelections();
+                Sheet.Selection.ClearSelections();
             }
 
-            var mergeRangeAtPosition = _sheetLocal.Cells.GetMerge(row, col);
-            if (row == -1)
-                this.BeginSelectingCol(col);
-            else if (col == -1)
-                this.BeginSelectingRow(row);
+            var mergeRangeAtPosition = _sheetLocal.Cells.GetMerge(args.Row, args.Col);
+            if (args.Row == -1)
+                this.BeginSelectingCol(args.Col);
+            else if (args.Col == -1)
+                this.BeginSelectingRow(args.Row);
             else
-                this.BeginSelectingCell(row, col);
+                this.BeginSelectingCell(args.Row, args.Col);
+
+            if (args.MouseButton == 2) // RMC
+                this.EndSelecting();
         }
     }
 
     private void HandleColumnHeaderMouseDown(ColumnMouseEventArgs args)
     {
-        this.HandleCellMouseDown(-1, args.Column, args.Args.MetaKey, args.Args.CtrlKey, args.Args.ShiftKey);
+        //this.HandleCellMouseDown(-1, args.Column, args.Args.MetaKey, args.Args.CtrlKey, args.Args.ShiftKey);
     }
 
     private void HandleColumnHeaderMouseUp(ColumnMouseEventArgs args)
     {
-        this.HandleCellMouseUp(-1, args.Column, args.Args.MetaKey, args.Args.CtrlKey, args.Args.ShiftKey);
+        //var pointerArgs = new SheetPointer
+        //this.HandleCellMouseUp(-1, args.Column, args.Args.MetaKey, args.Args.CtrlKey, args.Args.ShiftKey);
     }
 
     private void HandleColumnHeaderMouseOver(ColumnMouseEventArgs args)
     {
-        this.HandleCellMouseOver(-1, args.Column);
+        //this.HandleCellMouseOver(-1, args.Column);
     }
 
     private void HandleRowHeaderMouseDown(RowMouseEventArgs e)
     {
-        this.HandleCellMouseDown(e.RowIndex, -1, e.Args.MetaKey, e.Args.CtrlKey, e.Args.ShiftKey);
+        //this.HandleCellMouseDown(e.RowIndex, -1, e.Args.MetaKey, e.Args.CtrlKey, e.Args.ShiftKey);
     }
 
     private void HandleRowHeaderMouseUp(RowMouseEventArgs args)
     {
-        this.HandleCellMouseUp(args.RowIndex, -1, args.Args.MetaKey, args.Args.CtrlKey, args.Args.ShiftKey);
+        //this.HandleCellMouseUp(args.RowIndex, -1, args.Args.MetaKey, args.Args.CtrlKey, args.Args.ShiftKey);
     }
 
     private void HandleRowHeaderMouseOver(RowMouseEventArgs args)
     {
-        this.HandleCellMouseOver(args.RowIndex, -1);
+        //this.HandleCellMouseOver(args.RowIndex, -1);
     }
 
-    private async void HandleCellDoubleClick(int row, int col, bool metaKey, bool ctrlKey, bool shiftKey)
+    private async void HandleCellDoubleClick(object? sender, SheetPointerEventArgs args)
     {
-        if (Sheet == null)
+        if (args.Row < 0 || args.Col < 0 || args.Row >= Sheet.NumRows || args.Col >= Sheet.NumCols)
             return;
 
-        if (row < 0 || col < 0 || row >= Sheet.NumRows || col >= Sheet.NumCols)
-            return;
-
-        await BeginEdit(row, col, EditEntryMode.Mouse);
+        await BeginEdit(args.Row, args.Col, EditEntryMode.Mouse);
     }
 
     private async Task BeginEdit(int row, int col, EditEntryMode mode, string entryChar = "")
@@ -469,9 +468,9 @@ public partial class Datasheet : IHandleEvent
         return Sheet.Editor.CancelEdit();
     }
 
-    private void HandleCellMouseOver(int row, int col)
+    private void HandleCellMouseOver(object? sender, SheetPointerEventArgs args)
     {
-        this.UpdateSelectingEndPosition(row, col);
+        this.UpdateSelectingEndPosition(args.Row, args.Col);
     }
 
     private Task<bool> HandleWindowMouseDown(MouseEventArgs e)
@@ -617,7 +616,7 @@ public partial class Datasheet : IHandleEvent
         if (!IsDataSheetActive)
             return false;
 
-        if (Sheet == null || !Sheet.Selection.Regions.Any())
+        if (!Sheet.Selection.Regions.Any())
             return false;
 
         if (Sheet.Editor.IsEditing)
