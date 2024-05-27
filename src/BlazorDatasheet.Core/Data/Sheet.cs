@@ -306,8 +306,10 @@ public class Sheet
         _isBatchingChanges = true;
     }
 
-    public void SortRange(IRegion region, List<ColumnSortOptions>? sortOptions = null)
+    public void SortRange(IRegion? region, List<ColumnSortOptions>? sortOptions = null)
     {
+        if (region == null)
+            return;
         var beforeArgs = new BeforeRangeSortEventArgs(region, sortOptions);
         BeforeRangeSort?.Invoke(this, beforeArgs);
         var cmd = new SortRangeCommand(region, sortOptions);
