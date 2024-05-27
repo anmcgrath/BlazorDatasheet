@@ -1,0 +1,31 @@
+<SheetMenuTarget MenuId="@SubMenuId" Placement="@MenuPlacement.Right" Trigger="@MenuTrigger.OnHover" Margin="0">
+    <SheetMenuItem HasSubMenu="true">
+        <div style="display: flex; justify-content: space-between; width: 100%; height: 100%; pointer-events: none;">
+            <div>@Label</div>
+            <div style="color: black; width: 0.7em; height: 0.7rem;">
+                <!-- from heroicons.com -->
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
+                </svg>
+            </div>
+        </div>
+    </SheetMenuItem>
+</SheetMenuTarget>
+
+<SheetMenu MenuId="@SubMenuId" ParentMenuId="@MenuId">
+    @ChildContent
+</SheetMenu>
+
+@code {
+
+    // The menu
+    [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
+
+    [Parameter] public string? Label { get; set; }
+
+    // parent menu id
+    [CascadingParameter] public string MenuId { get; set; } = null!;
+
+    private string SubMenuId { get; set; } = Guid.NewGuid().ToString();
+
+}

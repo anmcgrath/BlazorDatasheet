@@ -20,6 +20,7 @@
     --cell-highlight-bg-color: #a9e5b6;
     --num-highlight-color: #43a3b4;
     --string-highlight-color: #1a6206;
+    --sheet-menu-bg-color: #f1f1f1;
 }
 
 .vars[theme='dark'] {
@@ -38,6 +39,7 @@
     --cell-highlight-bg-color: #456b4d;
     --num-highlight-color: #d4d6ec;
     --string-highlight-color: #79a16a;
+    --sheet-menu-bg-color: #333;
 }
 
 .active-sheet {

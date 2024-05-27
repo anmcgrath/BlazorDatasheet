@@ -1,0 +1,43 @@
+@using BlazorDatasheet.Services
+@inject IMenuService MenuService
+
+<div class="sheet-menu-item" @onmouseup="HandleMouseUp" @onmouseover="HandleMouseOver">
+    @ChildContent
+</div>
+
+<style>
+    .sheet-menu-item {
+        padding: 2px 6px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .sheet-menu-item:hover {
+        background-color: #ddd;
+    }
+</style>
+
+@code {
+
+    [Parameter] public RenderFragment ChildContent { get; set; } = default!;
+
+    [Parameter] public EventCallback<MouseEventArgs> OnClick { get; set; }
+
+    [CascadingParameter] public string MenuId { get; set; } = null!;
+
+    [Parameter] public bool HasSubMenu { get; set; } = false;
+
+    private async Task HandleMouseUp(MouseEventArgs args)
+    {
+        if (OnClick.HasDelegate)
+            await OnClick.InvokeAsync(args);
+        if (!HasSubMenu)
+            await MenuService.CloseMenu(this.MenuId, closeParent: true);
+    }
+
+    private async Task HandleMouseOver(MouseEventArgs args)
+    {
+        await MenuService.CloseSubMenus(this.MenuId);
+    }
+
+}

@@ -1,0 +1,81 @@
+@using BlazorDatasheet.Services
+@inject IMenuService MenuService;
+
+<div
+    class="sheet-menu-target"
+    id="@TargetId"
+    @onclick="TargetOnClick"
+    @onclick:preventDefault="@(Trigger == MenuTrigger.OnClick)"
+    @onmousedown="TargetOnMouseDown"
+    @onmousedown:preventDefault="@(Trigger == MenuTrigger.OnPress)"
+    @oncontextmenu="TargetOnContextMenu"
+    @onmouseover="TargetOnHover"
+    @onmouseover:preventDefault="@(Trigger == MenuTrigger.OnHover)"
+    @oncontextmenu:preventDefault="@(Trigger == MenuTrigger.OnContextMenu)">
+    @ChildContent
+</div>
+
+
+<style>
+    .sheet-menu-target {
+        display: inline-block;
+    }
+</style>
+
+@code {
+
+    [Parameter] public RenderFragment ChildContent { get; set; }
+
+    [Parameter] public string Trigger { get; set; } = MenuTrigger.OnClick;
+
+    [Parameter, EditorRequired] public string? MenuId { get; set; }
+
+    [Parameter] public string TargetId { get; set; } = Guid.NewGuid().ToString();
+
+    [Parameter] public string Placement { get; set; } = MenuPlacement.Bottom;
+
+    [Parameter] public double Margin { get; set; } = 5;
+
+    [Parameter] public object? MenuData { get; set; }
+
+    private async Task TargetOnClick(MouseEventArgs obj)
+    {
+        if (Trigger != MenuTrigger.OnClick)
+            return;
+
+        await ShowMenu(MenuTrigger.OnClick, obj);
+    }
+
+    private async Task TargetOnMouseDown(MouseEventArgs obj)
+    {
+        if (Trigger != MenuTrigger.OnPress)
+            return;
+
+        await ShowMenu(MenuTrigger.OnPress, obj);
+    }
+
+    private async Task TargetOnContextMenu(MouseEventArgs obj)
+    {
+        if (Trigger != MenuTrigger.OnContextMenu)
+            return;
+
+        await ShowMenu(MenuTrigger.OnContextMenu, obj);
+    }
+
+    private async Task TargetOnHover(MouseEventArgs obj)
+    {
+        if (Trigger != MenuTrigger.OnHover)
+            return;
+
+        await ShowMenu(MenuTrigger.OnHover, obj);
+    }
+
+    private async Task ShowMenu(string trigger, MouseEventArgs args)
+    {
+        if (string.IsNullOrEmpty(MenuId))
+            return;
+
+        await MenuService.ShowMenu(MenuId, new MenuShowOptions(TargetId, Placement, Margin, trigger, args), MenuData);
+    }
+
+}

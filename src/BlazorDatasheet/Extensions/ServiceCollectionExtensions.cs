@@ -8,6 +8,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddBlazorDatasheet(this IServiceCollection services)
     {
         services.AddTransient<IWindowEventService, WindowEventService>();
+        services.AddScoped<IMenuService, MenuService>();
         return services;
     }
 }

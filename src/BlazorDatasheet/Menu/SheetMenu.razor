@@ -1,0 +1,70 @@
+@using BlazorDatasheet.Services
+@inject IMenuService MenuService
+
+<CascadingValue Value="@MenuId">
+    <div id="@MenuId" popover="manual" class="sheetPopover">
+        <div class="sheetMenu">
+            @ChildContent(CurrentContext)
+        </div>
+    </div>
+</CascadingValue>
+
+<style>
+    .sheetMenu {
+        display: flex;
+        flex-direction: column;
+        background: var(--sheet-menu-bg-color);
+        border: var(--sheet-border-style);
+        border-radius: 4px;
+        padding: 4px;
+        min-width: 150px;
+        font-size: var(--sheet-font-size);
+        font-family: var(--sheet-font-family), sans-serif;
+        font-weight: var(--sheet-font-weight);
+        color: var(--sheet-foreground-color);
+    }
+
+    .sheetPopover {
+        position: fixed;
+        inset: 0;
+        width: fit-content;
+        height: fit-content;
+        margin: 0;
+        padding: 0;
+        overflow: auto;
+        border: none;
+    }
+
+</style>
+
+@code {
+
+[Parameter, EditorRequired] public RenderFragment<object?> ChildContent { get; set; } = default!;
+
+[Parameter] public string MenuId { get; set; } = Guid.NewGuid().ToString();
+
+[Parameter] public string? ParentMenuId { get; set; } = null;
+
+private object? CurrentContext { get; set; } = null;
+
+protected override void OnInitialized()
+{
+MenuService.MenuShown += (sender, args) =>
+{
+if (args.MenuId != this.MenuId)
+return;
+
+this.CurrentContext = args.Context;
+this.StateHasChanged();
+};
+}
+
+protected override async Task OnAfterRenderAsync(bool firstRender)
+{
+if (firstRender)
+{
+await MenuService.RegisterMenu(MenuId, ParentMenuId);
+}
+}
+
+}
