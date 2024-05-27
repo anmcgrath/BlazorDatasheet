@@ -81,7 +81,7 @@ public class Region : IRegion
     /// <param name="row"></param>
     /// <param name="col"></param>
     /// <returns></returns>
-    public bool Contains(int row, int col)
+    public virtual bool Contains(int row, int col)
     {
         return row >= TopLeft.row &&
                row <= BottomRight.row &&

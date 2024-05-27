@@ -20,6 +20,11 @@ public class RowRegion : Region
         return new RowRegion(TopLeft.row, BottomRight.row);
     }
 
+    public override bool Contains(int row, int col)
+    {
+        return row >= TopLeft.row && col <= BottomRight.row;
+    }
+
     public override void ExtendTo(int row, int col, IRegion? regionLimit = null)
     {
         if (regionLimit == null)
@@ -49,7 +54,7 @@ public class RowRegion : Region
     public override IRegion GetBoundingRegion(IRegion otherRegion)
     {
         return new RowRegion(Math.Min(otherRegion.TopLeft.row, this.TopLeft.row),
-                             Math.Max(otherRegion.BottomRight.row, this.BottomRight.row));
+            Math.Max(otherRegion.BottomRight.row, this.BottomRight.row));
     }
 
     public override void Shift(int dRow, int dCol)
