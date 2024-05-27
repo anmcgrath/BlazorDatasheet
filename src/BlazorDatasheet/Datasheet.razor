@@ -1,3 +1,4 @@
+@using BlazorDatasheet.Core.Commands
 @using BlazorDatasheet.Core.Data
 @using Microsoft.JSInterop;
 @inject IJSRuntime JS
@@ -35,8 +36,12 @@
                 <SheetMenuDivider/>
                 <SheetMenuItem OnClick="() => sheet.Columns.InsertAt(c.Left, c.Width)">Insert column(s) to left</SheetMenuItem>
                 <SheetMenuItem OnClick="() => sheet.Columns.RemoveAt(c.Left, c.Width)">Delete column(s)</SheetMenuItem>
-                <SheetMenuItem OnClick="() => sheet.SortRange(sheet.Selection.ActiveRegion)">Sort</SheetMenuItem>
             }
+
+            <SheetSubMenu Label="Sort">
+                <SheetMenuItem OnClick="() => sheet.SortRange(sheet.Selection.ActiveRegion)">Sort Ascending</SheetMenuItem>
+                <SheetMenuItem OnClick="() => sheet.SortRange(sheet.Selection.ActiveRegion, new List<ColumnSortOptions>() { new ColumnSortOptions(0, false) })">Sort Descending</SheetMenuItem>
+            </SheetSubMenu>
         }
 
     </SheetMenu>
