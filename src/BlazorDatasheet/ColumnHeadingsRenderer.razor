@@ -9,6 +9,7 @@
 @using BlazorDatasheet.DataStructures.Intervals
 @using BlazorDatasheet.DataStructures.Util
 @using BlazorDatasheet.Events
+@using BlazorDatasheet.Menu
 @inject IJSRuntime JS;
 @inject IWindowEventService _windowEventService;
 @implements IDisposable
@@ -72,7 +73,14 @@
         @onmouseover="e => HandleMouseOver(col, e)"
         @onmousedown="e => HandleMouseDown(col, e)">
         <div class="cell">
-            @HeadingRenderer(new HeadingContext(col, colHeading))
+            <div style="display: flex; justify-content: space-between">
+                <div>
+                    @HeadingRenderer(new HeadingContext(col, colHeading))
+                </div>
+                <SheetMenuTarget MenuId="@ContextMenus.Selection" MenuData="Sheet">
+                    <CaretButton/>
+                </SheetMenuTarget>
+            </div>
         </div>
     </div>
 }
