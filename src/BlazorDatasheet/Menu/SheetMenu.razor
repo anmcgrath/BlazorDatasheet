@@ -40,32 +40,32 @@
 
 @code {
 
-[Parameter, EditorRequired] public RenderFragment<object?> ChildContent { get; set; } = default!;
+    [Parameter, EditorRequired] public RenderFragment<object?> ChildContent { get; set; } = default!;
 
-[Parameter] public string MenuId { get; set; } = Guid.NewGuid().ToString();
+    [Parameter] public string MenuId { get; set; } = Guid.NewGuid().ToString();
 
-[Parameter] public string? ParentMenuId { get; set; } = null;
+    [Parameter] public string? ParentMenuId { get; set; } = null;
 
-private object? CurrentContext { get; set; } = null;
+    private object? CurrentContext { get; set; } = null;
 
-protected override void OnInitialized()
-{
-MenuService.MenuShown += (sender, args) =>
-{
-if (args.MenuId != this.MenuId)
-return;
+    protected override void OnInitialized()
+    {
+        MenuService.MenuShown += (sender, args) =>
+        {
+            if (args.MenuId != this.MenuId)
+                return;
 
-this.CurrentContext = args.Context;
-this.StateHasChanged();
-};
-}
+            this.CurrentContext = args.Context;
+            this.StateHasChanged();
+        };
+    }
 
-protected override async Task OnAfterRenderAsync(bool firstRender)
-{
-if (firstRender)
-{
-await MenuService.RegisterMenu(MenuId, ParentMenuId);
-}
-}
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await MenuService.RegisterMenu(MenuId, ParentMenuId);
+        }
+    }
 
 }
