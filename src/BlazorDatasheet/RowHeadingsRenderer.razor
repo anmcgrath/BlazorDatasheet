@@ -32,6 +32,8 @@
     <div class="sheet-row">
         <div
             class="sheet-cell row-head @(IsActive(row) ? "row-active" : "")"
+            data-row="@row"
+            data-col="-1"
             style="height:@CellLayoutProvider.ComputeHeight(row, 1)px; 
             overflow: hidden; 
             display: block !important; 
@@ -51,26 +53,19 @@
 
     private Sheet? _sheet;
 
-    [Parameter, EditorRequired]
-    public Sheet? Sheet { get; set; }
+    [Parameter, EditorRequired] public Sheet? Sheet { get; set; }
 
-    [Parameter, EditorRequired]
-    public CellLayoutProvider CellLayoutProvider { get; set; }
+    [Parameter, EditorRequired] public CellLayoutProvider CellLayoutProvider { get; set; }
 
-    [Parameter, EditorRequired]
-    public EventCallback<RowMouseEventArgs> OnMouseUp { get; set; }
+    [Parameter, EditorRequired] public EventCallback<RowMouseEventArgs> OnMouseUp { get; set; }
 
-    [Parameter, EditorRequired]
-    public EventCallback<RowMouseEventArgs> OnMouseOver { get; set; }
+    [Parameter, EditorRequired] public EventCallback<RowMouseEventArgs> OnMouseOver { get; set; }
 
-    [Parameter, EditorRequired]
-    public EventCallback<RowMouseEventArgs> OnMouseDown { get; set; }
+    [Parameter, EditorRequired] public EventCallback<RowMouseEventArgs> OnMouseDown { get; set; }
 
-    [Parameter, EditorRequired]
-    public int VisibleRowStart { get; set; }
+    [Parameter, EditorRequired] public int VisibleRowStart { get; set; }
 
-    [Parameter, EditorRequired]
-    public int NVisibleRows { get; set; }
+    [Parameter, EditorRequired] public int NVisibleRows { get; set; }
 
     private List<OrderedInterval> _selectionIntervals = new();
 
@@ -89,14 +84,16 @@
                 _sheet.Selection.SelectingChanged -= OnSelectingChanged;
                 _sheet.Selection.SelectionChanged -= OnSelectionChanged;
             }
+
             _sheet = Sheet;
-            
+
             if (_sheet == null)
                 return;
-            
+
             _sheet.Selection.SelectingChanged += OnSelectingChanged;
             _sheet.Selection.SelectionChanged += OnSelectionChanged;
         }
+
         base.OnParametersSet();
     }
 

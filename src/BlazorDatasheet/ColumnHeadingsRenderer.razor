@@ -65,6 +65,8 @@
         style="z-index: 1; 
         @CssUtil.GetCellWidthStyles(i, 1, CellLayoutProvider); 
         height: @(CellLayoutProvider.ColHeadingHeight)px"
+        data-row="-1"
+        data-col="@col"
         @onmouseup="e => HandleMouseUp(col, e)"
         @onmouseover="e => HandleMouseOver(col, e)"
         @onmousedown="e => HandleMouseDown(col, e)">
