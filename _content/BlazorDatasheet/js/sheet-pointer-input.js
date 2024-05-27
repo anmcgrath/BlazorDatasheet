@@ -43,7 +43,7 @@ class PointerInputService {
         let args = this.getSheetPointerEventArgs(e)
         if (!args)
             return
-        
+
         this.dotnetHelper.invokeMethodAsync(this.pointerUpCallbackName, args);
     }
 
@@ -58,7 +58,7 @@ class PointerInputService {
         let args = this.getSheetPointerEventArgs(e)
         if (!args)
             return
-        
+
         if (args.row !== this.currentRow || args.col !== this.currentCol) {
             this.onCellEnter(args)
         }
@@ -123,6 +123,7 @@ class PointerInputService {
             ctrlKey: e.ctrlKey,
             metaKey: e.metaKey,
             shiftKey: e.shiftKey,
+            mouseButton: e.button
         };
     }
 

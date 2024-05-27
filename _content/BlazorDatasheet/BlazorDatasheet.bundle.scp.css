@@ -124,8 +124,8 @@
 .text-input:focus[b-ogyzqrxhj5] {
     outline: none;
 }
-/* _content/BlazorDatasheet/Render/DefaultComponents/SelectRenderer.razor.rz.scp.css */
-.dropper[b-fldepj96gs] {
+/* _content/BlazorDatasheet/Render/CaretButton.razor.rz.scp.css */
+.dropper[b-n1g2dcs84v] {
     background: none;
     color:#999999;
     margin: 0;
@@ -133,9 +133,10 @@
     border: none;
 }
 
-.dropper:hover[b-fldepj96gs]{
+.dropper:hover[b-n1g2dcs84v]{
     background: var(--selection-bg-color);
 }
+/* _content/BlazorDatasheet/Render/DefaultComponents/SelectRenderer.razor.rz.scp.css */
 /* _content/BlazorDatasheet/Render/DefaultComponents/TextRenderer.razor.rz.scp.css */
 .cell-renderer[b-7xkejoswml]{
     overflow:hidden;

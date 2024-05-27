@@ -1,12 +1,17 @@
-﻿.vars[theme='default'] {
-    --sheet-foreground-color: #5c5c5c;
+﻿.vars {
+    --sheet-font-weight: normal;
+    --sheet-font-size: 0.75rem;
+    --sheet-font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Helvetica Neue, Arial, sans-serif;
+}
+
+.vars[theme='default'] {
+    --sheet-foreground-color: #454545;
     --sheet-bg-color: #ffffff;
-    --sheet-border-style: 1px solid lightgray;
+    --sheet-border-style: 1px solid #c5c5c5;
     --row-header-bg-color: #fafafa;
     --col-header-bg-color: #fafafa;
-    --headers-foreground-color: #000000;
-    --active-header-bg-color: #ececec;
-    --sheet-font-weight: normal;
+    --headers-foreground-color: #5c5a5a;
+    --active-header-bg-color: #ededed;
     --icon-color: #000000;
     --shadow-overlay-color: grey;
     --invalid-cell-foreground-color: #ff0000;
@@ -15,6 +20,7 @@
     --cell-highlight-bg-color: #a9e5b6;
     --num-highlight-color: #43a3b4;
     --string-highlight-color: #1a6206;
+    --sheet-menu-bg-color: #f1f1f1;
 }
 
 .vars[theme='dark'] {
@@ -25,7 +31,6 @@
     --col-header-bg-color: #2d2d2d;
     --headers-foreground-color: #a4a4a4;
     --active-header-bg-color: #343434;
-    --sheet-font-weight: normal;
     --icon-color: #000000;
     --shadow-overlay-color: #000000;
     --invalid-cell-foreground-color: #d71b1b;
@@ -34,6 +39,7 @@
     --cell-highlight-bg-color: #456b4d;
     --num-highlight-color: #d4d6ec;
     --string-highlight-color: #79a16a;
+    --sheet-menu-bg-color: #333;
 }
 
 .active-sheet {
@@ -46,11 +52,14 @@
 
 .sheet {
     background: var(--sheet-bg-color);
-    font-size: .8rem;
+    font-size: var(--sheet-font-size);
     box-sizing: border-box;
     position: relative;
     display: block;
     white-space: nowrap;
+    font-family: var(--sheet-font-family), serif;
+    -moz-osx-font-smoothing: grayscale;
+    font-weight: var(--sheet-font-weight);
 }
 
 .sheet-fixed-height {
@@ -104,7 +113,7 @@
     display: inline-block;
     width: 100%;
     height: 100%;
-    padding: 2px;
+    padding: 3px;
     overflow: hidden;
     box-sizing: border-box;
     -moz-box-sizing: border-box;
@@ -121,9 +130,6 @@
 
 .column-active {
     background: var(--active-header-bg-color) !important;
-    border-bottom-width: 2px;
-    border-bottom-color: var(--selection-border-color);
-    border-bottom-style: solid;
 }
 
 .row-head {
@@ -139,10 +145,6 @@
 
 .row-active {
     background: var(--active-header-bg-color) !important;
-    border-right-width: 2px;
-    padding-right: 4px;
-    border-right-color: var(--selection-border-color);
-    border-right-style: solid;
 }
 
 .unselectable {
