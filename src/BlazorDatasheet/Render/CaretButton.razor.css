@@ -1,0 +1,11 @@
+.dropper {
+    background: none;
+    color:#999999;
+    margin: 0;
+    padding: 0 2px 0 2px;
+    border: none;
+}
+
+.dropper:hover{
+    background: var(--selection-bg-color);
+}
