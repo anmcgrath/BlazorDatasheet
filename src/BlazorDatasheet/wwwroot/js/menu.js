@@ -63,6 +63,8 @@ class MenuService {
     showMenuEl(menuEl, options) {
         if (this.isActive(menuEl))
             return
+        
+        console.log(options)
 
         // run with set timeout to allow the updated menu to be structured based on context
         setTimeout(() => {
