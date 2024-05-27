@@ -1,6 +1,6 @@
 namespace BlazorDatasheet.Menu;
 
-public static class MenuPlacement
+internal static class MenuPlacement
 {
     public const string Top = "top";
     public const string Right = "right";

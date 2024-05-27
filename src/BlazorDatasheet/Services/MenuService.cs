@@ -10,6 +10,7 @@ public class MenuService : IMenuService, IAsyncDisposable
     private bool _isInitialized;
 
     public EventHandler<MenuShownEventArgs>? MenuShown { get; set; }
+    public EventHandler<BeforeMenuShownEventArgs>? BeforeMenuShown { get; set; }
 
     public async Task CloseSubMenus(string menuId)
     {
@@ -44,17 +45,23 @@ public class MenuService : IMenuService, IAsyncDisposable
         await _menuJs!.InvokeVoidAsync("registerMenu", id, parentId);
     }
 
-    public async Task ShowMenu<T>(string menuId, MenuShowOptions options, T context = default(T))
+    public async Task<bool> ShowMenu<T>(string menuId, MenuShowOptions options, T context = default(T))
     {
         await Init();
+        var beforeArgs = new BeforeMenuShownEventArgs(menuId, context);
+        BeforeMenuShown?.Invoke(this, beforeArgs);
+        if (beforeArgs.Cancel)
+            return false;
         MenuShown?.Invoke(this, new MenuShownEventArgs(menuId, context));
         await _menuJs!.InvokeVoidAsync("showMenu", menuId, options);
+        return true;
     }
 
-    public async Task CloseMenu(string menuId, bool closeParent = false)
+    public async Task<bool> CloseMenu(string menuId, bool closeParent = false)
     {
         await Init();
         await _menuJs!.InvokeVoidAsync("closeMenu", menuId, closeParent);
+        return true;
     }
 
     public async ValueTask DisposeAsync()
