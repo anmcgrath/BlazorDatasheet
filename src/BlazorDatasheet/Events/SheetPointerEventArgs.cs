@@ -13,4 +13,5 @@ public class SheetPointerEventArgs
     public bool MetaKey { get; set; }
     public double PageX { get; set; }
     public double PageY { get; set; }
+    public int MouseButton { get; set; }
 }
