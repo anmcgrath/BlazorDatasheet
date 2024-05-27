@@ -63,8 +63,6 @@ class MenuService {
     showMenuEl(menuEl, options) {
         if (this.isActive(menuEl))
             return
-        
-        console.log(options)
 
         // run with set timeout to allow the updated menu to be structured based on context
         setTimeout(() => {
@@ -84,7 +82,7 @@ class MenuService {
 
             menuEl.addEventListener('toggle', onToggle)
             if (options.trigger === 'oncontextmenu') {
-                let rect = new DOMRect(options.args.clientX, options.args.clientY, 1, 1)
+                let rect = new DOMRect(options.clientX, options.clientY, 1, 1)
                 this.positionMenu(menuEl, rect, options.margin, options.placement)
             } else if (options.targetId) {
                 let targetEl = document.getElementById(options.targetId)
