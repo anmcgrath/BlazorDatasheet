@@ -20,7 +20,7 @@
     @onmouseover="() => IsMouseInsideSheet = true"
     @onmouseout="() => IsMouseInsideSheet = false">
 
-    <SheetMenu MenuId="SelectionMenu">
+    <SheetMenu MenuId="@ContextMenus.Selection">
 
         @{
             var sheet = context as Sheet;
