@@ -20,31 +20,8 @@
     @onmouseover="() => IsMouseInsideSheet = true"
     @onmouseout="() => IsMouseInsideSheet = false">
 
-    <SheetMenu MenuId="@ContextMenus.Selection">
-
-        @{
-            var sheet = context as Sheet;
-        }
-
-        @if (sheet is not null)
-        {
-            <SheetMenuItem OnClick="() => this.CopySelectionToClipboard()">Copy</SheetMenuItem>
-            <SheetMenuDivider/>
-            <SheetMenuItem OnClick="() => this.Sheet.Cells.ClearCells(Sheet.Selection.Regions)">Clear</SheetMenuItem>
-            @if (sheet.Selection.Regions.Count == 1 && sheet.Selection.ActiveRegion is ColumnRegion c)
-            {
-                <SheetMenuDivider/>
-                <SheetMenuItem OnClick="() => sheet.Columns.InsertAt(c.Left, c.Width)">Insert column(s) to left</SheetMenuItem>
-                <SheetMenuItem OnClick="() => sheet.Columns.RemoveAt(c.Left, c.Width)">Delete column(s)</SheetMenuItem>
-            }
-
-            <SheetSubMenu Label="Sort">
-                <SheetMenuItem OnClick="() => sheet.SortRange(sheet.Selection.ActiveRegion)">Sort Ascending</SheetMenuItem>
-                <SheetMenuItem OnClick="() => sheet.SortRange(sheet.Selection.ActiveRegion, new List<ColumnSortOptions>() { new ColumnSortOptions(0, false) })">Sort Descending</SheetMenuItem>
-            </SheetSubMenu>
-        }
-
-    </SheetMenu>
+    <!-- Register Menus -->
+    <SelectionMenu/>
 
     <SheetMenuTarget
         MenuId="SelectionMenu"
