@@ -22,7 +22,7 @@ public class RowRegion : Region
 
     public override bool Contains(int row, int col)
     {
-        return row >= TopLeft.row && col <= BottomRight.row;
+        return row >= TopLeft.row && row <= BottomRight.row;
     }
 
     public override void ExtendTo(int row, int col, IRegion? regionLimit = null)
