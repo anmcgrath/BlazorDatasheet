@@ -8,14 +8,17 @@ public class MenuShowOptions
     public string Placement { get; set; }
     public double Margin { get; set; }
     public string Trigger { get; }
-    public MouseEventArgs Args { get; }
+    public double ClientX { get; }
+    public double ClientY { get; }
 
-    public MenuShowOptions(string targetId, string placement, double margin, string trigger, MouseEventArgs args)
+    public MenuShowOptions(string targetId, string placement, double margin, string trigger, double clientX,
+        double clientY)
     {
         TargetId = targetId;
         Placement = placement;
         Margin = margin;
         Trigger = trigger;
-        Args = args;
+        ClientX = clientX;
+        ClientY = clientY;
     }
 }
