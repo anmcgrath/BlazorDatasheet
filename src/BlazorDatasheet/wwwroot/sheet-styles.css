@@ -78,10 +78,20 @@
     user-select: none;
     -moz-user-select: none;
     -webkit-user-select: none;
-    padding: 0;
-    display: inline-block;
-    box-sizing: border-box;
+    padding: 0 4px;
     overflow: hidden;
+    line-height: 20px;
+    height: 20px;
+    vertical-align: top;
+}
+
+.sheet-table {
+    table-layout: fixed;
+    border-collapse: collapse;
+}
+
+.sheet-table td {
+    border: var(--sheet-border-style);
 }
 
 .sheet-row {
