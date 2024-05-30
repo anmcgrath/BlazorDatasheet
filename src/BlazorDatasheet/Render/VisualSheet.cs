@@ -1,10 +1,10 @@
 using BlazorDatasheet.Core.Data;
-using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.Core.Events.Visual;
 using BlazorDatasheet.Core.Formats;
+using BlazorDatasheet.Core.Layout;
 using BlazorDatasheet.DataStructures.Geometry;
 
-namespace BlazorDatasheet.Core.Layout;
+namespace BlazorDatasheet.Render;
 
 /// <summary>
 /// Stores a cache of sheet cell's that are within the render viewport.

@@ -110,18 +110,24 @@
                             var row = rowIndex;
                             var rowHeight = @_cellLayoutProvider.ComputeHeight(row, 1);
 
-                            <tr @key="row" style="height:@(rowHeight)px">
+                            <tr @key="row" style="height:@(rowHeight)px;">
                                 @for (int j = _visualSheet.Viewport.VisibleRegion.Left; j <= _visualSheet.Viewport.VisibleRegion.Right; j++)
                                 {
                                     var col = j;
                                     var cell = _visualSheet.GetVisualCell(row, col);
+                                    @if (!cell.Visible)
+                                        continue;
+
                                     var cellValue = cell?.Value?.ToString() ?? "";
                                     var k = col;
                                     <td
                                         @key="k"
                                         data-row="@row"
                                         data-col="@col"
-                                        class="sheet-cell">
+                                        colspan="@cell.ColSpan"
+                                        rowspan="@cell.RowSpan"
+                                        class="sheet-cell"
+                                        style="@cell.FormatStyleString">
                                         @cellValue
                                     </td>
                                 }
