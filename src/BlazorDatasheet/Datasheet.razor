@@ -40,9 +40,8 @@
                         {
                             <!-- the little bit outside to the left of first col header -->
                             <div class="sheet-cell row-head column-head"
-                                 style="@CssUtil.GetCellWidthStyles(-1, 1, _cellLayoutProvider); height: @(_cellLayoutProvider.ColHeadingHeight)px;
+                                 style="width:@(_cellLayoutProvider.RowHeadingWidth)px; height: @(_cellLayoutProvider.ColHeadingHeight)px;
                                  display: inline-block;@(StickyHeadings ? "position: sticky; left: 0; z-index:2;" : "")">
-                                <div class="cell"></div>
                             </div>
                         }
                         <div id="filler-left-0" style="min-width: @(_visualSheet.Viewport.Left)px; display: block; float: left; height: 1px;"></div>
