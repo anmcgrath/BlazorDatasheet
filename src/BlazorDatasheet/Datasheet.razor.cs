@@ -242,13 +242,12 @@ public partial class Datasheet : SheetComponentBase
         return typeof(TextRenderer);
     }
 
-    private Dictionary<string, object> GetCellRendererParameters(Sheet sheet, VisualCell visualCell)
+    private Dictionary<string, object> GetCellRendererParameters(VisualCell visualCell)
     {
         return new Dictionary<string, object>()
         {
             { "Cell", visualCell },
-            { "OnChangeCellValueRequest", HandleCellRendererRequestChangeValue },
-            { "OnBeginEditRequest", HandleCellRequestBeginEdit }
+            { "Sheet", _sheetLocal }
         };
     }
 
@@ -645,24 +644,6 @@ public partial class Datasheet : SheetComponentBase
         }
 
         _dotnetHelper?.Dispose();
-    }
-
-    /// <summary>
-    /// Handles when a cell renderer requests to start editing the cell
-    /// </summary>
-    /// <param name="args"></param>
-    private async void HandleCellRequestBeginEdit(CellEditRequest args)
-    {
-        await BeginEdit(args.Row, args.Col, args.EntryMode);
-    }
-
-    /// <summary>
-    /// Handles when a cell renderer requests that a cell's value be changed
-    /// </summary>
-    /// <param name="args"></param>
-    private void HandleCellRendererRequestChangeValue(ChangeCellValueRequest args)
-    {
-        Sheet.Cells.SetValue(args.Row, args.Col, args.NewValue);
     }
 
     /// <summary>

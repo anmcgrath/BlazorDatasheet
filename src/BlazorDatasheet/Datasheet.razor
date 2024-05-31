@@ -9,6 +9,7 @@
 @using BlazorDatasheet.Services
 @using BlazorDatasheet.Util
 @using BlazorDatasheet.Menu
+@using BlazorDatasheet.Render.DefaultComponents
 @inherits SheetComponentBase
 
 
@@ -128,7 +129,23 @@
                                         rowspan="@cell.RowSpan"
                                         class="sheet-cell"
                                         style="@cell.FormatStyleString">
-                                        @cellValue
+                                        @switch (cell.CellType)
+                                        {
+                                            case "text":
+                                                @cell.Value
+                                                break;
+                                            case "boolean":
+                                                <BoolRenderer Cell="cell" Sheet="_sheetLocal"/>
+                                                break;
+                                            case "select":
+                                                <SelectRenderer Cell="cell" Sheet="_sheetLocal"/>
+                                                break;
+                                            default:
+                                                <DynamicComponent
+                                                    Parameters="@GetCellRendererParameters(cell)"
+                                                    Type="@GetCellRendererType(cell.CellType)"/>
+                                                break;
+                                        }
                                     </td>
                                 }
                             </tr>

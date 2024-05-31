@@ -6,6 +6,14 @@
     <div style="overflow: hidden;">
         @(Cell.Value?.ToString())
     </div>
-    <CaretButton OnClick="() => this.RequestEdit(EditEntryMode.Mouse)"/>
-
+    <CaretButton OnClick="BeginEdit"/>
 </div>
+
+@code {
+
+    private void BeginEdit()
+    {
+        Sheet.Editor.BeginEdit(Cell.Row, Cell.Col, true, EditEntryMode.Mouse);
+    }
+
+}

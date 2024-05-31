@@ -14,7 +14,7 @@
         set
         {
             _checked = value;
-            this.RequestChangeCellValue(_checked);
+            this.Sheet.Cells.SetValue(Cell.Row, Cell.Col, _checked);
         }
     }
 
