@@ -55,7 +55,7 @@ public class RowInfoStore
     }
 
     /// <summary>
-    /// Sets the headings of all rows between (and including) rows columns specified, to the value given.
+    /// Sets the headings of all rows between (and including) rows specified, to the value given.
     /// Returns any rows ranges that were modified.
     /// </summary>
     /// <param name="rowStart"></param>
@@ -150,7 +150,7 @@ public class RowInfoStore
     }
 
     /// <summary>
-    /// Returns the left position of the column index
+    /// Returns the left position of the row index
     /// </summary>
     /// <param name="rowIndex"></param>
     /// <returns></returns>
@@ -171,9 +171,9 @@ public class RowInfoStore
             RowHeightChanged?.Invoke(this, new RowHeightChangedEventArgs(change.start, change.end, change.height));
     }
 
-    public CellFormat? GetFormat(int column)
+    public CellFormat? GetFormat(int row)
     {
-        return RowFormats.Get(column);
+        return RowFormats.Get(row);
     }
 
     internal RowColFormatRestoreData SetRowFormatImpl(CellFormat cellFormat, RowRegion rowRegion)
@@ -249,7 +249,6 @@ public class RowInfoStore
     /// </summary>
     /// <param name="row"></param>
     /// <param name="height"></param>
-    /// <param name="colStart"></param>
     public void SetHeight(int row, double height) => SetHeight(row, row, height);
 
     /// <summary>
