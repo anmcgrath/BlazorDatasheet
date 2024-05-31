@@ -153,6 +153,11 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>
         }
     }
 
+    public bool HasBorder() => BorderTop != null &&
+                               BorderBottom != null &&
+                               BorderRight != null &&
+                               BorderLeft != null;
+
 
     public bool Equals(CellFormat? other)
     {
