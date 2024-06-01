@@ -26,28 +26,28 @@
 
 </div>
 
-@for (int rowIndex = VisibleRowStart; rowIndex < (VisibleRowStart + NVisibleRows); rowIndex++)
-{
-    var row = rowIndex;
-    var heading = @Sheet.Rows.GetHeading(row) ?? (row + 1).ToString();
-    <div class="sheet-row">
-        <div
-            class="sheet-cell row-head @(IsActive(row) ? "row-active" : "")"
-            data-row="@row"
-            data-col="-1"
-            style="height:@CellLayoutProvider.ComputeHeight(row, 1)px; 
-            overflow: hidden; 
-            display: block !important; 
-            @CssUtil.GetCellWidthStyles(-1, 1, CellLayoutProvider)"
-            @onmousedown="e => HandleMouseDown(row, e)"
-            @onmouseover="e => HandleMouseOver(row, e)"
-            @onmouseup="e => HandleMouseUp(row, e)">
-            <div class="cell" style="text-align: right">
+<table class="head-table">
+
+    @for (int rowIndex = VisibleRowStart; rowIndex < (VisibleRowStart + NVisibleRows); rowIndex++)
+    {
+        var row = rowIndex;
+        var heading = _sheet!.Rows.GetHeading(row) ?? (row + 1).ToString();
+        var rowHeight = @CellLayoutProvider.ComputeHeight(row, 1);
+
+        <tr style="height:@(rowHeight)px">
+            <td class="sheet-cell row-head @(IsActive(row) ? "row-active" : "")"
+                data-row="@row"
+                data-col="-1"
+                style="width:@(CellLayoutProvider.RowHeadingWidth)px;"
+                @onmousedown="e => HandleMouseDown(row, e)"
+                @onmouseover="e => HandleMouseOver(row, e)"
+                @onmouseup="e => HandleMouseUp(row, e)">
                 @heading
-            </div>
-        </div>
-    </div>
-}
+            </td>
+        </tr>
+    }
+
+</table>
 
 
 @code {

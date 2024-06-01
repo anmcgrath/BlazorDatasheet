@@ -6,12 +6,12 @@
 @using BlazorDatasheet.Render;
 @implements IDisposable;
 @using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.DataStructures.Util
 @using BlazorDatasheet.Services
 @using BlazorDatasheet.Util
 @using BlazorDatasheet.Menu
 @using BlazorDatasheet.Render.DefaultComponents
 @inherits SheetComponentBase
-
 
 <div
     @ref="_innerSheet"
@@ -33,60 +33,9 @@
             <!-- Column headers -->
             <div style="display: flex; flex-direction: column; justify-content: start;">
 
-                @if (ShowColHeadings)
-                {
-                    <div style="display: flex; flex-direction: row;" class="sheet-row @(StickyHeadings ? "col-sticky" : "col-nonsticky")">
-                        @if (ShowRowHeadings)
-                        {
-                            <!-- the little bit outside to the left of first col header -->
-                            <div class="sheet-cell row-head column-head"
-                                 style="width:@(_cellLayoutProvider.RowHeadingWidth)px; height: @(_cellLayoutProvider.ColHeadingHeight)px;
-                                 display: inline-block;@(StickyHeadings ? "position: sticky; left: 0; z-index:2;" : "")">
-                            </div>
-                        }
-                        <div id="filler-left-0" style="min-width: @(_visualSheet.Viewport.Left)px; display: block; float: left; height: 1px;"></div>
-
-                        <ColumnHeadingsRenderer
-                            OnMouseDown="HandleColumnHeaderMouseDown"
-                            OnMouseUp="HandleColumnHeaderMouseUp"
-                            OnMouseOver="HandleColumnHeaderMouseOver"
-                            NVisibleCols="_visualSheet.Viewport.VisibleRegion.Width"
-                            VisibleColStart="_visualSheet.Viewport.VisibleRegion.Left"
-                            CellLayoutProvider="_cellLayoutProvider"
-                            Sheet="Sheet">
-                            <HeadingRenderer>
-                                @if (ColumnHeaderTemplate != null)
-                                {
-                                    @ColumnHeaderTemplate(context)
-                                }
-                                else
-                                {
-                                    @context.Heading?.ToString()
-                                }
-                            </HeadingRenderer>
-                        </ColumnHeadingsRenderer>
-
-                    </div>
-                }
-
                 <div id="filler-top" @ref="_fillerTop" style="min-height: @(_visualSheet.Viewport?.Top)px; min-width:@(_cellLayoutProvider.TotalWidth)px; display: block;"></div>
 
                 <div id="last-row" style="display: flex; flex-direction: row;">
-
-                    @if (ShowRowHeadings)
-                    {
-                        <div id="rowHeadings" class="@(StickyHeadings ? "row-sticky" : "")">
-                            <RowHeadingsRenderer
-                                OnMouseDown="HandleRowHeaderMouseDown"
-                                OnMouseUp="HandleRowHeaderMouseUp"
-                                OnMouseOver="HandleRowHeaderMouseOver"
-                                NVisibleRows="_visualSheet.Viewport.VisibleRegion.Height"
-                                VisibleRowStart="_visualSheet.Viewport.VisibleRegion.Top"
-                                Sheet="Sheet"
-                                CellLayoutProvider="_cellLayoutProvider"/>
-                        </div>
-                    }
-
 
                     <div id="filler-left-1" @ref="_fillerLeft1" style="float:right; min-width: @(_visualSheet.Viewport.Left)px; height: @(RenderedInnerSheetHeight)px;"></div>
 
@@ -96,6 +45,11 @@
                         style="width:@(RenderedInnerSheetWidth)px;height: @(RenderedInnerSheetHeight)px;">
 
                         <colgroup>
+                            @if (ShowRowHeadings)
+                            {
+                                <col style="width:@(_cellLayoutProvider.RowHeadingWidth)px;"/>
+                            }
+
                             @for (int i = _visualSheet.Viewport.VisibleRegion.Left; i <= _visualSheet.Viewport.VisibleRegion.Right; i++)
                             {
                                 var col = i;
@@ -104,6 +58,28 @@
                             }
                         </colgroup>
 
+                        <!-- col headings -->
+                        @if (ShowColHeadings)
+                        {
+                            <thead class="@(this.StickyHeadings ? "col-sticky" : "")">
+                            <tr style="height: @(_cellLayoutProvider.ColHeadingHeight)px;">
+                                @if (ShowRowHeadings)
+                                {
+                                    <th class="sheet-cell @(StickyHeadings ? "row-sticky" : "")"></th>
+                                }
+
+                                @for (int i = _visualSheet.Viewport.VisibleRegion.Left; i <= _visualSheet.Viewport.VisibleRegion.Right; i++)
+                                {
+                                    var col = i;
+                                    var colHeading = Sheet?.Columns.GetHeading(i) ?? RangeText.ColNumberToLetters(col);
+                                    <th class="sheet-cell" data-col="@col" data-row="-1">
+                                        @colHeading
+                                    </th>
+                                }
+                            </tr>   
+                            </thead>
+                        }
+
                         <tbody>
                         @for (int rowIndex = _visualSheet.Viewport.VisibleRegion.Top; rowIndex <= _visualSheet.Viewport.VisibleRegion.Bottom; rowIndex++)
                         {
@@ -111,6 +87,14 @@
                             var rowHeight = @_cellLayoutProvider.ComputeHeight(row, 1);
 
                             <tr @key="row" style="height:@(rowHeight)px;">
+
+                                @if (ShowRowHeadings)
+                                {
+                                    <th data-row="@row" data-col="-1" class="sheet-cell row-head @(this.StickyHeadings ? "row-sticky" : "")">
+                                        @(_sheetLocal.Rows.GetHeading(row) ?? (row + 1).ToString())
+                                    </th>
+                                }
+
                                 @for (int j = _visualSheet.Viewport.VisibleRegion.Left; j <= _visualSheet.Viewport.VisibleRegion.Right; j++)
                                 {
                                     var col = j;
@@ -118,7 +102,6 @@
                                     @if (!cell.Visible)
                                         continue;
 
-                                    var cellValue = cell?.Value?.ToString() ?? "";
                                     var k = col;
                                     <td
                                         @key="k"

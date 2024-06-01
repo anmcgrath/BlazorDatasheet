@@ -38,7 +38,7 @@
             class="unselectable"
             @onmousedown="e => HandleMouseDownOnAdorner(col)"
             style="@GetArdornerSizeStyles(col)
-            position:absolute; z-index: 2;  
+            position:absolute; z-index: 2;
             background: none; cursor: col-resize; display: block">
         </div>
     }
@@ -57,33 +57,38 @@
 
 </div>
 
-@for (var i = VisibleColStart; i < (VisibleColStart + NVisibleCols); i++)
-{
-    var col = i;
-    var colHeading = Sheet?.Columns.GetHeading(i) ?? RangeText.ColNumberToLetters(col);
-
-    <div
-        class="sheet-cell @GetActiveClass(col) column-head"
-        style="z-index: 1; 
-        @CssUtil.GetCellWidthStyles(i, 1, CellLayoutProvider); 
-        height: @(CellLayoutProvider.ColHeadingHeight)px"
-        data-row="-1"
-        data-col="@col"
-        @onmouseup="e => HandleMouseUp(col, e)"
-        @onmouseover="e => HandleMouseOver(col, e)"
-        @onmousedown="e => HandleMouseDown(col, e)">
-        <div class="cell">
-            <div style="display: flex; justify-content: space-between">
-                <div>
-                    @HeadingRenderer(new HeadingContext(col, colHeading))
+<table class="head-table">
+    <thead>
+    <tr style="height:@(CellLayoutProvider.ColHeadingHeight)px; width:@(CellLayoutProvider.ComputeWidth(VisibleColStart, NVisibleCols))px">
+        @for (int i = VisibleColStart; i < (VisibleColStart + NVisibleCols); i++)
+        {
+            var col = i;
+            var colHeading = Sheet?.Columns.GetHeading(i) ?? RangeText.ColNumberToLetters(col);
+            var width = CellLayoutProvider.ComputeWidth(col, 1);
+            <td
+                data-row="-1"
+                data-col="@col"
+                class="sheet-cell @GetActiveClass(col)"
+                style="
+                    width:@(width)px;
+                    max-width: @(width)px;
+                    height: @(CellLayoutProvider.ColHeadingHeight)px;"
+                @onmouseup="e => HandleMouseUp(col, e)"
+                @onmouseover="e => HandleMouseOver(col, e)"
+                @onmousedown="e => HandleMouseDown(col, e)">
+                <div style="display: flex; justify-content: space-between;">
+                    <div>
+                        @HeadingRenderer(new HeadingContext(col, colHeading))
+                    </div>
+                    <SheetMenuTarget MenuId="@ContextMenus.Selection" MenuData="Sheet">
+                        <CaretButton/>
+                    </SheetMenuTarget>
                 </div>
-                <SheetMenuTarget MenuId="@ContextMenus.Selection" MenuData="Sheet">
-                    <CaretButton/>
-                </SheetMenuTarget>
-            </div>
-        </div>
-    </div>
-}
+            </td>
+        }
+    </tr>
+    </thead>
+</table>
 
 @code {
 
