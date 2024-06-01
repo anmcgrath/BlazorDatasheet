@@ -67,7 +67,7 @@ public class VisualCell
             FormatStyleString = GetCellFormatStyleString(row, col, defaultFormat, true),
             X = sheet.Columns.GetLeft(col),
             Y = sheet.Rows.GetTop(row),
-            CellType = "text",
+            CellType = "default",
             Format = defaultFormat
         };
     }

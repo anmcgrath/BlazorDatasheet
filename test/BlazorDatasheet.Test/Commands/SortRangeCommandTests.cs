@@ -147,8 +147,8 @@ public class SortRangeCommandTests
         cmd.Undo(sheet);
 
         sheet.Cells[2, 0].Type.Should().Be("bool");
-        sheet.Cells[0, 0].Type.Should().Be("text");
-        sheet.Cells[1, 0].Type.Should().Be("text");
+        sheet.Cells[0, 0].Type.Should().Be("default");
+        sheet.Cells[1, 0].Type.Should().Be("default");
     }
 
     [Test]

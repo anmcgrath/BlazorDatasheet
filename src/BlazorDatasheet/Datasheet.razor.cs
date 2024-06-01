@@ -66,11 +66,6 @@ public partial class Datasheet : SheetComponentBase
     public Dictionary<string, CellTypeDefinition> CustomCellTypeDefinitions { get; set; } = new();
 
     /// <summary>
-    /// Default editors for cell types.
-    /// </summary>
-    private Dictionary<string, CellTypeDefinition> _defaultCellTypeDefinitions = new();
-
-    /// <summary>
     /// Exists so that we can determine whether the sheet has changed
     /// during parameter set
     /// </summary>
@@ -188,7 +183,6 @@ public partial class Datasheet : SheetComponentBase
     {
         _windowEventService = new WindowEventService(JS);
         _clipboard = new Clipboard(JS);
-        this.RegisterDefaultCellRendererAndEditors();
         base.OnInitialized();
     }
 
@@ -220,24 +214,11 @@ public partial class Datasheet : SheetComponentBase
 
         base.OnParametersSet();
     }
-
-    private void RegisterDefaultCellRendererAndEditors()
-    {
-        _defaultCellTypeDefinitions.Add("text", CellTypeDefinition.Create<TextEditorComponent, TextRenderer>());
-        _defaultCellTypeDefinitions.Add("datetime", CellTypeDefinition.Create<DateTimeEditorComponent, TextRenderer>());
-        _defaultCellTypeDefinitions.Add("boolean", CellTypeDefinition.Create<BoolEditorComponent, BoolRenderer>());
-        _defaultCellTypeDefinitions.Add("select", CellTypeDefinition.Create<SelectEditorComponent, SelectRenderer>());
-        _defaultCellTypeDefinitions.Add("textarea", CellTypeDefinition.Create<TextareaEditorComponent, TextRenderer>());
-    }
-
+    
     private Type GetCellRendererType(string type)
     {
-        // First look at any custom renderers
-        if (CustomCellTypeDefinitions.ContainsKey(type))
-            return CustomCellTypeDefinitions[type].RendererType;
-
-        if (_defaultCellTypeDefinitions.ContainsKey(type))
-            return _defaultCellTypeDefinitions[type].RendererType;
+        if (CustomCellTypeDefinitions.TryGetValue(type, out var definition))
+            return definition.RendererType;
 
         return typeof(TextRenderer);
     }

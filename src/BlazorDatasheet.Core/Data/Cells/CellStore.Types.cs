@@ -11,7 +11,7 @@ public partial class CellStore
     public string GetCellType(int row, int col)
     {
         var type = _typeStore.Get(row, col);
-        return type ?? "text";
+        return type ?? "default";
     }
 
     /// <summary>

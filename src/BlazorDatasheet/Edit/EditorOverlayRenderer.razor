@@ -29,8 +29,6 @@
 
     [Parameter, EditorRequired] public Dictionary<string, CellTypeDefinition> CustomCellTypes { get; set; }
 
-    [Parameter, EditorRequired] public Dictionary<string, CellTypeDefinition> DefaultCellTypes { get; set; }
-
     private Sheet? _sheet;
 
     [Parameter, EditorRequired] public CellLayoutProvider CellLayoutProvider { get; set; }
@@ -107,8 +105,19 @@
         if (CustomCellTypes?.TryGetValue(cellType, out var customCellType) == true)
             return customCellType.EditorType;
 
-        if (DefaultCellTypes.TryGetValue(cellType, out var defaultCellType))
-            return defaultCellType.EditorType;
+        switch (cellType)
+        {
+            case "default":
+                return typeof(TextEditorComponent);
+            case "boolean":
+                return typeof(BoolEditorComponent);
+            case "select":
+                return typeof(SelectEditorComponent);
+            case "datetime":
+                return typeof(DateTimeEditorComponent);
+            case "textarea":
+                return typeof(TextareaEditorComponent);
+        }
 
         return typeof(TextEditorComponent);
     }

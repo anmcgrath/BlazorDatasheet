@@ -113,7 +113,7 @@
                                         style="@cell.FormatStyleString">
                                         @switch (cell.CellType)
                                         {
-                                            case "text":
+                                            case "default":
                                                 @cell.Value
                                                 break;
                                             case "boolean":
@@ -140,7 +140,6 @@
                     <EditorOverlayRenderer
                         @ref="_editorManager"
                         Sheet="Sheet"
-                        DefaultCellTypes="_defaultCellTypeDefinitions"
                         CustomCellTypes="CustomCellTypeDefinitions"
                         CellLayoutProvider="_cellLayoutProvider"/>
                 </div>
