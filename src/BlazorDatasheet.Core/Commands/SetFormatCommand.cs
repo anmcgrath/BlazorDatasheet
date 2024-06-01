@@ -49,8 +49,7 @@ public class SetFormatCommand : IUndoableCommand
                 _cellFormatRestoreData = sheet.Cells.MergeFormatImpl(region, _cellFormat);
         }
         
-        if(_cellFormat.HasBorder())
-            UpdateSurroundingBorders(sheet);
+        UpdateSurroundingBorders(sheet);
         sheet.EndBatchUpdates();
 
         return true;
