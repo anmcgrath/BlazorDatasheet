@@ -31,7 +31,7 @@ public class StyleBuilder
         return this;
     }
 
-    public string ToString()
+    public override string ToString()
     {
         return _stringBuilder.ToString();
     }
