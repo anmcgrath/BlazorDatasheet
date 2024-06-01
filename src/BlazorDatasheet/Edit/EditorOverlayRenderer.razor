@@ -192,7 +192,7 @@
 
         var mergedPosn = Sheet.Cells.GetMerge(EditCell.Row, EditCell.Col)?
             .GetIntersection(Sheet.Region);
-        
+
         int colSpan = 1;
         int rowSpan = 1;
 
@@ -202,8 +202,8 @@
             rowSpan = mergedPosn.Height;
         }
 
-        var w = CellLayoutProvider.ComputeWidth(EditCell.Col, colSpan) - 1;
-        var h = CellLayoutProvider.ComputeHeight(EditCell.Row, rowSpan) - 1;
+        var w = CellLayoutProvider.ComputeWidth(EditCell.Col, colSpan);
+        var h = CellLayoutProvider.ComputeHeight(EditCell.Row, rowSpan);
 
         strBuilder.Append($"left:{left}px;");
         strBuilder.Append($"top:{top}px;");
