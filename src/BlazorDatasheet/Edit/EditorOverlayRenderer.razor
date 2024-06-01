@@ -14,7 +14,7 @@
 @if (IsEditing)
 {
     <div id="editor" class="editor-overlay"
-         style="position:absolute; display: inline-block; @GetEditorSizeStyling()">
+         style="position:absolute; box-sizing: border-box; display: inline-block; @GetEditorSizeStyling()">
         <DynamicComponent
             Type="@ActiveEditorType"
             Parameters="@GetDynamicEditorParameters()"

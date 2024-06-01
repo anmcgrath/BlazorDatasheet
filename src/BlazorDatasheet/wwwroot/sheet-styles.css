@@ -62,6 +62,7 @@
     font-family: var(--sheet-font-family), serif;
     -moz-osx-font-smoothing: grayscale;
     font-weight: var(--sheet-font-weight);
+    color:var(--sheet-foreground-color);
 }
 
 .sheet-fixed-height {
@@ -158,5 +159,5 @@
 }
 
 .editor-overlay {
-    box-shadow: 0px 0px 4px var(--shadow-overlay-color);
+    box-shadow: 0 0 6px var(--shadow-overlay-color);
 }
