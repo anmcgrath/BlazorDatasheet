@@ -123,7 +123,7 @@ public partial class Datasheet : SheetComponentBase
     /// <summary>
     /// Left filler element that is used for virtualisation.
     /// </summary>
-    private ElementReference _fillerLeft1;
+    private ElementReference _fillerLeft;
 
     /// <summary>
     /// Bottom filler element that is used for virtualisation.
@@ -261,7 +261,7 @@ public partial class Datasheet : SheetComponentBase
                 _dotnetHelper,
                 _wholeSheetDiv,
                 nameof(HandleScroll),
-                _fillerLeft1,
+                _fillerLeft,
                 _fillerTop,
                 _fillerRight,
                 _fillerBottom);

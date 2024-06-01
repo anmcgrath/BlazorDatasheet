@@ -35,9 +35,9 @@
 
                 <div id="filler-top" @ref="_fillerTop" style="min-height: @(_visualSheet.Viewport?.Top)px; min-width:@(_cellLayoutProvider.TotalWidth)px; display: block;"></div>
 
-                <div id="last-row" style="display: flex; flex-direction: row;">
+                <div style="display: flex; flex-direction: row;">
 
-                    <div id="filler-left-1" @ref="_fillerLeft1" style="float:right; min-width: @(_visualSheet.Viewport.Left)px; height: @(RenderedInnerSheetHeight)px;"></div>
+                    <div id="filler-left" @ref="_fillerLeft" style="float:right; min-width: @(_visualSheet.Viewport.Left)px; height: @(RenderedInnerSheetHeight)px;"></div>
 
                     <!-- inner sheet is the size of the visual sheet, which is resized on virtualisation -->
                     <table
