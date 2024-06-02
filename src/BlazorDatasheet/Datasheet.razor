@@ -104,6 +104,21 @@
                             </td>
                         </tr>
 
+                        <!-- row for holding left virtualiser -->
+                        @if (Virtualise)
+                        {
+                            <tr style="visibility: collapse;">
+                                @if (ShowRowHeadings)
+                                {
+                                    <td style="max-height: 0;"></td>
+                                }
+                                <td colspan="1" rowspan="@(_visualSheet.Viewport.VisibleRegion.Height+1)" style="padding: 0; border: 0;height: 0;">
+                                    <div @ref="_fillerLeft" id="filler-left-1" style="display: block; min-width: @(_visualSheet.Viewport.Left)px; background: red; height: @(_visualSheet.Viewport.VisibleHeight)px;"></div>
+                                </td>
+                                <td colspan="@_visualSheet.Viewport.VisibleRegion.Width" style="max-height: 0;"></td>
+                            </tr>
+                        }
+
                         @for (int rowIndex = _visualSheet.Viewport.VisibleRegion.Top; rowIndex <= _visualSheet.Viewport.VisibleRegion.Bottom; rowIndex++)
                         {
                             var row = rowIndex;
@@ -117,13 +132,6 @@
                                         class="sheet-cell row-head @(this.StickyHeadings ? "row-sticky" : "")">
                                         @(_sheetLocal.Rows.GetHeading(row) ?? (row + 1).ToString())
                                     </th>
-                                }
-
-                                @if (row == _visualSheet.Viewport.VisibleRegion.Top && Virtualise)
-                                {
-                                    <td rowspan="@_visualSheet.Viewport.VisibleRegion.Height" style="padding: 0; border: 0">
-                                        <div @ref="_fillerLeft" id="filler-left-1" style="display: block; min-width: @(_visualSheet.Viewport.Left)px; background: red; height: @(_visualSheet.Viewport.VisibleHeight)px;"></div>
-                                    </td>
                                 }
 
                                 @for (int j = _visualSheet.Viewport.VisibleRegion.Left; j <= _visualSheet.Viewport.VisibleRegion.Right; j++)
