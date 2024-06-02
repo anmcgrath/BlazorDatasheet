@@ -310,6 +310,9 @@ public class Sheet
     {
         if (region == null)
             return;
+
+        sortOptions ??= [new ColumnSortOptions(0, true)];
+
         var beforeArgs = new BeforeRangeSortEventArgs(region, sortOptions);
         BeforeRangeSort?.Invoke(this, beforeArgs);
         var cmd = new SortRangeCommand(region, sortOptions);
