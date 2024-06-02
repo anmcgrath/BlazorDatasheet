@@ -11,7 +11,7 @@
     --row-header-bg-color: #fafafa;
     --col-header-bg-color: #fafafa;
     --headers-foreground-color: #5c5a5a;
-    --active-header-bg-color: #eeeeee;
+    --active-header-bg-color: #cee0ed;
     --icon-color: #000000;
     --shadow-overlay-color: grey;
     --invalid-cell-foreground-color: #ff0000;
@@ -62,7 +62,7 @@
     font-family: var(--sheet-font-family), serif;
     -moz-osx-font-smoothing: grayscale;
     font-weight: var(--sheet-font-weight);
-    color:var(--sheet-foreground-color);
+    color: var(--sheet-foreground-color);
 }
 
 .sheet-fixed-height {
@@ -90,17 +90,17 @@
 
 .sheet-table {
     table-layout: fixed;
-    border-collapse: separate; 
+    border-collapse: separate;
     border-spacing: 0;
     border-top: var(--sheet-border-style);
     border-left: var(--sheet-border-style);
 }
 
-.sheet-table th{
-    background:var(--row-header-bg-color)
+.sheet-table th {
+    background: var(--row-header-bg-color)
 }
 
-.sheet-table td,th {
+.sheet-table td, th {
     border-right: var(--sheet-border-style);
     border-bottom: var(--sheet-border-style);
 }
@@ -122,7 +122,7 @@
     z-index: 1;
 }
 
-.row-head{
+.row-head {
     text-align: right;
 }
 
@@ -159,5 +159,6 @@
 }
 
 .editor-overlay {
-    box-shadow: 0 0 6px var(--shadow-overlay-color);
+    box-shadow: 0 0 4px var(--shadow-overlay-color);
+    background: var(--sheet-bg-color);
 }

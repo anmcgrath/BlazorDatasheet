@@ -1,6 +1,7 @@
 using System.Text;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Core.Layout;
+using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Render;
 
 namespace BlazorDatasheet.Util;
@@ -15,16 +16,16 @@ public static class CssUtil
     public static string GetStyledInput(IReadOnlyCell cell)
     {
         var sb = new StyleBuilder();
-        if (cell?.Format?.BackgroundColor != null)
-            sb.AddStyle("background", cell.Format.BackgroundColor);
+        sb.AddStyleNotNull("background", cell?.Format?.BackgroundColor);
+        sb.AddStyleNotNull("color", cell?.Format?.ForegroundColor);
+        if (cell?.ValueType == CellValueType.Number && cell?.Format?.TextAlign == null && cell?.Formula == null)
+            sb.AddStyle("text-align", "right");
+        else if (cell?.Formula != null)
+            sb.AddStyle("text-align", "left");
         else
-            sb.AddStyle("background", "var(--sheet-bg-color)");
-
-        if (cell?.Format?.ForegroundColor == null)
-            sb.AddStyle("color", "var(--sheet-foreground-color)");
-        else
-            sb.AddStyle("color", cell.Format.ForegroundColor);
-
+            sb.AddStyleNotNull("text-align", cell?.Format?.TextAlign);
+        
+        sb.AddStyleNotNull("font-weight", cell?.Format?.FontWeight);
         return sb.ToString();
     }
 }
