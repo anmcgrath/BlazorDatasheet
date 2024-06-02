@@ -47,6 +47,12 @@ public partial class Datasheet : SheetComponentBase
     public bool StickyHeadings { get; set; }
 
     /// <summary>
+    /// When set to true (default), the sheet will be virtualised, meaning only the visible cells will be rendered.
+    /// </summary>
+    [Parameter]
+    public bool Virtualise { get; set; } = true;
+
+    /// <summary>
     /// Renders a number of cells past the visual region, to improve scroll performance.
     /// </summary>
     [Parameter]
