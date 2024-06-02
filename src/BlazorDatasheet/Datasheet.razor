@@ -150,12 +150,13 @@
                                                 <div style="margin-right:2px; float:left; color: @(cell.Format?.IconColor ?? "var(--icon-color)");">
                                                     @GetIconRenderFragment(cell.Icon)
                                                 </div>
-                                                
                                             }
                                             @switch (cell.CellType)
                                             {
                                                 case "default":
-                                                    @cell.Value
+                                                    <div style="width: 100%;">
+                                                        @cell.FormattedString
+                                                    </div>
                                                     break;
                                                 case "boolean":
                                                     <BoolRenderer Cell="cell" Sheet="_sheetLocal"/>

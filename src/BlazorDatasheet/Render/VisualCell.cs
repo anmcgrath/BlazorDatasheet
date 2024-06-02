@@ -1,6 +1,7 @@
 using System.Text;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Formats;
+using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Util;
 
 namespace BlazorDatasheet.Render;
@@ -8,6 +9,7 @@ namespace BlazorDatasheet.Render;
 public class VisualCell
 {
     public object? Value { get; private set; }
+    public string FormattedString { get; private set; }
     public int Row { get; private set; }
     public int Col { get; private set; }
     public bool Visible { get; private set; } = true;
@@ -15,8 +17,8 @@ public class VisualCell
     public int RowSpan { get; private set; } = 1;
     public double X { get; private set; }
     public double Y { get; private set; }
-    public string CellType { get; private set; }
-    public string FormatStyleString { get; private set; }
+    public string CellType { get; private set; } = "default";
+    public string FormatStyleString { get; private set; } = string.Empty;
     public string? Icon { get; private set; }
     public CellFormat? Format { get; private set; }
 
@@ -39,7 +41,14 @@ public class VisualCell
 
         var cell = sheet.Cells.GetCell(row, col);
         var format = cell.Format.Clone();
-        Value = cell.Value;
+
+        var cellValue = sheet.Cells.GetCellValue(row, col);
+        Value = cellValue.Data;
+        if (cellValue.ValueType == CellValueType.Number && format.NumberFormat != null)
+            FormattedString = (cellValue.GetValue<double>()).ToString(format.NumberFormat);
+        else
+            FormattedString = Value?.ToString() ?? string.Empty;
+
         var cf = sheet.ConditionalFormats.GetFormatResult(row, col);
         if (cf != null)
             format.Merge(cf);
@@ -48,7 +57,7 @@ public class VisualCell
 
         X = sheet.Columns.GetLeft(col);
         Y = sheet.Rows.GetTop(row);
-        FormatStyleString = GetCellFormatStyleString(Row, Col, format, cell.IsValid);
+        FormatStyleString = GetCellFormatStyleString(Row, Col, format, cell.IsValid, cellValue.ValueType);
         Icon = format?.Icon;
         CellType = cell.Type;
         Format = format;
@@ -64,7 +73,7 @@ public class VisualCell
         {
             Row = row,
             Col = col,
-            FormatStyleString = GetCellFormatStyleString(row, col, defaultFormat, true),
+            FormatStyleString = GetCellFormatStyleString(row, col, defaultFormat, true, CellValueType.Text),
             X = sheet.Columns.GetLeft(col),
             Y = sheet.Rows.GetTop(row),
             CellType = "default",
@@ -72,7 +81,8 @@ public class VisualCell
         };
     }
 
-    private static string GetCellFormatStyleString(int row, int col, CellFormat? format, bool isCellValid)
+    private static string GetCellFormatStyleString(int row, int col, CellFormat? format, bool isCellValid,
+        CellValueType type)
     {
         if (format == null)
             return string.Empty;
@@ -96,7 +106,11 @@ public class VisualCell
         if (format.BorderTop != null)
             sb.AddStyle("border-top", $"{format.BorderTop.Width}px solid {format.BorderTop.Color};");
 
-        sb.AddStyle("text-align", format.TextAlign!, format.TextAlign != null);
+        // if number and no align is set, move to right
+        if (type == CellValueType.Number && format.TextAlign == null)
+            sb.AddStyle("text-align", "right");
+        else
+            sb.AddStyleNotNull("text-align", format.TextAlign);
 
         return sb.ToString();
     }
