@@ -220,7 +220,7 @@ public partial class Datasheet : SheetComponentBase
 
         base.OnParametersSet();
     }
-    
+
     private Type GetCellRendererType(string type)
     {
         if (CustomCellTypeDefinitions.TryGetValue(type, out var definition))
@@ -624,6 +624,7 @@ public partial class Datasheet : SheetComponentBase
         {
             await _virtualizer.InvokeAsync<string>("disposeVirtualisationHandlers", _wholeSheetDiv);
             await _sheetPointerInputService.DisposeAsync();
+            await _windowEventService.DisposeAsync();
         }
         catch (Exception e)
         {

@@ -1,14 +1,8 @@
-@using BlazorDatasheet.Core.Commands
-@using BlazorDatasheet.Core.Data
 @using Microsoft.JSInterop;
 @inject IJSRuntime JS
 @inject IWindowEventService _windowEventService;
-@using BlazorDatasheet.Render;
 @implements IDisposable;
-@using BlazorDatasheet.DataStructures.Geometry
-@using BlazorDatasheet.DataStructures.Util
 @using BlazorDatasheet.Services
-@using BlazorDatasheet.Util
 @using BlazorDatasheet.Menu
 @using BlazorDatasheet.Render.DefaultComponents
 @inherits SheetComponentBase
@@ -35,7 +29,6 @@
 
                 <div style="display: flex; flex-direction: row; justify-content: start">
 
-                    <!-- inner sheet is the size of the visual sheet, which is resized on virtualisation -->
                     <table
                         class="sheet-table"
                         style="width:@(RenderedInnerSheetWidth)px;height: @(RenderedInnerSheetHeight)px;">
@@ -47,10 +40,7 @@
                             }
 
                             <!-- virtualisation column -->
-                            @if (Virtualise)
-                            {
-                                <col style="width: @(_visualSheet.Viewport.Left)px;"/>
-                            }
+                            <col style="width: @(_visualSheet.Viewport.Left)px;"/>
 
                             @for (int i = _visualSheet.Viewport.VisibleRegion.Left; i <= _visualSheet.Viewport.VisibleRegion.Right; i++)
                             {
@@ -69,19 +59,26 @@
                                 {
                                     <th class="sheet-cell @(StickyHeadings ? "row-sticky" : "")"></th>
                                 }
-                                @if (Virtualise)
-                                {
-                                    <th></th>
-                                }
 
-                                @for (int i = _visualSheet.Viewport.VisibleRegion.Left; i <= _visualSheet.Viewport.VisibleRegion.Right; i++)
-                                {
-                                    var col = i;
-                                    var colHeading = Sheet?.Columns.GetHeading(i) ?? RangeText.ColNumberToLetters(col);
-                                    <th class="sheet-cell" data-col="@col" data-row="-1">
-                                        @colHeading
-                                    </th>
-                                }
+                                <!-- Virtualisation column -->
+                                <th></th>
+
+                                <ColumnHeadingsRenderer
+                                    NCols="@_visualSheet.Viewport.VisibleRegion.Width"
+                                    ColStart="@_visualSheet.Viewport.VisibleRegion.Left"
+                                    CellLayoutProvider="_cellLayoutProvider"
+                                    Sheet="_sheetLocal">
+                                    <HeadingRenderer>
+                                        @if (ColumnHeaderTemplate != null)
+                                        {
+                                            @ColumnHeaderTemplate(context)
+                                        }
+                                        else
+                                        {
+                                            @context.Heading
+                                        }
+                                    </HeadingRenderer>
+                                </ColumnHeadingsRenderer>
                             </tr>
                             </thead>
                         }
@@ -91,10 +88,9 @@
                         <!-- filler top row -->
                         <tr>
                             @{
-                                var colSpan = _visualSheet.Viewport.VisibleRegion.Width;
+                                // +1 here for virtualisation column
+                                var colSpan = _visualSheet.Viewport.VisibleRegion.Width + 1;
                                 if (ShowRowHeadings)
-                                    colSpan++;
-                                if (Virtualise)
                                     colSpan++;
                             }
                             <td colspan="@colSpan" style="padding: 0; border: 0">
@@ -105,19 +101,16 @@
                         </tr>
 
                         <!-- row for holding left virtualiser -->
-                        @if (Virtualise)
-                        {
-                            <tr style="visibility: collapse;">
-                                @if (ShowRowHeadings)
-                                {
-                                    <td style="max-height: 0;"></td>
-                                }
-                                <td colspan="1" rowspan="@(_visualSheet.Viewport.VisibleRegion.Height+1)" style="padding: 0; border: 0;height: 0;">
-                                    <div @ref="_fillerLeft" id="filler-left-1" style="display: block; min-width: @(_visualSheet.Viewport.Left)px; background: red; height: @(_visualSheet.Viewport.VisibleHeight)px;"></div>
-                                </td>
-                                <td colspan="@_visualSheet.Viewport.VisibleRegion.Width" style="max-height: 0;"></td>
-                            </tr>
-                        }
+                        <tr style="visibility: collapse;">
+                            @if (ShowRowHeadings)
+                            {
+                                <td style="max-height: 0;"></td>
+                            }
+                            <td colspan="1" rowspan="@(_visualSheet.Viewport.VisibleRegion.Height + 1)" style="padding: 0; border: 0;height: 0;">
+                                <div @ref="_fillerLeft" id="filler-left-1" style="display: block; min-width: @(_visualSheet.Viewport.Left)px; background: red; height: @(_visualSheet.Viewport.VisibleHeight)px;"></div>
+                            </td>
+                            <td colspan="@_visualSheet.Viewport.VisibleRegion.Width" style="max-height: 0;"></td>
+                        </tr>
 
                         @for (int rowIndex = _visualSheet.Viewport.VisibleRegion.Top; rowIndex <= _visualSheet.Viewport.VisibleRegion.Bottom; rowIndex++)
                         {
@@ -191,8 +184,8 @@
                      style="min-height: @(_visualSheet.Viewport?.DistanceBottom)px; min-width:@(_cellLayoutProvider.TotalWidth)px;">
                 </div>
             </div>
-        </div>
 
+        </div>
     </SheetMenuTarget>
 
     <!-- entire size of sheet to force scrollbars. Includes width of row headers/columns-->

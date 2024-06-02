@@ -12,97 +12,70 @@
 @using BlazorDatasheet.Menu
 @inject IJSRuntime JS;
 @inject IWindowEventService _windowEventService;
-@implements IDisposable
+@implements IAsyncDisposable
 @inherits SheetComponentBase
 
+<!-- Resize preview -->
+@if (IsDragging)
+{
+    var resizeWidth = Math.Max(_minResizeWidth, CellLayoutProvider.ComputeWidth(ActiveAdornerIndex, 1) + CurrentColResizeAmount);
+    <BoxOverlayRenderer
+        Y="0"
+        Width="3"
+        BorderThickness="1"
+        X="@(CellLayoutProvider.ComputeLeftPosition(ActiveAdornerIndex) + resizeWidth)"
+        Height="@(CellLayoutProvider.TotalHeight)"/>
+}
 
-<div style="position: absolute; top: 0; left: 0;">
+@for (int i = ColStart; i < (ColStart + NCols); i++)
+{
+    var col = i;
+    var colHeading = Sheet?.Columns.GetHeading(i) ?? RangeText.ColNumberToLetters(col);
 
-    @foreach (var interval in _selectionIntervals)
-    {
-        <BoxOverlayRenderer
-            BackgroundVisible="@true"
-            BorderThickness="0"
-            BackgroundStyle="background:var(--selection-bg-color);"
-            Width="CellLayoutProvider.ComputeWidth(interval.Start, interval.Length)"
-            Height="CellLayoutProvider.ComputeHeight(-1, 1)"
-            X="CellLayoutProvider.ComputeLeftPosition(interval.Start)"
-            Y="CellLayoutProvider.ComputeTopPosition(-1)"/>
-    }
-
-    <!-- Ardoners -->
-    @for (int i = VisibleColStart; i < (VisibleColStart + NVisibleCols); i++)
-    {
-        var col = i;
-        <div
-            class="unselectable"
-            @onmousedown="e => HandleMouseDownOnAdorner(col)"
-            style="@GetArdornerSizeStyles(col)
-            position:absolute; z-index: 2;
-            background: none; cursor: col-resize; display: block">
-        </div>
-    }
-
-    <!-- Resize preview -->
-    @if (IsDragging)
-    {
-        var resizeWidth = Math.Max(_minResizeWidth, CellLayoutProvider.ComputeWidth(ActiveAdornerIndex, 1) + CurrentColResizeAmount);
-        <BoxOverlayRenderer
-            Y="0"
-            Width="3"
-            BorderThickness="1"
-            X="@(CellLayoutProvider.ComputeLeftPosition(ActiveAdornerIndex) + resizeWidth)"
-            Height="@(CellLayoutProvider.TotalHeight)"/>
-    }
-
-</div>
-
-<table class="head-table">
-    <thead>
-    <tr style="height:@(CellLayoutProvider.ColHeadingHeight)px; width:@(CellLayoutProvider.ComputeWidth(VisibleColStart, NVisibleCols))px">
-        @for (int i = VisibleColStart; i < (VisibleColStart + NVisibleCols); i++)
-        {
-            var col = i;
-            var colHeading = Sheet?.Columns.GetHeading(i) ?? RangeText.ColNumberToLetters(col);
-            var width = CellLayoutProvider.ComputeWidth(col, 1);
-            <td
-                data-row="-1"
-                data-col="@col"
-                class="sheet-cell @GetActiveClass(col)"
-                style="
-                    width:@(width)px;
-                    max-width: @(width)px;
-                    height: @(CellLayoutProvider.ColHeadingHeight)px;"
-                @onmouseup="e => HandleMouseUp(col, e)"
-                @onmouseover="e => HandleMouseOver(col, e)"
-                @onmousedown="e => HandleMouseDown(col, e)">
-                <div style="display: flex; justify-content: space-between;">
-                    <div>
-                        @HeadingRenderer(new HeadingContext(col, colHeading))
-                    </div>
+    <th class="unselectable @GetActiveClass(col)">
+        <div style="width: 100%; display: flex; justify-content: start; position: relative; overflow-x: visible;">
+            <div class="sheet-cell" data-col="@col" data-row="-1" style="display: flex; justify-content: space-between; width: 100%;">
+                <div>
+                    @{
+                        var heading = Sheet.Columns.GetHeading(col) ?? RangeText.ColNumberToLetters(col);
+                    }
+                    @HeadingRenderer(new HeadingContext(col, heading))
+                </div>
+                <div style="display: flex; flex-direction: row;">
                     <SheetMenuTarget MenuId="@ContextMenus.Selection" MenuData="Sheet">
                         <CaretButton/>
                     </SheetMenuTarget>
                 </div>
-            </td>
-        }
-    </tr>
-    </thead>
-</table>
+            </div>
+
+            <div class="unselectable"
+                 @onmousedown="e => HandleMouseDownOnAdorner(col)"
+                 style="position: absolute; 
+                 right: 0; 
+                 z-index: 4; 
+                 margin-right:-5px; 
+                 width: 10px; 
+                 height: 100%; 
+                 float: left; 
+                 display: inline-block; 
+                 cursor: col-resize;">
+            </div>
+        </div>
+    </th>
+}
 
 @code {
 
     private Sheet? _sheet;
 
     [Parameter, EditorRequired] public Sheet? Sheet { get; set; }
-    [Parameter] public CellLayoutProvider CellLayoutProvider { get; set; }
+    [Parameter, EditorRequired] public CellLayoutProvider CellLayoutProvider { get; set; } = null!;
     [Parameter] public EventCallback<ColumnMouseEventArgs> OnMouseUp { get; set; }
     [Parameter] public EventCallback<ColumnMouseEventArgs> OnMouseOver { get; set; }
     [Parameter] public EventCallback<ColumnMouseEventArgs> OnMouseDown { get; set; }
     [Parameter, EditorRequired] public RenderFragment<HeadingContext> HeadingRenderer { get; set; } = default!;
-    [Parameter] public int NVisibleCols { get; set; }
-
-    [Parameter] public int VisibleColStart { get; set; }
+    [Parameter] public int NCols { get; set; }
+    [Parameter] public int ColStart { get; set; }
 
     private double MouseX { get; set; }
     private double MouseXStart { get; set; }
@@ -145,7 +118,6 @@
         }
     }
 
-    [JSInvokable]
     public Task<bool> WindowHandleMouseMove(MouseEventArgs arg)
     {
         MouseX = arg.PageX;
@@ -180,7 +152,7 @@
         return Task.FromResult(false);
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
     }
 
@@ -212,21 +184,6 @@
     private void HandleMouseOver(int col, MouseEventArgs args)
     {
         OnMouseOver.InvokeAsync(new ColumnMouseEventArgs(col, args));
-    }
-
-    private string GetArdornerSizeStyles(int col)
-    {
-        var sb = new StringBuilder();
-        var left = CellLayoutProvider.ComputeLeftPosition(col + 1);
-        var top = 0;
-        var width = 10;
-        var height = CellLayoutProvider.ColHeadingHeight;
-
-        sb.Append($"top:{top}px;");
-        sb.Append($"left:{left - 6}px;");
-        sb.Append($"width:{width}px;");
-        sb.Append($"height:{height}px;");
-        return sb.ToString();
     }
 
     private string GetActiveClass(int col)

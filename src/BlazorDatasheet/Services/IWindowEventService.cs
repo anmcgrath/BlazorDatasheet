@@ -4,7 +4,7 @@ using ClipboardEventArgs = BlazorDatasheet.Core.Events.ClipboardEventArgs;
 
 namespace BlazorDatasheet.Services;
 
-public interface IWindowEventService : IDisposable
+public interface IWindowEventService : IAsyncDisposable
 {
     Task RegisterMouseEvent(string eventType, Func<MouseEventArgs, Task<bool>> handler);
     Task RegisterKeyEvent(string eventType, Func<KeyboardEventArgs, Task<bool>> handler);
