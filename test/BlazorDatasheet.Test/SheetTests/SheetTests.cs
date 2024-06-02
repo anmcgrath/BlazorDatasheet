@@ -141,6 +141,7 @@ public class SheetTests
         sheet.BeforeRangeSort += (sender, args) =>
         {
             args.Cancel = true;
+            args.SortOptions.Should().NotBeNull();
         };
         
         sheet.SortRange(new ColumnRegion(0));

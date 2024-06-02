@@ -20,11 +20,10 @@ public class SortRangeCommand : IUndoableCommand
     /// <param name="region">The region to sort</param>
     /// <param name="sortOptions">The column sort options, if null the default sort (sort on column 0 ascending) will be used.
     /// If two column values are equal, then the next option will be used for the sort, equivalent to a ThenBy</param>
-    public SortRangeCommand(IRegion region, List<ColumnSortOptions>? sortOptions = null)
+    public SortRangeCommand(IRegion region, List<ColumnSortOptions> sortOptions = null)
     {
         _region = region;
-        _sortOptions = sortOptions ?? new List<ColumnSortOptions>()
-            { new(0, true) };
+        _sortOptions = sortOptions;
     }
 
     /// <summary>
