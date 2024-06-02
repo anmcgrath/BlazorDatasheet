@@ -21,6 +21,7 @@
     <SheetMenuTarget
         MenuId="SelectionMenu"
         MenuData="Sheet"
+        Margin="0"
         Trigger="@MenuTrigger.OnContextMenu"
         Placement="@MenuPlacement.BottomRight">
         <div>
@@ -143,23 +144,32 @@
                                         rowspan="@cell.RowSpan"
                                         class="sheet-cell"
                                         style="@cell.FormatStyleString">
-                                        @switch (cell.CellType)
-                                        {
-                                            case "default":
-                                                @cell.Value
-                                                break;
-                                            case "boolean":
-                                                <BoolRenderer Cell="cell" Sheet="_sheetLocal"/>
-                                                break;
-                                            case "select":
-                                                <SelectRenderer Cell="cell" Sheet="_sheetLocal"/>
-                                                break;
-                                            default:
-                                                <DynamicComponent
-                                                    Parameters="@GetCellRendererParameters(cell)"
-                                                    Type="@GetCellRendererType(cell.CellType)"/>
-                                                break;
-                                        }
+                                        <div style="display: flex;">
+                                            @if (cell.Icon != null)
+                                            {
+                                                <div style="margin-right:2px; float:left; color: @(cell.Format?.IconColor ?? "var(--icon-color)");">
+                                                    @GetIconRenderFragment(cell.Icon)
+                                                </div>
+                                                
+                                            }
+                                            @switch (cell.CellType)
+                                            {
+                                                case "default":
+                                                    @cell.Value
+                                                    break;
+                                                case "boolean":
+                                                    <BoolRenderer Cell="cell" Sheet="_sheetLocal"/>
+                                                    break;
+                                                case "select":
+                                                    <SelectRenderer Cell="cell" Sheet="_sheetLocal"/>
+                                                    break;
+                                                default:
+                                                    <DynamicComponent
+                                                        Parameters="@GetCellRendererParameters(cell)"
+                                                        Type="@GetCellRendererType(cell.CellType)"/>
+                                                    break;
+                                            }
+                                        </div>
                                     </td>
                                 }
                             </tr>
