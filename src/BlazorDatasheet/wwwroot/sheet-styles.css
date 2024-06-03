@@ -88,6 +88,11 @@
     vertical-align: top;
 }
 
+.merged-cell{
+    background: var(--sheet-bg-color);
+    border: var(--sheet-border-style);
+}
+
 .sheet-table {
     table-layout: fixed;
     border-collapse: separate;

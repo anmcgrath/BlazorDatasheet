@@ -1,3 +1,5 @@
+@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Formula.Functions.Logical
 @using Microsoft.JSInterop;
 @inject IJSRuntime JS
 @inject IWindowEventService _windowEventService;
@@ -90,11 +92,11 @@
                         <tr>
                             @{
                                 // +1 here for virtualisation column
-                                var colSpan = _visualSheet.Viewport.VisibleRegion.Width + 1;
+                                var fillerColSpan = _visualSheet.Viewport.VisibleRegion.Width + 1;
                                 if (ShowRowHeadings)
-                                    colSpan++;
+                                    fillerColSpan++;
                             }
-                            <td colspan="@colSpan" style="padding: 0; border: 0">
+                            <td colspan="@fillerColSpan" style="padding: 0; border: 0">
                                 <div id="filler-top" @ref="_fillerTop"
                                      style="min-height: @(_visualSheet.Viewport.Top)px; display: block;">
                                 </div>
@@ -107,8 +109,11 @@
                             {
                                 <td style="max-height: 0;"></td>
                             }
-                            <td colspan="1" rowspan="@(_visualSheet.Viewport.VisibleRegion.Height + 1)" style="padding: 0; border: 0;height: 0;">
-                                <div @ref="_fillerLeft" id="filler-left-1" style="display: block; min-width: @(_visualSheet.Viewport.Left)px; background: red; height: @(_visualSheet.Viewport.VisibleHeight)px;"></div>
+                            <td colspan="1" rowspan="@(_visualSheet.Viewport.VisibleRegion.Height + 1)"
+                                style="padding: 0; border: 0;height: 0;">
+                                <div @ref="_fillerLeft" id="filler-left-1"
+                                     style="display: block; min-width: @(_visualSheet.Viewport.Left)px; background: red; height: @(_visualSheet.Viewport.VisibleHeight)px;">
+                                </div>
                             </td>
                             <td colspan="@_visualSheet.Viewport.VisibleRegion.Width" style="max-height: 0;"></td>
                         </tr>
@@ -132,22 +137,34 @@
                                 {
                                     var col = j;
                                     var cell = _visualSheet.GetVisualCell(row, col);
-                                    @if (!cell.Visible)
-                                        continue;
-
                                     var k = col;
+
+                                    var rowSpan = 1;
+                                    var colSpan = 1;
+                                    var dataCol = col;
+                                    var dataRow = row;
+
+                                    if (!Virtualise && cell.Merge != null)
+                                    {
+                                        rowSpan = cell.Merge.Height + 1;
+                                        colSpan = cell.Merge.Width + 1;
+                                        dataCol = cell.Merge.Left;
+                                        dataRow = cell.Merge.Top;
+                                    }
+
                                     <td
                                         @key="k"
-                                        data-row="@row"
-                                        data-col="@col"
-                                        colspan="@cell.ColSpan"
-                                        rowspan="@cell.RowSpan"
+                                        data-row="@dataRow"
+                                        data-col="@dataCol"
+                                        colspan="@colSpan"
+                                        rowspan="@rowSpan"
                                         class="sheet-cell"
                                         style="@cell.FormatStyleString">
                                         <div style="display: flex;">
                                             @if (cell.Icon != null)
                                             {
-                                                <div style="margin-right:2px; float:left; color: @(cell.Format?.IconColor ?? "var(--icon-color)");">
+                                                <div
+                                                    style="margin-right:2px; float:left; color: @(cell.Format?.IconColor ?? "var(--icon-color)");">
                                                     @GetIconRenderFragment(cell.Icon)
                                                 </div>
                                             }

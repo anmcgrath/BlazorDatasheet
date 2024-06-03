@@ -81,15 +81,12 @@
 
         let self = this
         let observer = new IntersectionObserver((entries, observer) => {
-            console.log(entries)
             for (let i = 0; i < entries.length; i++) {
                 if (!entries[i].isIntersecting)
                     continue
                 if (entries[i].target.getBoundingClientRect().width <= 0 ||
                     entries[i].target.getBoundingClientRect().height <= 0)
                     continue
-                
-                console.log('intersecting', entries[i].target)
 
                 let offset = getViewPort(el)
                 dotNetHelper.invokeMethodAsync(dotnetScrollHandlerName, offset);
@@ -100,10 +97,7 @@
         observer.observe(fillerTop)
         observer.observe(fillerBottom)
         observer.observe(fillerLeft)
-        console.log('observing left',fillerLeft)
         observer.observe(fillerRight)
-        
-        console.log('observing', fillerTop, fillerBottom, fillerLeft, fillerRight)
 
         this.interactionMap[el] = observer
 

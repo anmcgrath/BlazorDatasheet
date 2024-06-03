@@ -15,7 +15,7 @@ public class VisualSheet
     private readonly Dictionary<CellPosition, VisualCell> _visualCache = new();
     private CellFormat _defaultFormat = new CellFormat();
     public Viewport Viewport { get; private set; } = new();
-    
+
     /// <summary>
     /// The "visible" bounds of the sheet, shown in the scroll container
     /// </summary>
@@ -129,6 +129,7 @@ public class VisualSheet
     {
         if (_visualCache.TryGetValue(new CellPosition(row, col), out var cell))
             return cell;
-        return VisualCell.Empty(row, col, _sheet, ref _defaultFormat);
+
+        return new VisualCell(row, col, _sheet);
     }
 }

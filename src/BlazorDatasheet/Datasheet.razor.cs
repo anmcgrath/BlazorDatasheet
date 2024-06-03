@@ -12,6 +12,7 @@ using BlazorDatasheet.Events;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Render.DefaultComponents;
 using BlazorDatasheet.Services;
+using BlazorDatasheet.Util;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
@@ -87,7 +88,7 @@ public partial class Datasheet : SheetComponentBase
     [Parameter] public Dictionary<string, RenderFragment> Icons { get; set; } = new();
 
     [Parameter] public RenderFragment<HeadingContext>? ColumnHeaderTemplate { get; set; }
-    
+
     public string Id { get; set; } = Guid.NewGuid().ToString();
 
     /// <summary>
@@ -320,14 +321,14 @@ public partial class Datasheet : SheetComponentBase
 
     private string GetAbsoluteCellPositionStyles(int row, int col, int rowSpan, int colSpan)
     {
-        var sb = new StringBuilder();
+        var sb = new StyleBuilder();
         var top = _cellLayoutProvider.ComputeTopPosition(row);
         var left = _cellLayoutProvider.ComputeLeftPosition(col);
-        sb.Append("position:absolute;");
-        sb.Append($"top:{top}px;");
-        sb.Append($"width:{_cellLayoutProvider.ComputeWidth(col, colSpan)}px;");
-        sb.Append($"height:{_cellLayoutProvider.ComputeHeight(row, rowSpan)}px;");
-        sb.Append($"left:{left}px;");
+        sb.AddStyle("top", $"{top}px");
+        sb.AddStyle($"left", $"{left}px;");
+        sb.AddStyle("width", $"{_cellLayoutProvider.ComputeWidth(col, colSpan)}px");
+        sb.AddStyle("height", $"{_cellLayoutProvider.ComputeHeight(row, rowSpan)}px");
+
         return sb.ToString();
     }
 
@@ -362,7 +363,7 @@ public partial class Datasheet : SheetComponentBase
             {
                 Sheet.Selection.ClearSelections();
             }
-            
+
             if (args.Row == -1)
                 this.BeginSelectingCol(args.Col);
             else if (args.Col == -1)
@@ -595,7 +596,7 @@ public partial class Datasheet : SheetComponentBase
             await _virtualizer.InvokeAsync<string>("disposeVirtualisationHandlers", _wholeSheetDiv);
             await _sheetPointerInputService.DisposeAsync();
             await _windowEventService.DisposeAsync();
-            
+
             _dotnetHelper.Dispose();
         }
         catch (Exception e)

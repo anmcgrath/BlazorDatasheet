@@ -1,6 +1,7 @@
 using System.Text;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Formats;
+using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Util;
 
@@ -12,9 +13,7 @@ public class VisualCell
     public string FormattedString { get; private set; }
     public int Row { get; private set; }
     public int Col { get; private set; }
-    public bool Visible { get; private set; } = true;
-    public int ColSpan { get; private set; } = 1;
-    public int RowSpan { get; private set; } = 1;
+    public IRegion? Merge { get; private set; }
     public double X { get; private set; }
     public double Y { get; private set; }
     public string CellType { get; private set; } = "default";
@@ -24,20 +23,7 @@ public class VisualCell
 
     public VisualCell(int row, int col, Sheet sheet)
     {
-        var merge = sheet.Cells.GetMerge(row, col);
-        if (merge != null)
-        {
-            if (merge.Top == row && merge.Left == col)
-            {
-                ColSpan = merge.Width;
-                RowSpan = merge.Height;
-            }
-            else
-            {
-                Visible = false;
-                return;
-            }
-        }
+        Merge = sheet.Cells.GetMerge(row, col)?.Clone();
 
         var cell = sheet.Cells.GetCell(row, col);
         var format = cell.Format.Clone();
