@@ -255,7 +255,6 @@ public partial class Datasheet : SheetComponentBase
             await _sheetPointerInputService.Init();
 
             _sheetPointerInputService.PointerDown += this.HandleCellMouseDown;
-            _sheetPointerInputService.PointerUp += this.HandleCellMouseUp;
             _sheetPointerInputService.PointerEnter += HandleCellMouseOver;
             _sheetPointerInputService.PointerDoubleClick += HandleCellDoubleClick;
 
@@ -336,11 +335,7 @@ public partial class Datasheet : SheetComponentBase
         await _windowEventService.RegisterMouseEvent("mousedown", HandleWindowMouseDown);
         await _windowEventService.RegisterKeyEvent("keydown", HandleWindowKeyDown);
         await _windowEventService.RegisterClipboardEvent("paste", HandleWindowPaste);
-    }
-
-    private void HandleCellMouseUp(object? sender, SheetPointerEventArgs args)
-    {
-        this.EndSelecting();
+        await _windowEventService.RegisterMouseEvent("mouseup", HandleWindowMouseUp);
     }
 
     private void HandleCellMouseDown(object? sender, SheetPointerEventArgs args)
@@ -467,6 +462,12 @@ public partial class Datasheet : SheetComponentBase
         if (changed)
             StateHasChanged();
 
+        return Task.FromResult(false);
+    }
+
+    private Task<bool> HandleWindowMouseUp(MouseEventArgs arg)
+    {
+        EndSelecting();
         return Task.FromResult(false);
     }
 
