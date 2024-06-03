@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Diagnostics;
 using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.Data;

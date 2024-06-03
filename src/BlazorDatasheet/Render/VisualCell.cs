@@ -23,7 +23,7 @@ public class VisualCell
 
     public VisualCell(int row, int col, Sheet sheet)
     {
-        Merge = sheet.Cells.GetMerge(row, col)?.Clone();
+        Merge = sheet.Cells.GetMerge(row, col)?.GetIntersection(sheet.Region);
 
         var cell = sheet.Cells.GetCell(row, col);
         var format = cell.Format.Clone();

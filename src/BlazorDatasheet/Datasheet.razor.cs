@@ -218,6 +218,20 @@ public partial class Datasheet : SheetComponentBase
 
             _cellLayoutProvider.IncludeColHeadings = ShowColHeadings;
             _cellLayoutProvider.IncludeRowHeadings = ShowRowHeadings;
+
+            if (!Virtualise)
+            {
+                var vp = new Viewport()
+                {
+                    DistanceBottom = 0,
+                    DistanceRight = 0,
+                    Left = 0,
+                    Top = 0,
+                    VisibleRegion = new Region(0, Sheet.NumRows - 1, 0, Sheet.NumCols - 1)
+                };
+
+                _visualSheet.UpdateViewport(vp);
+            }
         }
 
         base.OnParametersSet();
@@ -288,6 +302,9 @@ public partial class Datasheet : SheetComponentBase
     [JSInvokable("HandleScroll")]
     public void HandleScroll(ViewportScrollInfo e)
     {
+        if (!Virtualise)
+            return;
+
         var newViewport = _cellLayoutProvider
             .GetViewPort(
                 e.ScrollLeft,

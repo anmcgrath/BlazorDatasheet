@@ -146,10 +146,15 @@
 
                                     if (!Virtualise && cell.Merge != null)
                                     {
-                                        rowSpan = cell.Merge.Height + 1;
-                                        colSpan = cell.Merge.Width + 1;
-                                        dataCol = cell.Merge.Left;
-                                        dataRow = cell.Merge.Top;
+                                        if (cell.Merge.Top == row && cell.Merge.Left == col)
+                                        {
+                                            rowSpan = cell.Merge.Height;
+                                            colSpan = cell.Merge.Width;
+                                            dataCol = cell.Merge.Left;
+                                            dataRow = cell.Merge.Top;
+                                        }
+                                        else
+                                            continue;
                                     }
 
                                     <td
