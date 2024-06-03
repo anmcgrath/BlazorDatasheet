@@ -27,4 +27,5 @@ public interface IMenuService
     EventHandler<MenuShownEventArgs>? MenuShown { get; set; }
     EventHandler<BeforeMenuShownEventArgs>? BeforeMenuShown { get; set; }
     Task CloseSubMenus(string menuId);
+    bool IsMenuOpen(string id);
 }
