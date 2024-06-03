@@ -7,6 +7,7 @@
 @using BlazorDatasheet.DataStructures.Intervals
 @using BlazorDatasheet.DataStructures.Util
 @using BlazorDatasheet.Events
+@using BlazorDatasheet.Formula.Functions.Logical
 @using BlazorDatasheet.Menu
 @inject IJSRuntime JS;
 @inject IWindowEventService _windowEventService;
@@ -16,12 +17,12 @@
 <!-- Resize preview -->
 @if (IsDragging)
 {
-    var resizeWidth = Math.Max(_minResizeWidth, CellLayoutProvider.ComputeWidth(ActiveAdornerIndex, 1) + CurrentColResizeAmount);
+    var resizeWidth = Math.Max(_minResizeWidth, CellLayoutProvider.ComputeWidth(ActiveResizerIndex, 1) + CurrentColResizeAmount);
     <BoxOverlayRenderer
         Y="0"
         Width="3"
         BorderThickness="1"
-        X="@(CellLayoutProvider.ComputeLeftPosition(ActiveAdornerIndex) + resizeWidth)"
+        X="@(CellLayoutProvider.ComputeLeftPosition(ActiveResizerIndex) + resizeWidth)"
         Height="@(CellLayoutProvider.TotalHeight)"/>
 }
 
@@ -44,7 +45,7 @@
             </div>
 
             <div class="unselectable"
-                 @onmousedown="_ => HandleMouseDownOnAdorner(col)"
+                 @onmousedown="_ => HandleMouseDownOnResizer(col)"
                  style="position: absolute; 
                  right: 0; 
                  z-index: 4; 
@@ -63,7 +64,7 @@
 
     private Sheet? _sheet;
 
-    [Parameter, EditorRequired] public Sheet Sheet { get; set; } = default!;
+    [Parameter, EditorRequired] public Sheet Sheet { get; set; } = null!;
     [Parameter, EditorRequired] public CellLayoutProvider CellLayoutProvider { get; set; } = null!;
     [Parameter] public EventCallback<ColumnMouseEventArgs> OnMouseUp { get; set; }
     [Parameter] public EventCallback<ColumnMouseEventArgs> OnMouseOver { get; set; }
@@ -74,7 +75,7 @@
 
     private double MouseX { get; set; }
     private double MouseXStart { get; set; }
-    private int ActiveAdornerIndex { get; set; }
+    private int ActiveResizerIndex { get; set; }
     private bool IsDragging { get; set; }
     private double CurrentColResizeAmount { get; set; }
     private int _minResizeWidth = 15;
@@ -124,10 +125,10 @@
         return Task.FromResult(false);
     }
 
-    private void HandleMouseDownOnAdorner(int col)
+    private void HandleMouseDownOnResizer(int col)
     {
         MouseXStart = MouseX;
-        ActiveAdornerIndex = col;
+        ActiveResizerIndex = col;
         CurrentColResizeAmount = 0;
         IsDragging = true;
     }
@@ -137,8 +138,8 @@
         if (IsDragging)
         {
             IsDragging = false;
-            var resizeWidth = Math.Max(_minResizeWidth, CellLayoutProvider.ComputeWidth(ActiveAdornerIndex, 1) + CurrentColResizeAmount);
-            Sheet.Columns.SetWidth(ActiveAdornerIndex, resizeWidth);
+            var resizeWidth = Math.Max(_minResizeWidth, CellLayoutProvider.ComputeWidth(ActiveResizerIndex, 1) + CurrentColResizeAmount);
+            Sheet.Columns.SetWidth(ActiveResizerIndex, resizeWidth);
             return Task.FromResult(true);
         }
 
