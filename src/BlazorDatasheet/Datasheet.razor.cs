@@ -88,6 +88,8 @@ public partial class Datasheet : SheetComponentBase
     [Parameter] public Dictionary<string, RenderFragment> Icons { get; set; } = new();
 
     [Parameter] public RenderFragment<HeadingContext>? ColumnHeaderTemplate { get; set; } = null;
+    
+    public string Id { get; set; } = Guid.NewGuid().ToString();
 
     /// <summary>
     /// Whether the user is focused on the datasheet.
