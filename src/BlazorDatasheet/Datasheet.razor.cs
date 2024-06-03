@@ -8,7 +8,6 @@ using BlazorDatasheet.Core.Layout;
 using BlazorDatasheet.Core.Util;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Edit;
-using BlazorDatasheet.Edit.DefaultComponents;
 using BlazorDatasheet.Events;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Render.DefaultComponents;
@@ -87,7 +86,7 @@ public partial class Datasheet : SheetComponentBase
 
     [Parameter] public Dictionary<string, RenderFragment> Icons { get; set; } = new();
 
-    [Parameter] public RenderFragment<HeadingContext>? ColumnHeaderTemplate { get; set; } = null;
+    [Parameter] public RenderFragment<HeadingContext>? ColumnHeaderTemplate { get; set; }
     
     public string Id { get; set; } = Guid.NewGuid().ToString();
 
@@ -363,8 +362,7 @@ public partial class Datasheet : SheetComponentBase
             {
                 Sheet.Selection.ClearSelections();
             }
-
-            var mergeRangeAtPosition = _sheetLocal.Cells.GetMerge(args.Row, args.Col);
+            
             if (args.Row == -1)
                 this.BeginSelectingCol(args.Col);
             else if (args.Col == -1)
@@ -556,10 +554,10 @@ public partial class Datasheet : SheetComponentBase
 
     private void CollapseAndMoveSelection(int drow, int dcol)
     {
-        if (Sheet?.Selection?.ActiveRegion == null)
+        if (Sheet.Selection.ActiveRegion == null)
             return;
 
-        if (Sheet?.Selection.IsSelecting == true)
+        if (Sheet.Selection.IsSelecting)
             return;
 
         var posn = Sheet.Selection.ActiveCellPosition;
@@ -597,13 +595,13 @@ public partial class Datasheet : SheetComponentBase
             await _virtualizer.InvokeAsync<string>("disposeVirtualisationHandlers", _wholeSheetDiv);
             await _sheetPointerInputService.DisposeAsync();
             await _windowEventService.DisposeAsync();
+            
+            _dotnetHelper.Dispose();
         }
         catch (Exception e)
         {
             Console.WriteLine(e.Message);
         }
-
-        _dotnetHelper?.Dispose();
     }
 
     /// <summary>
@@ -658,11 +656,11 @@ public partial class Datasheet : SheetComponentBase
         if (!IsSelecting)
             return;
 
-        if (Sheet?.Selection?.SelectingRegion?.End.row == row &&
-            Sheet?.Selection?.SelectingRegion?.End.col == col)
+        if (Sheet.Selection.SelectingRegion?.End.row == row &&
+            Sheet.Selection.SelectingRegion?.End.col == col)
             return;
 
-        Sheet?.Selection.UpdateSelectingEndPosition(row, col);
+        Sheet.Selection.UpdateSelectingEndPosition(row, col);
     }
 
     /// <summary>
@@ -673,7 +671,7 @@ public partial class Datasheet : SheetComponentBase
         if (!IsSelecting)
             return;
 
-        Sheet?.Selection.EndSelecting();
+        Sheet.Selection.EndSelecting();
     }
 
     private string GetContainerClassString()
@@ -695,7 +693,7 @@ public partial class Datasheet : SheetComponentBase
 
     private void HandleSelectionExpanded(SelectionExpandedEventArgs e)
     {
-        _sheetLocal?.Commands.ExecuteCommand(new AutoFillCommand(e.Original, e.Expanded));
+        Sheet.Commands.ExecuteCommand(new AutoFillCommand(e.Original, e.Expanded));
     }
 
     private RenderFragment GetIconRenderFragment(string? cellIcon)

@@ -22,7 +22,6 @@
     {
         <BoxOverlayRenderer
             BackgroundVisible="@true"
-            BackgroundStyle="@_bgStyle"
             BorderThickness="0"
             X="GetLeft(region)"
             Y="GetTop(region)"
@@ -34,7 +33,6 @@
     <BoxOverlayRenderer
         BackgroundVisible="@false"
         BorderThickness="2"
-        BackgroundStyle="@_bgStyle"
         X="GetLeft(BoundedSelectingRegion)"
         Y="GetTop(BoundedSelectingRegion)"
         Width="GetWidth(BoundedSelectingRegion)"
@@ -58,7 +56,6 @@
             foreach (var brokenRegion in brokenRegions)
             {
                 <BoxOverlayRenderer
-                    BackgroundStyle="@_bgStyle"
                     BackgroundVisible="true"
                     BorderThickness="0"
                     X="GetLeft(brokenRegion)"
@@ -72,7 +69,6 @@
         <BoxOverlayRenderer
             BackgroundVisible="@(!isActiveRegion)"
             BorderThickness="@(isActiveRegion ? 2 : 0)"
-            BackgroundStyle="@_bgStyle"
             X="GetLeft(boundedRegion)"
             Y="GetTop(boundedRegion)"
             Width="GetWidth(boundedRegion)"
@@ -87,11 +83,9 @@
 
     private Sheet? _sheet;
 
-    [Parameter, EditorRequired] public Sheet? Sheet { get; set; }
+    [Parameter, EditorRequired] public Sheet Sheet { get; set; } = null!;
 
-    private string _bgStyle = "background:var(--selection-bg-color);";
-
-    private IRegion? BoundedSelectingRegion => Sheet?.Selection.SelectingRegion?.GetIntersection(Sheet?.Region);
+    private IRegion? BoundedSelectingRegion => Sheet.Selection.SelectingRegion?.GetIntersection(Sheet.Region);
 
     private double GetLeft(IRegion region) => CellLayoutProvider.ComputeLeftPosition(region);
     private double GetTop(IRegion region) => CellLayoutProvider.ComputeTopPosition(region);
@@ -115,14 +109,14 @@
 
             _sheet.Selection.SelectionChanged += OnSelectionChanged;
             _sheet.Selection.SelectingChanged += OnSelectingChanged;
-            _sheet.Editor.EditBegin += (sender, args) => StateHasChanged();
+            _sheet.Editor.EditBegin += (_, _) => StateHasChanged();
         }
     }
 
     // Returns the region that the position covers (may be > 1 because of merged cells)
     private IRegion GetRegion(CellPosition position)
     {
-        var merge = Sheet.Cells?.GetMerge(position.row, position.col);
+        var merge = Sheet.Cells.GetMerge(position.row, position.col);
         if (merge != null)
             return merge;
         else
