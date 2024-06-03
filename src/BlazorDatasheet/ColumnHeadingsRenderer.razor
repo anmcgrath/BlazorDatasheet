@@ -1,9 +1,7 @@
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Render
 @using BlazorDatasheet.Services
-@using BlazorDatasheet.Util
 @using Microsoft.JSInterop
-@using System.Text
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Layout
 @using BlazorDatasheet.DataStructures.Intervals
@@ -30,16 +28,13 @@
 @for (int i = ColStart; i < (ColStart + NCols); i++)
 {
     var col = i;
-    var colHeading = Sheet?.Columns.GetHeading(i) ?? RangeText.ColNumberToLetters(col);
+    var colHeading = Sheet.Columns.GetHeading(i) ?? RangeText.ColNumberToLetters(col);
 
     <th class="unselectable @GetActiveClass(col)">
         <div style="width: 100%; display: flex; justify-content: start; position: relative; overflow-x: visible;">
             <div class="sheet-cell" data-col="@col" data-row="-1" style="display: flex; justify-content: space-between; width: 100%;">
                 <div>
-                    @{
-                        var heading = Sheet.Columns.GetHeading(col) ?? RangeText.ColNumberToLetters(col);
-                    }
-                    @HeadingRenderer(new HeadingContext(col, heading))
+                    @HeadingRenderer(new HeadingContext(col, colHeading))
                 </div>
                 <div style="display: flex; flex-direction: row;">
                     <SheetMenuTarget MenuId="@ContextMenus.Selection" MenuData="Sheet">
@@ -49,7 +44,7 @@
             </div>
 
             <div class="unselectable"
-                 @onmousedown="e => HandleMouseDownOnAdorner(col)"
+                 @onmousedown="_ => HandleMouseDownOnAdorner(col)"
                  style="position: absolute; 
                  right: 0; 
                  z-index: 4; 
@@ -68,7 +63,7 @@
 
     private Sheet? _sheet;
 
-    [Parameter, EditorRequired] public Sheet? Sheet { get; set; }
+    [Parameter, EditorRequired] public Sheet Sheet { get; set; } = default!;
     [Parameter, EditorRequired] public CellLayoutProvider CellLayoutProvider { get; set; } = null!;
     [Parameter] public EventCallback<ColumnMouseEventArgs> OnMouseUp { get; set; }
     [Parameter] public EventCallback<ColumnMouseEventArgs> OnMouseOver { get; set; }
@@ -84,7 +79,7 @@
     private double CurrentColResizeAmount { get; set; }
     private int _minResizeWidth = 15;
 
-    public List<OrderedInterval> _selectionIntervals { get; set; } = new();
+    private List<OrderedInterval> _selectionIntervals = new();
 
     protected override void OnParametersSet()
     {
@@ -94,7 +89,6 @@
             {
                 _sheet.Selection.SelectingChanged -= OnSelectingChanged;
                 _sheet.Selection.SelectionChanged -= SelectionOnSelectionChanged;
-                ;
             }
 
             _sheet = Sheet;
@@ -103,7 +97,6 @@
 
             _sheet.Selection.SelectingChanged += OnSelectingChanged;
             _sheet.Selection.SelectionChanged += SelectionOnSelectionChanged;
-            ;
         }
 
         base.OnParametersSet();
@@ -152,17 +145,13 @@
         return Task.FromResult(false);
     }
 
-    public async ValueTask DisposeAsync()
-    {
-    }
-
     private bool IsActive(int col)
     {
-        return (Sheet!.Selection!.SelectingRegion?.SpansCol(col) == true)
-               || Sheet!.Selection!.Regions.Any(x => x.SpansCol(col));
+        return (Sheet.Selection.SelectingRegion?.SpansCol(col) == true)
+               || Sheet.Selection.Regions.Any(x => x.SpansCol(col));
     }
 
-    private void OnSelectingChanged(object? sender, IRegion region) => UpdateIntervals();
+    private void OnSelectingChanged(object? sender, IRegion? region) => UpdateIntervals();
 
     private void SelectionOnSelectionChanged(object? sender, IEnumerable<IRegion> e) => UpdateIntervals();
 
@@ -188,9 +177,14 @@
 
     private string GetActiveClass(int col)
     {
-        var isSelecting = (Sheet!.Selection!.SelectingRegion?.SpansCol(col) == true)
-                          || Sheet!.Selection!.Regions.Any(x => x.SpansCol(col));
+        var isSelecting = (Sheet.Selection.SelectingRegion?.SpansCol(col) == true)
+                          || Sheet.Selection.Regions.Any(x => x.SpansCol(col));
         return isSelecting ? "column-active" : "";
+    }
+    
+    public ValueTask DisposeAsync()
+    {
+        return ValueTask.CompletedTask;
     }
 
 }

@@ -375,37 +375,6 @@ public partial class Datasheet : SheetComponentBase
         }
     }
 
-    private void HandleColumnHeaderMouseDown(ColumnMouseEventArgs args)
-    {
-        //this.HandleCellMouseDown(-1, args.Column, args.Args.MetaKey, args.Args.CtrlKey, args.Args.ShiftKey);
-    }
-
-    private void HandleColumnHeaderMouseUp(ColumnMouseEventArgs args)
-    {
-        //var pointerArgs = new SheetPointer
-        //this.HandleCellMouseUp(-1, args.Column, args.Args.MetaKey, args.Args.CtrlKey, args.Args.ShiftKey);
-    }
-
-    private void HandleColumnHeaderMouseOver(ColumnMouseEventArgs args)
-    {
-        //this.HandleCellMouseOver(-1, args.Column);
-    }
-
-    private void HandleRowHeaderMouseDown(RowMouseEventArgs e)
-    {
-        //this.HandleCellMouseDown(e.RowIndex, -1, e.Args.MetaKey, e.Args.CtrlKey, e.Args.ShiftKey);
-    }
-
-    private void HandleRowHeaderMouseUp(RowMouseEventArgs args)
-    {
-        //this.HandleCellMouseUp(args.RowIndex, -1, args.Args.MetaKey, args.Args.CtrlKey, args.Args.ShiftKey);
-    }
-
-    private void HandleRowHeaderMouseOver(RowMouseEventArgs args)
-    {
-        //this.HandleCellMouseOver(args.RowIndex, -1);
-    }
-
     private async void HandleCellDoubleClick(object? sender, SheetPointerEventArgs args)
     {
         if (args.Row < 0 || args.Col < 0 || args.Row >= Sheet.NumRows || args.Col >= Sheet.NumCols)
