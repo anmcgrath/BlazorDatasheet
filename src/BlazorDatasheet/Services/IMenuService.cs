@@ -1,4 +1,5 @@
 using BlazorDatasheet.Menu;
+using Microsoft.AspNetCore.Components;
 
 namespace BlazorDatasheet.Services;
 
@@ -26,5 +27,34 @@ public interface IMenuService
 
     EventHandler<MenuShownEventArgs>? MenuShown { get; set; }
     EventHandler<BeforeMenuShownEventArgs>? BeforeMenuShown { get; set; }
+    
+    /// <summary>
+    /// Closes all sub-menus of the menu <paramref name="menuId"/>
+    /// </summary>
+    /// <param name="menuId"></param>
+    /// <returns></returns>
     Task CloseSubMenus(string menuId);
+
+    /// <summary>
+    /// Returns whether the menu with id <paramref name="id"/> is open.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    bool IsMenuOpen(string id);
+
+    /// <summary>
+    /// Registers a RenderFragment so that it is shown in the menu with id <paramref name="menuId"/> in section no. <paramref name="sectionNo"/>
+    /// </summary>
+    /// <param name="menuId"></param>
+    /// <param name="sectionNo"></param>
+    /// <param name="sectionFragment"></param>
+    void RegisterFragment(string menuId, int sectionNo, RenderFragment<object?> sectionFragment);
+
+    /// <summary>
+    /// Returns render fragments that have been registered to the menu <paramref name="menuId"/> in section no. <paramref name="sectionNo"/>
+    /// </summary>
+    /// <param name="menuId"></param>
+    /// <param name="sectionNo"></param>
+    /// <returns></returns>
+    List<RenderFragment<object?>> GetFragments(string menuId, int sectionNo);
 }

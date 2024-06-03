@@ -3,11 +3,13 @@
 @inherits SheetComponentBase
 
 <CascadingValue Value="@MenuId">
-    <div id="@MenuId" popover="manual" class="sheetPopover">
-        <div class="sheetMenu">
-            @ChildContent(CurrentContext)
+    <CascadingValue Value="@CurrentContext">
+        <div id="@MenuId" popover="manual" class="sheetPopover">
+            <div class="sheetMenu">
+                @ChildContent(CurrentContext)
+            </div>
         </div>
-    </div>
+    </CascadingValue>
 </CascadingValue>
 
 <style>
@@ -39,13 +41,16 @@
 
 @code {
 
-    [Parameter, EditorRequired] public RenderFragment<object?> ChildContent { get; set; } = default!;
+    [Parameter, EditorRequired]
+    public RenderFragment<object?> ChildContent { get; set; } = default!;
 
-    [Parameter] public string MenuId { get; set; } = Guid.NewGuid().ToString();
+    [Parameter]
+    public string MenuId { get; set; } = Guid.NewGuid().ToString();
 
-    [Parameter] public string? ParentMenuId { get; set; } = null;
+    [Parameter]
+    public string? ParentMenuId { get; set; } = null;
 
-    private object? CurrentContext { get; set; } = null;
+    public object? CurrentContext { get; set; } = null;
 
     protected override void OnInitialized()
     {

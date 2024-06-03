@@ -10,23 +10,24 @@
 
     @if (sheet is not null && sheet.Selection.ActiveRegion != null)
     {
-        <SheetMenuItem OnClick="() => sheet.Cells.ClearCells(sheet.Selection.Regions)">Clear</SheetMenuItem>
+        <MenuSection SectionId="0">
+            <SheetMenuItem OnClick="() => sheet.Cells.ClearCells(sheet.Selection.Regions)">Clear</SheetMenuItem>
+        </MenuSection>
+        <SheetMenuDivider/>
 
         @if (sheet.Selection.Regions.Count == 1 && sheet.Selection.ActiveRegion is ColumnRegion c)
         {
-            <SheetMenuDivider/>
             <SheetMenuItem OnClick="() => sheet.Columns.InsertAt(c.Left, c.Width)">Insert column(s) left</SheetMenuItem>
             <SheetMenuItem OnClick="() => sheet.Columns.RemoveAt(c.Left, c.Width)">Delete column(s)</SheetMenuItem>
+            <SheetMenuDivider/>
         }
 
         @if (sheet.Selection.Regions.Count == 1 && sheet.Selection.ActiveRegion is RowRegion r)
         {
-            <SheetMenuDivider/>
             <SheetMenuItem OnClick="() => sheet.Rows.InsertRowAt(r.Top, r.Height)">Insert row(s) above</SheetMenuItem>
             <SheetMenuItem OnClick="() => sheet.Rows.RemoveAt(r.Top, r.Height)">Delete row(s)</SheetMenuItem>
+            <SheetMenuDivider/>
         }
-
-        <SheetMenuDivider/>
 
         <SheetSubMenu Label="Sort">
             <SheetMenuItem OnClick="() => sheet.SortRange(sheet.Selection.ActiveRegion)">Sort Ascending</SheetMenuItem>

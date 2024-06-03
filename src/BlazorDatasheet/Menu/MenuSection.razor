@@ -1,0 +1,25 @@
+﻿@using BlazorDatasheet.Services
+@inject IMenuService MenuService
+
+@ChildContent
+
+@foreach (var fragment in MenuService.GetFragments(MenuId, SectionId))
+{
+    @fragment(CurrentContext)
+}
+
+
+@code {
+
+    [Parameter] public RenderFragment ChildContent { get; set; } = default!;
+
+    [CascadingParameter]
+    public string MenuId { get; set; }
+
+    [CascadingParameter]
+    public object? CurrentContext { get; set; }
+
+    [Parameter]
+    public int SectionId { get; set; }
+
+}
