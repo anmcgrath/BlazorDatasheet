@@ -20,10 +20,10 @@ public class SortRangeCommand : IUndoableCommand
     /// <param name="region">The region to sort</param>
     /// <param name="sortOptions">The column sort options, if null the default sort (sort on column 0 ascending) will be used.
     /// If two column values are equal, then the next option will be used for the sort, equivalent to a ThenBy</param>
-    public SortRangeCommand(IRegion region, List<ColumnSortOptions> sortOptions = null)
+    public SortRangeCommand(IRegion region, List<ColumnSortOptions>? sortOptions = null)
     {
         _region = region;
-        _sortOptions = sortOptions;
+        _sortOptions = sortOptions ?? [new(0, true)];
     }
 
     /// <summary>
@@ -138,7 +138,7 @@ public class SortRangeCommand : IUndoableCommand
     {
         if (SortedRegion == null)
             return true;
-        
+
         var rowCollection = sheet.Cells.GetCellDataStore().GetRowData(SortedRegion);
         var formulaCollection = sheet.Cells.GetFormulaStore().GetSubStore(SortedRegion, false);
         var typeCollection = (ConsolidatedDataStore<string>)sheet.Cells.GetTypeStore().GetSubStore(SortedRegion);
