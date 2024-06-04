@@ -1,34 +1,45 @@
 @using System.Text
+@using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Util
+@using BlazorDatasheet.Render.DefaultComponents
 @inherits SheetComponentBase
 
 <!-- The cell content -->
 
-@if (true)
-{
-    <div
-        class="cell"
-        style="@CellFormatStyleString">
-        @if (Icon != null)
-        {
-            <div style="margin-right:2px; float:left; color: @(IconColor ?? "var(--icon-color)");">@Icon</div>
-        }
-        @ItemTemplate
-    </div>
-}
+<div style="display: flex;">
+    @if (Cell.Icon != null)
+    {
+        <div
+            style="margin-right:2px; float:left; color: @(Cell.Format?.IconColor ?? "var(--icon-color)");">
+            @Icon
+        </div>
+    }
+    @switch (Cell.CellType)
+    {
+        case "default":
+            <div style="width: 100%;">
+                @Cell.FormattedString
+            </div>
+            break;
+        case "boolean":
+            <BoolRenderer Cell="Cell" Sheet="Sheet"/>
+            break;
+        case "select":
+            <SelectRenderer Cell="Cell" Sheet="Sheet"/>
+            break;
+    }
+</div>
 
 @code {
 
 
-    [Parameter, EditorRequired] public string CellFormatStyleString { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public VisualCell Cell { get; set; } = null!;
 
-    [Parameter, EditorRequired] public RenderFragment ItemTemplate { get; set; }
+    [Parameter, EditorRequired] public Sheet Sheet { get; set; } = null!;
 
-    [Parameter, EditorRequired] public bool IsDirty { get; set; }
+    [Parameter] public bool IsDirty { get; set; }
 
-    [Parameter] public RenderFragment? Icon { get; set; }
-
-    [Parameter] public string IconColor { get; set; } = "black";
+    [Parameter] public RenderFragment Icon { get; set; }
 
     public override Task SetParametersAsync(ParameterView parameters)
     {
@@ -36,17 +47,14 @@
         {
             switch (parameter.Name)
             {
-                case nameof(CellFormatStyleString):
-                    CellFormatStyleString = (string)parameter.Value;
+                case nameof(Cell):
+                    Cell = (VisualCell)parameter.Value;
                     break;
-                case nameof(ItemTemplate):
-                    ItemTemplate = (RenderFragment)parameter.Value;
+                case nameof(Sheet):
+                    Sheet = (Sheet)parameter.Value;
                     break;
                 case nameof(IsDirty):
                     IsDirty = (bool)parameter.Value;
-                    break;
-                case nameof(IconColor):
-                    IconColor = (string)parameter.Value;
                     break;
                 case nameof(Icon):
                     Icon = (RenderFragment)parameter.Value;
@@ -57,15 +65,9 @@
         return base.SetParametersAsync(ParameterView.Empty);
     }
 
-
     protected override bool ShouldRender()
     {
         return IsDirty;
-    }
-
-    protected override void OnAfterRender(bool firstRender)
-    {
-        base.OnAfterRender(firstRender);
     }
 
 }

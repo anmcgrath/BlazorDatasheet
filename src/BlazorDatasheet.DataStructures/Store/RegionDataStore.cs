@@ -327,6 +327,21 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
     }
 
     /// <summary>
+    /// Clears all data
+    /// </summary>
+    /// <returns></returns>
+    public virtual RegionRestoreData<T> Clear()
+    {
+        var allData = Tree.Search();
+        var restoreData =  new RegionRestoreData<T>()
+        {
+            RegionsRemoved = allData.ToList()
+        };
+        Tree.Clear();
+        return restoreData;
+    }
+
+    /// <summary>
     /// Returns a sub-store containing only the data in the region specified.
     /// If the <paramref name="newStoreResetsOffsets"/> is true, the new store will have the top-left corner at 0,0.
     /// </summary>

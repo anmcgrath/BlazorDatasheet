@@ -133,68 +133,15 @@
                                     </th>
                                 }
 
-                                @for (int j = _visualSheet.Viewport.VisibleRegion.Left; j <= _visualSheet.Viewport.VisibleRegion.Right; j++)
-                                {
-                                    var col = j;
-                                    var cell = _visualSheet.GetVisualCell(row, col);
-                                    var k = col;
+                                <DatasheetRow
+                                    CustomCellTypeDefinitions="CustomCellTypeDefinitions"
+                                    Icons="Icons"
+                                    IsDirty="@DirtyRows.Contains(row)"
+                                    VisualSheet="_visualSheet"
+                                    Sheet="_sheetLocal"
+                                    Row="row"
+                                    Virtualise="Virtualise"/>
 
-                                    var rowSpan = 1;
-                                    var colSpan = 1;
-                                    var dataCol = col;
-                                    var dataRow = row;
-
-                                    if (!Virtualise && cell.Merge != null)
-                                    {
-                                        if (cell.Merge.Top == row && cell.Merge.Left == col)
-                                        {
-                                            rowSpan = cell.Merge.Height;
-                                            colSpan = cell.Merge.Width;
-                                            dataCol = cell.Merge.Left;
-                                            dataRow = cell.Merge.Top;
-                                        }
-                                        else
-                                            continue;
-                                    }
-
-                                    <td
-                                        @key="k"
-                                        data-row="@dataRow"
-                                        data-col="@dataCol"
-                                        colspan="@colSpan"
-                                        rowspan="@rowSpan"
-                                        class="sheet-cell"
-                                        style="@cell.FormatStyleString">
-                                        <div style="display: flex;">
-                                            @if (cell.Icon != null)
-                                            {
-                                                <div
-                                                    style="margin-right:2px; float:left; color: @(cell.Format?.IconColor ?? "var(--icon-color)");">
-                                                    @GetIconRenderFragment(cell.Icon)
-                                                </div>
-                                            }
-                                            @switch (cell.CellType)
-                                            {
-                                                case "default":
-                                                    <div style="width: 100%;">
-                                                        @cell.FormattedString
-                                                    </div>
-                                                    break;
-                                                case "boolean":
-                                                    <BoolRenderer Cell="cell" Sheet="_sheetLocal"/>
-                                                    break;
-                                                case "select":
-                                                    <SelectRenderer Cell="cell" Sheet="_sheetLocal"/>
-                                                    break;
-                                                default:
-                                                    <DynamicComponent
-                                                        Parameters="@GetCellRendererParameters(cell)"
-                                                        Type="@GetCellRendererType(cell.CellType)"/>
-                                                    break;
-                                            }
-                                        </div>
-                                    </td>
-                                }
                             </tr>
                         }
                         </tbody>

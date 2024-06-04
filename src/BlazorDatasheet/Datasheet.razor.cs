@@ -113,10 +113,7 @@ public partial class Datasheet : SheetComponentBase
     public double RenderedInnerSheetWidth => _cellLayoutProvider
         .ComputeWidthBetween(_visualSheet.Viewport.VisibleRegion.Left, _visualSheet.Viewport.VisibleRegion.Right);
 
-    /// <summary>
-    /// Store any cells that are dirty here
-    /// </summary>
-    private HashSet<CellPosition> DirtyCells { get; set; } = new();
+    private HashSet<int> DirtyRows { get; set; } = new();
 
     /// <summary>
     /// Div that is the width/height of all the rows/columns in the sheet (does not include row/col headings).
@@ -212,7 +209,7 @@ public partial class Datasheet : SheetComponentBase
             _visualSheet = new VisualSheet(_sheetLocal);
             _visualSheet.Invalidated += (_, args) =>
             {
-                DirtyCells.UnionWith(args.DirtyCells);
+                DirtyRows.UnionWith(args.DirtyRows);
                 this.StateHasChanged();
             };
 
@@ -256,7 +253,7 @@ public partial class Datasheet : SheetComponentBase
 
     protected override bool ShouldRender()
     {
-        return SheetIsDirty || DirtyCells.Any();
+        return SheetIsDirty || DirtyRows.Any();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -291,7 +288,7 @@ public partial class Datasheet : SheetComponentBase
         }
 
         SheetIsDirty = false;
-        DirtyCells.Clear();
+        DirtyRows.Clear();
     }
 
     /// <summary>
