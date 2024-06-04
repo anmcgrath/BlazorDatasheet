@@ -71,7 +71,7 @@
                                 <tr style="height: @(_cellLayoutProvider.ColHeadingHeight)px;">
                                     @if (ShowRowHeadings)
                                     {
-                                        <th class="sheet-cell @(StickyHeadings ? "row-sticky" : "")"></th>
+                                        <th class="col-head @(StickyHeadings ? "row-sticky" : "")"></th>
                                     }
 
                                     <!-- Virtualisation column -->
@@ -138,9 +138,10 @@
 
                                     @if (ShowRowHeadings)
                                     {
-                                        <th data-row="@row" data-col="-1"
-                                            class="sheet-cell row-head @(this.StickyHeadings ? "row-sticky" : "")">
-                                            @(_sheetLocal.Rows.GetHeading(row) ?? (row + 1).ToString())
+                                        <th class="unselectable row-head @(this.StickyHeadings ? "row-sticky" : "")">
+                                            <div class="sheet-cell" data-col="-1" data-row="@row">
+                                                @(_sheetLocal.Rows.GetHeading(row) ?? (row + 1).ToString())
+                                            </div>
                                         </th>
                                     }
 

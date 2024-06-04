@@ -36,7 +36,7 @@
     var col = i;
     var colHeading = Sheet.Columns.GetHeading(i) ?? RangeText.ColNumberToLetters(col);
 
-    <th class="unselectable @GetActiveClass(col)">
+    <th class="unselectable @GetActiveClass(col) col-head">
         <div style="width: 100%; display: flex; justify-content: start; position: relative; overflow-x: visible;">
             <div class="sheet-cell" data-col="@col" data-row="-1" style="display: flex; justify-content: space-between; width: 100%;">
                 <div>

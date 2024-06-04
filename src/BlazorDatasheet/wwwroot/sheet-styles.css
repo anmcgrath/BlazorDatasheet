@@ -88,7 +88,7 @@
     vertical-align: top;
 }
 
-.merged-cell{
+.merged-cell {
     background: var(--sheet-bg-color);
     border: var(--sheet-border-style);
 }
@@ -99,10 +99,6 @@
     border-spacing: 0;
     border-top: var(--sheet-border-style);
     border-left: var(--sheet-border-style);
-}
-
-.sheet-table th {
-    background: var(--row-header-bg-color)
 }
 
 .sheet-table td, th {
@@ -129,6 +125,19 @@
 
 .row-head {
     text-align: right;
+    background: var(--row-header-bg-color)
+}
+
+.row-head :hover {
+    background: var(--selection-bg-color);
+}
+
+.col-head {
+    background: var(--row-header-bg-color)
+}
+
+.col-head :hover {
+    background: var(--selection-bg-color);
 }
 
 .invalid-cell {
