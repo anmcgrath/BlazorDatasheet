@@ -333,19 +333,6 @@ public partial class Datasheet : SheetComponentBase
         _visualSheet.UpdateViewport(newViewport);
     }
 
-    private string GetAbsoluteCellPositionStyles(int row, int col, int rowSpan, int colSpan)
-    {
-        var sb = new StyleBuilder();
-        var top = _cellLayoutProvider.ComputeTopPosition(row);
-        var left = _cellLayoutProvider.ComputeLeftPosition(col);
-        sb.AddStyle("top", $"{top}px");
-        sb.AddStyle($"left", $"{left}px;");
-        sb.AddStyle("width", $"{_cellLayoutProvider.ComputeWidth(col, colSpan)}px");
-        sb.AddStyle("height", $"{_cellLayoutProvider.ComputeHeight(row, rowSpan)}px");
-
-        return sb.ToString();
-    }
-
     private async Task AddWindowEventsAsync()
     {
         await _windowEventService.RegisterMouseEvent("mousedown", HandleWindowMouseDown);

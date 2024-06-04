@@ -39,7 +39,7 @@
             {
                 <div
                     style="margin-right:2px; float:left; color: @(cell.Format?.IconColor ?? "var(--icon-color)");">
-                    <!--@GetIconRenderFragment(cell.Icon)-->
+                    @GetIconRenderFragment(cell.Icon)
                 </div>
             }
             @switch (cell.CellType)
@@ -87,7 +87,6 @@
 
     protected override void OnAfterRender(bool firstRender)
     {
-        Console.WriteLine($"Rendered row {Row}");
         base.OnAfterRender(firstRender);
     }
 

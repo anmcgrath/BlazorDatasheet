@@ -17,6 +17,14 @@
     @onmouseover="() => IsMouseInsideSheet = true"
     @onmouseout="() => IsMouseInsideSheet = false">
 
+    <!-- if virtualisation is on, merges need to be rendered outside of the table to handle merged cells that span outside of the viewport -->
+    <VirtualMergesRenderer
+        Icons="Icons"
+        CustomCellTypeDefinitions="CustomCellTypeDefinitions"
+        Sheet="Sheet"
+        VisualSheet="_visualSheet"
+        CellLayoutProvider="_cellLayoutProvider"/>
+
     <!-- Register Menus -->
     <SelectionMenu/>
 
