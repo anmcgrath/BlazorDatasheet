@@ -11,7 +11,7 @@
     --row-header-bg-color: #fafafa;
     --col-header-bg-color: #fafafa;
     --headers-foreground-color: #5c5a5a;
-    --active-header-bg-color: #cee0ed;
+    --active-header-bg-color: rgba(121, 150, 179, 0.18);
     --icon-color: #000000;
     --shadow-overlay-color: grey;
     --invalid-cell-foreground-color: #ff0000;
@@ -31,7 +31,7 @@
     --row-header-bg-color: #2d2d2d;
     --col-header-bg-color: #2d2d2d;
     --headers-foreground-color: #a4a4a4;
-    --active-header-bg-color: #343434;
+    --active-header-bg-color: rgb(25, 25, 50, 0.18);
     --icon-color: #000000;
     --shadow-overlay-color: #000000;
     --invalid-cell-foreground-color: #d71b1b;
@@ -119,8 +119,8 @@
 
 .row-sticky {
     position: sticky;
+    z-index: 2;
     left: 0;
-    z-index: 1;
 }
 
 .row-head {
@@ -150,6 +150,13 @@
 
 .row-active {
     background: var(--active-header-bg-color) !important;
+}
+
+.collapsed-row > th, .collapsed-row > tr, .collapsed-row > td{
+    padding: 0;
+    margin: 0;
+    border:0;
+    border-spacing: 0;
 }
 
 .unselectable {

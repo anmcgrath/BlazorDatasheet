@@ -6,7 +6,8 @@
 
 <!--Renders a box at a particular row/column with a width & height -->
 
-<div style="@GetSizeStyleString(); box-sizing: border-box; position: absolute; pointer-events: none;"></div>
+<div style="@GetSizeStyleString(); box-sizing: border-box; position: absolute; pointer-events: none;">
+</div>
 
 @code {
 
@@ -38,7 +39,6 @@
         sb.AddStyle($"top",$"{Y}px");
         sb.AddStyle($"width",$"{Width+1}px;");
         sb.AddStyle($"height",$"{Height+1}px;");
-        sb.AddStyle("position", "relative");
         sb.AddStyle("z-index", ZIndex.ToString());
         sb.AddStyle("border", $"{BorderThickness}px {BorderStyle} {BorderColor}", BorderThickness!=0);
         sb.AddStyle("background", BackgroundColor, BackgroundVisible);

@@ -18,9 +18,16 @@
     {
         if (!_registered && !string.IsNullOrEmpty(For) && !string.IsNullOrEmpty(DatasheetId))
         {
+            Console.WriteLine($"Registering portal {For}");
             PortalService.AddToPortal(For, DatasheetId, ChildContent);
             _registered = true;
         }
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        PortalService.RenderPortalTarget(For, DatasheetId);
+        base.OnAfterRender(firstRender);
     }
 
 }

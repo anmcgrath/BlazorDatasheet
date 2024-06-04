@@ -91,6 +91,11 @@ public class Range1DStore<T>
 
         return (interval.Start, interval.End, interval.Data.Value);
     }
+
+    public void Clear()
+    {
+        this._intervals.Clear();
+    }
 }
 
 public class OverwritingValue<R> : IMergeable<OverwritingValue<R>>
