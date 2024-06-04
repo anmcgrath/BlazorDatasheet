@@ -8,15 +8,17 @@
     [Parameter, EditorRequired]
     public string For { get; set; } = null;
 
+    [Parameter, EditorRequired] public string DatasheetId { get; set; } = null!;
+
     [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
 
     private bool _registered = false;
 
     protected override void OnParametersSet()
     {
-        if (!_registered && !string.IsNullOrEmpty(For))
+        if (!_registered && !string.IsNullOrEmpty(For) && !string.IsNullOrEmpty(DatasheetId))
         {
-            PortalService.AddToPortal(For, ChildContent);
+            PortalService.AddToPortal(For, DatasheetId, ChildContent);
             _registered = true;
         }
     }

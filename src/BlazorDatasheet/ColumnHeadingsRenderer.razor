@@ -16,7 +16,7 @@
 @inherits SheetComponentBase
 
 <!-- Resize preview -->
-<Portal For="@DatasheetId">
+<Portal For="Sheet" DatasheetId="@DatasheetId">
     @if (IsDragging)
     {
         var resizeWidth = Math.Max(_minResizeWidth, CellLayoutProvider.ComputeWidth(ActiveResizerIndex, 1) + CurrentColResizeAmount);
@@ -24,6 +24,7 @@
             Y="0"
             Width="2"
             BorderColor="black"
+            ZIndex="4"
             BorderThickness="1"
             BorderStyle="solid"
             X="@(CellLayoutProvider.ComputeLeftPosition(ActiveResizerIndex) + resizeWidth - 1.5)"
@@ -126,7 +127,7 @@
         if (IsDragging)
         {
             CurrentColResizeAmount = MouseX - MouseXStart; // 10 being the minimum width we can resize to
-            PortalService.RenderPortalTarget(DatasheetId);
+            PortalService.RenderPortalTarget("Sheet", DatasheetId);
             return Task.FromResult(true);
         }
 
@@ -167,7 +168,7 @@
                 Sheet.Columns.SetWidth(ActiveResizerIndex, resizeWidth);
             }
 
-            PortalService.RenderPortalTarget(DatasheetId);
+            PortalService.RenderPortalTarget("Sheet", DatasheetId);
             return Task.FromResult(true);
         }
 

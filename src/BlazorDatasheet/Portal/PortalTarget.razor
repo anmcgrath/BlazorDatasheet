@@ -8,12 +8,14 @@
 @code {
 
     [Parameter, EditorRequired] public string TargetId { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string DatasheetId { get; set; } = string.Empty;
 
     private List<RenderFragment> _fragments = new();
 
     protected override void OnInitialized()
     {
-        PortalService.RegisterPortalTarget(TargetId, this);
+        Console.WriteLine("Initialised for " + TargetId + " and " + DatasheetId);
+        PortalService.RegisterPortalTarget(TargetId, DatasheetId, this);
     }
 
     public void SetRenderFragments(List<RenderFragment> fragments)
