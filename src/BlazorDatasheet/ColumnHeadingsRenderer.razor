@@ -8,22 +8,28 @@
 @using BlazorDatasheet.DataStructures.Util
 @using BlazorDatasheet.Events
 @using BlazorDatasheet.Menu
+@using BlazorDatasheet.Portal
 @inject IJSRuntime JS;
 @inject IWindowEventService _windowEventService;
+@inject PortalService PortalService;
 @implements IAsyncDisposable
 @inherits SheetComponentBase
 
 <!-- Resize preview -->
-@if (IsDragging)
-{
-    var resizeWidth = Math.Max(_minResizeWidth, CellLayoutProvider.ComputeWidth(ActiveResizerIndex, 1) + CurrentColResizeAmount);
-    <BoxOverlayRenderer
-        Y="0"
-        Width="3"
-        BorderThickness="1"
-        X="@(CellLayoutProvider.ComputeLeftPosition(ActiveResizerIndex) + resizeWidth)"
-        Height="@(CellLayoutProvider.TotalHeight)"/>
-}
+<Portal For="@DatasheetId">
+    @if (IsDragging)
+    {
+        var resizeWidth = Math.Max(_minResizeWidth, CellLayoutProvider.ComputeWidth(ActiveResizerIndex, 1) + CurrentColResizeAmount);
+        <BoxOverlayRenderer
+            Y="0"
+            Width="2"
+            BorderColor="black"
+            BorderThickness="1"
+            BorderStyle="solid"
+            X="@(CellLayoutProvider.ComputeLeftPosition(ActiveResizerIndex) + resizeWidth - 1.5)"
+            Height="@(CellLayoutProvider.TotalHeight)"/>
+    }
+</Portal>
 
 @for (int i = ColStart; i < (ColStart + NCols); i++)
 {
@@ -72,6 +78,9 @@
     [Parameter] public int NCols { get; set; }
     [Parameter] public int ColStart { get; set; }
 
+    [CascadingParameter(Name = "DatasheetId")]
+    public string DatasheetId { get; set; } = default!;
+
     private double MouseX { get; set; }
     private double MouseXStart { get; set; }
     private int ActiveResizerIndex { get; set; }
@@ -117,7 +126,7 @@
         if (IsDragging)
         {
             CurrentColResizeAmount = MouseX - MouseXStart; // 10 being the minimum width we can resize to
-            StateHasChanged();
+            PortalService.RenderPortalTarget(DatasheetId);
             return Task.FromResult(true);
         }
 
@@ -158,6 +167,7 @@
                 Sheet.Columns.SetWidth(ActiveResizerIndex, resizeWidth);
             }
 
+            PortalService.RenderPortalTarget(DatasheetId);
             return Task.FromResult(true);
         }
 

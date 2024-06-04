@@ -1,0 +1,24 @@
+﻿@inject PortalService PortalService
+
+@code {
+
+    /// <summary>
+    /// The ID of the portal target
+    /// </summary>
+    [Parameter, EditorRequired]
+    public string For { get; set; } = null;
+
+    [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
+
+    private bool _registered = false;
+
+    protected override void OnParametersSet()
+    {
+        if (!_registered && !string.IsNullOrEmpty(For))
+        {
+            PortalService.AddToPortal(For, ChildContent);
+            _registered = true;
+        }
+    }
+
+}
