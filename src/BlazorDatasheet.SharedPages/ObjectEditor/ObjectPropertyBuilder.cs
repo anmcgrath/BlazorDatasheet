@@ -6,7 +6,7 @@ namespace BlazorDatasheet.Core.ObjectEditor;
 public class ObjectPropertyBuilder<T>
 {
     internal string PropertyName;
-    internal string Type = "text";
+    internal string Type = "default";
     internal readonly List<ConditionalFormat> ConditionalFormats;
     internal readonly List<IDataValidator> Validators;
     internal string? Heading { get; set; } = null;

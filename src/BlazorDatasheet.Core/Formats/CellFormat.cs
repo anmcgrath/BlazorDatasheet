@@ -24,7 +24,7 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>
     /// <summary>
     /// How to format the string when rendered.
     /// </summary>
-    public string? StringFormat { get; set; }
+    public string? NumberFormat { get; set; }
 
     /// <summary>
     /// The name of displayed inside the cell
@@ -78,7 +78,7 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>
             BackgroundColor = BackgroundColor,
             ForegroundColor = ForegroundColor,
             Icon = Icon,
-            StringFormat = StringFormat,
+            NumberFormat = NumberFormat,
             IconColor = IconColor,
             TextAlign = TextAlign,
             IsReadOnly = IsReadOnly,
@@ -108,8 +108,8 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>
             this.TextAlign = format.TextAlign;
         if (format.Icon != null)
             this.Icon = format.Icon;
-        if (!string.IsNullOrEmpty(format.StringFormat))
-            this.StringFormat = format.StringFormat;
+        if (!string.IsNullOrEmpty(format.NumberFormat))
+            this.NumberFormat = format.NumberFormat;
         if (!string.IsNullOrEmpty(format.IconColor))
             this.IconColor = format.IconColor;
         if (format.IsReadOnly.HasValue)
@@ -153,6 +153,11 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>
         }
     }
 
+    public bool HasBorder() => BorderTop != null &&
+                               BorderBottom != null &&
+                               BorderRight != null &&
+                               BorderLeft != null;
+
 
     public bool Equals(CellFormat? other)
     {
@@ -161,7 +166,7 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>
                this.IconColor == other?.IconColor &&
                this.IsReadOnly == other?.IsReadOnly &&
                this.ForegroundColor == other?.ForegroundColor &&
-               this.StringFormat == other?.StringFormat &&
+               this.NumberFormat == other?.NumberFormat &&
                this.TextAlign == other?.TextAlign &&
                this.Icon == other?.Icon &&
                this.BorderBottom == other?.BorderBottom &&

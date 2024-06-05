@@ -10,7 +10,7 @@
     /// <summary>
     /// A whole Sheet
     /// </summary>
-    [CascadingParameter]
+    [Parameter]
     public Sheet Sheet { get; set; }
 
     /// <summary>
@@ -18,36 +18,5 @@
     /// </summary>
     [Parameter]
     public VisualCell Cell { get; set; }
-
-    /// <summary>
-    /// Run when the renderer requests that the cell value is changed (used, for example for the default bool renderer)
-    /// </summary>
-    [Parameter]
-    public Action<ChangeCellValueRequest>? OnChangeCellValueRequest { get; set; }
-
-    /// <summary>
-    /// Run when the renderer requests that an edit is started (used, for example for the default select renderer)
-    /// </summary>
-    [Parameter]
-    public Action<CellEditRequest>? OnBeginEditRequest { get; set; }
-
-    /// <summary>
-    /// Request that the cell should change value without going to an editor.
-    /// </summary>
-    /// <param name="value">The value to change the cell to. This will be converted from a string to the appropriate value.</param>
-    protected void RequestChangeCellValue(object value)
-    {
-        OnChangeCellValueRequest?.Invoke(new ChangeCellValueRequest(Cell.Row, Cell.Col, value));
-    }
-
-    /// <summary>
-    /// Request that the sheet should start editing the cell
-    /// </summary>
-    /// <param name="isSoftEdit">Whether the edit is a "soft edit"</param>
-    /// <param name="mode">The mode used to enter the edit</param>
-    protected void RequestEdit(EditEntryMode mode)
-    {
-        OnBeginEditRequest?.Invoke(new CellEditRequest(Cell.Row, Cell.Col, mode));
-    }
 
 }

@@ -183,8 +183,8 @@ public class CellLayoutProvider : IGridLayoutProvider
         var region = new Region(startRow, endRow, startCol, endCol);
         var leftPos = _sheet.Columns.GetLeft(startCol);
         var topPos = _sheet.Rows.GetTop(startRow);
-        var visibleWidth = ComputeWidthBetween(startCol, endCol);
-        var visibleHeight = ComputeHeightBetween(startRow, endRow);
+        var visibleWidth = ComputeWidthBetween(startCol, endCol + 1);
+        var visibleHeight = ComputeHeightBetween(startRow, endRow + 1);
         var distRight = ComputeWidthBetween(endCol, _sheet.NumCols - 1);
         var distBottom = ComputeHeightBetween(endRow, _sheet.NumRows - 1);
 

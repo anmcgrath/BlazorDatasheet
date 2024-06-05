@@ -4,10 +4,10 @@ namespace BlazorDatasheet.Core.Events.Visual;
 
 public class VisualSheetInvalidateArgs
 {
-    public HashSet<CellPosition> DirtyCells { get; }
+    public HashSet<int> DirtyRows { get; }
 
-    public VisualSheetInvalidateArgs(HashSet<CellPosition> dirtyCells)
+    public VisualSheetInvalidateArgs(HashSet<int> dirtyRows)
     {
-        DirtyCells = dirtyCells;
+        DirtyRows = dirtyRows;
     }
 }

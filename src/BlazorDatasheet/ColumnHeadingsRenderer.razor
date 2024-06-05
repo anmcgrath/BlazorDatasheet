@@ -1,112 +1,95 @@
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Render
 @using BlazorDatasheet.Services
-@using BlazorDatasheet.Util
 @using Microsoft.JSInterop
-@using System.Text
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Layout
 @using BlazorDatasheet.DataStructures.Intervals
 @using BlazorDatasheet.DataStructures.Util
 @using BlazorDatasheet.Events
 @using BlazorDatasheet.Menu
+@using BlazorDatasheet.Portal
 @inject IJSRuntime JS;
 @inject IWindowEventService _windowEventService;
-@implements IDisposable
+@inject PortalService PortalService;
+@implements IAsyncDisposable
 @inherits SheetComponentBase
 
-
-<div style="position: absolute; top: 0; left: 0;">
-
-    @foreach (var interval in _selectionIntervals)
-    {
-        <BoxOverlayRenderer
-            BackgroundVisible="@true"
-            BorderThickness="0"
-            BackgroundStyle="background:var(--selection-bg-color);"
-            Width="CellLayoutProvider.ComputeWidth(interval.Start, interval.Length)"
-            Height="CellLayoutProvider.ComputeHeight(-1, 1)"
-            X="CellLayoutProvider.ComputeLeftPosition(interval.Start)"
-            Y="CellLayoutProvider.ComputeTopPosition(-1)"/>
-    }
-
-    <!-- Ardoners -->
-    @for (int i = VisibleColStart; i < (VisibleColStart + NVisibleCols); i++)
-    {
-        var col = i;
-        <div
-            class="unselectable"
-            @onmousedown="e => HandleMouseDownOnAdorner(col)"
-            style="@GetArdornerSizeStyles(col)
-            position:absolute; z-index: 2;  
-            background: none; cursor: col-resize; display: block">
-        </div>
-    }
-
-    <!-- Resize preview -->
+<!-- Resize preview -->
+<Portal For="Sheet" DatasheetId="@DatasheetId">
     @if (IsDragging)
     {
-        var resizeWidth = Math.Max(_minResizeWidth, CellLayoutProvider.ComputeWidth(ActiveAdornerIndex, 1) + CurrentColResizeAmount);
+        var resizeWidth = Math.Max(_minResizeWidth, CellLayoutProvider.ComputeWidth(ActiveResizerIndex, 1) + CurrentColResizeAmount);
         <BoxOverlayRenderer
             Y="0"
-            Width="3"
+            Width="2"
+            BorderColor="black"
+            ZIndex="4"
             BorderThickness="1"
-            X="@(CellLayoutProvider.ComputeLeftPosition(ActiveAdornerIndex) + resizeWidth)"
+            BorderStyle="solid"
+            X="@(CellLayoutProvider.ComputeLeftPosition(ActiveResizerIndex) + resizeWidth - 1.5)"
             Height="@(CellLayoutProvider.TotalHeight)"/>
     }
+</Portal>
 
-</div>
-
-@for (var i = VisibleColStart; i < (VisibleColStart + NVisibleCols); i++)
+@for (int i = ColStart; i < (ColStart + NCols); i++)
 {
     var col = i;
-    var colHeading = Sheet?.Columns.GetHeading(i) ?? RangeText.ColNumberToLetters(col);
+    var colHeading = Sheet.Columns.GetHeading(i) ?? RangeText.ColNumberToLetters(col);
 
-    <div
-        class="sheet-cell @GetActiveClass(col) column-head"
-        style="z-index: 1; 
-        @CssUtil.GetCellWidthStyles(i, 1, CellLayoutProvider); 
-        height: @(CellLayoutProvider.ColHeadingHeight)px"
-        data-row="-1"
-        data-col="@col"
-        @onmouseup="e => HandleMouseUp(col, e)"
-        @onmouseover="e => HandleMouseOver(col, e)"
-        @onmousedown="e => HandleMouseDown(col, e)">
-        <div class="cell">
-            <div style="display: flex; justify-content: space-between">
+    <th class="unselectable col-head">
+        <div style="width: 100%; display: flex; justify-content: start; position: relative; overflow-x: visible;">
+            <div class="sheet-cell" data-col="@col" data-row="-1" style="display: flex; justify-content: space-between; width: 100%;">
                 <div>
                     @HeadingRenderer(new HeadingContext(col, colHeading))
                 </div>
-                <SheetMenuTarget MenuId="@ContextMenus.Selection" MenuData="Sheet">
-                    <CaretButton/>
-                </SheetMenuTarget>
+                <div style="display: flex; flex-direction: row;">
+                    <SheetMenuTarget MenuId="@ContextMenus.Selection" MenuData="Sheet">
+                        <CaretButton/>
+                    </SheetMenuTarget>
+                </div>
+            </div>
+
+            <div class="unselectable"
+                 @onmousedown="_ => HandleMouseDownOnResizer(col)"
+                 style="position: absolute; 
+                 right: 0; 
+                 z-index: 4; 
+                 margin-right:-5px; 
+                 width: 10px; 
+                 height: 100%; 
+                 float: left; 
+                 display: inline-block; 
+                 cursor: col-resize;">
             </div>
         </div>
-    </div>
+    </th>
 }
 
 @code {
 
     private Sheet? _sheet;
 
-    [Parameter, EditorRequired] public Sheet? Sheet { get; set; }
-    [Parameter] public CellLayoutProvider CellLayoutProvider { get; set; }
+    [Parameter, EditorRequired] public Sheet Sheet { get; set; } = null!;
+    [Parameter, EditorRequired] public CellLayoutProvider CellLayoutProvider { get; set; } = null!;
     [Parameter] public EventCallback<ColumnMouseEventArgs> OnMouseUp { get; set; }
     [Parameter] public EventCallback<ColumnMouseEventArgs> OnMouseOver { get; set; }
     [Parameter] public EventCallback<ColumnMouseEventArgs> OnMouseDown { get; set; }
     [Parameter, EditorRequired] public RenderFragment<HeadingContext> HeadingRenderer { get; set; } = default!;
-    [Parameter] public int NVisibleCols { get; set; }
+    [Parameter] public int NCols { get; set; }
+    [Parameter] public int ColStart { get; set; }
 
-    [Parameter] public int VisibleColStart { get; set; }
+    [CascadingParameter(Name = "DatasheetId")]
+    public string DatasheetId { get; set; } = default!;
 
     private double MouseX { get; set; }
     private double MouseXStart { get; set; }
-    private int ActiveAdornerIndex { get; set; }
+    private int ActiveResizerIndex { get; set; }
     private bool IsDragging { get; set; }
     private double CurrentColResizeAmount { get; set; }
     private int _minResizeWidth = 15;
 
-    public List<OrderedInterval> _selectionIntervals { get; set; } = new();
+    private List<OrderedInterval> _selectionIntervals = new();
 
     protected override void OnParametersSet()
     {
@@ -116,7 +99,6 @@
             {
                 _sheet.Selection.SelectingChanged -= OnSelectingChanged;
                 _sheet.Selection.SelectionChanged -= SelectionOnSelectionChanged;
-                ;
             }
 
             _sheet = Sheet;
@@ -125,7 +107,6 @@
 
             _sheet.Selection.SelectingChanged += OnSelectingChanged;
             _sheet.Selection.SelectionChanged += SelectionOnSelectionChanged;
-            ;
         }
 
         base.OnParametersSet();
@@ -140,24 +121,23 @@
         }
     }
 
-    [JSInvokable]
     public Task<bool> WindowHandleMouseMove(MouseEventArgs arg)
     {
         MouseX = arg.PageX;
         if (IsDragging)
         {
             CurrentColResizeAmount = MouseX - MouseXStart; // 10 being the minimum width we can resize to
-            StateHasChanged();
+            PortalService.RenderPortalTarget("Sheet", DatasheetId);
             return Task.FromResult(true);
         }
 
         return Task.FromResult(false);
     }
 
-    private void HandleMouseDownOnAdorner(int col)
+    private void HandleMouseDownOnResizer(int col)
     {
         MouseXStart = MouseX;
-        ActiveAdornerIndex = col;
+        ActiveResizerIndex = col;
         CurrentColResizeAmount = 0;
         IsDragging = true;
     }
@@ -167,30 +147,47 @@
         if (IsDragging)
         {
             IsDragging = false;
-            var resizeWidth = Math.Max(_minResizeWidth, CellLayoutProvider.ComputeWidth(ActiveAdornerIndex, 1) + CurrentColResizeAmount);
-            Sheet.Columns.SetWidth(ActiveAdornerIndex, resizeWidth);
+            var resizeWidth = Math.Max(_minResizeWidth, CellLayoutProvider.ComputeWidth(ActiveResizerIndex, 1) + CurrentColResizeAmount);
+            if (Sheet.Selection.Regions.All(x => x is ColumnRegion) && Sheet.Selection.Regions.Any(x => x.SpansCol(ActiveResizerIndex)))
+            {
+                Sheet.BatchUpdates();
+                Sheet.Commands.BeginCommandGroup();
+                foreach (var region in Sheet.Selection.Regions.Cast<ColumnRegion>())
+                {
+                    for (int i = region.Left; i <= region.Right; i++)
+                    {
+                        Sheet.Columns.SetWidth(i, resizeWidth);
+                    }
+                }
+
+                Sheet.Commands.EndCommandGroup();
+                Sheet.EndBatchUpdates();
+            }
+            else
+            {
+                Sheet.Columns.SetWidth(ActiveResizerIndex, resizeWidth);
+            }
+
+            PortalService.RenderPortalTarget("Sheet", DatasheetId);
             return Task.FromResult(true);
         }
 
         return Task.FromResult(false);
     }
 
-    public void Dispose()
-    {
-    }
-
     private bool IsActive(int col)
     {
-        return (Sheet!.Selection!.SelectingRegion?.SpansCol(col) == true)
-               || Sheet!.Selection!.Regions.Any(x => x.SpansCol(col));
+        return (Sheet.Selection.SelectingRegion?.SpansCol(col) == true)
+               || Sheet.Selection.Regions.Any(x => x.SpansCol(col));
     }
 
-    private void OnSelectingChanged(object? sender, IRegion region) => UpdateIntervals();
+    private void OnSelectingChanged(object? sender, IRegion? region) => UpdateIntervals();
 
     private void SelectionOnSelectionChanged(object? sender, IEnumerable<IRegion> e) => UpdateIntervals();
 
     private void UpdateIntervals()
     {
+        
         StateHasChanged();
     }
 
@@ -209,26 +206,16 @@
         OnMouseOver.InvokeAsync(new ColumnMouseEventArgs(col, args));
     }
 
-    private string GetArdornerSizeStyles(int col)
-    {
-        var sb = new StringBuilder();
-        var left = CellLayoutProvider.ComputeLeftPosition(col + 1);
-        var top = 0;
-        var width = 10;
-        var height = CellLayoutProvider.ColHeadingHeight;
-
-        sb.Append($"top:{top}px;");
-        sb.Append($"left:{left - 6}px;");
-        sb.Append($"width:{width}px;");
-        sb.Append($"height:{height}px;");
-        return sb.ToString();
-    }
-
     private string GetActiveClass(int col)
     {
-        var isSelecting = (Sheet!.Selection!.SelectingRegion?.SpansCol(col) == true)
-                          || Sheet!.Selection!.Regions.Any(x => x.SpansCol(col));
+        var isSelecting = (Sheet.Selection.SelectingRegion?.SpansCol(col) == true)
+                          || Sheet.Selection.Regions.Any(x => x.SpansCol(col));
         return isSelecting ? "column-active" : "";
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        return ValueTask.CompletedTask;
     }
 
 }

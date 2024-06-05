@@ -261,10 +261,9 @@ public class ColumnInfoStore
     /// <param name="colStart"></param>
     public void SetWidth(int column, double width)
     {
-        var cmd = new SetColumnWidthCommand(column, column, width);
-        _sheet.Commands.ExecuteCommand(cmd);
+        SetWidth(column,column,width);
     }
-
+    
     /// <summary>
     /// Sets the column headings from (and including) <paramref name="colStart"/> to <paramref name="colEnd"/> to <paramref name="heading"/>
     /// </summary>

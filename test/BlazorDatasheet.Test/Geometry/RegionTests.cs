@@ -1,5 +1,6 @@
 using System.Linq;
 using BlazorDatasheet.DataStructures.Geometry;
+using FluentAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Geometry;
@@ -175,6 +176,18 @@ public class RegionTests
         Assert.True(region.Contains(100, 1));
         Assert.True(region.Contains(100, 2));
         Assert.True(region.Contains(100, 3));
+    }
+
+    [Test]
+    public void GetIntersectionRowColRegionReturnsSingleCell()
+    {
+        var colRegion = new ColumnRegion(5);
+        var rowREgion = new RowRegion(6);
+        var colIntRow = colRegion.GetIntersection(rowREgion);
+        colIntRow.Left.Should().Be(5);
+        colIntRow.Top.Should().Be(6);
+        colIntRow.Width.Should().Be(1);
+        colIntRow.Height.Should().Be(1);
     }
 
     [Test]

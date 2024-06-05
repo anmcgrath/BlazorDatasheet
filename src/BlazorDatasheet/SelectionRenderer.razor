@@ -1,19 +1,15 @@
-@using System.Text
-@using BlazorDatasheet.Render
 @using Region = BlazorDatasheet.DataStructures.Geometry.Region
-@using System.ComponentModel
 @using BlazorDatasheet.Core.Data
-@using BlazorDatasheet.Core.Events.Input
 @using BlazorDatasheet.Core.Layout
+@using BlazorDatasheet.Core.Selecting
 @using BlazorDatasheet.DataStructures.Geometry
-@using BlazorDatasheet.Events
-@using BlazorDatasheet.Services
-@using BlazorDatasheet.Services
-@using Microsoft.JSInterop
+@using BlazorDatasheet.DataStructures.Intervals
+@using BlazorDatasheet.DataStructures.Store
+@using BlazorDatasheet.Portal
 @inherits SheetComponentBase
 
 <!-- Render the temp selection (currently selected region) -->
-@if (Sheet != null && BoundedSelectingRegion != null && BoundedSelectingRegion?.Area > 0)
+@if (BoundedSelectingRegion != null && BoundedSelectingRegion?.Area > 0)
 {
     <!-- We split into regions around the cell's start position, so that the cell's 
     start position shows the renderer underneath it -->
@@ -22,7 +18,6 @@
     {
         <BoxOverlayRenderer
             BackgroundVisible="@true"
-            BackgroundStyle="@_bgStyle"
             BorderThickness="0"
             X="GetLeft(region)"
             Y="GetTop(region)"
@@ -34,7 +29,6 @@
     <BoxOverlayRenderer
         BackgroundVisible="@false"
         BorderThickness="2"
-        BackgroundStyle="@_bgStyle"
         X="GetLeft(BoundedSelectingRegion)"
         Y="GetTop(BoundedSelectingRegion)"
         Width="GetWidth(BoundedSelectingRegion)"
@@ -42,7 +36,7 @@
 }
 
 <!-- render the selections that exist in the sheet -->
-@if (Sheet?.Selection != null && !Sheet.Selection.IsEmpty())
+@if (!Sheet.Selection.IsEmpty())
 {
     foreach (var region in Sheet.Selection.Regions)
     {
@@ -58,7 +52,6 @@
             foreach (var brokenRegion in brokenRegions)
             {
                 <BoxOverlayRenderer
-                    BackgroundStyle="@_bgStyle"
                     BackgroundVisible="true"
                     BorderThickness="0"
                     X="GetLeft(brokenRegion)"
@@ -72,13 +65,50 @@
         <BoxOverlayRenderer
             BackgroundVisible="@(!isActiveRegion)"
             BorderThickness="@(isActiveRegion ? 2 : 0)"
-            BackgroundStyle="@_bgStyle"
             X="GetLeft(boundedRegion)"
             Y="GetTop(boundedRegion)"
             Width="GetWidth(boundedRegion)"
             Height="GetHeight(boundedRegion)"/>
     }
 }
+
+<!-- row and column heading highlights -->
+
+<Portal For="Col" DatasheetId="@DatasheetId">
+    @{
+        var intervals = _colHighlights.GetAllIntervals();
+    }
+    @foreach (var interval in intervals)
+    {
+        <BoxOverlayRenderer
+            BackgroundVisible="true"
+            BorderThickness="0"
+            BackgroundColor="var(--active-header-bg-color)"
+            X="GetColSelectionLeft(interval.start)"
+            Y="0"
+            Width="GetColSelectionWidth(interval.start, interval.end - interval.start + 1)"
+            Height="@CellLayoutProvider.ColHeadingHeight">
+        </BoxOverlayRenderer>
+    }
+</Portal>
+
+<Portal For="Row" DatasheetId="@DatasheetId">
+    @{
+        var intervals = _rowHighlights.GetAllIntervals();
+    }
+    @foreach (var interval in intervals)
+    {
+        <BoxOverlayRenderer
+            BackgroundVisible="true"
+            BorderThickness="0"
+            BackgroundColor="var(--active-header-bg-color)"
+            X="0"
+            Y="GetRowSelectionTop(interval.start)"
+            Width="@CellLayoutProvider.RowHeadingWidth"
+            Height="GetRowSelectionHeight(interval.start, interval.end - interval.start + 1)">
+        </BoxOverlayRenderer>
+    }
+</Portal>
 
 
 @code {
@@ -87,16 +117,29 @@
 
     private Sheet? _sheet;
 
-    [Parameter, EditorRequired] public Sheet? Sheet { get; set; }
+    [Parameter, EditorRequired] public Sheet Sheet { get; set; } = null!;
 
-    private string _bgStyle = "background:var(--selection-bg-color);";
+    [CascadingParameter(Name = "DatasheetId")]
+    public string DatasheetId { get; set; } = default!;
 
-    private IRegion? BoundedSelectingRegion => Sheet?.Selection.SelectingRegion?.GetIntersection(Sheet?.Region);
+    private IRegion? BoundedSelectingRegion => Sheet.Selection.SelectingRegion?.GetIntersection(Sheet.Region);
 
     private double GetLeft(IRegion region) => CellLayoutProvider.ComputeLeftPosition(region);
     private double GetTop(IRegion region) => CellLayoutProvider.ComputeTopPosition(region);
     private double GetWidth(IRegion region) => CellLayoutProvider.ComputeWidth(region);
     private double GetHeight(IRegion region) => CellLayoutProvider.ComputeHeight(region);
+
+    private double GetRowSelectionTop(int row) =>
+        CellLayoutProvider.ComputeTopPosition(row) -
+        (CellLayoutProvider.IncludeColHeadings ? CellLayoutProvider.ColHeadingHeight : 0);
+
+    private double GetRowSelectionHeight(int row, int rowSpan) => CellLayoutProvider.ComputeHeight(row, rowSpan);
+
+    private double GetColSelectionLeft(int col) =>
+        CellLayoutProvider.ComputeLeftPosition(col) -
+        (CellLayoutProvider.IncludeRowHeadings ? CellLayoutProvider.RowHeadingWidth : 0);
+
+    private double GetColSelectionWidth(int col, int colSpan) => CellLayoutProvider.ComputeWidth(col, colSpan);
 
 
     protected override void OnParametersSet()
@@ -115,14 +158,14 @@
 
             _sheet.Selection.SelectionChanged += OnSelectionChanged;
             _sheet.Selection.SelectingChanged += OnSelectingChanged;
-            _sheet.Editor.EditBegin += (sender, args) => StateHasChanged();
+            _sheet.Editor.EditBegin += (_, _) => StateHasChanged();
         }
     }
 
     // Returns the region that the position covers (may be > 1 because of merged cells)
     private IRegion GetRegion(CellPosition position)
     {
-        var merge = Sheet.Cells?.GetMerge(position.row, position.col);
+        var merge = Sheet.Cells.GetMerge(position.row, position.col);
         if (merge != null)
             return merge;
         else
@@ -131,12 +174,43 @@
 
     private void OnSelectionChanged(object? sender, IEnumerable<IRegion> regions)
     {
+        UpdateHeadingHighlights();
         StateHasChanged();
     }
 
     private void OnSelectingChanged(object? sender, IRegion? region)
     {
+        UpdateHeadingHighlights();
         StateHasChanged();
+    }
+
+    private Range1DStore<bool> _rowHighlights = new(false);
+    private Range1DStore<bool> _colHighlights = new(false);
+
+    private void UpdateHeadingHighlights()
+    {
+        _rowHighlights.Clear();
+        _colHighlights.Clear();
+
+        foreach (var region in Sheet.Selection.Regions)
+        {
+            var bounded = region.GetIntersection(Sheet.Region);
+            if(bounded == null)
+                continue;
+            
+            _rowHighlights.Set(bounded.Top, bounded.Bottom, true);
+            _colHighlights.Set(bounded.Left, bounded.Right, true);
+        }
+
+        if (Sheet.Selection.IsSelecting)
+        {
+            var bounded = Sheet.Selection.SelectingRegion!.GetIntersection(Sheet.Region);
+            if (bounded == null)
+                return;
+            
+            _rowHighlights.Set(bounded.Top, bounded.Bottom, true);
+            _colHighlights.Set(bounded.Left, bounded.Right, true);
+        }
     }
 
 }

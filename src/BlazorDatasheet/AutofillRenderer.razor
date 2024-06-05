@@ -10,7 +10,7 @@
 @inject IWindowEventService WindowEventService
 @inherits SheetComponentBase
 
-@if (!Sheet!.Editor.IsEditing)
+@if (!Sheet.Editor.IsEditing)
 {
     <!-- render dragger (bottom right corner) -->
     <div id="auto-filler"
@@ -36,8 +36,7 @@
 
 @code {
 
-    [Parameter, EditorRequired]
-    public Sheet? Sheet { get; set; }
+    [Parameter, EditorRequired] public Sheet Sheet { get; set; } = null!;
 
     [Parameter, EditorRequired]
     public CellLayoutProvider CellLayoutProvider { get; set; } = null!;
@@ -87,7 +86,7 @@
             return false;
 
         await SelectionExpanded.InvokeAsync(new SelectionExpandedEventArgs(
-            Sheet!.Selection.ActiveRegion!.Clone(),
+            Sheet.Selection.ActiveRegion!.Clone(),
             _dragPreviewRegion.Clone()));
 
         _isDragging = false;
@@ -96,19 +95,19 @@
         return true;
     }
 
-    private async Task<bool> HandleWindowMouseMove(MouseEventArgs e)
+    private Task<bool> HandleWindowMouseMove(MouseEventArgs e)
     {
         if (!_isDragging)
-            return false;
+            return Task.FromResult(false);
 
-        if (Sheet?.Selection.ActiveRegion == null)
-            return false;
+        if (Sheet.Selection.ActiveRegion == null)
+            return Task.FromResult(false);
 
         var dx = e.PageX - _dragStartDocumentPosition.X;
         var dy = e.PageY - _dragStartDocumentPosition.Y;
 
         if (Math.Abs(dx) < 5 && Math.Abs(dy) < 5)
-            return true;
+            return Task.FromResult(true);
 
         var selRect = CellLayoutProvider.ComputeRect(Sheet.Selection.ActiveRegion);
         var sheetX = selRect.X + selRect.Width + dx;
@@ -122,11 +121,14 @@
 
         this.StateHasChanged();
 
-        return true;
+        return Task.FromResult(true);
     }
 
-    private IRegion? CalculateContractRegion(double dx, double dy, CellPosition cellMousePosition)
+    private IRegion CalculateContractRegion(double dx, double dy, CellPosition cellMousePosition)
     {
+        if(Sheet.Selection.ActiveRegion == null)
+            return new Region(cellMousePosition.row, cellMousePosition.col);
+        
         var left = Sheet.Selection.ActiveRegion.Left;
         var top = Sheet.Selection.ActiveRegion.Top;
         var axis = Math.Abs(dx) >= Math.Abs(dy) ? Axis.Col : Axis.Row;
@@ -137,6 +139,9 @@
 
     private IRegion? CalculateExpandRegion(double sheetX, double sheetY, CellPosition cellMousePosition)
     {
+        if(Sheet.Selection.ActiveRegion == null)
+            return null;
+        
         var selRect = CellLayoutProvider.ComputeRect(Sheet.Selection.ActiveRegion);
         var axis = GetExpansionAxis(sheetX, sheetY, selRect);
 
@@ -222,14 +227,15 @@
         StateHasChanged();
     }
 
-    private async Task DraggerMouseDown(PointerEventArgs e)
+    private Task DraggerMouseDown(PointerEventArgs e)
     {
-        if (Sheet?.Selection.ActiveRegion == null)
-            return;
+        if (Sheet.Selection.ActiveRegion == null)
+            return Task.CompletedTask;
 
         _isDragging = true;
 
         _dragStartDocumentPosition = new Point2d(e.PageX, e.PageY);
+        return Task.CompletedTask;
     }
 
     private void DraggerMouseUp(PointerEventArgs obj)
@@ -243,7 +249,7 @@
 
     private async void PointerMouseUp(object? sender, SheetPointerEventArgs? arg)
     {
-        if (_isDragging && _dragPreviewRegion != null && Sheet?.Selection.ActiveRegion != null)
+        if (_isDragging && _dragPreviewRegion != null && Sheet.Selection.ActiveRegion != null)
             await SelectionExpanded.InvokeAsync(new SelectionExpandedEventArgs(Sheet.Selection.ActiveRegion.Clone(), _dragPreviewRegion.Clone()));
 
         _isDragging = false;
@@ -257,9 +263,6 @@
 
     private string GetDraggerStyleString()
     {
-        if (Sheet == null)
-            return string.Empty;
-
         var region = Sheet.Selection.ActiveRegion ?? Sheet.Selection.SelectingRegion;
         if (region == null)
             return "display:none;";

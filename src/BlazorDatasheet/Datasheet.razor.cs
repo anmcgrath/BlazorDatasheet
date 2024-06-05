@@ -8,11 +8,11 @@ using BlazorDatasheet.Core.Layout;
 using BlazorDatasheet.Core.Util;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Edit;
-using BlazorDatasheet.Edit.DefaultComponents;
 using BlazorDatasheet.Events;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Render.DefaultComponents;
 using BlazorDatasheet.Services;
+using BlazorDatasheet.Util;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
@@ -47,6 +47,12 @@ public partial class Datasheet : SheetComponentBase
     public bool StickyHeadings { get; set; }
 
     /// <summary>
+    /// When set to true (default), the sheet will be virtualised, meaning only the visible cells will be rendered.
+    /// </summary>
+    [Parameter]
+    public bool Virtualise { get; set; } = true;
+
+    /// <summary>
     /// Renders a number of cells past the visual region, to improve scroll performance.
     /// </summary>
     [Parameter]
@@ -66,11 +72,6 @@ public partial class Datasheet : SheetComponentBase
     public Dictionary<string, CellTypeDefinition> CustomCellTypeDefinitions { get; set; } = new();
 
     /// <summary>
-    /// Default editors for cell types.
-    /// </summary>
-    private Dictionary<string, CellTypeDefinition> _defaultCellTypeDefinitions = new();
-
-    /// <summary>
     /// Exists so that we can determine whether the sheet has changed
     /// during parameter set
     /// </summary>
@@ -86,7 +87,9 @@ public partial class Datasheet : SheetComponentBase
 
     [Parameter] public Dictionary<string, RenderFragment> Icons { get; set; } = new();
 
-    [Parameter] public RenderFragment<HeadingContext>? ColumnHeaderTemplate { get; set; } = null;
+    [Parameter] public RenderFragment<HeadingContext>? ColumnHeaderTemplate { get; set; }
+
+    public string Id { get; set; } = Guid.NewGuid().ToString();
 
     /// <summary>
     /// Whether the user is focused on the datasheet.
@@ -110,10 +113,7 @@ public partial class Datasheet : SheetComponentBase
     public double RenderedInnerSheetWidth => _cellLayoutProvider
         .ComputeWidthBetween(_visualSheet.Viewport.VisibleRegion.Left, _visualSheet.Viewport.VisibleRegion.Right);
 
-    /// <summary>
-    /// Store any cells that are dirty here
-    /// </summary>
-    private HashSet<CellPosition> DirtyCells { get; set; } = new();
+    private HashSet<int> DirtyRows { get; set; } = new();
 
     /// <summary>
     /// Div that is the width/height of all the rows/columns in the sheet (does not include row/col headings).
@@ -128,7 +128,7 @@ public partial class Datasheet : SheetComponentBase
     /// <summary>
     /// Left filler element that is used for virtualisation.
     /// </summary>
-    private ElementReference _fillerLeft1;
+    private ElementReference _fillerLeft;
 
     /// <summary>
     /// Bottom filler element that is used for virtualisation.
@@ -188,7 +188,6 @@ public partial class Datasheet : SheetComponentBase
     {
         _windowEventService = new WindowEventService(JS);
         _clipboard = new Clipboard(JS);
-        this.RegisterDefaultCellRendererAndEditors();
         base.OnInitialized();
     }
 
@@ -210,51 +209,51 @@ public partial class Datasheet : SheetComponentBase
             _visualSheet = new VisualSheet(_sheetLocal);
             _visualSheet.Invalidated += (_, args) =>
             {
-                DirtyCells.UnionWith(args.DirtyCells);
+                DirtyRows.UnionWith(args.DirtyRows);
                 this.StateHasChanged();
             };
 
             _cellLayoutProvider.IncludeColHeadings = ShowColHeadings;
             _cellLayoutProvider.IncludeRowHeadings = ShowRowHeadings;
+
+            if (!Virtualise)
+            {
+                var vp = new Viewport()
+                {
+                    DistanceBottom = 0,
+                    DistanceRight = 0,
+                    Left = 0,
+                    Top = 0,
+                    VisibleRegion = new Region(0, Sheet.NumRows - 1, 0, Sheet.NumCols - 1)
+                };
+
+                _visualSheet.UpdateViewport(vp);
+            }
         }
 
         base.OnParametersSet();
     }
 
-    private void RegisterDefaultCellRendererAndEditors()
-    {
-        _defaultCellTypeDefinitions.Add("text", CellTypeDefinition.Create<TextEditorComponent, TextRenderer>());
-        _defaultCellTypeDefinitions.Add("datetime", CellTypeDefinition.Create<DateTimeEditorComponent, TextRenderer>());
-        _defaultCellTypeDefinitions.Add("boolean", CellTypeDefinition.Create<BoolEditorComponent, BoolRenderer>());
-        _defaultCellTypeDefinitions.Add("select", CellTypeDefinition.Create<SelectEditorComponent, SelectRenderer>());
-        _defaultCellTypeDefinitions.Add("textarea", CellTypeDefinition.Create<TextareaEditorComponent, TextRenderer>());
-    }
-
     private Type GetCellRendererType(string type)
     {
-        // First look at any custom renderers
-        if (CustomCellTypeDefinitions.ContainsKey(type))
-            return CustomCellTypeDefinitions[type].RendererType;
-
-        if (_defaultCellTypeDefinitions.ContainsKey(type))
-            return _defaultCellTypeDefinitions[type].RendererType;
+        if (CustomCellTypeDefinitions.TryGetValue(type, out var definition))
+            return definition.RendererType;
 
         return typeof(TextRenderer);
     }
 
-    private Dictionary<string, object> GetCellRendererParameters(Sheet sheet, VisualCell visualCell)
+    private Dictionary<string, object> GetCellRendererParameters(VisualCell visualCell)
     {
         return new Dictionary<string, object>()
         {
             { "Cell", visualCell },
-            { "OnChangeCellValueRequest", HandleCellRendererRequestChangeValue },
-            { "OnBeginEditRequest", HandleCellRequestBeginEdit }
+            { "Sheet", _sheetLocal }
         };
     }
 
     protected override bool ShouldRender()
     {
-        return SheetIsDirty || DirtyCells.Any();
+        return SheetIsDirty || DirtyRows.Any();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -269,7 +268,6 @@ public partial class Datasheet : SheetComponentBase
             await _sheetPointerInputService.Init();
 
             _sheetPointerInputService.PointerDown += this.HandleCellMouseDown;
-            _sheetPointerInputService.PointerUp += this.HandleCellMouseUp;
             _sheetPointerInputService.PointerEnter += HandleCellMouseOver;
             _sheetPointerInputService.PointerDoubleClick += HandleCellDoubleClick;
 
@@ -281,7 +279,7 @@ public partial class Datasheet : SheetComponentBase
                 _dotnetHelper,
                 _wholeSheetDiv,
                 nameof(HandleScroll),
-                _fillerLeft1,
+                _fillerLeft,
                 _fillerTop,
                 _fillerRight,
                 _fillerBottom);
@@ -290,7 +288,7 @@ public partial class Datasheet : SheetComponentBase
         }
 
         SheetIsDirty = false;
-        DirtyCells.Clear();
+        DirtyRows.Clear();
     }
 
     /// <summary>
@@ -301,6 +299,9 @@ public partial class Datasheet : SheetComponentBase
     [JSInvokable("HandleScroll")]
     public void HandleScroll(ViewportScrollInfo e)
     {
+        if (!Virtualise)
+            return;
+
         var newViewport = _cellLayoutProvider
             .GetViewPort(
                 e.ScrollLeft,
@@ -332,29 +333,12 @@ public partial class Datasheet : SheetComponentBase
         _visualSheet.UpdateViewport(newViewport);
     }
 
-    private string GetAbsoluteCellPositionStyles(int row, int col, int rowSpan, int colSpan)
-    {
-        var sb = new StringBuilder();
-        var top = _cellLayoutProvider.ComputeTopPosition(row);
-        var left = _cellLayoutProvider.ComputeLeftPosition(col);
-        sb.Append("position:absolute;");
-        sb.Append($"top:{top}px;");
-        sb.Append($"width:{_cellLayoutProvider.ComputeWidth(col, colSpan)}px;");
-        sb.Append($"height:{_cellLayoutProvider.ComputeHeight(row, rowSpan)}px;");
-        sb.Append($"left:{left}px;");
-        return sb.ToString();
-    }
-
     private async Task AddWindowEventsAsync()
     {
         await _windowEventService.RegisterMouseEvent("mousedown", HandleWindowMouseDown);
         await _windowEventService.RegisterKeyEvent("keydown", HandleWindowKeyDown);
         await _windowEventService.RegisterClipboardEvent("paste", HandleWindowPaste);
-    }
-
-    private void HandleCellMouseUp(object? sender, SheetPointerEventArgs args)
-    {
-        this.EndSelecting();
+        await _windowEventService.RegisterMouseEvent("mouseup", HandleWindowMouseUp);
     }
 
     private void HandleCellMouseDown(object? sender, SheetPointerEventArgs args)
@@ -381,7 +365,6 @@ public partial class Datasheet : SheetComponentBase
                 Sheet.Selection.ClearSelections();
             }
 
-            var mergeRangeAtPosition = _sheetLocal.Cells.GetMerge(args.Row, args.Col);
             if (args.Row == -1)
                 this.BeginSelectingCol(args.Col);
             else if (args.Col == -1)
@@ -392,37 +375,6 @@ public partial class Datasheet : SheetComponentBase
             if (args.MouseButton == 2) // RMC
                 this.EndSelecting();
         }
-    }
-
-    private void HandleColumnHeaderMouseDown(ColumnMouseEventArgs args)
-    {
-        //this.HandleCellMouseDown(-1, args.Column, args.Args.MetaKey, args.Args.CtrlKey, args.Args.ShiftKey);
-    }
-
-    private void HandleColumnHeaderMouseUp(ColumnMouseEventArgs args)
-    {
-        //var pointerArgs = new SheetPointer
-        //this.HandleCellMouseUp(-1, args.Column, args.Args.MetaKey, args.Args.CtrlKey, args.Args.ShiftKey);
-    }
-
-    private void HandleColumnHeaderMouseOver(ColumnMouseEventArgs args)
-    {
-        //this.HandleCellMouseOver(-1, args.Column);
-    }
-
-    private void HandleRowHeaderMouseDown(RowMouseEventArgs e)
-    {
-        //this.HandleCellMouseDown(e.RowIndex, -1, e.Args.MetaKey, e.Args.CtrlKey, e.Args.ShiftKey);
-    }
-
-    private void HandleRowHeaderMouseUp(RowMouseEventArgs args)
-    {
-        //this.HandleCellMouseUp(args.RowIndex, -1, args.Args.MetaKey, args.Args.CtrlKey, args.Args.ShiftKey);
-    }
-
-    private void HandleRowHeaderMouseOver(RowMouseEventArgs args)
-    {
-        //this.HandleCellMouseOver(args.RowIndex, -1);
     }
 
     private async void HandleCellDoubleClick(object? sender, SheetPointerEventArgs args)
@@ -481,6 +433,12 @@ public partial class Datasheet : SheetComponentBase
         if (changed)
             StateHasChanged();
 
+        return Task.FromResult(false);
+    }
+
+    private Task<bool> HandleWindowMouseUp(MouseEventArgs arg)
+    {
+        EndSelecting();
         return Task.FromResult(false);
     }
 
@@ -598,10 +556,10 @@ public partial class Datasheet : SheetComponentBase
 
     private void CollapseAndMoveSelection(int drow, int dcol)
     {
-        if (Sheet?.Selection?.ActiveRegion == null)
+        if (Sheet.Selection.ActiveRegion == null)
             return;
 
-        if (Sheet?.Selection.IsSelecting == true)
+        if (Sheet.Selection.IsSelecting)
             return;
 
         var posn = Sheet.Selection.ActiveCellPosition;
@@ -638,31 +596,14 @@ public partial class Datasheet : SheetComponentBase
         {
             await _virtualizer.InvokeAsync<string>("disposeVirtualisationHandlers", _wholeSheetDiv);
             await _sheetPointerInputService.DisposeAsync();
+            await _windowEventService.DisposeAsync();
+
+            _dotnetHelper.Dispose();
         }
         catch (Exception e)
         {
             Console.WriteLine(e.Message);
         }
-
-        _dotnetHelper?.Dispose();
-    }
-
-    /// <summary>
-    /// Handles when a cell renderer requests to start editing the cell
-    /// </summary>
-    /// <param name="args"></param>
-    private async void HandleCellRequestBeginEdit(CellEditRequest args)
-    {
-        await BeginEdit(args.Row, args.Col, args.EntryMode);
-    }
-
-    /// <summary>
-    /// Handles when a cell renderer requests that a cell's value be changed
-    /// </summary>
-    /// <param name="args"></param>
-    private void HandleCellRendererRequestChangeValue(ChangeCellValueRequest args)
-    {
-        Sheet.Cells.SetValue(args.Row, args.Col, args.NewValue);
     }
 
     /// <summary>
@@ -717,11 +658,11 @@ public partial class Datasheet : SheetComponentBase
         if (!IsSelecting)
             return;
 
-        if (Sheet?.Selection?.SelectingRegion?.End.row == row &&
-            Sheet?.Selection?.SelectingRegion?.End.col == col)
+        if (Sheet.Selection.SelectingRegion?.End.row == row &&
+            Sheet.Selection.SelectingRegion?.End.col == col)
             return;
 
-        Sheet?.Selection.UpdateSelectingEndPosition(row, col);
+        Sheet.Selection.UpdateSelectingEndPosition(row, col);
     }
 
     /// <summary>
@@ -732,7 +673,7 @@ public partial class Datasheet : SheetComponentBase
         if (!IsSelecting)
             return;
 
-        Sheet?.Selection.EndSelecting();
+        Sheet.Selection.EndSelecting();
     }
 
     private string GetContainerClassString()
@@ -754,7 +695,7 @@ public partial class Datasheet : SheetComponentBase
 
     private void HandleSelectionExpanded(SelectionExpandedEventArgs e)
     {
-        _sheetLocal?.Commands.ExecuteCommand(new AutoFillCommand(e.Original, e.Expanded));
+        Sheet.Commands.ExecuteCommand(new AutoFillCommand(e.Original, e.Expanded));
     }
 
     private RenderFragment GetIconRenderFragment(string? cellIcon)

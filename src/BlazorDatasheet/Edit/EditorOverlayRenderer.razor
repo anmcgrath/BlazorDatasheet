@@ -14,7 +14,7 @@
 @if (IsEditing)
 {
     <div id="editor" class="editor-overlay"
-         style="position:absolute; display: inline-block; @GetEditorSizeStyling()">
+         style="position:absolute; box-sizing: border-box; display: inline-block; @GetEditorSizeStyling()">
         <DynamicComponent
             Type="@ActiveEditorType"
             Parameters="@GetDynamicEditorParameters()"
@@ -28,8 +28,6 @@
     [Parameter, EditorRequired] public Sheet Sheet { get; set; }
 
     [Parameter, EditorRequired] public Dictionary<string, CellTypeDefinition> CustomCellTypes { get; set; }
-
-    [Parameter, EditorRequired] public Dictionary<string, CellTypeDefinition> DefaultCellTypes { get; set; }
 
     private Sheet? _sheet;
 
@@ -107,8 +105,19 @@
         if (CustomCellTypes?.TryGetValue(cellType, out var customCellType) == true)
             return customCellType.EditorType;
 
-        if (DefaultCellTypes.TryGetValue(cellType, out var defaultCellType))
-            return defaultCellType.EditorType;
+        switch (cellType)
+        {
+            case "default":
+                return typeof(TextEditorComponent);
+            case "boolean":
+                return typeof(BoolEditorComponent);
+            case "select":
+                return typeof(SelectEditorComponent);
+            case "datetime":
+                return typeof(DateTimeEditorComponent);
+            case "textarea":
+                return typeof(TextareaEditorComponent);
+        }
 
         return typeof(TextEditorComponent);
     }
@@ -192,7 +201,7 @@
 
         var mergedPosn = Sheet.Cells.GetMerge(EditCell.Row, EditCell.Col)?
             .GetIntersection(Sheet.Region);
-        
+
         int colSpan = 1;
         int rowSpan = 1;
 
@@ -202,8 +211,8 @@
             rowSpan = mergedPosn.Height;
         }
 
-        var w = CellLayoutProvider.ComputeWidth(EditCell.Col, colSpan) - 1;
-        var h = CellLayoutProvider.ComputeHeight(EditCell.Row, rowSpan) - 1;
+        var w = CellLayoutProvider.ComputeWidth(EditCell.Col, colSpan);
+        var h = CellLayoutProvider.ComputeHeight(EditCell.Row, rowSpan);
 
         strBuilder.Append($"left:{left}px;");
         strBuilder.Append($"top:{top}px;");

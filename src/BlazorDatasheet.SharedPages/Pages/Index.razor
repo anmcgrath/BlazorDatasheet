@@ -22,6 +22,7 @@
         @ref="_datasheet"
         Theme="@Theme"
         Sheet="Sheet"
+        Virtualise="true"
         ShowColHeadings="true"
         ShowRowHeadings="true"
         StickyHeadings="true">
@@ -44,6 +45,7 @@
     <button @onclick="@(() => Sheet.Cells.Merge(Sheet.Selection.Regions))">Merge cells</button>
     <button @onclick="@(SortSelectionDesc)">Sort Desc</button>
     <button @onclick="@(SortSelectionAsc)">Sort ASc</button>
+    <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat(){NumberFormat="C2"}))">Currency</button>
 </div>
 
 <div>

@@ -1,0 +1,110 @@
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Layout
+@using BlazorDatasheet.Render
+@using BlazorDatasheet.Render.DefaultComponents
+@using BlazorDatasheet.Util
+
+@if (Sheet.Cells.AnyMerges())
+{
+    var merges = Sheet.Cells.GetMerges(VisualSheet.Viewport.VisibleRegion)
+        .Select(x => x.GetIntersection(Sheet.Region))
+        .Where(x => x != null)
+        .Select(x => x!);
+
+    foreach (var merge in merges)
+    {
+        var row = merge.Top;
+        var col = merge.Left;
+
+        var cell = VisualSheet.GetVisualCell(row, col);
+        <div
+            data-row="@row"
+            data-col="@col"
+            style="position: absolute; @GetAbsoluteStyle(row, col, merge.Height, merge.Width) @cell.FormatStyleString"
+            class="sheet-cell merged-cell">
+            <div style="display: flex;">
+                @if (cell.Icon != null)
+                {
+                    <div
+                        style="margin-right:2px; float:left; color: @(cell.Format?.IconColor ?? "var(--icon-color)");">
+                        @GetIconRenderFragment(cell.Icon)
+                    </div>
+                }
+                @switch (cell.CellType)
+                {
+                    case "default":
+                    case "datetime":
+                        <div style="width: 100%;">
+                            @cell.FormattedString
+                        </div>
+                        break;
+                    case "boolean":
+                        <BoolRenderer Cell="cell" Sheet="Sheet"/>
+                        break;
+                    case "select":
+                        <SelectRenderer Cell="cell" Sheet="Sheet"/>
+                        break;
+
+                    default:
+                        <DynamicComponent
+                            Parameters="@GetCellRendererParameters(cell)"
+                            Type="@GetCellRendererType(cell.CellType)"/>
+                        break;
+                }
+            </div>
+        </div>
+    }
+}
+
+
+@code {
+
+    [Parameter, EditorRequired] public VisualSheet VisualSheet { get; set; } = null!;
+
+    [Parameter, EditorRequired] public Sheet Sheet { get; set; } = null!;
+
+    [Parameter, EditorRequired] public Dictionary<string, CellTypeDefinition> CustomCellTypeDefinitions { get; set; } = null!;
+
+    [Parameter, EditorRequired] public Dictionary<string, RenderFragment> Icons { get; set; } = null!;
+
+    [Parameter, EditorRequired] public CellLayoutProvider CellLayoutProvider { get; set; } = null!;
+
+    private Type GetCellRendererType(string type)
+    {
+        if (CustomCellTypeDefinitions.TryGetValue(type, out var definition))
+            return definition.RendererType;
+
+        return typeof(TextRenderer);
+    }
+
+    private Dictionary<string, object> GetCellRendererParameters(VisualCell visualCell)
+    {
+        return new Dictionary<string, object>()
+        {
+            { "Cell", visualCell },
+            { "Sheet", Sheet }
+        };
+    }
+
+    private RenderFragment GetIconRenderFragment(string? cellIcon)
+    {
+        if (cellIcon != null && Icons.TryGetValue(cellIcon, out var rf))
+            return rf;
+        return _ => { };
+    }
+
+
+    private string GetAbsoluteStyle(int row, int col, int rowSpan, int colSpan)
+    {
+        var sb = new StyleBuilder();
+        var top = CellLayoutProvider.ComputeTopPosition(row);
+        var left = CellLayoutProvider.ComputeLeftPosition(col);
+        sb.AddStyle("top", $"{top}px");
+        sb.AddStyle($"left", $"{left}px;");
+        sb.AddStyle("width", $"{CellLayoutProvider.ComputeWidth(col, colSpan)}px");
+        sb.AddStyle("height", $"{CellLayoutProvider.ComputeHeight(row, rowSpan)}px");
+
+        return sb.ToString();
+    }
+
+}

@@ -1,0 +1,118 @@
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Render
+@using BlazorDatasheet.Render.DefaultComponents
+
+@for (int j = VisualSheet.Viewport.VisibleRegion.Left; j <= VisualSheet.Viewport.VisibleRegion.Right; j++)
+{
+    var col = j;
+    var cell = VisualSheet.GetVisualCell(Row, col);
+    var k = col;
+
+    var rowSpan = 1;
+    var colSpan = 1;
+    var dataCol = col;
+    var dataRow = Row;
+
+    if (!Virtualise && cell.Merge != null)
+    {
+        if (cell.Merge.Top == Row && cell.Merge.Left == col)
+        {
+            rowSpan = cell.Merge.Height;
+            colSpan = cell.Merge.Width;
+            dataCol = cell.Merge.Left;
+            dataRow = cell.Merge.Top;
+        }
+        else
+            continue;
+    }
+
+    <td
+        @key="k"
+        data-row="@dataRow"
+        data-col="@dataCol"
+        colspan="@colSpan"
+        rowspan="@rowSpan"
+        class="sheet-cell"
+        style="@cell.FormatStyleString">
+        <div style="display: flex;">
+            @if (cell.Icon != null)
+            {
+                <div
+                    style="margin-right:2px; float:left; color: @(cell.Format?.IconColor ?? "var(--icon-color)");">
+                    @GetIconRenderFragment(cell.Icon)
+                </div>
+            }
+            @switch (cell.CellType)
+            {
+                case "default":
+                case "datetime":
+                    <div style="width: 100%;">
+                        @cell.FormattedString
+                    </div>
+                    break;
+                case "boolean":
+                    <BoolRenderer Cell="cell" Sheet="Sheet"/>
+                    break;
+                case "select":
+                    <SelectRenderer Cell="cell" Sheet="Sheet"/>
+                    break;
+
+                default:
+                    <DynamicComponent
+                        Parameters="@GetCellRendererParameters(cell)"
+                        Type="@GetCellRendererType(cell.CellType)"/>
+                    break;
+            }
+        </div>
+    </td>
+}
+
+@code {
+
+    [Parameter, EditorRequired] public VisualSheet VisualSheet { get; set; } = null!;
+
+    [Parameter, EditorRequired] public Sheet Sheet { get; set; } = null!;
+
+    [Parameter, EditorRequired] public bool IsDirty { get; set; }
+
+    [Parameter, EditorRequired] public int Row { get; set; }
+
+    [Parameter, EditorRequired] public bool Virtualise { get; set; }
+
+    [Parameter, EditorRequired] public Dictionary<string, CellTypeDefinition> CustomCellTypeDefinitions { get; set; } = null!;
+
+    [Parameter, EditorRequired] public Dictionary<string, RenderFragment> Icons { get; set; } = null!;
+
+    protected override bool ShouldRender() => IsDirty;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+    }
+
+    private Type GetCellRendererType(string type)
+    {
+        if (CustomCellTypeDefinitions.TryGetValue(type, out var definition))
+            return definition.RendererType;
+
+        return typeof(TextRenderer);
+    }
+
+    private Dictionary<string, object> GetCellRendererParameters(VisualCell visualCell)
+    {
+        return new Dictionary<string, object>()
+        {
+            { "Cell", visualCell },
+            { "Sheet", Sheet }
+        };
+    }
+
+    private RenderFragment GetIconRenderFragment(string? cellIcon)
+    {
+        if (cellIcon != null && Icons.TryGetValue(cellIcon, out var rf))
+            return rf;
+        return _ => { };
+    }
+
+
+}

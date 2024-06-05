@@ -7,27 +7,27 @@ namespace BlazorDatasheet.Services;
 
 public class Clipboard : IClipboard
 {
-    public IJSRuntime JS;
+    private readonly IJSRuntime _js;
 
-    private string lastCopiedText;
-    private IRegion lastCopiedRegion;
+    private string _lastCopiedText;
+    private IRegion _lastCopiedRegion;
 
     public Clipboard(IJSRuntime jsRuntime)
     {
-        JS = jsRuntime;
+        _js = jsRuntime;
     }
 
-    public async Task Copy(IRegion region, Sheet sheet)
+    public async Task Copy(IRegion? region, Sheet sheet)
     {
         if (region == null)
             return;
         
         var text = sheet.GetRegionAsDelimitedText(region);
         
-        await JS.InvokeVoidAsync("writeTextToClipboard", text);
+        await _js.InvokeVoidAsync("writeTextToClipboard", text);
         
-        lastCopiedRegion = region;
-        lastCopiedText = text;
+        _lastCopiedRegion = region;
+        _lastCopiedText = text;
 
     }
 }

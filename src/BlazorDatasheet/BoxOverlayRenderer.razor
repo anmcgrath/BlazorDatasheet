@@ -1,11 +1,13 @@
 @using System.ComponentModel
 @using System.Text
 @using BlazorDatasheet.Render
+@using BlazorDatasheet.Util
 @inherits SheetComponentBase
 
 <!--Renders a box at a particular row/column with a width & height -->
 
-<div style="@GetSizeStyleString(); box-sizing: border-box; position: absolute; pointer-events: none;"></div>
+<div style="@GetSizeStyleString(); box-sizing: border-box; position: absolute; pointer-events: none;">
+</div>
 
 @code {
 
@@ -21,7 +23,7 @@
 
     [Parameter] public double BorderThickness { get; set; }
 
-    [Parameter] public string BackgroundStyle { get; set; }
+    [Parameter] public string BackgroundColor { get; set; } = "var(--selection-bg-color)";
 
     [Parameter] public string BorderColor { get; set; } = "var(--selection-border-color);";
 
@@ -31,26 +33,17 @@
 
     private string GetSizeStyleString()
     {
-        var strBuilder = new StringBuilder();
+        var sb = new StyleBuilder();
 
-        strBuilder.Append($"left:{X-1}px;");
-        strBuilder.Append($"top:{Y-1}px;");
-        strBuilder.Append($"width:{Width+1}px;");
-        strBuilder.Append($"height:{Height+1}px;");
-        strBuilder.Append($"position:relative;");
-        strBuilder.Append($"z-index:{ZIndex};");
-        if (BorderThickness != 0)
-        {
-            strBuilder.Append($"border: {BorderThickness}px {BorderStyle} {BorderColor};");
-        }
+        sb.AddStyle($"left",$"{X}px");
+        sb.AddStyle($"top",$"{Y}px");
+        sb.AddStyle($"width",$"{Width+1}px;");
+        sb.AddStyle($"height",$"{Height+1}px;");
+        sb.AddStyle("z-index", ZIndex.ToString());
+        sb.AddStyle("border", $"{BorderThickness}px {BorderStyle} {BorderColor}", BorderThickness!=0);
+        sb.AddStyle("background", BackgroundColor, BackgroundVisible);
 
-        if (BackgroundVisible)
-        {
-            strBuilder.Append(BackgroundStyle);
-        }
-
-        var style = strBuilder.ToString();
-        return style;
+        return sb.ToString();
     }
 
 }

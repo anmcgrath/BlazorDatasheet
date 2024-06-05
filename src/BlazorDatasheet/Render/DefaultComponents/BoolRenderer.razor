@@ -1,7 +1,9 @@
 @namespace BlazorDatasheet.Render.DefaultComponents
 @inherits BaseRenderer
 
-<input type="checkbox" disabled="@Cell?.Format?.IsReadOnly" @bind="Checked"/>
+<div style="margin-top:auto;margin-bottom: auto;">
+    <input type="checkbox" disabled="@Cell?.Format?.IsReadOnly" @bind="Checked"/>
+</div>
 
 @code {
 
@@ -14,7 +16,7 @@
         set
         {
             _checked = value;
-            this.RequestChangeCellValue(_checked);
+            this.Sheet.Cells.SetValue(Cell.Row, Cell.Col, _checked);
         }
     }
 

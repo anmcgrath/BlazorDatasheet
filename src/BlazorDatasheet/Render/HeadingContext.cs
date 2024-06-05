@@ -1,6 +1,6 @@
 namespace BlazorDatasheet.Render;
 
-public class HeadingContext
+public struct HeadingContext
 {
     public int Id { get; }
     public string? Heading { get; }

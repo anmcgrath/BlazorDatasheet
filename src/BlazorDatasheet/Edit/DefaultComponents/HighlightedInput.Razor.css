@@ -12,13 +12,12 @@
 .highlight-input, .highlight-result {
     height: 100%;
     min-width: 100%;
-    padding: 2px;
+    padding: 2px 5px;
     display: inline-block;
     position: absolute;
     top: 0;
     left: 0;
     white-space: pre;
-    outline:2px solid var(--selection-border-color);
     z-index: 2;
 }
 

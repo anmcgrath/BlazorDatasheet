@@ -1,0 +1,33 @@
+﻿@inject PortalService PortalService
+
+@code {
+
+    /// <summary>
+    /// The ID of the portal target
+    /// </summary>
+    [Parameter, EditorRequired]
+    public string For { get; set; } = null;
+
+    [Parameter, EditorRequired] public string DatasheetId { get; set; } = null!;
+
+    [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
+
+    private bool _registered = false;
+
+    protected override void OnParametersSet()
+    {
+        if (!_registered && !string.IsNullOrEmpty(For) && !string.IsNullOrEmpty(DatasheetId))
+        {
+            Console.WriteLine($"Registering portal {For}");
+            PortalService.AddToPortal(For, DatasheetId, ChildContent);
+            _registered = true;
+        }
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        PortalService.RenderPortalTarget(For, DatasheetId);
+        base.OnAfterRender(firstRender);
+    }
+
+}

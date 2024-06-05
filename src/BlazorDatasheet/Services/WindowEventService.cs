@@ -110,7 +110,7 @@ public class WindowEventService : IWindowEventService
     }
 
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         try
         {
@@ -122,11 +122,6 @@ public class WindowEventService : IWindowEventService
         {
             Console.WriteLine(e.Message);
         }
-    }
-
-    public async void Dispose()
-    {
-        await DisposeAsync();
     }
 }
 

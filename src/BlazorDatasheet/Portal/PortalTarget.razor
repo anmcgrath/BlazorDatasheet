@@ -1,0 +1,32 @@
+﻿@inject PortalService PortalService
+
+@foreach (var fragment in _fragments)
+{
+    @fragment
+}
+
+@code {
+
+    [Parameter, EditorRequired] public string TargetId { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string DatasheetId { get; set; } = string.Empty;
+
+    private List<RenderFragment> _fragments = new();
+
+    protected override void OnInitialized()
+    {
+        Console.WriteLine("Initialised for " + TargetId + " and " + DatasheetId);
+        PortalService.RegisterPortalTarget(TargetId, DatasheetId, this);
+    }
+
+    public void SetRenderFragments(List<RenderFragment> fragments)
+    {
+        _fragments = fragments;
+    }
+
+
+    public void Render()
+    {
+        StateHasChanged();
+    }
+
+}
