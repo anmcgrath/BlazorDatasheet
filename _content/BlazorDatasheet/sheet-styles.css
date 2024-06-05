@@ -11,7 +11,7 @@
     --row-header-bg-color: #fafafa;
     --col-header-bg-color: #fafafa;
     --headers-foreground-color: #5c5a5a;
-    --active-header-bg-color: #ededed;
+    --active-header-bg-color: rgba(121, 150, 179, 0.18);
     --icon-color: #000000;
     --shadow-overlay-color: grey;
     --invalid-cell-foreground-color: #ff0000;
@@ -20,7 +20,8 @@
     --cell-highlight-bg-color: #a9e5b6;
     --num-highlight-color: #43a3b4;
     --string-highlight-color: #1a6206;
-    --sheet-menu-bg-color: #f1f1f1;
+    --sheet-menu-bg-color: #fff;
+    --sheet-menu-hover-color: #e1ebf4;
 }
 
 .vars[theme='dark'] {
@@ -30,7 +31,7 @@
     --row-header-bg-color: #2d2d2d;
     --col-header-bg-color: #2d2d2d;
     --headers-foreground-color: #a4a4a4;
-    --active-header-bg-color: #343434;
+    --active-header-bg-color: rgb(25, 25, 50, 0.18);
     --icon-color: #000000;
     --shadow-overlay-color: #000000;
     --invalid-cell-foreground-color: #d71b1b;
@@ -40,6 +41,7 @@
     --num-highlight-color: #d4d6ec;
     --string-highlight-color: #79a16a;
     --sheet-menu-bg-color: #333;
+    --sheet-menu-hover-color: #202e3e;
 }
 
 .active-sheet {
@@ -60,6 +62,7 @@
     font-family: var(--sheet-font-family), serif;
     -moz-osx-font-smoothing: grayscale;
     font-weight: var(--sheet-font-weight);
+    color: var(--sheet-foreground-color);
 }
 
 .sheet-fixed-height {
@@ -78,14 +81,29 @@
     user-select: none;
     -moz-user-select: none;
     -webkit-user-select: none;
-    padding: 0;
-    display: inline-block;
-    box-sizing: border-box;
+    padding: 0 4px;
     overflow: hidden;
+    line-height: 20px;
+    height: 20px;
+    vertical-align: top;
 }
 
-.sheet-row {
-    padding: 0;
+.merged-cell {
+    background: var(--sheet-bg-color);
+    border: var(--sheet-border-style);
+}
+
+.sheet-table {
+    table-layout: fixed;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-top: var(--sheet-border-style);
+    border-left: var(--sheet-border-style);
+}
+
+.sheet-table td, th {
+    border-right: var(--sheet-border-style);
+    border-bottom: var(--sheet-border-style);
 }
 
 .col-sticky {
@@ -101,50 +119,44 @@
 
 .row-sticky {
     position: sticky;
+    z-index: 2;
     left: 0;
-    z-index: 1;
+}
+
+.row-head {
+    text-align: right;
+    background: var(--row-header-bg-color)
+}
+
+.row-head :hover {
+    background: var(--selection-bg-color);
+}
+
+.col-head {
+    background: var(--row-header-bg-color)
+}
+
+.col-head :hover {
+    background: var(--selection-bg-color);
 }
 
 .invalid-cell {
     color: var(--invalid-cell-foreground-color) !important;
 }
 
-.cell {
-    display: inline-block;
-    width: 100%;
-    height: 100%;
-    padding: 3px;
-    overflow: hidden;
-    box-sizing: border-box;
-    -moz-box-sizing: border-box;
-    -webkit-box-sizing: border-box;
-}
-
-.column-head {
-    background: var(--col-header-bg-color) !important;
-    border-right: var(--sheet-border-style);
-    border-top: var(--sheet-border-style);
-    color: var(--headers-foreground-color);
-    height: 100%;
-}
-
 .column-active {
     background: var(--active-header-bg-color) !important;
 }
 
-.row-head {
-    background: var(--row-header-bg-color) !important;
-    border-right: var(--sheet-border-style);
-    border-bottom: var(--sheet-border-style);
-    border-left: var(--sheet-border-style);
-    padding-right: 5px;
-    padding-left: 5px;
-    align-content: center;
-    color: var(--headers-foreground-color);
-}
-
 .row-active {
     background: var(--active-header-bg-color) !important;
+}
+
+.collapsed-row > th, .collapsed-row > tr, .collapsed-row > td{
+    padding: 0;
+    margin: 0;
+    border:0;
+    border-spacing: 0;
 }
 
 .unselectable {
@@ -168,5 +180,6 @@
 }
 
 .editor-overlay {
-    box-shadow: 0px 0px 4px var(--shadow-overlay-color);
+    box-shadow: 0 0 4px var(--shadow-overlay-color);
+    background: var(--sheet-bg-color);
 }
