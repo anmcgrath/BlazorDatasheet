@@ -50,7 +50,7 @@ public class Range1DStore<T>
     public virtual List<(int start, int end, T value)> Delete(int start, int end)
     {
         var removed = _intervals.Clear(start, end).Select(x => (x.Start, x.End, x.Data.Value)).ToList();
-        _intervals.ShiftLeft(start, (start - end) + 1);
+        _intervals.ShiftLeft(start, (end - start) + 1);
         return removed;
     }
 

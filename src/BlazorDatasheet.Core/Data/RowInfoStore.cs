@@ -89,7 +89,7 @@ public class RowInfoStore
         };
 
         RowFormats.ShiftLeft(start, (end - start) + 1);
-        RowRemoved?.Invoke(this, new RowRemovedEventArgs(start, (start - end) + 1));
+        RowRemoved?.Invoke(this, new RowRemovedEventArgs(start, (end - start) + 1));
         _sheet.MarkDirty(new RowRegion(start, _sheet.NumRows));
         return res;
     }
