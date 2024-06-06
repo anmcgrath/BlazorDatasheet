@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "BlazorDatasheet.Wasm",
   "resources": {
-    "hash": "sha256-cOE/gM6jH0wFYQH1m76QowVynzjqELbAXd3QU0ndk54=",
+    "hash": "sha256-wKx26AXwULyXEd+0jw8bL2vgBnap7UGi9n27gq4eZmg=",
     "jsModuleNative": {
       "dotnet.native.8.0.5.k8qrcc28q0.js": "sha256-boyHe+0RMZDkzBKGhsrnXPhPg3oZ6UqJnTUzngJPjNY="
     },
@@ -17,13 +17,13 @@
       "icudt_no_CJK.dat": "sha256-L7sV7NEYP37/Qr2FPCePo5cJqRgTXRwGHuwF5Q+0Nfs="
     },
     "assembly": {
-      "BlazorDatasheet.Core.wasm": "sha256-CDAAHtVtxu+uCFLCiu+2lPvJDHilWnakOviyzoaq34A=",
-      "BlazorDatasheet.DataStructures.wasm": "sha256-xS7Z1vbrUKAeTQcRX51PDwBNgF9vKPrRT7XntvvPfe4=",
-      "BlazorDatasheet.Formula.Core.wasm": "sha256-rPT0OEuYx99dl1VioeegxyjvUZhVGDZeKKaHAXNFDTk=",
-      "BlazorDatasheet.Formula.Functions.wasm": "sha256-GgH8C1xCZRPxD2jPSsSlrkZa+GWmdP9IdNqQWhbMMBs=",
-      "BlazorDatasheet.SharedPages.wasm": "sha256-n0ZDM3geGI1bYxNskK++ACtYCeBrGsXCdtVSg7EC6tk=",
-      "BlazorDatasheet.wasm": "sha256-xXn/lki+Xe7Jjj4BLYeCZV/SddqevCTrtoNPwBKKhO0=",
-      "BlazorDatasheet.Wasm.wasm": "sha256-KQuUM4Wp71eprlsW3pLKf7QJbqTjoDUnRRhqOzkpCCE=",
+      "BlazorDatasheet.Core.wasm": "sha256-6GDNmNO+KTBh1x1SQAqNUsaWZVBdGCDerjT38zNt80k=",
+      "BlazorDatasheet.DataStructures.wasm": "sha256-YrAIR867vclM+EO9KDT9ZQuN9Flgi/4/02/i+1d6biA=",
+      "BlazorDatasheet.Formula.Core.wasm": "sha256-/vbzdw/XfciHXTT8rnDyuau+gjfY3Md4PGAv2iBfpSE=",
+      "BlazorDatasheet.Formula.Functions.wasm": "sha256-qw23TSrFIAkhC5WoJbukhZYw86Pt8H81xtWvLaiaX0A=",
+      "BlazorDatasheet.SharedPages.wasm": "sha256-uteARlnHtUqgqmd7ifPGfBCwFTcLB98kd+8wyLOm4BQ=",
+      "BlazorDatasheet.wasm": "sha256-Pv+erNAeD+N1veeZY9Um+4SNosgYYBYyzz92qX5XJa4=",
+      "BlazorDatasheet.Wasm.wasm": "sha256-aeUpYNUC4x2YhNi9xWFs9dGet1m19LZHnd18H53o2BA=",
       "Microsoft.AspNetCore.Components.wasm": "sha256-Kt+WG/CiDus2TU5Eq70Ym+RtZmCPBg1cNMmB6qSECSo=",
       "Microsoft.AspNetCore.Components.Web.wasm": "sha256-q944OgUp9sog4SvnLs6OL54c/P++M+7Kg2jdDuMODGw=",
       "Microsoft.AspNetCore.Components.WebAssembly.wasm": "sha256-vOYUxJenhpqw4oK5b61FP/mlyRZu3zgVemvtISW29fs=",
