@@ -1,6 +1,6 @@
 ﻿using BlazorDatasheet.DataStructures.Geometry;
 
-namespace BlazorDatasheet.Core;
+namespace BlazorDatasheet.Core.Events;
 
 public class RangeSortedEventArgs
 {
