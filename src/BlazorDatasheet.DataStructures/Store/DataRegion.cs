@@ -23,5 +23,11 @@ public class DataRegion<T> : ISpatialData
         _envelope = Region.ToEnvelope();
     }
 
+    internal void Shift(int dRow, int dCol)
+    {
+        Region.Shift(dRow, dCol);
+        UpdateEnvelope();
+    }
+
     public ref readonly Envelope Envelope => ref _envelope;
 }

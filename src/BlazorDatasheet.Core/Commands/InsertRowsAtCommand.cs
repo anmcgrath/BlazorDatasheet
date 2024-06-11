@@ -26,7 +26,7 @@ internal class InsertRowsAtCommand : IUndoableCommand
         sheet.Validators.Store.InsertRows(_index, _nRows);
         sheet.Cells.InsertRowAt(_index, _nRows);
         sheet.AddRows(_nRows);
-        sheet.ConditionalFormats.InsertRowAt(_index, _nRows);
+        sheet.ConditionalFormats.InsertRowAtImpl(_index, _nRows);
         sheet.Rows.InsertImpl(_index, _nRows);
         return true;
     }

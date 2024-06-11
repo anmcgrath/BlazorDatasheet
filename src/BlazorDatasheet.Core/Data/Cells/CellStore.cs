@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Interfaces;
@@ -6,6 +7,7 @@ using BlazorDatasheet.Core.Validation;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core;
+[assembly: InternalsVisibleTo("BlazorDatasheet.Test")]
 
 namespace BlazorDatasheet.Core.Data.Cells;
 
@@ -116,8 +118,8 @@ public partial class CellStore
     internal void InsertColAt(int col, int nCols, bool? expandNeighboring = null)
     {
         _dataStore.InsertColAt(col, nCols);
-        _formatStore.InsertCols(col, nCols, expandNeighboring);
-        _typeStore.InsertCols(col, nCols, expandNeighboring);
+        _formatStore.InsertCols(col, nCols);
+        _typeStore.InsertCols(col, nCols);
         _formulaStore.InsertColAt(col, nCols);
         _validStore.InsertColAt(col, nCols);
         _mergeStore.InsertCols(col, nCols, false);

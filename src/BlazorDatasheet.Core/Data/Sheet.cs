@@ -111,7 +111,7 @@ public class Sheet
         Editor = new Editor(this);
         Validators = new ValidationManager(this);
         Rows = new RowInfoStore(24, this);
-        Columns = new ColumnInfoStore(105, this);
+        Columns = new ColumnInfoStore(30, this);
         FormulaEngine = new FormulaEngine.FormulaEngine(this);
         ConditionalFormats = new ConditionalFormatManager(this, Cells);
     }
