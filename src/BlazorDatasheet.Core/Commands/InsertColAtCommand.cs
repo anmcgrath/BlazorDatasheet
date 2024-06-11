@@ -25,7 +25,7 @@ public class InsertColAtCommand : IUndoableCommand
         sheet.Validators.Store.InsertCols(_colIndex, _nCols);
         sheet.Cells.InsertColAt(_colIndex, _nCols);
         sheet.AddCols(_nCols);
-        sheet.ConditionalFormats.InsertColAt(_colIndex, _nCols);
+        sheet.ConditionalFormats.InsertColAtImpl(_colIndex, _nCols);
         sheet.Columns.InsertImpl(_colIndex, _nCols);
         return true;
     }

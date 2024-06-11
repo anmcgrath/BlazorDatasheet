@@ -52,4 +52,6 @@ public partial class CellStore
     {
         return _formatStore.GetDataRegions(region);
     }
+
+    internal MergeRegionDataStore<CellFormat> GetFormatStore() => _formatStore;
 }

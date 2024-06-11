@@ -128,7 +128,7 @@ public partial class CellStore
     /// Returns the sparse matrix store that holds the cell data.
     /// </summary>
     /// <returns></returns>
-    public IMatrixDataStore<CellValue> GetCellDataStore()
+    internal IMatrixDataStore<CellValue> GetCellDataStore()
     {
         return _dataStore;
     }

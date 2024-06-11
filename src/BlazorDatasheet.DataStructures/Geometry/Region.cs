@@ -1,4 +1,5 @@
 using BlazorDatasheet.DataStructures.Graph;
+using BlazorDatasheet.DataStructures.References;
 using BlazorDatasheet.DataStructures.Util;
 
 namespace BlazorDatasheet.DataStructures.Geometry;
@@ -517,7 +518,9 @@ public class Region : IRegion
 
     public override string ToString()
     {
-        return $"region from (r{TopLeft.row}, c{TopLeft.col}) to (r{BottomRight.row}, c{BottomRight.col})";
+        var rangeRef = new RangeReference(new CellReference(Top, Left), new CellReference(Bottom, Right));
+        return
+            $"region {rangeRef.ToRefText()} from (r{TopLeft.row}, c{TopLeft.col}) to (r{BottomRight.row}, c{BottomRight.col})";
     }
 
     public bool Equals(IRegion? obj)

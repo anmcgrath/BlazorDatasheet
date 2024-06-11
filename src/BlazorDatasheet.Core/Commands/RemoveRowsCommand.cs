@@ -50,19 +50,12 @@ public class RemoveRowsCommand : IUndoableCommand
 
     public bool Undo(Sheet sheet)
     {
-        sheet.Validators.Store.InsertRows(_rowIndex, _nRowsRemoved, false);
         sheet.Validators.Store.Restore(_validatorRestoreData);
-
-        sheet.Cells.InsertRowAt(_rowIndex, _nRows, false);
         sheet.Cells.Restore(_cellStoreRestoreData);
-
         sheet.Rows.InsertImpl(_rowIndex, _nRowsRemoved);
         sheet.Rows.Restore(_rowInfoStoreRestore);
-
-        sheet.ConditionalFormats.InsertRowAt(_rowIndex, _nRowsRemoved, false);
         sheet.ConditionalFormats.Restore(_cfRestoreData);
-
-        sheet.AddRows();
+        sheet.AddRows(_nRowsRemoved);
 
         sheet.MarkDirty(new RowRegion(_rowIndex, sheet.NumRows));
         return true;

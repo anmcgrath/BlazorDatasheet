@@ -50,29 +50,15 @@ public class RemoveColumnCommand : IUndoableCommand
 
     public bool Undo(Sheet sheet)
     {
-        UndoValidation(sheet);
-
         // Insert column back in and set all the values that we removed
         sheet.AddCols(_nColsRemoved);
-
-        sheet.Cells.InsertColAt(_columnIndex, _nColsRemoved, false);
-        sheet.Cells.Restore(_cellStoreRestoreData);
-
         sheet.Columns.InsertImpl(_columnIndex, _nColsRemoved);
+        sheet.Validators.Store.Restore(_validatorRestoreData);
         sheet.Columns.Restore(_columnInfoRestoreData);
-
-        sheet.ConditionalFormats.InsertColAt(_columnIndex, _nColsRemoved, false);
+        sheet.Cells.Restore(_cellStoreRestoreData);
         sheet.ConditionalFormats.Restore(_cfRestoreData);
-
         sheet.MarkDirty(new ColumnRegion(_columnIndex, sheet.NumCols));
 
         return true;
-    }
-
-
-    private void UndoValidation(Sheet sheet)
-    {
-        sheet.Validators.Store.InsertCols(_columnIndex, _nColsRemoved, false);
-        sheet.Validators.Store.Restore(_validatorRestoreData);
     }
 }

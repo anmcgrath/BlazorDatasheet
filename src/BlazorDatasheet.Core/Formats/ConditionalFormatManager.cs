@@ -143,12 +143,12 @@ public class ConditionalFormatManager
         return initialFormat;
     }
 
-    internal void InsertRowAt(int row, int nRows, bool expandNeighbouring = false)
+    internal void InsertRowAtImpl(int row, int nRows, bool expandNeighbouring = false)
     {
         _appliedFormats.InsertRows(row, nRows, expandNeighbouring);
     }
 
-    internal void InsertColAt(int row, int nRows, bool expandNeighbouring = false)
+    internal void InsertColAtImpl(int row, int nRows, bool expandNeighbouring = false)
     {
         _appliedFormats.InsertCols(row, nRows, expandNeighbouring);
     }
