@@ -204,6 +204,8 @@ public partial class Datasheet : SheetComponentBase
             _sheetLocal.Columns.ColumnInserted += async (_, _) => await RefreshViewport();
             _sheetLocal.Rows.RowRemoved += async (_, _) => await RefreshViewport();
             _sheetLocal.Columns.ColumnRemoved += async (_, _) => await RefreshViewport();
+            _sheetLocal.Rows.RowHeightChanged += async (_, _) => await RefreshViewport();
+            _sheetLocal.Columns.ColumnWidthChanged += async (_, _) => await RefreshViewport();
 
             _cellLayoutProvider = new CellLayoutProvider(_sheetLocal);
             _visualSheet = new VisualSheet(_sheetLocal);
