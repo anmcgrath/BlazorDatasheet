@@ -34,13 +34,13 @@ public interface IMatrixDataStore<T> : IStore<T, MatrixRestoreData<T>>
     /// </summary>
     /// <param name="row">The index of the row that the new row will now be.</param>
     /// <param name="nRows">The number of rows to inser</param>
-    public void InsertRowAt(int row, int nRows);
+    public MatrixRestoreData<T> InsertRowAt(int row, int nRows);
 
     /// <summary>
     /// Inserts a column into the store
     /// </summary>
     /// <param name="col">The index of the column that the new column is inserted AFTER</param>
-    public void InsertColAt(int col, int nCols);
+    public MatrixRestoreData<T> InsertColAt(int col, int nCols);
 
     /// <summary>
     /// Removes the column specified from the store and returns the values that were removed.

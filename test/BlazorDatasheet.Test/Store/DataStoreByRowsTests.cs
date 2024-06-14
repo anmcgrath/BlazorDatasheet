@@ -60,6 +60,31 @@ public class DataStoreByRowsTests
         Assert.AreEqual("D", store.Get(5, 0));
         Assert.AreEqual(default(string), store.Get(6, 0));
     }
+    
+    [Test]
+    public void Remove_Col_Operations_Correct()
+    {
+        IMatrixDataStore<string> store = GetStore<string>();
+        store.Set(0, 0, "A");
+        store.Set(0, 1, "B");
+        store.Set(0, 2, "C");
+        store.Set(0, 3, "D");
+        store.RemoveColAt(0, 1);
+        Assert.AreEqual("B", store.Get(0, 0));
+        Assert.AreEqual("C", store.Get(0, 1));
+        Assert.AreEqual("D", store.Get(0, 2));
+        Assert.AreEqual(default(string), store.Get(0, 3));
+    }
+
+    [Test]
+    public void Remove_Col_Before_Data_Correct()
+    {
+        var store = GetStore<string>();
+        store.Set(0, 1, "B");
+        store.Set(0, 2, "C");
+        store.RemoveColAt(0, 1);
+        store.Get(0, 0).Should().Be("B");
+    }
 
     [Test]
     public void Insert_Row_After_Non_Existing_Operations_Correct()

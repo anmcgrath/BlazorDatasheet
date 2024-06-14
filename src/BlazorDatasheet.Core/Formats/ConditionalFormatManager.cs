@@ -143,35 +143,36 @@ public class ConditionalFormatManager
         return initialFormat;
     }
 
-    internal void InsertRowAtImpl(int row, int nRows, bool expandNeighbouring = false)
+    internal RegionRestoreData<ConditionalFormatAbstractBase> InsertRowAtImpl(int row, int nRows,
+        bool expandNeighbouring = false)
     {
-        _appliedFormats.InsertRows(row, nRows, expandNeighbouring);
+        return _appliedFormats.InsertRows(row, nRows, expandNeighbouring);
     }
 
-    internal void InsertColAtImpl(int row, int nRows, bool expandNeighbouring = false)
+    internal RegionRestoreData<ConditionalFormatAbstractBase> InsertColAtImpl(int row, int nRows,
+        bool expandNeighbouring = false)
     {
-        _appliedFormats.InsertCols(row, nRows, expandNeighbouring);
+        return _appliedFormats.InsertCols(row, nRows, expandNeighbouring);
     }
 
     internal RegionRestoreData<ConditionalFormatAbstractBase> RemoveRowAt(int row, int nRows)
     {
-        var restoreData = _appliedFormats.RemoveRows(row, row + nRows - 1);
-
-        var cfsAffected = restoreData.RegionsAdded
-            .Select(x => x.Data).Concat(restoreData.RegionsRemoved.Select(x => x.Data))
-            .Distinct()
+        var cfsAffected = _appliedFormats
+            .GetData(new RowRegion(row, int.MaxValue))
             .ToList();
+
+        var restoreData = _appliedFormats.RemoveRows(row, row + nRows - 1);
         Prepare(cfsAffected);
         return restoreData;
     }
 
     internal RegionRestoreData<ConditionalFormatAbstractBase> RemoveColAt(int col, int nCols)
     {
-        var restoreData = _appliedFormats.RemoveCols(col, col + nCols - 1);
-        var cfsAffected = restoreData.RegionsAdded
-            .Select(x => x.Data).Concat(restoreData.RegionsRemoved.Select(x => x.Data))
-            .Distinct()
+        var cfsAffected = _appliedFormats
+            .GetData(new ColumnRegion(col, int.MaxValue))
             .ToList();
+
+        var restoreData = _appliedFormats.RemoveCols(col, col + nCols - 1);
         Prepare(cfsAffected);
         return restoreData;
     }

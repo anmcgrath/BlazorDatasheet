@@ -106,7 +106,7 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
     /// <param name="rowIndex"></param>
     /// <param name="nRows"></param>
     /// <param name="expandNeighbouring">Whether to expand the neighbouring values. If null, the value set on the class is used.</param>
-    public void InsertRows(int rowIndex, int nRows, bool? expandNeighbouring = null) =>
+    public RegionRestoreData<T> InsertRows(int rowIndex, int nRows, bool? expandNeighbouring = null) =>
         InsertRowsOrColumnAndShift(rowIndex, nRows, Axis.Row, expandNeighbouring);
 
     /// <summary>
@@ -115,12 +115,12 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
     /// <param name="colIndex"></param>
     /// <param name="nCols"></param>y
     /// <param name="expandNeighbouring">Whether to expand the neighbouring values. If null, the value set on the class is used.</param>
-    public void InsertCols(int colIndex, int nCols, bool? expandNeighbouring = null) =>
+    public RegionRestoreData<T> InsertCols(int colIndex, int nCols, bool? expandNeighbouring = null) =>
         InsertRowsOrColumnAndShift(colIndex, nCols, Axis.Col, expandNeighbouring);
 
-    private void InsertRowsOrColumnAndShift(int index, int nRowsOrCol, Axis axis, bool? expandNeighbouring)
+    private RegionRestoreData<T> InsertRowsOrColumnAndShift(int index, int nRowsOrCol, Axis axis,
+        bool? expandNeighbouring)
     {
-        Console.WriteLine($"Insert row or col {typeof(T)}");
         var expand = expandNeighbouring ?? ExpandWhenInsertAfter;
 
         // As an example for inserting rows, there are three things that can happen
@@ -129,21 +129,26 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
         // 3. Any regions below the index should be shifted down
         var i0 = expand ? index - 1 : index;
         IRegion region = axis == Axis.Col ? new ColumnRegion(i0, index) : new RowRegion(i0, index);
-        var intersecting = GetDataRegions(region);
+        var overlapping = GetDataRegions(region);
         var dataRegionsToAdd = new List<DataRegion<T>>();
+        var regionsAdded = new List<DataRegion<T>>();
+        var regionsRemoved = new List<DataRegion<T>>();
 
-        foreach (var dataRegion in intersecting)
+        foreach (var overlap in overlapping)
         {
-            if (dataRegion.Region.GetLeadingEdgeOffset(axis) == index)
+            if (overlap.Region.GetLeadingEdgeOffset(axis) == index)
                 continue; // we shift in this case, and don't expand
-            var i1 = dataRegion.Region.GetTrailingEdgeOffset(axis);
+            var i1 = overlap.Region.GetTrailingEdgeOffset(axis);
             if (!expand && index > i1)
                 continue;
-            Tree.Delete(dataRegion);
-            dataRegion.Region.Expand(axis == Axis.Row ? Edge.Bottom : Edge.Right, nRowsOrCol);
-            dataRegion.UpdateEnvelope();
-            dataRegionsToAdd.Add(dataRegion);
-            Tree.Delete(dataRegion);
+
+            Tree.Delete(overlap);
+            regionsRemoved.Add(overlap);
+            var expanded = new DataRegion<T>(overlap.Data, overlap.Region.Clone());
+            expanded.Region.Expand(axis == Axis.Row ? Edge.Bottom : Edge.Right, nRowsOrCol);
+            expanded.UpdateEnvelope();
+            regionsAdded.Add(expanded);
+            dataRegionsToAdd.Add(expanded);
         }
 
         // index - 1 because the top of the region has to be above the region to shift it down
@@ -158,6 +163,12 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
         }
 
         Tree.BulkLoad(dataRegionsToAdd);
+        return new RegionRestoreData<T>()
+        {
+            RegionsAdded = regionsAdded,
+            RegionsRemoved = regionsRemoved,
+            Shifts = [new(axis, index, nRowsOrCol)],
+        };
     }
 
     /// <summary>
@@ -195,12 +206,10 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
 
         var overlapping = GetDataRegions(region);
         var newDataToAdd = new List<DataRegion<T>>();
-        // data that has been contracted
-        var contractions = new List<(Edge edge, DataRegion<T> region, int amount, int shiftRow, int shiftCol)>();
+        var dataAdded = new List<DataRegion<T>>();
 
         foreach (var overlap in overlapping)
         {
-            Console.WriteLine($"region {region} overlaps with {overlap.Region}");
             // If the overlapping region is fully contained within the region, remove it.
             if (region.Contains(overlap.Region))
             {
@@ -223,19 +232,24 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
             var intersection = overlap.Region.GetIntersection(region)!;
             // contraction amount in row direction
             var cRow = axis == Axis.Row ? intersection.Height : 0;
-            var sRow = axis == Axis.Row ? Math.Max(end, intersection.Bottom) - start + 1 : 0;
             // contraction amount in col direction
             var cCol = axis == Axis.Col ? intersection.Width : 0;
-            var sCol = axis == Axis.Col ? Math.Max(end, intersection.Right) - start + 1 : 0;
-            var cEdge = axis == Axis.Col ? Edge.Left : Edge.Top;
+            var cEdge = axis == Axis.Col ? Edge.Right : Edge.Bottom;
+            var shift = start - overlap.Region.GetLeadingEdgeOffset(axis);
+            if (shift > 0)
+                shift = 0;
+            var sRow = axis == Axis.Row ? shift : 0;
+            var sCol = axis == Axis.Col ? shift : 0;
 
             Tree.Delete(overlap);
-            overlap.Region.Shift(-sRow, -sCol);
-            overlap.Region.Contract(cEdge, Math.Max(cRow, cCol));
-            overlap.UpdateEnvelope();
-            Tree.Insert(overlap);
+            removed.Add(overlap);
 
-            contractions.Add((cEdge, overlap, Math.Max(cRow, cCol), -sRow, -sCol));
+            var newRegion = new DataRegion<T>(overlap.Data, overlap.Region.Clone());
+            newRegion.Region.Contract(cEdge, Math.Max(cRow, cCol));
+            newRegion.Region.Shift(sRow,sCol);
+            newRegion.UpdateEnvelope();
+            dataAdded.Add(newRegion);
+            newDataToAdd.Add(newRegion);
         }
 
         // shift anything right or below the removed region right/down
@@ -254,11 +268,8 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
         return new RegionRestoreData<T>()
         {
             RegionsRemoved = removed,
-            Shifts = new List<(Axis axis, int start, int shift)>()
-            {
-                (axis, start, -(end - start + 1))
-            },
-            Contractions = contractions
+            RegionsAdded = dataAdded,
+            Shifts = [new(axis, start - 1, -(end - start + 1))],
         };
     }
 
@@ -278,25 +289,6 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
             case Axis.Col:
                 return this.GetDataRegions(new ColumnRegion(rowOrCol + 1, int.MaxValue))
                     .Where(x => x.Region.Left >= rowOrCol + 1);
-        }
-
-        return Enumerable.Empty<DataRegion<T>>();
-    }
-
-    /// <summary>
-    /// Gets data to the right/below or intersecting the given row or column.
-    /// </summary>
-    /// <param name="rowOrCol"></param>
-    /// <param name="axis"></param>
-    /// <returns></returns>
-    private IEnumerable<DataRegion<T>> GetOnOrAfter(int rowOrCol, Axis axis)
-    {
-        switch (axis)
-        {
-            case Axis.Row:
-                return this.GetDataRegions(new RowRegion(rowOrCol, int.MaxValue));
-            case Axis.Col:
-                return this.GetDataRegions(new ColumnRegion(rowOrCol, int.MaxValue));
         }
 
         return Enumerable.Empty<DataRegion<T>>();
@@ -508,20 +500,15 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
 
     public virtual void Restore(RegionRestoreData<T> restoreData)
     {
-        Console.WriteLine($"restoring {typeof(T)}");
-        Console.WriteLine($"Shifts {restoreData.Shifts.Count}");
-        Console.WriteLine($"Contractions {restoreData.Contractions.Count}");
-        Console.WriteLine($"Removed {restoreData.RegionsRemoved.Count}");
-        Console.WriteLine($"Added {restoreData.RegionsAdded.Count}");
         foreach (var shift in restoreData.Shifts)
         {
-            var regionsToShift = GetAfter(shift.start, shift.axis);
+            var shiftDir = Math.Abs(shift.Amount) / shift.Amount;
+            var regionsToShift = GetAfter(shift.Index, shift.Axis);
             foreach (var region in regionsToShift)
             {
                 Tree.Delete(region);
-                var dCol = shift.axis == Axis.Col ? -shift.shift : 0;
-                var dRow = shift.axis == Axis.Row ? -shift.shift : 0;
-                Console.WriteLine($"Shifting {region.Region} by {dRow} {dCol}");
+                var dCol = shift.Axis == Axis.Col ? -shift.Amount : 0;
+                var dRow = shift.Axis == Axis.Row ? -shift.Amount : 0;
                 region.Region.Shift(dRow, dCol);
                 region.UpdateEnvelope();
                 Tree.Insert(region);
@@ -531,15 +518,6 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
         foreach (var added in restoreData.RegionsAdded)
         {
             Tree.Delete(added);
-        }
-
-        foreach (var contraction in restoreData.Contractions)
-        {
-            Tree.Delete(contraction.region);
-            contraction.region.Region.Shift(-contraction.shiftRow, -contraction.shiftCol);
-            contraction.region.Region.Expand(contraction.edge, contraction.amount);
-            contraction.region.UpdateEnvelope();
-            Tree.Insert(contraction.region);
         }
 
         Tree.BulkLoad(restoreData.RegionsRemoved);
