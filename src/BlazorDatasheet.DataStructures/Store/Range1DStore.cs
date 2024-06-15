@@ -82,10 +82,11 @@ public class Range1DStore<T>
     /// Returns the interval after the given position
     /// </summary>
     /// <param name="position"></param>
+    /// <param name="direction"></param>
     /// <returns></returns>
-    public (int position, int end, T? data)? GetNext(int position)
+    public (int position, int end, T? data)? GetNext(int position, int direction = 1)
     {
-        var interval = Intervals.GetNext(position);
+        var interval = Intervals.GetNext(position, direction);
         if (interval == null)
             return null;
 
