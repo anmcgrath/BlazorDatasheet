@@ -70,6 +70,28 @@ public partial class Datasheet : SheetComponentBase
     /// </summary>
     [Parameter]
     public Dictionary<string, CellTypeDefinition> CustomCellTypeDefinitions { get; set; } = new();
+    
+    /// <summary>
+    /// If set to true, the user can remove rows using the context menu.
+    /// </summary>
+    [Parameter] public bool CanUserRemoveRows { get; set; } = true;
+    /// <summary>
+    /// If set to true, the user can remove columns using the context menu.
+    /// </summary>
+    [Parameter] public bool CanUserRemoveCols { get; set; } = true;
+    /// <summary>
+    /// If set to true, the user can insert rows using the context menu.
+    /// </summary>
+    [Parameter] public bool CanUserInsertRows { get; set; } = true;
+    /// <summary>
+    /// If set to true, the user can insert columns using the context menu.
+    /// </summary>
+    [Parameter] public bool CanUserInsertCols { get; set; } = true;
+    /// <summary>
+    /// If set to true, the user can sort regions using the context menu.
+    /// </summary>
+    [Parameter] public bool CanUserSort { get; set; } = true;
+
 
     /// <summary>
     /// Exists so that we can determine whether the sheet has changed

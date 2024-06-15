@@ -13,30 +13,62 @@
         <MenuSection SectionId="0">
             <SheetMenuItem OnClick="() => sheet.Cells.ClearCells(sheet.Selection.Regions)">Clear</SheetMenuItem>
         </MenuSection>
+        
         <SheetMenuDivider/>
 
         @if (sheet.Selection.Regions.Count == 1 && sheet.Selection.ActiveRegion is ColumnRegion c)
         {
-            <SheetMenuItem OnClick="() => sheet.Columns.InsertAt(c.Left, c.Width)">Insert column(s) left</SheetMenuItem>
-            <SheetMenuItem OnClick="() => sheet.Columns.RemoveAt(c.Left, c.Width)">Delete column(s)</SheetMenuItem>
-            <SheetMenuDivider/>
+            @if (CanUserInsertCols)
+            {
+                <SheetMenuItem OnClick="() => sheet.Columns.InsertAt(c.Left, c.Width)">Insert column(s) left</SheetMenuItem>
+            }
+
+            @if (CanUserRemoveCols)
+            {
+                <SheetMenuItem OnClick="() => sheet.Columns.RemoveAt(c.Left, c.Width)">Delete column(s)</SheetMenuItem>
+            }
+
+            @if (CanUserInsertCols || CanUserRemoveCols)
+            {
+                <SheetMenuDivider/>
+            }
         }
 
         @if (sheet.Selection.Regions.Count == 1 && sheet.Selection.ActiveRegion is RowRegion r)
         {
-            <SheetMenuItem OnClick="() => sheet.Rows.InsertRowAt(r.Top, r.Height)">Insert row(s) above</SheetMenuItem>
-            <SheetMenuItem OnClick="() => sheet.Rows.RemoveAt(r.Top, r.Height)">Delete row(s)</SheetMenuItem>
-            <SheetMenuDivider/>
+            @if (CanUserInsertRows)
+            {
+                <SheetMenuItem OnClick="() => sheet.Rows.InsertRowAt(r.Top, r.Height)">Insert row(s) above</SheetMenuItem>
+            }
+
+            @if (CanUserRemoveRows)
+            {
+                <SheetMenuItem OnClick="() => sheet.Rows.RemoveAt(r.Top, r.Height)">Delete row(s)</SheetMenuItem>
+            }
+
+            @if (CanUserInsertRows || CanUserRemoveRows)
+            {
+                <SheetMenuDivider/>
+            }
         }
 
-        <SheetSubMenu Label="Sort">
-            <SheetMenuItem OnClick="() => sheet.SortRange(sheet.Selection.ActiveRegion)">Sort Ascending</SheetMenuItem>
-            <SheetMenuItem OnClick="() => sheet.SortRange(sheet.Selection.ActiveRegion, new List<ColumnSortOptions>() { new ColumnSortOptions(0, false) })">Sort Descending</SheetMenuItem>
-        </SheetSubMenu>
+        @if (CanUserSort)
+        {
+            <SheetSubMenu Label="Sort">
+                <SheetMenuItem OnClick="() => sheet.SortRange(sheet.Selection.ActiveRegion)">Sort Ascending</SheetMenuItem>
+                <SheetMenuItem OnClick="() => sheet.SortRange(sheet.Selection.ActiveRegion, new List<ColumnSortOptions>() { new ColumnSortOptions(0, false) })">Sort Descending</SheetMenuItem>
+            </SheetSubMenu>
+        }
     }
 
 </SheetMenu>
 
 @code {
+
+    [Parameter] public bool CanUserRemoveRows { get; set; } = true;
+    [Parameter] public bool CanUserRemoveCols { get; set; } = true;
+    [Parameter] public bool CanUserInsertRows { get; set; } = true;
+    [Parameter] public bool CanUserInsertCols { get; set; } = true;
+    [Parameter] public bool CanUserSort { get; set; } = true;
 
 }

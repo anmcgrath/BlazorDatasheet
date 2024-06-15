@@ -15,7 +15,6 @@ public class PortalService
 
     public void AddToPortal(string portalTargetId, string datasheetId, RenderFragment fragment)
     {
-        Console.WriteLine($"Adding fragment to portal {portalTargetId} for datasheet {datasheetId}");
         if (_portalTargets.TryGetValue((portalTargetId, datasheetId), out var fragments))
         {
             fragments.Add(fragment);
