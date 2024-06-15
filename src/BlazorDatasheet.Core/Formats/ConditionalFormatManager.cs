@@ -163,6 +163,7 @@ public class ConditionalFormatManager
 
         var restoreData = _appliedFormats.RemoveRows(row, row + nRows - 1);
         Prepare(cfsAffected);
+        
         return restoreData;
     }
 
@@ -182,9 +183,17 @@ public class ConditionalFormatManager
         _appliedFormats.Restore(data);
 
         var cfsAffected = data.RegionsAdded
-            .Select(x => x.Data).Concat(data.RegionsRemoved.Select(x => x.Data))
-            .Distinct()
-            .ToList();
-        Prepare(cfsAffected);
+            .Select(x => x.Data)
+            .Concat(data.RegionsRemoved.Select(x => x.Data));
+
+        foreach (var shift in data.Shifts)
+        {
+            if (shift.Axis == Axis.Col)
+                cfsAffected = cfsAffected.Concat(_appliedFormats.GetData(new ColumnRegion(shift.Index, int.MaxValue)));
+            else
+                cfsAffected = cfsAffected.Concat(_appliedFormats.GetData(new RowRegion(shift.Index, int.MaxValue)));
+        }
+        
+        Prepare(cfsAffected.Distinct().ToList());
     }
 }
