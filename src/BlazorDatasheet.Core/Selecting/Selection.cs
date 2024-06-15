@@ -244,6 +244,20 @@ public class Selection
         }
     }
 
+    public void ConstrainSelectionToSheet()
+    {
+        var constrainedRegions = new List<IRegion>();
+        for (int i = 0; i < _regions.Count; i++)
+        {
+            var intersection = _regions[i].GetIntersection(_sheet.Region);
+            if (intersection != null)
+                constrainedRegions.Add(intersection);
+        }
+        _regions.Clear();
+        _regions.AddRange(constrainedRegions);
+        EmitSelectionChange();
+    }
+
     /// <summary>
     /// Returns true if the position is inside any of the active selections
     /// </summary>
@@ -293,7 +307,7 @@ public class Selection
             else
                 currRow = merge.Bottom;
         }
-        
+
         currRow = _sheet.Rows.GetNextVisibleRow(currRow, rowDir);
 
         // Fix the active region to surrounds of the sheet

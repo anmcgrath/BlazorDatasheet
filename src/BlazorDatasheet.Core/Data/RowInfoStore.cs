@@ -63,7 +63,7 @@ public class RowInfoStore
             HeightsModified = _heightStore.Set(rowStart, rowEnd, height)
         };
 
-        RowHeightChanged?.Invoke(this, new RowHeightChangedEventArgs(rowStart, rowEnd, height));
+        RowHeightChanged?.Invoke(this, new RowHeightChangedEventArgs(rowStart, rowEnd));
         return restoreData;
     }
 
@@ -103,8 +103,8 @@ public class RowInfoStore
         };
 
         RowFormats.ShiftLeft(start, (end - start) + 1);
-        RowRemoved?.Invoke(this, new RowRemovedEventArgs(start, (end - start) + 1));
         _sheet.MarkDirty(new RowRegion(start, _sheet.NumRows));
+        RowRemoved?.Invoke(this, new RowRemovedEventArgs(start, (end - start) + 1));
         return res;
     }
 
@@ -138,7 +138,7 @@ public class RowInfoStore
         var changedVisibility = _visibleRows.Set(start, start + nRows - 1, false);
         var changedCumulativeHeights = _cumulativeHeightStore.Set(start, start + nRows - 1, 0);
 
-        RowHeightChanged?.Invoke(this, new RowHeightChangedEventArgs(start, start + nRows - 1, 0));
+        RowHeightChanged?.Invoke(this, new RowHeightChangedEventArgs(start, start + nRows - 1));
         _sheet.MarkDirty(new RowRegion(start, start + nRows - 1));
         return new RowInfoStoreRestoreData()
         {
@@ -298,7 +298,7 @@ public class RowInfoStore
         RowFormats.AddRange(data.RowFormatRestoreData.IntervalsRemoved);
 
         foreach (var change in data.CumulativeHeightsModified)
-            RowHeightChanged?.Invoke(this, new RowHeightChangedEventArgs(change.start, change.end, change.height));
+            RowHeightChanged?.Invoke(this, new RowHeightChangedEventArgs(change.start, change.end));
     }
 
     public CellFormat? GetFormat(int row)

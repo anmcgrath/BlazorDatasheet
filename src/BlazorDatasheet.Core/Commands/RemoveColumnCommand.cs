@@ -40,11 +40,11 @@ public class RemoveColumnCommand : IUndoableCommand
         if (_nColsRemoved == 0)
             return false;
 
+        sheet.RemoveCols(_nColsRemoved);
         _cellStoreRestoreData = sheet.Cells.RemoveColAt(_columnIndex, _nColsRemoved);
         _columnInfoRestoreData = sheet.Columns.RemoveColumnsImpl(_columnIndex, _columnIndex + _nColsRemoved - 1);
         _validatorRestoreData = sheet.Validators.Store.RemoveCols(_columnIndex, _columnIndex + _nColsRemoved - 1);
         _cfRestoreData = sheet.ConditionalFormats.RemoveColAt(_columnIndex, _nColsRemoved);
-        sheet.RemoveCols(_nColsRemoved);
         return true;
     }
 

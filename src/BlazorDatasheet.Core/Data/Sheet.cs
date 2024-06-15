@@ -107,11 +107,11 @@ public class Sheet
     {
         Cells = new Cells.CellStore(this);
         Commands = new CommandManager(this);
-        Selection = new Selection(this);
         Editor = new Editor(this);
         Validators = new ValidationManager(this);
         Rows = new RowInfoStore(24, this);
         Columns = new ColumnInfoStore(105, this);
+        Selection = new Selection(this);
         FormulaEngine = new FormulaEngine.FormulaEngine(this);
         ConditionalFormats = new ConditionalFormatManager(this, Cells);
     }
