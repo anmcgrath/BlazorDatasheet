@@ -220,6 +220,29 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
         return overlapping;
     }
 
+    /// <summary>
+    /// Returns the next interval after the given position
+    /// </summary>
+    /// <param name="position"></param>
+    /// <returns></returns>
+    public OrderedInterval<T>? GetNext(int position)
+    {
+        if (!_Intervals.Any())
+            return null;
+
+        if (position > End)
+            return null;
+
+        var i0 = _Intervals.Keys.BinarySearchIndexOf(position);
+        if (i0 < 0)
+            i0 = ~i0;
+
+        if (i0 >= _Intervals.Count)
+            return null;
+
+        return _Intervals[_Intervals.Keys[i0]];
+    }
+
     public IList<OrderedInterval<T>> GetAllIntervals() => _Intervals.Values.ToList();
 
     /// <summary>

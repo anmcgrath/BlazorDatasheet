@@ -15,6 +15,7 @@ public class RowInfoStore
     private readonly Range1DStore<string> _headingStore = new(null);
     private readonly CumulativeRange1DStore _heightStore;
     internal readonly MergeableIntervalStore<CellFormat> RowFormats = new();
+    private readonly Range1DStore<bool> _visibleRows = new(true);
 
     /// <summary>
     /// Fired when a row is inserted into the sheet
@@ -92,6 +93,49 @@ public class RowInfoStore
         RowRemoved?.Invoke(this, new RowRemovedEventArgs(start, (end - start) + 1));
         _sheet.MarkDirty(new RowRegion(start, _sheet.NumRows));
         return res;
+    }
+
+    internal void UnhideRowsImpl(int start, int nRows)
+    {
+        _visibleRows.Clear(start, start + nRows - 1);
+    }
+
+    internal void HideRowsImpl(int start, int nRows)
+    {
+        _visibleRows.Set(start, start + nRows - 1, false);
+    }
+
+    public bool IsRowVisible(int row)
+    {
+        return _visibleRows.Get(row);
+    }
+
+    /// <summary>
+    /// Returns the next visible row. If no visible row is found, returns -1.
+    /// </summary>
+    /// <param name="rowIndex"></param>
+    /// <returns></returns>
+    public int GetNextVisibleRow(int rowIndex)
+    {
+        var nextNonVisibleInterval = _visibleRows.GetNext(rowIndex);
+        int index = rowIndex + 1;
+        if (_visibleRows.Get(index))
+            return (index >= _sheet.NumRows ? -1 : index);
+
+        while (nextNonVisibleInterval != null)
+        {
+            index = nextNonVisibleInterval.Value.end + 1;
+
+            if (_visibleRows.Get(index))
+                break;
+
+            nextNonVisibleInterval = _visibleRows.GetNext(index);
+        }
+
+        if (index >= _sheet.NumRows)
+            return -1;
+
+        return index;
     }
 
     /// <summary>

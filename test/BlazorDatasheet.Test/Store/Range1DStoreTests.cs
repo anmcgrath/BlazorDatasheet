@@ -36,4 +36,30 @@ public class Range1DStoreTests
         store.Get(10).Should().Be(r1str);
         store.Get(11).Should().Be(string.Empty);
     }
+
+    [Test]
+    public void Clear_Range_Clears_Data()
+    {
+        var store = new Range1DStore<bool>(true);
+        store.Set(4, 11, false);
+        int clearStart = 6;
+        int clearEnd = 9;
+        store.Clear(clearStart, clearEnd);
+        for(int i = 4; i <= 11; i++)
+        {
+            store.Get(i).Should().Be(i >= clearStart && i <= clearEnd);
+        }
+    }
+
+    [Test]
+    public void Get_Next_Range_Gets_Correct_Interval()
+    {
+        var store = new Range1DStore<bool>(false);
+        store.Set(5, 10, true);
+        store.Set(15, 20, true);
+        store.GetNext(0).Should().BeEquivalentTo((5, 10, true));
+        store.GetNext(7).Should().BeEquivalentTo((15, 20, true));
+        store.GetNext(10).Should().BeEquivalentTo((15, 20, true));
+        store.GetNext(20).Should().BeNull();
+    }
 }

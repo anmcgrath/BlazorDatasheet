@@ -565,6 +565,7 @@ public partial class Datasheet : SheetComponentBase
             return;
 
         var posn = Sheet.Selection.ActiveCellPosition;
+        
         Sheet.Selection.ClearSelections();
         Sheet.Selection.Set(posn.row, posn.col);
         Sheet.Selection.MoveActivePositionByRow(drow);
