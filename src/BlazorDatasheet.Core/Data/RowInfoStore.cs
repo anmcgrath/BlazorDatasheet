@@ -110,29 +110,43 @@ public class RowInfoStore
         return _visibleRows.Get(row);
     }
 
+    public void HideRows(int start, int nRows)
+    {
+        var cmd = new HideRowsCommand(start, nRows);
+        _sheet.Commands.ExecuteCommand(cmd);
+    }
+
     /// <summary>
     /// Returns the next visible row. If no visible row is found, returns -1.
     /// </summary>
     /// <param name="rowIndex"></param>
     /// <returns></returns>
-    public int GetNextVisibleRow(int rowIndex)
+    public int GetNextVisibleRow(int rowIndex, int direction = 1)
     {
-        var nextNonVisibleInterval = _visibleRows.GetNext(rowIndex);
-        int index = rowIndex + 1;
+        if (direction == 0)
+            return rowIndex;
+
+        direction = Math.Abs(direction) / direction;
+
+        var nextNonVisibleInterval = _visibleRows.GetNext(rowIndex, direction);
+        int index = rowIndex + direction;
         if (_visibleRows.Get(index))
-            return (index >= _sheet.NumRows ? -1 : index);
+            return (index >= _sheet.NumRows || index < 0 ? -1 : index);
 
         while (nextNonVisibleInterval != null)
         {
-            index = nextNonVisibleInterval.Value.end + 1;
+            if(direction == 1)
+                index = nextNonVisibleInterval.Value.end + direction;
+            else
+                index = nextNonVisibleInterval.Value.position + direction;
 
             if (_visibleRows.Get(index))
                 break;
 
-            nextNonVisibleInterval = _visibleRows.GetNext(index);
+            nextNonVisibleInterval = _visibleRows.GetNext(index, direction);
         }
 
-        if (index >= _sheet.NumRows)
+        if (index >= _sheet.NumRows || index < 0)
             return -1;
 
         return index;

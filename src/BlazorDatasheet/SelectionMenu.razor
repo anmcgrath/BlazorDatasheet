@@ -27,7 +27,7 @@
         {
             <SheetMenuItem OnClick="() => sheet.Rows.InsertRowAt(r.Top, r.Height)">Insert row(s) above</SheetMenuItem>
             <SheetMenuItem OnClick="() => sheet.Rows.RemoveAt(r.Top, r.Height)">Delete row(s)</SheetMenuItem>
-            <SheetMenuItem OnClick="() => sheet.Rows.SetHeight(r.Top, r.Bottom, 0)">Hide rows</SheetMenuItem>
+            <SheetMenuItem OnClick="() => sheet.Rows.HideRows(r.Top, r.Bottom)">Hide rows</SheetMenuItem>
             <SheetMenuDivider/>
         }
 
