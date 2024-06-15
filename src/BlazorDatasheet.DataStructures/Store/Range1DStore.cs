@@ -54,6 +54,13 @@ public class Range1DStore<T>
         return removed;
     }
 
+    public List<(int start, int end, T? value)> GetOverlapping(int start, int end)
+    {
+        return Intervals.GetIntervals(start, end)
+            .Select(x => (x.Start, x.End, x.Data.Value))
+            .ToList();
+    }
+
     /// <summary>
     /// Inserts empty values into the store and shifts to the right
     /// </summary>

@@ -16,9 +16,9 @@ public class HideRowsCommandTests
         sheet.Rows.IsRowVisible(10).Should().BeFalse();
         sheet.Rows.IsRowVisible(15).Should().BeFalse();
         sheet.Rows.IsRowVisible(19).Should().BeTrue();
-        sheet.Rows.GetHeight(10).Should().Be(0);
-        sheet.Rows.GetHeight(15).Should().Be(0);
-        sheet.Rows.GetHeight(19).Should().Be(sheet.Rows.DefaultHeight);
+        sheet.Rows.GetVisualHeight(10).Should().Be(0);
+        sheet.Rows.GetVisualHeight(15).Should().Be(0);
+        sheet.Rows.GetVisualHeight(19).Should().Be(sheet.Rows.DefaultHeight);
 
         sheet.Rows.GetNextVisibleRow(9).Should().Be(19);
         
@@ -26,6 +26,6 @@ public class HideRowsCommandTests
         sheet.Rows.IsRowVisible(10).Should().BeTrue();
         sheet.Rows.IsRowVisible(15).Should().BeTrue();
         sheet.Rows.IsRowVisible(19).Should().BeTrue();
-        sheet.Rows.GetHeight(10).Should().Be(sheet.Rows.DefaultHeight);
+        sheet.Rows.GetVisualHeight(10).Should().Be(sheet.Rows.DefaultHeight);
     }
 }

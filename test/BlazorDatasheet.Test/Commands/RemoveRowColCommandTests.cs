@@ -143,8 +143,8 @@ public class RemoveRowColCommandTests
         sheet.Rows.SetHeight(2, 200);
         sheet.Rows.RemoveAt(1, 2);
         sheet.Commands.Undo();
-        sheet.Rows.GetHeight(1).Should().Be(100);
-        sheet.Rows.GetHeight(2).Should().Be(200);
+        sheet.Rows.GetVisualHeight(1).Should().Be(100);
+        sheet.Rows.GetVisualHeight(2).Should().Be(200);
     }
 
     [Test]

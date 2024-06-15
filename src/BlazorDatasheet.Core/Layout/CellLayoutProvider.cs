@@ -91,7 +91,7 @@ public class CellLayoutProvider : IGridLayoutProvider
 
     public double ComputeBottomPosition(int row)
     {
-        return ComputeTopPosition(row) + _sheet.Rows.GetHeight(row);
+        return ComputeTopPosition(row) + _sheet.Rows.GetVisualHeight(row);
     }
 
     public double ComputeWidth(int startCol, int colSpan)
