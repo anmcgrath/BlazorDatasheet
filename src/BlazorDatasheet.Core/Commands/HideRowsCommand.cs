@@ -8,6 +8,7 @@ public class HideRowsCommand : IUndoableCommand
     private int _end;
 
     private SetRowHeightCommand _rowHeightCommand = null!;
+    private RowInfoStoreRestoreData _restoreData = null!;
 
     public HideRowsCommand(int start, int end)
     {
@@ -17,7 +18,7 @@ public class HideRowsCommand : IUndoableCommand
 
     public bool Execute(Sheet sheet)
     {
-        sheet.Rows.HideRowsImpl(_start, _end - _start + 1);
+        _restoreData = sheet.Rows.HideRowsImpl(_start, _end - _start + 1);
         _rowHeightCommand = new SetRowHeightCommand(_start, _end, 0);
         _rowHeightCommand.Execute(sheet);
         return true;
@@ -25,7 +26,7 @@ public class HideRowsCommand : IUndoableCommand
 
     public bool Undo(Sheet sheet)
     {
-        sheet.Rows.UnhideRowsImpl(_start, _end - _start + 1);
+        sheet.Rows.Restore(_restoreData);
         _rowHeightCommand.Undo(sheet);
         return true;
     }

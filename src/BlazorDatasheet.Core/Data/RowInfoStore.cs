@@ -95,14 +95,22 @@ public class RowInfoStore
         return res;
     }
 
-    internal void UnhideRowsImpl(int start, int nRows)
+    internal RowInfoStoreRestoreData UnhideRowsImpl(int start, int nRows)
     {
-        _visibleRows.Clear(start, start + nRows - 1);
+        var cleared = _visibleRows.Clear(start, start + nRows - 1);
+        return new RowInfoStoreRestoreData()
+        {
+            VisibilityModified = cleared
+        };
     }
 
-    internal void HideRowsImpl(int start, int nRows)
+    internal RowInfoStoreRestoreData HideRowsImpl(int start, int nRows)
     {
-        _visibleRows.Set(start, start + nRows - 1, false);
+        var changed = _visibleRows.Set(start, start + nRows - 1, false);
+        return new RowInfoStoreRestoreData()
+        {
+            VisibilityModified = changed
+        };
     }
 
     public bool IsRowVisible(int row)
@@ -135,7 +143,7 @@ public class RowInfoStore
 
         while (nextNonVisibleInterval != null)
         {
-            if(direction == 1)
+            if (direction == 1)
                 index = nextNonVisibleInterval.Value.end + direction;
             else
                 index = nextNonVisibleInterval.Value.position + direction;
@@ -221,6 +229,18 @@ public class RowInfoStore
     {
         _heightStore.BatchSet(data.HeightsModified);
         _headingStore.BatchSet(data.HeadingsModifed);
+
+        Console.WriteLine("Restoring row info");
+        foreach (var originalData in data.VisibilityModified)
+        {
+            Console.WriteLine("Restoring visibility of rows");
+            Console.WriteLine($"{originalData.start} - {originalData.end} to {originalData.visibile}");
+            if (originalData.visibile)
+                _visibleRows.Clear(originalData.start, originalData.end);
+            else
+                _visibleRows.Set(originalData.start, originalData.end, false);
+        }
+
         foreach (var added in data.RowFormatRestoreData.IntervalsAdded)
             RowFormats.Clear(added);
         RowFormats.AddRange(data.RowFormatRestoreData.IntervalsRemoved);
@@ -323,7 +343,16 @@ public class RowInfoStore
 
 internal class RowInfoStoreRestoreData
 {
-    public List<(int start, int end, double height)> HeightsModified { get; init; }
-    public List<(int start, int end, string heading)> HeadingsModifed { get; init; }
-    public RowColFormatRestoreData RowFormatRestoreData { get; init; }
+    public List<(int start, int end, double height)> HeightsModified { get; init; } = new();
+    public List<(int start, int end, string heading)> HeadingsModifed { get; init; } = new();
+    public List<(int start, int end, bool visibile)> VisibilityModified { get; init; } = new();
+    public RowColFormatRestoreData RowFormatRestoreData { get; init; } = new();
+
+    public void Merge(RowInfoStoreRestoreData other)
+    {
+        HeightsModified.AddRange(other.HeightsModified);
+        HeadingsModifed.AddRange(other.HeadingsModifed);
+        VisibilityModified.AddRange(other.VisibilityModified);
+        RowFormatRestoreData.Merge(other.RowFormatRestoreData);
+    }
 }
