@@ -186,6 +186,17 @@ public class Sheet
     }
 
     /// <summary>
+    /// Returns whether the cell at position <paramref name="row"/>, <paramref name="col"/> is hidden
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <returns></returns>
+    public bool IsCellVisible(int row, int col)
+    {
+        return Rows.IsRowVisible(row);
+    }
+
+    /// <summary>
     /// The <see cref="SheetRange"/> specified by the string e.g A1, B1:B4, A:B, A:A, 2:4, etc.
     /// Multiple regions can be included by separating them with a ","
     /// </summary>

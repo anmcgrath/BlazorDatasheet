@@ -399,6 +399,9 @@ public partial class Datasheet : SheetComponentBase
         if (cell.Format.IsReadOnly == true)
             return;
 
+        if (!cell.IsVisible)
+            return;
+
         var softEdit = mode == EditEntryMode.Key || mode == EditEntryMode.None || cell.Value == null;
 
         Sheet.Editor.BeginEdit(row, col, softEdit, mode, entryChar);
