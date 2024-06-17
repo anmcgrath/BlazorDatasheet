@@ -133,6 +133,7 @@ public class Sheet
     internal void RemoveCols(int nCols = 1)
     {
         NumCols -= nCols;
+        Selection.ConstrainSelectionToSheet();
     }
 
     #endregion
@@ -147,6 +148,7 @@ public class Sheet
     internal void RemoveRows(int nRows)
     {
         NumRows -= nRows;
+        Selection.ConstrainSelectionToSheet();
     }
 
     #endregion

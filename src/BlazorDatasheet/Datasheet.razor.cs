@@ -322,10 +322,7 @@ public partial class Datasheet : SheetComponentBase
         // scroll container, then update the viewport to include overflows
         var vInfo =
             await _virtualizer.InvokeAsync<ViewportScrollInfo>("getViewportInfo", _wholeSheetDiv);
-        
-        Console.WriteLine(vInfo.ScrollTop);
-        Console.WriteLine(_cellLayoutProvider.TotalHeight);
-        
+
         var newViewport = _cellLayoutProvider
             .GetViewPort(
                 vInfo.ScrollLeft,
