@@ -59,6 +59,7 @@ public class VisualSheet
 
         var dirtyRows = newRegions
             .SelectMany(x => Enumerable.Range(x.Top, x.Height))
+            .Concat(oldRegions.SelectMany(x => Enumerable.Range(x.Top, x.Height)))
             .ToHashSet();
 
         Invalidated?.Invoke(this,
