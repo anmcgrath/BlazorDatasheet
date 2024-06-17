@@ -158,6 +158,8 @@
 
             _sheet.Selection.SelectionChanged += OnSelectionChanged;
             _sheet.Selection.SelectingChanged += OnSelectingChanged;
+            _sheet.Rows.RowRemoved += (_, _) => UpdateHeadingHighlights();
+            _sheet.Columns.ColumnRemoved += (_, _) => UpdateHeadingHighlights();
             _sheet.Editor.EditBegin += (_, _) => StateHasChanged();
         }
     }
@@ -195,9 +197,9 @@
         foreach (var region in Sheet.Selection.Regions)
         {
             var bounded = region.GetIntersection(Sheet.Region);
-            if(bounded == null)
+            if (bounded == null)
                 continue;
-            
+
             _rowHighlights.Set(bounded.Top, bounded.Bottom, true);
             _colHighlights.Set(bounded.Left, bounded.Right, true);
         }
@@ -207,7 +209,7 @@
             var bounded = Sheet.Selection.SelectingRegion!.GetIntersection(Sheet.Region);
             if (bounded == null)
                 return;
-            
+
             _rowHighlights.Set(bounded.Top, bounded.Bottom, true);
             _colHighlights.Set(bounded.Left, bounded.Right, true);
         }
