@@ -20,7 +20,12 @@
         @onmouseout="() => IsMouseInsideSheet = false">
 
         <!-- Register Menus -->
-        <SelectionMenu/>
+        <SelectionMenu
+            CanUserSort="@CanUserSort"
+            CanUserInsertCols="@CanUserInsertCols"
+            CanUserInsertRows="@CanUserInsertRows"
+            CanUserRemoveCols="@CanUserRemoveCols"
+            CanUserRemoveRows="@CanUserRemoveRows"/>
 
 
         <SheetMenuTarget
@@ -37,7 +42,7 @@
                 Sheet="Sheet"
                 VisualSheet="_visualSheet"
                 CellLayoutProvider="_cellLayoutProvider"/>
-            
+
             <div>
 
                 <div style="display: flex; flex-direction: column; justify-content: start;">
@@ -107,8 +112,8 @@
                             <tr class="collapsed-row">
                                 @if (ShowRowHeadings)
                                 {
-                                    <td style="background: red; z-index: 4;" 
-                                        class="@(StickyHeadings?"row-sticky":"")">
+                                    <td style="background: red; z-index: 4;"
+                                        class="@(StickyHeadings ? "row-sticky" : "")">
                                         <div style="position: absolute; overflow: visible; display: block;">
                                             <PortalTarget TargetId="Row" DatasheetId="@Id"/>
                                         </div>
