@@ -263,6 +263,8 @@
         var region = Sheet.Region.GetIntersection(Sheet.Selection.ActiveRegion ?? Sheet.Selection.SelectingRegion);
         if (region == null)
             return "display:none;";
+        
+        Console.WriteLine(region);
 
         var x = CellLayoutProvider.ComputeLeftPosition(region.Right + 1);
         var y = CellLayoutProvider.ComputeTopPosition(region.Bottom + 1);
