@@ -69,7 +69,7 @@ public class CumulativeRange1DStore : Range1DStore<double>
             ClearCumulativeData(index);
         }
 
-        var intervals = _intervals.GetIntervals(position, _intervals.End);
+        var intervals = Intervals.GetIntervals(position, Intervals.End);
         foreach (var interval in intervals)
         {
             var existingCumEnd = _cumulativeValuesAtEnd.Any();
@@ -139,10 +139,10 @@ public class CumulativeRange1DStore : Range1DStore<double>
     /// <returns></returns>
     public double GetCumulative(int position)
     {
-        if (!_intervals.Any())
+        if (!Intervals.Any())
             return position * Default;
 
-        if (position > _intervals.End)
+        if (position > Intervals.End)
             return _cumulativeValuesAtEnd.Last() + (position - _storedPositionEnds.Last() - 1) * Default;
 
         var indexStart = _storedPositionStarts.BinarySearchIndexOf(position);
@@ -151,7 +151,7 @@ public class CumulativeRange1DStore : Range1DStore<double>
 
         // if inside an overlapping interval, calculate the cumulative by seeing how far from the start it is
         // and the cell size in the interval
-        var overlapping = this._intervals.GetIntervals(position, position).FirstOrDefault();
+        var overlapping = this.Intervals.GetIntervals(position, position).FirstOrDefault();
         if (overlapping != null)
         {
             var startPosnIndex = _storedPositionStarts.BinarySearchIndexOf(overlapping.Start);
@@ -226,7 +226,7 @@ public class CumulativeRange1DStore : Range1DStore<double>
         if (_cumulativeValuesAtStart[searchIndexStart - 1] == _cumulativeValuesAtEnd[searchIndexStart - 1])
             return _storedPositionStarts[searchIndexStart - 1];
 
-        var oi = _intervals.Get(_storedPositionStarts[searchIndexStart - 1]);
+        var oi = Intervals.Get(_storedPositionStarts[searchIndexStart - 1]);
         return _storedPositionStarts[searchIndexStart - 1] +
                (int)((cumulative - _cumulativeValuesAtStart[searchIndexStart - 1]) / oi.Value);
     }

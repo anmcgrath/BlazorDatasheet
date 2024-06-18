@@ -7,13 +7,13 @@ namespace BlazorDatasheet.DataStructures.Store;
 /// </summary>
 public class Range1DStore<T>
 {
-    protected readonly MergeableIntervalStore<OverwritingValue<T>> _intervals;
+    protected readonly MergeableIntervalStore<OverwritingValue<T>> Intervals;
     private readonly T? _defaultIfNotFound;
 
     public Range1DStore(T? defaultIfNotFound)
     {
         _defaultIfNotFound = defaultIfNotFound;
-        _intervals = new MergeableIntervalStore<OverwritingValue<T>>(new OverwritingValue<T>(defaultIfNotFound));
+        Intervals = new MergeableIntervalStore<OverwritingValue<T>>(new OverwritingValue<T>(defaultIfNotFound));
     }
 
     /// <summary>
@@ -25,7 +25,7 @@ public class Range1DStore<T>
     /// <returns></returns>
     public virtual List<(int start, int end, T value)> Set(int start, int end, T value)
     {
-        var modified = _intervals.Add(start, end, new OverwritingValue<T>(value));
+        var modified = Intervals.Add(start, end, new OverwritingValue<T>(value));
         return modified.Select(x => (x.Start, x.End, x.Data.Value)).ToList();
     }
 
@@ -49,9 +49,16 @@ public class Range1DStore<T>
     /// <returns></returns>
     public virtual List<(int start, int end, T value)> Delete(int start, int end)
     {
-        var removed = _intervals.Clear(start, end).Select(x => (x.Start, x.End, x.Data.Value)).ToList();
-        _intervals.ShiftLeft(start, (end - start) + 1);
+        var removed = Intervals.Clear(start, end).Select(x => (x.Start, x.End, x.Data.Value)).ToList();
+        Intervals.ShiftLeft(start, (end - start) + 1);
         return removed;
+    }
+
+    public List<(int start, int end, T? value)> GetOverlapping(int start, int end)
+    {
+        return Intervals.GetIntervals(start, end)
+            .Select(x => (x.Start, x.End, x.Data.Value))
+            .ToList();
     }
 
     /// <summary>
@@ -61,12 +68,12 @@ public class Range1DStore<T>
     /// <param name="n"></param>
     public virtual void InsertAt(int start, int n)
     {
-        _intervals.ShiftRight(start, n);
+        Intervals.ShiftRight(start, n);
     }
 
     public T? Get(int position)
     {
-        var val = _intervals.Get(position);
+        var val = Intervals.Get(position);
         if (val == null)
             return _defaultIfNotFound;
         return val.Value;
@@ -78,23 +85,48 @@ public class Range1DStore<T>
             this.Set(d.start, d.end, d.data);
     }
 
+    /// <summary>
+    /// Returns the interval after the given position
+    /// </summary>
+    /// <param name="position"></param>
+    /// <param name="direction"></param>
+    /// <returns></returns>
+    public (int position, int end, T? data)? GetNext(int position, int direction = 1)
+    {
+        var interval = Intervals.GetNext(position, direction);
+        if (interval == null)
+            return null;
+
+        return (interval.Start, interval.End, interval.Data.Value);
+    }
+
     public List<(int start, int end, T? data)> GetAllIntervals()
     {
-        return _intervals.GetAllIntervals().Select(x => (x.Start, x.End, x.Data.Value)).ToList();
+        return Intervals.GetAllIntervals().Select(x => (x.Start, x.End, x.Data.Value)).ToList();
     }
 
     public (int start, int end, T? data) GetInterval(int position)
     {
-        var interval = _intervals.GetIntervals(new OrderedInterval(position, position)).FirstOrDefault();
+        var interval = Intervals.GetIntervals(new OrderedInterval(position, position)).FirstOrDefault();
         if (interval == null)
             return (-1, -1, _defaultIfNotFound);
 
         return (interval.Start, interval.End, interval.Data.Value);
     }
 
+    /// <summary>
+    /// Removes the data between the given positions but does not shift the remaining data
+    /// </summary>
+    /// <param name="start"></param>
+    /// <param name="end"></param>
+    public List<(int start, int end, T? value)> Clear(int start, int end)
+    {
+        return Intervals.Clear(start, end).Select(x => (x.Start, x.End, x.Data.Value)).ToList();
+    }
+
     public void Clear()
     {
-        this._intervals.Clear();
+        this.Intervals.Clear();
     }
 }
 

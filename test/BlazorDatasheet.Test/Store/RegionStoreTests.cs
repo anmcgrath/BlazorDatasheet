@@ -147,13 +147,59 @@ public class RegionStoreTests
     }
 
     [Test]
+    public void Delete_Row_Before_Data_Restores_Correctly()
+    {
+        var store = new RegionDataStore<bool>();
+        var restore1 = store.Add(new Region(1, 1), true);
+        var restoreData = store.RemoveRows(0, 1);
+        store.Restore(restoreData);
+        store.GetData(1, 1).Should().BeEquivalentTo([true]);
+        store.Restore(restore1);
+        store.GetAllDataRegions().Should().BeEmpty();
+    }
+
+    [Test]
     public void Insert_Col_At_Same_Col_As_Data_Shifts_Right()
     {
         var store = new RegionDataStore<int>();
         store.Add(new Region(0, 0), -1);
-        store.InsertCols(0, 1);
+        var restore = store.InsertCols(0, 1);
         store.GetData(0, 0).Should().BeEmpty();
         store.GetData(0, 1).Should().ContainSingle(x => x == -1);
+        store.Restore(restore);
+        store.GetData(0, 0).Should().BeEquivalentTo([-1]);
+    }
+
+    [Test]
+    public void Delete_First_Col_Of_region_Restores()
+    {
+        var store = new RegionDataStore<int>();
+        var r = new Region(1, 5, 1, 5);
+        store.Add(r, 1);
+        var restoreData = store.RemoveCols(1, 1);
+        store.GetAllDataRegions()
+            .Select(x => x.Region)
+            .Should().BeEquivalentTo([new Region(1, 5, 1, 4)]);
+        store.Restore(restoreData);
+        store.GetAllDataRegions()
+            .Select(x => x.Region)
+            .Should().BeEquivalentTo([r]);
+    }
+    
+    [Test]
+    public void Delete_First_Cols_From_Behind_region_Restores()
+    {
+        var store = new RegionDataStore<int>();
+        var r = new Region(1, 5, 1, 5);
+        store.Add(r, 1);
+        var restoreData = store.RemoveCols(0, 1);
+        store.GetAllDataRegions()
+            .Select(x => x.Region)
+            .Should().BeEquivalentTo([new Region(1, 5, 0, 3)]);
+        store.Restore(restoreData);
+        store.GetAllDataRegions()
+            .Select(x => x.Region)
+            .Should().BeEquivalentTo([r]);
     }
 
     [Test]
@@ -195,7 +241,7 @@ public class RegionStoreTests
         subStore.GetData(3, 1).Should().BeEquivalentTo(new int[] { 1 });
         subStore.GetData(4, 2).Should().BeEquivalentTo(new int[] { 2 });
     }
-    
+
     [Test]
     public void Get_Sub_Store_Gets_Sub_Storage_Works_When_Resetting_Indices()
     {

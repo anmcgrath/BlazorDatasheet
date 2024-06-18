@@ -110,7 +110,7 @@
     box-shadow: 0 4px 6px -6px var(--shadow-overlay-color);
     position: sticky;
     top: 0;
-    z-index: 2;
+    z-index: 3;
 }
 
 .col-nonsticky {
@@ -119,7 +119,7 @@
 
 .row-sticky {
     position: sticky;
-    z-index: 2;
+    z-index: 3;
     left: 0;
 }
 
@@ -133,7 +133,7 @@
 }
 
 .col-head {
-    background: var(--row-header-bg-color)
+    background: var(--row-header-bg-color);
 }
 
 .col-head :hover {
@@ -152,10 +152,10 @@
     background: var(--active-header-bg-color) !important;
 }
 
-.collapsed-row > th, .collapsed-row > tr, .collapsed-row > td{
+.collapsed-row > th, .collapsed-row > tr, .collapsed-row > td {
     padding: 0;
     margin: 0;
-    border:0;
+    border: 0;
     border-spacing: 0;
 }
 
@@ -180,6 +180,34 @@
 }
 
 .editor-overlay {
-    box-shadow: 0 0 4px var(--shadow-overlay-color);
     background: var(--sheet-bg-color);
+    box-shadow: 0 0 4px var(--shadow-overlay-color);
+}
+
+.highlight-input {
+    outline: 0 solid transparent;
+    color: transparent;
+    caret-color: var(--sheet-foreground-color);
+    -webkit-user-modify: read-write-plaintext-only;
+}
+
+.highlight-input:focus {
+    outline: 0 solid transparent;
+}
+
+.highlight-input, .highlight-result {
+    height: 100%;
+    min-width: 100%;
+    display: inline-block;
+    position: absolute;
+    padding: 1px 4px;
+    top: 0;
+    left: 0;
+    white-space: pre;
+    z-index: 2;
+}
+
+.highlight-result {
+    pointer-events: none;
+    background: inherit;
 }

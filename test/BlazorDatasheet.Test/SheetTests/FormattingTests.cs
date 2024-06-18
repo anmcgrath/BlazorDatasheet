@@ -1,4 +1,5 @@
 using System.Linq;
+using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -165,6 +166,23 @@ public class FormattingTests
     }
 
     [Test]
+    public void Insert_Row_Or_Col_Before_Format_Shifts_Format()
+    {
+        var f1 = new CellFormat() { BackgroundColor = "red" };
+        _sheet.SetFormat(new Region(2, 2), f1);
+        _sheet.Columns.InsertAt(0);
+        _sheet.Rows.InsertRowAt(0);
+        _sheet.GetFormat(2, 2)?.BackgroundColor?.Should().BeNullOrEmpty();
+        _sheet.GetFormat(3, 3)?.BackgroundColor.Should().Be("red");
+
+        _sheet.Commands.Undo();
+        _sheet.Commands.Undo();
+
+        _sheet.GetFormat(2, 2)?.BackgroundColor.Should().Be("red");
+        _sheet.GetFormat(3, 3)?.BackgroundColor?.Should().BeNullOrEmpty();
+    }
+
+    [Test]
     public void Set_Left_Border_Sets_Cell_To_Lefts_Right_Border()
     {
         _sheet.SetFormat(new Region(1, 2),
@@ -224,5 +242,36 @@ public class FormattingTests
         _sheet.Commands.Undo();
         _sheet.Commands.Undo();
         _sheet.GetFormat(0, 0)?.BackgroundColor.Should().Be(null);
+    }
+
+    [Test]
+    public void Delete_Multiple_Cols_Inside_Format_And_Undo_Resets_Format()
+    {
+        _sheet.SetFormat(new Region(3, 5, 0, 5), new CellFormat() { BackgroundColor = "red" });
+        var existingRegions = _sheet.Cells.GetFormatStore().GetAllDataRegions()
+            .Select(x => x.Region.Clone())
+            .ToList();
+
+        var cmd = new RemoveColumnCommand(0, 2);
+        cmd.Execute(_sheet);
+        cmd.Undo(_sheet);
+
+        var regionsAfterUndo = _sheet.Cells.GetFormatStore().GetAllDataRegions().Select(x => x.Region.Clone())
+            .ToList();
+
+        regionsAfterUndo.Should().BeEquivalentTo(existingRegions);
+    }
+
+    [Test]
+    public void Insert_Col_Into_Format_Expands_Format()
+    {
+        _sheet.SetFormat(new Region(0, 0, 0, 1), new CellFormat() { BackgroundColor = "red" });
+        _sheet.Columns.InsertAt(1);
+        _sheet.GetFormat(0, 2)?.BackgroundColor.Should().Be("red");
+        _sheet.Commands.Undo();
+        _sheet.Commands.Undo();
+
+        // undo all the way (before setformat) should clear the format.
+        _sheet.Cells.GetFormatStore().Any().Should().BeFalse();
     }
 }

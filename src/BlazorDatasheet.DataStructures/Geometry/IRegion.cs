@@ -187,7 +187,7 @@ public interface IRegion : IEquatable<IRegion>
 
     /// <summary>
     /// Returns the position of the trailing edge.
-    /// The trailing edge is the first edge for the particular reading order
+    /// The trailing edge is the last edge for the particular reading order
     /// The position is either row or col depending on the axis
     /// </summary>
     /// <param name="axis"></param>

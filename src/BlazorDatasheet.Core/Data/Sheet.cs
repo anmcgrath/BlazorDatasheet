@@ -107,11 +107,11 @@ public class Sheet
     {
         Cells = new Cells.CellStore(this);
         Commands = new CommandManager(this);
-        Selection = new Selection(this);
         Editor = new Editor(this);
         Validators = new ValidationManager(this);
         Rows = new RowInfoStore(24, this);
         Columns = new ColumnInfoStore(105, this);
+        Selection = new Selection(this);
         FormulaEngine = new FormulaEngine.FormulaEngine(this);
         ConditionalFormats = new ConditionalFormatManager(this, Cells);
     }
@@ -133,6 +133,7 @@ public class Sheet
     internal void RemoveCols(int nCols = 1)
     {
         NumCols -= nCols;
+        Selection.ConstrainSelectionToSheet();
     }
 
     #endregion
@@ -147,6 +148,7 @@ public class Sheet
     internal void RemoveRows(int nRows)
     {
         NumRows -= nRows;
+        Selection.ConstrainSelectionToSheet();
     }
 
     #endregion
@@ -183,6 +185,17 @@ public class Sheet
     public SheetRange Range(IRegion region)
     {
         return new SheetRange(this, region);
+    }
+
+    /// <summary>
+    /// Returns whether the cell at position <paramref name="row"/>, <paramref name="col"/> is hidden
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <returns></returns>
+    public bool IsCellVisible(int row, int col)
+    {
+        return Rows.IsRowVisible(row);
     }
 
     /// <summary>

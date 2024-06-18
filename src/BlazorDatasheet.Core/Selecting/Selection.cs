@@ -48,14 +48,14 @@ public class Selection
     /// <summary>
     /// Fired when the current selection changes
     /// </summary>
-    public event EventHandler<IEnumerable<IRegion>> SelectionChanged;
+    public event EventHandler<IEnumerable<IRegion>>? SelectionChanged;
 
     /// <summary>
     /// Fired when the current selecting region changes
     /// </summary>
-    public event EventHandler<IRegion?> SelectingChanged;
+    public event EventHandler<IRegion?>? SelectingChanged;
 
-    public event EventHandler<CellsSelectedEventArgs> CellsSelected;
+    public event EventHandler<CellsSelectedEventArgs>? CellsSelected;
 
     public Selection(Sheet sheet)
     {
@@ -244,6 +244,20 @@ public class Selection
         }
     }
 
+    public void ConstrainSelectionToSheet()
+    {
+        var constrainedRegions = new List<IRegion>();
+        for (int i = 0; i < _regions.Count; i++)
+        {
+            var intersection = _regions[i].GetIntersection(_sheet.Region);
+            if (intersection != null)
+                constrainedRegions.Add(intersection);
+        }
+        _regions.Clear();
+        _regions.AddRange(constrainedRegions);
+        EmitSelectionChange();
+    }
+
     /// <summary>
     /// Returns true if the position is inside any of the active selections
     /// </summary>
@@ -278,18 +292,23 @@ public class Selection
         if (ActiveRegion == null || rowDir == 0)
             return;
 
+        rowDir = Math.Abs(rowDir) / rowDir;
+
+        var currRow = ActiveCellPosition.row;
+        var currCol = ActiveCellPosition.col;
+
         // If it's currently inside a merged cell, find where it should next move to
-        var merge = _sheet.Cells.GetMerge(ActiveCellPosition.row, ActiveCellPosition.col);
+        var merge = _sheet.Cells.GetMerge(currRow, currCol);
         if (merge != null)
         {
-            // Move multiple rows if the current position is on the edge away
-            // from the movement direction.
-            if (rowDir == 1 && merge.Top == ActiveCellPosition.row ||
-                rowDir == -1 && merge.Bottom == ActiveCellPosition.row)
-            {
-                rowDir *= merge.Height;
-            }
+            // move the active row position to the edge of the current merged cell
+            if (rowDir == -1)
+                currRow = merge.Top;
+            else
+                currRow = merge.Bottom;
         }
+
+        currRow = _sheet.Rows.GetNextVisibleRow(currRow, rowDir);
 
         // Fix the active region to surrounds of the sheet
         var activeRegionFixed = ActiveRegion.GetIntersection(_sheet.Region);
@@ -303,7 +322,7 @@ public class Selection
             // We end up with a new region of area 1 (or the size of the merged cell it is not on)
             _regions.Clear();
 
-            var offsetPosn = new CellPosition(ActiveCellPosition.row + rowDir, ActiveCellPosition.col);
+            var offsetPosn = new CellPosition(currRow, currCol);
             offsetPosn = _sheet.Region.GetConstrained(offsetPosn);
             var newRegion = new Region(offsetPosn.row, offsetPosn.col);
             newRegion = ExpandRegionOverMerged(newRegion) as Region;
@@ -316,8 +335,8 @@ public class Selection
 
         // Move the posn and attempt to bring into either the next region
         // or the next cell in the region
-        var newRow = ActiveCellPosition.row + rowDir;
-        var newCol = ActiveCellPosition.col;
+        var newRow = currRow;
+        var newCol = currCol;
         if (newRow > activeRegionFixed.Bottom)
         {
             newCol++;

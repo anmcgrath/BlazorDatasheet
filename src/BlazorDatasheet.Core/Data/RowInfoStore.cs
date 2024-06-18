@@ -12,9 +12,17 @@ public class RowInfoStore
 {
     private readonly Sheet _sheet;
     public double DefaultHeight { get; }
+
     private readonly Range1DStore<string> _headingStore = new(null);
-    private readonly CumulativeRange1DStore _heightStore;
+
+    // stores and manages the cumulative heights of the rows
+    private readonly CumulativeRange1DStore _cumulativeHeightStore;
+
+    //  stores the individual row heights. This may be different to cumulative,
+    // since cumulative includes 0 heights when rows are invisible.
+    private readonly Range1DStore<double> _heightStore;
     internal readonly MergeableIntervalStore<CellFormat> RowFormats = new();
+    private readonly Range1DStore<bool> _visibleRows = new(true);
 
     /// <summary>
     /// Fired when a row is inserted into the sheet
@@ -35,7 +43,8 @@ public class RowInfoStore
     {
         _sheet = sheet;
         DefaultHeight = defaultHeight;
-        _heightStore = new CumulativeRange1DStore(defaultHeight);
+        _cumulativeHeightStore = new CumulativeRange1DStore(defaultHeight);
+        _heightStore = new Range1DStore<double>(defaultHeight);
     }
 
     /// <summary>
@@ -46,11 +55,15 @@ public class RowInfoStore
     /// <param name="rowEnd"></param>
     /// <param name="height"></param>
     /// <returns></returns>
-    internal List<(int start, int end, double width)> SetRowHeightsImpl(int rowStart, int rowEnd, double height)
+    internal RowInfoStoreRestoreData SetRowHeightsImpl(int rowStart, int rowEnd, double height)
     {
-        var restoreData = _heightStore.Set(rowStart, rowEnd, height);
-        RowHeightChanged?.Invoke(this, new RowHeightChangedEventArgs(rowStart, rowEnd, height));
-        _sheet.MarkDirty(new RowRegion(rowStart, rowEnd));
+        var restoreData = new RowInfoStoreRestoreData()
+        {
+            CumulativeHeightsModified = _cumulativeHeightStore.Set(rowStart, rowEnd, height),
+            HeightsModified = _heightStore.Set(rowStart, rowEnd, height)
+        };
+
+        RowHeightChanged?.Invoke(this, new RowHeightChangedEventArgs(rowStart, rowEnd));
         return restoreData;
     }
 
@@ -80,6 +93,7 @@ public class RowInfoStore
     {
         var res = new RowInfoStoreRestoreData()
         {
+            CumulativeHeightsModified = _cumulativeHeightStore.Delete(start, end),
             HeightsModified = _heightStore.Delete(start, end),
             HeadingsModifed = _headingStore.Delete(start, end),
             RowFormatRestoreData = new RowColFormatRestoreData()
@@ -89,9 +103,102 @@ public class RowInfoStore
         };
 
         RowFormats.ShiftLeft(start, (end - start) + 1);
-        RowRemoved?.Invoke(this, new RowRemovedEventArgs(start, (end - start) + 1));
         _sheet.MarkDirty(new RowRegion(start, _sheet.NumRows));
+        RowRemoved?.Invoke(this, new RowRemovedEventArgs(start, (end - start) + 1));
         return res;
+    }
+
+    internal RowInfoStoreRestoreData UnhideRowsImpl(int start, int nRows)
+    {
+        var restoreData = new RowInfoStoreRestoreData()
+        {
+            VisibilityModified = _visibleRows.Clear(start, start + nRows - 1)
+        };
+        // We need to set the heights in the cumulative store to the stored physical rows
+        // heights, since the cumulative store will have 0 heights for hidden rows.
+        var heights = _heightStore.GetOverlapping(start, start + nRows - 1);
+        // first set cumulative heights in the range to default
+        restoreData.CumulativeHeightsModified.AddRange(
+            _cumulativeHeightStore.Set(start, start + nRows, DefaultHeight)
+        );
+
+        foreach (var height in heights)
+        {
+            restoreData.CumulativeHeightsModified.AddRange(_cumulativeHeightStore.Set(height.start, height.end,
+                height.value));
+        }
+
+        _sheet.MarkDirty(new RowRegion(start, start + nRows - 1));
+
+        return restoreData;
+    }
+
+    internal RowInfoStoreRestoreData HideRowsImpl(int start, int nRows)
+    {
+        var changedVisibility = _visibleRows.Set(start, start + nRows - 1, false);
+        var changedCumulativeHeights = _cumulativeHeightStore.Set(start, start + nRows - 1, 0);
+
+        RowHeightChanged?.Invoke(this, new RowHeightChangedEventArgs(start, start + nRows - 1));
+        _sheet.MarkDirty(new RowRegion(start, start + nRows - 1));
+        return new RowInfoStoreRestoreData()
+        {
+            VisibilityModified = changedVisibility,
+            CumulativeHeightsModified = changedCumulativeHeights
+        };
+    }
+
+    public bool IsRowVisible(int row)
+    {
+        return _visibleRows.Get(row);
+    }
+
+    public void HideRows(int start, int nRows)
+    {
+        var cmd = new HideRowsCommand(start, nRows);
+        _sheet.Commands.ExecuteCommand(cmd);
+    }
+
+    public void UnhideRows(int start, int nRows)
+    {
+        var cmd = new UnhideRowsCommand(start, nRows);
+        _sheet.Commands.ExecuteCommand(cmd);
+    }
+
+
+    /// <summary>
+    /// Returns the next visible row. If no visible row is found, returns -1.
+    /// </summary>
+    /// <param name="rowIndex"></param>
+    /// <returns></returns>
+    public int GetNextVisibleRow(int rowIndex, int direction = 1)
+    {
+        if (direction == 0)
+            return rowIndex;
+
+        direction = Math.Abs(direction) / direction;
+
+        var nextNonVisibleInterval = _visibleRows.GetNext(rowIndex, direction);
+        int index = rowIndex + direction;
+        if (_visibleRows.Get(index))
+            return (index >= _sheet.NumRows || index < 0 ? -1 : index);
+
+        while (nextNonVisibleInterval != null)
+        {
+            if (direction == 1)
+                index = nextNonVisibleInterval.Value.end + direction;
+            else
+                index = nextNonVisibleInterval.Value.position + direction;
+
+            if (_visibleRows.Get(index))
+                break;
+
+            nextNonVisibleInterval = _visibleRows.GetNext(index, direction);
+        }
+
+        if (index >= _sheet.NumRows || index < 0)
+            return -1;
+
+        return index;
     }
 
     /// <summary>
@@ -101,6 +208,7 @@ public class RowInfoStore
     /// <param name="n"></param>
     internal void InsertImpl(int start, int n)
     {
+        _cumulativeHeightStore.InsertAt(start, n);
         _heightStore.InsertAt(start, n);
         _headingStore.InsertAt(start, n);
         RowFormats.ShiftRight(start, n);
@@ -125,17 +233,28 @@ public class RowInfoStore
     /// <returns></returns>
     public int GetRow(double y)
     {
-        return _heightStore.GetPosition(y);
+        return _cumulativeHeightStore.GetPosition(y);
     }
 
     /// <summary>
-    /// Returns the height of the row specified.
+    /// Returns the height of the row specified. This is the visual height, so it will be 0 if the row is hidden.
     /// </summary>
     /// <param name="row"></param>
     /// <returns></returns>
-    public double GetHeight(int row)
+    public double GetVisualHeight(int row)
     {
-        return _heightStore.GetSize(row);
+        return _cumulativeHeightStore.GetSize(row);
+    }
+
+    /// <summary>
+    /// Returns the physical height of the row. This is non-zero even if the row is
+    /// hidden. For visual height, use <seealso cref="GetVisualHeight"/>
+    /// </summary>
+    /// <param name="row"></param>
+    /// <returns></returns>
+    public double GetPhysicalHeight(int row)
+    {
+        return _heightStore.Get(row);
     }
 
     /// <summary>
@@ -146,7 +265,7 @@ public class RowInfoStore
     /// <returns></returns>
     public double GetHeightBetween(int start, int end)
     {
-        return _heightStore.GetSizeBetween(start, end);
+        return _cumulativeHeightStore.GetSizeBetween(start, end);
     }
 
     /// <summary>
@@ -156,19 +275,30 @@ public class RowInfoStore
     /// <returns></returns>
     public double GetTop(int rowIndex)
     {
-        return _heightStore.GetCumulative(rowIndex);
+        return _cumulativeHeightStore.GetCumulative(rowIndex);
     }
 
     internal void Restore(RowInfoStoreRestoreData data)
     {
+        _cumulativeHeightStore.BatchSet(data.CumulativeHeightsModified);
         _heightStore.BatchSet(data.HeightsModified);
+
         _headingStore.BatchSet(data.HeadingsModifed);
+
+        foreach (var originalData in data.VisibilityModified)
+        {
+            if (originalData.visibile)
+                _visibleRows.Clear(originalData.start, originalData.end);
+            else
+                _visibleRows.Set(originalData.start, originalData.end, false);
+        }
+
         foreach (var added in data.RowFormatRestoreData.IntervalsAdded)
             RowFormats.Clear(added);
         RowFormats.AddRange(data.RowFormatRestoreData.IntervalsRemoved);
 
-        foreach (var change in data.HeightsModified)
-            RowHeightChanged?.Invoke(this, new RowHeightChangedEventArgs(change.start, change.end, change.height));
+        foreach (var change in data.CumulativeHeightsModified)
+            RowHeightChanged?.Invoke(this, new RowHeightChangedEventArgs(change.start, change.end));
     }
 
     public CellFormat? GetFormat(int row)
@@ -265,7 +395,17 @@ public class RowInfoStore
 
 internal class RowInfoStoreRestoreData
 {
-    public List<(int start, int end, double height)> HeightsModified { get; init; }
-    public List<(int start, int end, string heading)> HeadingsModifed { get; init; }
-    public RowColFormatRestoreData RowFormatRestoreData { get; init; }
+    public List<(int start, int end, double height)> CumulativeHeightsModified { get; init; } = new();
+    public List<(int start, int end, double height)> HeightsModified { get; init; } = new();
+    public List<(int start, int end, string heading)> HeadingsModifed { get; init; } = new();
+    public List<(int start, int end, bool visibile)> VisibilityModified { get; init; } = new();
+    public RowColFormatRestoreData RowFormatRestoreData { get; init; } = new();
+
+    public void Merge(RowInfoStoreRestoreData other)
+    {
+        CumulativeHeightsModified.AddRange(other.CumulativeHeightsModified);
+        HeadingsModifed.AddRange(other.HeadingsModifed);
+        VisibilityModified.AddRange(other.VisibilityModified);
+        RowFormatRestoreData.Merge(other.RowFormatRestoreData);
+    }
 }

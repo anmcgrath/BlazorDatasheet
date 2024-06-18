@@ -39,31 +39,23 @@ public class RemoveRowsCommand : IUndoableCommand
         if (_nRows <= 0)
             return false;
         _nRowsRemoved = Math.Min(sheet.NumRows - _rowIndex + 1, _nRows);
+        sheet.RemoveRows(_nRowsRemoved);
 
         _cellStoreRestoreData = sheet.Cells.RemoveRowAt(_rowIndex, _nRowsRemoved);
         _rowInfoStoreRestore = sheet.Rows.RemoveRowsImpl(_rowIndex, _rowIndex + _nRowsRemoved - 1);
         _validatorRestoreData = sheet.Validators.Store.RemoveRows(_rowIndex, _rowIndex + _nRowsRemoved - 1);
         _cfRestoreData = sheet.ConditionalFormats.RemoveRowAt(_rowIndex, _nRowsRemoved);
-        sheet.RemoveRows(_nRowsRemoved);
         return true;
     }
 
     public bool Undo(Sheet sheet)
     {
-        sheet.Validators.Store.InsertRows(_rowIndex, _nRowsRemoved, false);
+        sheet.AddRows(_nRowsRemoved);
         sheet.Validators.Store.Restore(_validatorRestoreData);
-
-        sheet.Cells.InsertRowAt(_rowIndex, _nRows, false);
         sheet.Cells.Restore(_cellStoreRestoreData);
-
         sheet.Rows.InsertImpl(_rowIndex, _nRowsRemoved);
         sheet.Rows.Restore(_rowInfoStoreRestore);
-
-        sheet.ConditionalFormats.InsertRowAt(_rowIndex, _nRowsRemoved, false);
         sheet.ConditionalFormats.Restore(_cfRestoreData);
-
-        sheet.AddRows();
-
         sheet.MarkDirty(new RowRegion(_rowIndex, sheet.NumRows));
         return true;
     }

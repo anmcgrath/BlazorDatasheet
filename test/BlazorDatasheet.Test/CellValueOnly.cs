@@ -42,6 +42,7 @@ public class CellValueOnly : IReadOnlyCell
     }
 
     public CellValueType ValueType { get; }
+    public bool IsVisible { get; }
 
     public bool HasFormula() => false;
 }

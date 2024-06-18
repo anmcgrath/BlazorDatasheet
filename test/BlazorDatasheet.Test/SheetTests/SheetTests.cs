@@ -83,8 +83,8 @@ public class SheetTests
         sheet.Range("2:$3")!.Region.Should().BeOfType<RowRegion>();
         sheet.Range("2:$3")!.Region.Should()
             .BeEquivalentTo(new { Top = 1, Bottom = 2 }, options => options.ExcludingMissingMembers());
-        
-        
+
+
         sheet.Range("$2:3")!.Region.Should().BeOfType<RowRegion>();
         sheet.Range("$2:3")!.Region.Should()
             .BeEquivalentTo(new { Top = 1, Bottom = 2 }, options => options.ExcludingMissingMembers());
@@ -143,7 +143,7 @@ public class SheetTests
             args.Cancel = true;
             args.SortOptions.Should().NotBeNull();
         };
-        
+
         sheet.SortRange(new ColumnRegion(0));
         sheet.Cells[0, 0].Value.Should().Be(2);
         sheet.Cells[1, 0].Value.Should().Be(1);

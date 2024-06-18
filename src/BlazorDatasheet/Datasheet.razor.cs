@@ -226,6 +226,8 @@ public partial class Datasheet : SheetComponentBase
             _sheetLocal.Columns.ColumnInserted += async (_, _) => await RefreshViewport();
             _sheetLocal.Rows.RowRemoved += async (_, _) => await RefreshViewport();
             _sheetLocal.Columns.ColumnRemoved += async (_, _) => await RefreshViewport();
+            _sheetLocal.Rows.RowHeightChanged += async (_, _) => await RefreshViewport();
+            _sheetLocal.Columns.ColumnWidthChanged += async (_, _) => await RefreshViewport();
 
             _cellLayoutProvider = new CellLayoutProvider(_sheetLocal);
             _visualSheet = new VisualSheet(_sheetLocal);
@@ -419,6 +421,9 @@ public partial class Datasheet : SheetComponentBase
         if (cell.Format.IsReadOnly == true)
             return;
 
+        if (!cell.IsVisible)
+            return;
+
         var softEdit = mode == EditEntryMode.Key || mode == EditEntryMode.None || cell.Value == null;
 
         Sheet.Editor.BeginEdit(row, col, softEdit, mode, entryChar);
@@ -585,6 +590,7 @@ public partial class Datasheet : SheetComponentBase
             return;
 
         var posn = Sheet.Selection.ActiveCellPosition;
+        
         Sheet.Selection.ClearSelections();
         Sheet.Selection.Set(posn.row, posn.col);
         Sheet.Selection.MoveActivePositionByRow(drow);

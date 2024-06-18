@@ -10,11 +10,11 @@
 @inject IWindowEventService WindowEventService
 @inherits SheetComponentBase
 
-@if (!Sheet.Editor.IsEditing)
+@if (!Sheet.Editor.IsEditing && Sheet.Selection.ActiveRegion != null)
 {
     <!-- render dragger (bottom right corner) -->
     <div id="auto-filler"
-         class="unselectable"
+         class="unselectable auto-fill"
          @onpointerdown="DraggerMouseDown"
          @onpointerup="DraggerMouseUp"
          style="@GetDraggerStyleString();cursor:crosshair;pointer-events: all;">
@@ -38,15 +38,12 @@
 
     [Parameter, EditorRequired] public Sheet Sheet { get; set; } = null!;
 
-    [Parameter, EditorRequired]
-    public CellLayoutProvider CellLayoutProvider { get; set; } = null!;
+    [Parameter, EditorRequired] public CellLayoutProvider CellLayoutProvider { get; set; } = null!;
 
-    [Parameter, EditorRequired]
-    public SheetPointerInputService? InputService { get; set; }
+    [Parameter, EditorRequired] public SheetPointerInputService? InputService { get; set; }
 
 
-    [Parameter]
-    public EventCallback<SelectionExpandedEventArgs> SelectionExpanded { get; set; }
+    [Parameter] public EventCallback<SelectionExpandedEventArgs> SelectionExpanded { get; set; }
 
     private bool _isDragging = false;
 
@@ -119,6 +116,8 @@
         else
             _dragPreviewRegion = CalculateExpandRegion(sheetX, sheetY, cellAtMouse);
 
+        _dragPreviewRegion = Sheet.Region.GetIntersection(_dragPreviewRegion);
+
         this.StateHasChanged();
 
         return Task.FromResult(true);
@@ -126,9 +125,9 @@
 
     private IRegion CalculateContractRegion(double dx, double dy, CellPosition cellMousePosition)
     {
-        if(Sheet.Selection.ActiveRegion == null)
+        if (Sheet.Selection.ActiveRegion == null)
             return new Region(cellMousePosition.row, cellMousePosition.col);
-        
+
         var left = Sheet.Selection.ActiveRegion.Left;
         var top = Sheet.Selection.ActiveRegion.Top;
         var axis = Math.Abs(dx) >= Math.Abs(dy) ? Axis.Col : Axis.Row;
@@ -139,15 +138,13 @@
 
     private IRegion? CalculateExpandRegion(double sheetX, double sheetY, CellPosition cellMousePosition)
     {
-        if(Sheet.Selection.ActiveRegion == null)
+        if (Sheet.Selection.ActiveRegion == null)
             return null;
-        
+
         var selRect = CellLayoutProvider.ComputeRect(Sheet.Selection.ActiveRegion);
         var axis = GetExpansionAxis(sheetX, sheetY, selRect);
 
-        var expandTo = axis == Axis.Col ?
-            new Region(Sheet.Selection.ActiveRegion.Bottom, cellMousePosition.col) :
-            new Region(cellMousePosition.row, Sheet.Selection.ActiveRegion.Left);
+        var expandTo = axis == Axis.Col ? new Region(Sheet.Selection.ActiveRegion.Bottom, cellMousePosition.col) : new Region(cellMousePosition.row, Sheet.Selection.ActiveRegion.Left);
 
         var expandedRegion = Sheet.Selection.ActiveRegion.GetBoundingRegion(expandTo);
         return expandedRegion;
@@ -167,7 +164,7 @@
         var p = new Point2d(sheetX, sheetY);
 
         var closestCorner = GetCorners(selectionRect)
-            .Select<Point2d, (Point2d p, double dist)>(x => ((x,GetDistSq(x, p))))
+            .Select<Point2d, (Point2d p, double dist)>(x => ((x, GetDistSq(x, p))))
             .MinBy(x => x.dist);
 
         var dx = sheetX - closestCorner.p.X;
@@ -240,8 +237,8 @@
 
     private void DraggerMouseUp(PointerEventArgs obj)
     {
-    // if the user mouses up on the dragger (which doesn't move)
-    // then we should just cancel out of the drag
+        // if the user mouses up on the dragger (which doesn't move)
+        // then we should just cancel out of the drag
         _isDragging = false;
         _dragPreviewRegion = null;
         this.StateHasChanged();
@@ -263,12 +260,13 @@
 
     private string GetDraggerStyleString()
     {
-        var region = Sheet.Selection.ActiveRegion ?? Sheet.Selection.SelectingRegion;
+        var region = Sheet.Region.GetIntersection(Sheet.Selection.ActiveRegion ?? Sheet.Selection.SelectingRegion);
         if (region == null)
             return "display:none;";
 
         var x = CellLayoutProvider.ComputeLeftPosition(region.Right + 1);
         var y = CellLayoutProvider.ComputeTopPosition(region.Bottom + 1);
+
         var w = 6d;
         var h = 6d;
         var sb = new StringBuilder();

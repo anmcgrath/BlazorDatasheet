@@ -91,7 +91,7 @@ public class CellLayoutProvider : IGridLayoutProvider
 
     public double ComputeBottomPosition(int row)
     {
-        return ComputeTopPosition(row) + _sheet.Rows.GetHeight(row);
+        return ComputeTopPosition(row) + _sheet.Rows.GetVisualHeight(row);
     }
 
     public double ComputeWidth(int startCol, int colSpan)
@@ -157,30 +157,45 @@ public class CellLayoutProvider : IGridLayoutProvider
     /// </summary>
     /// <param name="left">The left position of the visual region</param>
     /// <param name="top">The top position of the visual region</param>
-    /// <param name="height"> The height of the visual region</param>
+    /// <param name="containerHeight"> The height of the visual region</param>
     /// <param name="overflowX">The number of cells to include to the left/right of the "visible" viewport</param>
     /// <param name="overflowY">The number of cells to include to the top/bottom of the "visible" region.</param>
-    /// <param name="width">The width of the visual region</param>
+    /// <param name="containerWidth">The width of the visual region</param>
     /// <returns></returns>
-    public Viewport GetViewPort(double left, double top, double width, double height, int overflowX, int overflowY)
+    public Viewport GetViewPort(double left, double top, double containerWidth, double containerHeight, int overflowX,
+        int overflowY)
     {
+        // if top > total height of sheet we must have an issue...
+        // if left > total width of sheet we must have an issue...
+        // even if top > total height of sheet - container height we have an issue
+        // even if left > total width of sheet - container width we have an issue
+        var totalWidth = _sheet.Columns.GetWidthBetween(0, _sheet.NumCols);
+        var totalHeight = _sheet.Rows.GetHeightBetween(0, _sheet.NumRows);
+        if (top > totalHeight - containerHeight)
+            top = totalHeight - containerHeight;
+        if (left > totalWidth - containerWidth)
+            left = totalWidth - containerWidth;
+
         // what would be seen on screen if there were no overflow
         var visibleRowStart = ComputeRow(top);
         var visibleColStart = ComputeColumn(left);
-        var visibleRowEnd = ComputeRow(top + height);
-        var visibleColEnd = ComputeColumn(left + width);
+        visibleRowStart = Math.Max(visibleRowStart, 0);
+        visibleColStart = Math.Max(visibleColStart, 0);
 
+        var visibleRowEnd = ComputeRow(top + containerHeight);
+        var visibleColEnd = ComputeColumn(left + containerWidth);
 
-        visibleRowEnd = Math.Min(_sheet.NumRows - 1, visibleRowEnd);
+        visibleRowEnd = Math.Clamp(visibleRowEnd, 0, _sheet.NumRows - 1);
         visibleColEnd = Math.Min(_sheet.NumCols - 1, visibleColEnd);
 
         var startRow = Math.Max(visibleRowStart - overflowY, 0);
-        var endRow = Math.Min(_sheet.NumRows - 1, visibleRowEnd + overflowY);
+        var endRow = Math.Min(Math.Max(_sheet.NumRows - 1, 0), visibleRowEnd + overflowY);
 
         var startCol = Math.Max(visibleColStart - overflowX, 0);
-        var endCol = Math.Min(_sheet.NumCols - 1, visibleColEnd + overflowX);
+        var endCol = Math.Min(Math.Max(_sheet.NumCols - 1, 0), visibleColEnd + overflowX);
 
         var region = new Region(startRow, endRow, startCol, endCol);
+
         var leftPos = _sheet.Columns.GetLeft(startCol);
         var topPos = _sheet.Rows.GetTop(startRow);
         var visibleWidth = ComputeWidthBetween(startCol, endCol + 1);

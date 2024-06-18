@@ -143,35 +143,37 @@ public class ConditionalFormatManager
         return initialFormat;
     }
 
-    internal void InsertRowAt(int row, int nRows, bool expandNeighbouring = false)
+    internal RegionRestoreData<ConditionalFormatAbstractBase> InsertRowAtImpl(int row, int nRows,
+        bool expandNeighbouring = false)
     {
-        _appliedFormats.InsertRows(row, nRows, expandNeighbouring);
+        return _appliedFormats.InsertRows(row, nRows, expandNeighbouring);
     }
 
-    internal void InsertColAt(int row, int nRows, bool expandNeighbouring = false)
+    internal RegionRestoreData<ConditionalFormatAbstractBase> InsertColAtImpl(int row, int nRows,
+        bool expandNeighbouring = false)
     {
-        _appliedFormats.InsertCols(row, nRows, expandNeighbouring);
+        return _appliedFormats.InsertCols(row, nRows, expandNeighbouring);
     }
 
     internal RegionRestoreData<ConditionalFormatAbstractBase> RemoveRowAt(int row, int nRows)
     {
-        var restoreData = _appliedFormats.RemoveRows(row, row + nRows - 1);
-
-        var cfsAffected = restoreData.RegionsAdded
-            .Select(x => x.Data).Concat(restoreData.RegionsRemoved.Select(x => x.Data))
-            .Distinct()
+        var cfsAffected = _appliedFormats
+            .GetData(new RowRegion(row, int.MaxValue))
             .ToList();
+
+        var restoreData = _appliedFormats.RemoveRows(row, row + nRows - 1);
         Prepare(cfsAffected);
+        
         return restoreData;
     }
 
     internal RegionRestoreData<ConditionalFormatAbstractBase> RemoveColAt(int col, int nCols)
     {
-        var restoreData = _appliedFormats.RemoveCols(col, col + nCols - 1);
-        var cfsAffected = restoreData.RegionsAdded
-            .Select(x => x.Data).Concat(restoreData.RegionsRemoved.Select(x => x.Data))
-            .Distinct()
+        var cfsAffected = _appliedFormats
+            .GetData(new ColumnRegion(col, int.MaxValue))
             .ToList();
+
+        var restoreData = _appliedFormats.RemoveCols(col, col + nCols - 1);
         Prepare(cfsAffected);
         return restoreData;
     }
@@ -181,9 +183,17 @@ public class ConditionalFormatManager
         _appliedFormats.Restore(data);
 
         var cfsAffected = data.RegionsAdded
-            .Select(x => x.Data).Concat(data.RegionsRemoved.Select(x => x.Data))
-            .Distinct()
-            .ToList();
-        Prepare(cfsAffected);
+            .Select(x => x.Data)
+            .Concat(data.RegionsRemoved.Select(x => x.Data));
+
+        foreach (var shift in data.Shifts)
+        {
+            if (shift.Axis == Axis.Col)
+                cfsAffected = cfsAffected.Concat(_appliedFormats.GetData(new ColumnRegion(shift.Index, int.MaxValue)));
+            else
+                cfsAffected = cfsAffected.Concat(_appliedFormats.GetData(new RowRegion(shift.Index, int.MaxValue)));
+        }
+        
+        Prepare(cfsAffected.Distinct().ToList());
     }
 }

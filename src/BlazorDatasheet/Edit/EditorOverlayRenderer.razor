@@ -8,6 +8,7 @@
 @using BlazorDatasheet.Core.Interfaces
 @using BlazorDatasheet.Core.Layout
 @using BlazorDatasheet.Formula.Core
+@using BlazorDatasheet.Util
 @using Microsoft.JSInterop
 @inject IJSRuntime JS;
 
@@ -189,13 +190,27 @@
         StateHasChanged();
     }
 
+    private string GetEditorDisplayStyling()
+    {
+        var sb = new StyleBuilder();
+        var visualCell = new VisualCell(EditCell.Row, EditCell.Col, Sheet);
+        var format = visualCell.Format;
+
+        sb.AddStyleNotNull("background", format?.BackgroundColor);
+        sb.AddStyle("background", "var(--sheet-bg-color)", format?.BackgroundColor == null);
+        sb.AddStyleNotNull("text-align", visualCell?.Format?.TextAlign);
+        sb.AddStyleNotNull("font-weight", visualCell?.Format?.FontWeight);
+
+        return sb.ToString();
+    }
+
     /// <summary>
     /// Calculates the top/left/width/height styles of the editor container
     /// </summary>
     /// <returns></returns>
     private string GetEditorSizeStyling()
     {
-        var strBuilder = new StringBuilder();
+        var sb = new StyleBuilder();
         var left = CellLayoutProvider.ComputeLeftPosition(EditCell.Col);
         var top = CellLayoutProvider.ComputeTopPosition(EditCell.Row);
 
@@ -214,12 +229,12 @@
         var w = CellLayoutProvider.ComputeWidth(EditCell.Col, colSpan);
         var h = CellLayoutProvider.ComputeHeight(EditCell.Row, rowSpan);
 
-        strBuilder.Append($"left:{left}px;");
-        strBuilder.Append($"top:{top}px;");
-        strBuilder.Append($"min-width:{w}px;");
-        strBuilder.Append($"max-width:{w}px;");
-        strBuilder.Append($"height:{h}px;");
-        var style = strBuilder.ToString();
+        sb.AddStyle("left", $"{left + 1}px;");
+        sb.AddStyle("top", $"{top + 1}px;");
+        sb.AddStyle("min-width", $"{w - 1}px;");
+        sb.AddStyle("max-width", $"{w - 1}px;");
+        sb.AddStyle("height", $"{h - 1}px;");
+        var style = sb.ToString();
         return style;
     }
 
@@ -228,7 +243,8 @@
     {
         return new Dictionary<string, object>()
         {
-            { "OnValueChanged", EventCallback.Factory.Create<string>(this, HandleEditValueChanged) }
+            { "OnValueChanged", EventCallback.Factory.Create<string>(this, HandleEditValueChanged) },
+            { "Style", GetEditorDisplayStyling() }
         };
     }
 

@@ -9,7 +9,7 @@
 <input @bind="CurrentValue"
        @bind:event="oninput"
        class="text-input"
-       style="@CssUtil.GetStyledInput(Cell);"
+       style="@Style"
        @ref="InputRef"/>
 <div class="select-list">
     @foreach (var val in values)

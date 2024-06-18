@@ -12,6 +12,7 @@
     {
         <MenuSection SectionId="0">
             <SheetMenuItem OnClick="() => sheet.Cells.ClearCells(sheet.Selection.Regions)">Clear</SheetMenuItem>
+            <SheetMenuItem OnClick="() => sheet.Cells.Merge(sheet.Selection.Regions)">Merge</SheetMenuItem>
         </MenuSection>
         
         <SheetMenuDivider/>

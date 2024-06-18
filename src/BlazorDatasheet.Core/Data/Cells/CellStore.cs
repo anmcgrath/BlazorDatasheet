@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Interfaces;
@@ -6,6 +7,8 @@ using BlazorDatasheet.Core.Validation;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core;
+
+[assembly: InternalsVisibleTo("BlazorDatasheet.Test")]
 
 namespace BlazorDatasheet.Core.Data.Cells;
 
@@ -113,14 +116,16 @@ public partial class CellStore
     /// <param name="col">The column that will be replaced by the new column.</param>
     /// <param name="nCols">The number of columns to insert</param>
     /// <param name="expandNeighboring">Whether to expand any cell data to the left of the insertion. If undoing an action, best to set to false.</param>
-    internal void InsertColAt(int col, int nCols, bool? expandNeighboring = null)
+    internal CellStoreRestoreData InsertColAt(int col, int nCols, bool? expandNeighboring = null)
     {
-        _dataStore.InsertColAt(col, nCols);
-        _formatStore.InsertCols(col, nCols, expandNeighboring);
-        _typeStore.InsertCols(col, nCols, expandNeighboring);
-        _formulaStore.InsertColAt(col, nCols);
-        _validStore.InsertColAt(col, nCols);
-        _mergeStore.InsertCols(col, nCols, false);
+        var restoreData = new CellStoreRestoreData();
+        restoreData.ValueRestoreData = _dataStore.InsertColAt(col, nCols);
+        restoreData.FormatRestoreData = _formatStore.InsertCols(col, nCols);
+        restoreData.TypeRestoreData = _typeStore.InsertCols(col, nCols);
+        restoreData.FormulaRestoreData = _formulaStore.InsertColAt(col, nCols);
+        restoreData.ValidRestoreData = _validStore.InsertColAt(col, nCols);
+        restoreData.MergeRestoreData = _mergeStore.InsertCols(col, nCols, false);
+        return restoreData;
     }
 
     /// <summary>
@@ -129,14 +134,16 @@ public partial class CellStore
     /// <param name="row">The row that will be replaced by the new row.</param>
     /// <param name="nRows">The number of rows to insert</param>
     /// <param name="expandNeighboring">Whether to expand any cell data to the left of the insertion. If undoing an action, best to set to false.</param>
-    internal void InsertRowAt(int row, int nRows, bool? expandNeighboring = null)
+    internal CellStoreRestoreData InsertRowAt(int row, int nRows, bool? expandNeighboring = null)
     {
-        _dataStore.InsertRowAt(row, nRows);
-        _formatStore.InsertRows(row, nRows, expandNeighboring);
-        _typeStore.InsertRows(row, nRows, expandNeighboring);
-        _formulaStore.InsertRowAt(row, nRows);
-        _validStore.InsertRowAt(row, nRows);
-        _mergeStore.InsertRows(row, nRows, false);
+        var restoreData = new CellStoreRestoreData();
+        restoreData.ValueRestoreData = _dataStore.InsertRowAt(row, nRows);
+        restoreData.FormatRestoreData = _formatStore.InsertRows(row, nRows, expandNeighboring);
+        restoreData.TypeRestoreData = _typeStore.InsertRows(row, nRows, expandNeighboring);
+        restoreData.FormulaRestoreData = _formulaStore.InsertRowAt(row, nRows);
+        restoreData.ValidRestoreData = _validStore.InsertRowAt(row, nRows);
+        restoreData.MergeRestoreData = _mergeStore.InsertRows(row, nRows, false);
+        return restoreData;
     }
 
     internal CellStoreRestoreData RemoveRowAt(int row, int nRows)
@@ -224,7 +231,7 @@ public partial class CellStore
     internal void Restore(CellStoreRestoreData restoreData)
     {
         _sheet.BatchUpdates();
-        
+
         // Set formula through this function so we add the formula back in to the dependency graph
         foreach (var data in restoreData.FormulaRestoreData.DataRemoved)
             this.SetFormulaImpl(data.row, data.col, data.data);

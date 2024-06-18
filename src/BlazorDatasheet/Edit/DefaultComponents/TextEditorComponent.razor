@@ -10,7 +10,7 @@
 @using BlazorDatasheet.Formula.Core.Interpreter.Parsing
 
 <HighlightedInput
-    Style="@_editorStyle"
+    Style="@Style"
     RangeColors="_colors"
     CarePositionChanged="OnCaretPositionChanged"
     @bind-Value:set="OnInput"
@@ -52,7 +52,6 @@
         _sheet = sheet;
         _editX = sheet.Columns.GetWidthBetween(0, cell.Col);
         _editY = sheet.Rows.GetHeightBetween(0, cell.Row);
-        _editorStyle = CssUtil.GetStyledInput(cell);
     }
 
     private void OnInput(string value)
@@ -85,12 +84,12 @@
 
     private double GetX(IRegion region)
     {
-        return _sheet.Columns.GetWidthBetween(0, region.Left) - _editX;
+        return _sheet.Columns.GetWidthBetween(0, region.Left) - _editX - 1;
     }
 
     private double GetY(IRegion region)
     {
-        return _sheet.Rows.GetHeightBetween(0, region.Top) - _editY;
+        return _sheet.Rows.GetHeightBetween(0, region.Top) - _editY - 1;
     }
 
     private double GetWidth(IRegion region)

@@ -51,7 +51,7 @@
 
                         <table
                             class="sheet-table"
-                            style="width:@(RenderedInnerSheetWidth)px;height: @(RenderedInnerSheetHeight)px;">
+                            style="width:@(RenderedInnerSheetWidth)px;">
 
                             <colgroup>
                                 @if (ShowRowHeadings)
@@ -160,8 +160,11 @@
                             {
                                 var row = rowIndex;
                                 var rowHeight = @_cellLayoutProvider.ComputeHeight(row, 1);
+                                
+                                if(rowHeight == 0)
+                                    continue;
 
-                                <tr @key="row" style="height:@(rowHeight)px;">
+                                <tr @key="row" style="max-height:@(rowHeight)px;height:@(rowHeight)px;">
 
                                     @if (ShowRowHeadings)
                                     {
@@ -218,7 +221,7 @@
                  min-width:@(_cellLayoutProvider.TotalWidth)px;
                  max-width:@(_cellLayoutProvider.TotalWidth)px;
                  pointer-events: none;
-                 z-index: 0;">
+                 z-index: 2;">
 
             <PortalTarget TargetId="Sheet" DatasheetId="@Id"/>
 

@@ -1,4 +1,7 @@
 ﻿using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Data.Cells;
+using BlazorDatasheet.Core.Formats;
+using BlazorDatasheet.DataStructures.Store;
 
 namespace BlazorDatasheet.Core.Commands;
 
@@ -9,6 +12,10 @@ internal class InsertRowsAtCommand : IUndoableCommand
 {
     private readonly int _index;
     private readonly int _nRows;
+
+    private RegionRestoreData<int> _validatorRestoreData;
+    private RegionRestoreData<ConditionalFormatAbstractBase> _cfRestoreData;
+    private CellStoreRestoreData _cellStoreRestoreData;
 
     /// <summary>
     /// Command for inserting a row into the sheet.
@@ -23,20 +30,20 @@ internal class InsertRowsAtCommand : IUndoableCommand
 
     public bool Execute(Sheet sheet)
     {
-        sheet.Validators.Store.InsertRows(_index, _nRows);
-        sheet.Cells.InsertRowAt(_index, _nRows);
+        _validatorRestoreData = sheet.Validators.Store.InsertRows(_index, _nRows);
+        _cellStoreRestoreData = sheet.Cells.InsertRowAt(_index, _nRows);
+        _cfRestoreData = sheet.ConditionalFormats.InsertRowAtImpl(_index, _nRows);
         sheet.AddRows(_nRows);
-        sheet.ConditionalFormats.InsertRowAt(_index, _nRows);
         sheet.Rows.InsertImpl(_index, _nRows);
         return true;
     }
 
     public bool Undo(Sheet sheet)
     {
-        sheet.Validators.Store.RemoveRows(_index, _index + _nRows - 1);
-        sheet.Cells.RemoveRowAt(_index, _nRows);
+        sheet.Validators.Store.Restore(_validatorRestoreData);
+        sheet.Cells.Restore(_cellStoreRestoreData);
+        sheet.ConditionalFormats.Restore(_cfRestoreData);
         sheet.RemoveRows(_nRows);
-        sheet.ConditionalFormats.RemoveRowAt(_index, _nRows);
         sheet.Rows.RemoveRowsImpl(_index, _index + _nRows - 1);
         return true;
     }
