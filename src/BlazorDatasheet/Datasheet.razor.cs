@@ -70,31 +70,42 @@ public partial class Datasheet : SheetComponentBase
     /// </summary>
     [Parameter]
     public Dictionary<string, CellTypeDefinition> CustomCellTypeDefinitions { get; set; } = new();
-    
+
     /// <summary>
     /// If set to true, the user can remove rows using the context menu.
     /// </summary>
-    [Parameter] public bool CanUserRemoveRows { get; set; } = true;
+    [Parameter]
+    public bool CanUserRemoveRows { get; set; } = true;
+
     /// <summary>
     /// If set to true, the user can remove columns using the context menu.
     /// </summary>
-    [Parameter] public bool CanUserRemoveCols { get; set; } = true;
+    [Parameter]
+    public bool CanUserRemoveCols { get; set; } = true;
+
     /// <summary>
     /// If set to true, the user can insert rows using the context menu.
     /// </summary>
-    [Parameter] public bool CanUserInsertRows { get; set; } = true;
+    [Parameter]
+    public bool CanUserInsertRows { get; set; } = true;
+
     /// <summary>
     /// If set to true, the user can insert columns using the context menu.
     /// </summary>
-    [Parameter] public bool CanUserInsertCols { get; set; } = true;
+    [Parameter]
+    public bool CanUserInsertCols { get; set; } = true;
+
     /// <summary>
     /// If set to true, the user can sort regions using the context menu.
     /// </summary>
-    [Parameter] public bool CanUserSort { get; set; } = true;
+    [Parameter]
+    public bool CanUserSort { get; set; } = true;
+
     /// <summary>
     /// If set to true, the user can merge regions using the context menu.
     /// </summary>
-    [Parameter] public bool CanUserMergeRows { get; set; } = true;
+    [Parameter]
+    public bool CanUserMergeRows { get; set; } = true;
 
 
     /// <summary>
@@ -114,6 +125,10 @@ public partial class Datasheet : SheetComponentBase
     [Parameter] public Dictionary<string, RenderFragment> Icons { get; set; } = new();
 
     [Parameter] public RenderFragment<HeadingContext>? ColumnHeaderTemplate { get; set; }
+
+    [Parameter] public RenderFragment? EmptyColumnsTemplate { get; set; }
+
+    [Parameter] public RenderFragment? EmptyRowsTemplate { get; set; }
 
     public string Id { get; set; } = Guid.NewGuid().ToString();
 
@@ -594,7 +609,7 @@ public partial class Datasheet : SheetComponentBase
             return;
 
         var posn = Sheet.Selection.ActiveCellPosition;
-        
+
         Sheet.Selection.ClearSelections();
         Sheet.Selection.Set(posn.row, posn.col);
         Sheet.Selection.MoveActivePositionByRow(drow);

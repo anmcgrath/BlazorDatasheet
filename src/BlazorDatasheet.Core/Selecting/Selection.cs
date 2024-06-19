@@ -246,6 +246,12 @@ public class Selection
 
     public void ConstrainSelectionToSheet()
     {
+        if (_sheet.NumRows == 0 || _sheet.NumCols == 0)
+        {
+            this.ClearSelections();
+            return;
+        }
+        
         var constrainedRegions = new List<IRegion>();
         for (int i = 0; i < _regions.Count; i++)
         {
@@ -253,9 +259,10 @@ public class Selection
             if (intersection != null)
                 constrainedRegions.Add(intersection);
         }
+
+        ActiveRegion = null;
         _regions.Clear();
-        _regions.AddRange(constrainedRegions);
-        EmitSelectionChange();
+        Set(constrainedRegions);
     }
 
     /// <summary>
