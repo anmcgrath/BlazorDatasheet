@@ -91,6 +91,10 @@ public partial class Datasheet : SheetComponentBase
     /// If set to true, the user can sort regions using the context menu.
     /// </summary>
     [Parameter] public bool CanUserSort { get; set; } = true;
+    /// <summary>
+    /// If set to true, the user can merge regions using the context menu.
+    /// </summary>
+    [Parameter] public bool CanUserMergeRows { get; set; } = true;
 
 
     /// <summary>

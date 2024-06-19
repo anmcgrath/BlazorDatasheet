@@ -12,9 +12,12 @@
     {
         <MenuSection SectionId="0">
             <SheetMenuItem OnClick="() => sheet.Cells.ClearCells(sheet.Selection.Regions)">Clear</SheetMenuItem>
-            <SheetMenuItem OnClick="() => sheet.Cells.Merge(sheet.Selection.Regions)">Merge</SheetMenuItem>
+            @if (CanUserMergeRange)
+            {
+                <SheetMenuItem OnClick="() => sheet.Cells.Merge(sheet.Selection.Regions)">Merge</SheetMenuItem>
+            }
         </MenuSection>
-        
+
         <SheetMenuDivider/>
 
         @if (sheet.Selection.Regions.Count == 1 && sheet.Selection.ActiveRegion is ColumnRegion c)
@@ -71,5 +74,6 @@
     [Parameter] public bool CanUserInsertRows { get; set; } = true;
     [Parameter] public bool CanUserInsertCols { get; set; } = true;
     [Parameter] public bool CanUserSort { get; set; } = true;
+    [Parameter] public bool CanUserMergeRange { get; set; } = true;
 
 }
