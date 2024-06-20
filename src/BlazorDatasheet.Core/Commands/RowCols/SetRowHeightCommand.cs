@@ -1,7 +1,7 @@
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.DataStructures.Geometry;
 
-namespace BlazorDatasheet.Core.Commands;
+namespace BlazorDatasheet.Core.Commands.RowCols;
 
 public class SetRowHeightCommand : IUndoableCommand
 {

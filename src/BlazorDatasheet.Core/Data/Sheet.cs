@@ -1,6 +1,9 @@
 using System.Diagnostics;
 using System.Text;
 using BlazorDatasheet.Core.Commands;
+using BlazorDatasheet.Core.Commands.Data;
+using BlazorDatasheet.Core.Commands.Formatting;
+using BlazorDatasheet.Core.Commands.RowCols;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Edit;
 using BlazorDatasheet.Core.Events;

@@ -2,7 +2,7 @@
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Formula.Core.Interpreter;
 
-namespace BlazorDatasheet.Core.Commands;
+namespace BlazorDatasheet.Core.Commands.Data;
 
 internal class SetParsedFormulaCommand : IUndoableCommand
 {

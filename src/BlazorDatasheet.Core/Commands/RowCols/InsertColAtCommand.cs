@@ -3,7 +3,7 @@ using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Store;
 
-namespace BlazorDatasheet.Core.Commands;
+namespace BlazorDatasheet.Core.Commands.RowCols;
 
 /// <summary>
 /// Command for inserting a column in to the sheet

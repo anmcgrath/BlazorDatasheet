@@ -2,7 +2,7 @@ using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Formula.Core;
 
-namespace BlazorDatasheet.Core.Commands;
+namespace BlazorDatasheet.Core.Commands.Data;
 
 public class SetCellValueCommand : IUndoableCommand
 {

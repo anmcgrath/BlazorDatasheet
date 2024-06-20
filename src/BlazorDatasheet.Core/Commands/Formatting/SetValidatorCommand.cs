@@ -2,7 +2,7 @@
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.DataStructures.Geometry;
 
-namespace BlazorDatasheet.Core.Commands;
+namespace BlazorDatasheet.Core.Commands.Formatting;
 
 public class SetValidatorCommand : IUndoableCommand
 {

@@ -1,6 +1,6 @@
 using BlazorDatasheet.Core.Data;
 
-namespace BlazorDatasheet.Core.Commands;
+namespace BlazorDatasheet.Core.Commands.RowCols;
 
 public class SetColumnWidthCommand : IUndoableCommand
 {

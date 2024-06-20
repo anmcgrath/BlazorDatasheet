@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using BlazorDatasheet.Core.Commands;
+using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Core.Patterns;

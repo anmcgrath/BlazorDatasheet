@@ -2,7 +2,7 @@ using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.DataStructures.Geometry;
 
-namespace BlazorDatasheet.Core.Commands;
+namespace BlazorDatasheet.Core.Commands.Formatting;
 
 public class SetTypeCommand : IUndoableCommand
 {

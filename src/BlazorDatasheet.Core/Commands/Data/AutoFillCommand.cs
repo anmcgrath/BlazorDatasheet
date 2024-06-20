@@ -2,10 +2,8 @@ using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Core.Patterns;
 using BlazorDatasheet.DataStructures.Geometry;
-using BlazorDatasheet.Formula.Core;
-using BlazorDatasheet.Formula.Core.Regression;
 
-namespace BlazorDatasheet.Core.Commands;
+namespace BlazorDatasheet.Core.Commands.Data;
 
 public class AutoFillCommand : IUndoableCommand
 {
