@@ -181,13 +181,58 @@ public class SheetFormulaIntegrationTests
 
         int changeCount = 0;
 
-        _sheet.Cells.CellsChanged += (sender, args) =>
-        {
-            changeCount++;
-        };
+        _sheet.Cells.CellsChanged += (sender, args) => { changeCount++; };
         // change B1
         _sheet.Cells[0, 1].Value = 2;
-        
+
         changeCount.Should().Be(1);
+    }
+
+    [Test]
+    public void Insert_Row_Shifts_Formula_And_Updates_Ref()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Cells.SetFormula(2, 2, "=B2");
+        sheet.Rows.InsertRowAt(1);
+        sheet.Cells[2, 2].Formula.Should().BeNull();
+        sheet.Cells[3, 2].Formula.Should().Be("=B3");
+        sheet.Commands.Undo();
+        sheet.Cells[2, 2].Formula.Should().Be("=B2");
+    }
+
+    [Test]
+    public void Insert_Col_Shifts_Formula_And_Updates_Ref()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Cells.SetFormula(2, 2, "=B2");
+        sheet.Columns.InsertAt(1);
+        sheet.Cells[2, 2].Formula.Should().BeNull();
+        sheet.Cells[2, 3].Formula.Should().Be("=C2");
+        sheet.Commands.Undo();
+        sheet.Cells[2, 2].Formula.Should().Be("=B2");
+    }
+    
+    [Test]
+    public void Remove_Row_Shifts_Formula_And_Updates_Ref()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Cells.SetFormula(2, 2, "=B2");
+        sheet.Rows.RemoveAt(1);
+        sheet.Cells[2, 2].Formula.Should().BeNull();
+        sheet.Cells[1, 2].Formula.Should().Be("=B1");
+        sheet.Commands.Undo();
+        sheet.Cells[2, 2].Formula.Should().Be("=B2");
+    }
+
+    [Test]
+    public void Remove_Col_Shifts_Formula_And_Updates_Ref()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Cells.SetFormula(2, 2, "=B2");
+        sheet.Columns.RemoveAt(1);
+        sheet.Cells[2, 2].Formula.Should().BeNull();
+        sheet.Cells[2, 3].Formula.Should().Be("=A2");
+        sheet.Commands.Undo();
+        sheet.Cells[2, 2].Formula.Should().Be("=B2");
     }
 }
