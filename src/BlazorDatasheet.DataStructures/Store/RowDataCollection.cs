@@ -2,7 +2,8 @@
 
 namespace BlazorDatasheet.DataStructures.Store;
 
-public class RowDataCollection<T>
+public class 
+    RowDataCollection<T>
 {
     public int[] RowIndicies { get; private set; }
     public RowData<T>[] Rows { get; private set; }

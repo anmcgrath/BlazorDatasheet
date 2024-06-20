@@ -37,16 +37,16 @@ public class SetFormatCommand : IUndoableCommand
         _borderCommands = new();
 
         if (_region is ColumnRegion columnRegion)
-            _colFormatRestoreData = sheet.Columns.SetColumnFormatImpl(_cellFormat, columnRegion);
+            _colFormatRestoreData = sheet.Columns.SetFormatImpl(_cellFormat, columnRegion.Left, columnRegion.Right);
         else if (_region is RowRegion rowRegion)
-            _rowFormatRestoreData = sheet.Rows.SetRowFormatImpl(_cellFormat, rowRegion);
+            _rowFormatRestoreData = sheet.Rows.SetFormatImpl(_cellFormat, rowRegion.Top, rowRegion.Bottom);
         else
         {
             var region = sheet.Region.GetIntersection(_region);
             if (region != null)
                 _cellFormatRestoreData = sheet.Cells.MergeFormatImpl(region, _cellFormat);
         }
-        
+
         UpdateSurroundingBorders(sheet);
         sheet.EndBatchUpdates();
 
@@ -90,9 +90,9 @@ public class SetFormatCommand : IUndoableCommand
             cmd.Undo(sheet);
 
         if (_colFormatRestoreData != null)
-            Restore(sheet, _colFormatRestoreData, sheet.Columns.ColFormats);
+            Restore(sheet, _colFormatRestoreData, sheet.Columns.Formats);
         if (_rowFormatRestoreData != null)
-            Restore(sheet, _rowFormatRestoreData, sheet.Rows.RowFormats);
+            Restore(sheet, _rowFormatRestoreData, sheet.Rows.Formats);
         if (_cellFormatRestoreData != null)
             sheet.Cells.Restore(_cellFormatRestoreData);
 

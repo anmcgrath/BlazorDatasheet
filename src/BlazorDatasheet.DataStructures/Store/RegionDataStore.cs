@@ -101,25 +101,15 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
     }
 
     /// <summary>
-    /// Updates region positions by handling the row insert. Regions are shifted/expanded appropriately.
+    /// Inserts rows or columns (depending on <paramref name="axis"/>) and shifts/expand regions appropriately.
     /// </summary>
-    /// <param name="rowIndex"></param>
-    /// <param name="nRows"></param>
-    /// <param name="expandNeighbouring">Whether to expand the neighbouring values. If null, the value set on the class is used.</param>
-    public RegionRestoreData<T> InsertRows(int rowIndex, int nRows, bool? expandNeighbouring = null) =>
-        InsertRowsOrColumnAndShift(rowIndex, nRows, Axis.Row, expandNeighbouring);
-
-    /// <summary>
-    /// Updates region positions by handling the col insert. Regions are shifted/expanded appropriately.
-    /// </summary>
-    /// <param name="colIndex"></param>
-    /// <param name="nCols"></param>y
-    /// <param name="expandNeighbouring">Whether to expand the neighbouring values. If null, the value set on the class is used.</param>
-    public RegionRestoreData<T> InsertCols(int colIndex, int nCols, bool? expandNeighbouring = null) =>
-        InsertRowsOrColumnAndShift(colIndex, nCols, Axis.Col, expandNeighbouring);
-
-    private RegionRestoreData<T> InsertRowsOrColumnAndShift(int index, int nRowsOrCol, Axis axis,
-        bool? expandNeighbouring)
+    /// <param name="index"></param>
+    /// <param name="count"></param>
+    /// <param name="axis"></param>
+    /// <param name="expandNeighbouring"></param>
+    /// <returns></returns>
+    public RegionRestoreData<T> InsertRowColAt(int index, int count, Axis axis,
+        bool? expandNeighbouring = null)
     {
         var expand = expandNeighbouring ?? ExpandWhenInsertAfter;
 
@@ -145,7 +135,7 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
             Tree.Delete(overlap);
             regionsRemoved.Add(overlap);
             var expanded = new DataRegion<T>(overlap.Data, overlap.Region.Clone());
-            expanded.Region.Expand(axis == Axis.Row ? Edge.Bottom : Edge.Right, nRowsOrCol);
+            expanded.Region.Expand(axis == Axis.Row ? Edge.Bottom : Edge.Right, count);
             expanded.UpdateEnvelope();
             regionsAdded.Add(expanded);
             dataRegionsToAdd.Add(expanded);
@@ -156,8 +146,8 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
         foreach (var r in below)
         {
             Tree.Delete(r);
-            var dRow = axis == Axis.Row ? nRowsOrCol : 0;
-            var dCol = axis == Axis.Col ? nRowsOrCol : 0;
+            var dRow = axis == Axis.Row ? count : 0;
+            var dCol = axis == Axis.Col ? count : 0;
             r.Shift(dRow, dCol);
             dataRegionsToAdd.Add(r);
         }
@@ -167,8 +157,24 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
         {
             RegionsAdded = regionsAdded,
             RegionsRemoved = regionsRemoved,
-            Shifts = [new(axis, index, nRowsOrCol)],
+            Shifts = [new(axis, index, count)],
         };
+    }
+
+    /// <summary>
+    /// Updates the region positions by handling row/columns deletes. Regions are shifted/contracted appropriately.
+    /// Returns any data that is removed during this operation.
+    /// </summary>
+    /// <param name="index"></param>
+    /// <param name="count"></param>
+    /// <param name="axis"></param>
+    /// <returns></returns>
+    public RegionRestoreData<T> RemoveRowColAt(int index, int count, Axis axis)
+    {
+        if (axis == Axis.Col)
+            return RemoveCols(index, index + count - 1);
+        else
+            return RemoveRows(index, index + count - 1);
     }
 
     /// <summary>
@@ -246,7 +252,7 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
 
             var newRegion = new DataRegion<T>(overlap.Data, overlap.Region.Clone());
             newRegion.Region.Contract(cEdge, Math.Max(cRow, cCol));
-            newRegion.Region.Shift(sRow,sCol);
+            newRegion.Region.Shift(sRow, sCol);
             newRegion.UpdateEnvelope();
             dataAdded.Add(newRegion);
             newDataToAdd.Add(newRegion);

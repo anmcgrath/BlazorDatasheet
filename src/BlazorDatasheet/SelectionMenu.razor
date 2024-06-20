@@ -44,7 +44,7 @@
         {
             @if (CanUserInsertRows)
             {
-                <SheetMenuItem OnClick="() => sheet.Rows.InsertRowAt(r.Top, r.Height)">Insert row(s) above</SheetMenuItem>
+                <SheetMenuItem OnClick="() => sheet.Rows.InsertAt(r.Top, r.Height)">Insert row(s) above</SheetMenuItem>
             }
 
             @if (CanUserRemoveRows)

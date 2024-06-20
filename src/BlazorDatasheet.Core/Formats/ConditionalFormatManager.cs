@@ -143,38 +143,25 @@ public class ConditionalFormatManager
         return initialFormat;
     }
 
-    internal RegionRestoreData<ConditionalFormatAbstractBase> InsertRowAtImpl(int row, int nRows,
+
+    internal RegionRestoreData<ConditionalFormatAbstractBase> InsertRowColAt(int row, int nRows, Axis axis,
         bool expandNeighbouring = false)
     {
-        return _appliedFormats.InsertRows(row, nRows, expandNeighbouring);
+        return _appliedFormats.InsertRowColAt(row, nRows, axis, expandNeighbouring);
     }
 
-    internal RegionRestoreData<ConditionalFormatAbstractBase> InsertColAtImpl(int row, int nRows,
-        bool expandNeighbouring = false)
+    internal RegionRestoreData<ConditionalFormatAbstractBase> RemoveRowColAt(int index, int count, Axis axis)
     {
-        return _appliedFormats.InsertCols(row, nRows, expandNeighbouring);
-    }
+        IRegion dataRegion =
+            axis == Axis.Row ? new RowRegion(index, int.MaxValue) : new ColumnRegion(index, int.MaxValue);
 
-    internal RegionRestoreData<ConditionalFormatAbstractBase> RemoveRowAt(int row, int nRows)
-    {
         var cfsAffected = _appliedFormats
-            .GetData(new RowRegion(row, int.MaxValue))
+            .GetData(dataRegion)
             .ToList();
 
-        var restoreData = _appliedFormats.RemoveRows(row, row + nRows - 1);
+        var restoreData = _appliedFormats.RemoveRowColAt(index, count, axis);
         Prepare(cfsAffected);
-        
-        return restoreData;
-    }
 
-    internal RegionRestoreData<ConditionalFormatAbstractBase> RemoveColAt(int col, int nCols)
-    {
-        var cfsAffected = _appliedFormats
-            .GetData(new ColumnRegion(col, int.MaxValue))
-            .ToList();
-
-        var restoreData = _appliedFormats.RemoveCols(col, col + nCols - 1);
-        Prepare(cfsAffected);
         return restoreData;
     }
 
@@ -193,7 +180,7 @@ public class ConditionalFormatManager
             else
                 cfsAffected = cfsAffected.Concat(_appliedFormats.GetData(new RowRegion(shift.Index, int.MaxValue)));
         }
-        
+
         Prepare(cfsAffected.Distinct().ToList());
     }
 }

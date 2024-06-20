@@ -67,7 +67,7 @@ public class ConditionalFormatTests
             cell => new CellFormat() { BackgroundColor = cell.Row.ToString() });
         // Set this format to the second row in the sheet (sheet has 2 rows)
         sheet.ConditionalFormats.Apply(new RowRegion(1), cf);
-        sheet.Rows.InsertRowAt(0);
+        sheet.Rows.InsertAt(0);
         Assert.Null(sheet.ConditionalFormats.GetFormatResult(0, 0)?.BackgroundColor);
         Assert.AreEqual("2", sheet.ConditionalFormats.GetFormatResult(2, 0)?.BackgroundColor);
         sheet.Rows.RemoveAt(0);
@@ -78,11 +78,13 @@ public class ConditionalFormatTests
     [Test]
     public void Conditional_Format_Shifts_When_Col_Inserted_And_Removed_Before()
     {
+        
         var cf = new ConditionalFormat((posn, sheet) => true,
             cell => new CellFormat() { BackgroundColor = cell.Col.ToString() });
         sheet.ConditionalFormats.Apply(new ColumnRegion(1), cf);
         sheet.Columns.InsertAt(0);
         Assert.Null(sheet.ConditionalFormats.GetFormatResult(0, 0)?.BackgroundColor);
+        Assert.Null(sheet.ConditionalFormats.GetFormatResult(0, 1)?.BackgroundColor);
         Assert.AreEqual("2", sheet.ConditionalFormats.GetFormatResult(0, 2)?.BackgroundColor);
         sheet.Columns.RemoveAt(0);
         Assert.Null(sheet.ConditionalFormats.GetFormatResult(0, 0)?.BackgroundColor);
@@ -109,7 +111,7 @@ public class ConditionalFormatTests
             cell => new CellFormat() { BackgroundColor = cell.Row.ToString() });
 
         sheet.ConditionalFormats.Apply(new Region(1, 2, 1, 2), cf);
-        sheet.Rows.InsertRowAt(1);
+        sheet.Rows.InsertAt(1);
         Assert.AreEqual("3", sheet.ConditionalFormats.GetFormatResult(3, 1)?.BackgroundColor);
         sheet.Rows.RemoveAt(2);
         Assert.Null(sheet.ConditionalFormats.GetFormatResult(3, 1)?.BackgroundColor);

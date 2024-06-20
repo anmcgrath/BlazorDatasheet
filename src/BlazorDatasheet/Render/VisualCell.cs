@@ -41,8 +41,8 @@ public class VisualCell
         Row = row;
         Col = col;
 
-        X = sheet.Columns.GetLeft(col);
-        Y = sheet.Rows.GetTop(row);
+        X = sheet.Columns.GetVisualTop(col);
+        Y = sheet.Rows.GetVisualTop(row);
         FormatStyleString = GetCellFormatStyleString(Row, Col, format, cell.IsValid, cellValue.ValueType);
         Icon = format?.Icon;
         CellType = cell.Type;
@@ -60,8 +60,8 @@ public class VisualCell
             Row = row,
             Col = col,
             FormatStyleString = GetCellFormatStyleString(row, col, defaultFormat, true, CellValueType.Text),
-            X = sheet.Columns.GetLeft(col),
-            Y = sheet.Rows.GetTop(row),
+            X = sheet.Columns.GetVisualTop(col),
+            Y = sheet.Rows.GetVisualTop(row),
             CellType = "default",
             Format = defaultFormat
         };

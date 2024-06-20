@@ -111,66 +111,28 @@ public partial class CellStore
         return restoreData;
     }
 
-    /// <summary>
-    /// Inserts a number of columns into each of the cell's stores.
-    /// </summary>
-    /// <param name="col">The column that will be replaced by the new column.</param>
-    /// <param name="nCols">The number of columns to insert</param>
-    /// <param name="expandNeighboring">Whether to expand any cell data to the left of the insertion. If undoing an action, best to set to false.</param>
-    internal CellStoreRestoreData InsertColAt(int col, int nCols, bool? expandNeighboring = null)
+    internal CellStoreRestoreData InsertRowColAt(int index, int count, Axis axis, bool? expandNeighbouring = null)
     {
         var restoreData = new CellStoreRestoreData();
-        restoreData.ValueRestoreData = _dataStore.InsertColAt(col, nCols);
-        restoreData.FormatRestoreData = _formatStore.InsertCols(col, nCols);
-        restoreData.TypeRestoreData = _typeStore.InsertCols(col, nCols);
-        restoreData.FormulaRestoreData = _formulaStore.InsertColAt(col, nCols);
-        restoreData.ValidRestoreData = _validStore.InsertColAt(col, nCols);
-        restoreData.MergeRestoreData = _mergeStore.InsertCols(col, nCols, false);
+        restoreData.ValueRestoreData = _dataStore.InsertRowColAt(index, count, axis);
+        restoreData.FormatRestoreData = _formatStore.InsertRowColAt(index, count, axis, expandNeighbouring);
+        restoreData.TypeRestoreData = _typeStore.InsertRowColAt(index, count, axis, expandNeighbouring);
+        restoreData.FormulaRestoreData = _formulaStore.InsertRowColAt(index, count, axis);
+        restoreData.ValidRestoreData = _validStore.InsertRowColAt(index, count, axis);
+        restoreData.MergeRestoreData = _mergeStore.InsertRowColAt(index, count, axis, expandNeighbouring);
         return restoreData;
     }
 
-    /// <summary>
-    /// Inserts a number of rows into each of the cell's stores.
-    /// </summary>
-    /// <param name="row">The row that will be replaced by the new row.</param>
-    /// <param name="nRows">The number of rows to insert</param>
-    /// <param name="expandNeighboring">Whether to expand any cell data to the left of the insertion. If undoing an action, best to set to false.</param>
-    internal CellStoreRestoreData InsertRowAt(int row, int nRows, bool? expandNeighboring = null)
+    internal CellStoreRestoreData RemoveRowColAt(int index, int count, Axis axis)
     {
         var restoreData = new CellStoreRestoreData();
-        restoreData.ValueRestoreData = _dataStore.InsertRowAt(row, nRows);
-        restoreData.FormatRestoreData = _formatStore.InsertRows(row, nRows, expandNeighboring);
-        restoreData.TypeRestoreData = _typeStore.InsertRows(row, nRows, expandNeighboring);
-        restoreData.FormulaRestoreData = _formulaStore.InsertRowAt(row, nRows);
-        restoreData.ValidRestoreData = _validStore.InsertRowAt(row, nRows);
-        restoreData.MergeRestoreData = _mergeStore.InsertRows(row, nRows, false);
-        return restoreData;
-    }
-
-    internal CellStoreRestoreData RemoveRowAt(int row, int nRows)
-    {
-        var restoreData = new CellStoreRestoreData();
-        restoreData.ValueRestoreData = _dataStore.RemoveRowAt(row, nRows);
-        restoreData.ValidRestoreData = _validStore.RemoveRowAt(row, nRows);
-        restoreData.TypeRestoreData = _typeStore.RemoveRows(row, row + nRows - 1);
-        restoreData.FormulaRestoreData = ClearFormulaImpl(new[] { new RowRegion(row, nRows) }).FormulaRestoreData;
-        restoreData.FormatRestoreData = _formatStore.RemoveRows(row, row + nRows - 1);
-        restoreData.MergeRestoreData = _mergeStore.RemoveRows(row, row + nRows - 1);
-        _formulaStore.RemoveRowAt(row, nRows);
-
-        return restoreData;
-    }
-
-    internal CellStoreRestoreData RemoveColAt(int col, int nCols)
-    {
-        var restoreData = new CellStoreRestoreData();
-        restoreData.ValueRestoreData = _dataStore.RemoveColAt(col, nCols);
-        restoreData.ValidRestoreData = _validStore.RemoveColAt(col, nCols);
-        restoreData.TypeRestoreData = _typeStore.RemoveCols(col, col + nCols - 1);
-        restoreData.FormulaRestoreData = ClearFormulaImpl(new[] { new ColumnRegion(col, nCols) }).FormulaRestoreData;
-        restoreData.FormatRestoreData = _formatStore.RemoveCols(col, col + nCols - 1);
-        restoreData.MergeRestoreData = _mergeStore.RemoveCols(col, col + nCols - 1);
-        _formulaStore.RemoveColAt(col, nCols);
+        restoreData.ValueRestoreData = _dataStore.RemoveRowColAt(index, count, axis);
+        restoreData.ValidRestoreData = _validStore.RemoveRowColAt(index, count, axis);
+        restoreData.TypeRestoreData = _typeStore.RemoveRowColAt(index, count, axis);
+        restoreData.FormulaRestoreData = ClearFormulaImpl(new[] { new RowRegion(index, count) }).FormulaRestoreData;
+        restoreData.FormatRestoreData = _formatStore.RemoveRowColAt(index, count, axis);
+        restoreData.MergeRestoreData = _mergeStore.RemoveRowColAt(index, count, axis);
+        _formulaStore.RemoveRowColAt(index, count, axis);
 
         return restoreData;
     }

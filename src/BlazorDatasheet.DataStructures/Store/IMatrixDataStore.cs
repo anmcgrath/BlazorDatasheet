@@ -30,6 +30,21 @@ public interface IMatrixDataStore<T> : IStore<T, MatrixRestoreData<T>>
     public MatrixRestoreData<T> Clear(IEnumerable<IRegion> regions);
 
     /// <summary>
+    /// Inserts <paramref name="count"/> rows or columns, depending on the <paramref name="axis"/>
+    /// </summary>
+    /// <param name="index"></param>
+    /// <param name="count"></param>
+    /// <param name="axis"></param>
+    /// <returns></returns>
+    public MatrixRestoreData<T> InsertRowColAt(int index, int count, Axis axis)
+    {
+        if (axis == Axis.Col)
+            return InsertColAt(index, count);
+        else
+            return InsertRowAt(index, count);
+    }
+
+    /// <summary>
     /// Inserts a row into the store
     /// </summary>
     /// <param name="row">The index of the row that the new row will now be.</param>
@@ -65,11 +80,26 @@ public interface IMatrixDataStore<T> : IStore<T, MatrixRestoreData<T>>
     public int GetNextNonBlankColumn(int row, int col);
 
     /// <summary>
+    /// Removes the rows or columns specified from the store and returns the values that were removed.
+    /// </summary>
+    /// <param name="index"></param>
+    /// <param name="count"></param>
+    /// <param name="axis"></param>
+    /// <returns></returns>
+    public MatrixRestoreData<T> RemoveRowColAt(int index, int count, Axis axis)
+    {
+        if (axis == Axis.Col)
+            return RemoveColAt(index, count);
+        else
+            return RemoveRowAt(index, count);
+    }
+
+    /// <summary>
     /// Removes the row specified from the store and returns the values that were removed.
     /// </summary>
     /// <param name="row"></param>
     /// <param name="nRows"></param>
-    public MatrixRestoreData<T> RemoveRowAt(int row, int nRows);
+    internal MatrixRestoreData<T> RemoveRowAt(int row, int nRows);
 
     /// <summary>
     /// Get non empty cells that exist in the bounds given
@@ -122,7 +152,7 @@ public interface IMatrixDataStore<T> : IStore<T, MatrixRestoreData<T>>
     /// <param name="region"></param>
     /// <returns></returns>
     public T[][] GetData(IRegion region);
-    
+
     /// <summary>
     /// Returns a sub-store containing only the data in the region specified.
     /// If the <paramref name="newStoreResetsOffsets"/> is true, the new store will have the top-left corner at 0,0.

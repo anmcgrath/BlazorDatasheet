@@ -194,7 +194,7 @@ public class SheetFormulaIntegrationTests
     {
         var sheet = new Sheet(10, 10);
         sheet.Cells.SetFormula(2, 2, "=B2");
-        sheet.Rows.InsertRowAt(1);
+        sheet.Rows.InsertAt(1);
         sheet.Cells[2, 2].Formula.Should().BeNull();
         sheet.Cells[3, 2].Formula.Should().Be("=B3");
         sheet.Commands.Undo();
@@ -242,7 +242,7 @@ public class SheetFormulaIntegrationTests
     {
         var sheet = new Sheet(10, 10);
         sheet.Cells.SetFormula(2,2,"=D5");
-        sheet.Rows.InsertRowAt(3);
+        sheet.Rows.InsertAt(3);
         sheet.Cells[2, 2].Formula.Should().Be("=D6");
         sheet.Commands.Undo();
         sheet.Cells[2, 2].Formula.Should().Be("=D5");
@@ -264,7 +264,7 @@ public class SheetFormulaIntegrationTests
     {
         var sheet = new Sheet(20, 20);
         sheet.Cells.SetFormula(2,2,"=sum(D5:D10)");
-        sheet.Rows.InsertRowAt(6,2);
+        sheet.Rows.InsertAt(6,2);
         sheet.Cells[2, 2].Formula.Should().Be("=sum(D5:D12)");
     }
 

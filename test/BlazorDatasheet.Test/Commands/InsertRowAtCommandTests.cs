@@ -11,7 +11,7 @@ public class InsertRowAtCommandTests
         var sheet = new Sheet(3, 1);
         sheet.Cells.SetValue(0, 0, "'0,0");
         sheet.Cells.SetValue(2, 0, "'2,0");
-        sheet.Rows.InsertRowAt(0);
+        sheet.Rows.InsertAt(0);
 
         Assert.AreEqual(4, sheet.NumRows);
         Assert.AreEqual("'0,0", sheet.Cells.GetValue(1, 0));
@@ -27,9 +27,9 @@ public class InsertRowAtCommandTests
     public void Insert_Row_After_End_Of_Sheet_Appends_Row_At_End()
     {
         var sheet = new Sheet(3, 1);
-        sheet.Rows.InsertRowAt(3);
+        sheet.Rows.InsertAt(3);
         Assert.AreEqual(4, sheet.NumRows);
-        sheet.Rows.InsertRowAt(10);
+        sheet.Rows.InsertAt(10);
         Assert.AreEqual(5, sheet.NumRows);
         sheet.Commands.Undo();
         sheet.Commands.Undo();
