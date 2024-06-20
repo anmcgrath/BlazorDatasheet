@@ -190,7 +190,7 @@ public class SheetFormulaIntegrationTests
     }
 
     [Test]
-    public void Insert_Row_Shifts_Formula_And_Updates_Ref()
+    public void Insert_Row_Before_Formula_Shifts_Formula_And_Updates_Ref()
     {
         var sheet = new Sheet(10, 10);
         sheet.Cells.SetFormula(2, 2, "=B2");
@@ -202,7 +202,7 @@ public class SheetFormulaIntegrationTests
     }
 
     [Test]
-    public void Insert_Col_Shifts_Formula_And_Updates_Ref()
+    public void Insert_Col_Before_Formula_Shifts_Formula_And_Updates_Ref()
     {
         var sheet = new Sheet(10, 10);
         sheet.Cells.SetFormula(2, 2, "=B2");
@@ -214,7 +214,7 @@ public class SheetFormulaIntegrationTests
     }
     
     [Test]
-    public void Remove_Row_Shifts_Formula_And_Updates_Ref()
+    public void Remove_Row_Before_Formula_Shifts_Formula_And_Updates_Ref()
     {
         var sheet = new Sheet(10, 10);
         sheet.Cells.SetFormula(2, 2, "=B2");
@@ -226,7 +226,7 @@ public class SheetFormulaIntegrationTests
     }
 
     [Test]
-    public void Remove_Col_Shifts_Formula_And_Updates_Ref()
+    public void Remove_Col_Before_Formula_Shifts_Formula_And_Updates_Ref()
     {
         var sheet = new Sheet(10, 10);
         sheet.Cells.SetFormula(2, 2, "=B2");
@@ -236,4 +236,36 @@ public class SheetFormulaIntegrationTests
         sheet.Commands.Undo();
         sheet.Cells[2, 2].Formula.Should().Be("=B2");
     }
+
+    [Test]
+    public void Insert_Row_Before_Formula_Reference_Shifts_Formula_Reference()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Cells.SetFormula(2,2,"=D5");
+        sheet.Rows.InsertRowAt(3);
+        sheet.Cells[2, 2].Formula.Should().Be("=D6");
+        sheet.Commands.Undo();
+        sheet.Cells[2, 2].Formula.Should().Be("=D5");
+    }
+    
+    [Test]
+    public void Insert_Col_Before_Formula_Reference_Shifts_Formula_Reference()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Cells.SetFormula(2,2,"=D5");
+        sheet.Columns.InsertAt(3);
+        sheet.Cells[2, 2].Formula.Should().Be("=F5");
+        sheet.Commands.Undo();
+        sheet.Cells[2, 2].Formula.Should().Be("=D5");
+    }
+
+    [Test]
+    public void Insert_Row_Into_Referenced_Range_Shifts_Formula_Reference()
+    {
+        var sheet = new Sheet(20, 20);
+        sheet.Cells.SetFormula(2,2,"=sum(D5:D10)");
+        sheet.Rows.InsertRowAt(6,2);
+        sheet.Cells[2, 2].Formula.Should().Be("=sum(D5:D12)");
+    }
+    
 }
