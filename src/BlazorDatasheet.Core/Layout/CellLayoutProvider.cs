@@ -172,9 +172,9 @@ public class CellLayoutProvider : IGridLayoutProvider
         var totalWidth = _sheet.Columns.GetWidthBetween(0, _sheet.NumCols);
         var totalHeight = _sheet.Rows.GetHeightBetween(0, _sheet.NumRows);
         if (top > totalHeight - containerHeight)
-            top = totalHeight - containerHeight;
+            top = Math.Max(0, totalHeight - containerHeight);
         if (left > totalWidth - containerWidth)
-            left = totalWidth - containerWidth;
+            left = Math.Max(0, totalWidth - containerWidth);
 
         // what would be seen on screen if there were no overflow
         var visibleRowStart = ComputeRow(top);
