@@ -185,8 +185,8 @@ public class CellLayoutProvider : IGridLayoutProvider
         var visibleRowEnd = ComputeRow(top + containerHeight);
         var visibleColEnd = ComputeColumn(left + containerWidth);
 
-        visibleRowEnd = Math.Clamp(visibleRowEnd, 0, _sheet.NumRows - 1);
-        visibleColEnd = Math.Min(_sheet.NumCols - 1, visibleColEnd);
+        visibleRowEnd = Math.Clamp(visibleRowEnd, 0, Math.Max(_sheet.NumRows - 1, 0));
+        visibleColEnd = Math.Clamp(visibleColEnd, 0, Math.Max(_sheet.NumCols - 1, 0));
 
         var startRow = Math.Max(visibleRowStart - overflowY, 0);
         var endRow = Math.Min(Math.Max(_sheet.NumRows - 1, 0), visibleRowEnd + overflowY);
