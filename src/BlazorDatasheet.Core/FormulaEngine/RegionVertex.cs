@@ -1,6 +1,7 @@
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.DataStructures.Graph;
 
-namespace BlazorDatasheet.DataStructures.Graph;
+namespace BlazorDatasheet.Core.FormulaEngine;
 
 public class RegionVertex : Vertex
 {

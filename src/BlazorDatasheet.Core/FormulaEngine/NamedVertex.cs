@@ -1,4 +1,6 @@
-namespace BlazorDatasheet.DataStructures.Graph;
+using BlazorDatasheet.DataStructures.Graph;
+
+namespace BlazorDatasheet.Core.FormulaEngine;
 
 public class NamedVertex : Vertex
 {

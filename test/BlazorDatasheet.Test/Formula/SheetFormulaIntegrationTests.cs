@@ -267,5 +267,5 @@ public class SheetFormulaIntegrationTests
         sheet.Rows.InsertRowAt(6,2);
         sheet.Cells[2, 2].Formula.Should().Be("=sum(D5:D12)");
     }
-    
+
 }
