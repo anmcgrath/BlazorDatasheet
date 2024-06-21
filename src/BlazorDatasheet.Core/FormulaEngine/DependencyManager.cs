@@ -6,7 +6,10 @@ namespace BlazorDatasheet.Core.FormulaEngine;
 
 internal class DependencyManager
 {
-    private DependencyGraph _graph = new();
+    
+    public void AddFormula(IRegion region, string formula)
+    {
+    }
 
     public bool HasDependents(IRegion region)
     {

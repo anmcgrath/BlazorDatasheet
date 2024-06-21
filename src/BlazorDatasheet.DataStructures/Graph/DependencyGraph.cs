@@ -14,7 +14,7 @@ public class DependencyGraph<T>
     private readonly Dictionary<string, Dictionary<string, Vertex<T>>> _prec;
 
     /// <summary>
-    /// Maps between vertex key and Vertex
+    /// Maps between Vertex<T> key and Vertex<T>
     /// </summary>
     private readonly Dictionary<string, Vertex<T>> _symbolTable;
 
@@ -31,7 +31,7 @@ public class DependencyGraph<T>
     /// </summary>
     public int E => _numEdges;
 
-    private readonly TopologicalSort<T> _topo = new();
+    private readonly TopologicalSort _topo = new();
 
     public DependencyGraph()
     {
@@ -41,11 +41,11 @@ public class DependencyGraph<T>
     }
 
     /// <summary>
-    /// Adds vertex to the graph
+    /// Adds Vertex<T> to the graph
     /// </summary>
     /// <param name="v"></param>
     /// <returns></returns>
-    public void AddVertex(Vertex<T> v)
+    public void AddVertex<T>(Vertex<T> v)
     {
         if (!_symbolTable.ContainsKey(v.Key))
         {
@@ -59,44 +59,59 @@ public class DependencyGraph<T>
     public IEnumerable<Vertex<T>> GetAll() => _symbolTable.Values;
 
     /// <summary>
-    /// Return the vertices adjacent to vertex v
+    /// Return the vertices adjacent to Vertex<T> v
     /// </summary>
     /// <param name="v"></param>
     /// <returns></returns>
-    public IEnumerable<Vertex<T>> Adj(Vertex<T> v)
+    public IEnumerable<Vertex<T>> Adj(string key)
     {
-        var isPresent = _symbolTable.ContainsKey(v.Key);
+        var isPresent = _symbolTable.ContainsKey(key);
         if (!isPresent)
             return Enumerable.Empty<Vertex<T>>();
-        return _adj[v.Key].Values;
+        return _adj[key].Values;
     }
 
     /// <summary>
-    /// Return the precedent vertices to vertex v
+    /// Return the vertices adjacent to Vertex<T> v
     /// </summary>
     /// <param name="v"></param>
     /// <returns></returns>
-    public IEnumerable<Vertex<T>> Prec(Vertex<T> v)
-    {
-        var isPresent = _symbolTable.ContainsKey(v.Key);
-        if (!isPresent)
-            return Enumerable.Empty<Vertex<T>>();
-        return _prec[v.Key].Values;
-    }
+    public IEnumerable<Vertex<T>> Adj(Vertex<T> v) => Adj(v.Key);
 
     /// <summary>
-    /// Removes the vertex v and any associated edges
+    /// Return the precedent vertices to Vertex<T> v
+    /// </summary>
+    /// <param name="v"></param>
+    /// <returns></returns>
+    public IEnumerable<Vertex<T>> Prec(Vertex<T> v) => Prec(v.Key);
+
+    /// <summary>
+    /// Return the precedent vertices to Vertex<T> v
+    /// </summary>
+    /// <param name="v"></param>
+    /// <returns></returns>
+    public IEnumerable<Vertex<T>> Prec(string key)
+    {
+        var isPresent = _symbolTable.ContainsKey(key);
+        if (!isPresent)
+            return Enumerable.Empty<Vertex<T>>();
+        return _prec[key].Values;
+    }
+
+
+    /// <summary>
+    /// Removes the Vertex<T> v and any associated edges
     /// </summary>
     /// <param name="v"></param>
     /// <returns></returns>
     /// <exception cref="NotImplementedException"></exception>
-    public void RemoveVertex(Vertex<T> v)
+    public void RemoveVertex<T>(Vertex<T> v)
     {
         if (!_symbolTable.ContainsKey(v.Key))
             return;
         var adj = Adj(v);
         var prec = Prec(v);
-        
+
         // Remove edges
         foreach (var w in adj)
         {
@@ -140,7 +155,7 @@ public class DependencyGraph<T>
     {
         if (!IsDependedOn(v) && !HasDependents(v))
         {
-            RemoveVertex(v);
+            RemoveVertex<T>(v);
         }
     }
 
@@ -152,8 +167,8 @@ public class DependencyGraph<T>
     /// <param name="w"></param>
     public void AddEdge(Vertex<T> v, Vertex<T> w)
     {
-        AddVertex(v);
-        AddVertex(w);
+        AddVertex<T>(v);
+        AddVertex<T>(w);
         if (!_adj[v.Key].ContainsKey(w.Key))
         {
             _adj[v.Key].Add(w.Key, w);
@@ -163,7 +178,7 @@ public class DependencyGraph<T>
     }
 
     /// <summary>
-    /// Whether a vertex is connected to any other vertices.
+    /// Whether a Vertex<T> is connected to any other vertices.
     /// </summary>
     /// <param name="v"></param>
     /// <returns></returns>
@@ -178,7 +193,7 @@ public class DependencyGraph<T>
     }
 
     /// <summary>
-    /// Adds edges between the vertex v and all vertices in the array ws
+    /// Adds edges between the Vertex<T> v and all vertices in the array ws
     /// </summary>
     /// <param name="v"></param>
     /// <param name="ws"></param>
@@ -189,7 +204,7 @@ public class DependencyGraph<T>
     }
 
     /// <summary>
-    /// Adds edges between the vertex v and all vertices in the array ws
+    /// Adds edges between the Vertex<T> v and all vertices in the array ws
     /// </summary>
     /// <param name="vs"></param>
     /// <param name="w"></param>
@@ -205,7 +220,7 @@ public class DependencyGraph<T>
     }
 
     /// <summary>
-    /// Checks whether a vertex with the key given exists in the graph.
+    /// Checks whether a Vertex<T> with the key given exists in the graph.
     /// </summary>
     /// <param name="key"></param>
     /// <returns></returns>

@@ -119,6 +119,7 @@ public partial class CellStore
             MergeRestoreData = _mergeStore.InsertRowColAt(index, count, axis),
             FormulaRestoreData = _formulaStore.InsertRowColAt(index, count, axis)
         };
+
         return restoreData;
     }
 
@@ -132,7 +133,7 @@ public partial class CellStore
             FormatRestoreData = _formatStore.RemoveRowColAt(index, count, axis),
             MergeRestoreData = _mergeStore.RemoveRowColAt(index, count, axis)
         };
-        
+
         restoreData.Merge(ClearFormulaImpl(new[] { new RowRegion(index, count) }));
         _formulaStore.RemoveRowColAt(index, count, axis);
 

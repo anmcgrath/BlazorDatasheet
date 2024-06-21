@@ -1,13 +1,13 @@
 ﻿namespace BlazorDatasheet.DataStructures.Graph;
 
-public class TopologicalSort<T>
+public class TopologicalSort
 {
-    private Stack<Vertex<T>> _order;
+    private Stack<Vertex> _order;
     private HashSet<string> _marked;
 
-    public IEnumerable<Vertex<T>> Sort(DependencyGraph<T> g)
+    public IEnumerable<Vertex> Sort(DependencyGraph g)
     {
-        _order = new Stack<Vertex<T>>();
+        _order = new Stack<Vertex>();
         _marked = new();
 
         // TODO graph must be DAG so handle cycles
@@ -19,12 +19,12 @@ public class TopologicalSort<T>
         return _order;
     }
 
-    private bool Marked(Vertex<T> v)
+    private bool Marked(Vertex v)
     {
         return _marked.Contains(v.Key);
     }
 
-    private void dfs(DependencyGraph<T> g, Vertex<T> v)
+    private void dfs(DependencyGraph g, Vertex v)
     {
         _marked.Add(v.Key);
         foreach (var w in g.Adj(v))

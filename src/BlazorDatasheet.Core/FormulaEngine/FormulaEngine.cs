@@ -2,11 +2,11 @@
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Events;
 using BlazorDatasheet.Core.Events.Edit;
-using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Graph;
 using BlazorDatasheet.DataStructures.References;
 using BlazorDatasheet.DataStructures.Store;
+using BlazorDatasheet.DataStructures.Util;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
@@ -20,10 +20,10 @@ public class FormulaEngine
 {
     private readonly Sheet _sheet;
     private readonly CellStore _cells;
-    private SheetEnvironment _environment;
+    private readonly SheetEnvironment _environment;
     private readonly Parser _parser = new();
     private readonly Evaluator _evaluator;
-    private readonly DependencyGraph _dependencyGraph;
+    private readonly DependencyGraph<CellFormula?> _dependencyGraph;
 
     /// <summary>
     /// Keeps track of any ranges referenced by formula.
@@ -43,7 +43,7 @@ public class FormulaEngine
 
         _environment = new SheetEnvironment(sheet);
         _evaluator = new Evaluator(_environment);
-        _dependencyGraph = new DependencyGraph();
+        _dependencyGraph = new DependencyGraph<CellFormula?>();
         _observedRanges = new RegionDataStore<bool>();
 
         RegisterDefaultFunctions();
@@ -68,7 +68,7 @@ public class FormulaEngine
         {
             foreach (var region in e.Regions)
             {
-                if (IsRegionReferenced(region))
+                if (RegionContainsReferencedCells(region))
                 {
                     cellsReferenced = true;
                     break;
@@ -84,11 +84,11 @@ public class FormulaEngine
 
     private bool IsCellReferenced(int row, int col)
     {
-        return _dependencyGraph.HasVertex(new CellVertex(row, col).Key) ||
+        return _dependencyGraph.HasVertex(RangeText.ToCellText(row, col)) ||
                _observedRanges.Any(row, col);
     }
 
-    private bool IsRegionReferenced(IRegion region)
+    private bool RegionContainsReferencedCells(IRegion region)
     {
         return _observedRanges.Any(region);
     }
@@ -111,41 +111,44 @@ public class FormulaEngine
 
     public void AddToDependencyGraph(int row, int col, CellFormula formula)
     {
-        var formulaVertex = new CellVertex(row, col);
-        _dependencyGraph.AddVertex(formulaVertex);
+        var cellVertex = new RegionVertex(row, col, formula);
+        _dependencyGraph.AddVertex(cellVertex);
 
-        var references = formula.References!;
+        var references = formula.References;
         foreach (var reference in references)
         {
-            var vertex = GetVertex(reference);
-            _dependencyGraph.AddEdge(vertex, formulaVertex);
+            var referenceVertex = GetVertexFromReference(reference);
+            _dependencyGraph.AddEdge(referenceVertex, cellVertex);
             if (reference is RangeReference rangeReference)
             {
-                _observedRanges.Add(((RegionVertex)vertex).Region, true);
-                var cellVerticesInsideRange = GetCellVerticesInRange(rangeReference);
-                foreach (var cellVertex in cellVerticesInsideRange)
+                _observedRanges.Add(((RegionVertex)referenceVertex).Region, true);
+                var cellVerticesInsideRange = GetSingleCellVerticesInsideRange(rangeReference);
+                // We depend on all cells inside the range, so ensure that they are calculated first
+                // by adding the correct dependency - the region depends on everything inside
+                foreach (var vertex in cellVerticesInsideRange)
                 {
-                    if (cellVertex != formulaVertex)
-                        _dependencyGraph.AddEdge(cellVertex, vertex);
+                    if (vertex != cellVertex)
+                        _dependencyGraph.AddEdge(vertex, referenceVertex);
                 }
             }
         }
     }
 
-    private IEnumerable<CellVertex> GetCellVerticesInRange(RangeReference rangeRef)
+    private IEnumerable<RegionVertex> GetSingleCellVerticesInsideRange(RangeReference rangeRef)
     {
         var region = ToRegion(rangeRef);
         if (region == null)
-            return Enumerable.Empty<CellVertex>();
+            return Enumerable.Empty<RegionVertex>();
 
-        var cellVertices = new List<CellVertex>();
+        var cellVertices = new List<RegionVertex>();
 
         foreach (var vertex in _dependencyGraph.GetAll())
         {
-            if (vertex is CellVertex cellVertex &&
-                region.Contains(cellVertex.Row, cellVertex.Col))
+            if (vertex is RegionVertex rangeVertex &&
+                rangeVertex.Region.Width == 1 && rangeVertex.Region.Height == 1 &&
+                region.Contains(rangeVertex.Region.Top, rangeVertex.Region.Left))
             {
-                cellVertices.Add(cellVertex);
+                cellVertices.Add(rangeVertex);
             }
         }
 
@@ -167,7 +170,7 @@ public class FormulaEngine
         }
         catch (Exception e)
         {
-            return CellValue.Error(ErrorType.Na, "Error running formula");
+            return CellValue.Error(ErrorType.Na, $"Error running formula: {e.Message}");
         }
     }
 
@@ -178,7 +181,7 @@ public class FormulaEngine
     /// <param name="col"></param>
     public void RemoveFormula(int row, int col)
     {
-        var vertex = new CellVertex(row, col);
+        var vertex = new RegionVertex(row, col, null);
         var dependsOn = _dependencyGraph.Prec(vertex);
         foreach (var dependent in dependsOn)
         {
@@ -200,14 +203,14 @@ public class FormulaEngine
 
         foreach (var vertex in order)
         {
-            if (vertex is CellVertex cellVertex)
+            if (vertex is RegionVertex cellVertex && cellVertex.Region.IsSingleCell())
             {
-                var formula = _sheet.Cells.GetFormula(cellVertex.Row, cellVertex.Col);
+                var formula = _sheet.Cells.GetFormula(cellVertex.Region.Top, cellVertex.Region.Left);
                 if (formula != null)
                 {
                     var value = this.Evaluate(formula);
-                    _sheet.Cells.SetValueImpl(cellVertex.Row, cellVertex.Col, value);
-                    _sheet.MarkDirty(cellVertex.Row, cellVertex.Col);
+                    _sheet.Cells.SetValueImpl(cellVertex.Region.Top, cellVertex.Region.Left, value);
+                    _sheet.MarkDirty(cellVertex.Region.Top, cellVertex.Region.Left);
                 }
             }
         }
@@ -217,13 +220,17 @@ public class FormulaEngine
         IsCalculating = false;
     }
 
-    private Vertex GetVertex(Reference reference)
+    private Vertex<CellFormula?> GetVertexFromReference(Reference reference)
     {
         if (reference is CellReference cellReference)
-            return new CellVertex(cellReference.Row.RowNumber, cellReference.Col.ColNumber);
+        {
+            var formula = _sheet.Cells.GetFormula(cellReference.Row.RowNumber, cellReference.Col.ColNumber);
+            return new RegionVertex(cellReference.Row.RowNumber, cellReference.Col.ColNumber, formula);
+        }
+
         if (reference is NamedReference namedReference)
         {
-            return new NamedVertex(namedReference.Name);
+            return new NamedVertex(namedReference.Name, null);
         }
 
         if (reference is RangeReference rangeReference)
@@ -231,7 +238,7 @@ public class FormulaEngine
             var region = ToRegion(rangeReference);
             if (region != null)
             {
-                return new RegionVertex(region, rangeReference.ToRefText());
+                return new RegionVertex(region, null);
             }
         }
 
@@ -273,5 +280,33 @@ public class FormulaEngine
     {
         _environment.SetVariable(varName, value);
         CalculateSheet();
+    }
+
+    public void InsertRowColAt(int index, int count, Axis axis)
+    {
+        foreach (var vertex in _dependencyGraph.GetAll())
+        {
+            if (vertex.Data != null)
+            {
+                foreach (var reference in vertex.Data.References)
+                {
+                    
+                }
+            }
+        }
+    }
+
+    public IEnumerable<Vertex<CellFormula?>> GetVerticesInRegion(IRegion region)
+    {
+        var vertices = new List<RegionVertex>();
+        foreach (var vertex in _dependencyGraph.GetAll())
+        {
+            if (vertex is RegionVertex regionVertex && region.Contains(regionVertex.Region))
+            {
+                vertices.Add(regionVertex);
+            }
+        }
+
+        return vertices;
     }
 }

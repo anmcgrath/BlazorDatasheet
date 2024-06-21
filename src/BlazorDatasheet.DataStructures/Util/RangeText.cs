@@ -1,3 +1,4 @@
+using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.References;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 
@@ -223,5 +224,22 @@ public static class RangeText
         }
 
         return str;
+    }
+
+    public static string ToCellText(int row, int col)
+    {
+        return $"{ColNumberToLetters(col)}{row + 1}";
+    }
+
+    public static string ToRegionText(IRegion region)
+    {
+        var firstCol = RangeText.ColNumberToLetters(region.Left);
+        var firstRow = region.Top + 1;
+        if (region.Left == region.Right && region.Top == region.Bottom)
+            return $"{firstCol}{firstRow}";
+
+        var lastCol = RangeText.ColNumberToLetters(region.Right);
+        var lastRow = region.Bottom + 1;
+        return $"{firstCol}{firstRow}:{lastCol}{lastRow}";
     }
 }
