@@ -108,10 +108,9 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
     /// <param name="axis"></param>
     /// <param name="expandNeighbouring"></param>
     /// <returns></returns>
-    public RegionRestoreData<T> InsertRowColAt(int index, int count, Axis axis,
-        bool? expandNeighbouring = null)
+    public RegionRestoreData<T> InsertRowColAt(int index, int count, Axis axis)
     {
-        var expand = expandNeighbouring ?? ExpandWhenInsertAfter;
+        var expand = ExpandWhenInsertAfter;
 
         // As an example for inserting rows, there are three things that can happen
         // 1. Any regions that intersect the index should be expanded by nRows
@@ -343,6 +342,10 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
     {
         return Clear(region, GetDataRegions(region));
     }
+
+    public RegionRestoreData<T> InsertRowAt(int row, int nRows) => InsertRowColAt(row, nRows, Axis.Row);
+
+    public RegionRestoreData<T> InsertColAt(int col, int nCols) => InsertRowColAt(col, nCols, Axis.Col);
 
     /// <summary>
     /// Clears all data

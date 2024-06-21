@@ -111,15 +111,15 @@ public partial class CellStore
         return restoreData;
     }
 
-    internal CellStoreRestoreData InsertRowColAt(int index, int count, Axis axis, bool? expandNeighbouring = null)
+    internal CellStoreRestoreData InsertRowColAt(int index, int count, Axis axis)
     {
         var restoreData = new CellStoreRestoreData();
         restoreData.ValueRestoreData = _dataStore.InsertRowColAt(index, count, axis);
-        restoreData.FormatRestoreData = _formatStore.InsertRowColAt(index, count, axis, expandNeighbouring);
-        restoreData.TypeRestoreData = _typeStore.InsertRowColAt(index, count, axis, expandNeighbouring);
-        restoreData.FormulaRestoreData = _formulaStore.InsertRowColAt(index, count, axis);
+        restoreData.FormatRestoreData = _formatStore.InsertRowColAt(index, count, axis);
+        restoreData.TypeRestoreData = _typeStore.InsertRowColAt(index, count, axis);
         restoreData.ValidRestoreData = _validStore.InsertRowColAt(index, count, axis);
-        restoreData.MergeRestoreData = _mergeStore.InsertRowColAt(index, count, axis, expandNeighbouring);
+        restoreData.MergeRestoreData = _mergeStore.InsertRowColAt(index, count, axis);
+        restoreData.FormulaRestoreData = _formulaStore.InsertRowColAt(index, count, axis);
         return restoreData;
     }
 

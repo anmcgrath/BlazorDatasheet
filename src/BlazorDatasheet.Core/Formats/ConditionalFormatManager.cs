@@ -144,10 +144,9 @@ public class ConditionalFormatManager
     }
 
 
-    internal RegionRestoreData<ConditionalFormatAbstractBase> InsertRowColAt(int row, int nRows, Axis axis,
-        bool expandNeighbouring = false)
+    internal RegionRestoreData<ConditionalFormatAbstractBase> InsertRowColAt(int row, int nRows, Axis axis)
     {
-        return _appliedFormats.InsertRowColAt(row, nRows, axis, expandNeighbouring);
+        return _appliedFormats.InsertRowColAt(row, nRows, axis);
     }
 
     internal RegionRestoreData<ConditionalFormatAbstractBase> RemoveRowColAt(int index, int count, Axis axis)
