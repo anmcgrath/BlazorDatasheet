@@ -111,20 +111,20 @@ public class SparseMatrixStoreByCols<T> : IMatrixDataStore<T>
         };
     }
 
-    public MatrixRestoreData<T> InsertRowAt(int row, int nRows = 1)
+    public MatrixRestoreData<T> InsertRowAt(int row, int count = 1)
     {
         foreach (var column in _columns.Values)
         {
-            column.InsertRowAt(row, nRows);
+            column.InsertRowAt(row, count);
         }
 
         return new MatrixRestoreData<T>()
         {
-            Shifts = [new AppliedShift(Axis.Row, row, nRows)]
+            Shifts = [new AppliedShift(Axis.Row, row, count)]
         };
     }
 
-    public MatrixRestoreData<T> InsertColAt(int col, int nCols)
+    public MatrixRestoreData<T> InsertColAt(int col, int count)
     {
         var currentColumns = _columns.ToList();
         List<(int colIndex, SColumn<T> column)> columnsToReAdd = new List<(int colIndex, SColumn<T> column)>();
@@ -133,7 +133,7 @@ public class SparseMatrixStoreByCols<T> : IMatrixDataStore<T>
             if (kp.Key >= col)
             {
                 _columns.Remove(kp.Key);
-                columnsToReAdd.Add((kp.Key + nCols, kp.Value));
+                columnsToReAdd.Add((kp.Key + count, kp.Value));
             }
         }
 
@@ -143,22 +143,22 @@ public class SparseMatrixStoreByCols<T> : IMatrixDataStore<T>
             _columns.Add(c.colIndex, c.column);
         }
 
-        for (int i = 0; i < nCols; i++)
+        for (int i = 0; i < count; i++)
         {
             _columns.Add(col + i, new SColumn<T>(col + i, _defaultValueIfEmpty));
         }
         
         return new MatrixRestoreData<T>()
         {
-            Shifts = [new AppliedShift(Axis.Col, col, nCols)]
+            Shifts = [new AppliedShift(Axis.Col, col, count)]
         };
     }
 
-    public MatrixRestoreData<T> RemoveColAt(int col, int nCols)
+    public MatrixRestoreData<T> RemoveColAt(int col, int count)
     {
         var deleted = new List<(int row, int col, T? data)>();
 
-        for (int i = 0; i < nCols; i++)
+        for (int i = 0; i < count; i++)
         {
             if (_columns.ContainsKey(col + i))
             {
@@ -174,7 +174,7 @@ public class SparseMatrixStoreByCols<T> : IMatrixDataStore<T>
             if (kp.Key > col)
             {
                 _columns.Remove(kp.Key);
-                columnsToReAdd.Add((kp.Key - nCols, kp.Value));
+                columnsToReAdd.Add((kp.Key - count, kp.Value));
             }
         }
 
@@ -187,7 +187,7 @@ public class SparseMatrixStoreByCols<T> : IMatrixDataStore<T>
         return new MatrixRestoreData<T>()
         {
             DataRemoved = deleted,
-            Shifts = [new AppliedShift(Axis.Col, col, -nCols)]
+            Shifts = [new AppliedShift(Axis.Col, col, -count)]
         };
     }
 
@@ -209,15 +209,15 @@ public class SparseMatrixStoreByCols<T> : IMatrixDataStore<T>
         return -1;
     }
 
-    public MatrixRestoreData<T> RemoveRowAt(int row, int nRows)
+    public MatrixRestoreData<T> RemoveRowAt(int row, int count)
     {
         var deleted = new List<(int row, int col, T?)>();
         foreach (var column in _columns.Values)
-            deleted.AddRange(column.DeleteRowAt(row, nRows)!);
+            deleted.AddRange(column.DeleteRowAt(row, count)!);
         return new MatrixRestoreData<T>()
         {
             DataRemoved = deleted,
-            Shifts = [new AppliedShift(Axis.Row, row, -nRows)]
+            Shifts = [new AppliedShift(Axis.Row, row, -count)]
         };
     }
 

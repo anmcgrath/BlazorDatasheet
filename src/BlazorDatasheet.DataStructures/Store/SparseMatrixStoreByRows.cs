@@ -104,32 +104,32 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
         };
     }
 
-    public MatrixRestoreData<T> InsertRowAt(int row, int nRows)
+    public MatrixRestoreData<T> InsertRowAt(int row, int count)
     {
-        _rows.InsertAt(row, nRows);
+        _rows.InsertAt(row, count);
         return new MatrixRestoreData<T>()
         {
-            Shifts = [new AppliedShift(Axis.Row, row, nRows)]
+            Shifts = [new AppliedShift(Axis.Row, row, count)]
         };
     }
 
-    public MatrixRestoreData<T> InsertColAt(int col, int nCols)
+    public MatrixRestoreData<T> InsertColAt(int col, int count)
     {
         foreach (var row in _rows.Values)
-            row.Value.InsertAt(col, nCols);
+            row.Value.InsertAt(col, count);
 
         return new MatrixRestoreData<T>()
         {
-            Shifts = [new AppliedShift(Axis.Col, col, nCols)]
+            Shifts = [new AppliedShift(Axis.Col, col, count)]
         };
     }
 
-    public MatrixRestoreData<T> RemoveColAt(int col, int nCols)
+    public MatrixRestoreData<T> RemoveColAt(int col, int count)
     {
         var removed = new List<(int row, int col, T data)>();
         foreach (var row in _rows.Values)
         {
-            var removedColData = row.Value.DeleteAt(col, nCols);
+            var removedColData = row.Value.DeleteAt(col, count);
             removed.AddRange(removedColData.Select(x =>
                 (row.Key, x.indexDeleted, x.value)
             ));
@@ -138,7 +138,7 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
         return new MatrixRestoreData<T>()
         {
             DataRemoved = removed!,
-            Shifts = [new AppliedShift(Axis.Col, col, -nCols)]
+            Shifts = [new AppliedShift(Axis.Col, col, -count)]
         };
     }
 
@@ -163,9 +163,9 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
         return _rows.Get(row).GetNextNonEmptyItemKey(col + 1);
     }
 
-    public MatrixRestoreData<T> RemoveRowAt(int row, int nRows)
+    public MatrixRestoreData<T> RemoveRowAt(int row, int count)
     {
-        var removedRows = _rows.DeleteAt(row, nRows);
+        var removedRows = _rows.DeleteAt(row, count);
         var removedData = new List<(int row, int col, T data)>();
         foreach (var removedRow in removedRows)
         {
@@ -178,7 +178,7 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
         return new MatrixRestoreData<T>()
         {
             DataRemoved = removedData!,
-            Shifts = [new AppliedShift(Axis.Row, row, -nRows)]
+            Shifts = [new AppliedShift(Axis.Row, row, -count)]
         };
     }
 

@@ -1,4 +1,3 @@
-using System.Collections;
 using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.DataStructures.Store;
@@ -30,12 +29,6 @@ public interface IMatrixDataStore<T> : IStore<T, MatrixRestoreData<T>>
     public MatrixRestoreData<T> Clear(IEnumerable<IRegion> regions);
 
     /// <summary>
-    /// Removes the column specified from the store and returns the values that were removed.
-    /// </summary>
-    /// <param name="col">The index of the column to remove.</param>
-    public MatrixRestoreData<T> RemoveColAt(int col, int nCols);
-
-    /// <summary>
     /// Finds the next non-empty row number in the column. Returns -1 if no non-empty rows exist after the row
     /// </summary>
     /// <param name="row"></param>
@@ -65,13 +58,6 @@ public interface IMatrixDataStore<T> : IStore<T, MatrixRestoreData<T>>
         else
             return RemoveRowAt(index, count);
     }
-
-    /// <summary>
-    /// Removes the row specified from the store and returns the values that were removed.
-    /// </summary>
-    /// <param name="row"></param>
-    /// <param name="nRows"></param>
-    internal MatrixRestoreData<T> RemoveRowAt(int row, int nRows);
 
     /// <summary>
     /// Get non empty cells that exist in the bounds given

@@ -1,12 +1,8 @@
 ﻿using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Events;
-using BlazorDatasheet.Core.Events.Layout;
-using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.DataStructures.Geometry;
-using BlazorDatasheet.DataStructures.RTree;
 using BlazorDatasheet.DataStructures.Store;
-using BlazorDatasheet.DataStructures.Util;
 
 namespace BlazorDatasheet.Core.Formats;
 

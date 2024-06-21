@@ -1,6 +1,3 @@
-using System.Collections;
-using System.Data.SqlTypes;
-using System.Net;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.RTree;
 using BlazorDatasheet.DataStructures.Util;
@@ -106,7 +103,6 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
     /// <param name="index"></param>
     /// <param name="count"></param>
     /// <param name="axis"></param>
-    /// <param name="expandNeighbouring"></param>
     /// <returns></returns>
     public RegionRestoreData<T> InsertRowColAt(int index, int count, Axis axis)
     {
@@ -171,9 +167,9 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
     public RegionRestoreData<T> RemoveRowColAt(int index, int count, Axis axis)
     {
         if (axis == Axis.Col)
-            return RemoveCols(index, index + count - 1);
+            return RemoveColAt(index, index + count - 1);
         else
-            return RemoveRows(index, index + count - 1);
+            return RemoveRowAt(index, index + count - 1);
     }
 
     /// <summary>
@@ -183,7 +179,7 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
     /// <param name="rowStart"></param>
     /// <param name="rowEnd"></param>
     /// <returns>Any data that is removed during this operation</returns>
-    public RegionRestoreData<T> RemoveRows(int rowStart, int rowEnd) =>
+    public RegionRestoreData<T> RemoveRowAt(int rowStart, int rowEnd) =>
         RemoveRowsOrColumsAndShift(rowStart, rowEnd, Axis.Row);
 
     /// <summary>
@@ -191,10 +187,10 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
     /// Returns any data that is removed during this operation.
     /// </summary>
     /// <param name="colStart"></param>
-    /// <param name="colEnd"></param>
+    /// <param name="count"></param>
     /// <returns>Any data that is removed during this operation</returns>
-    public RegionRestoreData<T> RemoveCols(int colStart, int colEnd) =>
-        RemoveRowsOrColumsAndShift(colStart, colEnd, Axis.Col);
+    public RegionRestoreData<T> RemoveColAt(int colStart, int count) =>
+        RemoveRowsOrColumsAndShift(colStart, count, Axis.Col);
 
     /// <summary>
     /// Removes a number of rows or columns and shifts/contracts regions appropriately.
@@ -300,27 +296,6 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
     }
 
     /// <summary>
-    /// Gets data to the left/above the given row or column.
-    /// </summary>
-    /// <param name="rowOrCol"></param>
-    /// <param name="axis"></param>
-    /// <returns></returns>
-    private IEnumerable<DataRegion<T>> GetBefore(int rowOrCol, Axis axis)
-    {
-        switch (axis)
-        {
-            case Axis.Row:
-                return this.GetDataRegions(new RowRegion(0, rowOrCol - 1))
-                    .Where(x => x.Region.Bottom < rowOrCol);
-            case Axis.Col:
-                return this.GetDataRegions(new ColumnRegion(0, rowOrCol - 1))
-                    .Where(x => x.Region.Right < rowOrCol);
-        }
-
-        return Enumerable.Empty<DataRegion<T>>();
-    }
-
-    /// <summary>
     /// Clears the regions from overlapping data where the data is the same.
     /// Returns the regions that were removed/added in the process.
     /// </summary>
@@ -343,9 +318,9 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
         return Clear(region, GetDataRegions(region));
     }
 
-    public RegionRestoreData<T> InsertRowAt(int row, int nRows) => InsertRowColAt(row, nRows, Axis.Row);
+    public RegionRestoreData<T> InsertRowAt(int row, int count) => InsertRowColAt(row, count, Axis.Row);
 
-    public RegionRestoreData<T> InsertColAt(int col, int nCols) => InsertRowColAt(col, nCols, Axis.Col);
+    public RegionRestoreData<T> InsertColAt(int col, int count) => InsertRowColAt(col, count, Axis.Col);
 
     /// <summary>
     /// Clears all data
@@ -511,7 +486,6 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
     {
         foreach (var shift in restoreData.Shifts)
         {
-            var shiftDir = Math.Abs(shift.Amount) / shift.Amount;
             var regionsToShift = GetAfter(shift.Index, shift.Axis);
             foreach (var region in regionsToShift)
             {

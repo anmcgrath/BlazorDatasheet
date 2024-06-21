@@ -1,10 +1,7 @@
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Interfaces;
-using BlazorDatasheet.Core.Validation;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core;
@@ -113,25 +110,30 @@ public partial class CellStore
 
     internal CellStoreRestoreData InsertRowColAt(int index, int count, Axis axis)
     {
-        var restoreData = new CellStoreRestoreData();
-        restoreData.ValueRestoreData = _dataStore.InsertRowColAt(index, count, axis);
-        restoreData.FormatRestoreData = _formatStore.InsertRowColAt(index, count, axis);
-        restoreData.TypeRestoreData = _typeStore.InsertRowColAt(index, count, axis);
-        restoreData.ValidRestoreData = _validStore.InsertRowColAt(index, count, axis);
-        restoreData.MergeRestoreData = _mergeStore.InsertRowColAt(index, count, axis);
-        restoreData.FormulaRestoreData = _formulaStore.InsertRowColAt(index, count, axis);
+        var restoreData = new CellStoreRestoreData
+        {
+            ValueRestoreData = _dataStore.InsertRowColAt(index, count, axis),
+            FormatRestoreData = _formatStore.InsertRowColAt(index, count, axis),
+            TypeRestoreData = _typeStore.InsertRowColAt(index, count, axis),
+            ValidRestoreData = _validStore.InsertRowColAt(index, count, axis),
+            MergeRestoreData = _mergeStore.InsertRowColAt(index, count, axis),
+            FormulaRestoreData = _formulaStore.InsertRowColAt(index, count, axis)
+        };
         return restoreData;
     }
 
     internal CellStoreRestoreData RemoveRowColAt(int index, int count, Axis axis)
     {
-        var restoreData = new CellStoreRestoreData();
-        restoreData.ValueRestoreData = _dataStore.RemoveRowColAt(index, count, axis);
-        restoreData.ValidRestoreData = _validStore.RemoveRowColAt(index, count, axis);
-        restoreData.TypeRestoreData = _typeStore.RemoveRowColAt(index, count, axis);
-        restoreData.FormulaRestoreData = ClearFormulaImpl(new[] { new RowRegion(index, count) }).FormulaRestoreData;
-        restoreData.FormatRestoreData = _formatStore.RemoveRowColAt(index, count, axis);
-        restoreData.MergeRestoreData = _mergeStore.RemoveRowColAt(index, count, axis);
+        var restoreData = new CellStoreRestoreData
+        {
+            ValueRestoreData = _dataStore.RemoveRowColAt(index, count, axis),
+            ValidRestoreData = _validStore.RemoveRowColAt(index, count, axis),
+            TypeRestoreData = _typeStore.RemoveRowColAt(index, count, axis),
+            FormatRestoreData = _formatStore.RemoveRowColAt(index, count, axis),
+            MergeRestoreData = _mergeStore.RemoveRowColAt(index, count, axis)
+        };
+        
+        restoreData.Merge(ClearFormulaImpl(new[] { new RowRegion(index, count) }));
         _formulaStore.RemoveRowColAt(index, count, axis);
 
         return restoreData;
@@ -197,7 +199,7 @@ public partial class CellStore
 
         // Set formula through this function so we add the formula back in to the dependency graph
         foreach (var data in restoreData.FormulaRestoreData.DataRemoved)
-            this.SetFormulaImpl(data.row, data.col, data.data);
+            SetFormulaImpl(data.row, data.col, data.data);
 
         _validStore.Restore(restoreData.ValidRestoreData);
         _typeStore.Restore(restoreData.TypeRestoreData);
