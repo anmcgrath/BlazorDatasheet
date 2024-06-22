@@ -420,7 +420,7 @@ public class Sheet
     /// <param name="row"></param>
     /// <param name="col"></param>
     /// <returns></returns>
-    public CellFormat? GetFormat(int row, int col)
+    public CellFormat GetFormat(int row, int col)
     {
         var defaultFormat = new CellFormat();
         var cellFormat = Cells.GetFormat(row, col).Clone();
