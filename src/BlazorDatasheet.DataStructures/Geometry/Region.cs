@@ -28,7 +28,16 @@ public class Region : IRegion
 
     public int Height => Bottom >= int.MaxValue ? int.MaxValue : Bottom - Top + 1;
     public int Width => Right >= int.MaxValue ? int.MaxValue : Right - Left + 1;
-    public int Area => Height * Width;
+    public int Area
+    {
+        get
+        {
+            if (Height == int.MaxValue || Width == int.MaxValue)
+                return int.MaxValue;
+            
+            return Height * Width;
+        }
+    }
 
 
     /// <summary>

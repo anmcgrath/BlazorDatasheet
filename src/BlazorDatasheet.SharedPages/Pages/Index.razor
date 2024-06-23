@@ -47,7 +47,7 @@
     <button @onclick="@(() => Sheet.Cells.Merge(Sheet.Selection.Regions))">Merge cells</button>
     <button @onclick="@(SortSelectionDesc)">Sort Desc</button>
     <button @onclick="@(SortSelectionAsc)">Sort ASc</button>
-    <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat(){NumberFormat="C2"}))">Currency</button>
+    <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { NumberFormat = "C2" }))">Currency</button>
 </div>
 
 <div>
@@ -163,6 +163,10 @@
         Sheet.Cells[3, 3].Value = "Date/Time:";
         Sheet.Cells[3, 4].Type = "datetime";
         Sheet.Cells[3, 4].Value = DateTime.Now;
+        Sheet.Cells[3, 4].Format = new CellFormat()
+        {
+            NumberFormat = "yyyy-MM-dd"
+        };
 
         Sheet.Cells[4, 3].Value = "Select:";
         Sheet.Cells[4, 4].Type = "select";

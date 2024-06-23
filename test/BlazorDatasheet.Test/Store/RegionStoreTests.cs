@@ -253,4 +253,13 @@ public class RegionStoreTests
         subStore.GetData(0, 1).Should().BeEquivalentTo(new int[] { 1 });
         subStore.GetData(1, 2).Should().BeEquivalentTo(new int[] { 2 });
     }
+
+    [Test]
+    public void Removing_Across_Column_Region_Doesnt_Overflow()
+    {
+        var store = new ConsolidatedDataStore<int>();
+        store.Add(new ColumnRegion(10, 20), 1);
+
+        store.RemoveRows(10, 10);
+    }
 }

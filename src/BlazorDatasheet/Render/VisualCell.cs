@@ -30,8 +30,11 @@ public class VisualCell
 
         var cellValue = sheet.Cells.GetCellValue(row, col);
         Value = cellValue.Data;
+        
         if (cellValue.ValueType == CellValueType.Number && format.NumberFormat != null)
             FormattedString = (cellValue.GetValue<double>()).ToString(format.NumberFormat);
+        else if (cellValue.ValueType == CellValueType.Date && format.NumberFormat != null)
+            FormattedString = (cellValue.GetValue<DateTime>()).ToString(format.NumberFormat);
         else
             FormattedString = Value?.ToString() ?? string.Empty;
 

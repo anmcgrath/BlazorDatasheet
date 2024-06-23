@@ -2,6 +2,7 @@
 @using BlazorDatasheet.Core.Interfaces
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Edit
+@using BlazorDatasheet.Formula.Core
 @inherits BaseEditor
 
 <input
@@ -37,19 +38,20 @@
     public override void BeforeEdit(IReadOnlyCell cell, Sheet sheet)
     {
         Cell = cell;
+        CurrentValue = cell?.Value?.ToString() ?? string.Empty;
     }
 
     public override void BeginEdit(EditEntryMode entryMode, string? editValue, string key)
     {
-    /*var canParse = DateTime.TryParse(editValue?.ToString(), out var parsedDateTime);
-        if (canParse)
-        {
-            CurrentDateTime = parsedDateTime;
-        }
-        else
-        {
-            CurrentDateTime = DateTime.Now;
-        }*/
+        /*var canParse = DateTime.TryParse(editValue?.ToString(), out var parsedDateTime);
+            if (canParse)
+            {
+                CurrentDateTime = parsedDateTime;
+            }
+            else
+            {
+                CurrentDateTime = DateTime.Now;
+            }*/
     }
 
 }
