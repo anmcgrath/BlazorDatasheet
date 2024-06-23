@@ -185,7 +185,7 @@ public class RegionStoreTests
             .Select(x => x.Region)
             .Should().BeEquivalentTo([r]);
     }
-    
+
     [Test]
     public void Delete_First_Cols_From_Behind_region_Restores()
     {
@@ -252,5 +252,14 @@ public class RegionStoreTests
         var subStore = store.GetSubStore(new RowRegion(3, 4), newStoreResetsOffsets: true);
         subStore.GetData(0, 1).Should().BeEquivalentTo(new int[] { 1 });
         subStore.GetData(1, 2).Should().BeEquivalentTo(new int[] { 2 });
+    }
+
+    [Test]
+    public void Removing_Across_Column_Region_Doesnt_Overflow()
+    {
+        var store = new ConsolidatedDataStore<int>();
+        store.Add(new ColumnRegion(10, 20), 1);
+
+        store.RemoveRows(10, 10);
     }
 }
