@@ -220,14 +220,6 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
 
             // if the region is partially overlapping (it must be because we know it is overlapping and it doesn't fully
             // overlap) then shift the overlap left and contract the left edge
-            // First check if it will result in the area being smaller than the minArea, in which case it should be 
-            // removed instead
-            if (overlap.Region.Break(region).Sum(x => x.Area) <= MinArea)
-            {
-                Tree.Delete(overlap);
-                removed.Add(overlap);
-                continue;
-            }
 
             var intersection = overlap.Region.GetIntersection(region)!;
             // contraction amount in row direction
@@ -246,7 +238,12 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
 
             var newRegion = new DataRegion<T>(overlap.Data, overlap.Region.Clone());
             newRegion.Region.Contract(cEdge, Math.Max(cRow, cCol));
-            newRegion.Region.Shift(sRow,sCol);
+            newRegion.Region.Shift(sRow, sCol);
+            
+            // if the region is less than the minimum area, don't add it back
+            if(newRegion.Region.Area <= MinArea)
+                continue;
+            
             newRegion.UpdateEnvelope();
             dataAdded.Add(newRegion);
             newDataToAdd.Add(newRegion);
