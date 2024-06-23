@@ -7,6 +7,14 @@
         <IsPackable>false</IsPackable>
     </PropertyGroup>
 
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+      <WarningLevel>1</WarningLevel>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+      <WarningLevel>1</WarningLevel>
+    </PropertyGroup>
+
 
     <ItemGroup>
         <SupportedPlatform Include="browser" />
