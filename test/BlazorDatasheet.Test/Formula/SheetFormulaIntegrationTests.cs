@@ -1,10 +1,6 @@
-using System.Collections.Generic;
-using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
-using BlazorDatasheet.Core.FormulaEngine;
 using BlazorDatasheet.DataStructures.Geometry;
-using BlazorDatasheet.Formula.Core;
 using FluentAssertions;
 using NUnit.Framework;
 
@@ -32,6 +28,14 @@ public class SheetFormulaIntegrationTests
         _sheet.Cells.SetValue(0, 0, 5);
         var formulaVal = _sheet.Cells.GetValue(1, 1);
         Assert.AreEqual(15, formulaVal);
+    }
+
+    [Test]
+    public void Set_Formula_Then_Undo_Removes_Formula()
+    {
+        _sheet.Cells.SetFormula(0, 0, "=5");
+        _sheet.Commands.Undo();
+        _sheet.Cells.GetValue(0, 0).Should().BeNull();
     }
 
     [Test]
@@ -63,6 +67,7 @@ public class SheetFormulaIntegrationTests
         // Set sheet cell (1, 1) to any old value and the formula should be cleared.
         _sheet.Cells.SetValue(1, 1, "Blah");
         Assert.IsFalse(_sheet.Cells.HasFormula(1, 1));
+        _sheet.FormulaEngine.DependencyManager.HasDependents(0, 0).Should().BeFalse();
     }
 
     [Test]
@@ -143,10 +148,10 @@ public class SheetFormulaIntegrationTests
         // When we set A1 and A2, A3 should evaluate first and then A4 because the result of A4 depends on A3
         _sheet.Cells.SetFormula(2, 0, "=AVERAGE(A1:A2)");
         _sheet.Cells.SetFormula(3, 0, "=AVERAGE(A2:A3)");
-        _sheet.Cells.SetValue(0, 0, 10);
-        _sheet.Cells.SetValue(1, 0, 20);
-        _sheet.Cells.GetValue(2, 0).Should().Be((10 + 20) / 2d);
-        _sheet.Cells.GetValue(3, 0).Should().Be((15 + 20) / 2d);
+        _sheet.Cells.SetValue(0, 0, 10); // A1 = 10
+        _sheet.Cells.SetValue(1, 0, 20); // A2 = 20
+        _sheet.Cells.GetValue(2, 0).Should().Be((10 + 20) / 2d); // A3 = Sum(A1:A2) = 15
+        _sheet.Cells.GetValue(3, 0).Should().Be((20 + 15) / 2d); // A4 = Sum(A2:A3) = 17.5
     }
 
     [Test]
@@ -212,7 +217,7 @@ public class SheetFormulaIntegrationTests
         sheet.Commands.Undo();
         sheet.Cells[2, 2].Formula.Should().Be("=B2");
     }
-    
+
     [Test]
     public void Remove_Row_Before_Formula_Shifts_Formula_And_Updates_Ref()
     {
@@ -232,7 +237,7 @@ public class SheetFormulaIntegrationTests
         sheet.Cells.SetFormula(2, 2, "=B2");
         sheet.Columns.RemoveAt(1);
         sheet.Cells[2, 2].Formula.Should().BeNull();
-        sheet.Cells[2, 3].Formula.Should().Be("=A2");
+        sheet.Cells[2, 1].Formula.Should().Be("=A2");
         sheet.Commands.Undo();
         sheet.Cells[2, 2].Formula.Should().Be("=B2");
     }
@@ -241,19 +246,19 @@ public class SheetFormulaIntegrationTests
     public void Insert_Row_Before_Formula_Reference_Shifts_Formula_Reference()
     {
         var sheet = new Sheet(10, 10);
-        sheet.Cells.SetFormula(2,2,"=D5");
-        sheet.Rows.InsertAt(3);
-        sheet.Cells[2, 2].Formula.Should().Be("=D6");
+        sheet.Cells.SetFormula(2, 2, "=D5");
+        sheet.Rows.InsertAt(3, 2);
+        sheet.Cells[2, 2].Formula.Should().Be("=D7");
         sheet.Commands.Undo();
         sheet.Cells[2, 2].Formula.Should().Be("=D5");
     }
-    
+
     [Test]
     public void Insert_Col_Before_Formula_Reference_Shifts_Formula_Reference()
     {
         var sheet = new Sheet(10, 10);
-        sheet.Cells.SetFormula(2,2,"=D5");
-        sheet.Columns.InsertAt(3);
+        sheet.Cells.SetFormula(2, 2, "=D5");
+        sheet.Columns.InsertAt(3, 2);
         sheet.Cells[2, 2].Formula.Should().Be("=F5");
         sheet.Commands.Undo();
         sheet.Cells[2, 2].Formula.Should().Be("=D5");
@@ -263,9 +268,20 @@ public class SheetFormulaIntegrationTests
     public void Insert_Row_Into_Referenced_Range_Shifts_Formula_Reference()
     {
         var sheet = new Sheet(20, 20);
-        sheet.Cells.SetFormula(2,2,"=sum(D5:D10)");
-        sheet.Rows.InsertAt(6,2);
+        sheet.Cells.SetFormula(2, 2, "=sum(D5:D10)");
+        sheet.Rows.InsertAt(6, 2);
         sheet.Cells[2, 2].Formula.Should().Be("=sum(D5:D12)");
     }
 
+    [Test]
+    public void Remove_Formula_And_Undo_Restores_Dependencies()
+    {
+        var sheet = new Sheet(20, 20);
+        sheet.Cells.SetFormula(1, 1, "=5");
+        sheet.Cells.SetFormula(0, 0, "=B2");
+        sheet.Cells.ClearCells(new Region(0, 0));
+        sheet.Commands.Undo();
+        sheet.Cells.GetCellValue(0, 0).GetValue<int>().Should().Be(5);
+        sheet.FormulaEngine.DependencyManager.HasDependents(1, 1).Should().BeTrue();
+    }
 }

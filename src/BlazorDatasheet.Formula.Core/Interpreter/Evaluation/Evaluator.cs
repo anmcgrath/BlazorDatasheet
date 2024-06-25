@@ -117,6 +117,8 @@ public class Evaluator
     private CellValue EvaluateReferenceExpression(ReferenceExpression expression)
     {
         //TODO check it's valid (inside sheet)
+        if (expression.Reference.IsInvalid)
+            return CellValue.Error(ErrorType.Ref);
         return CellValue.Reference(expression.Reference);
     }
 

@@ -116,6 +116,13 @@ public interface IRegion : IEquatable<IRegion>
     /// <returns></returns>
     public IRegion? GetIntersection(IRegion? region);
 
+    /// <summary>
+    /// Returns whether the other region intersects with this region at all.
+    /// </summary>
+    /// <param name="region"></param>
+    /// <returns></returns>
+    public bool Intersects(IRegion? region);
+
 
     /// <summary>
     /// Extends this region TO the row and col specified

@@ -23,7 +23,6 @@ public class FormulaEngine
     private readonly SheetEnvironment _environment;
     private readonly Parser _parser = new();
     private readonly Evaluator _evaluator;
-    private readonly DependencyGraph<CellFormula?> _dependencyGraph;
 
     /// <summary>
     /// Keeps track of any ranges referenced by formula.
@@ -31,6 +30,8 @@ public class FormulaEngine
     /// but for now it's just whether it's referenced or not.
     /// </summary>
     private readonly RegionDataStore<bool> _observedRanges;
+
+    internal readonly DependencyManager DependencyManager = new();
 
     public bool IsCalculating { get; private set; }
 
@@ -43,7 +44,6 @@ public class FormulaEngine
 
         _environment = new SheetEnvironment(sheet);
         _evaluator = new Evaluator(_environment);
-        _dependencyGraph = new DependencyGraph<CellFormula?>();
         _observedRanges = new RegionDataStore<bool>();
 
         RegisterDefaultFunctions();
@@ -84,13 +84,12 @@ public class FormulaEngine
 
     private bool IsCellReferenced(int row, int col)
     {
-        return _dependencyGraph.HasVertex(RangeText.ToCellText(row, col)) ||
-               _observedRanges.Any(row, col);
+        return DependencyManager.HasDependents(row, col);
     }
 
     private bool RegionContainsReferencedCells(IRegion region)
     {
-        return _observedRanges.Any(region);
+        return DependencyManager.HasDependents(region);
     }
 
     private void RegisterDefaultFunctions()
@@ -109,50 +108,9 @@ public class FormulaEngine
         }
     }
 
-    public void AddToDependencyGraph(int row, int col, CellFormula formula)
+    internal DependencyManagerRestoreData SetFormula(int row, int col, CellFormula? formula)
     {
-        var cellVertex = new RegionVertex(row, col, formula);
-        _dependencyGraph.AddVertex(cellVertex);
-
-        var references = formula.References;
-        foreach (var reference in references)
-        {
-            var referenceVertex = GetVertexFromReference(reference);
-            _dependencyGraph.AddEdge(referenceVertex, cellVertex);
-            if (reference is RangeReference rangeReference)
-            {
-                _observedRanges.Add(((RegionVertex)referenceVertex).Region, true);
-                var cellVerticesInsideRange = GetSingleCellVerticesInsideRange(rangeReference);
-                // We depend on all cells inside the range, so ensure that they are calculated first
-                // by adding the correct dependency - the region depends on everything inside
-                foreach (var vertex in cellVerticesInsideRange)
-                {
-                    if (vertex != cellVertex)
-                        _dependencyGraph.AddEdge(vertex, referenceVertex);
-                }
-            }
-        }
-    }
-
-    private IEnumerable<RegionVertex> GetSingleCellVerticesInsideRange(RangeReference rangeRef)
-    {
-        var region = ToRegion(rangeRef);
-        if (region == null)
-            return Enumerable.Empty<RegionVertex>();
-
-        var cellVertices = new List<RegionVertex>();
-
-        foreach (var vertex in _dependencyGraph.GetAll())
-        {
-            if (vertex is RegionVertex rangeVertex &&
-                rangeVertex.Region.Width == 1 && rangeVertex.Region.Height == 1 &&
-                region.Contains(rangeVertex.Region.Top, rangeVertex.Region.Left))
-            {
-                cellVertices.Add(rangeVertex);
-            }
-        }
-
-        return cellVertices;
+        return DependencyManager.SetFormula(row, col, formula);
     }
 
     public CellFormula ParseFormula(string formulaString)
@@ -179,14 +137,9 @@ public class FormulaEngine
     /// </summary>
     /// <param name="row"></param>
     /// <param name="col"></param>
-    public void RemoveFormula(int row, int col)
+    internal DependencyManagerRestoreData RemoveFormula(int row, int col)
     {
-        var vertex = new RegionVertex(row, col, null);
-        var dependsOn = _dependencyGraph.Prec(vertex);
-        foreach (var dependent in dependsOn)
-        {
-            _dependencyGraph.RemoveEdge(dependent, vertex);
-        }
+        return DependencyManager.ClearFormula(row, col);
     }
 
     public void CalculateSheet()
@@ -197,73 +150,20 @@ public class FormulaEngine
         IsCalculating = true;
         _sheet.BatchUpdates();
 
-        var order =
-            _dependencyGraph
-                .TopologicalSort();
+        var order = DependencyManager.GetCalculationOrder();
 
         foreach (var vertex in order)
         {
-            if (vertex is RegionVertex cellVertex && cellVertex.Region.IsSingleCell())
-            {
-                var formula = _sheet.Cells.GetFormula(cellVertex.Region.Top, cellVertex.Region.Left);
-                if (formula != null)
-                {
-                    var value = this.Evaluate(formula);
-                    _sheet.Cells.SetValueImpl(cellVertex.Region.Top, cellVertex.Region.Left, value);
-                    _sheet.MarkDirty(cellVertex.Region.Top, cellVertex.Region.Left);
-                }
-            }
+            if (vertex.Formula == null || vertex.VertexType != VertexType.Cell)
+                continue;
+
+            var value = this.Evaluate(vertex.Formula);
+            _sheet.Cells.SetValueImpl(vertex.Region!.Top, vertex.Region!.Left, value);
+            _sheet.MarkDirty(vertex.Region!.Top, vertex.Region!.Left);
         }
 
         _sheet.EndBatchUpdates();
-
         IsCalculating = false;
-    }
-
-    private Vertex<CellFormula?> GetVertexFromReference(Reference reference)
-    {
-        if (reference is CellReference cellReference)
-        {
-            var formula = _sheet.Cells.GetFormula(cellReference.Row.RowNumber, cellReference.Col.ColNumber);
-            return new RegionVertex(cellReference.Row.RowNumber, cellReference.Col.ColNumber, formula);
-        }
-
-        if (reference is NamedReference namedReference)
-        {
-            return new NamedVertex(namedReference.Name, null);
-        }
-
-        if (reference is RangeReference rangeReference)
-        {
-            var region = ToRegion(rangeReference);
-            if (region != null)
-            {
-                return new RegionVertex(region, null);
-            }
-        }
-
-        throw new Exception("Could not convert reference to vertex");
-    }
-
-    private IRegion? ToRegion(RangeReference reference)
-    {
-        if (reference.Start is CellReference startCell && reference.End is CellReference endCell)
-        {
-            return new Region(startCell.Row.RowNumber, endCell.Row.RowNumber, startCell.Col.ColNumber,
-                endCell.Col.ColNumber);
-        }
-
-        if (reference.Start is ColReference startCol && reference.End is ColReference endCol)
-        {
-            return new ColumnRegion(startCol.ColNumber, endCol.ColNumber);
-        }
-
-        if (reference.Start is RowReference startRow && reference.End is RowReference endRow)
-        {
-            return new RowRegion(startRow.RowNumber, endRow.RowNumber);
-        }
-
-        return null;
     }
 
     /// <summary>
@@ -280,33 +180,5 @@ public class FormulaEngine
     {
         _environment.SetVariable(varName, value);
         CalculateSheet();
-    }
-
-    public void InsertRowColAt(int index, int count, Axis axis)
-    {
-        foreach (var vertex in _dependencyGraph.GetAll())
-        {
-            if (vertex.Data != null)
-            {
-                foreach (var reference in vertex.Data.References)
-                {
-                    
-                }
-            }
-        }
-    }
-
-    public IEnumerable<Vertex<CellFormula?>> GetVerticesInRegion(IRegion region)
-    {
-        var vertices = new List<RegionVertex>();
-        foreach (var vertex in _dependencyGraph.GetAll())
-        {
-            if (vertex is RegionVertex regionVertex && region.Contains(regionVertex.Region))
-            {
-                vertices.Add(regionVertex);
-            }
-        }
-
-        return vertices;
     }
 }

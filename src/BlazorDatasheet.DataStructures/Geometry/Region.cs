@@ -376,6 +376,8 @@ public class Region : IRegion
         return intersection;
     }
 
+    public bool Intersects(IRegion? region) => GetIntersection(region) != null;
+
     public virtual void ExtendTo(int row, int col, IRegion? regionLimit = null)
     {
         this.End = new CellPosition(row, col);

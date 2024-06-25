@@ -117,8 +117,10 @@ public partial class CellStore
             TypeRestoreData = _typeStore.InsertRowColAt(index, count, axis),
             ValidRestoreData = _validStore.InsertRowColAt(index, count, axis),
             MergeRestoreData = _mergeStore.InsertRowColAt(index, count, axis),
-            FormulaRestoreData = _formulaStore.InsertRowColAt(index, count, axis)
+            FormulaRestoreData = _formulaStore.InsertRowColAt(index, count, axis),
+            DependencyManagerRestoreData = _sheet.FormulaEngine.DependencyManager.InsertRowColAt(index, count, axis)
         };
+
 
         return restoreData;
     }
@@ -131,11 +133,10 @@ public partial class CellStore
             ValidRestoreData = _validStore.RemoveRowColAt(index, count, axis),
             TypeRestoreData = _typeStore.RemoveRowColAt(index, count, axis),
             FormatRestoreData = _formatStore.RemoveRowColAt(index, count, axis),
-            MergeRestoreData = _mergeStore.RemoveRowColAt(index, count, axis)
+            MergeRestoreData = _mergeStore.RemoveRowColAt(index, count, axis),
+            FormulaRestoreData = _formulaStore.RemoveRowColAt(index, count, axis),
+            DependencyManagerRestoreData = _sheet.FormulaEngine.DependencyManager.RemoveRowColAt(index, count, axis)
         };
-
-        restoreData.Merge(ClearFormulaImpl(new[] { new RowRegion(index, count) }));
-        _formulaStore.RemoveRowColAt(index, count, axis);
 
         return restoreData;
     }
@@ -199,9 +200,9 @@ public partial class CellStore
         _sheet.BatchUpdates();
 
         // Set formula through this function so we add the formula back in to the dependency graph
-        foreach (var data in restoreData.FormulaRestoreData.DataRemoved)
-            SetFormulaImpl(data.row, data.col, data.data);
+        _sheet.FormulaEngine.DependencyManager.Restore(restoreData.DependencyManagerRestoreData);
 
+        _formulaStore.Restore(restoreData.FormulaRestoreData);
         _validStore.Restore(restoreData.ValidRestoreData);
         _typeStore.Restore(restoreData.TypeRestoreData);
         _dataStore.Restore(restoreData.ValueRestoreData);

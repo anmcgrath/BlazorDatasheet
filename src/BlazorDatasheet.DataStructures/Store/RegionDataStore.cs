@@ -65,6 +65,19 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
         return Tree.Search(env);
     }
 
+    /// <summary>
+    /// Gets Data regions where the data is the same as the <paramref name="data"/> given
+    /// and the region is exactly the same
+    /// </summary>
+    /// <param name="region"></param>
+    /// <param name="data"></param>
+    /// <returns></returns>
+    public IEnumerable<DataRegion<T>> GetDataRegions(IRegion region, T data)
+    {
+        return GetDataRegions(region)
+            .Where(x => x.Data.Equals(data) && x.Region.Equals(region));
+    }
+
     public IEnumerable<T> GetData(int row, int col)
     {
         return GetDataRegions(row, col).Select(x => x.Data);
@@ -240,11 +253,11 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
             var newRegion = new DataRegion<T>(overlap.Data, overlap.Region.Clone());
             newRegion.Region.Contract(cEdge, Math.Max(cRow, cCol));
             newRegion.Region.Shift(sRow, sCol);
-            
+
             // if the region is less than the minimum area, don't add it back
-            if(newRegion.Region.Area <= MinArea)
+            if (newRegion.Region.Area <= MinArea)
                 continue;
-            
+
             newRegion.UpdateEnvelope();
             dataAdded.Add(newRegion);
             newDataToAdd.Add(newRegion);
@@ -419,7 +432,7 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
     }
 
     /// <summary>
-    /// Gets data regions inside the <paramref name="region"/> given, limited to those regions
+    /// Gets *new* data regions inside the <paramref name="region"/> given, limited to those regions
     /// </summary>
     /// <param name="region"></param>
     /// <returns></returns>
@@ -457,9 +470,19 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
         return restoreData;
     }
 
-    public void Delete(DataRegion<T> dataRegion)
+    public RegionRestoreData<T> Delete(DataRegion<T> dataRegion)
     {
         Tree.Delete(dataRegion);
+        return new RegionRestoreData<T>()
+        {
+            RegionsRemoved = [dataRegion]
+        };
+    }
+
+    public RegionRestoreData<T> Delete(IEnumerable<DataRegion<T>> dataRegions)
+    {
+        return dataRegions.Select(x => Delete(x))
+            .Aggregate((x, y) => x.Merge(y));
     }
 
     public bool Any() => Tree.Count > 0;

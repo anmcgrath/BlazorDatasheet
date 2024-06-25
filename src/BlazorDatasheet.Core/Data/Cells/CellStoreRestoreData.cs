@@ -1,4 +1,5 @@
 using BlazorDatasheet.Core.Formats;
+using BlazorDatasheet.Core.FormulaEngine;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Intervals;
 using BlazorDatasheet.DataStructures.Store;
@@ -15,6 +16,7 @@ internal class CellStoreRestoreData
     internal RegionRestoreData<string> TypeRestoreData { get; set; } = new();
     internal RegionRestoreData<CellFormat> FormatRestoreData { get; set; } = new();
     internal RegionRestoreData<bool> MergeRestoreData { get; set; } = new();
+    internal DependencyManagerRestoreData DependencyManagerRestoreData { get; set; } = new();
 
     internal IEnumerable<CellPosition> GetAffectedPositions()
     {
@@ -39,5 +41,6 @@ internal class CellStoreRestoreData
         TypeRestoreData.Merge(item.TypeRestoreData);
         FormatRestoreData.Merge(item.FormatRestoreData);
         MergeRestoreData.Merge(item.MergeRestoreData);
+        DependencyManagerRestoreData.Merge(item.DependencyManagerRestoreData);
     }
 }

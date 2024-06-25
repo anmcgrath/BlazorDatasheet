@@ -8,11 +8,11 @@
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-      <WarningLevel>1</WarningLevel>
+      <WarningLevel>8</WarningLevel>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-      <WarningLevel>1</WarningLevel>
+      <WarningLevel>8</WarningLevel>
     </PropertyGroup>
 
     <ItemGroup>

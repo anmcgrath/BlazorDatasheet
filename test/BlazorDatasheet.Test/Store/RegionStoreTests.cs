@@ -260,6 +260,6 @@ public class RegionStoreTests
         var store = new ConsolidatedDataStore<int>();
         store.Add(new ColumnRegion(10, 20), 1);
 
-        store.RemoveRows(10, 10);
+        store.RemoveRowAt(10, 10);
     }
 }
