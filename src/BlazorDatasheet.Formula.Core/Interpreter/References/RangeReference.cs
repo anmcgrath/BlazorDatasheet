@@ -1,7 +1,6 @@
 ﻿using BlazorDatasheet.DataStructures.Geometry;
-using BlazorDatasheet.Formula.Core.Interpreter.References;
 
-namespace BlazorDatasheet.DataStructures.References;
+namespace BlazorDatasheet.Formula.Core.Interpreter.References;
 
 public class RangeReference : Reference
 {
@@ -54,9 +53,9 @@ public class RangeReference : Reference
     {
     }
 
-    public override string ToRefText()
+    public override string ToAddressText()
     {
-        return Start.ToRefText() + ":" + End.ToRefText();
+        return Start.ToAddressText() + ":" + End.ToAddressText();
     }
 
     public override bool SameAs(Reference reference)
@@ -84,10 +83,12 @@ public class RangeReference : Reference
         End.Shift(offsetRow, offsetCol);
     }
 
+    public override bool IsInvalid { get; protected set; }
+
     public override IRegion ToRegion()
     {
         return Start.ToRegion().GetBoundingRegion(End.ToRegion());
     }
 
-    public override string ToString() => ToRefText();
+    public override string ToString() => ToAddressText();
 }

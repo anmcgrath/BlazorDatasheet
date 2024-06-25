@@ -1,4 +1,4 @@
-﻿namespace BlazorDatasheet.DataStructures.References;
+﻿namespace BlazorDatasheet.Formula.Core.Interpreter.References;
 
 public enum ReferenceKind
 {

@@ -1,7 +1,6 @@
 ﻿using BlazorDatasheet.DataStructures.Geometry;
-using BlazorDatasheet.Formula.Core.Interpreter.References;
 
-namespace BlazorDatasheet.DataStructures.References;
+namespace BlazorDatasheet.Formula.Core.Interpreter.References;
 
 public class CellReference : Reference
 {
@@ -23,9 +22,9 @@ public class CellReference : Reference
 
     public override ReferenceKind Kind { get; }
 
-    public override string ToRefText()
+    public override string ToAddressText()
     {
-        return $"{Col.ToRefText()}{Row.ToRefText()}";
+        return $"{Col.ToAddressText()}{Row.ToAddressText()}";
     }
 
     public override bool SameAs(Reference reference)
@@ -53,10 +52,12 @@ public class CellReference : Reference
         _row.Shift(offsetRow, offsetCol);
     }
 
+    public override bool IsInvalid { get; protected set; }
+
     public override IRegion ToRegion()
     {
         return new Region(_row.RowNumber, _col.ColNumber);
     }
 
-    public override string ToString() => ToRefText();
+    public override string ToString() => ToAddressText();
 }

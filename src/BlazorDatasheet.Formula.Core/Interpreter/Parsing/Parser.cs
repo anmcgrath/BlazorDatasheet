@@ -1,5 +1,5 @@
-using BlazorDatasheet.DataStructures.References;
 using BlazorDatasheet.DataStructures.Util;
+using BlazorDatasheet.Formula.Core.Interpreter.Addresses;
 using BlazorDatasheet.Formula.Core.Interpreter.Lexing;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 using Lexer = BlazorDatasheet.Formula.Core.Interpreter.Lexing.Lexer;
@@ -86,13 +86,40 @@ public class Parser
                 return ParseIdentifierExpression();
             case Tag.LeftCurlyBracketToken:
                 return ParseArrayConstant();
-            case Tag.ReferenceToken:
-                var refToken = (ReferenceToken)NextToken();
-                _references.Add(refToken.Reference);
-                return new ReferenceExpression(refToken.Reference);
+            case Tag.AddressToken:
+                var refToken = (AddressToken)NextToken();
+                var reference = GetReferenceFromAddress(refToken.Address);
+                _references.Add(reference);
+                return new ReferenceExpression(reference);
         }
 
         return ParseLiteralExpression();
+    }
+
+    private Reference GetReferenceFromAddress(Address address)
+    {
+        switch (address.Kind)
+        {
+            case AddressKind.CellAddress:
+                var cellAddress = (CellAddress)address;
+                return new CellReference(cellAddress.RowAddress.RowIndex, cellAddress.ColAddress.ColIndex,
+                    cellAddress.ColAddress.IsFixed, cellAddress.RowAddress.IsFixed);
+            case AddressKind.RangeAddress:
+                var rangeAddress = (RangeAddress)address;
+                return new RangeReference(GetReferenceFromAddress(rangeAddress.Start),
+                    GetReferenceFromAddress(rangeAddress.End));
+            case AddressKind.NamedAddress:
+                var namedAddress = (NamedAddress)address;
+                return new NamedReference(namedAddress.Name);
+            case AddressKind.ColAddress:
+                var colAddress = (ColAddress)address;
+                return new ColReference(colAddress.ColIndex, colAddress.IsFixed);
+            case AddressKind.RowAddress:
+                var rowAddress = (RowAddress)address;
+                return new RowReference(rowAddress.RowIndex, rowAddress.IsFixed);
+        }
+
+        throw new Exception($"Unhandled address type {address.Kind}");
     }
 
     private Expression ParseArrayConstant()

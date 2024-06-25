@@ -1,5 +1,6 @@
-using BlazorDatasheet.DataStructures.References;
 using BlazorDatasheet.DataStructures.Util;
+using BlazorDatasheet.Formula.Core.Interpreter.Addresses;
+using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Formula.Core.Interpreter.Lexing;
 
@@ -180,7 +181,7 @@ public ref struct Lexer
             // if we are in the second part of a range parsing...
             if (_referenceState == LexerReferenceState.ReadingReference)
             {
-                return new ReferenceToken(new RowReference(parsedInt - 1, false), start);
+                return new AddressToken(new RowAddress(parsedInt - 1, parsedInt, false), start);
             }
 
             // otherwise check if we are going to parse a range
@@ -194,24 +195,24 @@ public ref struct Lexer
                 var rightToken = ReadToken();
                 _referenceState = LexerReferenceState.None;
 
-                var rowStartRef = new RowReference(parsedInt - 1, false);
+                var rowStartAddr = new RowAddress(parsedInt - 1, parsedInt, false);
 
                 if (rightToken.Tag == Tag.Number)
                 {
                     var rightNumToken = (NumberToken)rightToken;
                     if (rightNumToken.IsInteger)
                     {
-                        var rowEnd = new RowReference((int)rightNumToken.Value - 1, false);
-                        return new ReferenceToken(new RangeReference(rowStartRef, rowEnd), start);
+                        var rowEnd = new RowAddress((int)rightNumToken.Value - 1, (int)rightNumToken.Value, false);
+                        return new AddressToken(new RangeAddress(rowStartAddr, rowEnd), start);
                     }
                 }
 
-                if (rightToken.Tag == Tag.ReferenceToken)
+                if (rightToken.Tag == Tag.AddressToken)
                 {
-                    var rightRefToken = (ReferenceToken)rightToken;
-                    if (rightRefToken.Reference.Kind == ReferenceKind.Row)
+                    var rightRefToken = (AddressToken)rightToken;
+                    if (rightRefToken.Address.Kind == AddressKind.RowAddress)
                     {
-                        return new ReferenceToken(new RangeReference(rowStartRef, rightRefToken.Reference), start);
+                        return new AddressToken(new RangeAddress(rowStartAddr, rightRefToken.Address), start);
                     }
                 }
 
@@ -237,16 +238,16 @@ public ref struct Lexer
 
         // if the current identifier is a valid row, column or cell reference then
         // we look to see if it is part of a range (e.g 1:2, a:2, b2:b3 etc.)
-        var canParseRef = RangeText.TryParseSingleReference(idSlice, out var parsedLeftRef);
+        var canParseRef = RangeText.TryParseSingleAddress(idSlice, out var parsedLeftAddress);
         if (!canParseRef)
             return new IdentifierToken(idSlice.ToString(), start);
 
-        if (parsedLeftRef!.Kind == ReferenceKind.Named)
+        if (parsedLeftAddress!.Kind == AddressKind.NamedAddress)
             return new IdentifierToken(idSlice.ToString(), start);
 
         if (canParseRef && _referenceState == LexerReferenceState.ReadingReference)
         {
-            return new ReferenceToken(parsedLeftRef, start);
+            return new AddressToken(parsedLeftAddress, start);
         }
 
         if (_current == ':' && _referenceState == LexerReferenceState.None) // so we only look ahead one at most
@@ -260,23 +261,23 @@ public ref struct Lexer
 
             _referenceState = LexerReferenceState.None;
 
-            if (next.Tag == Tag.ReferenceToken)
+            if (next.Tag == Tag.AddressToken)
             {
-                var rightToken = (ReferenceToken)next;
-                if (rightToken.Reference.Kind == parsedLeftRef.Kind)
+                var rightToken = (AddressToken)next;
+                if (rightToken.Address.Kind == parsedLeftAddress.Kind)
                 {
-                    return new ReferenceToken(new RangeReference(parsedLeftRef, rightToken.Reference), start);
+                    return new AddressToken(new RangeAddress(parsedLeftAddress, rightToken.Address), start);
                 }
             }
 
             // in this case we know the second row is not absolute reference
-            if (next.Tag == Tag.Number && parsedLeftRef.Kind == ReferenceKind.Row)
+            if (next.Tag == Tag.Number && parsedLeftAddress.Kind == AddressKind.RowAddress)
             {
                 var nextTokenAsNum = (NumberToken)next;
                 if (nextTokenAsNum.IsInteger)
                 {
-                    var rowRefRight = new RowReference((int)nextTokenAsNum.Value - 1, false);
-                    return new ReferenceToken(new RangeReference(parsedLeftRef, rowRefRight), start);
+                    var rowRefRight = new RowAddress((int)nextTokenAsNum.Value - 1, (int)nextTokenAsNum.Value, false);
+                    return new AddressToken(new RangeAddress(parsedLeftAddress, rowRefRight), start);
                 }
             }
 
@@ -284,8 +285,8 @@ public ref struct Lexer
             ResetPosition(tempPosition);
         }
 
-        if (canParseRef && parsedLeftRef!.Kind == ReferenceKind.Cell)
-            return new ReferenceToken(parsedLeftRef, start);
+        if (canParseRef && parsedLeftAddress!.Kind == AddressKind.CellAddress)
+            return new AddressToken(parsedLeftAddress, start);
 
         return new IdentifierToken(idSlice.ToString(), start);
     }

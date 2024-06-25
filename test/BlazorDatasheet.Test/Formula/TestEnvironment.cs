@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using BlazorDatasheet.DataStructures.Geometry;
-using BlazorDatasheet.DataStructures.References;
 using BlazorDatasheet.DataStructures.Util;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.References;

@@ -1,7 +1,6 @@
 ﻿using BlazorDatasheet.DataStructures.Geometry;
-using BlazorDatasheet.Formula.Core.Interpreter.References;
 
-namespace BlazorDatasheet.DataStructures.References;
+namespace BlazorDatasheet.Formula.Core.Interpreter.References;
 
 public class RowReference : Reference
 {
@@ -16,7 +15,7 @@ public class RowReference : Reference
 
     public override ReferenceKind Kind => ReferenceKind.Row;
 
-    public override string ToRefText()
+    public override string ToAddressText()
     {
         return (IsFixedReference ? "$" : "") + (RowNumber + 1);
     }
@@ -32,6 +31,8 @@ public class RowReference : Reference
         if (!IsFixedReference)
             RowNumber += offsetRow;
     }
+
+    public override bool IsInvalid { get; protected set; }
 
     public override IRegion ToRegion()
     {

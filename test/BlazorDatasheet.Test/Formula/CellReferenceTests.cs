@@ -3,7 +3,6 @@ using System.Linq;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.FormulaEngine;
-using BlazorDatasheet.DataStructures.References;
 using BlazorDatasheet.DataStructures.Util;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
@@ -93,7 +92,7 @@ public class CellReferenceTests
         if (isReferenceType)
         {
             var reference = (Reference)refCellValue.Data;
-            reference.ToRefText().Should().Be(refStr);
+            reference.ToAddressText().Should().Be(refStr);
         }
 
     }

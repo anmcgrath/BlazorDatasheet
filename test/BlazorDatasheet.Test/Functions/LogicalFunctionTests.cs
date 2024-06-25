@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using BlazorDatasheet.DataStructures.References;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 using BlazorDatasheet.Formula.Core.Interpreter.Parsing;

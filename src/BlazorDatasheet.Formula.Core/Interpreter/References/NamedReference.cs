@@ -1,7 +1,6 @@
 ﻿using BlazorDatasheet.DataStructures.Geometry;
-using BlazorDatasheet.Formula.Core.Interpreter.References;
 
-namespace BlazorDatasheet.DataStructures.References;
+namespace BlazorDatasheet.Formula.Core.Interpreter.References;
 
 public class NamedReference : Reference
 {
@@ -14,7 +13,7 @@ public class NamedReference : Reference
 
     public override ReferenceKind Kind => ReferenceKind.Named;
 
-    public override string ToRefText() => Name;
+    public override string ToAddressText() => Name;
 
     public override bool SameAs(Reference reference)
     {
@@ -25,6 +24,8 @@ public class NamedReference : Reference
     public override void Shift(int offsetRow, int offsetCol)
     {
     }
+
+    public override bool IsInvalid { get; protected set; }
 
     public override IRegion ToRegion()
     {

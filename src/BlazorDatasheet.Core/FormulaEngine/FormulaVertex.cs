@@ -2,6 +2,7 @@
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Graph;
 using BlazorDatasheet.DataStructures.Util;
+using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter;
 
 namespace BlazorDatasheet.Core.FormulaEngine;

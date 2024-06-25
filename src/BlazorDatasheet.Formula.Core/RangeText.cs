@@ -1,8 +1,8 @@
 using BlazorDatasheet.DataStructures.Geometry;
-using BlazorDatasheet.DataStructures.References;
+using BlazorDatasheet.Formula.Core.Interpreter.Addresses;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 
-namespace BlazorDatasheet.DataStructures.Util;
+namespace BlazorDatasheet.Formula.Core;
 
 public static class RangeText
 {
@@ -84,7 +84,7 @@ public static class RangeText
         var rowSpan = str.Slice(startRowStr, rowStrLen);
 
         var rowNum = int.Parse(rowSpan) - 1;
-        var colNum = ColStrToNumber(colSpan);
+        var colNum = ColStrToIndex(colSpan);
 
         if (colNum < MaxCols && rowNum < MaxRows)
             cellReference = new CellReference(rowNum, colNum, isFixedCol, isFixedRow);
@@ -98,11 +98,11 @@ public static class RangeText
     /// passed to this function.
     /// </summary>
     /// <param name="str"></param>
-    /// <param name="reference"></param>
+    /// <param name="address"></param>
     /// <returns>Either a col reference, row reference, cell reference or named reference.</returns>
-    public static bool TryParseSingleReference(ReadOnlySpan<char> str, out Reference? reference)
+    public static bool TryParseSingleAddress(ReadOnlySpan<char> str, out Address? address)
     {
-        reference = null;
+        address = null;
         if (str.Length < 1)
             return false;
 
@@ -126,15 +126,16 @@ public static class RangeText
         if (colStrLen != 0)
             hasColRef = true;
 
-        int colNum = colStrLen == 0 ? -1 : ColStrToNumber(str.Slice(startColStr, colStrLen));
+        var colStrSpan = str.Slice(startColStr, colStrLen);
+        int colIndex = colStrLen == 0 ? -1 : ColStrToIndex(colStrSpan);
 
         // if there are no characters after col ref then it is a single col ref
         if (pos == str.Length)
         {
-            if (colNum < MaxCols)
-                reference = new ColReference(colNum, isFirstFixed);
+            if (colIndex < MaxCols)
+                address = new ColAddress(colIndex, colStrSpan.ToString(), isFirstFixed);
             else
-                reference = new NamedReference(str.Slice(startColStr, colStrLen).ToString());
+                address = new NamedAddress(colStrSpan.ToString());
             return true;
         }
 
@@ -164,20 +165,22 @@ public static class RangeText
         if (rowStrLen == 0) // bad parse somehow - shouldn't be possible
             return false;
 
-        int rowNum = int.Parse(str.Slice(startRowStr, rowStrLen)) - 1;
-        if (rowNum > MaxRows)
+        int rowIndex = int.Parse(str.Slice(startRowStr, rowStrLen)) - 1;
+        if (rowIndex > MaxRows)
         {
-            reference = new NamedReference(str.ToString());
+            address = new NamedAddress(str.ToString());
             return true;
         }
 
         if (hasColRef)
         {
-            reference = new CellReference(rowNum, colNum, isFirstFixed, isSecondFixed);
+            var colAddress = new ColAddress(colIndex, colStrSpan.ToString(), isFirstFixed);
+            var rowAddress = new RowAddress(rowIndex, rowIndex + 1, isSecondFixed);
+            address = new CellAddress(colAddress, rowAddress);
             return true;
         }
 
-        reference = new RowReference(rowNum, isFirstFixed);
+        address = new RowAddress(rowIndex, rowIndex + 1, isFirstFixed);
         return true;
     }
 
@@ -196,7 +199,7 @@ public static class RangeText
     }
 
 
-    private static int ColStrToNumber(ReadOnlySpan<char> text)
+    private static int ColStrToIndex(ReadOnlySpan<char> text)
     {
         var col0 = 'A';
         var result = 0;

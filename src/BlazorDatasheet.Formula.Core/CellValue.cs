@@ -1,5 +1,4 @@
-﻿using BlazorDatasheet.DataStructures.References;
-using BlazorDatasheet.DataStructures.Util;
+﻿using BlazorDatasheet.DataStructures.Util;
 using BlazorDatasheet.Formula.Core.Extensions;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 

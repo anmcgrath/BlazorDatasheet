@@ -1,8 +1,8 @@
 ﻿using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Graph;
-using BlazorDatasheet.DataStructures.References;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core.Interpreter;
+using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Core.FormulaEngine;
 

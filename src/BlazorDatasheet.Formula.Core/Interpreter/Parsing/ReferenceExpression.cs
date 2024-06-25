@@ -13,7 +13,7 @@ public class ReferenceExpression : Expression
 
     public override string ToExpressionText()
     {
-        return Reference.ToRefText();
+        return Reference.ToAddressText();
     }
 
     public override NodeKind Kind => NodeKind.Range;

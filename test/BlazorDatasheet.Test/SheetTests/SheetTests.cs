@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.DataStructures.Geometry;
-using BlazorDatasheet.DataStructures.References;
 using BlazorDatasheet.DataStructures.Util;
 using FluentAssertions;
 using NUnit.Framework;
