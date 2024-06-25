@@ -27,4 +27,7 @@ public class NamedReference : Reference
 
     public override bool IsInvalid { get; protected set; }
     public override IRegion Region { get; protected set; } = new EmptyRegion();
+    internal override void SetRegion(IRegion region)
+    {
+    }
 }

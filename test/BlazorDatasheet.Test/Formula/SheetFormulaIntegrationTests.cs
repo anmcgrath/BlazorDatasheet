@@ -223,7 +223,7 @@ public class SheetFormulaIntegrationTests
     {
         var sheet = new Sheet(10, 10);
         sheet.Cells.SetFormula(2, 2, "=B2");
-        sheet.Rows.RemoveAt(1);
+        sheet.Rows.RemoveAt(0);
         sheet.Cells[2, 2].Formula.Should().BeNull();
         sheet.Cells[1, 2].Formula.Should().Be("=B1");
         sheet.Commands.Undo();
@@ -235,7 +235,7 @@ public class SheetFormulaIntegrationTests
     {
         var sheet = new Sheet(10, 10);
         sheet.Cells.SetFormula(2, 2, "=B2");
-        sheet.Columns.RemoveAt(1);
+        sheet.Columns.RemoveAt(0);
         sheet.Cells[2, 2].Formula.Should().BeNull();
         sheet.Cells[2, 1].Formula.Should().Be("=A2");
         sheet.Commands.Undo();
@@ -265,12 +265,25 @@ public class SheetFormulaIntegrationTests
     }
 
     [Test]
-    public void Insert_Row_Into_Referenced_Range_Shifts_Formula_Reference()
+    public void Insert_Row_Into_Referenced_Range_Expands_Formula_Reference()
     {
         var sheet = new Sheet(20, 20);
         sheet.Cells.SetFormula(2, 2, "=sum(D5:D10)");
         sheet.Rows.InsertAt(6, 2);
         sheet.Cells[2, 2].Formula.Should().Be("=sum(D5:D12)");
+        sheet.Commands.Undo();
+        sheet.Cells[2, 2].Formula.Should().Be("=sum(D5:D10)");
+    }
+
+    [Test]
+    public void Remove_Row_Into_Referenced_Range_Contracts_Formula_Reference()
+    {
+        var sheet = new Sheet(20, 20);
+        sheet.Cells.SetFormula(2, 2, "=sum(D5:D10)");
+        sheet.Rows.RemoveAt(4, 2);
+        sheet.Cells[2, 2].Formula.Should().Be("=sum(D5:D8)");
+        sheet.Commands.Undo();
+        sheet.Cells[2, 2].Formula.Should().Be("=sum(D5:D10)");
     }
 
     [Test]

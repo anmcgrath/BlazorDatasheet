@@ -108,5 +108,10 @@ public class RangeReference : Reference
     public override bool IsInvalid { get; protected set; }
     public sealed override IRegion Region { get; protected set; }
 
+    internal override void SetRegion(IRegion region)
+    {
+        Region = region;
+    }
+
     public override string ToString() => ToAddressText();
 }

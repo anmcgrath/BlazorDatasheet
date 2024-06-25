@@ -4,9 +4,9 @@ using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core.Interpreter;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 
-namespace BlazorDatasheet.Core.FormulaEngine;
+namespace BlazorDatasheet.Formula.Core.Dependencies;
 
-internal class DependencyManager
+public class DependencyManager
 {
     private readonly DependencyGraph<FormulaVertex> _dependencyGraph = new();
 
@@ -147,14 +147,10 @@ internal class DependencyManager
 
         foreach (var dependent in formulaDependents)
         {
-            foreach (var reference in dependent.Formula!.References)
-            {
-                if (reference is not NamedReference &&
-                    reference.Region.Intersects(affectedRegion))
-                {
-                    reference.Shift(dRow, dCol);
-                }
-            }
+            // capture the current references before they are modified
+            var existing = dependent.Formula!.References.Select(r => r.Region.Clone()).ToList();
+            restoreData.ModifiedReferenceRegions.Add((dependent.Formula, existing));
+            dependent.Formula!.InsertRowColIntoReferences(index, count, axis);
         }
 
         restoreData.Merge(ShiftVerticesInRegion(affectedRegion, dRow, dCol));
@@ -220,14 +216,10 @@ internal class DependencyManager
 
         foreach (var dependent in dependentFormula)
         {
-            foreach (var reference in dependent.Formula!.References)
-            {
-                if (reference is not NamedReference &&
-                    reference.Region.Intersects(affectedRegion))
-                {
-                    reference.Shift(dRow, dCol);
-                }
-            }
+            // capture the current references before they are modified
+            var existing = dependent.Formula!.References.Select(r => r.Region.Clone()).ToList();
+            restoreData.ModifiedReferenceRegions.Add((dependent.Formula, existing));
+            dependent.Formula!.RemoveRowColFromReferences(index, count, axis);
         }
 
         restoreData.Merge(ShiftVerticesInRegion(affectedRegion, dRow, dCol));
@@ -298,29 +290,20 @@ internal class DependencyManager
         // 1. shift & restore referenced vertex store
         _referencedVertexStore.Restore(restoreData.RegionRestoreData);
 
-        // 2. shift formula references
-        foreach (var shift in restoreData.Shifts)
-        {
-            IRegion affectedRegion = shift.Axis == Axis.Col
-                ? new ColumnRegion(shift.Index, int.MaxValue)
-                : new RowRegion(shift.Index, int.MaxValue);
+        // 2. restore contrracted/expanded/shifted formula references from the records
 
-            var affectedVertices = GetDirectDependents(affectedRegion);
-            foreach (var v in affectedVertices)
+        foreach (var regionModification in restoreData.ModifiedReferenceRegions)
+        {
+            int refIndex = 0;
+            foreach (var formulaReference in regionModification.formula.References)
             {
-                var dRow = shift.Axis == Axis.Row ? -shift.Amount : 0;
-                var dCol = shift.Axis == Axis.Col ? -shift.Amount : 0;
-                foreach (var formulaReference in v.Formula.References)
-                {
-                    if (affectedRegion.Intersects(affectedRegion))
-                        formulaReference.Shift(dRow, dCol);
-                }
+                formulaReference.SetRegion(regionModification.oldReferences[refIndex++]);
             }
         }
     }
 }
 
-internal class DependencyManagerRestoreData
+public class DependencyManagerRestoreData
 {
     public RegionRestoreData<FormulaVertex> RegionRestoreData { get; set; } = new();
     public List<FormulaVertex> VerticesRemoved { get; set; } = new();
@@ -328,6 +311,7 @@ internal class DependencyManagerRestoreData
     public readonly List<(FormulaVertex, FormulaVertex)> EdgesRemoved = new();
     public readonly List<(FormulaVertex, FormulaVertex)> EdgesAdded = new();
     public readonly List<AppliedShift> Shifts = new();
+    public readonly List<(CellFormula formula, List<IRegion> oldReferences)> ModifiedReferenceRegions = new();
 
     public void Merge(DependencyManagerRestoreData other)
     {
@@ -337,5 +321,6 @@ internal class DependencyManagerRestoreData
         EdgesAdded.AddRange(other.EdgesAdded);
         EdgesRemoved.AddRange(other.EdgesRemoved);
         Shifts.AddRange(other.Shifts);
+        ModifiedReferenceRegions.AddRange(other.ModifiedReferenceRegions);
     }
 }

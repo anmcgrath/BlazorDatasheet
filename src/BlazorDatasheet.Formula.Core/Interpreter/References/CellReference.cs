@@ -54,5 +54,13 @@ public class CellReference : Reference
 
     public override bool IsInvalid { get; protected set; }
     public sealed override IRegion Region { get; protected set; }
+
+    internal override void SetRegion(IRegion region)
+    {
+        ColIndex = Region.Left;
+        RowIndex = Region.Top;
+        Region = region;
+    }
+
     public override string ToString() => ToAddressText();
 }

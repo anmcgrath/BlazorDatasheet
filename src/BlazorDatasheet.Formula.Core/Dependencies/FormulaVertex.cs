@@ -1,13 +1,10 @@
-﻿using BlazorDatasheet.Core.Formats;
-using BlazorDatasheet.DataStructures.Geometry;
+﻿using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Graph;
-using BlazorDatasheet.DataStructures.Util;
-using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter;
 
-namespace BlazorDatasheet.Core.FormulaEngine;
+namespace BlazorDatasheet.Formula.Core.Dependencies;
 
-internal class FormulaVertex : Vertex, IEquatable<FormulaVertex>
+public class FormulaVertex : Vertex, IEquatable<FormulaVertex>
 {
     public FormulaVertex(string name, CellFormula? formula)
     {
@@ -34,7 +31,7 @@ internal class FormulaVertex : Vertex, IEquatable<FormulaVertex>
     public IRegion? Region { get; }
     public CellFormula? Formula { get; private set; }
 
-    internal VertexType VertexType { get; private set; }
+    public VertexType VertexType { get; private set; }
 
     public bool Equals(FormulaVertex? other)
     {

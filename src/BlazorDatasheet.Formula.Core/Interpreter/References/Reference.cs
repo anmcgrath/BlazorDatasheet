@@ -34,4 +34,5 @@ public abstract class Reference
     /// </summary>
     /// <returns></returns>
     public abstract IRegion Region { get; protected set; }
+    internal abstract void SetRegion(IRegion region);
 }
