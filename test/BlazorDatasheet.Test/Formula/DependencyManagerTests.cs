@@ -64,8 +64,8 @@ public class DependencyManagerTests
         var f = GetFormula("=A5");
         dm.SetFormula(0, 0, f);
         dm.InsertRowColAt(2, 2, Axis.Row);
-        dm.HasDependents(4, 0).Should().BeFalse();
-        dm.HasDependents(6, 0).Should().BeTrue();
+        dm.HasDependents(4, 0).Should().BeFalse(); // A5
+        dm.HasDependents(6, 0).Should().BeTrue(); // A7
         f.ToFormulaString().Should().BeEquivalentTo("=A7");
     }
 

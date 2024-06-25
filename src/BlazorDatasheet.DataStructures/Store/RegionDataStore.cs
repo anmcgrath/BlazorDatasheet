@@ -481,7 +481,7 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
 
     public RegionRestoreData<T> Delete(IEnumerable<DataRegion<T>> dataRegions)
     {
-        return dataRegions.Select(x => Delete(x))
+        return dataRegions.Select(Delete)
             .Aggregate((x, y) => x.Merge(y));
     }
 

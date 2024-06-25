@@ -13,7 +13,7 @@ internal class DependencyManager
     /// <summary>
     /// Stores regions that are referenced by formula vertices, and holds a reference
     /// to each formula vertex that references the region.
-    /// E.g for a formula "=A1 + sum(B1:B2)", the region A1 and B1:B2 will have a reference to the formula vertex
+    /// E.g. for a formula "=A1 + sum(B1:B2)", the region A1 and B1:B2 will have a reference to the formula vertex
     /// </summary>
     private readonly RegionDataStore<FormulaVertex> _referencedVertexStore = new();
 
@@ -41,7 +41,8 @@ internal class DependencyManager
                     restoreData.EdgesAdded.Add((f, formulaVertex));
                 }
 
-                restoreData.RegionRestoreData.Merge(_referencedVertexStore.Add(formulaRef.Region, formulaVertex));
+                restoreData.RegionRestoreData.Merge(
+                    _referencedVertexStore.Add(formulaRef.Region.Clone(), formulaVertex));
             }
             else
             {
@@ -68,23 +69,24 @@ internal class DependencyManager
         {
             foreach (var formulaRef in formulaReferences)
             {
-                IEnumerable<DataRegion<FormulaVertex>> dataToDelete = [];
+                List<DataRegion<FormulaVertex>> dataToDelete = [];
                 switch (formulaRef)
                 {
                     case CellReference cellRef:
                         dataToDelete = _referencedVertexStore
-                            .GetDataRegions(new Region(cellRef.RowIndex, cellRef.ColIndex), formulaVertex);
+                            .GetDataRegions(new Region(cellRef.RowIndex, cellRef.ColIndex), formulaVertex).ToList();
                         break;
                     case RangeReference rangeReference:
                         dataToDelete = _referencedVertexStore
-                            .GetDataRegions(rangeReference.Region, formulaVertex);
+                            .GetDataRegions(rangeReference.Region, formulaVertex).ToList();
                         break;
                     case NamedReference namedReference:
                         throw new NotImplementedException();
                         break;
                 }
 
-                restoreData.RegionRestoreData = _referencedVertexStore.Delete(dataToDelete);
+                if (dataToDelete.Count != 0)
+                    restoreData.RegionRestoreData = _referencedVertexStore.Delete(dataToDelete);
             }
         }
 
@@ -116,7 +118,7 @@ internal class DependencyManager
     /// </summary>
     /// <param name="region"></param>
     /// <returns></returns>
-    public IEnumerable<Vertex> GetDirectDependents(IRegion region)
+    public IEnumerable<FormulaVertex> GetDirectDependents(IRegion region)
     {
         return _referencedVertexStore.GetData(region);
     }
@@ -141,8 +143,7 @@ internal class DependencyManager
         // and shift the formula references
         // needs to be done before we shift vertices
 
-        var formulaDependents =
-            _referencedVertexStore.GetData(affectedRegion);
+        var formulaDependents = GetDirectDependents(affectedRegion);
 
         foreach (var dependent in formulaDependents)
         {
@@ -157,8 +158,7 @@ internal class DependencyManager
         }
 
         restoreData.Merge(ShiftVerticesInRegion(affectedRegion, dRow, dCol));
-        restoreData.RegionRestoreData =
-            _referencedVertexStore.InsertRowColAt(index, count, axis);
+        restoreData.RegionRestoreData = _referencedVertexStore.InsertRowColAt(index, count, axis);
 
         return restoreData;
     }
@@ -275,10 +275,6 @@ internal class DependencyManager
 
     public void Restore(DependencyManagerRestoreData restoreData)
     {
-        // 1. shift & restore referenced vertex store
-        _referencedVertexStore.Restore(restoreData.RegionRestoreData);
-        // 2. shift formula vertices
-
         foreach (var vertex in restoreData.VerticesAdded)
         {
             _dependencyGraph.RemoveVertex(vertex);
@@ -299,9 +295,28 @@ internal class DependencyManager
             _dependencyGraph.AddEdge(edge.Item1, edge.Item2);
         }
 
-        // if we restore this before the shift, it's not right...
-        // if we restore after the shift it's not right also...
+        // 1. shift & restore referenced vertex store
         _referencedVertexStore.Restore(restoreData.RegionRestoreData);
+
+        // 2. shift formula references
+        foreach (var shift in restoreData.Shifts)
+        {
+            IRegion affectedRegion = shift.Axis == Axis.Col
+                ? new ColumnRegion(shift.Index, int.MaxValue)
+                : new RowRegion(shift.Index, int.MaxValue);
+
+            var affectedVertices = GetDirectDependents(affectedRegion);
+            foreach (var v in affectedVertices)
+            {
+                var dRow = shift.Axis == Axis.Row ? -shift.Amount : 0;
+                var dCol = shift.Axis == Axis.Col ? -shift.Amount : 0;
+                foreach (var formulaReference in v.Formula.References)
+                {
+                    if (affectedRegion.Intersects(affectedRegion))
+                        formulaReference.Shift(dRow, dCol);
+                }
+            }
+        }
     }
 }
 
