@@ -1,5 +1,8 @@
+using System.Runtime.CompilerServices;
 using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
+
+[assembly: InternalsVisibleTo("BlazorDatasheet.Test")]
 
 namespace BlazorDatasheet.Formula.Core.Interpreter;
 

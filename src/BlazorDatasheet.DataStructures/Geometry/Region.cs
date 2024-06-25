@@ -274,6 +274,13 @@ public class Region : IRegion
         this.End = new CellPosition(this.End.row + dRow, this.End.col + dCol);
         this.SetOrderedBounds();
     }
+    
+    public virtual void Shift(int dRowStart, int dRowEnd, int dColStart, int dColEnd)
+    {
+        this.Start = new CellPosition(this.Start.row + dRowStart, this.Start.col + dColStart);
+        this.End = new CellPosition(this.End.row + dRowEnd, this.End.col + dColEnd);
+        this.SetOrderedBounds();
+    }
 
     /// <summary>
     /// Grows the edges provided by the amount given

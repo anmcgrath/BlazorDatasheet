@@ -26,9 +26,5 @@ public class NamedReference : Reference
     }
 
     public override bool IsInvalid { get; protected set; }
-
-    public override IRegion ToRegion()
-    {
-        return new AllRegion();
-    }
+    public override IRegion Region { get; protected set; } = new EmptyRegion();
 }

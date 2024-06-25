@@ -5,7 +5,7 @@ namespace BlazorDatasheet.Formula.Core.Interpreter.References;
 public abstract class Reference
 {
     /// <summary>
-    /// The reference kind, e.g Row, Column, Cell, etc.
+    /// The reference kind, e.g Cell, Range, Named
     /// </summary>
     public abstract ReferenceKind Kind { get; }
     /// <summary>
@@ -20,11 +20,6 @@ public abstract class Reference
     /// <returns></returns>
     public abstract bool SameAs(Reference reference);
     /// <summary>
-    /// Whether the reference is relative to another cell. Rows/col will then be the number of rows/col away
-    /// from where it is defined, e.g -1, 1 or 10, -5 etc.
-    /// </summary>
-    public bool IsRelativeReference { get; set; }
-    /// <summary>
     /// Shift this reference by the given offset.
     /// </summary>
     /// <param name="offsetRow"></param>
@@ -38,5 +33,5 @@ public abstract class Reference
     /// Returns a region that is the size of the reference.
     /// </summary>
     /// <returns></returns>
-    public abstract IRegion ToRegion();
+    public abstract IRegion Region { get; protected set; }
 }

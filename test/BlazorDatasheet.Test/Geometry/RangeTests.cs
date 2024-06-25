@@ -1,6 +1,8 @@
 using System.Linq;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.Formula.Core;
+using FluentAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Geometry;
@@ -55,5 +57,27 @@ public class RangeTests
         Assert.AreEqual(typeof(ColumnRegion), colRange.Region.GetType());
         Assert.AreEqual(1, colRange.Region.Start.col);
         Assert.AreEqual(3, colRange.Region.End.col);
+    }
+
+    [Test]
+    [TestCase(0, 0, 0, 0, false, false, false, false, "A1")]
+    [TestCase(1, 1, 2, 2, false, false, false, false, "C2")]
+    [TestCase(0, 0, 0, 0, false, false, true, true, "$A1")]
+    [TestCase(0, 0, 0, 0, true, true, false, false, "A$1")]
+    [TestCase(0, 0, 0, 0, true, true, true, true, "$A$1")]
+    [TestCase(1, 2, 1, 2, false, false, false, false, "B2:C3")]
+    [TestCase(1, 2, 2, 2, false, false, false, false, "C2:C3")]
+    [TestCase(1, 2, 2, 2, true, false, false, false, "C$2:C3")]
+    [TestCase(1, 2, 2, 2, false, true, false, false, "C2:C$3")]
+    [TestCase(1, 2, 2, 2, false, false, true, false, "$C2:C3")]
+    [TestCase(1, 2, 2, 2, false, false, false, true, "C2:$C3")]
+    public void Range_Text_Tests(int r0, int r1, int c0, int c1, bool row0Fixed, bool row1Fixed, bool col0Fixed,
+        bool col1Fixed,
+        string expected)
+    {
+        var region = new Region(r0, r1, c0, c1);
+        RangeText.ToRegionText(region, col0Fixed, col1Fixed, row0Fixed, row1Fixed)
+            .Should()
+            .Be(expected);
     }
 }

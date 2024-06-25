@@ -89,6 +89,9 @@ public class Parser
             case Tag.AddressToken:
                 var refToken = (AddressToken)NextToken();
                 var reference = GetReferenceFromAddress(refToken.Address);
+                if (reference == null)
+                    return new LiteralExpression(CellValue.Error(ErrorType.Ref));
+
                 _references.Add(reference);
                 return new ReferenceExpression(reference);
         }
@@ -96,7 +99,7 @@ public class Parser
         return ParseLiteralExpression();
     }
 
-    private Reference GetReferenceFromAddress(Address address)
+    private Reference? GetReferenceFromAddress(Address address)
     {
         switch (address.Kind)
         {
@@ -106,17 +109,20 @@ public class Parser
                     cellAddress.ColAddress.IsFixed, cellAddress.RowAddress.IsFixed);
             case AddressKind.RangeAddress:
                 var rangeAddress = (RangeAddress)address;
-                return new RangeReference(GetReferenceFromAddress(rangeAddress.Start),
-                    GetReferenceFromAddress(rangeAddress.End));
+                if (rangeAddress.Start.Kind == AddressKind.CellAddress &&
+                    rangeAddress.End.Kind == AddressKind.CellAddress)
+                    return new RangeReference((CellAddress)rangeAddress.Start, (CellAddress)rangeAddress.End);
+                if (rangeAddress.Start.Kind == AddressKind.ColAddress &&
+                    rangeAddress.End.Kind == AddressKind.ColAddress)
+                    return new RangeReference((ColAddress)rangeAddress.Start, (ColAddress)rangeAddress.End);
+                if (rangeAddress.Start.Kind == AddressKind.RowAddress &&
+                    rangeAddress.End.Kind == AddressKind.RowAddress)
+                    return new RangeReference((RowAddress)rangeAddress.Start, (RowAddress)rangeAddress.End);
+                Error("Invalid range address");
+                return null;
             case AddressKind.NamedAddress:
                 var namedAddress = (NamedAddress)address;
                 return new NamedReference(namedAddress.Name);
-            case AddressKind.ColAddress:
-                var colAddress = (ColAddress)address;
-                return new ColReference(colAddress.ColIndex, colAddress.IsFixed);
-            case AddressKind.RowAddress:
-                var rowAddress = (RowAddress)address;
-                return new RowReference(rowAddress.RowIndex, rowAddress.IsFixed);
         }
 
         throw new Exception($"Unhandled address type {address.Kind}");

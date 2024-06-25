@@ -12,4 +12,11 @@ public class RowAddress : Address
         Row = row;
         IsFixed = isFixed;
     }
+
+    public RowAddress(int rowIndex, bool isFixed) : base(AddressKind.RowAddress)
+    {
+        RowIndex = rowIndex;
+        Row = RowIndex + 1;
+        IsFixed = isFixed;
+    }
 }

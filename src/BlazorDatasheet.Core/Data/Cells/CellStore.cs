@@ -152,7 +152,7 @@ public partial class CellStore
         }
 
         if (options.CopyFormula)
-            restoreData.Merge(CopyFormula(fromRegion, toRegion));
+            restoreData.Merge(CopyFormulaImpl(fromRegion, toRegion));
 
         if (options.CopyFormat)
             restoreData.Merge(CopyFormatImpl(fromRegion, toRegion));

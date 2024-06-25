@@ -45,7 +45,7 @@ public class Evaluator
             if (r.Kind == ReferenceKind.Cell)
             {
                 var c = (CellReference)r;
-                return _environment.GetCellValue(c.Row.RowNumber, c.Col.ColNumber);
+                return _environment.GetCellValue(c.RowIndex, c.ColIndex);
             }
             else if (r.Kind == ReferenceKind.Range)
             {

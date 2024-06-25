@@ -176,7 +176,7 @@ public static class RangeText
         {
             var colAddress = new ColAddress(colIndex, colStrSpan.ToString(), isFirstFixed);
             var rowAddress = new RowAddress(rowIndex, rowIndex + 1, isSecondFixed);
-            address = new CellAddress(colAddress, rowAddress);
+            address = new CellAddress(rowAddress, colAddress);
             return true;
         }
 
@@ -234,15 +234,30 @@ public static class RangeText
         return $"{ColNumberToLetters(col)}{row + 1}";
     }
 
-    public static string ToRegionText(IRegion region)
-    {
-        var firstCol = RangeText.ColNumberToLetters(region.Left);
-        var firstRow = region.Top + 1;
-        if (region.Left == region.Right && region.Top == region.Bottom)
-            return $"{firstCol}{firstRow}";
+    private static string FS(bool isFixed) => isFixed ? "$" : string.Empty;
 
-        var lastCol = RangeText.ColNumberToLetters(region.Right);
-        var lastRow = region.Bottom + 1;
-        return $"{firstCol}{firstRow}:{lastCol}{lastRow}";
+    public static string ToRegionText(IRegion region,
+        bool fixedColStart = false,
+        bool fixeColEnd = false,
+        bool fixedRowStart = false,
+        bool fixedRowEnd = false)
+    {
+        var firstCol = ColNumberToLetters(region.Left);
+        var firstRow = (region.Top + 1).ToString();
+
+        if (region.Width == 1 && region.Height == 1)
+            return $"{FS(fixedColStart)}{firstCol}{FS(fixedRowStart)}{firstRow}";
+
+        var isRowRegion = region is RowRegion;
+        var isColRegion = region is ColumnRegion;
+
+        firstCol = isColRegion || (!isRowRegion && !isColRegion) ? firstCol : string.Empty;
+        firstRow = isRowRegion || (!isRowRegion && !isColRegion) ? firstRow : string.Empty;
+
+        var lastCol = isColRegion || (!isRowRegion && !isColRegion) ? ColNumberToLetters(region.Right) : string.Empty;
+        var lastRow = isRowRegion || (!isRowRegion && !isColRegion) ? (region.Bottom + 1).ToString() : string.Empty;
+        return
+            $"{FS(fixedColStart)}{firstCol}{FS(fixedRowStart)}{firstRow}:" +
+            $"{FS(fixeColEnd)}{lastCol}{FS(fixedRowEnd)}{lastRow}";
     }
 }

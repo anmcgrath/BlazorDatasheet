@@ -65,7 +65,7 @@ public partial class CellStore
         return new CellStoreRestoreData();
     }
 
-    private CellStoreRestoreData CopyFormula(IRegion fromRegion, IRegion toRegion)
+    private CellStoreRestoreData CopyFormulaImpl(IRegion fromRegion, IRegion toRegion)
     {
         var offset = new CellPosition(
             toRegion.TopLeft.row - fromRegion.TopLeft.row,

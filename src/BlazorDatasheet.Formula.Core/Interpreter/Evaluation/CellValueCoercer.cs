@@ -32,7 +32,7 @@ public class CellValueCoercer
             if (reference.Kind == ReferenceKind.Cell)
             {
                 var cellRef = (CellReference)reference;
-                return TryCoerceNumber(_environment.GetCellValue(cellRef.Row.RowNumber, cellRef.Col.ColNumber),
+                return TryCoerceNumber(_environment.GetCellValue(cellRef.RowIndex, cellRef.ColIndex),
                     out val);
             }
 
@@ -89,7 +89,7 @@ public class CellValueCoercer
             if (reference.Kind == ReferenceKind.Cell)
             {
                 var cellRef = (CellReference)reference;
-                return TryCoerceBool(_environment.GetCellValue(cellRef.Row.RowNumber, cellRef.Col.ColNumber),
+                return TryCoerceBool(_environment.GetCellValue(cellRef.RowIndex, cellRef.ColIndex),
                     out val);
             }
 
@@ -139,7 +139,7 @@ public class CellValueCoercer
             if (reference.Kind == ReferenceKind.Cell)
             {
                 var cellRef = (CellReference)reference;
-                return TryCoerceString(_environment.GetCellValue(cellRef.Row.RowNumber, cellRef.Col.ColNumber),
+                return TryCoerceString(_environment.GetCellValue(cellRef.RowIndex, cellRef.ColIndex),
                     out str);
             }
 
@@ -169,7 +169,7 @@ public class CellValueCoercer
             if (reference.Kind == ReferenceKind.Cell)
             {
                 var cellRef = (CellReference)reference;
-                return TryCoerceDate(_environment.GetCellValue(cellRef.Row.RowNumber, cellRef.Col.ColNumber),
+                return TryCoerceDate(_environment.GetCellValue(cellRef.RowIndex, cellRef.ColIndex),
                     out dateTime);
             }
 

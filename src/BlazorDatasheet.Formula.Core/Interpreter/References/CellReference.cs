@@ -4,27 +4,25 @@ namespace BlazorDatasheet.Formula.Core.Interpreter.References;
 
 public class CellReference : Reference
 {
-    private readonly ColReference _col;
-    private readonly RowReference _row;
-    public ColReference Col => _col;
-    public RowReference Row => _row;
+    public int RowIndex { get; private set; }
+    public int ColIndex { get; private set; }
+    public bool IsColFixed { get; }
+    public bool IsRowFixed { get; }
 
-    public CellReference(int row, int col, bool absoluteCol = false, bool absoluteRow = false) : this(
-        new RowReference(row, absoluteRow), new ColReference(col, absoluteCol))
+    public CellReference(int rowIndex, int colIndex, bool isColFixed, bool isRowFixed)
     {
-    }
-
-    public CellReference(RowReference row, ColReference col)
-    {
-        _row = row;
-        _col = col;
+        RowIndex = rowIndex;
+        ColIndex = colIndex;
+        IsColFixed = isColFixed;
+        IsRowFixed = isRowFixed;
+        Region = new Region(rowIndex, colIndex);
     }
 
     public override ReferenceKind Kind { get; }
 
     public override string ToAddressText()
     {
-        return $"{Col.ToAddressText()}{Row.ToAddressText()}";
+        return RangeText.ToRegionText(Region, IsColFixed, IsColFixed, IsRowFixed, IsRowFixed);
     }
 
     public override bool SameAs(Reference reference)
@@ -32,15 +30,14 @@ public class CellReference : Reference
         if (reference.Kind == ReferenceKind.Cell)
         {
             var cellRef = (CellReference)reference;
-            return Col.SameAs(cellRef.Col) &&
-                   Row.SameAs(cellRef.Row);
+            return ColIndex == cellRef.ColIndex &&
+                   RowIndex == cellRef.RowIndex;
         }
 
         if (reference.Kind == ReferenceKind.Range)
         {
             var rangeRef = (RangeReference)reference;
-            return this.SameAs(rangeRef.Start) &&
-                   this.SameAs(rangeRef.End);
+            return rangeRef.Region.Equals(this.Region);
         }
 
         return false;
@@ -48,16 +45,14 @@ public class CellReference : Reference
 
     public override void Shift(int offsetRow, int offsetCol)
     {
-        _col.Shift(offsetRow, offsetCol);
-        _row.Shift(offsetRow, offsetCol);
+        var dRow = IsRowFixed ? 0 : offsetRow;
+        var dCol = IsColFixed ? 0 : offsetCol;
+        ColIndex += dCol;
+        RowIndex += dRow;
+        Region.Shift(dRow, dCol);
     }
 
     public override bool IsInvalid { get; protected set; }
-
-    public override IRegion ToRegion()
-    {
-        return new Region(_row.RowNumber, _col.ColNumber);
-    }
-
+    public sealed override IRegion Region { get; protected set; }
     public override string ToString() => ToAddressText();
 }

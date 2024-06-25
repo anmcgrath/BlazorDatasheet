@@ -77,7 +77,7 @@
                 .Select((r, i) =>
                 {
                     var colorIndex = i % _colors.Count;
-                    return new DataRegion<string>(_colors[colorIndex], r.ToRegion());
+                    return new DataRegion<string>(_colors[colorIndex], r.Region);
                 }).ToList();
         }
     }

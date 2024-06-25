@@ -241,7 +241,7 @@ public class Sheet
         if (evaluatedValue.ValueType == CellValueType.Reference)
         {
             var reference = evaluatedValue.GetValue<Reference>();
-            return Range(reference!.ToRegion());
+            return Range(reference!.Region);
         }
 
         return null;

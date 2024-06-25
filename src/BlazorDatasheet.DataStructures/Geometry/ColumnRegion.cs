@@ -51,6 +51,11 @@ public class ColumnRegion : Region
         base.Shift(0, dCol);
     }
 
+    public override void Shift(int dRowStart, int dRowEnd, int dColStart, int dColEnd)
+    {
+        base.Shift(0, 0, dColStart, dColEnd);
+    }
+
     public override void Expand(Edge edges, int amount)
     {
         // Expand left & right sides bot not top and bottom

@@ -34,14 +34,14 @@ internal class DependencyManager
             // add edges to any formula that already exist
             if (formulaRef is not NamedReference)
             {
-                var formulaReferringToRegion = _referencedVertexStore.GetData(formulaRef.ToRegion());
+                var formulaReferringToRegion = _referencedVertexStore.GetData(formulaRef.Region);
                 foreach (var f in formulaReferringToRegion)
                 {
                     _dependencyGraph.AddEdge(f, formulaVertex);
                     restoreData.EdgesAdded.Add((f, formulaVertex));
                 }
 
-                restoreData.RegionRestoreData.Merge(_referencedVertexStore.Add(formulaRef.ToRegion(), formulaVertex));
+                restoreData.RegionRestoreData.Merge(_referencedVertexStore.Add(formulaRef.Region, formulaVertex));
             }
             else
             {
@@ -73,11 +73,11 @@ internal class DependencyManager
                 {
                     case CellReference cellRef:
                         dataToDelete = _referencedVertexStore
-                            .GetDataRegions(new Region(cellRef.Row.RowNumber, cellRef.Col.ColNumber), formulaVertex);
+                            .GetDataRegions(new Region(cellRef.RowIndex, cellRef.ColIndex), formulaVertex);
                         break;
                     case RangeReference rangeReference:
                         dataToDelete = _referencedVertexStore
-                            .GetDataRegions(rangeReference.ToRegion(), formulaVertex);
+                            .GetDataRegions(rangeReference.Region, formulaVertex);
                         break;
                     case NamedReference namedReference:
                         throw new NotImplementedException();
@@ -149,7 +149,7 @@ internal class DependencyManager
             foreach (var reference in dependent.Formula!.References)
             {
                 if (reference is not NamedReference &&
-                    reference.ToRegion().Intersects(affectedRegion))
+                    reference.Region.Intersects(affectedRegion))
                 {
                     reference.Shift(dRow, dCol);
                 }
@@ -223,7 +223,7 @@ internal class DependencyManager
             foreach (var reference in dependent.Formula!.References)
             {
                 if (reference is not NamedReference &&
-                    reference.ToRegion().Intersects(affectedRegion))
+                    reference.Region.Intersects(affectedRegion))
                 {
                     reference.Shift(dRow, dCol);
                 }

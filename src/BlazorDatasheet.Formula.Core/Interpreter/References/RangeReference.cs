@@ -1,52 +1,73 @@
 ﻿using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.Formula.Core.Interpreter.Addresses;
 
 namespace BlazorDatasheet.Formula.Core.Interpreter.References;
 
 public class RangeReference : Reference
 {
-    public Reference Start { get; }
-    public Reference End { get; }
     public override ReferenceKind Kind => ReferenceKind.Range;
 
-    public RangeReference(Reference start, Reference end)
+    public bool IsStartColFixed { get; private set; }
+    public bool IsEndColFixed { get; private set; }
+    public bool IsStartRowFixed { get; private set; }
+    public bool IsEndRowFixed { get; private set; }
+
+    public RangeReference(ColAddress colStart, ColAddress colEnd)
     {
-        if (start.Kind == ReferenceKind.Cell && end.Kind == ReferenceKind.Cell)
+        var start = colStart.ColIndex < colEnd.ColIndex ? colStart : colEnd;
+        var end = start == colStart ? colEnd : colStart;
+
+        Region = new ColumnRegion(start.ColIndex, end.ColIndex);
+        IsStartColFixed = start.IsFixed;
+        IsEndColFixed = end.IsFixed;
+    }
+
+    public RangeReference(RowAddress rowStart, RowAddress rowEnd)
+    {
+        var start = rowStart.RowIndex < rowEnd.RowIndex ? rowStart : rowEnd;
+        var end = start == rowStart ? rowEnd : rowStart;
+
+        Region = new RowRegion(start.RowIndex, end.RowIndex);
+        IsStartRowFixed = start.IsFixed;
+        IsEndRowFixed = end.IsFixed;
+    }
+
+    public RangeReference(CellAddress start, CellAddress end)
+    {
+        var cellStart = start;
+        var cellEnd = end;
+
+        ColAddress colStart, colEnd;
+        RowAddress rowStart, rowEnd;
+
+        if (cellStart.ColAddress.ColIndex <= cellEnd.ColAddress.ColIndex)
         {
-            var cellStart = (CellReference)start;
-            var cellEnd = (CellReference)end;
-
-            ColReference colStart, colEnd;
-            RowReference rowStart, rowEnd;
-
-            if (cellStart.Col.ColNumber <= cellEnd.Col.ColNumber)
-            {
-                colStart = cellStart.Col;
-                colEnd = cellEnd.Col;
-            }
-            else
-            {
-                colStart = cellEnd.Col;
-                colEnd = cellStart.Col;
-            }
-
-            if (cellStart.Row.RowNumber <= cellEnd.Row.RowNumber)
-            {
-                rowStart = cellStart.Row;
-                rowEnd = cellEnd.Row;
-            }
-            else
-            {
-                rowStart = cellEnd.Row;
-                rowEnd = cellStart.Row;
-            }
-
-            Start = new CellReference(rowStart, colStart);
-            End = new CellReference(rowEnd, colEnd);
-            return;
+            colStart = cellStart.ColAddress;
+            colEnd = cellEnd.ColAddress;
+        }
+        else
+        {
+            colStart = cellEnd.ColAddress;
+            colEnd = cellStart.ColAddress;
         }
 
-        Start = start;
-        End = end;
+        if (cellStart.RowAddress.RowIndex <= cellEnd.RowAddress.RowIndex)
+        {
+            rowStart = cellStart.RowAddress;
+            rowEnd = cellEnd.RowAddress;
+        }
+        else
+        {
+            rowStart = cellEnd.RowAddress;
+            rowEnd = cellStart.RowAddress;
+        }
+
+        IsStartColFixed = colStart.IsFixed;
+        IsEndColFixed = colEnd.IsFixed;
+        IsStartRowFixed = rowStart.IsFixed;
+        IsEndRowFixed = rowStart.IsFixed;
+
+        Region = new Region(rowStart.RowIndex, rowEnd.RowIndex, colStart.ColIndex, colEnd.ColIndex);
     }
 
     protected RangeReference()
@@ -55,7 +76,7 @@ public class RangeReference : Reference
 
     public override string ToAddressText()
     {
-        return Start.ToAddressText() + ":" + End.ToAddressText();
+        return RangeText.ToRegionText(Region, IsStartColFixed, IsEndColFixed, IsStartRowFixed, IsEndRowFixed);
     }
 
     public override bool SameAs(Reference reference)
@@ -63,15 +84,13 @@ public class RangeReference : Reference
         if (reference.Kind == ReferenceKind.Range)
         {
             var rangeRef = (RangeReference)reference;
-            return Start.SameAs(rangeRef.Start) &&
-                   End.SameAs(rangeRef.End);
+            return rangeRef.Region.Equals(Region);
         }
 
         if (reference.Kind == ReferenceKind.Cell)
         {
             var cellRef = (CellReference)reference;
-            return Start.SameAs(End) &&
-                   cellRef.SameAs(Start);
+            return cellRef.Region.Equals(Region);
         }
 
         return false;
@@ -79,16 +98,15 @@ public class RangeReference : Reference
 
     public override void Shift(int offsetRow, int offsetCol)
     {
-        Start.Shift(offsetRow, offsetCol);
-        End.Shift(offsetRow, offsetCol);
+        var dRowStart = IsStartRowFixed ? 0 : offsetRow;
+        var dRowEnd = IsEndRowFixed ? 0 : offsetRow;
+        var dColStart = IsStartColFixed ? 0 : offsetCol;
+        var dColEnd = IsEndColFixed ? 0 : offsetCol;
+        Region.Shift(dRowStart, dRowEnd, dColStart, dColEnd);
     }
 
     public override bool IsInvalid { get; protected set; }
-
-    public override IRegion ToRegion()
-    {
-        return Start.ToRegion().GetBoundingRegion(End.ToRegion());
-    }
+    public sealed override IRegion Region { get; protected set; }
 
     public override string ToString() => ToAddressText();
 }
