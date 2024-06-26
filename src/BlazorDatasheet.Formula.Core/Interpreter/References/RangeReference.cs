@@ -65,7 +65,7 @@ public class RangeReference : Reference
         IsStartColFixed = colStart.IsFixed;
         IsEndColFixed = colEnd.IsFixed;
         IsStartRowFixed = rowStart.IsFixed;
-        IsEndRowFixed = rowStart.IsFixed;
+        IsEndRowFixed = rowEnd.IsFixed;
 
         Region = new Region(rowStart.RowIndex, rowEnd.RowIndex, colStart.ColIndex, colEnd.ColIndex);
     }
