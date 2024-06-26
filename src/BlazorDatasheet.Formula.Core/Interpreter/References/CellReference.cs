@@ -4,15 +4,13 @@ namespace BlazorDatasheet.Formula.Core.Interpreter.References;
 
 public class CellReference : Reference
 {
-    public int RowIndex { get; private set; }
-    public int ColIndex { get; private set; }
+    public int RowIndex => Region.Top;
+    public int ColIndex => Region.Left;
     public bool IsColFixed { get; }
     public bool IsRowFixed { get; }
 
     public CellReference(int rowIndex, int colIndex, bool isColFixed, bool isRowFixed)
     {
-        RowIndex = rowIndex;
-        ColIndex = colIndex;
         IsColFixed = isColFixed;
         IsRowFixed = isRowFixed;
         Region = new Region(rowIndex, colIndex);
@@ -47,8 +45,6 @@ public class CellReference : Reference
     {
         var dRow = IsRowFixed ? 0 : offsetRow;
         var dCol = IsColFixed ? 0 : offsetCol;
-        ColIndex += dCol;
-        RowIndex += dRow;
         Region.Shift(dRow, dCol);
     }
 
@@ -57,8 +53,6 @@ public class CellReference : Reference
 
     internal override void SetRegion(IRegion region)
     {
-        ColIndex = Region.Left;
-        RowIndex = Region.Top;
         Region = region;
     }
 
