@@ -13,6 +13,8 @@ public class ReferenceExpression : Expression
 
     public override string ToExpressionText()
     {
+        if(Reference.IsInvalid)
+            return "#REF!";
         return Reference.ToAddressText();
     }
 

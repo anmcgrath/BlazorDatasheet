@@ -138,7 +138,9 @@ public class BinaryOpEvaluator
 
     public CellValue EvaluateAdd(CellValue left, CellValue right)
     {
+        Console.WriteLine($"Evaluating add {left} {right.ValueType}");
         var numPair = CoercedPair.AsNumbers(left, right, _cellValueCoercer);
+        Console.WriteLine($"Evaluating coerced {numPair.Value1} {numPair.Value2} {numPair.HasError}");
         if (numPair.HasError)
             return CellValue.Error(ErrorType.Value);
 

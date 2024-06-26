@@ -64,20 +64,35 @@ public class CellFormula
     {
         foreach (var reference in References)
         {
-            if (reference is CellReference cellReference)
+            if (axis == Axis.Row && reference.Region.Top > index)
             {
-                if (axis == Axis.Row && cellReference.RowIndex > index)
-                    reference.Shift(-count, 0);
-                else if (axis == Axis.Col && cellReference.ColIndex > index)
-                    reference.Shift(0, -count);
+                reference.Shift(-count, 0);
+                continue;
+            }
+
+            if (axis == Axis.Col && reference.Region.Left > index)
+            {
+                reference.Shift(0, -count);
+                continue;
+            }
+
+            IRegion removalRegion = axis == Axis.Col
+                ? new ColumnRegion(index, index + count - 1)
+                : new RowRegion(index, index + count - 1);
+
+            if (removalRegion.Contains(reference.Region))
+            {
+                reference.SetValidity(false);
+                continue;
             }
 
             if (reference is RangeReference rangeReference)
             {
-                if (axis == Axis.Row && reference.Region.Top > index)
-                    reference.Shift(-count, 0);
-                else if (axis == Axis.Col && reference.Region.Left >= index)
-                    reference.Shift(0, -count);
+                if (axis == Axis.Row && reference.Region.SpansRow(index))
+                    reference.Region.Contract(Edge.Bottom, count);
+
+                if (axis == Axis.Col && reference.Region.SpansCol(index))
+                    reference.Region.Contract(Edge.Right, count);
             }
         }
     }

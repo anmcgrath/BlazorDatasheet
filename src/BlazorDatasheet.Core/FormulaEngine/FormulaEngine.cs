@@ -41,6 +41,8 @@ public class FormulaEngine
         _cells = sheet.Cells;
         _sheet.Editor.BeforeCellEdit += SheetOnBeforeCellEdit;
         _cells.CellsChanged += SheetOnCellsChanged;
+        _sheet.Rows.Removed += (_, _) => CalculateSheet();
+        _sheet.Columns.Removed += (_, _) => CalculateSheet();
 
         _environment = new SheetEnvironment(sheet);
         _evaluator = new Evaluator(_environment);

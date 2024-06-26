@@ -162,8 +162,10 @@ public class DependencyManager
         foreach (var dependent in formulaDependents)
         {
             // capture the current references before they are modified
-            var existing = dependent.Formula!.References.Select(r => r.Region.Clone()).ToList();
-            restoreData.ModifiedReferenceRegions.Add((dependent.Formula, existing));
+            var existingRegions = dependent.Formula!.References.Select(r => r.Region.Clone()).ToList();
+            var existingValidities = dependent.Formula!.References.Select(r => r.IsInvalid).ToList();
+            restoreData.ModifiedFormulaReferences.Add(new ReferenceRestoreData(dependent.Formula!, existingRegions,
+                existingValidities));
             dependent.Formula!.InsertRowColIntoReferences(index, count, axis);
         }
 
@@ -231,8 +233,10 @@ public class DependencyManager
         foreach (var dependent in dependentFormula)
         {
             // capture the current references before they are modified
-            var existing = dependent.Formula!.References.Select(r => r.Region.Clone()).ToList();
-            restoreData.ModifiedReferenceRegions.Add((dependent.Formula, existing));
+            var existingRegions = dependent.Formula!.References.Select(r => r.Region.Clone()).ToList();
+            var existingValidities = dependent.Formula!.References.Select(r => r.IsInvalid).ToList();
+            restoreData.ModifiedFormulaReferences.Add(new ReferenceRestoreData(dependent.Formula!, existingRegions,
+                existingValidities));
             dependent.Formula!.RemoveRowColFromReferences(index, count, axis);
         }
 
@@ -324,12 +328,14 @@ public class DependencyManager
 
         // 2. restore contrracted/expanded/shifted formula references from the records
 
-        foreach (var regionModification in restoreData.ModifiedReferenceRegions)
+        foreach (var regionModification in restoreData.ModifiedFormulaReferences)
         {
             int refIndex = 0;
-            foreach (var formulaReference in regionModification.formula.References)
+            foreach (var formulaReference in regionModification.Formula.References)
             {
-                formulaReference.SetRegion(regionModification.oldReferences[refIndex++]);
+                formulaReference.SetRegion(regionModification.OldRegions[refIndex]);
+                formulaReference.SetValidity(!regionModification.OldInvalidStates[refIndex]);
+                refIndex++;
             }
         }
     }
@@ -343,7 +349,7 @@ public class DependencyManagerRestoreData
     public readonly List<(string, string)> EdgesRemoved = new();
     public readonly List<(string, string)> EdgesAdded = new();
     public readonly List<AppliedShift> Shifts = new();
-    public readonly List<(CellFormula formula, List<IRegion> oldReferences)> ModifiedReferenceRegions = new();
+    internal readonly List<ReferenceRestoreData> ModifiedFormulaReferences = new();
 
     public void Merge(DependencyManagerRestoreData other)
     {
@@ -353,6 +359,20 @@ public class DependencyManagerRestoreData
         EdgesAdded.AddRange(other.EdgesAdded);
         EdgesRemoved.AddRange(other.EdgesRemoved);
         Shifts.AddRange(other.Shifts);
-        ModifiedReferenceRegions.AddRange(other.ModifiedReferenceRegions);
+        ModifiedFormulaReferences.AddRange(other.ModifiedFormulaReferences);
+    }
+}
+
+internal class ReferenceRestoreData
+{
+    public CellFormula Formula { get; }
+    public List<IRegion> OldRegions { get; }
+    public List<bool> OldInvalidStates { get; }
+
+    public ReferenceRestoreData(CellFormula formula, List<IRegion> oldRegions, List<bool> oldInvalidStates)
+    {
+        Formula = formula;
+        OldRegions = oldRegions;
+        OldInvalidStates = oldInvalidStates;
     }
 }
