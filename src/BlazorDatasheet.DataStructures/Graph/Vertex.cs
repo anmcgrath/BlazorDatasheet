@@ -8,6 +8,8 @@ public abstract class Vertex : IEquatable<Vertex>
     {
         return other?.Key == Key;
     }
+
+    public abstract void UpdateKey();
 }
 
 public abstract class Vertex<TData> : Vertex, IEquatable<Vertex<TData>>

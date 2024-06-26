@@ -1,3 +1,4 @@
+using System.Linq;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -198,12 +199,26 @@ public class SheetFormulaIntegrationTests
     public void Insert_Row_Before_Formula_Shifts_Formula_And_Updates_Ref()
     {
         var sheet = new Sheet(10, 10);
-        sheet.Cells.SetFormula(2, 2, "=B2");
+        sheet.Cells.SetFormula(2, 2, "=B2"); // set C3 to =B2
+        
         sheet.Rows.InsertAt(1);
         sheet.Cells[2, 2].Formula.Should().BeNull();
         sheet.Cells[3, 2].Formula.Should().Be("=B3");
+
+        sheet.FormulaEngine.DependencyManager.GetDirectDependents(new Region(2, 1)) // b3
+            .Select(x => x.Key)
+            .First()
+            .Should()
+            .Be("C4"); // (3,2)
+        
         sheet.Commands.Undo();
         sheet.Cells[2, 2].Formula.Should().Be("=B2");
+        
+        sheet.FormulaEngine.DependencyManager.GetDirectDependents(new Region(1, 1)) // b2
+            .Select(x => x.Key)
+            .First()
+            .Should()
+            .Be("C3"); // (3,2)
     }
 
     [Test]
@@ -283,6 +298,17 @@ public class SheetFormulaIntegrationTests
         sheet.Rows.InsertAt(2, 1);
         sheet.Range("A1").Value = 2;
         sheet.Cells[6, 0].Value.Should().Be(2);
+    }
+    
+    [Test]
+    public void Insert_Row_Bug_Produces_Multiple_Formula(){
+        var sheet = new Sheet(20, 20);
+        sheet.Cells.SetFormula(5, 0, "=A1");
+        sheet.Rows.InsertAt(2, 1);
+        sheet.Editor.BeginEdit(6, 0);
+        sheet.Editor.EditValue = "=A1";
+        sheet.Editor.AcceptEdit();
+        sheet.FormulaEngine.DependencyManager.FormulaCount.Should().Be(1);
     }
 
     [Test]

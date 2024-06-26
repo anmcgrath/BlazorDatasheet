@@ -85,6 +85,9 @@ public class GraphTests
 public class TestVertex : Vertex, IEquatable<TestVertex>
 {
     public override string Key { get; }
+    public override void UpdateKey()
+    {
+    }
 
     public TestVertex(string key)
     {

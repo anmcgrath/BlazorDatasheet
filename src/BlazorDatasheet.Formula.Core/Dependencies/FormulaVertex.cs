@@ -29,8 +29,15 @@ public class FormulaVertex : Vertex, IEquatable<FormulaVertex>
         VertexType = VertexType.Cell;
     }
 
-    private readonly string _key;
+    private string _key;
     public override string Key => _key;
+
+    public override void UpdateKey()
+    {
+        if (VertexType != VertexType.Named)
+            _key = RangeText.ToRegionText(Region);
+    }
+
     public IRegion? Region { get; }
     public CellFormula? Formula { get; private set; }
 

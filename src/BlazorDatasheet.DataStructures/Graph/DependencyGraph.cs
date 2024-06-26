@@ -111,31 +111,33 @@ public class DependencyGraph<T> where T : Vertex
     /// <param name="clearNoEdges">Whether to remove any vertices that are left with no edges</param>
     /// <returns></returns>
     /// <exception cref="NotImplementedException"></exception>
-    public void RemoveVertex(T v, bool clearNoEdges = true)
+    public void RemoveVertex(T v, bool clearNoEdges = true) => RemoveVertex(v.Key);
+
+    public void RemoveVertex(string vKey, bool clearNoEdges = true)
     {
-        if (!_symbolTable.ContainsKey(v.Key))
+        if (!_symbolTable.ContainsKey(vKey))
             return;
-        var adj = Adj(v);
-        var prec = Prec(v);
+        var adj = Adj(vKey);
+        var prec = Prec(vKey);
 
         // Remove edges
         foreach (var w in adj)
         {
-            RemoveEdge(v, w, clearNoEdges);
+            RemoveEdge(vKey, w.Key, clearNoEdges);
         }
 
         foreach (var w in prec)
         {
-            RemoveEdge(w, v, clearNoEdges);
+            RemoveEdge(w.Key, vKey, clearNoEdges);
         }
 
         // the vertex may have been removed as part of removing edges
-        if (_symbolTable.ContainsKey(v.Key))
+        if (_symbolTable.ContainsKey(vKey))
         {
-            _symbolTable.Remove(v.Key);
+            _symbolTable.Remove(vKey);
             _numVertices--;
-            _adj.Remove(v.Key);
-            _prec.Remove(v.Key);
+            _adj.Remove(vKey);
+            _prec.Remove(vKey);
         }
     }
 
@@ -146,30 +148,34 @@ public class DependencyGraph<T> where T : Vertex
     /// <param name="v"></param>
     /// <param name="w"></param>
     /// <param name="clearIfNoDependents">If set to true, clears any vertices if they are left with no dependents.</param>
-    public void RemoveEdge(T v, T w, bool clearIfNoDependents = true)
+    public void RemoveEdge(T v, T w, bool clearIfNoDependents = true) => RemoveEdge(v.Key, w.Key, clearIfNoDependents);
+
+    public void RemoveEdge(string vKey, string wKey, bool clearIfNoDependents = true)
     {
-        if (_symbolTable.ContainsKey(v.Key))
+        if (_symbolTable.ContainsKey(vKey))
         {
-            if (_adj[v.Key].ContainsKey(w.Key))
+            if (_adj[vKey].ContainsKey(wKey))
             {
-                _adj[v.Key].Remove(w.Key);
-                _prec[w.Key].Remove(v.Key);
+                _adj[vKey].Remove(wKey);
+                _prec[wKey].Remove(vKey);
                 _numEdges--;
 
                 if (clearIfNoDependents)
                 {
-                    RemoveIfNoDependents(v);
-                    RemoveIfNoDependents(w);
+                    RemoveIfNoDependents(vKey);
+                    RemoveIfNoDependents(wKey);
                 }
             }
         }
     }
 
-    private void RemoveIfNoDependents(T v)
+    private void RemoveIfNoDependents(T v) => RemoveIfNoDependents(v.Key);
+
+    private void RemoveIfNoDependents(string vKey)
     {
-        if (!IsDependedOn(v) && !IsDependentOnAny(v))
+        if (!IsDependedOn(vKey) && !IsDependentOnAny(vKey))
         {
-            RemoveVertex(v, false);
+            RemoveVertex(vKey, false);
         }
     }
 
@@ -186,6 +192,25 @@ public class DependencyGraph<T> where T : Vertex
         if (!_adj[v.Key].ContainsKey(w.Key))
         {
             _adj[v.Key].Add(w.Key, w);
+            _prec[w.Key].Add(v.Key, v);
+            _numEdges++;
+        }
+    }
+
+    /// <summary>
+    /// Adds edges between two vertices, only if they are already existing.
+    /// </summary>
+    /// <param name="vKey"></param>
+    /// <param name="wKey"></param>
+    public void AddEdge(string vKey, string wKey)
+    {
+        if (!_symbolTable.TryGetValue(vKey, out var v))
+            return;
+        if (!_symbolTable.TryGetValue(wKey, out var w)) ;
+
+        if (!_adj[vKey].ContainsKey(wKey))
+        {
+            _adj[vKey].Add(wKey, w);
             _prec[w.Key].Add(v.Key, v);
             _numEdges++;
         }
@@ -216,16 +241,16 @@ public class DependencyGraph<T> where T : Vertex
     /// <summary>
     /// Whether a Vertex is connected to any other vertices.
     /// </summary>
-    /// <param name="v"></param>
+    /// <param name="vKey"></param>
     /// <returns></returns>
-    public bool IsDependedOn(T v)
+    public bool IsDependedOn(string vKey)
     {
-        return Adj(v).Any();
+        return Adj(vKey).Any();
     }
 
-    public bool IsDependentOnAny(T v)
+    public bool IsDependentOnAny(string vKey)
     {
-        return Prec(v).Any();
+        return Prec(vKey).Any();
     }
 
     /// <summary>
@@ -264,6 +289,28 @@ public class DependencyGraph<T> where T : Vertex
     public bool HasVertex(string key)
     {
         return _symbolTable.ContainsKey(key);
+    }
+
+    /// <summary>
+    /// Updates the key for the vertex after calling Vertex.UpdateKey
+    /// </summary>
+    /// <param name="v"></param>
+    /// <exception cref="NotImplementedException"></exception>
+    public void RefreshKey(T v)
+    {
+        var currKey = v.Key;
+        var prec = Prec(currKey).Select(x => x.Key).ToList();
+        var adj = Adj(currKey).Select(x => x.Key).ToList();
+        RemoveVertex(currKey);
+
+        v.UpdateKey();
+        AddVertex(v);
+
+        foreach (var a in adj)
+            AddEdge(v.Key, a);
+
+        foreach (var p in prec)
+            AddEdge(p, v.Key);
     }
 }
 

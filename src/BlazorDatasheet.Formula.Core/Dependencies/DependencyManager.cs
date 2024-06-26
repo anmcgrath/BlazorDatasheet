@@ -40,7 +40,7 @@ public class DependencyManager
                 foreach (var f in formulaReferringToRegion)
                 {
                     _dependencyGraph.AddEdge(f, formulaVertex);
-                    restoreData.EdgesAdded.Add((f, formulaVertex));
+                    restoreData.EdgesAdded.Add((f.Key, formulaVertex.Key));
                 }
 
                 restoreData.RegionRestoreData.Merge(
@@ -94,10 +94,10 @@ public class DependencyManager
         }
 
         foreach (var vertex in _dependencyGraph.Adj(formulaVertex))
-            restoreData.EdgesRemoved.Add((formulaVertex, vertex));
+            restoreData.EdgesRemoved.Add((formulaVertex.Key, vertex.Key));
 
         foreach (var vertex in _dependencyGraph.Prec(formulaVertex))
-            restoreData.EdgesRemoved.Add((vertex, formulaVertex));
+            restoreData.EdgesRemoved.Add((vertex.Key, formulaVertex.Key));
 
         _dependencyGraph.RemoveVertex(formulaVertex);
 
@@ -237,26 +237,11 @@ public class DependencyManager
         var affectedVertices = GetVerticesInRegion(region);
         foreach (var v in affectedVertices)
         {
-            var shiftedR = v.Region!.Clone();
-            shiftedR.Shift(dRow, dCol);
-
-            var shiftedV = new FormulaVertex(shiftedR, v.Formula);
-            restoreData.VerticesAdded.Add(shiftedV);
-            restoreData.VerticesRemoved.Add(v);
-
-            foreach (var vertex in _dependencyGraph.Adj(v))
-            {
-                restoreData.EdgesRemoved.Add((v, vertex));
-                restoreData.EdgesAdded.Add((shiftedV, vertex));
-            }
-
-            foreach (var vertex in _dependencyGraph.Prec(v))
-            {
-                restoreData.EdgesRemoved.Add((vertex, v));
-                restoreData.EdgesAdded.Add((shiftedV, v));
-            }
-
-            _dependencyGraph.Swap(v, shiftedV);
+            // need to shift without changing the reference
+            // needs to update key in dependency graph
+            // and also shift the region it refers to
+            v.Region!.Shift(dRow, dCol);
+            _dependencyGraph.RefreshKey(v);
         }
 
         return restoreData;
@@ -270,6 +255,18 @@ public class DependencyManager
 
     public void Restore(DependencyManagerRestoreData restoreData)
     {
+        foreach (var shift in restoreData.Shifts)
+        {
+            IRegion r = shift.Axis == Axis.Col
+                ? new ColumnRegion(shift.Index, int.MaxValue)
+                : new RowRegion(shift.Index, int.MaxValue);
+
+            var dRow = shift.Axis == Axis.Row ? -shift.Amount : 0;
+            var dCol = shift.Axis == Axis.Col ? -shift.Amount : 0;
+
+            ShiftVerticesInRegion(r, dRow, dCol);
+        }
+
         foreach (var vertex in restoreData.VerticesAdded)
         {
             _dependencyGraph.RemoveVertex(vertex);
@@ -311,8 +308,8 @@ public class DependencyManagerRestoreData
     public RegionRestoreData<FormulaVertex> RegionRestoreData { get; set; } = new();
     public List<FormulaVertex> VerticesRemoved { get; set; } = new();
     public List<FormulaVertex> VerticesAdded { get; set; } = new();
-    public readonly List<(FormulaVertex, FormulaVertex)> EdgesRemoved = new();
-    public readonly List<(FormulaVertex, FormulaVertex)> EdgesAdded = new();
+    public readonly List<(string, string)> EdgesRemoved = new();
+    public readonly List<(string, string)> EdgesAdded = new();
     public readonly List<AppliedShift> Shifts = new();
     public readonly List<(CellFormula formula, List<IRegion> oldReferences)> ModifiedReferenceRegions = new();
 
