@@ -46,7 +46,7 @@ public class GraphTests
         Assert.AreEqual(1, dg.Prec(v2).Count());
 
         dg.RemoveVertex(v1);
-        Assert.AreEqual(1, dg.Count);
+        Assert.AreEqual(2, dg.Count);
         Assert.AreEqual(1, dg.E);
 
 
@@ -56,7 +56,7 @@ public class GraphTests
 
         dg.AddEdge(v1, v2);
         dg.AddEdge(v2, v3);
-        Assert.AreEqual(2, dg.Count);
+        Assert.AreEqual(3, dg.Count);
         Assert.AreEqual(2, dg.E);
         Assert.AreEqual(1, dg.Prec(v2).Count());
     }

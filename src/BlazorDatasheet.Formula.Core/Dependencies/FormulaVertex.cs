@@ -18,7 +18,10 @@ public class FormulaVertex : Vertex, IEquatable<FormulaVertex>
         Region = region;
         Formula = formula;
         _key = RangeText.ToRegionText(Region);
-        VertexType = VertexType.Region;
+        if (region.Width == 1 && region.Height == 1)
+            VertexType = VertexType.Cell;
+        else
+            VertexType = VertexType.Region;
     }
 
     public FormulaVertex(int row, int col, CellFormula? formula) : this(new Region(row, row, col, col), formula)

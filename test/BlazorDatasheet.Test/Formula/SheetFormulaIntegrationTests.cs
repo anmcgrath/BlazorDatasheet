@@ -276,6 +276,16 @@ public class SheetFormulaIntegrationTests
     }
 
     [Test]
+    public void Insert_Row_Before_Formula_Allows_Correct_Calculation()
+    {
+        var sheet = new Sheet(20, 20);
+        sheet.Cells.SetFormula(5, 0, "=A1");
+        sheet.Rows.InsertAt(2, 1);
+        sheet.Range("A1").Value = 2;
+        sheet.Cells[6, 0].Value.Should().Be(2);
+    }
+
+    [Test]
     public void Remove_Row_Into_Referenced_Range_Contracts_Formula_Reference()
     {
         var sheet = new Sheet(20, 20);

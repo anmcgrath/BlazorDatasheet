@@ -17,6 +17,8 @@ public class DependencyManager
     /// </summary>
     private readonly RegionDataStore<FormulaVertex> _referencedVertexStore = new();
 
+    internal int FormulaCount => _dependencyGraph.Count;
+
     public DependencyManagerRestoreData SetFormula(int row, int col, CellFormula? formula)
     {
         var formulaVertex = new FormulaVertex(row, col, formula);
@@ -69,7 +71,8 @@ public class DependencyManager
         {
             foreach (var formulaRef in formulaReferences)
             {
-                List<DataRegion<FormulaVertex>> dataToDelete = [];
+                List<DataRegion<FormulaVertex>> dataToDelete =  []
+                ;
                 switch (formulaRef)
                 {
                     case CellReference cellRef:
