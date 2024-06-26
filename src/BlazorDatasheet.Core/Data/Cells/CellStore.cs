@@ -98,7 +98,7 @@ public partial class CellStore
         var toClear = regionsToClear.ToList();
         restoreData.ValueRestoreData = _dataStore.Clear(toClear);
         restoreData.ValidRestoreData = _validStore.Clear(toClear);
-        restoreData.FormulaRestoreData = ClearFormulaImpl(toClear).FormulaRestoreData;
+        restoreData.Merge(ClearFormulaImpl(toClear));
 
         var affected = restoreData.GetAffectedPositions().ToList();
         _sheet.BatchUpdates();

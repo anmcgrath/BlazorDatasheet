@@ -340,4 +340,14 @@ public class SheetFormulaIntegrationTests
         sheet.Cells.GetCellValue(0, 0).GetValue<int>().Should().Be(5);
         sheet.FormulaEngine.DependencyManager.HasDependents(1, 1).Should().BeTrue();
     }
+
+    [Test]
+    public void Remove_Formula_In_Column_Removes_And_Restores_Correctly()
+    {
+        _sheet.Cells.SetFormula(0, 0, "=A2");
+        _sheet.Columns.RemoveAt(0);
+        _sheet.Commands.Undo();
+        _sheet.Cells[0, 0].Formula.Should().Be("=A2");
+        _sheet.FormulaEngine.DependencyManager.HasDependents(new Region(1, 0)).Should().BeTrue();
+    }
 }

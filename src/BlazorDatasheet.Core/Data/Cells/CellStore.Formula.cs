@@ -98,16 +98,16 @@ public partial class CellStore
 
     internal CellStoreRestoreData ClearFormulaImpl(IEnumerable<IRegion> regions)
     {
+        var restoreData = new CellStoreRestoreData();
         var clearedData = _formulaStore.Clear(regions);
         foreach (var clearedFormula in clearedData.DataRemoved)
         {
-            _sheet.FormulaEngine.RemoveFormula(clearedFormula.row, clearedFormula.col);
+            restoreData.DependencyManagerRestoreData.Merge(
+                _sheet.FormulaEngine.RemoveFormula(clearedFormula.row, clearedFormula.col));
         }
 
-        return new CellStoreRestoreData()
-        {
-            FormulaRestoreData = clearedData
-        };
+        restoreData.FormulaRestoreData = clearedData;
+        return restoreData;
     }
 
     /// <summary>

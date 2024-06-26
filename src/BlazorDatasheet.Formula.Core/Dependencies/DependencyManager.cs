@@ -15,7 +15,7 @@ public class DependencyManager
     /// to each formula vertex that references the region.
     /// E.g. for a formula "=A1 + sum(B1:B2)", the region A1 and B1:B2 will have a reference to the formula vertex
     /// </summary>
-    private readonly RegionDataStore<FormulaVertex> _referencedVertexStore = new();
+    private readonly RegionDataStore<FormulaVertex> _referencedVertexStore = new(0, false);
 
     internal int FormulaCount => _dependencyGraph.Count;
 
@@ -31,13 +31,15 @@ public class DependencyManager
         _dependencyGraph.AddVertex(formulaVertex);
         restoreData.VerticesAdded.Add(formulaVertex);
 
+        // find formula inside any of the regions that this formula references
+        // and add a dependency edge to them
         foreach (var formulaRef in formula.References)
         {
             // add edges to any formula that already exist
             if (formulaRef is not NamedReference)
             {
-                var formulaReferringToRegion = _referencedVertexStore.GetData(formulaRef.Region);
-                foreach (var f in formulaReferringToRegion)
+                var formulaInsideRegion = GetVerticesInRegion(formulaRef.Region);
+                foreach (var f in formulaInsideRegion)
                 {
                     _dependencyGraph.AddEdge(f, formulaVertex);
                     restoreData.EdgesAdded.Add((f.Key, formulaVertex.Key));
@@ -50,6 +52,13 @@ public class DependencyManager
             {
                 throw new NotImplementedException();
             }
+        }
+
+        // find any formula that reference this formula and add edges to them
+        foreach (var dependents in GetDirectDependents(new Region(row, col)))
+        {
+            _dependencyGraph.AddEdge(formulaVertex, dependents);
+            restoreData.EdgesAdded.Add((formulaVertex.Key, dependents.Key));
         }
 
         return restoreData;
@@ -71,8 +80,7 @@ public class DependencyManager
         {
             foreach (var formulaRef in formulaReferences)
             {
-                List<DataRegion<FormulaVertex>> dataToDelete =  []
-                ;
+                List<DataRegion<FormulaVertex>> dataToDelete = [];
                 switch (formulaRef)
                 {
                     case CellReference cellRef:
@@ -93,15 +101,18 @@ public class DependencyManager
             }
         }
 
+        // we should only delete edges that show cells that this formula is dependent on
+        // if there are formula that depend on this formula, they shouldn't be removed?
+
         foreach (var vertex in _dependencyGraph.Adj(formulaVertex))
             restoreData.EdgesRemoved.Add((formulaVertex.Key, vertex.Key));
 
         foreach (var vertex in _dependencyGraph.Prec(formulaVertex))
             restoreData.EdgesRemoved.Add((vertex.Key, formulaVertex.Key));
 
-        _dependencyGraph.RemoveVertex(formulaVertex);
-
+        _dependencyGraph.RemoveVertex(formulaVertex, false);
         restoreData.VerticesRemoved.Add(formulaVertex);
+
         return restoreData;
     }
 
@@ -226,7 +237,7 @@ public class DependencyManager
         }
 
         restoreData.Merge(ShiftVerticesInRegion(affectedRegion, dRow, dCol));
-        restoreData.RegionRestoreData = _referencedVertexStore.RemoveRowColAt(index, index + count - 1, axis);
+        restoreData.RegionRestoreData.Merge(_referencedVertexStore.RemoveRowColAt(index, count, axis));
         return restoreData;
     }
 
@@ -251,6 +262,27 @@ public class DependencyManager
     {
         var sort = new TopologicalSort<FormulaVertex>();
         return sort.Sort(_dependencyGraph);
+    }
+
+    public IEnumerable<RegionDependency> GetDependencies()
+    {
+        var results = new List<RegionDependency>();
+        foreach (var vertex in _dependencyGraph.GetAll())
+        {
+            foreach (var dependent in _dependencyGraph.Adj(vertex))
+            {
+                if (dependent.VertexType != VertexType.Named)
+                    results.Add(new RegionDependency(dependent.Region!, vertex.Region!, "black"));
+            }
+        }
+
+        var dataREgions = _referencedVertexStore.GetAllDataRegions();
+        foreach (var region in dataREgions)
+        {
+            results.Add(new RegionDependency(region.Data.Region!, region.Region, "red"));
+        }
+
+        return results;
     }
 
     public void Restore(DependencyManagerRestoreData restoreData)

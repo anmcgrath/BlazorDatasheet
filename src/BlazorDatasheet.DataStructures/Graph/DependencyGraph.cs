@@ -111,7 +111,7 @@ public class DependencyGraph<T> where T : Vertex
     /// <param name="clearNoEdges">Whether to remove any vertices that are left with no edges</param>
     /// <returns></returns>
     /// <exception cref="NotImplementedException"></exception>
-    public void RemoveVertex(T v, bool clearNoEdges = true) => RemoveVertex(v.Key);
+    public void RemoveVertex(T v, bool clearNoEdges = true) => RemoveVertex(v.Key, clearNoEdges);
 
     public void RemoveVertex(string vKey, bool clearNoEdges = true)
     {
