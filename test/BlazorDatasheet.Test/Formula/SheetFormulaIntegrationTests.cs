@@ -51,12 +51,18 @@ public class SheetFormulaIntegrationTests
     public void Formula_Calculation_Performs_When_Formula_Is_Set()
     {
         _sheet.Cells.SetValue(0, 0, 5);
-        _sheet.Cells.CellsChanged += (sender, positions) =>
-        {
-            var x = 2;
-        };
         _sheet.Cells.SetFormula(1, 1, "=A1 + 10");
         Assert.AreEqual(15, _sheet.Cells.GetValue(1, 1));
+    }
+
+    [Test]
+    public void Formula_Calculation_Performs_When_Formula_Is_Set_Over_Formula()
+    {
+        _sheet.Cells.SetValue(0, 0, 2);
+        _sheet.Cells.SetFormula(1, 0, "=A1");
+        _sheet.Cells.SetFormula(2, 0, "=A2");
+        _sheet.Cells.SetFormula(1, 0, "=A1");
+        _sheet.Cells[2, 0].Value.Should().Be(2);
     }
 
     [Test]
@@ -200,7 +206,7 @@ public class SheetFormulaIntegrationTests
     {
         var sheet = new Sheet(10, 10);
         sheet.Cells.SetFormula(2, 2, "=B2"); // set C3 to =B2
-        
+
         sheet.Rows.InsertAt(1);
         sheet.Cells[2, 2].Formula.Should().BeNull();
         sheet.Cells[3, 2].Formula.Should().Be("=B3");
@@ -210,10 +216,10 @@ public class SheetFormulaIntegrationTests
             .First()
             .Should()
             .Be("C4"); // (3,2)
-        
+
         sheet.Commands.Undo();
         sheet.Cells[2, 2].Formula.Should().Be("=B2");
-        
+
         sheet.FormulaEngine.DependencyManager.GetDirectDependents(new Region(1, 1)) // b2
             .Select(x => x.Key)
             .First()
@@ -299,9 +305,10 @@ public class SheetFormulaIntegrationTests
         sheet.Range("A1").Value = 2;
         sheet.Cells[6, 0].Value.Should().Be(2);
     }
-    
+
     [Test]
-    public void Insert_Row_Bug_Produces_Multiple_Formula(){
+    public void Insert_Row_Bug_Produces_Multiple_Formula()
+    {
         var sheet = new Sheet(20, 20);
         sheet.Cells.SetFormula(5, 0, "=A1");
         sheet.Rows.InsertAt(2, 1);
