@@ -25,6 +25,7 @@
         Theme="@Theme"
         Sheet="Sheet"
         Virtualise="true"
+        ShowFormulaDependents="@ShowFormulaDependents"
         ShowColHeadings="true"
         ShowRowHeadings="true"
         StickyHeadings="true">
@@ -55,6 +56,11 @@
     <label for="darkmode-toggle">Darkmode</label>
 </div>
 
+<div>
+    <input id="show-formula-dependents" type="checkbox" @bind="ShowFormulaDependents"/>
+    <label for="show-formula-dependents">Show formula dependents</label>
+</div>
+
 @code {
 
     private Sheet Sheet;
@@ -72,6 +78,18 @@
     }
 
     private Datasheet _datasheet;
+
+    private bool _showFormulaDependents;
+
+    private bool ShowFormulaDependents
+    {
+        get => _showFormulaDependents;
+        set
+        {
+            _showFormulaDependents = value;
+            _datasheet.ForceReRender();
+        }
+    }
 
     private void SortSelectionDesc()
     {

@@ -142,7 +142,7 @@ public class FormulaEngine
         return DependencyManager.ClearFormula(row, col);
     }
 
-    public IEnumerable<RegionDependency> GetDependencies() => DependencyManager.GetDependencies();
+    public IEnumerable<DependencyInfo> GetDependencies() => DependencyManager.GetDependencies();
 
     public void CalculateSheet()
     {

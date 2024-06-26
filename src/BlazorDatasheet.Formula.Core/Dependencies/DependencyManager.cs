@@ -264,22 +264,22 @@ public class DependencyManager
         return sort.Sort(_dependencyGraph);
     }
 
-    public IEnumerable<RegionDependency> GetDependencies()
+    public IEnumerable<DependencyInfo> GetDependencies()
     {
-        var results = new List<RegionDependency>();
+        var results = new List<DependencyInfo>();
         foreach (var vertex in _dependencyGraph.GetAll())
         {
             foreach (var dependent in _dependencyGraph.Adj(vertex))
             {
                 if (dependent.VertexType != VertexType.Named)
-                    results.Add(new RegionDependency(dependent.Region!, vertex.Region!, "black"));
+                    results.Add(new DependencyInfo(dependent.Region!, vertex.Region!, DependencyType.CalculationOrder));
             }
         }
 
         var dataREgions = _referencedVertexStore.GetAllDataRegions();
         foreach (var region in dataREgions)
         {
-            results.Add(new RegionDependency(region.Data.Region!, region.Region, "red"));
+            results.Add(new DependencyInfo(region.Data.Region!, region.Region, DependencyType.Region));
         }
 
         return results;

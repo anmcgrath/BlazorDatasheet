@@ -108,6 +108,8 @@ public partial class Datasheet : SheetComponentBase
     [Parameter]
     public bool CanUserMergeRows { get; set; } = true;
 
+    [Parameter]
+    public bool ShowFormulaDependents { get; set; }
 
     /// <summary>
     /// Exists so that we can determine whether the sheet has changed

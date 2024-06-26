@@ -1,0 +1,76 @@
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Layout
+@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Formula.Core
+@using BlazorDatasheet.Formula.Core.Dependencies
+
+@{
+    <div style="position: absolute;top: 0;left: 0; width: 100%; height: 100%;" id="svg_layer">
+        <svg viewBox="0 0 @CellLayoutProvider.TotalWidth @CellLayoutProvider.TotalHeight" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <!-- A marker to be used as an arrowhead -->
+                <marker
+                    fill="blue"
+                    id="arrow"
+                    viewBox="0 0 10 10"
+                    refX="5"
+                    refY="5"
+                    markerWidth="6"
+                    markerHeight="6"
+                    orient="auto-start-reverse">
+                    <path d="M 0 0 L 10 5 L 0 10 z"/>
+                </marker>
+            </defs>
+
+            @{
+                var dependents = Sheet.FormulaEngine.GetDependencies();
+                foreach (var dependent in dependents)
+                {
+                    var rectStart = GetRect(dependent.From);
+                    var rectEnd = GetRect(dependent.To);
+                    var startP = GetCentre(rectStart);
+                    var endP = GetCentre(rectEnd);
+                    var dasharray = dependent.Type == DependencyType.Region ? "6,3" : "";
+                    <line x1="@(startP.X)"
+                          stroke-dasharray="@dasharray"
+                          y1="@(startP.Y)"
+                          x2="@endP.X"
+                          y2="@endP.Y"
+                          stroke="blue"
+                          marker-end="url(#arrow)"/>
+
+                    <rect
+                        height="@rectEnd.Height"
+                        width="@rectEnd.Width"
+                        x="@rectEnd.X"
+                        y="@rectEnd.Y"
+                        stroke-dasharray="6,3"
+                        fill="none"
+                        stroke="blue"
+                        stroke-width="1"/>
+                }
+            }
+        </svg>
+    </div>
+}
+
+@code {
+
+    [Parameter, EditorRequired] public Sheet Sheet { get; set; } = null!;
+    [Parameter] public CellLayoutProvider CellLayoutProvider { get; set; } = null!;
+
+    private Rect GetRect(IRegion region)
+    {
+        var lPos = CellLayoutProvider.ComputeLeftPosition(region.Left);
+        var rPos = CellLayoutProvider.ComputeRightPosition(region.Right);
+        var tPos = CellLayoutProvider.ComputeTopPosition(region.Top);
+        var bPos = CellLayoutProvider.ComputeBottomPosition(region.Bottom);
+        return new Rect(lPos, tPos, rPos - lPos, bPos - tPos);
+    }
+
+    private Point2d GetCentre(Rect rect)
+    {
+        return new Point2d(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
+    }
+
+}
