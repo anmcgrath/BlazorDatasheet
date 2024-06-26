@@ -129,10 +129,14 @@ public class DependencyGraph<T> where T : Vertex
             RemoveEdge(w, v, clearNoEdges);
         }
 
-        _symbolTable.Remove(v.Key);
-        _adj.Remove(v.Key);
-        _prec.Remove(v.Key);
-        _numVertices--;
+        // the vertex may have been removed as part of removing edges
+        if (_symbolTable.ContainsKey(v.Key))
+        {
+            _symbolTable.Remove(v.Key);
+            _numVertices--;
+            _adj.Remove(v.Key);
+            _prec.Remove(v.Key);
+        }
     }
 
     /// <summary>
