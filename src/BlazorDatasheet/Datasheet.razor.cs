@@ -1,5 +1,6 @@
 using System.Text;
 using BlazorDatasheet.Core.Commands;
+using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Edit;
 using BlazorDatasheet.Core.Events;
@@ -107,6 +108,8 @@ public partial class Datasheet : SheetComponentBase
     [Parameter]
     public bool CanUserMergeRows { get; set; } = true;
 
+    [Parameter]
+    public bool ShowFormulaDependents { get; set; }
 
     /// <summary>
     /// Exists so that we can determine whether the sheet has changed
@@ -241,12 +244,12 @@ public partial class Datasheet : SheetComponentBase
             _sheetLocal = Sheet;
 
             _sheetLocal.SetDialogService(new SimpleDialogService(this.JS));
-            _sheetLocal.Rows.RowInserted += async (_, _) => await RefreshViewport();
-            _sheetLocal.Columns.ColumnInserted += async (_, _) => await RefreshViewport();
-            _sheetLocal.Rows.RowRemoved += async (_, _) => await RefreshViewport();
-            _sheetLocal.Columns.ColumnRemoved += async (_, _) => await RefreshViewport();
-            _sheetLocal.Rows.RowHeightChanged += async (_, _) => await RefreshViewport();
-            _sheetLocal.Columns.ColumnWidthChanged += async (_, _) => await RefreshViewport();
+            _sheetLocal.Rows.Inserted += async (_, _) => await RefreshViewport();
+            _sheetLocal.Columns.Inserted += async (_, _) => await RefreshViewport();
+            _sheetLocal.Rows.Removed += async (_, _) => await RefreshViewport();
+            _sheetLocal.Columns.Removed += async (_, _) => await RefreshViewport();
+            _sheetLocal.Rows.SizeModified += async (_, _) => await RefreshViewport();
+            _sheetLocal.Columns.SizeModified += async (_, _) => await RefreshViewport();
 
             _cellLayoutProvider = new CellLayoutProvider(_sheetLocal);
             _visualSheet = new VisualSheet(_sheetLocal);

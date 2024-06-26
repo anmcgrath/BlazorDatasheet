@@ -86,7 +86,8 @@ public interface IRegion : IEquatable<IRegion>
     /// <summary>
     /// Determines whether the axis at position is spanned by region
     /// </summary>
-    /// <param name="row"></param>
+    /// <param name="index"></param>
+    /// <param name="axis"></param>
     /// <returns></returns>
     public bool Spans(int index, Axis axis);
 
@@ -115,6 +116,13 @@ public interface IRegion : IEquatable<IRegion>
     /// <param name="region"></param>
     /// <returns></returns>
     public IRegion? GetIntersection(IRegion? region);
+
+    /// <summary>
+    /// Returns whether the other region intersects with this region at all.
+    /// </summary>
+    /// <param name="region"></param>
+    /// <returns></returns>
+    public bool Intersects(IRegion? region);
 
 
     /// <summary>
@@ -228,4 +236,11 @@ public interface IRegion : IEquatable<IRegion>
     /// <param name="position"></param>
     /// <returns></returns>
     bool Contains(CellPosition position);
+
+    bool IsSingleCell() => Height == 1 && Width == 1;
+
+    /// <summary>
+    /// Shift the entire region by the amount specified
+    /// </summary>
+    void Shift(int dRowStart, int dRowEnd, int dColStart, int dColEnd);
 }

@@ -90,7 +90,7 @@
             var section = span.Slice(start, len);
             sb.Append($"<span ");
             sb.Append($"class=\"{GetClass(tokens[i].Tag)}\" ");
-            if (tokens[i].Tag == Tag.ReferenceToken)
+            if (tokens[i].Tag == Tag.AddressToken)
             {
                 var colorIndex = (refCount % RangeColors.Count);
                 var color = RangeColors[colorIndex];

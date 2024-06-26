@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using BlazorDatasheet.Core.Commands;
+using BlazorDatasheet.Core.Commands.Data;
+using BlazorDatasheet.Core.Commands.RowCols;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.DataStructures.Geometry;
 using FluentAssertions;

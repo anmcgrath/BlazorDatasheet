@@ -7,5 +7,5 @@ public enum Edge : short
     Top = 1,
     Right = 2,
     Left = 4,
-    Bottom = 8
+    Bottom = 8,
 }

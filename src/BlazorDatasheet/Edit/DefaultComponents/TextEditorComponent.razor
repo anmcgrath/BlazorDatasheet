@@ -50,8 +50,8 @@
     {
         Cell = cell;
         _sheet = sheet;
-        _editX = sheet.Columns.GetWidthBetween(0, cell.Col);
-        _editY = sheet.Rows.GetHeightBetween(0, cell.Row);
+        _editX = sheet.Columns.GetVisualWidthBetween(0, cell.Col);
+        _editY = sheet.Rows.GetVisualHeightBetween(0, cell.Row);
     }
 
     private void OnInput(string value)
@@ -77,29 +77,29 @@
                 .Select((r, i) =>
                 {
                     var colorIndex = i % _colors.Count;
-                    return new DataRegion<string>(_colors[colorIndex], r.ToRegion());
+                    return new DataRegion<string>(_colors[colorIndex], r.Region);
                 }).ToList();
         }
     }
 
     private double GetX(IRegion region)
     {
-        return _sheet.Columns.GetWidthBetween(0, region.Left) - _editX - 1;
+        return _sheet.Columns.GetVisualWidthBetween(0, region.Left) - _editX - 1;
     }
 
     private double GetY(IRegion region)
     {
-        return _sheet.Rows.GetHeightBetween(0, region.Top) - _editY - 1;
+        return _sheet.Rows.GetVisualHeightBetween(0, region.Top) - _editY - 1;
     }
 
     private double GetWidth(IRegion region)
     {
-        return _sheet.Columns.GetWidthBetween(region.Left, region.Right + 1);
+        return _sheet.Columns.GetVisualWidthBetween(region.Left, region.Right + 1);
     }
 
     private double GetHeight(IRegion region)
     {
-        return _sheet.Rows.GetHeightBetween(region.Top, region.Bottom + 1);
+        return _sheet.Rows.GetVisualHeightBetween(region.Top, region.Bottom + 1);
     }
 
     public override void BeginEdit(EditEntryMode entryMode, string? editValue, string key)

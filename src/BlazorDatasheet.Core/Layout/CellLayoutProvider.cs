@@ -15,16 +15,16 @@ public class CellLayoutProvider : IGridLayoutProvider
     /// The total width of the sheet including row headings
     /// </summary>
     public double TotalWidth =>
-        _sheet.Columns.GetWidthBetween(0, _sheet.NumCols) + (IncludeRowHeadings ? RowHeadingWidth : 0);
+        _sheet.Columns.GetVisualWidthBetween(0, _sheet.NumCols) + (IncludeRowHeadings ? RowHeadingWidth : 0);
 
     /// <summary>
     /// The total height of the sheet including col headings
     /// </summary>
     public double TotalHeight =>
-        _sheet.Rows.GetHeightBetween(0, _sheet.NumRows) + (IncludeColHeadings ? ColHeadingHeight : 0);
+        _sheet.Rows.GetVisualHeightBetween(0, _sheet.NumRows) + (IncludeColHeadings ? ColHeadingHeight : 0);
 
-    public double RowHeadingWidth => _sheet.Columns.DefaultWidth;
-    public double ColHeadingHeight => _sheet.Rows.DefaultHeight;
+    public double RowHeadingWidth => _sheet.Columns.DefaultSize;
+    public double ColHeadingHeight => _sheet.Rows.DefaultSize;
 
     public bool IncludeRowHeadings { get; set; }
     public bool IncludeColHeadings { get; set; }
@@ -70,12 +70,12 @@ public class CellLayoutProvider : IGridLayoutProvider
     public double ComputeLeftPosition(int col)
     {
         var extra = IncludeRowHeadings ? RowHeadingWidth : 0;
-        return _sheet.Columns.GetLeft(col) + extra;
+        return _sheet.Columns.GetVisualTop(col) + extra;
     }
 
     public double ComputeRightPosition(int col)
     {
-        return ComputeLeftPosition(col) + _sheet.Columns.GetWidth(col);
+        return ComputeLeftPosition(col) + _sheet.Columns.GetVisualWidth(col);
     }
 
     public double ComputeTopPosition(IRegion region)
@@ -86,7 +86,7 @@ public class CellLayoutProvider : IGridLayoutProvider
     public double ComputeTopPosition(int row)
     {
         var extra = IncludeColHeadings ? ColHeadingHeight : 0;
-        return _sheet.Rows.GetTop(row) + extra;
+        return _sheet.Rows.GetVisualTop(row) + extra;
     }
 
     public double ComputeBottomPosition(int row)
@@ -96,7 +96,7 @@ public class CellLayoutProvider : IGridLayoutProvider
 
     public double ComputeWidth(int startCol, int colSpan)
     {
-        return _sheet.Columns.GetWidthBetween(startCol, startCol + colSpan);
+        return _sheet.Columns.GetVisualWidthBetween(startCol, startCol + colSpan);
     }
 
     /// <summary>
@@ -138,7 +138,7 @@ public class CellLayoutProvider : IGridLayoutProvider
 
     public double ComputeHeight(int startRow, int rowSpan)
     {
-        var h = _sheet.Rows.GetHeightBetween(startRow, startRow + rowSpan);
+        var h = _sheet.Rows.GetVisualHeightBetween(startRow, startRow + rowSpan);
         return h;
     }
 
@@ -169,8 +169,8 @@ public class CellLayoutProvider : IGridLayoutProvider
         // if left > total width of sheet we must have an issue...
         // even if top > total height of sheet - container height we have an issue
         // even if left > total width of sheet - container width we have an issue
-        var totalWidth = _sheet.Columns.GetWidthBetween(0, _sheet.NumCols);
-        var totalHeight = _sheet.Rows.GetHeightBetween(0, _sheet.NumRows);
+        var totalWidth = _sheet.Columns.GetVisualWidthBetween(0, _sheet.NumCols);
+        var totalHeight = _sheet.Rows.GetVisualHeightBetween(0, _sheet.NumRows);
         if (top > totalHeight - containerHeight)
             top = Math.Max(0, totalHeight - containerHeight);
         if (left > totalWidth - containerWidth)
@@ -196,8 +196,8 @@ public class CellLayoutProvider : IGridLayoutProvider
 
         var region = new Region(startRow, endRow, startCol, endCol);
 
-        var leftPos = _sheet.Columns.GetLeft(startCol);
-        var topPos = _sheet.Rows.GetTop(startRow);
+        var leftPos = _sheet.Columns.GetVisualTop(startCol);
+        var topPos = _sheet.Rows.GetVisualTop(startRow);
         var visibleWidth = ComputeWidthBetween(startCol, endCol + 1);
         var visibleHeight = ComputeHeightBetween(startRow, endRow + 1);
         var distRight = ComputeWidthBetween(endCol, _sheet.NumCols - 1);

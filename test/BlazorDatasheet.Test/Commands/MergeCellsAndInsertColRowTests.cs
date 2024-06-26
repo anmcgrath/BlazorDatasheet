@@ -1,4 +1,5 @@
 ﻿using BlazorDatasheet.Core.Commands;
+using BlazorDatasheet.Core.Commands.RowCols;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.DataStructures.Geometry;
 using NUnit.Framework;
@@ -53,7 +54,7 @@ public class MergeCellsAndInsertColRowTests
         Assert.AreEqual(null, sheet.Cells.GetValue(3, 3));
         Assert.AreEqual("U", sheet.Cells.GetValue(1, 1));
 
-        sheet.Rows.InsertRowAt(1);
+        sheet.Rows.InsertAt(1);
         /*
                0  1  2  3  4
            0 |  |  |  |  |  |
@@ -110,7 +111,7 @@ public class MergeCellsAndInsertColRowTests
         Assert.AreEqual(null, sheet.Cells.GetValue(3, 3));
         Assert.AreEqual("U", sheet.Cells.GetValue(1, 1));
 
-        sheet.Rows.InsertRowAt(3);
+        sheet.Rows.InsertAt(3);
         /*
                0  1  2  3  4
            0 |  |  |  |  |  |
@@ -525,7 +526,7 @@ public class MergeCellsAndInsertColRowTests
         sheet.Cells.Merge(new ColumnRegion(1));
         Assert.AreEqual(sheet.Cells.GetValue(0, 1), "M");
 
-        sheet.Rows.InsertRowAt(0);
+        sheet.Rows.InsertAt(0);
         var mergeRegion = sheet.Cells.GetMerge(0, 1);
         Assert.NotNull(mergeRegion);
         Assert.AreEqual(mergeRegion.GetType(), typeof(ColumnRegion));
@@ -586,7 +587,7 @@ public class MergeCellsAndInsertColRowTests
 
         Assert.AreEqual(sheet.Cells.GetValue(0, 1), "M");
 
-        sheet.Rows.InsertRowAt(1);
+        sheet.Rows.InsertAt(1);
 
         var mergeRowRegion = sheet.Cells.GetMerge(2, 0);
         Assert.NotNull(mergeRowRegion);
@@ -636,7 +637,7 @@ public class MergeCellsAndInsertColRowTests
         // When the removal is undone, the merge should be the same as before.
         var sheet = new Sheet(10, 10);
         sheet.Cells.Merge(new Region(2, 5, 2, 3));
-        sheet.Commands.ExecuteCommand(new RemoveRowsCommand(2));
+        sheet.Commands.ExecuteCommand(new RemoveRowColsCommand(2, Axis.Row));
         Assert.True(sheet.Cells.IsInsideMerge(2, 2));
         Assert.False(sheet.Cells.IsInsideMerge(5, 2));
         sheet.Commands.Undo();

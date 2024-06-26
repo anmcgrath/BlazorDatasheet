@@ -1,6 +1,9 @@
 using System.Diagnostics;
 using System.Text;
 using BlazorDatasheet.Core.Commands;
+using BlazorDatasheet.Core.Commands.Data;
+using BlazorDatasheet.Core.Commands.Formatting;
+using BlazorDatasheet.Core.Commands.RowCols;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Edit;
 using BlazorDatasheet.Core.Events;
@@ -122,15 +125,40 @@ public class Sheet
         NumRows = numRows;
     }
 
+    /// <summary>
+    /// Removes <paramref name="count"/> rows or columns, depending on the axis provided.
+    /// </summary>
+    /// <param name="axis"></param>
+    /// <param name="count"></param>
+    public void Remove(Axis axis, int count)
+    {
+        if (axis == Axis.Col)
+            RemoveCols(count);
+        else
+            RemoveRows(count);
+    }
+
+    /// <summary>
+    /// Adds <paramref name="count"/> rows or columns, depending on the axis provided.
+    /// </summary>
+    /// <param name="axis"></param>
+    /// <param name="count"></param>
+    public void Add(Axis axis, int count)
+    {
+        if (axis == Axis.Col)
+            AddCols(count);
+        else
+            AddRows(count);
+    }
 
     #region COLS
 
-    internal void AddCols(int nCols = 1)
+    private void AddCols(int nCols = 1)
     {
         NumCols += nCols;
     }
 
-    internal void RemoveCols(int nCols = 1)
+    private void RemoveCols(int nCols = 1)
     {
         NumCols -= nCols;
         Selection.ConstrainSelectionToSheet();
@@ -140,12 +168,12 @@ public class Sheet
 
     #region ROWS
 
-    internal void AddRows(int nRows = 1)
+    private void AddRows(int nRows = 1)
     {
         NumRows += nRows;
     }
 
-    internal void RemoveRows(int nRows)
+    private void RemoveRows(int nRows)
     {
         NumRows -= nRows;
         Selection.ConstrainSelectionToSheet();
@@ -195,7 +223,7 @@ public class Sheet
     /// <returns></returns>
     public bool IsCellVisible(int row, int col)
     {
-        return Rows.IsRowVisible(row);
+        return Rows.IsVisible(row);
     }
 
     /// <summary>
@@ -213,7 +241,7 @@ public class Sheet
         if (evaluatedValue.ValueType == CellValueType.Reference)
         {
             var reference = evaluatedValue.GetValue<Reference>();
-            return Range(reference!.ToRegion());
+            return Range(reference!.Region);
         }
 
         return null;
@@ -364,7 +392,6 @@ public class Sheet
     /// </summary>
     /// <param name="text">The text to insert</param>
     /// <param name="inputPosition">The position where the insertion starts</param>
-    /// <param name="newLineDelim">The delimiter that specifies a new-line</param>
     /// <returns>The region of cells that were affected</returns>
     public Region? InsertDelimitedText(string text, CellPosition inputPosition)
     {
@@ -424,8 +451,8 @@ public class Sheet
     {
         var defaultFormat = new CellFormat();
         var cellFormat = Cells.GetFormat(row, col).Clone();
-        var rowFormat = Rows.RowFormats.Get(row)?.Clone() ?? defaultFormat;
-        var colFormat = Columns.ColFormats.Get(col)?.Clone() ?? defaultFormat;
+        var rowFormat = Rows.Formats.Get(row)?.Clone() ?? defaultFormat;
+        var colFormat = Columns.Formats.Get(col)?.Clone() ?? defaultFormat;
 
         rowFormat.Merge(colFormat);
         rowFormat.Merge(cellFormat);
@@ -435,7 +462,7 @@ public class Sheet
     /// <summary>
     /// Sets the format for a particular range
     /// </summary>
-    /// <param name="range"></param>
+    /// <param name="region"></param>
     /// <param name="cellFormat"></param>
     public void SetFormat(IRegion region, CellFormat cellFormat)
     {
@@ -502,6 +529,21 @@ public class Sheet
         }
 
         return strBuilder.ToString();
+    }
+
+    /// <summary>
+    /// Returns the size (number of rows or columns) across the specified axis
+    /// </summary>
+    /// <param name="axis"></param>
+    /// <returns></returns>
+    public int GetSize(Axis axis)
+    {
+        return axis == Axis.Col ? NumCols : NumRows;
+    }
+
+    internal RowColInfoStore GetRowColStore(Axis axis)
+    {
+        return axis == Axis.Row ? Rows : Columns;
     }
 
     public void SetDialogService(IDialogService? service)

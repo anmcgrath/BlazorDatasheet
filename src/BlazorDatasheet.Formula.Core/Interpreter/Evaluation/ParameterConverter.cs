@@ -1,4 +1,3 @@
-using BlazorDatasheet.DataStructures.References;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
@@ -138,7 +137,7 @@ public class ParameterConverter
             if (r.Kind == ReferenceKind.Cell)
             {
                 var c = (CellReference)r;
-                return CellValue.Array(new[] { new[] { _environment.GetCellValue(c.Row.RowNumber, c.Col.ColNumber) } });
+                return CellValue.Array(new[] { new[] { _environment.GetCellValue(c.RowIndex, c.ColIndex) } });
             }
 
             if (r.Kind == ReferenceKind.Range)
@@ -188,7 +187,7 @@ public class ParameterConverter
         if (reference.Kind == ReferenceKind.Cell)
         {
             var cellRef = (CellReference)reference;
-            return _environment.GetCellValue(cellRef.Row.RowNumber, cellRef.Col.ColNumber);
+            return _environment.GetCellValue(cellRef.RowIndex, cellRef.ColIndex);
         }
 
         return CellValue.Error(ErrorType.Na);

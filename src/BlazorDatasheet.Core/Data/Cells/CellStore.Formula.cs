@@ -1,7 +1,9 @@
 using BlazorDatasheet.Core.Commands;
+using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Events.Formula;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
+using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter;
 
 namespace BlazorDatasheet.Core.Data.Cells;
@@ -39,9 +41,12 @@ public partial class CellStore
         var restoreData = new CellStoreRestoreData();
         restoreData.ValidRestoreData = _validStore.Clear(row, col);
         restoreData.ValueRestoreData = _dataStore.Clear(row, col);
+
+        if (!restoreData.ValueRestoreData.DataRemoved.Any())
+            restoreData.ValueRestoreData.DataRemoved.Add((row, col, new CellValue(null)));
+
         restoreData.FormulaRestoreData = _formulaStore.Set(row, col, formula);
-        if (formula != null)
-            _sheet.FormulaEngine.AddToDependencyGraph(row, col, formula);
+        restoreData.DependencyManagerRestoreData = _sheet.FormulaEngine.SetFormula(row, col, formula);
 
         FormulaChanged?.Invoke(this,
             new CellFormulaChangeEventArgs(row, col,
@@ -60,7 +65,7 @@ public partial class CellStore
         return new CellStoreRestoreData();
     }
 
-    private CellStoreRestoreData CopyFormula(IRegion fromRegion, IRegion toRegion)
+    private CellStoreRestoreData CopyFormulaImpl(IRegion fromRegion, IRegion toRegion)
     {
         var offset = new CellPosition(
             toRegion.TopLeft.row - fromRegion.TopLeft.row,
@@ -84,23 +89,25 @@ public partial class CellStore
 
     internal CellStoreRestoreData ClearFormulaImpl(int row, int col)
     {
-        var restoreData = _formulaStore.Clear(row, col);
-        _sheet.FormulaEngine.RemoveFormula(row, col);
-        return new CellStoreRestoreData() { FormulaRestoreData = restoreData };
+        return new CellStoreRestoreData()
+        {
+            FormulaRestoreData = _formulaStore.Clear(row, col),
+            DependencyManagerRestoreData = _sheet.FormulaEngine.RemoveFormula(row, col)
+        };
     }
 
     internal CellStoreRestoreData ClearFormulaImpl(IEnumerable<IRegion> regions)
     {
+        var restoreData = new CellStoreRestoreData();
         var clearedData = _formulaStore.Clear(regions);
         foreach (var clearedFormula in clearedData.DataRemoved)
         {
-            _sheet.FormulaEngine.RemoveFormula(clearedFormula.row, clearedFormula.col);
+            restoreData.DependencyManagerRestoreData.Merge(
+                _sheet.FormulaEngine.RemoveFormula(clearedFormula.row, clearedFormula.col));
         }
 
-        return new CellStoreRestoreData()
-        {
-            FormulaRestoreData = clearedData
-        };
+        restoreData.FormulaRestoreData = clearedData;
+        return restoreData;
     }
 
     /// <summary>

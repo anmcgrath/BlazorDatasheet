@@ -315,7 +315,7 @@ public class Selection
                 currRow = merge.Bottom;
         }
 
-        currRow = _sheet.Rows.GetNextVisibleRow(currRow, rowDir);
+        currRow = _sheet.Rows.GetNextVisible(currRow, rowDir);
 
         // Fix the active region to surrounds of the sheet
         var activeRegionFixed = ActiveRegion.GetIntersection(_sheet.Region);

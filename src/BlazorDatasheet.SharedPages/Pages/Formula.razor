@@ -21,8 +21,8 @@
         Sheet = new Sheet(10, 10);
         Sheet.BatchUpdates();
         Sheet.Commands.PauseHistory();
-        Sheet.Columns.SetWidth(0, 10, 40);
-        Sheet.Rows.SetHeight(0, 10, 40);
+        Sheet.Columns.SetSize(0, 10, 40);
+        Sheet.Rows.SetSize(0, 10, 40);
 
         for (int i = 0; i < 10; i++)
         {

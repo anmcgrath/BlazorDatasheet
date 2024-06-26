@@ -2,12 +2,12 @@
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Events;
 using BlazorDatasheet.Core.Events.Edit;
-using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Graph;
-using BlazorDatasheet.DataStructures.References;
 using BlazorDatasheet.DataStructures.Store;
+using BlazorDatasheet.DataStructures.Util;
 using BlazorDatasheet.Formula.Core;
+using BlazorDatasheet.Formula.Core.Dependencies;
 using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
@@ -20,10 +20,9 @@ public class FormulaEngine
 {
     private readonly Sheet _sheet;
     private readonly CellStore _cells;
-    private SheetEnvironment _environment;
+    private readonly SheetEnvironment _environment;
     private readonly Parser _parser = new();
     private readonly Evaluator _evaluator;
-    private readonly DependencyGraph _dependencyGraph;
 
     /// <summary>
     /// Keeps track of any ranges referenced by formula.
@@ -31,6 +30,8 @@ public class FormulaEngine
     /// but for now it's just whether it's referenced or not.
     /// </summary>
     private readonly RegionDataStore<bool> _observedRanges;
+
+    internal readonly DependencyManager DependencyManager = new();
 
     public bool IsCalculating { get; private set; }
 
@@ -40,10 +41,11 @@ public class FormulaEngine
         _cells = sheet.Cells;
         _sheet.Editor.BeforeCellEdit += SheetOnBeforeCellEdit;
         _cells.CellsChanged += SheetOnCellsChanged;
+        _sheet.Rows.Removed += (_, _) => CalculateSheet();
+        _sheet.Columns.Removed += (_, _) => CalculateSheet();
 
         _environment = new SheetEnvironment(sheet);
         _evaluator = new Evaluator(_environment);
-        _dependencyGraph = new DependencyGraph();
         _observedRanges = new RegionDataStore<bool>();
 
         RegisterDefaultFunctions();
@@ -68,7 +70,7 @@ public class FormulaEngine
         {
             foreach (var region in e.Regions)
             {
-                if (IsRegionReferenced(region))
+                if (RegionContainsReferencedCells(region))
                 {
                     cellsReferenced = true;
                     break;
@@ -84,13 +86,12 @@ public class FormulaEngine
 
     private bool IsCellReferenced(int row, int col)
     {
-        return _dependencyGraph.HasVertex(new CellVertex(row, col).Key) ||
-               _observedRanges.Any(row, col);
+        return DependencyManager.HasDependents(row, col);
     }
 
-    private bool IsRegionReferenced(IRegion region)
+    private bool RegionContainsReferencedCells(IRegion region)
     {
-        return _observedRanges.Any(region);
+        return DependencyManager.HasDependents(region);
     }
 
     private void RegisterDefaultFunctions()
@@ -109,47 +110,9 @@ public class FormulaEngine
         }
     }
 
-    public void AddToDependencyGraph(int row, int col, CellFormula formula)
+    internal DependencyManagerRestoreData SetFormula(int row, int col, CellFormula? formula)
     {
-        var formulaVertex = new CellVertex(row, col);
-        _dependencyGraph.AddVertex(formulaVertex);
-
-        var references = formula.References!;
-        foreach (var reference in references)
-        {
-            var vertex = GetVertex(reference);
-            _dependencyGraph.AddEdge(vertex, formulaVertex);
-            if (reference is RangeReference rangeReference)
-            {
-                _observedRanges.Add(((RegionVertex)vertex).Region, true);
-                var cellVerticesInsideRange = GetCellVerticesInRange(rangeReference);
-                foreach (var cellVertex in cellVerticesInsideRange)
-                {
-                    if (cellVertex != formulaVertex)
-                        _dependencyGraph.AddEdge(cellVertex, vertex);
-                }
-            }
-        }
-    }
-
-    private IEnumerable<CellVertex> GetCellVerticesInRange(RangeReference rangeRef)
-    {
-        var region = ToRegion(rangeRef);
-        if (region == null)
-            return Enumerable.Empty<CellVertex>();
-
-        var cellVertices = new List<CellVertex>();
-
-        foreach (var vertex in _dependencyGraph.GetAll())
-        {
-            if (vertex is CellVertex cellVertex &&
-                region.Contains(cellVertex.Row, cellVertex.Col))
-            {
-                cellVertices.Add(cellVertex);
-            }
-        }
-
-        return cellVertices;
+        return DependencyManager.SetFormula(row, col, formula);
     }
 
     public CellFormula ParseFormula(string formulaString)
@@ -167,7 +130,7 @@ public class FormulaEngine
         }
         catch (Exception e)
         {
-            return CellValue.Error(ErrorType.Na, "Error running formula");
+            return CellValue.Error(ErrorType.Na, $"Error running formula: {e.Message}");
         }
     }
 
@@ -176,15 +139,12 @@ public class FormulaEngine
     /// </summary>
     /// <param name="row"></param>
     /// <param name="col"></param>
-    public void RemoveFormula(int row, int col)
+    internal DependencyManagerRestoreData RemoveFormula(int row, int col)
     {
-        var vertex = new CellVertex(row, col);
-        var dependsOn = _dependencyGraph.Prec(vertex);
-        foreach (var dependent in dependsOn)
-        {
-            _dependencyGraph.RemoveEdge(dependent, vertex);
-        }
+        return DependencyManager.ClearFormula(row, col);
     }
+
+    public IEnumerable<DependencyInfo> GetDependencies() => DependencyManager.GetDependencies();
 
     public void CalculateSheet()
     {
@@ -194,69 +154,20 @@ public class FormulaEngine
         IsCalculating = true;
         _sheet.BatchUpdates();
 
-        var order =
-            _dependencyGraph
-                .TopologicalSort();
+        var order = DependencyManager.GetCalculationOrder();
 
         foreach (var vertex in order)
         {
-            if (vertex is CellVertex cellVertex)
-            {
-                var formula = _sheet.Cells.GetFormula(cellVertex.Row, cellVertex.Col);
-                if (formula != null)
-                {
-                    var value = this.Evaluate(formula);
-                    _sheet.Cells.SetValueImpl(cellVertex.Row, cellVertex.Col, value);
-                    _sheet.MarkDirty(cellVertex.Row, cellVertex.Col);
-                }
-            }
+            if (vertex.Formula == null || vertex.VertexType != VertexType.Cell)
+                continue;
+
+            var value = this.Evaluate(vertex.Formula);
+            _sheet.Cells.SetValueImpl(vertex.Region!.Top, vertex.Region!.Left, value);
+            _sheet.MarkDirty(vertex.Region!.Top, vertex.Region!.Left);
         }
 
         _sheet.EndBatchUpdates();
-
         IsCalculating = false;
-    }
-
-    private Vertex GetVertex(Reference reference)
-    {
-        if (reference is CellReference cellReference)
-            return new CellVertex(cellReference.Row.RowNumber, cellReference.Col.ColNumber);
-        if (reference is NamedReference namedReference)
-        {
-            return new NamedVertex(namedReference.Name);
-        }
-
-        if (reference is RangeReference rangeReference)
-        {
-            var region = ToRegion(rangeReference);
-            if (region != null)
-            {
-                return new RegionVertex(region, rangeReference.ToRefText());
-            }
-        }
-
-        throw new Exception("Could not convert reference to vertex");
-    }
-
-    private IRegion? ToRegion(RangeReference reference)
-    {
-        if (reference.Start is CellReference startCell && reference.End is CellReference endCell)
-        {
-            return new Region(startCell.Row.RowNumber, endCell.Row.RowNumber, startCell.Col.ColNumber,
-                endCell.Col.ColNumber);
-        }
-
-        if (reference.Start is ColReference startCol && reference.End is ColReference endCol)
-        {
-            return new ColumnRegion(startCol.ColNumber, endCol.ColNumber);
-        }
-
-        if (reference.Start is RowReference startRow && reference.End is RowReference endRow)
-        {
-            return new RowRegion(startRow.RowNumber, endRow.RowNumber);
-        }
-
-        return null;
     }
 
     /// <summary>

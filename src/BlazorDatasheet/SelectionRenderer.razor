@@ -158,8 +158,8 @@
 
             _sheet.Selection.SelectionChanged += OnSelectionChanged;
             _sheet.Selection.SelectingChanged += OnSelectingChanged;
-            _sheet.Rows.RowRemoved += (_, _) => UpdateHeadingHighlights();
-            _sheet.Columns.ColumnRemoved += (_, _) => UpdateHeadingHighlights();
+            _sheet.Rows.Removed += (_, _) => UpdateHeadingHighlights();
+            _sheet.Columns.Removed += (_, _) => UpdateHeadingHighlights();
             _sheet.Editor.EditBegin += (_, _) => StateHasChanged();
         }
     }

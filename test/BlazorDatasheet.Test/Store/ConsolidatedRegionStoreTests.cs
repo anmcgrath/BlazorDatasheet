@@ -102,7 +102,7 @@ public class ConsolidatedRegionStoreTests
     {
         var store = new ConsolidatedDataStore<int>();
         store.Add(new Region(1, 1, 1, 1), 0);
-        store.InsertRows(0, 1);
+        store.InsertRowColAt(0, 1, Axis.Row);
         store.GetData(1, 1).Should().BeEmpty();
         store.GetData(2, 1).Should().NotBeEmpty();
         store.GetRegions(0).First().Top.Should().Be(2);

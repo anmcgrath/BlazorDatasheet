@@ -1,5 +1,3 @@
-using BlazorDatasheet.DataStructures.Graph;
-using BlazorDatasheet.DataStructures.References;
 using BlazorDatasheet.DataStructures.Util;
 
 namespace BlazorDatasheet.DataStructures.Geometry;
@@ -28,13 +26,14 @@ public class Region : IRegion
 
     public int Height => Bottom >= int.MaxValue ? int.MaxValue : Bottom - Top + 1;
     public int Width => Right >= int.MaxValue ? int.MaxValue : Right - Left + 1;
+
     public int Area
     {
         get
         {
             if (Height == int.MaxValue || Width == int.MaxValue)
                 return int.MaxValue;
-            
+
             return Height * Width;
         }
     }
@@ -275,6 +274,13 @@ public class Region : IRegion
         this.End = new CellPosition(this.End.row + dRow, this.End.col + dCol);
         this.SetOrderedBounds();
     }
+    
+    public virtual void Shift(int dRowStart, int dRowEnd, int dColStart, int dColEnd)
+    {
+        this.Start = new CellPosition(this.Start.row + dRowStart, this.Start.col + dColStart);
+        this.End = new CellPosition(this.End.row + dRowEnd, this.End.col + dColEnd);
+        this.SetOrderedBounds();
+    }
 
     /// <summary>
     /// Grows the edges provided by the amount given
@@ -357,7 +363,7 @@ public class Region : IRegion
         var y1 = this.BottomRight.row;
         var y2 = region.BottomRight.row;
 
-        IRegion? intersection = null;
+        IRegion? intersection;
 
         var xL = Math.Max(this.TopLeft.col, region.TopLeft.col);
         var xR = Math.Min(x1, x2);
@@ -375,6 +381,8 @@ public class Region : IRegion
 
         return intersection;
     }
+
+    public bool Intersects(IRegion? region) => GetIntersection(region) != null;
 
     public virtual void ExtendTo(int row, int col, IRegion? regionLimit = null)
     {
@@ -471,11 +479,9 @@ public class Region : IRegion
             {
                 if (broken.GetIntersection(region) == null)
                     continue;
-                else
-                {
-                    toRemove.Add(broken);
-                    newBroken.AddRange(broken.Break(region));
-                }
+                
+                toRemove.Add(broken);
+                newBroken.AddRange(broken.Break(region));
             }
 
             foreach (var remove in toRemove)
@@ -508,12 +514,11 @@ public class Region : IRegion
         var rowDir = BottomRight.row >= TopLeft.row ? 1 : -1;
         var colDir = BottomRight.col >= TopLeft.col ? 1 : -1;
         var row = TopLeft.row;
-        var col = TopLeft.col;
 
         for (var i = 0; i < Height; i++)
         {
             // Reset column at start of each row
-            col = TopLeft.col;
+            var col = TopLeft.col;
 
             for (var j = 0; j < Width; j++)
             {
@@ -527,9 +532,7 @@ public class Region : IRegion
 
     public override string ToString()
     {
-        var rangeRef = new RangeReference(new CellReference(Top, Left), new CellReference(Bottom, Right));
-        return
-            $"region {rangeRef.ToRefText()} from (r{TopLeft.row}, c{TopLeft.col}) to (r{BottomRight.row}, c{BottomRight.col})";
+        return $"region from (r{TopLeft.row}, c{TopLeft.col}) to (r{BottomRight.row}, c{BottomRight.col})";
     }
 
     public bool Equals(IRegion? obj)

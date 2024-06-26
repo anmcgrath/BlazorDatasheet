@@ -1,4 +1,6 @@
 @using BlazorDatasheet.Core.Commands
+@using BlazorDatasheet.Core.Commands.Data
+@using BlazorDatasheet.Core.Commands.RowCols
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Menu
@@ -42,7 +44,7 @@
         {
             @if (CanUserInsertRows)
             {
-                <SheetMenuItem OnClick="() => sheet.Rows.InsertRowAt(r.Top, r.Height)">Insert row(s) above</SheetMenuItem>
+                <SheetMenuItem OnClick="() => sheet.Rows.InsertAt(r.Top, r.Height)">Insert row(s) above</SheetMenuItem>
             }
 
             @if (CanUserRemoveRows)

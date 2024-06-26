@@ -3,9 +3,9 @@ using System.Linq;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.FormulaEngine;
-using BlazorDatasheet.DataStructures.References;
 using BlazorDatasheet.DataStructures.Util;
 using BlazorDatasheet.Formula.Core;
+using BlazorDatasheet.Formula.Core.Interpreter.Addresses;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 using FluentAssertions;
 using NUnit.Framework;
@@ -28,36 +28,36 @@ public class CellReferenceTests
         var parsed = RangeText.TryParseSingleCellReference(cellStr, out var refr);
         parsed.Should().Be(true);
         var cellRef = (CellReference)refr!;
-        rowExpected.Should().Be(cellRef.Row.RowNumber);
-        colExpected.Should().Be(cellRef.Col.ColNumber);
-        rowAbsExpected.Should().Be(cellRef.Row.IsFixedReference);
-        colAbsExpected.Should().Be(cellRef.Col.IsFixedReference);
+        rowExpected.Should().Be(cellRef.RowIndex);
+        colExpected.Should().Be(cellRef.ColIndex);
+        rowAbsExpected.Should().Be(cellRef.IsRowFixed);
+        colAbsExpected.Should().Be(cellRef.IsColFixed);
     }
 
     [Test]
     public void Range_Same_As()
     {
-        var r1 = new RangeReference(new CellReference(0, 0), new CellReference(1, 1));
-        var r2 = new RangeReference(new CellReference(0, 0), new CellReference(1, 1));
+        var r1 = new RangeReference(new CellAddress(0, 0), new CellAddress(1, 1));
+        var r2 = new RangeReference(new CellAddress(0, 0), new CellAddress(1, 1));
         Assert.True(r1.SameAs(r2));
         Assert.True(r2.SameAs(r1));
 
-        var r3 = new RangeReference(new ColReference(0, true), new ColReference(0, true));
-        var r4 = new RangeReference(new ColReference(0, true), new ColReference(0, true));
-        var r5 = new RangeReference(new ColReference(0, true), new ColReference(1, true));
+        var r3 = new RangeReference(new ColAddress(0, true), new ColAddress(0, true));
+        var r4 = new RangeReference(new ColAddress(0, true), new ColAddress(0, true));
+        var r5 = new RangeReference(new ColAddress(0, true), new ColAddress(1, true));
 
         Assert.True(r3.SameAs(r4));
         Assert.False(r4.SameAs(r5));
 
-        var r6 = new RangeReference(new RowReference(0, true), new RowReference(0, true));
-        var r7 = new RangeReference(new RowReference(0, true), new RowReference(0, true));
-        var r8 = new RangeReference(new RowReference(0, true), new RowReference(1, true));
+        var r6 = new RangeReference(new RowAddress(0, true), new RowAddress(0, true));
+        var r7 = new RangeReference(new RowAddress(0, true), new RowAddress(0, true));
+        var r8 = new RangeReference(new RowAddress(0, true), new RowAddress(1, true));
 
         Assert.True(r6.SameAs(r7));
         Assert.False(r8.SameAs(r7));
 
-        var r9 = new RangeReference(new CellReference(1, 1), new CellReference(0, 0));
-        var r10 = new RangeReference(new CellReference(0, 0), new CellReference(1, 1));
+        var r9 = new RangeReference(new CellAddress(1, 1), new CellAddress(0, 0));
+        var r10 = new RangeReference(new CellAddress(0, 0), new CellAddress(1, 1));
         Assert.True(r9.SameAs(r10));
     }
 
@@ -92,8 +92,8 @@ public class CellReferenceTests
 
         if (isReferenceType)
         {
-            var reference = (Reference)refCellValue.Data;
-            reference.ToRefText().Should().Be(refStr);
+            var reference = (Reference)refCellValue.Data!;
+            reference.ToAddressText().Should().Be(refStr);
         }
 
     }

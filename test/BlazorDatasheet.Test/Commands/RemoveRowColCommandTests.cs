@@ -1,4 +1,5 @@
 using BlazorDatasheet.Core.Commands;
+using BlazorDatasheet.Core.Commands.RowCols;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -127,20 +128,20 @@ public class RemoveRowColCommandTests
     public void Remove_Cols_Then_Undo_Restores_Widths()
     {
         var sheet = new Sheet(5, 5);
-        sheet.Columns.SetWidth(1, 100);
-        sheet.Columns.SetWidth(2, 200);
+        sheet.Columns.SetSize(1, 100);
+        sheet.Columns.SetSize(2, 200);
         sheet.Columns.RemoveAt(1, 2);
         sheet.Commands.Undo();
-        sheet.Columns.GetWidth(1).Should().Be(100);
-        sheet.Columns.GetWidth(2).Should().Be(200);
+        sheet.Columns.GetVisualWidth(1).Should().Be(100);
+        sheet.Columns.GetVisualWidth(2).Should().Be(200);
     }
 
     [Test]
     public void Remove_Rows_Then_Undo_Restores_Heights()
     {
         var sheet = new Sheet(5, 5);
-        sheet.Rows.SetHeight(1, 100);
-        sheet.Rows.SetHeight(2, 200);
+        sheet.Rows.SetSize(1, 100);
+        sheet.Rows.SetSize(2, 200);
         sheet.Rows.RemoveAt(1, 2);
         sheet.Commands.Undo();
         sheet.Rows.GetVisualHeight(1).Should().Be(100);
@@ -152,7 +153,7 @@ public class RemoveRowColCommandTests
     {
         var sheet = new Sheet(5, 5);
         sheet.SetFormat(sheet.Range("A1:A5").Region, new CellFormat() { TextAlign = "centre" });
-        var cmd = new RemoveRowsCommand(4, 1);
+        var cmd = new RemoveRowColsCommand(4, Axis.Row, 1);
         cmd.Execute(sheet);
         cmd.Undo(sheet);
         sheet.GetFormat(4, 0).TextAlign.Should().Be("centre");
@@ -163,7 +164,7 @@ public class RemoveRowColCommandTests
     {
         var sheet = new Sheet(5, 5);
         sheet.SetFormat(sheet.Range("A1:D1").Region, new CellFormat() { TextAlign = "centre" });
-        var cmd = new RemoveColumnCommand(3, 1);
+        var cmd = new RemoveRowColsCommand(3, Axis.Col, 1);
         cmd.Execute(sheet);
         cmd.Undo(sheet);
         sheet.GetFormat(0, 3).TextAlign.Should().Be("centre");
@@ -177,7 +178,7 @@ public class RemoveRowColCommandTests
         // |   | c | c | c |
         var sheet = new Sheet(5, 5);
         sheet.SetFormat(new Region(0, 0, 1, 3), new CellFormat() { TextAlign = "centre" });
-        var cmd = new RemoveColumnCommand(0, 2);
+        var cmd = new RemoveRowColsCommand(0, Axis.Col, 2);
         cmd.Execute(sheet);
         cmd.Undo(sheet);
         sheet.GetFormat(0, 1)?.TextAlign.Should().Be("centre");

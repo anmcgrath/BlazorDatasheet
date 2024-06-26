@@ -68,7 +68,7 @@ public class RegionStoreTests
         store.Add(new Region(5, 5), 4); // R4
         store.Add(new Region(0, 0), 5); // R5
 
-        store.RemoveRows(1, 3);
+        store.RemoveRowAt(1, 3);
 
         /*
                0  1  2  3  4  5
@@ -110,7 +110,7 @@ public class RegionStoreTests
         store.Add(new Region(5, 5), 4); // R4
         store.Add(new Region(0, 0), 5); // R5
 
-        store.InsertRows(2, 2);
+        store.InsertRowColAt(2, 2, Axis.Row);
 
         /*
                0  1  2  3  4  5
@@ -141,7 +141,7 @@ public class RegionStoreTests
     {
         var store = new RegionDataStore<int>();
         store.Add(new Region(0, 0), -1);
-        store.InsertRows(0, 1);
+        store.InsertRowColAt(0, 1, Axis.Row);
         store.GetData(0, 0).Should().BeEmpty();
         store.GetData(1, 0).Should().ContainSingle(x => x == -1);
     }
@@ -151,7 +151,7 @@ public class RegionStoreTests
     {
         var store = new RegionDataStore<bool>();
         var restore1 = store.Add(new Region(1, 1), true);
-        var restoreData = store.RemoveRows(0, 1);
+        var restoreData = store.RemoveColAt(0, 1);
         store.Restore(restoreData);
         store.GetData(1, 1).Should().BeEquivalentTo([true]);
         store.Restore(restore1);
@@ -163,7 +163,7 @@ public class RegionStoreTests
     {
         var store = new RegionDataStore<int>();
         store.Add(new Region(0, 0), -1);
-        var restore = store.InsertCols(0, 1);
+        var restore = store.InsertRowColAt(0, 1, Axis.Col);
         store.GetData(0, 0).Should().BeEmpty();
         store.GetData(0, 1).Should().ContainSingle(x => x == -1);
         store.Restore(restore);
@@ -176,7 +176,7 @@ public class RegionStoreTests
         var store = new RegionDataStore<int>();
         var r = new Region(1, 5, 1, 5);
         store.Add(r, 1);
-        var restoreData = store.RemoveCols(1, 1);
+        var restoreData = store.RemoveColAt(1, 1);
         store.GetAllDataRegions()
             .Select(x => x.Region)
             .Should().BeEquivalentTo([new Region(1, 5, 1, 4)]);
@@ -192,7 +192,7 @@ public class RegionStoreTests
         var store = new RegionDataStore<int>();
         var r = new Region(1, 5, 1, 5);
         store.Add(r, 1);
-        var restoreData = store.RemoveCols(0, 1);
+        var restoreData = store.RemoveColAt(0, 1);
         store.GetAllDataRegions()
             .Select(x => x.Region)
             .Should().BeEquivalentTo([new Region(1, 5, 0, 3)]);
@@ -260,6 +260,6 @@ public class RegionStoreTests
         var store = new ConsolidatedDataStore<int>();
         store.Add(new ColumnRegion(10, 20), 1);
 
-        store.RemoveRows(10, 10);
+        store.RemoveRowAt(10, 10);
     }
 }

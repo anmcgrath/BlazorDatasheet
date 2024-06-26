@@ -7,6 +7,7 @@
 @using BlazorDatasheet.DataStructures.Intervals
 @using BlazorDatasheet.DataStructures.Util
 @using BlazorDatasheet.Events
+@using BlazorDatasheet.Formula.Core
 @using BlazorDatasheet.Menu
 @using BlazorDatasheet.Portal
 @inject IJSRuntime JS;
@@ -156,7 +157,7 @@
                 {
                     for (int i = region.Left; i <= region.Right; i++)
                     {
-                        Sheet.Columns.SetWidth(i, resizeWidth);
+                        Sheet.Columns.SetSize(i, resizeWidth);
                     }
                 }
 
@@ -165,7 +166,7 @@
             }
             else
             {
-                Sheet.Columns.SetWidth(ActiveResizerIndex, resizeWidth);
+                Sheet.Columns.SetSize(ActiveResizerIndex, resizeWidth);
             }
 
             PortalService.RenderPortalTarget("Sheet", DatasheetId);

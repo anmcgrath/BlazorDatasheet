@@ -61,6 +61,11 @@ public class RowRegion : Region
     {
         base.Shift(dRow, 0);
     }
+    
+    public override void Shift(int dRowStart, int dRowEnd, int dColStart, int dColEnd)
+    {
+        base.Shift(dRowStart, dRowEnd, 0, 0);
+    }
 
     public override IRegion Clone()
     {

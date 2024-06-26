@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using BlazorDatasheet.DataStructures.Geometry;
-using BlazorDatasheet.DataStructures.References;
 using BlazorDatasheet.DataStructures.Util;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
@@ -67,16 +66,14 @@ public class TestEnvironment : IEnvironment
         if (reference.Kind == ReferenceKind.Range)
         {
             var rangeRef = (RangeReference)reference;
-            var rstart = rangeRef.Start.ToRegion();
-            var rEnd = rangeRef.End.ToRegion();
-            var r = rstart.GetBoundingRegion(rEnd);
+            var r = reference.Region;
             return GetValuesInRange(r.Top, r.Bottom, r.Left, r.Right);
         }
 
         if (reference.Kind == ReferenceKind.Cell)
         {
             var cellRef = (CellReference)reference;
-            return new[] { new[] { GetCellValue(cellRef.Row.RowNumber, cellRef.Col.ColNumber) } };
+            return new[] { new[] { GetCellValue(cellRef.RowIndex, cellRef.ColIndex) } };
         }
 
         return Array.Empty<CellValue[]>();

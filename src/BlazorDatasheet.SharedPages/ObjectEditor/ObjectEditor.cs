@@ -60,7 +60,7 @@ public class ObjectEditor<T>
         PageSize = nPages;
         NumPages = _dataSource.Count() / PageSize;
         if (Sheet.NumRows < PageSize)
-            Sheet.Rows.InsertRowAt(0, PageSize - Sheet.NumRows);
+            Sheet.Rows.InsertAt(0, PageSize - Sheet.NumRows);
         if (Sheet.NumRows > PageSize)
             Sheet.Rows.RemoveAt(0, Sheet.NumRows - PageSize);
         RefreshView();

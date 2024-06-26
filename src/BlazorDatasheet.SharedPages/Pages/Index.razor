@@ -10,6 +10,8 @@
 @using BlazorDatasheet.Core.Validation
 @using System.Drawing
 @using BlazorDatasheet.Core.Commands
+@using BlazorDatasheet.Core.Commands.Data
+@using BlazorDatasheet.Core.Commands.RowCols
 
 <PageTitle>Index</PageTitle>
 
@@ -23,6 +25,7 @@
         Theme="@Theme"
         Sheet="Sheet"
         Virtualise="true"
+        ShowFormulaDependents="@ShowFormulaDependents"
         ShowColHeadings="true"
         ShowRowHeadings="true"
         StickyHeadings="true">
@@ -53,6 +56,11 @@
     <label for="darkmode-toggle">Darkmode</label>
 </div>
 
+<div>
+    <input id="show-formula-dependents" type="checkbox" @bind="ShowFormulaDependents"/>
+    <label for="show-formula-dependents">Show formula dependents</label>
+</div>
+
 @code {
 
     private Sheet Sheet;
@@ -70,6 +78,18 @@
     }
 
     private Datasheet _datasheet;
+
+    private bool _showFormulaDependents;
+
+    private bool ShowFormulaDependents
+    {
+        get => _showFormulaDependents;
+        set
+        {
+            _showFormulaDependents = value;
+            _datasheet.ForceReRender();
+        }
+    }
 
     private void SortSelectionDesc()
     {
@@ -96,7 +116,7 @@
             return;
         }
 
-        Sheet.Rows.InsertRowAt(Sheet.Selection.ActiveRegion.TopLeft.row);
+        Sheet.Rows.InsertAt(Sheet.Selection.ActiveRegion.TopLeft.row);
     }
 
     private void InsertColAfterSelection()

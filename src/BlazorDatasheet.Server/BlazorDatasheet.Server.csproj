@@ -6,6 +6,14 @@
         <ImplicitUsings>enable</ImplicitUsings>
     </PropertyGroup>
 
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+      <WarningLevel>1</WarningLevel>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+      <WarningLevel>1</WarningLevel>
+    </PropertyGroup>
+
     <ItemGroup>
       <ProjectReference Include="..\BlazorDatasheet.SharedPages\BlazorDatasheet.SharedPages.csproj" />
       <ProjectReference Include="..\BlazorDatasheet\BlazorDatasheet.csproj" />

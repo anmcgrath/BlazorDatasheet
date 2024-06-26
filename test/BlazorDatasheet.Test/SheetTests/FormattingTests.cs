@@ -1,5 +1,6 @@
 using System.Linq;
 using BlazorDatasheet.Core.Commands;
+using BlazorDatasheet.Core.Commands.RowCols;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -148,7 +149,7 @@ public class FormattingTests
         _sheet.SetFormat(new ColumnRegion(2), f1);
         _sheet.SetFormat(new RowRegion(2), f2);
         _sheet.Columns.InsertAt(0);
-        _sheet.Rows.InsertRowAt(0);
+        _sheet.Rows.InsertAt(0);
         _sheet.GetFormat(0, 2)?.BackgroundColor?.Should().BeNullOrEmpty();
         _sheet.GetFormat(0, 3)?.BackgroundColor.Should().Be("red");
 
@@ -171,7 +172,7 @@ public class FormattingTests
         var f1 = new CellFormat() { BackgroundColor = "red" };
         _sheet.SetFormat(new Region(2, 2), f1);
         _sheet.Columns.InsertAt(0);
-        _sheet.Rows.InsertRowAt(0);
+        _sheet.Rows.InsertAt(0);
         _sheet.GetFormat(2, 2)?.BackgroundColor?.Should().BeNullOrEmpty();
         _sheet.GetFormat(3, 3)?.BackgroundColor.Should().Be("red");
 
@@ -252,7 +253,7 @@ public class FormattingTests
             .Select(x => x.Region.Clone())
             .ToList();
 
-        var cmd = new RemoveColumnCommand(0, 2);
+        var cmd = new RemoveRowColsCommand(0, Axis.Col, 2);
         cmd.Execute(_sheet);
         cmd.Undo(_sheet);
 

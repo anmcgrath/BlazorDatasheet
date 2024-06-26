@@ -1,4 +1,4 @@
-using BlazorDatasheet.DataStructures.References;
+using BlazorDatasheet.Formula.Core.Interpreter.Addresses;
 using BlazorDatasheet.Formula.Core.Interpreter.Lexing;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 
@@ -75,9 +75,9 @@ public class BinaryOpEvaluator
         var leftRef = (Reference)left.Data!;
         var rightRef = (Reference)right.Data!;
 
-        var regJoined = leftRef.ToRegion().GetBoundingRegion(rightRef.ToRegion());
-        var c1 = new CellReference(regJoined.Top, regJoined.Left, false, false);
-        var c2 = new CellReference(regJoined.Bottom, regJoined.Right, false, false);
+        var regJoined = leftRef.Region.GetBoundingRegion(rightRef.Region);
+        var c1 = new CellAddress(regJoined.Top, regJoined.Left);
+        var c2 = new CellAddress(regJoined.Bottom, regJoined.Right);
 
         return CellValue.Reference(new RangeReference(c1, c2));
     }
@@ -138,7 +138,9 @@ public class BinaryOpEvaluator
 
     public CellValue EvaluateAdd(CellValue left, CellValue right)
     {
+        Console.WriteLine($"Evaluating add {left} {right.ValueType}");
         var numPair = CoercedPair.AsNumbers(left, right, _cellValueCoercer);
+        Console.WriteLine($"Evaluating coerced {numPair.Value1} {numPair.Value2} {numPair.HasError}");
         if (numPair.HasError)
             return CellValue.Error(ErrorType.Value);
 
@@ -169,7 +171,7 @@ public class BinaryOpEvaluator
         if (value.IsCellReference())
         {
             var cellRef = (CellReference)value.Data!;
-            return _environment.GetCellValue(cellRef.Row.RowNumber, cellRef.Col.ColNumber);
+            return _environment.GetCellValue(cellRef.RowIndex, cellRef.ColIndex);
         }
 
         return value;

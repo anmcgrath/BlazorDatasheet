@@ -9,11 +9,12 @@ public class RegionRestoreData<T>
 
     public List<AppliedShift> Shifts { get; init; } = new();
 
-    public void Merge(RegionRestoreData<T> item)
+    public RegionRestoreData<T> Merge(RegionRestoreData<T> item)
     {
         RegionsAdded.AddRange(item.RegionsAdded);
         RegionsRemoved.AddRange(item.RegionsRemoved);
         Shifts.AddRange(item.Shifts);
+        return this;
     }
 }
 

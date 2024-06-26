@@ -1,4 +1,3 @@
-using BlazorDatasheet.DataStructures.References;
 using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 using SyntaxTree = BlazorDatasheet.Formula.Core.Interpreter.Parsing.SyntaxTree;
@@ -46,7 +45,7 @@ public class Evaluator
             if (r.Kind == ReferenceKind.Cell)
             {
                 var c = (CellReference)r;
-                return _environment.GetCellValue(c.Row.RowNumber, c.Col.ColNumber);
+                return _environment.GetCellValue(c.RowIndex, c.ColIndex);
             }
             else if (r.Kind == ReferenceKind.Range)
             {
@@ -117,6 +116,8 @@ public class Evaluator
     private CellValue EvaluateReferenceExpression(ReferenceExpression expression)
     {
         //TODO check it's valid (inside sheet)
+        if (expression.Reference.IsInvalid)
+            return CellValue.Error(ErrorType.Ref);
         return CellValue.Reference(expression.Reference);
     }
 

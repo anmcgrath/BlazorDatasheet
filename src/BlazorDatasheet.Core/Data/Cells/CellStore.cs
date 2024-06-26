@@ -1,9 +1,7 @@
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using BlazorDatasheet.Core.Commands;
+using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Interfaces;
-using BlazorDatasheet.Core.Validation;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core;
@@ -100,7 +98,7 @@ public partial class CellStore
         var toClear = regionsToClear.ToList();
         restoreData.ValueRestoreData = _dataStore.Clear(toClear);
         restoreData.ValidRestoreData = _validStore.Clear(toClear);
-        restoreData.FormulaRestoreData = ClearFormulaImpl(toClear).FormulaRestoreData;
+        restoreData.Merge(ClearFormulaImpl(toClear));
 
         var affected = restoreData.GetAffectedPositions().ToList();
         _sheet.BatchUpdates();
@@ -110,66 +108,35 @@ public partial class CellStore
         return restoreData;
     }
 
-    /// <summary>
-    /// Inserts a number of columns into each of the cell's stores.
-    /// </summary>
-    /// <param name="col">The column that will be replaced by the new column.</param>
-    /// <param name="nCols">The number of columns to insert</param>
-    /// <param name="expandNeighboring">Whether to expand any cell data to the left of the insertion. If undoing an action, best to set to false.</param>
-    internal CellStoreRestoreData InsertColAt(int col, int nCols, bool? expandNeighboring = null)
+    internal CellStoreRestoreData InsertRowColAt(int index, int count, Axis axis)
     {
-        var restoreData = new CellStoreRestoreData();
-        restoreData.ValueRestoreData = _dataStore.InsertColAt(col, nCols);
-        restoreData.FormatRestoreData = _formatStore.InsertCols(col, nCols);
-        restoreData.TypeRestoreData = _typeStore.InsertCols(col, nCols);
-        restoreData.FormulaRestoreData = _formulaStore.InsertColAt(col, nCols);
-        restoreData.ValidRestoreData = _validStore.InsertColAt(col, nCols);
-        restoreData.MergeRestoreData = _mergeStore.InsertCols(col, nCols, false);
-        return restoreData;
-    }
+        var restoreData = new CellStoreRestoreData
+        {
+            ValueRestoreData = _dataStore.InsertRowColAt(index, count, axis),
+            FormatRestoreData = _formatStore.InsertRowColAt(index, count, axis),
+            TypeRestoreData = _typeStore.InsertRowColAt(index, count, axis),
+            ValidRestoreData = _validStore.InsertRowColAt(index, count, axis),
+            MergeRestoreData = _mergeStore.InsertRowColAt(index, count, axis),
+            FormulaRestoreData = _formulaStore.InsertRowColAt(index, count, axis),
+            DependencyManagerRestoreData = _sheet.FormulaEngine.DependencyManager.InsertRowColAt(index, count, axis)
+        };
 
-    /// <summary>
-    /// Inserts a number of rows into each of the cell's stores.
-    /// </summary>
-    /// <param name="row">The row that will be replaced by the new row.</param>
-    /// <param name="nRows">The number of rows to insert</param>
-    /// <param name="expandNeighboring">Whether to expand any cell data to the left of the insertion. If undoing an action, best to set to false.</param>
-    internal CellStoreRestoreData InsertRowAt(int row, int nRows, bool? expandNeighboring = null)
-    {
-        var restoreData = new CellStoreRestoreData();
-        restoreData.ValueRestoreData = _dataStore.InsertRowAt(row, nRows);
-        restoreData.FormatRestoreData = _formatStore.InsertRows(row, nRows, expandNeighboring);
-        restoreData.TypeRestoreData = _typeStore.InsertRows(row, nRows, expandNeighboring);
-        restoreData.FormulaRestoreData = _formulaStore.InsertRowAt(row, nRows);
-        restoreData.ValidRestoreData = _validStore.InsertRowAt(row, nRows);
-        restoreData.MergeRestoreData = _mergeStore.InsertRows(row, nRows, false);
-        return restoreData;
-    }
-
-    internal CellStoreRestoreData RemoveRowAt(int row, int nRows)
-    {
-        var restoreData = new CellStoreRestoreData();
-        restoreData.ValueRestoreData = _dataStore.RemoveRowAt(row, nRows);
-        restoreData.ValidRestoreData = _validStore.RemoveRowAt(row, nRows);
-        restoreData.TypeRestoreData = _typeStore.RemoveRows(row, row + nRows - 1);
-        restoreData.FormulaRestoreData = ClearFormulaImpl(new[] { new RowRegion(row, nRows) }).FormulaRestoreData;
-        restoreData.FormatRestoreData = _formatStore.RemoveRows(row, row + nRows - 1);
-        restoreData.MergeRestoreData = _mergeStore.RemoveRows(row, row + nRows - 1);
-        _formulaStore.RemoveRowAt(row, nRows);
 
         return restoreData;
     }
 
-    internal CellStoreRestoreData RemoveColAt(int col, int nCols)
+    internal CellStoreRestoreData RemoveRowColAt(int index, int count, Axis axis)
     {
-        var restoreData = new CellStoreRestoreData();
-        restoreData.ValueRestoreData = _dataStore.RemoveColAt(col, nCols);
-        restoreData.ValidRestoreData = _validStore.RemoveColAt(col, nCols);
-        restoreData.TypeRestoreData = _typeStore.RemoveCols(col, col + nCols - 1);
-        restoreData.FormulaRestoreData = ClearFormulaImpl(new[] { new ColumnRegion(col, nCols) }).FormulaRestoreData;
-        restoreData.FormatRestoreData = _formatStore.RemoveCols(col, col + nCols - 1);
-        restoreData.MergeRestoreData = _mergeStore.RemoveCols(col, col + nCols - 1);
-        _formulaStore.RemoveColAt(col, nCols);
+        var restoreData = new CellStoreRestoreData
+        {
+            ValueRestoreData = _dataStore.RemoveRowColAt(index, count, axis),
+            ValidRestoreData = _validStore.RemoveRowColAt(index, count, axis),
+            TypeRestoreData = _typeStore.RemoveRowColAt(index, count, axis),
+            FormatRestoreData = _formatStore.RemoveRowColAt(index, count, axis),
+            MergeRestoreData = _mergeStore.RemoveRowColAt(index, count, axis),
+            FormulaRestoreData = _formulaStore.RemoveRowColAt(index, count, axis),
+            DependencyManagerRestoreData = _sheet.FormulaEngine.DependencyManager.RemoveRowColAt(index, count, axis)
+        };
 
         return restoreData;
     }
@@ -185,7 +152,7 @@ public partial class CellStore
         }
 
         if (options.CopyFormula)
-            restoreData.Merge(CopyFormula(fromRegion, toRegion));
+            restoreData.Merge(CopyFormulaImpl(fromRegion, toRegion));
 
         if (options.CopyFormat)
             restoreData.Merge(CopyFormatImpl(fromRegion, toRegion));
@@ -233,9 +200,9 @@ public partial class CellStore
         _sheet.BatchUpdates();
 
         // Set formula through this function so we add the formula back in to the dependency graph
-        foreach (var data in restoreData.FormulaRestoreData.DataRemoved)
-            this.SetFormulaImpl(data.row, data.col, data.data);
+        _sheet.FormulaEngine.DependencyManager.Restore(restoreData.DependencyManagerRestoreData);
 
+        _formulaStore.Restore(restoreData.FormulaRestoreData);
         _validStore.Restore(restoreData.ValidRestoreData);
         _typeStore.Restore(restoreData.TypeRestoreData);
         _dataStore.Restore(restoreData.ValueRestoreData);

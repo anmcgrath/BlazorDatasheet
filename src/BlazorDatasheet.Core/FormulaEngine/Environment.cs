@@ -1,5 +1,4 @@
 ﻿using BlazorDatasheet.Core.Data;
-using BlazorDatasheet.DataStructures.References;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 
@@ -58,7 +57,7 @@ public class SheetEnvironment : IEnvironment
 
     public IEnumerable<CellValue> GetNonEmptyInRange(Reference reference)
     {
-        return _sheet.Cells.GetNonEmptyCellValues(reference.ToRegion())
+        return _sheet.Cells.GetNonEmptyCellValues(reference.Region)
             .Select(x => x.value).ToArray();
     }
 
@@ -68,17 +67,14 @@ public class SheetEnvironment : IEnvironment
     {
         if (reference.Kind == ReferenceKind.Range)
         {
-            var rangeRef = (RangeReference)reference;
-            var rstart = rangeRef.Start.ToRegion();
-            var rEnd = rangeRef.End.ToRegion();
-            var r = rstart.GetBoundingRegion(rEnd);
+            var r = reference.Region;
             return GetValuesInRange(_sheet.Range(r.Top, r.Bottom, r.Left, r.Right));
         }
 
         if (reference.Kind == ReferenceKind.Cell)
         {
             var cellRef = (CellReference)reference;
-            return new[] { new[] { GetCellValue(cellRef.Row.RowNumber, cellRef.Col.ColNumber) } };
+            return new[] { new[] { GetCellValue(cellRef.RowIndex, cellRef.ColIndex) } };
         }
 
         return Array.Empty<CellValue[]>();

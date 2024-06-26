@@ -1,4 +1,3 @@
-using System.Collections;
 using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.DataStructures.Store;
@@ -30,25 +29,6 @@ public interface IMatrixDataStore<T> : IStore<T, MatrixRestoreData<T>>
     public MatrixRestoreData<T> Clear(IEnumerable<IRegion> regions);
 
     /// <summary>
-    /// Inserts a row into the store
-    /// </summary>
-    /// <param name="row">The index of the row that the new row will now be.</param>
-    /// <param name="nRows">The number of rows to inser</param>
-    public MatrixRestoreData<T> InsertRowAt(int row, int nRows);
-
-    /// <summary>
-    /// Inserts a column into the store
-    /// </summary>
-    /// <param name="col">The index of the column that the new column is inserted AFTER</param>
-    public MatrixRestoreData<T> InsertColAt(int col, int nCols);
-
-    /// <summary>
-    /// Removes the column specified from the store and returns the values that were removed.
-    /// </summary>
-    /// <param name="col">The index of the column to remove.</param>
-    public MatrixRestoreData<T> RemoveColAt(int col, int nCols);
-
-    /// <summary>
     /// Finds the next non-empty row number in the column. Returns -1 if no non-empty rows exist after the row
     /// </summary>
     /// <param name="row"></param>
@@ -65,11 +45,19 @@ public interface IMatrixDataStore<T> : IStore<T, MatrixRestoreData<T>>
     public int GetNextNonBlankColumn(int row, int col);
 
     /// <summary>
-    /// Removes the row specified from the store and returns the values that were removed.
+    /// Removes the rows or columns specified from the store and returns the values that were removed.
     /// </summary>
-    /// <param name="row"></param>
-    /// <param name="nRows"></param>
-    public MatrixRestoreData<T> RemoveRowAt(int row, int nRows);
+    /// <param name="index"></param>
+    /// <param name="count"></param>
+    /// <param name="axis"></param>
+    /// <returns></returns>
+    public MatrixRestoreData<T> RemoveRowColAt(int index, int count, Axis axis)
+    {
+        if (axis == Axis.Col)
+            return RemoveColAt(index, count);
+        else
+            return RemoveRowAt(index, count);
+    }
 
     /// <summary>
     /// Get non empty cells that exist in the bounds given
@@ -122,7 +110,7 @@ public interface IMatrixDataStore<T> : IStore<T, MatrixRestoreData<T>>
     /// <param name="region"></param>
     /// <returns></returns>
     public T[][] GetData(IRegion region);
-    
+
     /// <summary>
     /// Returns a sub-store containing only the data in the region specified.
     /// If the <paramref name="newStoreResetsOffsets"/> is true, the new store will have the top-left corner at 0,0.

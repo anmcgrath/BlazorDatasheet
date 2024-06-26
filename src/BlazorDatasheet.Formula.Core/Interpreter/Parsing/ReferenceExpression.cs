@@ -13,7 +13,9 @@ public class ReferenceExpression : Expression
 
     public override string ToExpressionText()
     {
-        return Reference.ToRefText();
+        if(Reference.IsInvalid)
+            return "#REF!";
+        return Reference.ToAddressText();
     }
 
     public override NodeKind Kind => NodeKind.Range;

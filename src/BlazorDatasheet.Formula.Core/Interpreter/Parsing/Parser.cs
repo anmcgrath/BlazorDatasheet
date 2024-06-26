@@ -1,5 +1,5 @@
-using BlazorDatasheet.DataStructures.References;
 using BlazorDatasheet.DataStructures.Util;
+using BlazorDatasheet.Formula.Core.Interpreter.Addresses;
 using BlazorDatasheet.Formula.Core.Interpreter.Lexing;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 using Lexer = BlazorDatasheet.Formula.Core.Interpreter.Lexing.Lexer;
@@ -86,13 +86,46 @@ public class Parser
                 return ParseIdentifierExpression();
             case Tag.LeftCurlyBracketToken:
                 return ParseArrayConstant();
-            case Tag.ReferenceToken:
-                var refToken = (ReferenceToken)NextToken();
-                _references.Add(refToken.Reference);
-                return new ReferenceExpression(refToken.Reference);
+            case Tag.AddressToken:
+                var refToken = (AddressToken)NextToken();
+                var reference = GetReferenceFromAddress(refToken.Address);
+                if (reference == null)
+                    return new LiteralExpression(CellValue.Error(ErrorType.Ref));
+
+                _references.Add(reference);
+                return new ReferenceExpression(reference);
         }
 
         return ParseLiteralExpression();
+    }
+
+    private Reference? GetReferenceFromAddress(Address address)
+    {
+        switch (address.Kind)
+        {
+            case AddressKind.CellAddress:
+                var cellAddress = (CellAddress)address;
+                return new CellReference(cellAddress.RowAddress.RowIndex, cellAddress.ColAddress.ColIndex,
+                    cellAddress.ColAddress.IsFixed, cellAddress.RowAddress.IsFixed);
+            case AddressKind.RangeAddress:
+                var rangeAddress = (RangeAddress)address;
+                if (rangeAddress.Start.Kind == AddressKind.CellAddress &&
+                    rangeAddress.End.Kind == AddressKind.CellAddress)
+                    return new RangeReference((CellAddress)rangeAddress.Start, (CellAddress)rangeAddress.End);
+                if (rangeAddress.Start.Kind == AddressKind.ColAddress &&
+                    rangeAddress.End.Kind == AddressKind.ColAddress)
+                    return new RangeReference((ColAddress)rangeAddress.Start, (ColAddress)rangeAddress.End);
+                if (rangeAddress.Start.Kind == AddressKind.RowAddress &&
+                    rangeAddress.End.Kind == AddressKind.RowAddress)
+                    return new RangeReference((RowAddress)rangeAddress.Start, (RowAddress)rangeAddress.End);
+                Error("Invalid range address");
+                return null;
+            case AddressKind.NamedAddress:
+                var namedAddress = (NamedAddress)address;
+                return new NamedReference(namedAddress.Name);
+        }
+
+        throw new Exception($"Unhandled address type {address.Kind}");
     }
 
     private Expression ParseArrayConstant()

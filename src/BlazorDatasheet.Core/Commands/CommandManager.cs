@@ -63,11 +63,6 @@ public class CommandManager
         return result;
     }
 
-    internal void SetSheet(Sheet sheet)
-    {
-        _sheet = sheet;
-    }
-
     /// <summary>
     /// Returns all the undo commands in the undo stack
     /// </summary>

@@ -1,6 +1,3 @@
-using System.Collections;
-using System.Data.SqlTypes;
-using System.Net;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.RTree;
 using BlazorDatasheet.DataStructures.Util;
@@ -68,6 +65,19 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
         return Tree.Search(env);
     }
 
+    /// <summary>
+    /// Gets Data regions where the data is the same as the <paramref name="data"/> given
+    /// and the region is exactly the same
+    /// </summary>
+    /// <param name="region"></param>
+    /// <param name="data"></param>
+    /// <returns></returns>
+    public IEnumerable<DataRegion<T>> GetDataRegions(IRegion region, T data)
+    {
+        return GetDataRegions(region)
+            .Where(x => x.Data.Equals(data) && x.Region.Equals(region));
+    }
+
     public IEnumerable<T> GetData(int row, int col)
     {
         return GetDataRegions(row, col).Select(x => x.Data);
@@ -101,27 +111,15 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
     }
 
     /// <summary>
-    /// Updates region positions by handling the row insert. Regions are shifted/expanded appropriately.
+    /// Inserts rows or columns (depending on <paramref name="axis"/>) and shifts/expand regions appropriately.
     /// </summary>
-    /// <param name="rowIndex"></param>
-    /// <param name="nRows"></param>
-    /// <param name="expandNeighbouring">Whether to expand the neighbouring values. If null, the value set on the class is used.</param>
-    public RegionRestoreData<T> InsertRows(int rowIndex, int nRows, bool? expandNeighbouring = null) =>
-        InsertRowsOrColumnAndShift(rowIndex, nRows, Axis.Row, expandNeighbouring);
-
-    /// <summary>
-    /// Updates region positions by handling the col insert. Regions are shifted/expanded appropriately.
-    /// </summary>
-    /// <param name="colIndex"></param>
-    /// <param name="nCols"></param>y
-    /// <param name="expandNeighbouring">Whether to expand the neighbouring values. If null, the value set on the class is used.</param>
-    public RegionRestoreData<T> InsertCols(int colIndex, int nCols, bool? expandNeighbouring = null) =>
-        InsertRowsOrColumnAndShift(colIndex, nCols, Axis.Col, expandNeighbouring);
-
-    private RegionRestoreData<T> InsertRowsOrColumnAndShift(int index, int nRowsOrCol, Axis axis,
-        bool? expandNeighbouring)
+    /// <param name="index"></param>
+    /// <param name="count"></param>
+    /// <param name="axis"></param>
+    /// <returns></returns>
+    public RegionRestoreData<T> InsertRowColAt(int index, int count, Axis axis)
     {
-        var expand = expandNeighbouring ?? ExpandWhenInsertAfter;
+        var expand = ExpandWhenInsertAfter;
 
         // As an example for inserting rows, there are three things that can happen
         // 1. Any regions that intersect the index should be expanded by nRows
@@ -145,7 +143,7 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
             Tree.Delete(overlap);
             regionsRemoved.Add(overlap);
             var expanded = new DataRegion<T>(overlap.Data, overlap.Region.Clone());
-            expanded.Region.Expand(axis == Axis.Row ? Edge.Bottom : Edge.Right, nRowsOrCol);
+            expanded.Region.Expand(axis == Axis.Row ? Edge.Bottom : Edge.Right, count);
             expanded.UpdateEnvelope();
             regionsAdded.Add(expanded);
             dataRegionsToAdd.Add(expanded);
@@ -156,8 +154,8 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
         foreach (var r in below)
         {
             Tree.Delete(r);
-            var dRow = axis == Axis.Row ? nRowsOrCol : 0;
-            var dCol = axis == Axis.Col ? nRowsOrCol : 0;
+            var dRow = axis == Axis.Row ? count : 0;
+            var dCol = axis == Axis.Col ? count : 0;
             r.Shift(dRow, dCol);
             dataRegionsToAdd.Add(r);
         }
@@ -167,8 +165,24 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
         {
             RegionsAdded = regionsAdded,
             RegionsRemoved = regionsRemoved,
-            Shifts = [new(axis, index, nRowsOrCol)],
+            Shifts = [new(axis, index, count)],
         };
+    }
+
+    /// <summary>
+    /// Updates the region positions by handling row/columns deletes. Regions are shifted/contracted appropriately.
+    /// Returns any data that is removed during this operation.
+    /// </summary>
+    /// <param name="index"></param>
+    /// <param name="count"></param>
+    /// <param name="axis"></param>
+    /// <returns></returns>
+    public RegionRestoreData<T> RemoveRowColAt(int index, int count, Axis axis)
+    {
+        if (axis == Axis.Col)
+            return RemoveColAt(index, index + count - 1);
+        else
+            return RemoveRowAt(index, index + count - 1);
     }
 
     /// <summary>
@@ -178,7 +192,7 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
     /// <param name="rowStart"></param>
     /// <param name="rowEnd"></param>
     /// <returns>Any data that is removed during this operation</returns>
-    public RegionRestoreData<T> RemoveRows(int rowStart, int rowEnd) =>
+    public RegionRestoreData<T> RemoveRowAt(int rowStart, int rowEnd) =>
         RemoveRowsOrColumsAndShift(rowStart, rowEnd, Axis.Row);
 
     /// <summary>
@@ -186,10 +200,10 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
     /// Returns any data that is removed during this operation.
     /// </summary>
     /// <param name="colStart"></param>
-    /// <param name="colEnd"></param>
+    /// <param name="count"></param>
     /// <returns>Any data that is removed during this operation</returns>
-    public RegionRestoreData<T> RemoveCols(int colStart, int colEnd) =>
-        RemoveRowsOrColumsAndShift(colStart, colEnd, Axis.Col);
+    public RegionRestoreData<T> RemoveColAt(int colStart, int count) =>
+        RemoveRowsOrColumsAndShift(colStart, count, Axis.Col);
 
     /// <summary>
     /// Removes a number of rows or columns and shifts/contracts regions appropriately.
@@ -239,11 +253,11 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
             var newRegion = new DataRegion<T>(overlap.Data, overlap.Region.Clone());
             newRegion.Region.Contract(cEdge, Math.Max(cRow, cCol));
             newRegion.Region.Shift(sRow, sCol);
-            
+
             // if the region is less than the minimum area, don't add it back
-            if(newRegion.Region.Area <= MinArea)
+            if (newRegion.Region.Area <= MinArea)
                 continue;
-            
+
             newRegion.UpdateEnvelope();
             dataAdded.Add(newRegion);
             newDataToAdd.Add(newRegion);
@@ -292,27 +306,6 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
     }
 
     /// <summary>
-    /// Gets data to the left/above the given row or column.
-    /// </summary>
-    /// <param name="rowOrCol"></param>
-    /// <param name="axis"></param>
-    /// <returns></returns>
-    private IEnumerable<DataRegion<T>> GetBefore(int rowOrCol, Axis axis)
-    {
-        switch (axis)
-        {
-            case Axis.Row:
-                return this.GetDataRegions(new RowRegion(0, rowOrCol - 1))
-                    .Where(x => x.Region.Bottom < rowOrCol);
-            case Axis.Col:
-                return this.GetDataRegions(new ColumnRegion(0, rowOrCol - 1))
-                    .Where(x => x.Region.Right < rowOrCol);
-        }
-
-        return Enumerable.Empty<DataRegion<T>>();
-    }
-
-    /// <summary>
     /// Clears the regions from overlapping data where the data is the same.
     /// Returns the regions that were removed/added in the process.
     /// </summary>
@@ -334,6 +327,10 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
     {
         return Clear(region, GetDataRegions(region));
     }
+
+    public RegionRestoreData<T> InsertRowAt(int row, int count) => InsertRowColAt(row, count, Axis.Row);
+
+    public RegionRestoreData<T> InsertColAt(int col, int count) => InsertRowColAt(col, count, Axis.Col);
 
     /// <summary>
     /// Clears all data
@@ -435,7 +432,7 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
     }
 
     /// <summary>
-    /// Gets data regions inside the <paramref name="region"/> given, limited to those regions
+    /// Gets *new* data regions inside the <paramref name="region"/> given, limited to those regions
     /// </summary>
     /// <param name="region"></param>
     /// <returns></returns>
@@ -473,9 +470,19 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
         return restoreData;
     }
 
-    public void Delete(DataRegion<T> dataRegion)
+    public RegionRestoreData<T> Delete(DataRegion<T> dataRegion)
     {
         Tree.Delete(dataRegion);
+        return new RegionRestoreData<T>()
+        {
+            RegionsRemoved = [dataRegion]
+        };
+    }
+
+    public RegionRestoreData<T> Delete(IEnumerable<DataRegion<T>> dataRegions)
+    {
+        return dataRegions.Select(Delete)
+            .Aggregate((x, y) => x.Merge(y));
     }
 
     public bool Any() => Tree.Count > 0;
@@ -499,7 +506,6 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
     {
         foreach (var shift in restoreData.Shifts)
         {
-            var shiftDir = Math.Abs(shift.Amount) / shift.Amount;
             var regionsToShift = GetAfter(shift.Index, shift.Axis);
             foreach (var region in regionsToShift)
             {
