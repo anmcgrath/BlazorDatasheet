@@ -109,8 +109,8 @@ public class ColorConverter
         double v) c1, double t)
     {
         double h = ((1 - t) * c0.h + t * c1.h) % 360;
-        double s = SheetMath.ClampDouble(0, 1, ((1 - t) * c0.s + t * c1.s));
-        double v = SheetMath.ClampDouble(0, 1, ((1 - t) * c0.v + t * c1.v));
+        double s = Math.Clamp(((1 - t) * c0.s + t * c1.s), 0, 1);
+        double v = Math.Clamp(((1 - t) * c0.v + t * c1.v), 0, 1);
         return (h, s, v);
     }
 }

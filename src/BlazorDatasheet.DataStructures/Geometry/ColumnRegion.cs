@@ -39,8 +39,7 @@ public class ColumnRegion : Region
             return;
         }
 
-        var newColumnEnd = SheetMath
-            .ClampInt(regionLimit.TopLeft.col, regionLimit.BottomRight.col, col);
+        var newColumnEnd = Math.Clamp(col, regionLimit.TopLeft.col, regionLimit.BottomRight.col);
 
         End = new CellPosition(int.MaxValue, newColumnEnd);
         SetOrderedBounds();
