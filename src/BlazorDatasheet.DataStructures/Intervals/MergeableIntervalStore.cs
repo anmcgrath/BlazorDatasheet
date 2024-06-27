@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using BlazorDatasheet.DataStructures.Search;
 
 namespace BlazorDatasheet.DataStructures.Intervals;
@@ -25,7 +24,7 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
     /// The intervals are sorted by their start but could just as easily be sorted
     /// by their end position.
     /// </summary>
-    private SortedList<int, OrderedInterval<T>> _Intervals { get; } = new();
+    private readonly SortedList<int, OrderedInterval<T>> _intervals = new();
 
     /// <summary>
     /// The default value returned if there is no value found.
@@ -41,7 +40,7 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
     /// Whether we have any intervals stored.
     /// </summary>
     /// <returns></returns>
-    public bool Any() => _Intervals.Any();
+    public bool Any() => _intervals.Any();
 
     /// <summary>
     /// Returns the data (if any) associated with the interval containing the position
@@ -50,17 +49,17 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
     /// <returns></returns>
     public T? Get(int position)
     {
-        if (!_Intervals.Any())
+        if (!_intervals.Any())
             return DefaultValue;
 
         if (position < Start || position > End)
             return DefaultValue;
 
-        var i0 = _Intervals.Keys.BinarySearchIndexOf(position);
+        var i0 = _intervals.Keys.BinarySearchIndexOf(position);
         if (i0 < 0)
             i0 = ~i0; // closest value to it (with start index greater than it)
         else
-            return _Intervals[_Intervals.Keys[i0]].Data;
+            return _intervals[_intervals.Keys[i0]].Data;
 
         // Now we have the next closest with a start index greater position
         // but it can't be that interval because position < start.
@@ -68,8 +67,8 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
         if (i0 - 1 < 0)
             return DefaultValue;
 
-        if (_Intervals[_Intervals.Keys[i0 - 1]].Contains(position))
-            return _Intervals[_Intervals.Keys[i0 - 1]].Data;
+        if (_intervals[_intervals.Keys[i0 - 1]].Contains(position))
+            return _intervals[_intervals.Keys[i0 - 1]].Data;
 
         return DefaultValue;
     }
@@ -92,7 +91,7 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
         var overlapping = GetIntervals(interval);
         if (!overlapping.Any())
         {
-            _Intervals.Add(interval.Start, interval);
+            _intervals.Add(interval.Start, interval);
             UpdateStartEndPositions();
             return new List<OrderedInterval<T>>()
             {
@@ -102,11 +101,11 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
 
         // Handle when interval extends before the first overlapping interval
         if (interval.Start < overlapping.First().Start)
-            _Intervals.Add(interval.Start,
+            _intervals.Add(interval.Start,
                 new OrderedInterval<T>(interval.Start, overlapping.First().Start - 1, interval.Data));
         // Handle when interval extends after the last overlapping interval
         if (interval.End > overlapping.Last().End)
-            _Intervals.Add(overlapping.Last().End + 1,
+            _intervals.Add(overlapping.Last().End + 1,
                 new OrderedInterval<T>(overlapping.Last().End + 1, interval.End, interval.Data));
 
         var modified = new List<OrderedInterval<T>>();
@@ -133,14 +132,14 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
                 // first store the (removed) original data that was in o.
                 modified.Add(new OrderedInterval<T>(interval.Start, interval.End, oi.Data.Clone()));
 
-                _Intervals.Remove(oi.Start);
+                _intervals.Remove(oi.Start);
                 if (oi.Start != interval.Start)
-                    _Intervals.Add(oi.Start, new OrderedInterval<T>(oi.Start, interval.Start - 1, oi.Data));
+                    _intervals.Add(oi.Start, new OrderedInterval<T>(oi.Start, interval.Start - 1, oi.Data));
                 var merged = new OrderedInterval<T>(interval.Start, interval.End, oi.Data.Clone());
                 merged.Data.Merge(interval.Data);
-                _Intervals.Add(merged.Start, merged);
+                _intervals.Add(merged.Start, merged);
                 if (oi.End != interval.End)
-                    _Intervals.Add(interval.End + 1, new OrderedInterval<T>(interval.End + 1, oi.End, oi.Data));
+                    _intervals.Add(interval.End + 1, new OrderedInterval<T>(interval.End + 1, oi.End, oi.Data));
             }
 
             else if (interval.Start > oi.Start)
@@ -149,12 +148,12 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
                 // first store the (removed) original data from o
                 modified.Add(new OrderedInterval<T>(interval.Start, oi.End, oi.Data.Clone()));
 
-                _Intervals.Remove(oi.Start);
+                _intervals.Remove(oi.Start);
                 var old = new OrderedInterval<T>(oi.Start, interval.Start - 1, oi.Data);
                 var merged = new OrderedInterval<T>(interval.Start, oi.End, oi.Data.Clone());
                 merged.Data.Merge(interval.Data);
-                _Intervals.Add(old.Start, old);
-                _Intervals.Add(merged.Start, merged);
+                _intervals.Add(old.Start, old);
+                _intervals.Add(merged.Start, merged);
             }
             else if (interval.End < oi.End)
             {
@@ -162,12 +161,12 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
                 // first store the (removed) original data from o
                 modified.Add(new OrderedInterval<T>(oi.Start, interval.End, oi.Data.Clone()));
 
-                _Intervals.Remove(oi.Start);
+                _intervals.Remove(oi.Start);
                 var old = new OrderedInterval<T>(interval.End + 1, oi.End, oi.Data);
                 var merged = new OrderedInterval<T>(oi.Start, interval.End, oi.Data.Clone());
                 merged.Data.Merge(interval.Data);
-                _Intervals.Add(old.Start, old);
-                _Intervals.Add(merged.Start, merged);
+                _intervals.Add(old.Start, old);
+                _intervals.Add(merged.Start, merged);
             }
 
             // If we can't check between this and the next one, continue.
@@ -179,7 +178,7 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
             // [oi, oi, oi], i, i, i, [oi+1, oi+1, o1+1]
             var gap = overlapping[i + 1].Start - oi.End;
             if (gap > 1)
-                _Intervals.Add(
+                _intervals.Add(
                     oi.End + 1, new OrderedInterval<T>(oi.End + 1, overlapping[i + 1].Start - 1, interval.Data));
         }
 
@@ -202,17 +201,17 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
     {
         var overlapping = new List<OrderedInterval<T>>();
 
-        if (!_Intervals.Any())
+        if (!_intervals.Any())
             return overlapping;
 
-        var i0 = _Intervals.Keys.BinarySearchClosest(interval.Start);
-        if (i0 >= 1 && _Intervals[_Intervals.Keys[i0 - 1]].Overlaps(interval))
+        var i0 = _intervals.Keys.BinarySearchClosest(interval.Start);
+        if (i0 >= 1 && _intervals[_intervals.Keys[i0 - 1]].Overlaps(interval))
             i0--;
 
-        for (int i = i0; i < _Intervals.Count; i++)
+        for (int i = i0; i < _intervals.Count; i++)
         {
-            if (_Intervals[_Intervals.Keys[i]].Overlaps(interval))
-                overlapping.Add(_Intervals[_Intervals.Keys[i]]);
+            if (_intervals[_intervals.Keys[i]].Overlaps(interval))
+                overlapping.Add(_intervals[_intervals.Keys[i]]);
             else
                 break;
         }
@@ -228,14 +227,14 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
     /// <returns></returns>
     public OrderedInterval<T>? GetNext(int position, int direction = 1)
     {
-        if (!_Intervals.Any())
+        if (!_intervals.Any())
             return null;
 
         if (position > End && direction > 0 ||
             position < Start && direction < 0)
             return null;
 
-        var i0 = _Intervals.Keys.BinarySearchIndexOf(position);
+        var i0 = _intervals.Keys.BinarySearchIndexOf(position);
         if (i0 < 0)
         {
             i0 = ~i0;
@@ -244,16 +243,16 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
                 i0--;
         }
 
-        if (direction < 0 && _Intervals.Values[i0].Contains(position))
+        if (direction < 0 && _intervals.Values[i0].Contains(position))
             i0--;
 
-        if (i0 >= _Intervals.Count || i0 < 0)
+        if (i0 >= _intervals.Count || i0 < 0)
             return null;
 
-        return _Intervals[_Intervals.Keys[i0]];
+        return _intervals[_intervals.Keys[i0]];
     }
 
-    public IList<OrderedInterval<T>> GetAllIntervals() => _Intervals.Values.ToList();
+    public IList<OrderedInterval<T>> GetAllIntervals() => _intervals.Values.ToList();
 
     /// <summary>
     /// Remove the interval from storage
@@ -272,13 +271,13 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
     /// <returns>The ordered intervals that were removed during the process.</returns>
     public List<OrderedInterval<T>> Clear(OrderedInterval interval)
     {
-        if (!_Intervals.Any())
+        if (!_intervals.Any())
             return new List<OrderedInterval<T>>();
 
         if (interval.End < Start || interval.Start > End)
             return new List<OrderedInterval<T>>();
 
-        var i0 = _Intervals.Keys.BinarySearchIndexOf(interval.Start);
+        var i0 = _intervals.Keys.BinarySearchIndexOf(interval.Start);
         if (i0 < 0)
             i0 = ~i0;
 
@@ -287,7 +286,7 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
         OrderedInterval<T> currentInterval;
         // Start with a good guess of where the interval starts which is to the left
         // the one we have found (or the one that is greater than interval.start)
-        if (i0 >= 1 && _Intervals[_Intervals.Keys[i0 - 1]].Overlaps(interval))
+        if (i0 >= 1 && _intervals[_intervals.Keys[i0 - 1]].Overlaps(interval))
         {
             i0--;
         }
@@ -306,9 +305,9 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
         // The interval to split right (if any). Note splitLeft may be equal to split right.
         OrderedInterval<T>? splitRight = null;
 
-        for (int i = i0; i < _Intervals.Count; i++)
+        for (int i = i0; i < _intervals.Count; i++)
         {
-            var existingInterval = _Intervals[_Intervals.Keys[i]];
+            var existingInterval = _intervals[_intervals.Keys[i]];
             if (!existingInterval.Overlaps(interval))
                 break;
 
@@ -326,15 +325,15 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
         }
 
         foreach (var intervalToRemove in removed)
-            _Intervals.Remove(intervalToRemove.Start);
+            _intervals.Remove(intervalToRemove.Start);
 
         // we need to work with split right first because split left may depend on it
         if (splitRight != null)
         {
             removed.Add(new OrderedInterval<T>(interval.Start, Math.Min(interval.End, splitRight.End),
                 splitRight.Data.Clone()));
-            _Intervals.Remove(splitRight.Start);
-            _Intervals.Add(splitRight.Start,
+            _intervals.Remove(splitRight.Start);
+            _intervals.Add(splitRight.Start,
                 new OrderedInterval<T>(splitRight.Start, interval.Start - 1, splitRight.Data));
         }
 
@@ -342,12 +341,12 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
         {
             if (splitLeft != splitRight) // we may have already removed split Right, so don't remove it twice
             {
-                _Intervals.Remove(splitLeft.Start);
+                _intervals.Remove(splitLeft.Start);
                 removed.Add(new OrderedInterval<T>(Math.Max(splitLeft.Start, interval.Start), interval.End,
                     splitLeft.Data.Clone()));
             }
 
-            _Intervals.Add(interval.End + 1, new OrderedInterval<T>(interval.End + 1, splitLeft.End, splitLeft.Data));
+            _intervals.Add(interval.End + 1, new OrderedInterval<T>(interval.End + 1, splitLeft.End, splitLeft.Data));
         }
 
         UpdateStartEndPositions();
@@ -373,8 +372,8 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
                 oi.End += n;
             else
             {
-                _Intervals.Remove(oi.Start);
-                _Intervals.Add(oi.Start + n, new OrderedInterval<T>(oi.Start + n, oi.End + n, oi.Data));
+                _intervals.Remove(oi.Start);
+                _intervals.Add(oi.Start + n, new OrderedInterval<T>(oi.Start + n, oi.End + n, oi.Data));
             }
         }
 
@@ -403,17 +402,17 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
                 // Anything that is shifted to the left of from gets removed. This shouldn't
                 // really happen in reality because when we are using it, it will be with a cut also
                 else
-                    _Intervals.Remove(oi.Start);
+                    _intervals.Remove(oi.Start);
             }
             else
             {
-                _Intervals.Remove(oi.Start);
+                _intervals.Remove(oi.Start);
                 // if it doesn't move partially past from, we can just shift the whole thing.
                 if (oi.Start - n >= from)
-                    _Intervals.Add(oi.Start - n, new OrderedInterval<T>(oi.Start - n, oi.End - n, oi.Data));
+                    _intervals.Add(oi.Start - n, new OrderedInterval<T>(oi.Start - n, oi.End - n, oi.Data));
                 else
                 {
-                    _Intervals.Add(from, new OrderedInterval<T>(from, oi.End - n, oi.Data));
+                    _intervals.Add(from, new OrderedInterval<T>(from, oi.End - n, oi.Data));
                 }
             }
         }
@@ -423,10 +422,10 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
 
     private void UpdateStartEndPositions()
     {
-        if (_Intervals.Any())
+        if (_intervals.Any())
         {
-            Start = _Intervals.First().Value.Start;
-            End = _Intervals.Last().Value.End;
+            Start = _intervals.First().Value.Start;
+            End = _intervals.Last().Value.End;
         }
     }
 
@@ -441,6 +440,6 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
     /// </summary>
     public void Clear()
     {
-        _Intervals.Clear();
+        _intervals.Clear();
     }
 }
