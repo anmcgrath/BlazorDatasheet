@@ -211,7 +211,9 @@ public class CellLayoutProvider : IGridLayoutProvider
             DistanceBottom = distBottom,
             DistanceRight = distRight,
             VisibleWidth = visibleWidth,
-            VisibleHeight = visibleHeight
+            VisibleHeight = visibleHeight,
+            NumberVisibleCols = _sheet.Columns.CountVisible(startCol, endCol),
+            NumberVisibleRows = _sheet.Rows.CountVisible(startRow, endRow)
         };
     }
 }

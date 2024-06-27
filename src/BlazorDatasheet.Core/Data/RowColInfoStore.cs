@@ -28,7 +28,9 @@ public abstract class RowColInfoStore
     internal readonly MergeableIntervalStore<CellFormat> Formats = new();
 
     /// <summary>
-    /// Stores whether each row/column is visible
+    /// Stores whether each row/column is visible.
+    /// The default is true, if the row/colum is NOT visible, there will be
+    /// data in the store for that index.
     /// </summary>
     private readonly Range1DStore<bool> _visible = new(true);
 
@@ -170,9 +172,34 @@ public abstract class RowColInfoStore
         };
     }
 
+    /// <summary>
+    /// Returns whether the row/column is visible at <paramref name="index"/>
+    /// </summary>
+    /// <param name="index"></param>
+    /// <returns></returns>
     public bool IsVisible(int index)
     {
         return _visible.Get(index);
+    }
+
+    /// <summary>
+    /// Counts the number of visible rows/columns between start+end
+    /// </summary>
+    /// <param name="start"></param>
+    /// <param name="end"></param>
+    /// <returns></returns>
+    public int CountVisible(int start, int end)
+    {
+        var totalCount = end - start + 1;
+        int invisibleCount = 0;
+        var invisible = _visible.GetOverlapping(start, end);
+        foreach (var i in invisible)
+        {
+            var nOverlap = Math.Min(i.end, end) - Math.Max(i.start, start) + 1;
+            invisibleCount += nOverlap;
+        }
+
+        return totalCount - invisibleCount;
     }
 
     public void Hide(int start, int count)

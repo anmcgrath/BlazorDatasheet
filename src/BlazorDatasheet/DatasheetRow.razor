@@ -6,6 +6,10 @@
 {
     var col = j;
     var cell = VisualSheet.GetVisualCell(Row, col);
+    
+    if(!cell.IsVisible)
+        continue;
+    
     var k = col;
 
     var rowSpan = 1;

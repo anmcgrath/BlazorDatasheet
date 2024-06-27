@@ -107,13 +107,13 @@ public partial class Datasheet : SheetComponentBase
     /// </summary>
     [Parameter]
     public bool CanUserMergeRows { get; set; } = true;
-    
+
     /// <summary>
     /// If set to true, the user can hide rows using the context menu.
     /// </summary>
     [Parameter]
     public bool CanUserHideRows { get; set; } = true;
-    
+
     /// <summary>
     /// If set to true, the user can hide columns using the context menu.
     /// </summary>
@@ -121,8 +121,7 @@ public partial class Datasheet : SheetComponentBase
     public bool CanUserHideCols { get; set; } = true;
 
 
-    [Parameter]
-    public bool ShowFormulaDependents { get; set; }
+    [Parameter] public bool ShowFormulaDependents { get; set; }
 
     /// <summary>
     /// Exists so that we can determine whether the sheet has changed
@@ -277,14 +276,10 @@ public partial class Datasheet : SheetComponentBase
 
             if (!Virtualise)
             {
-                var vp = new Viewport()
-                {
-                    DistanceBottom = 0,
-                    DistanceRight = 0,
-                    Left = 0,
-                    Top = 0,
-                    VisibleRegion = new Region(0, Sheet.NumRows - 1, 0, Sheet.NumCols - 1)
-                };
+                var vp = _cellLayoutProvider
+                    .GetViewPort(0, 0,
+                        _cellLayoutProvider.TotalWidth, _cellLayoutProvider.TotalHeight,
+                        0, 0);
 
                 _visualSheet.UpdateViewport(vp);
             }

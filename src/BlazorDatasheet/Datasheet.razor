@@ -42,14 +42,16 @@
 
             @if (Sheet.NumCols > 0)
             {
-                <!-- if virtualisation is on, merges need to be rendered outside of the table to handle merged cells that span outside of the viewport -->
-                <VirtualMergesRenderer
-                    Icons="Icons"
-                    CustomCellTypeDefinitions="CustomCellTypeDefinitions"
-                    Sheet="Sheet"
-                    VisualSheet="_visualSheet"
-                    CellLayoutProvider="_cellLayoutProvider"/>
-
+                @if (Virtualise)
+                {
+                    <!-- if virtualisation is on, merges need to be rendered outside of the table to handle merged cells that span outside of the viewport -->
+                    <VirtualMergesRenderer
+                        Icons="Icons"
+                        CustomCellTypeDefinitions="CustomCellTypeDefinitions"
+                        Sheet="Sheet"
+                        VisualSheet="_visualSheet"
+                        CellLayoutProvider="_cellLayoutProvider"/>
+                }
 
                 <div style="display: flex; flex-direction: column; justify-content: start;">
 
@@ -73,6 +75,9 @@
                                 {
                                     var col = i;
                                     var colWidth = _cellLayoutProvider.ComputeWidth(col, 1);
+                                    if (colWidth == 0)
+                                        continue;
+
                                     <col style="width:@(colWidth)px; max-width:@(colWidth)px;"/>
                                 }
                             </colgroup>
@@ -127,14 +132,14 @@
                                     <td></td>
                                 }
                                 <td></td>
-                                <td colspan="@_visualSheet.Viewport.VisibleRegion.Width"></td>
+                                <td colspan="@_visualSheet.Viewport.NumberVisibleCols"></td>
                             </tr>
 
                             <!-- filler top row -->
                             <tr>
                                 @{
                                     // +1 here for virtualisation column
-                                    var fillerColSpan = _visualSheet.Viewport.VisibleRegion.Width + 1;
+                                    var fillerColSpan = _visualSheet.Viewport.NumberVisibleCols + 1;
                                     if (ShowRowHeadings)
                                         fillerColSpan += 2; // +1 for row headings
                                 }
@@ -153,13 +158,13 @@
                                     <th></th>
                                     <!-- row headings -->
                                 }
-                                <td colspan="1" rowspan="@(_visualSheet.Viewport.VisibleRegion.Height + 1)"
+                                <td colspan="1" rowspan="@(_visualSheet.Viewport.NumberVisibleRows + 1)"
                                     style="padding: 0; border: 0;height: 0;">
                                     <div @ref="_fillerLeft" id="filler-left-1"
                                          style="display: block; min-width: @(_visualSheet.Viewport.Left)px; height: @(_visualSheet.Viewport.VisibleHeight)px;">
                                     </div>
                                 </td>
-                                <td colspan="@_visualSheet.Viewport.VisibleRegion.Width" style="max-height: 0;"></td>
+                                <td colspan="@_visualSheet.Viewport.NumberVisibleCols" style="max-height: 0;"></td>
                             </tr>
 
                             @if (Sheet.NumRows > 0)

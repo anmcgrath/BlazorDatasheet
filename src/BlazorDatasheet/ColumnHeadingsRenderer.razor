@@ -36,8 +36,11 @@
 @for (int i = ColStart; i < (ColStart + NCols); i++)
 {
     var col = i;
+    if(!Sheet.Columns.IsVisible(i))
+        continue;
+    
     var colHeading = Sheet.Columns.GetHeading(i) ?? RangeText.ColNumberToLetters(col);
-
+    
     <th class="unselectable col-head">
         <div style="width: 100%; display: flex; justify-content: start; position: relative; overflow-x: visible;">
             <div class="sheet-cell" data-col="@col" data-row="-1" style="display: flex; justify-content: space-between; width: 100%;">

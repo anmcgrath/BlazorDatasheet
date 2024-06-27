@@ -10,35 +10,38 @@ public class Viewport
     /// <summary>
     /// The visible region, including the cells that are shown off-screen for performance improvements.
     /// </summary>
-    public Region VisibleRegion { get; set; } = new(-1, -1, -1, -1);
+    public Region VisibleRegion { get; internal init; } = new(-1, -1, -1, -1);
 
     /// <summary>
     /// The left (x) position of the first cell in the visual region.
     /// </summary>
-    public double Left { get; set; }
+    public double Left { get;internal  init; }
 
     /// <summary>
     /// The top (y) position of the first cell in the visual region
     /// </summary>
-    public double Top { get; set; }
+    public double Top { get;internal  init; }
 
     /// <summary>
     /// The distance from the right edge of the viewport to the end of the sheet
     /// </summary>
-    public double DistanceRight { get; set; }
+    public double DistanceRight { get;internal  init; }
 
     /// <summary>
     /// The distance from the bottom edge of the viewport to the end of the sheet.
     /// </summary>
-    public double DistanceBottom { get; set; }
+    public double DistanceBottom { get;internal  init; }
 
     /// <summary>
     /// The width (in px) of the rendered area - includes overflow
     /// </summary>
-    public double VisibleWidth { get; set; }
+    public double VisibleWidth { get;internal  init; }
 
     /// <summary>
     /// The height (in px) of the rendered area - includes overflow
     /// </summary>
-    public double VisibleHeight { get; set; }
+    public double VisibleHeight { get;internal  init; }
+    
+    public int NumberVisibleRows { get; internal init; }
+    public int NumberVisibleCols { get; internal init; }
 }
