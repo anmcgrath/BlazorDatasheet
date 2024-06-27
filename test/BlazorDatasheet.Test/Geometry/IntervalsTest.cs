@@ -252,6 +252,15 @@ public class IntervalsTest
         all[1].Start.Should().Be(15 - shift);
         all[1].End.Should().Be(20 - shift);
     }
+
+    [Test]
+    public void Clear_MergeableIntervalStore_Clears_Store()
+    {
+        var store = new MergeableIntervalStore<SimpleMergeableData<string>>();
+        store.Add(5, 10, new SimpleMergeableData<string>());
+        store.Clear();
+        store.GetAllIntervals().Should().BeEmpty();
+    }
 }
 
 public class SimpleMergeableData<T> : IMergeable<SimpleMergeableData<T>>

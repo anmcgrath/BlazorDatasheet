@@ -42,4 +42,16 @@ public class HideCommandTests
         sheet.Rows.CountVisible(4, 6).Should().Be(1);
         sheet.Rows.CountVisible(9, 10).Should().Be(1);
     }
+
+    [Test]
+    public void Hide_Overlapping_Rows_Restores_Correctly()
+    {
+        var sheet = new Sheet(100, 100);
+        sheet.Rows.Hide(6, 14);
+        sheet.Rows.Hide(2, 26);
+        sheet.Commands.Undo();
+        sheet.Rows.IsVisible(8).Should().Be(false);
+        sheet.Rows.IsVisible(4).Should().Be(true);
+        sheet.Rows.IsVisible(20).Should().Be(true);
+    }
 }

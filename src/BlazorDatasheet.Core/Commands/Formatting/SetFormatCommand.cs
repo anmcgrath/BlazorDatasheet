@@ -105,6 +105,7 @@ public class SetFormatCommand : IUndoableCommand
     {
         foreach (var added in restoreData.IntervalsAdded)
             store.Clear(added);
+        
         store.AddRange(restoreData.IntervalsRemoved.Where(x => x.Data != null));
         foreach (var cellRestore in restoreData.CellFormatRestoreData)
             sheet.Cells.Restore(cellRestore);
