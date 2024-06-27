@@ -177,13 +177,13 @@ public abstract class RowColInfoStore
 
     public void Hide(int start, int count)
     {
-        var cmd = new HideCommand(start, count, _axis);
+        var cmd = new HideCommand(start, start + count - 1, _axis);
         _sheet.Commands.ExecuteCommand(cmd);
     }
 
     public void Unhide(int start, int count)
     {
-        var cmd = new UnhideCommand(start, count, _axis);
+        var cmd = new UnhideCommand(start, start + count - 1, _axis);
         _sheet.Commands.ExecuteCommand(cmd);
     }
 
