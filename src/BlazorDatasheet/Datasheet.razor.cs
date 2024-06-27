@@ -107,6 +107,19 @@ public partial class Datasheet : SheetComponentBase
     /// </summary>
     [Parameter]
     public bool CanUserMergeRows { get; set; } = true;
+    
+    /// <summary>
+    /// If set to true, the user can hide rows using the context menu.
+    /// </summary>
+    [Parameter]
+    public bool CanUserHideRows { get; set; } = true;
+    
+    /// <summary>
+    /// If set to true, the user can hide columns using the context menu.
+    /// </summary>
+    [Parameter]
+    public bool CanUserHideCols { get; set; } = true;
+
 
     [Parameter]
     public bool ShowFormulaDependents { get; set; }
