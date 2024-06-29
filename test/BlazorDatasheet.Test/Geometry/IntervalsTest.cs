@@ -116,11 +116,11 @@ public class IntervalsTest
         store.Add(oi);
         var restoreData = store.Clear(new OrderedInterval(1, 9));
         var smd = store.Get(0);
-        Assert.AreEqual(val, smd);
+        val.Should().BeEquivalentTo(smd);
         Assert.Null(store.Get(1));
         Assert.Null(store.Get(5));
         Assert.Null(store.Get(9));
-        Assert.AreEqual(val, store.Get(10));
+        val.Should().BeEquivalentTo(store.Get(10));
         store.Restore(restoreData);
         store.GetAllIntervals().Count.Should().Be(1);
         store.GetAllIntervals().First().Should().BeEquivalentTo(oi);

@@ -138,14 +138,14 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
                 _intervals.Remove(oi.Start);
 
                 if (oi.Start != interval.Start) // add a interval before the merged interval
-                    intervalsToAdd.Add(new OrderedInterval<T>(oi.Start, interval.Start - 1, oi.Data));
+                    intervalsToAdd.Add(new OrderedInterval<T>(oi.Start, interval.Start - 1, oi.Data.Clone()));
 
                 var merged = new OrderedInterval<T>(interval.Start, interval.End, oi.Data.Clone());
                 merged.Data.Merge(interval.Data);
                 intervalsToAdd.Add(merged);
 
                 if (oi.End != interval.End) // add an interval after the merged interval
-                    intervalsToAdd.Add(new OrderedInterval<T>(interval.End + 1, oi.End, oi.Data));
+                    intervalsToAdd.Add(new OrderedInterval<T>(interval.End + 1, oi.End, oi.Data.Clone()));
             }
 
             else if (interval.Start > oi.Start)
@@ -305,10 +305,10 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
                 continue;
 
             if (interval.Start > oi.Start)
-                intervalsToAdd.Add(new OrderedInterval<T>(oi.Start, interval.Start - 1, oi.Data));
+                intervalsToAdd.Add(new OrderedInterval<T>(oi.Start, interval.Start - 1, oi.Data.Clone()));
 
             if (oi.End > interval.End)
-                intervalsToAdd.Add(new OrderedInterval<T>(interval.End + 1, oi.End, oi.Data));
+                intervalsToAdd.Add(new OrderedInterval<T>(interval.End + 1, oi.End, oi.Data.Clone()));
         }
 
         foreach (var oi in intervalsToAdd)
@@ -349,7 +349,7 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
             {
                 restoreData.RemovedIntervals.Add(oi);
                 _intervals.Remove(oi.Start);
-                var newOi = new OrderedInterval<T>(oi.Start, oi.End + n, oi.Data);
+                var newOi = new OrderedInterval<T>(oi.Start, oi.End + n, oi.Data.Clone());
                 _intervals.Add(newOi.Start, newOi);
                 restoreData.AddedIntervals.Add(newOi);
             }
@@ -388,7 +388,7 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
             {
                 restoreData.RemovedIntervals.Add(oi);
                 _intervals.Remove(oi.Start);
-                var newOi = new OrderedInterval<T>(oi.Start, oi.End - n, oi.Data);
+                var newOi = new OrderedInterval<T>(oi.Start, oi.End - n, oi.Data.Clone());
                 _intervals.Add(newOi.Start, newOi);
                 restoreData.AddedIntervals.Add(newOi);
             }
