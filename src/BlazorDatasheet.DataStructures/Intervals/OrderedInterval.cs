@@ -11,7 +11,7 @@ public class OrderedInterval
     public int Start
     {
         get => _start;
-        set
+        private set
         {
             _start = Math.Min(value, _end);
             _end = Math.Max(value, _end);
@@ -23,7 +23,7 @@ public class OrderedInterval
     public int End
     {
         get => _end;
-        set
+        private set
         {
             _start = Math.Min(value, _start);
             _end = Math.Max(value, _start);
@@ -112,7 +112,15 @@ public class OrderedInterval
     {
         return Merge(intervals.AsEnumerable());
     }
-    
+
+    public void Shift(int n)
+    {
+        _start += n;
+        _end += n;
+        _start = Math.Min(_start, _end);
+        _end = Math.Max(_start, _end);
+    }
+
     public override string ToString()
     {
         return $"[{Start},{End}]";

@@ -46,7 +46,8 @@ public class Range1DStore<T>
     /// <param name="start"></param>
     /// <param name="end"></param>
     /// <returns></returns>
-    public virtual MergeableIntervalStoreRestoreData<OverwritingValue<T>> Delete(int start, int end)
+    public virtual MergeableIntervalStoreRestoreData<OverwritingValue<T>> 
+        Delete(int start, int end)
     {
         var restoreData = Intervals.Clear(start, end);
         restoreData.Merge(Intervals.ShiftLeft(start, (end - start) + 1));

@@ -103,10 +103,7 @@ public class SetFormatCommand : IUndoableCommand
 
     private void Restore(Sheet sheet, RowColFormatRestoreData restoreData, MergeableIntervalStore<CellFormat> store)
     {
-        foreach (var added in restoreData.IntervalsAdded)
-            store.Clear(added);
-        
-        store.AddRange(restoreData.IntervalsRemoved.Where(x => x.Data != null));
+        store.Restore(restoreData.Format1DRestoreData);
         foreach (var cellRestore in restoreData.CellFormatRestoreData)
             sheet.Cells.Restore(cellRestore);
     }

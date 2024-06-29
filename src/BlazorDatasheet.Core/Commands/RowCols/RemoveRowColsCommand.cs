@@ -56,12 +56,12 @@ public class RemoveRowColsCommand : IUndoableCommand
         sheet.Add(_axis, _nRemoved);
         sheet.Validators.Store.Restore(_validatorRestoreData);
         sheet.Cells.Restore(_cellStoreRestoreData);
-
-        sheet.GetRowColStore(_axis).InsertImpl(_index, _nRemoved);
         sheet.GetRowColStore(_axis).Restore(_rowColInfoRestore);
-
         sheet.ConditionalFormats.Restore(_cfRestoreData);
-        sheet.MarkDirty(new RowRegion(_index, sheet.NumRows));
+        IRegion dirtyRegion = _axis == Axis.Col
+            ? new ColumnRegion(_index, sheet.NumCols)
+            : new RowRegion(_index, sheet.NumRows);
+        sheet.MarkDirty(dirtyRegion);
         return true;
     }
 }
