@@ -122,11 +122,11 @@
         if (isMergeStartVisible)
             return true;
 
-        var nextVisibleRow = Sheet.Rows.GetNextVisible(merge.Top);
+        var nextVisibleRow = Sheet.Rows.GetNextVisible(merge.Top - 1);
         if (!merge.Spans(nextVisibleRow, Axis.Row))
             return false;
         
-        var nextVisibleCol = Sheet.Columns.GetNextVisible(merge.Left);
+        var nextVisibleCol = Sheet.Columns.GetNextVisible(merge.Left - 1);
         if (!merge.Spans(nextVisibleCol, Axis.Col))
             return false;
         return true;
