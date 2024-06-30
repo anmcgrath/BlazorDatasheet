@@ -196,10 +196,10 @@ public class Region : IRegion
     /// <param name="otherColEnd"></param>
     public void Constrain(int otherRowStart, int otherRowEnd, int otherColStart, int otherColEnd)
     {
-        var r0 = SheetMath.ClampInt(otherRowStart, otherRowEnd, this.TopLeft.row);
-        var r1 = SheetMath.ClampInt(otherRowStart, otherRowEnd, this.BottomRight.row);
-        var c0 = SheetMath.ClampInt(otherColStart, otherColEnd, this.TopLeft.col);
-        var c1 = SheetMath.ClampInt(otherColStart, otherColEnd, this.BottomRight.col);
+        var r0 = Math.Clamp(this.TopLeft.row, otherRowStart, otherRowEnd);
+        var r1 = Math.Clamp(this.BottomRight.row, otherRowStart, otherRowEnd);
+        var c0 = Math.Clamp(this.TopLeft.col, otherColStart, otherColEnd);
+        var c1 = Math.Clamp(this.BottomRight.col, otherColStart, otherColEnd);
         this.Start = new CellPosition(r0, c0);
         this.End = new CellPosition(r1, c1);
         SetOrderedBounds();

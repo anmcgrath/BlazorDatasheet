@@ -34,8 +34,7 @@ public class RowRegion : Region
             return;
         }
 
-        var newRowEnd = SheetMath
-            .ClampInt(regionLimit.TopLeft.row, regionLimit.BottomRight.row, row);
+        var newRowEnd = Math.Clamp(row, regionLimit.TopLeft.row, regionLimit.BottomRight.row);
 
         End = new CellPosition(newRowEnd, int.MaxValue);
         SetOrderedBounds();

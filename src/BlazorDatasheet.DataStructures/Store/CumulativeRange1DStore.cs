@@ -36,12 +36,12 @@ public class CumulativeRange1DStore : Range1DStore<double>
     /// <param name="end"></param>
     /// <param name="value"></param>
     /// <returns></returns>
-    public override List<(int start, int end, double value)> Set(int start, int end, double value)
+    public override MergeableIntervalStoreRestoreData<OverwritingValue<double>> Set(int start, int end, double value)
     {
-        List<(int start, int end, double value)> res = base.Set(start, end, value);
+        var restoreData = base.Set(start, end, value);
         // update cumulative positions1
         UpdateCumulativePositionsFrom(start);
-        return res;
+        return restoreData;
     }
 
     /// <summary>
@@ -113,7 +113,7 @@ public class CumulativeRange1DStore : Range1DStore<double>
     /// <param name="start"></param>
     /// <param name="end"></param>
     /// <returns></returns>
-    public override List<(int start, int end, double value)> Delete(int start, int end)
+    public override MergeableIntervalStoreRestoreData<OverwritingValue<double>> Delete(int start, int end)
     {
         var res = base.Delete(start, end);
         UpdateCumulativePositionsFrom(start);
@@ -125,10 +125,11 @@ public class CumulativeRange1DStore : Range1DStore<double>
     /// </summary>
     /// <param name="start"></param>
     /// <param name="n"></param>
-    public override void InsertAt(int start, int n)
+    public override MergeableIntervalStoreRestoreData<OverwritingValue<double>> InsertAt(int start, int n)
     {
-        base.InsertAt(start, n);
+        var restoreData = base.InsertAt(start, n);
         UpdateCumulativePositionsFrom(0);
+        return restoreData;
     }
 
     /// <summary>
@@ -223,7 +224,8 @@ public class CumulativeRange1DStore : Range1DStore<double>
         // [            x         ],           [                   ]
 
         // handle the case of c_1_start = c-1end
-        if (_cumulativeValuesAtStart[searchIndexStart - 1] == _cumulativeValuesAtEnd[searchIndexStart - 1])
+        if (Math.Abs(_cumulativeValuesAtStart[searchIndexStart - 1] - _cumulativeValuesAtEnd[searchIndexStart - 1]) <
+            0.0001)
             return _storedPositionStarts[searchIndexStart - 1];
 
         var oi = Intervals.Get(_storedPositionStarts[searchIndexStart - 1]);
@@ -231,15 +233,9 @@ public class CumulativeRange1DStore : Range1DStore<double>
                (int)((cumulative - _cumulativeValuesAtStart[searchIndexStart - 1]) / oi.Value);
     }
 
-    /// <summary>
-    /// Sets a number of intervals with data at once.
-    /// </summary>
-    /// <param name="data"></param>
-    public override void BatchSet(List<(int start, int end, double data)> data)
+    public new void Restore(MergeableIntervalStoreRestoreData<OverwritingValue<double>> restoreData)
     {
-        if (!data.Any())
-            return;
-        base.BatchSet(data);
-        this.UpdateCumulativePositionsFrom(data.Select(x => x.start).Min());
+        base.Restore(restoreData);
+        UpdateCumulativePositionsFrom(0);
     }
 }

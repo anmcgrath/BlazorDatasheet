@@ -223,7 +223,7 @@ public class Sheet
     /// <returns></returns>
     public bool IsCellVisible(int row, int col)
     {
-        return Rows.IsVisible(row);
+        return Rows.IsVisible(row) && Columns.IsVisible(col);
     }
 
     /// <summary>

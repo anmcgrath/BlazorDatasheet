@@ -20,6 +20,8 @@ public class VisualCell
     public string FormatStyleString { get; private set; } = string.Empty;
     public string? Icon { get; private set; }
     public CellFormat? Format { get; private set; }
+    
+    public bool IsVisible { get; set; }
 
     public VisualCell(int row, int col, Sheet sheet)
     {
@@ -41,11 +43,15 @@ public class VisualCell
         var cf = sheet.ConditionalFormats.GetFormatResult(row, col);
         if (cf != null)
             format.Merge(cf);
+        
         Row = row;
         Col = col;
 
+        IsVisible = cell.IsVisible;
+
         X = sheet.Columns.GetVisualTop(col);
         Y = sheet.Rows.GetVisualTop(row);
+        
         FormatStyleString = GetCellFormatStyleString(Row, Col, format, cell.IsValid, cellValue.ValueType);
         Icon = format?.Icon;
         CellType = cell.Type;

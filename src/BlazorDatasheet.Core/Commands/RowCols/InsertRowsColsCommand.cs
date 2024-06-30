@@ -18,6 +18,7 @@ internal class InsertRowsColsCommand : IUndoableCommand
     private RegionRestoreData<int> _validatorRestoreData;
     private RegionRestoreData<ConditionalFormatAbstractBase> _cfRestoreData;
     private CellStoreRestoreData _cellStoreRestoreData;
+    private RowColInfoRestoreData _rowColInfoRestoreData;
 
     /// <summary>
     /// Command for inserting a row into the sheet.
@@ -37,8 +38,8 @@ internal class InsertRowsColsCommand : IUndoableCommand
         _validatorRestoreData = sheet.Validators.Store.InsertRowColAt(_index, _count, _axis);
         _cellStoreRestoreData = sheet.Cells.InsertRowColAt(_index, _count, _axis);
         _cfRestoreData = sheet.ConditionalFormats.InsertRowColAt(_index, _count, _axis);
+        _rowColInfoRestoreData = sheet.GetRowColStore(_axis).InsertImpl(_index, _count);
         sheet.Add(_axis, _count);
-        sheet.GetRowColStore(_axis).InsertImpl(_index, _count);
         return true;
     }
 
@@ -48,7 +49,11 @@ internal class InsertRowsColsCommand : IUndoableCommand
         sheet.Cells.Restore(_cellStoreRestoreData);
         sheet.ConditionalFormats.Restore(_cfRestoreData);
         sheet.Remove(_axis, _count);
-        sheet.GetRowColStore(_axis).RemoveImpl(_index, _index + _count - 1);
+        sheet.GetRowColStore(_axis).Restore(_rowColInfoRestoreData);
+        IRegion dirtyRegion = _axis == Axis.Col
+            ? new ColumnRegion(_index, sheet.NumCols)
+            : new RowRegion(_index, sheet.NumRows);
+        sheet.MarkDirty(dirtyRegion);
         return true;
     }
 }

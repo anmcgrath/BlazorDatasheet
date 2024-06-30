@@ -251,7 +251,7 @@ public class Selection
             this.ClearSelections();
             return;
         }
-        
+
         var constrainedRegions = new List<IRegion>();
         for (int i = 0; i < _regions.Count; i++)
         {
@@ -387,18 +387,23 @@ public class Selection
         if (ActiveRegion == null || colDir == 0)
             return;
 
+        colDir = Math.Abs(colDir) / colDir;
+
+        var currRow = ActiveCellPosition.row;
+        var currCol = ActiveCellPosition.col;
+
         // If it's currently inside a merged cell, find where it should next move to
         var merge = _sheet.Cells.GetMerge(ActiveCellPosition.row, ActiveCellPosition.col);
         if (merge != null)
         {
-            // Move multiple rows if the current position is on the edge away
-            // from the movement direction.
-            if (colDir == 1 && merge.Left == ActiveCellPosition.col ||
-                colDir == -1 && merge.Right == ActiveCellPosition.col)
-            {
-                colDir *= merge.Width;
-            }
+            // move the active row position to the edge of the current merged cell
+            if (colDir == -1)
+                currCol = merge.Left;
+            else
+                currCol = merge.Right;
         }
+
+        currCol = _sheet.Columns.GetNextVisible(currCol, colDir);
 
         // Fix the active region to surrounds of the sheet
         var activeRegionFixed = ActiveRegion.GetIntersection(_sheet.Region);
@@ -410,7 +415,7 @@ public class Selection
             // We end up with a new region of area 1 (or the size of the merged cell it is not on)
             _regions.Clear();
 
-            var offsetPosn = new CellPosition(ActiveCellPosition.row, ActiveCellPosition.col + colDir);
+            var offsetPosn = new CellPosition(currRow, currCol);
             offsetPosn = _sheet.Region.GetConstrained(offsetPosn);
             var newRegion = new Region(offsetPosn.row, offsetPosn.col);
             newRegion = ExpandRegionOverMerged(newRegion) as Region;

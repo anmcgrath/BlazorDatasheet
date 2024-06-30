@@ -33,8 +33,14 @@
             {
                 <SheetMenuItem OnClick="() => sheet.Columns.RemoveAt(c.Left, c.Width)">Delete column(s)</SheetMenuItem>
             }
+            
+            @if (CanUserHideCols)
+            {
+                <SheetMenuItem OnClick="() => sheet.Columns.Hide(c.Left, c.Width)">Hide column(s)</SheetMenuItem>
+                <SheetMenuItem OnClick="() => sheet.Columns.Unhide(c.Left, c.Width)">Un-hide column(s)</SheetMenuItem>
+            }
 
-            @if (CanUserInsertCols || CanUserRemoveCols)
+            @if (CanUserInsertCols || CanUserRemoveCols || CanUserHideCols)
             {
                 <SheetMenuDivider/>
             }
@@ -51,8 +57,14 @@
             {
                 <SheetMenuItem OnClick="() => sheet.Rows.RemoveAt(r.Top, r.Height)">Delete row(s)</SheetMenuItem>
             }
+            
+            @if (CanUserHideRows)
+            {
+                <SheetMenuItem OnClick="() => sheet.Rows.Hide(r.Top, r.Height)">Hide row(s)</SheetMenuItem>
+                <SheetMenuItem OnClick="() => sheet.Rows.Unhide(r.Top, r.Height)">Un-hide row(s)</SheetMenuItem>
+            }
 
-            @if (CanUserInsertRows || CanUserRemoveRows)
+            @if (CanUserInsertRows || CanUserRemoveRows || CanUserHideRows)
             {
                 <SheetMenuDivider/>
             }
@@ -77,5 +89,7 @@
     [Parameter] public bool CanUserInsertCols { get; set; } = true;
     [Parameter] public bool CanUserSort { get; set; } = true;
     [Parameter] public bool CanUserMergeRange { get; set; } = true;
+    [Parameter] public bool CanUserHideRows { get; set; } = true;
+    [Parameter] public bool CanUserHideCols { get; set; } = true;
 
 }

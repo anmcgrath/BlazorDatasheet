@@ -23,10 +23,9 @@ public class Range1DStore<T>
     /// <param name="end"></param>
     /// <param name="value"></param>
     /// <returns></returns>
-    public virtual List<(int start, int end, T value)> Set(int start, int end, T value)
+    public virtual MergeableIntervalStoreRestoreData<OverwritingValue<T>> Set(int start, int end, T value)
     {
-        var modified = Intervals.Add(start, end, new OverwritingValue<T>(value));
-        return modified.Select(x => (x.Start, x.End, x.Data.Value)).ToList();
+        return Intervals.Add(start, end, new OverwritingValue<T>(value));
     }
 
     /// <summary>
@@ -35,7 +34,7 @@ public class Range1DStore<T>
     /// <param name="start"></param>
     /// <param name="value"></param>
     /// <returns></returns>
-    public List<(int start, int end, T value)> Set(int start, T value)
+    public MergeableIntervalStoreRestoreData<OverwritingValue<T>> Set(int start, T value)
     {
         return Set(start, start, value);
     }
@@ -47,11 +46,12 @@ public class Range1DStore<T>
     /// <param name="start"></param>
     /// <param name="end"></param>
     /// <returns></returns>
-    public virtual List<(int start, int end, T value)> Delete(int start, int end)
+    public virtual MergeableIntervalStoreRestoreData<OverwritingValue<T>> 
+        Delete(int start, int end)
     {
-        var removed = Intervals.Clear(start, end).Select(x => (x.Start, x.End, x.Data.Value)).ToList();
-        Intervals.ShiftLeft(start, (end - start) + 1);
-        return removed;
+        var restoreData = Intervals.Clear(start, end);
+        restoreData.Merge(Intervals.ShiftLeft(start, (end - start) + 1));
+        return restoreData;
     }
 
     public List<(int start, int end, T? value)> GetOverlapping(int start, int end)
@@ -66,9 +66,9 @@ public class Range1DStore<T>
     /// </summary>
     /// <param name="start"></param>
     /// <param name="n"></param>
-    public virtual void InsertAt(int start, int n)
+    public virtual MergeableIntervalStoreRestoreData<OverwritingValue<T>> InsertAt(int start, int n)
     {
-        Intervals.ShiftRight(start, n);
+        return Intervals.ShiftRight(start, n);
     }
 
     public T? Get(int position)
@@ -77,12 +77,6 @@ public class Range1DStore<T>
         if (val == null)
             return _defaultIfNotFound;
         return val.Value;
-    }
-
-    public virtual void BatchSet(List<(int start, int end, T data)> data)
-    {
-        foreach (var d in data)
-            this.Set(d.start, d.end, d.data);
     }
 
     /// <summary>
@@ -119,14 +113,19 @@ public class Range1DStore<T>
     /// </summary>
     /// <param name="start"></param>
     /// <param name="end"></param>
-    public List<(int start, int end, T? value)> Clear(int start, int end)
+    public MergeableIntervalStoreRestoreData<OverwritingValue<T>> Clear(int start, int end)
     {
-        return Intervals.Clear(start, end).Select(x => (x.Start, x.End, x.Data.Value)).ToList();
+        return Intervals.Clear(start, end);
     }
 
     public void Clear()
     {
         this.Intervals.Clear();
+    }
+
+    public void Restore(MergeableIntervalStoreRestoreData<OverwritingValue<T>> restoreData)
+    {
+        Intervals.Restore(restoreData);
     }
 }
 

@@ -3,6 +3,7 @@ using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Intervals;
+using BlazorDatasheet.Formula.Core;
 
 namespace BlazorDatasheet.Core.Commands.Formatting;
 
@@ -103,10 +104,11 @@ public class SetFormatCommand : IUndoableCommand
 
     private void Restore(Sheet sheet, RowColFormatRestoreData restoreData, MergeableIntervalStore<CellFormat> store)
     {
-        foreach (var added in restoreData.IntervalsAdded)
-            store.Clear(added);
-        store.AddRange(restoreData.IntervalsRemoved.Where(x => x.Data != null));
-        foreach (var cellRestore in restoreData.CellFormatRestoreData)
+        store.Restore(restoreData.Format1DRestoreData);
+        for (int i = restoreData.CellFormatRestoreData.Count - 1; i >= 0; i--)
+        {
+            var cellRestore = restoreData.CellFormatRestoreData[i];
             sheet.Cells.Restore(cellRestore);
+        }
     }
 }

@@ -105,48 +105,44 @@ public class IntervalsTest
     }
 
     [Test]
-    public void Cut_Ordered_Interval_From_Non_Overlappting_Store_Correct()
+    public void Cut_Ordered_Interval_From_Non_Overlapping_Store_Correct()
     {
         var val = new SimpleMergeableData<int>()
         {
             Value = 10
         };
         var store = new MergeableIntervalStore<SimpleMergeableData<int>>();
-        store.Add(new OrderedInterval<SimpleMergeableData<int>>(0, 10, val));
-        var cuts = store.Clear(new OrderedInterval(1, 9));
-        Assert.AreEqual(val, store.Get(0));
+        var oi = new OrderedInterval<SimpleMergeableData<int>>(0, 10, val);
+        store.Add(oi);
+        var restoreData = store.Clear(new OrderedInterval(1, 9));
+        var smd = store.Get(0);
+        val.Should().BeEquivalentTo(smd);
         Assert.Null(store.Get(1));
         Assert.Null(store.Get(5));
         Assert.Null(store.Get(9));
-        Assert.AreEqual(val, store.Get(10));
-
-        cuts.Count.Should().Be(1);
-        cuts[0].Start.Should().Be(1);
-        cuts[0].End.Should().Be(9);
+        val.Should().BeEquivalentTo(store.Get(10));
+        store.Restore(restoreData);
+        store.GetAllIntervals().Count.Should().Be(1);
+        store.GetAllIntervals().First().Should().BeEquivalentTo(oi);
     }
 
     [Test]
-    public void Cut_Ordered_Interval_From_Non_overlapping_Store_REturns_Correct_Cuts()
+    public void Cut_Ordered_Interval_From_Non_overlapping_Store_Restores_Correct_Cuts()
     {
         var store = new MergeableIntervalStore<SimpleMergeableData<int>>();
         store.Add(1, 3, new SimpleMergeableData<int>(-1));
         store.Add(5, 6, new SimpleMergeableData<int>(1));
         store.Add(8, 10, new SimpleMergeableData<int>(2));
 
-        var removed = store.Clear(2, 9);
-        removed.Count.Should().Be(3);
-        removed = removed.OrderBy(x => x.Start).ToList();
-        removed[0].Start.Should().Be(2);
-        removed[0].End.Should().Be(3);
-        removed[0].Data.Value.Should().Be(-1);
+        var restoreData = store.Clear(2, 9);
+        store.Restore(restoreData);
 
-        removed[1].Start.Should().Be(5);
-        removed[1].End.Should().Be(6);
-        removed[1].Data.Value.Should().Be(1);
-
-        removed[2].Start.Should().Be(8);
-        removed[2].End.Should().Be(9);
-        removed[2].Data.Value.Should().Be(2);
+        store.GetAllIntervals().Select(x => x.Start)
+            .Should().BeEquivalentTo([1, 5, 8]);
+        store.GetAllIntervals().Select(x => x.End)
+            .Should().BeEquivalentTo([3, 6, 10]);
+        store.GetAllIntervals().Select(x => x.Data.Value)
+            .Should().BeEquivalentTo([-1, 1, 2]);
     }
 
     [Test]
@@ -163,39 +159,36 @@ public class IntervalsTest
     }
 
     [Test]
-    public void Modified_Intervals_returned_After_adding_When_Interval_Contained_InExisting()
+    public void Modified_Intervals_Restored_After_adding_When_Interval_Contained_InExisting()
     {
         var store = new MergeableIntervalStore<SimpleMergeableData<string>>();
-        store.Add(0, 10, new SimpleMergeableData<string>("init")).Should().NotBeEmpty();
-
-        var modified = store.Add(2, 3, new SimpleMergeableData<string>("new"));
-        modified.Count.Should().Be(1);
-        modified[0].Data.Value.Should().Be("init");
-        modified[0].Start.Should().Be(2);
-        modified[0].End.Should().Be(3);
+        var restore1 = store.Add(0, 10, new SimpleMergeableData<string>("init"));
+        var restore2 = store.Add(2, 3, new SimpleMergeableData<string>("new"));
+        store.Get(2)!.Value.Should().Be("new");
+        store.Restore(restore2);
+        store.Get(2)!.Value.Should().Be("init");
+        store.Restore(restore1);
+        store.GetAllIntervals().Should().BeEmpty();
     }
 
     [Test]
     public void Modified_Intervals_returned_After_adding_When_Overlaps_Partially()
     {
         var store = new MergeableIntervalStore<SimpleMergeableData<string>>();
-        store.Add(1, 3, new SimpleMergeableData<string>("init_start"))
-            .Should().NotBeEmpty()
-            .And.Subject.First().Data.Should().Be(default(string));
+        var restore1 = store.Add(1, 3, new SimpleMergeableData<string>("init_start"));
+        var restore2 = store.Add(2, 7, new SimpleMergeableData<string>("init_end"));
 
-        store.Add(5, 7, new SimpleMergeableData<string>("init_end"))
-            .Should().NotBeEmpty()
-            .And.Subject.First().Data.Should().Be(default(string));
+        store.Get(3)!.Value.Should().Be("init_end");
+        store.Get(2)!.Value.Should().Be("init_end");
+        store.Get(1)!.Value.Should().Be("init_start");
+        store.Get(7)!.Value.Should().Be("init_end");
 
-        var modified = store.Add(2, 6, new SimpleMergeableData<string>("new"));
-        modified.Count.Should().Be(2);
-        modified[0].Data.Value.Should().Be("init_start");
-        modified[0].Start.Should().Be(2);
-        modified[0].End.Should().Be(3);
+        store.Restore(restore2);
 
-        modified[1].Data.Value.Should().Be("init_end");
-        modified[1].Start.Should().Be(5);
-        modified[1].End.Should().Be(6);
+        store.Get(3)!.Value.Should().Be("init_start");
+        store.Restore(restore1);
+
+        store.GetAllIntervals().Should().BeEmpty();
     }
 
     [Test]
@@ -251,6 +244,15 @@ public class IntervalsTest
         all[0].End.Should().Be(10 - shift);
         all[1].Start.Should().Be(15 - shift);
         all[1].End.Should().Be(20 - shift);
+    }
+
+    [Test]
+    public void Clear_MergeableIntervalStore_Clears_Store()
+    {
+        var store = new MergeableIntervalStore<SimpleMergeableData<string>>();
+        store.Add(5, 10, new SimpleMergeableData<string>());
+        store.Clear();
+        store.GetAllIntervals().Should().BeEmpty();
     }
 }
 

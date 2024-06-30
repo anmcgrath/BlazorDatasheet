@@ -150,10 +150,10 @@ public class CumulativeRangeStoreTests
     public void Setting_Values_Over_Default_Should_Return_Default_Changed()
     {
         var changed = store.Set(2, 5, 100);
-        changed.Count.Should().Be(1);
-        changed[0].start.Should().Be(2);
-        changed[0].end.Should().Be(5);
-        changed[0].value.Should().Be(store.Default);
+        changed.AddedIntervals.Count.Should().Be(1);
+        changed.AddedIntervals[0].Start.Should().Be(2);
+        changed.AddedIntervals[0].End.Should().Be(5);
+        changed.AddedIntervals[0].Data.Value.Should().Be(100);
     }
 
     [Test]
