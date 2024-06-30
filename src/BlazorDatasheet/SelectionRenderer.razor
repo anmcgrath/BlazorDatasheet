@@ -86,8 +86,8 @@
             BackgroundColor="var(--active-header-bg-color)"
             X="GetColSelectionLeft(interval.start)"
             Y="0"
-            Width="GetColSelectionWidth(interval.start, interval.end - interval.start + 1)"
-            Height="@CellLayoutProvider.ColHeadingHeight">
+            Width="@(GetColSelectionWidth(interval.start, interval.end - interval.start + 1) - 1)"
+            Height="@(CellLayoutProvider.ColHeadingHeight - 1)">
         </BoxOverlayRenderer>
     }
 </Portal>
@@ -104,8 +104,8 @@
             BackgroundColor="var(--active-header-bg-color)"
             X="0"
             Y="GetRowSelectionTop(interval.start)"
-            Width="@CellLayoutProvider.RowHeadingWidth"
-            Height="GetRowSelectionHeight(interval.start, interval.end - interval.start + 1)">
+            Width="@(CellLayoutProvider.RowHeadingWidth - 1)"
+            Height="@(GetRowSelectionHeight(interval.start, interval.end - interval.start + 1) - 1)">
         </BoxOverlayRenderer>
     }
 </Portal>
