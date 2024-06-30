@@ -1,5 +1,6 @@
 ﻿@using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Layout
+@using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Render
 @using BlazorDatasheet.Render.DefaultComponents
 @using BlazorDatasheet.Util
@@ -17,6 +18,11 @@
         var col = merge.Left;
 
         var cell = VisualSheet.GetVisualCell(row, col);
+        if (!IsMergeVisible(merge))
+        {
+            continue;
+        }
+
         <div
             data-row="@row"
             data-col="@col"
@@ -99,12 +105,31 @@
         var sb = new StyleBuilder();
         var top = CellLayoutProvider.ComputeTopPosition(row);
         var left = CellLayoutProvider.ComputeLeftPosition(col);
+        var width = CellLayoutProvider.ComputeWidth(col, colSpan);
+        var height = CellLayoutProvider.ComputeHeight(row, rowSpan);
+
         sb.AddStyle("top", $"{top}px");
         sb.AddStyle($"left", $"{left}px;");
-        sb.AddStyle("width", $"{CellLayoutProvider.ComputeWidth(col, colSpan)}px");
-        sb.AddStyle("height", $"{CellLayoutProvider.ComputeHeight(row, rowSpan)}px");
+        sb.AddStyle("width", $"{width}px");
+        sb.AddStyle("height", $"{height}px");
 
         return sb.ToString();
+    }
+
+    private bool IsMergeVisible(IRegion merge)
+    {
+        var isMergeStartVisible = Sheet.Rows.IsVisible(merge.Top) && Sheet.Columns.IsVisible(merge.Left);
+        if (isMergeStartVisible)
+            return true;
+
+        var nextVisibleRow = Sheet.Rows.GetNextVisible(merge.Top);
+        if (!merge.Spans(nextVisibleRow, Axis.Row))
+            return false;
+        
+        var nextVisibleCol = Sheet.Columns.GetNextVisible(merge.Left);
+        if (!merge.Spans(nextVisibleCol, Axis.Col))
+            return false;
+        return true;
     }
 
 }

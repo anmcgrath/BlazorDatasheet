@@ -228,7 +228,7 @@ public abstract class RowColInfoStore
 
         direction = Math.Abs(direction) / direction;
 
-        var nextNonVisibleInterval = _visible.GetNext(index, direction);
+        var nextNonVisibleInterval = _visible.GetNext(index - 1, direction);
         int nextIndex = index + direction;
         if (_visible.Get(nextIndex))
             return (nextIndex >= _sheet.GetSize(_axis) || nextIndex < 0 ? -1 : nextIndex);
