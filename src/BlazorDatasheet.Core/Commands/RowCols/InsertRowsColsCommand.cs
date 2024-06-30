@@ -50,6 +50,7 @@ internal class InsertRowsColsCommand : IUndoableCommand
         sheet.ConditionalFormats.Restore(_cfRestoreData);
         sheet.Remove(_axis, _count);
         sheet.GetRowColStore(_axis).Restore(_rowColInfoRestoreData);
+        sheet.GetRowColStore(_axis).EmitRemoved(_index, _count);
         IRegion dirtyRegion = _axis == Axis.Col
             ? new ColumnRegion(_index, sheet.NumCols)
             : new RowRegion(_index, sheet.NumRows);

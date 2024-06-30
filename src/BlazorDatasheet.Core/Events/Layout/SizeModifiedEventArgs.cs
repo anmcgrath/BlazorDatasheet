@@ -5,10 +5,10 @@ namespace BlazorDatasheet.Core.Events.Layout;
 public class SizeModifiedEventArgs
 {
     public int IndexStart { get; }
-    public double IndexEnd { get; }
+    public int IndexEnd { get; }
     public Axis Axis { get; }
 
-    public SizeModifiedEventArgs(int indexStart, double indexEnd, Axis axis)
+    public SizeModifiedEventArgs(int indexStart, int indexEnd, Axis axis)
     {
         IndexStart = indexStart;
         IndexEnd = indexEnd;

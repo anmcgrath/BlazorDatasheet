@@ -122,15 +122,15 @@ public abstract class RowColInfoStore
             SizesRestoreData = SizeStore.Delete(start, end),
             HeadingsRestoreData = _headingStore.Delete(start, end),
             VisibilityRestoreData = _visible.Delete(start, end),
-            RowFormatRestoreData = new RowColFormatRestoreData()
+            RowColFormatRestoreData = new RowColFormatRestoreData()
             {
                 Format1DRestoreData = Formats.Clear(start, end)
             }
         };
 
-        restoreData.RowFormatRestoreData.Format1DRestoreData.Merge(Formats.ShiftLeft(start, (end - start) + 1));
+        restoreData.RowColFormatRestoreData.Format1DRestoreData.Merge(Formats.ShiftLeft(start, (end - start) + 1));
         _sheet.MarkDirty(GetSpannedRegion(start, _sheet.GetSize(_axis)));
-        Removed?.Invoke(this, new RowColRemovedEventArgs(start, (end - start) + 1, _axis));
+        EmitRemoved(start, (end - start) + 1);
         return restoreData;
     }
 
@@ -153,7 +153,8 @@ public abstract class RowColInfoStore
                 size.value));
         }
 
-        _sheet.MarkDirty(GetSpannedRegion(start, start + count - 1));
+        _sheet.MarkDirty(GetSpannedRegion(0, int.MaxValue));
+        SizeModified?.Invoke(this, new SizeModifiedEventArgs(start, start + count - 1, _axis));
 
         return restoreData;
     }
@@ -162,9 +163,10 @@ public abstract class RowColInfoStore
     {
         var changedVisibility = _visible.Set(start, start + count - 1, false);
         var changedCumulativeSizes = CumulativeSizeStore.Set(start, start + count - 1, 0);
-
+        
+        _sheet.MarkDirty(GetSpannedRegion(0, int.MaxValue));
         SizeModified?.Invoke(this, new SizeModifiedEventArgs(start, start + count - 1, _axis));
-        _sheet.MarkDirty(GetSpannedRegion(start, start + count - 1));
+        
         return new RowColInfoRestoreData()
         {
             VisibilityRestoreData = changedVisibility,
@@ -265,13 +267,13 @@ public abstract class RowColInfoStore
             SizesRestoreData = SizeStore.InsertAt(start, count),
             HeadingsRestoreData = _headingStore.InsertAt(start, count),
             VisibilityRestoreData = _visible.InsertAt(start, count),
-            RowFormatRestoreData = new RowColFormatRestoreData()
+            RowColFormatRestoreData = new RowColFormatRestoreData()
             {
                 Format1DRestoreData = Formats.ShiftRight(start, count)
             }
         };
 
-        Inserted?.Invoke(this, new RowColInsertedEventArgs(start, count, _axis));
+        EmitInserted(start, count);
         _sheet.MarkDirty(GetSpannedRegion(start, _sheet.GetSize(_axis)));
         return restoreData;
     }
@@ -292,11 +294,23 @@ public abstract class RowColInfoStore
         SizeStore.Restore(data.SizesRestoreData);
         _headingStore.Restore(data.HeadingsRestoreData);
         _visible.Restore(data.VisibilityRestoreData);
-        Formats.Restore(data.RowFormatRestoreData.Format1DRestoreData);
+        Formats.Restore(data.RowColFormatRestoreData.Format1DRestoreData);
 
         foreach (var change in data.CumulativeSizesRestoreData.RemovedIntervals.Concat(data.CumulativeSizesRestoreData
                      .AddedIntervals))
+        {
             SizeModified?.Invoke(this, new SizeModifiedEventArgs(change.Start, change.End, _axis));
+        }
+    }
+
+    internal void EmitInserted(int start, int count)
+    {
+        Inserted?.Invoke(this, new RowColInsertedEventArgs(start, count, _axis));
+    }
+
+    internal void EmitRemoved(int start, int count)
+    {
+        Removed?.Invoke(this, new RowColRemovedEventArgs(start, count, _axis));
     }
 
     internal RowColFormatRestoreData SetFormatImpl(CellFormat cellFormat, int start, int end)
@@ -401,14 +415,14 @@ internal class RowColInfoRestoreData
     public MergeableIntervalStoreRestoreData<OverwritingValue<double>> SizesRestoreData { get; init; } = new();
     public MergeableIntervalStoreRestoreData<OverwritingValue<string>> HeadingsRestoreData { get; init; } = new();
     public MergeableIntervalStoreRestoreData<OverwritingValue<bool>> VisibilityRestoreData { get; init; } = new();
-    public RowColFormatRestoreData RowFormatRestoreData { get; init; } = new();
+    public RowColFormatRestoreData RowColFormatRestoreData { get; init; } = new();
 
     public void Merge(RowColInfoRestoreData other)
     {
         CumulativeSizesRestoreData.Merge(other.CumulativeSizesRestoreData);
         HeadingsRestoreData.Merge(other.HeadingsRestoreData);
         VisibilityRestoreData.Merge(other.VisibilityRestoreData);
-        RowFormatRestoreData.Merge(other.RowFormatRestoreData);
+        RowColFormatRestoreData.Merge(other.RowColFormatRestoreData);
     }
 }
 

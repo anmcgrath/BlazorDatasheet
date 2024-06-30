@@ -28,8 +28,8 @@ public class HideCommand : IUndoableCommand
     {
         sheet.GetRowColStore(_axis).Restore(_restoreData);
         IRegion dirtyRegion = _axis == Axis.Col
-            ? new ColumnRegion(_start, int.MaxValue)
-            : new RowRegion(_start, int.MaxValue);
+            ? new ColumnRegion(0, int.MaxValue)
+            : new RowRegion(0, int.MaxValue);
         sheet.MarkDirty(dirtyRegion);
         return true;
     }

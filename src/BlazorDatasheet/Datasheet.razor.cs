@@ -384,6 +384,7 @@ public partial class Datasheet : SheetComponentBase
                 OverflowX,
                 OverflowY);
 
+        SheetIsDirty = true;
         _visualSheet.UpdateViewport(newViewport);
     }
 
@@ -451,8 +452,20 @@ public partial class Datasheet : SheetComponentBase
         if (cell.Format.IsReadOnly == true)
             return;
 
+        // check if the cell is visible OR if the cell is merged, and part of the cell is visible
         if (!cell.IsVisible)
-            return;
+        {
+            var mergedRegion = Sheet.Cells.GetMerge(row, col);
+            if (mergedRegion == null)
+                return;
+
+            // is some part of the merge visible?
+            if (Sheet.Rows.GetNextVisible(mergedRegion.Top - 1) > mergedRegion.Bottom)
+                return;
+            if (Sheet.Columns.GetNextVisible(mergedRegion.Left - 1) > mergedRegion.Right)
+                return;
+        }
+
 
         var softEdit = mode == EditEntryMode.Key || mode == EditEntryMode.None || cell.Value == null;
 
