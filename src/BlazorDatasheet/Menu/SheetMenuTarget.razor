@@ -1,18 +1,20 @@
 @using BlazorDatasheet.Services
+@using Microsoft.JSInterop
 @inject IMenuService MenuService;
 @inherits SheetComponentBase
+@implements IAsyncDisposable
+@inject IJSRuntime _js;
 
 <div
+    @ref="_menuTarget"
     class="sheet-menu-target"
     id="@TargetId"
     @onclick="TargetOnClick"
     @onclick:preventDefault="@(Trigger == MenuTrigger.OnClick)"
     @onmousedown="TargetOnMouseDown"
     @onmousedown:preventDefault="@(Trigger == MenuTrigger.OnPress)"
-    @oncontextmenu="TargetOnContextMenu"
     @onmouseover="TargetOnHover"
-    @onmouseover:preventDefault="@(Trigger == MenuTrigger.OnHover)"
-    @oncontextmenu:preventDefault="@(Trigger == MenuTrigger.OnContextMenu)">
+    @onmouseover:preventDefault="@(Trigger == MenuTrigger.OnHover)">
     @ChildContent
 </div>
 
@@ -39,6 +41,18 @@
 
     [Parameter] public object? MenuData { get; set; }
 
+    private ElementReference _menuTarget;
+    private DotNetObjectReference<SheetMenuTarget> _dotnetRef;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _dotnetRef = DotNetObjectReference.Create(this);
+            await _js.InvokeVoidAsync("setContextListener", _menuTarget, _dotnetRef, nameof(TargetOnContextMenu));
+        }
+    }
+
     private async Task TargetOnClick(MouseEventArgs obj)
     {
         if (Trigger != MenuTrigger.OnClick)
@@ -55,7 +69,8 @@
         await ShowMenu(MenuTrigger.OnPress, obj);
     }
 
-    private async Task TargetOnContextMenu(MouseEventArgs obj)
+    [JSInvokable(nameof(TargetOnContextMenu))]
+    public async Task TargetOnContextMenu(MouseEventArgs obj)
     {
         if (Trigger != MenuTrigger.OnContextMenu)
             return;
@@ -77,6 +92,18 @@
             return;
 
         await MenuService.ShowMenu(MenuId, new MenuShowOptions(TargetId, Placement, Margin, trigger, args.ClientX, args.ClientY), MenuData);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            _dotnetRef.Dispose();
+        }
+        catch (Exception e)
+        {
+            // Ignore
+        }
     }
 
 }
