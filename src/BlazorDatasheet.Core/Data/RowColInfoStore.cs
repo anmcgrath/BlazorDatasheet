@@ -10,7 +10,7 @@ namespace BlazorDatasheet.Core.Data;
 
 public abstract class RowColInfoStore
 {
-    private readonly Sheet _sheet;
+    protected readonly Sheet Sheet;
     public double DefaultSize { get; }
 
     private readonly Range1DStore<string> _headingStore = new(null);
@@ -38,7 +38,7 @@ public abstract class RowColInfoStore
 
     protected RowColInfoStore(double defaultSize, Sheet sheet, Axis axis)
     {
-        _sheet = sheet;
+        Sheet = sheet;
         DefaultSize = defaultSize;
         CumulativeSizeStore = new CumulativeRange1DStore(defaultSize);
         SizeStore = new Range1DStore<double>(defaultSize);
@@ -100,7 +100,7 @@ public abstract class RowColInfoStore
     internal RowColInfoRestoreData SetHeadingsImpl(int start, int end, string heading)
     {
         var restoreData = _headingStore.Set(start, end, heading);
-        _sheet.MarkDirty(GetSpannedRegion(start, end));
+        Sheet.MarkDirty(GetSpannedRegion(start, end));
         return new RowColInfoRestoreData()
         {
             HeadingsRestoreData = restoreData
@@ -129,7 +129,7 @@ public abstract class RowColInfoStore
         };
 
         restoreData.RowColFormatRestoreData.Format1DRestoreData.Merge(Formats.ShiftLeft(start, (end - start) + 1));
-        _sheet.MarkDirty(GetSpannedRegion(start, _sheet.GetSize(_axis)));
+        Sheet.MarkDirty(GetSpannedRegion(start, Sheet.GetSize(_axis)));
         EmitRemoved(start, (end - start) + 1);
         return restoreData;
     }
@@ -153,7 +153,7 @@ public abstract class RowColInfoStore
                 size.value));
         }
 
-        _sheet.MarkDirty(GetSpannedRegion(0, int.MaxValue));
+        Sheet.MarkDirty(GetSpannedRegion(0, int.MaxValue));
         SizeModified?.Invoke(this, new SizeModifiedEventArgs(start, start + count - 1, _axis));
 
         return restoreData;
@@ -163,10 +163,10 @@ public abstract class RowColInfoStore
     {
         var changedVisibility = _visible.Set(start, start + count - 1, false);
         var changedCumulativeSizes = CumulativeSizeStore.Set(start, start + count - 1, 0);
-        
-        _sheet.MarkDirty(GetSpannedRegion(0, int.MaxValue));
+
+        Sheet.MarkDirty(GetSpannedRegion(0, int.MaxValue));
         SizeModified?.Invoke(this, new SizeModifiedEventArgs(start, start + count - 1, _axis));
-        
+
         return new RowColInfoRestoreData()
         {
             VisibilityRestoreData = changedVisibility,
@@ -207,13 +207,13 @@ public abstract class RowColInfoStore
     public void Hide(int start, int count)
     {
         var cmd = new HideCommand(start, start + count - 1, _axis);
-        _sheet.Commands.ExecuteCommand(cmd);
+        Sheet.Commands.ExecuteCommand(cmd);
     }
 
     public void Unhide(int start, int count)
     {
         var cmd = new UnhideCommand(start, start + count - 1, _axis);
-        _sheet.Commands.ExecuteCommand(cmd);
+        Sheet.Commands.ExecuteCommand(cmd);
     }
 
     /// <summary>
@@ -233,7 +233,7 @@ public abstract class RowColInfoStore
         var nextNonVisibleInterval = _visible.GetNext(index - 1, direction);
         int nextIndex = index + direction;
         if (_visible.Get(nextIndex))
-            return (nextIndex >= _sheet.GetSize(_axis) || nextIndex < 0 ? -1 : nextIndex);
+            return (nextIndex >= Sheet.GetSize(_axis) || nextIndex < 0 ? -1 : nextIndex);
 
         while (nextNonVisibleInterval != null)
         {
@@ -248,10 +248,15 @@ public abstract class RowColInfoStore
             nextNonVisibleInterval = _visible.GetNext(nextIndex, direction);
         }
 
-        if (nextIndex >= _sheet.GetSize(_axis) || nextIndex < 0)
+        if (nextIndex >= Sheet.GetSize(_axis) || nextIndex < 0)
             return -1;
 
         return nextIndex;
+    }
+
+    public IEnumerable<Interval> GetVisibleRows()
+    {
+        return _visible.GetAllIntervals();
     }
 
     /// <summary>
@@ -274,7 +279,7 @@ public abstract class RowColInfoStore
         };
 
         EmitInserted(start, count);
-        _sheet.MarkDirty(GetSpannedRegion(start, _sheet.GetSize(_axis)));
+        Sheet.MarkDirty(GetSpannedRegion(start, Sheet.GetSize(_axis)));
         return restoreData;
     }
 
@@ -327,7 +332,7 @@ public abstract class RowColInfoStore
         // this is because we the order of choosing the cell format is 1. cell format, then 2. col format then 3. row format.
         // if we set col format then a row format with some intersection, we would find that the col format is chosen when we
         // query the format at the intersection. It should be the cell format, so we set that.
-        var altAxisStore = _sheet.GetRowColStore(_axis == Axis.Col ? Axis.Row : Axis.Col);
+        var altAxisStore = Sheet.GetRowColStore(_axis == Axis.Col ? Axis.Row : Axis.Col);
         var colOverlaps = altAxisStore.Formats.GetAllIntervals()
             .Select(x =>
             {
@@ -337,7 +342,7 @@ public abstract class RowColInfoStore
                     return new DataRegion<CellFormat>(x.Data, new Region(start, end, x.Start, x.End));
             });
 
-        var cellOverlaps = _sheet.Cells.GetFormatData(spanningRegion)
+        var cellOverlaps = Sheet.Cells.GetFormatData(spanningRegion)
             .Select(x => new DataRegion<CellFormat>(x.Data, x.Region.GetIntersection(spanningRegion)!));
 
         // The intersectings region should be be merged with any existing (or empty) cell formats
@@ -346,10 +351,10 @@ public abstract class RowColInfoStore
         // That should be ok because they will already exist and won't be added
         foreach (var overlap in colOverlaps.Concat(cellOverlaps))
         {
-            cellChanges.Add(_sheet.Cells.MergeFormatImpl(overlap.Region, cellFormat));
+            cellChanges.Add(Sheet.Cells.MergeFormatImpl(overlap.Region, cellFormat));
         }
 
-        _sheet.MarkDirty(spanningRegion);
+        Sheet.MarkDirty(spanningRegion);
 
         return new RowColFormatRestoreData()
         {
@@ -361,7 +366,7 @@ public abstract class RowColInfoStore
     public bool RemoveAt(int index, int count = 1)
     {
         var cmd = new RemoveRowColsCommand(index, _axis, count);
-        return _sheet.Commands.ExecuteCommand(cmd);
+        return Sheet.Commands.ExecuteCommand(cmd);
     }
 
     /// <summary>
@@ -372,7 +377,7 @@ public abstract class RowColInfoStore
     /// <param name="heading"></param>
     public void SetHeadings(int indexStart, int indexEnd, string heading)
     {
-        _sheet.Commands.ExecuteCommand(new SetHeadingsCommand(indexStart, indexEnd, heading, _axis));
+        Sheet.Commands.ExecuteCommand(new SetHeadingsCommand(indexStart, indexEnd, heading, _axis));
     }
 
     /// <summary>
@@ -382,9 +387,9 @@ public abstract class RowColInfoStore
     /// <param name="count"></param>
     public void InsertAt(int index, int count = 1)
     {
-        var indexToAddAt = Math.Min(_sheet.GetSize(_axis) - 1, Math.Max(index, 0));
+        var indexToAddAt = Math.Min(Sheet.GetSize(_axis) - 1, Math.Max(index, 0));
         var cmd = new InsertRowsColsCommand(indexToAddAt, count, _axis);
-        _sheet.Commands.ExecuteCommand(cmd);
+        Sheet.Commands.ExecuteCommand(cmd);
     }
 
     /// <summary>
@@ -396,7 +401,7 @@ public abstract class RowColInfoStore
     public void SetSize(int indexStart, int indexEnd, double sizePx)
     {
         var cmd = new SetSizeCommand(indexStart, indexEnd, sizePx, _axis);
-        _sheet.Commands.ExecuteCommand(cmd);
+        Sheet.Commands.ExecuteCommand(cmd);
     }
 
     /// <summary>

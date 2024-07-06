@@ -84,9 +84,9 @@
             BackgroundVisible="true"
             BorderThickness="0"
             BackgroundColor="var(--active-header-bg-color)"
-            X="GetColSelectionLeft(interval.start)"
+            X="GetColSelectionLeft(interval.Start)"
             Y="0"
-            Width="@(GetColSelectionWidth(interval.start, interval.end - interval.start + 1) - 1)"
+            Width="@(GetColSelectionWidth(interval.Start, interval.End - interval.Start + 1) - 1)"
             Height="@(CellLayoutProvider.ColHeadingHeight - 1)">
         </BoxOverlayRenderer>
     }
@@ -103,9 +103,9 @@
             BorderThickness="0"
             BackgroundColor="var(--active-header-bg-color)"
             X="0"
-            Y="GetRowSelectionTop(interval.start)"
+            Y="GetRowSelectionTop(interval.Start)"
             Width="@(CellLayoutProvider.RowHeadingWidth - 1)"
-            Height="@(GetRowSelectionHeight(interval.start, interval.end - interval.start + 1) - 1)">
+            Height="@(GetRowSelectionHeight(interval.Start, interval.End - interval.Start + 1) - 1)">
         </BoxOverlayRenderer>
     }
 </Portal>

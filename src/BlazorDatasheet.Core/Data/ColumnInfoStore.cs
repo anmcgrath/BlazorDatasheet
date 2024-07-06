@@ -1,10 +1,13 @@
+using BlazorDatasheet.Core.Data.Filter;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.DataStructures.Intervals;
 
 namespace BlazorDatasheet.Core.Data;
 
 public class ColumnInfoStore : RowColInfoStore
 {
-    
+    private Dictionary<int, IColumnFilter> _filters = new();
+
     public ColumnInfoStore(double defaultWidth, Sheet sheet) : base(defaultWidth, sheet, Axis.Col)
     {
     }
@@ -48,5 +51,61 @@ public class ColumnInfoStore : RowColInfoStore
     public double GetVisualTop(int colIndex)
     {
         return CumulativeSizeStore.GetCumulative(colIndex);
+    }
+
+    public void SetFilter(int column, IColumnFilter filter)
+    {
+        if (!_filters.TryAdd(column, filter))
+            _filters[column] = filter;
+    }
+
+    public IColumnFilter? GetFilter(int column)
+    {
+        if (_filters.TryGetValue(column, out var columnFilter))
+            return columnFilter;
+        return null;
+    }
+
+    public void ApplyFilter(int column)
+    {
+        if (!_filters.TryGetValue(column, out var columnFilter))
+            return;
+
+        int hiddenStart = 0;
+        int hiddenEnd = -1;
+
+        var hidden = new List<Interval>();
+
+        var nonEmptyCells = Sheet.Cells.GetNonEmptyCellValues(new ColumnRegion(column));
+        foreach (var (row, col, cell) in nonEmptyCells)
+        {
+            if (columnFilter.Match(cell))
+            {
+                hiddenEnd = row - 1;
+                if (hiddenEnd >= hiddenStart)
+                    hidden.Add(new Interval(hiddenStart, hiddenEnd));
+                hiddenStart = row + 1;
+            }
+        }
+
+        if (hiddenStart >= hiddenEnd && hiddenStart < Sheet.NumRows)
+            hidden.Add(new Interval(hiddenStart, Sheet.NumRows - 1));
+
+
+        Sheet.Rows.Unhide(0, Sheet.NumRows);
+        
+        Sheet.Commands.BeginCommandGroup();
+
+        foreach (var interval in hidden)
+        {
+            Sheet.Rows.Hide(interval.Start, interval.End - interval.Start + 1);
+        }
+
+        Sheet.Commands.EndCommandGroup();
+    }
+
+    public void ClearFilters()
+    {
+        _filters.Clear();
     }
 }

@@ -12,6 +12,7 @@
 @using BlazorDatasheet.Core.Commands
 @using BlazorDatasheet.Core.Commands.Data
 @using BlazorDatasheet.Core.Commands.RowCols
+@using BlazorDatasheet.Core.Data.Filter
 
 <PageTitle>Index</PageTitle>
 
@@ -61,11 +62,17 @@
     <label for="show-formula-dependents">Show formula dependents</label>
 </div>
 
+<div>
+    <input @bind="FilterValue"/>
+    <button @onclick="ApplyFilter">Apply</button>
+</div>
+
 @code {
 
     private Sheet Sheet;
     private string Theme => IsDarkMode ? "dark" : "default";
     private bool _isDarkMode;
+    private string FilterValue { get; set; }
 
     private bool IsDarkMode
     {
@@ -255,6 +262,15 @@
             }
         };
         Sheet.SetFormat(selectionRegions, format);
+    }
+
+    private void ApplyFilter()
+    {
+        if (!string.IsNullOrEmpty(FilterValue))
+        {
+            Sheet.Columns.SetFilter(0, new PatternFilter(PatternFilterType.Contains, FilterValue));
+            Sheet.Columns.ApplyFilter(0);
+        }
     }
 
 }
