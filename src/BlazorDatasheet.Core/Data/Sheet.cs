@@ -32,6 +32,11 @@ public class Sheet
     public int NumCols { get; private set; }
 
     /// <summary>
+    /// The total area (Num Rows x Num Cols) of the sheet.
+    /// </summary>
+    public int Area => NumRows * NumCols;
+
+    /// <summary>
     /// Start/finish edits.
     /// </summary>
     public Editor Editor { get; }
