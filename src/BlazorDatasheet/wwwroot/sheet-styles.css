@@ -97,8 +97,6 @@
     table-layout: fixed;
     border-collapse: separate;
     border-spacing: 0;
-    border-top: var(--sheet-border-style);
-    border-left: var(--sheet-border-style);
 }
 
 .sheet-table td, th {
@@ -107,10 +105,9 @@
 }
 
 .col-sticky {
-    box-shadow: 0 4px 6px -6px var(--shadow-overlay-color);
     position: sticky;
     top: 0;
-    z-index: 3;
+    z-index: 5;
 }
 
 .col-nonsticky {
@@ -125,7 +122,8 @@
 
 .row-head {
     text-align: right;
-    background: var(--row-header-bg-color)
+    background: var(--row-header-bg-color);
+    border-left: var(--sheet-border-style);
 }
 
 .row-head :hover {
@@ -134,6 +132,7 @@
 
 .col-head {
     background: var(--row-header-bg-color);
+    border-top: var(--sheet-border-style);
 }
 
 .col-head :hover {

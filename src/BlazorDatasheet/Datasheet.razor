@@ -1,13 +1,9 @@
-@using BlazorDatasheet.Core.Layout
-@using BlazorDatasheet.DataStructures.Geometry
-@using BlazorDatasheet.Formula.Functions.Logical
 @using Microsoft.JSInterop;
 @inject IJSRuntime JS
 @inject IWindowEventService _windowEventService;
 @implements IDisposable;
 @using BlazorDatasheet.Services
 @using BlazorDatasheet.Menu
-@using BlazorDatasheet.Render.DefaultComponents
 @using BlazorDatasheet.Portal
 @using BlazorDatasheet.Render
 @inherits SheetComponentBase
@@ -87,10 +83,10 @@
                             {
                                 <thead class="@(this.StickyHeadings ? "col-sticky" : "")">
                                 <tr style="height: @(_cellLayoutProvider.ColHeadingHeight)px;">
-                                    @if (ShowRowHeadings)
+                                    @if (ShowRowHeadings) // the bit to the left of col headings
                                     {
                                         <th></th>
-                                        <th style="z-index: 4;" class="col-head @(StickyHeadings ? "row-sticky" : "")"></th>
+                                        <th style="z-index: 4;" class="col-head row-head @(StickyHeadings ? "row-sticky col-sticky" : "")"></th>
                                     }
 
                                     <!-- Virtualisation column -->
