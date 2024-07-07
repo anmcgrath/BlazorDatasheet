@@ -206,12 +206,18 @@ public abstract class RowColInfoStore
 
     public void Hide(int start, int count)
     {
+        if (count == 0)
+            return;
+
         var cmd = new HideCommand(start, start + count - 1, _axis);
         Sheet.Commands.ExecuteCommand(cmd);
     }
 
     public void Unhide(int start, int count)
     {
+        if (count == 0)
+            return;
+
         var cmd = new UnhideCommand(start, start + count - 1, _axis);
         Sheet.Commands.ExecuteCommand(cmd);
     }
@@ -253,7 +259,7 @@ public abstract class RowColInfoStore
 
         if (nextNonVisibleInterval == null)
             return -1;
-        
+
         return nextIndex;
     }
 
