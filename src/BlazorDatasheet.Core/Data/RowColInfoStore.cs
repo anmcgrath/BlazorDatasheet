@@ -251,6 +251,9 @@ public abstract class RowColInfoStore
         if (nextIndex >= Sheet.GetSize(_axis) || nextIndex < 0)
             return -1;
 
+        if (nextNonVisibleInterval == null)
+            return -1;
+        
         return nextIndex;
     }
 
