@@ -81,6 +81,24 @@ public class Sheet
     /// </summary>
     public Selection Selection { get; }
 
+    /// <summary>
+    /// Whether the UI associated with the sheet should be updating
+    /// </summary>
+    public bool ScreenUpdating
+    {
+        get => _screenUpdating;
+        set
+        {
+            if (_screenUpdating != value)
+            {
+                _screenUpdating = value;
+                ScreenUpdatingChanged?.Invoke(this, new SheetScreenUpdatingEventArgs(value));
+            }
+        }
+    }
+
+    private bool _screenUpdating = true;
+
     internal IDialogService? Dialog { get; private set; }
 
     #region EVENTS
@@ -93,6 +111,11 @@ public class Sheet
     public event EventHandler<BeforeRangeSortEventArgs>? BeforeRangeSort;
 
     public event EventHandler<RangeSortedEventArgs>? RangeSorted;
+
+    /// <summary>
+    /// Fired when <see cref="ScreenUpdating"/> is changed
+    /// </summary>
+    public EventHandler<SheetScreenUpdatingEventArgs>? ScreenUpdatingChanged;
 
     #endregion
 

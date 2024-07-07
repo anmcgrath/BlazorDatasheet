@@ -91,10 +91,8 @@ public class ColumnInfoStore : RowColInfoStore
         if (hiddenStart >= hiddenEnd && hiddenStart < Sheet.NumRows)
             hidden.Add(new Interval(hiddenStart, Sheet.NumRows - 1));
 
-
-        Sheet.Rows.Unhide(0, Sheet.NumRows);
-        
         Sheet.Commands.BeginCommandGroup();
+        Sheet.Rows.Unhide(0, Sheet.NumRows);
 
         foreach (var interval in hidden)
         {

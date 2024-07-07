@@ -154,7 +154,6 @@
             var resizeWidth = Math.Max(_minResizeWidth, CellLayoutProvider.ComputeWidth(ActiveResizerIndex, 1) + CurrentColResizeAmount);
             if (Sheet.Selection.Regions.All(x => x is ColumnRegion) && Sheet.Selection.Regions.Any(x => x.SpansCol(ActiveResizerIndex)))
             {
-                Sheet.BatchUpdates();
                 Sheet.Commands.BeginCommandGroup();
                 foreach (var region in Sheet.Selection.Regions.Cast<ColumnRegion>())
                 {
@@ -165,7 +164,6 @@
                 }
 
                 Sheet.Commands.EndCommandGroup();
-                Sheet.EndBatchUpdates();
             }
             else
             {
@@ -191,7 +189,6 @@
 
     private void UpdateIntervals()
     {
-        
         StateHasChanged();
     }
 

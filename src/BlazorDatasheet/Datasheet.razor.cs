@@ -1,9 +1,11 @@
+using System.Diagnostics;
 using System.Text;
 using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Edit;
 using BlazorDatasheet.Core.Events;
+using BlazorDatasheet.Core.Events.Visual;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Core.Layout;
 using BlazorDatasheet.Core.Util;
@@ -240,6 +242,9 @@ public partial class Datasheet : SheetComponentBase
 
     private IJSObjectReference _virtualizer = null!;
 
+    private bool _refreshViewportRequested = false;
+    private bool _renderRequested = false;
+
     protected override void OnInitialized()
     {
         _windowEventService = new WindowEventService(JS);
@@ -262,6 +267,7 @@ public partial class Datasheet : SheetComponentBase
             _sheetLocal.Columns.Removed += async (_, _) => await RefreshViewport();
             _sheetLocal.Rows.SizeModified += async (_, _) => await RefreshViewport();
             _sheetLocal.Columns.SizeModified += async (_, _) => await RefreshViewport();
+            _sheetLocal.ScreenUpdatingChanged += ScreenUpdatingChanged;
 
             _cellLayoutProvider = new CellLayoutProvider(_sheetLocal);
             _visualSheet = new VisualSheet(_sheetLocal);
@@ -288,6 +294,15 @@ public partial class Datasheet : SheetComponentBase
         base.OnParametersSet();
     }
 
+    private async void ScreenUpdatingChanged(object? sender, SheetScreenUpdatingEventArgs e)
+    { 
+        if (e.IsScreenUpdating && _refreshViewportRequested)
+            await RefreshViewport();
+
+        if (e.IsScreenUpdating && _renderRequested)
+            this.StateHasChanged();
+    }
+
     private Type GetCellRendererType(string type)
     {
         if (CustomCellTypeDefinitions.TryGetValue(type, out var definition))
@@ -307,6 +322,13 @@ public partial class Datasheet : SheetComponentBase
 
     protected override bool ShouldRender()
     {
+        _renderRequested = true;
+        if (!Sheet.ScreenUpdating)
+            return false;
+
+        if (SheetIsDirty || DirtyRows.Any())
+            Console.WriteLine("Sheet rendered " + GetStack(1, 8));
+
         return SheetIsDirty || DirtyRows.Any();
     }
 
@@ -341,8 +363,36 @@ public partial class Datasheet : SheetComponentBase
             await module.DisposeAsync();
         }
 
+        _renderRequested = false;
         SheetIsDirty = false;
         DirtyRows.Clear();
+    }
+
+    private string GetStack(int skip, int limit)
+    {
+        var stackTrace = new StackTrace();
+        var frames = stackTrace.GetFrames();
+        if (frames == null)
+            return string.Empty;
+
+        var sb = new StringBuilder();
+        int count = 1;
+        int n = 0;
+        foreach (var frame in frames)
+        {
+            if (n < skip)
+            {
+                n++;
+                continue;
+            }
+
+            if (count > limit)
+                break;
+            sb.Append("<-" + frame.GetMethod().Name);
+            count++;
+        }
+
+        return sb.ToString();
     }
 
     /// <summary>
@@ -370,6 +420,10 @@ public partial class Datasheet : SheetComponentBase
 
     private async Task RefreshViewport()
     {
+        _refreshViewportRequested = true;
+        if (!Sheet.ScreenUpdating)
+            return;
+
         // Get the most up-to-date positioning of the visible sheet region in the
         // scroll container, then update the viewport to include overflows
         var vInfo =
@@ -386,6 +440,7 @@ public partial class Datasheet : SheetComponentBase
 
         SheetIsDirty = true;
         _visualSheet.UpdateViewport(newViewport);
+        _refreshViewportRequested = false;
     }
 
     private async Task AddWindowEventsAsync()

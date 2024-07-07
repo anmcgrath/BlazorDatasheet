@@ -35,16 +35,19 @@ internal class InsertRowsColsCommand : IUndoableCommand
 
     public bool Execute(Sheet sheet)
     {
+        sheet.ScreenUpdating = false;
         _validatorRestoreData = sheet.Validators.Store.InsertRowColAt(_index, _count, _axis);
         _cellStoreRestoreData = sheet.Cells.InsertRowColAt(_index, _count, _axis);
         _cfRestoreData = sheet.ConditionalFormats.InsertRowColAt(_index, _count, _axis);
         _rowColInfoRestoreData = sheet.GetRowColStore(_axis).InsertImpl(_index, _count);
         sheet.Add(_axis, _count);
+        sheet.ScreenUpdating = true;
         return true;
     }
 
     public bool Undo(Sheet sheet)
     {
+        sheet.ScreenUpdating = false;
         sheet.Validators.Store.Restore(_validatorRestoreData);
         sheet.Cells.Restore(_cellStoreRestoreData);
         sheet.ConditionalFormats.Restore(_cfRestoreData);
@@ -55,6 +58,7 @@ internal class InsertRowsColsCommand : IUndoableCommand
             ? new ColumnRegion(_index, sheet.NumCols)
             : new RowRegion(_index, sheet.NumRows);
         sheet.MarkDirty(dirtyRegion);
+        sheet.ScreenUpdating = true;
         return true;
     }
 }
