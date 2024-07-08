@@ -23,8 +23,8 @@ public class CellLayoutProvider : IGridLayoutProvider
     public double TotalHeight =>
         _sheet.Rows.GetVisualHeightBetween(0, _sheet.NumRows) + (IncludeColHeadings ? ColHeadingHeight : 0);
 
-    public double RowHeadingWidth => 60;
-    public double ColHeadingHeight => _sheet.Rows.DefaultSize;
+    public double RowHeadingWidth => _sheet.Rows.HeadingWidth;
+    public double ColHeadingHeight => _sheet.Columns.HeadingHeight;
 
     public bool IncludeRowHeadings { get; set; }
     public bool IncludeColHeadings { get; set; }

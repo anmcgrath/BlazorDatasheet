@@ -8,7 +8,22 @@ public class ColumnInfoStore : RowColInfoStore
 {
     private Dictionary<int, IColumnFilter> _filters = new();
 
-    public ColumnInfoStore(double defaultWidth, Sheet sheet) : base(defaultWidth, sheet, Axis.Col)
+    private double _headingHeight = 24;
+
+    /// <summary>
+    /// The height (in px) of column headings
+    /// </summary>
+    public double HeadingHeight
+    {
+        get => _headingHeight;
+        set
+        {
+            _headingHeight = value;
+            EmitSizeModified(-1, -1);
+        }
+    }
+
+    public ColumnInfoStore(double defaultHeight, Sheet sheet) : base(defaultHeight, sheet, Axis.Col)
     {
     }
 

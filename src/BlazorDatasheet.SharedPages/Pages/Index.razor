@@ -47,8 +47,8 @@
     <button @onclick="@(() => SetBorder(Sheet.Selection.Regions, 2, "black"))">Thick border</button>
     <button @onclick="@(() => SetBorder(Sheet.Selection.Regions, 1, "black"))">Thin border</button>
     <button @onclick="@(() => Sheet.Cells.Merge(Sheet.Selection.Regions))">Merge cells</button>
-    <button @onclick="@(SortSelectionDesc)">Sort Desc</button>
-    <button @onclick="@(SortSelectionAsc)">Sort ASc</button>
+    <button @onclick="@SortSelectionDesc">Sort Desc</button>
+    <button @onclick="@SortSelectionAsc">Sort ASc</button>
     <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { NumberFormat = "C2" }))">Currency</button>
 </div>
 
@@ -214,6 +214,7 @@
         }, false);
 
         Sheet = new Sheet(100, 100);
+        Sheet.ScreenUpdating = false;
         Sheet.BatchUpdates();
         Sheet.Commands.PauseHistory();
         Sheet.Validators.Add(4, 0, new NumberValidator(true));
@@ -282,6 +283,7 @@
 
         Sheet.EndBatchUpdates();
         Sheet.Commands.ResumeHistory();
+        Sheet.ScreenUpdating = true;
     }
 
     private void SetBorder(IReadOnlyList<IRegion> selectionRegions, int width, string color)

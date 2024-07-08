@@ -287,7 +287,7 @@ public partial class Datasheet : SheetComponentBase
                 _visualSheet.UpdateViewport(vp);
             }
         }
-        
+
         _cellLayoutProvider.IncludeColHeadings = ShowColHeadings;
         _cellLayoutProvider.IncludeRowHeadings = ShowRowHeadings;
 
@@ -295,7 +295,7 @@ public partial class Datasheet : SheetComponentBase
     }
 
     private async void ScreenUpdatingChanged(object? sender, SheetScreenUpdatingEventArgs e)
-    { 
+    {
         if (e.IsScreenUpdating && _refreshViewportRequested)
             await RefreshViewport();
 
@@ -325,9 +325,6 @@ public partial class Datasheet : SheetComponentBase
         _renderRequested = true;
         if (!Sheet.ScreenUpdating)
             return false;
-
-        if (SheetIsDirty || DirtyRows.Any())
-            Console.WriteLine("Sheet rendered " + GetStack(1, 8));
 
         return SheetIsDirty || DirtyRows.Any();
     }
@@ -366,33 +363,6 @@ public partial class Datasheet : SheetComponentBase
         _renderRequested = false;
         SheetIsDirty = false;
         DirtyRows.Clear();
-    }
-
-    private string GetStack(int skip, int limit)
-    {
-        var stackTrace = new StackTrace();
-        var frames = stackTrace.GetFrames();
-        if (frames == null)
-            return string.Empty;
-
-        var sb = new StringBuilder();
-        int count = 1;
-        int n = 0;
-        foreach (var frame in frames)
-        {
-            if (n < skip)
-            {
-                n++;
-                continue;
-            }
-
-            if (count > limit)
-                break;
-            sb.Append("<-" + frame.GetMethod().Name);
-            count++;
-        }
-
-        return sb.ToString();
     }
 
     /// <summary>

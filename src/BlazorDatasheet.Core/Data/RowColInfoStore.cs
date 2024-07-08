@@ -91,8 +91,13 @@ public abstract class RowColInfoStore
             SizesRestoreData = SizeStore.Set(start, end, size)
         };
 
-        SizeModified?.Invoke(this, new SizeModifiedEventArgs(start, end, _axis));
+        EmitSizeModified(start, end);
         return restoreData;
+    }
+
+    protected void EmitSizeModified(int start, int end)
+    {
+        SizeModified?.Invoke(this, new SizeModifiedEventArgs(start, end, _axis));
     }
 
     /// <summary>
@@ -159,7 +164,7 @@ public abstract class RowColInfoStore
         }
 
         Sheet.MarkDirty(GetSpannedRegion(0, int.MaxValue));
-        SizeModified?.Invoke(this, new SizeModifiedEventArgs(start, start + count - 1, _axis));
+        EmitSizeModified(start, start + count - 1);
 
         return restoreData;
     }
@@ -170,7 +175,7 @@ public abstract class RowColInfoStore
         var changedCumulativeSizes = CumulativeSizeStore.Set(start, start + count - 1, 0);
 
         Sheet.MarkDirty(GetSpannedRegion(0, int.MaxValue));
-        SizeModified?.Invoke(this, new SizeModifiedEventArgs(start, start + count - 1, _axis));
+        EmitSizeModified(start, start + count - 1);
 
         return new RowColInfoRestoreData()
         {
@@ -318,7 +323,7 @@ public abstract class RowColInfoStore
         foreach (var change in data.CumulativeSizesRestoreData.RemovedIntervals.Concat(data.CumulativeSizesRestoreData
                      .AddedIntervals))
         {
-            SizeModified?.Invoke(this, new SizeModifiedEventArgs(change.Start, change.End, _axis));
+            EmitSizeModified(change.Start, change.End);
         }
     }
 

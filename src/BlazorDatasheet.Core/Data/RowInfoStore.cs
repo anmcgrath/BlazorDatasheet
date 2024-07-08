@@ -4,10 +4,24 @@ namespace BlazorDatasheet.Core.Data;
 
 public class RowInfoStore : RowColInfoStore
 {
+    private double _headingWidth = 60;
+
     public RowInfoStore(double defaultSize, Sheet sheet) : base(defaultSize, sheet, Axis.Row)
     {
     }
 
+    /// <summary>
+    /// The width (in px) of row headings.
+    /// </summary>
+    public double HeadingWidth
+    {
+        get => _headingWidth;
+        set
+        {
+            _headingWidth = value;
+            EmitSizeModified(-1, -1);
+        }
+    }
 
     /// <summary>
     /// Returns the row index at the position <paramref name="yPosition"/>
