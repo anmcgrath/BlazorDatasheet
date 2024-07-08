@@ -39,9 +39,10 @@
     if (!Sheet.Columns.IsVisible(i))
         continue;
 
+    var leftBorderClass = !IsRowHeadingsVisible && col == _sheet?.Columns.FirstVisible ? "sheet-left" : "";
     var colHeading = Sheet.Columns.GetHeading(i) ?? RangeText.ColNumberToLetters(col);
 
-    <th class="unselectable col-head">
+    <th class="unselectable col-head @leftBorderClass">
         <div style="width: 100%; display: flex; justify-content: start; position: relative; overflow-x: visible;">
             <div class="sheet-cell" data-col="@col" data-row="-1" style="display: flex; justify-content: space-between; width: 100%;">
                 <div>
@@ -81,6 +82,7 @@
     [Parameter] public EventCallback<ColumnMouseEventArgs> OnMouseDown { get; set; }
     [Parameter, EditorRequired] public RenderFragment<HeadingContext> HeadingRenderer { get; set; } = default!;
     [Parameter] public int NCols { get; set; }
+    [Parameter] public bool IsRowHeadingsVisible { get; set; }
     [Parameter] public int ColStart { get; set; }
 
     [CascadingParameter(Name = "DatasheetId")]

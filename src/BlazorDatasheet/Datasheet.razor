@@ -101,6 +101,7 @@
                                         NCols="@_visualSheet.Viewport.VisibleRegion.Width"
                                         ColStart="@_visualSheet.Viewport.VisibleRegion.Left"
                                         CellLayoutProvider="_cellLayoutProvider"
+                                        IsRowHeadingsVisible="@ShowRowHeadings"
                                         Sheet="_sheetLocal">
                                         <HeadingRenderer>
                                             @if (ColumnHeaderTemplate != null)
@@ -212,7 +213,7 @@
                                         RowHasHeading="@ShowRowHeadings"
                                         CustomCellTypeDefinitions="CustomCellTypeDefinitions"
                                         Icons="Icons"
-                                        IsDirty="@DirtyRows.Contains(row) || SheetIsDirty"
+                                        IsDirty="@(DirtyRows.Contains(row) || SheetIsDirty)"
                                         VisualSheet="_visualSheet"
                                         Sheet="_sheetLocal"
                                         Row="row"
