@@ -28,6 +28,11 @@ public abstract class RowColInfoStore
     internal readonly MergeableIntervalStore<CellFormat> Formats = new();
 
     /// <summary>
+    /// The first visible row/column.
+    /// </summary>
+    public int FirstVisible => GetNextVisible(-1, 1);
+
+    /// <summary>
     /// Stores whether each row/column is visible.
     /// The default is true, if the row/colum is NOT visible, there will be
     /// data in the store for that index.

@@ -84,12 +84,12 @@
                         {
                             if (Sheet.NumCols > 0)
                             {
-                                <thead class="@(this.StickyHeadings ? "col-sticky" : "")">
-                                <tr style="height: @(_cellLayoutProvider.ColHeadingHeight)px;">
+                                <thead class="sheet-left @(StickyHeadings ? "col-sticky" : "")">
+                                    <tr style="height: @(_cellLayoutProvider.ColHeadingHeight)px;" class="sheet-top">
                                     @if (ShowRowHeadings) // the bit to the left of col headings
                                     {
                                         <th></th>
-                                        <th style="z-index: 4;" class="col-head row-head @(StickyHeadings ? "row-sticky col-sticky" : "")"></th>
+                                        <th style="z-index: 4;" class="col-head row-head sheet-left @(StickyHeadings ? "row-sticky col-sticky" : "")"></th>
                                     }
 
                                     <!-- Virtualisation column -->
@@ -194,12 +194,14 @@
                                 if (rowHeight == 0)
                                     continue;
 
-                                <tr @key="row" style="max-height:@(rowHeight)px;height:@(rowHeight)px;">
+                                <tr @key="row"
+                                    style="max-height:@(rowHeight)px;height:@(rowHeight)px;"
+                                    class="@(!ShowColHeadings && row == Sheet.Rows.FirstVisible ? "sheet-top" : "")">
 
                                     @if (ShowRowHeadings)
                                     {
                                         <th></th>
-                                        <th class="unselectable row-head @(StickyHeadings ? "row-sticky" : "")">
+                                        <th class="unselectable row-head sheet-left @(StickyHeadings ? "row-sticky" : "")">
                                             <div class="sheet-cell" data-col="-1" data-row="@row">
                                                 @(_sheetLocal.Rows.GetHeading(row) ?? (row + 1).ToString())
                                             </div>
@@ -207,9 +209,10 @@
                                     }
 
                                     <DatasheetRow
+                                        RowHasHeading="@ShowRowHeadings"
                                         CustomCellTypeDefinitions="CustomCellTypeDefinitions"
                                         Icons="Icons"
-                                        IsDirty="@DirtyRows.Contains(row)"
+                                        IsDirty="@DirtyRows.Contains(row) || SheetIsDirty"
                                         VisualSheet="_visualSheet"
                                         Sheet="_sheetLocal"
                                         Row="row"

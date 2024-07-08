@@ -226,8 +226,8 @@
         var w = CellLayoutProvider.ComputeWidth(EditCell.Col, colSpan);
         var h = CellLayoutProvider.ComputeHeight(EditCell.Row, rowSpan);
 
-        sb.AddStyle("left", $"{left + 1}px;");
-        sb.AddStyle("top", $"{top + 1}px;");
+        sb.AddStyle("left", $"{left}px;");
+        sb.AddStyle("top", $"{top}px;");
         sb.AddStyle("min-width", $"{w - 1}px;");
         sb.AddStyle("max-width", $"{w - 1}px;");
         sb.AddStyle("height", $"{h - 1}px;");

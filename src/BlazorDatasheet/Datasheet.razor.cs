@@ -277,9 +277,6 @@ public partial class Datasheet : SheetComponentBase
                 this.StateHasChanged();
             };
 
-            _cellLayoutProvider.IncludeColHeadings = ShowColHeadings;
-            _cellLayoutProvider.IncludeRowHeadings = ShowRowHeadings;
-
             if (!Virtualise)
             {
                 var vp = _cellLayoutProvider
@@ -290,7 +287,11 @@ public partial class Datasheet : SheetComponentBase
                 _visualSheet.UpdateViewport(vp);
             }
         }
+        
+        _cellLayoutProvider.IncludeColHeadings = ShowColHeadings;
+        _cellLayoutProvider.IncludeRowHeadings = ShowRowHeadings;
 
+        this.ForceReRender();
         base.OnParametersSet();
     }
 

@@ -93,13 +93,24 @@
     border: var(--sheet-border-style);
 }
 
+.sheet-left {
+    border-left: var(--sheet-border-style);
+}
+
+.sheet-top {
+}
+
 .sheet-table {
     table-layout: fixed;
     border-collapse: separate;
     border-spacing: 0;
 }
 
-.sheet-table td, th {
+.sheet-top td, .sheet-top th {
+    border-top: var(--sheet-border-style);
+}
+
+.sheet-table td, .sheet-table th {
     border-right: var(--sheet-border-style);
     border-bottom: var(--sheet-border-style);
 }
@@ -123,7 +134,6 @@
 .row-head {
     text-align: right;
     background: var(--row-header-bg-color);
-    border-left: var(--sheet-border-style);
 }
 
 .row-head :hover {
@@ -132,7 +142,6 @@
 
 .col-head {
     background: var(--row-header-bg-color);
-    border-top: var(--sheet-border-style);
 }
 
 .col-head :hover {
