@@ -291,7 +291,6 @@ public partial class Datasheet : SheetComponentBase
         _cellLayoutProvider.IncludeColHeadings = ShowColHeadings;
         _cellLayoutProvider.IncludeRowHeadings = ShowRowHeadings;
 
-        this.ForceReRender();
         base.OnParametersSet();
     }
 
