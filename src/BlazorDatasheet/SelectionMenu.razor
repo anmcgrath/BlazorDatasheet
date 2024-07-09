@@ -20,10 +20,13 @@
             }
         </MenuSection>
 
-        <SheetMenuDivider/>
-
         @if (sheet.Selection.Regions.Count == 1 && sheet.Selection.ActiveRegion is ColumnRegion c)
         {
+            @if (CanUserInsertCols || CanUserRemoveCols || CanUserHideCols)
+            {
+                <SheetMenuDivider/>
+            }
+
             @if (CanUserInsertCols)
             {
                 <SheetMenuItem OnClick="() => sheet.Columns.InsertAt(c.Left, c.Width)">Insert column(s) left</SheetMenuItem>
@@ -33,21 +36,22 @@
             {
                 <SheetMenuItem OnClick="() => sheet.Columns.RemoveAt(c.Left, c.Width)">Delete column(s)</SheetMenuItem>
             }
-            
+
             @if (CanUserHideCols)
             {
+                <SheetMenuDivider/>
                 <SheetMenuItem OnClick="() => sheet.Columns.Hide(c.Left, c.Width)">Hide column(s)</SheetMenuItem>
                 <SheetMenuItem OnClick="() => sheet.Columns.Unhide(c.Left, c.Width)">Un-hide column(s)</SheetMenuItem>
-            }
-
-            @if (CanUserInsertCols || CanUserRemoveCols || CanUserHideCols)
-            {
-                <SheetMenuDivider/>
             }
         }
 
         @if (sheet.Selection.Regions.Count == 1 && sheet.Selection.ActiveRegion is RowRegion r)
         {
+            @if (CanUserInsertRows || CanUserRemoveRows || CanUserHideRows)
+            {
+                <SheetMenuDivider/>
+            }
+
             @if (CanUserInsertRows)
             {
                 <SheetMenuItem OnClick="() => sheet.Rows.InsertAt(r.Top, r.Height)">Insert row(s) above</SheetMenuItem>
@@ -57,21 +61,18 @@
             {
                 <SheetMenuItem OnClick="() => sheet.Rows.RemoveAt(r.Top, r.Height)">Delete row(s)</SheetMenuItem>
             }
-            
+
             @if (CanUserHideRows)
             {
+                <SheetMenuDivider/>
                 <SheetMenuItem OnClick="() => sheet.Rows.Hide(r.Top, r.Height)">Hide row(s)</SheetMenuItem>
                 <SheetMenuItem OnClick="() => sheet.Rows.Unhide(r.Top, r.Height)">Un-hide row(s)</SheetMenuItem>
-            }
-
-            @if (CanUserInsertRows || CanUserRemoveRows || CanUserHideRows)
-            {
-                <SheetMenuDivider/>
             }
         }
 
         @if (CanUserSort)
         {
+            <SheetMenuDivider/>
             <SheetSubMenu Label="Sort">
                 <SheetMenuItem OnClick="() => sheet.SortRange(sheet.Selection.ActiveRegion)">Sort Ascending</SheetMenuItem>
                 <SheetMenuItem OnClick="() => sheet.SortRange(sheet.Selection.ActiveRegion, new List<ColumnSortOptions>() { new ColumnSortOptions(0, false) })">Sort Descending</SheetMenuItem>
@@ -93,3 +94,4 @@
     [Parameter] public bool CanUserHideCols { get; set; } = true;
 
 }
+
