@@ -47,9 +47,14 @@ class MenuService {
         }
     }
 
-    closeSubMenus(menuId) {
+    closeSubMenus(menuId, exceptions) {
         let children = this.getChildren(menuId)
-        children.forEach(child => this.closeMenu(child.id))
+        children.forEach(child => {
+                if (exceptions.indexOf(child.id) !== -1)
+                    return
+                this.closeMenu(child.id)
+            }
+        )
     }
 
     getChildren(menuId) {

@@ -27,13 +27,14 @@ public interface IMenuService
 
     EventHandler<MenuShownEventArgs>? MenuShown { get; set; }
     EventHandler<BeforeMenuShownEventArgs>? BeforeMenuShown { get; set; }
-    
+
     /// <summary>
-    /// Closes all sub-menus of the menu <paramref name="menuId"/>
+    /// Closes all sub-menus of the menu <paramref name="menuId"/>, except for <paramref name="exceptions"/>
     /// </summary>
-    /// <param name="menuId"></param>
+    /// <param name="menuId">The menu ID that contains the sub-menus to close</param>
+    /// <param name="exceptions">A list of sub-menu IDs that should stay open</param>
     /// <returns></returns>
-    Task CloseSubMenus(string menuId);
+    Task CloseSubMenus(string menuId, string[]? exceptions = null);
 
     /// <summary>
     /// Returns whether the menu with id <paramref name="id"/> is open.

@@ -17,9 +17,9 @@ public class MenuService : IMenuService, IAsyncDisposable
 
     private List<string> _openMenus = new();
 
-    public async Task CloseSubMenus(string menuId)
+    public async Task CloseSubMenus(string menuId, string[]? exceptions)
     {
-        await _menuJs!.InvokeVoidAsync("closeSubMenus", menuId);
+        await _menuJs!.InvokeVoidAsync("closeSubMenus", menuId, exceptions ?? []);
     }
 
     private string Id = Guid.NewGuid().ToString();
