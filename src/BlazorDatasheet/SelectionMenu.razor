@@ -1,9 +1,13 @@
-@using BlazorDatasheet.Core.Commands
 @using BlazorDatasheet.Core.Commands.Data
-@using BlazorDatasheet.Core.Commands.RowCols
 @using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Data.Filter
+@using BlazorDatasheet.Core.Formats
 @using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Formula.Core
 @using BlazorDatasheet.Menu
+@using BlazorDatasheet.Services
+@inject IMenuService MenuService;
+
 <SheetMenu MenuId="@ContextMenus.Selection">
 
     @{
@@ -18,6 +22,11 @@
             {
                 <SheetMenuItem OnClick="() => sheet.Cells.Merge(sheet.Selection.Regions)">Merge</SheetMenuItem>
             }
+            <SheetSubMenu Label="Alignment">
+                <SheetMenuItem OnClick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { TextAlign = "left" }))">Left</SheetMenuItem>
+                <SheetMenuItem OnClick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { TextAlign = "center" }))">Centre</SheetMenuItem>
+                <SheetMenuItem OnClick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { TextAlign = "right" }))">Right</SheetMenuItem>
+            </SheetSubMenu>
         </MenuSection>
 
         @if (sheet.Selection.Regions.Count == 1 && sheet.Selection.ActiveRegion is ColumnRegion c)
