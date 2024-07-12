@@ -87,6 +87,19 @@
                 <SheetMenuItem OnClick="() => sheet.SortRange(sheet.Selection.ActiveRegion, new List<ColumnSortOptions>() { new ColumnSortOptions(0, false) })">Sort Descending</SheetMenuItem>
             </SheetSubMenu>
         }
+
+        @if (CanUserFilter &&
+             sheet.Selection.Regions.Count == 1 &&
+             sheet.Selection.ActiveRegion is ColumnRegion colRegion &&
+             colRegion.Width == 1)
+        {
+            <SheetSubMenu Label="Filter" @ref="_filterSubMenu">
+                <ColumnFilterEditor
+                    DistinctColumnData="@DistinctColumnData"
+                    ValueFilter="ActiveValueFilter"
+                    ColumnIndex="@sheet.Selection.ActiveRegion.Left"/>
+            </SheetSubMenu>
+        }
     }
 
 </SheetMenu>
@@ -101,6 +114,40 @@
     [Parameter] public bool CanUserMergeRange { get; set; } = true;
     [Parameter] public bool CanUserHideRows { get; set; } = true;
     [Parameter] public bool CanUserHideCols { get; set; } = true;
+    [Parameter] public bool CanUserFilter { get; set; } = true;
+
+    private IColumnFilter? ActiveColumnFilter { get; set; }
+    private List<CellValue> DistinctColumnData { get; set; }
+    private ValueFilter ActiveValueFilter { get; set; } = null!;
+
+    private SheetSubMenu _filterSubMenu = default!;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            MenuService.MenuShown += async (sender, args) =>
+            {
+                if (args.MenuId == _filterSubMenu?.SubMenuId)
+                {
+                    var sheet = args.Context as Sheet;
+                    if (sheet == null)
+                        return;
+
+                    if (!CanUserFilter)
+                        return;
+
+                    if (sheet.Selection.ActiveRegion is ColumnRegion cr &&
+                        sheet.Selection.Regions.Count == 1 &&
+                        cr.Width == 1)
+                    {
+                        DistinctColumnData = await sheet.GetDistinctColumnDataAsync(cr.Left);
+                        ActiveValueFilter = new ValueFilter();
+                        ActiveValueFilter.SetValues(DistinctColumnData);
+                    }
+                }
+            };
+        }
+    }
 
 }
-

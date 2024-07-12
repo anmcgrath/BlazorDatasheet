@@ -1,6 +1,4 @@
-using System.Diagnostics;
 using System.Text;
-using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Edit;
@@ -9,13 +7,11 @@ using BlazorDatasheet.Core.Events.Visual;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Core.Layout;
 using BlazorDatasheet.Core.Util;
-using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Edit;
 using BlazorDatasheet.Events;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Render.DefaultComponents;
 using BlazorDatasheet.Services;
-using BlazorDatasheet.Util;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
@@ -103,6 +99,12 @@ public partial class Datasheet : SheetComponentBase
     /// </summary>
     [Parameter]
     public bool CanUserSort { get; set; } = true;
+
+    /// <summary>
+    /// If set to true, the user can filter columns using the context menu.
+    /// </summary>
+    [Parameter]
+    public bool CanUserFilter { get; set; } = true;
 
     /// <summary>
     /// If set to true, the user can merge regions using the context menu.
@@ -540,6 +542,9 @@ public partial class Datasheet : SheetComponentBase
     private async Task<bool> HandleWindowKeyDown(KeyboardEventArgs e)
     {
         if (!IsDataSheetActive)
+            return false;
+
+        if (_menuService.IsMenuOpen())
             return false;
 
         var editorHandled = _editorManager.HandleKeyDown(e.Key, e.CtrlKey, e.ShiftKey, e.AltKey, e.MetaKey);

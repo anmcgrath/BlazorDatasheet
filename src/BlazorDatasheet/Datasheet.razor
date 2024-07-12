@@ -1,6 +1,7 @@
 @using Microsoft.JSInterop;
 @inject IJSRuntime JS
 @inject IWindowEventService _windowEventService;
+@inject IMenuService _menuService;
 @implements IDisposable;
 @using BlazorDatasheet.Services
 @using BlazorDatasheet.Menu
@@ -20,6 +21,7 @@
         <!-- Register Menus -->
         <SelectionMenu
             CanUserSort="@CanUserSort"
+            CanUserFilter="@CanUserFilter"
             CanUserMergeRange="@CanUserMergeRows"
             CanUserInsertCols="@CanUserInsertCols"
             CanUserInsertRows="@CanUserInsertRows"
@@ -85,7 +87,7 @@
                             if (Sheet.NumCols > 0)
                             {
                                 <thead class="sheet-left @(StickyHeadings ? "col-sticky" : "")">
-                                    <tr style="height: @(_cellLayoutProvider.ColHeadingHeight)px;" class="sheet-top">
+                                <tr style="height: @(_cellLayoutProvider.ColHeadingHeight)px;" class="sheet-top">
                                     @if (ShowRowHeadings) // the bit to the left of col headings
                                     {
                                         <th></th>

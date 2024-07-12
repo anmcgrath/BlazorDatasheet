@@ -559,6 +559,26 @@ public class Sheet
         return strBuilder.ToString();
     }
 
+    public async Task<List<CellValue>> GetDistinctColumnDataAsync(int column)
+    {
+        // TODO: Allow custom function for get column data
+        if (column < 0 || column > NumCols - 1)
+            return new List<CellValue>();
+
+        var cells = Cells.GetNonEmptyCellValues(new ColumnRegion(column))
+            .Select(x => x.value)
+            .DistinctBy(x => x.Data)
+            .ToList();
+
+        if (cells.Count != this.NumRows)
+        {
+            // there are blanks in the column
+            cells.Add(CellValue.Empty);
+        }
+
+        return cells;
+    }
+
     /// <summary>
     /// Returns the size (number of rows or columns) across the specified axis
     /// </summary>

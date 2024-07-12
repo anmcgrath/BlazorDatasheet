@@ -1,0 +1,50 @@
+@using BlazorDatasheet.Core.Data.Filter
+@using BlazorDatasheet.Formula.Core
+
+<div style="margin: 4px 8px; display: block; max-height: 100px; overflow-y: scroll;">
+    <div>
+        @{
+            var indx = 0;
+        }
+        @if (DistinctColumnData != null)
+        {
+            @foreach (var val in DistinctColumnData)
+            {
+                <div style="display: block;">
+                    <input type="checkbox"
+                           @onchange="e => SetValue(val, e.Value)"
+                           checked="@ValueFilter.Includes(val)"
+                           id="@indx"/>
+                    <label for="@indx">@val.ToString()</label>
+                </div>
+                indx++;
+            }
+        }
+    </div>
+</div>
+
+<div style="display: flex; flex-direction: row; justify-content: space-between;">
+    <button class="sheet-button" style="width: 80px; margin: 4px 8px;">Cancel</button>
+    <button class="sheet-button" style="width: 80px; margin: 4px 8px;">OK</button>
+</div>
+
+@code {
+
+    [Parameter] public int ColumnIndex { get; set; }
+
+    [Parameter] public List<CellValue>? DistinctColumnData { get; set; }
+
+    [Parameter] public ValueFilter ValueFilter { get; set; } = null!;
+
+    private void SetValue(CellValue val, object? isChecked)
+    {
+        if (isChecked is bool c)
+        {
+            if (c)
+                ValueFilter.Include(val);
+            else
+                ValueFilter.Exclude(val);
+        }
+    }
+
+}
