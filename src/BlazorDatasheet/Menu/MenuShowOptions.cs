@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Components.Web;
-
 namespace BlazorDatasheet.Menu;
 
 public class MenuShowOptions

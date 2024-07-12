@@ -1,6 +1,7 @@
 @using BlazorDatasheet.Services
 @inject IMenuService MenuService
 @inherits SheetComponentBase
+@implements IMenu
 
 <CascadingValue Value="@MenuId">
     <CascadingValue Value="@CurrentContext">
@@ -41,14 +42,15 @@
 
 @code {
 
-    [Parameter, EditorRequired]
-    public RenderFragment<object?> ChildContent { get; set; } = default!;
+    [Parameter, EditorRequired] public RenderFragment<object?> ChildContent { get; set; } = default!;
 
-    [Parameter]
-    public string MenuId { get; set; } = Guid.NewGuid().ToString();
+    [Parameter] public string MenuId { get; set; } = Guid.NewGuid().ToString();
 
-    [Parameter]
-    public string? ParentMenuId { get; set; } = null;
+    [Parameter] public string? ParentMenuId { get; set; } = null;
+
+    [Parameter] public EventCallback<MenuShownEventArgs> OnMenuOpen { get; set; }
+
+    [Parameter] public EventCallback OnMenuClose { get; set; }
 
     public object? CurrentContext { get; set; } = null;
 
@@ -68,7 +70,7 @@
     {
         if (firstRender)
         {
-            await MenuService.RegisterMenu(MenuId, ParentMenuId);
+            await MenuService.RegisterMenu(MenuId, this, ParentMenuId);
         }
     }
 

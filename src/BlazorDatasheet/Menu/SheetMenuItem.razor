@@ -39,7 +39,7 @@
 
     private async Task HandleMouseOver(MouseEventArgs args)
     {
-        string[] exceptions = SubmenuId == null ? [] : [SubmenuId];
+        string[]? exceptions = SubmenuId == null ? null : [SubmenuId];
         await MenuService.CloseSubMenus(this.MenuId, exceptions);
     }
 

@@ -1,8 +1,9 @@
 class MenuService {
 
-    constructor() {
+    constructor(dotnetHelper) {
         this.menus = [];
         this.activeMenuEls = []
+        this.dotnetHelper = dotnetHelper
 
         window.addEventListener('mousedown', this.handleWindowMouseDown.bind(this))
     }
@@ -74,13 +75,14 @@ class MenuService {
             menuEl.showPopover()
             let self = this
 
-            let onToggle = function (event) {
+            let onToggle = async function (event) {
                 if (!self.menus.some(menu => menu.id === event.target.id)) // if menu doesn't exist
                     return
                 if (event.newState === 'open') {
                     self.activeMenuEls.push(event.target)
                 } else {
                     self.activeMenuEls.splice(self.activeMenuEls.indexOf(event.target), 1)
+                    await self.dotnetHelper.invokeMethodAsync("OnMenuClose", event.target.id)
                     event.target.removeEventListener('toggle', onToggle)
                 }
             }
@@ -171,8 +173,8 @@ class MenuService {
 
 let menuService = null
 
-export function getMenuService() {
+export function getMenuService(dotnetHelper) {
     if (menuService == null)
-        menuService = new MenuService()
+        menuService = new MenuService(dotnetHelper)
     return menuService
 }

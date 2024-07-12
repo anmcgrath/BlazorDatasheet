@@ -5,7 +5,7 @@ namespace BlazorDatasheet.Services;
 
 public interface IMenuService
 {
-    internal Task RegisterMenu(string id, string? parentId = null);
+    internal Task RegisterMenu(string id, IMenu menu, string? parentId = null);
 
     /// <summary>
     /// Shows a menu with the specified <paramref name="menuId"/>
@@ -15,7 +15,7 @@ public interface IMenuService
     /// <param name="context"></param>
     /// <typeparam name="T"></typeparam>
     /// <returns>True if menu is opened, false otherwise.</returns>
-    Task<bool> ShowMenu<T>(string menuId, MenuShowOptions options, T context = default(T));
+    Task<bool> ShowMenuAsync<T>(string menuId, MenuShowOptions options, T context = default(T));
 
     /// <summary>
     /// Closes the menu with the specified <paramref name="menuId"/>
@@ -42,6 +42,12 @@ public interface IMenuService
     /// <param name="id"></param>
     /// <returns></returns>
     bool IsMenuOpen(string id);
+
+    /// <summary>
+    /// Returns whether any menu is open.
+    /// </summary>
+    /// <returns></returns>
+    bool IsMenuOpen();
 
     /// <summary>
     /// Registers a RenderFragment so that it is shown in the menu with id <paramref name="menuId"/> in section no. <paramref name="sectionNo"/>
