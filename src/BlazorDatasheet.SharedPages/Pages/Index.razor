@@ -319,7 +319,8 @@
         if (!string.IsNullOrEmpty(FilterValue))
         {
             Sheet.Columns.SetFilter(0, new PatternFilter(PatternFilterType.Contains, FilterValue));
-            Sheet.Columns.ApplyFilter(0);
+            Sheet.Columns.SetFilter(1, new PatternFilter(PatternFilterType.Contains, FilterValue));
+            Sheet.Columns.ApplyFilters();
         }
     }
 

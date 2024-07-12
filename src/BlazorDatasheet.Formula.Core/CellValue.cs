@@ -361,4 +361,9 @@ public class CellValue : IComparable, IComparable<CellValue>
         var data = (CellValue[][])Data!;
         return data.Length;
     }
+
+    public override int GetHashCode()
+    {
+        return Data == null ? -1 : Data.GetHashCode();
+    }
 }

@@ -10,4 +10,9 @@ public interface IColumnFilter
     /// </summary>
     /// <returns></returns>
     public bool Match(CellValue cellValue);
+
+    /// <summary>
+    /// Whether blank values should always be included.
+    /// </summary>
+    public bool IncludeBlanks { get; }
 }

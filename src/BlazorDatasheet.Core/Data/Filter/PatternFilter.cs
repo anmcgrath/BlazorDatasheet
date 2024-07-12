@@ -37,6 +37,8 @@ public class PatternFilter : IColumnFilter
                 throw new ArgumentOutOfRangeException();
         }
     }
+
+    public bool IncludeBlanks => false;
 }
 
 public enum PatternFilterType
