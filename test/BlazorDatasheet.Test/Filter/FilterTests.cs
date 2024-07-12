@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Filter;
 using BlazorDatasheet.DataStructures.Intervals;
@@ -20,21 +21,18 @@ public class FilterTests
             ["out", "in"],
         ]);
         var patternFilter = new PatternFilter(PatternFilterType.Contains, "in");
-        sheet.Columns.SetFilter(0, patternFilter);
-        sheet.Columns.SetFilter(1, patternFilter);
+        var handler = new FilterHandler();
 
-        sheet.Columns.ApplyFilter(0);
-        sheet.Rows.GetVisibleRows()
+        handler.GetHiddenRows(sheet, new() { { 0, patternFilter } })
             .Should()
-            .BeEquivalentTo<Interval>([new(1, 2)]);
+            .BeEquivalentTo<Interval>([new(0, 0), new(3, sheet.NumRows - 1)]);
 
-        sheet.Columns.ApplyFilter(1);
-        sheet.Rows.GetVisibleRows()
+        handler.GetHiddenRows(sheet, new() { { 1, patternFilter } })
             .Should()
-            .BeEquivalentTo<Interval>([new(0, 0), new(3, 3)]);
+            .BeEquivalentTo<Interval>([new(1, 2), new(4, sheet.NumRows - 1)]);
     }
 
-    /*[Test]
+    [Test]
     public void Pattern_Filter_Matches_When_Single_Value()
     {
         var sheet = new Sheet(100, 100);
@@ -42,17 +40,19 @@ public class FilterTests
         [
             ["out", "in"],
         ]);
+
         var patternFilter = new PatternFilter(PatternFilterType.Contains, "in");
-        patternFilter.GetHiddenRows(sheet, 0)
+        var handler = new FilterHandler();
+        handler.GetHiddenRows(sheet, new() { { 0, patternFilter } })
             .Should().BeEquivalentTo<Interval>(
                 [new(0, 99)]);
 
-        patternFilter.GetHiddenRows(sheet, 1)
+        handler.GetHiddenRows(sheet, new() { { 1, patternFilter } })
             .Should().BeEquivalentTo<Interval>(
                 [new(1, 99)]);
     }
 
-    [Test]
+    /*[Test]
     public void Pattern_Filter_All_Matches_Hides_Nothing()
     {
         var sheet = new Sheet(3, 3);

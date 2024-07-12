@@ -1,6 +1,7 @@
 using BlazorDatasheet.Core.Data.Filter;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Intervals;
+using BlazorDatasheet.DataStructures.Store;
 
 namespace BlazorDatasheet.Core.Data;
 
@@ -81,35 +82,15 @@ public class ColumnInfoStore : RowColInfoStore
         return null;
     }
 
-    public void ApplyFilter(int column)
+    public void ApplyFilters()
     {
-        if (!_filters.TryGetValue(column, out var columnFilter))
-            return;
-
-        int hiddenStart = 0;
-        int hiddenEnd = -1;
-
-        var hidden = new List<Interval>();
-
-        var nonEmptyCells = Sheet.Cells.GetNonEmptyCellValues(new ColumnRegion(column));
-        foreach (var (row, col, cell) in nonEmptyCells)
-        {
-            if (columnFilter.Match(cell))
-            {
-                hiddenEnd = row - 1;
-                if (hiddenEnd >= hiddenStart)
-                    hidden.Add(new Interval(hiddenStart, hiddenEnd));
-                hiddenStart = row + 1;
-            }
-        }
-
-        if (hiddenStart >= hiddenEnd && hiddenStart < Sheet.NumRows)
-            hidden.Add(new Interval(hiddenStart, Sheet.NumRows - 1));
-
         Sheet.Commands.BeginCommandGroup();
         Sheet.Rows.Unhide(0, Sheet.NumRows);
 
-        foreach (var interval in hidden)
+        var handler = new FilterHandler();
+        var hiddenIntervals = handler.GetHiddenRows(Sheet, _filters);
+
+        foreach (var interval in hiddenIntervals)
         {
             Sheet.Rows.Hide(interval.Start, interval.End - interval.Start + 1);
         }
