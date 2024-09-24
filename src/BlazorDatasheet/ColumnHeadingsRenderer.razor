@@ -36,34 +36,37 @@
 @for (int i = ColStart; i < (ColStart + NCols); i++)
 {
     var col = i;
-    if(!Sheet.Columns.IsVisible(i))
+    if (!Sheet.Columns.IsVisible(i))
         continue;
-    
+
     var colHeading = Sheet.Columns.GetHeading(i) ?? RangeText.ColNumberToLetters(col);
-    
+
     <th class="unselectable col-head">
         <div style="width: 100%; display: flex; justify-content: start; position: relative; overflow-x: visible;">
             <div class="sheet-cell" data-col="@col" data-row="-1" style="display: flex; justify-content: space-between; width: 100%;">
                 <div>
                     @HeadingRenderer(new HeadingContext(col, colHeading))
                 </div>
-                <div style="display: flex; flex-direction: row;">
-                    <SheetMenuTarget MenuId="@ContextMenus.Selection" MenuData="Sheet">
-                        <CaretButton/>
-                    </SheetMenuTarget>
-                </div>
+                @if (HasAnyUserContextMenuActions)
+                {
+                    <div style="display: flex; flex-direction: row;">
+                        <SheetMenuTarget MenuId="@ContextMenus.Selection" MenuData="Sheet">
+                            <CaretButton />
+                        </SheetMenuTarget>
+                    </div>
+                }
             </div>
 
             <div class="unselectable"
                  @onmousedown="_ => HandleMouseDownOnResizer(col)"
-                 style="position: absolute; 
-                 right: 0; 
-                 z-index: 4; 
-                 margin-right:-5px; 
-                 width: 10px; 
-                 height: 100%; 
-                 float: left; 
-                 display: inline-block; 
+                 style="position: absolute;
+                 right: 0;
+                 z-index: 4;
+                 margin-right:-5px;
+                 width: 10px;
+                 height: 100%;
+                 float: left;
+                 display: inline-block;
                  cursor: col-resize;">
             </div>
         </div>
@@ -82,6 +85,7 @@
     [Parameter, EditorRequired] public RenderFragment<HeadingContext> HeadingRenderer { get; set; } = default!;
     [Parameter] public int NCols { get; set; }
     [Parameter] public int ColStart { get; set; }
+    [Parameter] public bool HasAnyUserContextMenuActions { get; set; } = true;
 
     [CascadingParameter(Name = "DatasheetId")]
     public string DatasheetId { get; set; } = default!;
@@ -191,7 +195,7 @@
 
     private void UpdateIntervals()
     {
-        
+
         StateHasChanged();
     }
 

@@ -103,6 +103,12 @@ public partial class Datasheet : SheetComponentBase
     public bool CanUserSort { get; set; } = true;
 
     /// <summary>
+    /// If set to true, the user can clear regions using the context menu.
+    /// </summary>
+    [Parameter]
+    public bool CanUserClearCells { get; set; } = true;
+
+    /// <summary>
     /// If set to true, the user can merge regions using the context menu.
     /// </summary>
     [Parameter]
@@ -120,6 +126,10 @@ public partial class Datasheet : SheetComponentBase
     [Parameter]
     public bool CanUserHideCols { get; set; } = true;
 
+    private bool HasAnyUserContextMenuActions =>
+        (CanUserRemoveRows || CanUserRemoveCols || CanUserInsertRows ||
+        CanUserInsertCols || CanUserSort || CanUserMergeRows ||
+        CanUserHideRows || CanUserHideCols || CanUserClearCells);
 
     [Parameter] public bool ShowFormulaDependents { get; set; }
 

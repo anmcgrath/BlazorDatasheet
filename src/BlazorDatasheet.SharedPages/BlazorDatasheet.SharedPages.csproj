@@ -36,4 +36,10 @@
       <AdditionalFiles Include="Icons\Icons.razor" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Content Update="Pages\ContextMenuDisabledExample.razor">
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      </Content>
+    </ItemGroup>
+
 </Project>
