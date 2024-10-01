@@ -12,7 +12,7 @@ internal class FilterHandler
     /// <param name="sheet">The <seealso cref="Sheet"/> to apply the filter to</param>
     /// <param name="filters">A Dictionary of filters, with the key being the column index</param>
     /// <returns></returns>
-    internal IEnumerable<Interval> GetHiddenRows(Sheet sheet, Dictionary<int, IColumnFilter> filters)
+    internal IEnumerable<Interval> GetHiddenRows(Sheet sheet, List<(int column, IFilter)> columnFilters)
     {
         var hidden = new Range1DStore<bool>(false);
         foreach (var (column, columnFilter) in filters)

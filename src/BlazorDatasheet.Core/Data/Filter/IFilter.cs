@@ -3,7 +3,7 @@ using BlazorDatasheet.Formula.Core;
 
 namespace BlazorDatasheet.Core.Data.Filter;
 
-public interface IColumnFilter
+public interface IFilter
 {
     /// <summary>
     /// Returns the visible rows based on the filter.

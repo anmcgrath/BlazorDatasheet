@@ -116,7 +116,7 @@
     [Parameter] public bool CanUserHideCols { get; set; } = true;
     [Parameter] public bool CanUserFilter { get; set; } = true;
 
-    private IColumnFilter? ActiveColumnFilter { get; set; }
+    private IFilter? ActiveColumnFilter { get; set; }
     private List<CellValue> DistinctColumnData { get; set; }
     private ValueFilter ActiveValueFilter { get; set; } = null!;
 
@@ -142,8 +142,7 @@
                         cr.Width == 1)
                     {
                         DistinctColumnData = await sheet.GetDistinctColumnDataAsync(cr.Left);
-                        ActiveValueFilter = new ValueFilter();
-                        ActiveValueFilter.SetValues(DistinctColumnData);
+                        ActiveValueFilter = new ValueFilter(DistinctColumnData);
                     }
                 }
             };

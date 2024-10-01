@@ -4,7 +4,7 @@ using BlazorDatasheet.Formula.Core;
 
 namespace BlazorDatasheet.Core.Data.Filter;
 
-public class PatternFilter : IColumnFilter
+public class PatternFilter : IFilter
 {
     private readonly PatternFilterType _type;
     private readonly string _value;

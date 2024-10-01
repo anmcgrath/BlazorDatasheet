@@ -2,15 +2,10 @@ using BlazorDatasheet.Formula.Core;
 
 namespace BlazorDatasheet.Core.Data.Filter;
 
-public class FilterGroup : IColumnFilter
+public class FilterGroup : IFilter
 {
-    public List<IColumnFilter> Filters { get; set; }
+    public List<IFilter> Filters { get; } = new();
     public FilterGroupJoin JoinType { get; set; }
-
-    public FilterGroup(List<IColumnFilter> filters)
-    {
-        Filters = filters;
-    }
 
     public bool Match(CellValue cellValue)
     {

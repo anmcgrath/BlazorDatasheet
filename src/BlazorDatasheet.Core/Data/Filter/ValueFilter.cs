@@ -2,13 +2,18 @@ using BlazorDatasheet.Formula.Core;
 
 namespace BlazorDatasheet.Core.Data.Filter;
 
-public class ValueFilter : IColumnFilter
+public class ValueFilter : IFilter
 {
     private HashSet<CellValue> _values = new();
 
-    public void SetValues(List<CellValue> values)
+    public ValueFilter(List<CellValue> values)
     {
         _values = values.ToHashSet();
+    }
+
+    public ValueFilter(HashSet<CellValue> values)
+    {
+        _values = values;
     }
 
     public void Include(CellValue value)
@@ -23,7 +28,7 @@ public class ValueFilter : IColumnFilter
 
     public bool Includes(CellValue value)
     {
-        return _values.Contains(value);
+        return IncludeAll || _values.Contains(value);
     }
 
     public bool Match(CellValue cellValue)
@@ -32,4 +37,5 @@ public class ValueFilter : IColumnFilter
     }
 
     public bool IncludeBlanks { get; set; }
+    public bool IncludeAll { get; set; }
 }
