@@ -126,13 +126,13 @@ public class CellLayoutProvider : IGridLayoutProvider
     public int ComputeColumn(double x)
     {
         var offset = IncludeRowHeadings ? RowHeadingWidth : 0;
-        return _sheet.Columns.GetColumn(x - offset);
+        return _sheet.Columns.GetColumnIndex(x - offset);
     }
 
     public int ComputeRow(double y)
     {
         var offset = IncludeColHeadings ? ColHeadingHeight : 0;
-        return _sheet.Rows.GetRow(y - offset);
+        return _sheet.Rows.GetRowIndex(y - offset);
     }
 
 

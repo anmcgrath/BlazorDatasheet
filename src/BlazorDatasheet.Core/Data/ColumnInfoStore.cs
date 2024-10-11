@@ -7,9 +7,7 @@ namespace BlazorDatasheet.Core.Data;
 
 public class ColumnInfoStore : RowColInfoStore
 {
-    private Dictionary<int, IFilter> _filters = new();
-
-    public ColumnFilterStore Filters { get; private set; }
+    public ColumnFilterCollection Filters { get; }
 
     private double _headingHeight = 24;
 
@@ -28,7 +26,7 @@ public class ColumnInfoStore : RowColInfoStore
 
     public ColumnInfoStore(double defaultHeight, Sheet sheet) : base(defaultHeight, sheet, Axis.Col)
     {
-        Filters = new ColumnFilterStore(sheet);
+        Filters = new ColumnFilterCollection(sheet);
     }
 
     /// <summary>
@@ -36,7 +34,7 @@ public class ColumnInfoStore : RowColInfoStore
     /// </summary>
     /// <param name="x"></param>
     /// <returns></returns>
-    public int GetColumn(double x)
+    internal int GetColumnIndex(double x)
     {
         return CumulativeSizeStore.GetPosition(x);
     }
@@ -46,7 +44,7 @@ public class ColumnInfoStore : RowColInfoStore
     /// </summary>
     /// <param name="column"></param>
     /// <returns></returns>
-    public double GetVisualWidth(int column)
+    internal double GetVisualWidth(int column)
     {
         return CumulativeSizeStore.GetSize(column);
     }
@@ -70,10 +68,5 @@ public class ColumnInfoStore : RowColInfoStore
     public double GetVisualTop(int colIndex)
     {
         return CumulativeSizeStore.GetCumulative(colIndex);
-    }
-
-    public void ClearFilters()
-    {
-        _filters.Clear();
     }
 }

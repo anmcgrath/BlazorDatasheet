@@ -28,7 +28,7 @@ public class RowInfoStore : RowColInfoStore
     /// </summary>
     /// <param name="yPosition"></param>
     /// <returns></returns>
-    public int GetRow(double yPosition)
+    internal int GetRowIndex(double yPosition)
     {
         return CumulativeSizeStore.GetPosition(yPosition);
     }
