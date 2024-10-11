@@ -56,7 +56,7 @@ public abstract class RowColInfoStore
     /// <param name="start">The start row/column of the region, along of the axis</param>
     /// <param name="end">The end row/column of the region, along of the axis</param>
     /// <returns></returns>
-    protected IRegion GetSpannedRegion(int start, int end)
+    private IRegion GetSpannedRegion(int start, int end)
     {
         return _axis == Axis.Col ? new ColumnRegion(start, end) : new RowRegion(start, end);
     }
@@ -168,6 +168,16 @@ public abstract class RowColInfoStore
 
         return restoreData;
     }
+    
+    internal RowColInfoRestoreData UnhideImpl(IEnumerable<Interval> intervals)
+    {
+        var restoreData = new RowColInfoRestoreData();
+        Sheet.BatchUpdates();
+        foreach (var interval in intervals)
+            restoreData.Merge(UnhideImpl(interval.Start, interval.Size));
+        Sheet.EndBatchUpdates();
+        return restoreData;
+    }
 
     internal RowColInfoRestoreData HideImpl(int start, int count)
     {
@@ -182,6 +192,16 @@ public abstract class RowColInfoStore
             VisibilityRestoreData = changedVisibility,
             CumulativeSizesRestoreData = changedCumulativeSizes
         };
+    }
+
+    internal RowColInfoRestoreData HideImpl(IEnumerable<Interval> intervals)
+    {
+        var restoreData = new RowColInfoRestoreData();
+        Sheet.BatchUpdates();
+        foreach (var interval in intervals)
+            restoreData.Merge(HideImpl(interval.Start, interval.Size));
+        Sheet.EndBatchUpdates();
+        return restoreData;
     }
 
     /// <summary>
