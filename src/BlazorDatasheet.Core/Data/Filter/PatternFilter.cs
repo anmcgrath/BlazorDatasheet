@@ -9,6 +9,12 @@ public class PatternFilter : IFilter
     private readonly PatternFilterType _type;
     private readonly string _value;
 
+    public PatternFilter()
+    {
+        _type = PatternFilterType.None;
+        _value = string.Empty;
+    }
+
     public PatternFilter(PatternFilterType type, string value)
     {
         _type = type;
@@ -17,8 +23,12 @@ public class PatternFilter : IFilter
 
     public bool Match(CellValue cellValue)
     {
+        if (_type == PatternFilterType.None)
+            return true;
+        
         if (cellValue.Data?.ToString() == null)
             return false;
+        
         switch (_type)
         {
             case PatternFilterType.StartsWith:
@@ -43,6 +53,7 @@ public class PatternFilter : IFilter
 
 public enum PatternFilterType
 {
+    None,
     StartsWith,
     EndsWith,
     Contains,
