@@ -79,6 +79,24 @@ public class FilterCommandsTests
         cmd.Undo(sheet);
         sheet.Columns.Filters.Get(0).Filters.Should().BeEquivalentTo([existingFilter]);
     }
+
+    [Test]
+    public void Clear_All_Filters_And_Undo_Clears_Filters()
+    {
+        var sheet = new Sheet(10, 10);
+        var filter1 = new TestFilter("c1");
+        var filter2 = new TestFilter("c2");
+        sheet.Columns.Filters.SetImpl(0, [filter1]);
+        sheet.Columns.Filters.SetImpl(1, [filter2]);
+
+        var cmd = new ClearFiltersCommand();
+        cmd.Execute(sheet);
+
+        sheet.Columns.Filters.GetAll().Should().BeEmpty();
+
+        cmd.Undo(sheet);
+        sheet.Columns.Filters.GetAll().SelectMany(x => x.Filters).Should().BeEquivalentTo([filter1, filter2]);
+    }
 }
 
 public class TestFilter : IFilter

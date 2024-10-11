@@ -6,18 +6,39 @@ namespace BlazorDatasheet.Core.Commands.Filters;
 public class ClearFiltersCommand : IUndoableCommand
 {
     private readonly int _columnIndex;
-    private List<IFilter>? _previousFilters;
+    private readonly bool _clearAllFilters;
+    private List<ColumnFilter>? _previousFilters;
     private IUndoableCommand _applyCommand = null!;
 
+    /// <summary>
+    /// Create a clear filter command that clears the colum filter at <paramref name="columnIndex"/>
+    /// </summary>
+    /// <param name="columnIndex"></param>
     public ClearFiltersCommand(int columnIndex)
     {
         _columnIndex = columnIndex;
+        _clearAllFilters = false;
+    }
+
+    /// <summary>
+    /// Create a clear filter command that clears all column filters.
+    /// </summary>
+    public ClearFiltersCommand()
+    {
+        _clearAllFilters = true;
     }
 
     public bool Execute(Sheet sheet)
     {
-        _previousFilters = sheet.Columns.Filters.Get(_columnIndex).Filters.ToList();
-        sheet.Columns.Filters.ClearImpl(_columnIndex);
+        if (_clearAllFilters)
+            _previousFilters = sheet.Columns.Filters.GetAll().ToList();
+        else
+            _previousFilters = [sheet.Columns.Filters.Get(_columnIndex)];
+
+        if (_clearAllFilters)
+            sheet.Columns.Filters.ClearImpl();
+        else
+            sheet.Columns.Filters.ClearImpl(_columnIndex);
 
         // Apply all filters to the sheet
         _applyCommand = new ApplyColumnFiltersCommand();
@@ -31,7 +52,11 @@ public class ClearFiltersCommand : IUndoableCommand
         _applyCommand.Undo(sheet);
 
         if (_previousFilters != null)
-            sheet.Columns.Filters.SetImpl(_columnIndex, _previousFilters);
+        {
+            foreach (var columnFilter in _previousFilters)
+                sheet.Columns.Filters.SetImpl(columnFilter.Column, columnFilter.Filters.ToList());
+        }
+
         return true;
     }
 }

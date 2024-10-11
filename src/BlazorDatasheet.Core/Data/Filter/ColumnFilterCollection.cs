@@ -38,6 +38,14 @@ public class ColumnFilterCollection
     }
 
     /// <summary>
+    /// Clears all filters
+    /// </summary>
+    internal void ClearImpl()
+    {
+        _filters.Clear();
+    }
+
+    /// <summary>
     /// Applies all column filters to the datasheet.
     /// </summary>
     public void Apply()
