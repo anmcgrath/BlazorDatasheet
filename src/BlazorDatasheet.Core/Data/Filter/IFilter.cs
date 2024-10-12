@@ -15,4 +15,10 @@ public interface IFilter
     /// Whether blank values should always be included.
     /// </summary>
     public bool IncludeBlanks { get; }
+
+    /// <summary>
+    /// Returns an identical copy of the filter, used for Undo/Redo purposes
+    /// </summary>
+    /// <returns></returns>
+    public IFilter Clone();
 }

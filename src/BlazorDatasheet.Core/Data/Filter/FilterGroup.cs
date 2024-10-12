@@ -4,7 +4,7 @@ namespace BlazorDatasheet.Core.Data.Filter;
 
 public class FilterGroup : IFilter
 {
-    public List<IFilter> Filters { get; } = new();
+    public List<IFilter> Filters { get; private set; } = new();
     public FilterGroupJoin JoinType { get; set; }
 
     public bool Match(CellValue cellValue)
@@ -18,4 +18,12 @@ public class FilterGroup : IFilter
     }
 
     public bool IncludeBlanks => Filters.TrueForAll(x => x.IncludeBlanks);
+    public IFilter Clone()
+    {
+        return new FilterGroup()
+        {
+            Filters = Filters.Select(x => x.Clone()).ToList(),
+            JoinType = JoinType
+        };
+    }
 }

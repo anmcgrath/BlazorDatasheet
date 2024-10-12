@@ -49,6 +49,10 @@ public class PatternFilter : IFilter
     }
 
     public bool IncludeBlanks => false;
+    public IFilter Clone()
+    {
+        return new PatternFilter(this._type, this._value);
+    }
 }
 
 public enum PatternFilterType

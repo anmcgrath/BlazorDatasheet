@@ -114,4 +114,5 @@ public class TestFilter : IFilter
     }
 
     public bool IncludeBlanks => true;
+    public IFilter Clone() => new TestFilter(MatchValue);
 }
