@@ -23,6 +23,9 @@ public class PatternFilter : IFilter
 
     public bool Match(CellValue cellValue)
     {
+        if (string.IsNullOrEmpty(_value))
+            return false;
+        
         if (_type == PatternFilterType.None)
             return true;
         
