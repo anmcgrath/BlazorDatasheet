@@ -1,6 +1,7 @@
 using System.Text;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Data.Filter;
 using BlazorDatasheet.Core.Edit;
 using BlazorDatasheet.Core.Events;
 using BlazorDatasheet.Core.Events.Visual;
@@ -62,6 +63,12 @@ public partial class Datasheet : SheetComponentBase
     /// </summary>
     [Parameter]
     public int OverflowY { get; set; } = 6;
+
+    /// <summary>
+    /// The default filter that is shown when the filter interface is opened and no filter exists.
+    /// </summary>
+    [Parameter]
+    public Type DefaultFilterType { get; set; } = typeof(ValueFilter);
 
     /// <summary>
     /// Register custom editor components (derived from <see cref="BaseEditor"/>) that will be selected

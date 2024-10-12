@@ -3,12 +3,11 @@
 @using BlazorDatasheet.Core.Data.Filter
 @using BlazorDatasheet.Core.Formats
 @using BlazorDatasheet.DataStructures.Geometry
-@using BlazorDatasheet.Formula.Core
 @using BlazorDatasheet.Menu
 @using BlazorDatasheet.Services
 @inject IMenuService MenuService;
 
-<SheetMenu MenuId="@ContextMenus.Selection">
+<SheetMenu MenuId="@ContextMenus.Selection" OnMenuClose="OnSelectionMenuClose">
 
     @{
         var sheet = context as Sheet;
@@ -94,10 +93,21 @@
              colRegion.Width == 1)
         {
             <SheetSubMenu Label="Filter" @ref="_filterSubMenu">
-                <ColumnFilterEditor
-                    DistinctColumnData="@DistinctColumnData"
-                    ValueFilter="ActiveValueFilter"
-                    ColumnIndex="@sheet.Selection.ActiveRegion.Left"/>
+                <div style="font-weight: bold">Filters</div>
+                @foreach (var filter in ColumnFilters)
+                {
+                    if (filter is ValueFilter valueFilter)
+                    {
+                        <ValueFilterEditor
+                            Sheet="sheet"
+                            ColumnIndex="@colRegion.Left"
+                            Filter="@valueFilter"/>
+                    }
+                }
+                <div style="display: flex; flex-direction: row; justify-content: space-between;">
+                    <button @onclick="CancelFilterButtonClick" class="sheet-button" style="width: 80px; margin: 4px 8px;">Cancel</button>
+                    <button @onclick="()=>AcceptFilterButtonClick(sheet, colRegion.Left)" class="sheet-button" style="width: 80px; margin: 4px 8px;">Apply</button>
+                </div>
             </SheetSubMenu>
         }
     }
@@ -116,37 +126,56 @@
     [Parameter] public bool CanUserHideCols { get; set; } = true;
     [Parameter] public bool CanUserFilter { get; set; } = true;
 
-    private IFilter? ActiveColumnFilter { get; set; }
-    private List<CellValue> DistinctColumnData { get; set; }
-    private ValueFilter ActiveValueFilter { get; set; } = null!;
-
     private SheetSubMenu _filterSubMenu = default!;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    private List<IFilter> ColumnFilters { get; set; } = new();
+
+    protected override void OnAfterRender(bool firstRender)
     {
         if (firstRender)
+            MenuService.MenuShown += OnSubmenuShown;
+    }
+
+    private async void OnSubmenuShown(object? sender, MenuShownEventArgs args)
+    {
+        if (args.MenuId == _filterSubMenu?.SubMenuId)
         {
-            MenuService.MenuShown += async (sender, args) =>
+            if (!CanUserFilter) return;
+
+            var sheet = args.Context as Sheet;
+            if (sheet == null) return;
+
+            if (sheet.Selection.ActiveRegion is ColumnRegion cr && sheet.Selection.Regions.Count == 1 && cr.Width == 1)
             {
-                if (args.MenuId == _filterSubMenu?.SubMenuId)
-                {
-                    var sheet = args.Context as Sheet;
-                    if (sheet == null)
-                        return;
-
-                    if (!CanUserFilter)
-                        return;
-
-                    if (sheet.Selection.ActiveRegion is ColumnRegion cr &&
-                        sheet.Selection.Regions.Count == 1 &&
-                        cr.Width == 1)
-                    {
-                        DistinctColumnData = await sheet.GetDistinctColumnDataAsync(cr.Left);
-                        ActiveValueFilter = new ValueFilter(DistinctColumnData);
-                    }
-                }
-            };
+                ColumnFilters = sheet
+                    .Columns
+                    .Filters
+                    .Get(cr.Left)
+                    .Filters
+                    .Select(x=>x.Clone())
+                    .ToList();
+                
+                if (!ColumnFilters.Any())
+                    ColumnFilters = [new ValueFilter()];
+            }
         }
+    }
+
+    private void OnSelectionMenuClose()
+    {
+        // Reset column filters
+        ColumnFilters = new();
+    }
+
+    private void CancelFilterButtonClick()
+    {
+        MenuService.CloseMenu(ContextMenus.Selection);
+    }
+
+    private void AcceptFilterButtonClick(Sheet sheet, int columnIndex)
+    {
+        sheet.Columns.Filters.Set(columnIndex, ColumnFilters);
+        MenuService.CloseMenu(ContextMenus.Selection);
     }
 
 }
