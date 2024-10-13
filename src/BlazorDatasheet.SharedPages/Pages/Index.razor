@@ -1,18 +1,11 @@
 @page "/"
 @using BlazorDatasheet.DataStructures.Geometry
-@using BlazorDatasheet.Edit
-@using BlazorDatasheet.Render
-@using BlazorDatasheet.SharedPages.Data
 @using BlazorDatasheet.Core.Data
-@using BlazorDatasheet.Core.Edit
 @using BlazorDatasheet.Core.Formats
 @using BlazorDatasheet.Core.Formats.DefaultConditionalFormats
 @using BlazorDatasheet.Core.Validation
 @using System.Drawing
-@using BlazorDatasheet.Core.Commands
 @using BlazorDatasheet.Core.Commands.Data
-@using BlazorDatasheet.Core.Commands.RowCols
-@using BlazorDatasheet.Core.Data.Filter
 
 <PageTitle>Index</PageTitle>
 
@@ -75,11 +68,6 @@
 <div>
     <input id="show-formula-dependents" type="checkbox" @bind="ShowFormulaDependents"/>
     <label for="show-formula-dependents">Show formula dependents</label>
-</div>
-
-<div>
-    <input @bind="FilterValue"/>
-    <button @onclick="ApplyFilter">Apply</button>
 </div>
 
 @code {
@@ -312,16 +300,6 @@
             }
         };
         Sheet.SetFormat(selectionRegions, format);
-    }
-
-    private void ApplyFilter()
-    {
-        if (!string.IsNullOrEmpty(FilterValue))
-        {
-            /*Sheet.Columns.Filters.SetFilter(0, new PatternFilter(PatternFilterType.Contains, FilterValue));
-            Sheet.Columns.SetFilter(1, new PatternFilter(PatternFilterType.Contains, FilterValue));
-            Sheet.Columns.ApplyFilters();*/
-        }
     }
 
 }
