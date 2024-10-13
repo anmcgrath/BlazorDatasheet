@@ -5,6 +5,7 @@
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Menu
 @using BlazorDatasheet.Services
+@using BlazorDatasheet.Menu.Filters
 @inject IMenuService MenuService;
 
 <SheetMenu MenuId="@ContextMenus.Selection" OnMenuClose="OnSelectionMenuClose">
@@ -93,9 +94,10 @@
              colRegion.Width == 1)
         {
             <SheetSubMenu Label="Filter" @ref="_filterSubMenu">
-                <div style="font-weight: bold">Filters</div>
+                <div style="font-weight: bold; text-align: center;">Filters</div>
                 @foreach (var filter in ColumnFilters)
                 {
+                    <SheetMenuDivider/>
                     if (filter is ValueFilter valueFilter)
                     {
                         <ValueFilterEditor
@@ -103,10 +105,17 @@
                             ColumnIndex="@colRegion.Left"
                             Filter="@valueFilter"/>
                     }
+                    else if (filter is PatternFilter patternFilter)
+                    {
+                        <PatternFilterEditor
+                            Sheet="sheet"
+                            ColumnIndex="@colRegion.Left"
+                            Filter="@patternFilter"/>
+                    }
                 }
                 <div style="display: flex; flex-direction: row; justify-content: space-between;">
                     <button @onclick="CancelFilterButtonClick" class="sheet-button" style="width: 80px; margin: 4px 8px;">Cancel</button>
-                    <button @onclick="()=>AcceptFilterButtonClick(sheet, colRegion.Left)" class="sheet-button" style="width: 80px; margin: 4px 8px;">Apply</button>
+                    <button @onclick="() => AcceptFilterButtonClick(sheet, colRegion.Left)" class="sheet-button" style="width: 80px; margin: 4px 8px;">Apply</button>
                 </div>
             </SheetSubMenu>
         }
@@ -127,6 +136,7 @@
     [Parameter] public bool CanUserFilter { get; set; } = true;
 
     private SheetSubMenu _filterSubMenu = default!;
+    private bool HasOpenedFilterMenu { get; set; }
 
     private List<IFilter> ColumnFilters { get; set; } = new();
 
@@ -138,8 +148,9 @@
 
     private async void OnSubmenuShown(object? sender, MenuShownEventArgs args)
     {
-        if (args.MenuId == _filterSubMenu?.SubMenuId)
+        if (args.MenuId == _filterSubMenu?.SubMenuId && !HasOpenedFilterMenu)
         {
+            HasOpenedFilterMenu = true;
             if (!CanUserFilter) return;
 
             var sheet = args.Context as Sheet;
@@ -152,11 +163,11 @@
                     .Filters
                     .Get(cr.Left)
                     .Filters
-                    .Select(x=>x.Clone())
+                    .Select(x => x.Clone())
                     .ToList();
-                
+
                 if (!ColumnFilters.Any())
-                    ColumnFilters = [new ValueFilter()];
+                    ColumnFilters = [new ValueFilter(), new PatternFilter()];
             }
         }
     }
@@ -165,6 +176,7 @@
     {
         // Reset column filters
         ColumnFilters = new();
+        HasOpenedFilterMenu = false;
     }
 
     private void CancelFilterButtonClick()
@@ -179,3 +191,4 @@
     }
 
 }
+

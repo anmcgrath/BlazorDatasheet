@@ -1,60 +1,59 @@
-using BlazorDatasheet.DataStructures.Geometry;
-using BlazorDatasheet.DataStructures.Intervals;
 using BlazorDatasheet.Formula.Core;
 
 namespace BlazorDatasheet.Core.Data.Filter;
 
 public class PatternFilter : IFilter
 {
-    private readonly PatternFilterType _type;
-    private readonly string _value;
+    public PatternFilterType Type { get; set; }
+    public string Value { get; set; }
 
     public PatternFilter()
     {
-        _type = PatternFilterType.None;
-        _value = string.Empty;
+        Type = PatternFilterType.None;
+        Value = string.Empty;
     }
 
     public PatternFilter(PatternFilterType type, string value)
     {
-        _type = type;
-        _value = value;
+        Type = type;
+        Value = value;
     }
 
     public bool Match(CellValue cellValue)
     {
-        if (string.IsNullOrEmpty(_value))
-            return false;
-        
-        if (_type == PatternFilterType.None)
+        if (string.IsNullOrEmpty(Value))
             return true;
-        
+
+        if (Type == PatternFilterType.None)
+            return true;
+
         if (cellValue.Data?.ToString() == null)
             return false;
-        
-        switch (_type)
+
+        switch (Type)
         {
             case PatternFilterType.StartsWith:
-                return cellValue.Data.ToString()!.StartsWith(_value);
+                return cellValue.Data.ToString()!.StartsWith(Value);
             case PatternFilterType.EndsWith:
-                return cellValue.Data.ToString()!.EndsWith(_value);
+                return cellValue.Data.ToString()!.EndsWith(Value);
             case PatternFilterType.Contains:
-                return cellValue.Data.ToString()!.Contains(_value);
+                return cellValue.Data.ToString()!.Contains(Value);
             case PatternFilterType.NotStartsWith:
-                return !cellValue.Data.ToString()!.StartsWith(_value);
+                return !cellValue.Data.ToString()!.StartsWith(Value);
             case PatternFilterType.NotEndsWith:
-                return !cellValue.Data.ToString()!.EndsWith(_value);
+                return !cellValue.Data.ToString()!.EndsWith(Value);
             case PatternFilterType.NotContains:
-                return !cellValue.Data.ToString()!.Contains(_value);
+                return !cellValue.Data.ToString()!.Contains(Value);
             default:
                 throw new ArgumentOutOfRangeException();
         }
     }
 
-    public bool IncludeBlanks => false;
+    public bool IncludeBlanks => Type == PatternFilterType.None || string.IsNullOrEmpty(Value);
+
     public IFilter Clone()
     {
-        return new PatternFilter(this._type, this._value);
+        return new PatternFilter(this.Type, this.Value);
     }
 }
 

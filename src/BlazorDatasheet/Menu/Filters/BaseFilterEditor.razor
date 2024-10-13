@@ -1,0 +1,10 @@
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Data.Filter
+
+@code {
+    [Parameter, EditorRequired] public IFilter Filter { get; set; } = null!;
+
+    [Parameter, EditorRequired] public Sheet Sheet { get; set; } = null!;
+
+    [Parameter, EditorRequired] public int ColumnIndex { get; set; }
+}

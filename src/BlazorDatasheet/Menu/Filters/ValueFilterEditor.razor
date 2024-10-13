@@ -1,9 +1,11 @@
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Data.Filter
 @using BlazorDatasheet.Formula.Core
+@inherits BaseFilterEditor
 
 
-<div style="padding: 4px;">
+<div style="padding: 8px;">
+    <div>Values:</div>
     <div style="display: block;">
         <input type="checkbox"
                @onchange="ToggleSetAll"
@@ -48,12 +50,6 @@
 </div>
 
 @code {
-
-    [Parameter, EditorRequired] public IFilter Filter { get; set; } = null!;
-
-    [Parameter, EditorRequired] public Sheet Sheet { get; set; } = null!;
-
-    [Parameter, EditorRequired] public int ColumnIndex { get; set; }
 
     private ValueFilter ValueFilter => (Filter as ValueFilter)!;
 
