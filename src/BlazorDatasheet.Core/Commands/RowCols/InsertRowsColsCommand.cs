@@ -1,7 +1,9 @@
 ﻿using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
+using BlazorDatasheet.Core.Data.Filter;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.DataStructures.Intervals;
 using BlazorDatasheet.DataStructures.Store;
 
 namespace BlazorDatasheet.Core.Commands.RowCols;
@@ -19,6 +21,7 @@ internal class InsertRowsColsCommand : IUndoableCommand
     private RegionRestoreData<ConditionalFormatAbstractBase> _cfRestoreData;
     private CellStoreRestoreData _cellStoreRestoreData;
     private RowColInfoRestoreData _rowColInfoRestoreData;
+    private MergeableIntervalStoreRestoreData<OverwritingValue<List<IFilter>?>> _filterRestoreData;
 
     /// <summary>
     /// Command for inserting a row into the sheet.
@@ -40,6 +43,12 @@ internal class InsertRowsColsCommand : IUndoableCommand
         _cellStoreRestoreData = sheet.Cells.InsertRowColAt(_index, _count, _axis);
         _cfRestoreData = sheet.ConditionalFormats.InsertRowColAt(_index, _count, _axis);
         _rowColInfoRestoreData = sheet.GetRowColStore(_axis).InsertImpl(_index, _count);
+
+        if (_axis == Axis.Col)
+        {
+            _filterRestoreData = sheet.Columns.Filters.Store.InsertAt(_index, _count);
+        }
+
         sheet.Add(_axis, _count);
         sheet.ScreenUpdating = true;
         return true;
@@ -54,6 +63,9 @@ internal class InsertRowsColsCommand : IUndoableCommand
         sheet.Remove(_axis, _count);
         sheet.GetRowColStore(_axis).Restore(_rowColInfoRestoreData);
         sheet.GetRowColStore(_axis).EmitRemoved(_index, _count);
+        if (_axis == Axis.Col)
+            sheet.Columns.Filters.Store.Restore(_filterRestoreData);
+        
         IRegion dirtyRegion = _axis == Axis.Col
             ? new ColumnRegion(_index, sheet.NumCols)
             : new RowRegion(_index, sheet.NumRows);

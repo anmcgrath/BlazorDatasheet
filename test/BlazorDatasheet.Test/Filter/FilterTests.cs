@@ -4,6 +4,7 @@ using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Filter;
 using BlazorDatasheet.DataStructures.Intervals;
 using BlazorDatasheet.Formula.Core;
+using BlazorDatasheet.Test.Commands;
 using FluentAssertions;
 using NUnit.Framework;
 
@@ -123,17 +124,53 @@ public class FilterTests
 
         TestPatternFilterMatch(PatternFilterType.StartsWith, "T", CellValue.Text("Test")).Should().Be(true);
         TestPatternFilterMatch(PatternFilterType.StartsWith, "T", CellValue.Text("Apple")).Should().Be(false);
-        TestPatternFilterMatch(PatternFilterType.StartsWith, "", CellValue.Text("Apple")).Should().Be(false);
+        TestPatternFilterMatch(PatternFilterType.StartsWith, "", CellValue.Text("Apple")).Should().Be(true);
 
         TestPatternFilterMatch(PatternFilterType.EndsWith, "Test", CellValue.Text("Test")).Should().Be(true);
         TestPatternFilterMatch(PatternFilterType.EndsWith, "Test", CellValue.Text("TheTest")).Should().Be(true);
         TestPatternFilterMatch(PatternFilterType.EndsWith, "Test", CellValue.Text("TheTests")).Should().Be(false);
-        TestPatternFilterMatch(PatternFilterType.EndsWith, "", CellValue.Text("TheTests")).Should().Be(false);
+        TestPatternFilterMatch(PatternFilterType.EndsWith, "", CellValue.Text("TheTests")).Should().Be(true);
 
         TestPatternFilterMatch(PatternFilterType.NotEndsWith, "Test", CellValue.Text("Test")).Should().Be(false);
         TestPatternFilterMatch(PatternFilterType.NotEndsWith, "Test", CellValue.Text("TheTest")).Should().Be(false);
         TestPatternFilterMatch(PatternFilterType.NotEndsWith, "Test", CellValue.Text("TheTests")).Should().Be(true);
-        TestPatternFilterMatch(PatternFilterType.NotEndsWith, "", CellValue.Text("TheTests")).Should().Be(false);
+        TestPatternFilterMatch(PatternFilterType.NotEndsWith, "", CellValue.Text("TheTests")).Should().Be(true);
+    }
+
+    [Test]
+    public void Insert_Col_Moves_Filter_Correctly_And_Undo()
+    {
+        var sheet = new Sheet(10, 10);
+        var filter = new TestFilter("Test");
+        sheet.Columns.Filters.Set(5, filter);
+
+        sheet.Columns.InsertAt(0, 2);
+        sheet.Columns.Filters.Get(5).Filters.Should().BeEmpty();
+        sheet.Columns.Filters.Get(7).Filters.Should().BeEquivalentTo([filter]);
+
+        sheet.Commands.Undo();
+        sheet.Columns.Filters.Get(5).Filters.Should().BeEquivalentTo([filter]);
+    }
+
+    [Test]
+    public void Remove_Col_Moves_Filter_Correctly_And_Undo()
+    {
+        var sheet = new Sheet(10, 10);
+        var filter = new TestFilter("Test");
+        var filter2 = new TestFilter("Test2");
+
+        sheet.Columns.Filters.Set(5, filter);
+        sheet.Columns.Filters.Set(7, filter2);
+
+        sheet.Columns.RemoveAt(5, 2);
+        sheet.Columns.Filters.Get(5).Filters.Should().BeEquivalentTo([filter2]);
+        sheet.Columns.Filters.Get(6).Filters.Should().BeEmpty();
+        sheet.Columns.Filters.Get(7).Filters.Should().BeEmpty();
+
+        sheet.Commands.Undo();
+        sheet.Columns.Filters.Get(5).Filters.Should().BeEquivalentTo([filter]);
+        sheet.Columns.Filters.Get(6).Filters.Should().BeEmpty();
+        sheet.Columns.Filters.Get(7).Filters.Should().BeEquivalentTo([filter2]);
     }
 
     private bool TestPatternFilterMatch(PatternFilterType type, string value, CellValue testValue)

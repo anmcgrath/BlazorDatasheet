@@ -7,7 +7,7 @@ namespace BlazorDatasheet.Core.Data.Filter;
 public class ColumnFilterCollection
 {
     private readonly Sheet _sheet;
-    private readonly Range1DStore<List<IFilter>?> _filters = new(null);
+    internal readonly Range1DStore<List<IFilter>?> Store = new(null);
 
     /// <summary>
     /// The current rows that are filtered.
@@ -34,7 +34,7 @@ public class ColumnFilterCollection
     /// <param name="columnIndex"></param>
     internal void ClearImpl(int columnIndex)
     {
-        _filters.Clear(columnIndex, 1);
+        Store.Clear(columnIndex, 1);
     }
 
     /// <summary>
@@ -42,7 +42,7 @@ public class ColumnFilterCollection
     /// </summary>
     internal void ClearImpl()
     {
-        _filters.Clear();
+        Store.Clear();
     }
 
     /// <summary>
@@ -62,7 +62,7 @@ public class ColumnFilterCollection
     /// <returns></returns>
     public ColumnFilter Get(int columnIndex)
     {
-        return new ColumnFilter(columnIndex, _filters.Get(columnIndex) ?? []);
+        return new ColumnFilter(columnIndex, Store.Get(columnIndex) ?? []);
     }
 
     /// <summary>
@@ -71,13 +71,13 @@ public class ColumnFilterCollection
     /// <returns></returns>
     public IEnumerable<ColumnFilter> GetAll()
     {
-        return _filters.GetAllIntervalData().Select((i, d) => new ColumnFilter(i.interval.Start, i.data ?? []));
+        return Store.GetAllIntervalData().Select((i, d) => new ColumnFilter(i.interval.Start, i.data ?? []));
     }
 
 
     internal void SetImpl(int columnIndex, List<IFilter> filters)
     {
-        _filters.Set(columnIndex, filters);
+        Store.Set(columnIndex, filters);
     }
 
     /// <summary>

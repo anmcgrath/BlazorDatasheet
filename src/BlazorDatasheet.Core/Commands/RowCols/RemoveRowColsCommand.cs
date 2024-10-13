@@ -1,7 +1,9 @@
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
+using BlazorDatasheet.Core.Data.Filter;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.DataStructures.Intervals;
 using BlazorDatasheet.DataStructures.Store;
 
 namespace BlazorDatasheet.Core.Commands.RowCols;
@@ -16,6 +18,7 @@ public class RemoveRowColsCommand : IUndoableCommand
     private RegionRestoreData<ConditionalFormatAbstractBase> _cfRestoreData = null!;
     private RowColInfoRestoreData _rowColInfoRestore = null!;
     private CellStoreRestoreData _cellStoreRestoreData = null!;
+    private MergeableIntervalStoreRestoreData<OverwritingValue<List<IFilter>?>> _filterRestoreData;
 
     // The actual number of rows removed (takes into account num of rows/columns in sheet)
     private int _nRemoved;
@@ -48,6 +51,10 @@ public class RemoveRowColsCommand : IUndoableCommand
         _rowColInfoRestore = sheet.GetRowColStore(_axis).RemoveImpl(_index, _index + _nRemoved - 1);
         _validatorRestoreData = sheet.Validators.Store.RemoveRowColAt(_index, _nRemoved, _axis);
         _cfRestoreData = sheet.ConditionalFormats.RemoveRowColAt(_index, _nRemoved, _axis);
+
+        if (_axis == Axis.Col)
+            _filterRestoreData = sheet.Columns.Filters.Store.Delete(_index, _index + _nRemoved - 1);
+
         return true;
     }
 
@@ -59,6 +66,9 @@ public class RemoveRowColsCommand : IUndoableCommand
         sheet.GetRowColStore(_axis).Restore(_rowColInfoRestore);
         sheet.ConditionalFormats.Restore(_cfRestoreData);
         sheet.GetRowColStore(_axis).EmitInserted(_index, _nRemoved);
+        if (_axis == Axis.Col)
+            sheet.Columns.Filters.Store.Restore(_filterRestoreData);
+
         IRegion dirtyRegion = _axis == Axis.Col
             ? new ColumnRegion(_index, sheet.NumCols)
             : new RowRegion(_index, sheet.NumRows);
