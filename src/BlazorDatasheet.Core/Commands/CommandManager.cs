@@ -42,7 +42,7 @@ public class CommandManager
             return true;
         }
 
-        var selectionBeforeExecute = _sheet.Selection.Regions.Select(x=>x.Clone()).ToList();
+        var selectionBeforeExecute = _sheet.Selection.Regions.Select(x => x.Clone()).ToList();
         var result = command.Execute(_sheet);
         if (result)
         {
@@ -87,7 +87,6 @@ public class CommandManager
     /// <returns></returns>
     public bool Undo()
     {
-
         if (_isCollectingCommands)
             return false;
 
@@ -96,7 +95,7 @@ public class CommandManager
 
         var cmd = _history.Pop()!;
         var result = cmd.Command.Undo(_sheet);
-        
+
         if (cmd.SelectedRegions.Any())
             _sheet.Selection.Set(cmd.SelectedRegions);
 
@@ -123,7 +122,7 @@ public class CommandManager
         var cmd = _redos.Pop()!;
         var result = cmd.Execute(_sheet);
 
-        var selectionBeforeExecute = _sheet.Selection.Regions.Select(x=>x.Clone()).ToList();
+        var selectionBeforeExecute = _sheet.Selection.Regions.Select(x => x.Clone()).ToList();
         if (result)
         {
             if (!HistoryPaused && cmd is IUndoableCommand undoCommand)

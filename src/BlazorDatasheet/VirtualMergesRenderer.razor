@@ -5,7 +5,7 @@
 @using BlazorDatasheet.Render.DefaultComponents
 @using BlazorDatasheet.Util
 
-@if (Sheet.Cells.AnyMerges())
+@if (Sheet.Cells.AnyMerges() && Sheet.NumRows > 0 && Sheet.NumCols > 0)
 {
     var merges = Sheet.Cells.GetMerges(VisualSheet.Viewport.VisibleRegion)
         .Select(x => x.GetIntersection(Sheet.Region))
@@ -108,10 +108,10 @@
         var width = CellLayoutProvider.ComputeWidth(col, colSpan);
         var height = CellLayoutProvider.ComputeHeight(row, rowSpan);
 
-        sb.AddStyle("top", $"{top}px");
-        sb.AddStyle($"left", $"{left}px;");
-        sb.AddStyle("width", $"{width}px");
-        sb.AddStyle("height", $"{height}px");
+        sb.AddStyle("top", $"{top - 1}px");
+        sb.AddStyle($"left", $"{left - 1}px;");
+        sb.AddStyle("width", $"{width + 1}px");
+        sb.AddStyle("height", $"{height + 1}px");
 
         return sb.ToString();
     }
@@ -125,7 +125,7 @@
         var nextVisibleRow = Sheet.Rows.GetNextVisible(merge.Top - 1);
         if (!merge.Spans(nextVisibleRow, Axis.Row))
             return false;
-        
+
         var nextVisibleCol = Sheet.Columns.GetNextVisible(merge.Left - 1);
         if (!merge.Spans(nextVisibleCol, Axis.Col))
             return false;

@@ -21,17 +21,13 @@
 
 @code {
 
-    [Parameter]
-    public RenderFragment ChildContent { get; set; } = default!;
+    [Parameter] public RenderFragment ChildContent { get; set; } = default!;
 
-    [Parameter]
-    public EventCallback<MouseEventArgs> OnClick { get; set; }
+    [Parameter] public EventCallback<MouseEventArgs> OnClick { get; set; }
 
-    [CascadingParameter]
-    public string MenuId { get; set; } = null!;
+    [CascadingParameter] public string MenuId { get; set; } = null!;
 
-    [Parameter]
-    public string? SubmenuId { get; set; } = null;
+    [Parameter] public string? SubmenuId { get; set; } = null;
 
     private async Task HandleMouseUp(MouseEventArgs args)
     {
@@ -43,9 +39,8 @@
 
     private async Task HandleMouseOver(MouseEventArgs args)
     {
-        if (SubmenuId != null && MenuService.IsMenuOpen(SubmenuId))
-            return;
-        await MenuService.CloseSubMenus(this.MenuId);
+        string[]? exceptions = SubmenuId == null ? null : [SubmenuId];
+        await MenuService.CloseSubMenus(this.MenuId, exceptions);
     }
 
 }

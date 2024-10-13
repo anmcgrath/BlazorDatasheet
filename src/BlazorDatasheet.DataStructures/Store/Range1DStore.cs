@@ -46,7 +46,7 @@ public class Range1DStore<T>
     /// <param name="start"></param>
     /// <param name="end"></param>
     /// <returns></returns>
-    public virtual MergeableIntervalStoreRestoreData<OverwritingValue<T>> 
+    public virtual MergeableIntervalStoreRestoreData<OverwritingValue<T>>
         Delete(int start, int end)
     {
         var restoreData = Intervals.Clear(start, end);
@@ -94,9 +94,17 @@ public class Range1DStore<T>
         return (interval.Start, interval.End, interval.Data.Value);
     }
 
-    public List<(int start, int end, T? data)> GetAllIntervals()
+    public List<(Interval interval, T? data)> GetAllIntervalData()
     {
-        return Intervals.GetAllIntervals().Select(x => (x.Start, x.End, x.Data.Value)).ToList();
+        return Intervals.GetAllIntervals().Select(x => (new Interval(x.Start, x.End), x.Data.Value)).ToList();
+    }
+
+    public List<Interval> GetAllIntervals()
+    {
+        return Intervals
+            .GetAllIntervals()
+            .Select(x => new Interval(x.Start, x.End))
+            .ToList();
     }
 
     public (int start, int end, T? data) GetInterval(int position)

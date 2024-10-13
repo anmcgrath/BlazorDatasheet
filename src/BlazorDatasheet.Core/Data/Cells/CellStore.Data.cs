@@ -104,6 +104,20 @@ public partial class CellStore
     }
 
     /// <summary>
+    /// Sets values, starting from <paramref name="row"/>,<paramref name="col"/>.
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <param name="values">The list of rows, with each row having a number of values.</param>
+    /// <returns></returns>
+    public bool SetValues(int row, int col, IEnumerable<IEnumerable<object>> values)
+    {
+        return SetValues(
+            values.SelectMany((rowValues, rIndex)
+                => rowValues.Select((obj, cIndex) => (rIndex + row, cIndex + col, obj))));
+    }
+
+    /// <summary>
     /// Gets the cell's value at row, col
     /// </summary>
     /// <param name="row"></param>

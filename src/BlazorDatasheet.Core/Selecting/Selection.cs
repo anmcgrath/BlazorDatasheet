@@ -66,6 +66,9 @@ public class Selection
 
     public void BeginSelectingCell(int row, int col)
     {
+        if (_sheet.Area == 0)
+            return;
+
         this.SelectingRegion = new Region(row, col);
         this.SelectingStartPosition = new CellPosition(row, col);
         this._selectingMode = SelectionMode.Cell;
@@ -75,6 +78,8 @@ public class Selection
 
     public void BeginSelectingCol(int col)
     {
+        if (_sheet.Area == 0)
+            return;
         this.SelectingRegion = new ColumnRegion(col, col);
         this.SelectingStartPosition = new CellPosition(0, col);
         this._selectingMode = SelectionMode.Column;
@@ -84,6 +89,8 @@ public class Selection
 
     public void BeginSelectingRow(int row)
     {
+        if (_sheet.Area == 0)
+            return;
         this.SelectingRegion = new RowRegion(row, row);
         this.SelectingStartPosition = new CellPosition(row, 0);
         this._selectingMode = SelectionMode.Row;
@@ -160,6 +167,9 @@ public class Selection
     /// <param name="regions"></param>
     private void Add(List<IRegion> regions)
     {
+        if (_sheet.Area == 0)
+            return;
+
         _regions.AddRange(regions);
         ActiveRegion = ExpandRegionOverMerged(regions.LastOrDefault());
         EmitSelectionChange();
@@ -236,6 +246,9 @@ public class Selection
     public void Set(List<IRegion> regions)
     {
         _regions.Clear();
+        if (_sheet.Area == 0)
+            return;
+
         this.EndSelecting();
         if (regions.Any())
         {
@@ -246,7 +259,7 @@ public class Selection
 
     public void ConstrainSelectionToSheet()
     {
-        if (_sheet.NumRows == 0 || _sheet.NumCols == 0)
+        if (_sheet.Area == 0)
         {
             this.ClearSelections();
             return;
@@ -469,7 +482,7 @@ public class Selection
     /// <param name="col"></param>
     internal void SetActivePosition(int row, int col)
     {
-        if (IsEmpty())
+        if (IsEmpty() || _sheet.Area == 0)
             return;
         if (!ActiveRegion.Contains(row, col))
             Set(row, col);

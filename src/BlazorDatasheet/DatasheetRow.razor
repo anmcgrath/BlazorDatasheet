@@ -60,7 +60,7 @@
         data-col="@dataCol"
         colspan="@colSpan"
         rowspan="@rowSpan"
-        class="sheet-cell"
+        class="sheet-cell @(!RowHasHeading && col == Sheet.Columns.FirstVisible ? "sheet-left" : "")"
         style="@visualCell.FormatStyleString">
         <div style="display: flex;">
             @if (visualCell.Icon != null)
@@ -105,6 +105,8 @@
 
     [Parameter, EditorRequired] public int Row { get; set; }
 
+    [Parameter, EditorRequired] public bool RowHasHeading { get; set; }
+
     [Parameter, EditorRequired] public bool Virtualise { get; set; }
 
     [Parameter, EditorRequired] public Dictionary<string, CellTypeDefinition> CustomCellTypeDefinitions { get; set; } = null!;
@@ -144,3 +146,4 @@
 
 
 }
+

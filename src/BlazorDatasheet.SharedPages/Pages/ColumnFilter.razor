@@ -1,0 +1,56 @@
+﻿@page "/ColumnFilter"
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Data.Filter
+
+<h1>Column filter</h1>
+
+<p>Below column A has a filter applied that requires the value to contain "T". No other columns start with a filter applied. Filters can be added using the column context menu.</p>
+
+<Datasheet 
+    Sheet="Sheet" 
+    Virtualise="true"/>
+
+@code {
+
+    private Sheet Sheet = new(500, 10);
+    private Random Random = new();
+
+    protected override void OnInitialized()
+    {
+        Sheet.Commands.PauseHistory();
+        Sheet.BatchUpdates();
+        for (int i = 0; i < Sheet.NumCols; i++)
+        {
+            var uniqueWords = Generate(20);
+            for (int j = 0; j < Sheet.NumRows; j++)
+            {
+                Sheet.Cells[j, i].Value = uniqueWords[Random.Next(0, uniqueWords.Length - 1)];
+            }
+        }
+        
+        Sheet.Columns.Filters.Set(0,[new ValueFilter(), new PatternFilter(PatternFilterType.Contains, "T")]);
+
+        Sheet.EndBatchUpdates();
+        Sheet.Commands.ResumeHistory();
+        base.OnInitialized();
+    }
+
+    private string[] Generate(int size)
+    {
+        string[] words = new string[50];
+        for (int i = 0; i < words.Length; i++)
+        {
+            words[i] = RandomString(10);
+        }
+
+        return words;
+    }
+
+    private string RandomString(int length)
+    {
+        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        return new string(Enumerable.Repeat(chars, length)
+            .Select(s => s[Random.Next(s.Length)]).ToArray());
+    }
+
+}

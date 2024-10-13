@@ -1,12 +1,13 @@
 @inherits SheetComponentBase
 
-<button tabindex="-1" class="dropper" @onclick="OnClick">
+<button tabindex="-1" class="dropper" @onclick="OnClick" @onmousedown="OnPress">
     @CaretIcon
 </button>
 
 @code {
 
     [Parameter] public EventCallback<MouseEventArgs> OnClick { get; set; }
+    [Parameter] public EventCallback<MouseEventArgs> OnPress { get; set; }
 
     // Caret icon from HeroIcons.com
     public static RenderFragment CaretIcon = __builder =>

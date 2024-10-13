@@ -1,17 +1,11 @@
 @page "/"
 @using BlazorDatasheet.DataStructures.Geometry
-@using BlazorDatasheet.Edit
-@using BlazorDatasheet.Render
-@using BlazorDatasheet.SharedPages.Data
 @using BlazorDatasheet.Core.Data
-@using BlazorDatasheet.Core.Edit
 @using BlazorDatasheet.Core.Formats
 @using BlazorDatasheet.Core.Formats.DefaultConditionalFormats
 @using BlazorDatasheet.Core.Validation
 @using System.Drawing
-@using BlazorDatasheet.Core.Commands
 @using BlazorDatasheet.Core.Commands.Data
-@using BlazorDatasheet.Core.Commands.RowCols
 
 <PageTitle>Index</PageTitle>
 
@@ -26,9 +20,9 @@
         Sheet="Sheet"
         Virtualise="true"
         ShowFormulaDependents="@ShowFormulaDependents"
-        ShowColHeadings="true"
-        ShowRowHeadings="true"
-        StickyHeadings="true">
+        ShowColHeadings="@ShowColHeadings"
+        ShowRowHeadings="@ShowRowHeadings"
+        StickyHeadings="@StickyHeadings">
     </Datasheet>
 </div>
 
@@ -46,9 +40,24 @@
     <button @onclick="@(() => SetBorder(Sheet.Selection.Regions, 2, "black"))">Thick border</button>
     <button @onclick="@(() => SetBorder(Sheet.Selection.Regions, 1, "black"))">Thin border</button>
     <button @onclick="@(() => Sheet.Cells.Merge(Sheet.Selection.Regions))">Merge cells</button>
-    <button @onclick="@(SortSelectionDesc)">Sort Desc</button>
-    <button @onclick="@(SortSelectionAsc)">Sort ASc</button>
+    <button @onclick="@SortSelectionDesc">Sort Desc</button>
+    <button @onclick="@SortSelectionAsc">Sort ASc</button>
     <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { NumberFormat = "C2" }))">Currency</button>
+</div>
+
+<div>
+    <input id="sticky-headings" type="checkbox" @bind="StickyHeadings"/>
+    <label for="sticky-headings">Sticky headings</label>
+</div>
+
+<div>
+    <input id="show-row-headings" type="checkbox" @bind="ShowRowHeadings"/>
+    <label for="show-row-headings">Show row headings</label>
+</div>
+
+<div>
+    <input id="show-col-headings" type="checkbox" @bind="ShowColHeadings"/>
+    <label for="show-col-headings">Show col headings</label>
 </div>
 
 <div>
@@ -66,6 +75,37 @@
     private Sheet Sheet;
     private string Theme => IsDarkMode ? "dark" : "default";
     private bool _isDarkMode;
+    private string FilterValue { get; set; }
+
+    private bool StickyHeadings
+    {
+        get => _stickyHeadings;
+        set
+        {
+            _stickyHeadings = value;
+            _datasheet.ForceReRender();
+        }
+    }
+
+    private bool ShowRowHeadings
+    {
+        get => _showRowHeadings;
+        set
+        {
+            _showRowHeadings = value;
+            _datasheet.ForceReRender();
+        }
+    }
+
+    private bool ShowColHeadings
+    {
+        get => _showColHeadings;
+        set
+        {
+            _showColHeadings = value;
+            _datasheet.ForceReRender();
+        }
+    }
 
     private bool IsDarkMode
     {
@@ -80,6 +120,9 @@
     private Datasheet _datasheet;
 
     private bool _showFormulaDependents;
+    private bool _stickyHeadings = true;
+    private bool _showRowHeadings = true;
+    private bool _showColHeadings = true;
 
     private bool ShowFormulaDependents
     {
@@ -159,6 +202,7 @@
         }, false);
 
         Sheet = new Sheet(100, 100);
+        Sheet.ScreenUpdating = false;
         Sheet.BatchUpdates();
         Sheet.Commands.PauseHistory();
         Sheet.Validators.Add(4, 0, new NumberValidator(true));
@@ -227,6 +271,7 @@
 
         Sheet.EndBatchUpdates();
         Sheet.Commands.ResumeHistory();
+        Sheet.ScreenUpdating = true;
     }
 
     private void SetBorder(IReadOnlyList<IRegion> selectionRegions, int width, string color)

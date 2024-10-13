@@ -4,17 +4,31 @@ namespace BlazorDatasheet.Core.Data;
 
 public class RowInfoStore : RowColInfoStore
 {
-    public RowInfoStore(double defaultSize, Sheet sheet) : base(defaultSize, sheet, Axis.Row)
+    private double _headingWidth = 60;
+
+    public RowInfoStore(double defaultHeight, Sheet sheet) : base(defaultHeight, sheet, Axis.Row)
     {
     }
 
+    /// <summary>
+    /// The width (in px) of row headings.
+    /// </summary>
+    public double HeadingWidth
+    {
+        get => _headingWidth;
+        set
+        {
+            _headingWidth = value;
+            EmitSizeModified(-1, -1);
+        }
+    }
 
     /// <summary>
     /// Returns the row index at the position <paramref name="yPosition"/>
     /// </summary>
     /// <param name="yPosition"></param>
     /// <returns></returns>
-    public int GetRow(double yPosition)
+    internal int GetRowIndex(double yPosition)
     {
         return CumulativeSizeStore.GetPosition(yPosition);
     }

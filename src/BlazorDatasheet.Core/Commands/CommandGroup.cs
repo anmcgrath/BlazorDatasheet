@@ -26,6 +26,7 @@ public class CommandGroup : IUndoableCommand
     {
         _successfulCommands.Clear();
 
+        sheet.ScreenUpdating = false;
         sheet.BatchUpdates();
         foreach (var command in _commands)
         {
@@ -41,12 +42,14 @@ public class CommandGroup : IUndoableCommand
         }
 
         sheet.EndBatchUpdates();
+        sheet.ScreenUpdating = true;
 
         return true;
     }
 
     public bool Undo(Sheet sheet)
     {
+        sheet.ScreenUpdating = false;
         var undo = true;
         var undoCommands =
             _successfulCommands
@@ -60,6 +63,7 @@ public class CommandGroup : IUndoableCommand
         }
 
         sheet.EndBatchUpdates();
+        sheet.ScreenUpdating = true;
 
         return undo;
     }

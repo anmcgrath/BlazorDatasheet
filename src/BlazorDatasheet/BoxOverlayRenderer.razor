@@ -35,12 +35,12 @@
     {
         var sb = new StyleBuilder();
 
-        sb.AddStyle($"left",$"{X}px");
-        sb.AddStyle($"top",$"{Y}px");
-        sb.AddStyle($"width",$"{Width+1}px;");
-        sb.AddStyle($"height",$"{Height+1}px;");
+        sb.AddStyle($"left", $"{X - 1}px");
+        sb.AddStyle($"top", $"{Y - 1}px");
+        sb.AddStyle($"width", $"{Width + 1}px;");
+        sb.AddStyle($"height", $"{Height + 1}px;");
         sb.AddStyle("z-index", ZIndex.ToString());
-        sb.AddStyle("border", $"{BorderThickness}px {BorderStyle} {BorderColor}", BorderThickness!=0);
+        sb.AddStyle("border", $"{BorderThickness}px {BorderStyle} {BorderColor}", BorderThickness != 0);
         sb.AddStyle("background", BackgroundColor, BackgroundVisible);
 
         return sb.ToString();

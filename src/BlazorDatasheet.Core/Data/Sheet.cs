@@ -30,6 +30,11 @@ public class Sheet
     public int NumCols { get; private set; }
 
     /// <summary>
+    /// The total area (Num Rows x Num Cols) of the sheet.
+    /// </summary>
+    public int Area => NumRows * NumCols;
+
+    /// <summary>
     /// Start/finish edits.
     /// </summary>
     public Editor Editor { get; }
@@ -79,6 +84,24 @@ public class Sheet
     /// </summary>
     public Selection Selection { get; }
 
+    /// <summary>
+    /// Whether the UI associated with the sheet should be updating
+    /// </summary>
+    public bool ScreenUpdating
+    {
+        get => _screenUpdating;
+        set
+        {
+            if (_screenUpdating != value)
+            {
+                _screenUpdating = value;
+                ScreenUpdatingChanged?.Invoke(this, new SheetScreenUpdatingEventArgs(value));
+            }
+        }
+    }
+
+    private bool _screenUpdating = true;
+
     internal IDialogService? Dialog { get; private set; }
 
     #region EVENTS
@@ -92,6 +115,10 @@ public class Sheet
 
     public event EventHandler<RangeSortedEventArgs>? RangeSorted;
 
+    /// <summary>
+    /// Fired when <see cref="ScreenUpdating"/> is changed
+    /// </summary>
+    public EventHandler<SheetScreenUpdatingEventArgs>? ScreenUpdatingChanged;
     #endregion EVENTS
 
     /// <summary>
@@ -528,6 +555,26 @@ public class Sheet
         }
 
         return strBuilder.ToString();
+    }
+
+    public async Task<List<CellValue>> GetDistinctColumnDataAsync(int column)
+    {
+        // TODO: Allow custom function for get column data
+        if (column < 0 || column > NumCols - 1)
+            return new List<CellValue>();
+
+        var cells = Cells.GetNonEmptyCellValues(new ColumnRegion(column))
+            .Select(x => x.value)
+            .DistinctBy(x => x.Data)
+            .ToList();
+
+        if (cells.Count != this.NumRows)
+        {
+            // there are blanks in the column
+            cells.Add(CellValue.Empty);
+        }
+
+        return cells;
     }
 
     /// <summary>

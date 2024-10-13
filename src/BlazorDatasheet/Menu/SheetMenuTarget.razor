@@ -91,7 +91,7 @@
         if (string.IsNullOrEmpty(MenuId))
             return;
 
-        await MenuService.ShowMenu(MenuId, new MenuShowOptions(TargetId, Placement, Margin, trigger, args.ClientX, args.ClientY), MenuData);
+        await MenuService.ShowMenuAsync(MenuId, new MenuShowOptions(TargetId, Placement, Margin, trigger, args.ClientX, args.ClientY), MenuData);
     }
 
     public async ValueTask DisposeAsync()

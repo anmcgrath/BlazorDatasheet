@@ -1,12 +1,32 @@
+using BlazorDatasheet.Core.Data.Filter;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.DataStructures.Intervals;
+using BlazorDatasheet.DataStructures.Store;
 
 namespace BlazorDatasheet.Core.Data;
 
 public class ColumnInfoStore : RowColInfoStore
 {
-    
-    public ColumnInfoStore(double defaultWidth, Sheet sheet) : base(defaultWidth, sheet, Axis.Col)
+    public ColumnFilterCollection Filters { get; }
+
+    private double _headingHeight = 24;
+
+    /// <summary>
+    /// The height (in px) of column headings
+    /// </summary>
+    public double HeadingHeight
     {
+        get => _headingHeight;
+        set
+        {
+            _headingHeight = value;
+            EmitSizeModified(-1, -1);
+        }
+    }
+
+    public ColumnInfoStore(double defaultHeight, Sheet sheet) : base(defaultHeight, sheet, Axis.Col)
+    {
+        Filters = new ColumnFilterCollection(sheet);
     }
 
     /// <summary>
@@ -14,7 +34,7 @@ public class ColumnInfoStore : RowColInfoStore
     /// </summary>
     /// <param name="x"></param>
     /// <returns></returns>
-    public int GetColumn(double x)
+    internal int GetColumnIndex(double x)
     {
         return CumulativeSizeStore.GetPosition(x);
     }
@@ -24,7 +44,7 @@ public class ColumnInfoStore : RowColInfoStore
     /// </summary>
     /// <param name="column"></param>
     /// <returns></returns>
-    public double GetVisualWidth(int column)
+    internal double GetVisualWidth(int column)
     {
         return CumulativeSizeStore.GetSize(column);
     }

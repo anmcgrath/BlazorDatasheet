@@ -1,10 +1,14 @@
-@using BlazorDatasheet.Core.Commands
 @using BlazorDatasheet.Core.Commands.Data
-@using BlazorDatasheet.Core.Commands.RowCols
 @using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Data.Filter
+@using BlazorDatasheet.Core.Formats
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Menu
-<SheetMenu MenuId="@ContextMenus.Selection">
+@using BlazorDatasheet.Services
+@using BlazorDatasheet.Menu.Filters
+@inject IMenuService MenuService;
+
+<SheetMenu MenuId="@ContextMenus.Selection" OnMenuClose="OnSelectionMenuClose">
 
     @{
         var sheet = context as Sheet;
@@ -18,12 +22,20 @@
             {
                 <SheetMenuItem OnClick="() => sheet.Cells.Merge(sheet.Selection.Regions)">Merge</SheetMenuItem>
             }
+            <SheetSubMenu Label="Alignment">
+                <SheetMenuItem OnClick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { TextAlign = "left" }))">Left</SheetMenuItem>
+                <SheetMenuItem OnClick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { TextAlign = "center" }))">Centre</SheetMenuItem>
+                <SheetMenuItem OnClick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { TextAlign = "right" }))">Right</SheetMenuItem>
+            </SheetSubMenu>
         </MenuSection>
-
-        <SheetMenuDivider/>
 
         @if (sheet.Selection.Regions.Count == 1 && sheet.Selection.ActiveRegion is ColumnRegion c)
         {
+            @if (CanUserInsertCols || CanUserRemoveCols || CanUserHideCols)
+            {
+                <SheetMenuDivider/>
+            }
+
             @if (CanUserInsertCols)
             {
                 <SheetMenuItem OnClick="() => sheet.Columns.InsertAt(c.Left, c.Width)">Insert column(s) left</SheetMenuItem>
@@ -33,21 +45,22 @@
             {
                 <SheetMenuItem OnClick="() => sheet.Columns.RemoveAt(c.Left, c.Width)">Delete column(s)</SheetMenuItem>
             }
-            
+
             @if (CanUserHideCols)
             {
+                <SheetMenuDivider/>
                 <SheetMenuItem OnClick="() => sheet.Columns.Hide(c.Left, c.Width)">Hide column(s)</SheetMenuItem>
                 <SheetMenuItem OnClick="() => sheet.Columns.Unhide(c.Left, c.Width)">Un-hide column(s)</SheetMenuItem>
-            }
-
-            @if (CanUserInsertCols || CanUserRemoveCols || CanUserHideCols)
-            {
-                <SheetMenuDivider/>
             }
         }
 
         @if (sheet.Selection.Regions.Count == 1 && sheet.Selection.ActiveRegion is RowRegion r)
         {
+            @if (CanUserInsertRows || CanUserRemoveRows || CanUserHideRows)
+            {
+                <SheetMenuDivider/>
+            }
+
             @if (CanUserInsertRows)
             {
                 <SheetMenuItem OnClick="() => sheet.Rows.InsertAt(r.Top, r.Height)">Insert row(s) above</SheetMenuItem>
@@ -57,24 +70,53 @@
             {
                 <SheetMenuItem OnClick="() => sheet.Rows.RemoveAt(r.Top, r.Height)">Delete row(s)</SheetMenuItem>
             }
-            
+
             @if (CanUserHideRows)
             {
+                <SheetMenuDivider/>
                 <SheetMenuItem OnClick="() => sheet.Rows.Hide(r.Top, r.Height)">Hide row(s)</SheetMenuItem>
                 <SheetMenuItem OnClick="() => sheet.Rows.Unhide(r.Top, r.Height)">Un-hide row(s)</SheetMenuItem>
-            }
-
-            @if (CanUserInsertRows || CanUserRemoveRows || CanUserHideRows)
-            {
-                <SheetMenuDivider/>
             }
         }
 
         @if (CanUserSort)
         {
+            <SheetMenuDivider/>
             <SheetSubMenu Label="Sort">
                 <SheetMenuItem OnClick="() => sheet.SortRange(sheet.Selection.ActiveRegion)">Sort Ascending</SheetMenuItem>
                 <SheetMenuItem OnClick="() => sheet.SortRange(sheet.Selection.ActiveRegion, new List<ColumnSortOptions>() { new ColumnSortOptions(0, false) })">Sort Descending</SheetMenuItem>
+            </SheetSubMenu>
+        }
+
+        @if (CanUserFilter &&
+             sheet.Selection.Regions.Count == 1 &&
+             sheet.Selection.ActiveRegion is ColumnRegion colRegion &&
+             colRegion.Width == 1)
+        {
+            <SheetSubMenu Label="Filter" @ref="_filterSubMenu">
+                <div style="font-weight: bold; text-align: center;">Filters</div>
+                @foreach (var filter in ColumnFilters)
+                {
+                    <SheetMenuDivider/>
+                    if (filter is ValueFilter valueFilter)
+                    {
+                        <ValueFilterEditor
+                            Sheet="sheet"
+                            ColumnIndex="@colRegion.Left"
+                            Filter="@valueFilter"/>
+                    }
+                    else if (filter is PatternFilter patternFilter)
+                    {
+                        <PatternFilterEditor
+                            Sheet="sheet"
+                            ColumnIndex="@colRegion.Left"
+                            Filter="@patternFilter"/>
+                    }
+                }
+                <div style="display: flex; flex-direction: row; justify-content: space-between;">
+                    <button @onclick="CancelFilterButtonClick" class="sheet-button" style="width: 80px; margin: 4px 8px;">Cancel</button>
+                    <button @onclick="() => AcceptFilterButtonClick(sheet, colRegion.Left)" class="sheet-button" style="width: 80px; margin: 4px 8px;">Apply</button>
+                </div>
             </SheetSubMenu>
         }
     }
@@ -91,5 +133,65 @@
     [Parameter] public bool CanUserMergeRange { get; set; } = true;
     [Parameter] public bool CanUserHideRows { get; set; } = true;
     [Parameter] public bool CanUserHideCols { get; set; } = true;
+    [Parameter] public bool CanUserFilter { get; set; } = true;
+    [Parameter] public Type[] DefaultFilterTypes { get; set; } = default!;
+
+    private SheetSubMenu _filterSubMenu = default!;
+    private bool HasOpenedFilterMenu { get; set; }
+
+    private List<IFilter> ColumnFilters { get; set; } = new();
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+            MenuService.MenuShown += OnSubmenuShown;
+    }
+
+    private async void OnSubmenuShown(object? sender, MenuShownEventArgs args)
+    {
+        if (args.MenuId == _filterSubMenu?.SubMenuId && !HasOpenedFilterMenu)
+        {
+            HasOpenedFilterMenu = true;
+            if (!CanUserFilter) return;
+
+            var sheet = args.Context as Sheet;
+            if (sheet == null) return;
+
+            if (sheet.Selection.ActiveRegion is ColumnRegion cr && sheet.Selection.Regions.Count == 1 && cr.Width == 1)
+            {
+                ColumnFilters = sheet
+                    .Columns
+                    .Filters
+                    .Get(cr.Left)
+                    .Filters
+                    .Select(x => x.Clone())
+                    .ToList();
+
+                if (!ColumnFilters.Any())
+                {
+                    ColumnFilters = DefaultFilterTypes.Select(x => (IFilter)Activator.CreateInstance(x)!)
+                        .ToList();
+                }
+            }
+        }
+    }
+
+    private void OnSelectionMenuClose()
+    {
+        // Reset column filters
+        ColumnFilters = new();
+        HasOpenedFilterMenu = false;
+    }
+
+    private void CancelFilterButtonClick()
+    {
+        MenuService.CloseMenu(ContextMenus.Selection);
+    }
+
+    private void AcceptFilterButtonClick(Sheet sheet, int columnIndex)
+    {
+        sheet.Columns.Filters.Set(columnIndex, ColumnFilters);
+        MenuService.CloseMenu(ContextMenus.Selection);
+    }
 
 }

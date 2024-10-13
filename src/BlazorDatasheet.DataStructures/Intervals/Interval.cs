@@ -10,6 +10,6 @@ public readonly struct Interval
     {
         Start = start;
         End = end;
-        Size = start - end + 1;
+        Size = end - start + 1;
     }
 }

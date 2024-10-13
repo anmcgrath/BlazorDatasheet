@@ -1,13 +1,10 @@
-@using BlazorDatasheet.Core.Layout
-@using BlazorDatasheet.DataStructures.Geometry
-@using BlazorDatasheet.Formula.Functions.Logical
 @using Microsoft.JSInterop;
 @inject IJSRuntime JS
 @inject IWindowEventService _windowEventService;
+@inject IMenuService _menuService;
 @implements IDisposable;
 @using BlazorDatasheet.Services
 @using BlazorDatasheet.Menu
-@using BlazorDatasheet.Render.DefaultComponents
 @using BlazorDatasheet.Portal
 @using BlazorDatasheet.Render
 @inherits SheetComponentBase
@@ -24,13 +21,16 @@
         <!-- Register Menus -->
         <SelectionMenu
             CanUserSort="@CanUserSort"
+            CanUserFilter="@CanUserFilter"
             CanUserMergeRange="@CanUserMergeRows"
             CanUserInsertCols="@CanUserInsertCols"
             CanUserInsertRows="@CanUserInsertRows"
             CanUserRemoveCols="@CanUserRemoveCols"
             CanUserRemoveRows="@CanUserRemoveRows"
             CanUserHideCols="@CanUserHideCols"
-            CanUserHideRows="@CanUserHideRows"/>
+            CanUserHideRows="@CanUserHideRows"
+            DefaultFilterTypes="@DefaultFilterTypes"
+            />
 
 
         <SheetMenuTarget
@@ -40,37 +40,37 @@
             Trigger="@MenuTrigger.OnContextMenu"
             Placement="@MenuPlacement.BottomRight">
 
-            @if (Sheet.NumCols > 0)
+            @if (Virtualise)
             {
-                @if (Virtualise)
-                {
-                    <!-- if virtualisation is on, merges need to be rendered outside of the table to handle merged cells that span outside of the viewport -->
-                    <VirtualMergesRenderer
-                        Icons="Icons"
-                        CustomCellTypeDefinitions="CustomCellTypeDefinitions"
-                        Sheet="Sheet"
-                        VisualSheet="_visualSheet"
-                        CellLayoutProvider="_cellLayoutProvider"/>
-                }
+                <!-- if virtualisation is on, merges need to be rendered outside of the table to handle merged cells that span outside of the viewport -->
+                <VirtualMergesRenderer
+                    Icons="Icons"
+                    CustomCellTypeDefinitions="CustomCellTypeDefinitions"
+                    Sheet="Sheet"
+                    VisualSheet="_visualSheet"
+                    CellLayoutProvider="_cellLayoutProvider"/>
+            }
 
-                <div style="display: flex; flex-direction: column; justify-content: start;">
+            <div style="display: flex; flex-direction: column; justify-content: start;">
 
-                    <div style="display: flex; flex-direction: row; justify-content: start">
+                <div style="display: flex; flex-direction: row; justify-content: start">
 
-                        <table
-                            class="sheet-table"
-                            style="width:@(RenderedInnerSheetWidth)px;">
+                    <table
+                        class="sheet-table"
+                        style="width:@(RenderedInnerSheetWidth)px;">
 
-                            <colgroup>
-                                @if (ShowRowHeadings)
-                                {
-                                    <col style="width:0;"/>
-                                    <col style="width:@(_cellLayoutProvider.RowHeadingWidth)px;"/>
-                                }
+                        <colgroup>
+                            @if (ShowRowHeadings)
+                            {
+                                <col style="width:0;"/>
+                                <col style="width:@(_cellLayoutProvider.RowHeadingWidth)px;"/>
+                            }
 
-                                <!-- virtualisation column -->
-                                <col style="width: @(_visualSheet.Viewport.Left)px;"/>
+                            <!-- virtualisation column -->
+                            <col style="width: @(_visualSheet.Viewport.Left)px;"/>
 
+                            @if (Sheet.NumCols > 0)
+                            {
                                 @for (int i = _visualSheet.Viewport.VisibleRegion.Left; i <= _visualSheet.Viewport.VisibleRegion.Right; i++)
                                 {
                                     var col = i;
@@ -80,17 +80,20 @@
 
                                     <col style="width:@(colWidth)px; max-width:@(colWidth)px;"/>
                                 }
-                            </colgroup>
+                            }
+                        </colgroup>
 
-                            <!-- col headings -->
-                            @if (ShowColHeadings)
+                        <!-- col headings -->
+                        @if (ShowColHeadings)
+                        {
+                            if (Sheet.NumCols > 0)
                             {
-                                <thead class="@(this.StickyHeadings ? "col-sticky" : "")">
-                                <tr style="height: @(_cellLayoutProvider.ColHeadingHeight)px;">
-                                    @if (ShowRowHeadings)
+                                <thead class="sheet-left @(StickyHeadings ? "col-sticky" : "")">
+                                <tr style="height: @(_cellLayoutProvider.ColHeadingHeight)px;" class="sheet-top">
+                                    @if (ShowRowHeadings) // the bit to the left of col headings
                                     {
                                         <th></th>
-                                        <th style="z-index: 4;" class="col-head @(StickyHeadings ? "row-sticky" : "")"></th>
+                                        <th style="z-index: 4;" class="col-head row-head sheet-left @(StickyHeadings ? "row-sticky col-sticky" : "")"></th>
                                     }
 
                                     <!-- Virtualisation column -->
@@ -102,6 +105,7 @@
                                         NCols="@_visualSheet.Viewport.VisibleRegion.Width"
                                         ColStart="@_visualSheet.Viewport.VisibleRegion.Left"
                                         CellLayoutProvider="_cellLayoutProvider"
+                                        IsRowHeadingsVisible="@ShowRowHeadings"
                                         Sheet="_sheetLocal">
                                         <HeadingRenderer>
                                             @if (ColumnHeaderTemplate != null)
@@ -117,143 +121,152 @@
                                 </tr>
                                 </thead>
                             }
-
-                            <tbody>
-
-                            <tr class="collapsed-row">
-                                @if (ShowRowHeadings)
-                                {
-                                    <td style="background: red; z-index: 4;"
-                                        class="@(StickyHeadings ? "row-sticky" : "")">
-                                        <div style="position: absolute; overflow: visible; display: block;">
-                                            <PortalTarget TargetId="Row" DatasheetId="@Id"/>
-                                        </div>
-                                    </td>
-                                    <td></td>
-                                }
-                                <td></td>
-                                <td colspan="@_visualSheet.Viewport.NumberVisibleCols"></td>
-                            </tr>
-
-                            <!-- filler top row -->
-                            <tr>
-                                @{
-                                    // +1 here for virtualisation column
-                                    var fillerColSpan = _visualSheet.Viewport.NumberVisibleCols + 1;
-                                    if (ShowRowHeadings)
-                                        fillerColSpan += 2; // +1 for row headings
-                                }
-                                <td colspan="@fillerColSpan" style="padding: 0; border: 0">
-                                    <div id="filler-top" @ref="_fillerTop"
-                                         style="min-height: @(_visualSheet.Viewport.Top)px; display: block;">
-                                    </div>
-                                </td>
-                            </tr>
-
-                            <!-- row for holding left virtualiser -->
-                            <tr class="collapsed-row">
-                                @if (ShowRowHeadings)
-                                {
-                                    <th></th>
-                                    <th></th>
-                                    <!-- row headings -->
-                                }
-                                <td colspan="1" rowspan="@(_visualSheet.Viewport.NumberVisibleRows + 1)"
-                                    style="padding: 0; border: 0;height: 0;">
-                                    <div @ref="_fillerLeft" id="filler-left"
-                                         style="display: block; min-width: @(_visualSheet.Viewport.Left)px; height: @(RenderedInnerSheetHeight)px;">
-                                    </div>
-                                </td>
-                                <td colspan="@_visualSheet.Viewport.NumberVisibleCols" style="max-height: 0;"></td>
-                            </tr>
-
-                            @if (Sheet.NumRows > 0)
-                            {
-                                @for (int rowIndex = _visualSheet.Viewport.VisibleRegion.Top; rowIndex <= _visualSheet.Viewport.VisibleRegion.Bottom; rowIndex++)
-                                {
-                                    var row = rowIndex;
-                                    var rowHeight = @_cellLayoutProvider.ComputeHeight(row, 1);
-
-                                    if (rowHeight == 0)
-                                        continue;
-
-                                    <tr @key="row" style="max-height:@(rowHeight)px;height:@(rowHeight)px;">
-
-                                        @if (ShowRowHeadings)
-                                        {
-                                            <th></th>
-                                            <th class="unselectable row-head @(StickyHeadings ? "row-sticky" : "")">
-                                                <div class="sheet-cell" data-col="-1" data-row="@row">
-                                                    @(_sheetLocal.Rows.GetHeading(row) ?? (row + 1).ToString())
-                                                </div>
-                                            </th>
-                                        }
-
-                                        <DatasheetRow
-                                            CustomCellTypeDefinitions="CustomCellTypeDefinitions"
-                                            Icons="Icons"
-                                            IsDirty="@DirtyRows.Contains(row)"
-                                            VisualSheet="_visualSheet"
-                                            Sheet="_sheetLocal"
-                                            Row="row"
-                                            Virtualise="Virtualise"/>
-
-                                    </tr>
-                                }
-                            }
                             else
                             {
+                                <thead>
                                 <tr>
-                                    @if (ShowRowHeadings)
-                                    {
-                                        <td></td>
-                                        <td></td>
-                                    }
-                                    <td colspan="@_visualSheet.Viewport.VisibleRegion.Width">
-                                        @if (EmptyRowsTemplate == null)
+                                    <td colspan="1">
+                                        @if (EmptyColumnsTemplate == null)
                                         {
-                                            <div>No rows</div>
+                                            <div>No columns</div>
                                         }
                                         else
                                         {
-                                            @EmptyRowsTemplate
+                                            <div>@EmptyColumnsTemplate</div>
                                         }
                                     </td>
+                                </tr>
+                                </thead>
+                            }
+                        }
+
+                        <tbody>
+
+                        <tr class="collapsed-row">
+                            @if (ShowRowHeadings)
+                            {
+                                <td style="background: red; z-index: 4;"
+                                    class="@(StickyHeadings ? "row-sticky" : "")">
+                                    <div style="position: absolute; overflow: visible; display: block;">
+                                        <PortalTarget TargetId="Row" DatasheetId="@Id"/>
+                                    </div>
+                                </td>
+                                <td></td>
+                            }
+                            <td></td>
+                            <td colspan="@_visualSheet.Viewport.NumberVisibleCols"></td>
+                        </tr>
+
+                        <!-- filler top row -->
+                        <tr>
+                            @{
+                                // +1 here for virtualisation column
+                                var fillerColSpan = _visualSheet.Viewport.NumberVisibleCols + 1;
+                                if (ShowRowHeadings)
+                                    fillerColSpan += 2; // +1 for row headings
+                            }
+                            <td colspan="@fillerColSpan" style="padding: 0; border: 0">
+                                <div id="filler-top" @ref="_fillerTop"
+                                     style="min-height: @(_visualSheet.Viewport.Top)px; display: block;">
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- row for holding left virtualiser -->
+                        <tr class="collapsed-row">
+                            @if (ShowRowHeadings)
+                            {
+                                <th></th>
+                                <th></th>
+                                <!-- row headings -->
+                            }
+                            <td colspan="1" rowspan="@(_visualSheet.Viewport.NumberVisibleRows + 1)"
+                                style="padding: 0; border: 0;height: 0;">
+                                <div @ref="_fillerLeft" id="filler-left"
+                                     style="display: block; min-width: @(_visualSheet.Viewport.Left)px; height: @(RenderedInnerSheetHeight)px;">
+                                </div>
+                            </td>
+                            <td colspan="@_visualSheet.Viewport.NumberVisibleCols" style="max-height: 0;"></td>
+                        </tr>
+
+                        @if (Sheet.NumRows > 0)
+                        {
+                            @for (int rowIndex = _visualSheet.Viewport.VisibleRegion.Top; rowIndex <= _visualSheet.Viewport.VisibleRegion.Bottom; rowIndex++)
+                            {
+                                var row = rowIndex;
+                                var rowHeight = @_cellLayoutProvider.ComputeHeight(row, 1);
+
+                                if (rowHeight == 0)
+                                    continue;
+
+                                <tr @key="row"
+                                    style="max-height:@(rowHeight)px;height:@(rowHeight)px;"
+                                    class="@(!ShowColHeadings && row == Sheet.Rows.FirstVisible ? "sheet-top" : "")">
+
+                                    @if (ShowRowHeadings)
+                                    {
+                                        <th></th>
+                                        <th class="unselectable row-head sheet-left @(StickyHeadings ? "row-sticky" : "")">
+                                            <div class="sheet-cell" data-col="-1" data-row="@row">
+                                                @(_sheetLocal.Rows.GetHeading(row) ?? (row + 1).ToString())
+                                            </div>
+                                        </th>
+                                    }
+
+                                    <DatasheetRow
+                                        RowHasHeading="@ShowRowHeadings"
+                                        CustomCellTypeDefinitions="CustomCellTypeDefinitions"
+                                        Icons="Icons"
+                                        IsDirty="@(DirtyRows.Contains(row) || SheetIsDirty)"
+                                        VisualSheet="_visualSheet"
+                                        Sheet="_sheetLocal"
+                                        Row="row"
+                                        Virtualise="Virtualise"/>
 
                                 </tr>
                             }
-                            </tbody>
-                        </table>
+                        }
+                        else
+                        {
+                            <tr>
+                                @if (ShowRowHeadings)
+                                {
+                                    <td></td>
+                                    <td></td>
+                                }
+                                <td colspan="@_visualSheet.Viewport.VisibleRegion.Width">
+                                    @if (EmptyRowsTemplate == null)
+                                    {
+                                        <div>No rows</div>
+                                    }
+                                    else
+                                    {
+                                        @EmptyRowsTemplate
+                                    }
+                                </td>
 
-                        <!-- filler right -->
-                        <div id="filler-right" @ref="_fillerRight"
-                             style="min-width: @(_visualSheet.Viewport.DistanceRight)px; height:@(_cellLayoutProvider.TotalHeight - _visualSheet.Viewport.DistanceBottom)">
-                        </div>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
 
-                        <EditorOverlayRenderer
-                            @ref="_editorManager"
-                            Sheet="Sheet"
-                            CustomCellTypes="CustomCellTypeDefinitions"
-                            CellLayoutProvider="_cellLayoutProvider"/>
+                    <!-- filler right -->
+                    <div id="filler-right" @ref="_fillerRight"
+                         style="min-width: @(_visualSheet.Viewport.DistanceRight)px; height:@(_cellLayoutProvider.TotalHeight - _visualSheet.Viewport.DistanceBottom)">
                     </div>
 
-                    <!-- filler bottom -->
-                    <div id="filler-bottom" @ref="_fillerBottom"
-                         style="min-height: @(_visualSheet.Viewport?.DistanceBottom)px; min-width:@(_cellLayoutProvider.TotalWidth)px;">
-                    </div>
+                    <EditorOverlayRenderer
+                        @ref="_editorManager"
+                        Sheet="Sheet"
+                        CustomCellTypes="CustomCellTypeDefinitions"
+                        CellLayoutProvider="_cellLayoutProvider"/>
                 </div>
-            }
-            else
-            {
-                if (EmptyColumnsTemplate == null)
-                {
-                    <div>Empty sheet</div>
-                }
-                else
-                {
-                    @EmptyColumnsTemplate
-                }
-            }
+
+                <!-- filler bottom -->
+                <div id="filler-bottom" @ref="_fillerBottom"
+                     style="min-height: @(_visualSheet.Viewport?.DistanceBottom)px; min-width:@(_cellLayoutProvider.TotalWidth)px;">
+                </div>
+            </div>
         </SheetMenuTarget>
 
         <!-- entire size of sheet to force scrollbars. Includes width of row headers/columns-->

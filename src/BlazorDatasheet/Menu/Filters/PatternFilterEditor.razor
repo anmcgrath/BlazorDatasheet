@@ -1,0 +1,27 @@
+﻿@using BlazorDatasheet.Core.Data.Filter
+@inherits BaseFilterEditor
+
+<div style="padding: 8px; display: block;">
+    <div>Text filter</div>
+    <div>
+        <select @bind="PatternFilter.Type">
+            <option value="@PatternFilterType.None">None</option>
+            <option value='-' disabled>――――</option>
+            <option value="@PatternFilterType.Contains">Contains</option>
+            <option value="@PatternFilterType.NotContains">Does not contain</option>
+            <option value='-' disabled>――――</option>
+            <option value="@PatternFilterType.StartsWith">Starts with</option>
+            <option value="@PatternFilterType.NotStartsWith">Does not start with</option>
+            <option value="@PatternFilterType.EndsWith">Ends with</option>
+            <option value="@PatternFilterType.NotEndsWith">Does not end with</option>
+        </select>
+
+        <input type="text" style="width: 80px;" @bind="PatternFilter.Value"/>
+    </div>
+</div>
+
+@code {
+
+    private PatternFilter PatternFilter => (Filter as PatternFilter)!;
+
+}

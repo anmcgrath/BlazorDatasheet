@@ -1,19 +1,18 @@
 using System.Text;
-using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Data.Filter;
 using BlazorDatasheet.Core.Edit;
 using BlazorDatasheet.Core.Events;
+using BlazorDatasheet.Core.Events.Visual;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Core.Layout;
 using BlazorDatasheet.Core.Util;
-using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Edit;
 using BlazorDatasheet.Events;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Render.DefaultComponents;
 using BlazorDatasheet.Services;
-using BlazorDatasheet.Util;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
@@ -66,6 +65,12 @@ public partial class Datasheet : SheetComponentBase
     public int OverflowY { get; set; } = 6;
 
     /// <summary>
+    /// The default filters that are shown when the filter interface is opened and no filter exists.
+    /// </summary>
+    [Parameter]
+    public Type[] DefaultFilterTypes { get; set; } = [typeof(ValueFilter), typeof(PatternFilter)];
+
+    /// <summary>
     /// Register custom editor components (derived from <see cref="BaseEditor"/>) that will be selected
     /// based on the cell type.
     /// </summary>
@@ -101,6 +106,12 @@ public partial class Datasheet : SheetComponentBase
     /// </summary>
     [Parameter]
     public bool CanUserSort { get; set; } = true;
+
+    /// <summary>
+    /// If set to true, the user can filter columns using the context menu.
+    /// </summary>
+    [Parameter]
+    public bool CanUserFilter { get; set; } = true;
 
     /// <summary>
     /// If set to true, the user can merge regions using the context menu.
@@ -240,6 +251,9 @@ public partial class Datasheet : SheetComponentBase
 
     private IJSObjectReference _virtualizer = null!;
 
+    private bool _refreshViewportRequested = false;
+    private bool _renderRequested = false;
+
     protected override void OnInitialized()
     {
         _windowEventService = new WindowEventService(JS);
@@ -262,6 +276,7 @@ public partial class Datasheet : SheetComponentBase
             _sheetLocal.Columns.Removed += async (_, _) => await RefreshViewport();
             _sheetLocal.Rows.SizeModified += async (_, _) => await RefreshViewport();
             _sheetLocal.Columns.SizeModified += async (_, _) => await RefreshViewport();
+            _sheetLocal.ScreenUpdatingChanged += ScreenUpdatingChanged;
 
             _cellLayoutProvider = new CellLayoutProvider(_sheetLocal);
             _visualSheet = new VisualSheet(_sheetLocal);
@@ -270,9 +285,6 @@ public partial class Datasheet : SheetComponentBase
                 DirtyRows.UnionWith(args.DirtyRows);
                 this.StateHasChanged();
             };
-
-            _cellLayoutProvider.IncludeColHeadings = ShowColHeadings;
-            _cellLayoutProvider.IncludeRowHeadings = ShowRowHeadings;
 
             if (!Virtualise)
             {
@@ -285,7 +297,19 @@ public partial class Datasheet : SheetComponentBase
             }
         }
 
+        _cellLayoutProvider.IncludeColHeadings = ShowColHeadings;
+        _cellLayoutProvider.IncludeRowHeadings = ShowRowHeadings;
+
         base.OnParametersSet();
+    }
+
+    private async void ScreenUpdatingChanged(object? sender, SheetScreenUpdatingEventArgs e)
+    {
+        if (e.IsScreenUpdating && _refreshViewportRequested)
+            await RefreshViewport();
+
+        if (e.IsScreenUpdating && _renderRequested)
+            this.StateHasChanged();
     }
 
     private Type GetCellRendererType(string type)
@@ -307,6 +331,10 @@ public partial class Datasheet : SheetComponentBase
 
     protected override bool ShouldRender()
     {
+        _renderRequested = true;
+        if (!Sheet.ScreenUpdating)
+            return false;
+
         return SheetIsDirty || DirtyRows.Any();
     }
 
@@ -341,6 +369,7 @@ public partial class Datasheet : SheetComponentBase
             await module.DisposeAsync();
         }
 
+        _renderRequested = false;
         SheetIsDirty = false;
         DirtyRows.Clear();
     }
@@ -370,6 +399,10 @@ public partial class Datasheet : SheetComponentBase
 
     private async Task RefreshViewport()
     {
+        _refreshViewportRequested = true;
+        if (!Sheet.ScreenUpdating)
+            return;
+
         // Get the most up-to-date positioning of the visible sheet region in the
         // scroll container, then update the viewport to include overflows
         var vInfo =
@@ -386,6 +419,7 @@ public partial class Datasheet : SheetComponentBase
 
         SheetIsDirty = true;
         _visualSheet.UpdateViewport(newViewport);
+        _refreshViewportRequested = false;
     }
 
     private async Task AddWindowEventsAsync()
@@ -515,6 +549,9 @@ public partial class Datasheet : SheetComponentBase
     private async Task<bool> HandleWindowKeyDown(KeyboardEventArgs e)
     {
         if (!IsDataSheetActive)
+            return false;
+
+        if (_menuService.IsMenuOpen())
             return false;
 
         var editorHandled = _editorManager.HandleKeyDown(e.Key, e.CtrlKey, e.ShiftKey, e.AltKey, e.MetaKey);

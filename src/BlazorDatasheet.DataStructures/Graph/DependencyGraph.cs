@@ -206,7 +206,8 @@ public class DependencyGraph<T> where T : Vertex
     {
         if (!_symbolTable.TryGetValue(vKey, out var v))
             return;
-        if (!_symbolTable.TryGetValue(wKey, out var w)) ;
+        if (!_symbolTable.TryGetValue(wKey, out var w))
+            return;
 
         if (!_adj[vKey].ContainsKey(wKey))
         {

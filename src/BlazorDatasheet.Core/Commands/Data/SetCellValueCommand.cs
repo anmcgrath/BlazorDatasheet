@@ -24,13 +24,17 @@ public class SetCellValueCommand : IUndoableCommand
 
     public bool Execute(Sheet sheet)
     {
+        sheet.ScreenUpdating = false;
         _restoreData = sheet.Cells.SetValueImpl(_row, _col, _value);
+        sheet.ScreenUpdating = true;
         return true;
     }
 
     public bool Undo(Sheet sheet)
     {
+        sheet.ScreenUpdating = false;
         sheet.Cells.Restore(_restoreData);
+        sheet.ScreenUpdating = true;
         return true;
     }
 }

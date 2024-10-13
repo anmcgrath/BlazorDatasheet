@@ -1,0 +1,93 @@
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Data.Filter
+@using BlazorDatasheet.Formula.Core
+@inherits BaseFilterEditor
+
+
+<div style="padding: 8px;">
+    <div>Values:</div>
+    <div style="display: block;">
+        <input type="checkbox"
+               @onchange="ToggleSetAll"
+               checked="@ValueFilter.IncludeAll"
+               id="select-all"/>
+        <label for="select-all">[Select all]</label>
+    </div>
+
+    <div style="margin: 4px 8px; display: block; max-height: 100px; overflow-y: scroll;">
+        <div>
+            @{
+                var indx = 0;
+            }
+
+            @foreach (var val in DistinctColumnData)
+            {
+                @if (!val.IsEmpty)
+                {
+                    <div style="display: block;">
+                        <input type="checkbox"
+                               @onchange="e => SetValue(val, e.Value)"
+                               checked="@ValueFilter.Includes(val)"
+                               id="@indx"/>
+                        <label for="@indx">@val.ToString()</label>
+                    </div>
+                }
+                else
+                {
+                    <div style="display: block;">
+                        <input type="checkbox"
+                               @onchange="ToggleIncludeBlanks"
+                               checked="@ValueFilter.IncludeBlanks"
+                               id="include-blanks"/>
+                        <label for="include-blanks">[Include blank]</label>
+                    </div>
+                }
+
+                indx++;
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+
+    private ValueFilter ValueFilter => (Filter as ValueFilter)!;
+
+    private List<CellValue> DistinctColumnData { get; set; } = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            DistinctColumnData = await Sheet.GetDistinctColumnDataAsync(ColumnIndex);
+            StateHasChanged();
+        }
+    }
+
+    private void ToggleSetAll()
+    {
+        ValueFilter.IncludeAll = !ValueFilter.IncludeAll;
+        if (!ValueFilter.IncludeAll)
+        {
+            foreach (var value in DistinctColumnData)
+                ValueFilter.Exclude(value);
+        }
+    }
+
+    private void SetValue(CellValue val, object? isChecked)
+    {
+        if (isChecked is bool c)
+        {
+            if (c)
+                ValueFilter.Include(val);
+            else
+                ValueFilter.Exclude(val);
+        }
+    }
+
+    private void ToggleIncludeBlanks()
+    {
+        ValueFilter.IncludeBlanks = !ValueFilter.IncludeBlanks;
+    }
+
+}

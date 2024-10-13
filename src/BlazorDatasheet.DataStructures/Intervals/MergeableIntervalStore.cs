@@ -264,7 +264,7 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
         return _intervals[_intervals.Keys[i0]];
     }
 
-    public IList<OrderedInterval<T>> GetAllIntervals() => _intervals.Values.ToList();
+    public IList<OrderedInterval<T>> GetAllIntervals() => _intervals.Values;
 
     /// <summary>
     /// Remove the interval from storage

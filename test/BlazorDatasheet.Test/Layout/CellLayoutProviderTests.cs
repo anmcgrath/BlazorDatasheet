@@ -110,7 +110,7 @@ public class CellLayoutProviderTests
     {
         var sheet = new Sheet(10, 10);
         sheet.Columns.SetSize(0, 5, 40);
-        sheet.Columns.GetColumn(0).Should().Be(0);
-        sheet.Columns.GetColumn(41).Should().Be(1);
+        sheet.Columns.GetColumnIndex(0).Should().Be(0);
+        sheet.Columns.GetColumnIndex(41).Should().Be(1);
     }
 }
