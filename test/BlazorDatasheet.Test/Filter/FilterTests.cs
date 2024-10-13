@@ -173,6 +173,42 @@ public class FilterTests
         sheet.Columns.Filters.Get(7).Filters.Should().BeEquivalentTo([filter2]);
     }
 
+    [Test]
+    public void Value_Filter_Should_Remove_Rows_With_NoMatch()
+    {
+        var valueFilter = new ValueFilter();
+        var exclude = CellValue.Text("Exclude");
+
+        valueFilter.Exclude(exclude);
+        valueFilter.IncludeBlanks = true;
+
+        var sheet = new Sheet(10, 10);
+        sheet.Cells.SetValue(4, 0, "Include");
+        sheet.Cells.SetValue(5, 0, exclude);
+        var handler = new FilterHandler();
+        handler.GetHiddenRows(sheet, 0, valueFilter)
+            .Should()
+            .BeEquivalentTo<Interval>([new(5, 5)]);
+    }
+
+    [Test]
+    public void Value_Filter_Matches()
+    {
+        var valueFilter = new ValueFilter();
+        var exclude = CellValue.Number(10);
+        var include = CellValue.Number(1);
+
+        valueFilter.Exclude(exclude);
+        valueFilter.IncludeBlanks = true;
+        valueFilter.IncludeAll = false;
+
+        valueFilter.Match(exclude).Should().BeFalse();
+        valueFilter.Match(include).Should().BeTrue();
+
+        valueFilter.IncludeAll = true;
+        valueFilter.Match(exclude).Should().BeTrue();
+    }
+
     private bool TestPatternFilterMatch(PatternFilterType type, string value, CellValue testValue)
     {
         return (new PatternFilter(type, value)).Match(testValue);
