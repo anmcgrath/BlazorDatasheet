@@ -65,10 +65,10 @@ public partial class Datasheet : SheetComponentBase
     public int OverflowY { get; set; } = 6;
 
     /// <summary>
-    /// The default filter that is shown when the filter interface is opened and no filter exists.
+    /// The default filters that are shown when the filter interface is opened and no filter exists.
     /// </summary>
     [Parameter]
-    public Type DefaultFilterType { get; set; } = typeof(ValueFilter);
+    public Type[] DefaultFilterTypes { get; set; } = [typeof(ValueFilter), typeof(PatternFilter)];
 
     /// <summary>
     /// Register custom editor components (derived from <see cref="BaseEditor"/>) that will be selected

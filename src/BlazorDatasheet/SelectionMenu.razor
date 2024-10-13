@@ -134,6 +134,7 @@
     [Parameter] public bool CanUserHideRows { get; set; } = true;
     [Parameter] public bool CanUserHideCols { get; set; } = true;
     [Parameter] public bool CanUserFilter { get; set; } = true;
+    [Parameter] public Type[] DefaultFilterTypes { get; set; } = default!;
 
     private SheetSubMenu _filterSubMenu = default!;
     private bool HasOpenedFilterMenu { get; set; }
@@ -167,7 +168,10 @@
                     .ToList();
 
                 if (!ColumnFilters.Any())
-                    ColumnFilters = [new ValueFilter(), new PatternFilter()];
+                {
+                    ColumnFilters = DefaultFilterTypes.Select(x => (IFilter)Activator.CreateInstance(x)!)
+                        .ToList();
+                }
             }
         }
     }
@@ -191,4 +195,3 @@
     }
 
 }
-
