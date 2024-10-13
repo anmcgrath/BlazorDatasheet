@@ -153,3 +153,9 @@ var range = sheet.Range("A1:C5);
 var range = sheet.Range(new ColumnRegion(0));
 var range = sheet.Range(0, 0, 4, 5);
 ```
+
+### Community Links
+
+* [Using a Blazor Excel Datasheet To Update A Database](https://blazordata.net/ViewBlogPost/1)
+* [Using OpenAI to Update A Blazor Excel Worksheet](https://blazorhelpwebsite.com/ViewBlogPost/18069)
+* [Microsoft Fabric and the Blazor Data Sheet](https://blazordata.net/ViewBlogPost/4)
