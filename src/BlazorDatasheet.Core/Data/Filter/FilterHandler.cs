@@ -90,8 +90,6 @@ internal class FilterHandler
                 }
             }
         }
-        
-        Console.WriteLine($"THere are {hidden.GetAllIntervals().Count} hidden intervals");
 
         return hidden.GetAllIntervals();
     }
