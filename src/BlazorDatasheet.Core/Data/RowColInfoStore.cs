@@ -146,60 +146,68 @@ public abstract class RowColInfoStore
 
     internal RowColInfoRestoreData UnhideImpl(int start, int count)
     {
-        // We need to set the sizes in the cumulative store to the stored physical
-        // sizes, since the cumulative store will have 0 size for hidden indices.
-        var sizes = SizeStore.GetOverlapping(start, start + count - 1);
-        // first set cumulative sizes in the range to default
+        return UnhideImpl([new(start, start + count - 1)]);
+    }
 
-        var restoreData = new RowColInfoRestoreData()
-        {
-            VisibilityRestoreData = _visible.Clear(start, start + count - 1),
-            CumulativeSizesRestoreData = CumulativeSizeStore.Set(start, start + count - 1, DefaultSize)
-        };
+    internal RowColInfoRestoreData UnhideImpl(IEnumerable<Interval> intervals)
+    {
+        int minRow = int.MaxValue;
+        int maxRow = int.MinValue;
 
-        foreach (var size in sizes)
+        var restoreData = new RowColInfoRestoreData();
+
+        foreach (var interval in intervals)
         {
-            restoreData.CumulativeSizesRestoreData.Merge(CumulativeSizeStore.Set(size.start, size.end,
-                size.value));
+            minRow = Math.Min(interval.Start, minRow);
+            maxRow = Math.Max(interval.End, maxRow);
+
+            restoreData.VisibilityRestoreData.Merge(_visible.Clear(interval.Start, interval.End));
+            restoreData.CumulativeSizesRestoreData.Merge(CumulativeSizeStore.Set(interval.Start, interval.End,
+                DefaultSize));
+
+            // We need to set the sizes in the cumulative store to the stored physical
+            // sizes, since the cumulative store will have 0 size for hidden indices.
+            var sizes = SizeStore.GetOverlapping(interval.Start, interval.End);
+            // first set cumulative sizes in the range to default
+
+            foreach (var size in sizes)
+            {
+                restoreData.CumulativeSizesRestoreData.Merge(CumulativeSizeStore.Set(size.start, size.end,
+                    size.value));
+            }
         }
 
         Sheet.MarkDirty(GetSpannedRegion(0, int.MaxValue));
-        EmitSizeModified(start, start + count - 1);
+        EmitSizeModified(minRow, maxRow);
 
-        return restoreData;
-    }
-    
-    internal RowColInfoRestoreData UnhideImpl(IEnumerable<Interval> intervals)
-    {
-        var restoreData = new RowColInfoRestoreData();
-        Sheet.BatchUpdates();
-        foreach (var interval in intervals)
-            restoreData.Merge(UnhideImpl(interval.Start, interval.Size));
-        Sheet.EndBatchUpdates();
         return restoreData;
     }
 
     internal RowColInfoRestoreData HideImpl(int start, int count)
     {
-        var changedVisibility = _visible.Set(start, start + count - 1, false);
-        var changedCumulativeSizes = CumulativeSizeStore.Set(start, start + count - 1, 0);
-
-        Sheet.MarkDirty(GetSpannedRegion(0, int.MaxValue));
-        EmitSizeModified(start, start + count - 1);
-
-        return new RowColInfoRestoreData()
-        {
-            VisibilityRestoreData = changedVisibility,
-            CumulativeSizesRestoreData = changedCumulativeSizes
-        };
+        return HideImpl([new(start, start + count - 1)]);
     }
 
     internal RowColInfoRestoreData HideImpl(IEnumerable<Interval> intervals)
     {
         var restoreData = new RowColInfoRestoreData();
         Sheet.BatchUpdates();
+
+        int minRow = int.MaxValue;
+        int maxRow = int.MinValue;
+
         foreach (var interval in intervals)
-            restoreData.Merge(HideImpl(interval.Start, interval.Size));
+        {
+            minRow = Math.Min(interval.Start, minRow);
+            maxRow = Math.Max(interval.End, maxRow);
+
+            restoreData.VisibilityRestoreData.Merge(_visible.Set(interval.Start, interval.End, false));
+            restoreData.CumulativeSizesRestoreData.Merge(CumulativeSizeStore.Set(interval.Start, interval.End, 0));
+        }
+
+        Sheet.MarkDirty(GetSpannedRegion(0, int.MaxValue));
+        EmitSizeModified(minRow, maxRow);
+
         Sheet.EndBatchUpdates();
         return restoreData;
     }
