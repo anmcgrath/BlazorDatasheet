@@ -1,9 +1,6 @@
-using System.Diagnostics;
-using System.Text;
 using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Commands.Formatting;
-using BlazorDatasheet.Core.Commands.RowCols;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Edit;
 using BlazorDatasheet.Core.Events;
@@ -16,6 +13,7 @@ using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
+using System.Text;
 
 namespace BlazorDatasheet.Core.Data;
 
@@ -121,8 +119,7 @@ public class Sheet
     /// Fired when <see cref="ScreenUpdating"/> is changed
     /// </summary>
     public EventHandler<SheetScreenUpdatingEventArgs>? ScreenUpdatingChanged;
-
-    #endregion
+    #endregion EVENTS
 
     /// <summary>
     /// True if the sheet is not firing dirty events until <see cref="EndBatchUpdates"/> is called.
@@ -134,20 +131,20 @@ public class Sheet
     /// </summary>
     private readonly ConsolidatedDataStore<bool> _dirtyRegions = new();
 
-    private Sheet()
+    private Sheet(int defaultWidth, int defaultHeight)
     {
         Cells = new Cells.CellStore(this);
         Commands = new CommandManager(this);
         Editor = new Editor(this);
         Validators = new ValidationManager(this);
-        Rows = new RowInfoStore(24, this);
-        Columns = new ColumnInfoStore(105, this);
+        Rows = new RowInfoStore(defaultHeight, this);
+        Columns = new ColumnInfoStore(defaultWidth, this);
         Selection = new Selection(this);
         FormulaEngine = new FormulaEngine.FormulaEngine(this);
         ConditionalFormats = new ConditionalFormatManager(this, Cells);
     }
 
-    public Sheet(int numRows, int numCols) : this()
+    public Sheet(int numRows, int numCols, int defaultWidth = 105, int defaultHeight = 24) : this(defaultWidth, defaultHeight)
     {
         NumCols = numCols;
         NumRows = numRows;
@@ -192,7 +189,7 @@ public class Sheet
         Selection.ConstrainSelectionToSheet();
     }
 
-    #endregion
+    #endregion COLS
 
     #region ROWS
 
@@ -207,7 +204,7 @@ public class Sheet
         Selection.ConstrainSelectionToSheet();
     }
 
-    #endregion
+    #endregion ROWS
 
     /// <summary>
     /// Returns a single cell range at the position row, col
@@ -288,6 +285,7 @@ public class Sheet
         {
             case Axis.Col:
                 return Range(new ColumnRegion(start, end));
+
             case Axis.Row:
                 return Range(new RowRegion(start, end));
         }
@@ -509,7 +507,7 @@ public class Sheet
         Commands.EndCommandGroup();
     }
 
-    #endregion
+    #endregion FORMAT
 
     public string? GetRegionAsDelimitedText(IRegion inputRegion, char tabDelimiter = '\t', string newLineDelim = "\n")
     {
