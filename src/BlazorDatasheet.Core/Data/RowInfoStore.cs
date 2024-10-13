@@ -6,7 +6,7 @@ public class RowInfoStore : RowColInfoStore
 {
     private double _headingWidth = 60;
 
-    public RowInfoStore(double defaultSize, Sheet sheet) : base(defaultSize, sheet, Axis.Row)
+    public RowInfoStore(double defaultHeight, Sheet sheet) : base(defaultHeight, sheet, Axis.Row)
     {
     }
 
