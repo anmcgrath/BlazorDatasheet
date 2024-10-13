@@ -24,6 +24,7 @@
         <!-- Register Menus -->
         <SelectionMenu
             CanUserSort="@CanUserSort"
+            CanUserClearCells="@CanUserClearCells"
             CanUserMergeRange="@CanUserMergeRows"
             CanUserInsertCols="@CanUserInsertCols"
             CanUserInsertRows="@CanUserInsertRows"
@@ -31,7 +32,6 @@
             CanUserRemoveRows="@CanUserRemoveRows"
             CanUserHideCols="@CanUserHideCols"
             CanUserHideRows="@CanUserHideRows"/>
-
 
         <SheetMenuTarget
             MenuId="SelectionMenu"
@@ -102,7 +102,8 @@
                                         NCols="@_visualSheet.Viewport.VisibleRegion.Width"
                                         ColStart="@_visualSheet.Viewport.VisibleRegion.Left"
                                         CellLayoutProvider="_cellLayoutProvider"
-                                        Sheet="_sheetLocal">
+                                        Sheet="_sheetLocal"
+                                        HasAnyUserContextMenuActions="HasAnyUserContextMenuActions">
                                         <HeadingRenderer>
                                             @if (ColumnHeaderTemplate != null)
                                             {

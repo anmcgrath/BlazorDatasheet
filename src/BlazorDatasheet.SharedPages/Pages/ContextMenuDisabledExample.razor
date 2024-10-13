@@ -1,0 +1,32 @@
+@page "/ContextMenuDisable"
+@using BlazorDatasheet.Core.Data
+
+<PageTitle>Context menu disable example</PageTitle>
+
+<h1>Context menu disable example</h1>
+
+<p>Below is a sheet where context menu is disabled.</p>
+
+<Datasheet
+    Sheet="sheet"
+
+    CanUserClearCells="false"
+    CanUserHideCols="false"
+    CanUserHideRows="false"
+    CanUserInsertCols="false"
+    CanUserInsertRows="false"
+    CanUserMergeRows="false"
+    CanUserRemoveCols="false"
+    CanUserRemoveRows="false"
+    CanUserSort="false"/>
+
+@code{
+
+    private Sheet sheet;
+
+    protected override void OnInitialized()
+    {
+        sheet = new Sheet(1, 1);
+    }
+
+}
