@@ -274,7 +274,7 @@ public abstract class RowColInfoStore
 
         direction = Math.Abs(direction) / direction;
 
-        var nextNonVisibleInterval = _visible.GetNext(index - 1, direction);
+        var nextNonVisibleInterval = _visible.GetNext(index, direction);
         int nextIndex = index + direction;
         if (_visible.Get(nextIndex))
             return (nextIndex >= Sheet.GetSize(_axis) || nextIndex < 0 ? -1 : nextIndex);
@@ -282,20 +282,20 @@ public abstract class RowColInfoStore
         while (nextNonVisibleInterval != null)
         {
             if (direction == 1)
-                nextIndex = nextNonVisibleInterval.Value.end + direction;
+                nextIndex = nextNonVisibleInterval.Value.End + direction;
             else
-                nextIndex = nextNonVisibleInterval.Value.position + direction;
+                nextIndex = nextNonVisibleInterval.Value.Start + direction;
 
-            if (_visible.Get(nextIndex))
+            if (_visible.Get(nextIndex) && !nextIndex.Equals(index))
                 break;
 
             nextNonVisibleInterval = _visible.GetNext(nextIndex, direction);
         }
 
-        if (nextIndex >= Sheet.GetSize(_axis) || nextIndex < 0)
-            return -1;
-
         if (nextNonVisibleInterval == null)
+            nextIndex = direction == 1 ? _visible.End + 1 : _visible.Start - 1;
+
+        if (nextIndex >= Sheet.GetSize(_axis) || nextIndex < 0)
             return -1;
 
         return nextIndex;

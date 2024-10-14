@@ -37,4 +37,22 @@ public class RowColVisibility
         sheet.Rows.GetNextVisible(1).Should().Be(5);
         sheet.Rows.GetNextVisible(0).Should().Be(5);
     }
+
+    [Test]
+    public void Next_Visible_With_Hidden_Surrounding_Returns_Correct()
+    {
+        var sheet = new Sheet(11, 11);
+        sheet.Rows.Hide(0, 5);
+        sheet.Rows.Hide(6, 2);
+        sheet.Rows.GetNextVisible(5).Should().Be(8);
+    }
+
+    [Test]
+    public void Next_Visible_With_Hidden_Surrounding_With_Size_1_Returns_Correct()
+    {
+        var sheet = new Sheet(500, 11);
+        sheet.Rows.Hide(11, 1);
+        sheet.Rows.Hide(13, 2);
+        sheet.Rows.GetNextVisible(12).Should().Be(15);
+    }
 }

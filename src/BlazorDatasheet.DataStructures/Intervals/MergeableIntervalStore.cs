@@ -247,21 +247,30 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
             return null;
 
         var i0 = _intervals.Keys.BinarySearchIndexOf(position);
+
+        // either the index or the next highest value
         if (i0 < 0)
         {
             i0 = ~i0;
-            // move to either containing interval index or the one before
+
             if (direction < 0)
                 i0--;
         }
 
-        if (direction < 0 && _intervals.Values[i0].Contains(position))
-            i0--;
-
-        if (i0 >= _intervals.Count || i0 < 0)
+        if (i0 > _intervals.Count - 1)
             return null;
 
-        return _intervals[_intervals.Keys[i0]];
+        var interval = _intervals.Values[i0];
+        while (interval.Contains(position))
+        {
+            i0 += direction;
+
+            if (i0 > _intervals.Count - 1 || i0 < 0)
+                return null;
+            interval = _intervals.Values[i0];
+        }
+
+        return interval;
     }
 
     public IList<OrderedInterval<T>> GetAllIntervals() => _intervals.Values;

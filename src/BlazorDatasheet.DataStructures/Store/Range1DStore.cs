@@ -10,6 +10,15 @@ public class Range1DStore<T>
     protected readonly MergeableIntervalStore<OverwritingValue<T>> Intervals;
     private readonly T? _defaultIfNotFound;
 
+    /// <summary>
+    /// The minimum range of all intervals
+    /// </summary>
+    public int Start => Intervals.Start;
+    /// <summary>
+    /// The maximum range of all intervals
+    /// </summary>
+    public int End => Intervals.End;
+
     public Range1DStore(T? defaultIfNotFound)
     {
         _defaultIfNotFound = defaultIfNotFound;
@@ -85,13 +94,13 @@ public class Range1DStore<T>
     /// <param name="position"></param>
     /// <param name="direction"></param>
     /// <returns></returns>
-    public (int position, int end, T? data)? GetNext(int position, int direction = 1)
+    public Interval? GetNext(int position, int direction = 1)
     {
         var interval = Intervals.GetNext(position, direction);
         if (interval == null)
             return null;
 
-        return (interval.Start, interval.End, interval.Data.Value);
+        return new Interval(interval.Start, interval.End);
     }
 
     public List<(Interval interval, T? data)> GetAllIntervalData()

@@ -1,4 +1,5 @@
 ﻿using System;
+using BlazorDatasheet.DataStructures.Intervals;
 using BlazorDatasheet.DataStructures.Store;
 using FluentAssertions;
 using NUnit.Framework;
@@ -57,9 +58,9 @@ public class Range1DStoreTests
         var store = new Range1DStore<bool>(false);
         store.Set(5, 10, true);
         store.Set(15, 20, true);
-        store.GetNext(0).Should().BeEquivalentTo((5, 10, true));
-        store.GetNext(7).Should().BeEquivalentTo((15, 20, true));
-        store.GetNext(10).Should().BeEquivalentTo((15, 20, true));
+        store.GetNext(0).Should().BeEquivalentTo<Interval>(new(5, 10));
+        store.GetNext(7).Should().BeEquivalentTo<Interval>(new(15, 20));
+        store.GetNext(10).Should().BeEquivalentTo<Interval>(new(15, 20));
         store.GetNext(20).Should().BeNull();
     }
 
@@ -71,11 +72,23 @@ public class Range1DStoreTests
         store.Set(15, 20, true);
         store.GetNext(0, -1).Should().BeNull();
         store.GetNext(7, -1).Should().BeNull();
-        store.GetNext(11, -1).Should().BeEquivalentTo((5, 10, true));
-        store.GetNext(17, -1).Should().BeEquivalentTo((5, 10, true));
-        store.GetNext(22, -1).Should().BeEquivalentTo((15, 20, true));
+        store.GetNext(11, -1).Should().BeEquivalentTo<Interval>(new(5, 10));
+        store.GetNext(17, -1).Should().BeEquivalentTo<Interval>(new(5, 10));
+        store.GetNext(21, -1).Should().BeEquivalentTo<Interval>(new(15, 20));
+        store.GetNext(22, -1).Should().BeEquivalentTo<Interval>(new(15, 20));
     }
-    
+
+    [Test]
+    public void Get_Next_Range_In_reverse_Gets_Correct_Interval_2()
+    {
+        var store = new Range1DStore<bool>(defaultIfNotFound: false);
+        store.Set(5, 6, true);
+        store.Set(8, 9, true);
+        store.GetNext(10, -1)
+            .Should()
+            .BeEquivalentTo(new Interval(8, 9));
+    }
+
     [Test]
     public void Get_Next_Range_With_Empty_Store_Returns_Null()
     {
