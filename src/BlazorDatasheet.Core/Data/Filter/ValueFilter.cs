@@ -4,7 +4,9 @@ namespace BlazorDatasheet.Core.Data.Filter;
 
 public class ValueFilter : IFilter
 {
-    private HashSet<CellValue> _excluded = new();
+    private HashSet<string> _excluded = new();
+
+    public IReadOnlyCollection<string> Excluded => _excluded;
 
     public ValueFilter()
     {
@@ -13,24 +15,24 @@ public class ValueFilter : IFilter
 
     public void Include(CellValue value)
     {
-        _excluded.Remove(value);
+        _excluded.Remove(value.ToString());
         IncludeAll = _excluded.Count == 0;
     }
 
     public void Exclude(CellValue value)
     {
-        _excluded.Add(value);
+        _excluded.Add(value.ToString());
         IncludeAll = _excluded.Count == 0;
     }
 
     public bool Includes(CellValue value)
     {
-        return IncludeAll || !_excluded.Contains(value);
+        return IncludeAll || !_excluded.Contains(value.ToString());
     }
 
     public bool Match(CellValue cellValue)
     {
-        return !_excluded.Contains(cellValue);
+        return !_excluded.Contains(cellValue.ToString());
     }
 
     public bool IncludeBlanks { get; set; } = true;
@@ -55,7 +57,8 @@ public class ValueFilter : IFilter
             if (value)
                 _excluded.Clear();
 
-            IncludeBlanks = value;
+            if (value)
+                IncludeBlanks = value;
             _includeAll = value;
         }
     }
