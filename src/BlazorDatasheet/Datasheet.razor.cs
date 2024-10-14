@@ -96,7 +96,7 @@ public partial class Datasheet : SheetComponentBase
     public bool CanUserInsertRows { get; set; } = true;
 
     /// <summary>
-    /// If set to true, the user can insert columns using the context menu.
+    /// If set to true, the user can insert columns using the context menu.f
     /// </summary>
     [Parameter]
     public bool CanUserInsertCols { get; set; } = true;
@@ -133,6 +133,11 @@ public partial class Datasheet : SheetComponentBase
 
 
     [Parameter] public bool ShowFormulaDependents { get; set; }
+
+    /// <summary>
+    /// Fired when the Datasheet becomes active or inactive (able to receive keyboard inputs).
+    /// </summary>
+    [Parameter] public EventCallback<SheetActiveEventArgs> OnSheetActiveChanged { get; set; }
 
     /// <summary>
     /// Exists so that we can determine whether the sheet has changed
@@ -529,15 +534,15 @@ public partial class Datasheet : SheetComponentBase
         this.UpdateSelectingEndPosition(args.Row, args.Col);
     }
 
-    private Task<bool> HandleWindowMouseDown(MouseEventArgs e)
+    private async Task<bool> HandleWindowMouseDown(MouseEventArgs e)
     {
         bool changed = IsDataSheetActive != IsMouseInsideSheet;
-        IsDataSheetActive = IsMouseInsideSheet;
+        await SetActiveAsync(IsMouseInsideSheet);
 
         if (changed)
             StateHasChanged();
 
-        return Task.FromResult(false);
+        return false;
     }
 
     private Task<bool> HandleWindowMouseUp(MouseEventArgs arg)
@@ -811,5 +816,18 @@ public partial class Datasheet : SheetComponentBase
         if (cellIcon != null && Icons.TryGetValue(cellIcon, out var rf))
             return rf;
         return _ => { };
+    }
+
+    /// <summary>
+    /// Set the datasheet as active, which controls whether the sheet is ready to receive keyboard input events.
+    /// </summary>
+    /// <param name="value"></param>
+    public async Task SetActiveAsync(bool value = true)
+    {
+        if(value == IsDataSheetActive)
+            return;
+        
+        IsDataSheetActive = value;
+        await OnSheetActiveChanged.InvokeAsync(new SheetActiveEventArgs(this, value));
     }
 }

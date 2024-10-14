@@ -6,6 +6,7 @@
 @using BlazorDatasheet.Core.Validation
 @using System.Drawing
 @using BlazorDatasheet.Core.Commands.Data
+@using BlazorDatasheet.Events
 
 <PageTitle>Index</PageTitle>
 
@@ -43,6 +44,7 @@
     <button @onclick="@SortSelectionDesc">Sort Desc</button>
     <button @onclick="@SortSelectionAsc">Sort ASc</button>
     <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { NumberFormat = "C2" }))">Currency</button>
+    <button @onclick="@(() => _datasheet.SetActiveAsync(true))">Set sheet active</button>
 </div>
 
 <div>
