@@ -1,4 +1,5 @@
 using BlazorDatasheet.Core.Data;
+using FluentAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Edit;
@@ -69,5 +70,16 @@ public class EditTests
         sheet.Editor.AcceptEdit();
         sheet.Commands.Undo();
         Assert.AreEqual(null, sheet.Cells.GetValue(0, 0));
+    }
+
+    [Test]
+    public void Do_Not_Do_Conversion_If_Cell_Type_Is_Set_To_Text()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Cells[0, 0].Type = "text";
+        sheet.Editor.BeginEdit(0, 0);
+        sheet.Editor.EditValue = "04-10-1";
+        sheet.Editor.AcceptEdit();
+        sheet.Cells[0,0].Value.Should().Be("04-10-1");
     }
 }

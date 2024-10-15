@@ -85,6 +85,7 @@ public class Editor
     /// <param name="col"></param>
     /// <param name="isSoftEdit">If true, the editor should hold on to the edit when arrow keys are pressed.</param>
     /// <param name="mode">Details on the method that was used to begin the edit.</param>
+    /// <param name="mode">Details on the method that was used to begin the edit.</param>
     /// <param name="key">The key that was used to begin the edit, if the entry mode was using the keyboard</param>
     public void BeginEdit(int row, int col, bool isSoftEdit = true, EditEntryMode mode = EditEntryMode.None,
         string? key = null)
@@ -155,7 +156,7 @@ public class Editor
         }
 
         var formulaResult = isFormula ? Sheet.FormulaEngine.Evaluate(parsedFormula) : CellValue.Empty;
-        var editValue = isFormula ? formulaResult : new CellValue(this.EditValue);
+        var editValue = isFormula ? formulaResult : GetValueAsCellValue(EditCell.Row, EditCell.Col, EditValue);
 
         var beforeAcceptEdit = new BeforeAcceptEditEventArgs(EditCell, editValue, parsedFormula, formulaString);
         BeforeEditAccepted?.Invoke(this, beforeAcceptEdit);
@@ -194,6 +195,18 @@ public class Editor
         }
 
         return false;
+    }
+
+    private CellValue GetValueAsCellValue(int row, int col, string editValue)
+    {
+        var type = Sheet.Cells.GetCellType(row, col);
+        switch (type)
+        {
+            case "text":
+                return CellValue.Text(editValue);
+        }
+
+        return new CellValue(editValue);
     }
 
     private void ClearEdit()
