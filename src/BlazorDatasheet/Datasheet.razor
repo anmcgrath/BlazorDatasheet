@@ -68,7 +68,7 @@
                             <!-- virtualisation column -->
                             <col style="width: @(_visualSheet.Viewport.Left)px;"/>
 
-                            @if (Sheet.NumCols > 0)
+                            @if (_visualSheet.Viewport.NumberVisibleCols > 0)
                             {
                                 @for (int i = _visualSheet.Viewport.VisibleRegion.Left; i <= _visualSheet.Viewport.VisibleRegion.Right; i++)
                                 {
@@ -85,7 +85,7 @@
                         <!-- col headings -->
                         @if (ShowColHeadings)
                         {
-                            if (Sheet.NumCols > 0)
+                            if (_visualSheet.Viewport.NumberVisibleCols > 0)
                             {
                                 <thead class="sheet-left @(StickyHeadings ? "col-sticky" : "")">
                                 <tr style="height: @(_cellLayoutProvider.ColHeadingHeight)px;" class="sheet-top">
@@ -188,7 +188,7 @@
                             <td colspan="@_visualSheet.Viewport.NumberVisibleCols" style="max-height: 0;"></td>
                         </tr>
 
-                        @if (Sheet.NumRows > 0 && _visualSheet.Viewport.NumberVisibleRows > 0)
+                        @if (_visualSheet.Viewport.NumberVisibleRows > 0)
                         {
                             @for (int i = 0; i < _visualSheet.Viewport.VisibleRowIndices.Count; i++)
                             {
