@@ -29,8 +29,7 @@
             CanUserRemoveRows="@CanUserRemoveRows"
             CanUserHideCols="@CanUserHideCols"
             CanUserHideRows="@CanUserHideRows"
-            DefaultFilterTypes="@DefaultFilterTypes"
-            />
+            DefaultFilterTypes="@DefaultFilterTypes"/>
 
 
         <SheetMenuTarget
@@ -189,15 +188,13 @@
                             <td colspan="@_visualSheet.Viewport.NumberVisibleCols" style="max-height: 0;"></td>
                         </tr>
 
-                        @if (Sheet.NumRows > 0)
+                        @if (Sheet.NumRows > 0 && _visualSheet.Viewport.NumberVisibleRows > 0)
                         {
-                            @for (int rowIndex = _visualSheet.Viewport.VisibleRegion.Top; rowIndex <= _visualSheet.Viewport.VisibleRegion.Bottom; rowIndex++)
+                            @for (int i = 0; i < _visualSheet.Viewport.VisibleRowIndices.Count; i++)
                             {
-                                var row = rowIndex;
+                                var rowOffset = i;
+                                var row = _visualSheet.Viewport.VisibleRowIndices[rowOffset];
                                 var rowHeight = @_cellLayoutProvider.ComputeHeight(row, 1);
-
-                                if (rowHeight == 0)
-                                    continue;
 
                                 <tr @key="row"
                                     style="max-height:@(rowHeight)px;height:@(rowHeight)px;"

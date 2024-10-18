@@ -55,4 +55,78 @@ public class RowColVisibility
         sheet.Rows.Hide(13, 2);
         sheet.Rows.GetNextVisible(12).Should().Be(15);
     }
+
+    [Test]
+    public void Get_Visible_Row_Indices_Tests_Start_Row_Hidden()
+    {
+        /*
+         * 0 H
+         * 1 V
+         * 2 V
+         * 3 H
+         * 4 H
+         * 5 V
+         */
+        var sheet = new Sheet(6, 5);
+        sheet.Rows.Hide(0, 1);
+        sheet.Rows.Hide(3, 2);
+        sheet.Rows.GetVisibleIndices(0, 5)
+            .Should()
+            .BeEquivalentTo([1, 2, 5]);
+    }
+
+    [Test]
+    public void Get_Visible_Row_Indices_Tests_End_Row_Hidden()
+    {
+        /*
+         * 0 V
+         * 1 V
+         * 2 V
+         * 3 H
+         * 4 V
+         * 5 H
+         */
+        var sheet = new Sheet(6, 5);
+        sheet.Rows.Hide(3, 1);
+        sheet.Rows.Hide(5, 1);
+        sheet.Rows.GetVisibleIndices(0, 5)
+            .Should()
+            .BeEquivalentTo([0, 1, 2, 4]);
+    }
+
+    [Test]
+    public void Get_Visible_Row_Indices_One_Row_Hidden_Returns_Correct()
+    {
+        /*
+         * 0 V
+         * 1 V
+         * 2 V
+         * 3 V
+         * 4 V
+         * 5 H
+         */
+        var sheet = new Sheet(6, 5);
+        sheet.Rows.Hide(5, 1);
+        sheet.Rows.GetVisibleIndices(0, 5)
+            .Should()
+            .BeEquivalentTo([0, 1, 2, 3, 4]);
+    }
+
+    [Test]
+    public void Get_Visible_Row_Indices_All_Rows_Hidden_Returns_Correct()
+    {
+        /*
+         * 0 V
+         * 1 V
+         * 2 V
+         * 3 V
+         * 4 V
+         * 5 H
+         */
+        var sheet = new Sheet(6, 5);
+        sheet.Rows.Hide(0, 6);
+        sheet.Rows.GetVisibleIndices(0, 5)
+            .Should()
+            .BeEmpty();
+    }
 }

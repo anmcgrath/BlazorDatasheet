@@ -2,9 +2,10 @@
 @using BlazorDatasheet.Render
 @using BlazorDatasheet.Render.DefaultComponents
 
-@for (int j = VisualSheet.Viewport.VisibleRegion.Left; j <= VisualSheet.Viewport.VisibleRegion.Right; j++)
+@for (int j = 0; j < VisualSheet.Viewport.VisibleColIndices.Count; j++)
 {
-    var col = j;
+    var colOffset = j;
+    var col = VisualSheet.Viewport.VisibleColIndices[colOffset];
     var visualCell = VisualSheet.GetVisualCell(Row, col);
 
     if (!visualCell.IsVisible)

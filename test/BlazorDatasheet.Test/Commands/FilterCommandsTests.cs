@@ -24,10 +24,10 @@ public class FilterCommandsTests
         var cmd = new SetColumnFilterCommand(0, new TestFilter("Test"));
         cmd.Execute(sheet);
 
-        sheet.Rows.GetVisibleRows().Should().BeEquivalentTo<Interval>([new(1, 1)]);
+        sheet.Rows.GetVisible().Should().BeEquivalentTo<Interval>([new(1, 1)]);
 
         cmd.Undo(sheet);
-        sheet.Rows.GetVisibleRows().Should().BeNullOrEmpty();
+        sheet.Rows.GetVisible().Should().BeNullOrEmpty();
     }
 
     [Test]
@@ -57,7 +57,7 @@ public class FilterCommandsTests
         filter.Filters.First().Should().BeOfType<TestFilter>();
         filter.Filters.Cast<TestFilter>().First().MatchValue.Should().Be("Test");
 
-        sheet.Rows.GetVisibleRows().Should().BeEquivalentTo<Interval>([new(1, 1)]);
+        sheet.Rows.GetVisible().Should().BeEquivalentTo<Interval>([new(1, 1)]);
     }
 
     [Test]

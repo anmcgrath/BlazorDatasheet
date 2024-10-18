@@ -165,10 +165,6 @@ public class CellLayoutProvider : IGridLayoutProvider
     public Viewport GetViewPort(double left, double top, double containerWidth, double containerHeight, int overflowX,
         int overflowY)
     {
-        // if top > total height of sheet we must have an issue...
-        // if left > total width of sheet we must have an issue...
-        // even if top > total height of sheet - container height we have an issue
-        // even if left > total width of sheet - container width we have an issue
         var totalWidth = _sheet.Columns.GetVisualWidthBetween(0, _sheet.NumCols);
         var totalHeight = _sheet.Rows.GetVisualHeightBetween(0, _sheet.NumRows);
         if (top > totalHeight - containerHeight)
@@ -194,7 +190,14 @@ public class CellLayoutProvider : IGridLayoutProvider
         var startCol = Math.Max(visibleColStart - overflowX, 0);
         var endCol = Math.Min(Math.Max(_sheet.NumCols - 1, 0), visibleColEnd + overflowX);
 
-        var region = new Region(startRow, endRow, startCol, endCol);
+        var rowIndices = _sheet.Rows.GetVisibleIndices(startRow, endRow);
+        var colIndices = _sheet.Columns.GetVisibleIndices(startCol, endCol);
+
+        var region = new Region(
+            rowIndices.FirstOrDefault(),
+            rowIndices.LastOrDefault(),
+            colIndices.FirstOrDefault(),
+            colIndices.LastOrDefault());
 
         var leftPos = _sheet.Columns.GetVisualTop(startCol);
         var topPos = _sheet.Rows.GetVisualTop(startRow);
@@ -212,8 +215,10 @@ public class CellLayoutProvider : IGridLayoutProvider
             DistanceRight = distRight,
             VisibleWidth = visibleWidth,
             VisibleHeight = visibleHeight,
-            NumberVisibleCols = _sheet.Columns.CountVisible(startCol, endCol),
-            NumberVisibleRows = _sheet.Rows.CountVisible(startRow, endRow)
+            NumberVisibleCols = colIndices.Count,
+            NumberVisibleRows = rowIndices.Count,
+            VisibleRowIndices = rowIndices,
+            VisibleColIndices = colIndices
         };
     }
 }
