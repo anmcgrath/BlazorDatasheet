@@ -113,4 +113,30 @@ public class CellLayoutProviderTests
         sheet.Columns.GetColumnIndex(0).Should().Be(0);
         sheet.Columns.GetColumnIndex(41).Should().Be(1);
     }
+    
+    [Test]
+    public void Compute_Visible_Rows_Correctly()
+    {
+        var sheet = new Sheet(10, 12, 10, 10);
+        var cp = new CellLayoutProvider(sheet);
+        sheet.Rows.Hide(0, 2);
+        sheet.Rows.Hide(5, 2);
+        cp.TotalHeight.Should().Be(60);
+        var vp = cp.GetViewPort(0, 0, 100, 100, 0, 0);
+        vp.NumberVisibleRows.Should().Be(6);
+        vp.VisibleRegion.Top.Should().Be(2);
+        vp.VisibleRegion.Bottom.Should().Be(9);
+        vp.VisibleHeight.Should().Be(60);
+        vp.Top.Should().Be(0);
+        vp.DistanceBottom.Should().Be(0);
+    }
+
+    [Test]
+    public void Hide_First_Row_Calculates_Viewport_Top_Correctly()
+    {
+        var sheet = new Sheet(10, 12, 10, 10);
+        sheet.Rows.Hide(0, 1);
+        var cp = new CellLayoutProvider(sheet);
+        cp.GetViewPort(0,0,100,100,0,0).VisibleRegion.Top.Should().Be(1);
+    }
 }

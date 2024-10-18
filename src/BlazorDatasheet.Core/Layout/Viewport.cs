@@ -44,4 +44,8 @@ public class Viewport
     
     public int NumberVisibleRows { get; internal init; }
     public int NumberVisibleCols { get; internal init; }
+
+    public List<int> VisibleRowIndices { get; internal init; } = new();
+    public List<int> VisibleColIndices { get; internal init; } = new();
+
 }
