@@ -137,7 +137,8 @@ public partial class Datasheet : SheetComponentBase
     /// <summary>
     /// Fired when the Datasheet becomes active or inactive (able to receive keyboard inputs).
     /// </summary>
-    [Parameter] public EventCallback<SheetActiveEventArgs> OnSheetActiveChanged { get; set; }
+    [Parameter]
+    public EventCallback<SheetActiveEventArgs> OnSheetActiveChanged { get; set; }
 
     /// <summary>
     /// Exists so that we can determine whether the sheet has changed
@@ -800,8 +801,9 @@ public partial class Datasheet : SheetComponentBase
     /// <summary>
     /// Re-render all cells, regardless of whether they are dirty
     /// </summary>
-    public void ForceReRender()
+    public async void ForceReRender()
     {
+        await RefreshViewport();
         SheetIsDirty = true;
         StateHasChanged();
     }
@@ -824,9 +826,9 @@ public partial class Datasheet : SheetComponentBase
     /// <param name="value"></param>
     public async Task SetActiveAsync(bool value = true)
     {
-        if(value == IsDataSheetActive)
+        if (value == IsDataSheetActive)
             return;
-        
+
         IsDataSheetActive = value;
         await OnSheetActiveChanged.InvokeAsync(new SheetActiveEventArgs(this, value));
     }
