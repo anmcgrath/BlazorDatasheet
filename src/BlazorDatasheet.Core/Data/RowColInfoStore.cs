@@ -270,6 +270,9 @@ public abstract class RowColInfoStore
     /// <returns></returns>
     public List<int> GetVisibleIndices(int start, int end)
     {
+        if (Sheet.GetSize(_axis) == 0)
+            return new List<int>();
+
         start = Math.Max(start, 0);
         end = Math.Min(end, Sheet.GetSize(_axis) - 1);
         var hidden = _visible.GetOverlapping(start, end);
