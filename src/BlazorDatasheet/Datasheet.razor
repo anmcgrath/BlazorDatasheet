@@ -182,7 +182,7 @@
                             <td colspan="1" rowspan="@(_visualSheet.Viewport.NumberVisibleRows + 1)"
                                 style="padding: 0; border: 0;height: 0;">
                                 <div @ref="_fillerLeft" id="filler-left"
-                                     style="display: block; min-width: @(_visualSheet.Viewport.Left)px; height: @(RenderedInnerSheetHeight)px;">
+                                     style="display: block; min-width: @(_visualSheet.Viewport.Left)px; height: @(Math.Max(RenderedInnerSheetHeight, 1))px;">
                                 </div>
                             </td>
                             <td colspan="@_visualSheet.Viewport.NumberVisibleCols" style="max-height: 0;"></td>
@@ -228,7 +228,9 @@
                             <tr>
                                 @if (ShowRowHeadings)
                                 {
+                                    <!-- Heading -->
                                     <td></td>
+                                    <!-- for virtualiser -->
                                     <td></td>
                                 }
                                 <td colspan="@_visualSheet.Viewport.VisibleRegion.Width">
