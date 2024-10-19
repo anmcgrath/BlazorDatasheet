@@ -124,6 +124,11 @@
                             {
                                 <thead>
                                 <tr>
+                                    @if (ShowRowHeadings)
+                                    {
+                                        <td></td>
+                                        <td></td>
+                                    }
                                     <td colspan="1">
                                         @if (EmptyColumnsTemplate == null)
                                         {
@@ -233,7 +238,7 @@
                                     <!-- for virtualiser -->
                                     <td></td>
                                 }
-                                <td colspan="@_visualSheet.Viewport.VisibleRegion.Width">
+                                <td colspan="@(_visualSheet.Viewport.VisibleRegion.Width + 1)">
                                     @if (EmptyRowsTemplate == null)
                                     {
                                         <div>No rows</div>
