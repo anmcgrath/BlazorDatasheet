@@ -29,8 +29,7 @@
             CanUserRemoveRows="@CanUserRemoveRows"
             CanUserHideCols="@CanUserHideCols"
             CanUserHideRows="@CanUserHideRows"
-            DefaultFilterTypes="@DefaultFilterTypes"
-            />
+            DefaultFilterTypes="@DefaultFilterTypes"/>
 
 
         <SheetMenuTarget
@@ -69,7 +68,7 @@
                             <!-- virtualisation column -->
                             <col style="width: @(_visualSheet.Viewport.Left)px;"/>
 
-                            @if (Sheet.NumCols > 0)
+                            @if (_visualSheet.Viewport.NumberVisibleCols > 0)
                             {
                                 @for (int i = _visualSheet.Viewport.VisibleRegion.Left; i <= _visualSheet.Viewport.VisibleRegion.Right; i++)
                                 {
@@ -86,21 +85,21 @@
                         <!-- col headings -->
                         @if (ShowColHeadings)
                         {
-                            if (Sheet.NumCols > 0)
-                            {
-                                <thead class="sheet-left @(StickyHeadings ? "col-sticky" : "")">
-                                <tr style="height: @(_cellLayoutProvider.ColHeadingHeight)px;" class="sheet-top">
-                                    @if (ShowRowHeadings) // the bit to the left of col headings
-                                    {
-                                        <th></th>
-                                        <th style="z-index: 4;" class="col-head row-head sheet-left @(StickyHeadings ? "row-sticky col-sticky" : "")"></th>
-                                    }
+                            <thead class="sheet-left @(StickyHeadings ? "col-sticky" : "")">
+                            <tr style="height: @(_cellLayoutProvider.ColHeadingHeight)px;" class="sheet-top">
+                                @if (ShowRowHeadings) // the bit to the left of col headings
+                                {
+                                    <th></th>
+                                    <th style="z-index: 4;" class="col-head row-head sheet-left @(StickyHeadings ? "row-sticky col-sticky" : "")"></th>
+                                }
 
-                                    <!-- Virtualisation column -->
-                                    <th style="position: relative;">
-                                        <PortalTarget TargetId="Col" DatasheetId="@Id"/>
-                                    </th>
+                                <th style="position: relative;">
+                                    <!-- portal target for rendering column selection highlights -->
+                                    <PortalTarget TargetId="Col" DatasheetId="@Id"/>
+                                </th>
 
+                                @if (_visualSheet.Viewport.NumberVisibleCols > 0)
+                                {
                                     <ColumnHeadingsRenderer
                                         NCols="@_visualSheet.Viewport.VisibleRegion.Width"
                                         ColStart="@_visualSheet.Viewport.VisibleRegion.Left"
@@ -118,13 +117,9 @@
                                             }
                                         </HeadingRenderer>
                                     </ColumnHeadingsRenderer>
-                                </tr>
-                                </thead>
-                            }
-                            else
-                            {
-                                <thead>
-                                <tr>
+                                }
+                                else
+                                {
                                     <td colspan="1">
                                         @if (EmptyColumnsTemplate == null)
                                         {
@@ -135,9 +130,9 @@
                                             <div>@EmptyColumnsTemplate</div>
                                         }
                                     </td>
-                                </tr>
-                                </thead>
-                            }
+                                }
+                            </tr>
+                            </thead>
                         }
 
                         <tbody>
@@ -183,21 +178,19 @@
                             <td colspan="1" rowspan="@(_visualSheet.Viewport.NumberVisibleRows + 1)"
                                 style="padding: 0; border: 0;height: 0;">
                                 <div @ref="_fillerLeft" id="filler-left"
-                                     style="display: block; min-width: @(_visualSheet.Viewport.Left)px; height: @(RenderedInnerSheetHeight)px;">
+                                     style="display: block; min-width: @(_visualSheet.Viewport.Left)px; height: @(Math.Max(RenderedInnerSheetHeight, 1))px;">
                                 </div>
                             </td>
                             <td colspan="@_visualSheet.Viewport.NumberVisibleCols" style="max-height: 0;"></td>
                         </tr>
 
-                        @if (Sheet.NumRows > 0)
+                        @if (_visualSheet.Viewport.NumberVisibleRows > 0)
                         {
-                            @for (int rowIndex = _visualSheet.Viewport.VisibleRegion.Top; rowIndex <= _visualSheet.Viewport.VisibleRegion.Bottom; rowIndex++)
+                            @for (int i = 0; i < _visualSheet.Viewport.VisibleRowIndices.Count; i++)
                             {
-                                var row = rowIndex;
+                                var rowOffset = i;
+                                var row = _visualSheet.Viewport.VisibleRowIndices[rowOffset];
                                 var rowHeight = @_cellLayoutProvider.ComputeHeight(row, 1);
-
-                                if (rowHeight == 0)
-                                    continue;
 
                                 <tr @key="row"
                                     style="max-height:@(rowHeight)px;height:@(rowHeight)px;"
@@ -231,10 +224,12 @@
                             <tr>
                                 @if (ShowRowHeadings)
                                 {
+                                    <!-- Heading -->
                                     <td></td>
+                                    <!-- for virtualiser -->
                                     <td></td>
                                 }
-                                <td colspan="@_visualSheet.Viewport.VisibleRegion.Width">
+                                <td colspan="@(_visualSheet.Viewport.VisibleRegion.Width + 1)">
                                     @if (EmptyRowsTemplate == null)
                                     {
                                         <div>No rows</div>

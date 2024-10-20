@@ -219,6 +219,8 @@ public abstract class RowColInfoStore
     /// <returns></returns>
     public bool IsVisible(int index)
     {
+        if (index < 0 || index >= Sheet.GetSize(_axis))
+            return false;
         return _visible.Get(index);
     }
 
@@ -258,6 +260,44 @@ public abstract class RowColInfoStore
 
         var cmd = new UnhideCommand(start, start + count - 1, _axis);
         Sheet.Commands.ExecuteCommand(cmd);
+    }
+
+    /// <summary>
+    /// Returns the visible rows or columns between <paramref name="start"/> and <paramref name="end"/> inclusive.
+    /// </summary>
+    /// <param name="start"></param>
+    /// <param name="end"></param>
+    /// <returns></returns>
+    public List<int> GetVisibleIndices(int start, int end)
+    {
+        if (Sheet.GetSize(_axis) == 0)
+            return new List<int>();
+
+        start = Math.Max(start, 0);
+        end = Math.Min(end, Sheet.GetSize(_axis) - 1);
+        var hidden = _visible.GetOverlapping(start, end);
+
+        if (!hidden.Any())
+            return Enumerable.Range(start, end - start + 1).ToList();
+
+        var visibleRows = new List<int>();
+
+        int n = hidden.First().start - start;
+        if (n > 0)
+            visibleRows.AddRange(Enumerable.Range(start, n));
+
+        for (int i = 0; i < hidden.Count - 1; ++i)
+        {
+            n = hidden[i + 1].start - (hidden[i].end + 1);
+            if (n > 0)
+                visibleRows.AddRange(Enumerable.Range(hidden[i].end + 1, n));
+        }
+
+        n = end - hidden.Last().end;
+        if (n > 0)
+            visibleRows.AddRange(Enumerable.Range(hidden.Last().end + 1, n));
+
+        return visibleRows;
     }
 
     /// <summary>
@@ -301,7 +341,7 @@ public abstract class RowColInfoStore
         return nextIndex;
     }
 
-    public IEnumerable<Interval> GetVisibleRows()
+    public IEnumerable<Interval> GetVisible()
     {
         return _visible.GetAllIntervals();
     }
