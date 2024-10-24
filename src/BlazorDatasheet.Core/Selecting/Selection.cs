@@ -1,5 +1,6 @@
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Events;
+using BlazorDatasheet.Core.Events.Selection;
 using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.Selecting;
@@ -55,7 +56,15 @@ public class Selection
     /// </summary>
     public event EventHandler<IRegion?>? SelectingChanged;
 
+    /// <summary>
+    /// Fired when the cells that are selected changes.
+    /// </summary>
     public event EventHandler<CellsSelectedEventArgs>? CellsSelected;
+
+    /// <summary>
+    /// Fired when the active cell position changes.
+    /// </summary>
+    public EventHandler<ActiveCellPositionChangedEventArgs> ActiveCellPositionChanged;
 
     public Selection(Sheet sheet)
     {
@@ -130,7 +139,7 @@ public class Selection
     {
         if (SelectingRegion == null)
             return;
-        this.ActiveCellPosition = new CellPosition(SelectingStartPosition.row, SelectingStartPosition.col);
+        SetActiveCellPosition(SelectingStartPosition.row, SelectingStartPosition.col);
         this.Add(SelectingRegion);
         SelectingRegion = null;
         EmitSelectingChanged();
@@ -252,7 +261,7 @@ public class Selection
         this.EndSelecting();
         if (regions.Any())
         {
-            this.ActiveCellPosition = regions.First().TopLeft;
+            SetActiveCellPosition(regions.First().Top, regions.First().Left);
             this.Add(regions);
         }
     }
@@ -346,7 +355,7 @@ public class Selection
             offsetPosn = _sheet.Region.GetConstrained(offsetPosn);
             var newRegion = new Region(offsetPosn.row, offsetPosn.col);
             newRegion = ExpandRegionOverMerged(newRegion) as Region;
-            this.ActiveCellPosition = new CellPosition(offsetPosn.row, offsetPosn.col);
+            SetActiveCellPosition(offsetPosn.row, offsetPosn.col);
             this.Add(newRegion);
 
             EmitSelectionChange();
@@ -385,7 +394,7 @@ public class Selection
             }
         }
 
-        ActiveCellPosition = new CellPosition(newRow, newCol);
+        SetActiveCellPosition(newRow, newCol);
         EmitSelectionChange();
     }
 
@@ -432,7 +441,7 @@ public class Selection
             offsetPosn = _sheet.Region.GetConstrained(offsetPosn);
             var newRegion = new Region(offsetPosn.row, offsetPosn.col);
             newRegion = ExpandRegionOverMerged(newRegion) as Region;
-            this.ActiveCellPosition = new CellPosition(offsetPosn.row, offsetPosn.col);
+            SetActiveCellPosition(offsetPosn.row, offsetPosn.col);
             this.Add(newRegion);
 
             EmitSelectionChange();
@@ -471,7 +480,7 @@ public class Selection
             }
         }
 
-        ActiveCellPosition = new CellPosition(newRow, newCol);
+        SetActiveCellPosition(newRow, newCol);
         EmitSelectionChange();
     }
 
@@ -480,14 +489,14 @@ public class Selection
     /// </summary>
     /// <param name="row"></param>
     /// <param name="col"></param>
-    internal void SetActivePosition(int row, int col)
+    internal void CollapseActiveRegion(int row, int col)
     {
         if (IsEmpty() || _sheet.Area == 0)
             return;
         if (!ActiveRegion.Contains(row, col))
             Set(row, col);
         else // position within active selection
-            ActiveCellPosition = new CellPosition(row, col);
+            SetActiveCellPosition(row, col);
     }
 
     private IRegion GetRegionAfterActive()
@@ -547,5 +556,14 @@ public class Selection
     public void Clear()
     {
         _sheet.Cells.ClearCells(this.Regions);
+    }
+
+    internal void SetActiveCellPosition(int row, int col)
+    {
+        var oldPosition = ActiveCellPosition;
+        var newPosition = new CellPosition(row, col);
+        var args = new ActiveCellPositionChangedEventArgs(oldPosition, newPosition);
+        this.ActiveCellPosition = newPosition;
+        ActiveCellPositionChanged?.Invoke(this, args);
     }
 }

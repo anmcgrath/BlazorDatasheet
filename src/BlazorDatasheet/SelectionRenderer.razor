@@ -1,5 +1,6 @@
 @using Region = BlazorDatasheet.DataStructures.Geometry.Region
 @using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events.Selection
 @using BlazorDatasheet.Core.Layout
 @using BlazorDatasheet.Core.Selecting
 @using BlazorDatasheet.DataStructures.Geometry
@@ -158,10 +159,16 @@
 
             _sheet.Selection.SelectionChanged += OnSelectionChanged;
             _sheet.Selection.SelectingChanged += OnSelectingChanged;
+            _sheet.Selection.ActiveCellPositionChanged += ActiveCellPositionChanged;
             _sheet.Rows.Removed += (_, _) => UpdateHeadingHighlights();
             _sheet.Columns.Removed += (_, _) => UpdateHeadingHighlights();
             _sheet.Editor.EditBegin += (_, _) => StateHasChanged();
         }
+    }
+
+    private void ActiveCellPositionChanged(object? sender, ActiveCellPositionChangedEventArgs e)
+    {
+        StateHasChanged();
     }
 
     // Returns the region that the position covers (may be > 1 because of merged cells)
