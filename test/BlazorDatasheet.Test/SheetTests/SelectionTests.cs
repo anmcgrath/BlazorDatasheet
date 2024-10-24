@@ -2,6 +2,7 @@
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Selecting;
 using BlazorDatasheet.DataStructures.Geometry;
+using FluentAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.SheetTests;
@@ -22,7 +23,7 @@ public class SelectionManagerTests
         var selection = new Selection(_sheet);
         //Select all
         selection.Set(_sheet.Region);
-        var posns = selection.Ranges.SelectMany(x=>x.Positions).ToList();
+        var posns = selection.Ranges.SelectMany(x => x.Positions).ToList();
         var cells = posns.Select(x => _sheet.Cells.GetCell(x.row, x.col)).ToList();
         Assert.AreEqual(_sheet.Region.Area, cells.Count);
     }
@@ -114,5 +115,21 @@ public class SelectionManagerTests
         Assert.AreEqual(4, _sheet.Selection.ActiveRegion.Area);
         _sheet.Selection.MoveActivePositionByRow(1);
         Assert.AreEqual(new CellPosition(2, 0), _sheet.Selection.ActiveCellPosition);
+    }
+
+    [Test]
+    public void Extend_Selection_To_Row_Col_Extends_Correctly()
+    {
+        _sheet.Selection.Set(1, 1);
+        _sheet.Selection.ExtendTo(2, 2);
+        _sheet.Selection.ActiveRegion.Should().BeEquivalentTo(new Region(1, 2, 1, 2));
+    }
+
+    [Test]
+    public void Active_Region_Is_Same_As_Last_Selected_Region_Added()
+    {
+        var r2 = new Region(1, 1, 1, 1);
+        _sheet.Selection.Set([new Region(0, 0, 0, 0), r2]);
+        _sheet.Selection.ActiveRegion.Should().BeSameAs(_sheet.Selection.Regions.Last());
     }
 }

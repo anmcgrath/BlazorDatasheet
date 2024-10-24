@@ -79,4 +79,9 @@ public class EmptyRegion : IRegion
     public void Shift(int dRowStart, int dColStart, int dRowEnd, int dColEnd)
     {
     }
+
+    public void Set(IRegion region)
+    {
+        
+    }
 }

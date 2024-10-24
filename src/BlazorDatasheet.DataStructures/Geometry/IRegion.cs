@@ -243,4 +243,10 @@ public interface IRegion : IEquatable<IRegion>
     /// Shift the entire region by the amount specified
     /// </summary>
     void Shift(int dRowStart, int dRowEnd, int dColStart, int dColEnd);
+
+    /// <summary>
+    /// Sets the region's start and end to those of <paramref name="region"/>
+    /// </summary>
+    /// <param name="region"></param>
+    void Set(IRegion region);
 }
