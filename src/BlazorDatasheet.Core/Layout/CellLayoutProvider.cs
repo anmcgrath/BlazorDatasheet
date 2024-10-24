@@ -70,7 +70,7 @@ public class CellLayoutProvider : IGridLayoutProvider
     public double ComputeLeftPosition(int col)
     {
         var extra = IncludeRowHeadings ? RowHeadingWidth : 0;
-        return _sheet.Columns.GetVisualTop(col) + extra;
+        return _sheet.Columns.GetVisualLeft(col) + extra;
     }
 
     public double ComputeRightPosition(int col)
@@ -199,7 +199,7 @@ public class CellLayoutProvider : IGridLayoutProvider
             colIndices.FirstOrDefault(),
             colIndices.LastOrDefault());
 
-        var leftPos = _sheet.Columns.GetVisualTop(startCol);
+        var leftPos = _sheet.Columns.GetVisualLeft(startCol);
         var topPos = _sheet.Rows.GetVisualTop(startRow);
         var visibleWidth = ComputeWidthBetween(startCol, endCol + 1);
         var visibleHeight = ComputeHeightBetween(startRow, endRow + 1);
