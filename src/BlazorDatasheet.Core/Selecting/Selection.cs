@@ -232,7 +232,7 @@ public class Selection
     }
 
     /// <summary>
-    /// Extends the active region to the row/col specified
+    /// Extends the active position to the row/col specified
     /// </summary>
     /// <param name="row"></param>
     /// <param name="col"></param>
@@ -241,9 +241,8 @@ public class Selection
         if (ActiveRegion == null)
             return;
 
-        var expanded = ActiveRegion.Clone();
-        expanded.ExtendTo(row, col);
-        expanded = ExpandRegionOverMerged(expanded);
+        var newRegion = new Region(ActiveCellPosition.row, row, ActiveCellPosition.col, col);
+        var expanded = ExpandRegionOverMerged(newRegion);
 
         if (expanded != null)
             ActiveRegion.Set(expanded);
@@ -590,7 +589,7 @@ public class Selection
     internal SelectionSnapshot GetSelectionSnapshot()
     {
         var activeRegionIndex = ActiveRegion != null ? _regions.IndexOf(ActiveRegion!) : -1;
-        var regions = _regions.Select(x=>x.Clone()).ToList();
+        var regions = _regions.Select(x => x.Clone()).ToList();
         var activeRegionClone = activeRegionIndex != -1 ? regions[activeRegionIndex] : null;
         return new SelectionSnapshot(activeRegionClone, regions, ActiveCellPosition);
     }
