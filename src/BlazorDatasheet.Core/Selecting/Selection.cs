@@ -250,6 +250,34 @@ public class Selection
     }
 
     /// <summary>
+    /// Expands the edge of the active region by the amount specified.
+    /// </summary>
+    /// <param name="edge"></param>
+    /// <param name="amount"></param>
+    public void ExpandEdge(Edge edge, int amount)
+    {
+        if (ActiveRegion == null)
+            return;
+
+        ActiveRegion.Expand(edge, amount);
+        EmitSelectionChange();
+    }
+
+    /// <summary>
+    /// Contracts the edge of the active region by the amount specified.
+    /// </summary>
+    /// <param name="edge"></param>
+    /// <param name="amount"></param>
+    public void ContractEdge(Edge edge, int amount)
+    {
+        if (ActiveRegion == null)
+            return;
+
+        ActiveRegion.Contract(edge, amount);
+        EmitSelectionChange();
+    }
+
+    /// <summary>
     /// Clears any selections or active selections and sets the selection to the region specified
     /// </summary>
     /// <param name="region"></param>

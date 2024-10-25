@@ -8,6 +8,7 @@ using BlazorDatasheet.Core.Events.Visual;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Core.Layout;
 using BlazorDatasheet.Core.Util;
+using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Edit;
 using BlazorDatasheet.Events;
 using BlazorDatasheet.Render;
@@ -582,7 +583,11 @@ public partial class Datasheet : SheetComponentBase
             var direction = KeyUtil.GetKeyMovementDirection(e.Key);
             if (!Sheet.Editor.IsEditing || (_editorManager.IsSoftEdit && AcceptEdit()))
             {
-                this.CollapseAndMoveSelection(direction.Item1, direction.Item2);
+                if (e.ShiftKey)
+                    GrowActiveSelection(direction.Item1, direction.Item2);
+                else
+                    this.CollapseAndMoveSelection(direction.Item1, direction.Item2);
+
                 return true;
             }
         }
@@ -665,6 +670,52 @@ public partial class Datasheet : SheetComponentBase
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Increases the size of the active selection, around the active cell position
+    /// </summary>
+    /// <param name="dRow"></param>
+    /// <param name="dCol"></param>
+    private void GrowActiveSelection(int dRow, int dCol)
+    {
+        if (Sheet.Selection.ActiveRegion == null)
+            return;
+
+        var selPosition = Sheet.Selection.ActiveCellPosition;
+        if (dCol != 0)
+        {
+            if (dCol == -1)
+            {
+                if (selPosition.col < Sheet.Selection.ActiveRegion.GetEdge(Edge.Right).Right)
+                    Sheet.Selection.ContractEdge(Edge.Right, 1);
+                else
+                    Sheet.Selection.ExpandEdge(Edge.Left, 1);
+            }
+            else if (dCol == 1)
+                if (selPosition.col > Sheet.Selection.ActiveRegion.GetEdge(Edge.Left).Left)
+                    Sheet.Selection.ContractEdge(Edge.Left, 1);
+                else
+                    Sheet.Selection.ExpandEdge(Edge.Right, 1);
+        }
+
+        if (dRow != 0)
+        {
+            if (dRow == -1)
+            {
+                if (selPosition.row < Sheet.Selection.ActiveRegion.GetEdge(Edge.Bottom).Bottom)
+                    Sheet.Selection.ContractEdge(Edge.Bottom, 1);
+                else
+                    Sheet.Selection.ExpandEdge(Edge.Top, 1);
+            }
+            else if (dRow == 1)
+            {
+                if (selPosition.row > Sheet.Selection.ActiveRegion.GetEdge(Edge.Top).Top)
+                    Sheet.Selection.ContractEdge(Edge.Top, 1);
+                else
+                    Sheet.Selection.ExpandEdge(Edge.Bottom, 1);
+            }
+        }
     }
 
     private void CollapseAndMoveSelection(int drow, int dcol)
