@@ -2,6 +2,7 @@
     constructor(dotnetHelper) {
         this.dotnetHelper = dotnetHelper;
         this.handlerMap = {}
+        this.preventDefaultMap = {}
     }
 
     registerEvent(eventName, handlerName) {
@@ -17,16 +18,26 @@
 
     }
 
+    preventDefault(eventName) {
+        this.preventDefaultMap[eventName] = true;
+    }
+
+    cancelPreventDefault(eventType) {
+        this.preventDefaultMap[eventType] = false;
+    }
+
     /**
      *
      * @param e {MouseEvent}
      */
     async handleWindowEvent(e) {
         if (this.handlerMap[e.type]) {
+            if (this.preventDefaultMap[e.type])
+                e.preventDefault()
+
             let respIsHandled = await this.dotnetHelper.invokeMethodAsync(this.handlerMap[e.type], this.serialize(e));
             if (respIsHandled === true) {
                 e.preventDefault();
-                e.stopImmediatePropagation();
             }
         }
     }

@@ -9,4 +9,6 @@ public interface IWindowEventService : IAsyncDisposable
     Task RegisterMouseEvent(string eventType, Func<MouseEventArgs, Task<bool>> handler);
     Task RegisterKeyEvent(string eventType, Func<KeyboardEventArgs, Task<bool>> handler);
     Task RegisterClipboardEvent(string eventType, Func<ClipboardEventArgs, Task<bool>> handler);
+    Task PreventDefault(string eventType);
+    Task CancelPreventDefault(string eventType);
 }

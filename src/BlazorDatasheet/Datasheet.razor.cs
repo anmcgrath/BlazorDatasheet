@@ -263,7 +263,6 @@ public partial class Datasheet : SheetComponentBase
 
     protected override void OnInitialized()
     {
-        _windowEventService = new WindowEventService(JS);
         _clipboard = new Clipboard(JS);
         base.OnInitialized();
     }
@@ -284,6 +283,9 @@ public partial class Datasheet : SheetComponentBase
             _sheetLocal.Rows.SizeModified += async (_, _) => await RefreshViewport();
             _sheetLocal.Columns.SizeModified += async (_, _) => await RefreshViewport();
             _sheetLocal.ScreenUpdatingChanged += ScreenUpdatingChanged;
+            _sheetLocal.Editor.EditBegin += async (_, _) => await _windowEventService.CancelPreventDefault("keydown");
+            _sheetLocal.Editor.EditFinished +=
+                async (_, _) => await _windowEventService.PreventDefault("keydown");
 
             _cellLayoutProvider = new CellLayoutProvider(_sheetLocal);
             _visualSheet = new VisualSheet(_sheetLocal);
@@ -879,6 +881,11 @@ public partial class Datasheet : SheetComponentBase
     {
         if (value == IsDataSheetActive)
             return;
+
+        if (value)
+            await _windowEventService.PreventDefault("keydown");
+        else
+            await _windowEventService.CancelPreventDefault("keydown");
 
         IsDataSheetActive = value;
         await OnSheetActiveChanged.InvokeAsync(new SheetActiveEventArgs(this, value));
