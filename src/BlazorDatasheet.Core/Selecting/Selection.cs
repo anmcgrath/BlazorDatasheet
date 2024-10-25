@@ -586,4 +586,21 @@ public class Selection
         this.ActiveCellPosition = newPosition;
         ActiveCellPositionChanged?.Invoke(this, args);
     }
+
+    internal SelectionSnapshot GetSelectionSnapshot()
+    {
+        var activeRegionIndex = ActiveRegion != null ? _regions.IndexOf(ActiveRegion!) : -1;
+        var regions = _regions.Select(x=>x.Clone()).ToList();
+        var activeRegionClone = activeRegionIndex != -1 ? regions[activeRegionIndex] : null;
+        return new SelectionSnapshot(activeRegionClone, regions, ActiveCellPosition);
+    }
+
+    internal void Restore(SelectionSnapshot selectionSnapshot)
+    {
+        this.ActiveRegion = selectionSnapshot.ActiveRegion;
+        _regions.Clear();
+        _regions.AddRange(selectionSnapshot.Regions);
+        ActiveCellPosition = selectionSnapshot.ActiveCellPosition;
+        EmitSelectionChange();
+    }
 }
