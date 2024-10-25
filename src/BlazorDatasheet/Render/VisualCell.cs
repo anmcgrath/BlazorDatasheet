@@ -49,7 +49,7 @@ public class VisualCell
 
         IsVisible = cell.IsVisible;
 
-        X = sheet.Columns.GetVisualTop(col);
+        X = sheet.Columns.GetVisualLeft(col);
         Y = sheet.Rows.GetVisualTop(row);
         
         FormatStyleString = GetCellFormatStyleString(Row, Col, format, cell.IsValid, cellValue.ValueType);
@@ -69,7 +69,7 @@ public class VisualCell
             Row = row,
             Col = col,
             FormatStyleString = GetCellFormatStyleString(row, col, defaultFormat, true, CellValueType.Text),
-            X = sheet.Columns.GetVisualTop(col),
+            X = sheet.Columns.GetVisualLeft(col),
             Y = sheet.Rows.GetVisualTop(row),
             CellType = "default",
             Format = defaultFormat

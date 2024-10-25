@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.DataStructures.Geometry;
 using FluentAssertions;
 using NUnit.Framework;
 
@@ -27,7 +28,7 @@ public class CommandManagerTests
         cmdMgr.GetUndoCommands().Should().HaveCount(1);
         cmdMgr.ExecuteCommand(new FakeCommand(1, ref _results));
         cmdMgr.GetUndoCommands().Cast<FakeCommand>().Should()
-              .ContainSingle(x => x.Id == 1, "because the first command should no longer be in the stack");
+            .ContainSingle(x => x.Id == 1, "because the first command should no longer be in the stack");
     }
 
     [Test]
@@ -67,6 +68,19 @@ public class CommandManagerTests
         _results.Should().Equal(new[] { 0, 1 }, "because we should now execute commands in order");
         cmdMgr.Undo();
         _results.Should().BeEmpty();
+    }
+
+    [Test]
+    public void Undo_Command_Sets_Selection_To_Original_Value()
+    {
+        var cmd = new FakeCommand(0, ref _results);
+        _sheet.Selection.Set(new Region(0, 10, 0, 10));
+        _sheet.Selection.MoveActivePositionByCol(1);
+        _sheet.Selection.MoveActivePositionByRow(1); // set activeposition to (1,1)
+        _sheet.Commands.ExecuteCommand(cmd);
+        _sheet.Commands.Undo();
+        _sheet.Selection.ActiveRegion.Should().BeEquivalentTo(new Region(0, 10, 0, 10));
+        _sheet.Selection.ActiveCellPosition.Should().BeEquivalentTo(new CellPosition(1, 1));
     }
 }
 

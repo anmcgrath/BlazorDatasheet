@@ -65,7 +65,7 @@ public class ColumnInfoStore : RowColInfoStore
     /// </summary>
     /// <param name="colIndex"></param>
     /// <returns></returns>
-    public double GetVisualTop(int colIndex)
+    public double GetVisualLeft(int colIndex)
     {
         return CumulativeSizeStore.GetCumulative(colIndex);
     }

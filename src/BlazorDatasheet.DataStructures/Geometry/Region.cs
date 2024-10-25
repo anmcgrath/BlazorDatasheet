@@ -85,6 +85,17 @@ public class Region : IRegion
     }
 
     /// <summary>
+    /// Sets the region's start and end to those of <paramref name="region"/>
+    /// </summary>
+    /// <param name="region"></param>
+    public void Set(IRegion region)
+    {
+        Start = region.Start;
+        End = region.End;
+        SetOrderedBounds();
+    }
+
+    /// <summary>
     /// Determines whether a point is inside the region
     /// </summary>
     /// <param name="row"></param>

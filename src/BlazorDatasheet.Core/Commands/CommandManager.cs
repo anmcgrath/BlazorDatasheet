@@ -42,7 +42,6 @@ public class CommandManager
             return true;
         }
 
-        var selectionBeforeExecute = _sheet.Selection.Regions.Select(x => x.Clone()).ToList();
         var result = command.Execute(_sheet);
         if (result)
         {
@@ -51,7 +50,7 @@ public class CommandManager
                 _history.Push(new UndoCommandData()
                 {
                     Command = undoCommand,
-                    SelectedRegions = selectionBeforeExecute
+                    SelectionSnapshot = _sheet.Selection.GetSelectionSnapshot()
                 });
             }
         }
@@ -96,8 +95,7 @@ public class CommandManager
         var cmd = _history.Pop()!;
         var result = cmd.Command.Undo(_sheet);
 
-        if (cmd.SelectedRegions.Any())
-            _sheet.Selection.Set(cmd.SelectedRegions);
+        _sheet.Selection.Restore(cmd.SelectionSnapshot);
 
         if (!HistoryPaused && result)
         {
@@ -122,7 +120,6 @@ public class CommandManager
         var cmd = _redos.Pop()!;
         var result = cmd.Execute(_sheet);
 
-        var selectionBeforeExecute = _sheet.Selection.Regions.Select(x => x.Clone()).ToList();
         if (result)
         {
             if (!HistoryPaused && cmd is IUndoableCommand undoCommand)
@@ -130,7 +127,7 @@ public class CommandManager
                 _history.Push(new UndoCommandData()
                 {
                     Command = undoCommand,
-                    SelectedRegions = selectionBeforeExecute
+                    SelectionSnapshot = _sheet.Selection.GetSelectionSnapshot()
                 });
             }
         }
@@ -195,10 +192,7 @@ internal class UndoCommandData
     /// <summary>
     /// The command to undo.
     /// </summary>
-    public IUndoableCommand Command { get; init; }
+    public IUndoableCommand Command { get; init; } = null!;
 
-    /// <summary>
-    /// The selected range at the time the command was run.
-    /// </summary>
-    public List<IRegion> SelectedRegions { get; init; }
+    public SelectionSnapshot SelectionSnapshot { get; init; }
 }
