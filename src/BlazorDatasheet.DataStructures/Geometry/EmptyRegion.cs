@@ -49,7 +49,7 @@ public class EmptyRegion : IRegion
     public List<IRegion> Break(IEnumerable<IRegion> regions) => [];
 
     public IRegion GetEdge(Edge edge) => new EmptyRegion();
-
+    public int GetEdgePosition(Edge edge) => 0;
     public IRegion Clone() => new EmptyRegion();
 
     public int GetSize(Axis axis) => 0;

@@ -165,6 +165,13 @@ public interface IRegion : IEquatable<IRegion>
     public IRegion GetEdge(Edge edge);
 
     /// <summary>
+    /// Returns the position of the edge, which aligns with the edge axis
+    /// </summary>
+    /// <param name="edge"></param>
+    /// <returns></returns>
+    public int GetEdgePosition(Edge edge);
+
+    /// <summary>
     /// Returns a copy of the region that does keep the order
     /// </summary>
     /// <returns></returns>

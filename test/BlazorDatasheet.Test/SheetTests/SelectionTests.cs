@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Selecting;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -28,18 +29,7 @@ public class SelectionManagerTests
         Assert.AreEqual(_sheet.Region.Area, cells.Count);
     }
 
-    public void Add_Selection_Changes_Active_Selection()
-    {
-        var selection = new Selection(_sheet);
-        var r = new Region(0, 0);
-        selection.Set(r);
-        Assert.AreEqual(r, selection.ActiveRegion);
-        Assert.AreEqual(r.TopLeft, selection.ActiveCellPosition);
-        var r2 = new Region(1, 1);
-        Assert.AreEqual(r2, selection.ActiveRegion);
-        Assert.AreEqual(r2.TopLeft, selection.ActiveCellPosition);
-    }
-
+    [Test]
     public void Add_Selection_Outside_Region_Constrains_Inside()
     {
         var selection = new Selection(_sheet);
@@ -118,6 +108,15 @@ public class SelectionManagerTests
     }
 
     [Test]
+    public void Setting_Selection_Fully_Inside_Merged_Region_Expands_To_Merged_Region()
+    {
+        var merge = new Region(2, 3, 5, 6);
+        _sheet.Cells.Merge(merge);
+        _sheet.Selection.Set(new Region(2, 2, 5, 5));
+        _sheet.Selection.ActiveRegion.Should().BeEquivalentTo(merge);
+    }
+
+    [Test]
     public void Extend_Selection_To_Row_Col_Extends_Correctly()
     {
         _sheet.Selection.Set(1, 1);
@@ -131,5 +130,65 @@ public class SelectionManagerTests
         var r2 = new Region(1, 1, 1, 1);
         _sheet.Selection.Set([new Region(0, 0, 0, 0), r2]);
         _sheet.Selection.ActiveRegion.Should().BeSameAs(_sheet.Selection.Regions.Last());
+    }
+
+    [Test]
+    public void Contract_Region_Over_Merged_Regions_With_Single_Intersection_Works()
+    {
+        var merge = new Region(2, 3, 4, 5);
+        _sheet.Cells.Merge(merge);
+        // intersect on right edge of region
+        var r = new Region(1, 5, 2, 4);
+        _sheet.ContractRegionOverMerges(r)
+            .Should()
+            .BeEquivalentTo(new Region(1, 5, 2, 3));
+    }
+
+    [Test]
+    public void Contract_Region_Over_Merged_Regions_When_Region_Fully_Inside_Merge_Sets_To_Null()
+    {
+        var merge = new Region(1, 4, 1, 4);
+        _sheet.Cells.Merge(merge);
+        _sheet.ContractRegionOverMerges(new Region(2, 3, 2, 3))
+            .Should()
+            .BeNull();
+    }
+
+    [Test]
+    public void Contract_Region_Over_Merged_Regions_When_Region_Equal_Returns_Region()
+    {
+        var merge = new Region(1, 4, 1, 4);
+        _sheet.Cells.Merge(merge);
+        _sheet.ContractRegionOverMerges(merge)
+            .Should()
+            .BeEquivalentTo(merge);
+    }
+
+    [Test]
+    public void Contract_Selection_Over_Merged_Regions_When_Merge_Fully_Inside_Region_Returns_Region()
+    {
+        _sheet.Cells.Merge(new Region(2, 3, 2, 3));
+        var region = new Region(0, 10, 1, 11);
+        _sheet.ContractRegionOverMerges(region)
+            .Should()
+            .BeEquivalentTo(region);
+    }
+
+    [Test]
+    public void Contract_Selection_Over_Single_Cell_Should_Still_Contain_Cell_And_Should_Expand_Other_Edge()
+    {
+        var edges = new List<Edge> { Edge.Right, Edge.Left, Edge.Bottom, Edge.Top };
+        var position = new Region(5, 5);
+        foreach (var edge in edges)
+        {
+            _sheet.Selection.Set(position);
+            _sheet.Selection.ContractEdge(edge, 1);
+            _sheet.Selection.ActiveRegion!.Contains(position)
+                .Should().BeTrue();
+            // the opposite edge should have moved
+            _sheet.Selection.ActiveRegion.GetEdgePosition(edge.GetOpposite())
+                .Should()
+                .NotBe(position.GetEdgePosition(edge.GetOpposite()));
+        }
     }
 }
