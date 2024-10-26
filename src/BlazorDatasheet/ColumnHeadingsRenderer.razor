@@ -3,6 +3,7 @@
 @using BlazorDatasheet.Services
 @using Microsoft.JSInterop
 @using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events
 @using BlazorDatasheet.Core.Layout
 @using BlazorDatasheet.DataStructures.Intervals
 @using BlazorDatasheet.DataStructures.Util
@@ -187,7 +188,7 @@
 
     private void OnSelectingChanged(object? sender, IRegion? region) => UpdateIntervals();
 
-    private void SelectionOnSelectionChanged(object? sender, IEnumerable<IRegion> e) => UpdateIntervals();
+    private void SelectionOnSelectionChanged(object? sender, SelectionChangedEventArgs args) => UpdateIntervals();
 
     private void UpdateIntervals()
     {

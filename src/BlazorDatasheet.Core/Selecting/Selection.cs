@@ -49,7 +49,7 @@ public class Selection
     /// <summary>
     /// Fired when the current selection changes
     /// </summary>
-    public event EventHandler<IEnumerable<IRegion>>? SelectionChanged;
+    public event EventHandler<SelectionChangedEventArgs>? SelectionChanged;
 
     /// <summary>
     /// Fired when the current selecting region changes
@@ -159,9 +159,10 @@ public class Selection
     /// </summary>
     public void ClearSelections()
     {
+        var oldRegions = CloneRegions();
         _regions.Clear();
         ActiveRegion = null;
-        EmitSelectionChange();
+        EmitSelectionChange(oldRegions);
     }
 
     /// <summary>
@@ -176,6 +177,8 @@ public class Selection
     /// <param name="regions"></param>
     private void Add(List<IRegion> regions)
     {
+        var oldRegions = CloneRegions();
+
         if (_sheet.Area == 0 || !regions.Any())
             return;
 
@@ -187,7 +190,7 @@ public class Selection
         }
 
         ActiveRegion = _regions.LastOrDefault();
-        EmitSelectionChange();
+        EmitSelectionChange(oldRegions);
     }
 
     /// <summary>
@@ -197,6 +200,8 @@ public class Selection
     /// <param name="col"></param>
     public void ExtendTo(int row, int col)
     {
+        var oldRegions = CloneRegions();
+
         if (ActiveRegion == null)
             return;
 
@@ -205,7 +210,7 @@ public class Selection
 
         if (expanded != null)
             ActiveRegion.Set(expanded);
-        EmitSelectionChange();
+        EmitSelectionChange(oldRegions);
     }
 
     /// <summary>
@@ -215,6 +220,8 @@ public class Selection
     /// <param name="amount"></param>
     public void ExpandEdge(Edge edge, int amount)
     {
+        var oldRegions = CloneRegions();
+
         if (ActiveRegion == null)
             return;
 
@@ -232,7 +239,7 @@ public class Selection
         if (expanded != null)
             ActiveRegion.Set(expanded);
 
-        EmitSelectionChange();
+        EmitSelectionChange(oldRegions);
     }
 
     private Axis GetAxis(Edge edge)
@@ -250,6 +257,8 @@ public class Selection
     /// <param name="amount"></param>
     public void ContractEdge(Edge edge, int amount)
     {
+        var oldRegions = CloneRegions();
+
         if (ActiveRegion == null)
             return;
 
@@ -274,7 +283,7 @@ public class Selection
             ExpandEdge(edge.GetOpposite(), amount);
         }
 
-        EmitSelectionChange();
+        EmitSelectionChange(oldRegions);
     }
 
     /// <summary>
@@ -355,6 +364,7 @@ public class Selection
     /// <param name="rowDir"></param>
     public void MoveActivePositionByRow(int rowDir)
     {
+        var oldRegions = CloneRegions();
         if (ActiveRegion == null || rowDir == 0)
             return;
 
@@ -395,7 +405,7 @@ public class Selection
             SetActiveCellPosition(offsetPosn.row, offsetPosn.col);
             if (newRegion != null)
                 this.Add(newRegion);
-            EmitSelectionChange();
+            EmitSelectionChange(oldRegions);
             return;
         }
 
@@ -436,7 +446,7 @@ public class Selection
         }
 
         SetActiveCellPosition(newRow, newCol);
-        EmitSelectionChange();
+        EmitSelectionChange(oldRegions);
     }
 
     /// <summary>
@@ -447,6 +457,7 @@ public class Selection
     /// <param name="colDir"></param>
     public void MoveActivePositionByCol(int colDir)
     {
+        var oldRegions = CloneRegions();
         if (ActiveRegion == null || colDir == 0)
             return;
 
@@ -488,7 +499,7 @@ public class Selection
             if (newRegion != null)
                 this.Add(newRegion);
 
-            EmitSelectionChange();
+            EmitSelectionChange(oldRegions);
             return;
         }
 
@@ -528,7 +539,7 @@ public class Selection
         }
 
         SetActiveCellPosition(newRow, newCol);
-        EmitSelectionChange();
+        EmitSelectionChange(oldRegions);
     }
 
     /// <summary>
@@ -568,9 +579,9 @@ public class Selection
         return _regions[activeRegionIndex];
     }
 
-    private void EmitSelectionChange()
+    private void EmitSelectionChange(IReadOnlyList<IRegion> oldRegions)
     {
-        SelectionChanged?.Invoke(this, _regions);
+        SelectionChanged?.Invoke(this, new SelectionChangedEventArgs(oldRegions, _regions));
         CellsSelected?.Invoke(this, new CellsSelectedEventArgs(_sheet.Cells.GetCellsInRegions(_regions)));
     }
 
@@ -624,10 +635,16 @@ public class Selection
 
     internal void Restore(SelectionSnapshot selectionSnapshot)
     {
+        var oldRegions = CloneRegions();
         this.ActiveRegion = selectionSnapshot.ActiveRegion;
         _regions.Clear();
         _regions.AddRange(selectionSnapshot.Regions);
         ActiveCellPosition = selectionSnapshot.ActiveCellPosition;
-        EmitSelectionChange();
+        EmitSelectionChange(oldRegions);
+    }
+
+    private IReadOnlyList<IRegion> CloneRegions()
+    {
+        return _regions.Select(x => x.Clone()).ToList();
     }
 }

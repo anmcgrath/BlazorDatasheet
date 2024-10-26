@@ -4,6 +4,7 @@ using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Filter;
 using BlazorDatasheet.Core.Edit;
 using BlazorDatasheet.Core.Events;
+using BlazorDatasheet.Core.Events.Selection;
 using BlazorDatasheet.Core.Events.Visual;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Core.Layout;
@@ -286,8 +287,10 @@ public partial class Datasheet : SheetComponentBase
             _sheetLocal.Editor.EditBegin += async (_, _) => await _windowEventService.CancelPreventDefault("keydown");
             _sheetLocal.Editor.EditFinished +=
                 async (_, _) => await _windowEventService.PreventDefault("keydown");
-
+            _sheetLocal.Selection.ActiveCellPositionChanged += ActiveCellPositionChangedAsync;
             _cellLayoutProvider = new CellLayoutProvider(_sheetLocal);
+
+
             _visualSheet = new VisualSheet(_sheetLocal);
             _visualSheet.Invalidated += (_, args) =>
             {
@@ -310,6 +313,58 @@ public partial class Datasheet : SheetComponentBase
         _cellLayoutProvider.IncludeRowHeadings = ShowRowHeadings;
 
         base.OnParametersSet();
+    }
+
+    private async void ActiveCellPositionChangedAsync(object? sender, ActiveCellPositionChangedEventArgs args)
+    {
+        var cellRect = Sheet.Cells.GetMerge(args.NewPosition.row, args.NewPosition.col) ??
+                       new Region(args.NewPosition.row, args.NewPosition.col);
+
+        await ScrollToContainRegion(cellRect);
+    }
+
+    private async Task ScrollToContainRegion(IRegion region)
+    {
+        var left = _cellLayoutProvider.ComputeLeftPosition(region);
+        var top = _cellLayoutProvider.ComputeTopPosition(region);
+        var right = _cellLayoutProvider.ComputeRightPosition(region);
+        var bottom = _cellLayoutProvider.ComputeBottomPosition(region);
+
+        var scrollInfo = await _virtualizer.InvokeAsync<ViewportScrollInfo>("getViewportInfo", _wholeSheetDiv);
+
+        double scrollToY = scrollInfo.ParentScrollTop;
+        double scrollToX = scrollInfo.ParentScrollLeft;
+
+        bool doScroll = false;
+
+        if (top < scrollInfo.VisibleTop || bottom > scrollInfo.VisibleTop + scrollInfo.ContainerHeight)
+        {
+            var bottomDist = bottom - (scrollInfo.VisibleTop + scrollInfo.ContainerHeight);
+            var topDist = top - scrollInfo.VisibleTop;
+
+            var scrollYDist = Math.Abs(bottomDist) < Math.Abs(topDist)
+                ? bottomDist
+                : topDist - (bottom - top);
+
+            scrollToY = scrollInfo.ParentScrollTop + scrollYDist;
+            doScroll = true;
+        }
+
+        if (left < scrollInfo.VisibleLeft || right > scrollInfo.VisibleLeft + scrollInfo.ContainerWidth)
+        {
+            var rightDist = right - (scrollInfo.VisibleLeft + scrollInfo.ContainerWidth);
+            var leftDist = left - scrollInfo.VisibleLeft;
+
+            var scrollXDist = Math.Abs(rightDist) < Math.Abs(leftDist)
+                ? rightDist
+                : leftDist - (right - left);
+
+            scrollToX = scrollInfo.ParentScrollLeft + scrollXDist;
+            doScroll = true;
+        }
+
+        if (doScroll)
+            await _virtualizer.InvokeVoidAsync("scrollTo", _wholeSheetDiv, scrollToX, scrollToY, "instant");
     }
 
     private async void ScreenUpdatingChanged(object? sender, SheetScreenUpdatingEventArgs e)
@@ -396,8 +451,8 @@ public partial class Datasheet : SheetComponentBase
 
         var newViewport = _cellLayoutProvider
             .GetViewPort(
-                e.ScrollLeft,
-                e.ScrollTop,
+                e.SheetLeft,
+                e.SheetTop,
                 e.ContainerWidth,
                 e.ContainerHeight,
                 OverflowX,
@@ -419,8 +474,8 @@ public partial class Datasheet : SheetComponentBase
 
         var newViewport = _cellLayoutProvider
             .GetViewPort(
-                vInfo.ScrollLeft,
-                vInfo.ScrollTop,
+                vInfo.SheetLeft,
+                vInfo.SheetTop,
                 vInfo.ContainerWidth,
                 vInfo.ContainerHeight,
                 OverflowX,
@@ -455,7 +510,9 @@ public partial class Datasheet : SheetComponentBase
         }
 
         if (args.ShiftKey && Sheet.Selection.ActiveRegion != null)
+        {
             Sheet.Selection.ExtendTo(args.Row, args.Col);
+        }
         else
         {
             if (!args.MetaKey && !args.CtrlKey)
@@ -586,7 +643,15 @@ public partial class Datasheet : SheetComponentBase
             if (!Sheet.Editor.IsEditing || (_editorManager.IsSoftEdit && AcceptEdit()))
             {
                 if (e.ShiftKey)
+                {
+                    var oldActiveRegion = Sheet.Selection.ActiveRegion?.Clone();
                     GrowActiveSelection(direction.Item1, direction.Item2);
+                    if (oldActiveRegion != null)
+                    {
+                        var r = Sheet.Selection.ActiveRegion!.Break(oldActiveRegion).FirstOrDefault();
+                        await ScrollToContainRegion(r);
+                    }
+                }
                 else
                     this.CollapseAndMoveSelection(direction.Item1, direction.Item2);
 
