@@ -49,7 +49,7 @@ public class Selection
     /// <summary>
     /// Fired when the current selection changes
     /// </summary>
-    public event EventHandler<IEnumerable<IRegion>>? SelectionChanged;
+    public event EventHandler<SelectionChangedEventArgs>? SelectionChanged;
 
     /// <summary>
     /// Fired when the current selecting region changes
@@ -81,7 +81,7 @@ public class Selection
         this.SelectingRegion = new Region(row, col);
         this.SelectingStartPosition = new CellPosition(row, col);
         this._selectingMode = SelectionMode.Cell;
-        this.SelectingRegion = ExpandRegionOverMerged(SelectingRegion);
+        this.SelectingRegion = _sheet.ExpandRegionOverMerges(SelectingRegion);
         EmitSelectingChanged();
     }
 
@@ -92,7 +92,7 @@ public class Selection
         this.SelectingRegion = new ColumnRegion(col, col);
         this.SelectingStartPosition = new CellPosition(0, col);
         this._selectingMode = SelectionMode.Column;
-        this.SelectingRegion = ExpandRegionOverMerged(SelectingRegion);
+        this.SelectingRegion = _sheet.ExpandRegionOverMerges(SelectingRegion);
         EmitSelectingChanged();
     }
 
@@ -103,7 +103,7 @@ public class Selection
         this.SelectingRegion = new RowRegion(row, row);
         this.SelectingStartPosition = new CellPosition(row, 0);
         this._selectingMode = SelectionMode.Row;
-        this.SelectingRegion = ExpandRegionOverMerged(SelectingRegion);
+        this.SelectingRegion = _sheet.ExpandRegionOverMerges(SelectingRegion);
         EmitSelectingChanged();
     }
 
@@ -125,7 +125,7 @@ public class Selection
                 break;
         }
 
-        SelectingRegion = ExpandRegionOverMerged(SelectingRegion);
+        SelectingRegion = _sheet.ExpandRegionOverMerges(SelectingRegion);
         EmitSelectingChanged();
     }
 
@@ -159,9 +159,10 @@ public class Selection
     /// </summary>
     public void ClearSelections()
     {
+        var oldRegions = CloneRegions();
         _regions.Clear();
         ActiveRegion = null;
-        EmitSelectionChange();
+        EmitSelectionChange(oldRegions);
     }
 
     /// <summary>
@@ -176,59 +177,20 @@ public class Selection
     /// <param name="regions"></param>
     private void Add(List<IRegion> regions)
     {
+        var oldRegions = CloneRegions();
+
         if (_sheet.Area == 0 || !regions.Any())
             return;
 
         foreach (var region in regions)
         {
-            var expandedRegion = ExpandRegionOverMerged(region);
+            var expandedRegion = _sheet.ExpandRegionOverMerges(region);
             if (expandedRegion != null)
                 _regions.Add(expandedRegion);
         }
 
         ActiveRegion = _regions.LastOrDefault();
-        EmitSelectionChange();
-    }
-
-    /// <summary>
-    /// Expands the <paramref name="region"/> so that it covers any merged cells
-    /// </summary>
-    private IRegion? ExpandRegionOverMerged(IRegion? region)
-    {
-        if (region is ColumnRegion || region is RowRegion)
-            return region;
-
-        // Look at the four sides of the active region
-        // If any of the sides are touching active regions, we check whether the selection
-        // covers the region entirely. If not, expand the sides so that they cover.
-        // Continue until there are no more merge intersections that we don't fully cover.
-        var boundedRegion = region?.Copy();
-
-        if (boundedRegion == null)
-            return null;
-
-        List<IRegion> mergeOverlaps;
-        do
-        {
-            var top = boundedRegion.GetEdge(Edge.Top);
-            var right = boundedRegion.GetEdge(Edge.Right);
-            var left = boundedRegion.GetEdge(Edge.Left);
-            var bottom = boundedRegion.GetEdge(Edge.Bottom);
-
-            mergeOverlaps =
-                _sheet.Cells
-                    .GetMerges(new[] { top, right, left, bottom })
-                    .Where(x => !boundedRegion.Contains(x))
-                    .ToList();
-
-            // Expand bounded selection to cover all the merges
-            foreach (var merge in mergeOverlaps)
-            {
-                boundedRegion = boundedRegion.GetBoundingRegion(merge);
-            }
-        } while (mergeOverlaps.Any());
-
-        return boundedRegion;
+        EmitSelectionChange(oldRegions);
     }
 
     /// <summary>
@@ -238,43 +200,90 @@ public class Selection
     /// <param name="col"></param>
     public void ExtendTo(int row, int col)
     {
+        var oldRegions = CloneRegions();
+
         if (ActiveRegion == null)
             return;
 
         var newRegion = new Region(ActiveCellPosition.row, row, ActiveCellPosition.col, col);
-        var expanded = ExpandRegionOverMerged(newRegion);
+        var expanded = _sheet.ExpandRegionOverMerges(newRegion);
 
         if (expanded != null)
             ActiveRegion.Set(expanded);
-        EmitSelectionChange();
+        EmitSelectionChange(oldRegions);
     }
 
     /// <summary>
-    /// Expands the edge of the active region by the amount specified.
+    /// Expands the edge of the active region by the amount specified, or the next visible.
     /// </summary>
     /// <param name="edge"></param>
     /// <param name="amount"></param>
     public void ExpandEdge(Edge edge, int amount)
     {
+        var oldRegions = CloneRegions();
+
         if (ActiveRegion == null)
             return;
 
-        ActiveRegion.Expand(edge, amount);
-        EmitSelectionChange();
+        var dir = edge == Edge.Top || edge == Edge.Left ? -1 : 1;
+        var edgePosition = ActiveRegion.GetEdgePosition(edge);
+        var axis = GetAxis(edge);
+
+        var newRegion = ActiveRegion.Clone();
+
+        var nextVisible = _sheet.GetRowColStore(axis).GetNextVisible(edgePosition, dir);
+        newRegion.Expand(edge, Math.Max(Math.Abs(amount), Math.Abs(nextVisible - edgePosition)));
+
+        var expanded = _sheet.ExpandRegionOverMerges(newRegion);
+        expanded = expanded?.GetIntersection(_sheet.Region);
+        if (expanded != null)
+            ActiveRegion.Set(expanded);
+
+        EmitSelectionChange(oldRegions);
+    }
+
+    private Axis GetAxis(Edge edge)
+    {
+        if (edge == Edge.Bottom || edge == Edge.Top)
+            return Axis.Row;
+        else
+            return Axis.Col;
     }
 
     /// <summary>
-    /// Contracts the edge of the active region by the amount specified.
+    /// Contracts the edge of the active region by the amount specified, or the next visible.
     /// </summary>
     /// <param name="edge"></param>
     /// <param name="amount"></param>
     public void ContractEdge(Edge edge, int amount)
     {
+        var oldRegions = CloneRegions();
+
         if (ActiveRegion == null)
             return;
 
-        ActiveRegion.Contract(edge, amount);
-        EmitSelectionChange();
+        var dir = edge == Edge.Top || edge == Edge.Left ? 1 : -1;
+        var edgePosition = ActiveRegion.GetEdgePosition(edge);
+        var axis = GetAxis(edge);
+
+        var nextVisible = _sheet.GetRowColStore(axis).GetNextVisible(edgePosition, dir);
+
+        var newRegion = ActiveRegion.Clone();
+        newRegion.Contract(edge, Math.Abs(nextVisible - edgePosition));
+
+        var contracted = _sheet.ContractRegionOverMerges(newRegion);
+        var activeCellRegion = _sheet.Cells.GetMerge(ActiveCellPosition.row, ActiveCellPosition.col) ??
+                               new Region(ActiveCellPosition.row, ActiveCellPosition.col);
+
+        if (contracted != null &&
+            (contracted.Contains(activeCellRegion) || contracted is RowRegion or ColumnRegion))
+            ActiveRegion.Set(contracted);
+        else
+        {
+            ExpandEdge(edge.GetOpposite(), amount);
+        }
+
+        EmitSelectionChange(oldRegions);
     }
 
     /// <summary>
@@ -355,6 +364,7 @@ public class Selection
     /// <param name="rowDir"></param>
     public void MoveActivePositionByRow(int rowDir)
     {
+        var oldRegions = CloneRegions();
         if (ActiveRegion == null || rowDir == 0)
             return;
 
@@ -391,11 +401,11 @@ public class Selection
             var offsetPosn = new CellPosition(currRow, currCol);
             offsetPosn = _sheet.Region.GetConstrained(offsetPosn);
             var newRegion = new Region(offsetPosn.row, offsetPosn.col);
-            newRegion = ExpandRegionOverMerged(newRegion) as Region;
+            newRegion = _sheet.ExpandRegionOverMerges(newRegion) as Region;
             SetActiveCellPosition(offsetPosn.row, offsetPosn.col);
             if (newRegion != null)
                 this.Add(newRegion);
-            EmitSelectionChange();
+            EmitSelectionChange(oldRegions);
             return;
         }
 
@@ -436,7 +446,7 @@ public class Selection
         }
 
         SetActiveCellPosition(newRow, newCol);
-        EmitSelectionChange();
+        EmitSelectionChange(oldRegions);
     }
 
     /// <summary>
@@ -447,6 +457,7 @@ public class Selection
     /// <param name="colDir"></param>
     public void MoveActivePositionByCol(int colDir)
     {
+        var oldRegions = CloneRegions();
         if (ActiveRegion == null || colDir == 0)
             return;
 
@@ -483,12 +494,12 @@ public class Selection
             var offsetPosn = new CellPosition(currRow, currCol);
             offsetPosn = _sheet.Region.GetConstrained(offsetPosn);
             var newRegion = new Region(offsetPosn.row, offsetPosn.col);
-            newRegion = ExpandRegionOverMerged(newRegion) as Region;
+            newRegion = _sheet.ExpandRegionOverMerges(newRegion) as Region;
             SetActiveCellPosition(offsetPosn.row, offsetPosn.col);
             if (newRegion != null)
                 this.Add(newRegion);
 
-            EmitSelectionChange();
+            EmitSelectionChange(oldRegions);
             return;
         }
 
@@ -528,7 +539,7 @@ public class Selection
         }
 
         SetActiveCellPosition(newRow, newCol);
-        EmitSelectionChange();
+        EmitSelectionChange(oldRegions);
     }
 
     /// <summary>
@@ -568,9 +579,9 @@ public class Selection
         return _regions[activeRegionIndex];
     }
 
-    private void EmitSelectionChange()
+    private void EmitSelectionChange(IReadOnlyList<IRegion> oldRegions)
     {
-        SelectionChanged?.Invoke(this, _regions);
+        SelectionChanged?.Invoke(this, new SelectionChangedEventArgs(oldRegions, _regions));
         CellsSelected?.Invoke(this, new CellsSelectedEventArgs(_sheet.Cells.GetCellsInRegions(_regions)));
     }
 
@@ -624,10 +635,16 @@ public class Selection
 
     internal void Restore(SelectionSnapshot selectionSnapshot)
     {
+        var oldRegions = CloneRegions();
         this.ActiveRegion = selectionSnapshot.ActiveRegion;
         _regions.Clear();
         _regions.AddRange(selectionSnapshot.Regions);
         ActiveCellPosition = selectionSnapshot.ActiveCellPosition;
-        EmitSelectionChange();
+        EmitSelectionChange(oldRegions);
+    }
+
+    private IReadOnlyList<IRegion> CloneRegions()
+    {
+        return _regions.Select(x => x.Clone()).ToList();
     }
 }

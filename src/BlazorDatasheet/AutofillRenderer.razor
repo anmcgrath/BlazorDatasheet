@@ -1,5 +1,6 @@
 ﻿@using System.Text
 @using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events
 @using BlazorDatasheet.Core.Layout
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Events
@@ -214,7 +215,7 @@
     }
 
 
-    private void SelectionOnSelectionChanged(object? sender, IEnumerable<IRegion> e)
+    private void SelectionOnSelectionChanged(object? sender, SelectionChangedEventArgs args)
     {
         StateHasChanged();
     }

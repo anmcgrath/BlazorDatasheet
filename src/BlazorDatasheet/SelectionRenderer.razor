@@ -1,5 +1,6 @@
 @using Region = BlazorDatasheet.DataStructures.Geometry.Region
 @using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events
 @using BlazorDatasheet.Core.Events.Selection
 @using BlazorDatasheet.Core.Layout
 @using BlazorDatasheet.Core.Selecting
@@ -181,7 +182,7 @@
             return new Region(position.row, position.col);
     }
 
-    private void OnSelectionChanged(object? sender, IEnumerable<IRegion> regions)
+    private void OnSelectionChanged(object? sender, SelectionChangedEventArgs args)
     {
         UpdateHeadingHighlights();
         StateHasChanged();

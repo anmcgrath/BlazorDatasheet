@@ -189,6 +189,23 @@ public class Region : IRegion
         return default;
     }
 
+    public int GetEdgePosition(Edge edge)
+    {
+        switch (edge)
+        {
+            case Edge.Top:
+                return Top;
+            case Edge.Bottom:
+                return Bottom;
+            case Edge.Left:
+                return Left;
+            case Edge.Right:
+                return Right;
+        }
+
+        return 0;
+    }
+
     /// <summary>
     /// Updates region so that it falls inside the region
     /// </summary>
@@ -285,7 +302,7 @@ public class Region : IRegion
         this.End = new CellPosition(this.End.row + dRow, this.End.col + dCol);
         this.SetOrderedBounds();
     }
-    
+
     public virtual void Shift(int dRowStart, int dRowEnd, int dColStart, int dColEnd)
     {
         this.Start = new CellPosition(this.Start.row + dRowStart, this.Start.col + dColStart);
@@ -490,7 +507,7 @@ public class Region : IRegion
             {
                 if (broken.GetIntersection(region) == null)
                     continue;
-                
+
                 toRemove.Add(broken);
                 newBroken.AddRange(broken.Break(region));
             }

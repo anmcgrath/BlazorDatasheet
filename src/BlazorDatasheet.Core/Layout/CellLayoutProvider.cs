@@ -78,6 +78,9 @@ public class CellLayoutProvider : IGridLayoutProvider
         return ComputeLeftPosition(col) + _sheet.Columns.GetVisualWidth(col);
     }
 
+    public double ComputeRightPosition(IRegion region) => ComputeRightPosition(region.Right);
+    public double ComputeBottomPosition(IRegion region) => ComputeBottomPosition(region.Bottom);
+
     public double ComputeTopPosition(IRegion region)
     {
         return ComputeTopPosition(region.TopLeft.row);

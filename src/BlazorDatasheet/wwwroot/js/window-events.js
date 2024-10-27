@@ -2,6 +2,8 @@
     constructor(dotnetHelper) {
         this.dotnetHelper = dotnetHelper;
         this.handlerMap = {}
+        this.preventDefaultMap = {}
+        this.preventExclusionsMap = {}
     }
 
     registerEvent(eventName, handlerName) {
@@ -17,16 +19,56 @@
 
     }
 
+    preventDefault(eventName, exclusions) {
+        this.preventDefaultMap[eventName] = true;
+        this.preventExclusionsMap[eventName] = exclusions;
+
+    }
+
+    cancelPreventDefault(eventType) {
+        this.preventDefaultMap[eventType] = false;
+        this.preventExclusionsMap[eventType] = []
+    }
+
     /**
      *
      * @param e {MouseEvent}
      */
     async handleWindowEvent(e) {
         if (this.handlerMap[e.type]) {
+            if (this.preventDefaultMap[e.type]) {
+
+                let preventDefault = true
+                let evSerialized = this.serialize(e)
+
+                if (this.preventExclusionsMap[e.type]) {
+                    // if one of these exclusions match the keyboard event,
+                    // don't prevent default
+
+                    for (const exclusion of this.preventExclusionsMap[e.type]) {
+                        let exclusionMatches = true
+                        for (const prop in exclusion) {
+                            if (exclusion[prop] == null)
+                                continue
+                            if (exclusion[prop] !== evSerialized[prop]) {
+                                exclusionMatches = false
+                                break
+                            }
+                        }
+                        if (exclusionMatches) {
+                            preventDefault = false
+                            break
+                        }
+                    }
+                }
+
+                if (preventDefault)
+                    e.preventDefault()
+            }
+
             let respIsHandled = await this.dotnetHelper.invokeMethodAsync(this.handlerMap[e.type], this.serialize(e));
             if (respIsHandled === true) {
                 e.preventDefault();
-                e.stopImmediatePropagation();
             }
         }
     }
@@ -54,7 +96,7 @@
         if (e) {
             return {
                 key: e.key,
-                code: e.keyCode.toString(),
+                code: e.code,
                 location: e.location,
                 repeat: e.repeat,
                 ctrlKey: e.ctrlKey,

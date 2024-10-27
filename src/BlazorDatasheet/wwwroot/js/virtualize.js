@@ -10,13 +10,15 @@
         let overflowX = window.getComputedStyle(parent).overflowX
         let overflow = window.getComputedStyle(parent).overflow
 
-        if (overflowY == 'scroll' || overflowX == 'scroll' || overflow == 'scroll')
+        if (overflowY === 'scroll' || overflowX === 'scroll' || overflow === 'scroll')
             return parent
         return this.findScrollableAncestor(parent)
     }
 
     getViewportInfo(wholeSheetEl) {
+        this.wholeSheetEl = wholeSheetEl
         let parent = this.findScrollableAncestor(wholeSheetEl) || document.documentElement
+        let parentRect = parent.getBoundingClientRect()
         // how much of the element has disappeared above the parent's scroll area?
         // if the parent is an element, it is equal to scroll height
         // otherwise if the parent is the document, it is equal to the top of the document - top of element.
@@ -33,12 +35,19 @@
         // scroll height/width is always the height/width of the element
         let scrollHeight = wholeSheetRect.height
         let scrollWidth = wholeSheetRect.width
-        
+
+        let visibleTopPosition = Math.max(0, parentRect.top) - wholeSheetRect.top;
+        let visibleLeftPosition = Math.max(0, parentRect.left) - wholeSheetRect.left;
+
         return {
-            scrollLeft: scrollLeft,
-            scrollTop: scrollTop,
+            sheetLeft: scrollLeft,
+            sheetTop: scrollTop,
             containerWidth: clientWidth,
-            containerHeight: clientHeight
+            containerHeight: clientHeight,
+            visibleTop: visibleTopPosition,
+            visibleLeft: visibleLeftPosition,
+            parentScrollTop: parent.scrollTop,
+            parentScrollLeft: parent.scrollLeft,
         }
     }
 
@@ -64,7 +73,6 @@
     resizeMap = {}
 
     addVirtualisationHandlers(dotNetHelper, el, dotnetScrollHandlerName, fillerLeft, fillerTop, fillerRight, fillerBottom) {
-
         // return initial scroll event to render the sheet
         let parent = this.findScrollableAncestor(el)
         if (parent) {
@@ -137,6 +145,11 @@
 
         mutationObserver.observe(filler, {attributes: true})
         return mutationObserver
+    }
+
+    scrollTo(wholeSheetEl, x, y, behaviour) {
+        let parent = this.findScrollableAncestor(wholeSheetEl) || document.documentElement
+        parent.scrollTo({left: x, top: y, behavior: behaviour})
     }
 
     sheetMousePositionListeners = {}

@@ -12,9 +12,9 @@ namespace BlazorDatasheet.Services;
 public class WindowEventService : IWindowEventService
 {
     private readonly IJSRuntime _js;
-    private IJSObjectReference _windowEventObj = null!;
+    private IJSObjectReference? _windowEventObj = null!;
 
-    private DotNetObjectReference<WindowEventService> _dotNetHelper;
+    private DotNetObjectReference<WindowEventService> _dotNetHelper = null!;
 
     private Dictionary<string, Func<MouseEventArgs, Task<bool>>>? _mouseEventListeners;
     private Dictionary<string, Func<KeyboardEventArgs, Task<bool>>>? _keyEventListeners;
@@ -52,8 +52,23 @@ public class WindowEventService : IWindowEventService
         await AddWindowEvent(eventType, nameof(HandleWindowClipboardEvent));
     }
 
+    public async Task PreventDefault(string eventType, List<object>? exclusions = null)
+    {
+        await CreateDotnetHelperIfNotExists();
+        if (_windowEventObj == null)
+            return;
+        await _windowEventObj.InvokeVoidAsync("preventDefault", eventType, exclusions);
+    }
 
-    private async ValueTask AddWindowEvent(string evType, string jsInvokableName)
+    public async Task CancelPreventDefault(string eventType)
+    {
+        await CreateDotnetHelperIfNotExists();
+        if (_windowEventObj == null)
+            return;
+        await _windowEventObj.InvokeVoidAsync("cancelPreventDefault", eventType);
+    }
+
+    private async Task CreateDotnetHelperIfNotExists()
     {
         if (_windowEventObj == null)
         {
@@ -63,6 +78,14 @@ public class WindowEventService : IWindowEventService
             _windowEventObj = await module.InvokeAsync<IJSObjectReference>("createWindowEvents", _dotNetHelper);
             await module.DisposeAsync();
         }
+    }
+
+
+    private async ValueTask AddWindowEvent(string evType, string jsInvokableName)
+    {
+        await CreateDotnetHelperIfNotExists();
+        if (_windowEventObj == null)
+            return;
 
         await _windowEventObj.InvokeVoidAsync("registerEvent", evType, jsInvokableName);
     }
@@ -114,8 +137,12 @@ public class WindowEventService : IWindowEventService
     {
         try
         {
-            await _windowEventObj.InvokeVoidAsync("dispose");
-            await _windowEventObj.DisposeAsync();
+            if (_windowEventObj != null)
+            {
+                await _windowEventObj.InvokeVoidAsync("dispose");
+                await _windowEventObj.DisposeAsync();
+            }
+
             _dotNetHelper?.Dispose();
         }
         catch (Exception e)
@@ -123,13 +150,4 @@ public class WindowEventService : IWindowEventService
             Console.WriteLine(e.Message);
         }
     }
-}
-
-internal class WindowEventOptions
-{
-    public string MouseDownCallbackName { get; set; }
-    public string MouseUpCallbackName { get; set; }
-    public string MouseMoveCallbackName { get; set; }
-    public string KeyDownCallbackName { get; set; }
-    public string PasteCallbackName { get; set; }
 }
