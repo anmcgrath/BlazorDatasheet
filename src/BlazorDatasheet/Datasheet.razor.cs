@@ -342,6 +342,17 @@ public partial class Datasheet : SheetComponentBase
         var bottom = _cellLayoutProvider.ComputeBottomPosition(region);
 
         var scrollInfo = await _virtualizer.InvokeAsync<ViewportScrollInfo>("getViewportInfo", _wholeSheetDiv);
+        if (ShowRowHeadings && StickyHeadings)
+        {
+            scrollInfo.VisibleLeft += _cellLayoutProvider.RowHeadingWidth;
+            scrollInfo.ContainerWidth -= _cellLayoutProvider.RowHeadingWidth;
+        }
+
+        if (ShowColHeadings && StickyHeadings)
+        {
+            scrollInfo.VisibleTop += _cellLayoutProvider.ColHeadingHeight;
+            scrollInfo.ContainerHeight -= _cellLayoutProvider.ColHeadingHeight;
+        }
 
         double scrollToY = scrollInfo.ParentScrollTop;
         double scrollToX = scrollInfo.ParentScrollLeft;
@@ -355,9 +366,10 @@ public partial class Datasheet : SheetComponentBase
 
             var scrollYDist = Math.Abs(bottomDist) < Math.Abs(topDist)
                 ? bottomDist
-                : topDist - (bottom - top);
+                : topDist;
 
-            scrollToY = scrollInfo.ParentScrollTop + scrollYDist;
+            scrollToY = Math.Round(scrollInfo.ParentScrollTop + scrollYDist, 1);
+            Console.WriteLine(scrollToY);
             doScroll = true;
         }
 
@@ -368,9 +380,9 @@ public partial class Datasheet : SheetComponentBase
 
             var scrollXDist = Math.Abs(rightDist) < Math.Abs(leftDist)
                 ? rightDist
-                : leftDist - (right - left);
+                : leftDist;
 
-            scrollToX = scrollInfo.ParentScrollLeft + scrollXDist;
+            scrollToX = Math.Round(scrollInfo.ParentScrollLeft + scrollXDist, 1);
             doScroll = true;
         }
 
@@ -805,7 +817,6 @@ public partial class Datasheet : SheetComponentBase
 
         var posn = Sheet.Selection.ActiveCellPosition;
 
-        Sheet.Selection.ClearSelections();
         Sheet.Selection.Set(posn.row, posn.col);
         Sheet.Selection.MoveActivePositionByRow(drow);
         Sheet.Selection.MoveActivePositionByCol(dcol);
