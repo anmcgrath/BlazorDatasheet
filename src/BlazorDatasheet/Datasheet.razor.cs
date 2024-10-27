@@ -15,6 +15,7 @@ using BlazorDatasheet.Events;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Render.DefaultComponents;
 using BlazorDatasheet.Services;
+using BlazorDatasheet.Util;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
@@ -262,6 +263,14 @@ public partial class Datasheet : SheetComponentBase
     private bool _refreshViewportRequested = false;
     private bool _renderRequested = false;
 
+    private List<object> _pasteKeys =
+    [
+        new KeyMap() { CtrlKey = true, Key = "v" },
+        new KeyMap() { CtrlKey = true, Key = "V" },
+        new KeyMap() { MetaKey = true, Key = "v" },
+        new KeyMap() { MetaKey = true, Key = "V" },
+    ];
+
     protected override void OnInitialized()
     {
         _clipboard = new Clipboard(JS);
@@ -285,8 +294,10 @@ public partial class Datasheet : SheetComponentBase
             _sheetLocal.Columns.SizeModified += async (_, _) => await RefreshViewport();
             _sheetLocal.ScreenUpdatingChanged += ScreenUpdatingChanged;
             _sheetLocal.Editor.EditBegin += async (_, _) => await _windowEventService.CancelPreventDefault("keydown");
+
             _sheetLocal.Editor.EditFinished +=
-                async (_, _) => await _windowEventService.PreventDefault("keydown");
+                async (_, _) => await _windowEventService.PreventDefault("keydown", _pasteKeys);
+
             _sheetLocal.Selection.ActiveCellPositionChanged += ActiveCellPositionChangedAsync;
             _cellLayoutProvider = new CellLayoutProvider(_sheetLocal);
 
@@ -666,19 +677,18 @@ public partial class Datasheet : SheetComponentBase
             return true;
         }
 
-        if (e.Code == "67" /*C*/ && (e.CtrlKey || e.MetaKey) && !Sheet.Editor.IsEditing)
+        if (e.Key.ToLower() == "c" && (e.CtrlKey || e.MetaKey) && !Sheet.Editor.IsEditing)
         {
             await CopySelectionToClipboard();
             return true;
         }
 
-        if (e.Code == "89" /*Y*/ && (e.CtrlKey || e.MetaKey) && !Sheet.Editor.IsEditing)
+        if (e.Key.ToLower() == "y" && (e.CtrlKey || e.MetaKey) && !Sheet.Editor.IsEditing)
         {
             return Sheet.Commands.Redo();
         }
 
-
-        if (e.Code == "90" /*Z*/ && (e.CtrlKey || e.MetaKey) && !Sheet.Editor.IsEditing)
+        if (e.Key.ToLower() == "z" && (e.CtrlKey || e.MetaKey) && !Sheet.Editor.IsEditing)
         {
             return Sheet.Commands.Undo();
         }
@@ -948,7 +958,7 @@ public partial class Datasheet : SheetComponentBase
             return;
 
         if (value)
-            await _windowEventService.PreventDefault("keydown");
+            await _windowEventService.PreventDefault("keydown", _pasteKeys);
         else
             await _windowEventService.CancelPreventDefault("keydown");
 

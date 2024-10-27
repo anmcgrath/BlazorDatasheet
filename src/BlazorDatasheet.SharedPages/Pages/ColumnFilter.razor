@@ -1,6 +1,8 @@
 ﻿@page "/ColumnFilter"
+@using System.Diagnostics
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Data.Filter
+@using BlazorDatasheet.Formula.Core
 
 <h1>Column filter</h1>
 
@@ -17,21 +19,33 @@
 
     protected override void OnInitialized()
     {
+        var sw = Stopwatch.StartNew();
+        Console.WriteLine($"StartingUp {sw.ElapsedMilliseconds}");
         Sheet.Commands.PauseHistory();
         Sheet.BatchUpdates();
+        Console.WriteLine($"about to loop {sw.ElapsedMilliseconds}");
         for (int i = 0; i < Sheet.NumCols; i++)
         {
+            Console.WriteLine($"Generating words {i} {sw.ElapsedMilliseconds}");
             var uniqueWords = Generate(20);
+            Console.WriteLine($"Words generated {i} {sw.ElapsedMilliseconds}");
+            Console.WriteLine($"Setting cells {sw.ElapsedMilliseconds}");
             for (int j = 0; j < Sheet.NumRows; j++)
             {
-                Sheet.Cells[j, i].Value = uniqueWords[Random.Next(0, uniqueWords.Length - 1)];
+                Sheet.Cells.SetValue(j, i, CellValue.Text(uniqueWords[Random.Next(0, uniqueWords.Length - 1)]));
             }
+
+            Console.WriteLine($"End setting cells {sw.ElapsedMilliseconds}");
         }
-        
+
+        Console.WriteLine($"Setting filters {sw.ElapsedMilliseconds}");
         Sheet.Columns.Filters.Set(0,[new ValueFilter(), new PatternFilter(PatternFilterType.Contains, "T")]);
 
+        Console.WriteLine($"End batching update {sw.ElapsedMilliseconds}");
         Sheet.EndBatchUpdates();
         Sheet.Commands.ResumeHistory();
+        Sheet.ScreenUpdating = true;
+
         base.OnInitialized();
     }
 
