@@ -31,6 +31,8 @@ internal class SparseList<T>
         Values[itemIndex] = value;
     }
 
+    public bool IsEmpty() => Values.Count == 0;
+
     /// <summary>
     /// Clears a value from memory but doesn't affect any other positions.
     /// </summary>
