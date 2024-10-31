@@ -65,6 +65,10 @@ public partial class CellStore
 
         var newCellValue = value.IsEmpty ? _defaultCellValue : value;
         restoreData.ValueRestoreData = _dataStore.Set(row, col, newCellValue);
+        if (value.IsEmpty)
+            restoreData.ValueRestoreData = _dataStore.Clear(row, col);
+        else
+            restoreData.ValueRestoreData = _dataStore.Set(row, col, value);
 
         this.EmitCellChanged(row, col);
         _sheet.MarkDirty(row, col);
