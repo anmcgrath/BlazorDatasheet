@@ -1,3 +1,5 @@
+using BlazorDatasheet.DataStructures.Geometry;
+
 namespace BlazorDatasheet.Core.Util;
 
 public static class KeyUtil
@@ -32,13 +34,13 @@ public static class KeyUtil
         return key == "Enter";
     }
 
-    public static (int row, int col) GetKeyMovementDirection(string key)
+    public static Offset GetKeyMovementDirection(string key)
     {
-        if (IsKeyDown(key)) return (1, 0);
-        if (IsKeyUp(key)) return (-1, 0);
-        if (IsKeyLeft(key)) return (0, -1);
-        if (IsKeyRight(key)) return (0, 1);
+        if (IsKeyDown(key)) return new(1, 0);
+        if (IsKeyUp(key)) return new(-1, 0);
+        if (IsKeyLeft(key)) return new(0, -1);
+        if (IsKeyRight(key)) return new(0, 1);
 
-        return (0, 0);
+        return new(0, 0);
     }
 }
