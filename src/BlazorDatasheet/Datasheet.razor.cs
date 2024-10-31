@@ -653,7 +653,7 @@ public partial class Datasheet : SheetComponentBase
                     }
                 }
                 else
-                    this.CollapseAndMoveSelection(direction.Item1, direction.Item2);
+                    this.CollapseAndMoveSelection(direction.row, direction.col);
 
                 return true;
             }
