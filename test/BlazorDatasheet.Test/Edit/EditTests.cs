@@ -1,4 +1,6 @@
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Formats;
+using BlazorDatasheet.DataStructures.Geometry;
 using FluentAssertions;
 using NUnit.Framework;
 
@@ -80,6 +82,24 @@ public class EditTests
         sheet.Editor.BeginEdit(0, 0);
         sheet.Editor.EditValue = "04-10-1";
         sheet.Editor.AcceptEdit();
-        sheet.Cells[0,0].Value.Should().Be("04-10-1");
+        sheet.Cells[0, 0].Value.Should().Be("04-10-1");
+    }
+
+    [Test]
+    public void Do_Not_Start_Edit_If_Cell_Is_Readonly()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.SetFormat(new Region(1, 1), new CellFormat() { IsReadOnly = true });
+        sheet.Editor.BeginEdit(1, 1);
+        sheet.Editor.IsEditing.Should().Be(false);
+    }
+    
+    [Test]
+    public void Cell_That_Is_not_visible_should_not_be_edited()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Rows.Hide(1, 1);
+        sheet.Editor.BeginEdit(1, 1);
+        sheet.Editor.IsEditing.Should().Be(false);
     }
 }
