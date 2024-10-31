@@ -296,7 +296,6 @@ public partial class Datasheet : SheetComponentBase
             _sheetLocal.Editor.EditFinished +=
                 async (_, _) => await _windowEventService.PreventDefault("keydown");
 
-            _sheetLocal.Selection.ActiveCellPositionChanged += ActiveCellPositionChangedAsync;
             _cellLayoutProvider = new CellLayoutProvider(_sheetLocal);
 
 
@@ -322,14 +321,6 @@ public partial class Datasheet : SheetComponentBase
         _cellLayoutProvider.IncludeRowHeadings = ShowRowHeadings;
 
         base.OnParametersSet();
-    }
-
-    private async void ActiveCellPositionChangedAsync(object? sender, ActiveCellPositionChangedEventArgs args)
-    {
-        var cellRect = Sheet.Cells.GetMerge(args.NewPosition.row, args.NewPosition.col) ??
-                       new Region(args.NewPosition.row, args.NewPosition.col);
-
-        await ScrollToContainRegion(cellRect);
     }
 
     private async Task ScrollToContainRegion(IRegion region)
@@ -367,7 +358,6 @@ public partial class Datasheet : SheetComponentBase
                 : topDist;
 
             scrollToY = Math.Round(scrollInfo.ParentScrollTop + scrollYDist, 1);
-            Console.WriteLine(scrollToY);
             doScroll = true;
         }
 
@@ -652,21 +642,52 @@ public partial class Datasheet : SheetComponentBase
             GrowActiveSelection(offset);
             if (oldActiveRegion == null) return false;
             var r = Sheet.Selection.ActiveRegion!.Break(oldActiveRegion).FirstOrDefault();
-            await ScrollToContainRegion(r);
+
+            if (r == null)
+            {
+                // if r is null we are instead shrinking the region, so instead break the old region with the new
+                // but we contract the new region to ensure that it is now visible
+                var rNew = Sheet.Selection.ActiveRegion.Clone();
+                Edge edge = Edge.None;
+                if (offset.Rows == 1)
+                    edge = Edge.Top;
+                else if (offset.Rows == -1)
+                    edge = Edge.Bottom;
+                else if (offset.Columns == 1)
+                    edge = Edge.Left;
+                else if (offset.Columns == -1)
+                    edge = Edge.Right;
+
+                rNew.Contract(edge, 1);
+                r = oldActiveRegion.Break(rNew).FirstOrDefault();
+            }
+
+            if (r != null)
+                await ScrollToContainRegion(r);
         }
         else
         {
             CollapseAndMoveSelection(offset);
+            await ScrollToActiveCellPosition();
         }
 
         return true;
     }
 
-    private bool AcceptEditAndMoveActiveSelection(Axis axis, int amount)
+    private async Task<bool> AcceptEditAndMoveActiveSelection(Axis axis, int amount)
     {
         var acceptEdit = !Sheet.Editor.IsEditing || Sheet.Editor.AcceptEdit();
         Sheet.Selection.MoveActivePosition(axis, amount);
+        await ScrollToActiveCellPosition();
         return acceptEdit;
+    }
+
+    private async Task ScrollToActiveCellPosition()
+    {
+        var cellRect =
+            Sheet.Cells.GetMerge(Sheet.Selection.ActiveCellPosition.row, Sheet.Selection.ActiveCellPosition.col) ??
+            new Region(Sheet.Selection.ActiveCellPosition.row, Sheet.Selection.ActiveCellPosition.col);
+        await ScrollToContainRegion(cellRect);
     }
 
     private async Task<bool> HandleWindowKeyDown(KeyboardEventArgs e)
