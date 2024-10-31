@@ -83,22 +83,41 @@ public class Editor
     /// </summary>
     /// <param name="row"></param>
     /// <param name="col"></param>
-    /// <param name="isSoftEdit">If true, the editor should hold on to the edit when arrow keys are pressed.</param>
-    /// <param name="mode">Details on the method that was used to begin the edit.</param>
+    /// <param name="forceSoftEdit">Whether to force the "soft edit" which enables the edit to be cancelled by the arrow keys</param>
     /// <param name="mode">Details on the method that was used to begin the edit.</param>
     /// <param name="key">The key that was used to begin the edit, if the entry mode was using the keyboard</param>
-    public void BeginEdit(int row, int col, bool isSoftEdit = true, EditEntryMode mode = EditEntryMode.None,
+    public void BeginEdit(int row, int col, bool forceSoftEdit = false, EditEntryMode mode = EditEntryMode.None,
         string? key = null)
     {
         if (this.IsEditing)
             return;
 
         var cell = Sheet.Cells.GetCell(row, col);
+        if (cell.Format.IsReadOnly == true)
+            return;
+
+        // check if the cell is visible OR if the cell is merged, and part of the cell is visible
+        if (!cell.IsVisible)
+        {
+            var mergedRegion = Sheet.Cells.GetMerge(row, col);
+            if (mergedRegion == null)
+                return;
+
+            // is some part of the merge visible?
+            if (Sheet.Rows.GetNextVisible(mergedRegion.Top - 1) > mergedRegion.Bottom)
+                return;
+            if (Sheet.Columns.GetNextVisible(mergedRegion.Left - 1) > mergedRegion.Right)
+                return;
+        }
+
         var beforeEditArgs = new BeforeCellEditEventArgs(cell, cell.GetValue<string>() ?? string.Empty, cell.Type);
         this.BeforeCellEdit?.Invoke(this, beforeEditArgs);
 
         if (beforeEditArgs.CancelEdit)
             return;
+
+        var isSoftEdit = forceSoftEdit ||
+                         (mode == EditEntryMode.Key || mode == EditEntryMode.None || cell.Value == null);
 
         EditValue = beforeEditArgs.EditValue;
         IsEditing = true;
@@ -137,9 +156,6 @@ public class Editor
     /// </summary>
     public bool AcceptEdit()
     {
-        if (!this.IsEditing || EditCell == null)
-            return false;
-
         // Determine if it's a formula, and calculate.
         CellFormula? parsedFormula = null;
         var isFormula = Sheet.FormulaEngine.IsFormula(this.EditValue);

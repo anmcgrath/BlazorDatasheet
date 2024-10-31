@@ -356,6 +356,14 @@ public class Selection
         return !_regions.Any();
     }
 
+    public void MoveActivePosition(Axis axis, int amount)
+    {
+        if (axis == Axis.Col)
+            MoveActivePositionByCol(amount);
+        else if (axis == Axis.Row)
+            MoveActivePositionByRow(amount);
+    }
+
     /// <summary>
     /// Move the active cell position to the next most relevant position
     /// If there's nowhere to go, collapse and move down. Otherwise, move through all regions,

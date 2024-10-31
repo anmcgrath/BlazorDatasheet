@@ -1,3 +1,5 @@
+using BlazorDatasheet.DataStructures.Geometry;
+
 namespace BlazorDatasheet.Core.Util;
 
 public static class KeyUtil
@@ -32,13 +34,13 @@ public static class KeyUtil
         return key == "Enter";
     }
 
-    public static Tuple<int, int> GetKeyMovementDirection(string key)
+    public static Offset GetMovementFromArrowKey(string key)
     {
-        if (IsKeyDown(key)) return new Tuple<int, int>(1, 0);
-        if (IsKeyUp(key)) return new Tuple<int, int>(-1, 0);
-        if (IsKeyLeft(key)) return new Tuple<int, int>(0, -1);
-        if (IsKeyRight(key)) return new Tuple<int, int>(0, 1);
+        if (IsKeyDown(key)) return new(1, 0);
+        if (IsKeyUp(key)) return new(-1, 0);
+        if (IsKeyLeft(key)) return new(0, -1);
+        if (IsKeyRight(key)) return new(0, 1);
 
-        return new Tuple<int, int>(0, 0);
+        return new(0, 0);
     }
 }
