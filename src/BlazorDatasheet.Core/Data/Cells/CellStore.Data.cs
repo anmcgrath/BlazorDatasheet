@@ -63,15 +63,12 @@ public partial class CellStore
         // Save old validation result and current cell values.
         restoreData.ValidRestoreData = _validStore.Set(row, col, validationResult.IsValid);
 
-        var newCellValue = value.IsEmpty ? _defaultCellValue : value;
-        restoreData.ValueRestoreData = _dataStore.Set(row, col, newCellValue);
         if (value.IsEmpty)
             restoreData.ValueRestoreData = _dataStore.Clear(row, col);
         else
             restoreData.ValueRestoreData = _dataStore.Set(row, col, value);
 
         this.EmitCellChanged(row, col);
-        _sheet.MarkDirty(row, col);
 
         return restoreData;
     }
@@ -114,7 +111,7 @@ public partial class CellStore
     /// <param name="col"></param>
     /// <param name="values">The list of rows, with each row having a number of values.</param>
     /// <returns></returns>
-    public bool SetValues(int row, int col, IEnumerable<IEnumerable<object>> values)
+    public bool SetValues(int row, int col, object[][] values)
     {
         return SetValues(
             values.SelectMany((rowValues, rIndex)

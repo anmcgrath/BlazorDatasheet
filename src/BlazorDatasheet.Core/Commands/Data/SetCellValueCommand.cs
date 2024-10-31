@@ -26,6 +26,7 @@ public class SetCellValueCommand : IUndoableCommand
     {
         sheet.ScreenUpdating = false;
         _restoreData = sheet.Cells.SetValueImpl(_row, _col, _value);
+        sheet.MarkDirty(_row, _col);
         sheet.ScreenUpdating = true;
         return true;
     }
