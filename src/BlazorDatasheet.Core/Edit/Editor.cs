@@ -156,9 +156,6 @@ public class Editor
     /// </summary>
     public bool AcceptEdit()
     {
-        if (!this.IsEditing || EditCell == null)
-            return false;
-
         // Determine if it's a formula, and calculate.
         CellFormula? parsedFormula = null;
         var isFormula = Sheet.FormulaEngine.IsFormula(this.EditValue);

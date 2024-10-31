@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
@@ -12,6 +13,8 @@ using BlazorDatasheet.Core.Util;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Edit;
 using BlazorDatasheet.Events;
+using BlazorDatasheet.Extensions;
+using BlazorDatasheet.KeyboardInput;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Render.DefaultComponents;
 using BlazorDatasheet.Services;
@@ -20,6 +23,8 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using ClipboardEventArgs = BlazorDatasheet.Core.Events.ClipboardEventArgs;
+
+[assembly: InternalsVisibleTo("BlazorDatasheet.Test")]
 
 namespace BlazorDatasheet;
 
@@ -263,17 +268,10 @@ public partial class Datasheet : SheetComponentBase
     private bool _refreshViewportRequested = false;
     private bool _renderRequested = false;
 
-    private List<object> _pasteKeys =
-    [
-        new KeyMap() { CtrlKey = true, Key = "v" },
-        new KeyMap() { CtrlKey = true, Key = "V" },
-        new KeyMap() { MetaKey = true, Key = "v" },
-        new KeyMap() { MetaKey = true, Key = "V" },
-    ];
-
     protected override void OnInitialized()
     {
         _clipboard = new Clipboard(JS);
+        RegisterDefaultShortcuts();
         base.OnInitialized();
     }
 
@@ -296,7 +294,7 @@ public partial class Datasheet : SheetComponentBase
             _sheetLocal.Editor.EditBegin += async (_, _) => await _windowEventService.CancelPreventDefault("keydown");
 
             _sheetLocal.Editor.EditFinished +=
-                async (_, _) => await _windowEventService.PreventDefault("keydown", _pasteKeys);
+                async (_, _) => await _windowEventService.PreventDefault("keydown");
 
             _sheetLocal.Selection.ActiveCellPositionChanged += ActiveCellPositionChangedAsync;
             _cellLayoutProvider = new CellLayoutProvider(_sheetLocal);
@@ -527,7 +525,7 @@ public partial class Datasheet : SheetComponentBase
         {
             if (!(Sheet.Editor.EditCell!.Row == args.Row && Sheet.Editor.EditCell!.Col == args.Col))
             {
-                if (!AcceptEdit())
+                if (!Sheet.Editor.AcceptEdit())
                     return;
             }
         }
@@ -572,24 +570,6 @@ public partial class Datasheet : SheetComponentBase
         Sheet.Editor.BeginEdit(row, col, false, mode, entryChar);
     }
 
-    /// <summary>
-    /// Accepts the current edit returning whether the edit was successful
-    /// </summary>
-    /// <returns></returns>
-    private bool AcceptEdit()
-    {
-        return Sheet.Editor.AcceptEdit();
-    }
-
-    /// <summary>
-    /// Cancels the current edit, returning whether the edit was successful
-    /// </summary>
-    /// <returns></returns>
-    private bool CancelEdit()
-    {
-        return Sheet.Editor.CancelEdit();
-    }
-
     private void HandleCellMouseOver(object? sender, SheetPointerEventArgs args)
     {
         this.UpdateSelectingEndPosition(args.Row, args.Col);
@@ -612,6 +592,86 @@ public partial class Datasheet : SheetComponentBase
         return Task.FromResult(false);
     }
 
+    internal async Task<bool> HandleShortcuts(string key, KeyboardModifiers modifiers)
+    {
+        return await ShortcutManager.ExecuteAsync(key, modifiers,
+            new ShortcutExecutionContext(this, this.Sheet));
+    }
+
+    private void RegisterDefaultShortcuts()
+    {
+        ShortcutManager.Register(["Escape"], KeyboardModifiers.Any,
+            context => Sheet.Editor.CancelEdit());
+
+        ShortcutManager
+            .Register(["Enter"], KeyboardModifiers.None, _ => AcceptEditAndMoveActiveSelection(Axis.Row, 1));
+        ShortcutManager
+            .Register(["Enter"], KeyboardModifiers.Shift, _ => AcceptEditAndMoveActiveSelection(Axis.Row, -1));
+
+        ShortcutManager
+            .Register(["Tab"], KeyboardModifiers.None, _ => AcceptEditAndMoveActiveSelection(Axis.Col, 1));
+        ShortcutManager
+            .Register(["Tab"], KeyboardModifiers.Shift, _ => AcceptEditAndMoveActiveSelection(Axis.Col, -1));
+
+        ShortcutManager
+            .Register(["KeyC"], [KeyboardModifiers.Ctrl, KeyboardModifiers.Meta],
+                async (_) => await CopySelectionToClipboard(),
+                _ => !Sheet.Editor.IsEditing);
+
+        ShortcutManager
+            .Register(["ArrowUp", "ArrowRight", "ArrowDown", "ArrowLeft"], KeyboardModifiers.None,
+                c =>
+                {
+                    var accepted = true;
+                    if (_editorManager.IsEditing)
+                        accepted = _editorManager.IsSoftEdit && Sheet.Editor.AcceptEdit();
+
+                    if (accepted)
+                        CollapseAndMoveSelection(KeyUtil.GetKeyMovementDirection(c.Key));
+                    return accepted;
+                }
+            );
+
+        ShortcutManager
+            .Register(["ArrowUp", "ArrowRight", "ArrowDown", "ArrowLeft"], KeyboardModifiers.Shift,
+                async c =>
+                {
+                    var accepted = true;
+                    if (_editorManager.IsEditing)
+                        accepted = _editorManager.IsSoftEdit && Sheet.Editor.AcceptEdit();
+
+                    if (accepted)
+                    {
+                        var oldActiveRegion = Sheet.Selection.ActiveRegion?.Clone();
+                        GrowActiveSelection(KeyUtil.GetKeyMovementDirection(c.Key));
+                        if (oldActiveRegion != null)
+                        {
+                            var r = Sheet.Selection.ActiveRegion!.Break(oldActiveRegion).FirstOrDefault();
+                            await ScrollToContainRegion(r);
+                        }
+                    }
+
+                    return accepted;
+                }
+            );
+
+        ShortcutManager.Register(["KeyY"], [KeyboardModifiers.Ctrl, KeyboardModifiers.Meta], _ => Sheet.Commands.Redo(),
+            _ => !Sheet.Editor.IsEditing);
+        ShortcutManager.Register(["KeyZ"], [KeyboardModifiers.Ctrl, KeyboardModifiers.Meta], _ => Sheet.Commands.Undo(),
+            _ => !Sheet.Editor.IsEditing);
+
+        ShortcutManager.Register(["Delete", "Backspace"], KeyboardModifiers.Any,
+            _ => Sheet.Commands.ExecuteCommand(new ClearCellsCommand(Sheet.Selection.Regions)),
+            _ => Sheet.Selection.Regions.Any());
+    }
+
+    private bool AcceptEditAndMoveActiveSelection(Axis axis, int amount)
+    {
+        var acceptEdit = !Sheet.Editor.IsEditing || Sheet.Editor.AcceptEdit();
+        Sheet.Selection.MoveActivePosition(axis, amount);
+        return acceptEdit;
+    }
+
     private async Task<bool> HandleWindowKeyDown(KeyboardEventArgs e)
     {
         if (!IsDataSheetActive)
@@ -624,72 +684,9 @@ public partial class Datasheet : SheetComponentBase
         if (editorHandled)
             return true;
 
-        if (e.Key == "Escape")
-        {
-            return CancelEdit();
-        }
-
-        if (KeyUtil.IsEnter(e.Key))
-        {
-            var acceptEdit = Sheet.Editor.IsEditing && AcceptEdit();
-            var movementDir = e.ShiftKey ? -1 : 1;
-            Sheet.Selection.MoveActivePositionByRow(movementDir);
-            return acceptEdit;
-        }
-
-        if (KeyUtil.IsArrowKey(e.Key))
-        {
-            var direction = KeyUtil.GetKeyMovementDirection(e.Key);
-            if (!Sheet.Editor.IsEditing || (_editorManager.IsSoftEdit && AcceptEdit()))
-            {
-                if (e.ShiftKey)
-                {
-                    var oldActiveRegion = Sheet.Selection.ActiveRegion?.Clone();
-                    GrowActiveSelection(direction.Item1, direction.Item2);
-                    if (oldActiveRegion != null)
-                    {
-                        var r = Sheet.Selection.ActiveRegion!.Break(oldActiveRegion).FirstOrDefault();
-                        await ScrollToContainRegion(r);
-                    }
-                }
-                else
-                    this.CollapseAndMoveSelection(direction.row, direction.col);
-
-                return true;
-            }
-        }
-
-        if (e.Key == "Tab" && (!Sheet.Editor.IsEditing || AcceptEdit()))
-        {
-            var movementDir = e.ShiftKey ? -1 : 1;
-            Sheet.Selection.MoveActivePositionByCol(movementDir);
+        var modifiers = e.GetModifiers();
+        if (await HandleShortcuts(e.Key, modifiers) || await HandleShortcuts(e.Code, modifiers))
             return true;
-        }
-
-        if (e.Key.ToLower() == "c" && (e.CtrlKey || e.MetaKey) && !Sheet.Editor.IsEditing)
-        {
-            await CopySelectionToClipboard();
-            return true;
-        }
-
-        if (e.Key.ToLower() == "y" && (e.CtrlKey || e.MetaKey) && !Sheet.Editor.IsEditing)
-        {
-            return Sheet.Commands.Redo();
-        }
-
-        if (e.Key.ToLower() == "z" && (e.CtrlKey || e.MetaKey) && !Sheet.Editor.IsEditing)
-        {
-            return Sheet.Commands.Undo();
-        }
-
-        if ((e.Key == "Delete" || e.Key == "Backspace") && !Sheet.Editor.IsEditing)
-        {
-            if (!Sheet.Selection.Regions.Any())
-                return true;
-
-            Sheet.Selection.Clear();
-            return true;
-        }
 
         // Single characters or numbers or symbols
         if ((e.Key.Length == 1) && !Sheet.Editor.IsEditing && IsDataSheetActive)
@@ -711,26 +708,6 @@ public partial class Datasheet : SheetComponentBase
 
                 await BeginEdit(inputPosition.row, inputPosition.col, EditEntryMode.Key, e.Key);
             }
-
-            return true;
-        }
-
-        // Ecxel like begin edit request by pressing F2
-        if ((e.Key == "F2") && !Sheet.Editor.IsEditing && IsDataSheetActive)
-        {
-            // Don't input anything if we are currently selecting
-            if (this.IsSelecting)
-                return false;
-
-            // Capture commands and return early (mainly for paste)
-            if (e.CtrlKey || e.MetaKey)
-                return false;
-
-
-            if (!Sheet.Selection.Regions.Any())
-                return false;
-            var inputPosition = Sheet.Selection.GetInputPosition();
-            await BeginEdit(inputPosition.row, inputPosition.col, EditEntryMode.Key, e.Key);
 
             return true;
         }
@@ -793,11 +770,10 @@ public partial class Datasheet : SheetComponentBase
         var posn = Sheet.Selection.ActiveCellPosition;
 
         Sheet.Selection.Set(posn.row, posn.col);
-        Sheet.Selection.MoveActivePositionByRow(drow);
-        Sheet.Selection.MoveActivePositionByCol(dcol);
         Sheet.Selection.MoveActivePositionByRow(offset.Rows);
         Sheet.Selection.MoveActivePositionByCol(offset.Columns);
 
+        return;
     }
 
     private async Task<bool> HandleWindowPaste(ClipboardEventArgs arg)
@@ -840,17 +816,18 @@ public partial class Datasheet : SheetComponentBase
     /// <summary>
     /// Copies current selection to clipboard
     /// </summary>
-    public async Task CopySelectionToClipboard()
+    public async Task<bool> CopySelectionToClipboard()
     {
         if (this.IsSelecting)
-            return;
+            return false;
 
         // Can only handle single selections for now
         var region = Sheet.Selection.ActiveRegion;
         if (region == null)
-            return;
+            return false;
 
         await _clipboard.Copy(region, Sheet);
+        return true;
     }
 
 
@@ -947,7 +924,7 @@ public partial class Datasheet : SheetComponentBase
             return;
 
         if (value)
-            await _windowEventService.PreventDefault("keydown", _pasteKeys);
+            await _windowEventService.PreventDefault("keydown");
         else
             await _windowEventService.CancelPreventDefault("keydown");
 

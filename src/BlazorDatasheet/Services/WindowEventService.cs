@@ -52,12 +52,12 @@ public class WindowEventService : IWindowEventService
         await AddWindowEvent(eventType, nameof(HandleWindowClipboardEvent));
     }
 
-    public async Task PreventDefault(string eventType, List<object>? exclusions = null)
+    public async Task PreventDefault(string eventType)
     {
         await CreateDotnetHelperIfNotExists();
         if (_windowEventObj == null)
             return;
-        await _windowEventObj.InvokeVoidAsync("preventDefault", eventType, exclusions);
+        await _windowEventObj.InvokeVoidAsync("preventDefault", eventType);
     }
 
     public async Task CancelPreventDefault(string eventType)

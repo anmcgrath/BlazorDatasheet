@@ -32,35 +32,16 @@
 
     /**
      *
-     * @param e {MouseEvent}
+     * @param e {KeyboardEvent}
      */
     async handleWindowEvent(e) {
         if (this.handlerMap[e.type]) {
             if (this.preventDefaultMap[e.type]) {
 
                 let preventDefault = true
-                let evSerialized = this.serialize(e)
 
-                if (this.preventExclusionsMap[e.type]) {
-                    // if one of these exclusions match the keyboard event,
-                    // don't prevent default
-
-                    for (const exclusion of this.preventExclusionsMap[e.type]) {
-                        let exclusionMatches = true
-                        for (const prop in exclusion) {
-                            if (exclusion[prop] == null)
-                                continue
-                            if (exclusion[prop] !== evSerialized[prop]) {
-                                exclusionMatches = false
-                                break
-                            }
-                        }
-                        if (exclusionMatches) {
-                            preventDefault = false
-                            break
-                        }
-                    }
-                }
+                if (e.type === 'keydown' && e.code === 'KeyV')
+                    preventDefault = false
 
                 if (preventDefault)
                     e.preventDefault()
