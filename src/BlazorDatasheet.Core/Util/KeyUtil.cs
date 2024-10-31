@@ -34,7 +34,7 @@ public static class KeyUtil
         return key == "Enter";
     }
 
-    public static Offset GetKeyMovementDirection(string key)
+    public static Offset GetMovementFromArrowKey(string key)
     {
         if (IsKeyDown(key)) return new(1, 0);
         if (IsKeyUp(key)) return new(-1, 0);

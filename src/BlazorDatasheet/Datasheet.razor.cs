@@ -621,39 +621,12 @@ public partial class Datasheet : SheetComponentBase
         ShortcutManager
             .Register(["ArrowUp", "ArrowRight", "ArrowDown", "ArrowLeft"], KeyboardModifiers.None,
                 c =>
-                {
-                    var accepted = true;
-                    if (_editorManager.IsEditing)
-                        accepted = _editorManager.IsSoftEdit && Sheet.Editor.AcceptEdit();
-
-                    if (accepted)
-                        CollapseAndMoveSelection(KeyUtil.GetKeyMovementDirection(c.Key));
-                    return accepted;
-                }
-            );
+                    HandleArrowKeysDown(false, KeyUtil.GetMovementFromArrowKey(c.Key)));
 
         ShortcutManager
             .Register(["ArrowUp", "ArrowRight", "ArrowDown", "ArrowLeft"], KeyboardModifiers.Shift,
-                async c =>
-                {
-                    var accepted = true;
-                    if (_editorManager.IsEditing)
-                        accepted = _editorManager.IsSoftEdit && Sheet.Editor.AcceptEdit();
-
-                    if (accepted)
-                    {
-                        var oldActiveRegion = Sheet.Selection.ActiveRegion?.Clone();
-                        GrowActiveSelection(KeyUtil.GetKeyMovementDirection(c.Key));
-                        if (oldActiveRegion != null)
-                        {
-                            var r = Sheet.Selection.ActiveRegion!.Break(oldActiveRegion).FirstOrDefault();
-                            await ScrollToContainRegion(r);
-                        }
-                    }
-
-                    return accepted;
-                }
-            );
+                c =>
+                    HandleArrowKeysDown(true, KeyUtil.GetMovementFromArrowKey(c.Key)));
 
         ShortcutManager.Register(["KeyY"], [KeyboardModifiers.Ctrl, KeyboardModifiers.Meta], _ => Sheet.Commands.Redo(),
             _ => !Sheet.Editor.IsEditing);
@@ -663,6 +636,30 @@ public partial class Datasheet : SheetComponentBase
         ShortcutManager.Register(["Delete", "Backspace"], KeyboardModifiers.Any,
             _ => Sheet.Commands.ExecuteCommand(new ClearCellsCommand(Sheet.Selection.Regions)),
             _ => Sheet.Selection.Regions.Any());
+    }
+
+    private async Task<bool> HandleArrowKeysDown(bool shift, Offset offset)
+    {
+        var accepted = true;
+        if (_editorManager.IsEditing)
+            accepted = _editorManager.IsSoftEdit && Sheet.Editor.AcceptEdit();
+
+        if (!accepted) return false;
+
+        if (shift)
+        {
+            var oldActiveRegion = Sheet.Selection.ActiveRegion?.Clone();
+            GrowActiveSelection(offset);
+            if (oldActiveRegion == null) return false;
+            var r = Sheet.Selection.ActiveRegion!.Break(oldActiveRegion).FirstOrDefault();
+            await ScrollToContainRegion(r);
+        }
+        else
+        {
+            CollapseAndMoveSelection(offset);
+        }
+
+        return true;
     }
 
     private bool AcceptEditAndMoveActiveSelection(Axis axis, int amount)
