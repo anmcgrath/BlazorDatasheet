@@ -198,12 +198,6 @@
 
     protected override void OnInitialized()
     {
-        _datasheet.ShortcutManager.Register(["KeyA"], [KeyboardModifiers.Ctrl], c =>
-        {
-            c.Sheet.Selection.Set(Sheet.Region);
-            return true;
-        });
-        
         var src = new SourceValidator(new List<string>()
         {
             "Option 1",

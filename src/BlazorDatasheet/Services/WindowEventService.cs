@@ -135,7 +135,6 @@ public class WindowEventService : IWindowEventService
 
     public async ValueTask DisposeAsync()
     {
-        Console.WriteLine($"Disposing windows event services fpr sheet");
         try
         {
             if (_windowEventObj != null)
