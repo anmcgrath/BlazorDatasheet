@@ -139,7 +139,6 @@ public partial class Datasheet : SheetComponentBase
     [Parameter]
     public bool CanUserHideCols { get; set; } = true;
 
-
     [Parameter] public bool ShowFormulaDependents { get; set; }
 
     /// <summary>
@@ -169,6 +168,11 @@ public partial class Datasheet : SheetComponentBase
     [Parameter] public RenderFragment? EmptyColumnsTemplate { get; set; }
 
     [Parameter] public RenderFragment? EmptyRowsTemplate { get; set; }
+
+    /// <summary>
+    /// The datasheet keyboard shortcut manager
+    /// </summary>
+    public ShortcutManager ShortcutManager { get; } = new();
 
     public string Id { get; set; } = Guid.NewGuid().ToString();
 

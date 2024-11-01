@@ -7,6 +7,7 @@
 @using System.Drawing
 @using BlazorDatasheet.Core.Commands.Data
 @using BlazorDatasheet.Events
+@using BlazorDatasheet.KeyboardInput
 
 <PageTitle>Index</PageTitle>
 
@@ -197,6 +198,12 @@
 
     protected override void OnInitialized()
     {
+        _datasheet.ShortcutManager.Register(["KeyA"], [KeyboardModifiers.Ctrl], c =>
+        {
+            c.Sheet.Selection.Set(Sheet.Region);
+            return true;
+        });
+        
         var src = new SourceValidator(new List<string>()
         {
             "Option 1",
