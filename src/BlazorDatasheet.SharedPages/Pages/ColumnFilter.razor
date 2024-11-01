@@ -19,11 +19,8 @@
 
     protected override void OnInitialized()
     {
-        var sw = Stopwatch.StartNew();
-        Console.WriteLine($"StartingUp {sw.ElapsedMilliseconds}");
         Sheet.Commands.PauseHistory();
         Sheet.BatchUpdates();
-        Console.WriteLine($"about to loop {sw.ElapsedMilliseconds}");
         var values = new CellValue[500][];
         for (int r = 0; r < values.Length; r++)
             values[r] = new CellValue[10];

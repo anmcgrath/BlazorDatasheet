@@ -154,6 +154,23 @@ public class SortRangeCommandTests
     }
 
     [Test]
+    public void Sort_Command_Moves_Cell_Types_In_Region()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Cells.SetValues(0, 0,
+            [["E"], ["D"], ["C"], ["B"], ["A"]]
+        );
+        sheet.Cells.SetType(new Region(0, 2, 0, 0), "type1");
+        sheet.Cells.SetType(new Region(3, 4, 0, 0), "type2");
+        sheet.Commands.ExecuteCommand(new SortRangeCommand(new ColumnRegion(0), new ColumnSortOptions(0, true)));
+        sheet.Cells.GetCellType(0, 0).Should().Be("type2");
+        sheet.Cells.GetCellType(1, 0).Should().Be("type2");
+        sheet.Cells.GetCellType(2, 0).Should().Be("type1");
+        sheet.Cells.GetCellType(3, 0).Should().Be("type1");
+        sheet.Cells.GetCellType(4, 0).Should().Be("type1");
+    }
+
+    [Test]
     public void Sort_On_Multiple_Columns_Sorts_Correctly()
     {
         var sheet = new Sheet(10, 10);
@@ -166,12 +183,11 @@ public class SortRangeCommandTests
             new ColumnSortOptions(0, true),
             new ColumnSortOptions(1, true)
         };
-        
+
         var cmd = new SortRangeCommand(new ColumnRegion(0, 1), options);
         cmd.Execute(sheet);
-        
+
         sheet.Cells[0, 1].Value.Should().Be(1);
         sheet.Cells[1, 1].Value.Should().Be(2);
     }
-    
 }

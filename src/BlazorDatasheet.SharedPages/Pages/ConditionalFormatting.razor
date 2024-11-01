@@ -44,14 +44,13 @@
         var numberScaleConditionalFormat = new NumberScaleConditionalFormat(Color.YellowGreen, Color.IndianRed);
         var checkConditionalFormat = new CustomCheckConditionalFormat("check");
 
-        var values = new List<(int row, int col, object value)>();
-
         var regionOfNumberScaleFormat = new Region(0, sheet.NumRows - 1, 1, sheet.NumRows - 1);
         var numberData = new object[regionOfNumberScaleFormat.Height][];
 
         var rand = new Random();
         for (int row = 0; row < numberData.Length; row++)
         {
+            numberData[row] = new object[regionOfNumberScaleFormat.Width];
             for (int col = 0; col < regionOfNumberScaleFormat.Width; col++)
             {
                 numberData[row][col] = (int?)rand.Next(100);
