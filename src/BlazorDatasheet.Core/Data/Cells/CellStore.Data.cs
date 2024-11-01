@@ -1,5 +1,6 @@
 using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Commands.Data;
+using BlazorDatasheet.Core.Events.Data;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core;
@@ -14,6 +15,11 @@ public partial class CellStore
     private readonly IMatrixDataStore<CellValue> _dataStore;
 
     /// <summary>
+    /// Fired before a cell value conversion (from object to <see cref="CellValue"/>) occurs. The value can be modified.
+    /// </summary>
+    public event EventHandler<BeforeCellValueConversionEventArgs> BeforeCellValueConversion;
+
+    /// <summary>
     /// Sets the cell value using <see cref="SetCellValueCommand"/>
     /// </summary>
     /// <param name="row"></param>
@@ -22,7 +28,7 @@ public partial class CellStore
     /// <returns></returns>
     public bool SetValue(int row, int col, object value)
     {
-        var cmd = new SetCellValueCommand(row, col, new CellValue(value));
+        var cmd = new SetCellValueCommand(row, col, value);
         return _sheet.Commands.ExecuteCommand(cmd);
     }
 
@@ -163,16 +169,21 @@ public partial class CellStore
     /// <returns></returns>
     internal CellValue ConvertToCellValue(int row, int col, object? value)
     {
-        if (value == null)
-            return CellValue.Empty;
-
+        CellValue newValue;
         var type = GetCellType(row, col);
-        switch (type)
+        if (value == null)
+            newValue = CellValue.Empty;
+        else
         {
-            case "text":
-                return CellValue.Text(value.ToString() ?? string.Empty);
+            newValue = type switch
+            {
+                "text" => CellValue.Text(value.ToString() ?? string.Empty),
+                _ => new CellValue(value)
+            };
         }
 
-        return new CellValue(value);
+        var args = new BeforeCellValueConversionEventArgs(value, newValue, row, col, type);
+        BeforeCellValueConversion?.Invoke(this, args);
+        return args.NewValue;
     }
 }
