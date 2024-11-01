@@ -1,5 +1,6 @@
 using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Commands.Data;
+using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core;
 
@@ -74,7 +75,7 @@ public partial class CellStore
     }
 
     /// <summary>
-    /// Sets a cell value to the value specified and raises the appropriate events.
+    /// Sets a cell value to the value specified and raises the appropriate events. <paramref name="value"/> is implicitly converted to a cell value.
     /// </summary>
     /// <param name="row"></param>
     /// <param name="col"></param>
@@ -82,40 +83,43 @@ public partial class CellStore
     /// <returns>Restore data that stores the changes made.</returns>
     internal CellStoreRestoreData SetValueImpl(int row, int col, object? value)
     {
-        return SetValueImpl(row, col, new CellValue(value));
+        return SetValueImpl(row, col, ConvertToCellValue(row, col, value));
     }
 
     /// <summary>
-    /// Sets cell values to those specified using <see cref="SetCellValueCommand"/>
-    /// </summary>
-    /// <param name="changes"></param>
-    /// <returns></returns>
-    public bool SetValues(IEnumerable<(int row, int col, object value)> changes)
-    {
-        _sheet.Commands.BeginCommandGroup();
-        foreach (var change in changes)
-        {
-            _sheet.Commands.ExecuteCommand(new SetCellValueCommand(change.row, change.col,
-                new CellValue(change.value)));
-        }
-
-        _sheet.Commands.EndCommandGroup();
-
-        return true;
-    }
-
-    /// <summary>
-    /// Sets values, starting from <paramref name="row"/>,<paramref name="col"/>.
+    /// Sets values, starting from <paramref name="row"/>,<paramref name="col"/>. Cell values are implicitly converted.
     /// </summary>
     /// <param name="row"></param>
     /// <param name="col"></param>
-    /// <param name="values">The list of rows, with each row having a number of values.</param>
+    /// <param name="values">An array of rows, with each row having a number of values.</param>
     /// <returns></returns>
     public bool SetValues(int row, int col, object[][] values)
     {
-        return SetValues(
-            values.SelectMany((rowValues, rIndex)
-                => rowValues.Select((obj, cIndex) => (rIndex + row, cIndex + col, obj))));
+        var cmd = new SetCellValuesCommand(row, col, values);
+        return _sheet.Commands.ExecuteCommand(cmd);
+    }
+
+    /// <summary>
+    /// Sets values, starting from <paramref name="row"/>,<paramref name="col"/>. Cell values are not converted in this case.
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <param name="values">An array of rows, with each row having a number of values.</param>
+    /// <returns></returns>
+    public bool SetValues(int row, int col, CellValue[][] values)
+    {
+        var cmd = new SetCellValuesCommand(row, col, values);
+        return _sheet.Commands.ExecuteCommand(cmd);
+    }
+
+    /// <summary>
+    /// Sets all values in the region to the single value supplied.
+    /// </summary>
+    /// <returns></returns>
+    public bool SetValues(IRegion region, object? value)
+    {
+        var cmd = new SetCellValuesCommand(region, value);
+        return _sheet.Commands.ExecuteCommand(cmd);
     }
 
     /// <summary>
@@ -147,5 +151,28 @@ public partial class CellStore
     internal IMatrixDataStore<CellValue> GetCellDataStore()
     {
         return _dataStore;
+    }
+
+
+    /// <summary>
+    /// Converts an object value to the cell value. If the cell has a type set, it will use the type to guide the conversion.
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    internal CellValue ConvertToCellValue(int row, int col, object? value)
+    {
+        if (value == null)
+            return CellValue.Empty;
+
+        var type = GetCellType(row, col);
+        switch (type)
+        {
+            case "text":
+                return CellValue.Text(value.ToString() ?? string.Empty);
+        }
+
+        return new CellValue(value);
     }
 }

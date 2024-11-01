@@ -437,28 +437,21 @@ public class Sheet
         // It is possible that each line is of different cell lengths, so we return the max for all lines
         var maxEndCol = -1;
 
-        var valChanges = new List<(int row, int col, object value)>();
+        object[][] rowData = new object[lines.Length][];
 
         int lineNo = 0;
         for (int row = inputPosition.row; row <= endRow; row++)
         {
             var lineSplit = lines[lineNo].Split('\t');
-            // Same thing as above with the number of columns
+            rowData[lineNo] = lineSplit;
+
             var endCol = Math.Min(inputPosition.col + lineSplit.Length - 1, NumCols - 1);
-
             maxEndCol = Math.Max(endCol, maxEndCol);
-
-            int cellIndex = 0;
-            for (int col = inputPosition.col; col <= endCol; col++)
-            {
-                valChanges.Add((row, col, lineSplit[cellIndex]));
-                cellIndex++;
-            }
 
             lineNo++;
         }
 
-        Cells.SetValues(valChanges);
+        Cells.SetValues(inputPosition.row, inputPosition.col, rowData);
 
         return new Region(inputPosition.row, endRow, inputPosition.col, maxEndCol);
     }

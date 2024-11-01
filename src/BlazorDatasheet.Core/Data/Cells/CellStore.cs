@@ -102,7 +102,7 @@ public partial class CellStore
 
         var affected = restoreData.GetAffectedPositions().ToList();
         _sheet.BatchUpdates();
-        EmitCellsChanged(affected);
+        EmitCellsChanged(toClear);
         _sheet.MarkDirty(toClear);
         _sheet.EndBatchUpdates();
         return restoreData;

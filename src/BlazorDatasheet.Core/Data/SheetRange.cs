@@ -72,7 +72,7 @@ public class SheetRange
     /// <param name="value"></param>
     private void DoSetValues(object? value)
     {
-        Sheet.Cells.SetValues(Positions.Select(x => (x.row, x.col, value)).ToList());
+        Sheet.Cells.SetValues(this.Region, value);
     }
 
     public void Clear()

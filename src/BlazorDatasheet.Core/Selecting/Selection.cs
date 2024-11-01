@@ -616,7 +616,13 @@ public class Selection
 
     public object Value
     {
-        set { _sheet.Cells.SetValues(Ranges.SelectMany(x => x.Positions).Select(x => (x.row, x.col, value))); }
+        set
+        {
+            _sheet.Commands.BeginCommandGroup();
+            foreach (var region in _regions)
+                _sheet.Cells.SetValues(region, value);
+            _sheet.Commands.EndCommandGroup();
+        }
     }
 
     public void Clear()
