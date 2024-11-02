@@ -76,21 +76,22 @@ public class ObjectEditor<T>
     {
         //Sheet.Range(Sheet.Region).Clear();
 
-        var values = new List<(int row, int col, object value)>();
         var items = _dataSource.Skip(PageSize * CurrentPage).Take(PageSize).ToList();
+        var values = new object[items.Count][];
 
         for (int i = 0; i < items.Count; i++)
         {
             Sheet.Rows.SetHeadings(i, i, _rowHeadingSelector(items[i]));
+            values[i] = new object[NColumns];
             for (int j = 0; j < NColumns; j++)
             {
                 var data = _valueColumnSelector(j, items[i]);
-                values.Add((i, j, data));
+                values[i][j] = data;
                 Sheet.Cells.SetCellMetaData(i, j, ItemMetaData, items[i]);
             }
         }
 
-        Sheet.Cells.SetValues(values);
+        Sheet.Cells.SetValues(0, 0, values);
         Sheet.Commands.ClearHistory();
     }
 }

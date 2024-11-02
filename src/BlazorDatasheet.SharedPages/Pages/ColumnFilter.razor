@@ -8,8 +8,8 @@
 
 <p>Below column A has a filter applied that requires the value to contain "T". No other columns start with a filter applied. Filters can be added using the column context menu.</p>
 
-<Datasheet 
-    Sheet="Sheet" 
+<Datasheet
+    Sheet="Sheet"
     Virtualise="true"/>
 
 @code {
@@ -19,29 +19,24 @@
 
     protected override void OnInitialized()
     {
-        var sw = Stopwatch.StartNew();
-        Console.WriteLine($"StartingUp {sw.ElapsedMilliseconds}");
         Sheet.Commands.PauseHistory();
         Sheet.BatchUpdates();
-        Console.WriteLine($"about to loop {sw.ElapsedMilliseconds}");
+        var values = new CellValue[500][];
+        for (int r = 0; r < values.Length; r++)
+            values[r] = new CellValue[10];
+
         for (int i = 0; i < Sheet.NumCols; i++)
         {
-            Console.WriteLine($"Generating words {i} {sw.ElapsedMilliseconds}");
             var uniqueWords = Generate(20);
-            Console.WriteLine($"Words generated {i} {sw.ElapsedMilliseconds}");
-            Console.WriteLine($"Setting cells {sw.ElapsedMilliseconds}");
             for (int j = 0; j < Sheet.NumRows; j++)
             {
-                Sheet.Cells.SetValue(j, i, CellValue.Text(uniqueWords[Random.Next(0, uniqueWords.Length - 1)]));
+                values[j][i] = CellValue.Text(uniqueWords[Random.Next(0, uniqueWords.Length - 1)]);
             }
-
-            Console.WriteLine($"End setting cells {sw.ElapsedMilliseconds}");
         }
 
-        Console.WriteLine($"Setting filters {sw.ElapsedMilliseconds}");
-        Sheet.Columns.Filters.Set(0,[new ValueFilter(), new PatternFilter(PatternFilterType.Contains, "T")]);
+        Sheet.Cells.SetValues(0, 0, values);
+        Sheet.Columns.Filters.Set(0, [new ValueFilter(), new PatternFilter(PatternFilterType.Contains, "T")]);
 
-        Console.WriteLine($"End batching update {sw.ElapsedMilliseconds}");
         Sheet.EndBatchUpdates();
         Sheet.Commands.ResumeHistory();
         Sheet.ScreenUpdating = true;

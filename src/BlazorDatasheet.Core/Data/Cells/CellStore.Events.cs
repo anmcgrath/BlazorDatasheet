@@ -68,14 +68,19 @@ public partial class CellStore
 
     private void EmitCellsChanged(IRegion region)
     {
+        EmitCellsChanged([region]);
+    }
+
+    private void EmitCellsChanged(IEnumerable<IRegion> regions)
+    {
         if (_isBatchingChanges)
         {
-            _regionsChanged.Add(region);
+            _regionsChanged.AddRange(regions);
         }
         else
         {
             CellsChanged?.Invoke(this,
-                new CellDataChangedEventArgs(new[] { region }, Enumerable.Empty<CellPosition>()));
+                new CellDataChangedEventArgs(regions, Enumerable.Empty<CellPosition>()));
         }
     }
 }

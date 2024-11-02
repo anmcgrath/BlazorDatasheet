@@ -82,13 +82,30 @@ sheet.Cells.SetValue(0, 0, "Test");
 sheet.Commands.ExecuteCommand(new SetCellValueCommand(0, 0, "Test"));
 ```
 
-In this example, the first two methods set the value but cannot be undone. The last two methods can be undone.
+Cell values are stored internally inside a ```CellValue``` wrapper. Values are converted implicitly when set above and a ```CellValueType``` is assigned to the cell.
+
+The ```CellValueType``` is used for formula evaluation and can be one of the following:
+
+```
+    Empty = 0,
+    Error = 1,
+    Array = 2,
+    Unknown = 3,
+    Sequence = 4,
+    Reference = 5,
+    Number = 6,
+    Date = 7,
+    Text = 8,
+    Logical = 9,
+```
+
+This conversion can be controlled, for example when setting the cell type to "text", values will always be stored as strings and no conversion will be made.
+
+The conversion can additionally be modified by using the ```Sheet.Cells.BeforeCellValueConversion``` event. By changing the ```NewValue``` property of the argument, the value that is stored is modified.
 
 ### Formula
 
 Formula can be applied to cells. When the cells or ranges that the formula cells reference change, the cell value is re-calculated.
-
-Currently, the whole sheet is calculated if any referenced cell or range changes.
 
 ```csharp
 sheet.Cells[0, 0].Formula = "=10+A2"
@@ -116,7 +133,7 @@ var format2 = sheet.Cells[1, 0].Format; // foreground = "blue"
 ```
 
 ### Cell types
-The cell type specifies which renderer and editor are used for the cell.
+The cell type specifies which renderer and editor are used for the cell. Cell types also help with explicit conversions when cell values are set.
 
 ```csharp
 sheet.Range("A1:B5").Type = "boolean"; // renders a checkbox
@@ -149,7 +166,7 @@ var rowRegion = new RowRegion(0, 3); // row region spanning 1 to 4
 A range is a of region that also knows about the sheet. Ranges can be used to set certain parts of the sheet.
 
 ```csharp
-var range = sheet.Range("A1:C5);
+var range = sheet.Range("A1:C5");
 var range = sheet.Range(new ColumnRegion(0));
 var range = sheet.Range(0, 0, 4, 5);
 ```

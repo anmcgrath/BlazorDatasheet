@@ -139,7 +139,6 @@ public partial class Datasheet : SheetComponentBase
     [Parameter]
     public bool CanUserHideCols { get; set; } = true;
 
-
     [Parameter] public bool ShowFormulaDependents { get; set; }
 
     /// <summary>
@@ -169,6 +168,11 @@ public partial class Datasheet : SheetComponentBase
     [Parameter] public RenderFragment? EmptyColumnsTemplate { get; set; }
 
     [Parameter] public RenderFragment? EmptyRowsTemplate { get; set; }
+
+    /// <summary>
+    /// The datasheet keyboard shortcut manager
+    /// </summary>
+    public ShortcutManager ShortcutManager { get; } = new();
 
     public string Id { get; set; } = Guid.NewGuid().ToString();
 
@@ -631,7 +635,7 @@ public partial class Datasheet : SheetComponentBase
     private async Task<bool> HandleArrowKeysDown(bool shift, Offset offset)
     {
         var accepted = true;
-        if (_editorManager.IsEditing)
+        if (Sheet.Editor.IsEditing)
             accepted = _editorManager.IsSoftEdit && Sheet.Editor.AcceptEdit();
 
         if (!accepted) return false;
@@ -662,13 +666,14 @@ public partial class Datasheet : SheetComponentBase
                 r = oldActiveRegion.Break(rNew).FirstOrDefault();
             }
 
-            if (r != null)
+            if (r != null && IsDataSheetActive)
                 await ScrollToContainRegion(r);
         }
         else
         {
             CollapseAndMoveSelection(offset);
-            await ScrollToActiveCellPosition();
+            if (IsDataSheetActive)
+                await ScrollToActiveCellPosition();
         }
 
         return true;
@@ -678,7 +683,8 @@ public partial class Datasheet : SheetComponentBase
     {
         var acceptEdit = !Sheet.Editor.IsEditing || Sheet.Editor.AcceptEdit();
         Sheet.Selection.MoveActivePosition(axis, amount);
-        await ScrollToActiveCellPosition();
+        if (IsDataSheetActive)
+            await ScrollToActiveCellPosition();
         return acceptEdit;
     }
 

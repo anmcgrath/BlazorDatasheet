@@ -58,6 +58,10 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
 
         var rowList = _rows.Get(row);
         var restoreData = rowList.Clear(col);
+
+        if (rowList.IsEmpty())
+            _rows.Values.Remove(row);
+
         if (restoreData == null)
             return new MatrixRestoreData<T>();
 
@@ -87,6 +91,9 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
             cleared.AddRange(clearedRowData.Select(x =>
                 (row.itemIndex, x.itemIndexCleared, x.Item2)
             ));
+
+            if (row.data.IsEmpty())
+                _rows.Values.Remove(row.itemIndex);
         }
 
         return new MatrixRestoreData<T>()

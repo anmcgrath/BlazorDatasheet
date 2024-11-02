@@ -94,7 +94,7 @@ public class SheetCell : IReadOnlyCell
     public object? Value
     {
         get => _sheet.Cells.GetValue(Row, Col);
-        set => _sheet.Cells.SetValueImpl(Row, Col, value);
+        set => _sheet.Cells.SetValue(Row, Col, value);
     }
 
     public bool IsVisible => _sheet.IsCellVisible(Row, Col);

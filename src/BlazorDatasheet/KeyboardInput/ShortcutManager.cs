@@ -1,8 +1,8 @@
 ﻿namespace BlazorDatasheet.KeyboardInput;
 
-public static class ShortcutManager
+public class ShortcutManager
 {
-    private static readonly Dictionary<MappedKey, RegisteredShortcut> KeyMap = new();
+    private readonly Dictionary<MappedKey, RegisteredShortcut> _keyMap = new();
 
     /// <summary>
     /// Register a keyboard event based on the browser's key attribute (the character/key the user is inputting) or
@@ -12,7 +12,7 @@ public static class ShortcutManager
     /// <param name="modifiers">The modifiers that the user should be pressing, can be more than one</param>
     /// <param name="execute">The function that should execute when the shortcut is run</param>
     /// <param name="canExecute"></param>
-    public static void Register(string[] keys, KeyboardModifiers[] modifiers,
+    public void Register(string[] keys, KeyboardModifiers[] modifiers,
         Func<ShortcutExecutionContext, bool> execute,
         Predicate<ShortcutExecutionContext>? canExecute = null)
     {
@@ -22,8 +22,8 @@ public static class ShortcutManager
             foreach (var modifier in modifiers)
             {
                 var map = new MappedKey(key, modifier);
-                if (!KeyMap.TryAdd(map, shortcut))
-                    KeyMap[map] = shortcut;
+                if (!_keyMap.TryAdd(map, shortcut))
+                    _keyMap[map] = shortcut;
             }
         }
     }
@@ -36,7 +36,7 @@ public static class ShortcutManager
     /// <param name="modifiers">The modifiers that the user should be pressing, can be more than one</param>
     /// <param name="executeAsync">The function that should execute when the shortcut is run</param>
     /// <param name="canExecute"></param>
-    public static void Register(string[] keys, KeyboardModifiers[] modifiers,
+    public void Register(string[] keys, KeyboardModifiers[] modifiers,
         Func<ShortcutExecutionContext, Task<bool>> executeAsync,
         Predicate<ShortcutExecutionContext>? canExecute = null)
     {
@@ -46,8 +46,8 @@ public static class ShortcutManager
             foreach (var modifier in modifiers)
             {
                 var map = new MappedKey(key, modifier);
-                if (!KeyMap.TryAdd(map, shortcut))
-                    KeyMap[map] = shortcut;
+                if (!_keyMap.TryAdd(map, shortcut))
+                    _keyMap[map] = shortcut;
             }
         }
     }
@@ -60,7 +60,7 @@ public static class ShortcutManager
     /// <param name="modifier">The modifiers that the user should be pressing, can be more than one</param>
     /// <param name="executeAsync">The function that should execute when the shortcut is run</param>
     /// <param name="canExecute"></param>
-    public static void Register(string[] keys, KeyboardModifiers modifier,
+    public void Register(string[] keys, KeyboardModifiers modifier,
         Func<ShortcutExecutionContext, Task<bool>> executeAsync,
         Predicate<ShortcutExecutionContext>? canExecute = null) => Register(keys, [modifier], executeAsync, canExecute);
 
@@ -72,7 +72,7 @@ public static class ShortcutManager
     /// <param name="modifier">The modifiers that the user should be pressing, can be more than one</param>
     /// <param name="execute">The function that should execute when the shortcut is run</param>
     /// <param name="canExecute"></param>
-    public static void Register(string[] keys, KeyboardModifiers modifier,
+    public void Register(string[] keys, KeyboardModifiers modifier,
         Func<ShortcutExecutionContext, bool> execute,
         Predicate<ShortcutExecutionContext>? canExecute = null) => Register(keys, [modifier], execute, canExecute);
 
@@ -83,13 +83,13 @@ public static class ShortcutManager
     /// <param name="modifiers"></param>
     /// <param name="context"></param>
     /// <returns></returns>
-    internal static async Task<bool> ExecuteAsync(string key, KeyboardModifiers modifiers,
+    internal async Task<bool> ExecuteAsync(string key, KeyboardModifiers modifiers,
         ShortcutExecutionContext context)
     {
         context.Key = key;
         context.Modifiers = modifiers;
 
-        if (KeyMap.TryGetValue(new MappedKey(key, KeyboardModifiers.Any), out var anyShortcut))
+        if (_keyMap.TryGetValue(new MappedKey(key, KeyboardModifiers.Any), out var anyShortcut))
         {
             if (anyShortcut.CanExecute == null || (anyShortcut.CanExecute != null && anyShortcut.CanExecute(context)))
             {
@@ -104,7 +104,7 @@ public static class ShortcutManager
             }
         }
 
-        if (KeyMap.TryGetValue(new MappedKey(key, modifiers), out var keyShortcut))
+        if (_keyMap.TryGetValue(new MappedKey(key, modifiers), out var keyShortcut))
         {
             if (keyShortcut.CanExecute == null || (keyShortcut.CanExecute != null && keyShortcut.CanExecute(context)))
             {

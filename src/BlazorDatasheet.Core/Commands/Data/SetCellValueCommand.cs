@@ -8,24 +8,46 @@ public class SetCellValueCommand : IUndoableCommand
 {
     private readonly int _row;
     private readonly int _col;
-    private readonly CellValue _value;
+    private readonly CellValue? _valueAsCellValue;
+    private readonly object? _value;
     private CellStoreRestoreData _restoreData = null!;
 
+    /// <summary>
+    /// Sets a single cell value to the <paramref name="value"/>. No conversion is performed.
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <param name="value"></param>
     public SetCellValueCommand(int row, int col, CellValue value)
+    {
+        _row = row;
+        _col = col;
+        _valueAsCellValue = value;
+    }
+
+    /// <summary>
+    /// Sets a single cell value to the <paramref name="value"/>. Conversion to <seealso cref="CellValue"/> is performed.
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <param name="value"></param>
+    public SetCellValueCommand(int row, int col, object? value)
     {
         _row = row;
         _col = col;
         _value = value;
     }
 
-    public SetCellValueCommand(int row, int col, object? value) : this(row, col, new CellValue(value))
-    {
-    }
-
     public bool Execute(Sheet sheet)
     {
         sheet.ScreenUpdating = false;
-        _restoreData = sheet.Cells.SetValueImpl(_row, _col, _value);
+
+        if (_valueAsCellValue != null)
+            _restoreData = sheet.Cells.SetValueImpl(_row, _col, _valueAsCellValue);
+        else
+            _restoreData = sheet.Cells.SetValueImpl(_row, _col, _value);
+
+        sheet.MarkDirty(_row, _col);
         sheet.ScreenUpdating = true;
         return true;
     }

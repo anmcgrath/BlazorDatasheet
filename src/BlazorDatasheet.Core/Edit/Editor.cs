@@ -156,6 +156,9 @@ public class Editor
     /// </summary>
     public bool AcceptEdit()
     {
+        if (EditCell == null || !IsEditing)
+            return false;
+
         // Determine if it's a formula, and calculate.
         CellFormula? parsedFormula = null;
         var isFormula = Sheet.FormulaEngine.IsFormula(this.EditValue);
@@ -172,7 +175,8 @@ public class Editor
         }
 
         var formulaResult = isFormula ? Sheet.FormulaEngine.Evaluate(parsedFormula) : CellValue.Empty;
-        var editValue = isFormula ? formulaResult : GetValueAsCellValue(EditCell.Row, EditCell.Col, EditValue);
+        var editValue =
+            isFormula ? formulaResult : Sheet.Cells.ConvertToCellValue(EditCell.Row, EditCell.Col, EditValue);
 
         var beforeAcceptEdit = new BeforeAcceptEditEventArgs(EditCell, editValue, parsedFormula, formulaString);
         BeforeEditAccepted?.Invoke(this, beforeAcceptEdit);
@@ -211,18 +215,6 @@ public class Editor
         }
 
         return false;
-    }
-
-    private CellValue GetValueAsCellValue(int row, int col, string editValue)
-    {
-        var type = Sheet.Cells.GetCellType(row, col);
-        switch (type)
-        {
-            case "text":
-                return CellValue.Text(editValue);
-        }
-
-        return new CellValue(editValue);
     }
 
     private void ClearEdit()

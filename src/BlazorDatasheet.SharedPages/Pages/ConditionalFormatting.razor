@@ -44,16 +44,20 @@
         var numberScaleConditionalFormat = new NumberScaleConditionalFormat(Color.YellowGreen, Color.IndianRed);
         var checkConditionalFormat = new CustomCheckConditionalFormat("check");
 
-        var values = new List<(int row, int col, object value)>();
+        var regionOfNumberScaleFormat = new Region(0, sheet.NumRows - 1, 1, sheet.NumRows - 1);
+        var numberData = new object[regionOfNumberScaleFormat.Height][];
 
-        var regionOfNumberScaleFormat = new Region(0, sheet.NumRows-1, 1, sheet.NumRows-1);
         var rand = new Random();
-        foreach (var posn in regionOfNumberScaleFormat)
+        for (int row = 0; row < numberData.Length; row++)
         {
-            values.Add((posn.row, posn.col, (int?)rand.Next(100)));
+            numberData[row] = new object[regionOfNumberScaleFormat.Width];
+            for (int col = 0; col < regionOfNumberScaleFormat.Width; col++)
+            {
+                numberData[row][col] = (int?)rand.Next(100);
+            }
         }
 
-        sheet.Cells.SetValues(values);
+        sheet.Cells.SetValues(0, 0, numberData);
         sheet.Range("A1:A3")!.Value = "check";
         sheet.Range("A4")!.Value = "chck";
 
