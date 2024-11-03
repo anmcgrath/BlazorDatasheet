@@ -22,7 +22,6 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.10" />
-        <PackageReference Include="Plotly.Blazor" Version="5.3.0" />
     </ItemGroup>
 
     <ItemGroup>
