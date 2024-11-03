@@ -1,0 +1,123 @@
+﻿@using BlazorDatasheet.Core.Commands.Data
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events
+@using BlazorDatasheet.Core.Validation
+@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Formula.Core
+@page "/ChartExample"
+@using Plotly.Blazor
+@using Plotly.Blazor.Traces
+@using Plotly.Blazor.Traces.ScatterLib
+
+<h3>ChartExample</h3>
+
+
+<div style="display: flex; flex-direction: column">
+    <div style="width: 400px; height: 300px;">
+        <PlotlyChart @bind-Config="config" @bind-Layout="layout" @bind-Data="data" @ref="chart"/>
+    </div>
+    <div style="margin-top: 50px; margin-bottom: 0px; overflow: hidden;">
+        <input type="range" min="0" max="10" step="0.1" @oninput="@(e => _sheet.FormulaEngine.SetVariable("alpha", e.Value))"/>
+    </div>
+    <div style="height: 300px; width: 210px; overflow-y: scroll; display: inline-block;">
+        <Datasheet
+            Sheet="_sheet"
+            ShowRowHeadings="false"/>
+    </div>
+</div>
+
+
+@code {
+
+    private List<ChartData> Points { get; set; } = new();
+    private readonly Sheet _sheet = new(50, 2);
+
+    PlotlyChart? chart;
+    Config config = new Config();
+
+    Layout layout = new Layout();
+
+    // Using of the interface IList is important for the event callback!
+    IList<ITrace> data = new List<ITrace>
+    {
+        new Scatter
+        {
+            Name = "ScatterTrace",
+            Mode = ModeFlag.Lines | ModeFlag.Markers,
+        }
+    };
+
+    protected override void OnInitialized()
+    {
+        _sheet.Validators.Add(new ColumnRegion(0, 1), new NumberValidator(true));
+        _sheet.BatchUpdates();
+
+        _sheet.FormulaEngine.SetVariable("alpha", 2);
+
+        _sheet.Cells.CellsChanged += CellsOnCellsChanged;
+        _sheet.Cells.SetValues(0, 0, Enumerable.Range(0, _sheet.NumRows).Select<int, CellValue[]>(x => [CellValue.Number(4 * Math.PI * x / _sheet.NumRows)]).ToArray());
+        _sheet.Cells[0, 1].Formula = "=-2/(3.14 * 1) * pow(-1,1) * sin(1 * 0.5 * A1 - alpha) -2/(3.14 * 2) * pow(-1,2) * sin(2 * 0.5 * A1 - alpha) -2/(3.14 * 1) * pow(-1,3) * sin(3 * 0.5 * A1 - alpha)";
+        for (int i = 0; i < _sheet.NumRows - 1; i++)
+            _sheet.Commands.ExecuteCommand(new CopyRangeCommand(_sheet.Range("B1")!, _sheet.Range(i + 1, 1)!, new CopyOptions() { CopyValues = false }));
+        _sheet.EndBatchUpdates();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+    }
+
+    private async void CellsOnCellsChanged(object? sender, CellDataChangedEventArgs e)
+    {
+        await RefreshChartData();
+    }
+
+    private async Task RefreshChartData()
+    {
+        var cellData = new List<ChartData>();
+        for (int i = 0; i < _sheet.NumRows; i++)
+        {
+            var cellValueX = _sheet.Cells.GetCellValue(i, 0);
+            var cellValueY = _sheet.Cells.GetCellValue(i, 1);
+            if (cellValueX.ValueType != CellValueType.Number ||
+                cellValueY.ValueType != CellValueType.Number)
+                continue;
+
+            cellData.Add(new(cellValueX.GetValue<double>(), cellValueY.GetValue<double>()));
+        }
+
+        if (!cellData.Any())
+            return;
+
+        this.data = new List<ITrace>
+        {
+            new Scatter
+            {
+                Name = "ScatterTrace",
+                Mode = ModeFlag.Lines | ModeFlag.Markers,
+                X = cellData.Select(x => (object)x.X).ToList(),
+                Y = cellData.Select(x => (object)x.Y).ToList()
+            }
+        };
+
+        StateHasChanged();
+
+        if (chart == null)
+            return;
+
+        await chart.React();
+    }
+
+    public class ChartData
+    {
+        public double X { get; }
+        public double Y { get; }
+
+        public ChartData(double x, double y)
+        {
+            X = x;
+            Y = y;
+        }
+    }
+
+}
