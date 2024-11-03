@@ -57,6 +57,11 @@ public class Selection
     public event EventHandler<IRegion?>? SelectingChanged;
 
     /// <summary>
+    /// Fired before the active cell position changes. Allows the modification of the new active cell position.
+    /// </summary>
+    public event EventHandler<BeforeActiveCellPositionChangedEventArgs> BeforeActiveCellPositionChanged;
+
+    /// <summary>
     /// Fired when the cells that are selected changes.
     /// </summary>
     public event EventHandler<CellsSelectedEventArgs>? CellsSelected;
@@ -634,9 +639,12 @@ public class Selection
     {
         var oldPosition = ActiveCellPosition;
         var newPosition = new CellPosition(row, col);
-        var args = new ActiveCellPositionChangedEventArgs(oldPosition, newPosition);
+        var beforeEventArgs = new BeforeActiveCellPositionChangedEventArgs(oldPosition, newPosition);
+        BeforeActiveCellPositionChanged?.Invoke(this, beforeEventArgs);
+        newPosition = beforeEventArgs.NewCellPosition;
+        var setEventArgs = new ActiveCellPositionChangedEventArgs(oldPosition, newPosition);
         this.ActiveCellPosition = newPosition;
-        ActiveCellPositionChanged?.Invoke(this, args);
+        ActiveCellPositionChanged?.Invoke(this, setEventArgs);
     }
 
     internal SelectionSnapshot GetSelectionSnapshot()
