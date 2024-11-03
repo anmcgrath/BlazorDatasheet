@@ -57,6 +57,11 @@ public class Selection
     public event EventHandler<IRegion?>? SelectingChanged;
 
     /// <summary>
+    /// Fired before the active cell position changes. Allows the modification of the new active cell position.
+    /// </summary>
+    public event EventHandler<BeforeActiveCellPositionChangedEventArgs> BeforeActiveCellPositionChanged;
+
+    /// <summary>
     /// Fired when the cells that are selected changes.
     /// </summary>
     public event EventHandler<CellsSelectedEventArgs>? CellsSelected;
@@ -376,7 +381,7 @@ public class Selection
         if (ActiveRegion == null || rowDir == 0)
             return;
 
-        rowDir = Math.Abs(rowDir) / rowDir;
+        rowDir = Math.Sign(rowDir);
 
         var currRow = ActiveCellPosition.row;
         var currCol = ActiveCellPosition.col;
@@ -393,6 +398,8 @@ public class Selection
         }
 
         currRow = _sheet.Rows.GetNextVisible(currRow, rowDir);
+        if (currRow == -1)
+            currRow = rowDir == 1 ? ActiveRegion.Bottom + 1 : ActiveRegion.Top - 1;
 
         // Fix the active region to surrounds of the sheet
         var activeRegionFixed = ActiveRegion.GetIntersection(_sheet.Region);
@@ -469,7 +476,7 @@ public class Selection
         if (ActiveRegion == null || colDir == 0)
             return;
 
-        colDir = Math.Abs(colDir) / colDir;
+        colDir = Math.Sign(colDir);
 
         var currRow = ActiveCellPosition.row;
         var currCol = ActiveCellPosition.col;
@@ -486,6 +493,8 @@ public class Selection
         }
 
         currCol = _sheet.Columns.GetNextVisible(currCol, colDir);
+        if (currCol == -1)
+            currCol = colDir == 1 ? ActiveRegion.Right + 1 : ActiveRegion.Left - 1;
 
         // Fix the active region to surrounds of the sheet
         var activeRegionFixed = ActiveRegion.GetIntersection(_sheet.Region);
@@ -634,9 +643,12 @@ public class Selection
     {
         var oldPosition = ActiveCellPosition;
         var newPosition = new CellPosition(row, col);
-        var args = new ActiveCellPositionChangedEventArgs(oldPosition, newPosition);
+        var beforeEventArgs = new BeforeActiveCellPositionChangedEventArgs(oldPosition, newPosition);
+        BeforeActiveCellPositionChanged?.Invoke(this, beforeEventArgs);
+        newPosition = beforeEventArgs.NewCellPosition;
+        var setEventArgs = new ActiveCellPositionChangedEventArgs(oldPosition, newPosition);
         this.ActiveCellPosition = newPosition;
-        ActiveCellPositionChanged?.Invoke(this, args);
+        ActiveCellPositionChanged?.Invoke(this, setEventArgs);
     }
 
     internal SelectionSnapshot GetSelectionSnapshot()

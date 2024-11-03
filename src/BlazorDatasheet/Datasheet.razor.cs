@@ -168,6 +168,11 @@ public partial class Datasheet : SheetComponentBase
     [Parameter] public RenderFragment? EmptyColumnsTemplate { get; set; }
 
     [Parameter] public RenderFragment? EmptyRowsTemplate { get; set; }
+    
+    /// <summary>
+    /// When set, this restricts the datasheet to viewing this region, otherwise the datasheet views the whole sheet.
+    /// </summary>
+    [Parameter] public Region? ViewRegion { get; set; }
 
     /// <summary>
     /// The datasheet keyboard shortcut manager
@@ -323,6 +328,7 @@ public partial class Datasheet : SheetComponentBase
 
         _cellLayoutProvider.IncludeColHeadings = ShowColHeadings;
         _cellLayoutProvider.IncludeRowHeadings = ShowRowHeadings;
+        _cellLayoutProvider.SetViewRegion(ViewRegion);
 
         base.OnParametersSet();
     }

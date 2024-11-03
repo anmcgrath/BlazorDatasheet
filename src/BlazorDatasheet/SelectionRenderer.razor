@@ -42,7 +42,7 @@
 {
     foreach (var region in Sheet.Selection.Regions)
     {
-        var boundedRegion = region.GetIntersection(Sheet.Region);
+        var boundedRegion = region.GetIntersection(CellLayoutProvider.ViewRegion);
         var isActiveRegion = region.Equals(Sheet.Selection.ActiveRegion);
         if (boundedRegion == null)
             continue;
@@ -124,7 +124,7 @@
     [CascadingParameter(Name = "DatasheetId")]
     public string DatasheetId { get; set; } = default!;
 
-    private IRegion? BoundedSelectingRegion => Sheet.Selection.SelectingRegion?.GetIntersection(Sheet.Region);
+    private IRegion? BoundedSelectingRegion => Sheet.Selection.SelectingRegion?.GetIntersection(CellLayoutProvider.ViewRegion);
 
     private double GetLeft(IRegion region) => CellLayoutProvider.ComputeLeftPosition(region);
     private double GetTop(IRegion region) => CellLayoutProvider.ComputeTopPosition(region);
@@ -204,7 +204,7 @@
 
         foreach (var region in Sheet.Selection.Regions)
         {
-            var bounded = region.GetIntersection(Sheet.Region);
+            var bounded = region.GetIntersection(CellLayoutProvider.ViewRegion);
             if (bounded == null)
                 continue;
 
@@ -214,7 +214,7 @@
 
         if (Sheet.Selection.IsSelecting)
         {
-            var bounded = Sheet.Selection.SelectingRegion!.GetIntersection(Sheet.Region);
+            var bounded = Sheet.Selection.SelectingRegion!.GetIntersection(CellLayoutProvider.ViewRegion);
             if (bounded == null)
                 return;
 

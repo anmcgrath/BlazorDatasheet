@@ -15,19 +15,29 @@ public class CellLayoutProvider : IGridLayoutProvider
     /// The total width of the sheet including row headings
     /// </summary>
     public double TotalWidth =>
-        _sheet.Columns.GetVisualWidthBetween(0, _sheet.NumCols) + (IncludeRowHeadings ? RowHeadingWidth : 0);
+        _sheet.Columns.GetVisualWidthBetween(ViewRegion.Left, ViewRegion.Right + 1) +
+        (IncludeRowHeadings ? RowHeadingWidth : 0);
 
     /// <summary>
     /// The total height of the sheet including col headings
     /// </summary>
     public double TotalHeight =>
-        _sheet.Rows.GetVisualHeightBetween(0, _sheet.NumRows) + (IncludeColHeadings ? ColHeadingHeight : 0);
+        _sheet.Rows.GetVisualHeightBetween(ViewRegion.Top, ViewRegion.Bottom + 1) +
+        (IncludeColHeadings ? ColHeadingHeight : 0);
 
     public double RowHeadingWidth => _sheet.Rows.HeadingWidth;
     public double ColHeadingHeight => _sheet.Columns.HeadingHeight;
 
     public bool IncludeRowHeadings { get; set; }
     public bool IncludeColHeadings { get; set; }
+
+    private IRegion? _region = null;
+
+    /// <summary>
+    /// The view region that the datasheet is limited to.
+    /// </summary>
+    public IRegion ViewRegion => _region ?? _sheet.Region;
+
 
     public CellLayoutProvider(Sheet sheet)
     {
@@ -42,6 +52,11 @@ public class CellLayoutProvider : IGridLayoutProvider
     public CellPosition ComputeCell(double x, double y)
     {
         return new CellPosition(ComputeRow(y), ComputeColumn(x));
+    }
+
+    public void SetViewRegion(Region? region)
+    {
+        _region = region;
     }
 
     public Rect ComputeRect(CellPosition position)
@@ -70,7 +85,7 @@ public class CellLayoutProvider : IGridLayoutProvider
     public double ComputeLeftPosition(int col)
     {
         var extra = IncludeRowHeadings ? RowHeadingWidth : 0;
-        return _sheet.Columns.GetVisualLeft(col) + extra;
+        return _sheet.Columns.GetVisualLeft(col) + extra - _sheet.Columns.GetVisualLeft(ViewRegion.Left);
     }
 
     public double ComputeRightPosition(int col)
@@ -89,7 +104,7 @@ public class CellLayoutProvider : IGridLayoutProvider
     public double ComputeTopPosition(int row)
     {
         var extra = IncludeColHeadings ? ColHeadingHeight : 0;
-        return _sheet.Rows.GetVisualTop(row) + extra;
+        return _sheet.Rows.GetVisualTop(row) + extra - _sheet.Rows.GetVisualTop(ViewRegion.Top);
     }
 
     public double ComputeBottomPosition(int row)
@@ -129,13 +144,13 @@ public class CellLayoutProvider : IGridLayoutProvider
     public int ComputeColumn(double x)
     {
         var offset = IncludeRowHeadings ? RowHeadingWidth : 0;
-        return _sheet.Columns.GetColumnIndex(x - offset);
+        return _sheet.Columns.GetColumnIndex(x - offset) + ViewRegion.Left;
     }
 
     public int ComputeRow(double y)
     {
         var offset = IncludeColHeadings ? ColHeadingHeight : 0;
-        return _sheet.Rows.GetRowIndex(y - offset);
+        return _sheet.Rows.GetRowIndex(y - offset) + ViewRegion.Left;
     }
 
 
@@ -168,12 +183,16 @@ public class CellLayoutProvider : IGridLayoutProvider
     public Viewport GetViewPort(double left, double top, double containerWidth, double containerHeight, int overflowX,
         int overflowY)
     {
-        var totalWidth = _sheet.Columns.GetVisualWidthBetween(0, _sheet.NumCols);
-        var totalHeight = _sheet.Rows.GetVisualHeightBetween(0, _sheet.NumRows);
+        var totalWidth = _sheet.Columns.GetVisualWidthBetween(ViewRegion.Left, ViewRegion.Right + 1);
+        var totalHeight = _sheet.Rows.GetVisualHeightBetween(ViewRegion.Top, ViewRegion.Bottom + 1);
+
+        var regTopPosn = _sheet.Rows.GetVisualTop(ViewRegion.Top);
+        var regLeftPosn = _sheet.Columns.GetColumnIndex(ViewRegion.Left);
+
         if (top > totalHeight - containerHeight)
-            top = Math.Max(0, totalHeight - containerHeight);
+            top = Math.Max(regTopPosn, totalHeight - containerHeight);
         if (left > totalWidth - containerWidth)
-            left = Math.Max(0, totalWidth - containerWidth);
+            left = Math.Max(regLeftPosn, totalWidth - containerWidth);
 
         // what would be seen on screen if there were no overflow
         var visibleRowStart = ComputeRow(top);
@@ -184,14 +203,14 @@ public class CellLayoutProvider : IGridLayoutProvider
         var visibleRowEnd = ComputeRow(top + containerHeight);
         var visibleColEnd = ComputeColumn(left + containerWidth);
 
-        visibleRowEnd = Math.Clamp(visibleRowEnd, 0, Math.Max(_sheet.NumRows - 1, 0));
-        visibleColEnd = Math.Clamp(visibleColEnd, 0, Math.Max(_sheet.NumCols - 1, 0));
+        visibleRowEnd = Math.Clamp(visibleRowEnd, ViewRegion.Top, Math.Max(ViewRegion.Bottom, 0));
+        visibleColEnd = Math.Clamp(visibleColEnd, ViewRegion.Left, Math.Max(ViewRegion.Right, 0));
 
-        var startRow = Math.Max(visibleRowStart - overflowY, 0);
-        var endRow = Math.Min(Math.Max(_sheet.NumRows - 1, 0), visibleRowEnd + overflowY);
+        var startRow = Math.Max(visibleRowStart - overflowY, ViewRegion.Top);
+        var endRow = Math.Min(Math.Max(ViewRegion.Bottom, ViewRegion.Top), visibleRowEnd + overflowY);
 
-        var startCol = Math.Max(visibleColStart - overflowX, 0);
-        var endCol = Math.Min(Math.Max(_sheet.NumCols - 1, 0), visibleColEnd + overflowX);
+        var startCol = Math.Max(visibleColStart - overflowX, ViewRegion.Left);
+        var endCol = Math.Min(Math.Max(ViewRegion.Right, ViewRegion.Left), visibleColEnd + overflowX);
 
         var rowIndices = _sheet.Rows.GetVisibleIndices(startRow, endRow);
         var colIndices = _sheet.Columns.GetVisibleIndices(startCol, endCol);
@@ -202,12 +221,12 @@ public class CellLayoutProvider : IGridLayoutProvider
             colIndices.FirstOrDefault(),
             colIndices.LastOrDefault());
 
-        var leftPos = _sheet.Columns.GetVisualLeft(startCol);
-        var topPos = _sheet.Rows.GetVisualTop(startRow);
+        var leftPos = _sheet.Columns.GetVisualWidthBetween(ViewRegion.Left, startCol);
+        var topPos = _sheet.Rows.GetVisualHeightBetween(ViewRegion.Top, startRow);
         var visibleWidth = ComputeWidthBetween(startCol, endCol + 1);
         var visibleHeight = ComputeHeightBetween(startRow, endRow + 1);
-        var distRight = ComputeWidthBetween(endCol, _sheet.NumCols - 1);
-        var distBottom = ComputeHeightBetween(endRow, _sheet.NumRows - 1);
+        var distRight = ComputeWidthBetween(endCol, ViewRegion.Right);
+        var distBottom = ComputeHeightBetween(endRow, ViewRegion.Bottom);
 
         return new Viewport()
         {

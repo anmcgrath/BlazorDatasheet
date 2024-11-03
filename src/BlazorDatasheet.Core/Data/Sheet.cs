@@ -14,6 +14,7 @@ using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 using System.Text;
+using BlazorDatasheet.Core.Events.Selection;
 
 namespace BlazorDatasheet.Core.Data;
 
@@ -83,7 +84,7 @@ public class Sheet
     /// The sheet's active selection
     /// </summary>
     public Selection Selection { get; }
-
+    
     /// <summary>
     /// Whether the UI associated with the sheet should be updating
     /// </summary>
@@ -114,7 +115,7 @@ public class Sheet
     public event EventHandler<BeforeRangeSortEventArgs>? BeforeRangeSort;
 
     public event EventHandler<RangeSortedEventArgs>? RangeSorted;
-
+    
     /// <summary>
     /// Fired when <see cref="ScreenUpdating"/> is changed
     /// </summary>
