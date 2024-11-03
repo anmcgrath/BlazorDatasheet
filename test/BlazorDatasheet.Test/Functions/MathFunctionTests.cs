@@ -37,6 +37,8 @@ public class MathFunctionTests
         Eval("=sin(\"abc\")").Should().BeOfType(typeof(FormulaError));
         _env.SetCellValue(0, 0, "abc");
         Eval("=sin(A1)").Should().BeOfType(typeof(FormulaError));
+        Eval("=sin(3.14)").Should().Be(Math.Sin(3.14));
+        Eval("=sin(A3)").Should().Be(Math.Sin(0)); // empty
     }
 
     [Test]
@@ -69,6 +71,22 @@ public class MathFunctionTests
         _env.SetCellValue(2, 1, 123);
         Eval("=sum(B3)").Should().Be(123);
     }
+
+    [Test]
+    public void Pow_Function_Tests()
+    {
+        _env.RegisterFunction("pow", new PowerFunction());
+        Eval("=pow(5,true)").Should().Be(Math.Pow(5, 1));
+        _env.SetCellValue(0, 0, true);
+        Eval("=pow(5,A1)").Should().Be(Math.Pow(5, 1));
+        Eval("=pow(\"abc\")").Should().BeOfType(typeof(FormulaError));
+        _env.SetCellValue(0, 0, "abc");
+        Eval("=pow(A1)").Should().BeOfType(typeof(FormulaError));
+        Eval("=pow(2,4)").Should().Be(Math.Pow(2, 4));
+        Eval("=pow(-2,-4)").Should().Be(Math.Pow(-2, -4));
+        Eval("=pow(-2,4)").Should().Be(Math.Pow(-2, 4));
+    }
+
 
     [Test]
     public void Intercept_Function_Tests()
