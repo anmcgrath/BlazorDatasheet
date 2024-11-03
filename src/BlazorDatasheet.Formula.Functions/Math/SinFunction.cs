@@ -18,11 +18,6 @@ public class SinFunction : ISheetFunction
     public CellValue Call(CellValue[] args, FunctionCallMetaData metaData)
     {
         var val = args[0];
-        if (val.ValueType == CellValueType.Error)
-            return val;
-
-        if (val.IsEmpty)
-            return CellValue.Number(0); // Math.Sin(0);
 
         if (val.ValueType != CellValueType.Number)
             return CellValue.Error(ErrorType.Value);
