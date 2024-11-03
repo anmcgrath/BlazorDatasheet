@@ -381,7 +381,7 @@ public class Selection
         if (ActiveRegion == null || rowDir == 0)
             return;
 
-        rowDir = Math.Abs(rowDir) / rowDir;
+        rowDir = Math.Sign(rowDir);
 
         var currRow = ActiveCellPosition.row;
         var currCol = ActiveCellPosition.col;
@@ -398,6 +398,8 @@ public class Selection
         }
 
         currRow = _sheet.Rows.GetNextVisible(currRow, rowDir);
+        if (currRow == -1)
+            currRow = rowDir == 1 ? ActiveRegion.Bottom + 1 : ActiveRegion.Top - 1;
 
         // Fix the active region to surrounds of the sheet
         var activeRegionFixed = ActiveRegion.GetIntersection(_sheet.Region);
@@ -474,7 +476,7 @@ public class Selection
         if (ActiveRegion == null || colDir == 0)
             return;
 
-        colDir = Math.Abs(colDir) / colDir;
+        colDir = Math.Sign(colDir);
 
         var currRow = ActiveCellPosition.row;
         var currCol = ActiveCellPosition.col;
@@ -491,6 +493,8 @@ public class Selection
         }
 
         currCol = _sheet.Columns.GetNextVisible(currCol, colDir);
+        if (currCol == -1)
+            currCol = colDir == 1 ? ActiveRegion.Right + 1 : ActiveRegion.Left - 1;
 
         // Fix the active region to surrounds of the sheet
         var activeRegionFixed = ActiveRegion.GetIntersection(_sheet.Region);
