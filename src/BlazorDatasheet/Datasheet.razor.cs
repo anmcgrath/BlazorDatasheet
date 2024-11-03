@@ -629,7 +629,7 @@ public partial class Datasheet : SheetComponentBase
 
         ShortcutManager.Register(["Delete", "Backspace"], KeyboardModifiers.Any,
             _ => Sheet.Commands.ExecuteCommand(new ClearCellsCommand(Sheet.Selection.Regions)),
-            _ => Sheet.Selection.Regions.Any());
+            _ => Sheet.Selection.Regions.Any() && !Sheet.Editor.IsEditing);
     }
 
     private async Task<bool> HandleArrowKeysDown(bool shift, Offset offset)
