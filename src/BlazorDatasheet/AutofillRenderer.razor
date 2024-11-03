@@ -117,7 +117,7 @@
         else
             _dragPreviewRegion = CalculateExpandRegion(sheetX, sheetY, cellAtMouse);
 
-        _dragPreviewRegion = Sheet.Region.GetIntersection(_dragPreviewRegion);
+        _dragPreviewRegion = CellLayoutProvider.ViewRegion.GetIntersection(_dragPreviewRegion);
 
         this.StateHasChanged();
 
@@ -261,7 +261,7 @@
 
     private string GetDraggerStyleString()
     {
-        var region = Sheet.Region.GetIntersection(Sheet.Selection.ActiveRegion ?? Sheet.Selection.SelectingRegion);
+        var region = CellLayoutProvider.ViewRegion.GetIntersection(Sheet.Selection.ActiveRegion ?? Sheet.Selection.SelectingRegion);
         if (region == null)
             return "display:none;";
 

@@ -66,7 +66,7 @@ public class RowInfoStore : RowColInfoStore
     }
 
     /// <summary>
-    /// Returns the left position of the row index
+    /// Returns the top position of the row index
     /// </summary>
     /// <param name="rowIndex"></param>
     /// <returns></returns>
