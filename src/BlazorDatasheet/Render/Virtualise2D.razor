@@ -1,0 +1,215 @@
+﻿@using System.Text
+@using BlazorDatasheet.Core.Events
+@using BlazorDatasheet.Core.Layout
+@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Render.Layout
+@using Microsoft.JSInterop
+@inject IJSRuntime Js;
+@implements IAsyncDisposable
+
+<div
+    @ref="_wholeEl"
+    style="
+        width: @(GetTotalViewSize().Width)px;
+        height: @(GetTotalViewSize().Height)px;
+        display: grid;
+        grid-template-columns: @_wholeElColTemplate;
+        grid-template-rows: @_wholeElRowTemplate;
+        grid-template-areas:
+        'fT fT fT'
+        'fL C  fR'
+        'fB fB fB'">
+
+    <div aria-hidden="true" @ref="_fillerTop" style="grid-area: fT"></div>
+    <div aria-hidden="true" @ref="_fillerRight" style=" grid-area: fR"></div>
+    <div style="background: white; grid-area: C; display: grid; grid-template-columns: @_contentColTemplate; grid-template-rows: @_contentRowTemplate;">
+        @{
+            var rowOffset = 1;
+        }
+        @for (int i = _rowStart; i <= _rowEnd; i++)
+        {
+            int row = i;
+            <div @key="row" style="display: contents;">
+                @{
+                    var colOffset = 1;
+                }
+                @for (int j = _colStart; j <= _colEnd; j++)
+                {
+                    int col = j;
+                    <div @key="col" style="grid-column: @colOffset; grid-row: @rowOffset; overflow: hidden;">
+                        @GridItemTemplate(new CellPosition(row, col))
+                    </div>
+                    colOffset++;
+                }
+            </div>
+
+            rowOffset++;
+        }
+    </div>
+    <div aria-hidden="true" @ref="_fillerLeft" style="grid-area: fL"></div>
+    <div aria-hidden="true" @ref="_fillerBottom" style="grid-area: fB"></div>
+
+</div>
+
+@code {
+
+    /// <summary>
+    /// Provides information on grid dimensions.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public IGridLayoutProvider LayoutProvider { get; set; } = new EmptyLayoutProvider();
+
+    /// <summary>
+    /// The template rendered for each grid item.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public RenderFragment<CellPosition> GridItemTemplate { get; set; } = null!;
+
+    private Region _viewRegion = null!;
+
+    /// <summary>
+    /// Set this to limit the view of the virtualised grid to the region specified
+    /// </summary>
+    [Parameter]
+    public Region? ViewRegion { get; set; }
+
+    private IJSObjectReference _virtualiser = null!;
+    private DotNetObjectReference<Virtualise2D> _dotnetHelper = default!;
+
+    private ElementReference _wholeEl;
+    private ElementReference _fillerTop;
+    private ElementReference _fillerRight;
+    private ElementReference _fillerLeft;
+    private ElementReference _fillerBottom;
+
+    private string _wholeElColTemplate = string.Empty;
+    private string _wholeElRowTemplate = string.Empty;
+    private string _contentColTemplate = string.Empty;
+    private string _contentRowTemplate = string.Empty;
+
+    private int _rowStart, _colStart, _rowEnd, _colEnd;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _dotnetHelper = DotNetObjectReference.Create(this);
+            var module =
+                await Js.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/js/virtualise-2d.js");
+            _virtualiser = await module.InvokeAsync<IJSObjectReference>("getVirtualiser");
+
+            await _virtualiser.InvokeVoidAsync("addVirtualisationHandlers",
+                _dotnetHelper,
+                _wholeEl,
+                nameof(HandleScroll),
+                _fillerLeft,
+                _fillerTop,
+                _fillerRight,
+                _fillerBottom);
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        _viewRegion = ViewRegion ?? new Region(0, LayoutProvider.NumRows - 1, 0, LayoutProvider.NumColumns - 1);
+        base.OnParametersSet();
+    }
+
+    /// <summary>
+    /// Returns the total view size that is constrained
+    /// by <see cref="ViewRegion"/>
+    /// </summary>
+    /// <returns></returns>
+    private Size GetTotalViewSize()
+    {
+        var layoutRegion = new Region(0, LayoutProvider.NumRows - 1, 0, LayoutProvider.NumColumns - 1);
+        var view = layoutRegion.GetIntersection(_viewRegion);
+        if (view == null)
+            return new Size(0, 0);
+
+        return new Size(LayoutProvider.ComputeWidthBetween(view.Left, view.Right + 1), LayoutProvider.ComputeHeightBetween(view.Top, view.Bottom + 1));
+    }
+
+    [JSInvokable(nameof(HandleScroll))]
+    public void HandleScroll(Rect viewRect)
+    {
+        var overflowX = 1;
+        var overflowY = 1;
+
+        var layoutProviderRegion = new Region(0, LayoutProvider.NumRows - 1, 0, LayoutProvider.NumColumns - 1);
+
+        // including overflow
+
+        // trying to restrict view to ViewRegion
+        // not working at all
+        IRegion? view = new Region(
+            LayoutProvider.ComputeRow(viewRect.Y) + _viewRegion.Top - overflowY,
+            LayoutProvider.ComputeRow(viewRect.Y + viewRect.Height) + _viewRegion.Top + overflowY,
+            LayoutProvider.ComputeColumn(viewRect.X) + _viewRegion.Left - overflowX,
+            LayoutProvider.ComputeColumn(viewRect.X + viewRect.Width) + _viewRegion.Left + overflowX
+        );
+
+        view = view.GetIntersection(_viewRegion)?.GetIntersection(layoutProviderRegion);
+
+        if (view == null)
+            return;
+
+        var left = LayoutProvider.ComputeLeftPosition(view.Left);
+        var right = LayoutProvider.ComputeRightPosition(view.Right);
+        var top = LayoutProvider.ComputeTopPosition(view.Top);
+        var bot = LayoutProvider.ComputeBottomPosition(view.Bottom);
+
+        var totalSize = GetTotalViewSize();
+        var pL = LayoutProvider.ComputeLeftPosition(Math.Max(_viewRegion.Left, 0));
+        var pT = LayoutProvider.ComputeTopPosition(Math.Max(_viewRegion.Top, 0));
+
+        var fillLeft = left - pL;
+        var fillRight = totalSize.Width - (right - pL);
+        var fillTop = top - pT;
+        var fillBottom = totalSize.Height - (bot - pT);
+        var contentWidth = LayoutProvider.ComputeWidth(view.Left, view.Width);
+        var contentHeight = LayoutProvider.ComputeHeight(view.Top, view.Height);
+
+        _wholeElColTemplate = $"{fillLeft}px {contentWidth}px {fillRight}px";
+        _wholeElRowTemplate = $"{fillTop}px {contentHeight}px {fillBottom}px";
+
+        _rowStart = view.Top;
+        _rowEnd = view.Bottom;
+        _colStart = view.Left;
+        _colEnd = view.Right;
+
+        var csb = new StringBuilder();
+        for (int col = _colStart; col <= _colEnd; col++)
+            csb.Append($"{LayoutProvider.ComputeWidth(col, 1)}px ");
+        var rsb = new StringBuilder();
+        for (int row = _rowStart; row <= _rowEnd; row++)
+            rsb.Append($"{LayoutProvider.ComputeHeight(row, 1)}px ");
+
+        _contentColTemplate = csb.ToString();
+        _contentRowTemplate = rsb.ToString();
+
+        StateHasChanged();
+        StateHasChanged();
+    }
+    
+    protected override void OnAfterRender(bool firstRender)
+    {
+        Console.WriteLine($"Rendered {GetType().Name}");
+        base.OnAfterRender(firstRender);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await _virtualiser.InvokeAsync<string>("disposeVirtualisationHandlers", _wholeEl);
+
+            _dotnetHelper.Dispose();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+        }
+    }
+
+}

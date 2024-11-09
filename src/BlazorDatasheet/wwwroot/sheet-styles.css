@@ -62,8 +62,6 @@
     background: var(--sheet-bg-color);
     font-size: var(--sheet-font-size);
     box-sizing: border-box;
-    position: relative;
-    display: block;
     white-space: nowrap;
     font-family: var(--sheet-font-family), serif;
     -moz-osx-font-smoothing: grayscale;
@@ -71,16 +69,16 @@
     color: var(--sheet-foreground-color);
 }
 
-.sheet-fixed-height {
-    overflow-y: scroll;
+.sheet-layer-container {
+    position: relative;
+    top: 0;
+    left: 0;
 }
 
-.sheet-fixed-width {
-    overflow-x: scroll;
-}
-
-.sheet-dynamic-height {
-
+.sheet-row-head-container{
+    display: flex;
+    flex-direction: column;
+    align-items: start;
 }
 
 .sheet-button {
@@ -95,7 +93,7 @@
     cursor: pointer;
 }
 
-.sheet-button:hover{
+.sheet-button:hover {
     background: var(--sheet-button-bg-hover-color);
 }
 
@@ -104,10 +102,12 @@
     -moz-user-select: none;
     -webkit-user-select: none;
     padding: 0 4px;
+    height: 100%;
+    width: 100%;
+    border-right: var(--sheet-border-style);
+    border-bottom: var(--sheet-border-style);
     overflow: hidden;
-    line-height: 20px;
-    height: 20px;
-    vertical-align: top;
+    background: var(--sheet-bg-color);
 }
 
 .merged-cell {
@@ -126,15 +126,6 @@
     table-layout: fixed;
     border-collapse: separate;
     border-spacing: 0;
-}
-
-.sheet-top td, .sheet-top th {
-    border-top: var(--sheet-border-style);
-}
-
-.sheet-table td, .sheet-table th {
-    border-right: var(--sheet-border-style);
-    border-bottom: var(--sheet-border-style);
 }
 
 .col-sticky {
@@ -156,6 +147,7 @@
 .row-head {
     text-align: right;
     background: var(--row-header-bg-color);
+    border-left: var(--sheet-border-style)
 }
 
 .row-head :hover {
@@ -164,6 +156,7 @@
 
 .col-head {
     background: var(--row-header-bg-color);
+    border-top: var(--sheet-border-style)
 }
 
 .col-head :hover {
@@ -180,13 +173,6 @@
 
 .row-active {
     background: var(--active-header-bg-color) !important;
-}
-
-.collapsed-row > th, .collapsed-row > tr, .collapsed-row > td {
-    padding: 0;
-    margin: 0;
-    border: 0;
-    border-spacing: 0;
 }
 
 .unselectable {

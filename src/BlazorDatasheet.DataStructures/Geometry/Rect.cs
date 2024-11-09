@@ -1,6 +1,6 @@
 ﻿namespace BlazorDatasheet.DataStructures.Geometry;
 
-public struct Rect
+public class Rect
 {
     public double X { get; }
     public double Height { get; }

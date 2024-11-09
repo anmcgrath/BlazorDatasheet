@@ -1,0 +1,157 @@
+﻿@using BlazorDatasheet.Core.Layout
+@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Render
+@using BlazorDatasheet.Render.DefaultComponents
+@using BlazorDatasheet.Render.Layout
+@inherits SheetComponentBase
+
+<div class="vars sheet" theme="@Theme">
+    <div style="display: flex; flex-direction: column; align-items:flex-start;">
+
+        @if (ShowColHeadings)
+        {
+            var cp = new ColHeadingLayoutProvider(_sheet);
+            <!-- Column headings -->
+            <div class="sheet-col-head-container" style="z-index: 2; @(StickyHeaders ? "position: sticky; top: 0;" : "")">
+                <div style="display: flex; flex-direction: row; align-items: flex-start">
+
+                    @if (ShowColHeadings)
+                    {
+                        <div class="sheet-cell row-head col-head"
+                             style="
+                         width: @(_sheet.Rows.HeadingWidth)px;
+                         z-index: 5;
+                        @(StickyHeaders ? "position: sticky; top: 0;" : "")
+                         height: @(_sheet.Columns.HeadingHeight)px;">
+                        </div>
+                    }
+
+                    <Virtualise2D
+                        LayoutProvider="cp">
+                        <GridItemTemplate>
+                            <div class="col-head sheet-cell"></div>
+                        </GridItemTemplate>
+                    </Virtualise2D>
+                </div>
+            </div>
+        }
+
+        <div style="display: flex; flex-direction: row; align-items: flex-start;">
+
+            @if (ShowRowHeadings)
+            {
+                <div class="sheet-row-head-container" style="@(StickyHeaders ? "position: sticky; left: 0;" : "")">
+                    <RowHeadingRenderer
+                        AlternateAxisHeadingsShown="ShowColHeadings"
+                        FrozenBottomCount="3"
+                        FrozenTopCount="3"
+                        ViewRegion="new Region(_viewRegion.Top, _viewRegion.Bottom, 0, 0)"
+                        Sheet="_sheet">
+                        @(_sheet.Rows.GetHeading(context) ?? (context + 1).ToString())
+                    </RowHeadingRenderer>
+                </div>
+            }
+
+            <div class="sheet-layer-container">
+                <div style="position: absolute; top: 0; left: 0; overflow: hidden;">
+                    |||
+                </div>
+            </div>
+
+            <!--@if (_stickyLeftCount > 0)
+            {
+                <div style="position: sticky; left: 0;">
+                    <DatasheetCssGrid
+                        ShowColHeadings="false"
+                        ShowRowHeadings="false"
+                        StickyLeftCount="0"
+                        Sheet="_sheet"
+                        ViewRegion="new Region(0, _viewRegion.Bottom, _viewRegion.Left, _viewRegion.Left + _stickyLeftCount - 1)"/>
+                </div>
+            }-->
+
+            <Virtualise2D
+                LayoutProvider="new CellLayoutProvider(_sheet)"
+                ViewRegion="_viewRegion"
+                Context="cellPosition">
+                <GridItemTemplate>
+                    @{
+                        var row = cellPosition.row;
+                        var col = cellPosition.col;
+                        var visualCell = new VisualCell(row, col, _sheet);
+
+                        var rowSpan = 1;
+                        var colSpan = 1;
+                        var dataCol = col;
+                        var dataRow = row;
+
+                        if (!Virtualise && visualCell.Merge != null)
+                        {
+                            if (_sheet.Rows.IsVisible(visualCell.Merge.Top) && _sheet.Columns.IsVisible(visualCell.Merge.Left))
+                            {
+                                if (visualCell.Merge.Top == row && visualCell.Merge.Left == col)
+                                {
+                                    rowSpan = _sheet.Rows.CountVisible(row, visualCell.Merge.Bottom);
+                                    colSpan = _sheet.Columns.CountVisible(col, visualCell.Merge.Right);
+                                    dataCol = visualCell.Merge.Left;
+                                    dataRow = visualCell.Merge.Top;
+                                }
+                            }
+                            else // cell top left is not visible
+                            {
+                                var nextVisibleRow = _sheet.Rows.GetNextVisible(visualCell.Merge.Top - 1);
+                                var nextVisibleCol = _sheet.Columns.GetNextVisible(visualCell.Merge.Left - 1);
+
+                                if (nextVisibleCol == col && nextVisibleRow == row)
+                                {
+                                    rowSpan = _sheet.Rows.CountVisible(row, visualCell.Merge.Bottom);
+                                    colSpan = _sheet.Columns.CountVisible(col, visualCell.Merge.Right);
+                                    dataCol = visualCell.Merge.Left;
+                                    dataRow = visualCell.Merge.Top;
+                                    visualCell = new VisualCell(visualCell.Merge.Top, visualCell.Merge.Left, Sheet);
+                                }
+                            }
+                        }
+                    }
+                    <div
+                        data-row="@dataRow"
+                        data-col="@dataCol"
+                        class="sheet-cell"
+                        style="@visualCell.FormatStyleString">
+                        <div style="display: flex;">
+                            @if (visualCell.Icon != null)
+                            {
+                                <div
+                                    style="margin-right:2px; float:left; color: @(visualCell.Format?.IconColor ?? "var(--icon-color)");">
+                                    @GetIconRenderFragment(visualCell.Icon)
+                                </div>
+                            }
+                            @switch (visualCell.CellType)
+                            {
+                                case "default":
+                                case "text":
+                                case "datetime":
+                                    <div style="width: 100%;">
+                                        @visualCell.FormattedString
+                                    </div>
+                                    break;
+                                case "boolean":
+                                    <BoolRenderer Cell="visualCell" Sheet="Sheet"/>
+                                    break;
+                                case "select":
+                                    <SelectRenderer Cell="visualCell" Sheet="Sheet"/>
+                                    break;
+
+                                default:
+                                    <DynamicComponent
+                                        Parameters="@GetCellRendererParameters(visualCell)"
+                                        Type="@GetCellRendererType(visualCell.CellType)"/>
+                                    break;
+                            }
+                        </div>
+                    </div>
+                </GridItemTemplate>
+            </Virtualise2D>
+        </div >
+    </div >
+</div >
