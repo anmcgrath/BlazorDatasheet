@@ -3,9 +3,15 @@
 @using BlazorDatasheet.Render
 @using BlazorDatasheet.Render.DefaultComponents
 @using BlazorDatasheet.Render.Layout
+@using BlazorDatasheet.Virtualise
 @inherits SheetComponentBase
 
-<div class="vars sheet" theme="@Theme">
+<div
+    @onmouseover="() => IsMouseInsideSheet = true"
+    @onmouseout="() => IsMouseInsideSheet = false"
+    class="vars sheet"
+    theme="@Theme"
+    @ref="_sheetContainer">
     <div style="display: flex; flex-direction: column; align-items:flex-start;">
 
         @if (ShowColHeadings)
@@ -43,7 +49,7 @@
                 <DatasheetCssGrid
                     GridLevel="GridLevel + 1"
                     ShowColHeadings="false"
-                    ShowRowHeadings="true"
+                    ShowRowHeadings="@ShowRowHeadings"
                     FrozenLeftCount="_frozenLeftCount"
                     FrozenRightCount="_frozenRightCount"
                     ViewRegion="new(_viewRegion.Top, _viewRegion.Top + _frozenTopCount - 1, _viewRegion.Left, _viewRegion.Right)"
@@ -56,7 +62,7 @@
 
             @if (ShowRowHeadings)
             {
-                <div class="sheet-row-head-container" style="@(StickyHeaders ? "position: sticky; left: 0;" : "")">
+                <div class="sheet-row-head-container" style="z-index: @(GridLevel + 1);@(StickyHeaders ? "position: sticky; left: 0;" : "")">
                     <RowHeadingRenderer
                         AlternateAxisHeadingsShown="ShowColHeadings"
                         ViewRegion="MainViewRegion"
@@ -66,10 +72,10 @@
                 </div>
             }
 
-            <div class="sheet-layer-container" style="z-index: @(GridLevel + 4);">
-                <div style="position: absolute; top: 0; left: 0; width: 50px; height: 50px; overflow: hidden;">
-                </div>
-            </div>
+            <LayerContainer Depth="@GridLevel" Sheet="_sheet" ViewRegion="new Region(MainViewRegion.Top, MainViewRegion.Bottom, _viewRegion.Left, _viewRegion.Right)">
+                <SelectionRendererNew/>
+                <EditorLayer @ref="_editorLayer" CustomCellTypes="@CustomCellTypeDefinitions"/>
+            </LayerContainer>
 
             @if (_frozenLeftCount > 0)
             {
@@ -191,7 +197,7 @@
                 <DatasheetCssGrid
                     GridLevel="GridLevel + 1"
                     ShowColHeadings="false"
-                    ShowRowHeadings="true"
+                    ShowRowHeadings="@ShowRowHeadings"
                     FrozenLeftCount="_frozenLeftCount"
                     FrozenRightCount="_frozenRightCount"
                     ViewRegion="new(_viewRegion.Bottom - _frozenTopCount + 1, _viewRegion.Bottom, _viewRegion.Left, _viewRegion.Right)"

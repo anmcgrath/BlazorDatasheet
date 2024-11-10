@@ -29,20 +29,17 @@
         @for (int i = _rowStart; i <= _rowEnd; i++)
         {
             int row = i;
-            <div @key="row" style="display: contents;">
-                @{
-                    var colOffset = 1;
-                }
-                @for (int j = _colStart; j <= _colEnd; j++)
-                {
-                    int col = j;
-                    <div @key="col" style="grid-column: @colOffset; grid-row: @rowOffset; overflow: hidden;">
-                        @GridItemTemplate(new CellPosition(row, col))
-                    </div>
-                    colOffset++;
-                }
-            </div>
 
+            <VirtualRow
+                RowOffset="rowOffset"
+                Row="row"
+                ColStart="_colStart"
+                ColEnd="_colEnd">
+                <GridItemTemplate>
+                    @GridItemTemplate(new CellPosition(context.row,context.col))
+                </GridItemTemplate>
+            </VirtualRow>
+            
             rowOffset++;
         }
     </div>
@@ -88,6 +85,8 @@
     private string _contentRowTemplate = string.Empty;
 
     private int _rowStart, _colStart, _rowEnd, _colEnd;
+
+    private List<IRegion> _newRegions = new();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -189,15 +188,8 @@
         _contentRowTemplate = rsb.ToString();
 
         StateHasChanged();
-        StateHasChanged();
     }
     
-    protected override void OnAfterRender(bool firstRender)
-    {
-        Console.WriteLine($"Rendered {GetType().Name}");
-        base.OnAfterRender(firstRender);
-    }
-
     public async ValueTask DisposeAsync()
     {
         try

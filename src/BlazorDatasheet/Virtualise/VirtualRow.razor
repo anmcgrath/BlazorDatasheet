@@ -1,0 +1,28 @@
+﻿@using BlazorDatasheet.DataStructures.Geometry
+<div @key="Row" style="display: contents;">
+    @{
+        var colOffset = 1;
+    }
+    @for (int j = ColStart; j <= ColEnd; j++)
+    {
+        int col = j;
+        <div @key="col" style="grid-column: @colOffset; grid-row: @RowOffset; overflow: hidden;">
+            @GridItemTemplate(new CellPosition(Row, col))
+        </div>
+        colOffset++;
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public int Row { get; set; }
+    
+    [Parameter, EditorRequired]
+    public int RowOffset { get; set; }
+
+    [Parameter, EditorRequired] public int ColStart { get; set; }
+
+    [Parameter, EditorRequired] public int ColEnd { get; set; }
+
+    [Parameter, EditorRequired] public RenderFragment<CellPosition> GridItemTemplate { get; set; } = default!;
+
+}

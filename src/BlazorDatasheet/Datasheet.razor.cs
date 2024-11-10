@@ -560,6 +560,11 @@ public partial class Datasheet : SheetComponentBase
 
         await BeginEdit(args.Row, args.Col, EditEntryMode.Mouse);
     }
+    
+    private void HandleCellMouseOver(object? sender, SheetPointerEventArgs args)
+    {
+        this.UpdateSelectingEndPosition(args.Row, args.Col);
+    }
 
     private async Task BeginEdit(int row, int col, EditEntryMode mode, string entryChar = "")
     {
@@ -569,11 +574,7 @@ public partial class Datasheet : SheetComponentBase
         this.CancelSelecting();
         Sheet.Editor.BeginEdit(row, col, false, mode, entryChar);
     }
-
-    private void HandleCellMouseOver(object? sender, SheetPointerEventArgs args)
-    {
-        this.UpdateSelectingEndPosition(args.Row, args.Col);
-    }
+    
 
     private async Task<bool> HandleWindowMouseDown(MouseEventArgs e)
     {

@@ -10,4 +10,9 @@ public class SheetActiveEventArgs
         DataSheet = dataSheet;
         IsActive = isActive;
     }
+    
+    public SheetActiveEventArgs(DatasheetCssGrid dataSheet, bool isActive)
+    {
+        IsActive = isActive;
+    }
 }

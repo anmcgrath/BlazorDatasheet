@@ -2,9 +2,10 @@
 @using BlazorDatasheet.Core.Layout
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Render.Layout
+@using BlazorDatasheet.Virtualise
 
 <div style="display: flex; flex-direction: column">
-    <div class="sheet-row-head-container" style="z-index: 2; position: sticky; left: 0;">
+    <div class="sheet-row-head-container" style=" position: sticky; left: 0;">
         <Virtualise2D
             LayoutProvider="_rowLayoutProvider"
             ViewRegion="new Region(_viewRegion.Top, _viewRegion.Bottom, 0, 0)">

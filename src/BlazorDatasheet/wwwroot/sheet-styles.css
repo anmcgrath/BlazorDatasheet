@@ -15,7 +15,7 @@
     --icon-color: #000000;
     --shadow-overlay-color: grey;
     --invalid-cell-foreground-color: #ff0000;
-    --selection-bg-color: rgba(163, 188, 213, 0.18);
+    --selection-bg-color: rgba(158, 200, 243, 0.36);
     --selection-border-color: #0998e5;
     --cell-highlight-bg-color: #a9e5b6;
     --num-highlight-color: #43a3b4;
@@ -67,10 +67,12 @@
     -moz-osx-font-smoothing: grayscale;
     font-weight: var(--sheet-font-weight);
     color: var(--sheet-foreground-color);
+    contain: style;
 }
 
 .sheet-layer-container {
     position: relative;
+    pointer-events: none;
     top: 0;
     left: 0;
 }
@@ -198,6 +200,7 @@
 .editor-overlay {
     background: var(--sheet-bg-color);
     box-shadow: 0 0 4px var(--shadow-overlay-color);
+    pointer-events: all;
 }
 
 .highlight-input {
