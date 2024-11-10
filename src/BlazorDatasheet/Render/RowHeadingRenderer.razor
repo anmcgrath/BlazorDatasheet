@@ -4,20 +4,10 @@
 @using BlazorDatasheet.Render.Layout
 
 <div style="display: flex; flex-direction: column">
-    @if (FrozenTopCount > 0)
-    {
-        <div style="position: sticky; @GetStickyPositionInfo(); z-index: 4;">
-            <RowHeadingRenderer
-                Sheet="_sheet"
-                ViewRegion="new Region(_viewRegion.Top, FrozenTopCount - 1, 0, 0)">
-                @ChildContent(context)
-            </RowHeadingRenderer>
-        </div>
-    }
     <div class="sheet-row-head-container" style="z-index: 2; position: sticky; left: 0;">
         <Virtualise2D
             LayoutProvider="_rowLayoutProvider"
-            ViewRegion="new Region(_viewRegion.Top + FrozenTopCount, _viewRegion.Bottom - FrozenBottomCount, 0, 0)">
+            ViewRegion="new Region(_viewRegion.Top, _viewRegion.Bottom, 0, 0)">
             <GridItemTemplate>
                 <div class="row-head sheet-cell">
                     @ChildContent(context.row)
@@ -25,25 +15,10 @@
             </GridItemTemplate>
         </Virtualise2D>
     </div>
-
-    @if (FrozenBottomCount > 0)
-    {
-        <div style="position: sticky; bottom: 0; z-index: 4">
-            <RowHeadingRenderer
-                Sheet="_sheet"
-                ViewRegion="new Region(_viewRegion.Bottom - FrozenTopCount + 1, _viewRegion.Bottom, 0, 0)">
-                @ChildContent(context)
-            </RowHeadingRenderer>
-        </div>
-    }
 </div>
 
 @code {
-
-    [Parameter] public int FrozenTopCount { get; set; }
-
-    [Parameter] public int FrozenBottomCount { get; set; }
-
+    
     [Parameter, EditorRequired] public Sheet? Sheet { get; set; }
 
     [Parameter] public Region? ViewRegion { get; set; }

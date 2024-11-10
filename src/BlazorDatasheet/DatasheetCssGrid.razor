@@ -10,31 +10,47 @@
 
         @if (ShowColHeadings)
         {
-            var cp = new ColHeadingLayoutProvider(_sheet);
             <!-- Column headings -->
-            <div class="sheet-col-head-container" style="z-index: 2; @(StickyHeaders ? "position: sticky; top: 0;" : "")">
+            <div class="sheet-col-head-container" style="z-index: @(GridLevel + 2); @(StickyHeaders ? "position: sticky; top: 0;" : "")">
                 <div style="display: flex; flex-direction: row; align-items: flex-start">
 
-                    @if (ShowColHeadings)
+                    @if (ShowRowHeadings)
                     {
                         <div class="sheet-cell row-head col-head"
                              style="
-                         width: @(_sheet.Rows.HeadingWidth)px;
-                         z-index: 5;
-                        @(StickyHeaders ? "position: sticky; top: 0;" : "")
-                         height: @(_sheet.Columns.HeadingHeight)px;">
+                                     width: @(_sheet.Rows.HeadingWidth)px;
+                                     z-index: @(GridLevel + 5);
+                                     @(StickyHeaders ? "position: sticky; top: 0; left:0;" : "")
+                                     height: @(_sheet.Columns.HeadingHeight)px;">
                         </div>
                     }
 
-                    <Virtualise2D
-                        LayoutProvider="cp">
-                        <GridItemTemplate>
-                            <div class="col-head sheet-cell"></div>
-                        </GridItemTemplate>
-                    </Virtualise2D>
+                    <ColumnHeadingRenderer
+                        Sheet="_sheet"
+                        AlternateAxisHeadingsShown="ShowRowHeadings"
+                        FrozenStartCount="_frozenLeftCount"
+                        FrozenEndCount="_frozenRightCount">
+                        @(_sheet.Columns.GetHeading(context) ?? (context + 1).ToString())
+                    </ColumnHeadingRenderer>
                 </div>
             </div>
         }
+
+        @if (_frozenTopCount > 0)
+        {
+            <div style="position: sticky; z-index: @(GridLevel + 2); top: @(ShowColHeadings ? _sheet.Columns.HeadingHeight + "px" : "0");" class="top-sticky">
+                <!-- Top sticky -->
+                <DatasheetCssGrid
+                    GridLevel="GridLevel + 1"
+                    ShowColHeadings="false"
+                    ShowRowHeadings="true"
+                    FrozenLeftCount="_frozenLeftCount"
+                    FrozenRightCount="_frozenRightCount"
+                    ViewRegion="new(_viewRegion.Top, _viewRegion.Top + _frozenTopCount - 1, _viewRegion.Left, _viewRegion.Right)"
+                    Sheet="_sheet"/>
+            </div>
+        }
+
 
         <div style="display: flex; flex-direction: row; align-items: flex-start;">
 
@@ -43,36 +59,36 @@
                 <div class="sheet-row-head-container" style="@(StickyHeaders ? "position: sticky; left: 0;" : "")">
                     <RowHeadingRenderer
                         AlternateAxisHeadingsShown="ShowColHeadings"
-                        FrozenBottomCount="3"
-                        FrozenTopCount="3"
-                        ViewRegion="new Region(_viewRegion.Top, _viewRegion.Bottom, 0, 0)"
+                        ViewRegion="MainViewRegion"
                         Sheet="_sheet">
                         @(_sheet.Rows.GetHeading(context) ?? (context + 1).ToString())
                     </RowHeadingRenderer>
                 </div>
             }
 
-            <div class="sheet-layer-container">
-                <div style="position: absolute; top: 0; left: 0; overflow: hidden;">
-                    |||
+            <div class="sheet-layer-container" style="z-index: @(GridLevel + 4);">
+                <div style="position: absolute; top: 0; left: 0; width: 50px; height: 50px; overflow: hidden;">
                 </div>
             </div>
 
-            <!--@if (_stickyLeftCount > 0)
+            @if (_frozenLeftCount > 0)
             {
-                <div style="position: sticky; left: 0;">
+                <!-- Left sticky -->
+                <div style="position: sticky; z-index: @(GridLevel + 1); left: @(ShowRowHeadings ? _sheet.Rows.HeadingWidth + "px" : "0");">
                     <DatasheetCssGrid
+                        GridLevel="GridLevel + 1"
                         ShowColHeadings="false"
                         ShowRowHeadings="false"
-                        StickyLeftCount="0"
+                        FrozenLeftCount="0"
+                        FrozenRightCount="0"
                         Sheet="_sheet"
-                        ViewRegion="new Region(0, _viewRegion.Bottom, _viewRegion.Left, _viewRegion.Left + _stickyLeftCount - 1)"/>
+                        ViewRegion="new(MainViewRegion.Top, MainViewRegion.Bottom, _viewRegion.Left, _viewRegion.Left + _frozenLeftCount - 1)"/>
                 </div>
-            }-->
+            }
 
             <Virtualise2D
                 LayoutProvider="new CellLayoutProvider(_sheet)"
-                ViewRegion="_viewRegion"
+                ViewRegion="MainViewRegion"
                 Context="cellPosition">
                 <GridItemTemplate>
                     @{
@@ -152,6 +168,36 @@
                     </div>
                 </GridItemTemplate>
             </Virtualise2D>
+
+            @if (_frozenRightCount > 0)
+            {
+                <div style="position: sticky; right: 0; z-index:@(GridLevel + 1);">
+                    <DatasheetCssGrid
+                        GridLevel="GridLevel + 1"
+                        ShowColHeadings="false"
+                        ShowRowHeadings="false"
+                        FrozenRightCount="0"
+                        FrozenLeftCount="0"
+                        Sheet="_sheet"
+                        ViewRegion="new Region(MainViewRegion.Top, MainViewRegion.Bottom, _viewRegion.Right - _frozenRightCount + 1, _viewRegion.Right)"/>
+                </div>
+            }
         </div >
+
+        @if (_frozenBottomCount > 0)
+        {
+            <div style="position: sticky; z-index: @(GridLevel + 1); bottom: 0;">
+                <!-- Bottom sticky -->
+                <DatasheetCssGrid
+                    GridLevel="GridLevel + 1"
+                    ShowColHeadings="false"
+                    ShowRowHeadings="true"
+                    FrozenLeftCount="_frozenLeftCount"
+                    FrozenRightCount="_frozenRightCount"
+                    ViewRegion="new(_viewRegion.Bottom - _frozenTopCount + 1, _viewRegion.Bottom, _viewRegion.Left, _viewRegion.Right)"
+                    Sheet="_sheet"/>
+            </div>
+        }
+
     </div >
 </div >

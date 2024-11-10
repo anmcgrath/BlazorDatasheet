@@ -1,0 +1,82 @@
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Layout
+@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Render.Layout
+
+<div style="display: flex; flex-direction: row">
+    
+    @if (FrozenStartCount > 0)
+    {
+        <div style="position: sticky; @GetStickyLeftPositionInfo(); z-index: 4;">
+            <ColumnHeadingRenderer
+                Sheet="_sheet"
+                ViewRegion="new Region(0, 0, _viewRegion.Left, FrozenStartCount - 1)">
+                @ChildContent(context)
+            </ColumnHeadingRenderer>
+        </div>
+    }
+    <div class="sheet-row-head-container" style="z-index: 2;">
+        <Virtualise2D
+            LayoutProvider="_rowLayoutProvider"
+            ViewRegion="new Region(0, 0, _viewRegion.Left + FrozenStartCount, _viewRegion.Right - FrozenEndCount)">
+            <GridItemTemplate>
+                <div class="row-head sheet-cell">
+                    @ChildContent(context.col)
+                </div>
+            </GridItemTemplate>
+        </Virtualise2D>
+    </div>
+
+    @if (FrozenEndCount > 0)
+    {
+        <div style="position: sticky; right: 0; z-index: 4">
+            <ColumnHeadingRenderer
+                Sheet="_sheet"
+                ViewRegion="new Region(0, 0, _viewRegion.Right - FrozenStartCount + 1, _viewRegion.Right)">
+                @ChildContent(context)
+            </ColumnHeadingRenderer>
+        </div>
+    }
+</div>
+
+@code {
+
+    [Parameter] public int FrozenStartCount { get; set; }
+
+    [Parameter] public int FrozenEndCount { get; set; }
+
+    [Parameter, EditorRequired] public Sheet? Sheet { get; set; }
+
+    [Parameter] public Region? ViewRegion { get; set; }
+
+    [Parameter] public bool AlternateAxisHeadingsShown { get; set; }
+
+    [Parameter, EditorRequired] public RenderFragment<int> ChildContent { get; set; } = null!;
+
+    private Sheet _sheet = new(1, 1);
+    private Region _viewRegion = new(0, 0);
+    private IGridLayoutProvider _rowLayoutProvider = new EmptyLayoutProvider();
+
+    protected override void OnParametersSet()
+    {
+        if (Sheet != _sheet)
+        {
+            _sheet = Sheet ?? new(0, 0);
+            _rowLayoutProvider = new ColHeadingLayoutProvider(_sheet);
+            StateHasChanged();
+        }
+
+        if (ViewRegion != _viewRegion)
+        {
+            _viewRegion = ViewRegion ?? _sheet.Region;
+        }
+
+        base.OnParametersSet();
+    }
+
+    private string GetStickyLeftPositionInfo()
+    {
+        return $"left: {(AlternateAxisHeadingsShown ? _sheet.Rows.HeadingWidth : 0)}px;";
+    }
+
+}
