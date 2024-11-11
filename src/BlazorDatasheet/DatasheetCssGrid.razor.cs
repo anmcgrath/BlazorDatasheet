@@ -402,7 +402,7 @@ public partial class DatasheetCssGrid : SheetComponentBase
     {
         var accepted = true;
         if (_sheet.Editor.IsEditing)
-            accepted = _editorLayer.IsSoftEdit && _sheet.Editor.AcceptEdit();
+            accepted = _sheet.Editor.IsSoftEdit && _sheet.Editor.AcceptEdit();
 
         if (!accepted) return false;
 
