@@ -85,7 +85,9 @@
 
     private void EditorOnEditBegin(object? sender, EditBeginEventArgs e)
     {
-        EditValue = e.EditValue;
+        if (!ViewRegion!.Contains(e.Cell.Row, e.Cell.Col))
+            return;
+
         ActiveEditorType = GetEditorType(e.Type);
         IsEditing = true;
         IsSoftEdit = e.IsSoftEdit;
