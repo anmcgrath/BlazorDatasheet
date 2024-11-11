@@ -198,6 +198,50 @@
 
         StateHasChanged();
     }
+    
+    internal async Task ScrollToContainRegion(IRegion region)
+    {
+        /*var left = LayoutProvider.ComputeLeftPosition(region.Left);
+        var top = LayoutProvider.ComputeTopPosition(region.Top);
+        var right = LayoutProvider.ComputeRightPosition(region.Right);
+        var bottom = LayoutProvider.ComputeBottomPosition(region.Bottom);
+
+        var scrollRect = await _virtualiser.InvokeAsync<Rect>("calculateViewRect", _wholeEl);
+
+        double scrollToY = scrollRect.Y;
+        double scrollToX = scrollRect.X;
+
+        bool doScroll = false;
+
+        if (top < scrollRect.Y || bottom > scrollRect.Y + scrollRect.Height)
+        {
+            var bottomDist = bottom - (scrollRect.Y + scrollRect.Height);
+            var topDist = top - scrollRect.Y;
+
+            var scrollYDist = Math.Abs(bottomDist) < Math.Abs(topDist)
+                ? bottomDist
+                : topDist;
+
+            scrollToY = Math.Round(scrollRect.Y + scrollYDist, 1);
+            doScroll = true;
+        }
+
+        if (left < scrollRect.X || right > scrollRect.X + scrollRect.Width)
+        {
+            var rightDist = right - (scrollRect.X + scrollRect.Width);
+            var leftDist = left - scrollRect.X;
+
+            var scrollXDist = Math.Abs(rightDist) < Math.Abs(leftDist)
+                ? rightDist
+                : leftDist;
+
+            scrollToX = Math.Round(scrollRect.X + scrollXDist, 1);
+            doScroll = true;
+        }
+
+        if (doScroll)
+            await _virtualiser.InvokeVoidAsync("scrollTo", _wholeEl, scrollToX, scrollToY, "instant");*/
+    }
 
     public async ValueTask DisposeAsync()
     {

@@ -1,6 +1,8 @@
-﻿using BlazorDatasheet.Core.Commands.Data;
+﻿using System.Diagnostics;
+using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Edit;
+using BlazorDatasheet.Core.Events.Edit;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Core.Util;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -11,6 +13,7 @@ using BlazorDatasheet.KeyboardInput;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Render.DefaultComponents;
 using BlazorDatasheet.Services;
+using BlazorDatasheet.Virtualise;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using ClipboardEventArgs = BlazorDatasheet.Core.Events.ClipboardEventArgs;
@@ -37,7 +40,7 @@ public partial class DatasheetCssGrid : SheetComponentBase
     /// When set, this restricts the datasheet to viewing this region, otherwise the datasheet views the whole sheet.
     /// </summary>
     [Parameter]
-    public Region? ViewRegion { get; set; } = null;
+    public Region? ViewRegion { get; set; }
 
     private Region _viewRegion = new(0, 0);
 
@@ -162,6 +165,11 @@ public partial class DatasheetCssGrid : SheetComponentBase
     private ElementReference _sheetContainer = default!;
     
     /// <summary>
+    /// Main virtualised view
+    /// </summary>
+    private Virtualise2D _mainView = default!;
+    
+    /// <summary>
     /// The editor layer, which renders the cell editor.
     /// </summary>
     private EditorLayer _editorLayer = default!;
@@ -205,8 +213,6 @@ public partial class DatasheetCssGrid : SheetComponentBase
             _frozenTopCount = FrozenTopCount;
         }
 
-        StateHasChanged();
-
         return base.OnParametersSetAsync();
     }
 
@@ -234,14 +240,27 @@ public partial class DatasheetCssGrid : SheetComponentBase
 
     private void RemoveEvents(Sheet sheet)
     {
+        _sheet.Editor.EditBegin -= EditorOnEditBegin;
+        _sheet.Editor.EditFinished -= EditorOnEditFinished;
     }
 
     private void AddEvents(Sheet sheet)
     {
-        _sheet.Editor.EditBegin += async (_, _) => await WindowEventService.CancelPreventDefault("keydown");
-        _sheet.Editor.EditFinished +=
-            async (_, _) => await WindowEventService.PreventDefault("keydown");
+        _sheet.Editor.EditBegin += EditorOnEditBegin;
+        _sheet.Editor.EditFinished += EditorOnEditFinished;
+        _sheet.SheetDirty += (sender, args) => StateHasChanged();
     }
+
+    private async void EditorOnEditFinished(object? sender, EditFinishedEventArgs e)
+    {
+        await WindowEventService.PreventDefault("keydown");
+    }
+
+    private async void EditorOnEditBegin(object? sender, EditBeginEventArgs e)
+    {
+        await WindowEventService.CancelPreventDefault("keydown");
+    }
+
 
     private async Task AddWindowEventsAsync()
     {
@@ -385,9 +404,7 @@ public partial class DatasheetCssGrid : SheetComponentBase
     {
         bool changed = IsDataSheetActive != IsMouseInsideSheet;
         await SetActiveAsync(IsMouseInsideSheet);
-
-        if (changed)
-            StateHasChanged();
+        
 
         return false;
     }
@@ -505,6 +522,11 @@ public partial class DatasheetCssGrid : SheetComponentBase
         await ScrollToContainRegion(cellRect);
     }
 
+    private async Task ScrollToContainRegion(IRegion cellRect)
+    {
+        await _mainView.ScrollToContainRegion(cellRect);
+    }
+
     /// <summary>
     /// Increases the size of the active selection, around the active cell position
     /// </summary>
@@ -582,61 +604,6 @@ public partial class DatasheetCssGrid : SheetComponentBase
         await OnSheetActiveChanged.InvokeAsync(new SheetActiveEventArgs(this, active));
     }
 
-    private async Task ScrollToContainRegion(IRegion region)
-    {
-        /*var left = _cellLayoutProvider.ComputeLeftPosition(region);
-        var top = _cellLayoutProvider.ComputeTopPosition(region);
-        var right = _cellLayoutProvider.ComputeRightPosition(region);
-        var bottom = _cellLayoutProvider.ComputeBottomPosition(region);
-
-        var scrollInfo = await _virtualizer.InvokeAsync<ViewportScrollInfo>("getViewportInfo", _wholeSheetDiv);
-        if (ShowRowHeadings && StickyHeadings)
-        {
-            scrollInfo.VisibleLeft += _cellLayoutProvider.RowHeadingWidth;
-            scrollInfo.ContainerWidth -= _cellLayoutProvider.RowHeadingWidth;
-        }
-
-        if (ShowColHeadings && StickyHeadings)
-        {
-            scrollInfo.VisibleTop += _cellLayoutProvider.ColHeadingHeight;
-            scrollInfo.ContainerHeight -= _cellLayoutProvider.ColHeadingHeight;
-        }
-
-        double scrollToY = scrollInfo.ParentScrollTop;
-        double scrollToX = scrollInfo.ParentScrollLeft;
-
-        bool doScroll = false;
-
-        if (top < scrollInfo.VisibleTop || bottom > scrollInfo.VisibleTop + scrollInfo.ContainerHeight)
-        {
-            var bottomDist = bottom - (scrollInfo.VisibleTop + scrollInfo.ContainerHeight);
-            var topDist = top - scrollInfo.VisibleTop;
-
-            var scrollYDist = Math.Abs(bottomDist) < Math.Abs(topDist)
-                ? bottomDist
-                : topDist;
-
-            scrollToY = Math.Round(scrollInfo.ParentScrollTop + scrollYDist, 1);
-            doScroll = true;
-        }
-
-        if (left < scrollInfo.VisibleLeft || right > scrollInfo.VisibleLeft + scrollInfo.ContainerWidth)
-        {
-            var rightDist = right - (scrollInfo.VisibleLeft + scrollInfo.ContainerWidth);
-            var leftDist = left - scrollInfo.VisibleLeft;
-
-            var scrollXDist = Math.Abs(rightDist) < Math.Abs(leftDist)
-                ? rightDist
-                : leftDist;
-
-            scrollToX = Math.Round(scrollInfo.ParentScrollLeft + scrollXDist, 1);
-            doScroll = true;
-        }
-
-        if (doScroll)
-            await _virtualizer.InvokeVoidAsync("scrollTo", _wholeSheetDiv, scrollToX, scrollToY, "instant");*/
-    }
-
     /// <summary>
     /// Copies current selection to clipboard
     /// </summary>
@@ -678,9 +645,14 @@ public partial class DatasheetCssGrid : SheetComponentBase
         return _ => { };
     }
 
+    protected override bool ShouldRender()
+    {
+        return base.ShouldRender();
+    }
+
     protected override void OnAfterRender(bool firstRender)
     {
-        Console.WriteLine($"Datasheet rendered");
+        //Console.WriteLine($"Datasheet rendered " + (new StackTrace()).GetFrame(1).GetMethod().Name);
         base.OnAfterRender(firstRender);
     }
 }

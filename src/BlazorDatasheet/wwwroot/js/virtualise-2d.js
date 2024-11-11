@@ -102,7 +102,6 @@
         if (el == null || el.parentElement == null)
             return false
         let parentStyle = window.getComputedStyle(el.parentElement)
-        console.log('parentStyle', parentStyle.position)
         return parentStyle.position === 'sticky' || this.isInsideSticky(el.parentElement)
     }
 
@@ -146,7 +145,6 @@
                     continue
 
                 let viewRect = getRect(wholeEl)
-                console.log('observed!', wholeEl, viewRect)
                 dotNetHelper.invokeMethodAsync(dotnetScrollHandlerName, viewRect);
             }
 
@@ -184,7 +182,10 @@
 
     scrollTo(wholeSheetEl, x, y, behaviour) {
         let parent = this.findScrollableAncestor(wholeSheetEl) || document.documentElement
-        parent.scrollTo({left: x, top: y, behavior: behaviour})
+        let offsetLeft = this.getOffsetLeftToScrollableParent(wholeSheetEl)
+        let offseTTop = this.getOffsetTopToScrollableParent(wholeSheetEl)
+        
+        parent.scrollTo({left: x + offsetLeft, top: y + offseTTop, behavior: behaviour})
     }
 
     sheetMousePositionListeners = {}
