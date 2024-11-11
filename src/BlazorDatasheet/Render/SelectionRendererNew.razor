@@ -5,7 +5,7 @@
 
 @foreach (var region in _sheet.Selection.Regions)
 {
-    var boundedRegion = region.GetIntersection(ViewRegion);
+    var boundedRegion = region.GetIntersection(_sheet.Region);
     var isActiveRegion = region.Equals(_sheet.Selection.ActiveRegion);
     if (boundedRegion == null)
         continue;
@@ -75,12 +75,6 @@
     private void OnSelectingChanged(object? sender, IRegion? args)
     {
         StateHasChanged();
-    }
-
-
-    protected override void OnAfterRender(bool firstRender)
-    {
-        base.OnAfterRender(firstRender);
     }
 
 }
