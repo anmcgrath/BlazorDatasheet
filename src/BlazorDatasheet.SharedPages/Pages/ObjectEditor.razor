@@ -13,11 +13,11 @@
 
 <p>In this example we have a datasource of 100 people and set up a page size of 10. When the page is changed, the Sheet data is overidden from the new data.</p>
 
-<Datasheet
+<DatasheetCssGrid
     @ref="dataSheet1"
     CustomCellTypeDefinitions="CustomTypes"
     Sheet="editor.Sheet">
-</Datasheet>
+</DatasheetCssGrid>
 
 <p>Page @(editor.CurrentPage + 1) of @editor.NumPages</p>
 
@@ -28,7 +28,7 @@
 
     private List<Person> People;
     private ObjectEditor<Person> editor;
-    private Datasheet dataSheet1;
+    private DatasheetCssGrid dataSheet1;
     private Dictionary<string, CellTypeDefinition> CustomTypes { get; } = new();
 
     protected override void OnInitialized()
