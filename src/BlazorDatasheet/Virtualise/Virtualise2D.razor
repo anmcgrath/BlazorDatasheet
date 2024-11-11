@@ -26,15 +26,15 @@
         @{
             var rowOffset = 1;
         }
-        @for (int i = _rowStart; i <= _rowEnd; i++)
+        @for (int i = _currentViewport.ViewRegion.Top; i <= _currentViewport.ViewRegion.Bottom; i++)
         {
             int row = i;
 
             <VirtualRow
                 RowOffset="rowOffset"
                 Row="row"
-                ColStart="_colStart"
-                ColEnd="_colEnd">
+                ColStart="_currentViewport.ViewRegion.Left"
+                ColEnd="_currentViewport.ViewRegion.Right">
                 <GridItemTemplate>
                     @GridItemTemplate(new CellPosition(context.row, context.col))
                 </GridItemTemplate>
@@ -65,7 +65,7 @@
     /// <summary>
     /// The number of columns past the end of the viewport to render.
     /// </summary>
-    [Parameter] 
+    [Parameter]
     public int OverscanColumns { get; set; } = 6;
 
     /// <summary>
@@ -73,6 +73,8 @@
     /// </summary>
     [Parameter]
     public int OverscanRows { get; set; } = 2;
+
+    [Parameter] public EventCallback<VirtualViewportChangedEventArgs> OnViewportChanged { get; set; }
 
     private Region _viewRegion = null!;
 
@@ -96,9 +98,7 @@
     private string _contentColTemplate = string.Empty;
     private string _contentRowTemplate = string.Empty;
 
-    private int _rowStart, _colStart, _rowEnd, _colEnd;
-
-    private List<IRegion> _newRegions = new();
+    private Viewport _currentViewport = new(new(-1, -1), new(0, 0, 0, 0));
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -142,7 +142,7 @@
     }
 
     [JSInvokable(nameof(HandleScroll))]
-    public void HandleScroll(Rect viewRect)
+    public async Task HandleScroll(Rect viewRect)
     {
         var layoutProviderRegion = new Region(0, LayoutProvider.NumRows - 1, 0, LayoutProvider.NumColumns - 1);
 
@@ -150,14 +150,14 @@
 
         // trying to restrict view to ViewRegion
         // not working at all
-        IRegion? view = new Region(
+        Region? view = new Region(
             LayoutProvider.ComputeRow(viewRect.Y) + _viewRegion.Top - OverscanRows,
             LayoutProvider.ComputeRow(viewRect.Y + viewRect.Height) + _viewRegion.Top + OverscanRows,
             LayoutProvider.ComputeColumn(viewRect.X) + _viewRegion.Left - OverscanColumns,
             LayoutProvider.ComputeColumn(viewRect.X + viewRect.Width) + _viewRegion.Left + OverscanColumns
         );
 
-        view = view.GetIntersection(_viewRegion)?.GetIntersection(layoutProviderRegion);
+        view = view.GetIntersection(_viewRegion)?.GetIntersection(layoutProviderRegion) as Region;
 
         if (view == null)
             return;
@@ -181,24 +181,25 @@
         _wholeElColTemplate = $"{fillLeft}px {contentWidth}px {fillRight}px";
         _wholeElRowTemplate = $"{fillTop}px {contentHeight}px {fillBottom}px";
 
-        _rowStart = view.Top;
-        _rowEnd = view.Bottom;
-        _colStart = view.Left;
-        _colEnd = view.Right;
+        var newViewport = new Viewport(view, new Rect(left, top, contentWidth, contentHeight));
+        var newRegions = newViewport.ViewRegion.Break(_currentViewport.ViewRegion).Cast<Region>().ToList();
+        _currentViewport = newViewport;
 
         var csb = new StringBuilder();
-        for (int col = _colStart; col <= _colEnd; col++)
+        for (int col = _currentViewport.ViewRegion.Left; col <= _currentViewport.ViewRegion.Right; col++)
             csb.Append($"{LayoutProvider.ComputeWidth(col, 1)}px ");
         var rsb = new StringBuilder();
-        for (int row = _rowStart; row <= _rowEnd; row++)
+        for (int row = _currentViewport.ViewRegion.Top; row <= _currentViewport.ViewRegion.Bottom; row++)
             rsb.Append($"{LayoutProvider.ComputeHeight(row, 1)}px ");
 
         _contentColTemplate = csb.ToString();
         _contentRowTemplate = rsb.ToString();
 
+        await OnViewportChanged.InvokeAsync(new VirtualViewportChangedEventArgs(_currentViewport, newRegions));
+
         StateHasChanged();
     }
-    
+
     internal async Task ScrollToContainRegion(IRegion region)
     {
         /*var left = LayoutProvider.ComputeLeftPosition(region.Left);

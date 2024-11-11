@@ -103,7 +103,7 @@
     user-select: none;
     -moz-user-select: none;
     -webkit-user-select: none;
-    padding: 0 4px;
+    padding: 2px 5px;
     height: 100%;
     width: 100%;
     border-right: var(--sheet-border-style);

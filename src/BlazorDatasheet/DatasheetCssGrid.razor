@@ -92,6 +92,7 @@
             </LayerContainer>
 
             <Virtualise2D
+                OnViewportChanged="HandleVirtualViewportChanged"
                 LayoutProvider="new CellLayoutProvider(_sheet)"
                 ViewRegion="MainViewRegion"
                 @ref="_mainView"

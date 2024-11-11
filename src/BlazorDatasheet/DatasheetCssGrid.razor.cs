@@ -250,6 +250,18 @@ public partial class DatasheetCssGrid : SheetComponentBase
         _sheet.Editor.EditFinished += EditorOnEditFinished;
         _sheet.SheetDirty += (sender, args) => StateHasChanged();
     }
+    
+    private async Task AddWindowEventsAsync()
+    {
+        await WindowEventService.RegisterMouseEvent("mousedown", HandleWindowMouseDown);
+        await WindowEventService.RegisterKeyEvent("keydown", HandleWindowKeyDown);
+        await WindowEventService.RegisterClipboardEvent("paste", HandleWindowPaste);
+        await WindowEventService.RegisterMouseEvent("mouseup", HandleWindowMouseUp);
+    }
+    
+    private void HandleVirtualViewportChanged(VirtualViewportChangedEventArgs args)
+    {
+    }
 
     private async void EditorOnEditFinished(object? sender, EditFinishedEventArgs e)
     {
@@ -260,15 +272,7 @@ public partial class DatasheetCssGrid : SheetComponentBase
     {
         await WindowEventService.CancelPreventDefault("keydown");
     }
-
-
-    private async Task AddWindowEventsAsync()
-    {
-        await WindowEventService.RegisterMouseEvent("mousedown", HandleWindowMouseDown);
-        await WindowEventService.RegisterKeyEvent("keydown", HandleWindowKeyDown);
-        await WindowEventService.RegisterClipboardEvent("paste", HandleWindowPaste);
-        await WindowEventService.RegisterMouseEvent("mouseup", HandleWindowMouseUp);
-    }
+    
 
     internal async Task<bool> HandleShortcuts(string key, KeyboardModifiers modifiers)
     {
@@ -644,6 +648,8 @@ public partial class DatasheetCssGrid : SheetComponentBase
             return rf;
         return _ => { };
     }
+    
+    
 
     protected override bool ShouldRender()
     {
