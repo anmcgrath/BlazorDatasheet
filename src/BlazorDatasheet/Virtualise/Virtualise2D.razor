@@ -36,10 +36,10 @@
                 ColStart="_colStart"
                 ColEnd="_colEnd">
                 <GridItemTemplate>
-                    @GridItemTemplate(new CellPosition(context.row,context.col))
+                    @GridItemTemplate(new CellPosition(context.row, context.col))
                 </GridItemTemplate>
             </VirtualRow>
-            
+
             rowOffset++;
         }
     </div>
@@ -61,6 +61,18 @@
     /// </summary>
     [Parameter, EditorRequired]
     public RenderFragment<CellPosition> GridItemTemplate { get; set; } = null!;
+
+    /// <summary>
+    /// The number of columns past the end of the viewport to render.
+    /// </summary>
+    [Parameter] 
+    public int OverscanColumns { get; set; } = 6;
+
+    /// <summary>
+    /// The number of rows past the end of the viewport to render.
+    /// </summary>
+    [Parameter]
+    public int OverscanRows { get; set; } = 2;
 
     private Region _viewRegion = null!;
 
@@ -132,9 +144,6 @@
     [JSInvokable(nameof(HandleScroll))]
     public void HandleScroll(Rect viewRect)
     {
-        var overflowX = 1;
-        var overflowY = 1;
-
         var layoutProviderRegion = new Region(0, LayoutProvider.NumRows - 1, 0, LayoutProvider.NumColumns - 1);
 
         // including overflow
@@ -142,10 +151,10 @@
         // trying to restrict view to ViewRegion
         // not working at all
         IRegion? view = new Region(
-            LayoutProvider.ComputeRow(viewRect.Y) + _viewRegion.Top - overflowY,
-            LayoutProvider.ComputeRow(viewRect.Y + viewRect.Height) + _viewRegion.Top + overflowY,
-            LayoutProvider.ComputeColumn(viewRect.X) + _viewRegion.Left - overflowX,
-            LayoutProvider.ComputeColumn(viewRect.X + viewRect.Width) + _viewRegion.Left + overflowX
+            LayoutProvider.ComputeRow(viewRect.Y) + _viewRegion.Top - OverscanRows,
+            LayoutProvider.ComputeRow(viewRect.Y + viewRect.Height) + _viewRegion.Top + OverscanRows,
+            LayoutProvider.ComputeColumn(viewRect.X) + _viewRegion.Left - OverscanColumns,
+            LayoutProvider.ComputeColumn(viewRect.X + viewRect.Width) + _viewRegion.Left + OverscanColumns
         );
 
         view = view.GetIntersection(_viewRegion)?.GetIntersection(layoutProviderRegion);
@@ -189,7 +198,7 @@
 
         StateHasChanged();
     }
-    
+
     public async ValueTask DisposeAsync()
     {
         try
