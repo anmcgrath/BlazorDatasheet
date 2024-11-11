@@ -2,7 +2,6 @@
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Render
 @using BlazorDatasheet.Render.DefaultComponents
-@using BlazorDatasheet.Render.Layout
 @using BlazorDatasheet.Virtualise
 @inherits SheetComponentBase
 
@@ -72,11 +71,6 @@
                 </div>
             }
 
-            <LayerContainer Depth="@GridLevel" Sheet="_sheet" ViewRegion="new Region(MainViewRegion.Top, MainViewRegion.Bottom, _viewRegion.Left, _viewRegion.Right)">
-                <SelectionRendererNew/>
-                <EditorLayer @ref="_editorLayer" CustomCellTypes="@CustomCellTypeDefinitions"/>
-            </LayerContainer>
-
             @if (_frozenLeftCount > 0)
             {
                 <!-- Left sticky -->
@@ -91,6 +85,11 @@
                         ViewRegion="new(MainViewRegion.Top, MainViewRegion.Bottom, _viewRegion.Left, _viewRegion.Left + _frozenLeftCount - 1)"/>
                 </div>
             }
+
+            <LayerContainer Depth="@GridLevel" Sheet="_sheet" ViewRegion="MainViewRegion">
+                <SelectionRendererNew/>
+                <EditorLayer @ref="_editorLayer" CustomCellTypes="@CustomCellTypeDefinitions"/>
+            </LayerContainer>
 
             <Virtualise2D
                 LayoutProvider="new CellLayoutProvider(_sheet)"
@@ -130,7 +129,7 @@
                                     colSpan = _sheet.Columns.CountVisible(col, visualCell.Merge.Right);
                                     dataCol = visualCell.Merge.Left;
                                     dataRow = visualCell.Merge.Top;
-                                    visualCell = new VisualCell(visualCell.Merge.Top, visualCell.Merge.Left, Sheet);
+                                    visualCell = new VisualCell(visualCell.Merge.Top, visualCell.Merge.Left, _sheet);
                                 }
                             }
                         }
