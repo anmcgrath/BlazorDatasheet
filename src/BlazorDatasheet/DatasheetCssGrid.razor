@@ -98,81 +98,13 @@
                 @ref="_mainView"
                 Context="cellPosition">
                 <GridItemTemplate>
-                    @{
-                        var row = cellPosition.row;
-                        var col = cellPosition.col;
-                        var visualCell = new VisualCell(row, col, _sheet);
-
-                        var rowSpan = 1;
-                        var colSpan = 1;
-                        var dataCol = col;
-                        var dataRow = row;
-
-                        if (!Virtualise && visualCell.Merge != null)
-                        {
-                            if (_sheet.Rows.IsVisible(visualCell.Merge.Top) && _sheet.Columns.IsVisible(visualCell.Merge.Left))
-                            {
-                                if (visualCell.Merge.Top == row && visualCell.Merge.Left == col)
-                                {
-                                    rowSpan = _sheet.Rows.CountVisible(row, visualCell.Merge.Bottom);
-                                    colSpan = _sheet.Columns.CountVisible(col, visualCell.Merge.Right);
-                                    dataCol = visualCell.Merge.Left;
-                                    dataRow = visualCell.Merge.Top;
-                                }
-                            }
-                            else // cell top left is not visible
-                            {
-                                var nextVisibleRow = _sheet.Rows.GetNextVisible(visualCell.Merge.Top - 1);
-                                var nextVisibleCol = _sheet.Columns.GetNextVisible(visualCell.Merge.Left - 1);
-
-                                if (nextVisibleCol == col && nextVisibleRow == row)
-                                {
-                                    rowSpan = _sheet.Rows.CountVisible(row, visualCell.Merge.Bottom);
-                                    colSpan = _sheet.Columns.CountVisible(col, visualCell.Merge.Right);
-                                    dataCol = visualCell.Merge.Left;
-                                    dataRow = visualCell.Merge.Top;
-                                    visualCell = new VisualCell(visualCell.Merge.Top, visualCell.Merge.Left, _sheet);
-                                }
-                            }
-                        }
-                    }
-                    <div
-                        data-row="@dataRow"
-                        data-col="@dataCol"
-                        class="sheet-cell"
-                        style="@visualCell.FormatStyleString">
-                        <div style="display: flex;">
-                            @if (visualCell.Icon != null)
-                            {
-                                <div
-                                    style="margin-right:2px; float:left; color: @(visualCell.Format?.IconColor ?? "var(--icon-color)");">
-                                    @GetIconRenderFragment(visualCell.Icon)
-                                </div>
-                            }
-                            @switch (visualCell.CellType)
-                            {
-                                case "default":
-                                case "text":
-                                case "datetime":
-                                    <div style="width: 100%;">
-                                        @visualCell.FormattedString
-                                    </div>
-                                    break;
-                                case "boolean":
-                                    <BoolRenderer Cell="visualCell" Sheet="Sheet"/>
-                                    break;
-                                case "select":
-                                    <SelectRenderer Cell="visualCell" Sheet="Sheet"/>
-                                    break;
-
-                                default:
-                                    <DynamicComponent
-                                        Parameters="@GetCellRendererParameters(visualCell)"
-                                        Type="@GetCellRendererType(visualCell.CellType)"/>
-                                    break;
-                            }
-                        </div>
-                    </div>
+                    <DatasheetCell
+                        Row="@cellPosition.row"
+                        Col="@cellPosition.col"
+                        Sheet="_sheet"
+                        IsDirty="@false"
+                        Virtualise="@Virtualise"
+                    />
                 </GridItemTemplate>
             </Virtualise2D>
 
@@ -206,5 +138,5 @@
             </div>
         }
 
-    </div >
+    </div>
 </div >
