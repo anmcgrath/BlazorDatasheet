@@ -13,7 +13,7 @@
 {
     <div id="editor" class="editor-overlay"
          @onclick="HandleEditorOverlayClick"
-         style="position:absolute; box-sizing: border-box; display: inline-block; @GetEditorSizeStyling()">
+         style="@GetEditorSizeStyling()">
         <DynamicComponent
             Type="@ActiveEditorType"
             Parameters="@GetDynamicEditorParameters()"
@@ -209,9 +209,6 @@
 
         sb.AddStyle("left", $"{left + 1}px;");
         sb.AddStyle("top", $"{top + 1}px;");
-        sb.AddStyle("min-width", $"{w - 3}px;");
-        sb.AddStyle("max-width", $"{w - 3}px;");
-        sb.AddStyle("height", $"{h - 3}px;");
         var style = sb.ToString();
         return style;
     }

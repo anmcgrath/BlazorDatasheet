@@ -9,17 +9,12 @@
 
 <div style="width: 500px; height: 500px; overflow: scroll;">
     <DatasheetCssGrid
+        FrozenLeftCount="1"
         ShowColHeadings="ShowColHeadings"
         ShowRowHeadings="ShowRowHeadings"
         Sheet="Sheet"/>
 </div>
 
-<div style="width: 500px; height: 500px; overflow: scroll;">
-    <Datasheet
-        ShowColHeadings="ShowColHeadings"
-        ShowRowHeadings="ShowRowHeadings"
-        Sheet="Sheet"/>
-</div>
 <div>
     <button @onclick="InsertRowAfterSelection">Insert row</button>
     <button @onclick="InsertColAfterSelection">Insert col</button>

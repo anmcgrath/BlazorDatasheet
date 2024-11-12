@@ -1,0 +1,71 @@
+﻿@using BlazorDatasheet.DataStructures.Store
+@using BlazorDatasheet.Formula.Core.Interpreter.Parsing
+@inherits Layer
+
+<div class="highlight-layer">
+    @foreach (var cr in _colorRegions)
+    {
+        var r = cr.Region.GetIntersection(Sheet.Region);
+        if (r == null)
+            continue;
+        var x = GetLayerColumnX(r.Left);
+        var y = GetLayerRowY(r.Top);
+        var w = Sheet.Columns.GetVisualWidthBetween(r.Left, r.Right + 1);
+        var h = Sheet.Rows.GetVisualHeightBetween(r.Top, r.Bottom + 1);
+        <BoxOverlayRenderer
+            Width="w"
+            Height="h"
+            X="x"
+            Y="y"
+            ZIndex="12"
+            BorderStyle="solid"
+            BorderColor="@cr.Data"
+            BorderThickness="1"/>
+    }
+</div>
+
+
+@code {
+
+    private List<DataRegion<string>> _colorRegions = new();
+
+    private void HighlightRanges()
+    {
+        if (Sheet.Editor.EditValue.StartsWith("="))
+        {
+            var parser = new Parser();
+            var formula = parser.FromString(Sheet.Editor.EditValue);
+            if (!formula.References.Any())
+            {
+                _colorRegions = new List<DataRegion<string>>();
+                return;
+            }
+
+            _colorRegions = formula.References
+                .Select((r, i) =>
+                {
+                    var colorIndex = (i % 5) + 1;
+                    return new DataRegion<string>($"var(--highlight-color-{colorIndex})", r.Region);
+                }).ToList();
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        Sheet.Editor.EditValueChanged += EditorOnEditValueChanged;
+        Sheet.Editor.EditFinished += (sender, args) =>
+        {
+            _colorRegions.Clear();
+            StateHasChanged();
+        };
+
+        base.OnParametersSet();
+    }
+
+    private void EditorOnEditValueChanged(object? sender, string? e)
+    {
+        HighlightRanges();
+        StateHasChanged();
+    }
+
+}

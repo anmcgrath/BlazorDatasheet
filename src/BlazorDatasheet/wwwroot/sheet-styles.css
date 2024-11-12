@@ -25,6 +25,11 @@
     --sheet-button-bg-color: #f4f4f4;
     --sheet-button-bg-hover-color: #ffffff;
     --sheet-button-border: 1px solid #979797;
+    --highlight-color-1: red;
+    --highlight-color-2: blue;
+    --highlight-color-3: purple;
+    --highlight-color-4: green;
+    --highlight-color-5: brown;
 }
 
 .vars[theme='dark'] {
@@ -77,7 +82,7 @@
     left: 0;
 }
 
-.sheet-row-head-container{
+.sheet-row-head-container {
     display: flex;
     flex-direction: column;
     align-items: start;
@@ -201,6 +206,9 @@
     background: var(--sheet-bg-color);
     box-shadow: 0 0 4px var(--shadow-overlay-color);
     pointer-events: all;
+    position: absolute;
+    box-sizing: border-box;
+    display: inline-block;
 }
 
 .highlight-input {
@@ -215,8 +223,6 @@
 }
 
 .highlight-input, .highlight-result {
-    height: 100%;
-    min-width: 100%;
     display: inline-block;
     position: absolute;
     padding: 1px 4px;
@@ -224,6 +230,8 @@
     left: 0;
     white-space: pre;
     z-index: 2;
+    text-wrap: stable;
+    overflow-wrap: anywhere;
 }
 
 .highlight-result {

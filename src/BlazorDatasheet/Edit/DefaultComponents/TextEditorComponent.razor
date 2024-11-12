@@ -1,105 +1,25 @@
 @inherits BaseEditor
-@using BlazorDatasheet.Util
 @using BlazorDatasheet.Core.Interfaces
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Edit
-@using BlazorDatasheet.Core.Util
-@using BlazorDatasheet.DataStructures.Geometry
-@using BlazorDatasheet.DataStructures.Store
-@using BlazorDatasheet.Formula.Core
-@using BlazorDatasheet.Formula.Core.Interpreter.Parsing
 
 <HighlightedInput
     Style="@Style"
-    RangeColors="_colors"
     CarePositionChanged="OnCaretPositionChanged"
     @bind-Value:set="OnInput"
     @bind-Value:get="CurrentValue"/>
 
-@foreach (var cr in _colorRegions)
-{
-    var r = cr.Region.GetIntersection(_sheet.Region);
-    if (r == null)
-        continue;
-    var x = GetX(r);
-    var y = GetY(r);
-    var w = GetWidth(r);
-    var h = GetHeight(r);
-    <BoxOverlayRenderer
-        Width="w"
-        Height="h"
-        X="x"
-        Y="y"
-        ZIndex="12"
-        BorderStyle="solid"
-        BorderColor="@cr.Data"
-        BorderThickness="1"/>
-}
-
 @code {
-
-    private IReadOnlyCell Cell;
-    private Sheet _sheet;
-    private List<DataRegion<string>> _colorRegions = new();
-    private List<string> _colors = new List<string>() { "blue", "green", "red", "purple" };
-    private double _editX;
-    private double _editY;
-    private string _editorStyle;
 
     public override void BeforeEdit(IReadOnlyCell cell, Sheet sheet)
     {
-        Cell = cell;
-        _sheet = sheet;
-        _editX = sheet.Columns.GetVisualWidthBetween(0, cell.Col);
-        _editY = sheet.Rows.GetVisualHeightBetween(0, cell.Row);
+
     }
 
     private void OnInput(string value)
     {
         var newValue = value ?? string.Empty;
         CurrentValue = newValue;
-        HighlightRanges();
-    }
-
-    private void HighlightRanges()
-    {
-        if (CurrentValue.StartsWith("="))
-        {
-            var parser = new Parser();
-            var formula = parser.FromString(CurrentValue);
-            if (!formula.References.Any())
-            {
-                _colorRegions = new List<DataRegion<string>>();
-                return;
-            }
-
-            _colorRegions = formula.References
-                .Select((r, i) =>
-                {
-                    var colorIndex = i % _colors.Count;
-                    return new DataRegion<string>(_colors[colorIndex], r.Region);
-                }).ToList();
-        }
-    }
-
-    private double GetX(IRegion region)
-    {
-        return _sheet.Columns.GetVisualWidthBetween(0, region.Left) - _editX - 1;
-    }
-
-    private double GetY(IRegion region)
-    {
-        return _sheet.Rows.GetVisualHeightBetween(0, region.Top) - _editY - 1;
-    }
-
-    private double GetWidth(IRegion region)
-    {
-        return _sheet.Columns.GetVisualWidthBetween(region.Left, region.Right + 1);
-    }
-
-    private double GetHeight(IRegion region)
-    {
-        return _sheet.Rows.GetVisualHeightBetween(region.Top, region.Bottom + 1);
     }
 
     public override void BeginEdit(EditEntryMode entryMode, string? editValue, string key)
@@ -112,8 +32,6 @@
         {
             CurrentValue = editValue?.ToString() ?? string.Empty;
         }
-
-        HighlightRanges();
     }
 
     private void OnCaretPositionChanged(int position)
