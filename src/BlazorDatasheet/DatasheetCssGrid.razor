@@ -103,9 +103,14 @@
                     }
                     @for (int i = vr.ColStart; i <= vr.ColEnd; i++)
                     {
-                        <div style="grid-row: @vr.RowOffset; grid-col:@colOffset;">
-                            Test
+                        int col = i;
+                        <div @key="col" style="grid-row: @vr.RowOffset; grid-column:@colOffset;">
+                            <DatasheetCell
+                                Col="@col"
+                                Row="@vr.Row"
+                                Sheet="_sheet" IsDirty="_dirtyRows.Contains(vr.Row)"></DatasheetCell>
                         </div>
+                        colOffset++;
                     }
                 </RowTemplate>
             </Virtualise2D>

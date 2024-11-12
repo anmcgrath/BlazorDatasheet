@@ -278,8 +278,11 @@ public partial class DatasheetCssGrid : SheetComponentBase
     private void HandleVirtualViewportChanged(VirtualViewportChangedEventArgs args)
     {
         _currentViewport = args.Viewport;
-        for (int i = _currentViewport.ViewRegion.Top; i <= _currentViewport.ViewRegion.Bottom; i++)
-            _dirtyRows.Add(i);
+        foreach (var region in args.NewRegions.Concat(args.RemovedRegions))
+        {
+            for (int i = region.Top; i <= region.Bottom; i++)
+                _dirtyRows.Add(i);
+        }
 
         StateHasChanged();
     }
@@ -701,10 +704,14 @@ public partial class DatasheetCssGrid : SheetComponentBase
     protected override bool ShouldRender()
     {
         _renderRequested = true;
-        if (!Sheet.ScreenUpdating)
+        if (!_sheet.ScreenUpdating)
             return false;
 
         return _sheetIsDirty || _dirtyRows.Count != 0;
     }
 
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+    }
 }

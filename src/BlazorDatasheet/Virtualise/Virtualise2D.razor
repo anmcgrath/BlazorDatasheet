@@ -30,12 +30,14 @@
         @for (int i = _currentViewport.ViewRegion.Top; i <= _currentViewport.ViewRegion.Bottom; i++)
         {
             int row = i;
-            
+
             @if (RowTemplate != null)
             {
-                @RowTemplate(new VirtualRowArgs(row, rowOffset, _currentViewport.ViewRegion.Left, _currentViewport.ViewRegion.Right))
+                <div style="display: contents;" @key="row">
+                    @RowTemplate(new VirtualRowArgs(row, rowOffset, _currentViewport.ViewRegion.Left, _currentViewport.ViewRegion.Right))
+                </div>
             }
-            else if(GridItemTemplate != null)
+            else if (GridItemTemplate != null)
             {
                 var colOffset = 1;
 
@@ -50,8 +52,8 @@
                     }
                 </div>
             }
-            rowOffset++;
 
+            rowOffset++;
         }
     </div>
     <div aria-hidden="true" @ref="_fillerLeft" style="grid-area: fL"></div>
@@ -72,7 +74,7 @@
     /// </summary>
     [Parameter, EditorRequired]
     public RenderFragment<CellPosition> GridItemTemplate { get; set; } = null!;
-    
+
     /// <summary>
     /// The template rendered for each row.
     /// </summary>
@@ -136,6 +138,7 @@
                 _fillerRight,
                 _fillerBottom);
         }
+
         _requiresRender = false;
     }
 
@@ -279,23 +282,10 @@
         }
     }
 
-    protected override bool ShouldRender()
+    protected override void OnAfterRender(bool firstRender)
     {
-        if (!_requiresRender)
-            return false;
-        _stopwatches.Enqueue(Stopwatch.StartNew());
-        return true;
-    }
-
-    private Queue<Stopwatch> _stopwatches = new();
-     protected override void OnAfterRender(bool firstRender)
-     {
-         if (_stopwatches.Count > 0)
-         {
-             var sw = _stopwatches.Dequeue();
-             Console.WriteLine($"Rendered virtualise 2d " + sw.ElapsedMilliseconds);
-         }
-         base.OnAfterRender(firstRender);
+        _requiresRender = false;
+        base.OnAfterRender(firstRender);
     }
 
 }
