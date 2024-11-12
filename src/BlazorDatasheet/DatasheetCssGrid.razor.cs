@@ -3,6 +3,7 @@ using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Edit;
 using BlazorDatasheet.Core.Events.Edit;
+using BlazorDatasheet.Core.Events.Visual;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Core.Util;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -163,16 +164,24 @@ public partial class DatasheetCssGrid : SheetComponentBase
     /// The whole sheet container, useful for checking whether mouse is inside the sheet
     /// </summary>
     private ElementReference _sheetContainer = default!;
-    
+
     /// <summary>
     /// Main virtualised view
     /// </summary>
     private Virtualise2D _mainView = default!;
-    
+
     /// <summary>
     /// The editor layer, which renders the cell editor.
     /// </summary>
     private EditorLayer _editorLayer = default!;
+
+    private HashSet<int> _dirtyRows = new();
+
+    private bool _sheetIsDirty;
+
+    private bool _renderRequested;
+
+    private Viewport _currentViewport = new(new(-1, -1), new(0, 0, 0, 0));
 
     /// <summary>
     /// The size of the main region of this datasheet, that is the region of the grid without
@@ -235,6 +244,10 @@ public partial class DatasheetCssGrid : SheetComponentBase
             await AddWindowEventsAsync();
         }
 
+        _renderRequested = false;
+        _sheetIsDirty = false;
+        _dirtyRows.Clear();
+
         await base.OnAfterRenderAsync(firstRender);
     }
 
@@ -242,15 +255,18 @@ public partial class DatasheetCssGrid : SheetComponentBase
     {
         _sheet.Editor.EditBegin -= EditorOnEditBegin;
         _sheet.Editor.EditFinished -= EditorOnEditFinished;
+        _sheet.SheetDirty -= SheetOnSheetDirty;
+        _sheet.ScreenUpdatingChanged -= ScreenUpdatingChanged;
     }
 
     private void AddEvents(Sheet sheet)
     {
         _sheet.Editor.EditBegin += EditorOnEditBegin;
         _sheet.Editor.EditFinished += EditorOnEditFinished;
-        _sheet.SheetDirty += (sender, args) => StateHasChanged();
+        _sheet.SheetDirty += SheetOnSheetDirty;
+        _sheet.ScreenUpdatingChanged += ScreenUpdatingChanged;
     }
-    
+
     private async Task AddWindowEventsAsync()
     {
         await WindowEventService.RegisterMouseEvent("mousedown", HandleWindowMouseDown);
@@ -258,9 +274,41 @@ public partial class DatasheetCssGrid : SheetComponentBase
         await WindowEventService.RegisterClipboardEvent("paste", HandleWindowPaste);
         await WindowEventService.RegisterMouseEvent("mouseup", HandleWindowMouseUp);
     }
-    
+
     private void HandleVirtualViewportChanged(VirtualViewportChangedEventArgs args)
     {
+        _currentViewport = args.Viewport;
+        for (int i = _currentViewport.ViewRegion.Top; i <= _currentViewport.ViewRegion.Bottom; i++)
+            _dirtyRows.Add(i);
+
+        StateHasChanged();
+    }
+
+    private void ScreenUpdatingChanged(object? sender, SheetScreenUpdatingEventArgs e)
+    {
+        if (e.IsScreenUpdating && _renderRequested)
+            this.StateHasChanged();
+    }
+
+    private void SheetOnSheetDirty(object? sender, DirtySheetEventArgs e)
+    {
+        var dirtyRegions = e.DirtyRegions
+            .GetDataRegions(_currentViewport.ViewRegion)
+            .Select(x => x.Region)
+            .Select(x => x.GetIntersection(_currentViewport.ViewRegion))
+            .Where(x => x != null)
+            .Select(x => x!)
+            .ToList();
+
+        //UpdateRegionCache(dirtyRegions);
+
+        foreach (var region in dirtyRegions)
+        {
+            for (int i = region.Top; i <= region.Bottom; i++)
+                _dirtyRows.Add(i);
+        }
+
+        StateHasChanged();
     }
 
     private async void EditorOnEditFinished(object? sender, EditFinishedEventArgs e)
@@ -272,7 +320,7 @@ public partial class DatasheetCssGrid : SheetComponentBase
     {
         await WindowEventService.CancelPreventDefault("keydown");
     }
-    
+
 
     internal async Task<bool> HandleShortcuts(string key, KeyboardModifiers modifiers)
     {
@@ -283,7 +331,7 @@ public partial class DatasheetCssGrid : SheetComponentBase
     private void RegisterDefaultShortcuts()
     {
         ShortcutManager.Register(["Escape"], KeyboardModifiers.Any,
-            _ => _sheet.Editor.CancelEdit());
+        _ => _sheet.Editor.CancelEdit());
 
         ShortcutManager
             .Register(["Enter"], KeyboardModifiers.None, _ => AcceptEditAndMoveActiveSelection(Axis.Row, 1));
@@ -297,29 +345,29 @@ public partial class DatasheetCssGrid : SheetComponentBase
 
         ShortcutManager
             .Register(["KeyC"], [KeyboardModifiers.Ctrl, KeyboardModifiers.Meta],
-                async (_) => await CopySelectionToClipboard(),
-                _ => !_sheet.Editor.IsEditing);
+        async (_) => await CopySelectionToClipboard(),
+        _ => !_sheet.Editor.IsEditing);
 
         ShortcutManager
             .Register(["ArrowUp", "ArrowRight", "ArrowDown", "ArrowLeft"], KeyboardModifiers.None,
-                c =>
-                    HandleArrowKeysDown(false, KeyUtil.GetMovementFromArrowKey(c.Key)));
+        c =>
+            HandleArrowKeysDown(false, KeyUtil.GetMovementFromArrowKey(c.Key)));
 
         ShortcutManager
             .Register(["ArrowUp", "ArrowRight", "ArrowDown", "ArrowLeft"], KeyboardModifiers.Shift,
-                c =>
-                    HandleArrowKeysDown(true, KeyUtil.GetMovementFromArrowKey(c.Key)));
+        c =>
+            HandleArrowKeysDown(true, KeyUtil.GetMovementFromArrowKey(c.Key)));
 
         ShortcutManager.Register(["KeyY"], [KeyboardModifiers.Ctrl, KeyboardModifiers.Meta],
-            _ => _sheet.Commands.Redo(),
-            _ => !_sheet.Editor.IsEditing);
+        _ => _sheet.Commands.Redo(),
+        _ => !_sheet.Editor.IsEditing);
         ShortcutManager.Register(["KeyZ"], [KeyboardModifiers.Ctrl, KeyboardModifiers.Meta],
-            _ => _sheet.Commands.Undo(),
-            _ => !_sheet.Editor.IsEditing);
+        _ => _sheet.Commands.Undo(),
+        _ => !_sheet.Editor.IsEditing);
 
         ShortcutManager.Register(["Delete", "Backspace"], KeyboardModifiers.Any,
-            _ => _sheet.Commands.ExecuteCommand(new ClearCellsCommand(_sheet.Selection.Regions)),
-            _ => _sheet.Selection.Regions.Any() && !_sheet.Editor.IsEditing);
+        _ => _sheet.Commands.ExecuteCommand(new ClearCellsCommand(_sheet.Selection.Regions)),
+        _ => _sheet.Selection.Regions.Any() && !_sheet.Editor.IsEditing);
     }
 
     private void HandleCellMouseDown(object? sender, SheetPointerEventArgs args)
@@ -408,7 +456,7 @@ public partial class DatasheetCssGrid : SheetComponentBase
     {
         bool changed = IsDataSheetActive != IsMouseInsideSheet;
         await SetActiveAsync(IsMouseInsideSheet);
-        
+
 
         return false;
     }
@@ -589,7 +637,7 @@ public partial class DatasheetCssGrid : SheetComponentBase
         _sheet.Selection.MoveActivePositionByRow(offset.Rows);
         _sheet.Selection.MoveActivePositionByCol(offset.Columns);
     }
-    
+
     /// <summary>
     /// Set the datasheet as active, which controls whether the sheet is ready to receive keyboard input events.
     /// </summary>
@@ -648,17 +696,15 @@ public partial class DatasheetCssGrid : SheetComponentBase
             return rf;
         return _ => { };
     }
-    
-    
+
 
     protected override bool ShouldRender()
     {
-        return base.ShouldRender();
+        _renderRequested = true;
+        if (!Sheet.ScreenUpdating)
+            return false;
+
+        return _sheetIsDirty || _dirtyRows.Count != 0;
     }
 
-    protected override void OnAfterRender(bool firstRender)
-    {
-        //Console.WriteLine($"Datasheet rendered " + (new StackTrace()).GetFrame(1).GetMethod().Name);
-        base.OnAfterRender(firstRender);
-    }
 }

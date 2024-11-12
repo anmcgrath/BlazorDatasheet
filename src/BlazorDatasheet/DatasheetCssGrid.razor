@@ -96,16 +96,18 @@
                 LayoutProvider="new CellLayoutProvider(_sheet)"
                 ViewRegion="MainViewRegion"
                 @ref="_mainView"
-                Context="cellPosition">
-                <GridItemTemplate>
-                    <DatasheetCell
-                        Row="@cellPosition.row"
-                        Col="@cellPosition.col"
-                        Sheet="_sheet"
-                        IsDirty="@false"
-                        Virtualise="@Virtualise"
-                    />
-                </GridItemTemplate>
+                Context="vr">
+                <RowTemplate>
+                    @{
+                        var colOffset = 1;
+                    }
+                    @for (int i = vr.ColStart; i <= vr.ColEnd; i++)
+                    {
+                        <div style="grid-row: @vr.RowOffset; grid-col:@colOffset;">
+                            Test
+                        </div>
+                    }
+                </RowTemplate>
             </Virtualise2D>
 
             @if (_frozenRightCount > 0)

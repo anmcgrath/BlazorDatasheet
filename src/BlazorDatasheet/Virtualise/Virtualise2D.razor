@@ -4,6 +4,7 @@
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Render.Layout
 @using Microsoft.JSInterop
+@using System.Diagnostics
 @inject IJSRuntime Js;
 @implements IAsyncDisposable
 
@@ -29,18 +30,28 @@
         @for (int i = _currentViewport.ViewRegion.Top; i <= _currentViewport.ViewRegion.Bottom; i++)
         {
             int row = i;
+            
+            @if (RowTemplate != null)
+            {
+                @RowTemplate(new VirtualRowArgs(row, rowOffset, _currentViewport.ViewRegion.Left, _currentViewport.ViewRegion.Right))
+            }
+            else if(GridItemTemplate != null)
+            {
+                var colOffset = 1;
 
-            <VirtualRow
-                RowOffset="rowOffset"
-                Row="row"
-                ColStart="_currentViewport.ViewRegion.Left"
-                ColEnd="_currentViewport.ViewRegion.Right">
-                <GridItemTemplate>
-                    @GridItemTemplate(new CellPosition(context.row, context.col))
-                </GridItemTemplate>
-            </VirtualRow>
-
+                <div @key="row" style="display: contents;">
+                    @for (int j = _currentViewport.ViewRegion.Left; j <= _currentViewport.ViewRegion.Right; j++)
+                    {
+                        int col = j;
+                        <div @key="col" style="grid-column: @colOffset; grid-row: @rowOffset; overflow: hidden;">
+                            @GridItemTemplate(new CellPosition(row, col))
+                        </div>
+                        colOffset++;
+                    }
+                </div>
+            }
             rowOffset++;
+
         }
     </div>
     <div aria-hidden="true" @ref="_fillerLeft" style="grid-area: fL"></div>
@@ -61,18 +72,24 @@
     /// </summary>
     [Parameter, EditorRequired]
     public RenderFragment<CellPosition> GridItemTemplate { get; set; } = null!;
+    
+    /// <summary>
+    /// The template rendered for each row.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public RenderFragment<VirtualRowArgs> RowTemplate { get; set; } = null!;
 
     /// <summary>
     /// The number of columns past the end of the viewport to render.
     /// </summary>
     [Parameter]
-    public int OverscanColumns { get; set; } = 6;
+    public int OverscanColumns { get; set; } = 2;
 
     /// <summary>
     /// The number of rows past the end of the viewport to render.
     /// </summary>
     [Parameter]
-    public int OverscanRows { get; set; } = 2;
+    public int OverscanRows { get; set; } = 6;
 
     [Parameter] public EventCallback<VirtualViewportChangedEventArgs> OnViewportChanged { get; set; }
 
@@ -99,6 +116,7 @@
     private string _contentRowTemplate = string.Empty;
 
     private Viewport _currentViewport = new(new(-1, -1), new(0, 0, 0, 0));
+    private bool _requiresRender = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -118,6 +136,7 @@
                 _fillerRight,
                 _fillerBottom);
         }
+        _requiresRender = false;
     }
 
     protected override void OnParametersSet()
@@ -183,6 +202,7 @@
 
         var newViewport = new Viewport(view, new Rect(left, top, contentWidth, contentHeight));
         var newRegions = newViewport.ViewRegion.Break(_currentViewport.ViewRegion).Cast<Region>().ToList();
+        var removedRegions = _currentViewport.ViewRegion.Break(newViewport.ViewRegion).Cast<Region>().ToList();
         _currentViewport = newViewport;
 
         var csb = new StringBuilder();
@@ -195,8 +215,9 @@
         _contentColTemplate = csb.ToString();
         _contentRowTemplate = rsb.ToString();
 
-        await OnViewportChanged.InvokeAsync(new VirtualViewportChangedEventArgs(_currentViewport, newRegions));
+        _requiresRender = true;
 
+        await OnViewportChanged.InvokeAsync(new VirtualViewportChangedEventArgs(_currentViewport, newRegions, removedRegions));
         StateHasChanged();
     }
 
@@ -256,6 +277,25 @@
         {
             Console.WriteLine(e.Message);
         }
+    }
+
+    protected override bool ShouldRender()
+    {
+        if (!_requiresRender)
+            return false;
+        _stopwatches.Enqueue(Stopwatch.StartNew());
+        return true;
+    }
+
+    private Queue<Stopwatch> _stopwatches = new();
+     protected override void OnAfterRender(bool firstRender)
+     {
+         if (_stopwatches.Count > 0)
+         {
+             var sw = _stopwatches.Dequeue();
+             Console.WriteLine($"Rendered virtualise 2d " + sw.ElapsedMilliseconds);
+         }
+         base.OnAfterRender(firstRender);
     }
 
 }
