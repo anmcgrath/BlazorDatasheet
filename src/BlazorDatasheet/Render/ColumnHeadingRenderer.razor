@@ -33,7 +33,7 @@
         <div style="position: sticky; right: 0; z-index: 4">
             <ColumnHeadingRenderer
                 Sheet="_sheet"
-                ViewRegion="new Region(0, 0, _viewRegion.Right - FrozenStartCount + 1, _viewRegion.Right)">
+                ViewRegion="new Region(0, 0, _viewRegion.Right - FrozenEndCount + 1, _viewRegion.Right)">
                 @ChildContent(context)
             </ColumnHeadingRenderer>
         </div>
