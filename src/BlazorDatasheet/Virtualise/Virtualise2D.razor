@@ -72,13 +72,13 @@
     /// <summary>
     /// The template rendered for each grid item.
     /// </summary>
-    [Parameter, EditorRequired]
+    [Parameter]
     public RenderFragment<CellPosition> GridItemTemplate { get; set; } = null!;
 
     /// <summary>
     /// The template rendered for each row.
     /// </summary>
-    [Parameter, EditorRequired]
+    [Parameter]
     public RenderFragment<VirtualRowArgs> RowTemplate { get; set; } = null!;
 
     /// <summary>
@@ -169,9 +169,6 @@
         var layoutProviderRegion = new Region(0, LayoutProvider.NumRows - 1, 0, LayoutProvider.NumColumns - 1);
 
         // including overflow
-
-        // trying to restrict view to ViewRegion
-        // not working at all
         Region? view = new Region(
             LayoutProvider.ComputeRow(viewRect.Y) + _viewRegion.Top - OverscanRows,
             LayoutProvider.ComputeRow(viewRect.Y + viewRect.Height) + _viewRegion.Top + OverscanRows,
@@ -203,7 +200,7 @@
         _wholeElColTemplate = $"{fillLeft}px {contentWidth}px {fillRight}px";
         _wholeElRowTemplate = $"{fillTop}px {contentHeight}px {fillBottom}px";
 
-        var newViewport = new Viewport(view, new Rect(left, top, contentWidth, contentHeight));
+        var newViewport = new Viewport(view, viewRect);
         var newRegions = newViewport.ViewRegion.Break(_currentViewport.ViewRegion).Cast<Region>().ToList();
         var removedRegions = _currentViewport.ViewRegion.Break(newViewport.ViewRegion).Cast<Region>().ToList();
         _currentViewport = newViewport;
@@ -224,48 +221,18 @@
         StateHasChanged();
     }
 
-    internal async Task ScrollToContainRegion(IRegion region)
+    internal async Task ScrollBy(double x, double y)
     {
-        /*var left = LayoutProvider.ComputeLeftPosition(region.Left);
-        var top = LayoutProvider.ComputeTopPosition(region.Top);
-        var right = LayoutProvider.ComputeRightPosition(region.Right);
-        var bottom = LayoutProvider.ComputeBottomPosition(region.Bottom);
-
-        var scrollRect = await _virtualiser.InvokeAsync<Rect>("calculateViewRect", _wholeEl);
-
-        double scrollToY = scrollRect.Y;
-        double scrollToX = scrollRect.X;
-
-        bool doScroll = false;
-
-        if (top < scrollRect.Y || bottom > scrollRect.Y + scrollRect.Height)
+        await _virtualiser.InvokeVoidAsync("scrollParentBy", x, y, _wholeEl);
+        // update the viewport as it may not have triggered an interaction observer event
+        var viewRect = await _virtualiser.InvokeAsync<Rect>("calculateViewRect", _wholeEl);
+        if (viewRect != _currentViewport.ViewRect)
         {
-            var bottomDist = bottom - (scrollRect.Y + scrollRect.Height);
-            var topDist = top - scrollRect.Y;
-
-            var scrollYDist = Math.Abs(bottomDist) < Math.Abs(topDist)
-                ? bottomDist
-                : topDist;
-
-            scrollToY = Math.Round(scrollRect.Y + scrollYDist, 1);
-            doScroll = true;
+            // we can assume ViewRegion hasn't changed, otherwise it would have changed from the interaction event
+            _currentViewport = new Viewport(_currentViewport.ViewRegion, viewRect);
+            await OnViewportChanged.InvokeAsync(new VirtualViewportChangedEventArgs(_currentViewport, new(), new()));
         }
 
-        if (left < scrollRect.X || right > scrollRect.X + scrollRect.Width)
-        {
-            var rightDist = right - (scrollRect.X + scrollRect.Width);
-            var leftDist = left - scrollRect.X;
-
-            var scrollXDist = Math.Abs(rightDist) < Math.Abs(leftDist)
-                ? rightDist
-                : leftDist;
-
-            scrollToX = Math.Round(scrollRect.X + scrollXDist, 1);
-            doScroll = true;
-        }
-
-        if (doScroll)
-            await _virtualiser.InvokeVoidAsync("scrollTo", _wholeEl, scrollToX, scrollToY, "instant");*/
     }
 
     public async ValueTask DisposeAsync()

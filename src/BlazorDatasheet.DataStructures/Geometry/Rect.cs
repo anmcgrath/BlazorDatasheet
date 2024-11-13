@@ -7,6 +7,9 @@ public class Rect
     public double Y { get; }
     public double Width { get; }
 
+    public double Right => X + Width;
+    public double Bottom => Y + Height;
+
     public Rect(double x, double y, double width, double height)
     {
         X = x;

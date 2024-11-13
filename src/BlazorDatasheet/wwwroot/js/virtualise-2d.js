@@ -71,11 +71,16 @@
         return rect
     }
 
+    scrollParentBy(x, y, el) {
+        let parent = this.findScrollableAncestor(el) || document.documentElement
+        parent.scrollBy({left: x, top: y, behavior: "auto"})
+    }
+
     getOffsetLeftToScrollableParent(el) {
         let offset = el.offsetLeft
         let parent = el.offsetParent
-        
-        while(parent !== null && !this.isScrollable(parent)){
+
+        while (parent !== null && !this.isScrollable(parent)) {
             offset += parent.offsetLeft
             parent = parent.offsetParent
         }
@@ -86,7 +91,7 @@
         let offset = el.offsetTop
         let parent = el.offsetParent
 
-        while(parent !== null && !this.isScrollable(parent)){
+        while (parent !== null && !this.isScrollable(parent)) {
             offset += parent.offsetTop
             parent = parent.offsetParent
         }
@@ -184,7 +189,7 @@
         let parent = this.findScrollableAncestor(wholeSheetEl) || document.documentElement
         let offsetLeft = this.getOffsetLeftToScrollableParent(wholeSheetEl)
         let offseTTop = this.getOffsetTopToScrollableParent(wholeSheetEl)
-        
+
         parent.scrollTo({left: x + offsetLeft, top: y + offseTTop, behavior: behaviour})
     }
 

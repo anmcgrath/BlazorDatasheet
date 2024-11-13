@@ -510,6 +510,7 @@ public partial class DatasheetCssGrid : SheetComponentBase
         else
         {
             CollapseAndMoveSelection(offset);
+
             if (IsDataSheetActive)
                 await ScrollToActiveCellPosition();
         }
@@ -577,9 +578,62 @@ public partial class DatasheetCssGrid : SheetComponentBase
         await ScrollToContainRegion(cellRect);
     }
 
-    private async Task ScrollToContainRegion(IRegion cellRect)
+    private async Task ScrollToContainRegion(IRegion region)
     {
-        await _mainView.ScrollToContainRegion(cellRect);
+        var frozenLeftW = _sheet.Columns.GetVisualLeft(FrozenLeftCount);
+        var frozenRightW = _sheet.Columns.GetVisualWidthBetween(_sheet.NumCols - FrozenRightCount, _sheet.NumCols);
+        var frozenTopH = _sheet.Rows.GetVisualTop(FrozenTopCount);
+        var frozenBottomH = _sheet.Rows.GetVisualHeightBetween(_sheet.NumRows - FrozenBottomCount, _sheet.NumRows);
+
+        // the viewRect we have from the viewport includes the frozen cols 
+        // so we need to consider those when considering whether the region is outside of the view
+        var constrainedViewRect = new Rect(
+            _currentViewport.ViewRect.X + frozenLeftW + GetGutterSize(Axis.Col),
+            _currentViewport.ViewRect.Y + frozenTopH + GetGutterSize(Axis.Row),
+            _currentViewport.ViewRect.Width - frozenRightW,
+            _currentViewport.ViewRect.Height - frozenBottomH);
+
+        var doScroll = false;
+        var regionRect = region.GetRect(_sheet);
+        double scrollYDist = 0, scrollXDist = 0;
+
+        if (regionRect.X < constrainedViewRect.X || regionRect.Right > constrainedViewRect.Right)
+        {
+            var rightDist = regionRect.Right - constrainedViewRect.Right;
+            var leftDist = regionRect.X - constrainedViewRect.X;
+
+            scrollXDist = Math.Abs(rightDist) < Math.Abs(leftDist)
+                ? rightDist
+                : leftDist;
+
+            doScroll = true;
+        }
+
+        if (regionRect.Y < constrainedViewRect.Y || regionRect.Bottom > constrainedViewRect.Bottom)
+        {
+            var bottomDist = regionRect.Bottom - constrainedViewRect.Bottom;
+            var topDist = regionRect.Y - constrainedViewRect.Y;
+
+            scrollYDist = Math.Abs(bottomDist) < Math.Abs(topDist)
+                ? bottomDist
+                : topDist;
+
+            Console.WriteLine($"{scrollYDist}");
+
+            doScroll = true;
+        }
+
+        if (doScroll)
+            await _mainView.ScrollBy(scrollXDist, scrollYDist);
+    }
+
+    private double GetGutterSize(Axis axis)
+    {
+        if (axis == Axis.Col && ShowRowHeadings)
+            return _sheet.Rows.HeadingWidth;
+        if (axis == Axis.Row && ShowColHeadings)
+            return _sheet.Columns.HeadingHeight;
+        return 0;
     }
 
     /// <summary>
