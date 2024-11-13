@@ -270,6 +270,10 @@
     font-weight: bold;
 }
 
+.bds-selected-header-full:hover{
+    background: #0a53be;
+}
+
 .bds-selected-header{
     background: var(--selection-bg-color);
 }
