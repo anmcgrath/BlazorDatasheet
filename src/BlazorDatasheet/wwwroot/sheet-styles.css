@@ -178,7 +178,7 @@
     border-left: var(--sheet-border-style)
 }
 
-.row-head :hover {
+.row-head:hover {
     background: var(--selection-bg-color);
 }
 
@@ -187,8 +187,12 @@
     border-top: var(--sheet-border-style)
 }
 
-.col-head :hover {
+.col-head:hover {
     background: var(--selection-bg-color);
+}
+
+.col-head:active {
+    background: #0a53be;
 }
 
 .invalid-cell {
@@ -258,4 +262,14 @@
 .highlight-result {
     pointer-events: none;
     background: inherit;
+}
+
+.bds-selected-header-full{
+    background: #0a53be;
+    color:white;
+    font-weight: bold;
+}
+
+.bds-selected-header{
+    background: var(--selection-bg-color);
 }

@@ -39,13 +39,17 @@
 @if (_sheet.Selection.IsSelecting)
 {
     var selection = _sheet.Selection.SelectingRegion!;
-    <BoxOverlayRenderer
-        BackgroundVisible="@true"
-        BorderThickness="2"
-        X="@GetLayerColumnX(selection.Left)"
-        Y="@GetLayerRowY(selection.Top)"
-        Width="_sheet.Columns.GetVisualWidthBetween(selection.Left, selection.Right + 1)"
-        Height="_sheet.Rows.GetVisualHeightBetween(selection.Top, selection.Bottom + 1)"/>
+    var boundedSelecting = selection.GetIntersection(_sheet.Region);
+    if (boundedSelecting != null)
+    {
+        <BoxOverlayRenderer
+            BackgroundVisible="@true"
+            BorderThickness="2"
+            X="@GetLayerColumnX(boundedSelecting.Left)"
+            Y="@GetLayerRowY(boundedSelecting.Top)"
+            Width="_sheet.Columns.GetVisualWidthBetween(boundedSelecting.Left, boundedSelecting.Right + 1)"
+            Height="_sheet.Rows.GetVisualHeightBetween(boundedSelecting.Top, boundedSelecting.Bottom + 1)"/>
+    }
 }
 
 

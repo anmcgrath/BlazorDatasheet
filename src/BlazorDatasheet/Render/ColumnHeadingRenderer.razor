@@ -1,11 +1,13 @@
-﻿@using BlazorDatasheet.Core.Data
+﻿@using System.Text
+@using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Layout
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Render.Layout
+@using BlazorDatasheet.Util
 @using BlazorDatasheet.Virtualise
 
 <div style="display: flex; flex-direction: row">
-    
+
     @if (FrozenStartCount > 0)
     {
         <div style="position: sticky; @GetStickyLeftPositionInfo(); z-index: 4;">
@@ -21,7 +23,7 @@
             LayoutProvider="_rowLayoutProvider"
             ViewRegion="new Region(0, 0, _viewRegion.Left + FrozenStartCount, _viewRegion.Right - FrozenEndCount)">
             <GridItemTemplate>
-                <div class="row-head sheet-cell">
+                <div class="col-head sheet-cell @GetSelectedClass(context.col)" data-col="@context.col" data-row="-1">
                     @ChildContent(context.col)
                 </div>
             </GridItemTemplate>
@@ -63,6 +65,10 @@
         if (Sheet != _sheet)
         {
             _sheet = Sheet ?? new(0, 0);
+
+            _sheet.Selection.SelectionChanged += (_, _) => StateHasChanged();
+            _sheet.Selection.SelectingChanged += (_, _) => StateHasChanged();
+
             _rowLayoutProvider = new ColHeadingLayoutProvider(_sheet);
             StateHasChanged();
         }
@@ -74,6 +80,34 @@
 
         base.OnParametersSet();
     }
+
+
+    private string GetSelectedClass(int col)
+    {
+        bool isInColumnRegion = false;
+        bool isSelected = false;
+        var regions = _sheet.Selection.Regions.Concat([_sheet.Selection.SelectingRegion]);
+        foreach (var selection in regions)
+        {
+            if (selection?.SpansCol(col) == true)
+            {
+                isSelected = true;
+                if (selection is ColumnRegion)
+                {
+                    isInColumnRegion = true;
+                    break;
+                }
+            }
+        }
+
+        var sb = new StringBuilder();
+        if (isInColumnRegion)
+            sb.Append("bds-selected-header-full");
+        else if(isSelected)
+            sb.Append("bds-selected-header");
+        return sb.ToString();
+    }
+
 
     private string GetStickyLeftPositionInfo()
     {

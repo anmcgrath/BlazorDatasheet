@@ -10,7 +10,7 @@
             LayoutProvider="_rowLayoutProvider"
             ViewRegion="new Region(_viewRegion.Top, _viewRegion.Bottom, 0, 0)">
             <GridItemTemplate>
-                <div class="row-head sheet-cell">
+                <div class="row-head sheet-cell" data-row="@context.row" data-col="-1">
                     @ChildContent(context.row)
                 </div>
             </GridItemTemplate>
