@@ -30,6 +30,7 @@
     --highlight-color-3: purple;
     --highlight-color-4: green;
     --highlight-color-5: brown;
+    --frozen-border-color: rgba(89, 85, 85, 0.4);
 }
 
 .vars[theme='dark'] {
@@ -53,6 +54,7 @@
     --sheet-button-bg-color: #292929;
     --sheet-button-bg-hover-color: #202e3e;
     --sheet-button-border: 2px solid #202e3e;
+    --frozen-border-color: rgba(43, 43, 43, 0.4);
 }
 
 .active-sheet {
@@ -100,8 +102,24 @@
     cursor: pointer;
 }
 
-.bds-main-view{
-    
+.bds-frozen-left {
+    box-shadow: 2px 0 0 var(--frozen-border-color);
+}
+
+.bds-frozen-right {
+    box-shadow: -2px 0 0 var(--frozen-border-color);
+}
+
+.bds-frozen-top {
+    box-shadow: 0 2px 0 var(--frozen-border-color);
+}
+
+.bds-frozen-bottom {
+    box-shadow: 0 -2px 0 var(--frozen-border-color);
+}
+
+.bds-main-view {
+
 }
 
 .sheet-button:hover {
@@ -118,7 +136,6 @@
     border-right: var(--sheet-border-style);
     border-bottom: var(--sheet-border-style);
     overflow: hidden;
-    background: none;
 }
 
 .merged-cell {

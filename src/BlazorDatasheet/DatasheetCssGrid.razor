@@ -44,7 +44,7 @@
 
         @if (_frozenTopCount > 0)
         {
-            <div style="position: sticky; z-index: @(GridLevel + 2); top: @(ShowColHeadings && StickyHeaders ? _sheet.Columns.HeadingHeight + "px" : "0");" class="top-sticky">
+            <div style="position: sticky; z-index: @(GridLevel + 2); top: @(ShowColHeadings && StickyHeaders ? _sheet.Columns.HeadingHeight + "px" : "0");" class="bds-frozen-top">
                 <!-- Top sticky -->
                 <DatasheetCssGrid
                     GridLevel="GridLevel + 1"
@@ -76,7 +76,7 @@
             @if (_frozenLeftCount > 0)
             {
                 <!-- Left sticky -->
-                <div style="position: sticky; z-index: @(GridLevel + 1); left: @(ShowRowHeadings && StickyHeaders ? _sheet.Rows.HeadingWidth + "px" : "0");">
+                <div class="bds-frozen-left" style="position: sticky; z-index: @(GridLevel + 1); left: @(ShowRowHeadings && StickyHeaders ? _sheet.Rows.HeadingWidth + "px" : "0");">
                     <DatasheetCssGrid
                         GridLevel="GridLevel + 1"
                         ShowColHeadings="false"
@@ -121,7 +121,7 @@
 
             @if (_frozenRightCount > 0)
             {
-                <div style="position: sticky; right: 0; z-index:@(GridLevel + 1);">
+                <div class="bds-frozen-right" style="position: sticky; right: 0; z-index:@(GridLevel + 1);">
                     <DatasheetCssGrid
                         GridLevel="GridLevel + 1"
                         ShowColHeadings="false"
@@ -136,7 +136,7 @@
 
         @if (_frozenBottomCount > 0)
         {
-            <div style="position: sticky; z-index: @(GridLevel + 1); bottom: 0;">
+            <div class="bds-frozen-bottom" style="position: sticky; z-index: @(GridLevel + 1); bottom: 0;">
                 <!-- Bottom sticky -->
                 <DatasheetCssGrid
                     GridLevel="GridLevel + 1"
