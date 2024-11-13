@@ -231,7 +231,7 @@ public partial class DatasheetCssGrid : SheetComponentBase
             requireRender = true;
         }
 
-        if (ViewRegion != _viewRegion)
+        if (!_viewRegion.Equals(ViewRegion))
         {
             _viewRegion = ViewRegion ?? _sheet.Region;
             requireRender = true;
@@ -317,6 +317,9 @@ public partial class DatasheetCssGrid : SheetComponentBase
         _currentViewport = args.Viewport;
         foreach (var region in args.NewRegions.Concat(args.RemovedRegions))
         {
+            if(region.GetIntersection(MainViewRegion) == null)
+                return;
+            
             for (int i = region.Top; i <= region.Bottom; i++)
                 _dirtyRows.Add(i);
         }
@@ -347,6 +350,8 @@ public partial class DatasheetCssGrid : SheetComponentBase
             for (int i = region.Top; i <= region.Bottom; i++)
                 _dirtyRows.Add(i);
         }
+
+        Console.WriteLine($"Sheet dirty and now I have {_dirtyRows.Count} dirty rows");
 
         StateHasChanged();
     }
@@ -793,11 +798,10 @@ public partial class DatasheetCssGrid : SheetComponentBase
 
 
     protected override bool ShouldRender()
-    {
+    {        
         _renderRequested = true;
-        if (!_sheet.ScreenUpdating)
-            return false;
 
-        return _sheetIsDirty || _dirtyRows.Count != 0;
+        var shouldRender = !_sheet.ScreenUpdating && (_sheetIsDirty || _dirtyRows.Count != 0);
+        return shouldRender;
     }
 }
