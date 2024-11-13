@@ -15,6 +15,7 @@
         FrozenTopCount="4"
         ShowColHeadings="ShowColHeadings"
         ShowRowHeadings="ShowRowHeadings"
+        StickyHeaders="StickyHeadings"
         Sheet="Sheet"/>
 </div>
 
@@ -71,11 +72,11 @@
     private bool _isDarkMode;
     private string FilterValue { get; set; }
 
-    private bool StickyHeadings { get; set; }
+    private bool StickyHeadings { get; set; } = true;
 
-    private bool ShowRowHeadings { get; set; } = false;
+    private bool ShowRowHeadings { get; set; } = true;
 
-    private bool ShowColHeadings { get; set; } = false;
+    private bool ShowColHeadings { get; set; } = true;
 
     private bool IsDarkMode { get; set; }
 

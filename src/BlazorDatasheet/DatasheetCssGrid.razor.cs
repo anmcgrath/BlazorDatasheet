@@ -75,11 +75,15 @@ public partial class DatasheetCssGrid : SheetComponentBase
     [Parameter]
     public bool ShowRowHeadings { get; set; } = true;
 
+    private bool _showRowHeadings;
+
     /// <summary>
     /// Whether to show the column headings.
     /// </summary>
     [Parameter]
     public bool ShowColHeadings { get; set; } = true;
+
+    private bool _showColHeadings;
 
     /// <summary>
     /// Specifies how many columns are frozen on the left side of the grid.
@@ -154,7 +158,11 @@ public partial class DatasheetCssGrid : SheetComponentBase
     /// </summary>
     private bool IsMouseInsideSheet { get; set; }
 
-    [Parameter] public bool StickyHeaders { get; set; } = true;
+    /// <summary>
+    /// Whether the row and column headers are sticky
+    /// </summary>
+    [Parameter]
+    public bool StickyHeaders { get; set; } = true;
 
     private DotNetObjectReference<DatasheetCssGrid> _dotnetHelper = default!;
 
@@ -213,16 +221,20 @@ public partial class DatasheetCssGrid : SheetComponentBase
 
     protected override Task OnParametersSetAsync()
     {
+        bool requireRender = false;
+
         if (Sheet != _sheet)
         {
             RemoveEvents(_sheet);
             _sheet = Sheet ?? new(0, 0);
             AddEvents(_sheet);
+            requireRender = true;
         }
 
         if (ViewRegion != _viewRegion)
         {
             _viewRegion = ViewRegion ?? _sheet.Region;
+            requireRender = true;
         }
 
         if (_frozenLeftCount != FrozenLeftCount || _frozenRightCount != FrozenRightCount)
@@ -231,6 +243,20 @@ public partial class DatasheetCssGrid : SheetComponentBase
             _frozenRightCount = FrozenRightCount;
             _frozenBottomCount = FrozenBottomCount;
             _frozenTopCount = FrozenTopCount;
+            requireRender = true;
+        }
+
+        if (_showColHeadings != ShowColHeadings || _showRowHeadings != ShowRowHeadings)
+        {
+            _showColHeadings = ShowColHeadings;
+            _showRowHeadings = ShowRowHeadings;
+            requireRender = true;
+        }
+
+        if (requireRender)
+        {
+            _sheetIsDirty = true;
+            StateHasChanged();
         }
 
         return base.OnParametersSetAsync();
