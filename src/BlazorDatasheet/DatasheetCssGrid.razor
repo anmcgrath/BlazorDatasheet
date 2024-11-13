@@ -9,6 +9,7 @@
     @onmouseover="() => IsMouseInsideSheet = true"
     @onmouseout="() => IsMouseInsideSheet = false"
     class="vars sheet"
+    style="@(GridLevel == 0 ? $"width:{TotalSheetWidth}px; height:{TotalSheetHeight}px;" : "")"
     theme="@Theme"
     @ref="_sheetContainer">
     <div style="display: flex; flex-direction: column; align-items:flex-start;">
@@ -93,6 +94,7 @@
             </LayerContainer>
 
             <Virtualise2D
+                Class="@("bds-main-view-"+GridLevel)"
                 OnViewportChanged="HandleVirtualViewportChanged"
                 LayoutProvider="new CellLayoutProvider(_sheet)"
                 ViewRegion="MainViewRegion"

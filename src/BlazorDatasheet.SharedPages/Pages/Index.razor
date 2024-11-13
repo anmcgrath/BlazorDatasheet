@@ -7,9 +7,12 @@
 @using System.Drawing
 @using BlazorDatasheet.Core.Commands.Data
 
-<div style="width: 500px; height: 500px; overflow: scroll;">
+<div style="width: 800px; height: 500px; overflow: scroll;">
     <DatasheetCssGrid
         FrozenLeftCount="1"
+        FrozenBottomCount="2"
+        FrozenRightCount="3"
+        FrozenTopCount="4"
         ShowColHeadings="ShowColHeadings"
         ShowRowHeadings="ShowRowHeadings"
         Sheet="Sheet"/>
@@ -70,9 +73,9 @@
 
     private bool StickyHeadings { get; set; }
 
-    private bool ShowRowHeadings { get; set; } = true;
+    private bool ShowRowHeadings { get; set; } = false;
 
-    private bool ShowColHeadings { get; set; } = true;
+    private bool ShowColHeadings { get; set; } = false;
 
     private bool IsDarkMode { get; set; }
 

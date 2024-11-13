@@ -100,6 +100,10 @@
     cursor: pointer;
 }
 
+.bds-main-view{
+    
+}
+
 .sheet-button:hover {
     background: var(--sheet-button-bg-hover-color);
 }
@@ -114,7 +118,7 @@
     border-right: var(--sheet-border-style);
     border-bottom: var(--sheet-border-style);
     overflow: hidden;
-    background: var(--sheet-bg-color);
+    background: none;
 }
 
 .merged-cell {

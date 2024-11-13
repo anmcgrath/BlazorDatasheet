@@ -9,7 +9,8 @@
 @implements IAsyncDisposable
 
 <div
-    @ref="_wholeEl"
+    class="@Class"
+    @ref="_contentEl"
     style="
         width: @(GetTotalViewSize().Width)px;
         height: @(GetTotalViewSize().Height)px;
@@ -23,7 +24,7 @@
 
     <div aria-hidden="true" @ref="_fillerTop" style="grid-area: fT"></div>
     <div aria-hidden="true" @ref="_fillerRight" style=" grid-area: fR"></div>
-    <div style="background: white; grid-area: C; display: grid; grid-template-columns: @_contentColTemplate; grid-template-rows: @_contentRowTemplate;">
+    <div style="grid-area: C; display: grid; grid-template-columns: @_contentColTemplate; grid-template-rows: @_contentRowTemplate;">
         @{
             var rowOffset = 1;
         }
@@ -93,6 +94,12 @@
     [Parameter]
     public int OverscanRows { get; set; } = 6;
 
+    /// <summary>
+    /// The class applied to the container div
+    /// </summary>
+    [Parameter] 
+    public string Class { get; set; } = string.Empty;
+
     [Parameter] public EventCallback<VirtualViewportChangedEventArgs> OnViewportChanged { get; set; }
 
     private Region _viewRegion = null!;
@@ -106,7 +113,7 @@
     private IJSObjectReference _virtualiser = null!;
     private DotNetObjectReference<Virtualise2D> _dotnetHelper = default!;
 
-    private ElementReference _wholeEl;
+    private ElementReference _contentEl;
     private ElementReference _fillerTop;
     private ElementReference _fillerRight;
     private ElementReference _fillerLeft;
@@ -131,7 +138,7 @@
 
             await _virtualiser.InvokeVoidAsync("addVirtualisationHandlers",
                 _dotnetHelper,
-                _wholeEl,
+                _contentEl,
                 nameof(HandleScroll),
                 _fillerLeft,
                 _fillerTop,
@@ -223,9 +230,9 @@
 
     internal async Task ScrollBy(double x, double y)
     {
-        await _virtualiser.InvokeVoidAsync("scrollParentBy", x, y, _wholeEl);
+        await _virtualiser.InvokeVoidAsync("scrollParentBy", x, y, _contentEl);
         // update the viewport as it may not have triggered an interaction observer event
-        var viewRect = await _virtualiser.InvokeAsync<Rect>("calculateViewRect", _wholeEl);
+        var viewRect = await CalculateViewRect(_contentEl);
         if (viewRect != _currentViewport.ViewRect)
         {
             // we can assume ViewRegion hasn't changed, otherwise it would have changed from the interaction event
@@ -235,11 +242,16 @@
 
     }
 
+    internal async Task<Rect> CalculateViewRect(ElementReference reference)
+    {
+        return await _virtualiser.InvokeAsync<Rect>("calculateViewRect", reference);
+    }
+
     public async ValueTask DisposeAsync()
     {
         try
         {
-            await _virtualiser.InvokeAsync<string>("disposeVirtualisationHandlers", _wholeEl);
+            await _virtualiser.InvokeAsync<string>("disposeVirtualisationHandlers", _contentEl);
 
             _dotnetHelper.Dispose();
         }

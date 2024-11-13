@@ -184,6 +184,17 @@ public partial class DatasheetCssGrid : SheetComponentBase
     private Viewport _currentViewport = new(new(-1, -1), new(0, 0, 0, 0));
 
     /// <summary>
+    /// Width of the sheet, including any gutters (row headings etc.)
+    /// </summary>
+    public double TotalSheetWidth => _sheet.Columns.GetVisualWidthBetween(0, _sheet.NumCols) + GetGutterSize(Axis.Row);
+
+    /// <summary>
+    /// Height of the sheet, including any gutters (col headings etc.)
+    /// </summary>
+    public double TotalSheetHeight => _sheet.Rows.GetVisualHeightBetween(0, _sheet.NumRows) + GetGutterSize(Axis.Col);
+
+
+    /// <summary>
     /// The size of the main region of this datasheet, that is the region of the grid without
     /// any frozen rows or columns.
     /// </summary>
@@ -334,7 +345,7 @@ public partial class DatasheetCssGrid : SheetComponentBase
     private void RegisterDefaultShortcuts()
     {
         ShortcutManager.Register(["Escape"], KeyboardModifiers.Any,
-        _ => _sheet.Editor.CancelEdit());
+            _ => _sheet.Editor.CancelEdit());
 
         ShortcutManager
             .Register(["Enter"], KeyboardModifiers.None, _ => AcceptEditAndMoveActiveSelection(Axis.Row, 1));
@@ -348,29 +359,29 @@ public partial class DatasheetCssGrid : SheetComponentBase
 
         ShortcutManager
             .Register(["KeyC"], [KeyboardModifiers.Ctrl, KeyboardModifiers.Meta],
-        async (_) => await CopySelectionToClipboard(),
-        _ => !_sheet.Editor.IsEditing);
+                async (_) => await CopySelectionToClipboard(),
+                _ => !_sheet.Editor.IsEditing);
 
         ShortcutManager
             .Register(["ArrowUp", "ArrowRight", "ArrowDown", "ArrowLeft"], KeyboardModifiers.None,
-        c =>
-            HandleArrowKeysDown(false, KeyUtil.GetMovementFromArrowKey(c.Key)));
+                c =>
+                    HandleArrowKeysDown(false, KeyUtil.GetMovementFromArrowKey(c.Key)));
 
         ShortcutManager
             .Register(["ArrowUp", "ArrowRight", "ArrowDown", "ArrowLeft"], KeyboardModifiers.Shift,
-        c =>
-            HandleArrowKeysDown(true, KeyUtil.GetMovementFromArrowKey(c.Key)));
+                c =>
+                    HandleArrowKeysDown(true, KeyUtil.GetMovementFromArrowKey(c.Key)));
 
         ShortcutManager.Register(["KeyY"], [KeyboardModifiers.Ctrl, KeyboardModifiers.Meta],
-        _ => _sheet.Commands.Redo(),
-        _ => !_sheet.Editor.IsEditing);
+            _ => _sheet.Commands.Redo(),
+            _ => !_sheet.Editor.IsEditing);
         ShortcutManager.Register(["KeyZ"], [KeyboardModifiers.Ctrl, KeyboardModifiers.Meta],
-        _ => _sheet.Commands.Undo(),
-        _ => !_sheet.Editor.IsEditing);
+            _ => _sheet.Commands.Undo(),
+            _ => !_sheet.Editor.IsEditing);
 
         ShortcutManager.Register(["Delete", "Backspace"], KeyboardModifiers.Any,
-        _ => _sheet.Commands.ExecuteCommand(new ClearCellsCommand(_sheet.Selection.Regions)),
-        _ => _sheet.Selection.Regions.Any() && !_sheet.Editor.IsEditing);
+            _ => _sheet.Commands.ExecuteCommand(new ClearCellsCommand(_sheet.Selection.Regions)),
+            _ => _sheet.Selection.Regions.Any() && !_sheet.Editor.IsEditing);
     }
 
     private void HandleCellMouseDown(object? sender, SheetPointerEventArgs args)
@@ -457,10 +468,7 @@ public partial class DatasheetCssGrid : SheetComponentBase
 
     private async Task<bool> HandleWindowMouseDown(MouseEventArgs e)
     {
-        bool changed = IsDataSheetActive != IsMouseInsideSheet;
         await SetActiveAsync(IsMouseInsideSheet);
-
-
         return false;
     }
 
@@ -580,24 +588,27 @@ public partial class DatasheetCssGrid : SheetComponentBase
 
     private async Task ScrollToContainRegion(IRegion region)
     {
-        var frozenLeftW = _sheet.Columns.GetVisualLeft(FrozenLeftCount);
-        var frozenRightW = _sheet.Columns.GetVisualWidthBetween(_sheet.NumCols - FrozenRightCount, _sheet.NumCols);
-        var frozenTopH = _sheet.Rows.GetVisualTop(FrozenTopCount);
-        var frozenBottomH = _sheet.Rows.GetVisualHeightBetween(_sheet.NumRows - FrozenBottomCount, _sheet.NumRows);
+        var frozenLeftW = _sheet.Columns.GetVisualLeft(_frozenLeftCount);
+        var frozenRightW = _sheet.Columns.GetVisualWidthBetween(_sheet.NumCols - _frozenRightCount, _sheet.NumCols);
+        var frozenTopH = _sheet.Rows.GetVisualTop(_frozenTopCount);
+        var frozenBottomH = _sheet.Rows.GetVisualHeightBetween(_sheet.NumRows - _frozenBottomCount, _sheet.NumRows);
 
         // the viewRect we have from the viewport includes the frozen cols 
         // so we need to consider those when considering whether the region is outside of the view
+        var currentViewRect = await _mainView.CalculateViewRect(_sheetContainer);
         var constrainedViewRect = new Rect(
-            _currentViewport.ViewRect.X + frozenLeftW + GetGutterSize(Axis.Col),
-            _currentViewport.ViewRect.Y + frozenTopH + GetGutterSize(Axis.Row),
-            _currentViewport.ViewRect.Width - frozenRightW,
-            _currentViewport.ViewRect.Height - frozenBottomH);
+            currentViewRect.X + frozenLeftW,
+            currentViewRect.Y + frozenTopH,
+            currentViewRect.Width - frozenRightW - frozenLeftW - GetGutterSize(Axis.Row),
+            currentViewRect.Height - frozenBottomH - frozenTopH - GetGutterSize(Axis.Col));
 
         var doScroll = false;
         var regionRect = region.GetRect(_sheet);
         double scrollYDist = 0, scrollXDist = 0;
 
-        if (regionRect.X < constrainedViewRect.X || regionRect.Right > constrainedViewRect.Right)
+        // If the region is outside the contained view rect but NOT within the frozen cols
+        if ((regionRect.X < constrainedViewRect.X || regionRect.Right > constrainedViewRect.Right) &&
+            !(region.Left <= _frozenLeftCount - 1 || region.Right >= _sheet.NumCols - _frozenRightCount))
         {
             var rightDist = regionRect.Right - constrainedViewRect.Right;
             var leftDist = regionRect.X - constrainedViewRect.X;
@@ -609,7 +620,9 @@ public partial class DatasheetCssGrid : SheetComponentBase
             doScroll = true;
         }
 
-        if (regionRect.Y < constrainedViewRect.Y || regionRect.Bottom > constrainedViewRect.Bottom)
+        // If the region is outside the contained view rect but NOT within the frozen rows
+        if ((regionRect.Y < constrainedViewRect.Y || regionRect.Bottom > constrainedViewRect.Bottom)
+            && !(region.Bottom <= _frozenTopCount - 1 || region.Top >= _sheet.NumRows - _frozenBottomCount))
         {
             var bottomDist = regionRect.Bottom - constrainedViewRect.Bottom;
             var topDist = regionRect.Y - constrainedViewRect.Y;
@@ -617,8 +630,6 @@ public partial class DatasheetCssGrid : SheetComponentBase
             scrollYDist = Math.Abs(bottomDist) < Math.Abs(topDist)
                 ? bottomDist
                 : topDist;
-
-            Console.WriteLine($"{scrollYDist}");
 
             doScroll = true;
         }
@@ -629,9 +640,9 @@ public partial class DatasheetCssGrid : SheetComponentBase
 
     private double GetGutterSize(Axis axis)
     {
-        if (axis == Axis.Col && ShowRowHeadings)
+        if (axis == Axis.Row && ShowRowHeadings)
             return _sheet.Rows.HeadingWidth;
-        if (axis == Axis.Row && ShowColHeadings)
+        if (axis == Axis.Col && ShowColHeadings)
             return _sheet.Columns.HeadingHeight;
         return 0;
     }
@@ -762,10 +773,5 @@ public partial class DatasheetCssGrid : SheetComponentBase
             return false;
 
         return _sheetIsDirty || _dirtyRows.Count != 0;
-    }
-
-    protected override void OnAfterRender(bool firstRender)
-    {
-        base.OnAfterRender(firstRender);
     }
 }
