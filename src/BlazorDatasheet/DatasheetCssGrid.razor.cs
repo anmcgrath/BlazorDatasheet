@@ -201,7 +201,6 @@ public partial class DatasheetCssGrid : SheetComponentBase
     /// </summary>
     public double TotalSheetHeight => _sheet.Rows.GetVisualHeightBetween(0, _sheet.NumRows) + GetGutterSize(Axis.Col);
 
-
     /// <summary>
     /// The size of the main region of this datasheet, that is the region of the grid without
     /// any frozen rows or columns.
@@ -315,16 +314,7 @@ public partial class DatasheetCssGrid : SheetComponentBase
     private void HandleVirtualViewportChanged(VirtualViewportChangedEventArgs args)
     {
         _currentViewport = args.Viewport;
-        foreach (var region in args.NewRegions.Concat(args.RemovedRegions))
-        {
-            if(region.GetIntersection(MainViewRegion) == null)
-                return;
-            
-            for (int i = region.Top; i <= region.Bottom; i++)
-                _dirtyRows.Add(i);
-        }
-
-        StateHasChanged();
+        MakeRegionsDirty(args.NewRegions.Concat(args.RemovedRegions));
     }
 
     private void ScreenUpdatingChanged(object? sender, SheetScreenUpdatingEventArgs e)
@@ -343,15 +333,21 @@ public partial class DatasheetCssGrid : SheetComponentBase
             .Select(x => x!)
             .ToList();
 
-        //UpdateRegionCache(dirtyRegions);
+        MakeRegionsDirty(dirtyRegions);
+    }
 
+    private void MakeRegionsDirty(IEnumerable<IRegion?> dirtyRegions)
+    {
         foreach (var region in dirtyRegions)
         {
-            for (int i = region.Top; i <= region.Bottom; i++)
-                _dirtyRows.Add(i);
-        }
+            if (region?.GetIntersection(MainViewRegion) == null)
+                continue;
 
-        Console.WriteLine($"Sheet dirty and now I have {_dirtyRows.Count} dirty rows");
+            for (int i = region.Top; i <= region.Bottom; i++)
+            {
+                _dirtyRows.Add(i);
+            }
+        }
 
         StateHasChanged();
     }
@@ -376,7 +372,7 @@ public partial class DatasheetCssGrid : SheetComponentBase
     private void RegisterDefaultShortcuts()
     {
         ShortcutManager.Register(["Escape"], KeyboardModifiers.Any,
-            _ => _sheet.Editor.CancelEdit());
+        _ => _sheet.Editor.CancelEdit());
 
         ShortcutManager
             .Register(["Enter"], KeyboardModifiers.None, _ => AcceptEditAndMoveActiveSelection(Axis.Row, 1));
@@ -390,29 +386,29 @@ public partial class DatasheetCssGrid : SheetComponentBase
 
         ShortcutManager
             .Register(["KeyC"], [KeyboardModifiers.Ctrl, KeyboardModifiers.Meta],
-                async (_) => await CopySelectionToClipboard(),
-                _ => !_sheet.Editor.IsEditing);
+        async (_) => await CopySelectionToClipboard(),
+        _ => !_sheet.Editor.IsEditing);
 
         ShortcutManager
             .Register(["ArrowUp", "ArrowRight", "ArrowDown", "ArrowLeft"], KeyboardModifiers.None,
-                c =>
-                    HandleArrowKeysDown(false, KeyUtil.GetMovementFromArrowKey(c.Key)));
+        c =>
+            HandleArrowKeysDown(false, KeyUtil.GetMovementFromArrowKey(c.Key)));
 
         ShortcutManager
             .Register(["ArrowUp", "ArrowRight", "ArrowDown", "ArrowLeft"], KeyboardModifiers.Shift,
-                c =>
-                    HandleArrowKeysDown(true, KeyUtil.GetMovementFromArrowKey(c.Key)));
+        c =>
+            HandleArrowKeysDown(true, KeyUtil.GetMovementFromArrowKey(c.Key)));
 
         ShortcutManager.Register(["KeyY"], [KeyboardModifiers.Ctrl, KeyboardModifiers.Meta],
-            _ => _sheet.Commands.Redo(),
-            _ => !_sheet.Editor.IsEditing);
+        _ => _sheet.Commands.Redo(),
+        _ => !_sheet.Editor.IsEditing);
         ShortcutManager.Register(["KeyZ"], [KeyboardModifiers.Ctrl, KeyboardModifiers.Meta],
-            _ => _sheet.Commands.Undo(),
-            _ => !_sheet.Editor.IsEditing);
+        _ => _sheet.Commands.Undo(),
+        _ => !_sheet.Editor.IsEditing);
 
         ShortcutManager.Register(["Delete", "Backspace"], KeyboardModifiers.Any,
-            _ => _sheet.Commands.ExecuteCommand(new ClearCellsCommand(_sheet.Selection.Regions)),
-            _ => _sheet.Selection.Regions.Any() && !_sheet.Editor.IsEditing);
+        _ => _sheet.Commands.ExecuteCommand(new ClearCellsCommand(_sheet.Selection.Regions)),
+        _ => _sheet.Selection.Regions.Any() && !_sheet.Editor.IsEditing);
     }
 
     private void HandleCellMouseDown(object? sender, SheetPointerEventArgs args)
@@ -798,7 +794,7 @@ public partial class DatasheetCssGrid : SheetComponentBase
 
 
     protected override bool ShouldRender()
-    {        
+    {
         _renderRequested = true;
 
         var shouldRender = !_sheet.ScreenUpdating && (_sheetIsDirty || _dirtyRows.Count != 0);
