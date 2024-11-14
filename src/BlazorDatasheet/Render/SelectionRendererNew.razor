@@ -12,8 +12,12 @@
     <!-- if it's the active region, render around the active position -->
     if (isActiveRegion)
     {
+        var inputRegion = _sheet.Cells.GetMerge(_sheet.Selection.ActiveCellPosition.row, _sheet.Selection.ActiveCellPosition.col) ??
+                          new Region(_sheet.Selection.ActiveCellPosition.row, _sheet.Selection.ActiveCellPosition.col);
+        
         var brokenRegions = boundedRegion
-            .Break(new Region(_sheet.Selection.ActiveCellPosition.row, _sheet.Selection.ActiveCellPosition.col));
+            .Break(inputRegion);
+        
         foreach (var brokenRegion in brokenRegions)
         {
             <BoxOverlayRenderer
