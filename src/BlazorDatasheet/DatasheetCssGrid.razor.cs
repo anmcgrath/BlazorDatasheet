@@ -328,12 +328,10 @@ public partial class DatasheetCssGrid : SheetComponentBase
         var dirtyRegions = e.DirtyRegions
             .GetDataRegions(_currentViewport.ViewRegion)
             .Select(x => x.Region)
-            .Select(x => x.GetIntersection(_currentViewport.ViewRegion))
-            .Where(x => x != null)
-            .Select(x => x!)
             .ToList();
 
-        MakeRegionsDirty(dirtyRegions);
+        if(dirtyRegions.Count > 0)
+            MakeRegionsDirty(dirtyRegions);
     }
 
     private void MakeRegionsDirty(IEnumerable<IRegion?> dirtyRegions)
@@ -372,7 +370,7 @@ public partial class DatasheetCssGrid : SheetComponentBase
     private void RegisterDefaultShortcuts()
     {
         ShortcutManager.Register(["Escape"], KeyboardModifiers.Any,
-        _ => _sheet.Editor.CancelEdit());
+            _ => _sheet.Editor.CancelEdit());
 
         ShortcutManager
             .Register(["Enter"], KeyboardModifiers.None, _ => AcceptEditAndMoveActiveSelection(Axis.Row, 1));
@@ -386,29 +384,29 @@ public partial class DatasheetCssGrid : SheetComponentBase
 
         ShortcutManager
             .Register(["KeyC"], [KeyboardModifiers.Ctrl, KeyboardModifiers.Meta],
-        async (_) => await CopySelectionToClipboard(),
-        _ => !_sheet.Editor.IsEditing);
+                async (_) => await CopySelectionToClipboard(),
+                _ => !_sheet.Editor.IsEditing);
 
         ShortcutManager
             .Register(["ArrowUp", "ArrowRight", "ArrowDown", "ArrowLeft"], KeyboardModifiers.None,
-        c =>
-            HandleArrowKeysDown(false, KeyUtil.GetMovementFromArrowKey(c.Key)));
+                c =>
+                    HandleArrowKeysDown(false, KeyUtil.GetMovementFromArrowKey(c.Key)));
 
         ShortcutManager
             .Register(["ArrowUp", "ArrowRight", "ArrowDown", "ArrowLeft"], KeyboardModifiers.Shift,
-        c =>
-            HandleArrowKeysDown(true, KeyUtil.GetMovementFromArrowKey(c.Key)));
+                c =>
+                    HandleArrowKeysDown(true, KeyUtil.GetMovementFromArrowKey(c.Key)));
 
         ShortcutManager.Register(["KeyY"], [KeyboardModifiers.Ctrl, KeyboardModifiers.Meta],
-        _ => _sheet.Commands.Redo(),
-        _ => !_sheet.Editor.IsEditing);
+            _ => _sheet.Commands.Redo(),
+            _ => !_sheet.Editor.IsEditing);
         ShortcutManager.Register(["KeyZ"], [KeyboardModifiers.Ctrl, KeyboardModifiers.Meta],
-        _ => _sheet.Commands.Undo(),
-        _ => !_sheet.Editor.IsEditing);
+            _ => _sheet.Commands.Undo(),
+            _ => !_sheet.Editor.IsEditing);
 
         ShortcutManager.Register(["Delete", "Backspace"], KeyboardModifiers.Any,
-        _ => _sheet.Commands.ExecuteCommand(new ClearCellsCommand(_sheet.Selection.Regions)),
-        _ => _sheet.Selection.Regions.Any() && !_sheet.Editor.IsEditing);
+            _ => _sheet.Commands.ExecuteCommand(new ClearCellsCommand(_sheet.Selection.Regions)),
+            _ => _sheet.Selection.Regions.Any() && !_sheet.Editor.IsEditing);
     }
 
     private void HandleCellMouseDown(object? sender, SheetPointerEventArgs args)
@@ -797,7 +795,7 @@ public partial class DatasheetCssGrid : SheetComponentBase
     {
         _renderRequested = true;
 
-        var shouldRender = !_sheet.ScreenUpdating && (_sheetIsDirty || _dirtyRows.Count != 0);
+        var shouldRender = _sheet.ScreenUpdating && (_sheetIsDirty || _dirtyRows.Count != 0);
         return shouldRender;
     }
 }
