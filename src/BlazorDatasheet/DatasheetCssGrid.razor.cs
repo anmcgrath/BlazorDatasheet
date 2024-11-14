@@ -586,7 +586,7 @@ public partial class DatasheetCssGrid : SheetComponentBase
             return;
 
         _sheet.Selection.CancelSelecting();
-        _sheet.Editor.BeginEdit(row, col, false, mode, entryChar);
+        _sheet.Editor.BeginEdit(row, col, mode == EditEntryMode.Key, mode, entryChar);
     }
 
     private void HandleCellMouseOver(object? sender, SheetPointerEventArgs args)
