@@ -155,6 +155,11 @@
         base.OnParametersSet();
     }
 
+    public async Task RefreshView()
+    {
+        await HandleScroll(await CalculateViewRect(_contentEl));
+    }
+
     /// <summary>
     /// Returns the total view size that is constrained
     /// by <see cref="ViewRegion"/>

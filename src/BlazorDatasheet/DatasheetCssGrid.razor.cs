@@ -301,6 +301,12 @@ public partial class DatasheetCssGrid : SheetComponentBase
         _sheet.Editor.EditFinished += EditorOnEditFinished;
         _sheet.SheetDirty += SheetOnSheetDirty;
         _sheet.ScreenUpdatingChanged += ScreenUpdatingChanged;
+        _sheet.Rows.Inserted += async (_, _) => await RefreshView();
+        _sheet.Columns.Inserted += async (_, _) => await RefreshView();
+        _sheet.Rows.Removed += async (_, _) => await RefreshView();
+        _sheet.Columns.Removed += async (_, _) => await RefreshView();
+        _sheet.Rows.SizeModified += async (_, _) => await RefreshView();
+        _sheet.Columns.SizeModified += async (_, _) => await RefreshView();
     }
 
     private async Task AddWindowEventsAsync()
@@ -309,6 +315,14 @@ public partial class DatasheetCssGrid : SheetComponentBase
         await WindowEventService.RegisterKeyEvent("keydown", HandleWindowKeyDown);
         await WindowEventService.RegisterClipboardEvent("paste", HandleWindowPaste);
         await WindowEventService.RegisterMouseEvent("mouseup", HandleWindowMouseUp);
+    }
+
+    public async Task RefreshView()
+    {
+        _viewRegion = ViewRegion ?? _sheet.Region;
+        _sheetIsDirty = true;
+        await _mainView.RefreshView();
+        StateHasChanged();
     }
 
     private void HandleVirtualViewportChanged(VirtualViewportChangedEventArgs args)
