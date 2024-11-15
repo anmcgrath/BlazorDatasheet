@@ -5,6 +5,7 @@
 @using BlazorDatasheet.Render.Layout
 @using BlazorDatasheet.Util
 @using BlazorDatasheet.Virtualise
+@inherits HeadingRenderer
 
 <div style="display: flex; flex-direction: row">
 
@@ -20,7 +21,8 @@
     }
     <div class="sheet-row-head-container" style="z-index: 2;">
         <Virtualise2D
-            LayoutProvider="_rowLayoutProvider"
+            @ref="MainView"
+            LayoutProvider="LayoutProvider"
             ViewRegion="new Region(0, 0, _viewRegion.Left + FrozenStartCount, _viewRegion.Right - FrozenEndCount)">
             <GridItemTemplate>
                 <div class="col-head sheet-cell @GetSelectedClass(context.col)" data-col="@context.col" data-row="-1">
@@ -47,67 +49,6 @@
     [Parameter] public int FrozenStartCount { get; set; }
 
     [Parameter] public int FrozenEndCount { get; set; }
-
-    [Parameter, EditorRequired] public Sheet? Sheet { get; set; }
-
-    [Parameter] public Region? ViewRegion { get; set; }
-
-    [Parameter] public bool AlternateAxisHeadingsShown { get; set; }
-
-    [Parameter, EditorRequired] public RenderFragment<int> ChildContent { get; set; } = null!;
-
-    private Sheet _sheet = new(1, 1);
-    private Region _viewRegion = new(0, 0);
-    private IGridLayoutProvider _rowLayoutProvider = new EmptyLayoutProvider();
-
-    protected override void OnParametersSet()
-    {
-        if (Sheet != _sheet)
-        {
-            _sheet = Sheet ?? new(0, 0);
-
-            _sheet.Selection.SelectionChanged += (_, _) => StateHasChanged();
-            _sheet.Selection.SelectingChanged += (_, _) => StateHasChanged();
-
-            _rowLayoutProvider = new ColHeadingLayoutProvider(_sheet);
-            StateHasChanged();
-        }
-
-        if (ViewRegion != _viewRegion)
-        {
-            _viewRegion = ViewRegion ?? _sheet.Region;
-        }
-
-        base.OnParametersSet();
-    }
-
-
-    private string GetSelectedClass(int col)
-    {
-        bool isInColumnRegion = false;
-        bool isSelected = false;
-        var regions = _sheet.Selection.Regions.Concat([_sheet.Selection.SelectingRegion]);
-        foreach (var selection in regions)
-        {
-            if (selection?.SpansCol(col) == true)
-            {
-                isSelected = true;
-                if (selection is ColumnRegion)
-                {
-                    isInColumnRegion = true;
-                    break;
-                }
-            }
-        }
-
-        var sb = new StringBuilder();
-        if (isInColumnRegion)
-            sb.Append("bds-selected-header-full");
-        else if(isSelected)
-            sb.Append("bds-selected-header");
-        return sb.ToString();
-    }
-
 
     private string GetStickyLeftPositionInfo()
     {

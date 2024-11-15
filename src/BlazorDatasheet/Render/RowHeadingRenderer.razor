@@ -3,14 +3,16 @@
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Render.Layout
 @using BlazorDatasheet.Virtualise
+@inherits HeadingRenderer
 
 <div style="display: flex; flex-direction: column">
     <div class="sheet-row-head-container" style=" position: sticky; left: 0;">
         <Virtualise2D
-            LayoutProvider="_rowLayoutProvider"
+            @ref="MainView"
+            LayoutProvider="LayoutProvider"
             ViewRegion="new Region(_viewRegion.Top, _viewRegion.Bottom, 0, 0)">
             <GridItemTemplate>
-                <div class="row-head sheet-cell" data-row="@context.row" data-col="-1">
+                <div class="row-head sheet-cell @GetSelectedClass(context.row)" data-row="@context.row" data-col="-1">
                     @ChildContent(context.row)
                 </div>
             </GridItemTemplate>
@@ -19,35 +21,6 @@
 </div>
 
 @code {
-    
-    [Parameter, EditorRequired] public Sheet? Sheet { get; set; }
-
-    [Parameter] public Region? ViewRegion { get; set; }
-
-    [Parameter] public bool AlternateAxisHeadingsShown { get; set; }
-
-    [Parameter, EditorRequired] public RenderFragment<int> ChildContent { get; set; } = null!;
-
-    private Sheet _sheet = new(1, 1);
-    private Region _viewRegion = new(0, 0);
-    private IGridLayoutProvider _rowLayoutProvider = new EmptyLayoutProvider();
-
-    protected override void OnParametersSet()
-    {
-        if (Sheet != _sheet)
-        {
-            _sheet = Sheet ?? new(0, 0);
-            _rowLayoutProvider = new RowHeadingLayoutProvider(_sheet);
-            StateHasChanged();
-        }
-
-        if (ViewRegion != _viewRegion)
-        {
-            _viewRegion = ViewRegion ?? _sheet.Region;
-        }
-
-        base.OnParametersSet();
-    }
 
     private string GetStickyPositionInfo()
     {
