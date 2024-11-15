@@ -236,7 +236,10 @@ public partial class DatasheetCssGrid : SheetComponentBase
             requireRender = true;
         }
 
-        if (_frozenLeftCount != FrozenLeftCount || _frozenRightCount != FrozenRightCount)
+        if (_frozenLeftCount != FrozenLeftCount ||
+            _frozenRightCount != FrozenRightCount ||
+            _frozenBottomCount != FrozenBottomCount ||
+            _frozenTopCount != FrozenTopCount)
         {
             _frozenLeftCount = FrozenLeftCount;
             _frozenRightCount = FrozenRightCount;
@@ -301,12 +304,15 @@ public partial class DatasheetCssGrid : SheetComponentBase
         _sheet.Editor.EditFinished += EditorOnEditFinished;
         _sheet.SheetDirty += SheetOnSheetDirty;
         _sheet.ScreenUpdatingChanged += ScreenUpdatingChanged;
-        _sheet.Rows.Inserted += async (_, _) => await RefreshView();
-        _sheet.Columns.Inserted += async (_, _) => await RefreshView();
-        _sheet.Rows.Removed += async (_, _) => await RefreshView();
-        _sheet.Columns.Removed += async (_, _) => await RefreshView();
-        _sheet.Rows.SizeModified += async (_, _) => await RefreshView();
-        _sheet.Columns.SizeModified += async (_, _) => await RefreshView();
+        if (GridLevel == 0)
+        {
+            _sheet.Rows.Inserted += (_, args) => RefreshView();
+            _sheet.Columns.Inserted += (_, _) => RefreshView();
+            _sheet.Rows.Removed += (_, args) => RefreshView();
+            _sheet.Columns.Removed += (_, _) => RefreshView();
+            _sheet.Rows.SizeModified += (_, _) => RefreshView();
+            _sheet.Columns.SizeModified += (_, _) => RefreshView();
+        }
     }
 
     private async Task AddWindowEventsAsync()
@@ -317,11 +323,10 @@ public partial class DatasheetCssGrid : SheetComponentBase
         await WindowEventService.RegisterMouseEvent("mouseup", HandleWindowMouseUp);
     }
 
-    public async Task RefreshView()
+    public void RefreshView()
     {
         _viewRegion = ViewRegion ?? _sheet.Region;
         _sheetIsDirty = true;
-        await _mainView.RefreshView();
         StateHasChanged();
     }
 
@@ -344,7 +349,7 @@ public partial class DatasheetCssGrid : SheetComponentBase
             .Select(x => x.Region)
             .ToList();
 
-        if(dirtyRegions.Count > 0)
+        if (dirtyRegions.Count > 0)
             MakeRegionsDirty(dirtyRegions);
     }
 

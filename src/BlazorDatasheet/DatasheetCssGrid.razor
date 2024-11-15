@@ -25,7 +25,8 @@
             @if (ShowColHeadings)
             {
                 <!-- Column headings -->
-                <div class="sheet-col-head-container" style="z-index: @(GridLevel + 2); @(StickyHeaders ? "position: sticky; top: 0;" : "")">
+                <div class="sheet-col-head-container"
+                     style="z-index: @(GridLevel + 2); @(StickyHeaders ? "position: sticky; top: 0;" : "")">
                     <div style="display: flex; flex-direction: row; align-items: flex-start">
 
                         @if (ShowRowHeadings)
@@ -33,9 +34,9 @@
                             <div class="sheet-cell row-head col-head"
                                  style="
                                      width: @(_sheet.Rows.HeadingWidth)px;
-                                     z-index: @(GridLevel + 5);
-                                     @(StickyHeaders ? "position: sticky; top: 0; left:0;" : "")
-                                     height: @(_sheet.Columns.HeadingHeight)px;">
+                                 z-index: @(GridLevel + 5);
+                                 @(StickyHeaders ? "position: sticky; top: 0; left:0;" : "")
+                                 height: @(_sheet.Columns.HeadingHeight)px;">
                             </div>
                         }
 
@@ -52,7 +53,9 @@
 
             @if (_frozenTopCount > 0)
             {
-                <div style="position: sticky; z-index: @(GridLevel + 2); top: @(ShowColHeadings && StickyHeaders ? _sheet.Columns.HeadingHeight + "px" : "0");" class="bds-frozen-top">
+                <div
+                    style="position: sticky; z-index: @(GridLevel + 2); top: @(ShowColHeadings && StickyHeaders ? _sheet.Columns.HeadingHeight + "px" : "0");"
+                    class="bds-frozen-top">
                     <!-- Top sticky -->
                     <DatasheetCssGrid
                         GridLevel="GridLevel + 1"
@@ -71,7 +74,8 @@
 
                 @if (ShowRowHeadings)
                 {
-                    <div class="sheet-row-head-container" style="z-index: @(GridLevel + 1);@(StickyHeaders ? "position: sticky; left: 0;" : "")">
+                    <div class="sheet-row-head-container"
+                         style="z-index: @(GridLevel + 1);@(StickyHeaders ? "position: sticky; left: 0;" : "")">
                         <RowHeadingRenderer
                             AlternateAxisHeadingsShown="ShowColHeadings"
                             ViewRegion="MainViewRegion"
@@ -84,7 +88,8 @@
                 @if (_frozenLeftCount > 0)
                 {
                     <!-- Left sticky -->
-                    <div class="bds-frozen-left" style="position: sticky; z-index: @(GridLevel + 1); left: @(ShowRowHeadings && StickyHeaders ? _sheet.Rows.HeadingWidth + "px" : "0");">
+                    <div class="bds-frozen-left"
+                         style="position: sticky; z-index: @(GridLevel + 1); left: @(ShowRowHeadings && StickyHeaders ? _sheet.Rows.HeadingWidth + "px" : "0");">
                         <DatasheetCssGrid
                             GridLevel="GridLevel + 1"
                             ShowColHeadings="false"
@@ -101,7 +106,7 @@
                     <EditorLayer @ref="_editorLayer" CustomCellTypes="@CustomCellTypeDefinitions"/>
                     <HighlightLayer/>
                 </LayerContainer>
-
+                
                 <Virtualise2D
                     Class="@("bds-main-view-" + GridLevel)"
                     OnViewportChanged="HandleVirtualViewportChanged"
@@ -126,7 +131,9 @@
                                 dataCol = visualCell.VisibleMergeColStart;
                                 dataRow = visualCell.VisibleMergeRowStart;
                             }
-                            <div @key="col" style="grid-row: @vr.RowOffset / span @visualCell.VisibleRowSpan; grid-column:@colOffset / span @visualCell.VisibleColSpan;">
+
+                            <div @key="col"
+                                 style="grid-row: @vr.RowOffset / span @visualCell.VisibleRowSpan; grid-column:@colOffset / span @visualCell.VisibleColSpan;">
                                 <div
                                     data-row="@dataRow"
                                     data-col="@dataCol"
@@ -184,7 +191,7 @@
                             ViewRegion="new Region(MainViewRegion.Top, MainViewRegion.Bottom, _viewRegion.Right - _frozenRightCount + 1, _viewRegion.Right)"/>
                     </div>
                 }
-            </div >
+            </div>
 
             @if (_frozenBottomCount > 0)
             {
@@ -203,6 +210,6 @@
             }
 
         </div>
-    </div >
+    </div>
 
 </SheetMenuTarget>

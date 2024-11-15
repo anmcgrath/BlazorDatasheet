@@ -97,12 +97,12 @@
     /// <summary>
     /// The class applied to the container div
     /// </summary>
-    [Parameter] 
+    [Parameter]
     public string Class { get; set; } = string.Empty;
 
     [Parameter] public EventCallback<VirtualViewportChangedEventArgs> OnViewportChanged { get; set; }
 
-    private Region _viewRegion = null!;
+    private Region _viewRegion = new(-1, -1);
 
     /// <summary>
     /// Set this to limit the view of the virtualised grid to the region specified
@@ -151,13 +151,23 @@
 
     protected override void OnParametersSet()
     {
-        _viewRegion = ViewRegion ?? new Region(0, LayoutProvider.NumRows - 1, 0, LayoutProvider.NumColumns - 1);
-        base.OnParametersSet();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!_viewRegion.Equals(ViewRegion))
+        {
+            _viewRegion = ViewRegion ?? new Region(0, LayoutProvider.NumRows - 1, 0, LayoutProvider.NumColumns - 1);
+            await RefreshView();
+        }
+
+        await base.OnParametersSetAsync();
     }
 
     public async Task RefreshView()
     {
-        await HandleScroll(await CalculateViewRect(_contentEl));
+        if(_contentEl.Context != null)
+            await HandleScroll(await CalculateViewRect(_contentEl));
     }
 
     /// <summary>
@@ -244,7 +254,6 @@
             _currentViewport = new Viewport(_currentViewport.ViewRegion, viewRect);
             await OnViewportChanged.InvokeAsync(new VirtualViewportChangedEventArgs(_currentViewport, new(), new()));
         }
-
     }
 
     internal async Task<Rect> CalculateViewRect(ElementReference reference)
