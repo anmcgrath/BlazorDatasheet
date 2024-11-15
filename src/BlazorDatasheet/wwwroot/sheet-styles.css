@@ -175,20 +175,14 @@
 
 .row-head {
     text-align: right;
-    background: var(--row-header-bg-color);
-    border-left: var(--sheet-border-style)
 }
 
-.row-head:hover {
-    background: var(--selection-bg-color);
-}
-
-.col-head {
+.col-head, .row-head {
     background: var(--row-header-bg-color);
     border-top: var(--sheet-border-style)
 }
 
-.col-head:hover {
+.col-head:hover, .row-head:hover {
     background: var(--selection-bg-color);
 }
 
