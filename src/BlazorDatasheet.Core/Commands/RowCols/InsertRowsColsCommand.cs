@@ -39,6 +39,7 @@ internal class InsertRowsColsCommand : IUndoableCommand
     public bool Execute(Sheet sheet)
     {
         sheet.ScreenUpdating = false;
+        sheet.Add(_axis, _count);
         _validatorRestoreData = sheet.Validators.Store.InsertRowColAt(_index, _count, _axis);
         _cellStoreRestoreData = sheet.Cells.InsertRowColAt(_index, _count, _axis);
         _cfRestoreData = sheet.ConditionalFormats.InsertRowColAt(_index, _count, _axis);
@@ -49,7 +50,6 @@ internal class InsertRowsColsCommand : IUndoableCommand
             _filterRestoreData = sheet.Columns.Filters.Store.InsertAt(_index, _count);
         }
 
-        sheet.Add(_axis, _count);
         sheet.ScreenUpdating = true;
         return true;
     }
@@ -57,15 +57,15 @@ internal class InsertRowsColsCommand : IUndoableCommand
     public bool Undo(Sheet sheet)
     {
         sheet.ScreenUpdating = false;
+        sheet.Remove(_axis, _count);
         sheet.Validators.Store.Restore(_validatorRestoreData);
         sheet.Cells.Restore(_cellStoreRestoreData);
         sheet.ConditionalFormats.Restore(_cfRestoreData);
-        sheet.Remove(_axis, _count);
         sheet.GetRowColStore(_axis).Restore(_rowColInfoRestoreData);
         sheet.GetRowColStore(_axis).EmitRemoved(_index, _count);
         if (_axis == Axis.Col)
             sheet.Columns.Filters.Store.Restore(_filterRestoreData);
-        
+
         IRegion dirtyRegion = _axis == Axis.Col
             ? new ColumnRegion(_index, sheet.NumCols)
             : new RowRegion(_index, sheet.NumRows);
