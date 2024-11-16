@@ -182,7 +182,7 @@ public partial class DatasheetCssGrid : SheetComponentBase
     /// <summary>
     /// Main virtualised view
     /// </summary>
-    private Virtualise2D _mainView = default!;
+    private Virtualise2D? _mainView;
 
     /// <summary>
     /// The editor layer, which renders the cell editor.
@@ -224,7 +224,7 @@ public partial class DatasheetCssGrid : SheetComponentBase
         base.OnInitialized();
     }
 
-    protected override Task OnParametersSetAsync()
+    protected override async Task OnParametersSetAsync()
     {
         bool requireRender = false;
 
@@ -233,7 +233,8 @@ public partial class DatasheetCssGrid : SheetComponentBase
             RemoveEvents(_sheet);
             _sheet = Sheet ?? new(0, 0);
             AddEvents(_sheet);
-            requireRender = true;
+            _visualCellCache.Clear();
+            ForceReRender();
         }
 
         if (!_viewRegion.Equals(ViewRegion))
@@ -267,7 +268,7 @@ public partial class DatasheetCssGrid : SheetComponentBase
             StateHasChanged();
         }
 
-        return base.OnParametersSetAsync();
+        await base.OnParametersSetAsync();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -330,21 +331,16 @@ public partial class DatasheetCssGrid : SheetComponentBase
         await WindowEventService.RegisterMouseEvent("mouseup", HandleWindowMouseUp);
     }
 
-    private void HandleRowColInserted(object? sender, RowColInsertedEventArgs? e)
-    {
-        _viewRegion = ViewRegion ?? _sheet.Region;
-        _sheetIsDirty = true;
-        StateHasChanged();
-    }
+    private void HandleRowColInserted(object? sender, RowColInsertedEventArgs? e) => ForceReRender();
 
-    private void HandleRowColRemoved(object? sender, RowColRemovedEventArgs? e)
-    {
-        _viewRegion = ViewRegion ?? _sheet.Region;
-        _sheetIsDirty = true;
-        StateHasChanged();
-    }
+    private void HandleRowColRemoved(object? sender, RowColRemovedEventArgs? e) => ForceReRender();
 
-    private void HandleSizeModified(object? sender, SizeModifiedEventArgs e)
+    private void HandleSizeModified(object? sender, SizeModifiedEventArgs e) => ForceReRender();
+
+    /// <summary>
+    /// Re-render all cells, regardless of whether they are dirty and refreshes the viewport
+    /// </summary>
+    public void ForceReRender()
     {
         _viewRegion = ViewRegion ?? _sheet.Region;
         _sheetIsDirty = true;
@@ -352,9 +348,11 @@ public partial class DatasheetCssGrid : SheetComponentBase
         RefreshView();
     }
 
-
     public async void RefreshView()
     {
+        if (_mainView == null)
+            return;
+
         await _mainView.RefreshView();
     }
 
@@ -681,6 +679,9 @@ public partial class DatasheetCssGrid : SheetComponentBase
 
     private async Task ScrollToContainRegion(IRegion region)
     {
+        if (_mainView == null)
+            return;
+
         var frozenLeftW = _sheet.Columns.GetVisualLeft(_frozenLeftCount);
         var frozenRightW = _sheet.Columns.GetVisualWidthBetween(_sheet.NumCols - _frozenRightCount, _sheet.NumCols);
         var frozenTopH = _sheet.Rows.GetVisualTop(_frozenTopCount);

@@ -188,6 +188,11 @@
     [JSInvokable(nameof(HandleScroll))]
     public async Task HandleScroll(Rect viewRect)
     {
+        var totalSize = GetTotalViewSize();
+        var totalRect = new Rect(0, 0, totalSize.Width, totalSize.Height);
+        // just in-case the total size shrinks and the view rect is now outside of the total view (e.g new sheet or filters applied).
+        viewRect = viewRect.GetIntersection(totalRect) ?? totalRect;
+
         var layoutProviderRegion = new Region(0, LayoutProvider.NumRows - 1, 0, LayoutProvider.NumColumns - 1);
 
         // including overflow
@@ -208,7 +213,6 @@
         var top = LayoutProvider.ComputeTopPosition(view.Top);
         var bot = LayoutProvider.ComputeBottomPosition(view.Bottom);
 
-        var totalSize = GetTotalViewSize();
         var pL = LayoutProvider.ComputeLeftPosition(Math.Max(_viewRegion.Left, 0));
         var pT = LayoutProvider.ComputeTopPosition(Math.Max(_viewRegion.Top, 0));
 
