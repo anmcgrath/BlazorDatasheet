@@ -1,5 +1,6 @@
 ﻿@using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.DataStructures.Geometry
+@inherits SheetComponentBase
 
 @code {
 
@@ -9,10 +10,9 @@
     [CascadingParameter]
     public int Depth { get; set; }
 
-    [CascadingParameter] public Region? ViewRegion { get; set; }
+    [CascadingParameter] protected Region? ViewRegion { get; set; }
 
-    [CascadingParameter] public Sheet Sheet { get; set; } = new(0, 0);
-
+    [CascadingParameter] protected Sheet Sheet { get; set; } = new(0, 0);
     /// <summary>
     /// The left position, in px, relative to the sheet
     /// </summary>

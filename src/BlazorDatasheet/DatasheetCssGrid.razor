@@ -102,10 +102,11 @@
                     </div>
                 }
 
-                <LayerContainer Depth="@GridLevel" Sheet="_sheet" ViewRegion="MainViewRegion">
+                <LayerContainer Depth="@GridLevel" Sheet="_sheet" ViewRegion="MainViewRegion" PointerInputService="_sheetPointerInputService">
                     <SelectionRendererNew/>
                     <EditorLayer @ref="_editorLayer" CustomCellTypes="@CustomCellTypeDefinitions"/>
                     <HighlightLayer/>
+                    <AutofillLayer/>
                 </LayerContainer>
 
                 <CascadingValue Value="Icons" Name="Icons" IsFixed="true">

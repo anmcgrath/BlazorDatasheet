@@ -1,19 +1,22 @@
 ﻿@using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Services
 <div class="sheet-layer-container" style="z-index: @(Depth);">
-    <div style="position: absolute; 
-        top: 0; 
-        left: 0; 
+    <div style="position: absolute;
+        top: 0;
+        left: 0;
         max-width:@(Width)px;
-        max-height:@(Height)px;
-        width:@(Width)px;
-        height:@(Height)px;
-        @(Depth > 0 ? "overflow:hidden;" : "")
-">
+    max-height:@(Height)px;
+    width:@(Width)px;
+    height:@(Height)px;
+    @(Depth > 0 ? "overflow:hidden;" : "")
+    ">
         <CascadingValue Value="ViewRegion">
             <CascadingValue Value="Sheet">
                 <CascadingValue Value="Depth" IsFixed="true">
-                    @ChildContent
+                    <CascadingValue Value="PointerInputService">
+                        @ChildContent
+                    </CascadingValue>
                 </CascadingValue>
             </CascadingValue>
         </CascadingValue>
@@ -35,6 +38,8 @@
     private Region _viewRegion = new(0, 0);
 
     [Parameter, EditorRequired] public Sheet Sheet { get; set; } = new(0, 0);
+
+    [Parameter, EditorRequired] public SheetPointerInputService? PointerInputService { get; set; }
 
     /// <summary>
     /// The width, in px, of the rendered layer region
