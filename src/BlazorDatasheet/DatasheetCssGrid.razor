@@ -6,7 +6,9 @@
 @using BlazorDatasheet.Virtualise
 @inherits SheetComponentBase
 
-<SelectionMenu/>
+<SelectionMenu
+    DefaultFilterTypes="DefaultFilterTypes"
+    />
 
 <SheetMenuTarget MenuId="SelectionMenu"
                  MenuData="_sheet"

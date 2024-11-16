@@ -1,5 +1,6 @@
 ﻿using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Data.Filter;
 using BlazorDatasheet.Core.Edit;
 using BlazorDatasheet.Core.Events.Edit;
 using BlazorDatasheet.Core.Events.Layout;
@@ -162,6 +163,12 @@ public partial class DatasheetCssGrid : SheetComponentBase
     /// </summary>
     [Parameter]
     public bool StickyHeaders { get; set; } = true;
+    
+    /// <summary>
+    /// The default filters that are shown when the filter interface is opened and no filter exists.
+    /// </summary>
+    [Parameter]
+    public Type[] DefaultFilterTypes { get; set; } = [typeof(ValueFilter), typeof(PatternFilter)];
 
     private DotNetObjectReference<DatasheetCssGrid> _dotnetHelper = default!;
 
