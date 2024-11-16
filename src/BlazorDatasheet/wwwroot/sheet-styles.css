@@ -142,6 +142,7 @@
 .merged-cell {
     background: var(--sheet-bg-color);
     border: var(--sheet-border-style);
+    pointer-events: all;
 }
 
 .sheet-left {
