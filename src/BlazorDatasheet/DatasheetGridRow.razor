@@ -16,6 +16,12 @@
 
     if (visualCell.Merge != null)
     {
+        if (!visualCell.IsMergeStart)
+        {
+            colOffset++;
+            continue;
+        }
+
         dataCol = visualCell.VisibleMergeColStart;
         dataRow = visualCell.VisibleMergeRowStart;
     }
@@ -26,14 +32,14 @@
             data-row="@dataRow"
             data-col="@dataCol"
             class="sheet-cell"
-            style="@visualCell.FormatStyleString">
+            style="@visualCell.FormatStyleString;">
             <div style="display: flex;">
                 @if (visualCell.Icon != null)
                 {
-                    <!--<div
+                    <div
                         style="margin-right:2px; float:left; color: @(visualCell.Format?.IconColor ?? "var(--icon-color)");">
                         @GetIconRenderFragment(visualCell.Icon)
-                    </div>-->
+                    </div>
                 }
                 @switch (visualCell.CellType)
                 {
@@ -51,11 +57,11 @@
                         <SelectRenderer Cell="visualCell" Sheet="Sheet"/>
                         break;
 
-                    /*default:
+                    default:
                         <DynamicComponent
                             Parameters="@GetCellRendererParameters(visualCell)"
                             Type="@GetCellRendererType(visualCell.CellType)"/>
-                        break;*/
+                        break;
                 }
             </div>
         </div>
@@ -77,6 +83,36 @@
 
     [Parameter, EditorRequired] public Dictionary<CellPosition, VisualCell> Cache { get; set; } = null!;
 
+    [CascadingParameter(Name = "Icons")] 
+    public Dictionary<string, RenderFragment> Icons { get; set; } = default!;
+    
+    [CascadingParameter(Name = "CustomCellTypeDefinitions")] 
+    public Dictionary<string, CellTypeDefinition> CustomCellTypeDefinitions { get; set; } = default!;
+
     protected override bool ShouldRender() => IsDirty;
+    
+    private Type GetCellRendererType(string type)
+    {
+        if (CustomCellTypeDefinitions.TryGetValue(type, out var definition))
+            return definition.RendererType;
+
+        return typeof(TextRenderer);
+    }
+    
+    private Dictionary<string, object> GetCellRendererParameters(VisualCell visualCell)
+    {
+        return new Dictionary<string, object>()
+        {
+            { "Cell", visualCell },
+            { "Sheet", Sheet }
+        };
+    }
+
+    private RenderFragment GetIconRenderFragment(string? cellIcon)
+    {
+        if (cellIcon != null && Icons.TryGetValue(cellIcon, out var rf))
+            return rf;
+        return _ => { };
+    }
 
 }
