@@ -163,7 +163,7 @@ public partial class DatasheetCssGrid : SheetComponentBase
     /// </summary>
     [Parameter]
     public bool StickyHeaders { get; set; } = true;
-    
+
     /// <summary>
     /// The default filters that are shown when the filter interface is opened and no filter exists.
     /// </summary>
@@ -189,7 +189,7 @@ public partial class DatasheetCssGrid : SheetComponentBase
     /// </summary>
     private EditorLayer _editorLayer = default!;
 
-    private HashSet<int> _dirtyRows = new();
+    private readonly List<IRegion> _dirtyRows = new();
 
     private bool _sheetIsDirty;
 
@@ -317,7 +317,7 @@ public partial class DatasheetCssGrid : SheetComponentBase
             _sheet.Rows.Removed += HandleRowColRemoved;
             _sheet.Columns.Removed += HandleRowColRemoved;
         }
-        
+
         _sheet.Rows.SizeModified += HandleSizeModified;
         _sheet.Columns.SizeModified += HandleSizeModified;
     }
@@ -336,7 +336,7 @@ public partial class DatasheetCssGrid : SheetComponentBase
         _sheetIsDirty = true;
         StateHasChanged();
     }
-    
+
     private void HandleRowColRemoved(object? sender, RowColRemovedEventArgs? e)
     {
         _viewRegion = ViewRegion ?? _sheet.Region;
@@ -351,7 +351,7 @@ public partial class DatasheetCssGrid : SheetComponentBase
         StateHasChanged();
         RefreshView();
     }
-    
+
 
     public async void RefreshView()
     {
@@ -399,21 +399,22 @@ public partial class DatasheetCssGrid : SheetComponentBase
             var boundedRegion = region?.GetIntersection(_currentViewport.ViewRegion) as Region;
             if (boundedRegion == null)
                 continue;
-            
-            for (int i = boundedRegion.Top; i <= boundedRegion.Bottom; i++)
+
+            _dirtyRows.Add(boundedRegion);
+
+            foreach (var row in _sheet.Rows.GetVisibleIndices(boundedRegion.Top, boundedRegion.Bottom))
             {
-                _dirtyRows.Add(i);
-                for (int j = boundedRegion.Left; j <= boundedRegion.Right; j++)
+                foreach (var col in _sheet.Columns.GetVisibleIndices(boundedRegion.Left, boundedRegion.Right))
                 {
-                    var position = new CellPosition(i, j);
-                    if (!_visualCellCache.TryAdd(position, new VisualCell(i, j, _sheet)))
+                    var position = new CellPosition(row, col);
+                    if (!_visualCellCache.TryAdd(position, new VisualCell(row, col, _sheet)))
                     {
-                        _visualCellCache[position] = new VisualCell(i, j, _sheet);
+                        _visualCellCache[position] = new VisualCell(row, col, _sheet);
                     }
                 }
             }
         }
-        
+
         StateHasChanged();
     }
 
@@ -833,6 +834,10 @@ public partial class DatasheetCssGrid : SheetComponentBase
         return true;
     }
 
+    private bool IsRowDirty(int rowIndex)
+    {
+        return _sheetIsDirty || _dirtyRows.Any(x => x.SpansRow(rowIndex));
+    }
 
     protected override bool ShouldRender()
     {

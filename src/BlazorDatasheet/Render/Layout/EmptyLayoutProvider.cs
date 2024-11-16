@@ -19,4 +19,8 @@ public class EmptyLayoutProvider : IGridLayoutProvider
     public int ComputeRow(double y) => 0;
 
     public double ComputeHeight(int startRow, int rowSpan) => 0;
+
+    public List<int> GetVisibleRowIndices(int startRow, int endRow) => new();
+
+    public List<int> GetVisibleColumnIndices(int startColumn, int endColumn) => new();
 }

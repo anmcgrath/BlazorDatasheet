@@ -28,4 +28,9 @@ public class ColHeadingLayoutProvider : IGridLayoutProvider
     public int ComputeRow(double y) => 0;
 
     public double ComputeHeight(int startRow, int rowSpan) => _sheet.Columns.HeadingHeight;
+
+    public List<int> GetVisibleRowIndices(int startRow, int endRow) => [0];
+
+    public List<int> GetVisibleColumnIndices(int startColumn, int endColumn) =>
+        _sheet.Columns.GetVisibleIndices(startColumn, endColumn);
 }

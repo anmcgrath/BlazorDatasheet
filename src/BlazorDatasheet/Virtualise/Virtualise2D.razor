@@ -11,30 +11,30 @@
     @ref="_contentEl"
     style="
         width: @(GetTotalViewSize().Width)px;
-        height: @(GetTotalViewSize().Height)px;
-        display: grid;
-        grid-template-columns: @_wholeElColTemplate;
-        grid-template-rows: @_wholeElRowTemplate;
-        grid-template-areas:
-        'fT fT fT'
-        'fL C  fR'
-        'fB fB fB'">
+    height: @(GetTotalViewSize().Height)px;
+    display: grid;
+    grid-template-columns: @_wholeElColTemplate;
+    grid-template-rows: @_wholeElRowTemplate;
+    grid-template-areas:
+    'fT fT fT'
+    'fL C  fR'
+    'fB fB fB'">
 
     <div aria-hidden="true" @ref="_fillerTop" style="grid-area: fT"></div>
     <div aria-hidden="true" @ref="_fillerRight" style=" grid-area: fR"></div>
-    <div style="grid-area: C; display: grid; grid-template-columns: @_contentColTemplate; grid-template-rows: @_contentRowTemplate;">
+    <div
+        style="grid-area: C; display: grid; grid-template-columns: @_contentColTemplate; grid-template-rows: @_contentRowTemplate;">
         @{
             var rowOffset = 1;
         }
-        @for (int i = _currentViewport.ViewRegion.Top; i <= _currentViewport.ViewRegion.Bottom; i++)
+        @foreach (var row in _visibleRowIndices)
         {
-            int row = i;
-
             @if (RowTemplate != null)
             {
-                <div style="display: grid; grid-column: 1 / span @_currentViewport.ViewRegion.Width; grid-row: @rowOffset; grid-template-columns: subgrid; grid-template-rows: subgrid;"
+                <div
+                    style="display: grid; grid-column: 1 / span @_currentViewport.ViewRegion.Width; grid-row: @rowOffset; grid-template-columns: subgrid; grid-template-rows: subgrid;"
                     @key="row">
-                    @RowTemplate(new VirtualRowArgs(row, rowOffset, _currentViewport.ViewRegion.Left, _currentViewport.ViewRegion.Right))
+                    @RowTemplate(new VirtualRowArgs(row, rowOffset, _currentViewport.ViewRegion.Left, _currentViewport.ViewRegion.Right, _visibleColIndices))
                 </div>
             }
             else if (GridItemTemplate != null)
@@ -42,9 +42,8 @@
                 var colOffset = 1;
 
                 <div @key="row" style="display: contents;">
-                    @for (int j = _currentViewport.ViewRegion.Left; j <= _currentViewport.ViewRegion.Right; j++)
+                    @foreach (var col in _visibleColIndices)
                     {
-                        int col = j;
                         <div @key="col" style="grid-column: @colOffset; grid-row: @rowOffset; overflow: hidden;">
                             @GridItemTemplate(new CellPosition(row, col))
                         </div>
@@ -124,6 +123,8 @@
     private string _contentRowTemplate = string.Empty;
 
     private Viewport _currentViewport = new(new(-1, -1), new(0, 0, 0, 0));
+    private List<int> _visibleRowIndices = new();
+    private List<int> _visibleColIndices = new();
     private bool _requiresRender = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -226,12 +227,15 @@
         var removedRegions = _currentViewport.ViewRegion.Break(newViewport.ViewRegion).Cast<Region>().ToList();
         _currentViewport = newViewport;
 
+        _visibleColIndices = LayoutProvider.GetVisibleColumnIndices(view.Left, view.Right);
+        _visibleRowIndices = LayoutProvider.GetVisibleRowIndices(view.Top, view.Bottom);
+
         var csb = new StringBuilder();
-        for (int col = _currentViewport.ViewRegion.Left; col <= _currentViewport.ViewRegion.Right; col++)
-            csb.Append($"{LayoutProvider.ComputeWidth(col, 1)}px ");
+        foreach (var visibleCol in _visibleColIndices)
+            csb.Append($"{LayoutProvider.ComputeWidth(visibleCol, 1)}px ");
         var rsb = new StringBuilder();
-        for (int row = _currentViewport.ViewRegion.Top; row <= _currentViewport.ViewRegion.Bottom; row++)
-            rsb.Append($"{LayoutProvider.ComputeHeight(row, 1)}px ");
+        foreach (var visibleRow in _visibleRowIndices)
+            rsb.Append($"{LayoutProvider.ComputeHeight(visibleRow, 1)}px ");
 
         _contentColTemplate = csb.ToString();
         _contentRowTemplate = rsb.ToString();

@@ -24,4 +24,6 @@ public class RowHeadingLayoutProvider : IGridLayoutProvider
 
     public double ComputeHeight(int startRow, int rowSpan) =>
         _sheet.Rows.GetVisualHeightBetween(startRow, startRow + rowSpan);
+    public List<int> GetVisibleRowIndices(int startRow, int endRow) => _sheet.Rows.GetVisibleIndices(startRow, endRow);
+    public List<int> GetVisibleColumnIndices(int startColumn, int endColumn) => [0];
 }

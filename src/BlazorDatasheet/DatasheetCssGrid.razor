@@ -123,11 +123,10 @@
                             <RowTemplate>
                                 <DatasheetGridRow
                                     Row="vr.Row"
-                                    ColStart="vr.ColStart"
-                                    ColEnd="vr.ColEnd"
+                                    VisibleColIndices="vr.VisibleColIndices"
                                     Sheet="_sheet"
                                     Cache="_visualCellCache"
-                                    IsDirty="_dirtyRows.Contains(vr.Row) || _sheetIsDirty"/>
+                                    IsDirty="IsRowDirty(vr.Row)"/>
                             </RowTemplate>
                         </Virtualise2D>
                     </CascadingValue>

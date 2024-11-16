@@ -167,6 +167,11 @@ public class CellLayoutProvider : IGridLayoutProvider
         return h;
     }
 
+    public List<int> GetVisibleRowIndices(int startRow, int endRow) => _sheet.Rows.GetVisibleIndices(startRow, endRow);
+
+    public List<int> GetVisibleColumnIndices(int startColumn, int endColumn) =>
+        _sheet.Columns.GetVisibleIndices(startColumn, endColumn);
+
     public int MinRow => ViewRegion.Top;
     public int MinCol => ViewRegion.Left;
     public int MaxRow => ViewRegion.Bottom;
