@@ -61,11 +61,14 @@ public class Editor
         get => _editValue;
         set
         {
-            _editValue = value;
-            EditValueChanged?.Invoke(this, _editValue);
+            if (_editValue != value)
+            {
+                _editValue = value;
+                EditValueChanged?.Invoke(this, _editValue);
+            }
         }
     }
-    
+
     /// <summary>
     /// The method used to enter the editing state.
     /// </summary>
@@ -77,7 +80,7 @@ public class Editor
     public string EditKey { get; private set; } = string.Empty;
 
     public string EditorType { get; private set; }
-    
+
     /// <summary>
     /// Whether the editor mode is soft - easy to exit
     /// </summary>
