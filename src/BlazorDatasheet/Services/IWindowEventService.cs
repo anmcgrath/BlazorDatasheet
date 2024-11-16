@@ -10,8 +10,9 @@ internal interface IWindowEventService : IAsyncDisposable
     /// </summary>
     /// <param name="eventType"></param>
     /// <param name="handler"></param>
+    /// <param name="throttleInMs">If set other than 0, the registered function will be throttled by the given amount.</param>
     /// <returns></returns>
-    Task RegisterMouseEvent(string eventType, Func<MouseEventArgs, Task<bool>> handler);
+    Task RegisterMouseEvent(string eventType, Func<MouseEventArgs, Task<bool>> handler, int throttleInMs = 0);
 
     /// <summary>
     /// Registers a window key event
