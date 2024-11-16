@@ -1,4 +1,6 @@
-﻿@using BlazorDatasheet.DataStructures.Store
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events.Edit
+@using BlazorDatasheet.DataStructures.Store
 @using BlazorDatasheet.Formula.Core.Interpreter.Parsing
 @inherits Layer
 
@@ -28,6 +30,27 @@
 @code {
 
     private List<DataRegion<string>> _colorRegions = new();
+    private Sheet _sheet = new(0, 0);
+
+    protected override void OnParametersSet()
+    {
+        if (_sheet != Sheet)
+        {
+            _sheet.Editor.EditValueChanged -= EditorOnEditValueChanged;
+            _sheet.Editor.EditFinished -= EditorOnEditFinished;
+            _sheet = Sheet;
+            _sheet.Editor.EditValueChanged += EditorOnEditValueChanged;
+            _sheet.Editor.EditFinished += EditorOnEditFinished;
+        }
+
+        base.OnParametersSet();
+    }
+
+    private void EditorOnEditFinished(object? sender, EditFinishedEventArgs e)
+    {
+        _colorRegions.Clear();
+        StateHasChanged();
+    }
 
     private void HighlightRanges()
     {
@@ -48,18 +71,6 @@
                     return new DataRegion<string>($"var(--highlight-color-{colorIndex})", r.Region);
                 }).ToList();
         }
-    }
-
-    protected override void OnParametersSet()
-    {
-        Sheet.Editor.EditValueChanged += EditorOnEditValueChanged;
-        Sheet.Editor.EditFinished += (sender, args) =>
-        {
-            _colorRegions.Clear();
-            StateHasChanged();
-        };
-
-        base.OnParametersSet();
     }
 
     private void EditorOnEditValueChanged(object? sender, string? e)

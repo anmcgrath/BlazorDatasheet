@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Components.Web;
 
 namespace BlazorDatasheet.Edit;
 
-public abstract class BaseEditor : ComponentBase, ICellEditor
+public abstract class BaseEditor : SheetComponentBase, ICellEditor
 {
     [Parameter] public EventCallback<string> OnValueChanged { get; set; }
 
@@ -22,6 +22,7 @@ public abstract class BaseEditor : ComponentBase, ICellEditor
             if (changed)
             {
                 OnValueChanged.InvokeAsync(value);
+                StateHasChanged();
             }
         }
     }
@@ -36,7 +37,7 @@ public abstract class BaseEditor : ComponentBase, ICellEditor
     /// If this is linked to the editor's input reference then the base editor will handle focusing.
     /// </summary>
     public ElementReference InputRef = new ElementReference();
-    
+
     /// <summary>
     /// Style to apply to the editor.
     /// </summary>
@@ -56,7 +57,10 @@ public abstract class BaseEditor : ComponentBase, ICellEditor
 
     public virtual void HandleEditValueChange(string? s)
     {
-        _currentValue = s;
-        this.StateHasChanged();
+        if (s != _currentValue)
+        {
+            _currentValue = s;
+            StateHasChanged();
+        }
     }
 }

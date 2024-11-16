@@ -63,8 +63,7 @@
 
     private void EditorOnEditValueChanged(object? sender, string? e)
     {
-        if (_activeCellEditor != null)
-            _activeCellEditor.HandleEditValueChange(e);
+        _activeCellEditor?.HandleEditValueChange(e);
     }
 
     private void EditorOnEditBegin(object? sender, EditBeginEventArgs e)
@@ -218,14 +217,15 @@
     {
         return new Dictionary<string, object>()
         {
-            { "OnValueChanged", EventCallback.Factory.Create<string>(this, HandleEditValueChanged) },
+            { nameof(BaseEditor.OnValueChanged), EventCallback.Factory.Create<string>(this, HandleEditValueChanged) },
             { "Style", GetEditorDisplayStyling() }
         };
     }
 
     private void HandleEditValueChanged(string newValue)
     {
-        Sheet.Editor.EditValue = newValue;
+        if(_sheet.Editor.IsEditing)
+            _sheet.Editor.EditValue = newValue;
     }
 
     private void HandleEditorOverlayClick()
