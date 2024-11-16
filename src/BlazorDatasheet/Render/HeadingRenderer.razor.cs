@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.Core.Layout;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Render.Layout;
@@ -36,11 +37,11 @@ public partial class HeadingRenderer : SheetComponentBase
             _sheet.Selection.SelectionChanged += (_, _) => StateHasChanged();
             _sheet.Selection.SelectingChanged += (_, _) => StateHasChanged();
             _sheet.Rows.SizeModified += (_, _) => RefreshView();
-            _sheet.Rows.Inserted += (_, _) => RefreshView();
-            _sheet.Rows.Removed += (_, _) => RefreshView();
-            _sheet.Columns.SizeModified += (_, _) => RefreshView();
-            _sheet.Columns.Inserted += (_, _) => RefreshView();
-            _sheet.Columns.Removed += (_, _) => RefreshView();
+            _sheet.Rows.Inserted += HandleRowColInserted;
+            _sheet.Columns.Inserted += HandleRowColInserted;
+            _sheet.Rows.Removed += HandleRowColRemoved;
+            _sheet.Columns.Removed += HandleRowColRemoved;
+            _sheet.Columns.SizeModified += HandleSizeModified;
 
             LayoutProvider = Axis == Axis.Col
                 ? new ColHeadingLayoutProvider(_sheet)
@@ -56,10 +57,26 @@ public partial class HeadingRenderer : SheetComponentBase
         base.OnParametersSet();
     }
 
-    private async void RefreshView()
+    private void HandleRowColInserted(object? sender, RowColInsertedEventArgs? e)
     {
         _viewRegion = ViewRegion ?? _sheet.Region;
         StateHasChanged();
+    }
+
+    private void HandleRowColRemoved(object? sender, RowColRemovedEventArgs? e)
+    {
+        _viewRegion = ViewRegion ?? _sheet.Region;
+        StateHasChanged();
+    }
+
+    private void HandleSizeModified(object? sender, SizeModifiedEventArgs e)
+    {
+        RefreshView();
+    }
+
+    public async void RefreshView()
+    {
+        await MainView.RefreshView();
     }
 
     protected string GetSelectedClass(int index)

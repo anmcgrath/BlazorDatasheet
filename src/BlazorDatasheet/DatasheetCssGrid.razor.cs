@@ -1,8 +1,8 @@
-﻿using System.Diagnostics;
-using BlazorDatasheet.Core.Commands.Data;
+﻿using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Edit;
 using BlazorDatasheet.Core.Events.Edit;
+using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.Core.Events.Visual;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Core.Util;
@@ -12,7 +12,6 @@ using BlazorDatasheet.Events;
 using BlazorDatasheet.Extensions;
 using BlazorDatasheet.KeyboardInput;
 using BlazorDatasheet.Render;
-using BlazorDatasheet.Render.DefaultComponents;
 using BlazorDatasheet.Services;
 using BlazorDatasheet.Virtualise;
 using Microsoft.AspNetCore.Components;
@@ -306,13 +305,14 @@ public partial class DatasheetCssGrid : SheetComponentBase
         _sheet.ScreenUpdatingChanged += ScreenUpdatingChanged;
         if (GridLevel == 0)
         {
-            _sheet.Rows.Inserted += (_, _) => RefreshView();
-            _sheet.Columns.Inserted += (_, _) => RefreshView();
-            _sheet.Rows.Removed += (_, _) => RefreshView();
-            _sheet.Columns.Removed += (_, _) => RefreshView();
-            _sheet.Rows.SizeModified += (_, _) => RefreshView();
-            _sheet.Columns.SizeModified += (_, _) => RefreshView();
+            _sheet.Rows.Inserted += HandleRowColInserted;
+            _sheet.Columns.Inserted += HandleRowColInserted;
+            _sheet.Rows.Removed += HandleRowColRemoved;
+            _sheet.Columns.Removed += HandleRowColRemoved;
         }
+        
+        _sheet.Rows.SizeModified += HandleSizeModified;
+        _sheet.Columns.SizeModified += HandleSizeModified;
     }
 
     private async Task AddWindowEventsAsync()
@@ -323,11 +323,32 @@ public partial class DatasheetCssGrid : SheetComponentBase
         await WindowEventService.RegisterMouseEvent("mouseup", HandleWindowMouseUp);
     }
 
-    public void RefreshView()
+    private void HandleRowColInserted(object? sender, RowColInsertedEventArgs? e)
     {
         _viewRegion = ViewRegion ?? _sheet.Region;
         _sheetIsDirty = true;
         StateHasChanged();
+    }
+    
+    private void HandleRowColRemoved(object? sender, RowColRemovedEventArgs? e)
+    {
+        _viewRegion = ViewRegion ?? _sheet.Region;
+        _sheetIsDirty = true;
+        StateHasChanged();
+    }
+
+    private void HandleSizeModified(object? sender, SizeModifiedEventArgs e)
+    {
+        _viewRegion = ViewRegion ?? _sheet.Region;
+        _sheetIsDirty = true;
+        StateHasChanged();
+        RefreshView();
+    }
+    
+
+    public async void RefreshView()
+    {
+        await _mainView.RefreshView();
     }
 
     private void ScreenUpdatingChanged(object? sender, SheetScreenUpdatingEventArgs e)
