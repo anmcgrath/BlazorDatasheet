@@ -13,6 +13,7 @@
                  Margin="0"
                  Trigger="@MenuTrigger.OnContextMenu"
                  Placement="@MenuPlacement.BottomRight">
+
     <div
         @onmouseover="() => IsMouseInsideSheet = true"
         @onmouseout="() => IsMouseInsideSheet = false"
@@ -107,24 +108,28 @@
                     <HighlightLayer/>
                 </LayerContainer>
 
-                <Virtualise2D
-                    Class="@("bds-main-view-" + GridLevel)"
-                    OnViewportChanged="HandleVirtualViewportChanged"
-                    LayoutProvider="new CellLayoutProvider(_sheet)"
-                    ViewRegion="MainViewRegion"
-                    @ref="_mainView"
-                    Context="vr">
-                    <RowTemplate>
-                        <DatasheetGridRow
-                            Row="vr.Row"
-                            ColStart="vr.ColStart"
-                            ColEnd="vr.ColEnd"
-                            Sheet="_sheet"
-                            Cache="_visualCellCache"
-                            IsDirty="_dirtyRows.Contains(vr.Row) || _sheetIsDirty"
-                        />
-                    </RowTemplate>
-                </Virtualise2D>
+                <CascadingValue Value="Icons" Name="Icons" IsFixed="true">
+                    <CascadingValue Value="CustomCellTypeDefinitions" Name="CustomCellTypeDefinitions" IsFixed="true">
+                        <Virtualise2D
+                            Class="@("bds-main-view-" + GridLevel)"
+                            OnViewportChanged="HandleVirtualViewportChanged"
+                            LayoutProvider="new CellLayoutProvider(_sheet)"
+                            ViewRegion="MainViewRegion"
+                            @ref="_mainView"
+                            Context="vr">
+                            <RowTemplate>
+                                <DatasheetGridRow
+                                    Row="vr.Row"
+                                    ColStart="vr.ColStart"
+                                    ColEnd="vr.ColEnd"
+                                    Sheet="_sheet"
+                                    Cache="_visualCellCache"
+                                    IsDirty="_dirtyRows.Contains(vr.Row) || _sheetIsDirty"/>
+                            </RowTemplate>
+                        </Virtualise2D>
+                    </CascadingValue>
+                </CascadingValue>
+
 
                 @if (_frozenRightCount > 0)
                 {

@@ -805,30 +805,6 @@ public partial class DatasheetCssGrid : SheetComponentBase
         return true;
     }
 
-    private Type GetCellRendererType(string type)
-    {
-        if (CustomCellTypeDefinitions.TryGetValue(type, out var definition))
-            return definition.RendererType;
-
-        return typeof(TextRenderer);
-    }
-
-    private Dictionary<string, object> GetCellRendererParameters(VisualCell visualCell)
-    {
-        return new Dictionary<string, object>()
-        {
-            { "Cell", visualCell },
-            { "Sheet", _sheet }
-        };
-    }
-
-    private RenderFragment GetIconRenderFragment(string? cellIcon)
-    {
-        if (cellIcon != null && Icons.TryGetValue(cellIcon, out var rf))
-            return rf;
-        return _ => { };
-    }
-
 
     protected override bool ShouldRender()
     {
