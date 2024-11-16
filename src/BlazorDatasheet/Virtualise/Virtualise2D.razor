@@ -1,10 +1,8 @@
 ﻿@using System.Text
-@using BlazorDatasheet.Core.Events
 @using BlazorDatasheet.Core.Layout
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Render.Layout
 @using Microsoft.JSInterop
-@using System.Diagnostics
 @inject IJSRuntime Js;
 @implements IAsyncDisposable
 
@@ -34,7 +32,8 @@
 
             @if (RowTemplate != null)
             {
-                <div style="display: contents;" @key="row">
+                <div style="display: grid; grid-column: 1 / span @_currentViewport.ViewRegion.Width; grid-row: @rowOffset / span @(_currentViewport.ViewRegion.Height - (rowOffset - 1)); grid-template-columns: subgrid; grid-template-rows: subgrid;"
+                    @key="row">
                     @RowTemplate(new VirtualRowArgs(row, rowOffset, _currentViewport.ViewRegion.Left, _currentViewport.ViewRegion.Right))
                 </div>
             }
@@ -166,7 +165,7 @@
 
     public async Task RefreshView()
     {
-        if(_contentEl.Context != null)
+        if (_contentEl.Context != null)
             await HandleScroll(await CalculateViewRect(_contentEl));
     }
 

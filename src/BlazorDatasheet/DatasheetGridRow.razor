@@ -1,0 +1,82 @@
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Render
+@using BlazorDatasheet.Render.DefaultComponents
+@{
+    var colOffset = 1;
+}
+@for (int i = ColStart; i <= ColEnd; i++)
+{
+    int col = i;
+    var dataCol = col;
+    var dataRow = Row;
+
+    if (!Cache.TryGetValue(new CellPosition(Row, col), out var visualCell))
+        visualCell = new VisualCell(Row, col, Sheet);
+
+    if (visualCell.Merge != null)
+    {
+        dataCol = visualCell.VisibleMergeColStart;
+        dataRow = visualCell.VisibleMergeRowStart;
+    }
+
+    <div @key="col"
+         style="grid-row: 1 / span @visualCell.VisibleRowSpan; grid-column:@colOffset / span @visualCell.VisibleColSpan;">
+        <div
+            data-row="@dataRow"
+            data-col="@dataCol"
+            class="sheet-cell"
+            style="@visualCell.FormatStyleString">
+            <div style="display: flex;">
+                @if (visualCell.Icon != null)
+                {
+                    <!--<div
+                        style="margin-right:2px; float:left; color: @(visualCell.Format?.IconColor ?? "var(--icon-color)");">
+                        @GetIconRenderFragment(visualCell.Icon)
+                    </div>-->
+                }
+                @switch (visualCell.CellType)
+                {
+                    case "default":
+                    case "text":
+                    case "datetime":
+                        <div style="width: 100%;">
+                            @visualCell.FormattedString
+                        </div>
+                        break;
+                    case "boolean":
+                        <BoolRenderer Cell="visualCell" Sheet="Sheet"/>
+                        break;
+                    case "select":
+                        <SelectRenderer Cell="visualCell" Sheet="Sheet"/>
+                        break;
+
+                    /*default:
+                        <DynamicComponent
+                            Parameters="@GetCellRendererParameters(visualCell)"
+                            Type="@GetCellRendererType(visualCell.CellType)"/>
+                        break;*/
+                }
+            </div>
+        </div>
+    </div>
+    colOffset++;
+}
+
+@code {
+
+    [Parameter] public int ColStart { get; set; }
+
+    [Parameter] public int ColEnd { get; set; }
+
+    [Parameter] public int Row { get; set; }
+
+    [Parameter] public bool IsDirty { get; set; }
+
+    [Parameter] public Sheet Sheet { get; set; } = null!;
+
+    [Parameter, EditorRequired] public Dictionary<CellPosition, VisualCell> Cache { get; set; } = null!;
+
+    protected override bool ShouldRender() => IsDirty;
+
+}

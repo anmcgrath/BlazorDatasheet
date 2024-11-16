@@ -106,7 +106,7 @@
                     <EditorLayer @ref="_editorLayer" CustomCellTypes="@CustomCellTypeDefinitions"/>
                     <HighlightLayer/>
                 </LayerContainer>
-                
+
                 <Virtualise2D
                     Class="@("bds-main-view-" + GridLevel)"
                     OnViewportChanged="HandleVirtualViewportChanged"
@@ -115,66 +115,14 @@
                     @ref="_mainView"
                     Context="vr">
                     <RowTemplate>
-                        @{
-                            var colOffset = 1;
-                        }
-                        @for (int i = vr.ColStart; i <= vr.ColEnd; i++)
-                        {
-                            int col = i;
-                            var dataCol = col;
-                            var dataRow = vr.Row;
-
-                            var visualCell = new VisualCell(vr.Row, col, _sheet);
-
-                            if (visualCell.Merge != null)
-                            {
-                                dataCol = visualCell.VisibleMergeColStart;
-                                dataRow = visualCell.VisibleMergeRowStart;
-                            }
-
-                            <div @key="col"
-                                 style="grid-row: @vr.RowOffset / span @visualCell.VisibleRowSpan; grid-column:@colOffset / span @visualCell.VisibleColSpan;">
-                                <div
-                                    data-row="@dataRow"
-                                    data-col="@dataCol"
-                                    class="sheet-cell"
-                                    style="@visualCell.FormatStyleString">
-                                    <div style="display: flex;">
-                                        @if (visualCell.Icon != null)
-                                        {
-                                            <!--
-                                            <div
-                                                style="margin-right:2px; float:left; color: @(visualCell.Format?.IconColor ?? "var(--icon-color)");">
-                                                @GetIconRenderFragment(visualCell.Icon)
-                                            </div>-->
-                                        }
-                                        @switch (visualCell.CellType)
-                                        {
-                                            case "default":
-                                            case "text":
-                                            case "datetime":
-                                                <div style="width: 100%;">
-                                                    @visualCell.FormattedString
-                                                </div>
-                                                break;
-                                            case "boolean":
-                                                <BoolRenderer Cell="visualCell" Sheet="Sheet"/>
-                                                break;
-                                            case "select":
-                                                <SelectRenderer Cell="visualCell" Sheet="Sheet"/>
-                                                break;
-
-                                            /*default:
-                                                                    <DynamicComponent
-                                                                        Parameters="@GetCellRendererParameters(visualCell)"
-                                                                        Type="@GetCellRendererType(visualCell.CellType)"/>
-                                                                    break;*/
-                                        }
-                                    </div>
-                                </div>
-                            </div>
-                            colOffset++;
-                        }
+                        <DatasheetGridRow
+                            Row="vr.Row"
+                            ColStart="vr.ColStart"
+                            ColEnd="vr.ColEnd"
+                            Sheet="_sheet"
+                            Cache="_visualCellCache"
+                            IsDirty="_dirtyRows.Contains(vr.Row) || _sheetIsDirty"
+                        />
                     </RowTemplate>
                 </Virtualise2D>
 

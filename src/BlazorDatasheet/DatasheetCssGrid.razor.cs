@@ -306,9 +306,9 @@ public partial class DatasheetCssGrid : SheetComponentBase
         _sheet.ScreenUpdatingChanged += ScreenUpdatingChanged;
         if (GridLevel == 0)
         {
-            _sheet.Rows.Inserted += (_, args) => RefreshView();
+            _sheet.Rows.Inserted += (_, _) => RefreshView();
             _sheet.Columns.Inserted += (_, _) => RefreshView();
-            _sheet.Rows.Removed += (_, args) => RefreshView();
+            _sheet.Rows.Removed += (_, _) => RefreshView();
             _sheet.Columns.Removed += (_, _) => RefreshView();
             _sheet.Rows.SizeModified += (_, _) => RefreshView();
             _sheet.Columns.SizeModified += (_, _) => RefreshView();
@@ -330,17 +330,28 @@ public partial class DatasheetCssGrid : SheetComponentBase
         StateHasChanged();
     }
 
-    private void HandleVirtualViewportChanged(VirtualViewportChangedEventArgs args)
-    {
-        _currentViewport = args.Viewport;
-        MakeRegionsDirty(args.NewRegions.Concat(args.RemovedRegions));
-    }
-
     private void ScreenUpdatingChanged(object? sender, SheetScreenUpdatingEventArgs e)
     {
         if (e.IsScreenUpdating && _renderRequested)
             this.StateHasChanged();
     }
+
+    private void HandleVirtualViewportChanged(VirtualViewportChangedEventArgs args)
+    {
+        _currentViewport = args.Viewport;
+
+        foreach (var region in args.RemovedRegions)
+        {
+            foreach (var position in region)
+            {
+                _visualCellCache.Remove(position);
+            }
+        }
+
+        MakeRegionsDirty(args.NewRegions);
+    }
+
+    private Dictionary<CellPosition, VisualCell> _visualCellCache = new();
 
     private void SheetOnSheetDirty(object? sender, DirtySheetEventArgs e)
     {
@@ -357,15 +368,24 @@ public partial class DatasheetCssGrid : SheetComponentBase
     {
         foreach (var region in dirtyRegions)
         {
-            if (region?.GetIntersection(MainViewRegion) == null)
+            var boundedRegion = region?.GetIntersection(_currentViewport.ViewRegion) as Region;
+            if (boundedRegion == null)
                 continue;
-
-            for (int i = region.Top; i <= region.Bottom; i++)
+            
+            for (int i = boundedRegion.Top; i <= boundedRegion.Bottom; i++)
             {
                 _dirtyRows.Add(i);
+                for (int j = boundedRegion.Left; j <= boundedRegion.Right; j++)
+                {
+                    var position = new CellPosition(i, j);
+                    if (!_visualCellCache.TryAdd(position, new VisualCell(i, j, _sheet)))
+                    {
+                        _visualCellCache[position] = new VisualCell(i, j, _sheet);
+                    }
+                }
             }
         }
-
+        
         StateHasChanged();
     }
 
