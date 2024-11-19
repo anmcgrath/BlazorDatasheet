@@ -2,7 +2,6 @@
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Menu
 @using BlazorDatasheet.Render
-@using BlazorDatasheet.Render.DefaultComponents
 @using BlazorDatasheet.Virtualise
 @inherits SheetComponentBase
 
@@ -21,7 +20,7 @@
         @onmouseout="() => IsMouseInsideSheet = false"
         class="vars sheet"
         style="@(GridLevel == 0 ? $"width:{TotalSheetWidth}px; height:{TotalSheetHeight}px;" : "")"
-        theme="@Theme"
+        theme="@_theme"
         @ref="_sheetContainer">
         <div style="display: flex; flex-direction: column; align-items:flex-start;">
 
@@ -61,6 +60,7 @@
                     class="bds-frozen-top">
                     <!-- Top sticky -->
                     <DatasheetCssGrid
+                        Theme="@_theme"
                         GridLevel="GridLevel + 1"
                         ShowColHeadings="false"
                         ShowRowHeadings="@ShowRowHeadings"
@@ -94,6 +94,7 @@
                     <div class="bds-frozen-left"
                          style="position: sticky; z-index: @(GridLevel + 1); left: @(ShowRowHeadings && StickyHeaders ? _sheet.Rows.HeadingWidth + "px" : "0");">
                         <DatasheetCssGrid
+                            Theme="@_theme"
                             GridLevel="GridLevel + 1"
                             ShowColHeadings="false"
                             ShowRowHeadings="false"
@@ -138,6 +139,7 @@
                 {
                     <div class="bds-frozen-right" style="position: sticky; right: 0; z-index:@(GridLevel + 1);">
                         <DatasheetCssGrid
+                            Theme="@_theme"
                             GridLevel="GridLevel + 1"
                             ShowColHeadings="false"
                             ShowRowHeadings="false"
@@ -154,6 +156,7 @@
                 <div class="bds-frozen-bottom" style="position: sticky; z-index: @(GridLevel + 1); bottom: 0;">
                     <!-- Bottom sticky -->
                     <DatasheetCssGrid
+                        Theme="@_theme"
                         GridLevel="GridLevel + 1"
                         ShowColHeadings="false"
                         ShowRowHeadings="@ShowRowHeadings"

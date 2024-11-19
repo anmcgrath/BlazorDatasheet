@@ -51,6 +51,8 @@ public partial class DatasheetCssGrid : SheetComponentBase
     [Parameter]
     public string Theme { get; set; } = "default";
 
+    private string _theme = "default";
+
     /// <summary>
     /// Renders graphics that show which cell formulas are dependent on others.
     /// </summary>
@@ -235,6 +237,12 @@ public partial class DatasheetCssGrid : SheetComponentBase
             AddEvents(_sheet);
             _visualCellCache.Clear();
             ForceReRender();
+        }
+
+        if (Theme != _theme)
+        {
+            _theme = Theme;
+            requireRender = true;
         }
 
         if (!_viewRegion.Equals(ViewRegion))
