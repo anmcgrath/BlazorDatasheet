@@ -116,6 +116,12 @@ public partial class Datasheet : SheetComponentBase
     public bool CanUserSort { get; set; } = true;
 
     /// <summary>
+    /// If set to true, the user can sort rows using the context menu.
+    /// </summary>
+    [Parameter]
+    public bool CanUserSortRows { get; set; } = true;
+
+    /// <summary>
     /// If set to true, the user can filter columns using the context menu.
     /// </summary>
     [Parameter]

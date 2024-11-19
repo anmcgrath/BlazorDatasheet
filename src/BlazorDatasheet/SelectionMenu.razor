@@ -79,12 +79,23 @@
             }
         }
 
-        @if (CanUserSort)
+        @if (CanUserSort || (CanUserSortRows && sheet.Selection.ActiveRegion.Height > 1))
         {
             <SheetMenuDivider/>
             <SheetSubMenu Label="Sort">
-                <SheetMenuItem OnClick="() => sheet.SortRange(sheet.Selection.ActiveRegion)">Sort Ascending</SheetMenuItem>
-                <SheetMenuItem OnClick="() => sheet.SortRange(sheet.Selection.ActiveRegion, new List<ColumnSortOptions>() { new ColumnSortOptions(0, false) })">Sort Descending</SheetMenuItem>
+                @if (CanUserSort) {
+                    <SheetMenuItem OnClick="() => sheet.SortRange(sheet.Selection.ActiveRegion)">Sort Ascending</SheetMenuItem>
+                    <SheetMenuItem OnClick="() => sheet.SortRange(sheet.Selection.ActiveRegion, new List<ColumnSortOptions>() { new ColumnSortOptions(0, false) })">Sort Descending</SheetMenuItem>
+                }
+                @if (CanUserSortRows && sheet.Selection.ActiveRegion.Height > 1)
+                {
+                    if (CanUserSort)
+                    {
+                        <SheetMenuDivider />
+                    }
+                    <SheetMenuItem OnClick="() => sheet.SortRange(sheet.Range(Axis.Row, sheet.Selection.ActiveRegion.Top, sheet.Selection.ActiveRegion.Bottom)!.Region, new List<ColumnSortOptions>() { new ColumnSortOptions(sheet.Selection.ActiveCellPosition.col, true) })">Sort Rows Ascending</SheetMenuItem>
+                    <SheetMenuItem OnClick="() => sheet.SortRange(sheet.Range(Axis.Row, sheet.Selection.ActiveRegion.Top, sheet.Selection.ActiveRegion.Bottom)!.Region, new List<ColumnSortOptions>() { new ColumnSortOptions(sheet.Selection.ActiveCellPosition.col, false) })">Sort Rows Descending</SheetMenuItem>
+                }
             </SheetSubMenu>
         }
 
@@ -130,6 +141,7 @@
     [Parameter] public bool CanUserInsertRows { get; set; } = true;
     [Parameter] public bool CanUserInsertCols { get; set; } = true;
     [Parameter] public bool CanUserSort { get; set; } = true;
+    [Parameter] public bool CanUserSortRows { get; set; } = true;
     [Parameter] public bool CanUserMergeRange { get; set; } = true;
     [Parameter] public bool CanUserHideRows { get; set; } = true;
     [Parameter] public bool CanUserHideCols { get; set; } = true;
