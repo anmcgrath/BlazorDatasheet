@@ -104,8 +104,8 @@
     {
         if (firstRender)
         {
-            await WindowEventService.RegisterMouseEvent("mouseup", WindowEventServiceOnOnMouseUp, 100);
-            await WindowEventService.RegisterMouseEvent("mousemove", WindowHandleMouseMove, 100);
+            await WindowEventService.RegisterMouseEvent("mouseup", WindowEventServiceOnOnMouseUp, 50);
+            await WindowEventService.RegisterMouseEvent("mousemove", WindowHandleMouseMove, 50);
         }
     }
 
