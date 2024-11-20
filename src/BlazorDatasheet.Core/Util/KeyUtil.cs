@@ -34,6 +34,11 @@ public static class KeyUtil
         return key == "Enter";
     }
 
+    public static bool IsEscape(string key)
+    {
+        return key == "Escape";
+    }
+
     public static Offset GetMovementFromArrowKey(string key)
     {
         if (IsKeyDown(key)) return new(1, 0);
