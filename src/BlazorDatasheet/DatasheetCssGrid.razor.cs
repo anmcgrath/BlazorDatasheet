@@ -197,6 +197,8 @@ public partial class DatasheetCssGrid : SheetComponentBase
 
     private bool _renderRequested;
 
+    private bool _showFormulaDependents;
+
     private Viewport _currentViewport = new(new(-1, -1), new(0, 0, 0, 0));
 
     /// <summary>
@@ -841,6 +843,16 @@ public partial class DatasheetCssGrid : SheetComponentBase
 
         await ClipboardService.Copy(region, _sheet);
         return true;
+    }
+
+    /// <summary>
+    /// Turn on or off the display of formula dependents
+    /// </summary>
+    /// <param name="value"></param>
+    public void SetShowFormulaDependents(bool value)
+    {
+        _showFormulaDependents = value;
+        ForceReRender();
     }
 
     private bool IsRowDirty(int rowIndex)

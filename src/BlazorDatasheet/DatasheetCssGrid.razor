@@ -3,11 +3,11 @@
 @using BlazorDatasheet.Menu
 @using BlazorDatasheet.Render
 @using BlazorDatasheet.Virtualise
+@using BlazorDatasheet.Render.Layers
 @inherits SheetComponentBase
 
 <SelectionMenu
-    DefaultFilterTypes="DefaultFilterTypes"
-    />
+    DefaultFilterTypes="DefaultFilterTypes"/>
 
 <SheetMenuTarget MenuId="SelectionMenu"
                  MenuData="_sheet"
@@ -111,6 +111,10 @@
                     <HighlightLayer/>
                     <AutofillLayer/>
                     <VirtualMergesLayer Cache="_visualCellCache"/>
+                    @if (_showFormulaDependents)
+                    {
+                        <FormulaDependenciesLayer/>
+                    }
                 </LayerContainer>
 
                 <CascadingValue Value="Icons" Name="Icons" IsFixed="true">
