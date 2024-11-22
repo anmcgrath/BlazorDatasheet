@@ -10,6 +10,8 @@ public class Evaluator
     private readonly BinaryOpEvaluator _bOp;
     private readonly UnaryOpEvaluator _uOp;
     private readonly IEnvironment _environment;
+    private FormulaEvaluationOptions _options = FormulaEvaluationOptions.Default;
+    private FormulaExecutionContext _formulaExecutionContext = default!;
 
     public Evaluator(IEnvironment environment)
     {
@@ -20,45 +22,40 @@ public class Evaluator
         _uOp = new UnaryOpEvaluator(cellValueCoercer);
     }
 
-    public CellValue Evaluate(CellFormula cellFormula, bool resolveReferences = true)
+    public CellValue Evaluate(CellFormula cellFormula, FormulaExecutionContext? executionContext = null,
+        FormulaEvaluationOptions? options = null)
     {
-        return Evaluate(cellFormula.ExpressionTree, resolveReferences);
+        _options = options ?? FormulaEvaluationOptions.Default;
+        _formulaExecutionContext = executionContext ?? new FormulaExecutionContext();
+        var evaluatedValue = DoEvaluate(cellFormula);
+        return evaluatedValue;
+    }
+
+    private CellValue DoEvaluate(CellFormula formula)
+    {
+        if (_formulaExecutionContext.IsExecuting(formula))
+        {
+            return CellValue.Error(ErrorType.Circular);
+        }
+
+        _formulaExecutionContext.SetExecuting(formula);
+        return Evaluate(formula.ExpressionTree);
     }
 
     /// <summary>
     /// Evaluates a syntax tree
     /// </summary>
     /// <param name="tree"></param>
-    /// <param name="resolveReferences">Whether or not to resolve any CellValues that are references. If set to false,
-    /// a CellValue will be returned with a ValueType Reference, otherwise the value will be looked up in the sheet.</param>
     /// <returns></returns>
-    public CellValue Evaluate(SyntaxTree tree, bool resolveReferences = true)
+    internal CellValue Evaluate(SyntaxTree tree)
     {
-        if (tree.Errors.Any())
+        if (tree.Errors.Count > 0)
             return CellValue.Error(ErrorType.Na);
-        var result = EvaluateExpression(tree.Root);
 
-        // If we haven't resolved references yet, do that.
-        if (resolveReferences && result.ValueType == CellValueType.Reference)
-        {
-            var r = (Reference)result.Data!;
-            if (r.Kind == ReferenceKind.Cell)
-            {
-                var c = (CellReference)r;
-                return _environment.GetCellValue(c.RowIndex, c.ColIndex);
-            }
-            else if (r.Kind == ReferenceKind.Range)
-            {
-                return CellValue.Array(_environment
-                    .GetRangeValues(r));
-            }
-        }
-
-        // otherwise return the calculated result.
-        return result;
+        return EvaluateExpression(tree.Root);
     }
 
-    public CellValue EvaluateExpression(Expression expression)
+    private CellValue EvaluateExpression(Expression expression)
     {
         switch (expression.Kind)
         {
@@ -118,7 +115,36 @@ public class Evaluator
         //TODO check it's valid (inside sheet)
         if (expression.Reference.IsInvalid)
             return CellValue.Error(ErrorType.Ref);
+
+        if (expression.Reference.Kind == ReferenceKind.Cell)
+            return EvaluateCellReference((CellReference)expression.Reference);
+
+        if (expression.Reference.Kind == ReferenceKind.Range)
+            return EvaluateRangeReference((RangeReference)expression.Reference);
+
+        // we currently don't handle array values...
         return CellValue.Reference(expression.Reference);
+    }
+
+    private CellValue EvaluateCellReference(CellReference cellReference)
+    {
+        if (_options.DoNotResolveDependencies)
+            return CellValue.Reference(cellReference);
+
+        var formula = _environment.GetFormula(cellReference.RowIndex, cellReference.ColIndex);
+        if (formula == null)
+            return _environment.GetCellValue(cellReference.RowIndex, cellReference.ColIndex);
+
+        return DoEvaluate(formula);
+    }
+
+    private CellValue EvaluateRangeReference(RangeReference reference)
+    {
+        if (_options.DoNotResolveDependencies)
+            return CellValue.Reference(reference);
+
+        return CellValue.Array(_environment
+            .GetRangeValues(reference));
     }
 
     private CellValue EvaluateFunctionCall(FunctionExpression node)
