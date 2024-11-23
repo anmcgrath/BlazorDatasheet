@@ -4,6 +4,7 @@ using System.Linq;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Util;
 using BlazorDatasheet.Formula.Core;
+using BlazorDatasheet.Formula.Core.Interpreter;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Test.Formula;
@@ -13,6 +14,7 @@ public class TestEnvironment : IEnvironment
     private Dictionary<CellPosition, CellValue> _cellValues = new();
     private Dictionary<string, ISheetFunction> _functions = new();
     private Dictionary<string, CellValue> _variables = new();
+    private Dictionary<CellPosition, CellFormula> _formulas = new();
 
     public void SetCellValue(int row, int col, object val)
     {
@@ -23,6 +25,13 @@ public class TestEnvironment : IEnvironment
     {
         _cellValues.TryAdd(position, new CellValue(val));
         _cellValues[position] = new CellValue(val);
+    }
+
+    public void SetCellFormula(int row, int col, CellFormula formula)
+    {
+        var position = new CellPosition(row, col);
+        if (_formulas.TryAdd(position, formula))
+            _formulas[position] = formula;
     }
 
     public void RegisterFunction(string name, ISheetFunction functionDefinition)
@@ -59,6 +68,14 @@ public class TestEnvironment : IEnvironment
         if (hasVal)
             return val;
         return CellValue.Empty;
+    }
+
+    public CellFormula? GetFormula(int row, int col)
+    {
+        var hasVal = _formulas.TryGetValue(new CellPosition(row, col), out var val);
+        if (hasVal)
+            return val;
+        return null;
     }
 
     public CellValue[][] GetRangeValues(Reference reference)

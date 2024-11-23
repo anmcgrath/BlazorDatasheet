@@ -8,5 +8,6 @@ public enum ErrorType
     Null,
     Num,
     Ref,
-    Value
+    Value,
+    Circular
 }

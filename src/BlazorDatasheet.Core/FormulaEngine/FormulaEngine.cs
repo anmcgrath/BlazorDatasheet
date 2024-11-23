@@ -126,7 +126,8 @@ public class FormulaEngine
             return CellValue.Empty;
         try
         {
-            return _evaluator.Evaluate(formula, resolveReferences);
+            return _evaluator.Evaluate(formula, new FormulaExecutionContext(),
+                new FormulaEvaluationOptions(!resolveReferences));
         }
         catch (Exception e)
         {
@@ -155,15 +156,46 @@ public class FormulaEngine
         _sheet.BatchUpdates();
 
         var order = DependencyManager.GetCalculationOrder();
+        var executionContext = new FormulaExecutionContext();
 
-        foreach (var vertex in order)
+        foreach (var scc in order)
         {
-            if (vertex.Formula == null || vertex.VertexType != VertexType.Cell)
-                continue;
+            bool isCircularGroup = false;
 
-            var value = this.Evaluate(vertex.Formula);
-            _sheet.Cells.SetValueImpl(vertex.Region!.Top, vertex.Region!.Left, value);
-            _sheet.MarkDirty(vertex.Region!.Top, vertex.Region!.Left);
+            foreach (var vertex in scc)
+            {
+                if (vertex.Formula == null || vertex.VertexType != VertexType.Cell)
+                    continue;
+
+                // if it's part of a scc group, and we don't have circular references, then the value would
+                // already have been evaluated.
+                CellValue value;
+
+                // To speed up time in scc group, if one vertex is circular the rest will be.
+                if (isCircularGroup)
+                    value = CellValue.Error(ErrorType.Circular);
+                else
+                {
+                    // check whether the formula has already been calculated in this scc group - may be the case if we lucked
+                    // out on the first value calculation and it wasn't a circular reference.
+                    if (scc.Count > 1 && executionContext.TryGetExecutedValue(vertex.Formula, out var result))
+                    {
+                        //TODO: This is never hit so we are always recalculating
+                        value = result;
+                    }
+                    else
+                    {
+                        value = _evaluator.Evaluate(vertex.Formula, executionContext);
+                        if (value.IsError() && ((FormulaError)value.Data!).ErrorType == ErrorType.Circular)
+                            isCircularGroup = true;
+                    }
+                }
+
+                executionContext.ClearExecuting();
+
+                _sheet.Cells.SetValueImpl(vertex.Region!.Top, vertex.Region!.Left, value);
+                _sheet.MarkDirty(vertex.Region!.Top, vertex.Region!.Left);
+            }
         }
 
         _sheet.EndBatchUpdates();

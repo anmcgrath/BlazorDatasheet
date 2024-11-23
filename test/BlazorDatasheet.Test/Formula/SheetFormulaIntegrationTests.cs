@@ -1,7 +1,12 @@
+using System.Collections.Generic;
 using System.Linq;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.Formula.Core.Interpreter;
+using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
+using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
+using BlazorDatasheet.Formula.Functions.Logical;
 using FluentAssertions;
 using NUnit.Framework;
 
@@ -349,5 +354,41 @@ public class SheetFormulaIntegrationTests
         _sheet.Commands.Undo();
         _sheet.Cells[0, 0].Formula.Should().Be("=A2");
         _sheet.FormulaEngine.DependencyManager.HasDependents(new Region(1, 0)).Should().BeTrue();
+    }
+
+    [Test]
+    public void Conditional_Circular_Reference_Calculates_Correctly()
+    {
+        // subset of https://github.com/anmcgrath/BlazorDatasheet/issues/126
+        var sheet = new Sheet(10, 10);
+        sheet.Cells.SetFormula(0, 1, "=if(A1<A3,A1, A1+B2)");
+        sheet.Cells.SetFormula(1, 1, "=if(A1<A3,A2+B1,A2+B3)");
+        sheet.Cells.SetFormula(2, 1, "=if(A1<A3,A3+B2,A3+B4)");
+        sheet.Cells.SetValues(0, 0, [[1], [3], [5]]);
+        sheet.Cells[0, 1].Value.Should().Be(1);
+        sheet.Cells[1, 1].Value.Should().Be(4);
+        sheet.Cells[2, 1].Value.Should().Be(9);
+        sheet.BatchUpdates();
+        sheet.SortRange(new ColumnRegion(0), [new(0, false)]);
+        sheet.EndBatchUpdates();
+        sheet.Cells[0, 1].Value.Should().Be(9);
+        sheet.Cells[1, 1].Value.Should().Be(4);
+        sheet.Cells[2, 1].Value.Should().Be(1);
+    }
+
+    [Test]
+    public void Simple_Non_Circular_Strongly_Grouped_Reference_Calculates_Correctly()
+    {
+        var env = new TestEnvironment();
+        env.RegisterFunction("if", new IfFunction());
+        var eval = new Evaluator(env);
+        var parser = new Parser();
+        var fA1 = new CellFormula(parser.Parse("=B1"));
+        var fB1 = new CellFormula(parser.Parse("=if(true,C1,A1)"));
+        env.SetCellValue(0, 2, 3);
+        env.SetCellFormula(0, 0, fA1);
+        env.SetCellFormula(0, 1, fB1);
+        var res = eval.Evaluate(fB1);
+        res.Data.Should().Be(3);
     }
 }

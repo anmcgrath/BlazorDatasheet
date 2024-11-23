@@ -24,7 +24,7 @@ public class LogicalFunctionTests
     {
         var eval = new Evaluator(_env);
         var parser = new Parser();
-        return eval.Evaluate(parser.Parse(formulaString), resolveReferences).Data;
+        return eval.Evaluate(parser.FromString(formulaString), null, new FormulaEvaluationOptions(!resolveReferences)).Data;
     }
 
     [Test]
