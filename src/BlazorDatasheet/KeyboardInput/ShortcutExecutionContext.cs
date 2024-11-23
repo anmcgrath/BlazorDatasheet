@@ -14,9 +14,4 @@ public class ShortcutExecutionContext
         Datasheet = datasheet;
         Sheet = sheet;
     }
-    
-    internal ShortcutExecutionContext(Sheet sheet)
-    {
-        Sheet = sheet;
-    }
 }

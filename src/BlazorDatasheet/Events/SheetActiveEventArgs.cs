@@ -11,8 +11,4 @@ public class SheetActiveEventArgs
         IsActive = isActive;
     }
     
-    public SheetActiveEventArgs(DatasheetCssGrid dataSheet, bool isActive)
-    {
-        IsActive = isActive;
-    }
 }

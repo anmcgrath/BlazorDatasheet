@@ -1,4 +1,4 @@
-namespace BlazorDatasheet.Render;
+namespace BlazorDatasheet.Render.Headings;
 
 public struct HeadingContext
 {

@@ -7,7 +7,7 @@ using BlazorDatasheet.Render.Layout;
 using BlazorDatasheet.Virtualise;
 using Microsoft.AspNetCore.Components;
 
-namespace BlazorDatasheet.Render;
+namespace BlazorDatasheet.Render.Headings;
 
 public partial class HeadingRenderer : SheetComponentBase
 {

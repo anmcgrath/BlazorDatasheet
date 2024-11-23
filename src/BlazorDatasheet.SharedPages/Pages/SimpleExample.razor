@@ -10,7 +10,7 @@
 
 <p>Below is a sheet with 100,000 rows. There is no data validation or formatting and the default editors are used.</p>
 
-<DatasheetCssGrid Sheet="sheet"/>
+<Datasheet Sheet="sheet"/>
 
 <button @onclick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { BackgroundColor = "red" }))">Set format to red</button>
 <button @onclick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { BackgroundColor = "blue" }))">Set format to blue</button>
