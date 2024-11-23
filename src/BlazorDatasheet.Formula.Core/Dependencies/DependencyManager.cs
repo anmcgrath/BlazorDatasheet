@@ -262,10 +262,14 @@ public class DependencyManager
         return restoreData;
     }
 
-    public IEnumerable<FormulaVertex> GetCalculationOrder()
+    /// <summary>
+    /// Returns the topological sort of the vertices. Each group of vertices is a strongly connected group.
+    /// </summary>
+    /// <returns></returns>
+    public IList<IList<FormulaVertex>> GetCalculationOrder()
     {
-        var sort = new TopologicalSort<FormulaVertex>();
-        return sort.Sort(_dependencyGraph);
+        var sort = new SccSort<FormulaVertex>(_dependencyGraph);
+        return sort.Sort();
     }
 
     public IEnumerable<DependencyInfo> GetDependencies()

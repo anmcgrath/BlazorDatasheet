@@ -35,6 +35,7 @@ public class DependencyManagerTests
         dm.SetFormula(0, 0, GetFormula("=A2")); // A1
         dm.SetFormula(1, 0, GetFormula("=A3")); // A2
         dm.GetCalculationOrder()
+            .SelectMany(x => x)
             .Select(x => new CellPosition(x.Region!.Top, x.Region!.Left))
             .Should()
             .BeEquivalentTo([
@@ -51,7 +52,7 @@ public class DependencyManagerTests
         dm.SetFormula(0, 1, GetFormula("=A2")); // B1
         dm.SetFormula(0, 2, GetFormula("=A3")); // C1
 
-        var sorted = dm.GetCalculationOrder()
+        var sorted = dm.GetCalculationOrder().SelectMany(x => x)
             .Where(x => x.Formula != null)
             .Select(x => x.Region!.Left)
             .ToList();
@@ -79,6 +80,7 @@ public class DependencyManagerTests
         dm.SetFormula(1, 0, f);
         dm.InsertRowColAt(0, 2, Axis.Row);
         dm.GetCalculationOrder()
+            .SelectMany(x => x)
             .Should().BeEquivalentTo([new FormulaVertex(3, 0, GetFormula("=A7"))]);
     }
 
@@ -106,7 +108,7 @@ public class DependencyManagerTests
         dm.HasDependents(1, 0).Should().BeFalse();
         dm.Restore(rest);
         dm.HasDependents(1, 0).Should().BeTrue();
-        dm.GetCalculationOrder().Select(x => x.Region)
+        dm.GetCalculationOrder().SelectMany(x => x).Select(x => x.Region)
             .Should()
             .BeEquivalentTo([new Region(0, 0)]);
     }

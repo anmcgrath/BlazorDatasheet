@@ -55,6 +55,8 @@ public class SetCellValuesCommand : IUndoableCommand
 
     public bool Execute(Sheet sheet)
     {
+        sheet.ScreenUpdating = false;
+        sheet.BatchUpdates();
         if (_values != null)
             ExecuteSetObjectArrayData(sheet);
         else if (_cellValues != null)
@@ -65,13 +67,14 @@ public class SetCellValuesCommand : IUndoableCommand
             ExecuteSetRegionData(sheet);
         else
             return false;
+        sheet.EndBatchUpdates();
+        sheet.ScreenUpdating = true;
 
         return true;
     }
 
     private void ExecuteSetObjectArrayData(Sheet sheet)
     {
-        sheet.ScreenUpdating = false;
         var rowEnd = _row + _values!.Length;
         var colEnd = _col;
 
@@ -85,12 +88,10 @@ public class SetCellValuesCommand : IUndoableCommand
         }
 
         sheet.MarkDirty(new Region(_row, rowEnd, _col, colEnd));
-        sheet.ScreenUpdating = true;
     }
 
     private void ExecuteSetCellValueData(Sheet sheet)
     {
-        sheet.ScreenUpdating = false;
         var rowEnd = _row + _cellValues!.Length;
         var colEnd = _col;
 
@@ -104,14 +105,11 @@ public class SetCellValuesCommand : IUndoableCommand
         }
 
         sheet.MarkDirty(new Region(_row, rowEnd, _col, colEnd));
-        sheet.ScreenUpdating = true;
     }
 
 
     private void ExecuteSetRegionData(Sheet sheet)
     {
-        sheet.ScreenUpdating = false;
-
         for (int row = _region!.Top; row <= _region!.Bottom; row++)
         {
             for (int col = _region.Left; col <= _region.Right; col++)
@@ -121,7 +119,6 @@ public class SetCellValuesCommand : IUndoableCommand
         }
 
         sheet.MarkDirty(_region);
-        sheet.ScreenUpdating = true;
     }
 
     private void ExecuteSetRegionDataAsCellValue(Sheet sheet)
@@ -137,13 +134,14 @@ public class SetCellValuesCommand : IUndoableCommand
         }
 
         sheet.MarkDirty(_region);
-        sheet.ScreenUpdating = true;
     }
 
     public bool Undo(Sheet sheet)
     {
         sheet.ScreenUpdating = false;
+        sheet.BatchUpdates();
         sheet.Cells.Restore(_restoreData);
+        sheet.EndBatchUpdates();
         sheet.ScreenUpdating = true;
         return true;
     }

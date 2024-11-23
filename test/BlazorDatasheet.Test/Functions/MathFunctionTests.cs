@@ -62,14 +62,25 @@ public class MathFunctionTests
 
         Eval("=sum(A1:A2,C1:C2)").Should().Be(nums.Sum());
 
-        _env.SetCellValue(0, 0, true);
-        Eval("=sum(A1)").Should().Be(0);
-
-        _env.SetCellValue(0, 0, "abc");
-        Eval("=sum(A1)").Should().Be(0);
-
         _env.SetCellValue(2, 1, 123);
         Eval("=sum(B3)").Should().Be(123);
+    }
+
+    [Test]
+    public void Sum_With_True_Cell_Value_Should_Return_0()
+    {
+        _env.RegisterFunction("sum", new SumFunction());
+        _env.SetCellValue(0, 0, true);
+        Eval("=sum(A1)").Should().Be(0);
+    }
+
+    [Test]
+    public void Sum_With_Text_Cell_Value_Should_Return_0()
+    {
+        // correct behaviour from excel - if sum range contains text it should be valuated as 0
+        _env.RegisterFunction("sum", new SumFunction());
+        _env.SetCellValue(0, 0, "abc");
+        Eval("=sum(A1)").Should().Be(0);
     }
 
     [Test]

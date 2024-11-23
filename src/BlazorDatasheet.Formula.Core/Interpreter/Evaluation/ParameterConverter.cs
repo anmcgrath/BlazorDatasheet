@@ -14,13 +14,13 @@ public class ParameterConverter
     }
 
     /// <summary>
-    /// Performs an implicit conversion of a value into another type, specified by <paramref name="definition"/>
+    /// Performs an implicit conversion of a value into another type, specified by <paramref name="type"/>
     /// See the below link as we try to follow this standard.
     /// http://docs.oasis-open.org/office/v1.2/os/OpenDocument-v1.2-os-part2.html
     /// If the conversion cannot be performed, an error is usually the result.
     /// </summary>
     /// <param name="value"></param>
-    /// <param name="definition"></param>
+    /// <param name="type"></param>
     /// <returns></returns>
     public CellValue ConvertVal(CellValue value, ParameterType type)
     {

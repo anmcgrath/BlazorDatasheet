@@ -43,5 +43,5 @@ public class IfFunction : ISheetFunction
         return CellValue.Logical(isTrue);
     }
 
-    public bool AcceptsErrors => false;
+    public bool AcceptsErrors => true;
 }
