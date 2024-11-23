@@ -6,12 +6,16 @@
 @inject IJSRuntime Js;
 @implements IAsyncDisposable
 
+@{
+    var totalSize = GetTotalViewSize();
+}
+
 <div
     class="@Class"
     @ref="_contentEl"
     style="
-        width: @(GetTotalViewSize().Width)px;
-    height: @(GetTotalViewSize().Height)px;
+        width: @(totalSize.Width)px;
+    height: @(totalSize.Height)px;
     display: grid;
     grid-template-columns: @_wholeElColTemplate;
     grid-template-rows: @_wholeElRowTemplate;
@@ -27,33 +31,37 @@
         @{
             var rowOffset = 1;
         }
-        @foreach (var row in _visibleRowIndices)
+        @if (totalSize.Height > 0 && totalSize.Width > 0)
         {
-            @if (RowTemplate != null)
+            @foreach (var row in _visibleRowIndices)
             {
-                <div
-                    style="display: grid; grid-column: 1 / span @_currentViewport.ViewRegion.Width; grid-row: @rowOffset; grid-template-columns: subgrid; grid-template-rows: subgrid;"
-                    @key="row">
-                    @RowTemplate(new VirtualRowArgs(row, rowOffset, _currentViewport.ViewRegion.Left, _currentViewport.ViewRegion.Right, _visibleColIndices))
-                </div>
-            }
-            else if (GridItemTemplate != null)
-            {
-                var colOffset = 1;
+                @if (RowTemplate != null)
+                {
+                    <div
+                        style="display: grid; grid-column: 1 / span @_currentViewport.ViewRegion.Width; grid-row: @rowOffset; grid-template-columns: subgrid; grid-template-rows: subgrid;"
+                        @key="row">
+                        @RowTemplate(new VirtualRowArgs(row, rowOffset, _currentViewport.ViewRegion.Left, _currentViewport.ViewRegion.Right, _visibleColIndices))
+                    </div>
+                }
+                else if (GridItemTemplate != null)
+                {
+                    var colOffset = 1;
 
-                <div @key="row" style="display: contents;">
-                    @foreach (var col in _visibleColIndices)
-                    {
-                        <div @key="col" style="grid-column: @colOffset; grid-row: @rowOffset; overflow: hidden;">
-                            @GridItemTemplate(new CellPosition(row, col))
-                        </div>
-                        colOffset++;
-                    }
-                </div>
-            }
+                    <div @key="row" style="display: contents;">
+                        @foreach (var col in _visibleColIndices)
+                        {
+                            <div @key="col" style="grid-column: @colOffset; grid-row: @rowOffset; overflow: hidden;">
+                                @GridItemTemplate(new CellPosition(row, col))
+                            </div>
+                            colOffset++;
+                        }
+                    </div>
+                }
 
-            rowOffset++;
+                rowOffset++;
+            }
         }
+
     </div>
     <div aria-hidden="true" @ref="_fillerLeft" style="grid-area: fL"></div>
     <div aria-hidden="true" @ref="_fillerBottom" style="grid-area: fB"></div>
@@ -230,10 +238,9 @@
         var newRegions = newViewport.ViewRegion.Break(_currentViewport.ViewRegion).Cast<Region>().ToList();
         var removedRegions = _currentViewport.ViewRegion.Break(newViewport.ViewRegion).Cast<Region>().ToList();
         _currentViewport = newViewport;
-
         _visibleColIndices = LayoutProvider.GetVisibleColumnIndices(view.Left, view.Right);
         _visibleRowIndices = LayoutProvider.GetVisibleRowIndices(view.Top, view.Bottom);
-
+        
         var csb = new StringBuilder();
         foreach (var visibleCol in _visibleColIndices)
             csb.Append($"{LayoutProvider.ComputeWidth(visibleCol, 1)}px ");
@@ -247,7 +254,7 @@
         _requiresRender = true;
 
         await OnViewportChanged.InvokeAsync(new VirtualViewportChangedEventArgs(_currentViewport, newRegions, removedRegions));
-        StateHasChanged();
+        await InvokeAsync(StateHasChanged);
     }
 
     internal async Task ScrollBy(double x, double y)

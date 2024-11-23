@@ -6,7 +6,7 @@
 @using BlazorDatasheet.Util
 @inherits Layer
 
-@if (Sheet.Cells.AnyMerges() && ViewRegion != null)
+@if (Sheet.Cells.AnyMerges() && ViewRegion != null && Sheet.Rows.CountVisible(0,_sheet.NumRows) > 0)
 {
     var merges = Sheet.Cells.GetMerges(ViewRegion)
         .Select(x => x.GetIntersection(Sheet.Region));

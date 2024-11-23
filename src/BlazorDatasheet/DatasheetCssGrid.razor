@@ -80,6 +80,39 @@
                 </div>
             }
 
+            @{
+                var numVisibleRows = _sheet.Rows.CountVisible(0, _sheet.NumRows);
+                var numVisibleCols = _sheet.Columns.CountVisible(0, _sheet.NumCols);
+            }
+            @if (GridLevel == 0)
+            {
+                if (numVisibleCols == 0 && numVisibleRows == 0)
+                {
+                    <div></div>
+                }
+                else if (numVisibleRows == 0)
+                {
+                    if (EmptyRowsTemplate != null)
+                    {
+                        @EmptyRowsTemplate
+                    }
+                    else
+                    {
+                        <div class="sheet-row-head-container sheet-cell">No visible rows.</div>
+                    }
+                }
+                else if (numVisibleCols == 0)
+                {
+                    if (EmptyColumnsTemplate != null)
+                    {
+                        @EmptyColumnsTemplate
+                    }
+                    else
+                    {
+                        <div class="sheet-row-head-container sheet-cell">No visible columns.</div>
+                    }
+                }
+            }
 
             <div style="display: flex; flex-direction: row; align-items: flex-start;">
 
