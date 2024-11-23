@@ -52,7 +52,23 @@ public class Evaluator
         if (tree.Errors.Count > 0)
             return CellValue.Error(ErrorType.Na);
 
-        return EvaluateExpression(tree.Root);
+        var result = EvaluateExpression(tree.Root);
+        // If we haven't resolved references yet, do that
+        // We do this at the end of evaluation so that we can pass
+        // references to functions.
+        if (!_options.DoNotResolveDependencies && result.ValueType == CellValueType.Reference)
+        {
+            var r = (Reference)result.Data!;
+            if (r.Kind == ReferenceKind.Cell)
+                return _environment.GetCellValue(((CellReference)r).RowIndex, ((CellReference)r).ColIndex);
+            else if (r.Kind == ReferenceKind.Range)
+            {
+                return CellValue.Array(_environment
+                    .GetRangeValues(r));
+            }
+        }
+
+        return result;
     }
 
     private CellValue EvaluateExpression(Expression expression)
@@ -133,18 +149,14 @@ public class Evaluator
 
         var formula = _environment.GetFormula(cellReference.RowIndex, cellReference.ColIndex);
         if (formula == null)
-            return _environment.GetCellValue(cellReference.RowIndex, cellReference.ColIndex);
+            return CellValue.Reference(cellReference);
 
         return DoEvaluate(formula);
     }
 
     private CellValue EvaluateRangeReference(RangeReference reference)
     {
-        if (_options.DoNotResolveDependencies)
-            return CellValue.Reference(reference);
-
-        return CellValue.Array(_environment
-            .GetRangeValues(reference));
+        return CellValue.Reference(reference);
     }
 
     private CellValue EvaluateFunctionCall(FunctionExpression node)
