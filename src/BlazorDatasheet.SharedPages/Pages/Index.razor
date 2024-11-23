@@ -9,10 +9,12 @@
 
 <div style="width: 800px; height: 500px; overflow: scroll;">
     <DatasheetCssGrid
+        ShowFormulaDependents="ShowFormulaDependents"
         FrozenRightCount="3"
         FrozenTopCount="4"
         FrozenLeftCount="1"
         FrozenBottomCount="2"
+        Theme="@Theme"
         ShowColHeadings="ShowColHeadings"
         ShowRowHeadings="ShowRowHeadings"
         StickyHeaders="StickyHeadings"
@@ -27,15 +29,24 @@
     <button @onclick="() => Sheet.Commands.Undo()">Undo</button>
     <button @onclick="() => Sheet.Commands.Redo()">Redo</button>
     <button @onclick="@(() => Sheet.Selection.Value = "Bob")">Set to Bob</button>
-    <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { BackgroundColor = "red" }))">Set bg to red</button>
-    <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { BackgroundColor = "blue" }))">Set bg to blue</button>
-    <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { ForegroundColor = "green" }))">Set font colour to green</button>
+    <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { BackgroundColor = "red" }))">
+        Set bg to red
+    </button>
+    <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { BackgroundColor = "blue" }))">
+        Set bg to blue
+    </button>
+    <button
+        @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { ForegroundColor = "green" }))">Set
+        font colour to green
+    </button>
     <button @onclick="@(() => SetBorder(Sheet.Selection.Regions, 2, "black"))">Thick border</button>
     <button @onclick="@(() => SetBorder(Sheet.Selection.Regions, 1, "black"))">Thin border</button>
     <button @onclick="@(() => Sheet.Cells.Merge(Sheet.Selection.Regions))">Merge cells</button>
     <button @onclick="@SortSelectionDesc">Sort Desc</button>
     <button @onclick="@SortSelectionAsc">Sort ASc</button>
-    <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { NumberFormat = "C2" }))">Currency</button>
+    <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { NumberFormat = "C2" }))">
+        Currency
+    </button>
     <button @onclick="@(() => _datasheet.SetActiveAsync(true))">Set sheet active</button>
 </div>
 
@@ -80,22 +91,13 @@
 
     private bool IsDarkMode { get; set; }
 
-    private Datasheet _datasheet;
-
-    private bool _showFormulaDependents;
+    private DatasheetCssGrid _datasheet = default!;
+    
     private bool _stickyHeadings = true;
     private bool _showRowHeadings = true;
     private bool _showColHeadings = true;
 
-    private bool ShowFormulaDependents
-    {
-        get => _showFormulaDependents;
-        set
-        {
-            _showFormulaDependents = value;
-            _datasheet.ForceReRender();
-        }
-    }
+    private bool ShowFormulaDependents { get; set; }
 
     private void SortSelectionDesc()
     {

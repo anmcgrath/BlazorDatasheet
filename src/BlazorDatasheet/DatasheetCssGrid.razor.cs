@@ -272,6 +272,12 @@ public partial class DatasheetCssGrid : SheetComponentBase
             requireRender = true;
         }
 
+        if (ShowFormulaDependents != _showFormulaDependents)
+        {
+            _showFormulaDependents = ShowFormulaDependents;
+            requireRender = true;
+        }
+
         if (requireRender)
         {
             _sheetIsDirty = true;
