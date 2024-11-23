@@ -171,6 +171,12 @@ public partial class DatasheetCssGrid : SheetComponentBase
     /// </summary>
     [Parameter]
     public Type[] DefaultFilterTypes { get; set; } = [typeof(ValueFilter), typeof(PatternFilter)];
+    
+    [Parameter] public RenderFragment<HeadingContext>? ColumnHeaderTemplate { get; set; }
+
+    [Parameter] public RenderFragment? EmptyColumnsTemplate { get; set; }
+
+    [Parameter] public RenderFragment? EmptyRowsTemplate { get; set; }
 
     private DotNetObjectReference<DatasheetCssGrid> _dotnetHelper = default!;
 

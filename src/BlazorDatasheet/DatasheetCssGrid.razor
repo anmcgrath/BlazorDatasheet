@@ -47,7 +47,14 @@
                             AlternateAxisHeadingsShown="ShowRowHeadings"
                             FrozenStartCount="_frozenLeftCount"
                             FrozenEndCount="_frozenRightCount">
-                            @(_sheet.Columns.GetHeading(context) ?? (context + 1).ToString())
+                            @if (ColumnHeaderTemplate != null)
+                            {
+                                @ColumnHeaderTemplate(context)
+                            }
+                            else
+                            {
+                                @context.Heading
+                            }
                         </ColumnHeadingRenderer>
                     </div>
                 </div>
@@ -84,7 +91,7 @@
                             AlternateAxisHeadingsShown="ShowColHeadings"
                             ViewRegion="MainViewRegion"
                             Sheet="_sheet">
-                            @(_sheet.Rows.GetHeading(context) ?? (context + 1).ToString())
+                            @(context.Heading ?? (context.Id + 1).ToString())
                         </RowHeadingRenderer>
                     </div>
                 }
@@ -107,7 +114,8 @@
                     </div>
                 }
 
-                <LayerContainer Depth="@GridLevel" Sheet="_sheet" ViewRegion="MainViewRegion" PointerInputService="_sheetPointerInputService">
+                <LayerContainer Depth="@GridLevel" Sheet="_sheet" ViewRegion="MainViewRegion"
+                                PointerInputService="_sheetPointerInputService">
                     <SelectionRendererNew/>
                     <EditorLayer @ref="_editorLayer" CustomCellTypes="@CustomCellTypeDefinitions"/>
                     <HighlightLayer/>

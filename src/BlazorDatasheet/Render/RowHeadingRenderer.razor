@@ -13,7 +13,7 @@
             ViewRegion="new Region(_viewRegion.Top, _viewRegion.Bottom, 0, 0)">
             <GridItemTemplate>
                 <div class="row-head sheet-cell @GetSelectedClass(context.row)" data-row="@context.row" data-col="-1">
-                    @ChildContent(context.row)
+                    @ChildContent(new HeadingContext(context.row, _sheet.Rows.GetHeading(context.col)))
                 </div>
             </GridItemTemplate>
         </Virtualise2D>

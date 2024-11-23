@@ -14,7 +14,7 @@ public partial class HeadingRenderer : SheetComponentBase
     [Parameter, EditorRequired] public Sheet? Sheet { get; set; }
     [Parameter] public Region? ViewRegion { get; set; }
     [Parameter] public bool AlternateAxisHeadingsShown { get; set; }
-    [Parameter, EditorRequired] public RenderFragment<int> ChildContent { get; set; } = null!;
+    [Parameter, EditorRequired] public RenderFragment<HeadingContext> ChildContent { get; set; } = null!;
 
     protected Virtualise2D MainView = default!;
 

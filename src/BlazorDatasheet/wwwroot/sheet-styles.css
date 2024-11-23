@@ -187,6 +187,7 @@
 
 .col-head, .row-head {
     background: var(--row-header-bg-color);
+    font-weight: bold;
 }
 
 .col-head:hover, .row-head:hover {
