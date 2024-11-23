@@ -151,11 +151,11 @@
 
                 <LayerContainer Depth="@GridLevel" Sheet="_sheet" ViewRegion="MainViewRegion"
                                 PointerInputService="_sheetPointerInputService">
-                    <SelectionRendererLayer/>
                     <EditorLayer @ref="_editorLayer" CustomCellTypes="@CustomCellTypeDefinitions"/>
                     <HighlightLayer/>
                     <AutofillLayer/>
                     <VirtualMergesLayer Cache="_visualCellCache"/>
+                    <SelectionRendererLayer/>
                     @if (_showFormulaDependents)
                     {
                         <FormulaDependenciesLayer/>
