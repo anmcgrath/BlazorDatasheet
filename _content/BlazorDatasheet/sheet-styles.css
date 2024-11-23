@@ -15,7 +15,7 @@
     --icon-color: #000000;
     --shadow-overlay-color: grey;
     --invalid-cell-foreground-color: #ff0000;
-    --selection-bg-color: rgba(163, 188, 213, 0.18);
+    --selection-bg-color: rgba(158, 200, 243, 0.36);
     --selection-border-color: #0998e5;
     --cell-highlight-bg-color: #a9e5b6;
     --num-highlight-color: #43a3b4;
@@ -25,6 +25,13 @@
     --sheet-button-bg-color: #f4f4f4;
     --sheet-button-bg-hover-color: #ffffff;
     --sheet-button-border: 1px solid #979797;
+    --highlight-color-1: red;
+    --highlight-color-2: blue;
+    --highlight-color-3: purple;
+    --highlight-color-4: green;
+    --highlight-color-5: brown;
+    --frozen-border-color: rgba(89, 85, 85, 0.4);
+    --header-selected-bg-color: #0a53be;
 }
 
 .vars[theme='dark'] {
@@ -48,6 +55,7 @@
     --sheet-button-bg-color: #292929;
     --sheet-button-bg-hover-color: #202e3e;
     --sheet-button-border: 2px solid #202e3e;
+    --frozen-border-color: rgba(43, 43, 43, 0.4);
 }
 
 .active-sheet {
@@ -62,25 +70,26 @@
     background: var(--sheet-bg-color);
     font-size: var(--sheet-font-size);
     box-sizing: border-box;
-    position: relative;
-    display: block;
     white-space: nowrap;
     font-family: var(--sheet-font-family), serif;
     -moz-osx-font-smoothing: grayscale;
     font-weight: var(--sheet-font-weight);
     color: var(--sheet-foreground-color);
+    contain: style;
 }
 
-.sheet-fixed-height {
-    overflow-y: scroll;
+.sheet-layer-container {
+    position: relative;
+    pointer-events: none;
+    top: 0;
+    left: 0;
 }
 
-.sheet-fixed-width {
-    overflow-x: scroll;
-}
-
-.sheet-dynamic-height {
-
+.sheet-row-head-container {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    background: var(--row-header-bg-color);
 }
 
 .sheet-button {
@@ -95,7 +104,27 @@
     cursor: pointer;
 }
 
-.sheet-button:hover{
+.bds-frozen-left {
+    box-shadow: 2px 0 0 var(--frozen-border-color);
+}
+
+.bds-frozen-right {
+    box-shadow: -2px 0 0 var(--frozen-border-color);
+}
+
+.bds-frozen-top {
+    box-shadow: 0 2px 0 var(--frozen-border-color);
+}
+
+.bds-frozen-bottom {
+    box-shadow: 0 -2px 0 var(--frozen-border-color);
+}
+
+.bds-main-view {
+
+}
+
+.sheet-button:hover {
     background: var(--sheet-button-bg-hover-color);
 }
 
@@ -103,16 +132,18 @@
     user-select: none;
     -moz-user-select: none;
     -webkit-user-select: none;
-    padding: 0 4px;
+    padding: 2px 5px;
+    height: 100%;
+    width: 100%;
+    border-right: var(--sheet-border-style);
+    border-bottom: var(--sheet-border-style);
     overflow: hidden;
-    line-height: 20px;
-    height: 20px;
-    vertical-align: top;
 }
 
 .merged-cell {
     background: var(--sheet-bg-color);
     border: var(--sheet-border-style);
+    pointer-events: all;
 }
 
 .sheet-left {
@@ -126,15 +157,6 @@
     table-layout: fixed;
     border-collapse: separate;
     border-spacing: 0;
-}
-
-.sheet-top td, .sheet-top th {
-    border-top: var(--sheet-border-style);
-}
-
-.sheet-table td, .sheet-table th {
-    border-right: var(--sheet-border-style);
-    border-bottom: var(--sheet-border-style);
 }
 
 .col-sticky {
@@ -155,19 +177,25 @@
 
 .row-head {
     text-align: right;
-    background: var(--row-header-bg-color);
-}
-
-.row-head :hover {
-    background: var(--selection-bg-color);
+    border-left: var(--sheet-border-style);
 }
 
 .col-head {
-    background: var(--row-header-bg-color);
+    text-align: right;
+    border-top: var(--sheet-border-style);
 }
 
-.col-head :hover {
+.col-head, .row-head {
+    background: var(--row-header-bg-color);
+    font-weight: bold;
+}
+
+.col-head:hover, .row-head:hover {
     background: var(--selection-bg-color);
+}
+
+.col-head:active {
+    background: var(--header-selected-bg-color);
 }
 
 .invalid-cell {
@@ -180,13 +208,6 @@
 
 .row-active {
     background: var(--active-header-bg-color) !important;
-}
-
-.collapsed-row > th, .collapsed-row > tr, .collapsed-row > td {
-    padding: 0;
-    margin: 0;
-    border: 0;
-    border-spacing: 0;
 }
 
 .unselectable {
@@ -212,6 +233,10 @@
 .editor-overlay {
     background: var(--sheet-bg-color);
     box-shadow: 0 0 4px var(--shadow-overlay-color);
+    pointer-events: all;
+    position: absolute;
+    box-sizing: border-box;
+    display: inline-block;
 }
 
 .highlight-input {
@@ -226,8 +251,6 @@
 }
 
 .highlight-input, .highlight-result {
-    height: 100%;
-    min-width: 100%;
     display: inline-block;
     position: absolute;
     padding: 1px 4px;
@@ -235,9 +258,25 @@
     left: 0;
     white-space: pre;
     z-index: 2;
+    text-wrap: stable;
+    overflow-wrap: anywhere;
 }
 
 .highlight-result {
     pointer-events: none;
     background: inherit;
+}
+
+.bds-selected-header-full{
+    background: var(--header-selected-bg-color);
+    color:white;
+    font-weight: bold;
+}
+
+.bds-selected-header-full:hover{
+    background: var(--header-selected-bg-color);
+}
+
+.bds-selected-header{
+    background: var(--selection-bg-color);
 }
