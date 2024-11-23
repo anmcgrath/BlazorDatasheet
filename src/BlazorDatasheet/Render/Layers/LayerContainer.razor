@@ -1,0 +1,66 @@
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Services
+<div class="sheet-layer-container" style="z-index: @(Depth);">
+    <div style="position: absolute;
+        top: 0;
+        left: 0;
+        max-width:@(Width)px;
+    max-height:@(Height)px;
+    width:@(Width)px;
+    height:@(Height)px;
+    @(Depth > 0 ? "overflow:hidden;" : "")
+    ">
+        <CascadingValue Value="ViewRegion">
+            <CascadingValue Value="Sheet">
+                <CascadingValue Value="Depth" IsFixed="true">
+                    <CascadingValue Value="PointerInputService">
+                        @ChildContent
+                    </CascadingValue>
+                </CascadingValue>
+            </CascadingValue>
+        </CascadingValue>
+    </div>
+</div>
+
+@code {
+
+    [Parameter] public RenderFragment ChildContent { get; set; } = default!;
+
+    /// <summary>
+    /// How deep (number of sub-grids) this container is
+    /// </summary>
+    [Parameter]
+    public int Depth { get; set; }
+
+    [Parameter, EditorRequired] public Region? ViewRegion { get; set; }
+
+    private Region _viewRegion = new(0, 0);
+
+    [Parameter, EditorRequired] public Sheet Sheet { get; set; } = new(0, 0);
+
+    [Parameter, EditorRequired] public SheetPointerInputService? PointerInputService { get; set; }
+
+    /// <summary>
+    /// The width, in px, of the rendered layer region
+    /// </summary>
+    protected double Width { get; private set; }
+
+    /// <summary>
+    /// The height, in px, of the rendered layer region
+    /// </summary>
+    protected double Height { get; private set; }
+
+    protected override void OnParametersSet()
+    {
+        if (ViewRegion != _viewRegion)
+        {
+            _viewRegion = ViewRegion ?? new Region(0, 0);
+            Width = Sheet.Columns.GetVisualWidthBetween(_viewRegion.Left, _viewRegion.Right + 1);
+            Height = Sheet.Rows.GetVisualHeightBetween(_viewRegion.Top, _viewRegion.Bottom + 1);
+        }
+
+        base.OnParametersSet();
+    }
+
+}

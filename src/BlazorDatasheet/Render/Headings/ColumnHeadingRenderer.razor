@@ -1,0 +1,176 @@
+﻿@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Formula.Core
+@using BlazorDatasheet.Menu
+@using BlazorDatasheet.Services
+@using BlazorDatasheet.Virtualise
+@inherits HeadingRenderer
+@inject IWindowEventService WindowEventService
+@implements IAsyncDisposable
+
+<div style="display: flex; flex-direction: row">
+
+    <div style="position: relative; top: 0; left: 0;">
+        @if (IsDragging)
+        {
+            var resizeWidth = Math.Max(_minResizeWidth, _sheet.Columns.GetVisualWidth(ActiveResizerIndex) + CurrentColResizeAmount);
+            var resizerX = (_sheet.Columns.GetVisualLeft(ActiveResizerIndex) - _sheet.Columns.GetVisualLeft(_viewRegion.Left)) + resizeWidth;
+            <BoxOverlayRenderer
+                Y="0"
+                Width="2"
+                BorderColor="black"
+                ZIndex="4"
+                BorderThickness="1"
+                BorderStyle="solid"
+                X="resizerX"
+                Height="_sheet.Columns.HeadingHeight"/>
+        }
+    </div>
+
+    @if (FrozenStartCount > 0)
+    {
+        <div style="position: sticky; @GetStickyLeftPositionInfo(); z-index: 4;">
+            <ColumnHeadingRenderer
+                Sheet="_sheet"
+                ViewRegion="new Region(0, 0, _viewRegion.Left, FrozenStartCount - 1)">
+                @ChildContent(context)
+            </ColumnHeadingRenderer>
+        </div>
+    }
+    <div class="sheet-row-head-container" style="z-index: 2;">
+        <Virtualise2D
+            @ref="MainView"
+            LayoutProvider="LayoutProvider"
+            ViewRegion="new Region(0, 0, _viewRegion.Left + FrozenStartCount, _viewRegion.Right - FrozenEndCount)">
+            <GridItemTemplate>
+                <div
+                    @key="context.col"
+                    style="width: 100%; display: flex; justify-content: start; position: relative; overflow-x: visible;">
+                    <div class="col-head sheet-cell @GetSelectedClass(context.col)" data-col="@context.col"
+                         data-row="-1"
+                         style="display: flex; justify-content: space-between; width: 100%;">
+                        <div>
+                            @ChildContent(new HeadingContext(context.col, _sheet.Columns.GetHeading(context.col) ?? RangeText.ColNumberToLetters(context.col)))
+                        </div>
+                        <div style="display: flex; flex-direction: row;">
+                            <SheetMenuTarget MenuId="@ContextMenus.Selection" MenuData="Sheet">
+                                <CaretButton/>
+                            </SheetMenuTarget>
+                        </div>
+                    </div>
+
+                    <div class="unselectable"
+                         @onmousedown="_ => HandleMouseDownOnResizer(context.col)"
+                         style="position: absolute; 
+                         right: 0; 
+                         z-index: 4; 
+                         margin-right:-5px; 
+                         width: 10px; 
+                         height: 100%; 
+                         float: left; 
+                         display: inline-block; 
+                         cursor: col-resize;">
+                    </div>
+                </div>
+            </GridItemTemplate>
+        </Virtualise2D>
+    </div>
+
+    @if (FrozenEndCount > 0)
+    {
+        <div style="position: sticky; right: 0; z-index: 4">
+            <ColumnHeadingRenderer
+                Sheet="_sheet"
+                ViewRegion="new Region(0, 0, _viewRegion.Right - FrozenEndCount + 1, _viewRegion.Right)">
+                @ChildContent(context)
+            </ColumnHeadingRenderer>
+        </div>
+    }
+</div>
+
+@code {
+
+    [Parameter] public int FrozenStartCount { get; set; }
+
+    [Parameter] public int FrozenEndCount { get; set; }
+
+    private double MouseX { get; set; }
+    private double MouseXStart { get; set; }
+    private int ActiveResizerIndex { get; set; }
+    private bool IsDragging { get; set; }
+    private double CurrentColResizeAmount { get; set; }
+    private int _minResizeWidth = 15;
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await WindowEventService.RegisterMouseEvent("mouseup", WindowEventServiceOnOnMouseUp, 50);
+            await WindowEventService.RegisterMouseEvent("mousemove", WindowHandleMouseMove, 50);
+        }
+    }
+
+    public Task<bool> WindowHandleMouseMove(MouseEventArgs arg)
+    {
+        MouseX = arg.PageX;
+        if (IsDragging)
+        {
+            CurrentColResizeAmount = MouseX - MouseXStart; // 10 being the minimum width we can resize to
+            StateHasChanged();
+            return Task.FromResult(true);
+        }
+
+        return Task.FromResult(false);
+    }
+
+    private void HandleMouseDownOnResizer(int col)
+    {
+        MouseXStart = MouseX;
+        ActiveResizerIndex = col;
+        CurrentColResizeAmount = 0;
+        IsDragging = true;
+    }
+
+    private async Task<bool> WindowEventServiceOnOnMouseUp(MouseEventArgs arg)
+    {
+        if (IsDragging)
+        {
+            IsDragging = false;
+            var resizeWidth = Math.Max(_minResizeWidth, _sheet.Columns.GetVisualWidth(ActiveResizerIndex) + CurrentColResizeAmount);
+            if (_sheet.Selection.Regions.All(x => x is ColumnRegion) && _sheet.Selection.Regions.Any(x => x.SpansCol(ActiveResizerIndex)))
+            {
+                _sheet.Commands.BeginCommandGroup();
+                foreach (var region in _sheet.Selection.Regions.Cast<ColumnRegion>())
+                {
+                    for (int i = region.Left; i <= region.Right; i++)
+                    {
+                        _sheet.Columns.SetSize(i, resizeWidth);
+                    }
+                }
+
+                _sheet.Commands.EndCommandGroup();
+            }
+            else
+            {
+                _sheet.Columns.SetSize(ActiveResizerIndex, resizeWidth);
+            }
+
+            await MainView.RefreshView();
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private string GetStickyLeftPositionInfo()
+    {
+        return $"left: {(AlternateAxisHeadingsShown ? _sheet.Rows.HeadingWidth : 0)}px;";
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (WindowEventService != null) await WindowEventService.DisposeAsync();
+    }
+
+}

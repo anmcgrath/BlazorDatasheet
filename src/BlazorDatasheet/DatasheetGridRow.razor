@@ -1,0 +1,115 @@
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Render
+@using BlazorDatasheet.Render.DefaultComponents
+@{
+    var colOffset = 1;
+}
+@foreach(var col in VisibleColIndices)
+{
+    var dataCol = col;
+    var dataRow = Row;
+
+    if (!Cache.TryGetValue(new CellPosition(Row, col), out var visualCell))
+        visualCell = new VisualCell(Row, col, Sheet);
+
+    if (visualCell.Merge != null)
+    {
+        if (!visualCell.IsMergeStart)
+        {
+            colOffset++;
+            continue;
+        }
+
+        dataCol = visualCell.VisibleMergeColStart;
+        dataRow = visualCell.VisibleMergeRowStart;
+    }
+
+    <div @key="col"
+         style="grid-row: 1 / span @visualCell.VisibleRowSpan; grid-column:@colOffset / span @visualCell.VisibleColSpan;">
+        <div
+            data-row="@dataRow"
+            data-col="@dataCol"
+            class="sheet-cell"
+            style="@visualCell.FormatStyleString;">
+            <div style="display: flex;">
+                @if (visualCell.Icon != null)
+                {
+                    <div
+                        style="margin-right:2px; float:left; color: @(visualCell.Format?.IconColor ?? "var(--icon-color)");">
+                        @GetIconRenderFragment(visualCell.Icon)
+                    </div>
+                }
+                @switch (visualCell.CellType)
+                {
+                    case "default":
+                    case "text":
+                    case "datetime":
+                        <div style="width: 100%;">
+                            @visualCell.FormattedString
+                        </div>
+                        break;
+                    case "boolean":
+                        <BoolRenderer Cell="visualCell" Sheet="Sheet"/>
+                        break;
+                    case "select":
+                        <SelectRenderer Cell="visualCell" Sheet="Sheet"/>
+                        break;
+
+                    default:
+                        <DynamicComponent
+                            Parameters="@GetCellRendererParameters(visualCell)"
+                            Type="@GetCellRendererType(visualCell.CellType)"/>
+                        break;
+                }
+            </div>
+        </div>
+    </div>
+    colOffset++;
+}
+
+@code {
+
+    [Parameter] public int Row { get; set; }
+
+    [Parameter] public bool IsDirty { get; set; }
+
+    [Parameter] public Sheet Sheet { get; set; } = null!;
+
+    [Parameter] public List<int> VisibleColIndices { get; set; } = new();
+
+    [Parameter, EditorRequired] public Dictionary<CellPosition, VisualCell> Cache { get; set; } = null!;
+
+    [CascadingParameter(Name = "Icons")] 
+    public Dictionary<string, RenderFragment> Icons { get; set; } = default!;
+    
+    [CascadingParameter(Name = "CustomCellTypeDefinitions")] 
+    public Dictionary<string, CellTypeDefinition> CustomCellTypeDefinitions { get; set; } = default!;
+
+    protected override bool ShouldRender() => IsDirty;
+    
+    private Type GetCellRendererType(string type)
+    {
+        if (CustomCellTypeDefinitions.TryGetValue(type, out var definition))
+            return definition.RendererType;
+
+        return typeof(TextRenderer);
+    }
+    
+    private Dictionary<string, object> GetCellRendererParameters(VisualCell visualCell)
+    {
+        return new Dictionary<string, object>()
+        {
+            { "Cell", visualCell },
+            { "Sheet", Sheet }
+        };
+    }
+
+    private RenderFragment GetIconRenderFragment(string? cellIcon)
+    {
+        if (cellIcon != null && Icons.TryGetValue(cellIcon, out var rf))
+            return rf;
+        return _ => { };
+    }
+
+}

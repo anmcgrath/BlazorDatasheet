@@ -1,0 +1,81 @@
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.DataStructures.Geometry
+@inherits SheetComponentBase
+
+@code {
+
+    /// <summary>
+    /// How deep (number of sub-grids) this container is
+    /// </summary>
+    [CascadingParameter]
+    public int Depth { get; set; }
+
+    [CascadingParameter] protected Region? ViewRegion { get; set; }
+
+    [CascadingParameter] protected Sheet Sheet { get; set; } = new(0, 0);
+    /// <summary>
+    /// The left position, in px, relative to the sheet
+    /// </summary>
+    protected double Left { get; private set; }
+
+    /// <summary>
+    /// The top position, in px, relative to the sheet
+    /// </summary>
+    protected double Top { get; private set; }
+
+
+    private Region _viewRegion = new(0, 0);
+
+    protected override void OnParametersSet()
+    {
+        if (ViewRegion != _viewRegion)
+        {
+            _viewRegion = ViewRegion ?? new(0, 0);
+            Left = Sheet.Columns.GetVisualLeft(_viewRegion.Left);
+            Top = Sheet.Rows.GetVisualTop(_viewRegion.Top);
+        }
+
+        base.OnParametersSet();
+    }
+
+    /// <summary>
+    /// Get the x position relative to the layer start position
+    /// </summary>
+    /// <param name="sheetX"></param>
+    /// <returns></returns>
+    protected double GetLayerX(double sheetX)
+    {
+        return sheetX - Left;
+    }
+
+    /// <summary>
+    /// Get the y position relative to the layer start position
+    /// </summary>
+    /// <param name="sheetY"></param>
+    /// <returns></returns>
+    protected double GetLayerY(double sheetY)
+    {
+        return sheetY - Top;
+    }
+
+    /// <summary>
+    /// Get the x position relative to the layer start position
+    /// </summary>
+    /// <param name="column"></param>
+    /// <returns></returns>
+    public double GetLayerColumnX(int column)
+    {
+        return GetLayerX(Sheet.Columns.GetVisualLeft(column));
+    }
+
+    /// <summary>
+    /// Get the t position relative to the layer start position
+    /// </summary>
+    /// <param name="row"></param>
+    /// <returns></returns>
+    public double GetLayerRowY(int row)
+    {
+        return GetLayerY(Sheet.Rows.GetVisualTop(row));
+    }
+
+}

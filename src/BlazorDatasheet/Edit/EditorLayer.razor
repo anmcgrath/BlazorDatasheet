@@ -1,0 +1,236 @@
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Edit
+@using BlazorDatasheet.Core.Events.Edit
+@using BlazorDatasheet.Edit.DefaultComponents
+@using BlazorDatasheet.Render
+@using BlazorDatasheet.Util
+@using Microsoft.JSInterop
+@inherits BlazorDatasheet.Render.Layers.Layer
+
+@inject IJSRuntime Js;
+
+@if (IsEditing)
+{
+    <div id="editor" class="editor-overlay"
+         @onclick="HandleEditorOverlayClick"
+         style="@GetEditorSizeStyling()">
+        <DynamicComponent
+            Type="@ActiveEditorType"
+            Parameters="@GetDynamicEditorParameters()"
+            @ref="ActiveEditorContainer"/>
+    </div>
+}
+
+@code {
+
+    [Parameter, EditorRequired] public Dictionary<string, CellTypeDefinition> CustomCellTypes { get; set; } = null!;
+
+    private Sheet _sheet = new(0, 0);
+
+    /// The type of the active editor, which is an ICellEditor
+    private Type? ActiveEditorType { get; set; } = typeof(TextEditorComponent);
+
+    /// The current cell editor component
+    private BaseEditor? _activeCellEditor;
+
+    private bool BeginningEdit { get; set; }
+
+    /// The Dynamic component holding the Active Editor component
+    internal DynamicComponent? ActiveEditorContainer { get; set; }
+
+    /// <summary>
+    /// Whether this editor layer is in the editing state.
+    /// </summary>
+    public bool IsEditing { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (_sheet != Sheet)
+        {
+            _sheet.Editor.EditBegin -= EditorOnEditBegin;
+            _sheet.Editor.EditFinished -= EditorOnEditFinished;
+            _sheet.Editor.EditValueChanged -= EditorOnEditValueChanged;
+
+            _sheet = Sheet;
+
+            _sheet.Editor.EditBegin += EditorOnEditBegin;
+            _sheet.Editor.EditFinished += EditorOnEditFinished;
+            _sheet.Editor.EditValueChanged += EditorOnEditValueChanged;
+        }
+
+        base.OnParametersSet();
+    }
+
+    private void EditorOnEditValueChanged(object? sender, string? e)
+    {
+        _activeCellEditor?.HandleEditValueChange(e);
+    }
+
+    private void EditorOnEditBegin(object? sender, EditBeginEventArgs e)
+    {
+        if (!ViewRegion!.Contains(e.Cell.Row, e.Cell.Col))
+            return;
+
+        ActiveEditorType = GetEditorType(e.Type);
+        BeginningEdit = true;
+        IsEditing = true;
+        StateHasChanged();
+    }
+
+    private Type GetEditorType(string cellType)
+    {
+        if (CustomCellTypes.TryGetValue(cellType, out var customCellType))
+            return customCellType.EditorType;
+
+        switch (cellType)
+        {
+            case "default":
+                return typeof(TextEditorComponent);
+            case "boolean":
+                return typeof(BoolEditorComponent);
+            case "select":
+                return typeof(SelectEditorComponent);
+            case "datetime":
+                return typeof(DateTimeEditorComponent);
+            case "textarea":
+                return typeof(TextareaEditorComponent);
+        }
+
+        return typeof(TextEditorComponent);
+    }
+
+    private void EditorOnEditFinished(object? sender, EditFinishedEventArgs e)
+    {
+        ClearCurrentEdit();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (BeginningEdit && _sheet.Editor.IsEditing)
+        {
+            BeginningEdit = false;
+
+            if (ActiveEditorContainer?.Instance == null)
+                return;
+            _activeCellEditor = (BaseEditor)(ActiveEditorContainer.Instance);
+            if (_activeCellEditor == null)
+                return;
+
+            _activeCellEditor.BeforeEdit(_sheet.Editor.EditCell!, Sheet);
+            _activeCellEditor.RequestCancelEdit += HandleEditorRequestCancelEdit;
+            _activeCellEditor.RequestAcceptEdit += HandleEditorRequestAcceptEdit;
+            _activeCellEditor.BeginEdit(_sheet.Editor.CurrentEntryMode, _sheet.Editor.EditValue, _sheet.Editor.EditKey);
+
+            if (_sheet.Editor.CurrentEntryMode != EditEntryMode.None)
+            {
+                if (!EqualityComparer<ElementReference>.Default.Equals(_activeCellEditor.InputRef, default(ElementReference)))
+                {
+                    // Request focus with a delay so that it the field doesn't capture any oninput events
+                    // from the text field that is just rendered. If not, there's inconsistent behaviour between
+                    // WASM and Server.
+                    await Js.InvokeVoidAsync("setFocusWithTimeout", _activeCellEditor.InputRef, 0);
+                }
+            }
+        }
+    }
+
+    public bool HandleKeyDown(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
+    {
+        if (!_sheet.Editor.IsEditing)
+            return false;
+
+        if (_activeCellEditor == null)
+            return false;
+
+        return _activeCellEditor.HandleKey(key, ctrlKey, shiftKey, altKey, metaKey);
+    }
+
+    private void HandleEditorRequestCancelEdit(object? sender, EventArgs args)
+    {
+        _sheet.Editor.CancelEdit();
+    }
+
+    private void HandleEditorRequestAcceptEdit(object? sender, EventArgs args)
+    {
+        _sheet.Editor.AcceptEdit();
+    }
+
+    private void ClearCurrentEdit()
+    {
+        if (_activeCellEditor != null)
+        {
+            _activeCellEditor.RequestCancelEdit -= HandleEditorRequestCancelEdit;
+            _activeCellEditor.RequestAcceptEdit -= HandleEditorRequestAcceptEdit;
+        }
+
+        IsEditing = false;
+        StateHasChanged();
+    }
+
+    private string GetEditorDisplayStyling()
+    {
+        var sb = new StyleBuilder();
+        var visualCell = new VisualCell(_sheet.Editor.EditCell!.Row, _sheet.Editor.EditCell!.Col, Sheet);
+        var format = visualCell.Format;
+
+        sb.AddStyleNotNull("background", format?.BackgroundColor);
+        sb.AddStyle("background", "var(--sheet-bg-color)", format?.BackgroundColor == null);
+        sb.AddStyleNotNull("text-align", visualCell.Format?.TextAlign);
+        sb.AddStyleNotNull("font-weight", visualCell.Format?.FontWeight);
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Calculates the top/left/width/height styles of the editor container
+    /// </summary>
+    /// <returns></returns>
+    private string GetEditorSizeStyling()
+    {
+        var sb = new StyleBuilder();
+        var left = GetLayerColumnX(_sheet.Editor.EditCell!.Col);
+        var top = GetLayerRowY(_sheet.Editor.EditCell!.Row);
+
+        var mergedPosn = Sheet.Cells.GetMerge(_sheet.Editor.EditCell!.Row, _sheet.Editor.EditCell!.Col)?
+            .GetIntersection(Sheet.Region);
+
+        int colSpan = 1;
+        int rowSpan = 1;
+
+        if (mergedPosn != null)
+        {
+            colSpan = mergedPosn.Width;
+            rowSpan = mergedPosn.Height;
+        }
+
+        var w = _sheet.Columns.GetVisualWidthBetween(_sheet.Editor.EditCell!.Col, _sheet.Editor.EditCell!.Col + colSpan);
+        var h = _sheet.Rows.GetVisualHeightBetween(_sheet.Editor.EditCell!.Row, _sheet.Editor.EditCell!.Row + rowSpan);
+
+        sb.AddStyle("left", $"{left + 1}px;");
+        sb.AddStyle("top", $"{top + 1}px;");
+        var style = sb.ToString();
+        return style;
+    }
+
+
+    private IDictionary<string, object> GetDynamicEditorParameters()
+    {
+        return new Dictionary<string, object>()
+        {
+            { nameof(BaseEditor.OnValueChanged), EventCallback.Factory.Create<string>(this, HandleEditValueChanged) },
+            { "Style", GetEditorDisplayStyling() }
+        };
+    }
+
+    private void HandleEditValueChanged(string newValue)
+    {
+        if(_sheet.Editor.IsEditing)
+            _sheet.Editor.EditValue = newValue;
+    }
+
+    private void HandleEditorOverlayClick()
+    {
+        _sheet.Editor.SetSoftEdit(false);
+    }
+
+}

@@ -34,7 +34,7 @@ public class ColumnInfoStore : RowColInfoStore
     /// </summary>
     /// <param name="x"></param>
     /// <returns></returns>
-    internal int GetColumnIndex(double x)
+    public int GetColumnIndex(double x)
     {
         return CumulativeSizeStore.GetPosition(x);
     }
@@ -44,7 +44,7 @@ public class ColumnInfoStore : RowColInfoStore
     /// </summary>
     /// <param name="column"></param>
     /// <returns></returns>
-    internal double GetVisualWidth(int column)
+    public double GetVisualWidth(int column)
     {
         return CumulativeSizeStore.GetSize(column);
     }

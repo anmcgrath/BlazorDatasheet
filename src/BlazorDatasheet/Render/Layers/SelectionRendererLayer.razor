@@ -1,0 +1,88 @@
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events
+@using BlazorDatasheet.DataStructures.Geometry
+@inherits Layer
+
+@foreach (var region in _sheet.Selection.Regions)
+{
+    var boundedRegion = region.GetIntersection(_sheet.Region);
+    var isActiveRegion = region.Equals(_sheet.Selection.ActiveRegion);
+    if (boundedRegion == null)
+        continue;
+    <!-- if it's the active region, render around the active position -->
+    if (isActiveRegion)
+    {
+        var inputRegion = _sheet.Cells.GetMerge(_sheet.Selection.ActiveCellPosition.row, _sheet.Selection.ActiveCellPosition.col) ??
+                          new Region(_sheet.Selection.ActiveCellPosition.row, _sheet.Selection.ActiveCellPosition.col);
+        
+        var brokenRegions = boundedRegion
+            .Break(inputRegion);
+        
+        foreach (var brokenRegion in brokenRegions)
+        {
+            <BoxOverlayRenderer
+                BackgroundVisible="true"
+                BorderThickness="0"
+                X="GetLayerColumnX(brokenRegion.Left)"
+                Y="GetLayerRowY(brokenRegion.Top)"
+                Width="_sheet.Columns.GetVisualWidthBetween(brokenRegion.Left, brokenRegion.Right + 1)"
+                Height="_sheet.Rows.GetVisualHeightBetween(brokenRegion.Top, brokenRegion.Bottom + 1)"/>
+        }
+    }
+
+    <!-- now render the border around the whole region. No fill on active region because we've filled it already -->
+    <BoxOverlayRenderer
+        BackgroundVisible="@(!isActiveRegion)"
+        BorderThickness="@(isActiveRegion ? 2 : 0)"
+        X="GetLayerColumnX(boundedRegion.Left)"
+        Y="GetLayerRowY(boundedRegion.Top)"
+        Width="_sheet.Columns.GetVisualWidthBetween(boundedRegion.Left, boundedRegion.Right + 1)"
+        Height="_sheet.Rows.GetVisualHeightBetween(boundedRegion.Top, boundedRegion.Bottom + 1)"/>
+}
+
+@if (_sheet.Selection.IsSelecting)
+{
+    var selection = _sheet.Selection.SelectingRegion!;
+    var boundedSelecting = selection.GetIntersection(_sheet.Region);
+    if (boundedSelecting != null)
+    {
+        <BoxOverlayRenderer
+            BackgroundVisible="@true"
+            BorderThickness="2"
+            X="@GetLayerColumnX(boundedSelecting.Left)"
+            Y="@GetLayerRowY(boundedSelecting.Top)"
+            Width="_sheet.Columns.GetVisualWidthBetween(boundedSelecting.Left, boundedSelecting.Right + 1)"
+            Height="_sheet.Rows.GetVisualHeightBetween(boundedSelecting.Top, boundedSelecting.Bottom + 1)"/>
+    }
+}
+
+
+@code {
+
+    private Sheet _sheet = new(0, 0);
+
+    protected override void OnParametersSet()
+    {
+        if (_sheet != Sheet)
+        {
+            _sheet.Selection.SelectionChanged -= OnSelectionChanged;
+            _sheet.Selection.SelectingChanged -= OnSelectingChanged;
+            _sheet = Sheet;
+            _sheet.Selection.SelectionChanged += OnSelectionChanged;
+            _sheet.Selection.SelectingChanged += OnSelectingChanged;
+        }
+
+        base.OnParametersSet();
+    }
+
+    private void OnSelectionChanged(object? sender, SelectionChangedEventArgs args)
+    {
+        StateHasChanged();
+    }
+
+    private void OnSelectingChanged(object? sender, IRegion? args)
+    {
+        StateHasChanged();
+    }
+
+}

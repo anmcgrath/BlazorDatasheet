@@ -20,19 +20,36 @@ public class VisualCell
     public string FormatStyleString { get; private set; } = string.Empty;
     public string? Icon { get; private set; }
     public CellFormat? Format { get; private set; }
-    
     public bool IsVisible { get; set; }
+    public int VisibleRowSpan { get; set; } = 1;
+    public int VisibleColSpan { get; set; } = 1;
+    public bool IsMergeStart { get; set; } = false;
+
+    public int VisibleMergeRowStart { get; set; }
+
+    public int VisibleMergeColStart { get; set; }
 
     public VisualCell(int row, int col, Sheet sheet)
     {
         Merge = sheet.Cells.GetMerge(row, col)?.GetIntersection(sheet.Region);
+
+        if (Merge != null)
+        {
+            VisibleMergeColStart = sheet.Columns.GetNextVisible(Merge.Left - 1);
+            VisibleMergeRowStart = sheet.Rows.GetNextVisible(Merge.Top - 1);
+            
+            IsMergeStart = row == VisibleMergeRowStart && col == VisibleMergeColStart;
+            
+            VisibleRowSpan = sheet.Rows.CountVisible(VisibleMergeRowStart, Merge.Bottom);
+            VisibleColSpan = sheet.Columns.CountVisible(VisibleMergeColStart, Merge.Right);
+        }
 
         var cell = sheet.Cells.GetCell(row, col);
         var format = cell.Format.Clone();
 
         var cellValue = sheet.Cells.GetCellValue(row, col);
         Value = cellValue.Data;
-        
+
         if (cellValue.ValueType == CellValueType.Number && format.NumberFormat != null)
             FormattedString = (cellValue.GetValue<double>()).ToString(format.NumberFormat);
         else if (cellValue.ValueType == CellValueType.Date && format.NumberFormat != null)
@@ -43,7 +60,7 @@ public class VisualCell
         var cf = sheet.ConditionalFormats.GetFormatResult(row, col);
         if (cf != null)
             format.Merge(cf);
-        
+
         Row = row;
         Col = col;
 
@@ -51,7 +68,7 @@ public class VisualCell
 
         X = sheet.Columns.GetVisualLeft(col);
         Y = sheet.Rows.GetVisualTop(row);
-        
+
         FormatStyleString = GetCellFormatStyleString(Row, Col, format, cell.IsValid, cellValue.ValueType);
         Icon = format?.Icon;
         CellType = cell.Type;

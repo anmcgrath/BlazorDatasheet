@@ -1,0 +1,30 @@
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Layout
+@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Render.Layout
+@using BlazorDatasheet.Virtualise
+@inherits HeadingRenderer
+
+<div style="display: flex; flex-direction: column">
+    <div class="sheet-row-head-container" style=" position: sticky; left: 0;">
+        <Virtualise2D
+            @ref="MainView"
+            LayoutProvider="LayoutProvider"
+            ViewRegion="new Region(_viewRegion.Top, _viewRegion.Bottom, 0, 0)">
+            <GridItemTemplate>
+                <div class="row-head sheet-cell @GetSelectedClass(context.row)" data-row="@context.row" data-col="-1">
+                    @ChildContent(new HeadingContext(context.row, _sheet.Rows.GetHeading(context.col)))
+                </div>
+            </GridItemTemplate>
+        </Virtualise2D>
+    </div>
+</div>
+
+@code {
+
+    private string GetStickyPositionInfo()
+    {
+        return $"top: {(AlternateAxisHeadingsShown ? _sheet.Columns.HeadingHeight : 0)}px;";
+    }
+
+}

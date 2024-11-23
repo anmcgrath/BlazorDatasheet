@@ -1,0 +1,298 @@
+﻿@using System.Text
+@using BlazorDatasheet.Core.Layout
+@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Render.Layout
+@using Microsoft.JSInterop
+@inject IJSRuntime Js;
+@implements IAsyncDisposable
+
+@{
+    var totalSize = GetTotalViewSize();
+}
+
+<div
+    class="@Class"
+    @ref="_contentEl"
+    style="
+        width: @(totalSize.Width)px;
+    height: @(totalSize.Height)px;
+    display: grid;
+    grid-template-columns: @_wholeElColTemplate;
+    grid-template-rows: @_wholeElRowTemplate;
+    grid-template-areas:
+    'fT fT fT'
+    'fL C  fR'
+    'fB fB fB'">
+
+    <div aria-hidden="true" @ref="_fillerTop" style="grid-area: fT"></div>
+    <div aria-hidden="true" @ref="_fillerRight" style=" grid-area: fR"></div>
+    <div
+        style="grid-area: C; display: grid; grid-template-columns: @_contentColTemplate; grid-template-rows: @_contentRowTemplate;">
+        @{
+            var rowOffset = 1;
+        }
+        @if (totalSize.Height > 0 && totalSize.Width > 0)
+        {
+            @foreach (var row in _visibleRowIndices)
+            {
+                @if (RowTemplate != null)
+                {
+                    <div
+                        style="display: grid; grid-column: 1 / span @_currentViewport.ViewRegion.Width; grid-row: @rowOffset; grid-template-columns: subgrid; grid-template-rows: subgrid;"
+                        @key="row">
+                        @RowTemplate(new VirtualRowArgs(row, rowOffset, _currentViewport.ViewRegion.Left, _currentViewport.ViewRegion.Right, _visibleColIndices))
+                    </div>
+                }
+                else if (GridItemTemplate != null)
+                {
+                    var colOffset = 1;
+
+                    <div @key="row" style="display: contents;">
+                        @foreach (var col in _visibleColIndices)
+                        {
+                            <div @key="col" style="grid-column: @colOffset; grid-row: @rowOffset; overflow: hidden;">
+                                @GridItemTemplate(new CellPosition(row, col))
+                            </div>
+                            colOffset++;
+                        }
+                    </div>
+                }
+
+                rowOffset++;
+            }
+        }
+
+    </div>
+    <div aria-hidden="true" @ref="_fillerLeft" style="grid-area: fL"></div>
+    <div aria-hidden="true" @ref="_fillerBottom" style="grid-area: fB"></div>
+
+</div>
+
+@code {
+
+    /// <summary>
+    /// Provides information on grid dimensions.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public IGridLayoutProvider LayoutProvider { get; set; } = new EmptyLayoutProvider();
+
+    /// <summary>
+    /// The template rendered for each grid item.
+    /// </summary>
+    [Parameter]
+    public RenderFragment<CellPosition> GridItemTemplate { get; set; } = null!;
+
+    /// <summary>
+    /// The template rendered for each row.
+    /// </summary>
+    [Parameter]
+    public RenderFragment<VirtualRowArgs> RowTemplate { get; set; } = null!;
+
+    /// <summary>
+    /// The number of columns past the end of the viewport to render.
+    /// </summary>
+    [Parameter]
+    public int OverscanColumns { get; set; } = 2;
+
+    /// <summary>
+    /// The number of rows past the end of the viewport to render.
+    /// </summary>
+    [Parameter]
+    public int OverscanRows { get; set; } = 6;
+
+    /// <summary>
+    /// The class applied to the container div
+    /// </summary>
+    [Parameter]
+    public string Class { get; set; } = string.Empty;
+
+    [Parameter] public EventCallback<VirtualViewportChangedEventArgs> OnViewportChanged { get; set; }
+
+    private Region _viewRegion = new(-1, -1);
+
+    /// <summary>
+    /// Set this to limit the view of the virtualised grid to the region specified
+    /// </summary>
+    [Parameter]
+    public Region? ViewRegion { get; set; }
+
+    private IJSObjectReference _virtualiser = null!;
+    private DotNetObjectReference<Virtualise2D> _dotnetHelper = default!;
+
+    private ElementReference _contentEl;
+    private ElementReference _fillerTop;
+    private ElementReference _fillerRight;
+    private ElementReference _fillerLeft;
+    private ElementReference _fillerBottom;
+
+    private string _wholeElColTemplate = string.Empty;
+    private string _wholeElRowTemplate = string.Empty;
+    private string _contentColTemplate = string.Empty;
+    private string _contentRowTemplate = string.Empty;
+
+    private Viewport _currentViewport = new(new(-1, -1), new(0, 0, 0, 0));
+    private List<int> _visibleRowIndices = new();
+    private List<int> _visibleColIndices = new();
+    private bool _requiresRender = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _dotnetHelper = DotNetObjectReference.Create(this);
+            var module =
+                await Js.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/js/virtualise-2d.js");
+            _virtualiser = await module.InvokeAsync<IJSObjectReference>("getVirtualiser");
+
+            await _virtualiser.InvokeVoidAsync("addVirtualisationHandlers",
+                _dotnetHelper,
+                _contentEl,
+                nameof(HandleScroll),
+                _fillerLeft,
+                _fillerTop,
+                _fillerRight,
+                _fillerBottom);
+        }
+
+        _requiresRender = false;
+    }
+
+    protected override void OnParametersSet()
+    {
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!_viewRegion.Equals(ViewRegion))
+        {
+            _viewRegion = ViewRegion ?? new Region(0, LayoutProvider.NumRows - 1, 0, LayoutProvider.NumColumns - 1);
+            await RefreshView();
+        }
+
+        await base.OnParametersSetAsync();
+    }
+
+    public async Task RefreshView()
+    {
+        if (_contentEl.Context != null)
+            await HandleScroll(await CalculateViewRect(_contentEl));
+    }
+
+    /// <summary>
+    /// Returns the total view size that is constrained
+    /// by <see cref="ViewRegion"/>
+    /// </summary>
+    /// <returns></returns>
+    private Size GetTotalViewSize()
+    {
+        var layoutRegion = new Region(0, LayoutProvider.NumRows - 1, 0, LayoutProvider.NumColumns - 1);
+        var view = layoutRegion.GetIntersection(_viewRegion);
+        if (view == null)
+            return new Size(0, 0);
+
+        return new Size(LayoutProvider.ComputeWidthBetween(view.Left, view.Right + 1), LayoutProvider.ComputeHeightBetween(view.Top, view.Bottom + 1));
+    }
+
+    [JSInvokable(nameof(HandleScroll))]
+    public async Task HandleScroll(Rect viewRect)
+    {
+        var totalSize = GetTotalViewSize();
+        var totalRect = new Rect(0, 0, totalSize.Width, totalSize.Height);
+        // just in-case the total size shrinks and the view rect is now outside of the total view (e.g new sheet or filters applied).
+        viewRect = viewRect.GetIntersection(totalRect) ?? totalRect;
+
+        var layoutProviderRegion = new Region(0, LayoutProvider.NumRows - 1, 0, LayoutProvider.NumColumns - 1);
+
+        // including overflow
+        Region? view = new Region(
+            LayoutProvider.ComputeRow(viewRect.Y) + _viewRegion.Top - OverscanRows,
+            LayoutProvider.ComputeRow(viewRect.Y + viewRect.Height) + _viewRegion.Top + OverscanRows,
+            LayoutProvider.ComputeColumn(viewRect.X) + _viewRegion.Left - OverscanColumns,
+            LayoutProvider.ComputeColumn(viewRect.X + viewRect.Width) + _viewRegion.Left + OverscanColumns
+        );
+
+        view = view.GetIntersection(_viewRegion)?.GetIntersection(layoutProviderRegion) as Region;
+
+        if (view == null)
+            return;
+
+        var left = LayoutProvider.ComputeLeftPosition(view.Left);
+        var right = LayoutProvider.ComputeRightPosition(view.Right);
+        var top = LayoutProvider.ComputeTopPosition(view.Top);
+        var bot = LayoutProvider.ComputeBottomPosition(view.Bottom);
+
+        var pL = LayoutProvider.ComputeLeftPosition(Math.Max(_viewRegion.Left, 0));
+        var pT = LayoutProvider.ComputeTopPosition(Math.Max(_viewRegion.Top, 0));
+
+        var fillLeft = left - pL;
+        var fillRight = totalSize.Width - (right - pL);
+        var fillTop = top - pT;
+        var fillBottom = totalSize.Height - (bot - pT);
+        var contentWidth = LayoutProvider.ComputeWidth(view.Left, view.Width);
+        var contentHeight = LayoutProvider.ComputeHeight(view.Top, view.Height);
+
+        _wholeElColTemplate = $"{fillLeft}px {contentWidth}px {fillRight}px";
+        _wholeElRowTemplate = $"{fillTop}px {contentHeight}px {fillBottom}px";
+
+        var newViewport = new Viewport(view, viewRect);
+        var newRegions = newViewport.ViewRegion.Break(_currentViewport.ViewRegion).Cast<Region>().ToList();
+        var removedRegions = _currentViewport.ViewRegion.Break(newViewport.ViewRegion).Cast<Region>().ToList();
+        _currentViewport = newViewport;
+        _visibleColIndices = LayoutProvider.GetVisibleColumnIndices(view.Left, view.Right);
+        _visibleRowIndices = LayoutProvider.GetVisibleRowIndices(view.Top, view.Bottom);
+        
+        var csb = new StringBuilder();
+        foreach (var visibleCol in _visibleColIndices)
+            csb.Append($"{LayoutProvider.ComputeWidth(visibleCol, 1)}px ");
+        var rsb = new StringBuilder();
+        foreach (var visibleRow in _visibleRowIndices)
+            rsb.Append($"{LayoutProvider.ComputeHeight(visibleRow, 1)}px ");
+
+        _contentColTemplate = csb.ToString();
+        _contentRowTemplate = rsb.ToString();
+
+        _requiresRender = true;
+
+        await OnViewportChanged.InvokeAsync(new VirtualViewportChangedEventArgs(_currentViewport, newRegions, removedRegions));
+        await InvokeAsync(StateHasChanged);
+    }
+
+    internal async Task ScrollBy(double x, double y)
+    {
+        await _virtualiser.InvokeVoidAsync("scrollParentBy", x, y, _contentEl);
+        // update the viewport as it may not have triggered an interaction observer event
+        var viewRect = await CalculateViewRect(_contentEl);
+        if (viewRect != _currentViewport.ViewRect)
+        {
+            // we can assume ViewRegion hasn't changed, otherwise it would have changed from the interaction event
+            _currentViewport = new Viewport(_currentViewport.ViewRegion, viewRect);
+            await OnViewportChanged.InvokeAsync(new VirtualViewportChangedEventArgs(_currentViewport, new(), new()));
+        }
+    }
+
+    internal async Task<Rect> CalculateViewRect(ElementReference reference)
+    {
+        return await _virtualiser.InvokeAsync<Rect>("calculateViewRect", reference);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await _virtualiser.InvokeAsync<string>("disposeVirtualisationHandlers", _contentEl);
+
+            _dotnetHelper.Dispose();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+        }
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        _requiresRender = false;
+        base.OnAfterRender(firstRender);
+    }
+
+}

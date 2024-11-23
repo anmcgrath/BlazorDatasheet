@@ -10,14 +10,8 @@
 
 <p>Below is a sheet with 100,000 rows. There is no data validation or formatting and the default editors are used.</p>
 
-<div style="overflow: scroll; width: 700px; height: 400px;">
+<Datasheet Sheet="sheet"/>
 
-    <Datasheet
-        ShowColHeadings="true"
-        ShowRowHeadings="true"
-        Sheet="sheet"/>
-
-</div>
 <button @onclick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { BackgroundColor = "red" }))">Set format to red</button>
 <button @onclick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { BackgroundColor = "blue" }))">Set format to blue</button>
 

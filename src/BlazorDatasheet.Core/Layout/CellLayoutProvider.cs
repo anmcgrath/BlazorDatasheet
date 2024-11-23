@@ -25,6 +25,9 @@ public class CellLayoutProvider : IGridLayoutProvider
         _sheet.Rows.GetVisualHeightBetween(ViewRegion.Top, ViewRegion.Bottom + 1) +
         (IncludeColHeadings ? ColHeadingHeight : 0);
 
+    public int NumRows => _sheet.NumRows;
+    public int NumColumns => _sheet.NumCols;
+
     public double RowHeadingWidth => _sheet.Rows.HeadingWidth;
     public double ColHeadingHeight => _sheet.Columns.HeadingHeight;
 
@@ -36,7 +39,11 @@ public class CellLayoutProvider : IGridLayoutProvider
     /// <summary>
     /// The view region that the datasheet is limited to.
     /// </summary>
-    public IRegion ViewRegion => _region ?? _sheet.Region;
+    public IRegion ViewRegion
+    {
+        get => _region ?? _sheet.Region;
+        set => _region = value;
+    }
 
 
     public CellLayoutProvider(Sheet sheet)
@@ -159,6 +166,16 @@ public class CellLayoutProvider : IGridLayoutProvider
         var h = _sheet.Rows.GetVisualHeightBetween(startRow, startRow + rowSpan);
         return h;
     }
+
+    public List<int> GetVisibleRowIndices(int startRow, int endRow) => _sheet.Rows.GetVisibleIndices(startRow, endRow);
+
+    public List<int> GetVisibleColumnIndices(int startColumn, int endColumn) =>
+        _sheet.Columns.GetVisibleIndices(startColumn, endColumn);
+
+    public int MinRow => ViewRegion.Top;
+    public int MinCol => ViewRegion.Left;
+    public int MaxRow => ViewRegion.Bottom;
+    public int MaxCol => ViewRegion.Right;
 
     public double ComputeWidth(IRegion region)
     {

@@ -25,13 +25,14 @@ public class WindowEventService : IWindowEventService
         _js = js;
     }
 
-    public async Task RegisterMouseEvent(string eventType, Func<MouseEventArgs, Task<bool>> handler)
+    public async Task RegisterMouseEvent(string eventType, Func<MouseEventArgs, Task<bool>> handler,
+        int throttleInMs = 0)
     {
         if (_mouseEventListeners == null)
             _mouseEventListeners = new();
 
         _mouseEventListeners.TryAdd(eventType, handler);
-        await AddWindowEvent(eventType, nameof(HandleWindowMouseEvent));
+        await AddWindowEvent(eventType, nameof(HandleWindowMouseEvent), throttleInMs);
     }
 
     public async Task RegisterKeyEvent(string eventType, Func<KeyboardEventArgs, Task<bool>> handler)
@@ -81,13 +82,13 @@ public class WindowEventService : IWindowEventService
     }
 
 
-    private async ValueTask AddWindowEvent(string evType, string jsInvokableName)
+    private async ValueTask AddWindowEvent(string evType, string jsInvokableName, int throttleInMs = 0)
     {
         await CreateDotnetHelperIfNotExists();
         if (_windowEventObj == null)
             return;
 
-        await _windowEventObj.InvokeVoidAsync("registerEvent", evType, jsInvokableName);
+        await _windowEventObj.InvokeVoidAsync("registerEvent", evType, jsInvokableName, throttleInMs);
     }
 
     [JSInvokable]

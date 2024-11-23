@@ -61,12 +61,30 @@ public class Editor
         get => _editValue;
         set
         {
-            _editValue = value;
-            EditValueChanged?.Invoke(this, _editValue);
+            if (_editValue != value)
+            {
+                _editValue = value;
+                EditValueChanged?.Invoke(this, _editValue);
+            }
         }
     }
 
+    /// <summary>
+    /// The method used to enter the editing state.
+    /// </summary>
+    public EditEntryMode CurrentEntryMode { get; private set; } = EditEntryMode.None;
+
+    /// <summary>
+    /// The key used to enter the edit state (if any)
+    /// </summary>
+    public string EditKey { get; private set; } = string.Empty;
+
     public string EditorType { get; private set; }
+
+    /// <summary>
+    /// Whether the editor mode is soft - easy to exit
+    /// </summary>
+    public bool IsSoftEdit { get; private set; }
 
     /// <summary>
     /// The currently edited cell.
@@ -123,6 +141,9 @@ public class Editor
         IsEditing = true;
         EditCell = cell;
         EditorType = beforeEditArgs.EditorType;
+        EditKey = key ?? string.Empty;
+        CurrentEntryMode = mode;
+        IsSoftEdit = forceSoftEdit;
 
         EditBegin?.Invoke(
             this,
@@ -217,11 +238,19 @@ public class Editor
         return false;
     }
 
+    public void SetSoftEdit(bool value)
+    {
+        IsSoftEdit = value;
+    }
+
     private void ClearEdit()
     {
         IsEditing = false;
         EditValue = string.Empty;
         EditorType = string.Empty;
         EditCell = null;
+        CurrentEntryMode = EditEntryMode.None;
+        EditKey = string.Empty;
+        IsSoftEdit = false;
     }
 }

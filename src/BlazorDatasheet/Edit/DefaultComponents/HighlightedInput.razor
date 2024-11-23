@@ -5,13 +5,16 @@
 @implements IAsyncDisposable
 @inject IJSRuntime Js;
 
-<div spellcheck="false" style="display: block;height: 100%; @Style">
+<div spellcheck="false" style="display: contents; @Style">
+
     <span class="highlight-result"
+          style="width:105px;"
           @ref="_highlightResultEl">
     </span>
 
     <span contenteditable="true"
           class="highlight-input"
+          style="width:105px;"
           @ref="_highlightInputEl">
     </span>
 </div>
@@ -24,8 +27,6 @@
     [Parameter] public EventCallback<int> CarePositionChanged { get; set; }
 
     [Parameter] public string? Style { get; set; }
-
-    [Parameter] public List<string> RangeColors { get; set; } = new();
 
     private ElementReference _highlightInputEl;
     private ElementReference _highlightResultEl;
@@ -92,9 +93,8 @@
             sb.Append($"class=\"{GetClass(tokens[i].Tag)}\" ");
             if (tokens[i].Tag == Tag.AddressToken)
             {
-                var colorIndex = (refCount % RangeColors.Count);
-                var color = RangeColors[colorIndex];
-                sb.Append($"style=\"color:{color}\"");
+                var colorIndex = (refCount % 5) + 1;
+                sb.Append($"style=\"color:var(--highlight-color-{colorIndex})\"");
                 refCount++;
             }
 

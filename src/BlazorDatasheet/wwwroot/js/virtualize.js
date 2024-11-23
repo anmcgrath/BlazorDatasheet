@@ -131,6 +131,36 @@
         return new DOMRect(left, top, right - left, bottom - top)
     }
 
+    /***
+     * @param {DOMRect} rect1
+     * @param {DOMRect} rect2
+     */
+    getIntersection(rect1, rect2) {
+        const x1 = rect1.right;
+        const x2 = rect2.right;
+        const y1 = rect1.bottom;
+        const y2 = rect2.bottom;
+
+
+        const xL = Math.max(rect1.left, rect2.left);
+        const xR = Math.min(x1, x2);
+        if (xR < xL)
+            return null
+        else {
+            var yB = Math.min(y1, y2);
+            var yT = Math.max(rect1.top, rect2.top);
+            if (yB < yT)
+                return null
+            else
+                return {
+                    top: yT,
+                    bottom: yB,
+                    left: xL,
+                    right: xR
+                }
+        }
+    }
+
     dotNetHelperMap = {}
 
     createMutationObserver(filler, interactionObserver) {

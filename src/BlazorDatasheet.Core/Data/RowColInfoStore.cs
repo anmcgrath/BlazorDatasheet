@@ -232,7 +232,7 @@ public abstract class RowColInfoStore
     /// <returns></returns>
     public int CountVisible(int start, int end)
     {
-        var totalCount = end - start + 1;
+        var totalCount = Math.Min(end - start + 1, Sheet.GetSize(_axis));
         int invisibleCount = 0;
         var invisible = _visible.GetOverlapping(start, end);
         foreach (var i in invisible)

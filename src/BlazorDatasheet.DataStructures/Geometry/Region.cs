@@ -386,21 +386,24 @@ public class Region : IRegion
 
     public IRegion? GetIntersection(IRegion? region)
     {
-        var x1 = this.BottomRight.col;
-        var x2 = region.BottomRight.col;
-        var y1 = this.BottomRight.row;
-        var y2 = region.BottomRight.row;
+        if (region == null)
+            return null;
+
+        var x1 = this.Right;
+        var x2 = region.Right;
+        var y1 = this.Bottom;
+        var y2 = region.Bottom;
 
         IRegion? intersection;
 
-        var xL = Math.Max(this.TopLeft.col, region.TopLeft.col);
+        var xL = Math.Max(this.Left, region.Left);
         var xR = Math.Min(x1, x2);
         if (xR < xL)
             intersection = null;
         else
         {
             var yB = Math.Min(y1, y2);
-            var yT = Math.Max(this.TopLeft.row, region.TopLeft.row);
+            var yT = Math.Max(this.Top, region.Top);
             if (yB < yT)
                 intersection = null;
             else

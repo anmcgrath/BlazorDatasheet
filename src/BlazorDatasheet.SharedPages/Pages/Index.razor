@@ -6,26 +6,18 @@
 @using BlazorDatasheet.Core.Validation
 @using System.Drawing
 @using BlazorDatasheet.Core.Commands.Data
-@using BlazorDatasheet.Events
-@using BlazorDatasheet.KeyboardInput
 
-<PageTitle>Index</PageTitle>
-
-<p>
-    Blazor DataSheet is an excel-like editor for cellular values. Below shows some of the features of the data sheet. Sample code is available on <a href="https://github.com/anmcgrath/BlazorDatasheet">GitHub</a>
-</p>
-
-<div style="overflow-y: auto; overflow-x: scroll; max-height: 500px; max-width: 800px;">
+<div style="width: 800px; height: 500px; overflow: scroll;">
     <Datasheet
         @ref="_datasheet"
+        ShowFormulaDependents="ShowFormulaDependents"
+        FrozenLeftCount="1"
+        FrozenTopCount="1"
         Theme="@Theme"
-        Sheet="Sheet"
-        Virtualise="true"
-        ShowFormulaDependents="@ShowFormulaDependents"
-        ShowColHeadings="@ShowColHeadings"
-        ShowRowHeadings="@ShowRowHeadings"
-        StickyHeadings="@StickyHeadings">
-    </Datasheet>
+        ShowColHeadings="ShowColHeadings"
+        ShowRowHeadings="ShowRowHeadings"
+        StickyHeaders="StickyHeadings"
+        Sheet="Sheet"/>
 </div>
 
 <div>
@@ -36,15 +28,24 @@
     <button @onclick="() => Sheet.Commands.Undo()">Undo</button>
     <button @onclick="() => Sheet.Commands.Redo()">Redo</button>
     <button @onclick="@(() => Sheet.Selection.Value = "Bob")">Set to Bob</button>
-    <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { BackgroundColor = "red" }))">Set bg to red</button>
-    <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { BackgroundColor = "blue" }))">Set bg to blue</button>
-    <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { ForegroundColor = "green" }))">Set font colour to green</button>
+    <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { BackgroundColor = "red" }))">
+        Set bg to red
+    </button>
+    <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { BackgroundColor = "blue" }))">
+        Set bg to blue
+    </button>
+    <button
+        @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { ForegroundColor = "green" }))">Set
+        font colour to green
+    </button>
     <button @onclick="@(() => SetBorder(Sheet.Selection.Regions, 2, "black"))">Thick border</button>
     <button @onclick="@(() => SetBorder(Sheet.Selection.Regions, 1, "black"))">Thin border</button>
     <button @onclick="@(() => Sheet.Cells.Merge(Sheet.Selection.Regions))">Merge cells</button>
     <button @onclick="@SortSelectionDesc">Sort Desc</button>
     <button @onclick="@SortSelectionAsc">Sort ASc</button>
-    <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { NumberFormat = "C2" }))">Currency</button>
+    <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { NumberFormat = "C2" }))">
+        Currency
+    </button>
     <button @onclick="@(() => _datasheet.SetActiveAsync(true))">Set sheet active</button>
 </div>
 
@@ -73,6 +74,7 @@
     <label for="show-formula-dependents">Show formula dependents</label>
 </div>
 
+
 @code {
 
     private Sheet Sheet;
@@ -80,62 +82,21 @@
     private bool _isDarkMode;
     private string FilterValue { get; set; }
 
-    private bool StickyHeadings
-    {
-        get => _stickyHeadings;
-        set
-        {
-            _stickyHeadings = value;
-            _datasheet.ForceReRender();
-        }
-    }
+    private bool StickyHeadings { get; set; } = true;
 
-    private bool ShowRowHeadings
-    {
-        get => _showRowHeadings;
-        set
-        {
-            _showRowHeadings = value;
-            _datasheet.ForceReRender();
-        }
-    }
+    private bool ShowRowHeadings { get; set; } = true;
 
-    private bool ShowColHeadings
-    {
-        get => _showColHeadings;
-        set
-        {
-            _showColHeadings = value;
-            _datasheet.ForceReRender();
-        }
-    }
+    private bool ShowColHeadings { get; set; } = true;
 
-    private bool IsDarkMode
-    {
-        get => _isDarkMode;
-        set
-        {
-            _isDarkMode = value;
-            _datasheet.ForceReRender();
-        }
-    }
+    private bool IsDarkMode { get; set; }
 
-    private Datasheet _datasheet;
+    private Datasheet _datasheet = default!;
 
-    private bool _showFormulaDependents;
     private bool _stickyHeadings = true;
     private bool _showRowHeadings = true;
     private bool _showColHeadings = true;
 
-    private bool ShowFormulaDependents
-    {
-        get => _showFormulaDependents;
-        set
-        {
-            _showFormulaDependents = value;
-            _datasheet.ForceReRender();
-        }
-    }
+    private bool ShowFormulaDependents { get; set; }
 
     private void SortSelectionDesc()
     {
