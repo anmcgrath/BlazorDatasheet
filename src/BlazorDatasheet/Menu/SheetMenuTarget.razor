@@ -21,7 +21,7 @@
 
 <style>
     .sheet-menu-target {
-        
+
     }
 </style>
 
@@ -41,15 +41,43 @@
 
     [Parameter] public object? MenuData { get; set; }
 
+    [Parameter] public bool Disabled { get; set; }
+    private bool _disabled;
+
     private ElementReference _menuTarget;
-    private DotNetObjectReference<SheetMenuTarget> _dotnetRef;
+    private DotNetObjectReference<SheetMenuTarget>? _dotnetRef;
+    private IJSObjectReference? _menuTargetService;
+
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Disabled != _disabled && Disabled)
+        {
+            _disabled = Disabled;
+
+            if (_dotnetRef == null || _menuTargetService == null)
+                return;
+
+            await _menuTargetService.InvokeVoidAsync("removeContextListener");
+        }
+
+        await base.OnParametersSetAsync();
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (firstRender && !_disabled && Trigger == MenuTrigger.OnContextMenu)
         {
             _dotnetRef = DotNetObjectReference.Create(this);
-            await _js.InvokeVoidAsync("setContextListener", _menuTarget, _dotnetRef, nameof(TargetOnContextMenu));
+
+            var module =
+                await _js.InvokeAsync<IJSObjectReference>("import",
+                    "./_content/BlazorDatasheet/js/menu-target.js");
+
+            _menuTargetService = await module.InvokeAsync<IJSObjectReference>(
+                "getMenuTargetService", _dotnetRef);
+
+            await _menuTargetService.InvokeVoidAsync("setContextListener", _menuTarget, nameof(TargetOnContextMenu));
         }
     }
 
@@ -91,7 +119,7 @@
         if (string.IsNullOrEmpty(MenuId))
             return;
 
-        await MenuService.ShowMenuAsync(MenuId, new MenuShowOptions(TargetId, Placement, Margin, trigger, args.ClientX, args.ClientY), MenuData);
+        await MenuService.ShowMenuAsync(MenuId, new MenuTargetOptions(TargetId, Placement, Margin, trigger, args.ClientX, args.ClientY), MenuData);
     }
 
     public async ValueTask DisposeAsync()

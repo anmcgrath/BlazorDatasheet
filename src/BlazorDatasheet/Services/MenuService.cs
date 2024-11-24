@@ -58,7 +58,7 @@ public class MenuService : IMenuService, IAsyncDisposable
         }
     }
 
-    public async Task<bool> ShowMenuAsync<T>(string menuId, MenuShowOptions options, T context = default(T))
+    public async Task<bool> ShowMenuAsync<T>(string menuId, MenuTargetOptions options, T context = default(T))
     {
         // If already open, don't re-open
         if (_openMenus.Contains(menuId))

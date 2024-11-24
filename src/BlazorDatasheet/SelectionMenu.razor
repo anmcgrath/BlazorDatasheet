@@ -17,36 +17,54 @@
     @if (sheet is not null && sheet.Selection.ActiveRegion != null)
     {
         <MenuSection SectionId="0">
-            <SheetMenuItem OnClick="() => sheet.Cells.ClearCells(sheet.Selection.Regions)">Clear</SheetMenuItem>
-            @if (CanUserMergeRange)
+            @if (MenuOptions.ClearEnabled)
+            {
+                <SheetMenuItem OnClick="() => sheet.Cells.ClearCells(sheet.Selection.Regions)">Clear</SheetMenuItem>
+            }
+            @if (MenuOptions.MergeEnabled)
             {
                 <SheetMenuItem OnClick="() => sheet.Cells.Merge(sheet.Selection.Regions)">Merge</SheetMenuItem>
             }
-            <SheetSubMenu Label="Alignment">
-                <SheetMenuItem OnClick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { TextAlign = "left" }))">Left</SheetMenuItem>
-                <SheetMenuItem OnClick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { TextAlign = "center" }))">Centre</SheetMenuItem>
-                <SheetMenuItem OnClick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { TextAlign = "right" }))">Right</SheetMenuItem>
-            </SheetSubMenu>
+            @if (MenuOptions.AlignmentEnabled)
+            {
+                <SheetSubMenu Label="Alignment">
+                    <SheetMenuItem
+                        OnClick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { TextAlign = "left" }))">
+                        Left
+                    </SheetMenuItem>
+                    <SheetMenuItem
+                        OnClick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { TextAlign = "center" }))">
+                        Centre
+                    </SheetMenuItem>
+                    <SheetMenuItem
+                        OnClick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { TextAlign = "right" }))">
+                        Right
+                    </SheetMenuItem>
+                </SheetSubMenu>
+            }
         </MenuSection>
 
         @if (sheet.Selection.Regions.Count == 1 && sheet.Selection.ActiveRegion is ColumnRegion c)
         {
-            @if (CanUserInsertCols || CanUserRemoveCols || CanUserHideCols)
+            @if (MenuOptions.InsertColsEnabled ||
+                 MenuOptions.DeleteColsEnabled ||
+                 MenuOptions.HideColsEnabled)
             {
                 <SheetMenuDivider/>
             }
 
-            @if (CanUserInsertCols)
+            @if (MenuOptions.InsertColsEnabled)
             {
-                <SheetMenuItem OnClick="() => sheet.Columns.InsertAt(c.Left, c.Width)">Insert column(s) left</SheetMenuItem>
+                <SheetMenuItem OnClick="() => sheet.Columns.InsertAt(c.Left, c.Width)">Insert column(s) left
+                </SheetMenuItem>
             }
 
-            @if (CanUserRemoveCols)
+            @if (MenuOptions.DeleteColsEnabled)
             {
                 <SheetMenuItem OnClick="() => sheet.Columns.RemoveAt(c.Left, c.Width)">Delete column(s)</SheetMenuItem>
             }
 
-            @if (CanUserHideCols)
+            @if (MenuOptions.HideColsEnabled)
             {
                 <SheetMenuDivider/>
                 <SheetMenuItem OnClick="() => sheet.Columns.Hide(c.Left, c.Width)">Hide column(s)</SheetMenuItem>
@@ -56,22 +74,22 @@
 
         @if (sheet.Selection.Regions.Count == 1 && sheet.Selection.ActiveRegion is RowRegion r)
         {
-            @if (CanUserInsertRows || CanUserRemoveRows || CanUserHideRows)
+            @if (MenuOptions.InsertRowsEnabled || MenuOptions.DeleteRowsEnabled || MenuOptions.HideRowsEnabled)
             {
                 <SheetMenuDivider/>
             }
 
-            @if (CanUserInsertRows)
+            @if (MenuOptions.InsertRowsEnabled)
             {
                 <SheetMenuItem OnClick="() => sheet.Rows.InsertAt(r.Top, r.Height)">Insert row(s) above</SheetMenuItem>
             }
 
-            @if (CanUserRemoveRows)
+            @if (MenuOptions.DeleteRowsEnabled)
             {
                 <SheetMenuItem OnClick="() => sheet.Rows.RemoveAt(r.Top, r.Height)">Delete row(s)</SheetMenuItem>
             }
 
-            @if (CanUserHideRows)
+            @if (MenuOptions.HideRowsEnabled)
             {
                 <SheetMenuDivider/>
                 <SheetMenuItem OnClick="() => sheet.Rows.Hide(r.Top, r.Height)">Hide row(s)</SheetMenuItem>
@@ -79,16 +97,20 @@
             }
         }
 
-        @if (CanUserSort)
+        @if (MenuOptions.SortRangeEnabled)
         {
             <SheetMenuDivider/>
             <SheetSubMenu Label="Sort">
-                <SheetMenuItem OnClick="() => sheet.SortRange(sheet.Selection.ActiveRegion)">Sort Ascending</SheetMenuItem>
-                <SheetMenuItem OnClick="() => sheet.SortRange(sheet.Selection.ActiveRegion, new List<ColumnSortOptions>() { new ColumnSortOptions(0, false) })">Sort Descending</SheetMenuItem>
+                <SheetMenuItem OnClick="() => sheet.SortRange(sheet.Selection.ActiveRegion)">Sort Ascending
+                </SheetMenuItem>
+                <SheetMenuItem
+                    OnClick="() => sheet.SortRange(sheet.Selection.ActiveRegion, new List<ColumnSortOptions>() { new ColumnSortOptions(0, false) })">
+                    Sort Descending
+                </SheetMenuItem>
             </SheetSubMenu>
         }
 
-        @if (CanUserFilter &&
+        @if (MenuOptions.FilterColumnEnabled &&
              sheet.Selection.Regions.Count == 1 &&
              sheet.Selection.ActiveRegion is ColumnRegion colRegion &&
              colRegion.Width == 1)
@@ -114,8 +136,12 @@
                     }
                 }
                 <div style="display: flex; flex-direction: row; justify-content: space-between;">
-                    <button @onclick="CancelFilterButtonClick" class="sheet-button" style="width: 80px; margin: 4px 8px;">Cancel</button>
-                    <button @onclick="() => AcceptFilterButtonClick(sheet, colRegion.Left)" class="sheet-button" style="width: 80px; margin: 4px 8px;">Apply</button>
+                    <button @onclick="CancelFilterButtonClick" class="sheet-button"
+                            style="width: 80px; margin: 4px 8px;">Cancel
+                    </button>
+                    <button @onclick="() => AcceptFilterButtonClick(sheet, colRegion.Left)" class="sheet-button"
+                            style="width: 80px; margin: 4px 8px;">Apply
+                    </button>
                 </div>
             </SheetSubMenu>
         }
@@ -125,15 +151,7 @@
 
 @code {
 
-    [Parameter] public bool CanUserRemoveRows { get; set; } = true;
-    [Parameter] public bool CanUserRemoveCols { get; set; } = true;
-    [Parameter] public bool CanUserInsertRows { get; set; } = true;
-    [Parameter] public bool CanUserInsertCols { get; set; } = true;
-    [Parameter] public bool CanUserSort { get; set; } = true;
-    [Parameter] public bool CanUserMergeRange { get; set; } = true;
-    [Parameter] public bool CanUserHideRows { get; set; } = true;
-    [Parameter] public bool CanUserHideCols { get; set; } = true;
-    [Parameter] public bool CanUserFilter { get; set; } = true;
+    [Parameter] public SheetMenuOptions MenuOptions { get; set; } = new();
     [Parameter] public Type[] DefaultFilterTypes { get; set; } = default!;
 
     private SheetSubMenu _filterSubMenu = default!;
@@ -152,7 +170,7 @@
         if (args.MenuId == _filterSubMenu?.SubMenuId && !HasOpenedFilterMenu)
         {
             HasOpenedFilterMenu = true;
-            if (!CanUserFilter) return;
+            if (!MenuOptions.FilterColumnEnabled) return;
 
             var sheet = args.Context as Sheet;
             if (sheet == null) return;

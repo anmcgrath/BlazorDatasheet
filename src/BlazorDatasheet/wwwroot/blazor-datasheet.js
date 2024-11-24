@@ -7,13 +7,3 @@ window.setFocusWithTimeout = function (el, timeout) {
         el.focus()
     }, timeout)
 }
-
-window.setContextListener = function (el, dotnetHelper, handlerName) {
-    el.addEventListener('contextmenu', async e => {
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.hasAttribute("contentEditable"))
-            return
-
-        e.preventDefault()
-        await dotnetHelper.invokeMethodAsync(handlerName, {clientX: e.clientX, clientY: e.clientY})
-    })
-}

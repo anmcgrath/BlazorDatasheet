@@ -15,7 +15,7 @@ public interface IMenuService
     /// <param name="context"></param>
     /// <typeparam name="T"></typeparam>
     /// <returns>True if menu is opened, false otherwise.</returns>
-    Task<bool> ShowMenuAsync<T>(string menuId, MenuShowOptions options, T context = default(T));
+    Task<bool> ShowMenuAsync<T>(string menuId, MenuTargetOptions options, T context = default(T));
 
     /// <summary>
     /// Closes the menu with the specified <paramref name="menuId"/>

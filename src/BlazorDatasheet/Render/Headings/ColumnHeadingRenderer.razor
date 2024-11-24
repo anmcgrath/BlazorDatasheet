@@ -30,6 +30,7 @@
     {
         <div style="position: sticky; @GetStickyLeftPositionInfo(); z-index: 4;">
             <ColumnHeadingRenderer
+                ShowColumnMenu="ShowColumnMenu"
                 Sheet="_sheet"
                 ViewRegion="new Region(0, 0, _viewRegion.Left, FrozenStartCount - 1)">
                 @ChildContent(context)
@@ -52,9 +53,12 @@
                             @ChildContent(new HeadingContext(context.col, _sheet.Columns.GetHeading(context.col) ?? RangeText.ColNumberToLetters(context.col)))
                         </div>
                         <div style="display: flex; flex-direction: row;">
-                            <SheetMenuTarget MenuId="@ContextMenus.Selection" MenuData="Sheet">
-                                <CaretButton/>
-                            </SheetMenuTarget>
+                            @if (ShowColumnMenu)
+                            {
+                                <SheetMenuTarget MenuId="@ContextMenus.Selection" MenuData="Sheet">
+                                    <CaretButton/>
+                                </SheetMenuTarget>
+                            }
                         </div>
                     </div>
 
@@ -80,6 +84,7 @@
         <div style="position: sticky; right: 0; z-index: 4">
             <ColumnHeadingRenderer
                 Sheet="_sheet"
+                ShowColumnMenu="ShowColumnMenu"
                 ViewRegion="new Region(0, 0, _viewRegion.Right - FrozenEndCount + 1, _viewRegion.Right)">
                 @ChildContent(context)
             </ColumnHeadingRenderer>
@@ -92,6 +97,8 @@
     [Parameter] public int FrozenStartCount { get; set; }
 
     [Parameter] public int FrozenEndCount { get; set; }
+
+    [Parameter] public bool ShowColumnMenu { get; set; }
 
     private double MouseX { get; set; }
     private double MouseXStart { get; set; }
