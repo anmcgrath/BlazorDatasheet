@@ -133,11 +133,12 @@
     -moz-user-select: none;
     -webkit-user-select: none;
     padding: 2px 5px;
-    height: 100%;
-    width: 100%;
     border-right: var(--sheet-border-style);
     border-bottom: var(--sheet-border-style);
     overflow: hidden;
+    width: 100%;
+    height: 100%;
+    display: flex;
 }
 
 .merged-cell {
@@ -178,6 +179,8 @@
 .row-head {
     text-align: right;
     border-left: var(--sheet-border-style);
+    justify-content: end;
+    align-items: center;
 }
 
 .col-head {
@@ -267,16 +270,16 @@
     background: inherit;
 }
 
-.bds-selected-header-full{
+.bds-selected-header-full {
     background: var(--header-selected-bg-color);
-    color:white;
+    color: white;
     font-weight: bold;
 }
 
-.bds-selected-header-full:hover{
+.bds-selected-header-full:hover {
     background: var(--header-selected-bg-color);
 }
 
-.bds-selected-header{
+.bds-selected-header {
     background: var(--selection-bg-color);
 }
