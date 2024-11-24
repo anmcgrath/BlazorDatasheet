@@ -2,12 +2,12 @@ namespace BlazorDatasheet.Render.Headings;
 
 public struct HeadingContext
 {
-    public int Id { get; }
+    public int Index { get; }
     public string? Heading { get; }
 
-    public HeadingContext(int id, string? heading)
+    public HeadingContext(int index, string? heading)
     {
-        Id = id;
+        Index = index;
         Heading = heading;
     }
 }

@@ -51,14 +51,7 @@
                             AlternateAxisHeadingsShown="ShowRowHeadings"
                             FrozenStartCount="_frozenLeftCount"
                             FrozenEndCount="_frozenRightCount">
-                            @if (ColumnHeaderTemplate != null)
-                            {
-                                @ColumnHeaderTemplate(context)
-                            }
-                            else
-                            {
-                                @context.Heading
-                            }
+                            @ColumnHeaderTemplate(context)
                         </ColumnHeadingRenderer>
                     </div>
                 </div>
@@ -80,7 +73,9 @@
                         FrozenLeftCount="_frozenLeftCount"
                         FrozenRightCount="_frozenRightCount"
                         ViewRegion="new(_viewRegion.Top, _viewRegion.Top + _frozenTopCount - 1, _viewRegion.Left, _viewRegion.Right)"
-                        Sheet="_sheet"/>
+                        Sheet="_sheet">
+                        <RowHeaderTemplate>@RowHeaderTemplate(context)</RowHeaderTemplate>
+                    </Datasheet>
                 </div>
             }
 
@@ -96,25 +91,11 @@
                 }
                 else if (numVisibleRows == 0)
                 {
-                    if (EmptyRowsTemplate != null)
-                    {
-                        @EmptyRowsTemplate
-                    }
-                    else
-                    {
-                        <div class="sheet-row-head-container sheet-cell">No visible rows.</div>
-                    }
+                    @EmptyRowsTemplate
                 }
                 else if (numVisibleCols == 0)
                 {
-                    if (EmptyColumnsTemplate != null)
-                    {
-                        @EmptyColumnsTemplate
-                    }
-                    else
-                    {
-                        <div class="sheet-row-head-container sheet-cell">No visible columns.</div>
-                    }
+                    @EmptyColumnsTemplate
                 }
             }
 
@@ -128,7 +109,7 @@
                             AlternateAxisHeadingsShown="ShowColHeadings"
                             ViewRegion="MainViewRegion"
                             Sheet="_sheet">
-                            @(context.Heading ?? (context.Id + 1).ToString())
+                            @RowHeaderTemplate(context)
                         </RowHeadingRenderer>
                     </div>
                 }
@@ -147,7 +128,8 @@
                             FrozenLeftCount="0"
                             FrozenRightCount="0"
                             Sheet="_sheet"
-                            ViewRegion="new(MainViewRegion.Top, MainViewRegion.Bottom, _viewRegion.Left, _viewRegion.Left + _frozenLeftCount - 1)"/>
+                            ViewRegion="new(MainViewRegion.Top, MainViewRegion.Bottom, _viewRegion.Left, _viewRegion.Left + _frozenLeftCount - 1)">
+                        </Datasheet>
                     </div>
                 }
 
@@ -225,3 +207,35 @@
     </div>
 
 </SheetMenuTarget>
+
+@code{
+
+    /// <summary>
+    /// Set this to render a custom column heading
+    /// </summary>
+    [Parameter]
+    public RenderFragment<HeadingContext> ColumnHeaderTemplate { get; set; } =
+        context => @<div>@context.Heading</div>;
+
+    /// <summary>
+    /// Set this to render a custom row heading
+    /// </summary>
+    [Parameter]
+    public RenderFragment<HeadingContext> RowHeaderTemplate { get; set; } =
+        context => @<div>@(context.Heading ?? (context.Index + 1).ToString())</div>;
+
+    /// <summary>
+    /// Render fragment shown when no columns are visible.
+    /// </summary>
+    [Parameter]
+    public RenderFragment EmptyColumnsTemplate { get; set; } =
+        @<div class="sheet-row-head-container sheet-cell">No visible columns.</div>;
+
+    /// <summary>
+    /// Render fragment shown when no rows are visible.
+    /// </summary>
+    [Parameter]
+    public RenderFragment EmptyRowsTemplate { get; set; } =
+        @<div class="sheet-row-head-container sheet-cell">No visible rows.</div>;
+
+}

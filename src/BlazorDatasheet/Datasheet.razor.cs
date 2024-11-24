@@ -33,6 +33,7 @@ public partial class Datasheet : SheetComponentBase
     [Inject] private IWindowEventService WindowEventService { get; set; } = null!;
     [Inject] private IMenuService MenuService { get; set; } = null!;
     private IClipboard ClipboardService { get; set; } = null!;
+    
 
     /// <summary>
     /// The Sheet holding the data for the datasheet.
@@ -176,12 +177,6 @@ public partial class Datasheet : SheetComponentBase
     /// </summary>
     [Parameter]
     public Type[] DefaultFilterTypes { get; set; } = [typeof(ValueFilter), typeof(PatternFilter)];
-
-    [Parameter] public RenderFragment<HeadingContext>? ColumnHeaderTemplate { get; set; }
-
-    [Parameter] public RenderFragment? EmptyColumnsTemplate { get; set; }
-
-    [Parameter] public RenderFragment? EmptyRowsTemplate { get; set; }
 
     /// <summary>
     /// Provides menu options for the sheet
