@@ -1,7 +1,6 @@
 ﻿@using BlazorDatasheet.Core.Layout
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Menu
-@using BlazorDatasheet.Render
 @using BlazorDatasheet.Render.Headings
 @using BlazorDatasheet.Virtualise
 @using BlazorDatasheet.Render.Layers
@@ -9,11 +8,13 @@
 @inherits SheetComponentBase
 
 <SelectionMenu
+    MenuOptions="_menuOptions"
     DefaultFilterTypes="DefaultFilterTypes"/>
 
 <SheetMenuTarget MenuId="SelectionMenu"
                  MenuData="_sheet"
                  Margin="0"
+                 Disabled="!_menuOptions.ContextMenuEnabled"
                  Trigger="@MenuTrigger.OnContextMenu"
                  Placement="@MenuPlacement.BottomRight">
 
@@ -46,6 +47,7 @@
 
                         <ColumnHeadingRenderer
                             Sheet="_sheet"
+                            ShowColumnMenu="_menuOptions.HeaderMenuEnabled"
                             AlternateAxisHeadingsShown="ShowRowHeadings"
                             FrozenStartCount="_frozenLeftCount"
                             FrozenEndCount="_frozenRightCount">

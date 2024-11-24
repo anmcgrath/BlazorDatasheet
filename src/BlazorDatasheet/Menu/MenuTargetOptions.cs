@@ -1,6 +1,6 @@
 namespace BlazorDatasheet.Menu;
 
-public class MenuShowOptions
+public class MenuTargetOptions
 {
     public string TargetId { get; set; }
     public string Placement { get; set; }
@@ -9,7 +9,7 @@ public class MenuShowOptions
     public double ClientX { get; }
     public double ClientY { get; }
 
-    public MenuShowOptions(string targetId, string placement, double margin, string trigger, double clientX,
+    public MenuTargetOptions(string targetId, string placement, double margin, string trigger, double clientX,
         double clientY)
     {
         TargetId = targetId;

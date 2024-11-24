@@ -13,6 +13,7 @@ using BlazorDatasheet.Edit;
 using BlazorDatasheet.Events;
 using BlazorDatasheet.Extensions;
 using BlazorDatasheet.KeyboardInput;
+using BlazorDatasheet.Menu;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Render.Headings;
 using BlazorDatasheet.Services;
@@ -21,9 +22,11 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using ClipboardEventArgs = BlazorDatasheet.Core.Events.ClipboardEventArgs;
 using Microsoft.JSInterop;
+
 [assembly: InternalsVisibleTo("BlazorDatasheet.Test")]
 
 namespace BlazorDatasheet;
+
 public partial class Datasheet : SheetComponentBase
 {
     [Inject] private IJSRuntime Js { get; set; } = null!;
@@ -180,6 +183,14 @@ public partial class Datasheet : SheetComponentBase
 
     [Parameter] public RenderFragment? EmptyRowsTemplate { get; set; }
 
+    /// <summary>
+    /// Provides menu options for the sheet
+    /// </summary>
+    [Parameter]
+    public SheetMenuOptions MenuOptions { get; set; } = new();
+
+    private SheetMenuOptions _menuOptions = new();
+
     private DotNetObjectReference<Datasheet> _dotnetHelper = default!;
 
     private SheetPointerInputService _sheetPointerInputService = null!;
@@ -283,6 +294,12 @@ public partial class Datasheet : SheetComponentBase
         if (ShowFormulaDependents != _showFormulaDependents)
         {
             _showFormulaDependents = ShowFormulaDependents;
+            requireRender = true;
+        }
+
+        if (!MenuOptions.CompareTo(_menuOptions))
+        {
+            _menuOptions = MenuOptions;
             requireRender = true;
         }
 
