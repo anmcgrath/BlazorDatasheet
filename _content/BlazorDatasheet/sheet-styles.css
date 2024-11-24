@@ -129,9 +129,6 @@
 }
 
 .sheet-cell {
-    user-select: none;
-    -moz-user-select: none;
-    -webkit-user-select: none;
     padding: 2px 5px;
     border-right: var(--sheet-border-style);
     border-bottom: var(--sheet-border-style);
@@ -254,7 +251,7 @@
 }
 
 .highlight-input, .highlight-result {
-    display: inline-block;
+    display: block;
     position: absolute;
     padding: 1px 4px;
     top: 0;
