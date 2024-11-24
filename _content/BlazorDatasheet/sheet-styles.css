@@ -129,6 +129,9 @@
 }
 
 .sheet-cell {
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
     padding: 2px 5px;
     border-right: var(--sheet-border-style);
     border-bottom: var(--sheet-border-style);
