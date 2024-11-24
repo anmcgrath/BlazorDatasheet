@@ -5,15 +5,21 @@
 
 <HighlightedInput
     Style="@Style"
+    CellHeight="_cellHeight"
+    CellWidth="_cellWidth"
     CarePositionChanged="OnCaretPositionChanged"
     @bind-Value:set="OnInput"
     @bind-Value:get="CurrentValue"/>
 
 @code {
 
+    private double _cellWidth = 0;
+    private double _cellHeight = 0;
+
     public override void BeforeEdit(IReadOnlyCell cell, Sheet sheet)
     {
-
+        _cellWidth = sheet.Columns.GetVisualWidth(cell.Col);
+        _cellHeight = sheet.Rows.GetVisualHeight(cell.Row);
     }
 
     private void OnInput(string value)

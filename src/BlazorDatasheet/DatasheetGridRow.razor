@@ -26,7 +26,7 @@
     }
 
     <div @key="col"
-         style="grid-row: 1 / span @visualCell.VisibleRowSpan; grid-column:@colOffset / span @visualCell.VisibleColSpan;">
+         style="grid-row: 1; grid-column:@colOffset;">
         <div
             data-row="@dataRow"
             data-col="@dataCol"
@@ -45,7 +45,7 @@
                     case "default":
                     case "text":
                     case "datetime":
-                        <div style="width: 100%;">
+                        <div style="width: 100%;" class="unselectable">
                             @visualCell.FormattedString
                         </div>
                         break;

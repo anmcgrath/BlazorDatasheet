@@ -259,15 +259,24 @@
     padding: 1px 4px;
     top: 0;
     left: 0;
-    white-space: pre;
-    z-index: 2;
-    text-wrap: stable;
-    overflow-wrap: anywhere;
+    z-index: 1;
 }
 
 .highlight-result {
     pointer-events: none;
     background: inherit;
+}
+
+.bds-frozen-left .highlight-input, .bds-frozen-left .highlight-result {
+    text-wrap: wrap;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+.bds-frozen-right .highlight-input, .bds-frozen-right .highlight-result {
+    text-wrap: wrap;
+    overflow-wrap: anywhere;
+    white-space: break-spaces;
 }
 
 .bds-selected-header-full {

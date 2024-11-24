@@ -10,7 +10,7 @@ public abstract class BaseEditor : SheetComponentBase, ICellEditor
 {
     [Parameter] public EventCallback<string> OnValueChanged { get; set; }
 
-    private string _currentValue;
+    private string _currentValue = string.Empty;
 
     public string CurrentValue
     {

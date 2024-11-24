@@ -8,13 +8,13 @@
 <div spellcheck="false" style="display: contents; @Style">
 
     <span class="highlight-result"
-          style="width:105px;"
+          style="min-width:@(CellWidth - 2)px;min-height: @(CellHeight - 2)px; max-width: 1000px;"
           @ref="_highlightResultEl">
     </span>
 
     <span contenteditable="true"
           class="highlight-input"
-          style="width:105px;"
+          style="min-width:@(CellWidth - 2)px;min-height: @(CellHeight - 2)px;"
           @ref="_highlightInputEl">
     </span>
 </div>
@@ -25,6 +25,9 @@
     [Parameter] public EventCallback<string> ValueChanged { get; set; }
 
     [Parameter] public EventCallback<int> CarePositionChanged { get; set; }
+
+    [Parameter] public double CellWidth { get; set; }
+    [Parameter] public double CellHeight { get; set; }
 
     [Parameter] public string? Style { get; set; }
 
