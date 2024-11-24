@@ -1,5 +1,8 @@
 # BlazorDatasheet
 
+[![NuGet Version](https://img.shields.io/nuget/v/BlazorDatasheet)](https://www.nuget.org/packages/BlazorDatasheet/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A simple datasheet component for editing tabular data.
 
 <img width="512" alt="DatasheetScreenshot" src="https://github.com/anmcgrath/BlazorDatasheet/assets/34253568/afb4fd86-f082-4cdf-bac9-5d4f777c7dcc">

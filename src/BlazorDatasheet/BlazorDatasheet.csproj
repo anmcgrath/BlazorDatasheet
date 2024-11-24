@@ -11,7 +11,7 @@
         <RepositoryType>git</RepositoryType>
         <PackageTags>blazor,editor,excel,spreadsheet,datasheet</PackageTags>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <Version>0.4.0.0</Version>
+        <Version>0.5.0.0</Version>
         <TargetFramework>net8.0</TargetFramework>
     </PropertyGroup>
 
