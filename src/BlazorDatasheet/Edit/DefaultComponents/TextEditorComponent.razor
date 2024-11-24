@@ -20,6 +20,7 @@
     {
         _cellWidth = sheet.Columns.GetVisualWidth(cell.Col);
         _cellHeight = sheet.Rows.GetVisualHeight(cell.Row);
+        StateHasChanged();
     }
 
     private void OnInput(string value)
