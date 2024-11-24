@@ -1,4 +1,5 @@
-﻿@using BlazorDatasheet.Core.Data
+﻿@using BlazorDatasheet.Core.Commands.Formatting
+@using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Edit
 @using BlazorDatasheet.Core.Events.Edit
 @using BlazorDatasheet.Edit.DefaultComponents
@@ -175,7 +176,16 @@
 
         sb.AddStyleNotNull("background", format?.BackgroundColor);
         sb.AddStyle("background", "var(--sheet-bg-color)", format?.BackgroundColor == null);
-        sb.AddStyleNotNull("text-align", visualCell.Format?.TextAlign);
+        if (visualCell.Format?.HorizontalTextAlign != null)
+        {
+            if (visualCell.Format.HorizontalTextAlign == TextAlign.Center)
+                sb.AddStyle("text-align", "center");
+            else if (visualCell.Format.HorizontalTextAlign == TextAlign.End)
+                sb.AddStyle("text-align", "right");
+            else if (visualCell.Format.HorizontalTextAlign == TextAlign.Start)
+                sb.AddStyle("text-align", "left");
+        }
+
         sb.AddStyleNotNull("font-weight", visualCell.Format?.FontWeight);
 
         return sb.ToString();
@@ -224,7 +234,7 @@
 
     private void HandleEditValueChanged(string newValue)
     {
-        if(_sheet.Editor.IsEditing)
+        if (_sheet.Editor.IsEditing)
             _sheet.Editor.EditValue = newValue;
     }
 

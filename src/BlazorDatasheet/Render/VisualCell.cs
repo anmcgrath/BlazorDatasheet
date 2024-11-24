@@ -1,4 +1,5 @@
 using System.Text;
+using BlazorDatasheet.Core.Commands.Formatting;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -14,8 +15,6 @@ public class VisualCell
     public int Row { get; private set; }
     public int Col { get; private set; }
     public IRegion? Merge { get; private set; }
-    public double X { get; private set; }
-    public double Y { get; private set; }
     public string CellType { get; private set; } = "default";
     public string FormatStyleString { get; private set; } = string.Empty;
     public string? Icon { get; private set; }
@@ -24,10 +23,11 @@ public class VisualCell
     public int VisibleRowSpan { get; set; } = 1;
     public int VisibleColSpan { get; set; } = 1;
     public bool IsMergeStart { get; set; } = false;
-
     public int VisibleMergeRowStart { get; set; }
-
     public int VisibleMergeColStart { get; set; }
+    public double Height { get; set; }
+    public double Width { get; set; }
+
 
     public VisualCell(int row, int col, Sheet sheet)
     {
@@ -37,9 +37,9 @@ public class VisualCell
         {
             VisibleMergeColStart = sheet.Columns.GetNextVisible(Merge.Left - 1);
             VisibleMergeRowStart = sheet.Rows.GetNextVisible(Merge.Top - 1);
-            
+
             IsMergeStart = row == VisibleMergeRowStart && col == VisibleMergeColStart;
-            
+
             VisibleRowSpan = sheet.Rows.CountVisible(VisibleMergeRowStart, Merge.Bottom);
             VisibleColSpan = sheet.Columns.CountVisible(VisibleMergeColStart, Merge.Right);
         }
@@ -64,10 +64,10 @@ public class VisualCell
         Row = row;
         Col = col;
 
-        IsVisible = cell.IsVisible;
+        Width = sheet.Columns.GetVisualWidth(col);
+        Height = sheet.Rows.GetVisualHeight(row);
 
-        X = sheet.Columns.GetVisualLeft(col);
-        Y = sheet.Rows.GetVisualTop(row);
+        IsVisible = cell.IsVisible;
 
         FormatStyleString = GetCellFormatStyleString(Row, Col, format, cell.IsValid, cellValue.ValueType);
         Icon = format?.Icon;
@@ -86,8 +86,8 @@ public class VisualCell
             Row = row,
             Col = col,
             FormatStyleString = GetCellFormatStyleString(row, col, defaultFormat, true, CellValueType.Text),
-            X = sheet.Columns.GetVisualLeft(col),
-            Y = sheet.Rows.GetVisualTop(row),
+            Height = sheet.Rows.GetVisualHeight(row),
+            Width = sheet.Columns.GetVisualWidth(col),
             CellType = "default",
             Format = defaultFormat
         };
@@ -115,10 +115,27 @@ public class VisualCell
             sb.AddStyle("border-right", $"{format.BorderRight.Width}px solid {format.BorderRight.Color};");
 
         // if number and no align is set, move to right
-        if (type == CellValueType.Number && format.TextAlign == null)
-            sb.AddStyle("text-align", "right");
-        else
-            sb.AddStyleNotNull("text-align", format.TextAlign);
+        if (type == CellValueType.Number && format.HorizontalTextAlign == null)
+            sb.AddStyle("justify-content", "end");
+        else if (format.HorizontalTextAlign != null)
+        {
+            if (format.HorizontalTextAlign == TextAlign.Start)
+                sb.AddStyle("justify-content", "start");
+            else if (format.HorizontalTextAlign == TextAlign.End)
+                sb.AddStyle("justify-content", "end");
+            else if (format.HorizontalTextAlign == TextAlign.Center)
+                sb.AddStyle("justify-content", "center");
+        }
+        
+        if (format.VerticalTextAlign != null)
+        {
+            if (format.VerticalTextAlign == TextAlign.Start)
+                sb.AddStyle("align-items", "start");
+            else if (format.VerticalTextAlign == TextAlign.End)
+                sb.AddStyle("align-items", "end");
+            else if (format.VerticalTextAlign == TextAlign.Center)
+                sb.AddStyle("align-items", "center");
+        }
 
         return sb.ToString();
     }

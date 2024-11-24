@@ -6,6 +6,7 @@
 @using BlazorDatasheet.Core.Validation
 @using System.Drawing
 @using BlazorDatasheet.Core.Commands.Data
+@using BlazorDatasheet.Core.Commands.Formatting
 
 <div style="width: 800px; height: 500px; overflow: scroll;">
     <Datasheet
@@ -177,7 +178,7 @@
         var border = new Border() { Width = 1, Color = "#000000" };
         Sheet.Range("A1:D1").Format = new CellFormat()
         {
-            TextAlign = "center",
+            HorizontalTextAlign = TextAlign.End,
             BackgroundColor = "#F5F5F5",
             BorderBottom = border,
             BorderRight = border,
@@ -213,7 +214,7 @@
         Sheet.Cells[5, 0].Value = "Sum:";
         Sheet.Cells[5, 1].Formula = "=SUM(B2:B5)";
 
-        Sheet.SetFormat(new Region(3, 5, 3, 3), new CellFormat() { TextAlign = "right" });
+        Sheet.SetFormat(new Region(3, 5, 3, 3), new CellFormat() { HorizontalTextAlign = TextAlign.End });
 
         for (int i = 10; i <= 13; i++)
         {

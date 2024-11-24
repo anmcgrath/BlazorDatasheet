@@ -1,4 +1,5 @@
 using BlazorDatasheet.Core.Commands;
+using BlazorDatasheet.Core.Commands.Formatting;
 using BlazorDatasheet.Core.Commands.RowCols;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Formats;
@@ -152,22 +153,22 @@ public class RemoveRowColCommandTests
     public void Remove_Row_At_End_Of_Format_region_Then_Undo_restores_Format()
     {
         var sheet = new Sheet(5, 5);
-        sheet.SetFormat(sheet.Range("A1:A5").Region, new CellFormat() { TextAlign = "centre" });
+        sheet.SetFormat(sheet.Range("A1:A5").Region, new CellFormat() { HorizontalTextAlign = TextAlign.Center });
         var cmd = new RemoveRowColsCommand(4, Axis.Row, 1);
         cmd.Execute(sheet);
         cmd.Undo(sheet);
-        sheet.GetFormat(4, 0).TextAlign.Should().Be("centre");
+        sheet.GetFormat(4, 0).HorizontalTextAlign.Should().Be(TextAlign.Center);
     }
 
     [Test]
     public void Remove_Col_At_End_Of_Format_region_Then_Undo_restores_Format()
     {
         var sheet = new Sheet(5, 5);
-        sheet.SetFormat(sheet.Range("A1:D1").Region, new CellFormat() { TextAlign = "centre" });
+        sheet.SetFormat(sheet.Range("A1:D1").Region, new CellFormat() { HorizontalTextAlign = TextAlign.Center });
         var cmd = new RemoveRowColsCommand(3, Axis.Col, 1);
         cmd.Execute(sheet);
         cmd.Undo(sheet);
-        sheet.GetFormat(0, 3).TextAlign.Should().Be("centre");
+        sheet.GetFormat(0, 3).HorizontalTextAlign.Should().Be(TextAlign.Center);
     }
 
     [Test]
@@ -177,10 +178,10 @@ public class RemoveRowColCommandTests
         // | 0 | 1 | 2 | 3 |
         // |   | c | c | c |
         var sheet = new Sheet(5, 5);
-        sheet.SetFormat(new Region(0, 0, 1, 3), new CellFormat() { TextAlign = "centre" });
+        sheet.SetFormat(new Region(0, 0, 1, 3), new CellFormat() { HorizontalTextAlign = TextAlign.Center });
         var cmd = new RemoveRowColsCommand(0, Axis.Col, 2);
         cmd.Execute(sheet);
         cmd.Undo(sheet);
-        sheet.GetFormat(0, 1)?.TextAlign.Should().Be("centre");
+        sheet.GetFormat(0, 1)?.HorizontalTextAlign.Should().Be(TextAlign.Center);
     }
 }

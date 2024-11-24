@@ -1,4 +1,5 @@
 @using BlazorDatasheet.Core.Commands.Data
+@using BlazorDatasheet.Core.Commands.Formatting
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Data.Filter
 @using BlazorDatasheet.Core.Formats
@@ -27,18 +28,32 @@
             }
             @if (MenuOptions.AlignmentEnabled)
             {
-                <SheetSubMenu Label="Alignment">
+                <SheetSubMenu Label="Horiz. Alignment">
                     <SheetMenuItem
-                        OnClick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { TextAlign = "left" }))">
+                        OnClick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { HorizontalTextAlign = TextAlign.Start }))">
                         Left
                     </SheetMenuItem>
                     <SheetMenuItem
-                        OnClick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { TextAlign = "center" }))">
+                        OnClick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { HorizontalTextAlign = TextAlign.Center }))">
                         Centre
                     </SheetMenuItem>
                     <SheetMenuItem
-                        OnClick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { TextAlign = "right" }))">
+                        OnClick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { HorizontalTextAlign = TextAlign.End }))">
                         Right
+                    </SheetMenuItem>
+                </SheetSubMenu>
+                <SheetSubMenu Label="Vert. Alignment">
+                    <SheetMenuItem
+                        OnClick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { VerticalTextAlign = TextAlign.Start }))">
+                        Top
+                    </SheetMenuItem>
+                    <SheetMenuItem
+                        OnClick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { VerticalTextAlign = TextAlign.Center }))">
+                        Centre
+                    </SheetMenuItem>
+                    <SheetMenuItem
+                        OnClick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { VerticalTextAlign = TextAlign.End }))">
+                        Bottom
                     </SheetMenuItem>
                 </SheetSubMenu>
             }

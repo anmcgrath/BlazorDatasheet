@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using BlazorDatasheet.Core.Commands.Formatting;
 using BlazorDatasheet.DataStructures.Intervals;
 using BlazorDatasheet.Formula.Core;
 
@@ -42,9 +43,14 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>
     public bool? IsReadOnly { get; set; }
 
     /// <summary>
-    /// CSS text align
+    /// Horizontal text align.
     /// </summary>
-    public string? TextAlign { get; set; }
+    public TextAlign? HorizontalTextAlign { get; set; }
+
+    /// <summary>
+    /// Vertical text align.
+    /// </summary>
+    public TextAlign? VerticalTextAlign { get; set; }
 
     /// <summary>
     /// Left border
@@ -80,7 +86,8 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>
             Icon = Icon,
             NumberFormat = NumberFormat,
             IconColor = IconColor,
-            TextAlign = TextAlign,
+            HorizontalTextAlign = HorizontalTextAlign,
+            VerticalTextAlign = VerticalTextAlign,
             IsReadOnly = IsReadOnly,
             BorderBottom = BorderBottom?.Clone(),
             BorderLeft = BorderLeft?.Clone(),
@@ -104,8 +111,10 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>
             this.ForegroundColor = format.ForegroundColor;
         if (!string.IsNullOrEmpty(format.FontWeight))
             this.FontWeight = format.FontWeight;
-        if (!string.IsNullOrEmpty(format.TextAlign))
-            this.TextAlign = format.TextAlign;
+        if (format.HorizontalTextAlign != null)
+            this.HorizontalTextAlign = format.HorizontalTextAlign;
+        if (format.VerticalTextAlign != null)
+            this.VerticalTextAlign = format.VerticalTextAlign;
         if (format.Icon != null)
             this.Icon = format.Icon;
         if (!string.IsNullOrEmpty(format.NumberFormat))
@@ -167,7 +176,8 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>
                this.IsReadOnly == other?.IsReadOnly &&
                this.ForegroundColor == other?.ForegroundColor &&
                this.NumberFormat == other?.NumberFormat &&
-               this.TextAlign == other?.TextAlign &&
+               this.HorizontalTextAlign == other?.HorizontalTextAlign &&
+               this.VerticalTextAlign == other?.VerticalTextAlign &&
                this.Icon == other?.Icon &&
                this.BorderBottom == other?.BorderBottom &&
                this.BorderLeft == other?.BorderLeft &&
