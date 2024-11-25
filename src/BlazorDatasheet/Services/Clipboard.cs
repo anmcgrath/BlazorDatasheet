@@ -9,8 +9,8 @@ public class Clipboard : IClipboard
 {
     private readonly IJSRuntime _js;
 
-    private string _lastCopiedText;
-    private IRegion _lastCopiedRegion;
+    private string? _lastCopiedText;
+    private IRegion? _lastCopiedRegion;
 
     public Clipboard(IJSRuntime jsRuntime)
     {

@@ -34,7 +34,6 @@ internal interface IWindowEventService : IAsyncDisposable
     /// Causes the window events to prevent the default behaviour for type <paramref name="eventType"/>
     /// </summary>
     /// <param name="eventType">The type of events to prevent default behaviour for.</param>
-    /// <param name="exclusions">If the event matches all the properties of any of the exclusions, prevent default will not be called.</param>
     /// <returns></returns>
     Task PreventDefault(string eventType);
 

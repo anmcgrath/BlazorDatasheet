@@ -71,7 +71,7 @@
             return this.serializeKeyboardEvent(e)
         else if (e.type.includes('mouse'))
             return this.serializeMouseEvent(e)
-        else if (e.type.includes('paste'))
+        else if (e.type.includes('paste') || e.type.includes('copy'))
             return this.serializeClipboardEvent(e)
     }
 

@@ -15,7 +15,6 @@ using BlazorDatasheet.Extensions;
 using BlazorDatasheet.KeyboardInput;
 using BlazorDatasheet.Menu;
 using BlazorDatasheet.Render;
-using BlazorDatasheet.Render.Headings;
 using BlazorDatasheet.Services;
 using BlazorDatasheet.Virtualise;
 using Microsoft.AspNetCore.Components;
@@ -33,7 +32,7 @@ public partial class Datasheet : SheetComponentBase
     [Inject] private IWindowEventService WindowEventService { get; set; } = null!;
     [Inject] private IMenuService MenuService { get; set; } = null!;
     private IClipboard ClipboardService { get; set; } = null!;
-    
+
 
     /// <summary>
     /// The Sheet holding the data for the datasheet.
@@ -364,6 +363,7 @@ public partial class Datasheet : SheetComponentBase
         await WindowEventService.RegisterMouseEvent("mousedown", HandleWindowMouseDown);
         await WindowEventService.RegisterKeyEvent("keydown", HandleWindowKeyDown);
         await WindowEventService.RegisterClipboardEvent("paste", HandleWindowPaste);
+        await WindowEventService.RegisterClipboardEvent("copy", HandleWindowCopy);
         await WindowEventService.RegisterMouseEvent("mouseup", HandleWindowMouseUp);
     }
 
@@ -653,26 +653,36 @@ public partial class Datasheet : SheetComponentBase
         return true;
     }
 
-    private async Task<bool> HandleWindowPaste(ClipboardEventArgs arg)
+    private Task<bool> HandleWindowPaste(ClipboardEventArgs arg)
     {
         if (!IsDataSheetActive)
-            return false;
+            return Task.FromResult(false);
 
         if (!_sheet.Selection.Regions.Any())
-            return false;
+            return Task.FromResult(false);
 
         if (_sheet.Editor.IsEditing)
-            return false;
+            return Task.FromResult(false);
 
         var posnToInput = _sheet.Selection.GetInputPosition();
 
         var range = _sheet.InsertDelimitedText(arg.Text, posnToInput);
         if (range == null)
-            return false;
+            return Task.FromResult(false);
 
         _sheet.Selection.Set(range);
-        return true;
+        return Task.FromResult(true);
     }
+
+    private async Task<bool> HandleWindowCopy(ClipboardEventArgs arg)
+    {
+        Console.WriteLine($"Copy");
+        if (!IsDataSheetActive || _sheet.Editor.IsEditing)
+            return false;
+
+        return await CopySelectionToClipboard();
+    }
+
 
     private async void HandleCellDoubleClick(object? sender, SheetPointerEventArgs args)
     {
