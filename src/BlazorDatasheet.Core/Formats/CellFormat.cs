@@ -1,7 +1,4 @@
-using System.Diagnostics;
-using BlazorDatasheet.Core.Commands.Formatting;
 using BlazorDatasheet.DataStructures.Intervals;
-using BlazorDatasheet.Formula.Core;
 
 namespace BlazorDatasheet.Core.Formats;
 

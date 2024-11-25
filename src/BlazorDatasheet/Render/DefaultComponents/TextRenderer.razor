@@ -1,5 +1,4 @@
-@namespace BlazorDatasheet.Render.DefaultComponents
-@using System.Text
+﻿@namespace BlazorDatasheet.Render.DefaultComponents
 @inherits BaseRenderer
 
 <div class="cell-renderer" title="@(ValueText)">
@@ -8,7 +7,8 @@
 
 @code{
 
-    public string ValueText { get; set; }
+    public string ValueText { get; set; } = null!;
+
     protected override void OnParametersSet()
     {
         ValueText = Cell.Value?.ToString() ?? string.Empty;

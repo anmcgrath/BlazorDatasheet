@@ -1,6 +1,4 @@
 using BlazorDatasheet.Core.Data;
-using BlazorDatasheet.Core.Events;
-using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.Formats;
@@ -26,7 +24,7 @@ public abstract class ConditionalFormatAbstractBase : IEquatable<ConditionalForm
     /// <summary>
     /// Whether the conditional formats after this should not be applied if this is true.
     /// </summary>
-    public bool StopIfTrue { get; set; }
+    public bool StopIfTrue { get; } = false;
 
     /// <summary>
     /// Returns the calculated format object

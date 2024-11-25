@@ -5,7 +5,7 @@ namespace BlazorDatasheet.Core.Formats;
 public class Border : IMergeable<Border>, IEquatable<Border>
 {
     public int? Width { get; set; }
-    public string Color { get; set; }
+    public string? Color { get; set; }
 
     public void Merge(Border item)
     {
@@ -29,10 +29,5 @@ public class Border : IMergeable<Border>, IEquatable<Border>
         if (ReferenceEquals(null, other)) return false;
         if (ReferenceEquals(this, other)) return true;
         return Width == other.Width && Color == other.Color;
-    }
-
-    public override int GetHashCode()
-    {
-        return HashCode.Combine(Width, Color);
     }
 }

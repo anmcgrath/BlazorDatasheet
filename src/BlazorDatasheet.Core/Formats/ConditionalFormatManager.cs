@@ -1,6 +1,5 @@
 ﻿using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
-using BlazorDatasheet.Core.Events;
 using BlazorDatasheet.Core.Events.Data;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
@@ -26,7 +25,7 @@ public class ConditionalFormatManager
     /// </summary>
     /// <param name="region"></param>
     /// <param name="conditionalFormat"></param>
-    public void Apply(IRegion? region, ConditionalFormatAbstractBase conditionalFormat)
+    public void Apply(IRegion region, ConditionalFormatAbstractBase conditionalFormat)
     {
         Apply(new SheetRange(_sheet, region), conditionalFormat);
     }

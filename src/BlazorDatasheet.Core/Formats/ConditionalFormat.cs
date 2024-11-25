@@ -17,7 +17,7 @@ public sealed class ConditionalFormat : ConditionalFormatAbstractBase
     /// </summary>
     public Func<IReadOnlyCell, CellFormat>? FormatFunc { get; }
 
-    private List<IReadOnlyCell> _cellCache;
+    private List<IReadOnlyCell> _cellCache = new();
 
     private ConditionalFormat()
     {

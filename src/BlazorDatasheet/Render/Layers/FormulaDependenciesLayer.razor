@@ -1,5 +1,3 @@
-@using BlazorDatasheet.Core.Data
-@using BlazorDatasheet.Core.Layout
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Formula.Core.Dependencies
 @inherits Layer
@@ -8,7 +6,9 @@
     if (ViewRegion != null)
     {
         <div style="position: absolute;top: 0;left: 0; width: 100%; height: 100%;" id="svg_layer">
-            <svg viewBox="0 0 @Sheet.Columns.GetVisualWidthBetween(ViewRegion.Left, ViewRegion.Right + 1) @Sheet.Rows.GetVisualHeightBetween(ViewRegion.Top, ViewRegion.Bottom + 1)" xmlns="http://www.w3.org/2000/svg">
+            <svg
+                viewBox="0 0 @Sheet.Columns.GetVisualWidthBetween(ViewRegion.Left, ViewRegion.Right + 1) @Sheet.Rows.GetVisualHeightBetween(ViewRegion.Top, ViewRegion.Bottom + 1)"
+                xmlns="http://www.w3.org/2000/svg">
                 <defs>
                     <!-- A marker to be used as an arrowhead -->
                     <marker
@@ -61,10 +61,7 @@
 
     protected override void OnParametersSet()
     {
-        Sheet.Cells.FormulaChanged += (sender, args) =>
-        {
-            StateHasChanged();
-        };
+        Sheet.Cells.FormulaChanged += (_, _) => { StateHasChanged(); };
         base.OnParametersSet();
     }
 
