@@ -51,7 +51,6 @@
 .text-input[b-k71ijntl8x] {
     width: 100%;
     border: none;
-    padding: 2px;
     height: 100%;
     box-sizing: border-box;
 }
@@ -75,8 +74,7 @@
 
 .select-item[b-k71ijntl8x] {
     cursor: pointer;
-    padding: 0.1rem;
-    padding-left: 0.2rem;
+    padding: 0.1rem 0.1rem 0.1rem 0.2rem;
 }
 
 .select-item:hover[b-k71ijntl8x],
