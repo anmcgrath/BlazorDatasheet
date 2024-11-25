@@ -2,11 +2,15 @@
 @using BlazorDatasheet.Core.Edit
 @inherits BaseRenderer
 
-<div style="display: flex; flex-direction: row; justify-content: space-between; width:100%;">
+<div
+    class="sheet-select-render"
+    style="display: flex; flex-direction: row; justify-content: space-between; width:@(Cell.Width)px; height: @(Cell.Height)px">
     <div style="overflow: hidden;">
         @(Cell.Value?.ToString())
     </div>
-    <CaretButton OnPress="@BeginEdit"/>
+    <div style="margin-right: 8px;">
+        <CaretButton OnPress="@BeginEdit"/>
+    </div>
 </div>
 
 @code {

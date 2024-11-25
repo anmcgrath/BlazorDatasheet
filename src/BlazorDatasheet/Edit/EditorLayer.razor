@@ -218,6 +218,10 @@
 
         sb.AddStyle("left", $"{left + 1}px;");
         sb.AddStyle("top", $"{top + 1}px;");
+
+        sb.AddStyle("max-width", LayerWidth + "px");
+        sb.AddStyle("max-height", LayerHeight + "px");
+
         var style = sb.ToString();
         return style;
     }
@@ -225,10 +229,18 @@
 
     private IDictionary<string, object> GetDynamicEditorParameters()
     {
+        var editCell = _sheet.Editor.EditCell!;
+        var merge = _sheet.Cells.GetMerge(editCell.Row, editCell.Col);
+        var r = merge?.Right ?? editCell.Col;
+        var b = merge?.Bottom ?? editCell.Row;
+        var cellWidth = _sheet.Columns.GetVisualWidthBetween(editCell.Col, r + 1);
+        var cellHeight = _sheet.Rows.GetVisualHeightBetween(editCell.Row, b + 1);
         return new Dictionary<string, object>()
         {
             { nameof(BaseEditor.OnValueChanged), EventCallback.Factory.Create<string>(this, HandleEditValueChanged) },
-            { "Style", GetEditorDisplayStyling() }
+            { "Style", GetEditorDisplayStyling() },
+            { "CellWidth", cellWidth },
+            { "CellHeight", cellHeight }
         };
     }
 

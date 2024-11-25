@@ -39,10 +39,22 @@ public abstract class BaseEditor : SheetComponentBase, ICellEditor
     public ElementReference InputRef = new ElementReference();
 
     /// <summary>
-    /// Style to apply to the editor.
+    /// Style to apply to the editor such as background and font.
     /// </summary>
-    [Parameter]
-    public string Style { get; set; }
+    [Parameter, EditorRequired]
+    public required string Style { get; set; }
+
+    /// <summary>
+    /// The cell width in px
+    /// </summary>
+    [Parameter, EditorRequired] 
+    public required double CellWidth { get; set; }
+
+    /// <summary>
+    /// The cell height in px
+    /// </summary>
+    [Parameter, EditorRequired] 
+    public required double CellHeight { get; set; }
 
     public virtual void BeforeEdit(IReadOnlyCell cell, Sheet sheet)
     {

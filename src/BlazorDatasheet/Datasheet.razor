@@ -135,10 +135,10 @@
 
                 <LayerContainer Depth="@GridLevel" Sheet="_sheet" ViewRegion="MainViewRegion"
                                 PointerInputService="_sheetPointerInputService">
-                    <EditorLayer @ref="_editorLayer" CustomCellTypes="@CustomCellTypeDefinitions"/>
                     <HighlightLayer/>
                     <AutofillLayer/>
                     <VirtualMergesLayer Cache="_visualCellCache"/>
+                    <EditorLayer @ref="_editorLayer" CustomCellTypes="@CustomCellTypeDefinitions"/>
                     <SelectionRendererLayer/>
                     @if (_showFormulaDependents)
                     {

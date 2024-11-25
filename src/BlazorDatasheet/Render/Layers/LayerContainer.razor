@@ -14,8 +14,12 @@
         <CascadingValue Value="ViewRegion">
             <CascadingValue Value="Sheet">
                 <CascadingValue Value="Depth" IsFixed="true">
-                    <CascadingValue Value="PointerInputService">
-                        @ChildContent
+                    <CascadingValue Value="LayerHeight">
+                        <CascadingValue Value="LayerWidth">
+                            <CascadingValue Value="PointerInputService">
+                                @ChildContent
+                            </CascadingValue>
+                        </CascadingValue>
                     </CascadingValue>
                 </CascadingValue>
             </CascadingValue>
@@ -45,12 +49,12 @@
     /// <summary>
     /// The width, in px, of the rendered layer region
     /// </summary>
-    protected double LayerWidth { get; private set; }
+    protected double LayerWidth { get; set; }
 
     /// <summary>
     /// The height, in px, of the rendered layer region
     /// </summary>
-    protected double LayerHeight { get; private set; }
+    protected double LayerHeight { get; set; }
 
     protected override void OnParametersSet()
     {

@@ -1,4 +1,3 @@
-@using BlazorDatasheet.Util
 @using BlazorDatasheet.Core.Util
 @using BlazorDatasheet.Core.Interfaces
 @using BlazorDatasheet.Core.Data
@@ -9,12 +8,12 @@
 <input @bind="CurrentValue"
        @bind:event="oninput"
        class="text-input"
-       style="@Style"
+       style="@Style; width: @(CellWidth - 2)px; height: @(CellHeight - 2)px;"
        @ref="InputRef"/>
 <div class="select-list">
-    @foreach (var val in values)
+    @foreach (var val in _values)
     {
-        <div class="select-item @(val.Equals(currentSelected) ? "active" : "")"
+        <div class="select-item @(val.Equals(_currentSelected) ? "active" : "")"
              @onmouseup="() => selectItem(val)">
             @val
         </div>
@@ -23,11 +22,11 @@
 
 @code {
 
-    private string[] values = Array.Empty<string>();
+    private string[] _values = Array.Empty<string>();
 
     private IReadOnlyCell Cell;
 
-    string? currentSelected;
+    string? _currentSelected;
 
     public override void BeforeEdit(IReadOnlyCell cell, Sheet sheet)
     {
@@ -36,7 +35,7 @@
         foreach (var validator in sheet.Validators.Get(cell.Row, cell.Col))
             if (validator is SourceValidator)
             {
-                values = ((SourceValidator)validator).ValidationSource.ToArray();
+                _values = ((SourceValidator)validator).ValidationSource.ToArray();
                 break;
             }
     }
@@ -45,19 +44,19 @@
     {
         if (entryMode == EditEntryMode.Mouse)
         {
-            CurrentValue = editValue.ToString();
+            CurrentValue = editValue ?? string.Empty;
         }
         else if (entryMode == EditEntryMode.Key)
         {
-            if (values.Any())
+            if (_values.Any())
             {
                 var keyUpped = key.ToUpperInvariant();
-                currentSelected = values.FirstOrDefault(v => v.ToUpperInvariant().StartsWith(keyUpped));
+                _currentSelected = _values.FirstOrDefault(v => v.ToUpperInvariant().StartsWith(keyUpped));
             }
 
-            if (!string.IsNullOrWhiteSpace(currentSelected))
+            if (!string.IsNullOrWhiteSpace(_currentSelected))
             {
-                CurrentValue = currentSelected;
+                CurrentValue = _currentSelected;
             }
             else
             {
@@ -73,9 +72,9 @@
     {
         if (KeyUtil.IsEnter(key))
         {
-            if (!string.IsNullOrWhiteSpace(currentSelected))
+            if (!string.IsNullOrWhiteSpace(_currentSelected))
             {
-                selectItem(currentSelected);
+                selectItem(_currentSelected);
                 return true;
             }
             else
@@ -99,9 +98,9 @@
         if (!string.IsNullOrWhiteSpace(CurrentValue))
         {
             var keyUpped = CurrentValue.ToUpperInvariant();
-            currentSelected = values.FirstOrDefault(v => v.ToUpperInvariant().StartsWith(keyUpped));
+            _currentSelected = _values.FirstOrDefault(v => v.ToUpperInvariant().StartsWith(keyUpped));
 
-            if (!string.IsNullOrWhiteSpace(currentSelected))
+            if (!string.IsNullOrWhiteSpace(_currentSelected))
             {
                 StateHasChanged();
                 return true;
@@ -113,11 +112,11 @@
 
     void hoverItem(int direction)
     {
-        var index = !string.IsNullOrWhiteSpace(currentSelected) ? Array.IndexOf(values, currentSelected) : 0;
+        var index = !string.IsNullOrWhiteSpace(_currentSelected) ? Array.IndexOf(_values, _currentSelected) : 0;
 
-        index = direction > 0 ? Math.Min(index + 1, values.Length - 1) : Math.Max(index - 1, 0);
+        index = direction > 0 ? Math.Min(index + 1, _values.Length - 1) : Math.Max(index - 1, 0);
 
-        currentSelected = values[index];
+        _currentSelected = _values[index];
 
         StateHasChanged();
     }

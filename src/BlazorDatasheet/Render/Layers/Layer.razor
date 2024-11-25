@@ -10,6 +10,10 @@
     [CascadingParameter]
     public int Depth { get; set; }
 
+    [CascadingParameter] protected double LayerWidth { get; set; }
+
+    [CascadingParameter] protected double LayerHeight { get; set; }
+
     [CascadingParameter] protected Region? ViewRegion { get; set; }
 
     [CascadingParameter] protected Sheet Sheet { get; set; } = new(0, 0);

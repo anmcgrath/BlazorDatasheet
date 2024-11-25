@@ -10,7 +10,7 @@
     class="date-input"
     @bind="CurrentDateTime"
     @bind:event="oninput"
-    style="@Style; width: 100%;"
+    style="@Style; width: @(CellWidth - 2)px; height: @(CellHeight - 2)px;"
     @ref="InputRef"/>
 
 @code {
