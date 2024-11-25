@@ -8,19 +8,26 @@ public class MergeCellsCommand : IUndoableCommand
 {
     private readonly List<IRegion> _overridenMergedRegions = new();
     private readonly List<IRegion> _mergesPerformed = new();
-    private CellStoreRestoreData _restoreData;
-    private IRegion _region;
+    private CellStoreRestoreData _restoreData = null!;
+    private readonly IRegion _region;
 
     /// <summary>
     /// Command that merges the cells in the range give.
     /// Note that the value in the top LHS will be kept, while other cell values will be cleared.
     /// </summary>
-    /// <param name="range">The range in which to merge. </param>
+    /// <param name="region"></param>
     public MergeCellsCommand(IRegion region)
     {
         _region = region.Clone();
     }
 
+    public bool CanExecute(Sheet sheet)
+    {
+        var existingMerges = sheet.Cells.GetMerges(_region).ToList();
+        if (!existingMerges.All(x => _region.Contains(x)))
+            return false;
+        return true;
+    }
 
     public bool Execute(Sheet sheet)
     {

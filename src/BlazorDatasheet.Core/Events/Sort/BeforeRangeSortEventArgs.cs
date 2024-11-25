@@ -1,10 +1,8 @@
 ﻿using System.ComponentModel;
-using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Commands.Data;
-using BlazorDatasheet.Core.Commands.RowCols;
 using BlazorDatasheet.DataStructures.Geometry;
 
-namespace BlazorDatasheet.Core.Events;
+namespace BlazorDatasheet.Core.Events.Sort;
 
 public class BeforeRangeSortEventArgs : CancelEventArgs
 {

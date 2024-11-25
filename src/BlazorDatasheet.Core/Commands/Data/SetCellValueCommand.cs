@@ -38,6 +38,8 @@ public class SetCellValueCommand : IUndoableCommand
         _value = value;
     }
 
+    public bool CanExecute(Sheet sheet) => sheet.Region.Contains(_row, _col);
+
     public bool Execute(Sheet sheet)
     {
         sheet.ScreenUpdating = false;

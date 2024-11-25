@@ -10,6 +10,8 @@ public class SetMetaDataCommand : IUndoableCommand
     private readonly object? _value;
     private object? _oldValue;
 
+    public bool CanExecute(Sheet sheet) => sheet.Region.Contains(_row, _col);
+
     public SetMetaDataCommand(int row, int col, string name, object? value)
     {
         _row = row;

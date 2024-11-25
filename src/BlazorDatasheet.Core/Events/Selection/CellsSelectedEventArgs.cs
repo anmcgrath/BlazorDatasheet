@@ -1,6 +1,6 @@
 ﻿using BlazorDatasheet.Core.Interfaces;
 
-namespace BlazorDatasheet.Core.Events;
+namespace BlazorDatasheet.Core.Events.Selection;
 
 public class CellsSelectedEventArgs
 {

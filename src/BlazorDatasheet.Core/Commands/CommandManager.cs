@@ -1,7 +1,7 @@
 ﻿using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Events.Commands;
 using BlazorDatasheet.Core.Selecting;
 using BlazorDatasheet.Core.Util;
-using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.Commands;
 
@@ -9,8 +9,23 @@ public class CommandManager
 {
     private readonly MaxStack<UndoCommandData> _history;
     private readonly MaxStack<ICommand> _redos;
-    private Sheet _sheet;
+    private readonly Sheet _sheet;
     private CommandGroup? _currentCommandGroup;
+
+    /// <summary>
+    /// Invoked before a command is run. If cancel is true in <see cref="BeforeCommandRunEventArgs"/>, the command is not run.
+    /// </summary>
+    public event EventHandler<BeforeCommandRunEventArgs>? BeforeCommandRun;
+
+    /// <summary>
+    /// Called after a command is run.
+    /// </summary>
+    public event EventHandler<CommandRunEventArgs>? CommandRun;
+
+    /// <summary>
+    /// Called after a command was undone.
+    /// </summary>
+    public event EventHandler<UndoCommandRunEventArgs>? CommandUndone;
 
     /// <summary>
     /// Whether the commands executed are being collected in a group.
@@ -42,7 +57,17 @@ public class CommandManager
             return true;
         }
 
+        var beforeArgs = new BeforeCommandRunEventArgs(command, _sheet);
+        BeforeCommandRun?.Invoke(this, beforeArgs);
+        if (beforeArgs.Cancel)
+            return false;
+
+        if (!command.CanExecute(_sheet))
+            return false;
+
         var result = command.Execute(_sheet);
+        CommandRun?.Invoke(this, new CommandRunEventArgs(command, _sheet, result));
+
         if (result)
         {
             if (!HistoryPaused && command is IUndoableCommand undoCommand)
@@ -92,14 +117,16 @@ public class CommandManager
         if (_history.Peek() == null)
             return false;
 
-        var cmd = _history.Pop()!;
-        var result = cmd.Command.Undo(_sheet);
+        var commandData = _history.Pop()!;
 
-        _sheet.Selection.Restore(cmd.SelectionSnapshot);
+        var result = commandData.Command.Undo(_sheet);
+        CommandUndone?.Invoke(this, new UndoCommandRunEventArgs(commandData.Command, _sheet, result));
+
+        _sheet.Selection.Restore(commandData.SelectionSnapshot);
 
         if (!HistoryPaused && result)
         {
-            _redos.Push(cmd.Command);
+            _redos.Push(commandData.Command);
         }
 
         return result;
@@ -117,12 +144,22 @@ public class CommandManager
         if (_redos.Peek() == null)
             return false;
 
-        var cmd = _redos.Pop()!;
-        var result = cmd.Execute(_sheet);
+        var command = _redos.Pop()!;
+        
+        var beforeArgs = new BeforeCommandRunEventArgs(command, _sheet);
+        BeforeCommandRun?.Invoke(this, beforeArgs);
+        if (beforeArgs.Cancel)
+            return false;
+        
+        if (!command.CanExecute(_sheet))
+            return false;
+        
+        var result = command.Execute(_sheet);
+        CommandRun?.Invoke(this, new CommandRunEventArgs(command, _sheet, result));
 
         if (result)
         {
-            if (!HistoryPaused && cmd is IUndoableCommand undoCommand)
+            if (!HistoryPaused && command is IUndoableCommand undoCommand)
             {
                 _history.Push(new UndoCommandData()
                 {
@@ -194,5 +231,8 @@ internal class UndoCommandData
     /// </summary>
     public IUndoableCommand Command { get; init; } = null!;
 
-    public SelectionSnapshot SelectionSnapshot { get; init; }
+    /// <summary>
+    /// Records information on the sheet's selection so that it can be restored.
+    /// </summary>
+    public required SelectionSnapshot SelectionSnapshot { get; init; }
 }

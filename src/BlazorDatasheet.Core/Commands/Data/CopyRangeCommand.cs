@@ -6,17 +6,18 @@ namespace BlazorDatasheet.Core.Commands.Data;
 
 public class CopyRangeCommand : IUndoableCommand
 {
-    private SheetRange _fromRange;
-    private SheetRange[] _toRanges;
+    private readonly SheetRange _fromRange;
+    private readonly SheetRange[] _toRanges;
     private readonly CopyOptions _copyOptions;
 
-    private CellStoreRestoreData _cellStoreRestore;
+    private CellStoreRestoreData _cellStoreRestore = null!;
 
     /// <summary>
     /// Copies data from one range to another. The from range must only have a single region.
     /// </summary>
     /// <param name="fromRange"></param>
     /// <param name="toRanges"></param>
+    /// <param name="copyOptions"></param>
     public CopyRangeCommand(SheetRange fromRange, SheetRange[] toRanges, CopyOptions copyOptions)
     {
         _fromRange = fromRange;
@@ -29,6 +30,7 @@ public class CopyRangeCommand : IUndoableCommand
     /// </summary>
     /// <param name="fromRange"></param>
     /// <param name="toRange"></param>
+    /// <param name="copyOptions"></param>
     public CopyRangeCommand(SheetRange fromRange, SheetRange toRange, CopyOptions copyOptions)
     {
         _fromRange = fromRange;
@@ -43,6 +45,8 @@ public class CopyRangeCommand : IUndoableCommand
 
         return true;
     }
+
+    public bool CanExecute(Sheet sheet) => true;
 
     private void Copy(IRegion fromRegion, IRegion toRegion, Sheet sheet)
     {

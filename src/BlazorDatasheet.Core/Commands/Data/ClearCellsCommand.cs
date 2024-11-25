@@ -10,7 +10,7 @@ namespace BlazorDatasheet.Core.Commands.Data;
 public class ClearCellsCommand : IUndoableCommand
 {
     private readonly IEnumerable<IRegion> _regions;
-    private CellStoreRestoreData _restoreData;
+    private CellStoreRestoreData _restoreData = null!;
 
     public ClearCellsCommand(SheetRange range) : this(new[] { range.Region })
     {
@@ -26,6 +26,8 @@ public class ClearCellsCommand : IUndoableCommand
         _restoreData = sheet.Cells.ClearCellsImpl(_regions);
         return true;
     }
+
+    public bool CanExecute(Sheet sheet) => true;
 
     public bool Undo(Sheet sheet)
     {

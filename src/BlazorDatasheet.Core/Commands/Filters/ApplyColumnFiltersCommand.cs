@@ -8,6 +8,7 @@ namespace BlazorDatasheet.Core.Commands.Filters;
 public class ApplyColumnFiltersCommand : IUndoableCommand
 {
     private IUndoableCommand _commandRun = null!;
+    public bool CanExecute(Sheet sheet) => true;
 
     public bool Execute(Sheet sheet)
     {

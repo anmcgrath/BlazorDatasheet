@@ -14,17 +14,17 @@ public class RemoveRowColCommandTests
     [Test]
     public void Remove_Col_Then_Undo_Works_Ok()
     {
-        var sheet = new Sheet(1, 3);
+        var sheet = new Sheet(1, 4);
         sheet.Cells.SetValue(0, 2, "'0,2");
         sheet.Cells.SetValue(0, 3, "'0,3");
 
         sheet.Columns.RemoveAt(2);
 
-        Assert.AreEqual(2, sheet.NumCols);
+        Assert.AreEqual(3, sheet.NumCols);
         Assert.AreEqual("'0,3", sheet.Cells.GetValue(0, 2));
 
         sheet.Commands.Undo();
-        Assert.AreEqual(3, sheet.NumCols);
+        Assert.AreEqual(4, sheet.NumCols);
         Assert.AreEqual("'0,2", sheet.Cells.GetValue(0, 2));
         Assert.AreEqual("'0,3", sheet.Cells.GetValue(0, 3));
     }
@@ -32,16 +32,16 @@ public class RemoveRowColCommandTests
     [Test]
     public void Remove_Row_Then_Undo_Works_Ok()
     {
-        var sheet = new Sheet(3, 1);
+        var sheet = new Sheet(4, 1);
         sheet.Cells.SetValue(2, 0, "'2,0");
         sheet.Cells.SetValue(3, 0, "'3,0");
         sheet.Rows.RemoveAt(2);
 
-        Assert.AreEqual(2, sheet.NumRows);
+        Assert.AreEqual(3, sheet.NumRows);
         Assert.AreEqual("'3,0", sheet.Cells.GetValue(2, 0));
 
         sheet.Commands.Undo();
-        Assert.AreEqual(3, sheet.NumRows);
+        Assert.AreEqual(4, sheet.NumRows);
         Assert.AreEqual("'2,0", sheet.Cells.GetValue(2, 0));
         Assert.AreEqual("'3,0", sheet.Cells.GetValue(3, 0));
     }

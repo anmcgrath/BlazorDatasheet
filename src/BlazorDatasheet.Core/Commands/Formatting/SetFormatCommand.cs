@@ -3,7 +3,6 @@ using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Intervals;
-using BlazorDatasheet.Formula.Core;
 
 namespace BlazorDatasheet.Core.Commands.Formatting;
 
@@ -31,6 +30,8 @@ public class SetFormatCommand : IUndoableCommand
         _clearSurroundingBorders = clearSurroundingBorders;
         _region = region.Clone();
     }
+
+    public bool CanExecute(Sheet sheet) => true;
 
     public bool Execute(Sheet sheet)
     {
@@ -62,9 +63,9 @@ public class SetFormatCommand : IUndoableCommand
         IRegion? above = null;
         IRegion? left = null;
 
-        if (_region is ColumnRegion columnRegion)
+        if (_region is ColumnRegion)
             left = new ColumnRegion(_region.Left - 1);
-        else if (_region is RowRegion rowRegion)
+        else if (_region is RowRegion)
             above = new RowRegion(_region.Top - 1);
         else
         {
@@ -72,8 +73,8 @@ public class SetFormatCommand : IUndoableCommand
             above = new Region(_region.Top - 1, _region.Top - 1, _region.Left, _region.Right);
         }
 
-        var cfLeft = new CellFormat() { BorderRight = _cellFormat?.BorderLeft?.Clone() };
-        var cfAbove = new CellFormat() { BorderBottom = _cellFormat?.BorderTop?.Clone() };
+        var cfLeft = new CellFormat() { BorderRight = _cellFormat.BorderLeft?.Clone() };
+        var cfAbove = new CellFormat() { BorderBottom = _cellFormat.BorderTop?.Clone() };
 
         if (left != null)
             _borderCommands.Add(new SetFormatCommand(left, cfLeft, false));

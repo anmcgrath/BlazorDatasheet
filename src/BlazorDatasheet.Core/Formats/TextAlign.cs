@@ -1,4 +1,4 @@
-﻿namespace BlazorDatasheet.Core.Commands.Formatting;
+﻿namespace BlazorDatasheet.Core.Formats;
 
 public enum TextAlign
 {

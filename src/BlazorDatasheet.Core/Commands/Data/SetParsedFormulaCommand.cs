@@ -9,8 +9,7 @@ internal class SetParsedFormulaCommand : IUndoableCommand
     private readonly int _row;
     private readonly int _col;
     private readonly CellFormula _formula;
-    private readonly bool _calculateSheetOnSet;
-    private CellStoreRestoreData _restoreData;
+    private CellStoreRestoreData _restoreData = null!;
 
     public SetParsedFormulaCommand(int row, int col, CellFormula formula)
     {
@@ -18,6 +17,8 @@ internal class SetParsedFormulaCommand : IUndoableCommand
         _col = col;
         _formula = formula;
     }
+
+    public bool CanExecute(Sheet sheet) => sheet.Region.Contains(_row, _col);
 
     public bool Execute(Sheet sheet)
     {

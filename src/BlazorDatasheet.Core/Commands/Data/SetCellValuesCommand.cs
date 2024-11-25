@@ -7,11 +7,11 @@ namespace BlazorDatasheet.Core.Commands.Data;
 
 public class SetCellValuesCommand : IUndoableCommand
 {
-    private readonly object[][]? _values = null;
-    private readonly CellValue[][]? _cellValues = null;
-    private readonly IRegion? _region = null;
-    private readonly object? _singleValue = null;
-    private readonly CellValue? _singleCellValue = null;
+    private readonly object[][]? _values;
+    private readonly CellValue[][]? _cellValues;
+    private readonly IRegion? _region;
+    private readonly object? _singleValue;
+    private readonly CellValue? _singleCellValue;
     private readonly int _row;
     private readonly int _col;
     private readonly CellStoreRestoreData _restoreData = new();
@@ -52,6 +52,19 @@ public class SetCellValuesCommand : IUndoableCommand
         _region = region;
         _singleValue = value;
     }
+
+    /// <summary>
+    /// Sets all the cells in the region <paramref name="region"/> to <paramref name="value"/>
+    /// </summary>
+    /// <param name="region"></param>
+    /// <param name="value"></param>
+    public SetCellValuesCommand(IRegion region, CellValue value)
+    {
+        _region = region;
+        _singleCellValue = value;
+    }
+
+    public bool CanExecute(Sheet sheet) => true;
 
     public bool Execute(Sheet sheet)
     {

@@ -8,7 +8,7 @@ public class SetTypeCommand : IUndoableCommand
 {
     private readonly IRegion _region;
     private readonly string _type;
-    private CellStoreRestoreData _restoreData;
+    private CellStoreRestoreData _restoreData = null!;
 
     public SetTypeCommand(int row, int col, string type) : this(new Region(row, row, col, col), type)
     {
@@ -19,6 +19,8 @@ public class SetTypeCommand : IUndoableCommand
         _region = region;
         _type = type;
     }
+
+    public bool CanExecute(Sheet sheet) => true;
 
     public bool Execute(Sheet sheet)
     {

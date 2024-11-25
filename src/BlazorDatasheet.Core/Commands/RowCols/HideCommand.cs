@@ -24,6 +24,8 @@ public class HideCommand : IUndoableCommand
         _axis = axis;
     }
 
+    public bool CanExecute(Sheet sheet) => true;
+
     public bool Execute(Sheet sheet)
     {
         _restoreData = sheet.GetRowColStore(_axis).HideImpl(_intervals);

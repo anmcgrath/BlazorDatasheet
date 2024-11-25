@@ -38,6 +38,8 @@ public class SortRangeCommand : IUndoableCommand
         _sortOptions = new List<ColumnSortOptions> { sortOption };
     }
 
+    public bool CanExecute(Sheet sheet) => true;
+
     public bool Execute(Sheet sheet)
     {
         var store = sheet.Cells.GetCellDataStore();

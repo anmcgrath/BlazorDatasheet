@@ -19,6 +19,8 @@ public class SetHeadingsCommand : IUndoableCommand
         _axis = axis;
     }
 
+    public bool CanExecute(Sheet sheet) => true;
+
     public bool Execute(Sheet sheet)
     {
         _restoreData = sheet.GetRowColStore(_axis).SetHeadingsImpl(_indexStart, _indexEnd, _heading);

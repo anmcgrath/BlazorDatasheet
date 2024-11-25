@@ -8,4 +8,5 @@ namespace BlazorDatasheet.Core.Commands;
 public interface ICommand
 {
     public bool Execute(Sheet sheet);
+    public bool CanExecute(Sheet sheet);
 }

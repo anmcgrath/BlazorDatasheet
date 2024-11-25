@@ -15,6 +15,7 @@ using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 using System.Text;
 using BlazorDatasheet.Core.Events.Selection;
+using BlazorDatasheet.Core.Events.Sort;
 
 namespace BlazorDatasheet.Core.Data;
 

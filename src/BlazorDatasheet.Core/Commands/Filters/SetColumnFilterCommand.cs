@@ -20,6 +20,7 @@ public class SetColumnFilterCommand : IUndoableCommand
     {
     }
 
+    public bool CanExecute(Sheet sheet) => sheet.Region.SpansCol(_columnIndex);
     public bool Execute(Sheet sheet)
     {
         _previousFilters = sheet.Columns.Filters.Get(_columnIndex).Filters.ToList();

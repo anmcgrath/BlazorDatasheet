@@ -17,11 +17,11 @@ internal class InsertRowsColsCommand : IUndoableCommand
     private readonly int _count;
     private readonly Axis _axis;
 
-    private RegionRestoreData<int> _validatorRestoreData;
-    private RegionRestoreData<ConditionalFormatAbstractBase> _cfRestoreData;
-    private CellStoreRestoreData _cellStoreRestoreData;
-    private RowColInfoRestoreData _rowColInfoRestoreData;
-    private MergeableIntervalStoreRestoreData<OverwritingValue<List<IFilter>?>> _filterRestoreData;
+    private RegionRestoreData<int> _validatorRestoreData = null!;
+    private RegionRestoreData<ConditionalFormatAbstractBase> _cfRestoreData = null!;
+    private CellStoreRestoreData _cellStoreRestoreData = null!;
+    private RowColInfoRestoreData _rowColInfoRestoreData = null!;
+    private MergeableIntervalStoreRestoreData<OverwritingValue<List<IFilter>?>> _filterRestoreData = null!;
 
     /// <summary>
     /// Command for inserting a row into the sheet.
@@ -35,6 +35,8 @@ internal class InsertRowsColsCommand : IUndoableCommand
         _count = count;
         _axis = axis;
     }
+
+    public bool CanExecute(Sheet sheet) => true;
 
     public bool Execute(Sheet sheet)
     {

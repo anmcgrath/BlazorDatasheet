@@ -15,6 +15,8 @@ public class SetValidatorCommand : IUndoableCommand
         _validator = validator;
     }
 
+    public bool CanExecute(Sheet sheet) => true;
+
     public bool Execute(Sheet sheet)
     {
         sheet.Validators.AddImpl(_validator, _region);

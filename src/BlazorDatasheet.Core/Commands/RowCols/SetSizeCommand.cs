@@ -6,25 +6,27 @@ namespace BlazorDatasheet.Core.Commands.RowCols;
 public class SetSizeCommand : IUndoableCommand
 {
     private readonly Axis _axis;
-    private int IndexStart { get; }
-    public int IndexEnd { get; }
-    private double Size { get; }
+    private readonly int _indexStart;
+    private readonly int _indexEnd;
+    private readonly double _size;
     private RowColInfoRestoreData _restoreData = null!;
 
     public SetSizeCommand(int indexStart, int indexEnd, double size, Axis axis)
     {
         _axis = axis;
-        IndexStart = indexStart;
-        IndexEnd = indexEnd;
-        Size = size;
+        _indexStart = indexStart;
+        _indexEnd = indexEnd;
+        _size = size;
     }
+
+    public bool CanExecute(Sheet sheet) => _size >= 0;
 
     public bool Execute(Sheet sheet)
     {
-        _restoreData = sheet.GetRowColStore(_axis).SetSizesImpl(IndexStart, IndexEnd, Size);
+        _restoreData = sheet.GetRowColStore(_axis).SetSizesImpl(_indexStart, _indexEnd, _size);
         IRegion dirtyRegion = _axis == Axis.Col
-            ? new ColumnRegion(IndexStart, IndexEnd)
-            : new RowRegion(IndexStart, IndexEnd);
+            ? new ColumnRegion(_indexStart, _indexEnd)
+            : new RowRegion(_indexStart, _indexEnd);
         sheet.MarkDirty(dirtyRegion);
         return true;
     }
@@ -33,8 +35,8 @@ public class SetSizeCommand : IUndoableCommand
     {
         sheet.GetRowColStore(_axis).Restore(_restoreData);
         IRegion dirtyRegion = _axis == Axis.Col
-            ? new ColumnRegion(IndexStart, IndexEnd)
-            : new RowRegion(IndexStart, IndexEnd);
+            ? new ColumnRegion(_indexStart, _indexEnd)
+            : new RowRegion(_indexStart, _indexEnd);
         sheet.MarkDirty(dirtyRegion);
         return true;
     }

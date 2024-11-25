@@ -2,6 +2,7 @@ using System.Collections;
 using System.Diagnostics;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Events;
+using BlazorDatasheet.Core.Events.Data;
 using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.ObjectEditor;

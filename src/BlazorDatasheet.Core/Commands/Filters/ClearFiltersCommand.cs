@@ -28,6 +28,8 @@ public class ClearFiltersCommand : IUndoableCommand
         _clearAllFilters = true;
     }
 
+    public bool CanExecute(Sheet sheet) => sheet.Region.SpansCol(_columnIndex);
+
     public bool Execute(Sheet sheet)
     {
         if (_clearAllFilters)

@@ -18,7 +18,7 @@ public class RemoveRowColsCommand : IUndoableCommand
     private RegionRestoreData<ConditionalFormatAbstractBase> _cfRestoreData = null!;
     private RowColInfoRestoreData _rowColInfoRestore = null!;
     private CellStoreRestoreData _cellStoreRestoreData = null!;
-    private MergeableIntervalStoreRestoreData<OverwritingValue<List<IFilter>?>> _filterRestoreData;
+    private MergeableIntervalStoreRestoreData<OverwritingValue<List<IFilter>?>> _filterRestoreData = null!;
 
     // The actual number of rows removed (takes into account num of rows/columns in sheet)
     private int _nRemoved;
@@ -34,6 +34,17 @@ public class RemoveRowColsCommand : IUndoableCommand
         _index = index;
         _axis = axis;
         _count = count;
+    }
+
+    public bool CanExecute(Sheet sheet)
+    {
+        if (_index >= sheet.GetSize(_axis))
+            return false;
+
+        if (_count <= 0)
+            return false;
+
+        return true;
     }
 
     public bool Execute(Sheet sheet)

@@ -21,6 +21,11 @@ public class CommandGroup : IUndoableCommand
     {
         _commands.Add(command);
     }
+    
+    public bool CanExecute(Sheet sheet)
+    {
+        return _commands.All(x=>x.CanExecute(sheet));
+    }
 
     public bool Execute(Sheet sheet)
     {

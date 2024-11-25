@@ -82,17 +82,54 @@ public class CommandManagerTests
         _sheet.Selection.ActiveRegion.Should().BeEquivalentTo(new Region(0, 10, 0, 10));
         _sheet.Selection.ActiveCellPosition.Should().BeEquivalentTo(new CellPosition(1, 1));
     }
+
+    [Test]
+    public void Command_Run_Fires_Event()
+    {
+        var cmdRun = false;
+        var cmd = new FakeCommand(0, ref _results);
+        _sheet.Commands.CommandRun += (sender, args) => cmdRun = true;
+        _sheet.Commands.ExecuteCommand(cmd);
+        cmdRun.Should().Be(true);
+    }
+
+    [Test]
+    public void Command_Undone_Fires_Event()
+    {
+        var cmdUndone = false;
+        var isSameCmd = false;
+        var cmd = new FakeCommand(0, ref _results);
+        _sheet.Commands.CommandUndone += (sender, args) =>
+        {
+            cmdUndone = true;
+            isSameCmd = args.Command == cmd;
+        };
+        _sheet.Commands.ExecuteCommand(cmd);
+        _sheet.Commands.Undo();
+        cmdUndone.Should().Be(true);
+        isSameCmd.Should().Be(true);
+    }
+
+    [Test]
+    public void Command_That_Cannot_Execute_Doesnt_Execute_Command()
+    {
+        var cmd = new FakeCommand(0, ref _results, canExecute: false);
+        _sheet.Commands.ExecuteCommand(cmd);
+        _results.Should().BeEmpty();
+    }
 }
 
 public class FakeCommand : IUndoableCommand
 {
     public int Id { get; }
     private List<int> _cmdExecutions;
+    private readonly bool _canExecute;
 
-    public FakeCommand(int id, ref List<int> cmdExecutions)
+    public FakeCommand(int id, ref List<int> cmdExecutions, bool canExecute = true)
     {
         Id = id;
         _cmdExecutions = cmdExecutions;
+        _canExecute = canExecute;
     }
 
     public bool Execute(Sheet sheet)
@@ -100,6 +137,8 @@ public class FakeCommand : IUndoableCommand
         _cmdExecutions.Add(Id);
         return true;
     }
+
+    public bool CanExecute(Sheet sheet) => _canExecute;
 
     public bool Undo(Sheet sheet)
     {

@@ -31,6 +31,8 @@ public class AutoFillCommand : IUndoableCommand
         return true;
     }
 
+    public bool CanExecute(Sheet sheet) => true;
+
     private void ExpandContent(Sheet sheet)
     {
         var fillDirection = GetFillDirection();
