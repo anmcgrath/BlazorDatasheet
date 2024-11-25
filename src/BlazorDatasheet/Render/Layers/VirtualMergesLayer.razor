@@ -1,13 +1,11 @@
 ﻿@using BlazorDatasheet.Core.Data
-@using BlazorDatasheet.Core.Events
 @using BlazorDatasheet.Core.Events.Data
-@using BlazorDatasheet.Core.Layout
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Render.DefaultComponents
 @using BlazorDatasheet.Util
 @inherits Layer
 
-@if (Sheet.Cells.AnyMerges() && ViewRegion != null && Sheet.Rows.CountVisible(0,_sheet.NumRows) > 0)
+@if (Sheet.Cells.AnyMerges() && ViewRegion != null && Sheet.Rows.CountVisible(0, _sheet.NumRows) > 0)
 {
     var merges = Sheet.Cells.GetMerges(ViewRegion)
         .Select(x => x.GetIntersection(Sheet.Region));
@@ -79,16 +77,10 @@
 
     private Sheet _sheet = new(0, 0);
 
-    protected override void OnParametersSet()
+    protected override void OnSheetChange(Sheet newSheet, Sheet oldSheet)
     {
-        if (_sheet != Sheet)
-        {
-            _sheet.Cells.CellsChanged -= CellsOnCellsChanged;
-            _sheet = Sheet;
-            _sheet.Cells.CellsChanged += CellsOnCellsChanged;
-        }
-
-        base.OnParametersSet();
+        oldSheet.Cells.CellsChanged -= CellsOnCellsChanged;
+        newSheet.Cells.CellsChanged += CellsOnCellsChanged;
     }
 
     private void CellsOnCellsChanged(object? sender, CellDataChangedEventArgs e)

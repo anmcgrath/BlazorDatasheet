@@ -30,20 +30,13 @@
 @code {
 
     private List<DataRegion<string>> _colorRegions = new();
-    private Sheet _sheet = new(0, 0);
 
-    protected override void OnParametersSet()
+    protected override void OnSheetChange(Sheet newSheet, Sheet oldSheet)
     {
-        if (_sheet != Sheet)
-        {
-            _sheet.Editor.EditValueChanged -= EditorOnEditValueChanged;
-            _sheet.Editor.EditFinished -= EditorOnEditFinished;
-            _sheet = Sheet;
-            _sheet.Editor.EditValueChanged += EditorOnEditValueChanged;
-            _sheet.Editor.EditFinished += EditorOnEditFinished;
-        }
-
-        base.OnParametersSet();
+        oldSheet.Editor.EditValueChanged -= EditorOnEditValueChanged;
+        oldSheet.Editor.EditFinished -= EditorOnEditFinished;
+        newSheet.Editor.EditValueChanged += EditorOnEditValueChanged;
+        newSheet.Editor.EditFinished += EditorOnEditFinished;
     }
 
     private void EditorOnEditFinished(object? sender, EditFinishedEventArgs e)

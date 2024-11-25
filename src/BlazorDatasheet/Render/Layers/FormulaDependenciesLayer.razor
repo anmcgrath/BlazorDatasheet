@@ -1,3 +1,5 @@
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events.Formula
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Formula.Core.Dependencies
 @inherits Layer
@@ -59,10 +61,15 @@
 
 @code {
 
-    protected override void OnParametersSet()
+    private void CellsOnFormulaChanged(object? sender, CellFormulaChangeEventArgs e)
     {
-        Sheet.Cells.FormulaChanged += (_, _) => { StateHasChanged(); };
-        base.OnParametersSet();
+        StateHasChanged();
+    }
+
+    protected override void OnSheetChange(Sheet newSheet, Sheet oldSheet)
+    {
+        oldSheet.Cells.FormulaChanged -= CellsOnFormulaChanged;
+        newSheet.Cells.FormulaChanged += CellsOnFormulaChanged;
     }
 
     private Rect GetRect(IRegion region)

@@ -5,10 +5,10 @@
     <div style="position: absolute;
         top: 0;
         left: 0;
-        max-width:@(Width)px;
-    max-height:@(Height)px;
-    width:@(Width)px;
-    height:@(Height)px;
+        max-width:@(LayerWidth)px;
+    max-height:@(LayerHeight)px;
+    width:@(LayerWidth)px;
+    height:@(LayerHeight)px;
     @(Depth > 0 ? "overflow:hidden;" : "")
     ">
         <CascadingValue Value="ViewRegion">
@@ -38,29 +38,47 @@
     private Region _viewRegion = new(0, 0);
 
     [Parameter, EditorRequired] public Sheet Sheet { get; set; } = new(0, 0);
+    private Sheet _sheet = new(0, 0);
 
     [Parameter, EditorRequired] public SheetPointerInputService? PointerInputService { get; set; }
 
     /// <summary>
     /// The width, in px, of the rendered layer region
     /// </summary>
-    protected double Width { get; private set; }
+    protected double LayerWidth { get; private set; }
 
     /// <summary>
     /// The height, in px, of the rendered layer region
     /// </summary>
-    protected double Height { get; private set; }
+    protected double LayerHeight { get; private set; }
 
     protected override void OnParametersSet()
     {
+        var updateSizes = false;
+
+        if (_sheet != Sheet)
+        {
+            _sheet = Sheet;
+            updateSizes = true;
+        }
+
         if (ViewRegion != _viewRegion)
         {
             _viewRegion = ViewRegion ?? new Region(0, 0);
-            Width = Sheet.Columns.GetVisualWidthBetween(_viewRegion.Left, _viewRegion.Right + 1);
-            Height = Sheet.Rows.GetVisualHeightBetween(_viewRegion.Top, _viewRegion.Bottom + 1);
+            updateSizes = true;
+        }
+
+        if (updateSizes)
+        {
+            LayerWidth = _sheet.Columns.GetVisualWidthBetween(_viewRegion.Left, _viewRegion.Right + 1);
+            LayerHeight = _sheet.Rows.GetVisualHeightBetween(_viewRegion.Top, _viewRegion.Bottom + 1);
         }
 
         base.OnParametersSet();
+    }
+
+    private void UpdateSizes()
+    {
     }
 
 }

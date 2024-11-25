@@ -13,6 +13,8 @@
     [CascadingParameter] protected Region? ViewRegion { get; set; }
 
     [CascadingParameter] protected Sheet Sheet { get; set; } = new(0, 0);
+    private Sheet _sheet = new(0, 0);
+
     /// <summary>
     /// The left position, in px, relative to the sheet
     /// </summary>
@@ -28,14 +30,37 @@
 
     protected override void OnParametersSet()
     {
+        var updatePositions = false;
+
+        if (_sheet != Sheet)
+        {
+            _sheet = Sheet;
+            updatePositions = true;
+            OnSheetChange(_sheet, Sheet);
+        }
+
         if (ViewRegion != _viewRegion)
         {
             _viewRegion = ViewRegion ?? new(0, 0);
+            updatePositions = true;
+            OnViewRegionChange(_viewRegion, ViewRegion);
+        }
+
+        if (updatePositions)
+        {
             Left = Sheet.Columns.GetVisualLeft(_viewRegion.Left);
             Top = Sheet.Rows.GetVisualTop(_viewRegion.Top);
         }
 
         base.OnParametersSet();
+    }
+
+    protected virtual void OnSheetChange(Sheet newSheet, Sheet oldSheet)
+    {
+    }
+
+    protected virtual void OnViewRegionChange(Region newRegion, Region? oldRegion)
+    {
     }
 
     /// <summary>

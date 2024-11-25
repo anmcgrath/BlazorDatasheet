@@ -31,13 +31,11 @@
         BorderStyle="dashed"
         X="GetLayerColumnX(_dragPreviewRegion.Left)"
         Y="GetLayerRowY(_dragPreviewRegion.Top)"
-        Width="_sheet.Columns.GetVisualWidthBetween(_dragPreviewRegion.Left, _dragPreviewRegion.Right + 1)"
-        Height="_sheet.Rows.GetVisualHeightBetween(_dragPreviewRegion.Top, _dragPreviewRegion.Bottom + 1)"/>
+        Width="Sheet.Columns.GetVisualWidthBetween(_dragPreviewRegion.Left, _dragPreviewRegion.Right + 1)"
+        Height="Sheet.Rows.GetVisualHeightBetween(_dragPreviewRegion.Top, _dragPreviewRegion.Bottom + 1)"/>
 }
 
 @code{
-
-    private Sheet _sheet = new(0, 0);
 
     private bool _isDragging = false;
 
@@ -47,17 +45,11 @@
     private CellLayoutProvider _cellLayoutProvider = new CellLayoutProvider(new Sheet(0, 0));
     private bool _pointerEventsRegistered;
 
-    protected override void OnParametersSet()
+    protected override void OnSheetChange(Sheet newSheet, Sheet oldSheet)
     {
-        if (_sheet != Sheet)
-        {
-            _sheet.Selection.SelectionChanged -= OnSelectionChanged;
-            _sheet = Sheet;
-            _sheet.Selection.SelectionChanged += OnSelectionChanged;
-            _cellLayoutProvider = new CellLayoutProvider(_sheet);
-        }
-
-        base.OnParametersSet();
+        oldSheet.Selection.SelectionChanged -= OnSelectionChanged;
+        newSheet.Selection.SelectionChanged += OnSelectionChanged;
+        _cellLayoutProvider = new CellLayoutProvider(newSheet);
     }
 
     private void OnSelectionChanged(object? sender, SelectionChangedEventArgs args)
@@ -83,9 +75,9 @@
     {
         if (!_isDragging || _dragPreviewRegion == null)
             return Task.FromResult(false);
-        
-        Sheet.Commands.ExecuteCommand(new AutoFillCommand(_sheet.Selection.ActiveRegion!, _dragPreviewRegion.Clone()));
-        
+
+        Sheet.Commands.ExecuteCommand(new AutoFillCommand(Sheet.Selection.ActiveRegion!, _dragPreviewRegion.Clone()));
+
 
         _isDragging = false;
         _dragPreviewRegion = null;
@@ -107,7 +99,7 @@
         if (Math.Abs(dx) < 5 && Math.Abs(dy) < 5)
             return Task.FromResult(true);
 
-        var selRect = Sheet.Selection.ActiveRegion.GetRect(_sheet);
+        var selRect = Sheet.Selection.ActiveRegion.GetRect(Sheet);
         var sheetX = selRect.X + selRect.Width + dx;
         var sheetY = selRect.Y + selRect.Height + dy;
         var cellAtMouse = _cellLayoutProvider.ComputeCell(sheetX, sheetY);
@@ -117,7 +109,7 @@
         else
             _dragPreviewRegion = CalculateExpandRegion(sheetX, sheetY, cellAtMouse);
 
-        _dragPreviewRegion = _sheet.Region.GetIntersection(_dragPreviewRegion);
+        _dragPreviewRegion = Sheet.Region.GetIntersection(_dragPreviewRegion);
 
         this.StateHasChanged();
 
@@ -142,7 +134,7 @@
         if (Sheet.Selection.ActiveRegion == null)
             return null;
 
-        var selRect = Sheet.Selection.ActiveRegion.GetRect(_sheet);
+        var selRect = Sheet.Selection.ActiveRegion.GetRect(Sheet);
         var axis = GetExpansionAxis(sheetX, sheetY, selRect);
 
         var expandTo = axis == Axis.Col ? new Region(Sheet.Selection.ActiveRegion.Bottom, cellMousePosition.col) : new Region(cellMousePosition.row, Sheet.Selection.ActiveRegion.Left);
@@ -254,7 +246,7 @@
 
     private string GetDraggerStyleString()
     {
-        var region = _sheet.Region.GetIntersection(Sheet.Selection.ActiveRegion ?? Sheet.Selection.SelectingRegion);
+        var region = Sheet.Region.GetIntersection(Sheet.Selection.ActiveRegion ?? Sheet.Selection.SelectingRegion);
         if (region == null)
             return "display:none;";
 
