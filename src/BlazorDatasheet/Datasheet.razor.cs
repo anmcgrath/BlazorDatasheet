@@ -176,6 +176,18 @@ public partial class Datasheet : SheetComponentBase
     /// </summary>
     [Parameter]
     public Type[] DefaultFilterTypes { get; set; } = [typeof(ValueFilter), typeof(PatternFilter)];
+    
+    /// <summary>
+    /// The number of columns past the end of the viewport to render.
+    /// </summary>
+    [Parameter]
+    public int OverscanColumns { get; set; } = 2;
+
+    /// <summary>
+    /// The number of rows past the end of the viewport to render.
+    /// </summary>
+    [Parameter]
+    public int OverscanRows { get; set; } = 6;
 
     /// <summary>
     /// Provides menu options for the sheet
