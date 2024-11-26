@@ -350,6 +350,17 @@ public partial class Datasheet : SheetComponentBase
         _sheet.Editor.EditFinished -= EditorOnEditFinished;
         _sheet.SheetDirty -= SheetOnSheetDirty;
         _sheet.ScreenUpdatingChanged -= ScreenUpdatingChanged;
+        
+        if (GridLevel == 0)
+        {
+            _sheet.Rows.Inserted -= HandleRowColInserted;
+            _sheet.Columns.Inserted -= HandleRowColInserted;
+            _sheet.Rows.Removed -= HandleRowColRemoved;
+            _sheet.Columns.Removed -= HandleRowColRemoved;
+        }
+
+        _sheet.Rows.SizeModified -= HandleSizeModified;
+        _sheet.Columns.SizeModified -= HandleSizeModified;
     }
 
     private void AddEvents(Sheet sheet)
@@ -368,6 +379,8 @@ public partial class Datasheet : SheetComponentBase
 
         _sheet.Rows.SizeModified += HandleSizeModified;
         _sheet.Columns.SizeModified += HandleSizeModified;
+        _sheet.SetDialogService(new SimpleDialogService(Js));
+
     }
 
     private async Task AddWindowEventsAsync()

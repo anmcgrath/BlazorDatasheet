@@ -3,7 +3,6 @@ using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Commands.Formatting;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Edit;
-using BlazorDatasheet.Core.Events;
 using BlazorDatasheet.Core.Events.Visual;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Interfaces;
@@ -14,7 +13,6 @@ using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 using System.Text;
-using BlazorDatasheet.Core.Events.Selection;
 using BlazorDatasheet.Core.Events.Sort;
 
 namespace BlazorDatasheet.Core.Data;
@@ -85,7 +83,7 @@ public class Sheet
     /// The sheet's active selection
     /// </summary>
     public Selection Selection { get; }
-    
+
     /// <summary>
     /// Whether the UI associated with the sheet should be updating
     /// </summary>
@@ -116,7 +114,7 @@ public class Sheet
     public event EventHandler<BeforeRangeSortEventArgs>? BeforeRangeSort;
 
     public event EventHandler<RangeSortedEventArgs>? RangeSorted;
-    
+
     /// <summary>
     /// Fired when <see cref="ScreenUpdating"/> is changed
     /// </summary>
@@ -136,7 +134,7 @@ public class Sheet
 
     private Sheet(int defaultWidth, int defaultHeight)
     {
-        Cells = new Cells.CellStore(this);
+        Cells = new CellStore(this);
         Commands = new CommandManager(this);
         Editor = new Editor(this);
         Validators = new ValidationManager(this);
@@ -354,7 +352,7 @@ public class Sheet
         }
     }
 
-    private int _batchRequestNo = 0;
+    private int _batchRequestNo;
 
     /// <summary>
     /// Batches dirty cell and region additions, as well as cell value changes to emit events once rather
