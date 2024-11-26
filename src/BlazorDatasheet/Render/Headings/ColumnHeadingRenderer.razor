@@ -41,6 +41,7 @@
         <Virtualise2D
             @ref="MainView"
             LayoutProvider="LayoutProvider"
+            OverscanColumns="OverscanColumns"
             ViewRegion="new Region(0, 0, _viewRegion.Left + FrozenStartCount, _viewRegion.Right - FrozenEndCount)">
             <GridItemTemplate>
                 <div
@@ -99,6 +100,12 @@
     [Parameter] public int FrozenEndCount { get; set; }
 
     [Parameter] public bool ShowColumnMenu { get; set; }
+    
+    /// <summary>
+    /// The number of columns past the end of the viewport to render.
+    /// </summary>
+    [Parameter]
+    public int OverscanColumns { get; set; } = 2;
 
     private double MouseX { get; set; }
     private double MouseXStart { get; set; }

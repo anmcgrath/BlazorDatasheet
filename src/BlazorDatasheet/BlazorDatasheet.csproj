@@ -11,17 +11,20 @@
         <RepositoryType>git</RepositoryType>
         <PackageTags>blazor,editor,excel,spreadsheet,datasheet</PackageTags>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <Version>0.5.0.0</Version>
-        <TargetFramework>net8.0</TargetFramework>
+        <Version>0.5.1.0</Version>
+        <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
     </PropertyGroup>
 
 
     <ItemGroup>
         <SupportedPlatform Include="browser" />
     </ItemGroup>
-
-    <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.10" />
+    
+    <ItemGroup Condition="  '$(TargetFramework)' == 'net8.0'  ">
+        <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.*" />
+    </ItemGroup>
+    <ItemGroup Condition="  '$(TargetFramework)' == 'net9.0'  ">
+        <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.*" />
     </ItemGroup>
 
     <ItemGroup>

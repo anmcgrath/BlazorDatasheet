@@ -5,6 +5,7 @@
 <div style="display: flex; flex-direction: column">
     <div class="sheet-row-head-container" style=" position: sticky; left: 0;">
         <Virtualise2D
+            OverscanRows="OverscanRows"
             @ref="MainView"
             LayoutProvider="LayoutProvider"
             ViewRegion="new Region(_viewRegion.Top, _viewRegion.Bottom, 0, 0)">
@@ -18,6 +19,12 @@
 </div>
 
 @code {
+
+    /// <summary>
+    /// The number of rows past the end of the viewport to render.
+    /// </summary>
+    [Parameter]
+    public int OverscanRows { get; set; } = 6;
 
     private string GetStickyPositionInfo()
     {

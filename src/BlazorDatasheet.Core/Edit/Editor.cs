@@ -11,47 +11,52 @@ public class Editor
     public Sheet Sheet;
 
     /// <summary>
-    /// Runs before the editor is accepted. Can set whether the edit is successful and whether the editor
+    /// Called before the editor is accepted. Can set whether the edit is successful and whether the editor
     /// should be cleared.
     /// </summary>
     public event EventHandler<BeforeAcceptEditEventArgs>? BeforeEditAccepted;
 
     /// <summary>
-    /// Runs before the editor is opened
+    /// Called before the editor is opened
     /// </summary>
     public event EventHandler<BeforeCellEditEventArgs>? BeforeCellEdit;
 
     /// <summary>
-    /// Runs when an edit is accepted.
+    /// Called when an edit is accepted.
     /// </summary>
     public event EventHandler<EditAcceptedEventArgs>? EditAccepted;
 
     /// <summary>
-    /// Runs when an edit is cancelled
+    /// Called when an edit is cancelled
     /// </summary>
     public event EventHandler<EditCancelledEventArgs>? EditCancelled;
 
     /// <summary>
-    /// Runs when an edit has begun.
+    /// Called when an edit has begun.
     /// </summary>
     public event EventHandler<EditBeginEventArgs>? EditBegin;
 
     /// <summary>
-    /// Calls when the editor value has changed.
+    /// Called when the editor value has changed.
     /// </summary>
     public event EventHandler<string?>? EditValueChanged;
 
     /// <summary>
     /// Called when the edit has finished (canceled, accepted or closed by another means.)
     /// </summary>
-    public event EventHandler<EditFinishedEventArgs> EditFinished;
+    public event EventHandler<EditFinishedEventArgs>? EditFinished;
+
+    /// <summary>
+    /// Called when an invalid edit has been made.
+    /// </summary>
+    public event EventHandler<InvalidEditEventArgs>? InvalidEdit;
 
     /// <summary>
     /// If the sheet is editing a value.
     /// </summary>
     public bool IsEditing { get; private set; }
 
-    private string _editValue;
+    private string _editValue = string.Empty;
 
     /// <summary>
     /// The currently edited value
@@ -79,7 +84,7 @@ public class Editor
     /// </summary>
     public string EditKey { get; private set; } = string.Empty;
 
-    public string EditorType { get; private set; }
+    public string EditorType { get; private set; } = string.Empty;
 
     /// <summary>
     /// Whether the editor mode is soft - easy to exit
@@ -128,7 +133,7 @@ public class Editor
                 return;
         }
 
-        var beforeEditArgs = new BeforeCellEditEventArgs(cell, cell.GetValue<string>() ?? string.Empty, cell.Type);
+        var beforeEditArgs = new BeforeCellEditEventArgs(cell, cell.GetValue<string>(), cell.Type);
         this.BeforeCellEdit?.Invoke(this, beforeEditArgs);
 
         if (beforeEditArgs.CancelEdit)
@@ -190,7 +195,11 @@ public class Editor
             parsedFormula = Sheet.FormulaEngine.ParseFormula(formulaString!);
             if (!parsedFormula.IsValid())
             {
-                Sheet?.Dialog?.Alert("Invalid formula");
+                var args = new InvalidEditEventArgs(EditValue, $"Invalid formula", false);
+                InvalidEdit?.Invoke(this, args);
+                if (!args.Handled)
+                    Sheet.Dialog?.Alert("Invalid formula");
+
                 return false;
             }
         }
@@ -208,7 +217,11 @@ public class Editor
             var validationResult = Sheet.Validators.Validate(editValue, EditCell.Row, EditCell.Col);
             if (validationResult.IsStrictFail)
             {
-                Sheet.Dialog.Alert(string.Join("\n", validationResult.FailMessages));
+                var msg = $"Validation(s) failed: {string.Join("\n", validationResult.FailMessages)}";
+                var args = new InvalidEditEventArgs(EditValue, msg, false);
+                InvalidEdit?.Invoke(this, args);
+                if (!args.Handled)
+                    Sheet?.Dialog?.Alert(msg);
                 return false;
             }
 

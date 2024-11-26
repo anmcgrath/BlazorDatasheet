@@ -176,6 +176,18 @@ public partial class Datasheet : SheetComponentBase
     /// </summary>
     [Parameter]
     public Type[] DefaultFilterTypes { get; set; } = [typeof(ValueFilter), typeof(PatternFilter)];
+    
+    /// <summary>
+    /// The number of columns past the end of the viewport to render.
+    /// </summary>
+    [Parameter]
+    public int OverscanColumns { get; set; } = 2;
+
+    /// <summary>
+    /// The number of rows past the end of the viewport to render.
+    /// </summary>
+    [Parameter]
+    public int OverscanRows { get; set; } = 6;
 
     /// <summary>
     /// Provides menu options for the sheet
@@ -338,6 +350,17 @@ public partial class Datasheet : SheetComponentBase
         _sheet.Editor.EditFinished -= EditorOnEditFinished;
         _sheet.SheetDirty -= SheetOnSheetDirty;
         _sheet.ScreenUpdatingChanged -= ScreenUpdatingChanged;
+        
+        if (GridLevel == 0)
+        {
+            _sheet.Rows.Inserted -= HandleRowColInserted;
+            _sheet.Columns.Inserted -= HandleRowColInserted;
+            _sheet.Rows.Removed -= HandleRowColRemoved;
+            _sheet.Columns.Removed -= HandleRowColRemoved;
+        }
+
+        _sheet.Rows.SizeModified -= HandleSizeModified;
+        _sheet.Columns.SizeModified -= HandleSizeModified;
     }
 
     private void AddEvents(Sheet sheet)
@@ -356,6 +379,8 @@ public partial class Datasheet : SheetComponentBase
 
         _sheet.Rows.SizeModified += HandleSizeModified;
         _sheet.Columns.SizeModified += HandleSizeModified;
+        _sheet.SetDialogService(new SimpleDialogService(Js));
+
     }
 
     private async Task AddWindowEventsAsync()
