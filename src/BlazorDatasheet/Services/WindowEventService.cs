@@ -21,12 +21,12 @@ public class WindowEventService : IWindowEventService
     public WindowEventService(IJSRuntime js)
     {
         _js = js;
-        _ = CreateDotnetHelperIfNotExists();
     }
 
     public async Task RegisterMouseEvent(string eventType, Func<MouseEventArgs, Task<bool>> handler,
         int throttleInMs = 0)
     {
+        await CreateDotnetHelperIfNotExists();
         _mouseEventListeners ??= new();
         _mouseEventListeners.TryAdd(eventType, handler);
         await AddWindowEvent(eventType, nameof(HandleWindowMouseEvent), throttleInMs);
@@ -34,6 +34,7 @@ public class WindowEventService : IWindowEventService
 
     public async Task RegisterKeyEvent(string eventType, Func<KeyboardEventArgs, Task<bool>> handler)
     {
+        await CreateDotnetHelperIfNotExists();
         _keyEventListeners ??= new();
         _keyEventListeners.TryAdd(eventType, handler);
         await AddWindowEvent(eventType, nameof(HandleWindowKeyEvent));
@@ -41,6 +42,7 @@ public class WindowEventService : IWindowEventService
 
     public async Task RegisterClipboardEvent(string eventType, Func<ClipboardEventArgs, Task<bool>> handler)
     {
+        await CreateDotnetHelperIfNotExists();
         _clipboardEventListeners ??= new();
         _clipboardEventListeners.TryAdd(eventType, handler);
         await AddWindowEvent(eventType, nameof(HandleWindowClipboardEvent));
@@ -48,6 +50,7 @@ public class WindowEventService : IWindowEventService
 
     public async Task PreventDefault(string eventType)
     {
+        await CreateDotnetHelperIfNotExists();
         if (_windowEventObj == null)
             return;
         await _windowEventObj.InvokeVoidAsync("preventDefault", eventType);
@@ -55,6 +58,7 @@ public class WindowEventService : IWindowEventService
 
     public async Task CancelPreventDefault(string eventType)
     {
+        await CreateDotnetHelperIfNotExists();
         if (_windowEventObj == null)
             return;
         await _windowEventObj.InvokeVoidAsync("cancelPreventDefault", eventType);
@@ -133,10 +137,6 @@ public class WindowEventService : IWindowEventService
                 await _windowEventObj.InvokeVoidAsync("dispose");
                 await _windowEventObj.DisposeAsync();
             }
-
-            _mouseEventListeners?.Clear();
-            _keyEventListeners?.Clear();
-            _clipboardEventListeners?.Clear();
 
             _dotNetHelper?.Dispose();
         }

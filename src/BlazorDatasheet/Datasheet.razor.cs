@@ -29,7 +29,7 @@ namespace BlazorDatasheet;
 public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 {
     [Inject] private IJSRuntime Js { get; set; } = null!;
-    [Inject] private IWindowEventService WindowEventService { get; set; } = null!;
+    private IWindowEventService _windowEventService = null!;
     [Inject] private IMenuService MenuService { get; set; } = null!;
     private IClipboard ClipboardService { get; set; } = null!;
 
@@ -249,6 +249,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     protected override void OnInitialized()
     {
         ClipboardService = new Clipboard(Js);
+        _windowEventService = new WindowEventService(Js);
         RegisterDefaultShortcuts();
         base.OnInitialized();
     }
@@ -384,11 +385,11 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
     private async Task AddWindowEventsAsync()
     {
-        await WindowEventService.RegisterMouseEvent("mousedown", HandleWindowMouseDown);
-        await WindowEventService.RegisterKeyEvent("keydown", HandleWindowKeyDown);
-        await WindowEventService.RegisterClipboardEvent("paste", HandleWindowPaste);
-        await WindowEventService.RegisterClipboardEvent("copy", HandleWindowCopy);
-        await WindowEventService.RegisterMouseEvent("mouseup", HandleWindowMouseUp);
+        await _windowEventService.RegisterMouseEvent("mousedown", HandleWindowMouseDown);
+        await _windowEventService.RegisterKeyEvent("keydown", HandleWindowKeyDown);
+        await _windowEventService.RegisterClipboardEvent("paste", HandleWindowPaste);
+        await _windowEventService.RegisterClipboardEvent("copy", HandleWindowCopy);
+        await _windowEventService.RegisterMouseEvent("mouseup", HandleWindowMouseUp);
     }
 
     private void HandleRowColInserted(object? sender, RowColInsertedEventArgs? e) => ForceReRender();
@@ -478,12 +479,12 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
     private async void EditorOnEditFinished(object? sender, EditFinishedEventArgs e)
     {
-        await WindowEventService.PreventDefault("keydown");
+        await _windowEventService.PreventDefault("keydown");
     }
 
     private async void EditorOnEditBegin(object? sender, EditBeginEventArgs e)
     {
-        await WindowEventService.CancelPreventDefault("keydown");
+        await _windowEventService.CancelPreventDefault("keydown");
     }
 
 
@@ -879,9 +880,9 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
             return;
 
         if (active)
-            await WindowEventService.PreventDefault("keydown");
+            await _windowEventService.PreventDefault("keydown");
         else
-            await WindowEventService.CancelPreventDefault("keydown");
+            await _windowEventService.CancelPreventDefault("keydown");
 
         IsDataSheetActive = active;
         await OnSheetActiveChanged.InvokeAsync(new SheetActiveEventArgs(this, active));
@@ -935,6 +936,6 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         if (_sheetPointerInputService is not null)
             await _sheetPointerInputService.DisposeAsync();
 
-        await WindowEventService.DisposeAsync();
+        await _windowEventService.DisposeAsync();
     }
 }

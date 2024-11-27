@@ -3,9 +3,10 @@
 @using BlazorDatasheet.Menu
 @using BlazorDatasheet.Services
 @using BlazorDatasheet.Virtualise
+@using Microsoft.JSInterop
 @inherits HeadingRenderer
-@inject IWindowEventService WindowEventService
 @implements IAsyncDisposable
+@inject IJSRuntime Js;
 
 <div style="display: flex; flex-direction: row">
 
@@ -113,14 +114,21 @@
     private bool IsDragging { get; set; }
     private double CurrentColResizeAmount { get; set; }
     private int _minResizeWidth = 15;
+    private IWindowEventService _windowEventService = null!;
+
+    protected override void OnInitialized()
+    {
+        _windowEventService = new WindowEventService(Js);
+        base.OnInitialized();
+    }
 
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            await WindowEventService.RegisterMouseEvent("mouseup", WindowEventServiceOnOnMouseUp, 50);
-            await WindowEventService.RegisterMouseEvent("mousemove", WindowHandleMouseMove, 50);
+            await _windowEventService.RegisterMouseEvent("mouseup", WindowEventServiceOnOnMouseUp, 15);
+            await _windowEventService.RegisterMouseEvent("mousemove", WindowHandleMouseMove, 15);
         }
     }
 
@@ -184,7 +192,7 @@
 
     public async ValueTask DisposeAsync()
     {
-        if (WindowEventService != null) await WindowEventService.DisposeAsync();
+        await _windowEventService.DisposeAsync();
     }
 
 }

@@ -7,8 +7,10 @@
 @using BlazorDatasheet.Events
 @using BlazorDatasheet.Extensions
 @using BlazorDatasheet.Services
+@using Microsoft.JSInterop
 @inherits Layer
-@inject IWindowEventService WindowEventService;
+@implements IAsyncDisposable
+@inject IJSRuntime Js;
 
 @if (!Sheet.Editor.IsEditing && Sheet.Selection.ActiveRegion != null)
 {
@@ -44,6 +46,13 @@
     private IRegion? _dragPreviewRegion;
     private CellLayoutProvider _cellLayoutProvider = new CellLayoutProvider(new Sheet(0, 0));
     private bool _pointerEventsRegistered;
+    private IWindowEventService _windowEventService = null!;
+
+    protected override void OnInitialized()
+    {
+        _windowEventService = new WindowEventService(Js);
+        base.OnInitialized();
+    }
 
     protected override void OnSheetChange(Sheet newSheet, Sheet oldSheet)
     {
@@ -66,8 +75,8 @@
     {
         if (firstRender)
         {
-            await WindowEventService.RegisterMouseEvent("mousemove", HandleWindowMouseMove, 50);
-            await WindowEventService.RegisterMouseEvent("mouseup", HandleWindowMouseUp);
+            await _windowEventService.RegisterMouseEvent("mousemove", HandleWindowMouseMove, 50);
+            await _windowEventService.RegisterMouseEvent("mouseup", HandleWindowMouseUp);
         }
     }
 
@@ -262,6 +271,11 @@
         sb.Append("background:var(--selection-border-color);");
         sb.Append("border:1px solid var(--sheet-bg-color);");
         return sb.ToString();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _windowEventService.DisposeAsync();
     }
 
 }
