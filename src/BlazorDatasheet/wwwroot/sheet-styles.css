@@ -139,6 +139,7 @@
     width: 100%;
     height: 100%;
     display: flex;
+    box-sizing: border-box;
 }
 
 .merged-cell {
@@ -256,6 +257,7 @@
 .highlight-input, .highlight-result {
     display: block;
     position: absolute;
+    box-sizing: border-box;
     padding: 1px 4px;
     top: 0;
     left: 0;

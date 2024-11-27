@@ -700,7 +700,6 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
     private async Task<bool> HandleWindowCopy(ClipboardEventArgs arg)
     {
-        Console.WriteLine($"Copy");
         if (!IsDataSheetActive || _sheet.Editor.IsEditing)
             return false;
 
