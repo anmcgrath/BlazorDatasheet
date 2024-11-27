@@ -1,4 +1,4 @@
-.dropper {
+.sheet-dropper {
     background: none;
     color:#999999;
     margin: 0;
@@ -6,6 +6,6 @@
     border: none;
 }
 
-.dropper:hover{
+.sheet-dropper:hover{
     background: var(--selection-bg-color);
 }
