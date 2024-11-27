@@ -116,7 +116,7 @@
     [Parameter]
     public Region? ViewRegion { get; set; }
 
-    private IJSObjectReference _virtualiser = null!;
+    private IJSObjectReference? _virtualiser = null!;
     private DotNetObjectReference<Virtualise2D> _dotnetHelper = default!;
 
     private ElementReference _contentEl;
@@ -175,7 +175,12 @@
     public async Task RefreshView()
     {
         if (_contentEl.Context != null)
-            await HandleScroll(await CalculateViewRect(_contentEl));
+        {
+            var rect = await CalculateViewRect(_contentEl);
+            if (rect == null)
+                return;
+            await HandleScroll(rect);
+        }
     }
 
     /// <summary>
@@ -240,7 +245,7 @@
         _currentViewport = newViewport;
         _visibleColIndices = LayoutProvider.GetVisibleColumnIndices(view.Left, view.Right);
         _visibleRowIndices = LayoutProvider.GetVisibleRowIndices(view.Top, view.Bottom);
-        
+
         var csb = new StringBuilder();
         foreach (var visibleCol in _visibleColIndices)
             csb.Append($"{LayoutProvider.ComputeWidth(visibleCol, 1)}px ");
@@ -259,10 +264,13 @@
 
     internal async Task ScrollBy(double x, double y)
     {
+        if (_virtualiser == null)
+            return;
+
         await _virtualiser.InvokeVoidAsync("scrollParentBy", x, y, _contentEl);
         // update the viewport as it may not have triggered an interaction observer event
         var viewRect = await CalculateViewRect(_contentEl);
-        if (viewRect != _currentViewport.ViewRect)
+        if (viewRect != null && viewRect != _currentViewport.ViewRect)
         {
             // we can assume ViewRegion hasn't changed, otherwise it would have changed from the interaction event
             _currentViewport = new Viewport(_currentViewport.ViewRegion, viewRect);
@@ -270,8 +278,11 @@
         }
     }
 
-    internal async Task<Rect> CalculateViewRect(ElementReference reference)
+    internal async Task<Rect?> CalculateViewRect(ElementReference reference)
     {
+        if (_virtualiser == null)
+            return new Rect(0, 0, 0, 0);
+
         return await _virtualiser.InvokeAsync<Rect>("calculateViewRect", reference);
     }
 
@@ -279,7 +290,12 @@
     {
         try
         {
-            await _virtualiser.InvokeAsync<string>("disposeVirtualisationHandlers", _contentEl);
+            if (_virtualiser != null)
+            {
+                await _virtualiser.InvokeAsync<string>("disposeVirtualisationHandlers", _contentEl);
+                await _virtualiser.DisposeAsync();
+                _virtualiser = null;
+            }
 
             _dotnetHelper.Dispose();
         }

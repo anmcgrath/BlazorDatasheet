@@ -9,7 +9,7 @@ namespace BlazorDatasheet.Services;
 /// </summary>
 public class WindowEventService : IWindowEventService
 {
-    private readonly IJSRuntime _js;
+    private readonly IJSRuntime? _js;
     private IJSObjectReference? _windowEventObj;
 
     private DotNetObjectReference<WindowEventService>? _dotNetHelper;
@@ -66,7 +66,7 @@ public class WindowEventService : IWindowEventService
 
     private async Task CreateDotnetHelperIfNotExists()
     {
-        if (_windowEventObj == null)
+        if (_windowEventObj == null && _js != null)
         {
             _dotNetHelper = DotNetObjectReference.Create(this);
             var module =
@@ -136,6 +136,7 @@ public class WindowEventService : IWindowEventService
             {
                 await _windowEventObj.InvokeVoidAsync("dispose");
                 await _windowEventObj.DisposeAsync();
+                _windowEventObj = null;
             }
 
             _dotNetHelper?.Dispose();

@@ -760,6 +760,9 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         // the viewRect we have from the viewport includes the frozen cols 
         // so we need to consider those when considering whether the region is outside of the view
         var currentViewRect = await _mainView.CalculateViewRect(_sheetContainer);
+        if (currentViewRect == null)
+            return;
+
         var constrainedViewRect = new Rect(
             currentViewRect.X + frozenLeftW,
             currentViewRect.Y + frozenTopH,
