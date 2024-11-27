@@ -94,7 +94,7 @@
     outline: none;
 }
 /* _content/BlazorDatasheet/Render/CaretButton.razor.rz.scp.css */
-.dropper[b-n1g2dcs84v] {
+.sheet-dropper[b-n1g2dcs84v] {
     background: none;
     color:#999999;
     margin: 0;
@@ -102,7 +102,7 @@
     border: none;
 }
 
-.dropper:hover[b-n1g2dcs84v]{
+.sheet-dropper:hover[b-n1g2dcs84v]{
     background: var(--selection-bg-color);
 }
 /* _content/BlazorDatasheet/Render/DefaultComponents/SelectRenderer.razor.rz.scp.css */

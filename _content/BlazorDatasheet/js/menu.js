@@ -20,6 +20,14 @@ class MenuService {
         this.menus.push({id, parentId});
     }
 
+    unregisterMenu(id) {
+        if (this.menus.length > 0) {
+            let index = this.menus.findIndex(x => x.id === id)
+            if (index >= 0)
+                this.menus.splice(index, 1)
+        }
+    }
+
     showMenu(menuId, options) {
         this.menus.forEach(menu => {
             if (menu.id === menuId) {

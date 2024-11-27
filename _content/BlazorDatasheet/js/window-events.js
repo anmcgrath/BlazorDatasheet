@@ -133,7 +133,7 @@
         }
     }
 
-    // https://stackoverflow.com/questions/27078285/simple-throttle-in-javascript
+// https://stackoverflow.com/questions/27078285/simple-throttle-in-javascript
 // Returns a function, that, when invoked, will only be triggered at most once
 // during a given window of time. Normally, the throttled function will run
 // as much as it can, without ever going more than once per `wait` duration;
@@ -154,6 +154,6 @@
 
 }
 
-export function createWindowEvents(dotnetHelper) {
+export function createWindowEventsService(dotnetHelper) {
     return new WindowEvents(dotnetHelper);
 }

@@ -24,6 +24,10 @@
         e.preventDefault()
         this.dotnetHelper.invokeMethodAsync(this.handlerName, {clientX: e.clientX, clientY: e.clientY})
     }
+    
+    dispose(){
+        this.removeContextListener()
+    }
 
 }
 
