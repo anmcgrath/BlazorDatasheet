@@ -2,7 +2,7 @@
 @using BlazorDatasheet.Virtualise
 @inherits HeadingRenderer
 
-<div style="display: flex; flex-direction: column">
+<div style="display: flex; flex-direction: column;">
     <div class="sheet-row-head-container" style=" position: sticky; left: 0;">
         <Virtualise2D
             OverscanRows="OverscanRows"
@@ -25,10 +25,5 @@
     /// </summary>
     [Parameter]
     public int OverscanRows { get; set; } = 6;
-
-    private string GetStickyPositionInfo()
-    {
-        return $"top: {(AlternateAxisHeadingsShown ? _sheet.Columns.HeadingHeight : 0)}px;";
-    }
 
 }

@@ -6,6 +6,7 @@ namespace BlazorDatasheet.Services;
 public interface IMenuService
 {
     internal Task RegisterMenu(string id, IMenu menu, string? parentId = null);
+    internal Task UnregisterMenu(string id);
 
     /// <summary>
     /// Shows a menu with the specified <paramref name="menuId"/>

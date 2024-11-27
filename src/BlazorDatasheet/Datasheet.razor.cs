@@ -26,7 +26,7 @@ using Microsoft.JSInterop;
 
 namespace BlazorDatasheet;
 
-public partial class Datasheet : SheetComponentBase
+public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 {
     [Inject] private IJSRuntime Js { get; set; } = null!;
     [Inject] private IWindowEventService WindowEventService { get; set; } = null!;
@@ -176,7 +176,7 @@ public partial class Datasheet : SheetComponentBase
     /// </summary>
     [Parameter]
     public Type[] DefaultFilterTypes { get; set; } = [typeof(ValueFilter), typeof(PatternFilter)];
-    
+
     /// <summary>
     /// The number of columns past the end of the viewport to render.
     /// </summary>
@@ -197,9 +197,9 @@ public partial class Datasheet : SheetComponentBase
 
     private SheetMenuOptions _menuOptions = new();
 
-    private DotNetObjectReference<Datasheet> _dotnetHelper = default!;
+    private DotNetObjectReference<Datasheet>? _dotnetHelper;
 
-    private SheetPointerInputService _sheetPointerInputService = null!;
+    private SheetPointerInputService? _sheetPointerInputService;
 
     /// <summary>
     /// The whole sheet container, useful for checking whether mouse is inside the sheet
@@ -330,7 +330,7 @@ public partial class Datasheet : SheetComponentBase
             _sheetPointerInputService = new SheetPointerInputService(Js, _sheetContainer);
             await _sheetPointerInputService.Init();
 
-            _sheetPointerInputService.PointerDown += this.HandleCellMouseDown;
+            _sheetPointerInputService.PointerDown += HandleCellMouseDown;
             _sheetPointerInputService.PointerEnter += HandleCellMouseOver;
             _sheetPointerInputService.PointerDoubleClick += HandleCellDoubleClick;
 
@@ -350,7 +350,7 @@ public partial class Datasheet : SheetComponentBase
         _sheet.Editor.EditFinished -= EditorOnEditFinished;
         _sheet.SheetDirty -= SheetOnSheetDirty;
         _sheet.ScreenUpdatingChanged -= ScreenUpdatingChanged;
-        
+
         if (GridLevel == 0)
         {
             _sheet.Rows.Inserted -= HandleRowColInserted;
@@ -380,7 +380,6 @@ public partial class Datasheet : SheetComponentBase
         _sheet.Rows.SizeModified += HandleSizeModified;
         _sheet.Columns.SizeModified += HandleSizeModified;
         _sheet.SetDialogService(new SimpleDialogService(Js));
-
     }
 
     private async Task AddWindowEventsAsync()
@@ -701,7 +700,6 @@ public partial class Datasheet : SheetComponentBase
 
     private async Task<bool> HandleWindowCopy(ClipboardEventArgs arg)
     {
-        Console.WriteLine($"Copy");
         if (!IsDataSheetActive || _sheet.Editor.IsEditing)
             return false;
 
@@ -927,5 +925,16 @@ public partial class Datasheet : SheetComponentBase
 
         var shouldRender = _sheet.ScreenUpdating && (_sheetIsDirty || _dirtyRows.Count != 0);
         return shouldRender;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_dotnetHelper is not null)
+            _dotnetHelper.Dispose();
+
+        if (_sheetPointerInputService is not null)
+            await _sheetPointerInputService.DisposeAsync();
+
+        await WindowEventService.DisposeAsync();
     }
 }

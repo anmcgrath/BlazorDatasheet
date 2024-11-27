@@ -1,5 +1,3 @@
-using BlazorDatasheet.Core.Events;
-using BlazorDatasheet.Core.Interfaces;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using ClipboardEventArgs = BlazorDatasheet.Core.Events.ClipboardEventArgs;
@@ -12,9 +10,9 @@ namespace BlazorDatasheet.Services;
 public class WindowEventService : IWindowEventService
 {
     private readonly IJSRuntime _js;
-    private IJSObjectReference? _windowEventObj = null!;
+    private IJSObjectReference? _windowEventObj;
 
-    private DotNetObjectReference<WindowEventService> _dotNetHelper = null!;
+    private DotNetObjectReference<WindowEventService>? _dotNetHelper;
 
     private Dictionary<string, Func<MouseEventArgs, Task<bool>>>? _mouseEventListeners;
     private Dictionary<string, Func<KeyboardEventArgs, Task<bool>>>? _keyEventListeners;
@@ -23,39 +21,33 @@ public class WindowEventService : IWindowEventService
     public WindowEventService(IJSRuntime js)
     {
         _js = js;
+        _ = CreateDotnetHelperIfNotExists();
     }
 
     public async Task RegisterMouseEvent(string eventType, Func<MouseEventArgs, Task<bool>> handler,
         int throttleInMs = 0)
     {
-        if (_mouseEventListeners == null)
-            _mouseEventListeners = new();
-
+        _mouseEventListeners ??= new();
         _mouseEventListeners.TryAdd(eventType, handler);
         await AddWindowEvent(eventType, nameof(HandleWindowMouseEvent), throttleInMs);
     }
 
     public async Task RegisterKeyEvent(string eventType, Func<KeyboardEventArgs, Task<bool>> handler)
     {
-        if (_keyEventListeners == null)
-            _keyEventListeners = new();
-
+        _keyEventListeners ??= new();
         _keyEventListeners.TryAdd(eventType, handler);
         await AddWindowEvent(eventType, nameof(HandleWindowKeyEvent));
     }
 
     public async Task RegisterClipboardEvent(string eventType, Func<ClipboardEventArgs, Task<bool>> handler)
     {
-        if (_clipboardEventListeners == null)
-            _clipboardEventListeners = new();
-
+        _clipboardEventListeners ??= new();
         _clipboardEventListeners.TryAdd(eventType, handler);
         await AddWindowEvent(eventType, nameof(HandleWindowClipboardEvent));
     }
 
     public async Task PreventDefault(string eventType)
     {
-        await CreateDotnetHelperIfNotExists();
         if (_windowEventObj == null)
             return;
         await _windowEventObj.InvokeVoidAsync("preventDefault", eventType);
@@ -63,7 +55,6 @@ public class WindowEventService : IWindowEventService
 
     public async Task CancelPreventDefault(string eventType)
     {
-        await CreateDotnetHelperIfNotExists();
         if (_windowEventObj == null)
             return;
         await _windowEventObj.InvokeVoidAsync("cancelPreventDefault", eventType);
@@ -76,7 +67,7 @@ public class WindowEventService : IWindowEventService
             _dotNetHelper = DotNetObjectReference.Create(this);
             var module =
                 await _js.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/js/window-events.js");
-            _windowEventObj = await module.InvokeAsync<IJSObjectReference>("createWindowEvents", _dotNetHelper);
+            _windowEventObj = await module.InvokeAsync<IJSObjectReference>("createWindowEventsService", _dotNetHelper);
             await module.DisposeAsync();
         }
     }
@@ -84,7 +75,6 @@ public class WindowEventService : IWindowEventService
 
     private async ValueTask AddWindowEvent(string evType, string jsInvokableName, int throttleInMs = 0)
     {
-        await CreateDotnetHelperIfNotExists();
         if (_windowEventObj == null)
             return;
 
@@ -144,11 +134,15 @@ public class WindowEventService : IWindowEventService
                 await _windowEventObj.DisposeAsync();
             }
 
+            _mouseEventListeners?.Clear();
+            _keyEventListeners?.Clear();
+            _clipboardEventListeners?.Clear();
+
             _dotNetHelper?.Dispose();
         }
-        catch (Exception e)
+        catch (Exception)
         {
-            Console.WriteLine(e.Message);
+            // ignored
         }
     }
 }

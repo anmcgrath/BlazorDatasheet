@@ -127,8 +127,10 @@
         try
         {
             _dotnetRef?.Dispose();
+            if (_menuTargetService != null)
+                await _menuTargetService.InvokeVoidAsync("dispose");
         }
-        catch (Exception e)
+        catch (Exception)
         {
             // Ignore
         }

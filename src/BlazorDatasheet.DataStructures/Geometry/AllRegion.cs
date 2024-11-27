@@ -1,3 +1,6 @@
+using System.Runtime.CompilerServices;
+[assembly: InternalsVisibleTo("BlazorDatasheet.Test")]
+
 namespace BlazorDatasheet.DataStructures.Geometry;
 
 /// <summary>

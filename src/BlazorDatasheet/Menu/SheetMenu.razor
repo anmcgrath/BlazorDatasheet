@@ -1,6 +1,7 @@
 @using BlazorDatasheet.Services
 @inject IMenuService MenuService
 @inherits SheetComponentBase
+@implements IAsyncDisposable
 @implements IMenu
 
 <CascadingValue Value="@MenuId">
@@ -72,6 +73,11 @@
         {
             await MenuService.RegisterMenu(MenuId, this, ParentMenuId);
         }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await MenuService.UnregisterMenu(MenuId);
     }
 
 }

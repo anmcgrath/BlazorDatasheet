@@ -58,12 +58,25 @@ public class MenuService : IMenuService, IAsyncDisposable
         }
     }
 
+    public async Task UnregisterMenu(string id)
+    {
+        try
+        {
+            if (_menuJs != null)
+                await _menuJs.InvokeVoidAsync("unregisterMenu", id);
+        }
+        catch (Exception)
+        {
+            // Ignore
+        }
+    }
+
     public async Task<bool> ShowMenuAsync<T>(string menuId, MenuTargetOptions options, T context = default(T))
     {
         // If already open, don't re-open
         if (_openMenus.Contains(menuId))
             return false;
-        
+
         await Init();
         var beforeArgs = new BeforeMenuShownEventArgs(menuId, context);
         BeforeMenuShown?.Invoke(this, beforeArgs);
