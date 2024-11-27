@@ -13,5 +13,5 @@ public enum EditEntryMode
     /// <summary>
     /// The user has used the keyboard to enter.
     /// </summary>
-    Key,
+    Key
 }

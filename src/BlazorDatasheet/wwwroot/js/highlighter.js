@@ -22,9 +22,12 @@ class Highligher {
         this.updateCaretPosition = function () {
             let sel = window.getSelection()
             let isSelectionInside = sel.focusNode.parentElement === options.inputEl
+            console.log('updateCaretPosition, inside? ', isSelectionInside)
+            if (!isSelectionInside)
+                return
             let len = sel.toString().length
             let caretPosition = -1
-            if (isSelectionInside && len === 0)
+            if (len === 0)
                 caretPosition = sel.focusOffset
             options.dotnetHelper.invokeMethodAsync("UpdateCaretPosition", caretPosition)
         }
@@ -43,7 +46,9 @@ class Highligher {
             moveCursorToEnd(options.inputEl)
         }
 
-        setTimeout(this.focusAndMoveCursorToEnd, 0);
+        if (options.focusOnInit) {
+            setTimeout(this.focusAndMoveCursorToEnd, 0);
+        }
 
         document.addEventListener('selectionchange', this.updateCaretPosition)
     }
@@ -51,6 +56,10 @@ class Highligher {
 
     setHighlightHtml(html) {
         this.#highlightResultEl.innerHTML = html
+    }
+
+    setInnerText(text) {
+        this.#inputEl.innerText = text;
     }
 
     dispose() {

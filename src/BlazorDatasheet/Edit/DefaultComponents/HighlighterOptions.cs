@@ -10,4 +10,6 @@ internal class HighlighterOptions
     public required ElementReference InputEl { get; init; }
     public required ElementReference HighlightResultEl { get; init; }
     public required DotNetObjectReference<HighlightedInput> DotnetHelper { get; init; }
+
+    public required bool FocusOnInit { get; init; }
 }

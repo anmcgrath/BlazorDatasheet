@@ -7,6 +7,14 @@
 @using System.Drawing
 @using BlazorDatasheet.Core.Commands.Data
 @using BlazorDatasheet.Core.Commands.Formatting
+@using BlazorDatasheet.Core.Edit
+
+<input type="text" @ref="_editorRef"
+       @onfocusin="OnFocusEditor"
+       @onfocusout="OnFocusLost" Label="Formula"
+       @bind:after="AfterInput"
+       @bind:event="oninput"
+       @bind="@_formulaValue"/>
 
 <div style="width: 800px; height: 500px; overflow: scroll;">
     <Datasheet
@@ -239,6 +247,25 @@
         Sheet.EndBatchUpdates();
         Sheet.Commands.ResumeHistory();
         Sheet.ScreenUpdating = true;
+        
+        Sheet.Selection.SelectionChanged += (sender, args) =>
+        {
+            var activePosn = Sheet.Selection.ActiveCellPosition;
+            var newVal = Sheet.Cells.GetValue(activePosn.row, activePosn.col)?.ToString() ?? string.Empty;
+            if (newVal != _formulaValue)
+            {
+                _formulaValue = newVal;
+                StateHasChanged();
+            }
+        };
+        Sheet.Editor.EditValueChanged += (sender, s) =>
+        {
+            if (_formulaValue != Sheet.Editor.EditValue)
+            {
+                _formulaValue = Sheet.Editor.EditValue;
+                StateHasChanged();
+            }
+        };
     }
 
     private void SetBorder(IReadOnlyList<IRegion> selectionRegions, int width, string color)
@@ -267,6 +294,44 @@
             }
         };
         Sheet.SetFormat(selectionRegions, format);
+    }
+    
+    private string _formulaValue { get; set; } = string.Empty;
+    private Sheet _sheet;
+    private bool _editorBoxFocus = false;
+    private bool _editRequestedFromExternalEditor = false;
+    private ElementReference _editorRef = default!;
+    
+    private void OnFocusEditor(FocusEventArgs obj)
+    {
+        if (!_editorBoxFocus)
+        {
+            _editRequestedFromExternalEditor = true;
+            Sheet.Editor.BeginEdit(Sheet.Selection.ActiveCellPosition.row, Sheet.Selection.ActiveCellPosition.col, false, EditEntryMode.None);
+        }
+
+        _editorBoxFocus = true;
+    }
+
+    private async void OnFocusLost()
+    {
+        if (_editRequestedFromExternalEditor)
+        {
+            _editRequestedFromExternalEditor = false;
+            await _editorRef.FocusAsync();
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        _editorBoxFocus = false;
+    }
+
+    private void AfterInput()
+    {
+        if (_editorBoxFocus && Sheet.Editor.IsEditing)
+        {
+            Sheet.Editor.EditValue = _formulaValue;
+        }
     }
 
 }

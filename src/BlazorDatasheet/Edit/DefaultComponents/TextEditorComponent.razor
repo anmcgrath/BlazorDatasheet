@@ -7,11 +7,14 @@
     Style="@Style"
     CellWidth="CellWidth"
     CellHeight="CellHeight"
+    FocusOnInit="_focusOnInit"
     CarePositionChanged="OnCaretPositionChanged"
     @bind-Value:set="OnInput"
     @bind-Value:get="CurrentValue"/>
 
 @code {
+
+    private bool _focusOnInit = true;
 
     public override void BeforeEdit(IReadOnlyCell cell, Sheet sheet)
     {
@@ -26,6 +29,7 @@
 
     public override void BeginEdit(EditEntryMode entryMode, string? editValue, string key)
     {
+        _focusOnInit = entryMode != EditEntryMode.None;
         if (entryMode == EditEntryMode.Key && !String.IsNullOrEmpty(key) && key.Length == 1)
         {
             CurrentValue = key;

@@ -20,7 +20,9 @@
 </div>
 
 @code {
-    [Parameter] public string Value { get; set; }
+    private string? _value;
+
+    [Parameter] public string? Value { get; set; }
 
     [Parameter] public EventCallback<string> ValueChanged { get; set; }
 
@@ -34,28 +36,47 @@
     private ElementReference _highlightInputEl;
     private ElementReference _highlightResultEl;
 
+    [Parameter] public bool FocusOnInit { get; set; }
+
     private IJSObjectReference? _highlightJs;
     private DotNetObjectReference<HighlightedInput>? _dotnetRef;
 
     private bool _isDisposing;
+    private bool hasRendered = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
+            Console.WriteLine($"Focus on init is {FocusOnInit}");
             var module = await Js.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/js/highlighter.js");
             _dotnetRef = DotNetObjectReference.Create(this);
             var options = new HighlighterOptions()
             {
-                InitialText = Value,
+                InitialText = Value ?? string.Empty,
                 InitialHtml = GetHighlightedHtmlValue(Value),
                 DotnetHelper = _dotnetRef,
                 InputEl = _highlightInputEl,
-                HighlightResultEl = _highlightResultEl
+                HighlightResultEl = _highlightResultEl,
+                FocusOnInit = FocusOnInit
             };
             _highlightJs = await module.InvokeAsync<IJSObjectReference>("createHighlighter", options);
+            hasRendered = true;
             await module.DisposeAsync();
         }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Account for external code changing the editor value.
+        if (Value != _value && hasRendered && _highlightJs != null)
+        {
+            _value = Value;
+            await _highlightJs.InvokeVoidAsync("setInnerText", _value);
+            await _highlightJs.InvokeVoidAsync("setHighlightHtml", GetHighlightedHtmlValue(_value));
+        }
+
+        await base.OnParametersSetAsync();
     }
 
     [JSInvokable]
@@ -129,6 +150,7 @@
         {
             await _highlightJs.InvokeVoidAsync("dispose");
             await _highlightJs.DisposeAsync();
+            _highlightJs = null;
         }
 
         _dotnetRef?.Dispose();

@@ -882,12 +882,13 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         if (active == IsDataSheetActive)
             return;
 
-        if (active)
+        if (active && !_sheet.Editor.IsEditing)
             await _windowEventService.PreventDefault("keydown");
         else
             await _windowEventService.CancelPreventDefault("keydown");
 
         IsDataSheetActive = active;
+
         await OnSheetActiveChanged.InvokeAsync(new SheetActiveEventArgs(this, active));
     }
 

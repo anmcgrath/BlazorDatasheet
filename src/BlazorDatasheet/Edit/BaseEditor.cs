@@ -71,6 +71,7 @@ public abstract class BaseEditor : SheetComponentBase, ICellEditor
     {
         if (s != _currentValue)
         {
+            Console.WriteLine($"Base editor handling edit value changed");
             _currentValue = s;
             StateHasChanged();
         }
