@@ -121,9 +121,9 @@ public class MenuService : IMenuService, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        if (_menuJs != null) await _menuJs.DisposeAsync();
         try
         {
+            if (_menuJs != null) await _menuJs.DisposeAsync();
             _dotNetObjectReference?.Dispose();
         }
         catch (Exception e)

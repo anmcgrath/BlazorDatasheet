@@ -13,7 +13,12 @@
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <Version>0.5.2.1</Version>
         <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
+    
+    <ItemGroup>
+        <None Include="..\..\README.md" Pack="true" PackagePath="\"/>
+    </ItemGroup>
 
 
     <ItemGroup>
