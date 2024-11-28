@@ -7,7 +7,7 @@ public interface IReadOnlyCell
 {
     T GetValue<T>();
     object? GetValue(Type t);
-    public CellFormat Format { get; }
+    public IReadonlyCellFormat Format { get; }
     public string Type { get; }
     public int Row { get; }
     public int Col { get; }

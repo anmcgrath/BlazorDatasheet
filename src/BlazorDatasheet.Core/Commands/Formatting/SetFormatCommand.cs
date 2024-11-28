@@ -73,12 +73,15 @@ public class SetFormatCommand : IUndoableCommand
             above = new Region(_region.Top - 1, _region.Top - 1, _region.Left, _region.Right);
         }
 
-        var cfLeft = new CellFormat() { BorderRight = _cellFormat.BorderLeft?.Clone() };
-        var cfAbove = new CellFormat() { BorderBottom = _cellFormat.BorderTop?.Clone() };
+        CellFormat? cfLeft = null, cfAbove = null;
+        if (_cellFormat.BorderLeft != null)
+            cfLeft = new CellFormat() { BorderRight = _cellFormat.BorderLeft.Clone() };
+        if (_cellFormat.BorderTop != null)
+            cfAbove = new CellFormat() { BorderBottom = _cellFormat.BorderTop.Clone() };
 
-        if (left != null)
+        if (left != null && cfLeft != null)
             _borderCommands.Add(new SetFormatCommand(left, cfLeft, false));
-        if (above != null)
+        if (above != null && cfAbove != null)
             _borderCommands.Add(new SetFormatCommand(above, cfAbove, false));
 
         foreach (var cmd in _borderCommands)

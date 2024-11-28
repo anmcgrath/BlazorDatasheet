@@ -115,7 +115,10 @@ public class SheetRange
 
     public CellFormat? Format
     {
-        set => Sheet.SetFormat(Region, value);
+        set
+        {
+            Sheet.SetFormat(Region, value);
+        } 
     }
 
     public void AddValidator(IDataValidator validator)

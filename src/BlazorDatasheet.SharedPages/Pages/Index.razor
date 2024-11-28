@@ -58,6 +58,7 @@
         Currency
     </button>
     <button @onclick="@(() => _datasheet.SetActiveAsync(true))">Set sheet active</button>
+    <button @onclick="ClearBg">Clear BG</button>
 </div>
 
 <div>
@@ -332,6 +333,11 @@
         {
             Sheet.Editor.EditValue = _formulaValue;
         }
+    }
+
+    private void ClearBg()
+    {
+        Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { BackgroundColor = null });
     }
 
 }

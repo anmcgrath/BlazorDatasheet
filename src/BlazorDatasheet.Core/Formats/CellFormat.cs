@@ -2,72 +2,149 @@ using BlazorDatasheet.DataStructures.Intervals;
 
 namespace BlazorDatasheet.Core.Formats;
 
-public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>
+public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReadonlyCellFormat
 {
     /// <summary>
     /// CSS font-weight
     /// </summary>
-    public string? FontWeight { get; set; }
+    public string? FontWeight
+    {
+        get => GetStyleOrDefault<string>(nameof(FontWeight));
+        set => AddStyle<string>(nameof(FontWeight), value);
+    }
 
     /// <summary>
     /// CSS background color
     /// </summary>
-    public string? BackgroundColor { get; set; }
+    public string? BackgroundColor
+    {
+        get => GetStyleOrDefault<string>(nameof(BackgroundColor));
+        set => AddStyle<string>(nameof(BackgroundColor), value);
+    }
 
     /// <summary>
     /// CSS color
     /// </summary>
-    public string? ForegroundColor { get; set; }
+    public string? ForegroundColor
+    {
+        get => GetStyleOrDefault<string>(nameof(ForegroundColor));
+        set => AddStyle<string>(nameof(ForegroundColor), value);
+    }
 
     /// <summary>
     /// How to format the string when rendered.
     /// </summary>
-    public string? NumberFormat { get; set; }
+    public string? NumberFormat
+    {
+        get => GetStyleOrDefault<string>(nameof(NumberFormat));
+        set => AddStyle<string>(nameof(NumberFormat), value);
+    }
 
     /// <summary>
     /// The name of displayed inside the cell
     /// </summary>
-    public string? Icon { get; set; }
+    public string? Icon
+    {
+        get => GetStyleOrDefault<string>(nameof(Icon));
+        set => AddStyle<string>(nameof(Icon), value);
+    }
 
     /// <summary>
     /// The icon's CSS color
     /// </summary>
-    public string? IconColor { get; set; }
+    public string? IconColor
+    {
+        get => GetStyleOrDefault<string>(nameof(IconColor));
+        set => AddStyle<string>(nameof(IconColor), value);
+    }
 
     /// <summary>
     /// Whether the cell's value can be modified by the user.
     /// </summary>
-    public bool? IsReadOnly { get; set; }
+    public bool? IsReadOnly
+    {
+        get => GetStyleOrDefault<bool?>(nameof(IsReadOnly));
+        set => AddStyle<bool?>(nameof(IsReadOnly), value);
+    }
 
     /// <summary>
     /// Horizontal text align.
     /// </summary>
-    public TextAlign? HorizontalTextAlign { get; set; }
+    public TextAlign? HorizontalTextAlign
+    {
+        get => GetStyleOrDefault<TextAlign?>(nameof(HorizontalTextAlign));
+        set => AddStyle<TextAlign?>(nameof(HorizontalTextAlign), value);
+    }
 
     /// <summary>
     /// Vertical text align.
     /// </summary>
-    public TextAlign? VerticalTextAlign { get; set; }
+    public TextAlign? VerticalTextAlign
+    {
+        get => GetStyleOrDefault<TextAlign?>(nameof(VerticalTextAlign));
+        set => AddStyle<TextAlign?>(nameof(VerticalTextAlign), value);
+    }
 
     /// <summary>
     /// Left border
     /// </summary>
-    public Border? BorderLeft { get; set; }
+    public Border? BorderLeft
+    {
+        get => GetStyleOrDefault<Border?>(nameof(BorderLeft));
+        set => AddStyle<Border?>(nameof(BorderLeft), value);
+    }
 
     /// <summary>
     /// Right border
     /// </summary>
-    public Border? BorderRight { get; set; }
+    public Border? BorderRight
+    {
+        get => GetStyleOrDefault<Border?>(nameof(BorderRight));
+        set => AddStyle<Border?>(nameof(BorderRight), value);
+    }
 
     /// <summary>
     /// Top border
     /// </summary>
-    public Border? BorderTop { get; set; }
+    public Border? BorderTop
+    {
+        get => GetStyleOrDefault<Border?>(nameof(BorderTop));
+        set => AddStyle<Border?>(nameof(BorderTop), value);
+    }
 
     /// <summary>
     /// Bottom border
     /// </summary>
-    public Border? BorderBottom { get; set; }
+    public Border? BorderBottom
+    {
+        get => GetStyleOrDefault<Border?>(nameof(BorderBottom));
+        set => AddStyle<Border?>(nameof(BorderBottom), value);
+    }
+
+    private Dictionary<string, object?>? _styles = null;
+
+    private void AddStyle<T>(string key, T? value)
+    {
+        _styles ??= new Dictionary<string, object?>();
+        if (!_styles.TryAdd(key, value))
+            _styles[key] = value;
+    }
+
+    private T? GetStyleOrDefault<T>(string key)
+    {
+        if (_styles == null)
+            return default;
+
+        return _styles.TryGetValue(key, out var val) ? (T?)val : default;
+    }
+
+    private object? GetStyleOrDefault(string key)
+    {
+        if (_styles == null)
+            return default;
+
+        return _styles.GetValueOrDefault(key);
+    }
 
     /// <summary>
     /// Returns a new Format object with cloned properties
@@ -75,22 +152,17 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>
     /// <returns></returns>
     public CellFormat Clone()
     {
-        return new CellFormat()
+        if (_styles == null)
+            return new CellFormat();
+
+        var cfClone = new CellFormat();
+
+        foreach (var kvp in _styles)
         {
-            FontWeight = FontWeight,
-            BackgroundColor = BackgroundColor,
-            ForegroundColor = ForegroundColor,
-            Icon = Icon,
-            NumberFormat = NumberFormat,
-            IconColor = IconColor,
-            HorizontalTextAlign = HorizontalTextAlign,
-            VerticalTextAlign = VerticalTextAlign,
-            IsReadOnly = IsReadOnly,
-            BorderBottom = BorderBottom?.Clone(),
-            BorderLeft = BorderLeft?.Clone(),
-            BorderRight = BorderRight?.Clone(),
-            BorderTop = BorderTop?.Clone()
-        };
+            cfClone.AddStyle(kvp.Key, kvp.Value);
+        }
+
+        return cfClone;
     }
 
     /// <summary>
@@ -100,26 +172,15 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>
     /// <param name="format">The format object that will override properties of this object, if they exist.</param>
     public void Merge(CellFormat? format)
     {
-        if (format == null)
+        if (format?._styles == null)
             return;
-        if (!string.IsNullOrEmpty(format.BackgroundColor))
-            this.BackgroundColor = format.BackgroundColor;
-        if (!string.IsNullOrEmpty(format.ForegroundColor))
-            this.ForegroundColor = format.ForegroundColor;
-        if (!string.IsNullOrEmpty(format.FontWeight))
-            this.FontWeight = format.FontWeight;
-        if (format.HorizontalTextAlign != null)
-            this.HorizontalTextAlign = format.HorizontalTextAlign;
-        if (format.VerticalTextAlign != null)
-            this.VerticalTextAlign = format.VerticalTextAlign;
-        if (format.Icon != null)
-            this.Icon = format.Icon;
-        if (!string.IsNullOrEmpty(format.NumberFormat))
-            this.NumberFormat = format.NumberFormat;
-        if (!string.IsNullOrEmpty(format.IconColor))
-            this.IconColor = format.IconColor;
-        if (format.IsReadOnly.HasValue)
-            this.IsReadOnly = format.IsReadOnly;
+
+        _styles ??= new Dictionary<string, object?>();
+        foreach (var style in format._styles)
+        {
+            if (!_styles.TryAdd(style.Key, style.Value))
+                _styles[style.Key] = style.Value;
+        }
 
         MergeBorders(format);
     }
@@ -167,18 +228,23 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>
 
     public bool Equals(CellFormat? other)
     {
-        return this.FontWeight == other?.FontWeight &&
-               this.BackgroundColor == other?.BackgroundColor &&
-               this.IconColor == other?.IconColor &&
-               this.IsReadOnly == other?.IsReadOnly &&
-               this.ForegroundColor == other?.ForegroundColor &&
-               this.NumberFormat == other?.NumberFormat &&
-               this.HorizontalTextAlign == other?.HorizontalTextAlign &&
-               this.VerticalTextAlign == other?.VerticalTextAlign &&
-               this.Icon == other?.Icon &&
-               this.BorderBottom == other?.BorderBottom &&
-               this.BorderLeft == other?.BorderLeft &&
-               this.BorderRight == other?.BorderRight &&
-               this.BorderTop == other?.BorderTop;
+        if (other == null)
+            return false;
+
+        if (_styles == null && other._styles == null)
+            return true;
+
+        if (other._styles?.Count != _styles?.Count)
+            return false;
+
+        _styles ??= new Dictionary<string, object?>();
+
+        foreach (var kp in _styles)
+        {
+            if (other.GetStyleOrDefault(kp.Key)?.Equals(GetStyleOrDefault(kp.Key)) == false)
+                return false;
+        }
+
+        return true;
     }
 }

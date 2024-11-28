@@ -27,7 +27,7 @@ public class CellValueOnly : IReadOnlyCell
         return Value;
     }
 
-    public CellFormat Format { get; } = new CellFormat();
+    public IReadonlyCellFormat Format { get; } = new CellFormat();
     public string Type { get; } = "default";
     public int Row { get; }
 

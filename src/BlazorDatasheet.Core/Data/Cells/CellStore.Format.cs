@@ -42,9 +42,9 @@ public partial class CellStore
     /// <param name="row"></param>
     /// <param name="col"></param>
     /// <returns></returns>
-    public CellFormat GetFormat(int row, int col)
+    public CellFormat? GetFormat(int row, int col)
     {
-        return _formatStore.GetData(row, col).FirstOrDefault() ?? new CellFormat();
+        return _formatStore.GetData(row, col).FirstOrDefault();
     }
 
 
