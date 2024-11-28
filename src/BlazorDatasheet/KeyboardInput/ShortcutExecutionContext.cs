@@ -9,7 +9,7 @@ public class ShortcutExecutionContext
     public string Key { get; internal set; } = string.Empty;
     public KeyboardModifiers Modifiers { get; internal set; }
 
-    internal ShortcutExecutionContext(Datasheet datasheet, Sheet sheet)
+    public ShortcutExecutionContext(Datasheet datasheet, Sheet sheet)
     {
         Datasheet = datasheet;
         Sheet = sheet;

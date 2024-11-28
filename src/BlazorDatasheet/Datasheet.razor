@@ -24,6 +24,7 @@
             @onmouseout="() => IsMouseInsideSheet = false"
             class="sheet"
             style="@(GridLevel == 0 ? $"width:{TotalSheetWidth}px; height:{TotalSheetHeight}px;" : "")"
+            tabindex="0"
             @ref="_sheetContainer">
             <div style="display: flex; flex-direction: column; align-items:flex-start;">
 

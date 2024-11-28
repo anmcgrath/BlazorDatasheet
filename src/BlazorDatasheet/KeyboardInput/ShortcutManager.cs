@@ -83,7 +83,7 @@ public class ShortcutManager
     /// <param name="modifiers"></param>
     /// <param name="context"></param>
     /// <returns></returns>
-    internal async Task<bool> ExecuteAsync(string key, KeyboardModifiers modifiers,
+    public async Task<bool> ExecuteAsync(string key, KeyboardModifiers modifiers,
         ShortcutExecutionContext context)
     {
         context.Key = key;

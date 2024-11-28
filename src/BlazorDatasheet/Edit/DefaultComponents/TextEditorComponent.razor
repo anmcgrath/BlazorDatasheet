@@ -38,6 +38,7 @@
         {
             CurrentValue = editValue?.ToString() ?? string.Empty;
         }
+        StateHasChanged();
     }
 
     private void OnCaretPositionChanged(int position)

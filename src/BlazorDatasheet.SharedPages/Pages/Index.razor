@@ -8,12 +8,15 @@
 @using BlazorDatasheet.Core.Commands.Data
 @using BlazorDatasheet.Core.Commands.Formatting
 @using BlazorDatasheet.Core.Edit
+@using BlazorDatasheet.Extensions
+@using BlazorDatasheet.KeyboardInput
 
 <input type="text" @ref="_editorRef"
        @onfocus="OnFocusEditor"
        @onblur="OnFocusLost" Label="Formula"
        @bind:after="AfterInput"
        @bind:event="oninput"
+       @onkeydown="OnKeyDown"
        @bind="@_externalInputValue"/>
 
 <div style="width: 800px; height: 500px; overflow: scroll;">
@@ -252,7 +255,7 @@
         Sheet.Selection.SelectionChanged += (sender, args) =>
         {
             var activePosn = Sheet.Selection.ActiveCellPosition;
-            var newVal = 
+            var newVal =
                 Sheet.Cells.GetFormulaString(activePosn.row, activePosn.col) ??
                 Sheet.Cells.GetValue(activePosn.row, activePosn.col)?.ToString() ?? string.Empty;
             if (newVal != _externalInputValue)
@@ -332,6 +335,20 @@
     private void ClearBg()
     {
         Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { BackgroundColor = null });
+    }
+
+    private async void OnKeyDown(KeyboardEventArgs obj)
+    {
+        if (!Sheet.Editor.IsEditing)
+        {
+            return;
+        }
+
+        await _datasheet.ShortcutManager.ExecuteAsync(obj.Key, obj.GetModifiers(), new ShortcutExecutionContext(_datasheet, _sheet));
+        if (!Sheet.Editor.IsEditing)
+        {
+            await _datasheet.FocusAsync();
+        }
     }
 
 }

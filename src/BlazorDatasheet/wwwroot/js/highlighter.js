@@ -15,17 +15,15 @@ class Highligher {
         this.#inputEl.addEventListener('input', e => {
             if (!options.dotnetHelper)
                 return
-            console.log('input set', e.target.innerText)
-            console.log('caret position = ', this.getCaretPosition())
             options.dotnetHelper.invokeMethodAsync("UpdateInput", e.target.innerText)
         })
 
         ///Returns caret position if selection is inside highligher, otherwise -1
         this.getCaretPosition = function () {
             let sel = window.getSelection()
-            if(sel == null || sel.focusNode == null)
+            if (sel == null || sel.focusNode == null)
                 return -1
-            
+
             let isSelectionInside = sel.focusNode.parentElement === options.inputEl
             if (!isSelectionInside)
                 return -1
@@ -58,7 +56,7 @@ class Highligher {
             setTimeout(this.focusAndMoveCursorToEnd, 0);
         }
 
-        //document.addEventListener('selectionchange', this.updateCaretPosition)
+        document.addEventListener('selectionchange', this.updateCaretPosition)
     }
 
 
@@ -100,17 +98,16 @@ class Highligher {
         const cursorPosition = this.getCaretPosition()
         this.#inputEl.innerText = text;
 
-        if(cursorPosition < 0)
+        if (cursorPosition < 0)
             return
-        
+
         const setrange = this.createRange(this.#inputEl, cursorPosition);
 
         const setselection = window.getSelection();
         setrange.collapse(false)
-        console.log(setrange)
         setselection.removeAllRanges();
         setselection.addRange(setrange);
-        
+
     }
 
     dispose() {

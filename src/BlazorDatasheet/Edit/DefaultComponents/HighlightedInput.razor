@@ -20,9 +20,9 @@
 </div>
 
 @code {
-    private string? _value;
+    private string? _value = string.Empty;
 
-    [Parameter] public string? Value { get; set; }
+    [Parameter] public string? Value { get; set; } = string.Empty;
 
     [Parameter] public EventCallback<string> ValueChanged { get; set; }
 
@@ -48,7 +48,6 @@
     {
         if (firstRender)
         {
-            Console.WriteLine($"Focus on init is {FocusOnInit}");
             var module = await Js.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/js/highlighter.js");
             _dotnetRef = DotNetObjectReference.Create(this);
             var options = new HighlighterOptions()
@@ -71,7 +70,6 @@
         // Account for external code changing the editor value.
         if (Value != _value && _hasRendered && _highlightJs != null)
         {
-            Console.WriteLine($"Param set valiue changed from {_value} to {Value}");
             _value = Value;
             await _highlightJs.InvokeVoidAsync("setInnerText", _value);
             await _highlightJs.InvokeVoidAsync("setHighlightHtml", GetHighlightedHtmlValue(_value));

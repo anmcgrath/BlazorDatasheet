@@ -893,6 +893,15 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     }
 
     /// <summary>
+    /// Sets the document focus to the sheet container and sets the sheet as active.
+    /// </summary>
+    public async Task FocusAsync()
+    {
+        await _sheetContainer.FocusAsync();
+        await SetActiveAsync(true);
+    }
+
+    /// <summary>
     /// Copies current selection to clipboard
     /// </summary>
     public async Task<bool> CopySelectionToClipboard()
