@@ -42,7 +42,7 @@
     private DotNetObjectReference<HighlightedInput>? _dotnetRef;
 
     private bool _isDisposing;
-    private bool hasRendered = false;
+    private bool _hasRendered = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -61,7 +61,7 @@
                 FocusOnInit = FocusOnInit
             };
             _highlightJs = await module.InvokeAsync<IJSObjectReference>("createHighlighter", options);
-            hasRendered = true;
+            _hasRendered = true;
             await module.DisposeAsync();
         }
     }
@@ -69,8 +69,9 @@
     protected override async Task OnParametersSetAsync()
     {
         // Account for external code changing the editor value.
-        if (Value != _value && hasRendered && _highlightJs != null)
+        if (Value != _value && _hasRendered && _highlightJs != null)
         {
+            Console.WriteLine($"Param set valiue changed from {_value} to {Value}");
             _value = Value;
             await _highlightJs.InvokeVoidAsync("setInnerText", _value);
             await _highlightJs.InvokeVoidAsync("setHighlightHtml", GetHighlightedHtmlValue(_value));
