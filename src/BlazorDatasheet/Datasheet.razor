@@ -83,8 +83,8 @@
                 }
 
                 @{
-                    var numVisibleRows = _sheet.Rows.CountVisible(0, _sheet.NumRows);
-                    var numVisibleCols = _sheet.Columns.CountVisible(0, _sheet.NumCols);
+                    var numVisibleRows = _sheet.Rows.CountVisible(_viewRegion.Top, _viewRegion.Bottom);
+                    var numVisibleCols = _sheet.Columns.CountVisible(_viewRegion.Left, _viewRegion.Right);
                 }
                 @if (GridLevel == 0)
                 {
@@ -152,30 +152,32 @@
                         }
                     </LayerContainer>
 
-                    <CascadingValue Value="Icons" Name="Icons" IsFixed="true">
-                        <CascadingValue Value="CustomCellTypeDefinitions" Name="CustomCellTypeDefinitions"
-                                        IsFixed="true">
-                            <Virtualise2D
-                                OverscanColumns="OverscanColumns"
-                                OverscanRows="OverscanRows"
-                                Class="@("bds-main-view-" + GridLevel)"
-                                OnViewportChanged="HandleVirtualViewportChanged"
-                                LayoutProvider="new CellLayoutProvider(_sheet)"
-                                ViewRegion="MainViewRegion"
-                                @ref="_mainView"
-                                Context="vr">
-                                <RowTemplate>
-                                    <DatasheetGridRow
-                                        Row="vr.Row"
-                                        VisibleColIndices="vr.VisibleColIndices"
-                                        Sheet="_sheet"
-                                        Cache="_visualCellCache"
-                                        IsDirty="IsRowDirty(vr.Row)"/>
-                                </RowTemplate>
-                            </Virtualise2D>
+                    @if (numVisibleCols > 0 && numVisibleRows > 0)
+                    {
+                        <CascadingValue Value="Icons" Name="Icons" IsFixed="true">
+                            <CascadingValue Value="CustomCellTypeDefinitions" Name="CustomCellTypeDefinitions"
+                                            IsFixed="true">
+                                <Virtualise2D
+                                    OverscanColumns="OverscanColumns"
+                                    OverscanRows="OverscanRows"
+                                    Class="@("bds-main-view-" + GridLevel)"
+                                    OnViewportChanged="HandleVirtualViewportChanged"
+                                    LayoutProvider="new CellLayoutProvider(_sheet)"
+                                    ViewRegion="MainViewRegion"
+                                    @ref="_mainView"
+                                    Context="vr">
+                                    <RowTemplate>
+                                        <DatasheetGridRow
+                                            Row="vr.Row"
+                                            VisibleColIndices="vr.VisibleColIndices"
+                                            Sheet="_sheet"
+                                            Cache="_visualCellCache"
+                                            IsDirty="IsRowDirty(vr.Row)"/>
+                                    </RowTemplate>
+                                </Virtualise2D>
+                            </CascadingValue>
                         </CascadingValue>
-                    </CascadingValue>
-
+                    }
 
                     @if (_frozenRightCount > 0)
                     {
