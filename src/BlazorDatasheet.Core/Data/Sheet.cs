@@ -471,7 +471,7 @@ public class Sheet
     public CellFormat GetFormat(int row, int col)
     {
         var defaultFormat = new CellFormat();
-        var cellFormat = Cells.GetFormat(row, col).Clone();
+        var cellFormat = (Cells.GetFormat(row, col) ?? new CellFormat()).Clone();
         var rowFormat = Rows.Formats.Get(row)?.Clone() ?? defaultFormat;
         var colFormat = Columns.Formats.Get(col)?.Clone() ?? defaultFormat;
 
@@ -500,6 +500,11 @@ public class Sheet
         }
 
         Commands.EndCommandGroup();
+    }
+
+    public void ClearFormat(IRegion region)
+    {
+        
     }
 
     #endregion FORMAT

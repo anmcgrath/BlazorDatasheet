@@ -91,6 +91,7 @@ public class IntervalsTest
         Assert.NotNull(fStore2.ForegroundColor);
         Assert.NotNull(fStore2.BackgroundColor);
         Assert.NotNull(fStore2.FontWeight);
+        
         Assert.AreEqual(f1.ForegroundColor, fStore2.ForegroundColor);
         Assert.AreEqual(f2.BackgroundColor, fStore2.BackgroundColor);
         Assert.AreEqual(f2.FontWeight, fStore2.FontWeight);
