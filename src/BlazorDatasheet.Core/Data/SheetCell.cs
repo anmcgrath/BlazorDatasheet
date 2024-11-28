@@ -73,10 +73,16 @@ public class SheetCell : IReadOnlyCell
     /// Gets the merged format at the cell's position. Setting the format will
     /// merge the format with existing formats in the sheet.
     /// </summary>
-    public CellFormat Format
+    public IReadonlyCellFormat Format
     {
         get => _sheet.GetFormat(Row, Col);
-        set => _sheet.Cells.MergeFormatImpl(new Region(Row, Col), value);
+        set
+        {
+            if (value is CellFormat cf)
+            {
+                _sheet.Cells.MergeFormatImpl(new Region(Row, Col), cf);
+            }
+        }
     }
 
     public string Type
