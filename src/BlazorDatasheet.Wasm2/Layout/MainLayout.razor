@@ -1,0 +1,22 @@
+﻿@using Microsoft.FluentUI.AspNetCore.Components
+@using BlazorDatasheet.SharedPages.Components
+@inherits LayoutComponentBase
+
+<FluentHeader>
+    <div style="width: 100%; display: flex; flex-direction: row; justify-content: space-between;">
+        <div>Blazor datasheet</div>
+    </div>
+</FluentHeader>
+
+<FluentStack Orientation="Orientation.Horizontal" Width="100%">
+    <NavMenu/>
+    <FluentBodyContent>
+        @Body
+    </FluentBodyContent>
+</FluentStack>
+
+<FluentToastProvider/>
+<FluentDialogProvider/>
+<FluentTooltipProvider/>
+<FluentMessageBarProvider/>
+<FluentMenuProvider/> 

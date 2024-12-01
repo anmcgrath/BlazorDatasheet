@@ -1,0 +1,220 @@
+﻿@using BlazorDatasheet.Core.Commands.Data
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events.Edit
+@using BlazorDatasheet.Core.Formats
+@using BlazorDatasheet.Core.Interfaces
+@using BlazorDatasheet.DataStructures.Geometry
+@using Microsoft.JSInterop
+@inject IJSRuntime Js;
+
+<FluentStack Orientation="Orientation.Vertical" Width="100%">
+    <FluentToolbar Style="width: 100%;">
+        <FluentMenuButton Text="Edit" ButtonAppearance="Appearance.Neutral">
+            <FluentMenuItem Disabled="@(!Sheet.Commands.GetUndoCommands().Any())" OnClick="() => Sheet.Commands.Undo()">
+                Undo
+            </FluentMenuItem>
+            <FluentMenuItem Disabled="@(!Sheet.Commands.GetRedoCommands().Any())" OnClick="() => Sheet.Commands.Redo()">
+                Redo
+            </FluentMenuItem>
+            <FluentSpacer/>
+
+            <FluentMenuItem Disabled="!Sheet.Selection.Regions.Any()" Label="Border">
+                <MenuItems>
+                    <FluentMenuItem OnClick="@(() => SetBorder(Sheet.Selection.Regions, 1, "black"))">Thin border
+                    </FluentMenuItem>
+                    <FluentMenuItem OnClick="@(() => SetBorder(Sheet.Selection.Regions, 2, "black"))">Thick border
+                    </FluentMenuItem>
+                </MenuItems>
+            </FluentMenuItem>
+
+            @if (Sheet.Selection.ActiveRegion is RowRegion r)
+            {
+                <FluentDivider/>
+                <FluentMenuItem OnClick="()=>Sheet.Rows.RemoveAt(r.Top, r.Height)">Delete Row(s)</FluentMenuItem>
+                <FluentMenuItem OnClick="()=>Sheet.Rows.InsertAt(r.Top, r.Height)">Insert Row(s) above</FluentMenuItem>
+            }
+
+            @if (Sheet.Selection.ActiveRegion is ColumnRegion c)
+            {
+                <FluentDivider/>
+                <FluentMenuItem OnClick="()=>Sheet.Columns.RemoveAt(c.Left, c.Width)">Delete Column(s)</FluentMenuItem>
+                <FluentMenuItem OnClick="()=>Sheet.Columns.InsertAt(c.Left, c.Width)">Insert Column(s) left
+                </FluentMenuItem>
+            }
+
+        </FluentMenuButton>
+
+        <FluentMenuButton Text="Data" ButtonAppearance="Appearance.Neutral">
+            <FluentMenuItem Disabled="!Sheet.Selection.Regions.Any()"
+                            OnClick="()=>Sheet.Cells.ClearCells(Sheet.Selection.Regions)">
+                Clear selection
+            </FluentMenuItem>
+            <FluentMenuItem Disabled="!Sheet.Selection.Regions.Any()" Label="Sort">
+                <MenuItems>
+                    <FluentMenuItem
+                        OnClick="() => Sheet.SortRange(Sheet.Selection.ActiveRegion, [new ColumnSortOptions(0, true)])">
+                        Sort
+                        range ascending
+                    </FluentMenuItem>
+                    <FluentMenuItem
+                        OnClick="() => Sheet.SortRange(Sheet.Selection.ActiveRegion, [new ColumnSortOptions(0, false)])">
+                        Sort range descending
+                    </FluentMenuItem>
+                </MenuItems>
+            </FluentMenuItem>
+        </FluentMenuButton>
+
+        <ColourPicker PreviewColour="@(_selectedCell?.Format?.BackgroundColor ?? "#ffffff")"
+                      ColorSelected="@(c => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { BackgroundColor = c }))">
+            <FluentIcon Value="@(new Icons.Regular.Size20.ColorFill())"/>
+        </ColourPicker>
+
+        <ColourPicker PreviewColour="@(_selectedCell?.Format?.ForegroundColor ?? "#ffffff")"
+                      ColorSelected="@(c => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { ForegroundColor = c }))">
+            <FluentIcon Value="@(new Icons.Regular.Size20.DrawText())"/>
+        </ColourPicker>
+        
+    </FluentToolbar>
+    
+    <FluentTextField @ref="_editorRef"
+                     Style="width: 100%"
+                     @bind-Value:get="_externalInputValue"
+                     @bind-Value:set="OnEditorValueExternalSet"
+                     Immediate="@true"
+                     @onfocusin="OnFocusEditor"
+                     @onfocusout="OnFocusLost"
+                     @onkeydown="OnKeyDown"></FluentTextField>
+</FluentStack>
+
+
+@code {
+
+    [Parameter, EditorRequired] public required Sheet Sheet { get; set; }
+
+    [Parameter, EditorRequired] public EventCallback<KeyboardEventArgs> EditorOnKeyDown { get; set; }
+
+    private IJSObjectReference? _module;
+
+    private string _externalInputValue = string.Empty;
+    private bool _editorBoxFocus;
+    private FluentTextField _editorRef;
+    private IReadOnlyCell? _selectedCell;
+
+    protected override void OnInitialized()
+    {
+        Sheet.Selection.SelectionChanged += (_, _) =>
+        {
+            if (Sheet.Selection.ActiveRegion == null)
+                return;
+
+            var activePosition = Sheet.Selection.ActiveCellPosition;
+            bool changed = activePosition.row != _selectedCell?.Row || activePosition.col != _selectedCell?.Col;
+            _selectedCell = Sheet.Cells.GetCell(activePosition);
+
+            var newVal =
+                Sheet.Cells.GetFormulaString(_selectedCell.Row, _selectedCell.Col) ??
+                Sheet.Cells.GetValue(_selectedCell.Row, _selectedCell.Col)?.ToString() ?? string.Empty;
+
+            _externalInputValue = newVal;
+
+            if (changed)
+                StateHasChanged();
+        };
+        Sheet.Editor.EditValueChanged += (_, _) =>
+        {
+            if (_externalInputValue != Sheet.Editor.EditValue)
+            {
+                _externalInputValue = Sheet.Editor.EditValue;
+                StateHasChanged();
+            }
+        };
+
+        Sheet.Editor.EditFinished += EditorOnEditFinished;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _module = await Js.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet.SharedPages/Components/Toolbar.razor.js");
+        }
+    }
+
+    private async void EditorOnEditFinished(object? sender, EditFinishedEventArgs e)
+    {
+        if (_editorBoxFocus)
+        {
+            /*if (_module is not null)
+                await _module.InvokeVoidAsync("loseFocus", _editorRef);*/
+            StateHasChanged();
+        }
+    }
+
+    private void OnFocusEditor(FocusEventArgs obj)
+    {
+        if (!_editorBoxFocus)
+        {
+            if (Sheet.Selection.ActiveRegion == null)
+                return;
+
+            Sheet.Editor.BeginEdit(Sheet.Selection.ActiveCellPosition.row, Sheet.Selection.ActiveCellPosition.col);
+        }
+
+        _editorBoxFocus = true;
+    }
+
+    private void OnFocusLost()
+    {
+        _editorBoxFocus = false;
+    }
+
+    private void OnEditorValueExternalSet(string value)
+    {
+        _externalInputValue = value;
+        if (_editorBoxFocus && Sheet.Editor.IsEditing)
+        {
+            Sheet.Editor.EditValue = _externalInputValue;
+        }
+    }
+
+
+    private void OnKeyDown(KeyboardEventArgs obj)
+    {
+        if (!Sheet.Editor.IsEditing)
+        {
+            return;
+        }
+
+        EditorOnKeyDown.InvokeAsync(obj);
+    }
+
+
+    private void SetBorder(IReadOnlyList<IRegion> selectionRegions, int width, string color)
+    {
+        var format = new CellFormat()
+        {
+            BorderBottom = new Border()
+            {
+                Width = width,
+                Color = color
+            },
+            BorderLeft = new Border()
+            {
+                Width = width,
+                Color = color
+            },
+            BorderRight = new Border()
+            {
+                Width = width,
+                Color = color
+            },
+            BorderTop = new Border()
+            {
+                Width = width,
+                Color = color
+            }
+        };
+        Sheet.SetFormat(selectionRegions, format);
+    }
+
+}

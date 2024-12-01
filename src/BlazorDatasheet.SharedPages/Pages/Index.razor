@@ -10,14 +10,16 @@
 @using BlazorDatasheet.Core.Edit
 @using BlazorDatasheet.Extensions
 @using BlazorDatasheet.KeyboardInput
+@using BlazorDatasheet.SharedPages.Components
 
-<input type="text" @ref="_editorRef"
-       @onfocus="OnFocusEditor"
-       @onblur="OnFocusLost" Label="Formula"
-       @bind:after="AfterInput"
-       @bind:event="oninput"
-       @onkeydown="OnKeyDown"
-       @bind="@_externalInputValue"/>
+
+<p></p>
+
+<div style="width: 800px;">
+    <Toolbar
+        EditorOnKeyDown="OnEditorKeyDown"
+        Sheet="Sheet"/>
+</div>
 
 <div style="width: 800px; height: 500px; overflow: scroll;">
     <Datasheet
@@ -30,64 +32,23 @@
         Theme="@Theme"
         ShowColHeadings="ShowColHeadings"
         ShowRowHeadings="ShowRowHeadings"
-        StickyHeaders="StickyHeadings"
         Sheet="Sheet"/>
 </div>
 
 <div>
-    <button @onclick="InsertRowAfterSelection">Insert row</button>
-    <button @onclick="InsertColAfterSelection">Insert col</button>
-    <button @onclick="RemoveCol">RemoveCol</button>
-    <button @onclick="RemoveRow">RemoveRow</button>
-    <button @onclick="() => Sheet.Commands.Undo()">Undo</button>
-    <button @onclick="() => Sheet.Commands.Redo()">Redo</button>
-    <button @onclick="@(() => Sheet.Selection.Value = "Bob")">Set to Bob</button>
-    <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { BackgroundColor = "red" }))">
-        Set bg to red
-    </button>
-    <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { BackgroundColor = "blue" }))">
-        Set bg to blue
-    </button>
-    <button
-        @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { ForegroundColor = "green" }))">Set
-        font colour to green
-    </button>
-    <button @onclick="@(() => SetBorder(Sheet.Selection.Regions, 2, "black"))">Thick border</button>
-    <button @onclick="@(() => SetBorder(Sheet.Selection.Regions, 1, "black"))">Thin border</button>
     <button @onclick="@(() => Sheet.Cells.Merge(Sheet.Selection.Regions))">Merge cells</button>
-    <button @onclick="@SortSelectionDesc">Sort Desc</button>
-    <button @onclick="@SortSelectionAsc">Sort ASc</button>
     <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { NumberFormat = "C2" }))">
         Currency
     </button>
     <button @onclick="@(() => _datasheet.SetActiveAsync(true))">Set sheet active</button>
-    <button @onclick="ClearBg">Clear BG</button>
 </div>
 
-<div>
-    <input id="sticky-headings" type="checkbox" @bind="StickyHeadings"/>
-    <label for="sticky-headings">Sticky headings</label>
-</div>
-
-<div>
-    <input id="show-row-headings" type="checkbox" @bind="ShowRowHeadings"/>
-    <label for="show-row-headings">Show row headings</label>
-</div>
-
-<div>
-    <input id="show-col-headings" type="checkbox" @bind="ShowColHeadings"/>
-    <label for="show-col-headings">Show col headings</label>
-</div>
-
-<div>
-    <input id="darkmode-toggle" type="checkbox" @bind="IsDarkMode"/>
-    <label for="darkmode-toggle">Darkmode</label>
-</div>
-
-<div>
-    <input id="show-formula-dependents" type="checkbox" @bind="ShowFormulaDependents"/>
-    <label for="show-formula-dependents">Show formula dependents</label>
-</div>
+<FluentToolbar Width="100%">
+    <FluentCheckbox @bind-Value="ShowRowHeadings">Row headings</FluentCheckbox>
+    <FluentCheckbox @bind-Value="ShowColHeadings">Column headings</FluentCheckbox>
+    <FluentCheckbox @bind-Value="IsDarkMode">Dark theme</FluentCheckbox>
+    <FluentCheckbox @bind-Value="ShowFormulaDependents">Show formula dependents</FluentCheckbox>
+</FluentToolbar>
 
 
 @code {
@@ -106,71 +67,10 @@
     private bool IsDarkMode { get; set; }
 
     private Datasheet _datasheet = default!;
-
-    private bool _stickyHeadings = true;
     private bool _showRowHeadings = true;
     private bool _showColHeadings = true;
 
     private bool ShowFormulaDependents { get; set; }
-
-    private void SortSelectionDesc()
-    {
-        if (Sheet.Selection.ActiveRegion == null)
-            return;
-        Sheet.Commands.ExecuteCommand(
-            new SortRangeCommand(Sheet.Selection.ActiveRegion, new ColumnSortOptions(0, false))
-        );
-    }
-
-    private void SortSelectionAsc()
-    {
-        if (Sheet.Selection.ActiveRegion == null)
-            return;
-        Sheet.Commands.ExecuteCommand(
-            new SortRangeCommand(Sheet.Selection.ActiveRegion, new ColumnSortOptions(0, true))
-        );
-    }
-
-    private void InsertRowAfterSelection()
-    {
-        if (Sheet.Selection.ActiveRegion == null)
-        {
-            return;
-        }
-
-        Sheet.Rows.InsertAt(Sheet.Selection.ActiveRegion.TopLeft.row);
-    }
-
-    private void InsertColAfterSelection()
-    {
-        if (Sheet.Selection.ActiveRegion == null)
-        {
-            return;
-        }
-
-        Sheet.Columns.InsertAt(Sheet.Selection.ActiveRegion.TopLeft.col);
-    }
-
-    private void RemoveCol()
-    {
-        if (Sheet.Selection.ActiveRegion == null)
-        {
-            return;
-        }
-
-        Sheet.Columns.RemoveAt(Sheet.Selection.ActiveRegion.Left);
-    }
-
-    private void RemoveRow()
-    {
-        if (Sheet.Selection.ActiveRegion == null)
-        {
-            return;
-        }
-
-        Sheet.Rows.RemoveAt(Sheet.Selection.ActiveRegion.Top);
-    }
-
 
     protected override void OnInitialized()
     {
@@ -243,7 +143,7 @@
             BorderRight = border,
             BorderTop = border
         };
-        Sheet.ConditionalFormats.Apply(new Region(10, 13, 0, 4), new NumberScaleConditionalFormat(Color.YellowGreen, Color.IndianRed));
+        Sheet.ConditionalFormats.Apply(new Region(10, 13, 0, 4), new NumberScaleConditionalFormat(System.Drawing.Color.YellowGreen, System.Drawing.Color.IndianRed));
 
         Sheet.Rows.SetHeadings(7, 7, "Custom Row");
         Sheet.Columns.SetHeadings(5, 5, "Custom Col");
@@ -251,104 +151,15 @@
         Sheet.EndBatchUpdates();
         Sheet.Commands.ResumeHistory();
         Sheet.ScreenUpdating = true;
-
-        Sheet.Selection.SelectionChanged += (sender, args) =>
-        {
-            var activePosn = Sheet.Selection.ActiveCellPosition;
-            var newVal =
-                Sheet.Cells.GetFormulaString(activePosn.row, activePosn.col) ??
-                Sheet.Cells.GetValue(activePosn.row, activePosn.col)?.ToString() ?? string.Empty;
-            if (newVal != _externalInputValue)
-            {
-                _externalInputValue = newVal;
-                StateHasChanged();
-            }
-        };
-        Sheet.Editor.EditValueChanged += (sender, s) =>
-        {
-            if (_externalInputValue != Sheet.Editor.EditValue)
-            {
-                _externalInputValue = Sheet.Editor.EditValue;
-                StateHasChanged();
-            }
-        };
     }
 
-    private void SetBorder(IReadOnlyList<IRegion> selectionRegions, int width, string color)
+    public async void OnEditorKeyDown(KeyboardEventArgs e)
     {
-        var format = new CellFormat()
-        {
-            BorderBottom = new Border()
-            {
-                Width = width,
-                Color = color
-            },
-            BorderLeft = new Border()
-            {
-                Width = width,
-                Color = color
-            },
-            BorderRight = new Border()
-            {
-                Width = width,
-                Color = color
-            },
-            BorderTop = new Border()
-            {
-                Width = width,
-                Color = color
-            }
-        };
-        Sheet.SetFormat(selectionRegions, format);
-    }
-
-    private string _externalInputValue = string.Empty;
-    private Sheet _sheet;
-    private bool _editorBoxFocus = false;
-    private bool _editRequestedFromExternalEditor = false;
-    private ElementReference _editorRef = default!;
-
-    private void OnFocusEditor(FocusEventArgs obj)
-    {
-        if (!_editorBoxFocus)
-        {
-            _editRequestedFromExternalEditor = true;
-            Sheet.Editor.BeginEdit(Sheet.Selection.ActiveCellPosition.row, Sheet.Selection.ActiveCellPosition.col, false, EditEntryMode.None);
-        }
-
-        _editorBoxFocus = true;
-    }
-
-    private async void OnFocusLost()
-    {
-        _editorBoxFocus = false;
-    }
-
-    private void AfterInput()
-    {
-        if (_editorBoxFocus && Sheet.Editor.IsEditing)
-        {
-            Sheet.Editor.EditValue = _externalInputValue;
-        }
-    }
-
-    private void ClearBg()
-    {
-        Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { BackgroundColor = null });
-    }
-
-    private async void OnKeyDown(KeyboardEventArgs obj)
-    {
-        if (!Sheet.Editor.IsEditing)
-        {
+        if (e.Key != "Enter" && e.Key != "Tab" && e.Key != "Escape")
             return;
-        }
 
-        await _datasheet.ShortcutManager.ExecuteAsync(obj.Key, obj.GetModifiers(), new ShortcutExecutionContext(_datasheet, _sheet));
-        if (!Sheet.Editor.IsEditing)
-        {
-            await _datasheet.FocusAsync();
-        }
+        await _datasheet.FocusAsync();
     }
+
 
 }

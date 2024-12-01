@@ -1,0 +1,75 @@
+﻿@using Color = System.Drawing.Color
+
+<div class="colorbutton">
+    <FluentStack Orientation="Orientation.Vertical" VerticalAlignment="VerticalAlignment.Center" VerticalGap="0">
+        <label for="@_id" style="cursor:pointer;">
+            @if (ChildContent != null)
+            {
+                @ChildContent
+            }
+        </label>
+        <input type="color" id="@_id"
+               @bind="PreviewColour" @bind:after="()=>ColorSelected.InvokeAsync(PreviewColour)"
+               style="height: 3px; width: 16px;"/>
+    </FluentStack>
+</div>
+
+<style>
+    .colorbutton {
+        padding: 4px 6px;
+        cursor: pointer;
+    }
+
+    .colorbutton:hover {
+        background: rgba(184, 216, 248, 0.34);
+    }
+
+    input[type="color"] {
+        cursor: pointer;
+        border: none;
+        outline: none;
+        padding: 0;
+    }
+</style>
+
+@code {
+
+    [Parameter] public string PreviewColour { get; set; } = "#ffffff";
+
+    [Parameter] public EventCallback<string> ColorSelected { get; set; }
+    
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private string _id = Guid.NewGuid().ToString();
+
+    [Parameter]
+    public List<string> Colors { get; set; } =
+    [
+        "#ffffff",
+        "#ff0000",
+        "#00ff00",
+        "#0000ff",
+        "#ffffff",
+        "#ff0000",
+        "#00ff00",
+        "#0000ff",
+        "#ffffff",
+        "#ff0000",
+        "#00ff00",
+        "#0000ff",
+        "#ffffff",
+        "#ff0000",
+        "#00ff00",
+        "#0000ff"
+    ];
+
+    private bool _isOpen = false;
+
+
+    private void ColorClicked(string color)
+    {
+        _isOpen = false;
+        ColorSelected.InvokeAsync(color);
+    }
+
+}

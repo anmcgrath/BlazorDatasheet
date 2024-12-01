@@ -1,0 +1,11 @@
+﻿@using Microsoft.AspNetCore.Components.Routing
+<div style="min-width: 250px;">
+    <FluentNavMenu>
+        <FluentNavLink Match="NavLinkMatch.All" Href="" Tooltip="Home">Home</FluentNavLink>
+        <FluentNavLink Href="/simple" Tooltip="Simple example">Simple example</FluentNavLink>
+        <FluentNavGroup Expanded="@true" Title="Custom types">
+            <FluentNavLink Href="/CustomRenderer">Custom renderer</FluentNavLink>
+            <FluentNavLink Href="/CustomEditor">Custom editor</FluentNavLink>
+        </FluentNavGroup>
+    </FluentNavMenu>
+</div>

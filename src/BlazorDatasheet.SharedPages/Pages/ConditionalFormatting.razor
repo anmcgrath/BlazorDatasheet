@@ -33,7 +33,7 @@
     {
         {
             "check",
-            Icons.Icons.CheckIcon
+            BlazorDatasheet.SharedPages.Icons.Icons.CheckIcon
         }
     };
 
@@ -41,7 +41,7 @@
     {
         sheet = new Sheet(15, 5);
         sheet.Commands.PauseHistory();
-        var numberScaleConditionalFormat = new NumberScaleConditionalFormat(Color.YellowGreen, Color.IndianRed);
+        var numberScaleConditionalFormat = new NumberScaleConditionalFormat(System.Drawing.Color.YellowGreen, System.Drawing.Color.IndianRed);
         var checkConditionalFormat = new CustomCheckConditionalFormat("check");
 
         var regionOfNumberScaleFormat = new Region(0, sheet.NumRows - 1, 1, sheet.NumRows - 1);

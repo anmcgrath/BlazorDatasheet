@@ -294,3 +294,17 @@
 .bds-selected-header {
     background: var(--selection-bg-color);
 }
+
+.bds-dropper {
+    background: none;
+    color: var(--sheet-foreground-color);
+    margin: 0;
+    padding: 0 2px 0 2px;
+    border: none;
+    line-height: inherit;
+    cursor: pointer;
+}
+
+.bds-dropper:hover {
+    background: var(--selection-bg-color);
+}

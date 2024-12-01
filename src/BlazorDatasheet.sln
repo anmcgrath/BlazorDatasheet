@@ -20,6 +20,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorDatasheet.Core", "Bla
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorDatasheet.Formula.Functions", "BlazorDatasheet.Formula.Functions\BlazorDatasheet.Formula.Functions.csproj", "{75314586-24CB-4A30-8166-41544ADECEB8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorDatasheet.Wasm2", "BlazorDatasheet.Wasm2\BlazorDatasheet.Wasm2.csproj", "{45EC65E4-21BE-487C-B88D-0B48C1DF5DC5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -62,6 +64,10 @@ Global
 		{75314586-24CB-4A30-8166-41544ADECEB8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{75314586-24CB-4A30-8166-41544ADECEB8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{75314586-24CB-4A30-8166-41544ADECEB8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{45EC65E4-21BE-487C-B88D-0B48C1DF5DC5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{45EC65E4-21BE-487C-B88D-0B48C1DF5DC5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{45EC65E4-21BE-487C-B88D-0B48C1DF5DC5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{45EC65E4-21BE-487C-B88D-0B48C1DF5DC5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{8D866B46-349C-4B1C-B5A6-146DAECCA089} = {88903F7E-79AF-45FD-A777-4E0A101AB65C}

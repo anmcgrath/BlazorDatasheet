@@ -733,6 +733,9 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     private async Task<bool> AcceptEditAndMoveActiveSelection(Axis axis, int amount)
     {
         var acceptEdit = !_sheet.Editor.IsEditing || _sheet.Editor.AcceptEdit();
+        if (!acceptEdit)
+            return false;
+
         _sheet.Selection.MoveActivePosition(axis, amount);
         if (IsDataSheetActive)
             await ScrollToActiveCellPosition();
@@ -898,7 +901,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     public async Task FocusAsync()
     {
         await _sheetContainer.FocusAsync();
-        await SetActiveAsync(true);
+        await SetActiveAsync();
     }
 
     /// <summary>

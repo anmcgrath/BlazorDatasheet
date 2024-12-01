@@ -31,7 +31,7 @@
                 Sheet.Cells.SetFormula(i, j, $"=(1+sin(({i / 10.0}+{j / 10.0})*3.14-x))/2");
             }
         }
-        var colorCf = new NumberScaleConditionalFormat(Color.LightBlue, Color.GreenYellow);
+        var colorCf = new NumberScaleConditionalFormat(System.Drawing.Color.LightBlue, System.Drawing.Color.GreenYellow);
         Sheet.ConditionalFormats.Apply(new Region(0, 10, 0, 10), colorCf);
         Sheet.FormulaEngine.SetVariable("x", 10);
         Sheet.EndBatchUpdates();

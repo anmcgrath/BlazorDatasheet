@@ -35,4 +35,9 @@
       <ProjectReference Include="..\BlazorDatasheet\BlazorDatasheet.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components" Version="4.10.4" />
+      <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components.Icons" Version="4.10.4" />
+    </ItemGroup>
+
 </Project>
