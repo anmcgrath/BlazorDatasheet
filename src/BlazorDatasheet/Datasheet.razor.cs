@@ -159,6 +159,12 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     private int _numberPrecisionDisplay = 15;
 
     /// <summary>
+    /// Any user-defined items to render in the context menu
+    /// </summary>
+    [Parameter]
+    public RenderFragment<Sheet>? MenuItems { get; set; }
+
+    /// <summary>
     /// The datasheet keyboard shortcut manager
     /// </summary>
     public ShortcutManager ShortcutManager { get; } = new();
@@ -312,6 +318,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
             requireRender = true;
         }
 
+        MenuOptions.CustomMenuFragment = MenuItems;
         if (!MenuOptions.CompareTo(_menuOptions))
         {
             _menuOptions = MenuOptions;
