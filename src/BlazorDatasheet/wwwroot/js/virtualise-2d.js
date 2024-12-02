@@ -74,8 +74,6 @@
             height: height
         }
 
-        console.log(rect)
-
         return rect
     }
 
