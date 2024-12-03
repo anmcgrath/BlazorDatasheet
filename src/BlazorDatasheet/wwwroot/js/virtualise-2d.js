@@ -13,7 +13,7 @@
         let overflowX = window.getComputedStyle(parent).overflowX
         let overflow = window.getComputedStyle(parent).overflow
 
-        if (overflowY === 'scroll' || overflowX === 'scroll' || overflow === 'scroll')
+        if (overflowY !== 'visible' || overflowX !== 'visible' || overflow !== 'visible')
             return parent
 
         return this.findScrollableAncestor(parent)
@@ -106,7 +106,7 @@
 
     isScrollable(el) {
         let style = window.getComputedStyle(el)
-        return style.overflow === 'scroll' || style.overflowX === 'scroll' || style.overflowY === 'scroll'
+        return style.overflow !== 'visible' || style.overflowX !== 'visible' || style.overflowY !== 'visible'
     }
 
     isInsideSticky(el) {
