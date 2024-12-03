@@ -22,7 +22,7 @@
             {
                 <SheetMenuItem OnClick="() => sheet.Cells.ClearCells(sheet.Selection.Regions)">Clear</SheetMenuItem>
             }
-            @if (MenuOptions.MergeEnabled)
+            @if (MenuOptions.MergeEnabled && !sheet.Selection.ActiveRegion.IsSingleCell())
             {
                 <SheetMenuItem OnClick="() => sheet.Cells.Merge(sheet.Selection.Regions)">Merge</SheetMenuItem>
             }
@@ -112,7 +112,7 @@
             }
         }
 
-        @if (MenuOptions.SortRangeEnabled)
+        @if (MenuOptions.SortRangeEnabled && sheet.Selection.ActiveRegion!.Height > 1)
         {
             <SheetMenuDivider/>
             <SheetSubMenu Label="Sort">
