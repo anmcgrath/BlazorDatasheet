@@ -5,7 +5,7 @@
 @{
     var colOffset = 1;
 }
-@foreach (var col in VisibleColIndices)
+@foreach (var col in _visibleColIndices)
 {
     var dataCol = col;
     var dataRow = Row;
@@ -32,37 +32,7 @@
             data-col="@dataCol"
             class="sheet-cell"
             style="@visualCell.FormatStyleString;">
-            <div style="display: flex;">
-                @if (visualCell.Icon != null)
-                {
-                    <div
-                        style="margin-right:2px; float:left; color: @(visualCell.Format?.IconColor ?? "var(--icon-color)");">
-                        @GetIconRenderFragment(visualCell.Icon)
-                    </div>
-                }
-                @switch (visualCell.CellType)
-                {
-                    case "default":
-                    case "text":
-                    case "datetime":
-                        <div style="width: 100%;">
-                            @visualCell.FormattedString
-                        </div>
-                        break;
-                    case "boolean":
-                        <BoolRenderer Cell="visualCell" Sheet="Sheet"/>
-                        break;
-                    case "select":
-                        <SelectRenderer Cell="visualCell" Sheet="Sheet"/>
-                        break;
-
-                    default:
-                        <DynamicComponent
-                            Parameters="@GetCellRendererParameters(visualCell)"
-                            Type="@GetCellRendererType(visualCell.CellType)"/>
-                        break;
-                }
-            </div>
+            <div>@Row, @col</div>
         </div>
     </div>
     colOffset++;
@@ -76,6 +46,7 @@
 
     [Parameter] public Sheet Sheet { get; set; } = null!;
 
+    private List<int> _visibleColIndices = new();
     [Parameter] public List<int> VisibleColIndices { get; set; } = new();
 
     [Parameter, EditorRequired] public Dictionary<CellPosition, VisualCell> Cache { get; set; } = null!;
@@ -85,7 +56,35 @@
     [CascadingParameter(Name = "CustomCellTypeDefinitions")]
     public Dictionary<string, CellTypeDefinition> CustomCellTypeDefinitions { get; set; } = default!;
 
-    protected override bool ShouldRender() => IsDirty;
+    protected override bool ShouldRender() => IsDirty || _colIndicesChanged;
+    private bool _colIndicesChanged = false;
+
+    protected override void OnParametersSet()
+    {
+        if (VisibleColIndices != _visibleColIndices)
+        {
+            if (!IsDirty)
+            {
+                _colIndicesChanged = CompareIndices(_visibleColIndices, VisibleColIndices);
+            }
+            _visibleColIndices = VisibleColIndices;
+        }
+
+        base.OnParametersSet();
+    }
+
+    private bool CompareIndices(List<int> oldIndices, List<int> newIndices)
+    {
+        // for the purpose of this comparison we just want to know whether
+        // we need to re-render, so we do not need to compare all elements
+        if (oldIndices.Count != newIndices.Count)
+            return true;
+        if (oldIndices.FirstOrDefault() != newIndices.FirstOrDefault())
+            return true;
+        if (oldIndices.LastOrDefault() != newIndices.LastOrDefault())
+            return true;
+        return false;
+    }
 
     private Type GetCellRendererType(string type)
     {
