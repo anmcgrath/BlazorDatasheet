@@ -5,7 +5,7 @@
 @using BlazorDatasheet.Util
 @inherits Layer
 
-@if (Sheet.Cells.AnyMerges() && ViewRegion != null && Sheet.Rows.CountVisible(0, _sheet.NumRows) > 0)
+@if (Sheet.Cells.AnyMerges() && ViewRegion != null && Sheet.Rows.CountVisible(0, Sheet.NumRows) > 0)
 {
     var merges = Sheet.Cells.GetMerges(ViewRegion)
         .Select(x => x.GetIntersection(Sheet.Region));
@@ -74,9 +74,7 @@
 
     [CascadingParameter(Name = "CustomCellTypeDefinitions")]
     public Dictionary<string, CellTypeDefinition> CustomCellTypeDefinitions { get; set; } = default!;
-
-    private Sheet _sheet = new(0, 0);
-
+    
     protected override void OnSheetChange(Sheet newSheet, Sheet oldSheet)
     {
         oldSheet.Cells.CellsChanged -= CellsOnCellsChanged;
