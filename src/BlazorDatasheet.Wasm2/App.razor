@@ -1,7 +1,8 @@
-﻿@using Index = BlazorDatasheet.SharedPages.Pages.Index
+﻿@using BlazorDatasheet.SharedPages
+@using Index = BlazorDatasheet.SharedPages.Pages.Index
 <Router AppAssembly="@typeof(App).Assembly" AdditionalAssemblies="new[] { typeof(Index).Assembly }">
     <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)"/>
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(SharedPages.MainLayout)"/>
         <FocusOnNavigate RouteData="@routeData" Selector="h1"/>
     </Found>
     <NotFound>

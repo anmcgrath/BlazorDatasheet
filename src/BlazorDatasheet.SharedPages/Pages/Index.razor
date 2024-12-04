@@ -4,16 +4,20 @@
 @using BlazorDatasheet.Core.Formats
 @using BlazorDatasheet.Core.Formats.DefaultConditionalFormats
 @using BlazorDatasheet.Core.Validation
-@using System.Drawing
-@using BlazorDatasheet.Core.Commands.Data
-@using BlazorDatasheet.Core.Commands.Formatting
-@using BlazorDatasheet.Core.Edit
-@using BlazorDatasheet.Extensions
-@using BlazorDatasheet.KeyboardInput
 @using BlazorDatasheet.SharedPages.Components
 
+<h1>BlazorDatasheet</h1>
 
-<p></p>
+<div style="margin-top: 1rem">
+    <p>
+        BlazorDatasheet is an excel-like control written in C# for Blazor.
+    </p>
+
+    <p>
+        See this example on GitHub
+        <a href="https://github.com/anmcgrath/BlazorDatasheet/blob/main/src/BlazorDatasheet.SharedPages/Pages/Index.razor">here.</a>
+    </p>
+</div>
 
 <div style="width: 800px;">
     <Toolbar
@@ -35,14 +39,6 @@
         Sheet="Sheet"/>
 </div>
 
-<div>
-    <button @onclick="@(() => Sheet.Cells.Merge(Sheet.Selection.Regions))">Merge cells</button>
-    <button @onclick="@(() => Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { NumberFormat = "C2" }))">
-        Currency
-    </button>
-    <button @onclick="@(() => _datasheet.SetActiveAsync(true))">Set sheet active</button>
-</div>
-
 <FluentToolbar Width="100%">
     <FluentCheckbox @bind-Value="ShowRowHeadings">Row headings</FluentCheckbox>
     <FluentCheckbox @bind-Value="ShowColHeadings">Column headings</FluentCheckbox>
@@ -56,9 +52,6 @@
     private Sheet Sheet;
     private string Theme => IsDarkMode ? "dark" : "default";
     private bool _isDarkMode;
-    private string FilterValue { get; set; }
-
-    private bool StickyHeadings { get; set; } = true;
 
     private bool ShowRowHeadings { get; set; } = true;
 

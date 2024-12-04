@@ -1,0 +1,9 @@
+﻿.nav-menu {
+    width: 330px;
+}
+
+@media screen and (max-width: 767px) {
+    .nav-menu {
+        width: 100% !important;
+    }
+}

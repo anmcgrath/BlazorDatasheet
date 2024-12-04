@@ -1,11 +1,19 @@
 ﻿@using Microsoft.AspNetCore.Components.Routing
-<div style="min-width: 250px;">
-    <FluentNavMenu>
+<div class="nav-menu">
+    <FluentNavMenu Collapsible="true">
         <FluentNavLink Match="NavLinkMatch.All" Href="" Tooltip="Home">Home</FluentNavLink>
         <FluentNavLink Href="/simple" Tooltip="Simple example">Simple example</FluentNavLink>
+        <FluentNavLink Href="/DataValidation">Data Validation</FluentNavLink>
+        <FluentNavGroup Expanded="@true" Title="Formula">
+            <FluentNavLink Href="/Formula">Formula</FluentNavLink>
+            <FluentNavLink Href="/FormulaVariable">Formula variables</FluentNavLink>
+        </FluentNavGroup>
+        <FluentNavLink Href="/ConditionalFormatting">ConditionalFormatting</FluentNavLink>
         <FluentNavGroup Expanded="@true" Title="Custom types">
             <FluentNavLink Href="/CustomRenderer">Custom renderer</FluentNavLink>
             <FluentNavLink Href="/CustomEditor">Custom editor</FluentNavLink>
         </FluentNavGroup>
+        <FluentNavLink Href="/ObjectEditor">Object Editor</FluentNavLink>
+        <FluentNavLink Href="/ColumnFilter">Column Filters</FluentNavLink>
     </FluentNavMenu>
 </div>

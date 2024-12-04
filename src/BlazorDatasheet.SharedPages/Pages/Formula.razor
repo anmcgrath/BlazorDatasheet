@@ -1,41 +1,64 @@
 ﻿@page "/Formula"
 @using BlazorDatasheet.Core.Data
-@using BlazorDatasheet.Core.Formats.DefaultConditionalFormats
-@using System.Drawing
-@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Core.Formats
+@using BlazorDatasheet.Formula.Core
+@using BlazorDatasheet.Menu
+<h1>Formula</h1>
 
-<p>Blazor datasheet has support for an excel-like formula language.</p>
+<div>
+    <p>
+        Blazor datasheet supports a subset of Excel functions in a similar style formula language. To set a formula,
+        type "=" before the definition.
+    </p>
+</div>
 
-<p>This example shows a 10x10 sheet with sin functions applied to each. The phase can be controlled with the formula variable "x", which is set via the range slider below.</p>
+<Datasheet
+    MenuOptions="@(new SheetMenuOptions()
+                 {
+                     MergeEnabled = false,
+                     HideColsEnabled = false,
+                     HideRowsEnabled = false,
+                     ClearEnabled = false,
+                     DeleteColsEnabled = false,
+                     DeleteRowsEnabled = false,
+                     HeaderMenuEnabled = false,
+                     InsertColsEnabled = false,
+                     InsertRowsEnabled = false,
+                     SortRangeEnabled = false,
+                     FilterColumnEnabled = false
+                 })"
+    Sheet="_sheet"/>
 
-<input type="range" min="0" max="10" step="0.05" @oninput="@(e => Sheet.FormulaEngine.SetVariable("x", e.Value))"/>
+@code {
 
-<Datasheet Sheet="Sheet" ShowColHeadings="false" ShowRowHeadings="false"/>
-
-@code{
-
-    public Sheet Sheet;
+    private Sheet _sheet = new(11, 2, 50);
 
     protected override void OnInitialized()
     {
-        Sheet = new Sheet(10, 10);
-        Sheet.BatchUpdates();
-        Sheet.Commands.PauseHistory();
-        Sheet.Columns.SetSize(0, 10, 40);
-        Sheet.Rows.SetSize(0, 10, 40);
+        var data = new CellValue[9][];
 
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < 9; i++)
         {
-            for (int j = 0; j < 10; j++)
-            {
-                Sheet.Cells.SetFormula(i, j, $"=(1+sin(({i / 10.0}+{j / 10.0})*3.14-x))/2");
-            }
+            data[i] = [CellValue.Number(i * 10)];
         }
-        var colorCf = new NumberScaleConditionalFormat(System.Drawing.Color.LightBlue, System.Drawing.Color.GreenYellow);
-        Sheet.ConditionalFormats.Apply(new Region(0, 10, 0, 10), colorCf);
-        Sheet.FormulaEngine.SetVariable("x", 10);
-        Sheet.EndBatchUpdates();
-        Sheet.Commands.ResumeHistory();
+
+        _sheet.BatchUpdates();
+        _sheet.Commands.PauseHistory();
+        ;
+        _sheet.Rows.HeadingWidth = 30;
+        _sheet.Cells.SetValues(0, 1, data);
+        _sheet.Cells.SetFormula(9, 1, "=SUM(B1:B9)");
+        _sheet.Cells.SetFormula(10, 1, "=AVERAGE(B1:B9)");
+        _sheet.Range("A10")!.Value = "Sum:";
+        _sheet.Columns.SetSize(1, 90);
+        _sheet.Range("A10:A11")!.Format = new CellFormat() { HorizontalTextAlign = TextAlign.End };
+        _sheet.Range("B10:B11")!.Format = new CellFormat() { NumberFormat = "N1" };
+        _sheet.Range("B:B")!.Format = new CellFormat() { HorizontalTextAlign = TextAlign.Center };
+        _sheet.Range("A11")!.Value = "Ave:";
+        _sheet.Commands.ResumeHistory();
+        _sheet.EndBatchUpdates();
+
+        base.OnInitialized();
     }
 
 }

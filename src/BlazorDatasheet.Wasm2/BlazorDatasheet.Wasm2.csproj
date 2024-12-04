@@ -17,6 +17,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Folder Include="Layout\" />
       <Folder Include="Pages\" />
     </ItemGroup>
 

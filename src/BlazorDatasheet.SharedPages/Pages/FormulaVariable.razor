@@ -1,0 +1,43 @@
+﻿@page "/FormulaVariable"
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Formats.DefaultConditionalFormats
+@using System.Drawing
+@using BlazorDatasheet.DataStructures.Geometry
+
+<h1>Formula - set variable</h1>
+
+<p>Blazor datasheet has support for an excel-like formula language.</p>
+
+<p>This example shows a 10x10 sheet with sin functions applied to each. The phase can be controlled with the formula variable "x", which is set via the range slider below.</p>
+
+<FluentSlider Style="width: 300px;" TValue="double" Min="0" Max="10" Step="0.1" Label="X" ValueChanged="@(e => Sheet.FormulaEngine.SetVariable("x", e))"/>
+
+<Datasheet Sheet="Sheet" ShowColHeadings="false" ShowRowHeadings="false"/>
+
+@code{
+
+    public Sheet Sheet;
+
+    protected override void OnInitialized()
+    {
+        Sheet = new Sheet(10, 10);
+        Sheet.BatchUpdates();
+        Sheet.Commands.PauseHistory();
+        Sheet.Columns.SetSize(0, 10, 40);
+        Sheet.Rows.SetSize(0, 10, 40);
+
+        for (int i = 0; i < 10; i++)
+        {
+            for (int j = 0; j < 10; j++)
+            {
+                Sheet.Cells.SetFormula(i, j, $"=(1+sin(({i / 10.0}+{j / 10.0})*3.14-x))/2");
+            }
+        }
+        var colorCf = new NumberScaleConditionalFormat(System.Drawing.Color.LightBlue, System.Drawing.Color.GreenYellow);
+        Sheet.ConditionalFormats.Apply(new Region(0, 10, 0, 10), colorCf);
+        Sheet.FormulaEngine.SetVariable("x", 10);
+        Sheet.EndBatchUpdates();
+        Sheet.Commands.ResumeHistory();
+    }
+
+}
