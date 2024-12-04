@@ -15,10 +15,16 @@
     <a href="https://github.com/anmcgrath/BlazorDatasheet/blob/main/src/BlazorDatasheet.SharedPages/Pages/SimpleExample.razor">here.</a>
 </p>
 
-<Datasheet Sheet="sheet"/>
+<div style="width: 800px; height: 600px; overflow: scroll;">
+    <Datasheet Sheet="sheet"/>
+</div>
 
-<button @onclick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { BackgroundColor = "red" }))">Set format to red</button>
-<button @onclick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { BackgroundColor = "blue" }))">Set format to blue</button>
+<button @onclick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { BackgroundColor = "red" }))">Set
+    format to red
+</button>
+<button @onclick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { BackgroundColor = "blue" }))">Set
+    format to blue
+</button>
 
 
 @code{
@@ -27,7 +33,7 @@
 
     protected override void OnInitialized()
     {
-        sheet = new Sheet(numRows: 100000, numCols: 20000);
+        sheet = new Sheet(numRows: 100_000, numCols: 20_000);
     }
 
 }
