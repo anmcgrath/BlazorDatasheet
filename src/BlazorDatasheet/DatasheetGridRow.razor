@@ -32,7 +32,37 @@
             data-col="@dataCol"
             class="sheet-cell"
             style="@visualCell.FormatStyleString;">
-            <div>@Row, @col</div>
+            <div style="display: flex;">
+                @if (visualCell.Icon != null)
+                {
+                    <div
+                        style="margin-right:2px; float:left; color: @(visualCell.Format?.IconColor ?? "var(--icon-color)");">
+                        @GetIconRenderFragment(visualCell.Icon)
+                    </div>
+                }
+                @switch (visualCell.CellType)
+                {
+                    case "default":
+                    case "text":
+                    case "datetime":
+                        <div style="width: 100%;">
+                            @visualCell.FormattedString
+                        </div>
+                        break;
+                    case "boolean":
+                        <BoolRenderer Cell="visualCell" Sheet="Sheet"/>
+                        break;
+                    case "select":
+                        <SelectRenderer Cell="visualCell" Sheet="Sheet"/>
+                        break;
+
+                    default:
+                        <DynamicComponent
+                            Parameters="@GetCellRendererParameters(visualCell)"
+                            Type="@GetCellRendererType(visualCell.CellType)"/>
+                        break;
+                }
+            </div>
         </div>
     </div>
     colOffset++;
