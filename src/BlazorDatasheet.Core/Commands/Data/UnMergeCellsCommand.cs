@@ -1,5 +1,6 @@
 ﻿using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
+using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.Commands.Data;
@@ -47,9 +48,6 @@ public class UnMergeCellsCommand : IUndoableCommand
         // Store the unmerge that we are doing and perform the actual unmerge
         _unMergesPerformed.Add(region);
         sheet.Cells.UnMergeCellsImpl(region);
-
-        //Remove any formatting on the merged cells
-        sheet.Cells.CutFormatImpl(region);
 
         sheet.EndBatchUpdates();
         return true;
