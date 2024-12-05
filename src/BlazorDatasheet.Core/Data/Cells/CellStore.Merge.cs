@@ -59,6 +59,22 @@ namespace BlazorDatasheet.Core.Data.Cells
         }
 
         /// <summary>
+        /// Un-merge selected regions of cells.
+        /// </summary>
+        /// <param name="regions"></param>
+        public void UnMerge(IEnumerable<IRegion> regions)
+        {
+            _sheet.Commands.BeginCommandGroup();
+
+            foreach (var region in regions)
+            {
+                _sheet.Commands.ExecuteCommand(new UnMergeCellsCommand(region));
+            }
+
+            _sheet.Commands.EndCommandGroup();
+        }
+
+        /// <summary>
         /// Un-merge all cells that overlap the range
         /// </summary>
         /// <param name="region"></param>
