@@ -155,5 +155,15 @@ namespace BlazorDatasheet.Core.Data.Cells
         {
             return _mergeStore.Any();
         }
+
+        /// <summary>
+        /// Returns whether the region has any merged cells.
+        /// </summary>
+        /// <param name="region"></param>
+        /// <returns></returns>
+        public bool AnyMerges(IRegion region)
+        {
+            return _mergeStore.Any(region);
+        }
     }
 }
