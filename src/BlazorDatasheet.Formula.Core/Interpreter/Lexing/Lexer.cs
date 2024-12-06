@@ -98,6 +98,9 @@ public ref struct Lexer
             case '&':
                 token = new Token(Tag.AmpersandToken, "&", _position);
                 break;
+            case '%':
+                token = new Token(Tag.PercentToken, "%", _position);
+                break;
             case '>':
                 if (Peek(1) == '=')
                 {

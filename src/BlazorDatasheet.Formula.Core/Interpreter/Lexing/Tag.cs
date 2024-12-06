@@ -25,6 +25,7 @@ public enum Tag
     LeftCurlyBracketToken,
     RightCurlyBracketToken,
     AmpersandToken,
+    PercentToken,
     ColonToken,
     AddressToken,
     Whitespace

@@ -193,4 +193,13 @@ public class InterpreterTests
         EvalExpression("=A1=A2").Data.Should().Be(false);
         EvalExpression("=A1<>A2").Data.Should().Be(true);
     }
+
+    [Test]
+    [TestCase("=1%", 1d / 100)]
+    [TestCase("=-2%", -2d / 100)]
+    [TestCase("=1%*100", 1)]
+    public void Percent_Operator_Evaluates_To_Correct_Value(string formula, double value)
+    {
+        EvalExpression(formula).Data.Should().Be(value);
+    }
 }

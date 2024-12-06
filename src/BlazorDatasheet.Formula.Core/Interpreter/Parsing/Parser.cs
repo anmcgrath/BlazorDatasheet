@@ -192,6 +192,12 @@ public class Parser
                 return new StringLiteralExpression(CellValue.Text(strToken.Value));
             case Tag.Number:
                 var nToken = (NumberToken)NextToken();
+                if (Current.Tag == Tag.PercentToken)
+                {
+                    NextToken();
+                    return new LiteralExpression(CellValue.Number(nToken.Value / 100));
+                }
+
                 return new LiteralExpression(CellValue.Number(nToken.Value));
             default:
                 var token = NextToken();
