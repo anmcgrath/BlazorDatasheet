@@ -9,6 +9,7 @@ using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
 using BlazorDatasheet.Formula.Functions.Logical;
 using FluentAssertions;
 using NUnit.Framework;
+using NUnit.Framework.Internal.Commands;
 
 namespace BlazorDatasheet.Test.Formula;
 
@@ -390,5 +391,18 @@ public class SheetFormulaIntegrationTests
         env.SetCellFormula(0, 1, fB1);
         var res = eval.Evaluate(fB1);
         res.Data.Should().Be(3);
+    }
+
+    [Test]
+    public void Range_Operator_On_Range_Will_Update_Correctly_When_Sheet_Edited()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Cells.SetFormula(5, 5, "=sum(a1:a2:b3)");
+        sheet.Cells.SetValues(0, 0, [[1, 2], [3, 4]]);
+        sheet.Cells.GetValue(5, 5).Should().Be(1 + 2 + 3 + 4);
+        sheet.Range("b1")!.Value = 3;
+
+        // update B2
+        sheet.Cells.GetValue(5, 5).Should().Be(1 + 3 + 3 + 4);
     }
 }
