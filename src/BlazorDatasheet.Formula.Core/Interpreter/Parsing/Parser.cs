@@ -62,7 +62,7 @@ public class Parser
         var leftExpression = ParsePrimaryExpression();
 
         while (Current.Tag == Tag.PercentToken)
-            leftExpression = new UnaryOperatorExpression(NextToken(), leftExpression);
+            leftExpression = new UnaryOperatorExpression(NextToken(), leftExpression, isPostFix: true);
 
         while (true)
         {

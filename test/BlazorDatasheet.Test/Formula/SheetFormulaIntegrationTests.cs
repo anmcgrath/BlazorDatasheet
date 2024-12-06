@@ -405,4 +405,14 @@ public class SheetFormulaIntegrationTests
         // update B2
         sheet.Cells.GetValue(5, 5).Should().Be(1 + 3 + 3 + 4);
     }
+
+    [Test]
+    [TestCase("=1%")]
+    [TestCase("=+1")]
+    public void Formula_String_Is_Correct_After_Parsing(string formula)
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Cells.SetFormula(0, 0, formula);
+        sheet.Cells.GetFormulaString(0, 0).Should().Be(formula);
+    }
 }
