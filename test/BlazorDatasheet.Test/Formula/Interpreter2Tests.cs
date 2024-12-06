@@ -1,5 +1,6 @@
 ﻿using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
+using BlazorDatashet.Formula.Functions.Math;
 using FluentAssertions;
 using NUnit.Framework;
 using Parser = BlazorDatasheet.Formula.Core.Interpreter.Parsing.Parser;
@@ -198,8 +199,27 @@ public class InterpreterTests
     [TestCase("=1%", 1d / 100)]
     [TestCase("=-2%", -2d / 100)]
     [TestCase("=1%*100", 1)]
+    [TestCase("=(1+2)%", 3d / 100)]
+    [TestCase("=sum(1%)", 1d / 100)]
+    [TestCase("=(1%)%", 1d / (100 * 100))]
+    [TestCase("=4   %", 4d / 100)]
+    [TestCase("=2%%%",
+        2d / (100 * 100 * 100))] // matches behaviour of excel but not google sheets (google sheets is error)
     public void Percent_Operator_Evaluates_To_Correct_Value(string formula, double value)
     {
+        _env.RegisterFunction("sum", new SumFunction());
         EvalExpression(formula).Data.Should().Be(value);
+    }
+
+    [Test]
+    [TestCase("%", ErrorType.Na)]
+    [TestCase("%2", ErrorType.Na)]
+    [TestCase("1+%", ErrorType.Na)]
+    public void Percent_Operator_Evaluates_To_Error_In_Incorrect_Formula(string incorrectFormula,
+        ErrorType expectedErrorType)
+    {
+        var expr = EvalExpression(incorrectFormula);
+        expr.IsError().Should().BeTrue();
+        expr.GetValue<FormulaError>().ErrorType.Should().Be(expectedErrorType);
     }
 }

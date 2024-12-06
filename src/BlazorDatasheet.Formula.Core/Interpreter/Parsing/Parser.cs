@@ -45,15 +45,13 @@ public class Parser
 
     private Expression ParseUnaryExpression()
     {
-        if (IsUnaryOperator(Current))
-        {
+        if (IsPrefixUnaryOperator(Current))
             return new UnaryOperatorExpression(NextToken(), ParseExpression());
-        }
 
         return ParseBinaryExpression();
     }
 
-    private bool IsUnaryOperator(Token token)
+    private bool IsPrefixUnaryOperator(Token token)
     {
         return token.Tag == Tag.PlusToken ||
                token.Tag == Tag.MinusToken;
@@ -62,6 +60,9 @@ public class Parser
     private Expression ParseBinaryExpression(int parentPrecedence = 0)
     {
         var leftExpression = ParsePrimaryExpression();
+
+        while (Current.Tag == Tag.PercentToken)
+            leftExpression = new UnaryOperatorExpression(NextToken(), leftExpression);
 
         while (true)
         {
@@ -192,12 +193,6 @@ public class Parser
                 return new StringLiteralExpression(CellValue.Text(strToken.Value));
             case Tag.Number:
                 var nToken = (NumberToken)NextToken();
-                if (Current.Tag == Tag.PercentToken)
-                {
-                    NextToken();
-                    return new LiteralExpression(CellValue.Number(nToken.Value / 100));
-                }
-
                 return new LiteralExpression(CellValue.Number(nToken.Value));
             default:
                 var token = NextToken();

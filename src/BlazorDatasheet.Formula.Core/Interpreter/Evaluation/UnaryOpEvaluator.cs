@@ -18,13 +18,23 @@ public class UnaryOpEvaluator
             case Tag.PlusToken:
                 return EvaluatePlus(value);
             case Tag.MinusToken:
-                return EvaluteMinus(value);
+                return EvaluateMinus(value);
+            case Tag.PercentToken:
+                return EvaluatePercent(value);
             default:
                 return CellValue.Error(ErrorType.Value);
         }
     }
 
-    private CellValue EvaluteMinus(CellValue value)
+    private CellValue EvaluatePercent(CellValue value)
+    {
+        var canConvert = _cellValueCoercer.TryCoerceNumber(value, out var convertedNum);
+        if (canConvert)
+            return CellValue.Number(convertedNum / 100d);
+        return CellValue.Error(ErrorType.Value);
+    }
+
+    private CellValue EvaluateMinus(CellValue value)
     {
         var canConvert = _cellValueCoercer.TryCoerceNumber(value, out var convertedNum);
         if (canConvert)
