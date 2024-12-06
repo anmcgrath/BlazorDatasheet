@@ -23,11 +23,6 @@ public class SheetMenuOptions
     public bool MergeEnabled { get; set; } = true;
 
     /// <summary>
-    /// Enables the menu "UnMerge" option
-    /// </summary>
-    public bool UnMergeEnabled { get; set; } = true;
-
-    /// <summary>
     /// Enables the menu "Alignment" option
     /// </summary>
     public bool AlignmentEnabled { get; set; } = true;
