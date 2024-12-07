@@ -117,7 +117,7 @@
     public Region? ViewRegion { get; set; }
 
     private IJSObjectReference? _virtualiser = null!;
-    private DotNetObjectReference<Virtualise2D> _dotnetHelper = default!;
+    private DotNetObjectReference<Virtualise2D>? _dotnetHelper;
 
     private ElementReference _contentEl;
     private ElementReference _fillerTop;
@@ -293,7 +293,7 @@
                 _virtualiser = null;
             }
 
-            _dotnetHelper.Dispose();
+            _dotnetHelper?.Dispose();
         }
         catch (Exception)
         {
