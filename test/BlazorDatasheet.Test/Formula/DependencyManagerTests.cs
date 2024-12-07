@@ -112,4 +112,16 @@ public class DependencyManagerTests
             .Should()
             .BeEquivalentTo([new Region(0, 0)]);
     }
+
+    [Test]
+    public void Clear_Named_Reference_Removes_References_To_It()
+    {
+        var dm = new DependencyManager();
+        dm.SetFormula("x", GetFormula("=A2"));
+        dm.SetFormula(1, 0, GetFormula("=A1"));
+        dm.GetDependencies().Count().Should().Be(2);
+        dm.ClearFormula("x");
+        var dependencies = dm.GetDependencies();
+        dependencies.Count().Should().Be(1); // still have A2 = A1
+    }
 }

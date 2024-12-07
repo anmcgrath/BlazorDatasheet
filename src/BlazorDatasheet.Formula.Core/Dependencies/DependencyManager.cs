@@ -69,17 +69,37 @@ public class DependencyManager
             }
             else
             {
-                throw new NotImplementedException();
+                var refName = ((NamedReference)formulaRef).Name;
+                // handle named references
+                if (_dependencyGraph.HasVertex(refName))
+                {
+                    var f = _dependencyGraph.GetVertex(refName);
+                    _dependencyGraph.AddEdge(f, formulaVertex);
+                    restoreData.EdgesAdded.Add((f.Key, formulaVertex.Key));
+                }
             }
         }
 
         // find any formula that reference this formula and add edges to them
         if (formulaVertex.Region != null)
         {
-            foreach (var dependents in GetDirectDependents(formulaVertex.Region))
+            foreach (var dependent in GetDirectDependents(formulaVertex.Region))
             {
-                _dependencyGraph.AddEdge(formulaVertex, dependents);
-                restoreData.EdgesAdded.Add((formulaVertex.Key, dependents.Key));
+                _dependencyGraph.AddEdge(formulaVertex, dependent);
+                restoreData.EdgesAdded.Add((formulaVertex.Key, dependent.Key));
+            }
+        }
+        else if (formulaVertex.VertexType == VertexType.Named)
+        {
+            // TODO: Store named reference relationships to lookup direct dependents
+            foreach (var vertex in _dependencyGraph.GetAll())
+            {
+                if (vertex.Formula?.References?.Any(x => (x is NamedReference nr && nr.Name == formulaVertex.Key)) ==
+                    true)
+                {
+                    _dependencyGraph.AddEdge(formulaVertex, vertex);
+                    restoreData.EdgesAdded.Add((formulaVertex.Key, vertex.Key));
+                }
             }
         }
 
@@ -101,24 +121,23 @@ public class DependencyManager
         {
             foreach (var formulaRef in formulaReferences)
             {
-                List<DataRegion<FormulaVertex>> dataToDelete = [];
+                List<DataRegion<FormulaVertex>> referenceStoreDataToDelet = [];
                 switch (formulaRef)
                 {
                     case CellReference cellRef:
-                        dataToDelete = _referencedVertexStore
+                        referenceStoreDataToDelet = _referencedVertexStore
                             .GetDataRegions(new Region(cellRef.RowIndex, cellRef.ColIndex), formulaVertex).ToList();
                         break;
                     case RangeReference rangeReference:
-                        dataToDelete = _referencedVertexStore
+                        referenceStoreDataToDelet = _referencedVertexStore
                             .GetDataRegions(rangeReference.Region, formulaVertex).ToList();
                         break;
                     case NamedReference namedReference:
-                        throw new NotImplementedException();
                         break;
                 }
 
-                if (dataToDelete.Count != 0)
-                    restoreData.RegionRestoreData = _referencedVertexStore.Delete(dataToDelete);
+                if (referenceStoreDataToDelet.Count != 0)
+                    restoreData.RegionRestoreData = _referencedVertexStore.Delete(referenceStoreDataToDelet);
             }
         }
 

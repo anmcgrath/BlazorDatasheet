@@ -225,7 +225,13 @@ public class Parser
         if (!isValidName)
             Error($"Invalid identifier {identifierToken.Value}");
 
-        return new ReferenceExpression(new NamedReference(identifierToken.Value, isValidName));
+        var namedRef = new NamedReference(identifierToken.Value, isValidName);
+        if (isValidName)
+        {
+            _references.Add(namedRef);
+        }
+
+        return new ReferenceExpression(namedRef);
     }
 
     private Expression ParseFunctionCallExpression()
