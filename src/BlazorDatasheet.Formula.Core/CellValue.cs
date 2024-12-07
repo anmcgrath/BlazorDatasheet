@@ -27,7 +27,7 @@ public class CellValue : IComparable, IComparable<CellValue>
 
         var valType = data.GetType();
         var isNullable = valType.IsNullable();
-        var nullableType = System.Nullable.GetUnderlyingType(valType);
+        var nullableType = Nullable.GetUnderlyingType(valType);
 
         if (valType.IsAssignableTo(typeof(Reference)))
         {
@@ -40,7 +40,7 @@ public class CellValue : IComparable, IComparable<CellValue>
         // try to convert to one of the 
         if (valType == typeof(string) || (isNullable && nullableType == typeof(string)))
         {
-            var converted = TryConvertFromString(data?.ToString(), out var convertedData, out var valueType);
+            var converted = TryConvertFromString(data.ToString(), out var convertedData, out var valueType);
             if (converted)
             {
                 Data = convertedData;
@@ -65,9 +65,8 @@ public class CellValue : IComparable, IComparable<CellValue>
     /// </summary>
     /// <param name="data"></param>
     /// <param name="cellValueType"></param>
-    internal CellValue(object? data, CellValueType cellValueType)
+    private CellValue(object? data, CellValueType cellValueType)
     {
-        // Set the type and trust it if the it i
         Data = data;
         ValueType = cellValueType;
     }
@@ -129,7 +128,7 @@ public class CellValue : IComparable, IComparable<CellValue>
             return CellValueType.Text;
         }
 
-        if (valType.IsNumeric() || (isNullable && nullableType.IsNumeric()))
+        if (valType.IsNumeric() || (isNullable && nullableType?.IsNumeric() == true))
             return CellValueType.Number;
 
         if (valType == typeof(bool) || (isNullable && nullableType == typeof(bool)))
@@ -159,33 +158,31 @@ public class CellValue : IComparable, IComparable<CellValue>
     /// </summary>
     /// <param name="type"></param>
     /// <returns></returns>
-    public object? GetValue(Type type)
+    private object? GetValue(Type type)
     {
         try
         {
             if (Data == null && ValueType == CellValueType.Text)
                 return string.Empty;
 
-            if (this.Data?.GetType() == type)
+            if (Data?.GetType() == type)
                 return Data;
-            else
+
+            var conversionType = type;
+            if (Nullable.GetUnderlyingType(type) != null)
             {
-                var conversionType = type;
-                if (System.Nullable.GetUnderlyingType(type) != null)
-                {
-                    conversionType = System.Nullable.GetUnderlyingType(type);
-                }
-
-                if (conversionType == typeof(string))
-                    return Data?.ToString();
-
-                if (Data is IConvertible)
-                    return Convert.ChangeType(Data, conversionType);
-
-                return Data;
+                conversionType = Nullable.GetUnderlyingType(type);
             }
+
+            if (conversionType == typeof(string))
+                return Data?.ToString();
+
+            if (Data is IConvertible && conversionType != null)
+                return Convert.ChangeType(Data, conversionType);
+
+            return Data;
         }
-        catch (Exception e)
+        catch (Exception)
         {
             return null;
         }
