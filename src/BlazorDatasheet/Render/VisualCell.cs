@@ -1,5 +1,4 @@
-using System.Text;
-using BlazorDatasheet.Core.Commands.Formatting;
+using System.Globalization;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -11,7 +10,7 @@ namespace BlazorDatasheet.Render;
 public class VisualCell
 {
     public object? Value { get; private set; }
-    public string FormattedString { get; private set; }
+    public string FormattedString { get; private set; } = string.Empty;
     public int Row { get; private set; }
     public int Col { get; private set; }
     public IRegion? Merge { get; private set; }
@@ -50,8 +49,15 @@ public class VisualCell
         var cellValue = sheet.Cells.GetCellValue(row, col);
         Value = cellValue.Data;
 
-        if (cellValue.ValueType == CellValueType.Number && format.NumberFormat != null)
-            FormattedString = (cellValue.GetValue<double>()).ToString(format.NumberFormat);
+        if (cellValue.ValueType == CellValueType.Number)
+        {
+            var roundedNum = Math.Round(cellValue.GetValue<double>(), 15);
+            if (format.NumberFormat != null)
+                FormattedString = roundedNum.ToString(format.NumberFormat);
+            else
+                FormattedString = roundedNum.ToString(CultureInfo.InvariantCulture);
+        }
+
         else if (cellValue.ValueType == CellValueType.Date && format.NumberFormat != null)
             FormattedString = (cellValue.GetValue<DateTime>()).ToString(format.NumberFormat);
         else
@@ -69,8 +75,8 @@ public class VisualCell
 
         IsVisible = cell.IsVisible;
 
-        FormatStyleString = GetCellFormatStyleString(Row, Col, format, cell.IsValid, cellValue.ValueType);
-        Icon = format?.Icon;
+        FormatStyleString = GetCellFormatStyleString(format, cell.IsValid, cellValue.ValueType);
+        Icon = format.Icon;
         CellType = cell.Type;
         Format = format;
     }
@@ -85,7 +91,7 @@ public class VisualCell
         {
             Row = row,
             Col = col,
-            FormatStyleString = GetCellFormatStyleString(row, col, defaultFormat, true, CellValueType.Text),
+            FormatStyleString = GetCellFormatStyleString(defaultFormat, true, CellValueType.Text),
             Height = sheet.Rows.GetVisualHeight(row),
             Width = sheet.Columns.GetVisualWidth(col),
             CellType = "default",
@@ -93,7 +99,7 @@ public class VisualCell
         };
     }
 
-    private static string GetCellFormatStyleString(int row, int col, CellFormat? format, bool isCellValid,
+    private static string GetCellFormatStyleString(CellFormat? format, bool isCellValid,
         CellValueType type)
     {
         if (format == null)
@@ -126,7 +132,7 @@ public class VisualCell
             else if (format.HorizontalTextAlign == TextAlign.Center)
                 sb.AddStyle("justify-content", "center");
         }
-        
+
         if (format.VerticalTextAlign != null)
         {
             if (format.VerticalTextAlign == TextAlign.Start)
