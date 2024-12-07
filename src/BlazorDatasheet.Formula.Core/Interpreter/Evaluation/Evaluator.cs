@@ -89,19 +89,10 @@ public class Evaluator
                 return EvaluateUnaryExpression((UnaryOperatorExpression)expression);
             case NodeKind.ArrayConstant:
                 return EvaluateArrayConstantExpression((ArrayConstantExpression)expression);
-            case NodeKind.Name:
-                return EvaluateNamedExpression((NameExpression)expression);
         }
 
         return CellValue.Error(new FormulaError(ErrorType.Na,
             $"Cannot evaluate expression {expression.ToExpressionText()}"));
-    }
-
-    private CellValue EvaluateNamedExpression(NameExpression expression)
-    {
-        if (!_environment.VariableExists(expression.NameToken.Value))
-            return CellValue.Error(ErrorType.Ref);
-        return _environment.GetVariable(expression.NameToken.Value);
     }
 
     private CellValue EvaluateArrayConstantExpression(ArrayConstantExpression expression)
@@ -132,6 +123,9 @@ public class Evaluator
         if (expression.Reference.IsInvalid)
             return CellValue.Error(ErrorType.Ref);
 
+        if (expression.Reference.Kind == ReferenceKind.Named)
+            return EvaluateNamedReference((NamedReference)expression.Reference);
+
         if (expression.Reference.Kind == ReferenceKind.Cell)
             return EvaluateCellReference((CellReference)expression.Reference);
 
@@ -157,6 +151,19 @@ public class Evaluator
     private CellValue EvaluateRangeReference(RangeReference reference)
     {
         return CellValue.Reference(reference);
+    }
+
+    private CellValue EvaluateNamedReference(NamedReference namedReference)
+    {
+        if (_options.DoNotResolveDependencies)
+        {
+            return CellValue.Reference(namedReference);
+        }
+
+        if (_environment.VariableExists(namedReference.Name))
+            return _environment.GetVariable(namedReference.Name);
+
+        return CellValue.Error(ErrorType.Ref);
     }
 
     private CellValue EvaluateFunctionCall(FunctionExpression node)

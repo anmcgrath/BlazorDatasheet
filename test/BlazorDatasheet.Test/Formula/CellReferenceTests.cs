@@ -14,25 +14,6 @@ namespace BlazorDatasheet.Test.Formula;
 
 public class CellReferenceTests
 {
-    [Test]
-    [TestCase("A1", 0, 0, false, false)]
-    [TestCase("B3", 2, 1, false, false)]
-    [TestCase("$C4", 3, 2, false, true)]
-    [TestCase("A$1", 0, 0, true, false)]
-    [TestCase("$A$1", 0, 0, true, true)]
-    [TestCase("AA102", 101, 26, false, false)]
-    [TestCase("AAA102", 101, 702, false, false)]
-    public void Cell_Str_Parses_Correctly(string cellStr, int rowExpected, int colExpected, bool rowAbsExpected,
-        bool colAbsExpected)
-    {
-        var parsed = RangeText.TryParseSingleCellReference(cellStr, out var refr);
-        parsed.Should().Be(true);
-        var cellRef = (CellReference)refr!;
-        rowExpected.Should().Be(cellRef.RowIndex);
-        colExpected.Should().Be(cellRef.ColIndex);
-        rowAbsExpected.Should().Be(cellRef.IsRowFixed);
-        colAbsExpected.Should().Be(cellRef.IsColFixed);
-    }
 
     [Test]
     public void Range_Same_As()
@@ -77,7 +58,7 @@ public class CellReferenceTests
     [Test]
     [TestCase("$A1:A2", true)]
     [TestCase("B$2:$A1$", false)]
-    [TestCase("namedRange", false)]
+    [TestCase("namedRange", true)]
     [TestCase("namedRange$", false)]
     [TestCase("$2:$3", true)]
     [TestCase("$C:$D", true)]
@@ -95,6 +76,5 @@ public class CellReferenceTests
             var reference = (Reference)refCellValue.Data!;
             reference.ToAddressText().Should().Be(refStr);
         }
-
     }
 }

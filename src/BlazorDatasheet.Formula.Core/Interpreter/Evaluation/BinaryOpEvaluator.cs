@@ -75,6 +75,40 @@ public class BinaryOpEvaluator
         var leftRef = (Reference)left.Data!;
         var rightRef = (Reference)right.Data!;
 
+        if (leftRef.Kind == ReferenceKind.Named)
+        {
+            var namedLeftRef = (NamedReference)leftRef;
+            if (_environment.VariableExists(namedLeftRef.Name))
+            {
+                var var = _environment.GetVariable(namedLeftRef.Name);
+                if (var.Data is Reference r and not NamedReference)
+                    leftRef = r;
+                else
+                    return CellValue.Error(ErrorType.Ref);
+            }
+            else
+            {
+                return CellValue.Error(ErrorType.Ref);
+            }
+        }
+
+        if (rightRef.Kind == ReferenceKind.Named)
+        {
+            var namedRightRef = (NamedReference)rightRef;
+            if (_environment.VariableExists(namedRightRef.Name))
+            {
+                var var = _environment.GetVariable(namedRightRef.Name);
+                if (var.Data is Reference r and not NamedReference)
+                    rightRef = r;
+                else
+                    return CellValue.Error(ErrorType.Ref);
+            }
+            else
+            {
+                return CellValue.Error(ErrorType.Ref);
+            }
+        }
+
         var regJoined = leftRef.Region.GetBoundingRegion(rightRef.Region);
         var c1 = new CellAddress(regJoined.Top, regJoined.Left);
         var c2 = new CellAddress(regJoined.Bottom, regJoined.Right);

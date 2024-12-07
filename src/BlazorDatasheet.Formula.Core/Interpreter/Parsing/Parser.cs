@@ -123,7 +123,12 @@ public class Parser
                 return null;
             case AddressKind.NamedAddress:
                 var namedAddress = (NamedAddress)address;
-                return new NamedReference(namedAddress.Name);
+                if (!namedAddress.IsValid)
+                {
+                    Error($"Invalid named address {namedAddress.Name}");
+                }
+
+                return new NamedReference(namedAddress.Name, namedAddress.IsValid);
         }
 
         throw new Exception($"Unhandled address type {address.Kind}");
@@ -216,7 +221,11 @@ public class Parser
         if (bool.TryParse(identifierToken.Value.ToLower(), out var parsedBool))
             return new LiteralExpression(CellValue.Logical(parsedBool));
 
-        return new NameExpression(identifierToken);
+        var isValidName = RangeText.IsValidNameAddress(identifierToken.Value.AsSpan());
+        if (!isValidName)
+            Error($"Invalid identifier {identifierToken.Value}");
+
+        return new ReferenceExpression(new NamedReference(identifierToken.Value, isValidName));
     }
 
     private Expression ParseFunctionCallExpression()

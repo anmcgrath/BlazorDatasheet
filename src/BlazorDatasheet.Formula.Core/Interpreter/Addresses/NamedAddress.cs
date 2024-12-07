@@ -3,9 +3,11 @@
 public class NamedAddress : Address
 {
     public string Name { get; }
+    public bool IsValid { get; }
 
-    public NamedAddress(string name) : base(AddressKind.NamedAddress)
+    public NamedAddress(string name, bool isValid) : base(AddressKind.NamedAddress)
     {
         Name = name;
+        IsValid = isValid;
     }
 }

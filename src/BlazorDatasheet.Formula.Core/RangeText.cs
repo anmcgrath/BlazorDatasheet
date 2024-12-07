@@ -10,90 +10,6 @@ public static class RangeText
     public const int MaxRows = 1048576;
 
     /// <summary>
-    /// Parses a single cell reference.
-    /// </summary>
-    /// <param name="str"></param>
-    /// <param name="cellReference"></param>
-    /// <returns>Returns a CelLReference or NameReference</returns>
-    public static bool TryParseSingleCellReference(ReadOnlySpan<char> str, out Reference? cellReference)
-    {
-        var isFixedCol = false;
-        var isFixedRow = false;
-        cellReference = null;
-
-        // requires both a row and a col at the very least
-        if (str.Length < 2)
-            return false;
-
-        int pos = 0;
-        if (str[0] == '$')
-        {
-            isFixedCol = true;
-            pos++;
-        }
-        // don't need to check pos is bound here because we know str length >=2
-        // and we are checking it in the loop
-
-        int startColStr = pos;
-        while (pos <= str.Length - 1 && char.IsLetter(str[pos]))
-            pos++;
-
-        int colStrLen = pos - startColStr;
-        if (colStrLen == 0)
-        {
-            cellReference = null;
-            return false;
-        }
-
-        if (pos == str.Length)
-            return false;
-
-        if (str[pos] == '$')
-        {
-            isFixedRow = true;
-            pos++;
-        }
-
-        if (pos > str.Length - 1)
-        {
-            if (!isFixedCol && !isFixedCol) // doesn't contain any $
-            {
-                cellReference = new NamedReference(str.ToString());
-                return true;
-            }
-
-            return false;
-        }
-
-        int startRowStr = pos;
-        while (pos <= str.Length - 1 && char.IsDigit(str[pos]))
-            pos++;
-
-        int rowStrLen = pos - startRowStr;
-        // if there are more chars it's got to be a named string
-        if (pos <= str.Length - 1)
-        {
-            cellReference = new NamedReference(str.ToString());
-            return true;
-        }
-
-        if (rowStrLen == 0)
-            return false;
-
-        var colSpan = str.Slice(startColStr, colStrLen);
-        var rowSpan = str.Slice(startRowStr, rowStrLen);
-
-        var rowNum = int.Parse(rowSpan) - 1;
-        var colNum = ColStrToIndex(colSpan);
-
-        if (colNum < MaxCols && rowNum < MaxRows)
-            cellReference = new CellReference(rowNum, colNum, isFixedCol, isFixedRow);
-        else
-            cellReference = new NamedReference(str.ToString());
-        return true;
-    }
-
-    /// <summary>
     /// Returns a reference from a single part of the range string - there shouldn't be any colons in the string
     /// passed to this function.
     /// </summary>
@@ -135,7 +51,7 @@ public static class RangeText
             if (colIndex < MaxCols)
                 address = new ColAddress(colIndex, colStrSpan.ToString(), isFirstFixed);
             else
-                address = new NamedAddress(colStrSpan.ToString());
+                address = new NamedAddress(colStrSpan.ToString(), IsValidNameAddress(colStrSpan));
             return true;
         }
 
@@ -168,7 +84,7 @@ public static class RangeText
         int rowIndex = int.Parse(str.Slice(startRowStr, rowStrLen)) - 1;
         if (rowIndex > MaxRows)
         {
-            address = new NamedAddress(str.ToString());
+            address = new NamedAddress(str.ToString(), IsValidNameAddress(str));
             return true;
         }
 
@@ -181,6 +97,17 @@ public static class RangeText
         }
 
         address = new RowAddress(rowIndex, rowIndex + 1, isFirstFixed);
+        return true;
+    }
+
+    public static bool IsValidNameAddress(ReadOnlySpan<char> addrSpan)
+    {
+        foreach (var c in addrSpan)
+        {
+            if (!IsValidNameChar(c))
+                return false;
+        }
+
         return true;
     }
 

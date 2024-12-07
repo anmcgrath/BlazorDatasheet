@@ -19,13 +19,32 @@ public class DependencyManager
 
     internal int FormulaCount => _dependencyGraph.Count;
 
+    public DependencyManagerRestoreData SetFormula(string variableName, CellFormula? formula)
+    {
+        return SetFormula(new FormulaVertex(variableName, formula));
+    }
+
     public DependencyManagerRestoreData SetFormula(int row, int col, CellFormula? formula)
     {
-        var formulaVertex = new FormulaVertex(row, col, formula);
-        // Clear any dependency tracking for old formula if there is one
-        var restoreData = ClearFormula(row, col);
+        return SetFormula(new FormulaVertex(row, col, formula));
+    }
 
-        if (formula == null)
+    public DependencyManagerRestoreData ClearFormula(int row, int col)
+    {
+        return ClearFormula(new FormulaVertex(row, col, null));
+    }
+
+    public DependencyManagerRestoreData ClearFormula(string varName)
+    {
+        return ClearFormula(new FormulaVertex(varName, null));
+    }
+
+    private DependencyManagerRestoreData SetFormula(FormulaVertex formulaVertex)
+    {
+        // Clear any dependency tracking for old formula if there is one
+        var restoreData = ClearFormula(formulaVertex);
+
+        if (formulaVertex.Formula == null)
             return restoreData;
 
         _dependencyGraph.AddVertex(formulaVertex);
@@ -33,7 +52,7 @@ public class DependencyManager
 
         // find formula inside any of the regions that this formula references
         // and add a dependency edge to them
-        foreach (var formulaRef in formula.References)
+        foreach (var formulaRef in formulaVertex.Formula.References)
         {
             // add edges to any formula that already exist
             if (formulaRef is not NamedReference)
@@ -55,19 +74,21 @@ public class DependencyManager
         }
 
         // find any formula that reference this formula and add edges to them
-        foreach (var dependents in GetDirectDependents(new Region(row, col)))
+        if (formulaVertex.Region != null)
         {
-            _dependencyGraph.AddEdge(formulaVertex, dependents);
-            restoreData.EdgesAdded.Add((formulaVertex.Key, dependents.Key));
+            foreach (var dependents in GetDirectDependents(formulaVertex.Region))
+            {
+                _dependencyGraph.AddEdge(formulaVertex, dependents);
+                restoreData.EdgesAdded.Add((formulaVertex.Key, dependents.Key));
+            }
         }
 
         return restoreData;
     }
 
-    public DependencyManagerRestoreData ClearFormula(int row, int col)
+    private DependencyManagerRestoreData ClearFormula(FormulaVertex formulaVertex)
     {
         var restoreData = new DependencyManagerRestoreData();
-        var formulaVertex = new FormulaVertex(row, col, null);
         if (!_dependencyGraph.HasVertex(formulaVertex.Key))
             return restoreData;
 

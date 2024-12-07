@@ -222,4 +222,10 @@ public class InterpreterTests
         expr.IsError().Should().BeTrue();
         expr.GetValue<FormulaError>().ErrorType.Should().Be(expectedErrorType);
     }
+
+    [Test]
+    public void Formula_Using_Variable_Has_Named_Reference()
+    {
+        
+    }
 }

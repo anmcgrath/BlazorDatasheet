@@ -93,4 +93,10 @@ public class SheetEnvironment : IEnvironment
             return Array.Empty<CellValue[]>();
         return range.Sheet.Cells.GetCellDataStore().GetData(region);
     }
+
+    public void ClearVariable(string varName)
+    {
+        if (VariableExists(varName))
+            _variables.Remove(varName);
+    }
 }

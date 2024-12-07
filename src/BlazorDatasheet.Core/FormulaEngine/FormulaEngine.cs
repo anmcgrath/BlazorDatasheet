@@ -25,13 +25,6 @@ public class FormulaEngine
     private readonly Parser _parser = new();
     private readonly Evaluator _evaluator;
 
-    /// <summary>
-    /// Keeps track of any ranges referenced by formula.
-    /// This should ideally keep track of the formula that reference the range also,
-    /// but for now it's just whether it's referenced or not.
-    /// </summary>
-    private readonly RegionDataStore<bool> _observedRanges;
-
     internal readonly DependencyManager DependencyManager = new();
 
     public bool IsCalculating { get; private set; }
@@ -47,7 +40,6 @@ public class FormulaEngine
 
         _environment = new SheetEnvironment(sheet);
         _evaluator = new Evaluator(_environment);
-        _observedRanges = new RegionDataStore<bool>();
 
         RegisterDefaultFunctions();
     }
@@ -165,7 +157,9 @@ public class FormulaEngine
 
             foreach (var vertex in scc)
             {
-                if (vertex.Formula == null || vertex.VertexType != VertexType.Cell)
+                if (vertex.Formula == null ||
+                    !(
+                        vertex.VertexType != VertexType.Cell || vertex.VertexType != VertexType.Named))
                     continue;
 
                 // if it's part of a scc group, and we don't have circular references, then the value would
@@ -194,8 +188,15 @@ public class FormulaEngine
 
                 executionContext.ClearExecuting();
 
-                _sheet.Cells.SetValueImpl(vertex.Region!.Top, vertex.Region!.Left, value);
-                _sheet.MarkDirty(vertex.Region!.Top, vertex.Region!.Left);
+                if (vertex.VertexType == VertexType.Cell)
+                {
+                    _sheet.Cells.SetValueImpl(vertex.Region!.Top, vertex.Region!.Left, value);
+                    _sheet.MarkDirty(vertex.Region!.Top, vertex.Region!.Left);
+                }
+                else if (vertex.VertexType == VertexType.Named)
+                {
+                    _environment.SetVariable(vertex.Key, value);
+                }
             }
         }
 
@@ -215,7 +216,27 @@ public class FormulaEngine
 
     public void SetVariable(string varName, object value)
     {
-        _environment.SetVariable(varName, value);
+        if (value is string s && IsFormula(s))
+        {
+            var formula = ParseFormula(s);
+            DependencyManager.SetFormula(varName, formula);
+        }
+        else
+        {
+            _environment.SetVariable(varName, value);
+        }
+
         CalculateSheet();
+    }
+
+    public CellValue GetVariable(string varName)
+    {
+        return _environment.GetVariable(varName);
+    }
+
+    public void ClearVariable(string varName)
+    {
+        _environment.ClearVariable(varName);
+        DependencyManager.ClearFormula(varName);
     }
 }

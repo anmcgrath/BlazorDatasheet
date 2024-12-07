@@ -415,4 +415,23 @@ public class SheetFormulaIntegrationTests
         sheet.Cells.SetFormula(0, 0, formula);
         sheet.Cells.GetFormulaString(0, 0).Should().Be(formula);
     }
+
+    [Test]
+    public void Set_Variable_With_Formula_Will_Update_When_Cell_Reference_Changes()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.FormulaEngine.SetVariable("x", "=A1");
+        sheet.Range("A1")!.Value = "Test";
+        sheet.FormulaEngine.GetVariable("x").Data.Should().Be("Test");
+    }
+
+    [Test]
+    public void Set_Variable_With_Formula_Will_Calculate_Correctly_When_Referenced()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.FormulaEngine.SetVariable("x", "=A1");
+        sheet.Cells.SetFormula(1, 0, "=x+1");
+        sheet.Range("A1")!.Value = 2;
+        sheet.Cells[1, 0].Value.Should().Be(3);
+    }
 }

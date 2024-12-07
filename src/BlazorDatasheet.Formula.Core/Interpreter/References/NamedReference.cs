@@ -6,9 +6,15 @@ public class NamedReference : Reference
 {
     public string Name { get; }
 
-    public NamedReference(string name)
+    /// <summary>
+    /// False if the address contains any invalid characters.
+    /// </summary>
+    public bool IsValidName { get; }
+
+    public NamedReference(string name, bool isValidName)
     {
         Name = name;
+        IsValidName = isValidName;
     }
 
     public override ReferenceKind Kind => ReferenceKind.Named;
@@ -27,6 +33,7 @@ public class NamedReference : Reference
 
     public override bool IsInvalid { get; protected set; }
     public override IRegion Region { get; protected set; } = new EmptyRegion();
+
     internal override void SetRegion(IRegion region)
     {
     }
