@@ -160,6 +160,12 @@
                 </div>
             </SheetSubMenu>
         }
+
+        // Add any user-defined menu items
+        foreach(Func<Sheet, RenderFragment> menuItemFragment in MenuOptions.MenuFragments)
+        {
+            @menuItemFragment(sheet);
+        }
     }
 
 </SheetMenu>

@@ -1,7 +1,12 @@
-﻿namespace BlazorDatasheet.Menu;
+﻿using BlazorDatasheet.Core.Data;
+using Microsoft.AspNetCore.Components;
+
+namespace BlazorDatasheet.Menu;
 
 public class SheetMenuOptions
 {
+    internal LinkedList<Func<Sheet, RenderFragment>> MenuFragments { get; } = new LinkedList<Func<Sheet, RenderFragment>>();
+
     /// <summary>
     /// When true, the context menu (on right mouse click) is enabled
     /// </summary>
@@ -67,6 +72,16 @@ public class SheetMenuOptions
     /// </summary>
     public bool FilterColumnEnabled { get; set; } = true;
 
+    public void AddMenuFragment(Func<Sheet, RenderFragment> fragment)
+    {
+        MenuFragments.AddLast(fragment);
+    }
+    public void RemoveMenuFragment(Func<Sheet, RenderFragment> fragment)
+    {
+        MenuFragments.Remove(fragment);
+    }
+
+
     internal bool CompareTo(SheetMenuOptions other)
     {
         return other.InsertColsEnabled == InsertColsEnabled &&
@@ -81,6 +96,7 @@ public class SheetMenuOptions
                other.FilterColumnEnabled == FilterColumnEnabled &&
                other.SortRangeEnabled == SortRangeEnabled &&
                other.ContextMenuEnabled == ContextMenuEnabled &&
-               other.HeaderMenuEnabled == HeaderMenuEnabled;
+               other.HeaderMenuEnabled == HeaderMenuEnabled &&
+               other.MenuFragments.SequenceEqual(MenuFragments);
     }
 }
