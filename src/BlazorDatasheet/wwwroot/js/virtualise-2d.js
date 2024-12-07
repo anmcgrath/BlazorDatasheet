@@ -144,7 +144,8 @@
         let getRect = this.calculateViewRect.bind(this)
 
         let viewRect = getRect(wholeEl)
-        dotNetHelper.invokeMethodAsync(dotnetScrollHandlerName, viewRect);
+        if (dotNetHelper)
+            dotNetHelper.invokeMethodAsync(dotnetScrollHandlerName, viewRect);
 
         let self = this
         let observer = new IntersectionObserver((entries, observer) => {
@@ -157,7 +158,8 @@
                     continue
 
                 let viewRect = getRect(wholeEl)
-                dotNetHelper.invokeMethodAsync(dotnetScrollHandlerName, viewRect);
+                if (dotNetHelper)
+                    dotNetHelper.invokeMethodAsync(dotnetScrollHandlerName, viewRect);
             }
 
         }, {root: parent, threshold: 0})
