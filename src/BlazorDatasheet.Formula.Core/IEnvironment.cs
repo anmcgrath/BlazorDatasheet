@@ -18,7 +18,7 @@ public interface IEnvironment
     public CellValue[][] GetRangeValues(Reference reference);
     bool FunctionExists(string functionIdentifier);
     ISheetFunction GetFunctionDefinition(string identifierText);
-    bool VariableExists(string variableIdentifier);
+    bool HasVariable(string variableIdentifier);
     CellValue GetVariable(string variableIdentifier);
     void SetVariable(string name, CellValue value);
     void RegisterFunction(string name, ISheetFunction value);

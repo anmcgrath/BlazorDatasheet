@@ -130,7 +130,7 @@ public class TestEnvironment : IEnvironment
         return _functions[identifierText];
     }
 
-    public bool VariableExists(string variableIdentifier)
+    public bool HasVariable(string variableIdentifier)
     {
         return _variables.ContainsKey(variableIdentifier);
     }

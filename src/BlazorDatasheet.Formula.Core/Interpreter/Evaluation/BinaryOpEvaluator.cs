@@ -78,7 +78,7 @@ public class BinaryOpEvaluator
         if (leftRef.Kind == ReferenceKind.Named)
         {
             var namedLeftRef = (NamedReference)leftRef;
-            if (_environment.VariableExists(namedLeftRef.Name))
+            if (_environment.HasVariable(namedLeftRef.Name))
             {
                 var var = _environment.GetVariable(namedLeftRef.Name);
                 if (var.Data is Reference r and not NamedReference)
@@ -95,7 +95,7 @@ public class BinaryOpEvaluator
         if (rightRef.Kind == ReferenceKind.Named)
         {
             var namedRightRef = (NamedReference)rightRef;
-            if (_environment.VariableExists(namedRightRef.Name))
+            if (_environment.HasVariable(namedRightRef.Name))
             {
                 var var = _environment.GetVariable(namedRightRef.Name);
                 if (var.Data is Reference r and not NamedReference)

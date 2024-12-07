@@ -17,7 +17,7 @@ public class SheetEnvironment : IEnvironment
         _sheet = sheet;
     }
 
-    public bool VariableExists(string name)
+    public bool HasVariable(string name)
     {
         return _variables.ContainsKey(name);
     }
@@ -96,7 +96,7 @@ public class SheetEnvironment : IEnvironment
 
     public void ClearVariable(string varName)
     {
-        if (VariableExists(varName))
+        if (HasVariable(varName))
             _variables.Remove(varName);
     }
 }

@@ -160,7 +160,7 @@ public class Evaluator
             return CellValue.Reference(namedReference);
         }
 
-        if (_environment.VariableExists(namedReference.Name))
+        if (_environment.HasVariable(namedReference.Name))
             return _environment.GetVariable(namedReference.Name);
 
         return CellValue.Error(ErrorType.Ref);
