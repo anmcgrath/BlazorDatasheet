@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Events.Formula;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core.Interpreter;
 using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
@@ -433,5 +434,21 @@ public class SheetFormulaIntegrationTests
         sheet.Cells.SetFormula(1, 0, "=x+1");
         sheet.Range("A1")!.Value = 2;
         sheet.Cells[1, 0].Value.Should().Be(3);
+    }
+
+    [Test]
+    public void Set_Variable_Raises_args()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.FormulaEngine.SetVariable("x", "Test");
+        using var monitor = sheet.FormulaEngine.Monitor();
+        sheet.FormulaEngine.SetVariable("x", "Test2");
+
+        monitor.Should()
+            .Raise(nameof(sheet.FormulaEngine.VariableChanged))
+            .WithArgs<VariableChangedEventArgs>(args =>
+                (args.NewValue!.Data == "Test2" && args.PreviousValue!.Data == "Test" && args.VariableName == "x"));
+
+        monitor.Clear();
     }
 }

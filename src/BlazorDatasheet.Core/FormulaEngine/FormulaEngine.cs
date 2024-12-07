@@ -3,6 +3,7 @@ using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Events;
 using BlazorDatasheet.Core.Events.Data;
 using BlazorDatasheet.Core.Events.Edit;
+using BlazorDatasheet.Core.Events.Formula;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Graph;
 using BlazorDatasheet.DataStructures.Store;
@@ -27,6 +28,7 @@ public class FormulaEngine
 
     internal readonly DependencyManager DependencyManager = new();
 
+    public event EventHandler<VariableChangedEventArgs>? VariableChanged;
     public bool IsCalculating { get; private set; }
 
     public FormulaEngine(Sheet sheet)
@@ -195,6 +197,9 @@ public class FormulaEngine
                 }
                 else if (vertex.VertexType == VertexType.Named)
                 {
+                    var prevValue = _environment.HasVariable(vertex.Key) ? _environment.GetVariable(vertex.Key) : null;
+                    VariableChanged?.Invoke(this,
+                        new VariableChangedEventArgs(vertex.Key, prevValue, new CellValue(value)));
                     _environment.SetVariable(vertex.Key, value);
                 }
             }
@@ -223,7 +228,9 @@ public class FormulaEngine
         }
         else
         {
-            _environment.SetVariable(varName, value);
+            var prevValue = _environment.HasVariable(varName) ? _environment.GetVariable(varName) : null;
+            VariableChanged?.Invoke(this, new VariableChangedEventArgs(varName, prevValue, new CellValue(value)));
+            _environment.SetVariable(varName, new CellValue(value));
         }
 
         CalculateSheet();
