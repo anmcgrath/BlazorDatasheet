@@ -42,9 +42,6 @@ public class UnMergeCellsCommand : IUndoableCommand
             .Break(region.TopLeft)
             .ToList();
 
-        //Store the values that are being cleared for undo
-        _restoreData = sheet.Cells.ClearCellsImpl(regionsToClear);
-
         // Store the unmerge that we are doing and perform the actual unmerge
         _unMergesPerformed.Add(region);
         sheet.Cells.UnMergeCellsImpl(region);
@@ -61,8 +58,6 @@ public class UnMergeCellsCommand : IUndoableCommand
         foreach (var merge in _unMergesPerformed)
             sheet.Cells.MergeImpl(merge);
 
-        // Restore all the cell values that were lost when merging
-        sheet.Cells.Restore(_restoreData);
         sheet.EndBatchUpdates();
 
         return true;
