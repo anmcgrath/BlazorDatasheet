@@ -1,6 +1,4 @@
 ﻿using BlazorDatasheet.Core.Data;
-using BlazorDatasheet.Core.Data.Cells;
-using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.Commands.Data;
