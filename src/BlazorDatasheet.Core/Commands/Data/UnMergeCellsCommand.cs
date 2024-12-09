@@ -8,7 +8,6 @@ namespace BlazorDatasheet.Core.Commands.Data;
 public class UnMergeCellsCommand : IUndoableCommand
 {
     private readonly List<IRegion> _unMergesPerformed = new();
-    private CellStoreRestoreData _restoreData = null!;
     private readonly IRegion _region;
 
     /// <summary>
