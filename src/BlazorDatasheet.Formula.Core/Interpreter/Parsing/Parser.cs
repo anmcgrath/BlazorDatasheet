@@ -88,16 +88,38 @@ public class Parser
             case Tag.LeftCurlyBracketToken:
                 return ParseArrayConstant();
             case Tag.AddressToken:
-                var refToken = (AddressToken)NextToken();
-                var reference = GetReferenceFromAddress(refToken.Address);
-                if (reference == null)
-                    return new LiteralExpression(CellValue.Error(ErrorType.Ref));
+                return ParseAddress(null);
+            case Tag.QuotedSheetName:
+                var sheetToken = (QuotedSheetNameToken)NextToken();
+                var bang = MatchToken(Tag.BangToken);
+                if (Current.Tag == Tag.BangToken)
+                {
+                    if (Current.Tag == Tag.AddressToken)
+                        return ParseAddress(sheetToken.Text);
+                }
+                else
+                {
+                    Error($"Could not parse sheet reference {sheetToken.Text}");
+                    return new LiteralExpression(CellValue.Empty);
+                }
 
-                _references.Add(reference);
-                return new ReferenceExpression(reference);
+                break;
         }
 
         return ParseLiteralExpression();
+    }
+
+    private Expression ParseAddress(string? sheetName)
+    {
+        var refToken = (AddressToken)NextToken();
+        var reference = GetReferenceFromAddress(refToken.Address);
+        if (reference == null)
+            return new LiteralExpression(CellValue.Error(ErrorType.Ref));
+
+        reference.SheetName = sheetName;
+
+        _references.Add(reference);
+        return new ReferenceExpression(reference);
     }
 
     private Reference? GetReferenceFromAddress(Address address)
@@ -215,6 +237,13 @@ public class Parser
     {
         if (Peek(1).Tag == Tag.LeftParenthToken)
             return ParseFunctionCallExpression();
+
+        if (Peek(1).Tag == Tag.BangToken)
+        {
+            var id = ((IdentifierToken)NextToken()).Value;
+            var bang = MatchToken(Tag.BangToken); // bang token
+            return ParseAddress(id);
+        }
 
         var identifierToken = (IdentifierToken)NextToken();
 

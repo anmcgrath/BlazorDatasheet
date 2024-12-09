@@ -82,10 +82,9 @@ public static class RangeText
             return false;
 
         int rowIndex = int.Parse(str.Slice(startRowStr, rowStrLen)) - 1;
-        if (rowIndex > MaxRows)
+        if (rowIndex > MaxRows || colIndex > MaxCols)
         {
-            address = new NamedAddress(str.ToString(), IsValidNameAddress(str));
-            return true;
+            return false;
         }
 
         if (hasColRef)

@@ -6,6 +6,7 @@ using BlazorDatasheet.Core.FormulaEngine;
 using BlazorDatasheet.DataStructures.Util;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.Addresses;
+using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 using FluentAssertions;
 using NUnit.Framework;
@@ -14,6 +15,10 @@ namespace BlazorDatasheet.Test.Formula;
 
 public class CellReferenceTests
 {
+    private SyntaxTree Parse(string str)
+    {
+        return new Parser().Parse(str);
+    }
 
     [Test]
     public void Range_Same_As()
@@ -76,5 +81,35 @@ public class CellReferenceTests
             var reference = (Reference)refCellValue.Data!;
             reference.ToAddressText().Should().Be(refStr);
         }
+    }
+
+    [Test]
+    public void Sheet_Ref_Parsed_With_Quoted_Sheet_Name()
+    {
+        var str = "='Sheet1'!A1:A2";
+        var parsedRef = Parse(str);
+        parsedRef.Errors.Should().BeEmpty();
+        parsedRef.Root.Should().BeOfType<ReferenceExpression>();
+        ((ReferenceExpression)parsedRef.Root).Reference.SheetName.Should().Be("Sheet1");
+    }
+    
+    [Test]
+    public void Sheet_Ref_Parsed_With_NonQuoted_Sheet_Name()
+    {
+        var str = "=Sheet1!A1:A2";
+        var parsedRef = Parse(str);
+        parsedRef.Errors.Should().BeEmpty();
+        parsedRef.Root.Should().BeOfType<ReferenceExpression>();
+        ((ReferenceExpression)parsedRef.Root).Reference.SheetName.Should().Be("Sheet1");
+    }
+    
+    [Test]
+    public void Sheet_Ref_Parsed_With_Ref_Before_Second_Cell()
+    {
+        var str = "=A1:Sheet1!A2";
+        var parsedRef = Parse(str);
+        parsedRef.Errors.Should().BeEmpty();
+        parsedRef.Root.Should().BeOfType<ReferenceExpression>();
+        ((ReferenceExpression)parsedRef.Root).Reference.SheetName.Should().Be("Sheet1");
     }
 }

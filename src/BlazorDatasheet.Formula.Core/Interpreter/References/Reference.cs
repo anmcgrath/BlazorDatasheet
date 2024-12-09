@@ -34,6 +34,7 @@ public abstract class Reference
     /// </summary>
     /// <returns></returns>
     public abstract IRegion Region { get; protected set; }
+    public string? SheetName { get; internal set; }
     internal abstract void SetRegion(IRegion region);
     internal void SetValidity(bool isValid)
     {

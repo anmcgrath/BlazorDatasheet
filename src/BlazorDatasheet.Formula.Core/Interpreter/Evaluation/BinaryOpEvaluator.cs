@@ -109,6 +109,21 @@ public class BinaryOpEvaluator
             }
         }
 
+        // Infer the sheet name from one of the references.
+        // If the sheet names are different, we don't support it.
+        if (leftRef.SheetName != rightRef.SheetName)
+        {
+            if (leftRef.SheetName != null && rightRef.SheetName != null)
+            {
+                return CellValue.Error(ErrorType.Value, "More than one sheet name cannot be used in a reference");
+            }
+
+            if (leftRef.SheetName != null)
+                rightRef.SheetName = leftRef.SheetName;
+            else if (rightRef.SheetName != null)
+                leftRef.SheetName = rightRef.SheetName;
+        }
+
         var regJoined = leftRef.Region.GetBoundingRegion(rightRef.Region);
         var c1 = new CellAddress(regJoined.Top, regJoined.Left);
         var c2 = new CellAddress(regJoined.Bottom, regJoined.Right);

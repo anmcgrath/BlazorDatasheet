@@ -325,6 +325,38 @@ public ref struct Lexer
 
         return new StringToken(stringValue, start);
     }
+    
+    private Token ReadQuotedSheetName()
+    {
+        int start = _position;
+        // Consume first '
+        Next();
+
+        if (_current == '\0')
+        {
+            Error("End of file reached unexpectedly");
+            return new BadToken(start);
+        }
+
+        while (_current != '\'')
+        {
+            if (_current == '\0')
+            {
+                Error($"Found EOF");
+                return new BadToken(start);
+            }
+
+            Next();
+        }
+
+        int length = _position - start - 1;
+        var stringValue = _string.Slice(start + 1, length).ToString();
+
+        // consume the last ""
+        Next();
+
+        return new StringToken(stringValue, start);
+    }
 
     private void Error(string error)
     {
