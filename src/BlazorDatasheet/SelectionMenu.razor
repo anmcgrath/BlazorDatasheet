@@ -26,6 +26,10 @@
             {
                 <SheetMenuItem OnClick="() => sheet.Cells.Merge(sheet.Selection.Regions)">Merge</SheetMenuItem>
             }
+            @if (MenuOptions.MergeEnabled && sheet.Cells.AnyMerges(sheet.Selection.ActiveRegion))
+            {
+                <SheetMenuItem OnClick="() => sheet.Cells.UnMerge(sheet.Selection.Regions)">Un-merge</SheetMenuItem>
+            }
             @if (MenuOptions.AlignmentEnabled)
             {
                 <SheetSubMenu Label="Horiz. Alignment">
