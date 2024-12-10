@@ -4,7 +4,7 @@ public class QuotedSheetNameToken : Token
 {
     public string Text { get; }
 
-    public QuotedSheetNameToken(string text, int positionStart) : base(Tag.QuotedSheetName, text, positionStart)
+    public QuotedSheetNameToken(string text, int positionStart) : base(Tag.SingleQuotedStringToken, text, positionStart)
     {
         Text = text;
     }

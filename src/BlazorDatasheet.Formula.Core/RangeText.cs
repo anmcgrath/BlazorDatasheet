@@ -8,7 +8,7 @@ public static class RangeText
 {
     public const int MaxCols = 16384;
     public const int MaxRows = 1048576;
-
+    
     /// <summary>
     /// Returns a reference from a single part of the range string - there shouldn't be any colons in the string
     /// passed to this function.

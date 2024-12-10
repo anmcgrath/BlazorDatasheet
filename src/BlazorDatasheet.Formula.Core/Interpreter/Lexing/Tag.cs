@@ -28,6 +28,6 @@ public enum Tag
     PercentToken,
     ColonToken,
     AddressToken,
-    Whitespace,
-    QuotedSheetName
+    SingleQuotedStringToken,
+    Whitespace
 }
