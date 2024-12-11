@@ -178,12 +178,36 @@ public class Editor
     }
 
     /// <summary>
+    /// Used to store the old value of EditValue.
+    /// </summary>
+    public double _oldValue { get; set; }
+
+    /// <summary>
     /// Accepts the edit and sets the cell value.
     /// </summary>
     public bool AcceptEdit()
     {
         if (EditCell == null || !IsEditing)
             return false;
+
+        double parsedNumber;    
+       if (EditValue.Contains('%'))// Check if the input value contains a % symbol.
+         {
+           string valueWithoutPercent = EditValue.Replace("%", "").Trim();
+           if (double.TryParse(valueWithoutPercent, out parsedNumber))
+              {
+                  EditValue = (parsedNumber / 100).ToString();
+                  _oldValue = parsedNumber / 100;
+              }
+         }
+      else if (EditCell.Format.NumberFormat.Contains("%"))//Check if the format contains %.
+         {
+            if (double.TryParse(EditValue, out parsedNumber) && _oldValue != parsedNumber)
+               {
+                   EditValue = (parsedNumber / 100).ToString();
+                   _oldValue = parsedNumber/100;
+               }
+         }
 
         // Determine if it's a formula, and calculate.
         CellFormula? parsedFormula = null;
