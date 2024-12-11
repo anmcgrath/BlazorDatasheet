@@ -46,6 +46,7 @@ public static class RangeText
         int colIndex = colStrLen == 0 ? -1 : ColStrToIndex(colStrSpan);
 
         // if there are no characters after col ref then it is a single col ref
+        // but we only parse if it's fixed. Otherwise it could be a keyword like false.
         if (pos == str.Length)
         {
             if (colIndex < MaxCols)

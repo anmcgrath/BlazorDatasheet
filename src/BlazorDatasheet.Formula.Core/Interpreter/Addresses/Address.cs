@@ -8,4 +8,9 @@ public class Address
     {
         Kind = kind;
     }
+
+    public T ToAddressType<T>() where T : Address
+    {
+        return (T)this;
+    }
 }

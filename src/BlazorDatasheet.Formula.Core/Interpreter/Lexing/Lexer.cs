@@ -201,11 +201,6 @@ public ref struct Lexer
         int length = _position - start;
         var idSlice = _string.Slice(start, length);
 
-        // if the current identifier is a valid row, column or cell reference then return an address.
-        var canParseCellRef = RangeText.TryParseSingleAddress(idSlice, out var parsedLeftAddress);
-        if (canParseCellRef)
-            return new AddressToken(parsedLeftAddress!, start);
-
         return new IdentifierToken(idSlice.ToString(), start);
     }
 
@@ -270,7 +265,7 @@ public ref struct Lexer
         // consume the last ""
         Next();
 
-        return new StringToken(stringValue, start);
+        return new QuotedSheetNameToken(stringValue, start);
     }
 
     private void Error(string error)

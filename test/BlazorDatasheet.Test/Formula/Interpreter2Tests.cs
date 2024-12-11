@@ -183,16 +183,16 @@ public class InterpreterTests
     }
 
     [Test]
-    public void Equality_Binary_Operations_With_Cell_References_Correctly_Works()
+    [TestCase("=A1<A2", true)]
+    [TestCase("=A1>A2", false)]
+    [TestCase("=A1>=A2", false)]
+    [TestCase("=A1<=A2", true)]
+    [TestCase("=A1=A2", false)]
+    [TestCase("=A1<>A2", true)]
+    public void Equality_Binary_Operations_With_Cell_References_Correctly_Works(string expr, bool expected)
     {
         _env.SetCellValue(0, 0, 5);
         _env.SetCellValue(1, 0, 10);
-        EvalExpression("=A1<A2").Data.Should().Be(true);
-        EvalExpression("=A1>A2").Data.Should().Be(false);
-        EvalExpression("=A1>=A2").Data.Should().Be(false);
-        EvalExpression("=A1<=A2").Data.Should().Be(true);
-        EvalExpression("=A1=A2").Data.Should().Be(false);
-        EvalExpression("=A1<>A2").Data.Should().Be(true);
     }
 
     [Test]
@@ -226,6 +226,5 @@ public class InterpreterTests
     [Test]
     public void Formula_Using_Variable_Has_Named_Reference()
     {
-        
     }
 }

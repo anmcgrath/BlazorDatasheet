@@ -62,10 +62,14 @@ public class CellReferenceTests
 
     [Test]
     [TestCase("$A1:A2", true)]
+    [TestCase("$A1", true)]
+    [TestCase("A1", true)]
+    [TestCase("A1:A2", true)]
     [TestCase("B$2:$A1$", false)]
     [TestCase("namedRange", true)]
     [TestCase("namedRange$", false)]
     [TestCase("$2:$3", true)]
+    [TestCase("2:3", true)]
     [TestCase("$C:$D", true)]
     [TestCase("C:D$", false)]
     [TestCase("A:B:C", false)]
@@ -92,7 +96,7 @@ public class CellReferenceTests
         parsedRef.Root.Should().BeOfType<ReferenceExpression>();
         ((ReferenceExpression)parsedRef.Root).Reference.SheetName.Should().Be("Sheet1");
     }
-    
+
     [Test]
     public void Sheet_Ref_Parsed_With_NonQuoted_Sheet_Name()
     {
@@ -102,7 +106,7 @@ public class CellReferenceTests
         parsedRef.Root.Should().BeOfType<ReferenceExpression>();
         ((ReferenceExpression)parsedRef.Root).Reference.SheetName.Should().Be("Sheet1");
     }
-    
+
     [Test]
     public void Sheet_Ref_Parsed_With_Ref_Before_Second_Cell()
     {
