@@ -200,7 +200,7 @@ public class Editor
                   _oldValue = parsedNumber / 100;
               }
          }
-      else if (EditCell.Format.NumberFormat.Contains("%"))//Check if the format contains %.
+      else if (EditCell.Format != null && !string.IsNullOrEmpty(EditCell.Format.NumberFormat) && EditCell.Format.NumberFormat.Contains("%"))//Check if the format contains %.
          {
             if (double.TryParse(EditValue, out parsedNumber) && _oldValue != parsedNumber)
                {
