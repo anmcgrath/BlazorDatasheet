@@ -201,6 +201,13 @@ public ref struct Lexer
         int length = _position - start;
         var idSlice = _string.Slice(start, length);
 
+        if (Peek(0) == '!')
+        {
+            // consume '!'
+            Next();
+            return new SheetLocatorToken(idSlice.ToString(), start);
+        }
+
         return new IdentifierToken(idSlice.ToString(), start);
     }
 
@@ -262,10 +269,17 @@ public ref struct Lexer
         int length = _position - start - 1;
         var stringValue = _string.Slice(start + 1, length).ToString();
 
-        // consume the last ""
+        // consume the last '
         Next();
 
-        return new QuotedSheetNameToken(stringValue, start);
+        if (Peek(0) == '!')
+        {
+            // consume '!'
+            Next();
+            return new SheetLocatorToken(stringValue, start);
+        }
+
+        return new BadToken(_position);
     }
 
     private void Error(string error)

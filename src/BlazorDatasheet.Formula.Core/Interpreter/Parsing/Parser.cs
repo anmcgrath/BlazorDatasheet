@@ -244,7 +244,7 @@ public class Parser
     private string? GetSheetName(Token token)
     {
         if (token.Tag == Tag.SingleQuotedStringToken)
-            return ((QuotedSheetNameToken)token).Text;
+            return ((SheetLocatorToken)token).Text;
         if (token.Tag == Tag.IdentifierToken)
             return ((IdentifierToken)token).Value;
 
