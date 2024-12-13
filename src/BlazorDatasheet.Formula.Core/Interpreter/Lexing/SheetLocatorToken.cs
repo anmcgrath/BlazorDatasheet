@@ -2,7 +2,7 @@
 
 public class SheetLocatorToken : Token
 {
-    public SheetLocatorToken(string text, int positionStart) : base(Tag.SingleQuotedStringToken, text, positionStart)
+    public SheetLocatorToken(string text, int positionStart) : base(Tag.SheetLocatorToken, text, positionStart)
     {
     }
 }

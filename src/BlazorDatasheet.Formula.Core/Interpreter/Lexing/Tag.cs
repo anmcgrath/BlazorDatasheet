@@ -28,7 +28,7 @@ public enum Tag
     PercentToken,
     ColonToken,
     AddressToken,
-    SingleQuotedStringToken,
+    SheetLocatorToken,
     Whitespace,
     LogicalToken
 }

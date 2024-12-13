@@ -116,4 +116,12 @@ public class CellReferenceTests
         parsedRef.Root.Should().BeOfType<ReferenceExpression>();
         ((ReferenceExpression)parsedRef.Root).Reference.SheetName.Should().Be("Sheet1");
     }
+
+    [Test]
+    public void Range_With_Multiple_Sheet_Names_Should_Return_Error()
+    {
+        var str = "=Sheet1!A1:Sheet2!A2";
+        var parsedRef = Parse(str);
+        parsedRef.Errors.Should().NotBeEmpty();
+    }
 }

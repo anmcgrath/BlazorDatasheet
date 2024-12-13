@@ -90,7 +90,7 @@ public class Parser
                 return ParseLogicalExpression();
             case Tag.LeftCurlyBracketToken:
                 return ParseArrayConstant();
-            case Tag.SingleQuotedStringToken:
+            case Tag.SheetLocatorToken:
                 return ParseSheetReference();
         }
 
@@ -110,39 +110,47 @@ public class Parser
     /// <returns></returns>
     private Expression ParseSheetReference()
     {
-        string? sheetNameAddr1 = null;
-        if (Peek(1).Tag == Tag.BangToken)
-        {
-            sheetNameAddr1 = GetSheetName(NextToken());
-            MatchToken(Tag.BangToken);
-        }
+        var sheetToken = (SheetLocatorToken)NextToken();
+        string sheetNameAddr1 = sheetToken.Text;
 
-        var firstTokenInRef = NextToken();
+        var firstTokenInRef = Peek(0);
 
         if (firstTokenInRef.Tag == Tag.Number)
         {
-            var numToken = (NumberToken)firstTokenInRef;
+            var numToken = (NumberToken)NextToken();
             if (numToken.IsInteger)
                 return ParseRowReference(new RowAddress((int)numToken.Value, false), sheetNameAddr1);
         }
 
+        if (firstTokenInRef.Tag == Tag.IdentifierToken)
+        {
+            var idExpr = ParseIdentifierExpression();
+            if (idExpr is ReferenceExpression refExpr)
+            {
+                if (refExpr.Reference.SheetName != null && refExpr.Reference.SheetName != sheetNameAddr1)
+                    Error("Range with multiple sheet references are not allowed");
+                refExpr.Reference.SheetName = sheetNameAddr1;
+                return idExpr;
+            }
+
+            Error("Expected reference expression after sheet locator.");
+            return new LiteralExpression(CellValue.Error(ErrorType.Ref));
+        }
+
+
+        NextToken();
         Error("Could not parse reference");
         return new LiteralExpression(CellValue.Error(ErrorType.Ref));
     }
 
-    private bool IsCellAddressToken(Token token)
-    {
-        return (token.Tag == Tag.AddressToken && ((AddressToken)token).Address.Kind == AddressKind.CellAddress);
-    }
-
-    private Expression ParseCellRangeReference(CellAddress firstCellAddress, string? sheetNameAddr1)
+    private ReferenceExpression ParseCellRangeReference(CellAddress firstCellAddress, string? sheetNameAddr1)
     {
         var firstCellRef = new CellReference(firstCellAddress.RowAddress.RowIndex, firstCellAddress.ColAddress.ColIndex,
             firstCellAddress.ColAddress.IsFixed, firstCellAddress.RowAddress.IsFixed);
+
         firstCellRef.SheetName = sheetNameAddr1;
 
-        var isSingleCell = Current.Tag != Tag.ColonToken && !IsCellAddressToken(Peek(1)) &&
-                           Peek(2).Tag != Tag.BangToken; // sheet locator
+        var isSingleCell = Current.Tag != Tag.ColonToken;
         if (isSingleCell) // single cell only
         {
             firstCellRef.SheetName = sheetNameAddr1;
@@ -150,16 +158,13 @@ public class Parser
             return new ReferenceExpression(firstCellRef);
         }
 
-        // if the next after the token isn't a cell ref, return single cell
-
         var colon = NextToken();
+        // Check for sheet for second cell ref
         string? sheetNameAddr2 = null;
 
-        if (Current.Tag == Tag.SingleQuotedStringToken ||
-            Current.Tag == Tag.IdentifierToken && Peek(1).Tag == Tag.BangToken)
+        if (Current.Tag == Tag.SheetLocatorToken)
         {
             sheetNameAddr2 = GetSheetName(NextToken());
-            var bang = MatchToken(Tag.BangToken);
         }
 
         // Just handle the case if we are cell to cell reference.
@@ -251,10 +256,8 @@ public class Parser
 
     private string? GetSheetName(Token token)
     {
-        if (token.Tag == Tag.SingleQuotedStringToken)
+        if (token.Tag == Tag.SheetLocatorToken)
             return ((SheetLocatorToken)token).Text;
-        if (token.Tag == Tag.IdentifierToken)
-            return ((IdentifierToken)token).Value;
 
         return null;
     }
@@ -347,13 +350,7 @@ public class Parser
         if (Peek(1).Tag == Tag.LeftParenthToken)
             return ParseFunctionCallExpression();
 
-        if (Peek(1).Tag == Tag.BangToken)
-            return ParseSheetReference();
-
         var identifierToken = (IdentifierToken)NextToken();
-
-        if (bool.TryParse(identifierToken.Value.ToLower(), out var parsedBool))
-            return new LiteralExpression(CellValue.Logical(parsedBool));
 
         // will be either a cell address, col address, row address or named address (valid or invalid).
         var isAddress = RangeText.TryParseSingleAddress(identifierToken.Value.AsSpan(), out var address);
@@ -380,6 +377,7 @@ public class Parser
             return new ReferenceExpression(namedRef);
         }
 
+        // The below will occur if we have a single col or row address but no colon.
         var idRef = new NamedReference(identifierToken.Value,
             RangeText.IsValidNameAddress(identifierToken.Value));
         _references.Add(idRef);
