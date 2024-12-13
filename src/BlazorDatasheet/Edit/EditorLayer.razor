@@ -171,7 +171,7 @@
     private string GetEditorDisplayStyling()
     {
         var sb = new StyleBuilder();
-        var visualCell = new VisualCell(_sheet.Editor.EditCell!.Row, _sheet.Editor.EditCell!.Col, Sheet);
+        var visualCell = new VisualCell(_sheet.Editor.EditCell!.Row, _sheet.Editor.EditCell!.Col, Sheet, 15);
         var format = visualCell.Format;
 
         sb.AddStyleNotNull("background", format?.BackgroundColor);

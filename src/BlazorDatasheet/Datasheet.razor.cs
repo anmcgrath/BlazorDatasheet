@@ -151,6 +151,20 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     public bool Virtualise { get; set; } = true;
 
     /// <summary>
+    /// The number of decimal places to round a number to. Default is 15.
+    /// </summary>
+    [Parameter]
+    public int NumberPrecisionDisplay { get; set; } = 15;
+
+    private int _numberPrecisionDisplay = 15;
+
+    /// <summary>
+    /// Any user-defined items to render in the context menu
+    /// </summary>
+    [Parameter]
+    public RenderFragment<Sheet>? MenuItems { get; set; }
+
+    /// <summary>
     /// The datasheet keyboard shortcut manager
     /// </summary>
     public ShortcutManager ShortcutManager { get; } = new();
@@ -304,10 +318,16 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
             requireRender = true;
         }
 
+        MenuOptions.CustomMenuFragment = MenuItems;
         if (!MenuOptions.CompareTo(_menuOptions))
         {
             _menuOptions = MenuOptions;
             requireRender = true;
+        }
+
+        if (NumberPrecisionDisplay != _numberPrecisionDisplay)
+        {
+            _numberPrecisionDisplay = Math.Min(15, NumberPrecisionDisplay);
         }
 
         if (requireRender)
@@ -466,9 +486,9 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
                 foreach (var col in _sheet.Columns.GetVisibleIndices(boundedRegion.Left, boundedRegion.Right))
                 {
                     var position = new CellPosition(row, col);
-                    if (!_visualCellCache.TryAdd(position, new VisualCell(row, col, _sheet)))
+                    if (!_visualCellCache.TryAdd(position, new VisualCell(row, col, _sheet, _numberPrecisionDisplay)))
                     {
-                        _visualCellCache[position] = new VisualCell(row, col, _sheet);
+                        _visualCellCache[position] = new VisualCell(row, col, _sheet, _numberPrecisionDisplay);
                     }
                 }
             }

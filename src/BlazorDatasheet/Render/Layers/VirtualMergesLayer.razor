@@ -19,7 +19,7 @@
         var col = merge.Left;
 
         if (!Cache.TryGetValue(new CellPosition(row, col), out var visualCell))
-            visualCell = new VisualCell(row, col, Sheet);
+            visualCell = new VisualCell(row, col, Sheet, NumberPrecisionDisplay);
 
         if (visualCell.VisibleColSpan <= 1 && visualCell.VisibleRowSpan <= 1)
         {
@@ -74,6 +74,8 @@
 
     [CascadingParameter(Name = "CustomCellTypeDefinitions")]
     public Dictionary<string, CellTypeDefinition> CustomCellTypeDefinitions { get; set; } = default!;
+    
+    [Parameter, EditorRequired] public required int NumberPrecisionDisplay { get; set; }
     
     protected override void OnSheetChange(Sheet newSheet, Sheet oldSheet)
     {

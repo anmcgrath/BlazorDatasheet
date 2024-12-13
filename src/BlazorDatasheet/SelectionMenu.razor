@@ -164,6 +164,12 @@
                 </div>
             </SheetSubMenu>
         }
+
+        // Add any user-defined menu items
+        @if (MenuOptions.CustomMenuFragment is not null)
+        {
+            @MenuOptions.CustomMenuFragment(sheet)
+        }
     }
 
 </SheetMenu>

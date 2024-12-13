@@ -28,7 +28,14 @@ public class VisualCell
     public double Width { get; set; }
 
 
-    public VisualCell(int row, int col, Sheet sheet)
+    /// <summary>
+    /// Create a visual cell, which has formatting properties calculated for the cell.
+    /// </summary>
+    /// <param name="row">The row of the cell</param>
+    /// <param name="col">The column of the cell</param>
+    /// <param name="sheet">The sheet that the cell is inside.</param>
+    /// <param name="numberOfSignificantDigits">The number of digits to round the displayed number to.</param>
+    internal VisualCell(int row, int col, Sheet sheet, int numberOfSignificantDigits)
     {
         Merge = sheet.Cells.GetMerge(row, col)?.GetIntersection(sheet.Region);
 
@@ -58,6 +65,14 @@ public class VisualCell
                 FormattedString = roundedNum.ToString(CultureInfo.InvariantCulture);
         }
 
+        if (cellValue.ValueType == CellValueType.Number)
+        {
+            var roundedNumber = Math.Round(cellValue.GetValue<double>(), numberOfSignificantDigits);
+            if (format.NumberFormat != null)
+                FormattedString = roundedNumber.ToString(format.NumberFormat);
+            else
+                FormattedString = roundedNumber.ToString(CultureInfo.InvariantCulture);
+        }
         else if (cellValue.ValueType == CellValueType.Date && format.NumberFormat != null)
             FormattedString = (cellValue.GetValue<DateTime>()).ToString(format.NumberFormat);
         else

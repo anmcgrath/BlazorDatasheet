@@ -474,7 +474,7 @@ public abstract class RowColInfoStore
     /// <param name="count"></param>
     public void InsertAt(int index, int count = 1)
     {
-        var indexToAddAt = Math.Min(Sheet.GetSize(_axis) - 1, Math.Max(index, 0));
+        var indexToAddAt = Math.Min(Sheet.GetSize(_axis), Math.Max(index, 0));
         var cmd = new InsertRowsColsCommand(indexToAddAt, count, _axis);
         Sheet.Commands.ExecuteCommand(cmd);
     }

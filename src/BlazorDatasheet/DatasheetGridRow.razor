@@ -11,7 +11,7 @@
     var dataRow = Row;
 
     if (!Cache.TryGetValue(new CellPosition(Row, col), out var visualCell))
-        visualCell = new VisualCell(Row, col, Sheet);
+        visualCell = new VisualCell(Row, col, Sheet, NumberPrecisionDisplay);
 
     if (visualCell.Merge != null)
     {
@@ -86,6 +86,8 @@
     [CascadingParameter(Name = "CustomCellTypeDefinitions")]
     public Dictionary<string, CellTypeDefinition> CustomCellTypeDefinitions { get; set; } = default!;
 
+    [Parameter, EditorRequired] public required int NumberPrecisionDisplay { get; set; }
+
     protected override bool ShouldRender() => IsDirty || _colIndicesChanged;
     private bool _colIndicesChanged = false;
 
@@ -97,6 +99,7 @@
             {
                 _colIndicesChanged = CompareIndices(_visibleColIndices, VisibleColIndices);
             }
+
             _visibleColIndices = VisibleColIndices;
         }
 

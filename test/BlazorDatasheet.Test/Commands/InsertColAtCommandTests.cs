@@ -3,7 +3,7 @@ using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Commands;
 
-public class InsertColAfterCommandTests
+public class InsertColAtCommandTests
 {
     [Test]
     public void Insert_Col_Then_Undo_Works_Ok()

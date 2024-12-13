@@ -1,7 +1,12 @@
-﻿namespace BlazorDatasheet.Menu;
+﻿using BlazorDatasheet.Core.Data;
+using Microsoft.AspNetCore.Components;
+
+namespace BlazorDatasheet.Menu;
 
 public class SheetMenuOptions
 {
+    internal RenderFragment<Sheet>? CustomMenuFragment { get; set; } 
+
     /// <summary>
     /// When true, the context menu (on right mouse click) is enabled
     /// </summary>
@@ -81,6 +86,7 @@ public class SheetMenuOptions
                other.FilterColumnEnabled == FilterColumnEnabled &&
                other.SortRangeEnabled == SortRangeEnabled &&
                other.ContextMenuEnabled == ContextMenuEnabled &&
-               other.HeaderMenuEnabled == HeaderMenuEnabled;
+               other.HeaderMenuEnabled == HeaderMenuEnabled &&
+               other.CustomMenuFragment == CustomMenuFragment;
     }
 }
