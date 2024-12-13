@@ -201,6 +201,9 @@ public ref struct Lexer
         int length = _position - start;
         var idSlice = _string.Slice(start, length);
 
+        if (bool.TryParse(idSlice, out var parsedBool))
+            return new LogicalToken(idSlice.ToString(), parsedBool, start);
+
         if (Peek(0) == '!')
         {
             // consume '!'

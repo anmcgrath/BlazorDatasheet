@@ -86,6 +86,8 @@ public class Parser
                 return ParseParenthExpression();
             case Tag.IdentifierToken:
                 return ParseIdentifierExpression();
+            case Tag.LogicalToken:
+                return ParseLogicalExpression();
             case Tag.LeftCurlyBracketToken:
                 return ParseArrayConstant();
             case Tag.SingleQuotedStringToken:
@@ -93,6 +95,12 @@ public class Parser
         }
 
         return ParseLiteralExpression();
+    }
+
+    private Expression ParseLogicalExpression()
+    {
+        var token = (LogicalToken)NextToken();
+        return new LiteralExpression(CellValue.Logical(token.Value));
     }
 
     /// <summary>

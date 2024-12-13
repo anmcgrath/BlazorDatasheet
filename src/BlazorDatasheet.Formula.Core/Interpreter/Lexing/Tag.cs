@@ -29,5 +29,6 @@ public enum Tag
     ColonToken,
     AddressToken,
     SingleQuotedStringToken,
-    Whitespace
+    Whitespace,
+    LogicalToken
 }
