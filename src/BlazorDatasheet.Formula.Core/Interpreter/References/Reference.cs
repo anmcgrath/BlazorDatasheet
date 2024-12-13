@@ -40,4 +40,11 @@ public abstract class Reference
     {
         IsInvalid = !isValid;
     }
+
+    protected string SheetText()
+    {
+        if (SheetName != null)
+            return '\'' + SheetName + '\'' + '!';
+        return string.Empty;
+    }
 }
