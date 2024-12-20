@@ -128,15 +128,27 @@ public class VisualCell
 
         // if number and no align is set, move to right
         if (type == CellValueType.Number && format.HorizontalTextAlign == null)
+        {
             sb.AddStyle("justify-content", "end");
+            sb.AddStyle("text-align", "end");
+        }
         else if (format.HorizontalTextAlign != null)
         {
             if (format.HorizontalTextAlign == TextAlign.Start)
+            {
                 sb.AddStyle("justify-content", "start");
+                sb.AddStyle("text-align", "start");
+            }
             else if (format.HorizontalTextAlign == TextAlign.End)
+            {
                 sb.AddStyle("justify-content", "end");
+                sb.AddStyle("text-align", "end");
+            }
             else if (format.HorizontalTextAlign == TextAlign.Center)
+            {
                 sb.AddStyle("justify-content", "center");
+                sb.AddStyle("text-align", "center");
+            }
         }
 
         if (format.VerticalTextAlign != null)

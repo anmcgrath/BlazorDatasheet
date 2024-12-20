@@ -75,6 +75,9 @@
                             StickyHeaders="StickyHeaders"
                             FrozenLeftCount="_frozenLeftCount"
                             FrozenRightCount="_frozenRightCount"
+                            NumberPrecisionDisplay="NumberPrecisionDisplay"
+                            CustomCellTypeDefinitions="CustomCellTypeDefinitions"
+                            Icons="Icons"
                             ViewRegion="new(_viewRegion.Top, _viewRegion.Top + _frozenTopCount - 1, _viewRegion.Left, _viewRegion.Right)"
                             Sheet="_sheet">
                             <RowHeaderTemplate>@RowHeaderTemplate(context)</RowHeaderTemplate>
@@ -133,6 +136,9 @@
                                 ShowFormulaDependents="@ShowFormulaDependents"
                                 FrozenLeftCount="0"
                                 FrozenRightCount="0"
+                                NumberPrecisionDisplay="NumberPrecisionDisplay"
+                                CustomCellTypeDefinitions="CustomCellTypeDefinitions"
+                                Icons="Icons"
                                 Sheet="_sheet"
                                 ViewRegion="new(MainViewRegion.Top, MainViewRegion.Bottom, _viewRegion.Left, _viewRegion.Left + _frozenLeftCount - 1)">
                             </Datasheet>
@@ -143,7 +149,11 @@
                                     PointerInputService="_sheetPointerInputService">
                         <HighlightLayer/>
                         <AutofillLayer/>
-                        <VirtualMergesLayer Cache="_visualCellCache"/>
+                        <VirtualMergesLayer
+                            Icons="Icons"
+                            NumberPrecisionDisplay="NumberPrecisionDisplay"
+                            CustomCellTypeDefinitions="CustomCellTypeDefinitions"
+                            Cache="_visualCellCache"/>
                         <EditorLayer @ref="_editorLayer" CustomCellTypes="@CustomCellTypeDefinitions"/>
                         <SelectionRendererLayer/>
                         @if (_showFormulaDependents)
@@ -193,6 +203,9 @@
                                 ShowRowHeadings="false"
                                 FrozenRightCount="0"
                                 FrozenLeftCount="0"
+                                NumberPrecisionDisplay="NumberPrecisionDisplay"
+                                CustomCellTypeDefinitions="CustomCellTypeDefinitions"
+                                Icons="Icons"
                                 Sheet="_sheet"
                                 ViewRegion="new Region(MainViewRegion.Top, MainViewRegion.Bottom, _viewRegion.Right - _frozenRightCount + 1, _viewRegion.Right)"/>
                         </div>
@@ -214,6 +227,9 @@
                             StickyHeaders="StickyHeaders"
                             FrozenLeftCount="_frozenLeftCount"
                             FrozenRightCount="_frozenRightCount"
+                            NumberPrecisionDisplay="NumberPrecisionDisplay"
+                            CustomCellTypeDefinitions="CustomCellTypeDefinitions"
+                            Icons="Icons"
                             ViewRegion="new(_viewRegion.Bottom - _frozenBottomCount + 1, _viewRegion.Bottom, _viewRegion.Left, _viewRegion.Right)"
                             Sheet="_sheet"/>
                     </div>
