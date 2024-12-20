@@ -11,7 +11,13 @@
 
 <p>Below is an example of a custom renderer that shows a progress bar between 0 and 200</p>
 
-<Datasheet Sheet="sheet" CustomCellTypeDefinitions="CustomTypes"></Datasheet>
+<Datasheet
+    FrozenBottomCount="1"
+    FrozenRightCount="1"
+    FrozenTopCount="1"
+    FrozenLeftCount="1"
+    Sheet="sheet"
+    CustomCellTypeDefinitions="CustomTypes"></Datasheet>
 
 @code {
 
@@ -21,12 +27,17 @@
     protected override void OnInitialized()
     {
         CustomTypes.Add("progress", CellTypeDefinition.Create<TextEditorComponent, ProgressRenderer>());
-        sheet = new Sheet(1, 3);
-        sheet.Cells[0, 0].Value = 0;
-        sheet.Cells[0, 1].Value = 100;
-        sheet.Cells[0, 1].Value = 200;
-        sheet.Cells.SetType(new RowRegion(0), "progress");
+        sheet = new Sheet(5, 5);
+        var r = new Random();
+        for (int i = 0; i < sheet.NumRows; i++)
+        {
+            for (int j = 0; j < sheet.NumCols; j++)
+            {
+                sheet.Cells.SetValue(i, j, CellValue.Number(r.Next(200)));
+            }
+        }
 
+        sheet.Cells.SetType(new RowRegion(0, sheet.NumRows - 1), "progress");
 
         base.OnInitialized();
     }
