@@ -52,7 +52,7 @@ public partial class CellStore
             new CellFormulaChangeEventArgs(row, col,
                 restoreData.FormulaRestoreData.DataRemoved.FirstOrDefault().data,
                 formula));
-        EmitCellChanged(row, col);
+
         _sheet.MarkDirty(row, col);
         return restoreData;
     }

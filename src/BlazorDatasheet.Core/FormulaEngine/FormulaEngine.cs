@@ -81,6 +81,7 @@ public class FormulaEngine
     {
         var restoreData = DependencyManager.SetFormula(row, col, formula);
         _requiresCalculation.Add(new FormulaVertex(row, col, formula));
+        Calculate(calculateAll: false);
         return restoreData;
     }
 
@@ -114,6 +115,8 @@ public class FormulaEngine
         var restoreData = DependencyManager.ClearFormula(row, col);
         foreach (var dependency in DependencyManager.GetDependents(new Region(row, col)))
             _requiresCalculation.Add(dependency);
+        Calculate(calculateAll: false);
+
         return restoreData;
     }
 
