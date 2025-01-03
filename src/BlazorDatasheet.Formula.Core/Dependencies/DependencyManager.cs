@@ -94,7 +94,7 @@ public class DependencyManager
             // TODO: Store named reference relationships to lookup direct dependents
             foreach (var vertex in _dependencyGraph.GetAll())
             {
-                if (vertex.Formula?.References?.Any(x => (x is NamedReference nr && nr.Name == formulaVertex.Key)) ==
+                if (vertex.Formula?.References.Any(x => (x is NamedReference nr && nr.Name == formulaVertex.Key)) ==
                     true)
                 {
                     _dependencyGraph.AddEdge(formulaVertex, vertex);
@@ -108,50 +108,61 @@ public class DependencyManager
 
     private DependencyManagerRestoreData ClearFormula(FormulaVertex formulaVertex)
     {
-        var restoreData = new DependencyManagerRestoreData();
         if (!_dependencyGraph.HasVertex(formulaVertex.Key))
-            return restoreData;
+            return new DependencyManagerRestoreData();
+
 
         formulaVertex = _dependencyGraph.GetVertex(formulaVertex.Key);
 
-        // remove the references that refer to this formula cell
+        // Clear any dependency relationships.
+        var restoreData = ClearDependents(formulaVertex);
+        _dependencyGraph.RemoveVertex(formulaVertex, false);
+        restoreData.VerticesRemoved.Add(formulaVertex);
+
+        return restoreData;
+    }
+
+    /// <summary>
+    /// Clears any managed dependencies for the given formula vertex.
+    /// </summary>
+    /// <param name="formulaVertex"></param>
+    private DependencyManagerRestoreData ClearDependents(FormulaVertex formulaVertex)
+    {
+        var restoreData = new DependencyManagerRestoreData();
+
+        // remove the link between the regions or cells that this cell references
+        // and the 
         var formulaReferences = formulaVertex.Formula?.References;
 
         if (formulaReferences != null)
         {
             foreach (var formulaRef in formulaReferences)
             {
-                List<DataRegion<FormulaVertex>> referenceStoreDataToDelet = [];
-                switch (formulaRef)
+                var referenceStoreDataToDelete = formulaRef switch
                 {
-                    case CellReference cellRef:
-                        referenceStoreDataToDelet = _referencedVertexStore
-                            .GetDataRegions(new Region(cellRef.RowIndex, cellRef.ColIndex), formulaVertex).ToList();
-                        break;
-                    case RangeReference rangeReference:
-                        referenceStoreDataToDelet = _referencedVertexStore
-                            .GetDataRegions(rangeReference.Region, formulaVertex).ToList();
-                        break;
-                    case NamedReference namedReference:
-                        break;
-                }
+                    CellReference cellRef => GetDirectDependentData(new Region(cellRef.RowIndex, cellRef.ColIndex),
+                        formulaVertex),
+                    RangeReference rangeReference => GetDirectDependentData(rangeReference.Region, formulaVertex),
+                    NamedReference => [],
+                    _ => []
+                };
 
-                if (referenceStoreDataToDelet.Count != 0)
-                    restoreData.RegionRestoreData = _referencedVertexStore.Delete(referenceStoreDataToDelet);
+                var storeDataToDelete = referenceStoreDataToDelete as DataRegion<FormulaVertex>[] ??
+                                        referenceStoreDataToDelete.ToArray();
+                
+                if (storeDataToDelete.Length != 0)
+                    restoreData.RegionRestoreData = _referencedVertexStore.Delete(storeDataToDelete);
             }
         }
 
         // we should only delete edges that show cells that this formula is dependent on
-        // if there are formula that depend on this formula, they shouldn't be removed?
+        // if there are formula that depend on this formula, they shouldn't be removed
 
         foreach (var vertex in _dependencyGraph.Adj(formulaVertex))
             restoreData.EdgesRemoved.Add((formulaVertex.Key, vertex.Key));
 
         foreach (var vertex in _dependencyGraph.Prec(formulaVertex))
             restoreData.EdgesRemoved.Add((vertex.Key, formulaVertex.Key));
-
-        _dependencyGraph.RemoveVertex(formulaVertex, false);
-        restoreData.VerticesRemoved.Add(formulaVertex);
 
         return restoreData;
     }
@@ -176,6 +187,10 @@ public class DependencyManager
     {
         return _referencedVertexStore.GetData(region);
     }
+
+    private IEnumerable<DataRegion<FormulaVertex>>
+        GetDirectDependentData(IRegion region, FormulaVertex formulaVertex) =>
+        _referencedVertexStore.GetDataRegions(region, formulaVertex);
 
     public DependencyManagerRestoreData InsertRowAt(int row, int count) =>
         InsertRowColAt(row, count, Axis.Row);
