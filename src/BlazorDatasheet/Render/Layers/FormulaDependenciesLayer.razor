@@ -27,7 +27,7 @@
                 </defs>
 
                 @{
-                    var dependents = Sheet.FormulaEngine.GetDependencies();
+                    var dependents = Sheet.FormulaEngine.GetDependencyInfo();
                     foreach (var dependent in dependents)
                     {
                         var rectStart = GetRect(dependent.From);

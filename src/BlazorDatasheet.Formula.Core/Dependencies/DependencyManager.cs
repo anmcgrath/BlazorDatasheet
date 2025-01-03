@@ -192,7 +192,7 @@ public class DependencyManager
         GetDirectDependentData(IRegion region, FormulaVertex formulaVertex) =>
         _referencedVertexStore.GetDataRegions(region, formulaVertex);
 
-    public DependencyManagerRestoreData InsertRowAt(int row, int count) =>
+    internal DependencyManagerRestoreData InsertRowAt(int row, int count) =>
         InsertRowColAt(row, count, Axis.Row);
 
     public DependencyManagerRestoreData InsertRowColAt(int index, int count, Axis axis)
@@ -243,16 +243,7 @@ public class DependencyManager
 
         return vertices;
     }
-
-    public DependencyManagerRestoreData InsertColAt(int col, int count) =>
-        InsertRowColAt(col, count, Axis.Col);
-
-    public DependencyManagerRestoreData RemoveColAt(int col, int count) =>
-        RemoveRowColAt(col, count, Axis.Col);
-
-    public DependencyManagerRestoreData RemoveRowAt(int row, int count) =>
-        RemoveRowColAt(row, count, Axis.Row);
-
+    
     public DependencyManagerRestoreData RemoveRowColAt(int index, int count, Axis axis)
     {
         var restoreData = new DependencyManagerRestoreData()
@@ -327,7 +318,7 @@ public class DependencyManager
         return sort.Sort();
     }
 
-    public IEnumerable<DependencyInfo> GetDependencies()
+    public IEnumerable<DependencyInfo> GetDependencyInfo()
     {
         var results = new List<DependencyInfo>();
         foreach (var vertex in _dependencyGraph.GetAll())

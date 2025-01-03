@@ -1,4 +1,5 @@
-﻿using BlazorDatasheet.Core.Data;
+﻿using System.Collections;
+using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Events.Data;
 using BlazorDatasheet.Core.Events.Edit;
@@ -105,12 +106,12 @@ public class FormulaEngine
         return DependencyManager.SetFormula(row, col, formula);
     }
 
-    public CellFormula ParseFormula(string formulaString)
+    internal CellFormula ParseFormula(string formulaString)
     {
         return _parser.FromString(formulaString);
     }
 
-    public CellValue Evaluate(CellFormula? formula, bool resolveReferences = true)
+    internal CellValue Evaluate(CellFormula? formula, bool resolveReferences = true)
     {
         if (formula == null)
             return CellValue.Empty;
@@ -134,8 +135,6 @@ public class FormulaEngine
     {
         return DependencyManager.ClearFormula(row, col);
     }
-
-    public IEnumerable<DependencyInfo> GetDependencies() => DependencyManager.GetDependencies();
 
     public void CalculateSheet()
     {
@@ -242,4 +241,6 @@ public class FormulaEngine
         _environment.ClearVariable(varName);
         DependencyManager.ClearFormula(varName);
     }
+
+    public IEnumerable<DependencyInfo> GetDependencyInfo() => DependencyManager.GetDependencyInfo();
 }

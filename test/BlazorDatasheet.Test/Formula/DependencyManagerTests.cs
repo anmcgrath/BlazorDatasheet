@@ -119,9 +119,9 @@ public class DependencyManagerTests
         var dm = new DependencyManager();
         dm.SetFormula("x", GetFormula("=A2"));
         dm.SetFormula(1, 0, GetFormula("=A1"));
-        dm.GetDependencies().Count().Should().Be(2);
+        dm.GetDependencyInfo().Count().Should().Be(2);
         dm.ClearFormula("x");
-        var dependencies = dm.GetDependencies();
+        var dependencies = dm.GetDependencyInfo();
         dependencies.Count().Should().Be(1); // still have A2 = A1
     }
 }
