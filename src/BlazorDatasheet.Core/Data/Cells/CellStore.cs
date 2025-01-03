@@ -100,7 +100,6 @@ public partial class CellStore
         restoreData.ValidRestoreData = _validStore.Clear(toClear);
         restoreData.Merge(ClearFormulaImpl(toClear));
 
-        var affected = restoreData.GetAffectedPositions().ToList();
         _sheet.BatchUpdates();
         EmitCellsChanged(toClear);
         _sheet.MarkDirty(toClear);
