@@ -1,18 +1,13 @@
 ﻿using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
-using BlazorDatasheet.Core.Events;
 using BlazorDatasheet.Core.Events.Data;
 using BlazorDatasheet.Core.Events.Edit;
 using BlazorDatasheet.Core.Events.Formula;
 using BlazorDatasheet.DataStructures.Geometry;
-using BlazorDatasheet.DataStructures.Graph;
-using BlazorDatasheet.DataStructures.Store;
-using BlazorDatasheet.DataStructures.Util;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Dependencies;
 using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
-using BlazorDatasheet.Formula.Core.Interpreter.References;
 using BlazorDatashet.Formula.Functions;
 using CellFormula = BlazorDatasheet.Formula.Core.Interpreter.CellFormula;
 
@@ -192,12 +187,13 @@ public class FormulaEngine
 
                 if (vertex.VertexType == VertexType.Cell)
                 {
-                    _sheet.Cells.SetValueImpl(vertex.Region!.Top, vertex.Region!.Left, value);
-                    _sheet.MarkDirty(vertex.Region!.Top, vertex.Region!.Left);
+                    _environment.SetCellValue(vertex.Region!.Top, vertex.Region!.Left, value);
                 }
                 else if (vertex.VertexType == VertexType.Named)
                 {
-                    var prevValue = _environment.HasVariable(vertex.Key) ? _environment.GetVariable(vertex.Key) : null;
+                    var prevValue = _environment.HasVariable(vertex.Key)
+                        ? _environment.GetVariable(vertex.Key)
+                        : null;
                     VariableChanged?.Invoke(this,
                         new VariableChangedEventArgs(vertex.Key, prevValue, new CellValue(value)));
                     _environment.SetVariable(vertex.Key, value);

@@ -34,6 +34,11 @@ public class TestEnvironment : IEnvironment
             _formulas[position] = formula;
     }
 
+    public void SetCellValue(int row, int col, CellValue value)
+    {
+        _cellValues.TryAdd(new CellPosition(row, col), value);
+    }
+
     public void RegisterFunction(string name, ISheetFunction functionDefinition)
     {
         var validator = new FunctionParameterValidator();

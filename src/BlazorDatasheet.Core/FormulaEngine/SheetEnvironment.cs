@@ -38,6 +38,12 @@ public class SheetEnvironment : IEnvironment
             _variables[name] = cellValue;
     }
 
+    public void SetCellValue(int row, int col, CellValue value)
+    {
+        _sheet.Cells.SetValueImpl(row, col, value);
+        _sheet.MarkDirty(row, col);
+    }
+
     public bool FunctionExists(string name)
     {
         return _functions.ContainsKey(name.ToLower());

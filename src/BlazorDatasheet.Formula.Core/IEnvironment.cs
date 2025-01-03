@@ -21,6 +21,7 @@ public interface IEnvironment
     bool HasVariable(string variableIdentifier);
     CellValue GetVariable(string variableIdentifier);
     void SetVariable(string name, CellValue value);
+    void SetCellValue(int row, int col, CellValue value);
     void RegisterFunction(string name, ISheetFunction value);
     public IEnumerable<CellValue> GetNonEmptyInRange(Reference reference);
 }
