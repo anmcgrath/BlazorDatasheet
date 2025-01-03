@@ -37,6 +37,9 @@
      * @param e {KeyboardEvent}
      */
     async handleWindowEvent(e) {
+        if (e.isComposing)
+            return
+
         if (this.handlerMap[e.type]) {
             if (this.preventDefaultMap[e.type]) {
 
@@ -50,6 +53,7 @@
             }
 
             let respIsHandled = await this.dotnetHelper.invokeMethodAsync(this.handlerMap[e.type], this.serialize(e));
+
             if (respIsHandled === true) {
                 e.preventDefault();
             }
@@ -86,7 +90,8 @@
                 shiftKey: e.shiftKey,
                 altKey: e.altKey,
                 metaKey: e.metaKey,
-                type: e.type
+                type: e.type,
+                isComposing: e.isComposing
             };
         }
     }

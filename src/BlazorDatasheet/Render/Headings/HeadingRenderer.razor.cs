@@ -76,7 +76,10 @@ public partial class HeadingRenderer : SheetComponentBase
 
     public async void RefreshView()
     {
-        await MainView.RefreshView();
+        if (MainView is not null)
+        {
+            await MainView.RefreshView();
+        }
     }
 
     protected string GetSelectedClass(int index)

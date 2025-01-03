@@ -609,7 +609,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
         var modifiers = e.GetModifiers();
         if (await HandleShortcuts(e.Key, modifiers) || await HandleShortcuts(e.Code, modifiers))
-            return true;
+            return false;
 
         // Single characters or numbers or symbols
         if ((e.Key.Length == 1) && !_sheet.Editor.IsEditing && IsDataSheetActive)
@@ -753,6 +753,10 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     private async Task<bool> AcceptEditAndMoveActiveSelection(Axis axis, int amount)
     {
         var acceptEdit = !_sheet.Editor.IsEditing || _sheet.Editor.AcceptEdit();
+
+        if (!acceptEdit)
+            return false;
+
         _sheet.Selection.MoveActivePosition(axis, amount);
         if (IsDataSheetActive)
             await ScrollToActiveCellPosition();
@@ -769,9 +773,6 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
     private async Task ScrollToContainRegion(IRegion region)
     {
-        if (_mainView == null)
-            return;
-
         var frozenLeftW = _sheet.Columns.GetVisualLeft(_frozenLeftCount);
         var frozenRightW = _sheet.Columns.GetVisualWidthBetween(_sheet.NumCols - _frozenRightCount, _sheet.NumCols);
         var frozenTopH = _sheet.Rows.GetVisualTop(_frozenTopCount);
