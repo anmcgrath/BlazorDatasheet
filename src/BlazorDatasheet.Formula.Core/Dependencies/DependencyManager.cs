@@ -1,4 +1,5 @@
-﻿using BlazorDatasheet.DataStructures.Geometry;
+﻿using System.Diagnostics;
+using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Graph;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core.Interpreter;
@@ -41,11 +42,11 @@ public class DependencyManager
 
     private DependencyManagerRestoreData SetFormula(FormulaVertex formulaVertex)
     {
-        // Clear any dependency tracking for old formula if there is one
+        // Clear old formula + dependency info for restore.
         var restoreData = ClearFormula(formulaVertex);
 
         if (formulaVertex.Formula == null)
-            return restoreData;
+            throw new UnreachableException("Formula dependents should not be set without formula.");
 
         _dependencyGraph.AddVertex(formulaVertex);
         restoreData.VerticesAdded.Add(formulaVertex);
@@ -54,8 +55,18 @@ public class DependencyManager
         // and add a dependency edge to them
         foreach (var formulaRef in formulaVertex.Formula.References)
         {
-            // add edges to any formula that already exist
-            if (formulaRef is not NamedReference)
+            if (formulaRef is NamedReference namedReference)
+            {
+                var refName = namedReference.Name;
+                // handle named references
+                if (_dependencyGraph.HasVertex(refName))
+                {
+                    var f = _dependencyGraph.GetVertex(refName);
+                    _dependencyGraph.AddEdge(f, formulaVertex);
+                    restoreData.EdgesAdded.Add((f.Key, formulaVertex.Key));
+                }
+            }
+            else
             {
                 var formulaInsideRegion = GetVerticesInRegion(formulaRef.Region);
                 foreach (var f in formulaInsideRegion)
@@ -66,17 +77,6 @@ public class DependencyManager
 
                 restoreData.RegionRestoreData.Merge(
                     _referencedVertexStore.Add(formulaRef.Region.Clone(), formulaVertex));
-            }
-            else
-            {
-                var refName = ((NamedReference)formulaRef).Name;
-                // handle named references
-                if (_dependencyGraph.HasVertex(refName))
-                {
-                    var f = _dependencyGraph.GetVertex(refName);
-                    _dependencyGraph.AddEdge(f, formulaVertex);
-                    restoreData.EdgesAdded.Add((f.Key, formulaVertex.Key));
-                }
             }
         }
 
@@ -149,7 +149,7 @@ public class DependencyManager
 
                 var storeDataToDelete = referenceStoreDataToDelete as DataRegion<FormulaVertex>[] ??
                                         referenceStoreDataToDelete.ToArray();
-                
+
                 if (storeDataToDelete.Length != 0)
                     restoreData.RegionRestoreData = _referencedVertexStore.Delete(storeDataToDelete);
             }
@@ -183,7 +183,7 @@ public class DependencyManager
     /// </summary>
     /// <param name="region"></param>
     /// <returns></returns>
-    public IEnumerable<FormulaVertex> GetDirectDependents(IRegion region)
+    internal IEnumerable<FormulaVertex> GetDirectDependents(IRegion region)
     {
         return _referencedVertexStore.GetData(region);
     }
