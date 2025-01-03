@@ -244,4 +244,15 @@ public class InterpreterTests
         _evaluator.CurrentContext.GetEvaluatedReferences(formula).First().Region.Should()
             .BeEquivalentTo(new Region(0, 0));
     }
+
+    [Test]
+    [TestCase("=1", 1)]
+    [TestCase("=1-2", -1)]
+    [TestCase("=1e-2", 1e-2)]
+    [TestCase("=4e5", 4e5)]
+    [TestCase("=10000000000000", 10000000000000)]
+    public void Number_Evalutes_To_Correct_Number(string formula, double expected)
+    {
+        EvalExpression(formula).GetValue<double>().Should().Be(expected);
+    }
 }

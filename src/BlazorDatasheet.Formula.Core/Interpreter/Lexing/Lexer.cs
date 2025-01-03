@@ -163,31 +163,38 @@ public ref struct Lexer
         int start = _position;
         Next();
 
+        bool containsE = false;
+
         while ((char.IsDigit(_current) || _current == '.' || _current == 'e' ||
-                _current == '-')) // e and - so that we can parse scientific notation.
+                (containsE && _current == '-'))) // e and - so that we can parse scientific notation.
         {
             if (_current == '.')
                 containsPeriod = true;
+            if (_current == 'e')
+                containsE = true;
+
             Next();
         }
 
         int length = _position - start;
 
-        if (containsPeriod) // could be double
+        if (!containsPeriod)
         {
-            if (double.TryParse(_string.Slice(start, length), out var parsedDouble))
-                return new NumberToken(parsedDouble, start);
+            // try to parse int which may or may not fail
+            // (scientific notation, number too large.)
+            // we try this before parsing double because of this.
 
-            Error($"{_string.Slice(start, length).ToString()} is not a number");
-            return new BadToken(_position);
+            // Distinguish between int and double because it's useful for parsing row references.
+            if (int.TryParse(_string.Slice(start, length), out var parsedInt))
+            {
+                return new NumberToken(parsedInt, start);
+            }
         }
 
-        // Distinguish between int and double because it's useful for parsing row references.
-        if (int.TryParse(_string.Slice(start, length), out var parsedInt))
-        {
-            return new NumberToken(parsedInt, start);
-        }
+        if (double.TryParse(_string.Slice(start, length), out var parsedDouble))
+            return new NumberToken(parsedDouble, start);
 
+        Error($"{_string.Slice(start, length).ToString()} is not a number");
         return new BadToken(_position);
     }
 
