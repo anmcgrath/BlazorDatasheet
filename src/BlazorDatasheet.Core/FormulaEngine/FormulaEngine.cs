@@ -23,16 +23,20 @@ public class FormulaEngine
     private readonly Evaluator _evaluator;
 
     internal readonly DependencyManager DependencyManager = new();
-
     public event EventHandler<VariableChangedEventArgs>? VariableChanged;
     public bool IsCalculating { get; private set; }
+
+    /// <summary>
+    /// The keys of formula that require recalculation
+    /// </summary>
+    private readonly HashSet<FormulaVertex> _requiresCalculation = new();
 
     public FormulaEngine(Sheet sheet)
     {
         _sheet = sheet;
         _cells = sheet.Cells;
         _sheet.Editor.BeforeCellEdit += SheetOnBeforeCellEdit;
-        _cells.CellsChanged += SheetOnCellsChanged;
+        _cells.CellsChanged += SheetOnCellValuesChanged;
         _sheet.Rows.Removed += (_, _) => CalculateSheet();
         _sheet.Columns.Removed += (_, _) => CalculateSheet();
 
@@ -42,47 +46,19 @@ public class FormulaEngine
         RegisterDefaultFunctions();
     }
 
-    private void SheetOnCellsChanged(object? sender, CellDataChangedEventArgs e)
+    private void SheetOnCellValuesChanged(object? sender, CellDataChangedEventArgs e)
     {
         if (this.IsCalculating)
             return;
 
-        var cellsReferenced = false;
-        foreach (var cell in e.Positions)
+        foreach (var region in e.Positions.Select(x => new Region(x.row, x.col)).Concat(e.Regions))
         {
-            if (IsCellReferenced(cell.row, cell.col))
-            {
-                cellsReferenced = true;
-                break;
-            }
+            var dependents = DependencyManager.GetDependents(region);
+            foreach (var dependent in dependents)
+                _requiresCalculation.Add(dependent);
         }
 
-        if (!cellsReferenced)
-        {
-            foreach (var region in e.Regions)
-            {
-                if (RegionContainsReferencedCells(region))
-                {
-                    cellsReferenced = true;
-                    break;
-                }
-            }
-        }
-
-        if (!cellsReferenced)
-            return;
-
-        this.CalculateSheet();
-    }
-
-    private bool IsCellReferenced(int row, int col)
-    {
-        return DependencyManager.IsReferenced(row, col);
-    }
-
-    private bool RegionContainsReferencedCells(IRegion region)
-    {
-        return DependencyManager.IsReferenced(region);
+        this.Calculate(calculateAll: false);
     }
 
     private void RegisterDefaultFunctions()
@@ -103,7 +79,9 @@ public class FormulaEngine
 
     internal DependencyManagerRestoreData SetFormula(int row, int col, CellFormula? formula)
     {
-        return DependencyManager.SetFormula(row, col, formula);
+        var restoreData = DependencyManager.SetFormula(row, col, formula);
+        _requiresCalculation.Add(new FormulaVertex(row, col, formula));
+        return restoreData;
     }
 
     internal CellFormula ParseFormula(string formulaString)
@@ -133,18 +111,32 @@ public class FormulaEngine
     /// <param name="col"></param>
     internal DependencyManagerRestoreData RemoveFormula(int row, int col)
     {
-        return DependencyManager.ClearFormula(row, col);
+        var restoreData = DependencyManager.ClearFormula(row, col);
+        foreach (var dependency in DependencyManager.GetDependents(new Region(row, col)))
+            _requiresCalculation.Add(dependency);
+        return restoreData;
     }
 
-    public void CalculateSheet()
+    public void CalculateSheet() => Calculate(calculateAll: true);
+
+    /// <summary>
+    /// Calculates the managed formula.
+    /// </summary>
+    /// <param name="calculateAll">If true, all formula are calculated regardless of whether they require calculation.</param>
+    public void Calculate(bool calculateAll)
     {
         if (IsCalculating)
             return;
 
+        if (_requiresCalculation.Count == 0 && !calculateAll)
+            return;
+
+        var vertices = calculateAll ? null : _requiresCalculation.ToList();
+
         IsCalculating = true;
         _sheet.BatchUpdates();
 
-        var order = DependencyManager.GetCalculationOrder();
+        var order = DependencyManager.GetCalculationOrder(vertices);
         var executionContext = new FormulaExecutionContext();
 
         foreach (var scc in order)
@@ -202,6 +194,7 @@ public class FormulaEngine
 
         _sheet.EndBatchUpdates();
         IsCalculating = false;
+        _requiresCalculation.Clear();
     }
 
     /// <summary>
@@ -240,6 +233,7 @@ public class FormulaEngine
     {
         _environment.ClearVariable(varName);
         DependencyManager.ClearFormula(varName);
+        CalculateSheet();
     }
 
     public IEnumerable<DependencyInfo> GetDependencyInfo() => DependencyManager.GetDependencyInfo();

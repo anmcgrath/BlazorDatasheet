@@ -21,7 +21,7 @@ public partial class CellStore
     private readonly List<IRegion> _regionsChanged = new();
 
     /// <summary>
-    /// Fired when one or more cells are changed
+    /// Fired when one or more cell values are changed
     /// </summary>
     public event EventHandler<CellDataChangedEventArgs>? CellsChanged;
 

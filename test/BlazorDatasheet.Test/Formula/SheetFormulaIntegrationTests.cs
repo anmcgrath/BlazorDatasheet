@@ -218,7 +218,7 @@ public class SheetFormulaIntegrationTests
         sheet.Cells[2, 2].Formula.Should().BeNull();
         sheet.Cells[3, 2].Formula.Should().Be("=B3");
 
-        sheet.FormulaEngine.DependencyManager.GetDirectDependents(new Region(2, 1)) // b3
+        sheet.FormulaEngine.DependencyManager.GetDependents(new Region(2, 1)) // b3
             .Select(x => x.Key)
             .First()
             .Should()
@@ -227,7 +227,7 @@ public class SheetFormulaIntegrationTests
         sheet.Commands.Undo();
         sheet.Cells[2, 2].Formula.Should().Be("=B2");
 
-        sheet.FormulaEngine.DependencyManager.GetDirectDependents(new Region(1, 1)) // b2
+        sheet.FormulaEngine.DependencyManager.GetDependents(new Region(1, 1)) // b2
             .Select(x => x.Key)
             .First()
             .Should()

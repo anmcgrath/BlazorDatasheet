@@ -83,7 +83,7 @@ public class DependencyManager
         // find any formula that reference this formula and add edges to them
         if (formulaVertex.Region != null)
         {
-            foreach (var dependent in GetDirectDependents(formulaVertex.Region))
+            foreach (var dependent in GetDependents(formulaVertex.Region))
             {
                 _dependencyGraph.AddEdge(formulaVertex, dependent);
                 restoreData.EdgesAdded.Add((formulaVertex.Key, dependent.Key));
@@ -183,7 +183,7 @@ public class DependencyManager
     /// </summary>
     /// <param name="region"></param>
     /// <returns></returns>
-    internal IEnumerable<FormulaVertex> GetDirectDependents(IRegion region)
+    public IEnumerable<FormulaVertex> GetDependents(IRegion region)
     {
         return _referencedVertexStore.GetData(region);
     }
@@ -212,7 +212,7 @@ public class DependencyManager
         // and shift the formula references
         // needs to be done before we shift vertices
 
-        var formulaDependents = GetDirectDependents(affectedRegion);
+        var formulaDependents = GetDependents(affectedRegion);
 
         foreach (var dependent in formulaDependents)
         {
@@ -243,7 +243,7 @@ public class DependencyManager
 
         return vertices;
     }
-    
+
     public DependencyManagerRestoreData RemoveRowColAt(int index, int count, Axis axis)
     {
         var restoreData = new DependencyManagerRestoreData()
@@ -309,10 +309,10 @@ public class DependencyManager
     }
 
     /// <summary>
-    /// Returns the topological sort of the vertices. Each group of vertices is a strongly connected group.
+    /// Returns the topological sort of the vertices <paramref name="vertices"/>. If <paramref name="vertices"/> is null, all vertices are considered. Each group of vertices is a strongly connected group.
     /// </summary>
     /// <returns></returns>
-    public IList<IList<FormulaVertex>> GetCalculationOrder()
+    public IList<IList<FormulaVertex>> GetCalculationOrder(IEnumerable<FormulaVertex>? vertices = null)
     {
         var sort = new SccSort<FormulaVertex>(_dependencyGraph);
         return sort.Sort();
