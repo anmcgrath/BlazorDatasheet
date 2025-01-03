@@ -81,7 +81,7 @@ public class SheetFormulaIntegrationTests
         // Set sheet cell (1, 1) to any old value and the formula should be cleared.
         _sheet.Cells.SetValue(1, 1, "Blah");
         Assert.IsFalse(_sheet.Cells.HasFormula(1, 1));
-        _sheet.FormulaEngine.DependencyManager.HasDependents(0, 0).Should().BeFalse();
+        _sheet.FormulaEngine.DependencyManager.IsReferenced(0, 0).Should().BeFalse();
     }
 
     [Test]
@@ -345,7 +345,7 @@ public class SheetFormulaIntegrationTests
         sheet.Cells.ClearCells(new Region(0, 0));
         sheet.Commands.Undo();
         sheet.Cells.GetCellValue(0, 0).GetValue<int>().Should().Be(5);
-        sheet.FormulaEngine.DependencyManager.HasDependents(1, 1).Should().BeTrue();
+        sheet.FormulaEngine.DependencyManager.IsReferenced(1, 1).Should().BeTrue();
     }
 
     [Test]
@@ -355,7 +355,7 @@ public class SheetFormulaIntegrationTests
         _sheet.Columns.RemoveAt(0);
         _sheet.Commands.Undo();
         _sheet.Cells[0, 0].Formula.Should().Be("=A2");
-        _sheet.FormulaEngine.DependencyManager.HasDependents(new Region(1, 0)).Should().BeTrue();
+        _sheet.FormulaEngine.DependencyManager.IsReferenced(new Region(1, 0)).Should().BeTrue();
     }
 
     [Test]

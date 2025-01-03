@@ -1,4 +1,6 @@
-﻿namespace BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
+﻿using BlazorDatasheet.Formula.Core.Interpreter.References;
+
+namespace BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 
 public class FormulaExecutionContext
 {
@@ -7,9 +9,44 @@ public class FormulaExecutionContext
     public IReadOnlyCollection<CellFormula> ExecutionOrder => _executed;
     private readonly Stack<CellFormula> _executing = new();
 
+    /// <summary>
+    /// Keeps track of references that each cell formula has evaluated.
+    /// </summary>
+    private Dictionary<CellFormula, List<Reference>> _evaluatedReferences = new();
+
     internal bool IsExecuting(CellFormula formula)
     {
         return _executing.Contains(formula);
+    }
+
+    /// <summary>
+    /// Records that the currently executing formula references <paramref name="reference"/>
+    /// </summary>
+    /// <param name="reference"></param>
+    internal void RecordReference(Reference reference)
+    {
+        var formula = _executing.Peek();
+        var existingReferences = _evaluatedReferences.GetValueOrDefault(formula);
+        if (existingReferences == null)
+        {
+            existingReferences = [];
+            _evaluatedReferences.Add(formula, existingReferences);
+        }
+
+        existingReferences.Add(reference);
+    }
+
+    /// <summary>
+    /// Returns the references that <paramref name="formula"/> has referenced, including evaluated references.
+    /// </summary>
+    /// <param name="formula"></param>
+    /// <returns></returns>
+    internal IEnumerable<Reference> GetEvaluatedReferences(CellFormula formula)
+    {
+        var evaluatedReferences = _evaluatedReferences.GetValueOrDefault(formula);
+        if (evaluatedReferences == null)
+            return Array.Empty<Reference>();
+        return evaluatedReferences;
     }
 
     /// <summary>

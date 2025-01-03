@@ -11,7 +11,8 @@ public class Evaluator
     private readonly UnaryOpEvaluator _uOp;
     private readonly IEnvironment _environment;
     private FormulaEvaluationOptions _options = FormulaEvaluationOptions.Default;
-    private FormulaExecutionContext _formulaExecutionContext = default!;
+    private FormulaExecutionContext? _formulaExecutionContext;
+    internal FormulaExecutionContext CurrentContext => _formulaExecutionContext ?? new FormulaExecutionContext();
 
     public Evaluator(IEnvironment environment)
     {
@@ -33,12 +34,12 @@ public class Evaluator
 
     private CellValue DoEvaluate(CellFormula formula)
     {
-        if (_formulaExecutionContext.IsExecuting(formula))
+        if (_formulaExecutionContext?.IsExecuting(formula) == true)
         {
             return CellValue.Error(ErrorType.Circular);
         }
 
-        _formulaExecutionContext.SetExecuting(formula);
+        _formulaExecutionContext?.SetExecuting(formula);
         return Evaluate(formula.ExpressionTree);
     }
 
@@ -73,26 +74,23 @@ public class Evaluator
 
     private CellValue EvaluateExpression(Expression expression)
     {
-        switch (expression.Kind)
+        var evaluatedExpr = expression.Kind switch
         {
-            case NodeKind.Literal:
-                return EvaluateLiteral((LiteralExpression)expression);
-            case NodeKind.BinaryOperation:
-                return EvaluateBinaryExpression((BinaryOperationExpression)expression);
-            case NodeKind.ParenthesizedExpression:
-                return EvaluateParenthesizedExpression((ParenthesizedExpression)expression);
-            case NodeKind.FunctionCall:
-                return EvaluateFunctionCall((FunctionExpression)expression);
-            case NodeKind.Range:
-                return EvaluateReferenceExpression((ReferenceExpression)expression);
-            case NodeKind.UnaryOperation:
-                return EvaluateUnaryExpression((UnaryOperatorExpression)expression);
-            case NodeKind.ArrayConstant:
-                return EvaluateArrayConstantExpression((ArrayConstantExpression)expression);
-        }
+            NodeKind.Literal => EvaluateLiteral((LiteralExpression)expression),
+            NodeKind.BinaryOperation => EvaluateBinaryExpression((BinaryOperationExpression)expression),
+            NodeKind.ParenthesizedExpression => EvaluateParenthesizedExpression((ParenthesizedExpression)expression),
+            NodeKind.FunctionCall => EvaluateFunctionCall((FunctionExpression)expression),
+            NodeKind.Range => EvaluateReferenceExpression((ReferenceExpression)expression),
+            NodeKind.UnaryOperation => EvaluateUnaryExpression((UnaryOperatorExpression)expression),
+            NodeKind.ArrayConstant => EvaluateArrayConstantExpression((ArrayConstantExpression)expression),
+            _ => CellValue.Error(new FormulaError(ErrorType.Na,
+                $"Cannot evaluate expression {expression.ToExpressionText()}"))
+        };
 
-        return CellValue.Error(new FormulaError(ErrorType.Na,
-            $"Cannot evaluate expression {expression.ToExpressionText()}"));
+        if (evaluatedExpr.ValueType == CellValueType.Reference)
+            _formulaExecutionContext?.RecordReference(evaluatedExpr.GetValue<Reference>()!);
+
+        return evaluatedExpr;
     }
 
     private CellValue EvaluateArrayConstantExpression(ArrayConstantExpression expression)

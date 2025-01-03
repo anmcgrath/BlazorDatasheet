@@ -1,4 +1,6 @@
-﻿using BlazorDatasheet.Formula.Core;
+﻿using System.Linq;
+using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 using BlazorDatashet.Formula.Functions.Math;
 using FluentAssertions;
@@ -226,5 +228,20 @@ public class InterpreterTests
     [Test]
     public void Formula_Using_Variable_Has_Named_Reference()
     {
+    }
+
+    [Test]
+    [TestCase("=A1")]
+    [TestCase("=sum(A1)")]
+    [TestCase("=A1+A1")]
+    public void Evaluated_Formula_Records_Single_Evaluated_Cell_Reference(string formulaStr)
+    {
+        var p = new Parser();
+        var formula = p.FromString(formulaStr);
+        _env.RegisterFunction("sum", new SumFunction());
+        _evaluator.Evaluate(formula);
+        _evaluator.CurrentContext.GetEvaluatedReferences(formula).Should().HaveCount(1);
+        _evaluator.CurrentContext.GetEvaluatedReferences(formula).First().Region.Should()
+            .BeEquivalentTo(new Region(0, 0));
     }
 }

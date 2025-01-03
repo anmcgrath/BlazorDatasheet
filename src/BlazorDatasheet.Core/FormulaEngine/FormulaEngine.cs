@@ -76,12 +76,12 @@ public class FormulaEngine
 
     private bool IsCellReferenced(int row, int col)
     {
-        return DependencyManager.HasDependents(row, col);
+        return DependencyManager.IsReferenced(row, col);
     }
 
     private bool RegionContainsReferencedCells(IRegion region)
     {
-        return DependencyManager.HasDependents(region);
+        return DependencyManager.IsReferenced(region);
     }
 
     private void RegisterDefaultFunctions()

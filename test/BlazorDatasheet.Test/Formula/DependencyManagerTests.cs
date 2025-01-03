@@ -23,9 +23,9 @@ public class DependencyManagerTests
     {
         var dm = new DependencyManager();
         dm.SetFormula(0, 0, GetFormula("=A2"));
-        dm.HasDependents(1, 0).Should().BeTrue();
+        dm.IsReferenced(1, 0).Should().BeTrue();
         dm.ClearFormula(0, 0);
-        dm.HasDependents(1, 0).Should().BeFalse();
+        dm.IsReferenced(1, 0).Should().BeFalse();
     }
 
     [Test]
@@ -67,8 +67,8 @@ public class DependencyManagerTests
         var f = GetFormula("=A5");
         dm.SetFormula(0, 0, f);
         dm.InsertRowColAt(2, 2, Axis.Row);
-        dm.HasDependents(4, 0).Should().BeFalse(); // A5
-        dm.HasDependents(6, 0).Should().BeTrue(); // A7
+        dm.IsReferenced(4, 0).Should().BeFalse(); // A5
+        dm.IsReferenced(6, 0).Should().BeTrue(); // A7
         f.ToFormulaString().Should().BeEquivalentTo("=A7");
     }
 
@@ -89,13 +89,13 @@ public class DependencyManagerTests
     {
         var dm = new DependencyManager();
         var rest1 = dm.SetFormula(0, 0, GetFormula("=A2+sum(a10:A12)"));
-        dm.HasDependents(10, 0).Should().BeTrue();
+        dm.IsReferenced(10, 0).Should().BeTrue();
         var rest2 = dm.SetFormula(1, 0, GetFormula("=B10"));
-        dm.HasDependents(9, 1).Should().BeTrue();
+        dm.IsReferenced(9, 1).Should().BeTrue();
         dm.Restore(rest2);
-        dm.HasDependents(9, 1).Should().BeFalse();
+        dm.IsReferenced(9, 1).Should().BeFalse();
         dm.Restore(rest1);
-        dm.HasDependents(10, 0).Should().BeFalse();
+        dm.IsReferenced(10, 0).Should().BeFalse();
         dm.GetCalculationOrder().Should().BeEmpty();
     }
 
@@ -105,9 +105,9 @@ public class DependencyManagerTests
         var dm = new DependencyManager();
         dm.SetFormula(0, 0, GetFormula("=A2"));
         var rest = dm.ClearFormula(0, 0);
-        dm.HasDependents(1, 0).Should().BeFalse();
+        dm.IsReferenced(1, 0).Should().BeFalse();
         dm.Restore(rest);
-        dm.HasDependents(1, 0).Should().BeTrue();
+        dm.IsReferenced(1, 0).Should().BeTrue();
         dm.GetCalculationOrder().SelectMany(x => x).Select(x => x.Region)
             .Should()
             .BeEquivalentTo([new Region(0, 0)]);

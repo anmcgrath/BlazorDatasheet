@@ -167,12 +167,12 @@ public class DependencyManager
         return restoreData;
     }
 
-    public bool HasDependents(IRegion region)
+    public bool IsReferenced(IRegion region)
     {
         return _referencedVertexStore.Any(region);
     }
 
-    public bool HasDependents(int row, int col)
+    public bool IsReferenced(int row, int col)
     {
         return _referencedVertexStore.Any(row, col) ||
                _dependencyGraph.HasVertex((new FormulaVertex(row, col, null)).Key);
