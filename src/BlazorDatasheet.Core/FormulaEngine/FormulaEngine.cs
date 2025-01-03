@@ -27,9 +27,19 @@ public class FormulaEngine
     public bool IsCalculating { get; private set; }
 
     /// <summary>
-    /// The keys of formula that require recalculation
+    /// The formula that require recalculation
     /// </summary>
     private readonly HashSet<FormulaVertex> _requiresCalculation = new();
+
+    /// <summary>
+    /// Formula that have dirty references.
+    /// This could happen if
+    /// 1. formula references volatile function
+    /// 2. reference a named region and the named region changes
+    /// 3. rows/cols are inserted/deleted
+    /// 4. the formula changes.
+    /// </summary>
+    private readonly HashSet<FormulaVertex> _dirtyReferences = new();
 
     public FormulaEngine(Sheet sheet)
     {
@@ -80,7 +90,9 @@ public class FormulaEngine
     internal DependencyManagerRestoreData SetFormula(int row, int col, CellFormula? formula)
     {
         var restoreData = DependencyManager.SetFormula(row, col, formula);
-        _requiresCalculation.Add(new FormulaVertex(row, col, formula));
+        var vertex = new FormulaVertex(row, col, formula);
+        _requiresCalculation.Add(vertex);
+        _dirtyReferences.Add(vertex);
         Calculate(calculateAll: false);
         return restoreData;
     }
@@ -115,6 +127,8 @@ public class FormulaEngine
         var restoreData = DependencyManager.ClearFormula(row, col);
         foreach (var dependency in DependencyManager.GetDependents(new Region(row, col)))
             _requiresCalculation.Add(dependency);
+
+        _dirtyReferences.Add(new FormulaVertex(row, col, null));
         Calculate(calculateAll: false);
 
         return restoreData;
@@ -192,12 +206,15 @@ public class FormulaEngine
                         new VariableChangedEventArgs(vertex.Key, prevValue, new CellValue(value)));
                     _environment.SetVariable(vertex.Key, value);
                 }
+
+                DependencyManager.UpdateReferences(vertex, vertex.Formula.References);
             }
         }
 
         _sheet.EndBatchUpdates();
         IsCalculating = false;
         _requiresCalculation.Clear();
+        _dirtyReferences.Clear();
     }
 
     /// <summary>
@@ -216,6 +233,9 @@ public class FormulaEngine
         {
             var formula = ParseFormula(s);
             DependencyManager.SetFormula(varName, formula);
+            var vertex = new FormulaVertex(varName, formula);
+            _requiresCalculation.Add(vertex);
+            _dirtyReferences.Add(vertex);
         }
         else
         {
@@ -236,6 +256,8 @@ public class FormulaEngine
     {
         _environment.ClearVariable(varName);
         DependencyManager.ClearFormula(varName);
+        _dirtyReferences.Add(new FormulaVertex(varName, null));
+
         CalculateSheet();
     }
 

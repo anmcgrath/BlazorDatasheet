@@ -51,9 +51,18 @@ public class DependencyManager
         _dependencyGraph.AddVertex(formulaVertex);
         restoreData.VerticesAdded.Add(formulaVertex);
 
+
+        return restoreData;
+    }
+
+    public DependencyManagerRestoreData UpdateReferences(FormulaVertex formulaVertex, IEnumerable<Reference> references)
+    {
+        var restoreData = new DependencyManagerRestoreData();
+        restoreData.Merge(ClearDependents(formulaVertex));
+
         // find formula inside any of the regions that this formula references
         // and add a dependency edge to them
-        foreach (var formulaRef in formulaVertex.Formula.References)
+        foreach (var formulaRef in references)
         {
             if (formulaRef is NamedReference namedReference)
             {

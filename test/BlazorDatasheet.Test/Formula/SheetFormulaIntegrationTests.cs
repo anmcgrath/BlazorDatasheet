@@ -451,4 +451,18 @@ public class SheetFormulaIntegrationTests
 
         monitor.Clear();
     }
+
+    [Test]
+    public void Set_Formula_Then_Undo_Has_Correct_References()
+    {
+        var sheet = new Sheet(100, 100);
+        sheet.Cells.SetFormula(0,0, "=C3");
+        sheet.Cells.SetFormula(1, 2, "=A1");
+        var ds = sheet.FormulaEngine.GetDependencyInfo();
+        sheet.FormulaEngine.DependencyManager.GetDependencyInfo().Count().Should().Be(3);
+        sheet.Commands.Undo();
+        sheet.FormulaEngine.DependencyManager.GetDependencyInfo().Count().Should().Be(2);
+        sheet.Commands.Undo();
+        sheet.FormulaEngine.DependencyManager.GetDependencyInfo().Count().Should().Be(0);
+    }
 }
