@@ -198,8 +198,15 @@ public partial class CellStore
     {
         _sheet.BatchUpdates();
 
-        // Set formula through this function so we add the formula back in to the dependency graph
         _sheet.FormulaEngine.DependencyManager.Restore(restoreData.DependencyManagerRestoreData);
+
+        foreach (var formulaRemoved in restoreData.FormulaRestoreData.DataRemoved)
+        {
+            if (formulaRemoved.data == null)
+                _sheet.FormulaEngine.RemoveFormula(formulaRemoved.row, formulaRemoved.col);
+            else
+                _sheet.FormulaEngine.SetFormula(formulaRemoved.row, formulaRemoved.col, formulaRemoved.data);
+        }
 
         _formulaStore.Restore(restoreData.FormulaRestoreData);
         _validStore.Restore(restoreData.ValidRestoreData);
@@ -207,6 +214,10 @@ public partial class CellStore
         _dataStore.Restore(restoreData.ValueRestoreData);
         _formatStore.Restore(restoreData.FormatRestoreData);
         _mergeStore.Restore(restoreData.MergeRestoreData);
+
+        foreach (var formulaAdded in restoreData.FormulaRestoreData.PositionsSet)
+            _sheet.FormulaEngine.RemoveFormula(formulaAdded.row, formulaAdded.col);
+
 
         foreach (var pt in restoreData.ValueRestoreData.DataRemoved)
         {

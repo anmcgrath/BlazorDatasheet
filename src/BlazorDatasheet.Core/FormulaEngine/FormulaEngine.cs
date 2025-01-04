@@ -124,11 +124,14 @@ public class FormulaEngine
     /// <param name="col"></param>
     internal DependencyManagerRestoreData RemoveFormula(int row, int col)
     {
-        var restoreData = DependencyManager.ClearFormula(row, col);
+        var formula = _environment.GetFormula(row, col);
+        if (formula == null)
+            return new DependencyManagerRestoreData();
+
+        var restoreData = DependencyManager.ClearFormula(row, col, formula);
         foreach (var dependency in DependencyManager.GetDependents(new Region(row, col)))
             _requiresCalculation.Add(dependency);
 
-        _dirtyReferences.Add(new FormulaVertex(row, col, null));
         Calculate(calculateAll: false);
 
         return restoreData;

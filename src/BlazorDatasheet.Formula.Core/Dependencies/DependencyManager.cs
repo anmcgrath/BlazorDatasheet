@@ -30,14 +30,14 @@ public class DependencyManager
         return SetFormula(new FormulaVertex(row, col, formula));
     }
 
-    public DependencyManagerRestoreData ClearFormula(int row, int col)
+    public DependencyManagerRestoreData ClearFormula(int row, int col, CellFormula? formula = null)
     {
-        return ClearFormula(new FormulaVertex(row, col, null));
+        return ClearFormula(new FormulaVertex(row, col, formula));
     }
 
-    public DependencyManagerRestoreData ClearFormula(string varName)
+    public DependencyManagerRestoreData ClearFormula(string varName, CellFormula? formula = null)
     {
-        return ClearFormula(new FormulaVertex(varName, null));
+        return ClearFormula(new FormulaVertex(varName, formula));
     }
 
     private DependencyManagerRestoreData SetFormula(FormulaVertex formulaVertex)
@@ -46,19 +46,16 @@ public class DependencyManager
         var restoreData = ClearFormula(formulaVertex);
 
         if (formulaVertex.Formula == null)
-            throw new UnreachableException("Formula dependents should not be set without formula.");
+            return restoreData;
 
         _dependencyGraph.AddVertex(formulaVertex);
-        restoreData.VerticesAdded.Add(formulaVertex);
-
 
         return restoreData;
     }
 
-    public DependencyManagerRestoreData UpdateReferences(FormulaVertex formulaVertex, IEnumerable<Reference> references)
+    public void UpdateReferences(FormulaVertex formulaVertex, IEnumerable<Reference> references)
     {
-        var restoreData = new DependencyManagerRestoreData();
-        restoreData.Merge(ClearDependents(formulaVertex));
+        ClearDependents(formulaVertex);
 
         // find formula inside any of the regions that this formula references
         // and add a dependency edge to them
@@ -72,7 +69,6 @@ public class DependencyManager
                 {
                     var f = _dependencyGraph.GetVertex(refName);
                     _dependencyGraph.AddEdge(f, formulaVertex);
-                    restoreData.EdgesAdded.Add((f.Key, formulaVertex.Key));
                 }
             }
             else
@@ -81,11 +77,9 @@ public class DependencyManager
                 foreach (var f in formulaInsideRegion)
                 {
                     _dependencyGraph.AddEdge(f, formulaVertex);
-                    restoreData.EdgesAdded.Add((f.Key, formulaVertex.Key));
                 }
 
-                restoreData.RegionRestoreData.Merge(
-                    _referencedVertexStore.Add(formulaRef.Region.Clone(), formulaVertex));
+                _referencedVertexStore.Add(formulaRef.Region.Clone(), formulaVertex);
             }
         }
 
@@ -95,7 +89,6 @@ public class DependencyManager
             foreach (var dependent in GetDependents(formulaVertex.Region))
             {
                 _dependencyGraph.AddEdge(formulaVertex, dependent);
-                restoreData.EdgesAdded.Add((formulaVertex.Key, dependent.Key));
             }
         }
         else if (formulaVertex.VertexType == VertexType.Named)
@@ -107,38 +100,28 @@ public class DependencyManager
                     true)
                 {
                     _dependencyGraph.AddEdge(formulaVertex, vertex);
-                    restoreData.EdgesAdded.Add((formulaVertex.Key, vertex.Key));
                 }
             }
         }
-
-        return restoreData;
     }
 
     private DependencyManagerRestoreData ClearFormula(FormulaVertex formulaVertex)
     {
-        if (!_dependencyGraph.HasVertex(formulaVertex.Key))
+        if (formulaVertex.Formula == null)
             return new DependencyManagerRestoreData();
-
-
-        formulaVertex = _dependencyGraph.GetVertex(formulaVertex.Key);
-
+        
         // Clear any dependency relationships.
-        var restoreData = ClearDependents(formulaVertex);
-        _dependencyGraph.RemoveVertex(formulaVertex, false);
-        restoreData.VerticesRemoved.Add(formulaVertex);
-
-        return restoreData;
+        ClearDependents(formulaVertex);
+        _dependencyGraph.RemoveVertex(formulaVertex, true);
+        return new DependencyManagerRestoreData();
     }
 
     /// <summary>
     /// Clears any managed dependencies for the given formula vertex.
     /// </summary>
     /// <param name="formulaVertex"></param>
-    private DependencyManagerRestoreData ClearDependents(FormulaVertex formulaVertex)
+    private void ClearDependents(FormulaVertex formulaVertex)
     {
-        var restoreData = new DependencyManagerRestoreData();
-
         // remove the link between the regions or cells that this cell references
         // and the 
         var formulaReferences = formulaVertex.Formula?.References;
@@ -160,20 +143,9 @@ public class DependencyManager
                                         referenceStoreDataToDelete.ToArray();
 
                 if (storeDataToDelete.Length != 0)
-                    restoreData.RegionRestoreData = _referencedVertexStore.Delete(storeDataToDelete);
+                    _referencedVertexStore.Delete(storeDataToDelete);
             }
         }
-
-        // we should only delete edges that show cells that this formula is dependent on
-        // if there are formula that depend on this formula, they shouldn't be removed
-
-        foreach (var vertex in _dependencyGraph.Adj(formulaVertex))
-            restoreData.EdgesRemoved.Add((formulaVertex.Key, vertex.Key));
-
-        foreach (var vertex in _dependencyGraph.Prec(formulaVertex))
-            restoreData.EdgesRemoved.Add((vertex.Key, formulaVertex.Key));
-
-        return restoreData;
     }
 
     public bool IsReferenced(IRegion region)

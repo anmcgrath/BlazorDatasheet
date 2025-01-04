@@ -46,7 +46,10 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
 
         var currValue = rowList.Get(col);
         rowList.Set(col, value);
+        
         restoreData.DataRemoved = new() { (row, col, currValue) };
+        restoreData.PositionsSet.Add(new(row, col));
+        
         return restoreData;
     }
 
@@ -218,6 +221,9 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
 
     public void Restore(MatrixRestoreData<T> restoreData)
     {
+        foreach (var position in restoreData.PositionsSet)
+            Clear(position.row, position.col);
+
         foreach (var shift in restoreData.Shifts)
         {
             if (shift.Amount > 0)
