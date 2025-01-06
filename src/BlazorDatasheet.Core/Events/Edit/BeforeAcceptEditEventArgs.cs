@@ -7,10 +7,7 @@ namespace BlazorDatasheet.Core.Events.Edit;
 public class BeforeAcceptEditEventArgs
 {
     public IReadOnlyCell Cell { get; }
-    public CellValue EditValue { get; }
-    public CellFormula? Formula { get; }
-
-    public string? FormulaString { get; }
+    public string EditString { get; }
 
     /// <summary>
     /// Determines whether the edit is accepted or not.
@@ -22,13 +19,10 @@ public class BeforeAcceptEditEventArgs
     /// </summary>
     public bool StopEdit { get; private set; }
 
-    public BeforeAcceptEditEventArgs(IReadOnlyCell cell, CellValue editValue, CellFormula? formula,
-        string? formulaString)
+    public BeforeAcceptEditEventArgs(IReadOnlyCell cell, string editString)
     {
         Cell = cell;
-        EditValue = editValue;
-        Formula = formula;
-        FormulaString = formulaString;
+        EditString = editString;
     }
 
     /// <summary>

@@ -117,7 +117,7 @@ public partial class CellStore
             ValidRestoreData = _validStore.InsertRowColAt(index, count, axis),
             MergeRestoreData = _mergeStore.InsertRowColAt(index, count, axis),
             FormulaRestoreData = _formulaStore.InsertRowColAt(index, count, axis),
-            DependencyManagerRestoreData = _sheet.FormulaEngine.DependencyManager.InsertRowColAt(index, count, axis)
+            FormulaEngineRestoreData = _sheet.FormulaEngine.InsertRowColAt(index, count, axis)
         };
 
 
@@ -134,7 +134,7 @@ public partial class CellStore
             FormatRestoreData = _formatStore.RemoveRowColAt(index, count, axis),
             MergeRestoreData = _mergeStore.RemoveRowColAt(index, count, axis),
             FormulaRestoreData = _formulaStore.RemoveRowColAt(index, count, axis),
-            DependencyManagerRestoreData = _sheet.FormulaEngine.DependencyManager.RemoveRowColAt(index, count, axis)
+            FormulaEngineRestoreData = _sheet.FormulaEngine.RemoveRowColAt(index, count, axis)
         };
 
         return restoreData;
@@ -198,14 +198,11 @@ public partial class CellStore
     {
         _sheet.BatchUpdates();
 
-        _sheet.FormulaEngine.DependencyManager.Restore(restoreData.DependencyManagerRestoreData);
+        _sheet.FormulaEngine.Restore(restoreData.FormulaEngineRestoreData);
 
         foreach (var formulaRemoved in restoreData.FormulaRestoreData.DataRemoved)
         {
-            if (formulaRemoved.data == null)
-                _sheet.FormulaEngine.RemoveFormula(formulaRemoved.row, formulaRemoved.col);
-            else
-                _sheet.FormulaEngine.SetFormula(formulaRemoved.row, formulaRemoved.col, formulaRemoved.data);
+            this.SetFormulaImpl(formulaRemoved.row, formulaRemoved.col, formulaRemoved.data);
         }
 
         _formulaStore.Restore(restoreData.FormulaRestoreData);

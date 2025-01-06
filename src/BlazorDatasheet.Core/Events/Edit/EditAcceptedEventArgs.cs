@@ -9,15 +9,10 @@ public class EditAcceptedEventArgs
     public int Col { get; }
     public CellValue Value { get; }
 
-    public CellFormula? Formula { get; }
-    public string? FormulaString { get; }
-
-    public EditAcceptedEventArgs(int row, int col, CellValue value, CellFormula? formula, string? formulaString)
+    public EditAcceptedEventArgs(int row, int col, CellValue value)
     {
         Row = row;
         Col = col;
         Value = value;
-        Formula = formula;
-        FormulaString = formulaString;
     }
 }

@@ -1,6 +1,7 @@
 ﻿using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter;
+using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Core.FormulaEngine;
@@ -72,7 +73,7 @@ public class SheetEnvironment : IEnvironment
 
     public CellFormula? GetFormula(int row, int col)
     {
-        return _sheet.Cells.GetFormula(row, col);
+        return null;
     }
 
     public CellValue[][] GetRangeValues(Reference reference)

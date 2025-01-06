@@ -4,14 +4,14 @@ using BlazorDatasheet.Formula.Core.Interpreter;
 
 namespace BlazorDatasheet.Core.Commands.Data;
 
-internal class SetParsedFormulaCommand : IUndoableCommand
+internal class SetFormulaCommand : IUndoableCommand
 {
     private readonly int _row;
     private readonly int _col;
-    private readonly CellFormula _formula;
+    private readonly string _formula;
     private CellStoreRestoreData _restoreData = null!;
 
-    public SetParsedFormulaCommand(int row, int col, CellFormula formula)
+    public SetFormulaCommand(int row, int col, string formula)
     {
         _row = row;
         _col = col;

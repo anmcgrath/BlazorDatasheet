@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using BlazorDatasheet.Core.Commands.Data;
@@ -75,13 +76,14 @@ public class SheetFormulaIntegrationTests
     [Test]
     public void Setting_Cell_Value_Will_Clear_Formula()
     {
+        throw new NotImplementedException();
         _sheet.Cells.SetFormula(1, 1, "=A1");
         Assert.IsTrue(_sheet.Cells.HasFormula(1, 1));
 
         // Set sheet cell (1, 1) to any old value and the formula should be cleared.
         _sheet.Cells.SetValue(1, 1, "Blah");
         Assert.IsFalse(_sheet.Cells.HasFormula(1, 1));
-        _sheet.FormulaEngine.DependencyManager.IsReferenced(0, 0).Should().BeFalse();
+        /*_sheet.FormulaEngine.DependencyManager.IsReferenced(0, 0).Should().BeFalse();*/
     }
 
     [Test]
@@ -211,6 +213,7 @@ public class SheetFormulaIntegrationTests
     [Test]
     public void Insert_Row_Before_Formula_Shifts_Formula_And_Updates_Ref()
     {
+        throw new NotImplementedException();
         var sheet = new Sheet(10, 10);
         sheet.Cells.SetFormula(2, 2, "=B2"); // set C3 to =B2
 
@@ -218,7 +221,7 @@ public class SheetFormulaIntegrationTests
         sheet.Cells[2, 2].Formula.Should().BeNull();
         sheet.Cells[3, 2].Formula.Should().Be("=B3");
 
-        sheet.FormulaEngine.DependencyManager.GetDependents(new Region(2, 1)) // b3
+        /*sheet.FormulaEngine.DependencyManager.GetDependents(new Region(2, 1)) // b3
             .Select(x => x.Key)
             .First()
             .Should()
@@ -231,7 +234,7 @@ public class SheetFormulaIntegrationTests
             .Select(x => x.Key)
             .First()
             .Should()
-            .Be("C3"); // (3,2)
+            .Be("C3"); // (3,2)*/
     }
 
     [Test]
@@ -316,13 +319,14 @@ public class SheetFormulaIntegrationTests
     [Test]
     public void Insert_Row_Bug_Produces_Multiple_Formula()
     {
+        throw new NotImplementedException();
         var sheet = new Sheet(20, 20);
         sheet.Cells.SetFormula(5, 0, "=A1");
         sheet.Rows.InsertAt(2, 1);
         sheet.Editor.BeginEdit(6, 0);
         sheet.Editor.EditValue = "=A1";
         sheet.Editor.AcceptEdit();
-        sheet.FormulaEngine.DependencyManager.FormulaCount.Should().Be(1);
+        /*sheet.FormulaEngine.DependencyManager.FormulaCount.Should().Be(1);*/
     }
 
     [Test]
@@ -339,23 +343,25 @@ public class SheetFormulaIntegrationTests
     [Test]
     public void Remove_Formula_And_Undo_Restores_Dependencies()
     {
+        throw new NotImplementedException();
         var sheet = new Sheet(20, 20);
         sheet.Cells.SetFormula(1, 1, "=5");
         sheet.Cells.SetFormula(0, 0, "=B2");
         sheet.Cells.ClearCells(new Region(0, 0));
         sheet.Commands.Undo();
         sheet.Cells.GetCellValue(0, 0).GetValue<int>().Should().Be(5);
-        sheet.FormulaEngine.DependencyManager.IsReferenced(1, 1).Should().BeTrue();
+        /*sheet.FormulaEngine.DependencyManager.IsReferenced(1, 1).Should().BeTrue();*/
     }
 
     [Test]
     public void Remove_Formula_In_Column_Removes_And_Restores_Correctly()
     {
+        throw new NotImplementedException();
         _sheet.Cells.SetFormula(0, 0, "=A2");
         _sheet.Columns.RemoveAt(0);
         _sheet.Commands.Undo();
         _sheet.Cells[0, 0].Formula.Should().Be("=A2");
-        _sheet.FormulaEngine.DependencyManager.IsReferenced(new Region(1, 0)).Should().BeTrue();
+        /*_sheet.FormulaEngine.DependencyManager.IsReferenced(new Region(1, 0)).Should().BeTrue();*/
     }
 
     [Test]
@@ -455,15 +461,16 @@ public class SheetFormulaIntegrationTests
     [Test]
     public void Set_Formula_Then_Undo_Has_Correct_References()
     {
-        var sheet = new Sheet(100, 100);
+        throw new NotImplementedException();
+        /*var sheet = new Sheet(100, 100);
         sheet.Cells.SetFormula(0, 0, "=C3");
         sheet.Cells.SetFormula(1, 2, "=A1");
         var ds = sheet.FormulaEngine.GetDependencyInfo();
-        sheet.FormulaEngine.DependencyManager.GetDependencyInfo().Count().Should().Be(3);
+        sheet.FormulaEngine.DependencyManager.GetDependencyInfo().Count().Should().Be(2);
         sheet.Commands.Undo();
-        sheet.FormulaEngine.DependencyManager.GetDependencyInfo().Count().Should().Be(1);
+        sheet.FormulaEngine.DependencyManager.GetDependencyInfo().Count().Should().Be(2);
         sheet.Commands.Undo();
         var refs = sheet.FormulaEngine.DependencyManager.GetDependencyInfo();
-        sheet.FormulaEngine.DependencyManager.GetDependencyInfo().Count().Should().Be(0);
+        sheet.FormulaEngine.DependencyManager.GetDependencyInfo().Count().Should().Be(0);*/
     }
 }

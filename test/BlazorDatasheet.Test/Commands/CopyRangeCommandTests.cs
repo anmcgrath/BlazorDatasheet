@@ -85,6 +85,17 @@ public class CopyRangeCommandTests
     }
 
     [Test]
+    public void Copy_Formula_Then_Undo_Clears_Value()
+    {
+        _sheet.Cells[1, 1].Formula = "=2";
+        _sheet.Commands.ExecuteCommand(new CopyRangeCommand(_sheet.Range(1, 1), _sheet.Range(2, 2),
+            CopyOptions.DefaultCopyOptions));
+        _sheet.Cells[2, 2].Value.Should().Be(2);
+        _sheet.Commands.Undo();
+        _sheet.Cells[2, 2].Value.Should().BeNull();
+    }
+
+    [Test]
     public void Copy_Format_With_Row_Col_Format_Copies_And_Undos()
     {
         _sheet.SetFormat(new ColumnRegion(1), new CellFormat() { BackgroundColor = "col" });

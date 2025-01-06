@@ -185,36 +185,15 @@ public class Editor
         if (EditCell == null || !IsEditing)
             return false;
 
-        // Determine if it's a formula, and calculate.
-        CellFormula? parsedFormula = null;
-        var isFormula = Sheet.FormulaEngine.IsFormula(this.EditValue);
-        var formulaString = isFormula ? this.EditValue : null;
+        var beforeAcceptEdit = new BeforeAcceptEditEventArgs(EditCell, EditValue);
+        var editCellValue = new CellValue(beforeAcceptEdit.EditString);
 
-        if (isFormula)
-        {
-            parsedFormula = Sheet.FormulaEngine.ParseFormula(formulaString!);
-            if (!parsedFormula.IsValid())
-            {
-                var args = new InvalidEditEventArgs(EditValue, $"Invalid formula", false);
-                InvalidEdit?.Invoke(this, args);
-                if (!args.Handled)
-                    Sheet.Dialog?.Alert("Invalid formula");
-
-                return false;
-            }
-        }
-
-        var formulaResult = isFormula ? Sheet.FormulaEngine.Evaluate(parsedFormula) : CellValue.Empty;
-        var editValue =
-            isFormula ? formulaResult : Sheet.Cells.ConvertToCellValue(EditCell.Row, EditCell.Col, EditValue);
-
-        var beforeAcceptEdit = new BeforeAcceptEditEventArgs(EditCell, editValue, parsedFormula, formulaString);
         BeforeEditAccepted?.Invoke(this, beforeAcceptEdit);
 
         if (beforeAcceptEdit.AcceptEdit)
         {
             // run the validators that are strict. cancel edit if any fail
-            var validationResult = Sheet.Validators.Validate(editValue, EditCell.Row, EditCell.Col);
+            var validationResult = Sheet.Validators.Validate(editCellValue, EditCell.Row, EditCell.Col);
             if (validationResult.IsStrictFail)
             {
                 var msg = $"Validation(s) failed: {string.Join("\n", validationResult.FailMessages)}";
@@ -224,19 +203,12 @@ public class Editor
                     Sheet?.Dialog?.Alert(msg);
                 return false;
             }
+            
+            Sheet.Cells.SetValue(EditCell.Row, EditCell.Col, editCellValue);
 
-            EditAccepted?.Invoke(
-                this,
-                new EditAcceptedEventArgs(EditCell.Row, EditCell.Col, beforeAcceptEdit.EditValue,
-                    beforeAcceptEdit.Formula, isFormula ? EditValue : null));
-
-
-            if (isFormula && parsedFormula != null)
-                Sheet.Cells.SetFormula(EditCell.Row, EditCell.Col, parsedFormula);
-            else
-                Sheet.Cells.SetValue(EditCell.Row, EditCell.Col, editValue);
-
+            EditAccepted?.Invoke(this, new EditAcceptedEventArgs(EditCell.Row, EditCell.Col, editCellValue));
             EditFinished?.Invoke(this, new EditFinishedEventArgs(EditCell.Row, EditCell.Col));
+
             this.ClearEdit();
             return true;
         }

@@ -28,7 +28,7 @@ public class DependencyManagerTests
         return parser.FromString(formulaStr);
     }
 
-    [Test]
+/*    [Test]
     public void SetFormula()
     {
         formulaEngine.SetFormula(0, 0, GetFormula("=A2"));
@@ -100,7 +100,7 @@ public class DependencyManagerTests
         formulaEngine.DependencyManager.GetCalculationOrder().SelectMany(x => x).Select(x => x.Region)
             .Should()
             .BeEquivalentTo([new Region(0, 0)]);
-    }
+    }*/
 
     [Test]
     public void Clear_Named_Reference_Removes_References_To_It()

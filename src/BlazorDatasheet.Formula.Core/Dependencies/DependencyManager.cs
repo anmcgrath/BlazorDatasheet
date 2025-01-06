@@ -20,27 +20,27 @@ public class DependencyManager
 
     internal int FormulaCount => _dependencyGraph.Count;
 
-    public DependencyManagerRestoreData SetFormula(string variableName, CellFormula? formula)
+    public FormulaEngineRestoreData SetFormula(string variableName, CellFormula? formula)
     {
         return SetFormula(new FormulaVertex(variableName, formula));
     }
 
-    public DependencyManagerRestoreData SetFormula(int row, int col, CellFormula? formula)
+    public FormulaEngineRestoreData SetFormula(int row, int col, CellFormula? formula)
     {
         return SetFormula(new FormulaVertex(row, col, formula));
     }
 
-    public DependencyManagerRestoreData ClearFormula(int row, int col, CellFormula? formula = null)
+    public FormulaEngineRestoreData ClearFormula(int row, int col, CellFormula? formula = null)
     {
         return ClearFormula(new FormulaVertex(row, col, formula));
     }
 
-    public DependencyManagerRestoreData ClearFormula(string varName, CellFormula? formula = null)
+    public FormulaEngineRestoreData ClearFormula(string varName, CellFormula? formula = null)
     {
         return ClearFormula(new FormulaVertex(varName, formula));
     }
 
-    private DependencyManagerRestoreData SetFormula(FormulaVertex formulaVertex)
+    private FormulaEngineRestoreData SetFormula(FormulaVertex formulaVertex)
     {
         // Clear old formula + dependency info for restore.
         var restoreData = ClearFormula(formulaVertex);
@@ -105,15 +105,15 @@ public class DependencyManager
         }
     }
 
-    private DependencyManagerRestoreData ClearFormula(FormulaVertex formulaVertex)
+    private FormulaEngineRestoreData ClearFormula(FormulaVertex formulaVertex)
     {
         if (formulaVertex.Formula == null)
-            return new DependencyManagerRestoreData();
+            return new FormulaEngineRestoreData();
         
         // Clear any dependency relationships.
         ClearDependents(formulaVertex);
         _dependencyGraph.RemoveVertex(formulaVertex, true);
-        return new DependencyManagerRestoreData();
+        return new FormulaEngineRestoreData();
     }
 
     /// <summary>
@@ -173,12 +173,12 @@ public class DependencyManager
         GetDirectDependentData(IRegion region, FormulaVertex formulaVertex) =>
         _referencedVertexStore.GetDataRegions(region, formulaVertex);
 
-    internal DependencyManagerRestoreData InsertRowAt(int row, int count) =>
+    internal FormulaEngineRestoreData InsertRowAt(int row, int count) =>
         InsertRowColAt(row, count, Axis.Row);
 
-    public DependencyManagerRestoreData InsertRowColAt(int index, int count, Axis axis)
+    public FormulaEngineRestoreData InsertRowColAt(int index, int count, Axis axis)
     {
-        var restoreData = new DependencyManagerRestoreData()
+        var restoreData = new FormulaEngineRestoreData()
         {
             Shifts = { new AppliedShift(axis, index, count) }
         };
@@ -225,9 +225,9 @@ public class DependencyManager
         return vertices;
     }
 
-    public DependencyManagerRestoreData RemoveRowColAt(int index, int count, Axis axis)
+    public FormulaEngineRestoreData RemoveRowColAt(int index, int count, Axis axis)
     {
-        var restoreData = new DependencyManagerRestoreData()
+        var restoreData = new FormulaEngineRestoreData()
         {
             Shifts = { new AppliedShift(axis, index, -count) }
         };
@@ -272,9 +272,9 @@ public class DependencyManager
         return restoreData;
     }
 
-    private DependencyManagerRestoreData ShiftVerticesInRegion(IRegion region, int dRow, int dCol)
+    private FormulaEngineRestoreData ShiftVerticesInRegion(IRegion region, int dRow, int dCol)
     {
-        var restoreData = new DependencyManagerRestoreData();
+        var restoreData = new FormulaEngineRestoreData();
         // shift any affected vertices by the number inserted
         var affectedVertices = GetVerticesInRegion(region);
         foreach (var v in affectedVertices)
@@ -287,16 +287,6 @@ public class DependencyManager
         }
 
         return restoreData;
-    }
-
-    /// <summary>
-    /// Returns the topological sort of the vertices <paramref name="vertices"/>. If <paramref name="vertices"/> is null, all vertices are considered. Each group of vertices is a strongly connected group.
-    /// </summary>
-    /// <returns></returns>
-    public IList<IList<FormulaVertex>> GetCalculationOrder(IEnumerable<FormulaVertex>? vertices = null)
-    {
-        var sort = new SccSort<FormulaVertex>(_dependencyGraph);
-        return sort.Sort();
     }
 
     public IEnumerable<DependencyInfo> GetDependencyInfo()
@@ -320,7 +310,7 @@ public class DependencyManager
         return results;
     }
 
-    public void Restore(DependencyManagerRestoreData restoreData)
+    public void Restore(FormulaEngineRestoreData restoreData)
     {
         foreach (var shift in restoreData.Shifts)
         {
@@ -372,7 +362,7 @@ public class DependencyManager
     }
 }
 
-public class DependencyManagerRestoreData
+public class FormulaEngineRestoreData
 {
     public RegionRestoreData<FormulaVertex> RegionRestoreData { get; set; } = new();
     public List<FormulaVertex> VerticesRemoved { get; set; } = new();
@@ -382,7 +372,7 @@ public class DependencyManagerRestoreData
     public readonly List<AppliedShift> Shifts = new();
     internal readonly List<ReferenceRestoreData> ModifiedFormulaReferences = new();
 
-    public void Merge(DependencyManagerRestoreData other)
+    public void Merge(FormulaEngineRestoreData other)
     {
         RegionRestoreData.Merge(other.RegionRestoreData);
         VerticesAdded.AddRange(other.VerticesAdded);

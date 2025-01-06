@@ -6,10 +6,10 @@ public class CellFormulaChangeEventArgs
 {
     public int Row { get; }
     public int Col { get; }
-    public CellFormula? OldFormula { get; }
-    public CellFormula? NewFormula { get; }
+    public string? OldFormula { get; }
+    public string? NewFormula { get; }
 
-    public CellFormulaChangeEventArgs(int row, int col, CellFormula? oldFormula, CellFormula? newFormula)
+    public CellFormulaChangeEventArgs(int row, int col, string? oldFormula, string? newFormula)
     {
         Row = row;
         Col = col;
