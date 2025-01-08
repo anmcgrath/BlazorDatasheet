@@ -68,7 +68,8 @@ public class DependencyManager
                 if (_dependencyGraph.HasVertex(refName))
                 {
                     var f = _dependencyGraph.GetVertex(refName);
-                    _dependencyGraph.AddEdge(f, formulaVertex);
+                    if (f != null)
+                        _dependencyGraph.AddEdge(f, formulaVertex);
                 }
             }
             else
@@ -109,7 +110,7 @@ public class DependencyManager
     {
         if (formulaVertex.Formula == null)
             return new FormulaEngineRestoreData();
-        
+
         // Clear any dependency relationships.
         ClearDependents(formulaVertex);
         _dependencyGraph.RemoveVertex(formulaVertex, true);

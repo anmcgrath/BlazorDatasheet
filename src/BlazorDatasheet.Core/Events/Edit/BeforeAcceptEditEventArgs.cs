@@ -8,6 +8,7 @@ public class BeforeAcceptEditEventArgs
 {
     public IReadOnlyCell Cell { get; }
     public string EditString { get; }
+    public CellValue EditCellValue { get; set; }
 
     /// <summary>
     /// Determines whether the edit is accepted or not.
@@ -19,10 +20,11 @@ public class BeforeAcceptEditEventArgs
     /// </summary>
     public bool StopEdit { get; private set; }
 
-    public BeforeAcceptEditEventArgs(IReadOnlyCell cell, string editString)
+    public BeforeAcceptEditEventArgs(IReadOnlyCell cell, string editString, CellValue editCellValue)
     {
         Cell = cell;
         EditString = editString;
+        EditCellValue = editCellValue;
     }
 
     /// <summary>

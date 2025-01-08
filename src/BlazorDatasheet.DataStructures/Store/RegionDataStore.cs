@@ -348,6 +348,22 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
     }
 
     /// <summary>
+    /// Clear all regions containing data <paramref name="data"/>
+    /// </summary>
+    /// <param name="data"></param>
+    /// <returns></returns>
+    public virtual RegionRestoreData<T> Clear(T data)
+    {
+        var dataToRemove = Tree.Search().Where(x => x.Data.Equals(data)).ToList();
+        foreach (var toRemove in dataToRemove)
+            Tree.Delete(toRemove);
+        return new RegionRestoreData<T>()
+        {
+            RegionsRemoved = dataToRemove.ToList()
+        };
+    }
+
+    /// <summary>
     /// Returns a sub-store containing only the data in the region specified.
     /// If the <paramref name="newStoreResetsOffsets"/> is true, the new store will have the top-left corner at 0,0.
     /// </summary>

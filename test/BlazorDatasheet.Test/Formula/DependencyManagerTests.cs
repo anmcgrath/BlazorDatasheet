@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.FormulaEngine;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -28,13 +29,14 @@ public class DependencyManagerTests
         return parser.FromString(formulaStr);
     }
 
-/*    [Test]
+    [Test]
     public void SetFormula()
     {
+        throw new NotImplementedException();
         formulaEngine.SetFormula(0, 0, GetFormula("=A2"));
-        formulaEngine.DependencyManager.IsReferenced(1, 0).Should().BeTrue();
+        /*formulaEngine.IsReferenced(1, 0).Should().BeTrue();
         formulaEngine.RemoveFormula(0, 0);
-        formulaEngine.DependencyManager.IsReferenced(1, 0).Should().BeFalse();
+        formulaEngine.IsReferenced(1, 0).Should().BeFalse();*/
     }
 
     [Test]
@@ -42,7 +44,7 @@ public class DependencyManagerTests
     {
         formulaEngine.SetFormula(0, 0, GetFormula("=A2")); // A1
         formulaEngine.SetFormula(1, 0, GetFormula("=A3")); // A2
-        formulaEngine.DependencyManager.GetCalculationOrder()
+        formulaEngine.GetCalculationOrder()
             .SelectMany(x => x)
             .Select(x => new CellPosition(x.Region!.Top, x.Region!.Left))
             .Should()
@@ -59,7 +61,7 @@ public class DependencyManagerTests
         formulaEngine.SetFormula(0, 1, GetFormula("=A2")); // B1
         formulaEngine.SetFormula(0, 2, GetFormula("=A3")); // C1
 
-        var sorted = formulaEngine.DependencyManager.GetCalculationOrder().SelectMany(x => x)
+        var sorted = formulaEngine.GetCalculationOrder().SelectMany(x => x)
             .Where(x => x.Formula != null)
             .Select(x => x.Region!.Left)
             .ToList();
@@ -70,44 +72,34 @@ public class DependencyManagerTests
     [Test]
     public void Insert_Rows_Shifts_References()
     {
+        throw new NotImplementedException();
         var f = GetFormula("=A5");
         formulaEngine.SetFormula(0, 0, f);
-        formulaEngine.DependencyManager.InsertRowColAt(2, 2, Axis.Row);
-        formulaEngine.DependencyManager.IsReferenced(4, 0).Should().BeFalse(); // A5
-        formulaEngine.DependencyManager.IsReferenced(6, 0).Should().BeTrue(); // A7
+        //formulaEngine.InsertRowColAt(2, 2, Axis.Row);
+        /*formulaEngine.DependencyManager.IsReferenced(4, 0).Should().BeFalse(); // A5
+        formulaEngine.DependencyManager.IsReferenced(6, 0).Should().BeTrue(); // A7*/
         f.ToFormulaString().Should().BeEquivalentTo("=A7");
     }
 
     [Test]
     public void Insert_Rows_Shifts_Formula()
     {
+        throw new NotImplementedException();
         var f = GetFormula("=A5");
         formulaEngine.SetFormula(1, 0, f);
-        formulaEngine.DependencyManager.InsertRowColAt(0, 2, Axis.Row);
+        /*formulaEngine.DependencyManager.InsertRowColAt(0, 2, Axis.Row);
         formulaEngine.DependencyManager.GetCalculationOrder()
             .SelectMany(x => x)
-            .Should().BeEquivalentTo([new FormulaVertex(3, 0, GetFormula("=A7"))]);
+            .Should().BeEquivalentTo([new FormulaVertex(3, 0, GetFormula("=A7"))]);*/
     }
-
-    [Test]
-    public void Clear_Formula_And_Restore_Restores_Correctly()
-    {
-        formulaEngine.SetFormula(0, 0, GetFormula("=A2"));
-        var rest = formulaEngine.RemoveFormula(0, 0);
-        formulaEngine.DependencyManager.IsReferenced(1, 0).Should().BeFalse();
-        formulaEngine.DependencyManager.Restore(rest);
-        formulaEngine.DependencyManager.IsReferenced(1, 0).Should().BeTrue();
-        formulaEngine.DependencyManager.GetCalculationOrder().SelectMany(x => x).Select(x => x.Region)
-            .Should()
-            .BeEquivalentTo([new Region(0, 0)]);
-    }*/
-
+    
     [Test]
     public void Clear_Named_Reference_Removes_References_To_It()
     {
         formulaEngine.SetVariable("x", "=A2");
-        formulaEngine.SetFormula(1, 0, GetFormula("=A1"));
-        formulaEngine.GetDependencyInfo().Count().Should().Be(2);
+        formulaEngine.SetFormula(1, 0, GetFormula("=A1")); // x = A2 = A1
+        // x is dependent on both the region A2 and the formula at A2 ("=A1")
+        formulaEngine.GetDependencyInfo().Count().Should().Be(3);
         formulaEngine.ClearVariable("x");
         var dependencies = formulaEngine.GetDependencyInfo();
         dependencies.Count().Should().Be(1); // still have A2 = A1

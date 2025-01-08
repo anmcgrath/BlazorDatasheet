@@ -2,7 +2,6 @@ using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Events.Edit;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Formula.Core;
-using CellFormula = BlazorDatasheet.Formula.Core.Interpreter.CellFormula;
 
 namespace BlazorDatasheet.Core.Edit;
 
@@ -185,8 +184,8 @@ public class Editor
         if (EditCell == null || !IsEditing)
             return false;
 
-        var beforeAcceptEdit = new BeforeAcceptEditEventArgs(EditCell, EditValue);
-        var editCellValue = new CellValue(beforeAcceptEdit.EditString);
+        var editCellValue = Sheet.Cells.ConvertToCellValue(EditCell.Row, EditCell.Col, EditValue);
+        var beforeAcceptEdit = new BeforeAcceptEditEventArgs(EditCell, EditValue, editCellValue);
 
         BeforeEditAccepted?.Invoke(this, beforeAcceptEdit);
 
@@ -200,11 +199,14 @@ public class Editor
                 var args = new InvalidEditEventArgs(EditValue, msg, false);
                 InvalidEdit?.Invoke(this, args);
                 if (!args.Handled)
-                    Sheet?.Dialog?.Alert(msg);
+                    Sheet.Dialog?.Alert(msg);
                 return false;
             }
-            
-            Sheet.Cells.SetValue(EditCell.Row, EditCell.Col, editCellValue);
+
+            if (EditValue.StartsWith('='))
+                Sheet.Cells.SetFormula(EditCell.Row, EditCell.Col, EditValue);
+            else
+                Sheet.Cells.SetValue(EditCell.Row, EditCell.Col, editCellValue);
 
             EditAccepted?.Invoke(this, new EditAcceptedEventArgs(EditCell.Row, EditCell.Col, editCellValue));
             EditFinished?.Invoke(this, new EditFinishedEventArgs(EditCell.Row, EditCell.Col));

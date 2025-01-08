@@ -68,7 +68,7 @@ public partial class CellStore
 
         // Save old validation result and current cell values.
         restoreData.ValidRestoreData = _validStore.Set(row, col, validationResult.IsValid);
-
+        
         if (value.IsEmpty)
             restoreData.ValueRestoreData = _dataStore.Clear(row, col);
         else

@@ -76,14 +76,13 @@ public class SheetFormulaIntegrationTests
     [Test]
     public void Setting_Cell_Value_Will_Clear_Formula()
     {
-        throw new NotImplementedException();
         _sheet.Cells.SetFormula(1, 1, "=A1");
         Assert.IsTrue(_sheet.Cells.HasFormula(1, 1));
 
         // Set sheet cell (1, 1) to any old value and the formula should be cleared.
         _sheet.Cells.SetValue(1, 1, "Blah");
         Assert.IsFalse(_sheet.Cells.HasFormula(1, 1));
-        /*_sheet.FormulaEngine.DependencyManager.IsReferenced(0, 0).Should().BeFalse();*/
+        _sheet.FormulaEngine.IsCellReferenced(0, 0).Should().BeFalse();
     }
 
     [Test]
@@ -93,13 +92,16 @@ public class SheetFormulaIntegrationTests
         Assert.IsTrue(_sheet.Cells.HasFormula(1, 1));
         _sheet.Cells.ClearCells(new Region(1, 1));
         Assert.IsFalse(_sheet.Cells.HasFormula(1, 1));
+        _sheet.FormulaEngine.GetDependencyInfo().Count().Should().Be(0);
     }
 
     [Test]
     public void Setting_Invalid_Formula_Will_Not_Set_Formula()
     {
         var invalidFormulaString = "=.A1";
-        _sheet.Cells.SetFormula(0, 0, invalidFormulaString);
+        _sheet.Editor.BeginEdit(0, 0);
+        _sheet.Editor.EditValue = invalidFormulaString;
+        _sheet.Editor.AcceptEdit();
         Assert.False(_sheet.Cells.HasFormula(0, 0));
     }
 
@@ -162,8 +164,8 @@ public class SheetFormulaIntegrationTests
         // Cell A3 = Sum(A1:A2)
         // Cell A4 = Sum(A2:A3)
         // When we set A1 and A2, A3 should evaluate first and then A4 because the result of A4 depends on A3
-        _sheet.Cells.SetFormula(2, 0, "=AVERAGE(A1:A2)");
-        _sheet.Cells.SetFormula(3, 0, "=AVERAGE(A2:A3)");
+        _sheet.Cells.SetFormula(2, 0, "=AVERAGE(A1:A2)"); // A3 = Sum(A1:A2)
+        _sheet.Cells.SetFormula(3, 0, "=AVERAGE(A2:A3)"); //A4 = Sum(A2:A3)
         _sheet.Cells.SetValue(0, 0, 10); // A1 = 10
         _sheet.Cells.SetValue(1, 0, 20); // A2 = 20
         _sheet.Cells.GetValue(2, 0).Should().Be((10 + 20) / 2d); // A3 = Sum(A1:A2) = 15
@@ -205,7 +207,7 @@ public class SheetFormulaIntegrationTests
 
         _sheet.Cells.CellsChanged += (sender, args) => { changeCount++; };
         // change B1
-        _sheet.Cells[0, 1].Value = 2;
+        _sheet.Cells[0, 1].Value = 2; // Set b1 = 2 (shouldn't recalc!) 
 
         changeCount.Should().Be(1);
     }
@@ -461,16 +463,15 @@ public class SheetFormulaIntegrationTests
     [Test]
     public void Set_Formula_Then_Undo_Has_Correct_References()
     {
-        throw new NotImplementedException();
-        /*var sheet = new Sheet(100, 100);
+        var sheet = new Sheet(100, 100);
         sheet.Cells.SetFormula(0, 0, "=C3");
         sheet.Cells.SetFormula(1, 2, "=A1");
-        var ds = sheet.FormulaEngine.GetDependencyInfo();
-        sheet.FormulaEngine.DependencyManager.GetDependencyInfo().Count().Should().Be(2);
+        sheet.FormulaEngine.GetDependencyInfo().Count().Should().Be(3);
         sheet.Commands.Undo();
-        sheet.FormulaEngine.DependencyManager.GetDependencyInfo().Count().Should().Be(2);
+        var di = sheet.FormulaEngine.GetDependencyInfo();
+        sheet.FormulaEngine.GetDependencyInfo().Count().Should().Be(1);
         sheet.Commands.Undo();
-        var refs = sheet.FormulaEngine.DependencyManager.GetDependencyInfo();
-        sheet.FormulaEngine.DependencyManager.GetDependencyInfo().Count().Should().Be(0);*/
+        var refs = sheet.FormulaEngine.GetDependencyInfo();
+        sheet.FormulaEngine.GetDependencyInfo().Count().Should().Be(0);
     }
 }

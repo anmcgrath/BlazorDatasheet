@@ -1,15 +1,16 @@
-﻿using System.Collections;
-using BlazorDatasheet.Core.Data;
-using BlazorDatasheet.Core.Data.Cells;
+﻿using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Events.Data;
 using BlazorDatasheet.Core.Events.Edit;
 using BlazorDatasheet.Core.Events.Formula;
+using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Graph;
+using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Dependencies;
 using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
+using BlazorDatasheet.Formula.Core.Interpreter.References;
 using BlazorDatashet.Formula.Functions;
 using CellFormula = BlazorDatasheet.Formula.Core.Interpreter.CellFormula;
 
@@ -18,14 +19,35 @@ namespace BlazorDatasheet.Core.FormulaEngine;
 public class FormulaEngine
 {
     private readonly Sheet _sheet;
-    private readonly CellStore _cells;
     private readonly SheetEnvironment _environment;
     private readonly Parser _parser = new();
     private readonly Evaluator _evaluator;
     public event EventHandler<VariableChangedEventArgs>? VariableChanged;
     public bool IsCalculating { get; private set; }
 
+    private bool _pauseCalculating;
+
+    /// <summary>
+    /// If true, the formula engine will not calculate. When changed to true, recalculation occurs.
+    /// </summary>
+    public bool PauseCalculating
+    {
+        get => _pauseCalculating;
+        set
+        {
+            if (value == _pauseCalculating)
+                return;
+
+            _pauseCalculating = value;
+
+            if (!_pauseCalculating)
+                Calculate(calculateAll: false);
+        }
+    }
+
     private readonly DependencyGraph<FormulaVertex> _dependencyGraph = new();
+
+    private readonly RegionDataStore<FormulaVertex> _regionDependencies = new();
 
     /// <summary>
     /// The formula that require recalculation
@@ -45,11 +67,13 @@ public class FormulaEngine
     public FormulaEngine(Sheet sheet)
     {
         _sheet = sheet;
-        _cells = sheet.Cells;
-        _sheet.Editor.BeforeCellEdit += SheetOnBeforeCellEdit;
-        _cells.CellsChanged += SheetOnCellValuesChanged;
-        _sheet.Rows.Removed += (_, _) => CalculateSheet();
-        _sheet.Columns.Removed += (_, _) => CalculateSheet();
+        _sheet.Cells.FormulaChanged += CellsOnFormulaChanged;
+        _sheet.Editor.BeforeCellEdit += EditorOnBeforeCellEdit;
+        _sheet.Editor.BeforeEditAccepted += EditorOnBeforeEditAccepted;
+
+        _sheet.Cells.CellsChanged += SheetOnCellValuesChanged;
+        _sheet.Rows.Removed += RowsOnRemoved;
+        _sheet.Columns.Removed += ColumnsOnRemoved;
 
         _environment = new SheetEnvironment(sheet);
         _evaluator = new Evaluator(_environment);
@@ -57,12 +81,47 @@ public class FormulaEngine
         RegisterDefaultFunctions();
     }
 
+    private void CellsOnFormulaChanged(object? sender, CellFormulaChangeEventArgs e)
+    {
+        CellFormula? parsedFormula = null;
+        if (e.NewFormula != null)
+            parsedFormula = _parser.FromString(e.NewFormula);
+
+        SetFormula(e.Row, e.Col, parsedFormula);
+    }
+
+    private void EditorOnBeforeEditAccepted(object? sender, BeforeAcceptEditEventArgs e)
+    {
+        if (!IsFormula(e.EditString))
+            return;
+
+        var tree = _parser.Parse(e.EditString);
+        if (tree.Errors.Count > 0)
+        {
+            e.AcceptEdit = false;
+        }
+    }
+
     private void SheetOnCellValuesChanged(object? sender, CellDataChangedEventArgs e)
     {
         if (this.IsCalculating)
             return;
 
-        this.Calculate(calculateAll: true);
+        PauseCalculating = true;
+
+        foreach (var cell in e.Positions)
+        {
+            foreach (var u in FindDependentFormula(new Region(cell.row, cell.col)))
+                _requiresCalculation.Add(u);
+        }
+
+        foreach (var region in e.Regions)
+        {
+            foreach (var u in FindDependentFormula(region))
+                _requiresCalculation.Add(u);
+        }
+
+        PauseCalculating = false; // also calculates sheet.
     }
 
     private void RegisterDefaultFunctions()
@@ -72,7 +131,7 @@ public class FormulaEngine
         _environment.RegisterLookupFunctions();
     }
 
-    private void SheetOnBeforeCellEdit(object? sender, BeforeCellEditEventArgs e)
+    private void EditorOnBeforeCellEdit(object? sender, BeforeCellEditEventArgs e)
     {
         var formula = _sheet.Cells.GetFormulaString(e.Cell.Row, e.Cell.Col);
         if (formula != null)
@@ -84,13 +143,97 @@ public class FormulaEngine
     internal FormulaEngineRestoreData SetFormula(int row, int col, CellFormula? formula)
     {
         var vertex = new FormulaVertex(row, col, formula);
+        AddFormulaVertex(vertex);
+        return new FormulaEngineRestoreData();
+    }
+
+    private void AddFormulaVertex(FormulaVertex vertex)
+    {
+        RemoveFormulaVertex(vertex);
+
+        if (vertex.Formula == null)
+            return;
+
         _dependencyGraph.AddVertex(vertex);
 
         _requiresCalculation.Add(vertex);
         _dirtyReferences.Add(vertex);
 
+        var dependentFormula = FindDependentFormula(vertex); // directly references cell
+        if (vertex.Region != null)
+            dependentFormula = dependentFormula.Concat(FindDependentFormula(vertex.Region));
+
+        foreach (var v in dependentFormula)
+        {
+            _requiresCalculation.Add(v);
+            _dependencyGraph.AddEdge(vertex, v);
+        }
+
         Calculate(calculateAll: false);
+    }
+
+    /// <summary>
+    /// Finds the formula that depend on this formula vertx.
+    /// </summary>
+    /// <param name="vertex"></param>
+    /// <returns></returns>
+    private IEnumerable<FormulaVertex> FindDependentFormula(FormulaVertex vertex)
+    {
+        return _dependencyGraph.Adj(vertex);
+    }
+
+    private IEnumerable<FormulaVertex> FindDependentFormula(IRegion region)
+    {
+        return _regionDependencies.GetData(region);
+    }
+
+    private List<FormulaVertex> GetVerticesInRegion(IRegion region)
+    {
+        var vertices = new List<FormulaVertex>();
+        foreach (var v in _dependencyGraph.GetAll())
+        {
+            if (region.Intersects(v.Region))
+            {
+                vertices.Add(v);
+            }
+        }
+
+        return vertices;
+    }
+
+
+    /// <summary>
+    /// Removes any vertices that the formula in this cell is dependent on
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    internal FormulaEngineRestoreData RemoveFormula(int row, int col)
+    {
+        var vertex = _dependencyGraph.GetVertex(GetVertexKey(row, col));
+        if (vertex == null)
+            return new FormulaEngineRestoreData();
+
+        RemoveFormulaVertex(vertex);
+
         return new FormulaEngineRestoreData();
+    }
+
+    internal void RemoveFormulaVertex(FormulaVertex vertex)
+    {
+        PauseCalculating = true;
+
+        var dependentFormula = FindDependentFormula(vertex);
+
+        foreach (var v in dependentFormula)
+        {
+            _requiresCalculation.Add(v);
+            _dirtyReferences.Add(v);
+        }
+
+        _regionDependencies.Clear(vertex);
+        _dependencyGraph.RemoveVertex(vertex, false);
+
+        PauseCalculating = false; // also calculates sheet
     }
 
     internal CellFormula ParseFormula(string formulaString)
@@ -113,17 +256,6 @@ public class FormulaEngine
         }
     }
 
-    /// <summary>
-    /// Removes any vertices that the formula in this cell is dependent on
-    /// </summary>
-    /// <param name="row"></param>
-    /// <param name="col"></param>
-    internal FormulaEngineRestoreData RemoveFormula(int row, int col)
-    {
-        _dependencyGraph.RemoveVertex(new FormulaVertex(row, col, null), true);
-        Calculate(calculateAll: true);
-        return new FormulaEngineRestoreData();
-    }
 
     public void CalculateSheet() => Calculate(calculateAll: true);
 
@@ -168,7 +300,7 @@ public class FormulaEngine
                 else
                 {
                     // check whether the formula has already been calculated in this scc group - may be the case if we lucked
-                    // out on the first value calculation and it wasn't a circular reference.
+                    // out on the first value calculation, and it wasn't a circular reference.
                     if (scc.Count > 1 && executionContext.TryGetExecutedValue(vertex.Formula, out var result))
                     {
                         //TODO: This is never hit so we are always recalculating
@@ -197,6 +329,9 @@ public class FormulaEngine
                         new VariableChangedEventArgs(vertex.Key, prevValue, new CellValue(value)));
                     _environment.SetVariable(vertex.Key, value);
                 }
+
+                if (_dirtyReferences.Contains(vertex))
+                    UpdateReferences(vertex, executionContext.GetEvaluatedReferences(vertex.Formula));
             }
         }
 
@@ -205,6 +340,50 @@ public class FormulaEngine
 
         _requiresCalculation.Clear();
         _dirtyReferences.Clear();
+    }
+
+    private void UpdateReferences(FormulaVertex vertex, IEnumerable<Reference> references)
+    {
+        foreach (var v in _dependencyGraph.Prec(vertex))
+            _dependencyGraph.RemoveEdge(v, vertex, false);
+
+        _regionDependencies.Clear(vertex);
+
+        foreach (var r in references)
+        {
+            if (r.Kind == ReferenceKind.Cell)
+            {
+                var row = r.Region.Top;
+                var col = r.Region.Left;
+
+                var u = _dependencyGraph.GetVertex(GetVertexKey(row, col));
+                if (u != null)
+                    _dependencyGraph.AddEdge(u, vertex);
+
+                _regionDependencies.Add(r.Region, vertex);
+            }
+
+            if (r.Kind == ReferenceKind.Range)
+            {
+                _regionDependencies.Add(r.Region, vertex);
+                foreach (var u in GetVerticesInRegion(r.Region))
+                {
+                    _dependencyGraph.AddEdge(u, vertex);
+                }
+            }
+
+            if (r.Kind == ReferenceKind.Named)
+            {
+                var u = new FormulaVertex(((NamedReference)r).Name, null);
+                _dependencyGraph.AddEdge(u, vertex);
+            }
+        }
+    }
+
+    private string GetVertexKey(int row, int col)
+    {
+        // TODO: get rid of determining keys in formula vertex.
+        return (new FormulaVertex(row, col, null)).Key;
     }
 
     /// <summary>
@@ -223,17 +402,15 @@ public class FormulaEngine
         {
             var formula = ParseFormula(s);
             var vertex = new FormulaVertex(varName, formula);
-            _requiresCalculation.Add(vertex);
-            _dirtyReferences.Add(vertex);
+            AddFormulaVertex(vertex);
         }
         else
         {
             var prevValue = _environment.HasVariable(varName) ? _environment.GetVariable(varName) : null;
             VariableChanged?.Invoke(this, new VariableChangedEventArgs(varName, prevValue, new CellValue(value)));
             _environment.SetVariable(varName, new CellValue(value));
+            CalculateSheet();
         }
-
-        CalculateSheet();
     }
 
     public CellValue GetVariable(string varName)
@@ -244,21 +421,54 @@ public class FormulaEngine
     public void ClearVariable(string varName)
     {
         _environment.ClearVariable(varName);
-        _dirtyReferences.Add(new FormulaVertex(varName, null));
+        var u = _dependencyGraph.GetVertex(varName);
+        if (u != null)
+        {
+            _dependencyGraph.RemoveVertex(new FormulaVertex(varName, null));
+            _regionDependencies.Clear(u);
+        }
 
         CalculateSheet();
     }
 
-    public IEnumerable<DependencyInfo> GetDependencyInfo() => Array.Empty<DependencyInfo>();
-
-    public FormulaEngineRestoreData RemoveRowColAt(int index, int count, Axis axis)
+    private void ColumnsOnRemoved(object? sender, RowColRemovedEventArgs e)
     {
-        return new FormulaEngineRestoreData();
     }
 
-    public FormulaEngineRestoreData InsertRowColAt(int index, int count, Axis axis)
+    private void RowsOnRemoved(object? sender, RowColRemovedEventArgs e)
     {
-        return new FormulaEngineRestoreData();
+    }
+
+    /// <summary>
+    /// Returns true if the cell has any formula referencing it, or any region that contains it.
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <returns></returns>
+    internal bool IsCellReferenced(int row, int col)
+    {
+        var formulaRefRegion = FindDependentFormula(new Region(row, col));
+        return formulaRefRegion.Any();
+    }
+
+    public IEnumerable<DependencyInfo> GetDependencyInfo()
+    {
+        var results = new List<DependencyInfo>();
+        foreach (var vertex in _dependencyGraph.GetAll())
+        {
+            foreach (var dependent in FindDependentFormula(vertex))
+            {
+                results.Add(new DependencyInfo(dependent.Region!, vertex.Region!, DependencyType.CalculationOrder));
+            }
+        }
+
+        var dataRegions = _regionDependencies.GetAllDataRegions();
+        foreach (var region in dataRegions)
+        {
+            results.Add(new DependencyInfo(region.Data.Region!, region.Region, DependencyType.Region));
+        }
+
+        return results;
     }
 
     public void Restore(FormulaEngineRestoreData restoreDataFormulaEngineRestoreData)
@@ -269,7 +479,7 @@ public class FormulaEngine
     /// Returns the topological sort of the vertices <paramref name="vertices"/>. If <paramref name="vertices"/> is null, all vertices are considered. Each group of vertices is a strongly connected group.
     /// </summary>
     /// <returns></returns>
-    private IList<IList<FormulaVertex>> GetCalculationOrder(IEnumerable<FormulaVertex>? vertices = null)
+    internal IList<IList<FormulaVertex>> GetCalculationOrder(IEnumerable<FormulaVertex>? vertices = null)
     {
         var sort = new SccSort<FormulaVertex>(_dependencyGraph);
         return sort.Sort();

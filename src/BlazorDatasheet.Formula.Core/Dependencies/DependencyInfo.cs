@@ -9,7 +9,7 @@ public class DependencyInfo
 
     public DependencyType Type { get; }
 
-    internal DependencyInfo(IRegion from, IRegion to, DependencyType type)
+    public DependencyInfo(IRegion from, IRegion to, DependencyType type)
     {
         From = from;
         To = to;

@@ -41,7 +41,7 @@ public class FormulaExecutionContext
     /// </summary>
     /// <param name="formula"></param>
     /// <returns></returns>
-    internal IEnumerable<Reference> GetEvaluatedReferences(CellFormula formula)
+    public IEnumerable<Reference> GetEvaluatedReferences(CellFormula formula)
     {
         var evaluatedReferences = _evaluatedReferences.GetValueOrDefault(formula);
         if (evaluatedReferences == null)

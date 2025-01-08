@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using BlazorDatasheet.Core.Commands.Data;
+using BlazorDatasheet.Core.Events.Formula;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -117,7 +118,6 @@ public partial class CellStore
             ValidRestoreData = _validStore.InsertRowColAt(index, count, axis),
             MergeRestoreData = _mergeStore.InsertRowColAt(index, count, axis),
             FormulaRestoreData = _formulaStore.InsertRowColAt(index, count, axis),
-            FormulaEngineRestoreData = _sheet.FormulaEngine.InsertRowColAt(index, count, axis)
         };
 
 
@@ -134,7 +134,6 @@ public partial class CellStore
             FormatRestoreData = _formatStore.RemoveRowColAt(index, count, axis),
             MergeRestoreData = _mergeStore.RemoveRowColAt(index, count, axis),
             FormulaRestoreData = _formulaStore.RemoveRowColAt(index, count, axis),
-            FormulaEngineRestoreData = _sheet.FormulaEngine.RemoveRowColAt(index, count, axis)
         };
 
         return restoreData;
@@ -198,13 +197,6 @@ public partial class CellStore
     {
         _sheet.BatchUpdates();
 
-        _sheet.FormulaEngine.Restore(restoreData.FormulaEngineRestoreData);
-
-        foreach (var formulaRemoved in restoreData.FormulaRestoreData.DataRemoved)
-        {
-            this.SetFormulaImpl(formulaRemoved.row, formulaRemoved.col, formulaRemoved.data);
-        }
-
         _formulaStore.Restore(restoreData.FormulaRestoreData);
         _validStore.Restore(restoreData.ValidRestoreData);
         _typeStore.Restore(restoreData.TypeRestoreData);
@@ -212,14 +204,21 @@ public partial class CellStore
         _formatStore.Restore(restoreData.FormatRestoreData);
         _mergeStore.Restore(restoreData.MergeRestoreData);
 
-        foreach (var formulaAdded in restoreData.FormulaRestoreData.PositionsSet)
-            _sheet.FormulaEngine.RemoveFormula(formulaAdded.row, formulaAdded.col);
-
-
         foreach (var pt in restoreData.ValueRestoreData.DataRemoved)
         {
             _sheet.MarkDirty(pt.row, pt.col);
             EmitCellChanged(pt.row, pt.col);
+        }
+
+        foreach (var pt in restoreData.FormulaRestoreData.DataRemoved)
+        {
+            FormulaChanged?.Invoke(this, new CellFormulaChangeEventArgs(pt.row, pt.col, null, pt.data));
+        }
+
+        foreach (var pt in restoreData.FormulaRestoreData.PositionsSet)
+        {
+            FormulaChanged?.Invoke(this,
+                new CellFormulaChangeEventArgs(pt.Position.row, pt.Position.col, pt.Data, null));
         }
 
         foreach (var region in restoreData.GetAffectedRegions())

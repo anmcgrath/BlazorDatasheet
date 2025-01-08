@@ -47,9 +47,8 @@ public class DependencyGraph<T> where T : Vertex
     /// <returns></returns>
     public void AddVertex(T v)
     {
-        if (!_symbolTable.ContainsKey(v.Key))
+        if (_symbolTable.TryAdd(v.Key, v))
         {
-            _symbolTable.Add(v.Key, v);
             _adj.Add(v.Key, new Dictionary<string, T>());
             _prec.Add(v.Key, new Dictionary<string, T>());
             _numVertices++;
@@ -71,9 +70,9 @@ public class DependencyGraph<T> where T : Vertex
         return _adj[key].Values;
     }
 
-    public T GetVertex(string key)
+    public T? GetVertex(string key)
     {
-        return _symbolTable[key];
+        return _symbolTable.GetValueOrDefault(key);
     }
 
     /// <summary>
