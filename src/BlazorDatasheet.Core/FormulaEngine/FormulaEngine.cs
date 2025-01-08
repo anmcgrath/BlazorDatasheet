@@ -1,4 +1,5 @@
-﻿using BlazorDatasheet.Core.Data;
+﻿using System.Diagnostics;
+using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Events.Data;
 using BlazorDatasheet.Core.Events.Edit;
 using BlazorDatasheet.Core.Events.Formula;
@@ -155,9 +156,11 @@ public class FormulaEngine
             return;
 
         _dependencyGraph.AddVertex(vertex);
-
         _requiresCalculation.Add(vertex);
-        _dirtyReferences.Add(vertex);
+
+        var ctx = new FormulaExecutionContext();
+        Evaluate(vertex.Formula, false, ctx);
+        UpdateReferences(vertex, ctx.GetEvaluatedReferences(vertex.Formula));
 
         var dependentFormula = FindDependentFormula(vertex); // directly references cell
         if (vertex.Region != null)
@@ -241,13 +244,14 @@ public class FormulaEngine
         return _parser.FromString(formulaString);
     }
 
-    internal CellValue Evaluate(CellFormula? formula, bool resolveReferences = true)
+    internal CellValue Evaluate(CellFormula? formula, bool resolveReferences = true,
+        FormulaExecutionContext? context = null)
     {
         if (formula == null)
             return CellValue.Empty;
         try
         {
-            return _evaluator.Evaluate(formula, new FormulaExecutionContext(),
+            return _evaluator.Evaluate(formula, context ?? new FormulaExecutionContext(),
                 new FormulaEvaluationOptions(!resolveReferences));
         }
         catch (Exception e)
@@ -314,8 +318,6 @@ public class FormulaEngine
                     }
                 }
 
-                executionContext.ClearExecuting();
-
                 if (vertex.VertexType == VertexType.Cell)
                 {
                     _environment.SetCellValue(vertex.Region!.Top, vertex.Region!.Left, value);
@@ -329,6 +331,8 @@ public class FormulaEngine
                         new VariableChangedEventArgs(vertex.Key, prevValue, new CellValue(value)));
                     _environment.SetVariable(vertex.Key, value);
                 }
+
+                executionContext.ClearExecuting();
 
                 if (_dirtyReferences.Contains(vertex))
                     UpdateReferences(vertex, executionContext.GetEvaluatedReferences(vertex.Formula));
@@ -384,6 +388,16 @@ public class FormulaEngine
     {
         // TODO: get rid of determining keys in formula vertex.
         return (new FormulaVertex(row, col, null)).Key;
+    }
+
+    internal CellFormula? GetFormula(int row, int col)
+    {
+        return _dependencyGraph.GetVertex(GetVertexKey(row, col))?.Formula;
+    }
+
+    internal CellFormula? GetFormula(string variable)
+    {
+        return _dependencyGraph.GetVertex(variable)?.Formula;
     }
 
     /// <summary>

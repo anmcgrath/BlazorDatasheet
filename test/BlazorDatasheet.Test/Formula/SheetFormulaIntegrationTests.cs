@@ -403,6 +403,16 @@ public class SheetFormulaIntegrationTests
     }
 
     [Test]
+    public void Circular_Ref_Returns_Circ_Error()
+    {
+        var sheet = new Sheet(20, 20);
+        sheet.Cells.SetFormula(0, 0, "=A2");
+        sheet.Cells.SetFormula(1, 0, "=A1");
+        sheet.Cells.GetCellValue(0, 0).IsError().Should().BeTrue();
+        sheet.Cells.GetCellValue(1, 0).IsError().Should().BeTrue();
+    }
+
+    [Test]
     public void Range_Operator_On_Range_Will_Update_Correctly_When_Sheet_Edited()
     {
         var sheet = new Sheet(10, 10);

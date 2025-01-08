@@ -28,8 +28,7 @@ public class Evaluator
     {
         _options = options ?? FormulaEvaluationOptions.Default;
         _formulaExecutionContext = executionContext ?? new FormulaExecutionContext();
-        var evaluatedValue = DoEvaluate(cellFormula);
-        return evaluatedValue;
+        return DoEvaluate(cellFormula);
     }
 
     private CellValue DoEvaluate(CellFormula formula)
@@ -115,7 +114,7 @@ public class Evaluator
     private CellValue EvaluateReferenceExpression(ReferenceExpression expression)
     {
         _formulaExecutionContext?.RecordReference(expression.Reference);
-        
+
         //TODO check it's valid (inside sheet)
         if (expression.Reference.IsInvalid)
             return CellValue.Error(ErrorType.Ref);

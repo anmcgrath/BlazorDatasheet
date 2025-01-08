@@ -73,7 +73,7 @@ public class SheetEnvironment : IEnvironment
 
     public CellFormula? GetFormula(int row, int col)
     {
-        return null;
+        return _sheet.FormulaEngine.GetFormula(row, col);
     }
 
     public CellValue[][] GetRangeValues(Reference reference)
