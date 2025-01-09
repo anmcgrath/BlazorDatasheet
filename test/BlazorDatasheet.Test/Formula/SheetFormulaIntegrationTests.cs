@@ -484,4 +484,14 @@ public class SheetFormulaIntegrationTests
         var refs = sheet.FormulaEngine.GetDependencyInfo();
         sheet.FormulaEngine.GetDependencyInfo().Count().Should().Be(0);
     }
+
+    [Test]
+    public void Override_Formula_With_Formula_Then_Undo_Will_Set_Original_References()
+    {
+        var sheet = new Sheet(100, 100);
+        sheet.Cells.SetFormula(0, 0, "=C3");
+        sheet.Cells.SetFormula(0, 0, "=A5");
+        sheet.Commands.Undo();
+        sheet.FormulaEngine.GetDependencyInfo().Count().Should().Be(1);
+    }
 }
