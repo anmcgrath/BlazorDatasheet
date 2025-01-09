@@ -86,6 +86,9 @@ public class Evaluator
                 $"Cannot evaluate expression {expression.ToExpressionText()}"))
         };
 
+        if (evaluatedExpr.ValueType == CellValueType.Reference)
+            _formulaExecutionContext?.RecordReference(evaluatedExpr.GetValue<Reference>()!);
+
         return evaluatedExpr;
     }
 
@@ -113,8 +116,6 @@ public class Evaluator
 
     private CellValue EvaluateReferenceExpression(ReferenceExpression expression)
     {
-        _formulaExecutionContext?.RecordReference(expression.Reference);
-
         //TODO check it's valid (inside sheet)
         if (expression.Reference.IsInvalid)
             return CellValue.Error(ErrorType.Ref);
