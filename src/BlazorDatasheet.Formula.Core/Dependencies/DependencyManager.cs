@@ -212,20 +212,6 @@ public class DependencyManager
         return restoreData;
     }
 
-    private List<FormulaVertex> GetVerticesInRegion(IRegion region)
-    {
-        var vertices = new List<FormulaVertex>();
-        foreach (var v in _dependencyGraph.GetAll())
-        {
-            if (region.Intersects(v.Region))
-            {
-                vertices.Add(v);
-            }
-        }
-
-        return vertices;
-    }
-
     public FormulaEngineRestoreData RemoveRowColAt(int index, int count, Axis axis)
     {
         var restoreData = new FormulaEngineRestoreData()
@@ -288,6 +274,20 @@ public class DependencyManager
         }
 
         return restoreData;
+    }
+    
+    private List<FormulaVertex> GetVerticesInRegion(IRegion region)
+    {
+        var vertices = new List<FormulaVertex>();
+        foreach (var v in _dependencyGraph.GetAll())
+        {
+            if (region.Intersects(v.Region))
+            {
+                vertices.Add(v);
+            }
+        }
+
+        return vertices;
     }
 
     public IEnumerable<DependencyInfo> GetDependencyInfo()

@@ -76,9 +76,10 @@ public class RemoveRowColsCommand : IUndoableCommand
         sheet.Cells.Restore(_cellStoreRestoreData);
         sheet.GetRowColStore(_axis).Restore(_rowColInfoRestore);
         sheet.ConditionalFormats.Restore(_cfRestoreData);
-        sheet.GetRowColStore(_axis).EmitInserted(_index, _nRemoved);
+
         if (_axis == Axis.Col)
             sheet.Columns.Filters.Store.Restore(_filterRestoreData);
+        sheet.GetRowColStore(_axis).EmitInserted(_index, _nRemoved);
 
         IRegion dirtyRegion = _axis == Axis.Col
             ? new ColumnRegion(_index, sheet.NumCols)

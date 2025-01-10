@@ -32,7 +32,7 @@ public class CellFormula
         }
     }
 
-    internal void InsertRowColIntoReferences(int index, int count, Axis axis)
+    public void InsertRowColIntoReferences(int index, int count, Axis axis)
     {
         foreach (var reference in References)
         {
@@ -60,7 +60,7 @@ public class CellFormula
         }
     }
 
-    internal void RemoveRowColFromReferences(int index, int count, Axis axis)
+    public void RemoveRowColFromReferences(int index, int count, Axis axis)
     {
         foreach (var reference in References)
         {

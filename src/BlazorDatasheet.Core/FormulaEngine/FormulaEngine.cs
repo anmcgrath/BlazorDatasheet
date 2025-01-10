@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using BlazorDatasheet.Core.Data;
+﻿using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Events.Data;
 using BlazorDatasheet.Core.Events.Edit;
 using BlazorDatasheet.Core.Events.Formula;
@@ -48,7 +47,7 @@ public class FormulaEngine
 
     private readonly DependencyGraph<FormulaVertex> _dependencyGraph = new();
 
-    private readonly RegionDataStore<FormulaVertex> _regionDependencies = new();
+    private readonly RegionDataStore<FormulaVertex> _regionDependencies = new(0, false);
 
     /// <summary>
     /// The formula that require recalculation
@@ -62,8 +61,14 @@ public class FormulaEngine
     /// 2. reference a named region and the named region changes
     /// 3. rows/cols are inserted/deleted
     /// 4. the formula changes.
+    /// These references are rebuilt on calculation.
     /// </summary>
     private readonly HashSet<FormulaVertex> _dirtyReferences = new();
+
+    /// <summary>
+    /// If true, all references are considered dirty and should be rebuilt on calculation.
+    /// </summary>
+    private bool _allDirtyRefs;
 
     public FormulaEngine(Sheet sheet)
     {
@@ -75,7 +80,9 @@ public class FormulaEngine
         _sheet.Cells.CellsChanged += SheetOnCellValuesChanged;
         _sheet.Rows.Removed += RowsOnRemoved;
         _sheet.Columns.Removed += ColumnsOnRemoved;
-
+        _sheet.Rows.Inserted += RowsOnInserted;
+        _sheet.Columns.Inserted += ColumnsOnInserted;
+        
         _environment = new SheetEnvironment(sheet);
         _evaluator = new Evaluator(_environment);
 
@@ -334,7 +341,7 @@ public class FormulaEngine
 
                 executionContext.ClearExecuting();
 
-                if (_dirtyReferences.Contains(vertex))
+                if (_allDirtyRefs || _dirtyReferences.Contains(vertex))
                     UpdateReferences(vertex, executionContext.GetEvaluatedReferences(vertex.Formula));
             }
         }
@@ -343,6 +350,7 @@ public class FormulaEngine
         IsCalculating = false;
 
         _requiresCalculation.Clear();
+        _allDirtyRefs = false;
         _dirtyReferences.Clear();
     }
 
@@ -364,12 +372,12 @@ public class FormulaEngine
                 if (u != null)
                     _dependencyGraph.AddEdge(u, vertex);
 
-                _regionDependencies.Add(r.Region, vertex);
+                _regionDependencies.Add(r.Region.Clone(), vertex);
             }
 
             if (r.Kind == ReferenceKind.Range)
             {
-                _regionDependencies.Add(r.Region, vertex);
+                _regionDependencies.Add(r.Region.Clone(), vertex);
                 foreach (var u in GetVerticesInRegion(r.Region))
                 {
                     _dependencyGraph.AddEdge(u, vertex);
@@ -451,6 +459,100 @@ public class FormulaEngine
 
     private void RowsOnRemoved(object? sender, RowColRemovedEventArgs e)
     {
+        var axis = Axis.Row;
+
+        int dRow = e.Count;
+        int dCol = 0;
+
+        var deletedRegion = new RowRegion(e.Index, e.Index + e.Count - 1);
+        foreach (var vertex in GetVerticesInRegion(deletedRegion))
+        {
+            RemoveFormulaVertex(vertex);
+        }
+
+        var affectedRegion = new RowRegion(e.Index, int.MaxValue);
+
+        var formulaAffected = FindDependentFormula(affectedRegion);
+
+        foreach (var data in formulaAffected)
+        {
+            if (data.Formula == null)
+                continue;
+
+            data.Formula.RemoveRowColFromReferences(e.Index, e.Count, Axis.Row);
+
+            var newFormulaStr = data.Formula.ToFormulaString();
+
+            if (data.VertexType == VertexType.Cell)
+            {
+                var vRow = data.Region!.Top;
+                var vCol = data.Region!.Left;
+                _sheet.Cells.GetFormulaStore().Set(vRow - dRow, vCol - dCol, newFormulaStr);
+            }
+
+            else if (data.VertexType == VertexType.Named)
+                _environment.SetVariable(data.Key, newFormulaStr);
+        }
+
+        ShiftVerticesInRegion(affectedRegion, -dRow, -dCol);
+        _regionDependencies.RemoveRowColAt(e.Index, e.Count, axis);
+
+        _allDirtyRefs = true;
+        CalculateSheet();
+    }
+
+    private void ColumnsOnInserted(object? sender, RowColInsertedEventArgs e)
+    {
+    }
+
+    private void RowsOnInserted(object? sender, RowColInsertedEventArgs e)
+    {
+        var axis = Axis.Row;
+
+        int dRow = e.Count;
+        int dCol = 0;
+
+        var formulaAffected = FindDependentFormula(new RowRegion(e.Index, int.MaxValue));
+
+        foreach (var data in formulaAffected)
+        {
+            if (data.Formula == null)
+                continue;
+
+            data.Formula.InsertRowColIntoReferences(e.Index, e.Count, Axis.Row);
+
+            var newFormulaStr = data.Formula.ToFormulaString();
+
+            if (data.VertexType == VertexType.Cell)
+            {
+                var vRow = data.Region!.Top;
+                var vCol = data.Region!.Left;
+                _sheet.Cells.GetFormulaStore().Set(vRow + dRow, vCol + dCol, newFormulaStr);
+            }
+
+            else if (data.VertexType == VertexType.Named)
+                _environment.SetVariable(data.Key, newFormulaStr);
+        }
+
+        ShiftVerticesInRegion(new RowRegion(e.Index, int.MaxValue), dRow, dCol);
+        _regionDependencies.InsertRowColAt(e.Index, e.Count, axis);
+
+        _allDirtyRefs = true;
+        CalculateSheet();
+    }
+
+    private void ShiftVerticesInRegion(IRegion region, int dRow, int dCol)
+    {
+        // shift any affected vertices by the number inserted
+        var affectedVertices = GetVerticesInRegion(region);
+        foreach (var v in affectedVertices)
+        {
+            // need to shift without changing the reference
+            // needs to update key in dependency graph
+            // and also shift the region it refers to
+            v.Region!.Shift(dRow, dCol);
+            _dependencyGraph.RefreshKey(v);
+        }
     }
 
     /// <summary>
