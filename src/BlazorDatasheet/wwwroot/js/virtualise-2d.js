@@ -131,7 +131,6 @@
     }
 
     addVirtualisationHandlers(dotNetHelper, wholeEl, dotnetScrollHandlerName, fillerLeft, fillerTop, fillerRight, fillerBottom) {
-        this.id = crypto.randomUUID()
         // return initial scroll event to render the sheet
         let parent = this.findScrollableAncestor(wholeEl)
         if (parent) {
