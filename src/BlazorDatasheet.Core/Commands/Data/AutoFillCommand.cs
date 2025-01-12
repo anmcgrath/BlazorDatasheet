@@ -5,7 +5,7 @@ using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.Commands.Data;
 
-public class AutoFillCommand : IUndoableCommand
+public class AutoFillCommand : BaseCommand, IUndoableCommand
 {
     private IRegion _fromRegion;
     private IRegion _toRegion;
@@ -19,7 +19,7 @@ public class AutoFillCommand : IUndoableCommand
         _toRegion = toRegion;
     }
 
-    public bool Execute(Sheet sheet)
+    public override bool Execute(Sheet sheet)
     {
         // Shrink/cut the content if the new region is smaller than the selection
         if (_fromRegion.Contains(_toRegion))
@@ -31,7 +31,7 @@ public class AutoFillCommand : IUndoableCommand
         return true;
     }
 
-    public bool CanExecute(Sheet sheet) => true;
+    public override bool CanExecute(Sheet sheet) => true;
 
     private void ExpandContent(Sheet sheet)
     {

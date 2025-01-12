@@ -4,7 +4,7 @@ using BlazorDatasheet.DataStructures.Intervals;
 
 namespace BlazorDatasheet.Core.Commands.RowCols;
 
-public class HideCommand : IUndoableCommand
+public class HideCommand : BaseCommand, IUndoableCommand
 {
     private readonly Axis _axis;
 
@@ -24,9 +24,9 @@ public class HideCommand : IUndoableCommand
         _axis = axis;
     }
 
-    public bool CanExecute(Sheet sheet) => true;
+    public override bool CanExecute(Sheet sheet) => true;
 
-    public bool Execute(Sheet sheet)
+    public override bool Execute(Sheet sheet)
     {
         _restoreData = sheet.GetRowColStore(_axis).HideImpl(_intervals);
         return true;

@@ -48,8 +48,9 @@ public class CommandManager
     /// Executes a command and, if it is an undoable command, adds it to the undo stack.
     /// </summary>
     /// <param name="command"></param>
+    /// <param name="isRedo"></param>
     /// <returns></returns>
-    public bool ExecuteCommand(ICommand command)
+    public bool ExecuteCommand(ICommand command, bool isRedo = false)
     {
         if (_isCollectingCommands)
         {
@@ -59,7 +60,12 @@ public class CommandManager
 
         var beforeArgs = new BeforeCommandRunEventArgs(command, _sheet);
         BeforeCommandRun?.Invoke(this, beforeArgs);
+
         if (beforeArgs.Cancel)
+            return false;
+
+        var chainedBeforeResult = ExecuteCommands(command.GetChainedBeforeCommands());
+        if (!chainedBeforeResult)
             return false;
 
         if (!command.CanExecute(_sheet))
@@ -67,6 +73,13 @@ public class CommandManager
 
         var result = command.Execute(_sheet);
         CommandRun?.Invoke(this, new CommandRunEventArgs(command, _sheet, result));
+
+        var chainedAfterResult = ExecuteCommands(command.GetChainedBeforeCommands());
+        if (!chainedAfterResult && command is IUndoableCommand undoableCommand)
+        {
+            undoableCommand.Undo(_sheet);
+            return false;
+        }
 
         if (result)
         {
@@ -82,9 +95,42 @@ public class CommandManager
 
         // Clear the redo stack because otherwise we will be redoing changes to the sheet with a changed
         // model from the original time the commands were run.
-        _redos.Clear();
+        if (!isRedo)
+            _redos.Clear();
 
         return result;
+    }
+
+    /// <summary>
+    /// Executes multiple commands and returns true if all are successful.
+    /// Rolls back any unsuccessful undoable commands so that if one fails to run, all fail to run.
+    /// </summary>
+    /// <param name="commands"></param>
+    /// <returns></returns>
+    private bool ExecuteCommands(IReadOnlyList<ICommand> commands)
+    {
+        int lastSuccessfulCommandIndex = -1;
+        for (int i = 0; i < commands.Count; i++)
+        {
+            var chainedCommand = commands[i];
+            var res = ExecuteCommand(chainedCommand);
+            if (res)
+                lastSuccessfulCommandIndex = i;
+            else
+                break;
+        }
+
+        var anyCommandsFailed = lastSuccessfulCommandIndex != commands.Count - 1;
+        if (anyCommandsFailed)
+        {
+            for (int i = lastSuccessfulCommandIndex; i >= 0; i--)
+            {
+                if (commands[i] is IUndoableCommand undoCommand)
+                    undoCommand.Undo(_sheet);
+            }
+        }
+
+        return !anyCommandsFailed;
     }
 
     /// <summary>
@@ -145,31 +191,7 @@ public class CommandManager
             return false;
 
         var command = _redos.Pop()!;
-        
-        var beforeArgs = new BeforeCommandRunEventArgs(command, _sheet);
-        BeforeCommandRun?.Invoke(this, beforeArgs);
-        if (beforeArgs.Cancel)
-            return false;
-        
-        if (!command.CanExecute(_sheet))
-            return false;
-        
-        var result = command.Execute(_sheet);
-        CommandRun?.Invoke(this, new CommandRunEventArgs(command, _sheet, result));
-
-        if (result)
-        {
-            if (!HistoryPaused && command is IUndoableCommand undoCommand)
-            {
-                _history.Push(new UndoCommandData()
-                {
-                    Command = undoCommand,
-                    SelectionSnapshot = _sheet.Selection.GetSelectionSnapshot()
-                });
-            }
-        }
-
-        return result;
+        return ExecuteCommand(command, isRedo: true);
     }
 
     /// <summary>

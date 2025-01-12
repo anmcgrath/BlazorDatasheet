@@ -6,7 +6,7 @@ using BlazorDatasheet.Formula.Core;
 
 namespace BlazorDatasheet.Core.Commands.Data;
 
-public class SortRangeCommand : IUndoableCommand
+public class SortRangeCommand : BaseCommand, IUndoableCommand
 {
     private readonly IRegion _region;
     public IRegion? SortedRegion;
@@ -38,9 +38,9 @@ public class SortRangeCommand : IUndoableCommand
         _sortOptions = new List<ColumnSortOptions> { sortOption };
     }
 
-    public bool CanExecute(Sheet sheet) => true;
+    public override bool CanExecute(Sheet sheet) => true;
 
-    public bool Execute(Sheet sheet)
+    public override bool Execute(Sheet sheet)
     {
         var store = sheet.Cells.GetCellDataStore();
 

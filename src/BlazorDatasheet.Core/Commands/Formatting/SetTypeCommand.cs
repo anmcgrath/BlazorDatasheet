@@ -4,7 +4,7 @@ using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.Commands.Formatting;
 
-public class SetTypeCommand : IUndoableCommand
+public class SetTypeCommand : BaseCommand, IUndoableCommand
 {
     private readonly IRegion _region;
     private readonly string _type;
@@ -20,9 +20,9 @@ public class SetTypeCommand : IUndoableCommand
         _type = type;
     }
 
-    public bool CanExecute(Sheet sheet) => true;
+    public override bool CanExecute(Sheet sheet) => true;
 
-    public bool Execute(Sheet sheet)
+    public override bool Execute(Sheet sheet)
     {
         _restoreData = sheet.Cells.SetCellTypeImpl(_region, _type);
         return true;

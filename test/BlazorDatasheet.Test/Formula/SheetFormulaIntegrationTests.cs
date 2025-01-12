@@ -5,6 +5,7 @@ using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Events.Formula;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.Formula.Core.Dependencies;
 using BlazorDatasheet.Formula.Core.Interpreter;
 using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
@@ -239,6 +240,18 @@ public class SheetFormulaIntegrationTests
             .Be("C3"); // (3,2)*/
     }
 
+
+    [Test]
+    public void Insert_Rows_Shifts_References()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Cells.SetFormula(0, 0, "=A5");
+        sheet.Rows.InsertAt(2, 2);
+        sheet.FormulaEngine.IsCellReferenced(4, 0).Should().BeFalse(); // a5
+        sheet.FormulaEngine.IsCellReferenced(6, 0).Should().BeTrue();
+        sheet.Cells.GetFormulaString(0, 0).Should().BeEquivalentTo("=A7");
+    }
+
     [Test]
     public void Insert_Col_Before_Formula_Shifts_Formula_And_Updates_Ref()
     {
@@ -321,14 +334,13 @@ public class SheetFormulaIntegrationTests
     [Test]
     public void Insert_Row_Bug_Produces_Multiple_Formula()
     {
-        throw new NotImplementedException();
         var sheet = new Sheet(20, 20);
         sheet.Cells.SetFormula(5, 0, "=A1");
         sheet.Rows.InsertAt(2, 1);
         sheet.Editor.BeginEdit(6, 0);
         sheet.Editor.EditValue = "=A1";
         sheet.Editor.AcceptEdit();
-        /*sheet.FormulaEngine.DependencyManager.FormulaCount.Should().Be(1);*/
+        sheet.FormulaEngine.GetCalculationOrder().Count().Should().Be(1);
     }
 
     [Test]
@@ -345,25 +357,23 @@ public class SheetFormulaIntegrationTests
     [Test]
     public void Remove_Formula_And_Undo_Restores_Dependencies()
     {
-        throw new NotImplementedException();
         var sheet = new Sheet(20, 20);
         sheet.Cells.SetFormula(1, 1, "=5");
         sheet.Cells.SetFormula(0, 0, "=B2");
         sheet.Cells.ClearCells(new Region(0, 0));
         sheet.Commands.Undo();
         sheet.Cells.GetCellValue(0, 0).GetValue<int>().Should().Be(5);
-        /*sheet.FormulaEngine.DependencyManager.IsReferenced(1, 1).Should().BeTrue();*/
+        sheet.FormulaEngine.IsCellReferenced(1, 1).Should().BeTrue();
     }
 
     [Test]
     public void Remove_Formula_In_Column_Removes_And_Restores_Correctly()
     {
-        throw new NotImplementedException();
         _sheet.Cells.SetFormula(0, 0, "=A2");
         _sheet.Columns.RemoveAt(0);
         _sheet.Commands.Undo();
         _sheet.Cells[0, 0].Formula.Should().Be("=A2");
-        /*_sheet.FormulaEngine.DependencyManager.IsReferenced(new Region(1, 0)).Should().BeTrue();*/
+        _sheet.FormulaEngine.IsCellReferenced(1, 0).Should().BeTrue();
     }
 
     [Test]
@@ -493,5 +503,20 @@ public class SheetFormulaIntegrationTests
         sheet.Cells.SetFormula(0, 0, "=A5");
         sheet.Commands.Undo();
         sheet.FormulaEngine.GetDependencyInfo().Count().Should().Be(1);
+    }
+
+    [Test]
+    public void Insert_Rows_Shifts_Formula_With_Correct_Calculation_Order()
+    {
+        _sheet.Cells.SetFormula(1, 0, "=A5");
+        _sheet.Cells.SetFormula(4, 0, "=1");
+        _sheet.Rows.InsertAt(0, 2);
+        var di = _sheet.FormulaEngine.GetCalculationOrder();
+
+        di
+            .SelectMany(x => x)
+            .Select(x => x.Key)
+            .Should()
+            .BeEquivalentTo(["A7", "A4"]);
     }
 }

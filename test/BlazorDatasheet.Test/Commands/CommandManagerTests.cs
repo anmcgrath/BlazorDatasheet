@@ -119,7 +119,7 @@ public class CommandManagerTests
     }
 }
 
-public class FakeCommand : IUndoableCommand
+public class FakeCommand : BaseCommand, IUndoableCommand
 {
     public int Id { get; }
     private List<int> _cmdExecutions;
@@ -132,13 +132,13 @@ public class FakeCommand : IUndoableCommand
         _canExecute = canExecute;
     }
 
-    public bool Execute(Sheet sheet)
+    public override bool Execute(Sheet sheet)
     {
         _cmdExecutions.Add(Id);
         return true;
     }
 
-    public bool CanExecute(Sheet sheet) => _canExecute;
+    public override bool CanExecute(Sheet sheet) => _canExecute;
 
     public bool Undo(Sheet sheet)
     {

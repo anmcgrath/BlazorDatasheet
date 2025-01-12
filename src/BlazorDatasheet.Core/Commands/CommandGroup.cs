@@ -2,7 +2,7 @@ using BlazorDatasheet.Core.Data;
 
 namespace BlazorDatasheet.Core.Commands;
 
-public class CommandGroup : IUndoableCommand
+public class CommandGroup : BaseCommand, IUndoableCommand
 {
     private readonly List<ICommand> _commands;
     private readonly List<ICommand> _successfulCommands;
@@ -21,13 +21,13 @@ public class CommandGroup : IUndoableCommand
     {
         _commands.Add(command);
     }
-    
-    public bool CanExecute(Sheet sheet)
+
+    public override bool CanExecute(Sheet sheet)
     {
-        return _commands.All(x=>x.CanExecute(sheet));
+        return _commands.All(x => x.CanExecute(sheet));
     }
 
-    public bool Execute(Sheet sheet)
+    public override bool Execute(Sheet sheet)
     {
         _successfulCommands.Clear();
 

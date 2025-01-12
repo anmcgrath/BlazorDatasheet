@@ -4,7 +4,7 @@ using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.Commands.Formatting;
 
-public class SetValidatorCommand : IUndoableCommand
+public class SetValidatorCommand : BaseCommand, IUndoableCommand
 {
     private readonly IRegion _region;
     private readonly IDataValidator _validator;
@@ -15,9 +15,9 @@ public class SetValidatorCommand : IUndoableCommand
         _validator = validator;
     }
 
-    public bool CanExecute(Sheet sheet) => true;
+    public override bool CanExecute(Sheet sheet) => true;
 
-    public bool Execute(Sheet sheet)
+    public override bool Execute(Sheet sheet)
     {
         sheet.Validators.AddImpl(_validator, _region);
         sheet.Cells.ValidateRegion(_region);

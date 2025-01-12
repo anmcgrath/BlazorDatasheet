@@ -5,12 +5,12 @@ using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.Commands.Filters;
 
-public class ApplyColumnFiltersCommand : IUndoableCommand
+public class ApplyColumnFiltersCommand : BaseCommand, IUndoableCommand
 {
     private IUndoableCommand _commandRun = null!;
-    public bool CanExecute(Sheet sheet) => true;
+    public override bool CanExecute(Sheet sheet) => true;
 
-    public bool Execute(Sheet sheet)
+    public override bool Execute(Sheet sheet)
     {
         // 1. Un-hide all rows filtered by the current column filters
         var unHideExistingCommand = new UnhideCommand(sheet.Columns.Filters.FilteredRows, Axis.Row);

@@ -8,11 +8,11 @@ using BlazorDatasheet.DataStructures.Store;
 
 namespace BlazorDatasheet.Core.Commands.RowCols;
 
-public class RemoveRowColsCommand : IUndoableCommand
+public class RemoveRowColsCommand : RegionCommand
 {
-    private readonly int _index;
-    private readonly Axis _axis;
-    private readonly int _count;
+    public int Index { get; }
+    public Axis Axis { get; }
+    public int Count { get; }
 
     private RegionRestoreData<int> _validatorRestoreData = null!;
     private RegionRestoreData<ConditionalFormatAbstractBase> _cfRestoreData = null!;
@@ -29,61 +29,67 @@ public class RemoveRowColsCommand : IUndoableCommand
     /// <param name="index">The index to remove.</param>
     /// <param name="axis"></param>
     /// <param name="count">The total number to remove</param>
-    public RemoveRowColsCommand(int index, Axis axis, int count = 1)
+    public RemoveRowColsCommand(int index, Axis axis, int count = 1) : base(axis == Axis.Col
+        ? new ColumnRegion(index, index + count - 1)
+        : new RowRegion(index, index + count - 1))
     {
-        _index = index;
-        _axis = axis;
-        _count = count;
+        Index = index;
+        Axis = axis;
+        Count = count;
     }
 
-    public bool CanExecute(Sheet sheet)
+    protected override bool DoExecute(Sheet sheet)
     {
-        if (_index >= sheet.GetSize(_axis))
+        if (Index >= sheet.GetSize(Axis))
             return false;
 
-        if (_count <= 0)
+        if (Count <= 0)
+            return false;
+
+        _nRemoved = Math.Min(sheet.GetSize(Axis) - Index + 1, Count);
+        sheet.Remove(Axis, _nRemoved);
+
+        _cellStoreRestoreData = sheet.Cells.RemoveRowColAt(Index, _nRemoved, Axis);
+        _rowColInfoRestore = sheet.GetRowColStore(Axis).RemoveImpl(Index, Index + _nRemoved - 1);
+        _validatorRestoreData = sheet.Validators.Store.RemoveRowColAt(Index, _nRemoved, Axis);
+        _cfRestoreData = sheet.ConditionalFormats.RemoveRowColAt(Index, _nRemoved, Axis);
+
+        if (Axis == Axis.Col)
+            _filterRestoreData = sheet.Columns.Filters.Store.Delete(Index, Index + _nRemoved - 1);
+
+        IRegion dirtyRegion = Axis == Axis.Col ? new ColumnRegion(Index, sheet.NumCols-1) :
+            new RowRegion(Index, sheet.NumRows - 1);
+        sheet.MarkDirty(dirtyRegion);
+
+        return true;
+    }
+
+    public override bool CanExecute(Sheet sheet)
+    {
+        if (Index >= sheet.GetSize(Axis))
+            return false;
+
+        if (Count <= 0)
             return false;
 
         return true;
     }
 
-    public bool Execute(Sheet sheet)
+    protected override bool DoUndo(Sheet sheet)
     {
-        if (_index >= sheet.GetSize(_axis))
-            return false;
-
-        if (_count <= 0)
-            return false;
-
-        _nRemoved = Math.Min(sheet.GetSize(_axis) - _index + 1, _count);
-        sheet.Remove(_axis, _nRemoved);
-
-        _cellStoreRestoreData = sheet.Cells.RemoveRowColAt(_index, _nRemoved, _axis);
-        _rowColInfoRestore = sheet.GetRowColStore(_axis).RemoveImpl(_index, _index + _nRemoved - 1);
-        _validatorRestoreData = sheet.Validators.Store.RemoveRowColAt(_index, _nRemoved, _axis);
-        _cfRestoreData = sheet.ConditionalFormats.RemoveRowColAt(_index, _nRemoved, _axis);
-
-        if (_axis == Axis.Col)
-            _filterRestoreData = sheet.Columns.Filters.Store.Delete(_index, _index + _nRemoved - 1);
-
-        return true;
-    }
-
-    public bool Undo(Sheet sheet)
-    {
-        sheet.Add(_axis, _nRemoved);
+        sheet.Add(Axis, _nRemoved);
         sheet.Validators.Store.Restore(_validatorRestoreData);
         sheet.Cells.Restore(_cellStoreRestoreData);
-        sheet.GetRowColStore(_axis).Restore(_rowColInfoRestore);
+        sheet.GetRowColStore(Axis).Restore(_rowColInfoRestore);
         sheet.ConditionalFormats.Restore(_cfRestoreData);
 
-        if (_axis == Axis.Col)
+        if (Axis == Axis.Col)
             sheet.Columns.Filters.Store.Restore(_filterRestoreData);
-        sheet.GetRowColStore(_axis).EmitInserted(_index, _nRemoved);
+        sheet.GetRowColStore(Axis).EmitInserted(Index, _nRemoved);
 
-        IRegion dirtyRegion = _axis == Axis.Col
-            ? new ColumnRegion(_index, sheet.NumCols)
-            : new RowRegion(_index, sheet.NumRows);
+        IRegion dirtyRegion = Axis == Axis.Col
+            ? new ColumnRegion(Index, sheet.NumCols)
+            : new RowRegion(Index, sheet.NumRows);
         sheet.MarkDirty(dirtyRegion);
         return true;
     }

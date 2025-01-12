@@ -11,11 +11,11 @@ namespace BlazorDatasheet.Core.Commands.RowCols;
 /// <summary>
 /// Command for inserting a row into the sheet.
 /// </summary>
-internal class InsertRowsColsCommand : IUndoableCommand
+internal class InsertRowsColsCommand : RegionCommand
 {
-    private readonly int _index;
-    private readonly int _count;
-    private readonly Axis _axis;
+    public int Index { get; }
+    public int Count { get; }
+    public Axis Axis { get; }
 
     private RegionRestoreData<int> _validatorRestoreData = null!;
     private RegionRestoreData<ConditionalFormatAbstractBase> _cfRestoreData = null!;
@@ -29,49 +29,51 @@ internal class InsertRowsColsCommand : IUndoableCommand
     /// <param name="index">The index that the row/column will be inserted at.</param>
     /// <param name="count">The number to insert</param>
     /// <param name="axis">Which axis to insert into the sheet</param>
-    public InsertRowsColsCommand(int index, int count, Axis axis)
+    public InsertRowsColsCommand(int index, int count, Axis axis) : base(axis == Axis.Col
+        ? new ColumnRegion(index, index + count - 1)
+        : new RowRegion(index, index + count - 1))
     {
-        _index = index;
-        _count = count;
-        _axis = axis;
+        Index = index;
+        Count = count;
+        Axis = axis;
     }
 
-    public bool CanExecute(Sheet sheet) => true;
-
-    public bool Execute(Sheet sheet)
+    protected override bool DoExecute(Sheet sheet)
     {
         sheet.ScreenUpdating = false;
-        sheet.Add(_axis, _count);
-        _validatorRestoreData = sheet.Validators.Store.InsertRowColAt(_index, _count, _axis);
-        _cellStoreRestoreData = sheet.Cells.InsertRowColAt(_index, _count, _axis);
-        _cfRestoreData = sheet.ConditionalFormats.InsertRowColAt(_index, _count, _axis);
-        _rowColInfoRestoreData = sheet.GetRowColStore(_axis).InsertImpl(_index, _count);
+        sheet.Add(Axis, Count);
+        _validatorRestoreData = sheet.Validators.Store.InsertRowColAt(Index, Count, Axis);
+        _cellStoreRestoreData = sheet.Cells.InsertRowColAt(Index, Count, Axis);
+        _cfRestoreData = sheet.ConditionalFormats.InsertRowColAt(Index, Count, Axis);
+        _rowColInfoRestoreData = sheet.GetRowColStore(Axis).InsertImpl(Index, Count);
 
-        if (_axis == Axis.Col)
+        if (Axis == Axis.Col)
         {
-            _filterRestoreData = sheet.Columns.Filters.Store.InsertAt(_index, _count);
+            _filterRestoreData = sheet.Columns.Filters.Store.InsertAt(Index, Count);
         }
 
         sheet.ScreenUpdating = true;
         return true;
     }
 
-    public bool Undo(Sheet sheet)
+    public override bool CanExecute(Sheet sheet) => true;
+
+    protected override bool DoUndo(Sheet sheet)
     {
         sheet.ScreenUpdating = false;
-        sheet.Remove(_axis, _count);
+        sheet.Remove(Axis, Count);
         sheet.Validators.Store.Restore(_validatorRestoreData);
         sheet.Cells.Restore(_cellStoreRestoreData);
         sheet.ConditionalFormats.Restore(_cfRestoreData);
-        sheet.GetRowColStore(_axis).Restore(_rowColInfoRestoreData);
-        if (_axis == Axis.Col)
+        sheet.GetRowColStore(Axis).Restore(_rowColInfoRestoreData);
+        if (Axis == Axis.Col)
             sheet.Columns.Filters.Store.Restore(_filterRestoreData);
-        
-        sheet.GetRowColStore(_axis).EmitRemoved(_index, _count);
 
-        IRegion dirtyRegion = _axis == Axis.Col
-            ? new ColumnRegion(_index, sheet.NumCols)
-            : new RowRegion(_index, sheet.NumRows);
+        sheet.GetRowColStore(Axis).EmitRemoved(Index, Count);
+
+        IRegion dirtyRegion = Axis == Axis.Col
+            ? new ColumnRegion(Index, sheet.NumCols)
+            : new RowRegion(Index, sheet.NumRows);
         sheet.MarkDirty(dirtyRegion);
         sheet.ScreenUpdating = true;
         return true;
