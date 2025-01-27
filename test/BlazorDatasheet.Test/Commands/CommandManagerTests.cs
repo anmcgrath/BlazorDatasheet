@@ -117,6 +117,103 @@ public class CommandManagerTests
         _sheet.Commands.ExecuteCommand(cmd);
         _results.Should().BeEmpty();
     }
+
+    [Test]
+    public void Attach_Command_Will_Execute_Command_After()
+    {
+        _sheet.Commands.CommandRun += (sender, args) =>
+        {
+            if (args.Command is FakeCommand command)
+            {
+                // use a proxy command so we don't end up with a stack overflow exception.
+                command.AttachAfter(new ProxyCommand(new FakeCommand(-1, ref _results)));
+            }
+        };
+
+        _sheet.Commands.ExecuteCommand(new FakeCommand(0, ref _results));
+        _results.Should().BeEquivalentTo([0, -1]);
+    }
+
+    [Test]
+    public void Attach_Command_Will_Execute_Command_Before()
+    {
+        _sheet.Commands.BeforeCommandRun += (sender, args) =>
+        {
+            if (args.Command is FakeCommand command)
+            {
+                // use a proxy command so we don't end up with a stack overflow exception.
+                command.AttachBefore(new ProxyCommand(new FakeCommand(-1, ref _results)));
+            }
+        };
+
+        _sheet.Commands.ExecuteCommand(new FakeCommand(0, ref _results));
+        _results.Should().BeEquivalentTo([-1, 0]);
+    }
+
+    [Test]
+    public void Failed_Attached_Command_Will_Undo_All_Commands()
+    {
+        _sheet.Commands.CommandRun += (sender, args) =>
+        {
+            if (args.Command is FakeCommand command)
+            {
+                // use a proxy command so we don't end up with a stack overflow exception.
+                command.AttachAfter(new ProxyCommand(new FakeCommand(-1, ref _results)));
+                command.AttachAfter(new ProxyCommand(new FakeCommand(-2, ref _results, false)));
+            }
+        };
+
+        _sheet.Commands.ExecuteCommand(new FakeCommand(0, ref _results));
+        _results.Should().BeEmpty();
+    }
+
+    [Test]
+    public void Undo_Wil_Undo_All_Attached_After()
+    {
+        _sheet.Commands.CommandRun += (sender, args) =>
+        {
+            if (args.Command is FakeCommand command)
+            {
+                // use a proxy command so we don't end up with a stack overflow exception.
+                command.AttachAfter(new ProxyCommand(new FakeCommand(2, ref _results)));
+                command.AttachAfter(new ProxyCommand(new FakeCommand(3, ref _results)));
+            }
+        };
+
+        // add a command first to ensure we don't undo this far back.
+        _sheet.Commands.ExecuteCommand(new ProxyCommand(new FakeCommand(0, ref _results)));
+
+        _sheet.Commands.ExecuteCommand(new FakeCommand(1, ref _results));
+        _sheet.Commands.Undo();
+        _results.Should().BeEquivalentTo([0]);
+
+        _sheet.Commands.Redo();
+        _results.Should().BeEquivalentTo([0, 1, 2, 3]);
+    }
+
+    [Test]
+    public void Undo_Wil_Undo_All_Attached_Before()
+    {
+        _sheet.Commands.BeforeCommandRun += (sender, args) =>
+        {
+            if (args.Command is FakeCommand command)
+            {
+                // use a proxy command so we don't end up with a stack overflow exception.
+                command.AttachBefore(new ProxyCommand(new FakeCommand(2, ref _results)));
+                command.AttachBefore(new ProxyCommand(new FakeCommand(3, ref _results)));
+            }
+        };
+
+        // add a command first to ensure we don't undo this far back.
+        _sheet.Commands.ExecuteCommand(new ProxyCommand(new FakeCommand(0, ref _results)));
+        _sheet.Commands.ExecuteCommand(new FakeCommand(1, ref _results));
+
+        _sheet.Commands.Undo();
+        _results.Should().BeEquivalentTo([0]);
+
+        _sheet.Commands.Redo();
+        _results.Should().BeEquivalentTo([0, 2, 3, 1]);
+    }
 }
 
 public class FakeCommand : BaseCommand, IUndoableCommand

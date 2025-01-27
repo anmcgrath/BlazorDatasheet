@@ -33,4 +33,9 @@ public interface ICommand
     /// </summary>
     /// <returns></returns>
     IReadOnlyList<ICommand> GetChainedBeforeCommands();
+
+    /// <summary>
+    /// Clears the commands attached to execute before or after this command.
+    /// </summary>
+    void ClearChainedCommands();
 }

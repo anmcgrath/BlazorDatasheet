@@ -21,4 +21,10 @@ public abstract class BaseCommand : ICommand
 
     public virtual IReadOnlyList<ICommand> GetChainedAfterCommands() => _chainedAfterCommands;
     public virtual IReadOnlyList<ICommand> GetChainedBeforeCommands() => _chainedBeforeCommands;
+
+    public void ClearChainedCommands()
+    {
+        _chainedAfterCommands.Clear();
+        _chainedBeforeCommands.Clear();
+    }
 }

@@ -74,7 +74,7 @@ public class CommandManager
         var result = command.Execute(_sheet);
         CommandRun?.Invoke(this, new CommandRunEventArgs(command, _sheet, result));
 
-        var chainedAfterResult = ExecuteCommands(command.GetChainedBeforeCommands());
+        var chainedAfterResult = ExecuteCommands(command.GetChainedAfterCommands(), isRedo: isRedo);
         if (!chainedAfterResult && command is IUndoableCommand undoableCommand)
         {
             undoableCommand.Undo(_sheet);
@@ -106,14 +106,18 @@ public class CommandManager
     /// Rolls back any unsuccessful undoable commands so that if one fails to run, all fail to run.
     /// </summary>
     /// <param name="commands"></param>
+    /// <param name="isRedo"></param>
     /// <returns></returns>
-    private bool ExecuteCommands(IReadOnlyList<ICommand> commands)
+    private bool ExecuteCommands(IReadOnlyList<ICommand> commands, bool isRedo = false)
     {
+        if (!commands.Any())
+            return true;
+
         int lastSuccessfulCommandIndex = -1;
         for (int i = 0; i < commands.Count; i++)
         {
             var chainedCommand = commands[i];
-            var res = ExecuteCommand(chainedCommand);
+            var res = ExecuteCommand(chainedCommand, isRedo);
             if (res)
                 lastSuccessfulCommandIndex = i;
             else
@@ -126,7 +130,10 @@ public class CommandManager
             for (int i = lastSuccessfulCommandIndex; i >= 0; i--)
             {
                 if (commands[i] is IUndoableCommand undoCommand)
+                {
                     undoCommand.Undo(_sheet);
+                    undoCommand.ClearChainedCommands();
+                }
             }
         }
 
@@ -165,9 +172,30 @@ public class CommandManager
 
         var commandData = _history.Pop()!;
 
+        foreach (var cmd in commandData.Command.GetChainedAfterCommands().Reverse())
+        {
+            if (cmd is IUndoableCommand undoableCommand)
+            {
+                var afterRes = undoableCommand.Undo(_sheet);
+                undoableCommand.ClearChainedCommands();
+                CommandUndone?.Invoke(this, new UndoCommandRunEventArgs(undoableCommand, _sheet, afterRes));
+            }
+        }
+
         var result = commandData.Command.Undo(_sheet);
         CommandUndone?.Invoke(this, new UndoCommandRunEventArgs(commandData.Command, _sheet, result));
 
+        foreach (var cmd in commandData.Command.GetChainedBeforeCommands().Reverse())
+        {
+            if (cmd is IUndoableCommand undoableCommand)
+            {
+                var beforeRes = undoableCommand.Undo(_sheet);
+                undoableCommand.ClearChainedCommands();
+                CommandUndone?.Invoke(this, new UndoCommandRunEventArgs(undoableCommand, _sheet, beforeRes));
+            }
+        }
+
+        commandData.Command.ClearChainedCommands();
         _sheet.Selection.Restore(commandData.SelectionSnapshot);
 
         if (!HistoryPaused && result)
