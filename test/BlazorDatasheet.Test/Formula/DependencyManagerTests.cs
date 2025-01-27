@@ -32,11 +32,10 @@ public class DependencyManagerTests
     [Test]
     public void SetFormula()
     {
-        throw new NotImplementedException();
         formulaEngine.SetFormula(0, 0, GetFormula("=A2"));
-        /*formulaEngine.IsReferenced(1, 0).Should().BeTrue();
+        formulaEngine.IsCellReferenced(1, 0).Should().BeTrue();
         formulaEngine.RemoveFormula(0, 0);
-        formulaEngine.IsReferenced(1, 0).Should().BeFalse();*/
+        formulaEngine.IsCellReferenced(1, 0).Should().BeFalse();
     }
 
     [Test]
@@ -67,30 +66,6 @@ public class DependencyManagerTests
             .ToList();
 
         sorted.Should().BeEquivalentTo([2, 1, 0]);
-    }
-
-    [Test]
-    public void Insert_Rows_Shifts_References()
-    {
-        throw new NotImplementedException();
-        var f = GetFormula("=A5");
-        formulaEngine.SetFormula(0, 0, f);
-        //formulaEngine.InsertRowColAt(2, 2, Axis.Row);
-        /*formulaEngine.DependencyManager.IsReferenced(4, 0).Should().BeFalse(); // A5
-        formulaEngine.DependencyManager.IsReferenced(6, 0).Should().BeTrue(); // A7*/
-        f.ToFormulaString().Should().BeEquivalentTo("=A7");
-    }
-
-    [Test]
-    public void Insert_Rows_Shifts_Formula()
-    {
-        throw new NotImplementedException();
-        var f = GetFormula("=A5");
-        formulaEngine.SetFormula(1, 0, f);
-        /*formulaEngine.DependencyManager.InsertRowColAt(0, 2, Axis.Row);
-        formulaEngine.DependencyManager.GetCalculationOrder()
-            .SelectMany(x => x)
-            .Should().BeEquivalentTo([new FormulaVertex(3, 0, GetFormula("=A7"))]);*/
     }
     
     [Test]

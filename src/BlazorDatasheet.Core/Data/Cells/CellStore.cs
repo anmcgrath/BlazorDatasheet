@@ -99,7 +99,7 @@ public partial class CellStore
         var toClear = regionsToClear.ToList();
         restoreData.ValueRestoreData = _dataStore.Clear(toClear);
         restoreData.ValidRestoreData = _validStore.Clear(toClear);
-        restoreData.Merge(ClearFormulaImpl(toClear));
+        restoreData.FormulaRestoreData = ClearFormulaImpl(toClear).FormulaRestoreData;
 
         _sheet.BatchUpdates();
         EmitCellsChanged(toClear);
@@ -215,7 +215,7 @@ public partial class CellStore
             FormulaChanged?.Invoke(this,
                 new CellFormulaChangeEventArgs(pt.Position.row, pt.Position.col, pt.Data, null));
         }
-        
+
         foreach (var pt in restoreData.FormulaRestoreData.DataRemoved)
         {
             FormulaChanged?.Invoke(this, new CellFormulaChangeEventArgs(pt.row, pt.col, null, pt.data));
