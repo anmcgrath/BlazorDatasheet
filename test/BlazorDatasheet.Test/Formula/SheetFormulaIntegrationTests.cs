@@ -216,7 +216,6 @@ public class SheetFormulaIntegrationTests
     [Test]
     public void Insert_Row_Before_Formula_Shifts_Formula_And_Updates_Ref()
     {
-        throw new NotImplementedException();
         var sheet = new Sheet(10, 10);
         sheet.Cells.SetFormula(2, 2, "=B2"); // set C3 to =B2
 
@@ -224,20 +223,13 @@ public class SheetFormulaIntegrationTests
         sheet.Cells[2, 2].Formula.Should().BeNull();
         sheet.Cells[3, 2].Formula.Should().Be("=B3");
 
-        /*sheet.FormulaEngine.DependencyManager.GetDependents(new Region(2, 1)) // b3
-            .Select(x => x.Key)
-            .First()
-            .Should()
-            .Be("C4"); // (3,2)
+        sheet.FormulaEngine.IsCellReferenced(2, 1).Should().BeTrue(); // B3
+        sheet.FormulaEngine.IsCellReferenced(1, 1).Should().BeFalse(); // B2
 
         sheet.Commands.Undo();
         sheet.Cells[2, 2].Formula.Should().Be("=B2");
 
-        sheet.FormulaEngine.DependencyManager.GetDependents(new Region(1, 1)) // b2
-            .Select(x => x.Key)
-            .First()
-            .Should()
-            .Be("C3"); // (3,2)*/
+        sheet.FormulaEngine.IsCellReferenced(1, 1).Should().BeTrue(); // B2
     }
 
 
@@ -370,7 +362,9 @@ public class SheetFormulaIntegrationTests
     public void Remove_Formula_In_Column_Removes_And_Restores_Correctly()
     {
         _sheet.Cells.SetFormula(0, 0, "=A2");
+        _sheet.FormulaEngine.IsCellReferenced(1, 0).Should().BeTrue();
         _sheet.Columns.RemoveAt(0);
+        _sheet.FormulaEngine.IsCellReferenced(1, 0).Should().BeFalse();
         _sheet.Commands.Undo();
         _sheet.Cells[0, 0].Formula.Should().Be("=A2");
         _sheet.FormulaEngine.IsCellReferenced(1, 0).Should().BeTrue();

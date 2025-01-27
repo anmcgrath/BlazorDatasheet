@@ -1,4 +1,6 @@
-﻿using BlazorDatasheet.Core.Data;
+﻿using BlazorDatasheet.Core.Commands.RowCols;
+using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Events.Commands;
 using BlazorDatasheet.Core.Events.Data;
 using BlazorDatasheet.Core.Events.Edit;
 using BlazorDatasheet.Core.Events.Formula;
@@ -78,15 +80,24 @@ public class FormulaEngine
         _sheet.Editor.BeforeEditAccepted += EditorOnBeforeEditAccepted;
 
         _sheet.Cells.CellsChanged += SheetOnCellValuesChanged;
-        _sheet.Rows.Removed += RowsOnRemoved;
-        _sheet.Columns.Removed += ColumnsOnRemoved;
-        _sheet.Rows.Inserted += RowsOnInserted;
-        _sheet.Columns.Inserted += ColumnsOnInserted;
-        
+        _sheet.Commands.CommandRun += CommandsOnCommandRun;
+
         _environment = new SheetEnvironment(sheet);
         _evaluator = new Evaluator(_environment);
 
         RegisterDefaultFunctions();
+    }
+
+    private void CommandsOnCommandRun(object? sender, CommandRunEventArgs e)
+    {
+        if (e.Command is RemoveRowColsCommand removeCommand)
+        {
+            this.RemoveRowCol(removeCommand.Index, removeCommand.Count, removeCommand.Axis);
+        }
+        else if (e.Command is InsertRowsColsCommand insertCommand)
+        {
+            this.InsertRowCol(insertCommand.Index, insertCommand.Count, insertCommand.Axis);
+        }
     }
 
     private void CellsOnFormulaChanged(object? sender, CellFormulaChangeEventArgs e)
@@ -226,6 +237,11 @@ public class FormulaEngine
         RemoveFormulaVertex(vertex);
 
         return new FormulaEngineRestoreData();
+    }
+
+    internal bool HasVertex(int row, int col)
+    {
+        return _dependencyGraph.HasVertex(GetVertexKey(row, col));
     }
 
     internal void RemoveFormulaVertex(FormulaVertex vertex)
@@ -455,22 +471,31 @@ public class FormulaEngine
 
     private void ColumnsOnRemoved(object? sender, RowColRemovedEventArgs e)
     {
+        RemoveRowCol(e.Index, e.Count, Axis.Col);
     }
 
     private void RowsOnRemoved(object? sender, RowColRemovedEventArgs e)
     {
-        var axis = Axis.Row;
+        RemoveRowCol(e.Index, e.Count, Axis.Row);
+    }
 
-        int dRow = e.Count;
-        int dCol = 0;
+    private void RemoveRowCol(int index, int count, Axis axis)
+    {
+        int dRow = axis == Axis.Row ? count : 0;
+        int dCol = axis == Axis.Col ? count : 0;
 
-        var deletedRegion = new RowRegion(e.Index, e.Index + e.Count - 1);
+        IRegion deletedRegion = axis == Axis.Col
+            ? new ColumnRegion(index, index + count - 1)
+            : new RowRegion(index, index + count - 1);
+
         foreach (var vertex in GetVerticesInRegion(deletedRegion))
         {
             RemoveFormulaVertex(vertex);
         }
 
-        var affectedRegion = new RowRegion(e.Index, int.MaxValue);
+        IRegion affectedRegion = axis == Axis.Col
+            ? new ColumnRegion(index, int.MaxValue)
+            : new RowRegion(index, int.MaxValue);
 
         var formulaAffected = FindDependentFormula(affectedRegion);
 
@@ -479,7 +504,7 @@ public class FormulaEngine
             if (data.Formula == null)
                 continue;
 
-            data.Formula.RemoveRowColFromReferences(e.Index, e.Count, Axis.Row);
+            data.Formula.RemoveRowColFromReferences(index, count, axis);
 
             var newFormulaStr = data.Formula.ToFormulaString();
 
@@ -487,7 +512,13 @@ public class FormulaEngine
             {
                 var vRow = data.Region!.Top;
                 var vCol = data.Region!.Left;
-                _sheet.Cells.GetFormulaStore().Set(vRow - dRow, vCol - dCol, newFormulaStr);
+
+                if (vRow >= index)
+                    vRow -= dRow;
+                if (vCol >= index)
+                    vCol -= dCol;
+
+                _sheet.Cells.GetFormulaStore().Set(vRow, vCol, newFormulaStr);
             }
 
             else if (data.VertexType == VertexType.Named)
@@ -495,7 +526,7 @@ public class FormulaEngine
         }
 
         ShiftVerticesInRegion(affectedRegion, -dRow, -dCol);
-        _regionDependencies.RemoveRowColAt(e.Index, e.Count, axis);
+        _regionDependencies.RemoveRowColAt(index, count, axis);
 
         _allDirtyRefs = true;
         CalculateSheet();
@@ -503,23 +534,29 @@ public class FormulaEngine
 
     private void ColumnsOnInserted(object? sender, RowColInsertedEventArgs e)
     {
+        InsertRowCol(e.Index, e.Count, Axis.Col);
     }
 
     private void RowsOnInserted(object? sender, RowColInsertedEventArgs e)
     {
-        var axis = Axis.Row;
+        InsertRowCol(e.Index, e.Count, Axis.Row);
+    }
 
-        int dRow = e.Count;
-        int dCol = 0;
+    private void InsertRowCol(int index, int count, Axis axis)
+    {
+        int dRow = axis == Axis.Row ? count : 0;
+        int dCol = axis == Axis.Col ? count : 0;
 
-        var formulaAffected = FindDependentFormula(new RowRegion(e.Index, int.MaxValue));
+        IRegion region = axis == Axis.Col ? new ColumnRegion(index, int.MaxValue) : new RowRegion(index, int.MaxValue);
+
+        var formulaAffected = FindDependentFormula(region);
 
         foreach (var data in formulaAffected)
         {
             if (data.Formula == null)
                 continue;
 
-            data.Formula.InsertRowColIntoReferences(e.Index, e.Count, Axis.Row);
+            data.Formula.InsertRowColIntoReferences(index, count, axis);
 
             var newFormulaStr = data.Formula.ToFormulaString();
 
@@ -527,19 +564,26 @@ public class FormulaEngine
             {
                 var vRow = data.Region!.Top;
                 var vCol = data.Region!.Left;
-                _sheet.Cells.GetFormulaStore().Set(vRow + dRow, vCol + dCol, newFormulaStr);
+
+                if (vRow >= index)
+                    vRow += dRow;
+                if (vCol >= index)
+                    vCol += dCol;
+
+                _sheet.Cells.GetFormulaStore().Set(vRow, vCol, newFormulaStr);
             }
 
             else if (data.VertexType == VertexType.Named)
                 _environment.SetVariable(data.Key, newFormulaStr);
         }
 
-        ShiftVerticesInRegion(new RowRegion(e.Index, int.MaxValue), dRow, dCol);
-        _regionDependencies.InsertRowColAt(e.Index, e.Count, axis);
+        ShiftVerticesInRegion(region, dRow, dCol);
+        _regionDependencies.InsertRowColAt(index, count, axis);
 
         _allDirtyRefs = true;
         CalculateSheet();
     }
+
 
     private void ShiftVerticesInRegion(IRegion region, int dRow, int dCol)
     {
