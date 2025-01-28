@@ -298,6 +298,7 @@ public class FormulaEngine
         if (_requiresCalculation.Count == 0 && !calculateAll)
             return;
 
+        // Limit the calculation to include those necessary vertices.
         var vertices = calculateAll ? null : _requiresCalculation.ToList();
 
         IsCalculating = true;
@@ -306,19 +307,19 @@ public class FormulaEngine
         var order = GetCalculationOrder(vertices);
         var executionContext = new FormulaExecutionContext();
 
+        // Our order is a list of strongly connected groups.
         foreach (var scc in order)
         {
             bool isCircularGroup = false;
 
             foreach (var vertex in scc)
             {
-                if (vertex.Formula == null ||
-                    !(
-                        vertex.VertexType != VertexType.Cell || vertex.VertexType != VertexType.Named))
+                if (vertex.Formula == null)
                     continue;
 
-                // if it's part of a scc group, and we don't have circular references, then the value would
-                // already have been evaluated.
+                if (vertex.VertexType == VertexType.Region)
+                    continue;
+                
                 CellValue value;
 
                 // To speed up time in scc group, if one vertex is circular the rest will be.
@@ -357,6 +358,9 @@ public class FormulaEngine
 
                 executionContext.ClearExecuting();
 
+                // Here we update formula engine references.
+                // Since we can allow dynamic references we should do it here
+                // rather than on parsing.
                 if (_allDirtyRefs || _dirtyReferences.Contains(vertex))
                     UpdateReferences(vertex, executionContext.GetEvaluatedReferences(vertex.Formula));
             }
