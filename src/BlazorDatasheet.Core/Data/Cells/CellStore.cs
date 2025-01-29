@@ -5,6 +5,7 @@ using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core;
+using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 [assembly: InternalsVisibleTo("BlazorDatasheet.Test")]
 
@@ -214,7 +215,7 @@ public partial class CellStore
             _sheet.MarkDirty(pt.row, pt.col);
             EmitCellChanged(pt.row, pt.col);
         }
-
+        
         foreach (var region in restoreData.GetAffectedRegions())
         {
             _sheet.MarkDirty(region);
@@ -232,5 +233,31 @@ public partial class CellStore
     public SheetCell this[int row, int col]
     {
         get { return new SheetCell(row, col, _sheet); }
+    }
+
+    /// <summary>
+    /// The <see cref="SheetCell"/> at the address given. If the address is not valid for a cell, null is returned.
+    /// </summary>
+    /// <param name="cellAddress"></param>
+    public SheetCell? this[string cellAddress]
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(cellAddress))
+                return null;
+
+            var rangeStrFormula = $"={cellAddress}";
+            var evaluatedValue =
+                _sheet.FormulaEngine.Evaluate(_sheet.FormulaEngine.ParseFormula(rangeStrFormula),
+                    resolveReferences: false);
+            if (evaluatedValue.ValueType == CellValueType.Reference)
+            {
+                var reference = evaluatedValue.GetValue<Reference>();
+                if (reference?.Kind == ReferenceKind.Cell)
+                    return new SheetCell(reference.Region!.Top, reference.Region!.Left, _sheet);
+            }
+
+            return null;
+        }
     }
 }
