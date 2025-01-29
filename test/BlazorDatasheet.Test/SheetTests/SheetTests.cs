@@ -147,4 +147,32 @@ public class SheetTests
         sheet.Cells[0, 0].Value.Should().Be(2);
         sheet.Cells[1, 0].Value.Should().Be(1);
     }
+
+    [Test]
+    [TestCase("A1", 0, 0)]
+    [TestCase("A$1", 0, 0)]
+    [TestCase("$A1", 0, 0)]
+    [TestCase("C7", 6, 2)]
+    [TestCase("$C$7", 6, 2)]
+    public void Get_Sheet_Cell_With_Correct_Row_Col(string cellAddress, int row, int col)
+    {
+        var sheet = new Sheet(100, 100);
+        var sheetCell = sheet.Cells[cellAddress];
+        sheetCell.Should().NotBeNull();
+        sheetCell!.Row.Should().Be(row);
+        sheetCell!.Col.Should().Be(col);
+    }
+
+    [Test]
+    [TestCase("A")]
+    [TestCase("3")]
+    [TestCase("A1:A3")]
+    [TestCase("3A")]
+    [TestCase("4:4")]
+    [TestCase("4:4")]
+    public void Invalid_Single_Cell_Addresses_Should_Return_Null_From_Cell_Store_Access(string cellAddress)
+    {
+        var sheet = new Sheet(100, 100);
+        sheet.Cells[cellAddress].Should().BeNull();
+    }
 }

@@ -255,7 +255,6 @@ public class Sheet
 
     /// <summary>
     /// The <see cref="SheetRange"/> specified by the string e.g A1, B1:B4, A:B, A:A, 2:4, etc.
-    /// Multiple regions can be included by separating them with a ","
     /// </summary>
     public SheetRange? Range(string rangeStr)
     {
