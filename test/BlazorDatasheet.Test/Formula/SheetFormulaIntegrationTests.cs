@@ -428,6 +428,20 @@ public class SheetFormulaIntegrationTests
         // update B2
         sheet.Cells.GetValue(5, 5).Should().Be(1 + 3 + 3 + 4);
     }
+    
+    [Test]
+    public void Range_Operator_With_Named_Range_Will_Update_Correctly_When_Sheet_Edited()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Cells.SetFormula(5, 5, "=sum(a1:a2:var)");
+        sheet.FormulaEngine.SetVariable("var", "=b3");
+        sheet.Cells.SetValues(0, 0, [[1, 2], [3, 4]]);
+        sheet.Cells.GetValue(5, 5).Should().Be(1 + 2 + 3 + 4);
+        sheet.Range("b1")!.Value = 3;
+
+        // update B2
+        sheet.Cells.GetValue(5, 5).Should().Be(1 + 3 + 3 + 4);
+    }
 
     [Test]
     [TestCase("=1%")]
