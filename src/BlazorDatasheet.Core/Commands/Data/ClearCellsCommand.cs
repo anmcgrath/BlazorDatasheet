@@ -9,21 +9,21 @@ namespace BlazorDatasheet.Core.Commands.Data;
 /// </summary>
 public class ClearCellsCommand : BaseCommand, IUndoableCommand
 {
-    private readonly IEnumerable<IRegion> _regions;
+    public IEnumerable<IRegion> Regions { get; }
     private CellStoreRestoreData _restoreData = null!;
 
-    public ClearCellsCommand(SheetRange range) : this(new[] { range.Region })
+    public ClearCellsCommand(SheetRange range) : this([range.Region])
     {
     }
 
     public ClearCellsCommand(IEnumerable<IRegion> regions)
     {
-        _regions = regions.Select(x => x.Clone()).ToList();
+        Regions = regions.Select(x => x.Clone()).ToList();
     }
 
     public override bool Execute(Sheet sheet)
     {
-        _restoreData = sheet.Cells.ClearCellsImpl(_regions);
+        _restoreData = sheet.Cells.ClearCellsImpl(Regions);
         return true;
     }
 

@@ -1,4 +1,5 @@
-﻿using BlazorDatasheet.Core.Commands.RowCols;
+﻿using BlazorDatasheet.Core.Commands.Data;
+using BlazorDatasheet.Core.Commands.RowCols;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Events.Commands;
 using BlazorDatasheet.Core.Events.Data;
@@ -98,6 +99,12 @@ public class FormulaEngine
         {
             this.InsertRowCol(insertCommand.Index, insertCommand.Count, insertCommand.Axis);
         }
+
+        if (e.Command is ClearCellsCommand clearCellsCommand)
+        {
+            foreach (var region in clearCellsCommand.Regions)
+                clearCellsCommand.AttachAfter(new ClearFormulaVerticesCommand(region));
+        }
     }
 
     private void CellsOnFormulaChanged(object? sender, CellFormulaChangeEventArgs e)
@@ -166,7 +173,7 @@ public class FormulaEngine
         return new FormulaEngineRestoreData();
     }
 
-    private void AddFormulaVertex(FormulaVertex vertex)
+    internal void AddFormulaVertex(FormulaVertex vertex)
     {
         RemoveFormulaVertex(vertex);
 
@@ -208,7 +215,7 @@ public class FormulaEngine
         return _regionDependencies.GetData(region);
     }
 
-    private List<FormulaVertex> GetVerticesInRegion(IRegion region)
+    internal List<FormulaVertex> GetVerticesInRegion(IRegion region)
     {
         var vertices = new List<FormulaVertex>();
         foreach (var v in _dependencyGraph.GetAll())
@@ -246,8 +253,6 @@ public class FormulaEngine
 
     internal void RemoveFormulaVertex(FormulaVertex vertex)
     {
-        PauseCalculating = true;
-
         var dependentFormula = FindDependentFormula(vertex);
 
         foreach (var v in dependentFormula)
@@ -258,8 +263,6 @@ public class FormulaEngine
 
         _regionDependencies.Clear(vertex);
         _dependencyGraph.RemoveVertex(vertex, false);
-
-        PauseCalculating = false; // also calculates sheet
     }
 
     internal CellFormula ParseFormula(string formulaString)
@@ -319,7 +322,7 @@ public class FormulaEngine
 
                 if (vertex.VertexType == VertexType.Region)
                     continue;
-                
+
                 CellValue value;
 
                 // To speed up time in scc group, if one vertex is circular the rest will be.
