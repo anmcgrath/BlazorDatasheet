@@ -113,9 +113,12 @@ public partial class CellStore
     /// <param name="row"></param>
     /// <param name="col"></param>
     /// <param name="formula"></param>
-    public void SetFormula(int row, int col, string formula)
+    public void SetFormula(int row, int col, string? formula)
     {
-        _sheet.Commands.ExecuteCommand(new SetFormulaCommand(row, col, formula));
+        if (formula == null)
+            _sheet.Commands.ExecuteCommand(new ClearCellsCommand(_sheet.Range(row, col)));
+        else
+            _sheet.Commands.ExecuteCommand(new SetFormulaCommand(row, col, formula));
     }
 
     internal IMatrixDataStore<string?> GetFormulaStore() => _formulaStore;

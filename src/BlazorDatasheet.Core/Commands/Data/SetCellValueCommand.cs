@@ -6,50 +6,55 @@ namespace BlazorDatasheet.Core.Commands.Data;
 
 public class SetCellValueCommand : BaseCommand, IUndoableCommand
 {
-    private readonly int _row;
-    private readonly int _col;
-    private readonly CellValue? _valueAsCellValue;
-    private readonly object? _value;
+    public int Row { get; }
+    public int Column { get; }
+    public CellValue Value { get; }
+
+    /// <summary>
+    /// We need this so that we respect type in conversion
+    /// </summary>
+    public object? RawValue { get; }
+
     private CellStoreRestoreData _restoreData = null!;
 
     /// <summary>
     /// Sets a single cell value to the <paramref name="value"/>. No conversion is performed.
     /// </summary>
     /// <param name="row"></param>
-    /// <param name="col"></param>
+    /// <param name="column"></param>
     /// <param name="value"></param>
-    public SetCellValueCommand(int row, int col, CellValue value)
+    public SetCellValueCommand(int row, int column, CellValue value)
     {
-        _row = row;
-        _col = col;
-        _valueAsCellValue = value;
+        Row = row;
+        Column = column;
+        Value = value;
     }
 
     /// <summary>
     /// Sets a single cell value to the <paramref name="value"/>. Conversion to <seealso cref="CellValue"/> is performed.
     /// </summary>
     /// <param name="row"></param>
-    /// <param name="col"></param>
+    /// <param name="column"></param>
     /// <param name="value"></param>
-    public SetCellValueCommand(int row, int col, object? value)
+    public SetCellValueCommand(int row, int column, object? value)
     {
-        _row = row;
-        _col = col;
-        _value = value;
+        Row = row;
+        Column = column;
+        RawValue = value;
     }
 
-    public override bool CanExecute(Sheet sheet) => sheet.Region.Contains(_row, _col);
+    public override bool CanExecute(Sheet sheet) => sheet.Region.Contains(Row, Column);
 
     public override bool Execute(Sheet sheet)
     {
         sheet.ScreenUpdating = false;
 
-        if (_valueAsCellValue != null)
-            _restoreData = sheet.Cells.SetValueImpl(_row, _col, _valueAsCellValue);
+        if (RawValue != null)
+            _restoreData = sheet.Cells.SetValueImpl(Row, Column, RawValue);
         else
-            _restoreData = sheet.Cells.SetValueImpl(_row, _col, _value);
+            _restoreData = sheet.Cells.SetValueImpl(Row, Column, Value);
 
-        sheet.MarkDirty(_row, _col);
+        sheet.MarkDirty(Row, Column);
         sheet.ScreenUpdating = true;
         return true;
     }

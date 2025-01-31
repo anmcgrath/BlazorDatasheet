@@ -94,7 +94,7 @@ public class SheetCell : IReadOnlyCell
     public string? Formula
     {
         get => _sheet.Cells.GetFormulaString(Row, Col);
-        set => _sheet.Cells.SetFormulaImpl(Row, Col, value);
+        set => _sheet.Cells.SetFormula(Row, Col, value);
     }
 
     public object? Value

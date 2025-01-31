@@ -210,7 +210,13 @@ public partial class CellStore
             _sheet.MarkDirty(pt.row, pt.col);
             EmitCellChanged(pt.row, pt.col);
         }
-        
+
+        foreach (var pt in restoreData.ValueRestoreData.PositionsSet)
+        {
+            _sheet.MarkDirty(pt.Position.row, pt.Position.col);
+            EmitCellChanged(pt.Position.row, pt.Position.col);
+        }
+
         foreach (var region in restoreData.GetAffectedRegions())
         {
             _sheet.MarkDirty(region);

@@ -76,17 +76,37 @@ public class FormulaEngine
     public FormulaEngine(Sheet sheet)
     {
         _sheet = sheet;
-        _sheet.Cells.FormulaChanged += CellsOnFormulaChanged;
+        //_sheet.Cells.FormulaChanged += CellsOnFormulaChanged;
         _sheet.Editor.BeforeCellEdit += EditorOnBeforeCellEdit;
         _sheet.Editor.BeforeEditAccepted += EditorOnBeforeEditAccepted;
 
         _sheet.Cells.CellsChanged += SheetOnCellValuesChanged;
         _sheet.Commands.CommandRun += CommandsOnCommandRun;
+        _sheet.Commands.BeforeCommandRun += CommandsOnBeforeCommandRun;
 
         _environment = new SheetEnvironment(sheet);
         _evaluator = new Evaluator(_environment);
 
         RegisterDefaultFunctions();
+    }
+
+    private void CommandsOnBeforeCommandRun(object? sender, BeforeCommandRunEventArgs e)
+    {
+        if (e.Command is ClearCellsCommand clearCellsCommand)
+        {
+            foreach (var region in clearCellsCommand.Regions)
+                clearCellsCommand.AttachAfter(new ClearFormulaVerticesCommand(region));
+        }
+
+        if (e.Command is SetFormulaCommand setFormulaCommand)
+        {
+            CellFormula? parsedFormula = null;
+            if (IsFormula(setFormulaCommand.FormulaString))
+                parsedFormula = _parser.FromString(setFormulaCommand.FormulaString);
+
+            setFormulaCommand.AttachAfter(new SetParsedFormulaCommand(setFormulaCommand.Row, setFormulaCommand.Col,
+                parsedFormula));
+        }
     }
 
     private void CommandsOnCommandRun(object? sender, CommandRunEventArgs e)
@@ -100,10 +120,10 @@ public class FormulaEngine
             this.InsertRowCol(insertCommand.Index, insertCommand.Count, insertCommand.Axis);
         }
 
-        if (e.Command is ClearCellsCommand clearCellsCommand)
+        if (!IsCalculating && e.Command is SetCellValueCommand setCellValueCommand)
         {
-            foreach (var region in clearCellsCommand.Regions)
-                clearCellsCommand.AttachAfter(new ClearFormulaVerticesCommand(region));
+            setCellValueCommand.AttachAfter(
+                new ClearFormulaVerticesCommand(new Region(setCellValueCommand.Row, setCellValueCommand.Column)));
         }
     }
 
@@ -155,6 +175,11 @@ public class FormulaEngine
         _environment.RegisterLogicalFunctions();
         _environment.RegisterMathFunctions();
         _environment.RegisterLookupFunctions();
+    }
+
+    internal void RegisterFunction(string name, ISheetFunction function)
+    {
+        _environment.RegisterFunction(name, function);
     }
 
     private void EditorOnBeforeCellEdit(object? sender, BeforeCellEditEventArgs e)
@@ -424,6 +449,11 @@ public class FormulaEngine
     internal CellFormula? GetFormula(int row, int col)
     {
         return _dependencyGraph.GetVertex(GetVertexKey(row, col))?.Formula;
+    }
+
+    internal FormulaVertex? GetVertex(int row, int col)
+    {
+        return _dependencyGraph.GetVertex(GetVertexKey(row, col));
     }
 
     internal CellFormula? GetFormula(string variable)

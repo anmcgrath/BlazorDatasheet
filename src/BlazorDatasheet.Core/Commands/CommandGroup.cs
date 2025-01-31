@@ -35,7 +35,7 @@ public class CommandGroup : BaseCommand, IUndoableCommand
         sheet.BatchUpdates();
         foreach (var command in _commands)
         {
-            var run = command.Execute(sheet);
+            var run = sheet.Commands.ExecuteCommand(command, isRedo: false, useUndo: false);
             if (!run)
             {
                 // Undo any successful commands that have been run

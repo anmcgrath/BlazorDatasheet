@@ -49,8 +49,9 @@ public class CommandManager
     /// </summary>
     /// <param name="command"></param>
     /// <param name="isRedo"></param>
+    /// <param name="useUndo"></param>
     /// <returns></returns>
-    public bool ExecuteCommand(ICommand command, bool isRedo = false)
+    public bool ExecuteCommand(ICommand command, bool isRedo = false, bool useUndo = true)
     {
         if (_isCollectingCommands)
         {
@@ -64,7 +65,8 @@ public class CommandManager
         if (beforeArgs.Cancel)
             return false;
 
-        var chainedBeforeResult = ExecuteCommands(command.GetChainedBeforeCommands());
+        var chainedBeforeResult = ExecuteCommands(command.GetChainedBeforeCommands(), isRedo: false, useUndo: false);
+
         if (!chainedBeforeResult)
             return false;
 
@@ -74,7 +76,7 @@ public class CommandManager
         var result = command.Execute(_sheet);
         CommandRun?.Invoke(this, new CommandRunEventArgs(command, _sheet, result));
 
-        var chainedAfterResult = ExecuteCommands(command.GetChainedAfterCommands(), isRedo: isRedo);
+        var chainedAfterResult = ExecuteCommands(command.GetChainedAfterCommands(), isRedo: false, useUndo: false);
         if (!chainedAfterResult && command is IUndoableCommand undoableCommand)
         {
             undoableCommand.Undo(_sheet);
@@ -83,7 +85,7 @@ public class CommandManager
 
         if (result)
         {
-            if (!HistoryPaused && command is IUndoableCommand undoCommand)
+            if (!HistoryPaused && useUndo && command is IUndoableCommand undoCommand)
             {
                 _history.Push(new UndoCommandData()
                 {
@@ -107,8 +109,9 @@ public class CommandManager
     /// </summary>
     /// <param name="commands"></param>
     /// <param name="isRedo"></param>
+    /// <param name="useUndo"></param>
     /// <returns></returns>
-    private bool ExecuteCommands(IReadOnlyList<ICommand> commands, bool isRedo = false)
+    private bool ExecuteCommands(IReadOnlyList<ICommand> commands, bool isRedo = false, bool useUndo = true)
     {
         if (!commands.Any())
             return true;
@@ -117,7 +120,7 @@ public class CommandManager
         for (int i = 0; i < commands.Count; i++)
         {
             var chainedCommand = commands[i];
-            var res = ExecuteCommand(chainedCommand, isRedo);
+            var res = ExecuteCommand(chainedCommand, isRedo, useUndo);
             if (res)
                 lastSuccessfulCommandIndex = i;
             else

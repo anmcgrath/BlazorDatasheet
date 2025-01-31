@@ -10,6 +10,7 @@ using BlazorDatasheet.Formula.Core.Interpreter;
 using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
 using BlazorDatasheet.Formula.Functions.Logical;
+using BlazorDatashet.Formula.Functions.Math;
 using FluentAssertions;
 using NUnit.Framework;
 using NUnit.Framework.Internal.Commands;
@@ -51,9 +52,9 @@ public class SheetFormulaIntegrationTests
     [Test]
     public void Formula_Calculation_Performs_When_Referenced_Cell_Value_Changes()
     {
-        _sheet.Cells.SetFormula(1, 1, "=A1 + 10");
-        _sheet.Cells.SetValue(0, 0, 5);
-        Assert.AreEqual(15, _sheet.Cells.GetValue(1, 1));
+        _sheet.Cells["B2"]!.Formula = "=A1 + 10";
+        _sheet.Cells["A1"]!.Value = 5;
+        Assert.AreEqual(15, _sheet.Cells["B2"]!.Value);
     }
 
     [Test]
@@ -428,7 +429,7 @@ public class SheetFormulaIntegrationTests
         // update B2
         sheet.Cells.GetValue(5, 5).Should().Be(1 + 3 + 3 + 4);
     }
-    
+
     [Test]
     public void Range_Operator_With_Named_Range_Will_Update_Correctly_When_Sheet_Edited()
     {
@@ -489,11 +490,22 @@ public class SheetFormulaIntegrationTests
     }
 
     [Test]
-    public void Set_Formula_Then_Undo_Has_Correct_References()
+    public void Set_Formula_Then_Undo_Has_Correct_References_Single()
     {
         var sheet = new Sheet(100, 100);
-        sheet.Cells.SetFormula(0, 0, "=C3");
-        sheet.Cells.SetFormula(1, 2, "=A1");
+        sheet.Cells["A1"]!.Formula = "=C3";
+        sheet.FormulaEngine.GetDependencyInfo().Count().Should().Be(1);
+        sheet.Commands.Undo();
+        var di = sheet.FormulaEngine.GetDependencyInfo();
+        di.Count().Should().Be(0);
+    }
+
+    [Test]
+    public void Set_Formula_Then_Undo_Has_Correct_References_Multiple()
+    {
+        var sheet = new Sheet(100, 100);
+        sheet.Cells["A1"]!.Formula = "=C3";
+        sheet.Cells["C2"]!.Formula = "=A1";
         sheet.FormulaEngine.GetDependencyInfo().Count().Should().Be(3);
         sheet.Commands.Undo();
         var di = sheet.FormulaEngine.GetDependencyInfo();
@@ -526,5 +538,16 @@ public class SheetFormulaIntegrationTests
             .Select(x => x.Key)
             .Should()
             .BeEquivalentTo(["A7", "A4"]);
+    }
+
+    [Test]
+    public void Formula_Referencing_Range_Will_Undo_Correctly()
+    {
+        _sheet.FormulaEngine.RegisterFunction("sum", new SumFunction());
+        _sheet.Cells["A1"]!.Formula = "=sum(B1:B5)";
+        _sheet.Cells["B2"]!.Value = 3;
+        _sheet.Cells["A1"]!.Value.Should().Be(3);
+        _sheet.Commands.Undo();
+        _sheet.Cells["A1"]!.Value.Should().Be(0);
     }
 }
