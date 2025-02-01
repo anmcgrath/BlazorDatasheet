@@ -200,12 +200,27 @@ public class FormulaEngine
 
     internal void AddFormulaVertex(FormulaVertex vertex)
     {
-        RemoveFormulaVertex(vertex);
-
         if (vertex.Formula == null)
             return;
 
-        _dependencyGraph.AddVertex(vertex);
+        if (_dependencyGraph.HasVertex(vertex.Key))
+        {
+            // Remove links between this vertex and anything it depends on
+            var dependsOn = _dependencyGraph.Prec(vertex.Key);
+            foreach (var u in dependsOn)
+            {
+                _dependencyGraph.RemoveEdge(u, vertex);
+            }
+
+            // Instead of add we can swap, preserving other dependencies.
+            _dependencyGraph.Swap(_dependencyGraph.GetVertex(vertex.Key)!, vertex);
+            
+            // Remove regions that the formula depends on
+            _regionDependencies.Clear(vertex);
+        }
+        else
+            _dependencyGraph.AddVertex(vertex);
+
         _requiresCalculation.Add(vertex);
 
         var ctx = new FormulaExecutionContext();
@@ -215,10 +230,10 @@ public class FormulaEngine
         var dependentFormula = FindDependentFormula(vertex); // directly references cell
         if (vertex.Region != null)
             dependentFormula = dependentFormula.Concat(FindDependentFormula(vertex.Region));
+        dependentFormula = dependentFormula.ToList();
 
         foreach (var v in dependentFormula)
         {
-            _requiresCalculation.Add(v);
             _dependencyGraph.AddEdge(vertex, v);
         }
 
@@ -379,9 +394,14 @@ public class FormulaEngine
                     var prevValue = _environment.HasVariable(vertex.Key)
                         ? _environment.GetVariable(vertex.Key)
                         : null;
+
+                    if (prevValue?.Data?.GetType() != typeof(CellFormula))
+                    {
+                        _environment.SetVariable(vertex.Key, value);
+                    }
+
                     VariableChanged?.Invoke(this,
                         new VariableChangedEventArgs(vertex.Key, prevValue, new CellValue(value)));
-                    _environment.SetVariable(vertex.Key, value);
                 }
 
                 executionContext.ClearExecuting();
