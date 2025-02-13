@@ -5,7 +5,6 @@ namespace BlazorDatasheet.Core.Commands;
 
 public abstract class RegionCommand : BaseCommand, IUndoableCommand
 {
-    private readonly List<IUndoableCommand> _children = new();
     public IRegion Region { get; }
 
     protected RegionCommand(IRegion region)
@@ -21,7 +20,6 @@ public abstract class RegionCommand : BaseCommand, IUndoableCommand
         sheet.MarkDirty(Region);
         sheet.EndBatchUpdates();
         sheet.ScreenUpdating = true;
-
         return executed;
     }
 
@@ -30,20 +28,12 @@ public abstract class RegionCommand : BaseCommand, IUndoableCommand
 
     public bool Undo(Sheet sheet)
     {
-        for (int i = _children.Count - 1; i >= 0; i--)
-            _children[i].Undo(sheet);
         sheet.ScreenUpdating = false;
         sheet.BatchUpdates();
         var undone = DoUndo(sheet);
         sheet.EndBatchUpdates();
         sheet.MarkDirty(Region);
         sheet.ScreenUpdating = true;
-
         return undone;
-    }
-
-    public void Attach(IUndoableCommand command)
-    {
-        _children.Add(command);
     }
 }

@@ -174,39 +174,34 @@ public class CommandManager
             return false;
 
         var commandData = _history.Pop()!;
-
-        foreach (var cmd in commandData.Command.GetChainedAfterCommands().Reverse())
-        {
-            if (cmd is IUndoableCommand undoableCommand)
-            {
-                var afterRes = undoableCommand.Undo(_sheet);
-                undoableCommand.ClearChainedCommands();
-                CommandUndone?.Invoke(this, new UndoCommandRunEventArgs(undoableCommand, _sheet, afterRes));
-            }
-        }
-
-        var result = commandData.Command.Undo(_sheet);
-        CommandUndone?.Invoke(this, new UndoCommandRunEventArgs(commandData.Command, _sheet, result));
-
-        foreach (var cmd in commandData.Command.GetChainedBeforeCommands().Reverse())
-        {
-            if (cmd is IUndoableCommand undoableCommand)
-            {
-                var beforeRes = undoableCommand.Undo(_sheet);
-                undoableCommand.ClearChainedCommands();
-                CommandUndone?.Invoke(this, new UndoCommandRunEventArgs(undoableCommand, _sheet, beforeRes));
-            }
-        }
+        var undoResult = UndoCommand(commandData.Command);
 
         commandData.Command.ClearChainedCommands();
         _sheet.Selection.Restore(commandData.SelectionSnapshot);
 
-        if (!HistoryPaused && result)
+        if (!HistoryPaused && undoResult)
         {
             _redos.Push(commandData.Command);
         }
 
-        return result;
+        return undoResult;
+    }
+
+    private bool UndoCommand(IUndoableCommand command)
+    {
+        foreach (var cmd in command.GetChainedAfterCommands().Reverse())
+            if (cmd is IUndoableCommand undoableCommand)
+                UndoCommand(undoableCommand);
+
+        var res = command.Undo(_sheet);
+        CommandUndone?.Invoke(this, new UndoCommandRunEventArgs(command, _sheet, res));
+
+        foreach (var cmd in command.GetChainedBeforeCommands().Reverse())
+            if (cmd is IUndoableCommand undoableCommand)
+                UndoCommand(undoableCommand);
+
+        command.ClearChainedCommands();
+        return res;
     }
 
     /// <summary>

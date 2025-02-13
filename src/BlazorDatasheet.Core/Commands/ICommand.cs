@@ -38,4 +38,7 @@ public interface ICommand
     /// Clears the commands attached to execute before or after this command.
     /// </summary>
     void ClearChainedCommands();
+
+    void ClearChainedAfterCommands();
+    void ClearChainedBeforeCommands();
 }

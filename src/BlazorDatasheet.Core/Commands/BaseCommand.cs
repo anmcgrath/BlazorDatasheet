@@ -27,4 +27,14 @@ public abstract class BaseCommand : ICommand
         _chainedAfterCommands.Clear();
         _chainedBeforeCommands.Clear();
     }
+
+    public void ClearChainedBeforeCommands()
+    {
+        _chainedBeforeCommands.Clear();
+    }
+
+    public void ClearChainedAfterCommands()
+    {
+        _chainedAfterCommands.Clear();
+    }
 }
