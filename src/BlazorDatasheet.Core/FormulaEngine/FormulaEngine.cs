@@ -83,6 +83,7 @@ public class FormulaEngine
         _sheet.Cells.CellsChanged += SheetOnCellValuesChanged;
         _sheet.Commands.CommandRun += CommandsOnCommandRun;
         _sheet.Commands.BeforeCommandRun += CommandsOnBeforeCommandRun;
+        _sheet.Commands.CommandUndone += CommandsOnCommandUndone;
 
         _environment = new SheetEnvironment(sheet);
         _evaluator = new Evaluator(_environment);
@@ -90,50 +91,64 @@ public class FormulaEngine
         RegisterDefaultFunctions();
     }
 
+    private void CommandsOnCommandUndone(object? sender, UndoCommandRunEventArgs e)
+    {
+        switch (e.Command)
+        {
+            case InsertRowsColsCommand insertRowsColsCommand:
+                RemoveRowCol(insertRowsColsCommand.Index, insertRowsColsCommand.Count, insertRowsColsCommand.Axis);
+                break;
+            case RemoveRowColsCommand removeRowColsCommand:
+                InsertRowCol(removeRowColsCommand.Index, removeRowColsCommand.Count, removeRowColsCommand.Axis);
+                break;
+        }
+    }
+
     private void CommandsOnBeforeCommandRun(object? sender, BeforeCommandRunEventArgs e)
     {
-        if (e.Command is ClearCellsCommand clearCellsCommand)
+        switch (e.Command)
         {
-            foreach (var region in clearCellsCommand.Regions)
-                clearCellsCommand.AttachAfter(new ClearFormulaVerticesCommand(region));
-        }
+            case ClearCellsCommand clearCellsCommand:
+            {
+                foreach (var region in clearCellsCommand.Regions)
+                    clearCellsCommand.AttachBefore(new ClearFormulaVerticesCommand(region));
+                break;
+            }
+            case SetFormulaCommand setFormulaCommand:
+            {
+                CellFormula? parsedFormula = null;
+                if (IsFormula(setFormulaCommand.FormulaString))
+                    parsedFormula = _parser.FromString(setFormulaCommand.FormulaString);
 
-        if (e.Command is SetFormulaCommand setFormulaCommand)
-        {
-            CellFormula? parsedFormula = null;
-            if (IsFormula(setFormulaCommand.FormulaString))
-                parsedFormula = _parser.FromString(setFormulaCommand.FormulaString);
-
-            setFormulaCommand.AttachAfter(new SetParsedFormulaCommand(setFormulaCommand.Row, setFormulaCommand.Col,
-                parsedFormula));
+                setFormulaCommand.AttachAfter(new SetParsedFormulaCommand(setFormulaCommand.Row, setFormulaCommand.Col,
+                    parsedFormula));
+                break;
+            }
         }
     }
 
     private void CommandsOnCommandRun(object? sender, CommandRunEventArgs e)
     {
-        if (e.Command is RemoveRowColsCommand removeCommand)
+        switch (e.Command)
         {
-            this.RemoveRowCol(removeCommand.Index, removeCommand.Count, removeCommand.Axis);
-        }
-        else if (e.Command is InsertRowsColsCommand insertCommand)
-        {
-            this.InsertRowCol(insertCommand.Index, insertCommand.Count, insertCommand.Axis);
-        }
+            case RemoveRowColsCommand removeCommand:
+                RemoveRowCol(removeCommand.Index, removeCommand.Count, removeCommand.Axis);
+                break;
+            case InsertRowsColsCommand insertCommand:
+            {
+                InsertRowCol(insertCommand.Index, insertCommand.Count, insertCommand.Axis);
+                break;
+            }
+            case SetCellValueCommand setCellValueCommand:
+                if (IsCalculating)
+                {
+                    setCellValueCommand.AttachAfter(
+                        new ClearFormulaVerticesCommand(new Region(setCellValueCommand.Row,
+                            setCellValueCommand.Column)));
+                }
 
-        if (!IsCalculating && e.Command is SetCellValueCommand setCellValueCommand)
-        {
-            setCellValueCommand.AttachAfter(
-                new ClearFormulaVerticesCommand(new Region(setCellValueCommand.Row, setCellValueCommand.Column)));
+                break;
         }
-    }
-
-    private void CellsOnFormulaChanged(object? sender, CellFormulaChangeEventArgs e)
-    {
-        CellFormula? parsedFormula = null;
-        if (e.NewFormula != null)
-            parsedFormula = _parser.FromString(e.NewFormula);
-
-        SetFormula(e.Row, e.Col, parsedFormula);
     }
 
     private void EditorOnBeforeEditAccepted(object? sender, BeforeAcceptEditEventArgs e)
@@ -191,11 +206,10 @@ public class FormulaEngine
         }
     }
 
-    internal FormulaEngineRestoreData SetFormula(int row, int col, CellFormula? formula)
+    internal void SetFormula(int row, int col, CellFormula? formula)
     {
         var vertex = new FormulaVertex(row, col, formula);
         AddFormulaVertex(vertex);
-        return new FormulaEngineRestoreData();
     }
 
     internal void AddFormulaVertex(FormulaVertex vertex)
@@ -214,7 +228,7 @@ public class FormulaEngine
 
             // Instead of add we can swap, preserving other dependencies.
             _dependencyGraph.Swap(_dependencyGraph.GetVertex(vertex.Key)!, vertex);
-            
+
             // Remove regions that the formula depends on
             _regionDependencies.Clear(vertex);
         }
@@ -526,17 +540,7 @@ public class FormulaEngine
         CalculateSheet();
     }
 
-    private void ColumnsOnRemoved(object? sender, RowColRemovedEventArgs e)
-    {
-        RemoveRowCol(e.Index, e.Count, Axis.Col);
-    }
-
-    private void RowsOnRemoved(object? sender, RowColRemovedEventArgs e)
-    {
-        RemoveRowCol(e.Index, e.Count, Axis.Row);
-    }
-
-    private void RemoveRowCol(int index, int count, Axis axis)
+    internal void RemoveRowCol(int index, int count, Axis axis)
     {
         int dRow = axis == Axis.Row ? count : 0;
         int dCol = axis == Axis.Col ? count : 0;
@@ -589,17 +593,7 @@ public class FormulaEngine
         CalculateSheet();
     }
 
-    private void ColumnsOnInserted(object? sender, RowColInsertedEventArgs e)
-    {
-        InsertRowCol(e.Index, e.Count, Axis.Col);
-    }
-
-    private void RowsOnInserted(object? sender, RowColInsertedEventArgs e)
-    {
-        InsertRowCol(e.Index, e.Count, Axis.Row);
-    }
-
-    private void InsertRowCol(int index, int count, Axis axis)
+    internal void InsertRowCol(int index, int count, Axis axis)
     {
         int dRow = axis == Axis.Row ? count : 0;
         int dCol = axis == Axis.Col ? count : 0;

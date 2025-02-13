@@ -362,7 +362,7 @@ public class SheetFormulaIntegrationTests
     [Test]
     public void Remove_Formula_In_Column_Removes_And_Restores_Correctly()
     {
-        _sheet.Cells.SetFormula(0, 0, "=A2");
+        _sheet.Cells["A1"]!.Formula = "=A2";
         _sheet.FormulaEngine.IsCellReferenced(1, 0).Should().BeTrue();
         _sheet.Columns.RemoveAt(0);
         _sheet.FormulaEngine.IsCellReferenced(1, 0).Should().BeFalse();

@@ -1,3 +1,4 @@
+using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Data.Filter;
@@ -36,6 +37,8 @@ public class RemoveRowColsCommand : RegionCommand
         Index = index;
         Axis = axis;
         Count = count;
+
+        this.AttachBefore(new ClearCellsCommand([this.Region]));
     }
 
     protected override bool DoExecute(Sheet sheet)
@@ -57,8 +60,9 @@ public class RemoveRowColsCommand : RegionCommand
         if (Axis == Axis.Col)
             _filterRestoreData = sheet.Columns.Filters.Store.Delete(Index, Index + _nRemoved - 1);
 
-        IRegion dirtyRegion = Axis == Axis.Col ? new ColumnRegion(Index, sheet.NumCols-1) :
-            new RowRegion(Index, sheet.NumRows - 1);
+        IRegion dirtyRegion = Axis == Axis.Col
+            ? new ColumnRegion(Index, sheet.NumCols - 1)
+            : new RowRegion(Index, sheet.NumRows - 1);
         sheet.MarkDirty(dirtyRegion);
 
         return true;
