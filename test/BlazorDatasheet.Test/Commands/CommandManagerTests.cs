@@ -215,6 +215,15 @@ public class CommandManagerTests
         _sheet.Commands.Redo();
         _results.Should().BeEquivalentTo([0, 2, 3, 1]);
     }
+
+    [Test]
+    public void Command_Not_Executed_Fires_Event()
+    {
+        var notExecutedCount = 0;
+        _sheet.Commands.CommandNotExecuted += (sender, args) => notExecutedCount++;
+        _sheet.Commands.ExecuteCommand(new FakeCommand(0, ref _results, false));
+        notExecutedCount.Should().Be(1);
+    }
 }
 
 public class FakeCommand : BaseCommand, IUndoableCommand

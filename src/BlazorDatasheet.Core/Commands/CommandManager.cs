@@ -28,6 +28,11 @@ public class CommandManager
     public event EventHandler<UndoCommandRunEventArgs>? CommandUndone;
 
     /// <summary>
+    /// Called when a command was not executed, i.e CanExecute was false.
+    /// </summary>
+    public event EventHandler<CommandNotExecutedEventArgs>? CommandNotExecuted;
+
+    /// <summary>
     /// Whether the commands executed are being collected in a group.
     /// </summary>
     private bool _isCollectingCommands;
@@ -71,9 +76,13 @@ public class CommandManager
             return false;
 
         if (!command.CanExecute(_sheet))
+        {
+            CommandNotExecuted?.Invoke(this, new CommandNotExecutedEventArgs(command));
             return false;
+        }
 
         var result = command.Execute(_sheet);
+
         CommandRun?.Invoke(this, new CommandRunEventArgs(command, _sheet, result));
 
         var chainedAfterResult = ExecuteCommands(command.GetChainedAfterCommands(), isRedo: false, useUndo: false);
