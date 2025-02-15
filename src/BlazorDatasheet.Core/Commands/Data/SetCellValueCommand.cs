@@ -4,7 +4,7 @@ using BlazorDatasheet.Formula.Core;
 
 namespace BlazorDatasheet.Core.Commands.Data;
 
-public class SetCellValueCommand : IUndoableCommand
+public class SetCellValueCommand : BaseCommand, IUndoableCommand
 {
     private readonly int _row;
     private readonly int _col;
@@ -38,9 +38,9 @@ public class SetCellValueCommand : IUndoableCommand
         _value = value;
     }
 
-    public bool CanExecute(Sheet sheet) => sheet.Region.Contains(_row, _col);
+    public override bool CanExecute(Sheet sheet) => sheet.Region.Contains(_row, _col);
 
-    public bool Execute(Sheet sheet)
+    public override bool Execute(Sheet sheet)
     {
         sheet.ScreenUpdating = false;
 

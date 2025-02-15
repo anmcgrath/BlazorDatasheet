@@ -8,7 +8,7 @@ using BlazorDatasheet.DataStructures.Store;
 
 namespace BlazorDatasheet.Core.Commands.RowCols;
 
-public class RemoveRowColsCommand : IUndoableCommand
+public class RemoveRowColsCommand : BaseCommand, IUndoableCommand
 {
     private readonly int _index;
     private readonly Axis _axis;
@@ -36,7 +36,7 @@ public class RemoveRowColsCommand : IUndoableCommand
         _count = count;
     }
 
-    public bool CanExecute(Sheet sheet)
+    public override bool CanExecute(Sheet sheet)
     {
         if (_index >= sheet.GetSize(_axis))
             return false;
@@ -47,7 +47,7 @@ public class RemoveRowColsCommand : IUndoableCommand
         return true;
     }
 
-    public bool Execute(Sheet sheet)
+    public override bool Execute(Sheet sheet)
     {
         if (_index >= sheet.GetSize(_axis))
             return false;

@@ -3,7 +3,7 @@ using BlazorDatasheet.Core.Data.Filter;
 
 namespace BlazorDatasheet.Core.Commands.Filters;
 
-public class ClearFiltersCommand : IUndoableCommand
+public class ClearFiltersCommand : BaseCommand, IUndoableCommand
 {
     private readonly int _columnIndex;
     private readonly bool _clearAllFilters;
@@ -28,9 +28,9 @@ public class ClearFiltersCommand : IUndoableCommand
         _clearAllFilters = true;
     }
 
-    public bool CanExecute(Sheet sheet) => sheet.Region.SpansCol(_columnIndex);
+    public override bool CanExecute(Sheet sheet) => sheet.Region.SpansCol(_columnIndex);
 
-    public bool Execute(Sheet sheet)
+    public override bool Execute(Sheet sheet)
     {
         if (_clearAllFilters)
             _previousFilters = sheet.Columns.Filters.GetAll().ToList();

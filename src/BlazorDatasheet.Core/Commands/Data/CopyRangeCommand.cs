@@ -4,7 +4,7 @@ using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.Commands.Data;
 
-public class CopyRangeCommand : IUndoableCommand
+public class CopyRangeCommand : BaseCommand, IUndoableCommand
 {
     private readonly SheetRange _fromRange;
     private readonly SheetRange[] _toRanges;
@@ -38,7 +38,7 @@ public class CopyRangeCommand : IUndoableCommand
         _toRanges = new[] { toRange };
     }
 
-    public bool Execute(Sheet sheet)
+    public override bool Execute(Sheet sheet)
     {
         foreach (var range in _toRanges)
             Copy(_fromRange.Region, range.Region, sheet);
@@ -46,7 +46,7 @@ public class CopyRangeCommand : IUndoableCommand
         return true;
     }
 
-    public bool CanExecute(Sheet sheet) => true;
+    public override bool CanExecute(Sheet sheet) => true;
 
     private void Copy(IRegion fromRegion, IRegion toRegion, Sheet sheet)
     {

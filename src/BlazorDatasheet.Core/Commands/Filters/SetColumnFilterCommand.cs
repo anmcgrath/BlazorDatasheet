@@ -3,7 +3,7 @@ using BlazorDatasheet.Core.Data.Filter;
 
 namespace BlazorDatasheet.Core.Commands.Filters;
 
-public class SetColumnFilterCommand : IUndoableCommand
+public class SetColumnFilterCommand : BaseCommand, IUndoableCommand
 {
     private readonly int _columnIndex;
     private readonly List<IFilter> _filters;
@@ -20,8 +20,8 @@ public class SetColumnFilterCommand : IUndoableCommand
     {
     }
 
-    public bool CanExecute(Sheet sheet) => sheet.Region.SpansCol(_columnIndex);
-    public bool Execute(Sheet sheet)
+    public override bool CanExecute(Sheet sheet) => sheet.Region.SpansCol(_columnIndex);
+    public override bool Execute(Sheet sheet)
     {
         _previousFilters = sheet.Columns.Filters.Get(_columnIndex).Filters.ToList();
         sheet.Columns.Filters.SetImpl(_columnIndex, _filters);

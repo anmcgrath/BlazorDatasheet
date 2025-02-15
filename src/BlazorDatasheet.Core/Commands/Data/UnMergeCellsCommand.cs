@@ -3,7 +3,7 @@ using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.Commands.Data;
 
-public class UnMergeCellsCommand : IUndoableCommand
+public class UnMergeCellsCommand : BaseCommand, IUndoableCommand
 {
     private readonly List<IRegion> _unMergesPerformed = new();
     private readonly IRegion _region;
@@ -19,7 +19,7 @@ public class UnMergeCellsCommand : IUndoableCommand
         _region = region.Clone();
     }
 
-    public bool CanExecute(Sheet sheet)
+    public override bool CanExecute(Sheet sheet)
     {
         var existingMerges = sheet.Cells.GetMerges(_region).ToList();
         if (existingMerges.All(x => _region.Contains(x)))
@@ -27,7 +27,7 @@ public class UnMergeCellsCommand : IUndoableCommand
         return false;
     }
 
-    public bool Execute(Sheet sheet)
+    public override bool Execute(Sheet sheet)
     {
         sheet.BatchUpdates();
         _unMergesPerformed.Clear();

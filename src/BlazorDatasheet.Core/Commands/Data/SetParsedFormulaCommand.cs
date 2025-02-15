@@ -4,7 +4,7 @@ using BlazorDatasheet.Formula.Core.Interpreter;
 
 namespace BlazorDatasheet.Core.Commands.Data;
 
-internal class SetParsedFormulaCommand : IUndoableCommand
+internal class SetParsedFormulaCommand : BaseCommand, IUndoableCommand
 {
     private readonly int _row;
     private readonly int _col;
@@ -18,9 +18,9 @@ internal class SetParsedFormulaCommand : IUndoableCommand
         _formula = formula;
     }
 
-    public bool CanExecute(Sheet sheet) => sheet.Region.Contains(_row, _col);
+    public override bool CanExecute(Sheet sheet) => sheet.Region.Contains(_row, _col);
 
-    public bool Execute(Sheet sheet)
+    public override bool Execute(Sheet sheet)
     {
         _restoreData = sheet.Cells.SetFormulaImpl(_row, _col, _formula);
         return true;
