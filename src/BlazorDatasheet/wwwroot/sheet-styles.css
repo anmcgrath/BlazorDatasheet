@@ -10,7 +10,8 @@
     --sheet-border-style: 1px solid #c5c5c5;
     --row-header-bg-color: #fafafa;
     --col-header-bg-color: #fafafa;
-    --headers-foreground-color: #5c5a5a;
+    --row-header-foreground-color: #red;
+    --col-header-foreground-color: #5c5a5a;
     --active-header-bg-color: rgba(121, 150, 179, 0.18);
     --icon-color: #000000;
     --shadow-overlay-color: grey;
@@ -40,7 +41,8 @@
     --sheet-border-style: 1px solid #3f3f3f;
     --row-header-bg-color: #2d2d2d;
     --col-header-bg-color: #2d2d2d;
-    --headers-foreground-color: #a4a4a4;
+    --row-header-foreground-color: #a4a4a4;
+    --col-header-foreground-color: #a4a4a4;
     --active-header-bg-color: rgb(25, 25, 50, 0.18);
     --icon-color: #000000;
     --shadow-overlay-color: #000000;
@@ -85,11 +87,20 @@
     left: 0;
 }
 
-.sheet-row-head-container {
+.sheet-col-head-container, .sheet-row-head-container {
     display: flex;
     flex-direction: column;
     align-items: start;
+}
+
+.sheet-row-head-container {
     background: var(--row-header-bg-color);
+    color: var(--row-header-foreground-color);
+}
+
+.sheet-col-head-container {
+    background: var(--col-header-bg-color);
+    color: var(--col-header-foreground-color);
 }
 
 .sheet-button {
@@ -190,7 +201,6 @@
 }
 
 .col-head, .row-head {
-    background: var(--row-header-bg-color);
     font-weight: bold;
 }
 
