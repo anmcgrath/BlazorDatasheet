@@ -2,7 +2,7 @@ using BlazorDatasheet.Core.Data;
 
 namespace BlazorDatasheet.Core.Commands.Data;
 
-public class SetMetaDataCommand : IUndoableCommand
+public class SetMetaDataCommand : BaseCommand, IUndoableCommand
 {
     private readonly int _row;
     private readonly int _col;
@@ -10,7 +10,7 @@ public class SetMetaDataCommand : IUndoableCommand
     private readonly object? _value;
     private object? _oldValue;
 
-    public bool CanExecute(Sheet sheet) => sheet.Region.Contains(_row, _col);
+    public override bool CanExecute(Sheet sheet) => sheet.Region.Contains(_row, _col);
 
     public SetMetaDataCommand(int row, int col, string name, object? value)
     {
@@ -20,7 +20,7 @@ public class SetMetaDataCommand : IUndoableCommand
         _value = value;
     }
 
-    public bool Execute(Sheet sheet)
+    public override bool Execute(Sheet sheet)
     {
         _oldValue = sheet.Cells.GetMetaData(_row, _col, _name);
         sheet.Cells.SetMetaDataImpl(_row, _col, _name, _value);

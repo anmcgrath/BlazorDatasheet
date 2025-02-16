@@ -2,7 +2,7 @@ using BlazorDatasheet.Core.Data;
 
 namespace BlazorDatasheet.Core.Commands;
 
-public class CommandGroup : IUndoableCommand
+public class CommandGroup : BaseCommand, IUndoableCommand
 {
     private readonly List<ICommand> _commands;
     private readonly List<ICommand> _successfulCommands;
@@ -21,13 +21,13 @@ public class CommandGroup : IUndoableCommand
     {
         _commands.Add(command);
     }
-    
-    public bool CanExecute(Sheet sheet)
+
+    public override bool CanExecute(Sheet sheet)
     {
-        return _commands.All(x=>x.CanExecute(sheet));
+        return _commands.All(x => x.CanExecute(sheet));
     }
 
-    public bool Execute(Sheet sheet)
+    public override bool Execute(Sheet sheet)
     {
         _successfulCommands.Clear();
 
@@ -35,7 +35,7 @@ public class CommandGroup : IUndoableCommand
         sheet.BatchUpdates();
         foreach (var command in _commands)
         {
-            var run = command.Execute(sheet);
+            var run = sheet.Commands.ExecuteCommand(command, isRedo: false, useUndo: false);
             if (!run)
             {
                 // Undo any successful commands that have been run

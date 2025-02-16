@@ -23,9 +23,12 @@ public class AutofillCommandTests
         var cmd = new AutoFillCommand(
             new Region(0, 1, 0, 0),
             new Region(0, 3, 0, 0));
-        cmd.Execute(sheet);
+        sheet.Commands.ExecuteCommand(cmd);
         sheet.Cells[2, 0].Value.Should().Be(5);
         sheet.Cells[3, 0].Value.Should().Be(7);
+        sheet.Commands.Undo();
+        sheet.Cells[2, 0].Value.Should().BeNull();
+        sheet.Cells[3, 0].Value.Should().BeNull();
     }
 
     [Test]
@@ -37,7 +40,7 @@ public class AutofillCommandTests
         var cmd = new AutoFillCommand(
             new Region(0, 1, 0, 0),
             new Region(0, 0, 0, 0));
-        cmd.Execute(sheet);
+        sheet.Commands.ExecuteCommand(cmd);
         sheet.Cells[0, 0].Value.Should().Be(1);
         sheet.Cells[1, 0].ValueType.Should().Be(CellValueType.Empty);
     }
@@ -63,7 +66,7 @@ public class AutofillCommandTests
             new Region(0, 5, 0, 0),
             new Region(0, 11, 0, 0));
 
-        autoFillCommand.Execute(sheet);
+        sheet.Commands.ExecuteCommand(autoFillCommand);
 
         sheet.Cells[6, 0].Value.Should().Be(5);
         sheet.Cells[7, 0].Value.Should().Be(7);
@@ -85,7 +88,7 @@ public class AutofillCommandTests
             sheet.Cells[position.row, position.col].Value = val;
 
         var autoFill = new AutoFillCommand(dataRegion, extendRegion);
-        autoFill.Execute(sheet);
+        sheet.Commands.ExecuteCommand(autoFill);
 
         foreach (var position in extendRegion)
             sheet.Cells[position.row, position.col].Value.Should().Be(val);
@@ -102,7 +105,7 @@ public class AutofillCommandTests
             new Region(2, 3, 3, 3),
             new Region(2, 5, 3, 3));
 
-        cmd.Execute(sheet);
+        sheet.Commands.ExecuteCommand(cmd);
         sheet.Cells[5, 3].Value.Should().Be("text");
         sheet.Cells[4, 3].Value.Should().Be(2);
     }
@@ -119,7 +122,7 @@ public class AutofillCommandTests
             new Region(2, 2, 3, 3),
             new Region(2, 2, 3, 4));
 
-        cmd.Execute(sheet);
+        sheet.Commands.ExecuteCommand(cmd);
         sheet.Cells[2, 4].HasFormula().Should().Be(true);
         sheet.Cells[2, 4].Formula.Should().Be("=SUM(B1:B2)");
 
@@ -136,7 +139,27 @@ public class AutofillCommandTests
         var f = new CellFormat() { BackgroundColor = "f1" };
         sheet.SetFormat(new Region(0, 0), f);
         var cmd = new AutoFillCommand(new Region(0, 0), new Region(0, 1, 0, 0));
-        cmd.Execute(sheet);
+        sheet.Commands.ExecuteCommand(cmd);
         sheet.GetFormat(1, 0).Should().BeEquivalentTo(f);
+    }
+
+    [Test]
+    public void Auto_Fill_Does_Not_Expand_Into_Readonly_Cells()
+    {
+        var sheet = new Sheet(100, 100);
+        sheet.Cells["B2"]!.Value = "Not Empty";
+        sheet.Cells["B2"]!.Format = new CellFormat() { IsReadOnly = true };
+        sheet.Commands.ExecuteCommand(new AutoFillCommand(new Region(0, 1), new Region(0, 5, 1, 1)));
+        sheet.Cells["B2"]!.Value.Should().Be("Not Empty");
+    }
+    
+    [Test]
+    public void Auto_Fill_Does_Not_Shrink_Readonly_Cells()
+    {
+        var sheet = new Sheet(100, 100);
+        sheet.Cells["B2"]!.Value = "Not Empty";
+        sheet.Cells["B2"]!.Format = new CellFormat() { IsReadOnly = true };
+        sheet.Commands.ExecuteCommand(new AutoFillCommand(new Region(0, 5, 1, 1), new Region(0, 1)));
+        sheet.Cells["B2"]!.Value.Should().Be("Not Empty");
     }
 }

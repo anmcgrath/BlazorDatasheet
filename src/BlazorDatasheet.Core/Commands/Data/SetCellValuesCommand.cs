@@ -5,7 +5,7 @@ using BlazorDatasheet.Formula.Core;
 
 namespace BlazorDatasheet.Core.Commands.Data;
 
-public class SetCellValuesCommand : IUndoableCommand
+public class SetCellValuesCommand : BaseCommand, IUndoableCommand
 {
     private readonly object[][]? _values;
     private readonly CellValue[][]? _cellValues;
@@ -64,9 +64,9 @@ public class SetCellValuesCommand : IUndoableCommand
         _singleCellValue = value;
     }
 
-    public bool CanExecute(Sheet sheet) => true;
+    public override bool CanExecute(Sheet sheet) => true;
 
-    public bool Execute(Sheet sheet)
+    public override bool Execute(Sheet sheet)
     {
         sheet.ScreenUpdating = false;
         sheet.BatchUpdates();

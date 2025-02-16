@@ -3,7 +3,7 @@ using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.Commands.RowCols;
 
-public class SetHeadingsCommand : IUndoableCommand
+public class SetHeadingsCommand : BaseCommand, IUndoableCommand
 {
     private readonly int _indexStart;
     private readonly int _indexEnd;
@@ -19,9 +19,9 @@ public class SetHeadingsCommand : IUndoableCommand
         _axis = axis;
     }
 
-    public bool CanExecute(Sheet sheet) => true;
+    public override bool CanExecute(Sheet sheet) => true;
 
-    public bool Execute(Sheet sheet)
+    public override bool Execute(Sheet sheet)
     {
         _restoreData = sheet.GetRowColStore(_axis).SetHeadingsImpl(_indexStart, _indexEnd, _heading);
         return true;

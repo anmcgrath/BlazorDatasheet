@@ -6,7 +6,7 @@ using BlazorDatasheet.DataStructures.Intervals;
 
 namespace BlazorDatasheet.Core.Commands.Formatting;
 
-public class SetFormatCommand : IUndoableCommand
+public class SetFormatCommand : BaseCommand, IUndoableCommand
 {
     private readonly CellFormat _cellFormat;
     private readonly bool _clearSurroundingBorders;
@@ -31,9 +31,9 @@ public class SetFormatCommand : IUndoableCommand
         _region = region.Clone();
     }
 
-    public bool CanExecute(Sheet sheet) => true;
+    public override bool CanExecute(Sheet sheet) => true;
 
-    public bool Execute(Sheet sheet)
+    public override bool Execute(Sheet sheet)
     {
         sheet.BatchUpdates();
         _borderCommands = new();

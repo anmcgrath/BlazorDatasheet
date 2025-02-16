@@ -11,7 +11,7 @@ namespace BlazorDatasheet.Core.Commands.RowCols;
 /// <summary>
 /// Command for inserting a row into the sheet.
 /// </summary>
-internal class InsertRowsColsCommand : IUndoableCommand
+internal class InsertRowsColsCommand : BaseCommand, IUndoableCommand
 {
     private readonly int _index;
     private readonly int _count;
@@ -36,9 +36,9 @@ internal class InsertRowsColsCommand : IUndoableCommand
         _axis = axis;
     }
 
-    public bool CanExecute(Sheet sheet) => true;
+    public override bool CanExecute(Sheet sheet) => true;
 
-    public bool Execute(Sheet sheet)
+    public override bool Execute(Sheet sheet)
     {
         sheet.ScreenUpdating = false;
         sheet.Add(_axis, _count);

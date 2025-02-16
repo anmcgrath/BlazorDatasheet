@@ -27,7 +27,7 @@ public partial class CellStore
     /// <returns></returns>
     public bool SetValue(int row, int col, object value)
     {
-        var cmd = new SetCellValueCommand(row, col, value);
+        var cmd = new SetCellValueCommand(row, col, ConvertToCellValue(row, col, value));
         return _sheet.Commands.ExecuteCommand(cmd);
     }
 

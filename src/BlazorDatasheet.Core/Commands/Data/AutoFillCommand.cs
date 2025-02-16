@@ -5,21 +5,25 @@ using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.Commands.Data;
 
-public class AutoFillCommand : IUndoableCommand
+public class AutoFillCommand : BaseCommand, IUndoableCommand
 {
     private IRegion _fromRegion;
     private IRegion _toRegion;
     private CommandGroup _expandCommands = new();
 
-    private ClearCellsCommand? _clearCellsCommand = null;
-
     public AutoFillCommand(IRegion fromRegion, IRegion toRegion)
     {
         _fromRegion = fromRegion;
         _toRegion = toRegion;
+
+        var clearRegions = _fromRegion.Contains(_toRegion)
+            ? _fromRegion.Break(_toRegion)
+            : _toRegion.Break(_fromRegion);
+
+        this.AttachBefore(new ClearCellsCommand(clearRegions));
     }
 
-    public bool Execute(Sheet sheet)
+    public override bool Execute(Sheet sheet)
     {
         // Shrink/cut the content if the new region is smaller than the selection
         if (_fromRegion.Contains(_toRegion))
@@ -31,7 +35,7 @@ public class AutoFillCommand : IUndoableCommand
         return true;
     }
 
-    public bool CanExecute(Sheet sheet) => true;
+    public override bool CanExecute(Sheet sheet) => true;
 
     private void ExpandContent(Sheet sheet)
     {
@@ -63,6 +67,7 @@ public class AutoFillCommand : IUndoableCommand
                         var rowColOffsetFromEnd = offset + cells.Length * repeatNo;
                         var cellPosition =
                             GetCellPositionFromOffset(lastCellPosition, fillDirection, rowColOffsetFromEnd + 1);
+                        GetCellPositionFromOffset(lastCellPosition, fillDirection, rowColOffsetFromEnd + 1);
 
                         _expandCommands.AddCommand(
                             pattern.GetCommand(offset - pattern.Offsets.First(), repeatNo, cells[offset],
@@ -202,15 +207,10 @@ public class AutoFillCommand : IUndoableCommand
 
     private void ShrinkContent(Sheet sheet)
     {
-        _clearCellsCommand = new ClearCellsCommand(_fromRegion.Break(_toRegion));
-        _clearCellsCommand.Execute(sheet);
     }
 
     public bool Undo(Sheet sheet)
     {
-        if (_clearCellsCommand != null)
-            _clearCellsCommand.Undo(sheet);
-
         _expandCommands?.Undo(sheet);
 
         return true;

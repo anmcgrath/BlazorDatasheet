@@ -3,7 +3,7 @@ using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.Commands.RowCols;
 
-public class SetSizeCommand : IUndoableCommand
+public class SetSizeCommand : BaseCommand, IUndoableCommand
 {
     private readonly Axis _axis;
     private readonly int _indexStart;
@@ -19,9 +19,9 @@ public class SetSizeCommand : IUndoableCommand
         _size = size;
     }
 
-    public bool CanExecute(Sheet sheet) => _size >= 0;
+    public override bool CanExecute(Sheet sheet) => _size >= 0;
 
-    public bool Execute(Sheet sheet)
+    public override bool Execute(Sheet sheet)
     {
         _restoreData = sheet.GetRowColStore(_axis).SetSizesImpl(_indexStart, _indexEnd, _size);
         IRegion dirtyRegion = _axis == Axis.Col
