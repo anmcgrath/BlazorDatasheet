@@ -1,6 +1,7 @@
 ﻿using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core;
 using FluentAssertions;
@@ -39,5 +40,17 @@ public class ClearCellsCommandTests
             Assert.AreEqual(2, _sheet.Cells.GetValue(0, 1));
             _commandManager.Redo();
         }
+    }
+
+    [Test]
+    public void Clear_Command_With_Readonly_Cells_Cannot_Execute()
+    {
+        _sheet.Cells[1, 1].Value = "Not Cleared";
+        _sheet.Cells[1, 1].Format = new CellFormat()
+        {
+            IsReadOnly = true
+        };
+        _sheet.Range("A1:C10")!.Clear();
+        _sheet.Cells[1, 1].Value.Should().Be("Not Cleared");
     }
 }

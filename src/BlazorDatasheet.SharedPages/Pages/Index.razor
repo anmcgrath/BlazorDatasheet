@@ -51,6 +51,7 @@
     </button>
     <button @onclick="@(() => _datasheet.SetActiveAsync(true))">Set sheet active</button>
     <button @onclick="ClearBg">Clear BG</button>
+    <button @onclick="@SetReadOnly">ReadOnly</button>
 </div>
 
 <div>
@@ -273,6 +274,14 @@
     private void ClearBg()
     {
         Sheet.SetFormat(Sheet.Selection.Regions, new CellFormat() { BackgroundColor = null });
+    }
+
+    private void SetReadOnly()
+    {
+        foreach (var range in Sheet.Selection.Ranges)
+        {
+            range.Format = new CellFormat() { IsReadOnly = true };
+        }
     }
 
 }

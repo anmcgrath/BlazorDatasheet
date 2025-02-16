@@ -441,7 +441,7 @@ public class Sheet
         int lineNo = 0;
         for (int row = inputPosition.row; row <= endRow; row++)
         {
-            var lineSplit = lines[lineNo].Split('\t');
+            string[] lineSplit = lines[lineNo].Split('\t');
             rowData[lineNo] = lineSplit;
 
             var endCol = Math.Min(inputPosition.col + lineSplit.Length - 1, NumCols - 1);
@@ -450,9 +450,13 @@ public class Sheet
             lineNo++;
         }
 
+        var inputRegion = new Region(inputPosition.row, endRow, inputPosition.col, maxEndCol);
+        if (Cells.ContainsReadOnly(inputRegion))
+            return null;
+
         Cells.SetValues(inputPosition.row, inputPosition.col, rowData);
 
-        return new Region(inputPosition.row, endRow, inputPosition.col, maxEndCol);
+        return inputRegion;
     }
 
     #region FORMAT
@@ -503,7 +507,6 @@ public class Sheet
 
     public void ClearFormat(IRegion region)
     {
-        
     }
 
     #endregion FORMAT

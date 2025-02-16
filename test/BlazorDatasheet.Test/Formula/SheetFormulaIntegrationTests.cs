@@ -3,6 +3,7 @@ using System.Linq;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter;
 using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
@@ -106,7 +107,7 @@ public class SheetFormulaIntegrationTests
         _sheet.Cells.SetFormula(1, 1, "=10");
         Assert.IsTrue(_sheet.Cells.HasFormula(1, 1));
         Assert.AreEqual(10, _sheet.Cells.GetValue(1, 1));
-        _sheet.Commands.ExecuteCommand(new SetCellValueCommand(1, 1, "TestChange"));
+        _sheet.Commands.ExecuteCommand(new SetCellValueCommand(1, 1, CellValue.Text("TestChange")));
         _sheet.Commands.Undo();
         Assert.AreEqual(10, _sheet.Cells.GetValue(1, 1));
         Assert.IsTrue(_sheet.Cells.HasFormula(1, 1));
@@ -117,7 +118,7 @@ public class SheetFormulaIntegrationTests
     public void Clear_Cell_Value_Using_Command_Restores_Formula_On_Undo()
     {
         _sheet.Cells.SetFormula(1, 1, "=10");
-        _sheet.Commands.ExecuteCommand(new ClearCellsCommand(_sheet.Range(1, 1)));
+        _sheet.Commands.ExecuteCommand(new ClearCellsCommand(new Region(1, 1)));
         Assert.False(_sheet.Cells.HasFormula(1, 1));
         _sheet.Commands.Undo();
         Assert.True(_sheet.Cells.HasFormula(1, 1));

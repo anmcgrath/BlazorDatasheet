@@ -192,6 +192,28 @@ public partial class CellStore
     }
 
     /// <summary>
+    /// Returns true if any cell format in the region is readonly.
+    /// </summary>
+    /// <param name="region"></param>
+    /// <returns></returns>
+    public bool ContainsReadOnly(IRegion region)
+    {
+        foreach (var interval in _sheet.Rows.Formats.GetIntervals(region.Top, region.Bottom))
+            if (interval.Data.IsReadOnly == true)
+                return true;
+
+        foreach (var interval in _sheet.Columns.Formats.GetIntervals(region.Left, region.Right))
+            if (interval.Data.IsReadOnly == true)
+                return true;
+
+        foreach (var cellFormat in _formatStore.GetData(region))
+            if (cellFormat.IsReadOnly == true)
+                return true;
+
+        return false;
+    }
+
+    /// <summary>
     /// Restores the internal storage state by redoing any actions that caused the internal data to change.
     /// Fires events for the changed data.
     /// </summary>
@@ -215,7 +237,7 @@ public partial class CellStore
             _sheet.MarkDirty(pt.row, pt.col);
             EmitCellChanged(pt.row, pt.col);
         }
-        
+
         foreach (var region in restoreData.GetAffectedRegions())
         {
             _sheet.MarkDirty(region);

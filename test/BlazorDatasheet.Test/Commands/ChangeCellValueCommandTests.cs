@@ -2,6 +2,7 @@
 using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Formula.Core;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Commands;
@@ -23,7 +24,7 @@ public class ChangeCellValueCommandTests
     [Test]
     public void Execute_Change_Cell_Command_Correctly_Changes_Value_On_Sheet()
     {
-        var changeCmd = new SetCellValueCommand(0, 0, 10);
+        var changeCmd = new SetCellValueCommand(0, 0, CellValue.Number(10));
         _commandManager.ExecuteCommand(changeCmd);
         Assert.AreEqual(10, _sheet.Cells.GetCell(0, 0).GetValue<int>());
         _commandManager.Undo();
