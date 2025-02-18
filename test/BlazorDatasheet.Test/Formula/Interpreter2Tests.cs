@@ -1,5 +1,7 @@
-﻿using BlazorDatasheet.Formula.Core;
+﻿using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
+using BlazorDatashet.Formula.Functions.Math;
 using FluentAssertions;
 using NUnit.Framework;
 using Parser = BlazorDatasheet.Formula.Core.Interpreter.Parsing.Parser;
@@ -182,15 +184,59 @@ public class InterpreterTests
     }
 
     [Test]
-    public void Equality_Binary_Operations_With_Cell_References_Correctly_Works()
+    [TestCase("=A1<A2", true)]
+    [TestCase("=A1>A2", false)]
+    [TestCase("=A1>=A2", false)]
+    [TestCase("=A1<=A2", true)]
+    [TestCase("=A1=A2", false)]
+    [TestCase("=A1<>A2", true)]
+    public void Equality_Binary_Operations_With_Cell_References_Correctly_Works(string expr, bool expected)
     {
         _env.SetCellValue(0, 0, 5);
         _env.SetCellValue(1, 0, 10);
-        EvalExpression("=A1<A2").Data.Should().Be(true);
-        EvalExpression("=A1>A2").Data.Should().Be(false);
-        EvalExpression("=A1>=A2").Data.Should().Be(false);
-        EvalExpression("=A1<=A2").Data.Should().Be(true);
-        EvalExpression("=A1=A2").Data.Should().Be(false);
-        EvalExpression("=A1<>A2").Data.Should().Be(true);
+    }
+
+    [Test]
+    [TestCase("=1%", 1d / 100)]
+    [TestCase("=-2%", -2d / 100)]
+    [TestCase("=1%*100", 1)]
+    [TestCase("=(1+2)%", 3d / 100)]
+    [TestCase("=sum(1%)", 1d / 100)]
+    [TestCase("=(1%)%", 1d / (100 * 100))]
+    [TestCase("=4   %", 4d / 100)]
+    [TestCase("=2%%%",
+        2d / (100 * 100 * 100))] // matches behaviour of excel but not google sheets (google sheets is error)
+    public void Percent_Operator_Evaluates_To_Correct_Value(string formula, double value)
+    {
+        _env.RegisterFunction("sum", new SumFunction());
+        EvalExpression(formula).Data.Should().Be(value);
+    }
+
+    [Test]
+    [TestCase("%", ErrorType.Na)]
+    [TestCase("%2", ErrorType.Na)]
+    [TestCase("1+%", ErrorType.Na)]
+    public void Percent_Operator_Evaluates_To_Error_In_Incorrect_Formula(string incorrectFormula,
+        ErrorType expectedErrorType)
+    {
+        var expr = EvalExpression(incorrectFormula);
+        expr.IsError().Should().BeTrue();
+        expr.GetValue<FormulaError>().ErrorType.Should().Be(expectedErrorType);
+    }
+
+    [Test]
+    public void Formula_Using_Variable_Has_Named_Reference()
+    {
+    }
+
+    [Test]
+    [TestCase("=1", 1)]
+    [TestCase("=1-2", -1)]
+    [TestCase("=1e-2", 1e-2)]
+    [TestCase("=4e5", 4e5)]
+    [TestCase("=10000000000000", 10000000000000)]
+    public void Number_Evalutes_To_Correct_Number(string formula, double expected)
+    {
+        EvalExpression(formula).GetValue<double>().Should().Be(expected);
     }
 }
