@@ -1,6 +1,5 @@
-using BlazorDatasheet.DataStructures.Util;
+using System.Globalization;
 using BlazorDatasheet.Formula.Core.Interpreter.Addresses;
-using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Formula.Core.Interpreter.Lexing;
 
@@ -64,9 +63,9 @@ public ref struct Lexer
             return new EndOfFileToken(_position);
 
         if (char.IsDigit(_current))
-            return ReadNumber(false);
-        else if (_current == '.')
-            return ReadNumber(true);
+            return ReadNumber();
+        if (_string.Slice(_position).StartsWith(NumberFormatInfo.CurrentInfo.NumberDecimalSeparator))
+            return ReadNumber();
 
         if (char.IsLetter(_current) || _current == '$')
             return ReadIdentifier();
@@ -156,19 +155,19 @@ public ref struct Lexer
         return token;
     }
 
-    private Token ReadNumber(bool containsPeriod)
+    private Token ReadNumber()
     {
         int start = _position;
         bool containsE = false;
         Next();
 
         while (char.IsDigit(_current) ||
-               _current == '.' ||
+               _current == Convert.ToChar(NumberFormatInfo.CurrentInfo.NumberDecimalSeparator) ||
                _current == 'e' ||
-               (containsE && _current == '-')) // e and - so that we can parse scientific notation.
+               (containsE &&
+                _current == Convert.ToChar(NumberFormatInfo.CurrentInfo
+                    .NegativeSign))) // e and - so that we can parse scientific notation.
         {
-            if (_current == '.')
-                containsPeriod = true;
             if (_current == 'e')
                 containsE = true;
 
@@ -177,7 +176,7 @@ public ref struct Lexer
 
         int length = _position - start;
 
-        if (!containsPeriod && int.TryParse(_string.Slice(start, length), out var parsedInt))
+        if (int.TryParse(_string.Slice(start, length), out var parsedInt))
         {
             // if we are in the second part of a range parsing...
             if (_referenceState == LexerReferenceState.ReadingReference)
@@ -261,7 +260,7 @@ public ref struct Lexer
 
             // store temp position so we can come back to it
             var tempPosition = _position;
-            var colon = ReadToken();
+            ReadToken(); // colon
             var next = ReadToken();
 
             _referenceState = LexerReferenceState.None;
@@ -290,7 +289,7 @@ public ref struct Lexer
             ResetPosition(tempPosition);
         }
 
-        if (canParseRef && parsedLeftAddress!.Kind == AddressKind.CellAddress)
+        if (canParseRef && parsedLeftAddress.Kind == AddressKind.CellAddress)
             return new AddressToken(parsedLeftAddress, start);
 
         return new IdentifierToken(idSlice.ToString(), start);

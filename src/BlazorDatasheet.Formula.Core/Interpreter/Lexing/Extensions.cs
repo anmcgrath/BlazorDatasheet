@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace BlazorDatasheet.Formula.Core.Interpreter.Lexing;
 
 public static class Extensions

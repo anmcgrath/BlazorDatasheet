@@ -1,4 +1,5 @@
-﻿using BlazorDatasheet.DataStructures.Geometry;
+﻿using System.Globalization;
+using System.Threading;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 using BlazorDatashet.Formula.Functions.Math;
@@ -238,5 +239,14 @@ public class InterpreterTests
     public void Number_Evalutes_To_Correct_Number(string formula, double expected)
     {
         EvalExpression(formula).GetValue<double>().Should().Be(expected);
+    }
+
+    [Test]
+    public void Non_Eng_Culture_Has_Correct_Decimal_Separator()
+    {
+        var ci = new CultureInfo("fr-FR");
+        Thread.CurrentThread.CurrentCulture = ci;
+        EvalExpression("=0,1").GetValue<double>().Should().BeApproximately(0.1, 1e-6);
+        EvalExpression("=,2").GetValue<double>().Should().BeApproximately(0.2, 1e-6);
     }
 }
