@@ -62,6 +62,9 @@ public class Parser
     private Expression ParseBinaryExpression(int parentPrecedence = 0)
     {
         var leftExpression = ParsePrimaryExpression();
+        
+        while (Current.Tag == Tag.PercentToken)
+            leftExpression = new UnaryOperatorExpression(NextToken(), leftExpression, isPostFix: true);
 
         while (true)
         {

@@ -98,6 +98,9 @@ public ref struct Lexer
             case '&':
                 token = new Token(Tag.AmpersandToken, "&", _position);
                 break;
+            case '%':
+                token = new Token(Tag.PercentToken, "%", _position);
+                break;
             case '>':
                 if (Peek(1) == '=')
                 {
@@ -156,27 +159,25 @@ public ref struct Lexer
     private Token ReadNumber(bool containsPeriod)
     {
         int start = _position;
+        bool containsE = false;
         Next();
 
-        while ((char.IsDigit(_current) || _current == '.'))
+        while (char.IsDigit(_current) ||
+               _current == '.' ||
+               _current == 'e' ||
+               (containsE && _current == '-')) // e and - so that we can parse scientific notation.
         {
             if (_current == '.')
                 containsPeriod = true;
+            if (_current == 'e')
+                containsE = true;
+
             Next();
         }
 
         int length = _position - start;
 
-        if (containsPeriod) // could be double
-        {
-            if (double.TryParse(_string.Slice(start, length), out var parsedDouble))
-                return new NumberToken(parsedDouble, start);
-
-            Error($"{_string.Slice(start, length).ToString()} is not a number");
-            return new BadToken(_position);
-        }
-
-        if (int.TryParse(_string.Slice(start, length), out var parsedInt))
+        if (!containsPeriod && int.TryParse(_string.Slice(start, length), out var parsedInt))
         {
             // if we are in the second part of a range parsing...
             if (_referenceState == LexerReferenceState.ReadingReference)
@@ -222,6 +223,10 @@ public ref struct Lexer
             return new NumberToken(parsedInt, start);
         }
 
+        if (double.TryParse(_string.Slice(start, length), out var parsedDouble))
+            return new NumberToken(parsedDouble, start);
+
+        Error($"{_string.Slice(start, length).ToString()} is not a number");
         return new BadToken(_position);
     }
 

@@ -19,6 +19,7 @@ public enum Tag
     GreaterThanToken,
     SemiColonToken,
     BangToken,
+    PercentToken,
     LessThanToken,
     LeftParenthToken,
     RightParenthToken,
