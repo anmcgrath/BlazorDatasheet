@@ -10,9 +10,9 @@
     --sheet-border-style: 1px solid #c5c5c5;
     --row-header-bg-color: #fafafa;
     --col-header-bg-color: #fafafa;
+    --head-selection-bg-color: rgb(218, 230, 243);
     --row-header-foreground-color: #red;
     --col-header-foreground-color: #5c5a5a;
-    --active-header-bg-color: rgba(121, 150, 179, 0.18);
     --icon-color: #000000;
     --shadow-overlay-color: grey;
     --invalid-cell-foreground-color: #ff0000;
@@ -41,9 +41,9 @@
     --sheet-border-style: 1px solid #3f3f3f;
     --row-header-bg-color: #2d2d2d;
     --col-header-bg-color: #2d2d2d;
+    --head-selection-bg-color: rgb(53, 57, 60);
     --row-header-foreground-color: #a4a4a4;
     --col-header-foreground-color: #a4a4a4;
-    --active-header-bg-color: rgb(25, 25, 50, 0.18);
     --icon-color: #000000;
     --shadow-overlay-color: #000000;
     --invalid-cell-foreground-color: #d71b1b;
@@ -58,6 +58,7 @@
     --sheet-button-bg-hover-color: #202e3e;
     --sheet-button-border: 2px solid #202e3e;
     --frozen-border-color: rgba(43, 43, 43, 0.4);
+    --header-selected-bg-color: #203d6a;
 }
 
 .active-sheet {
@@ -205,7 +206,7 @@
 }
 
 .col-head:hover, .row-head:hover {
-    background: var(--selection-bg-color);
+    background: var(--head-selection-bg-color);
 }
 
 .col-head:active {
@@ -214,14 +215,6 @@
 
 .invalid-cell {
     color: var(--invalid-cell-foreground-color) !important;
-}
-
-.column-active {
-    background: var(--active-header-bg-color) !important;
-}
-
-.row-active {
-    background: var(--active-header-bg-color) !important;
 }
 
 .unselectable {
@@ -302,5 +295,5 @@
 }
 
 .bds-selected-header {
-    background: var(--selection-bg-color);
+    background: var(--head-selection-bg-color);
 }
