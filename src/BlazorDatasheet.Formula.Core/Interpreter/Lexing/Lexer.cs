@@ -73,6 +73,9 @@ public ref struct Lexer
         if (_current == '"')
             return ReadStringLiteral();
 
+        if (_current == '\'')
+            return ReadQuotedSheetName();
+
         Token token;
         switch (_current)
         {
@@ -239,9 +242,16 @@ public ref struct Lexer
 
         int length = _position - start;
         var idSlice = _string.Slice(start, length);
-        
+
         if (bool.TryParse(idSlice, out var parsedBool))
             return new LogicalToken(idSlice.ToString(), parsedBool, start);
+
+        if (Peek(0) == '!')
+        {
+            // consume '!'
+            Next();
+            return new SheetLocatorToken(idSlice.ToString(), start);
+        }
 
         // if the current identifier is a valid row, column or cell reference then
         // we look to see if it is part of a range (e.g 1:2, a:2, b2:b3 etc.)
@@ -296,6 +306,45 @@ public ref struct Lexer
             return new AddressToken(parsedLeftAddress, start);
 
         return new IdentifierToken(idSlice.ToString(), start);
+    }
+
+    private Token ReadQuotedSheetName()
+    {
+        int start = _position;
+        // Consume first '
+        Next();
+
+        if (_current == '\0')
+        {
+            Error("End of file reached unexpectedly");
+            return new BadToken(start);
+        }
+
+        while (_current != '\'')
+        {
+            if (_current == '\0')
+            {
+                Error($"Found EOF");
+                return new BadToken(start);
+            }
+
+            Next();
+        }
+
+        int length = _position - start - 1;
+        var stringValue = _string.Slice(start + 1, length).ToString();
+
+        // consume the last '
+        Next();
+
+        if (Peek(0) == '!')
+        {
+            // consume '!'
+            Next();
+            return new SheetLocatorToken(stringValue, start);
+        }
+
+        return new BadToken(_position);
     }
 
     private Token ReadStringLiteral()
