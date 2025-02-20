@@ -62,7 +62,7 @@ public class Parser
     private Expression ParseBinaryExpression(int parentPrecedence = 0)
     {
         var leftExpression = ParsePrimaryExpression();
-        
+
         while (Current.Tag == Tag.PercentToken)
             leftExpression = new UnaryOperatorExpression(NextToken(), leftExpression, isPostFix: true);
 
@@ -87,6 +87,8 @@ public class Parser
                 return ParseParenthExpression();
             case Tag.IdentifierToken:
                 return ParseIdentifierExpression();
+            case Tag.LogicalToken:
+                return ParseLogicalExpression();
             case Tag.LeftCurlyBracketToken:
                 return ParseArrayConstant();
             case Tag.AddressToken:
@@ -101,6 +103,13 @@ public class Parser
 
         return ParseLiteralExpression();
     }
+
+    private Expression ParseLogicalExpression()
+    {
+        var token = (LogicalToken)NextToken();
+        return new LiteralExpression(CellValue.Logical(token.Value));
+    }
+
 
     private Reference? GetReferenceFromAddress(Address address)
     {
@@ -214,10 +223,6 @@ public class Parser
             return ParseFunctionCallExpression();
 
         var identifierToken = (IdentifierToken)NextToken();
-
-        if (bool.TryParse(identifierToken.Value.ToLower(), out var parsedBool))
-            return new LiteralExpression(CellValue.Logical(parsedBool));
-
         return new NameExpression(identifierToken);
     }
 

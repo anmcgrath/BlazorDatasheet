@@ -28,5 +28,6 @@ public enum Tag
     AmpersandToken,
     ColonToken,
     AddressToken,
+    LogicalToken,
     Whitespace
 }

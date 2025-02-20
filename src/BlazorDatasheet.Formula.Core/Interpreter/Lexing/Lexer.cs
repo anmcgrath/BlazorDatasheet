@@ -239,6 +239,9 @@ public ref struct Lexer
 
         int length = _position - start;
         var idSlice = _string.Slice(start, length);
+        
+        if (bool.TryParse(idSlice, out var parsedBool))
+            return new LogicalToken(idSlice.ToString(), parsedBool, start);
 
         // if the current identifier is a valid row, column or cell reference then
         // we look to see if it is part of a range (e.g 1:2, a:2, b2:b3 etc.)
