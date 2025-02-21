@@ -1,17 +1,13 @@
 ﻿using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
-using BlazorDatasheet.Core.Events;
 using BlazorDatasheet.Core.Events.Data;
 using BlazorDatasheet.Core.Events.Edit;
 using BlazorDatasheet.DataStructures.Geometry;
-using BlazorDatasheet.DataStructures.Graph;
 using BlazorDatasheet.DataStructures.Store;
-using BlazorDatasheet.DataStructures.Util;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Dependencies;
 using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
-using BlazorDatasheet.Formula.Core.Interpreter.References;
 using BlazorDatashet.Formula.Functions;
 using CellFormula = BlazorDatasheet.Formula.Core.Interpreter.CellFormula;
 
@@ -24,14 +20,6 @@ public class FormulaEngine
     private readonly SheetEnvironment _environment;
     private readonly Parser _parser = new();
     private readonly Evaluator _evaluator;
-
-    /// <summary>
-    /// Keeps track of any ranges referenced by formula.
-    /// This should ideally keep track of the formula that reference the range also,
-    /// but for now it's just whether it's referenced or not.
-    /// </summary>
-    private readonly RegionDataStore<bool> _observedRanges;
-
     internal readonly DependencyManager DependencyManager = new();
 
     public bool IsCalculating { get; private set; }
@@ -47,7 +35,6 @@ public class FormulaEngine
 
         _environment = new SheetEnvironment(sheet);
         _evaluator = new Evaluator(_environment);
-        _observedRanges = new RegionDataStore<bool>();
 
         RegisterDefaultFunctions();
     }

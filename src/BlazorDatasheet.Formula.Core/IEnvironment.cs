@@ -12,6 +12,7 @@ public interface IEnvironment
     /// </summary>
     /// <param name="row"></param>
     /// <param name="col"></param>
+    /// <param name="sheetName"></param>
     /// <returns></returns>
     CellFormula? GetFormula(int row, int col);
 

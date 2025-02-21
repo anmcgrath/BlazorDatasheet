@@ -85,6 +85,16 @@ public class Sheet
     public Selection Selection { get; }
 
     /// <summary>
+    /// The sheet name.
+    /// </summary>
+    public string Name { get; internal set; } = "Sheet1";
+
+    /// <summary>
+    /// The workbook associated with this sheet.
+    /// </summary>
+    public Workbook Workbook { get; internal set; }
+
+    /// <summary>
     /// Whether the UI associated with the sheet should be updating
     /// </summary>
     public bool ScreenUpdating
@@ -143,6 +153,13 @@ public class Sheet
         Selection = new Selection(this);
         FormulaEngine = new FormulaEngine.FormulaEngine(this);
         ConditionalFormats = new ConditionalFormatManager(this, Cells);
+        Workbook = new Workbook(this);
+    }
+
+    internal Sheet(int numRows, int numCols, int defaultWidth, int defaultHeight, Workbook workbook) : this(numRows,
+        numCols, defaultWidth, defaultHeight)
+    {
+        Workbook = workbook;
     }
 
     public Sheet(int numRows, int numCols, int defaultWidth = 105, int defaultHeight = 24) : this(defaultWidth,
@@ -150,6 +167,15 @@ public class Sheet
     {
         NumCols = numCols;
         NumRows = numRows;
+    }
+
+    internal Sheet(int numRows, int numCols, FormulaEngine.FormulaEngine formulaEngine, int defaultWidth = 105,
+        int defaultHeight = 24) : this(numRows, numCols, defaultWidth,
+        defaultHeight)
+    {
+        NumCols = numCols;
+        NumRows = numRows;
+        FormulaEngine = formulaEngine;
     }
 
     /// <summary>
