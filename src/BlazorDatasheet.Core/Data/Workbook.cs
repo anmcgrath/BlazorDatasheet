@@ -1,17 +1,24 @@
-﻿namespace BlazorDatasheet.Core.Data;
+﻿using BlazorDatasheet.Core.FormulaEngine;
+using BlazorDatasheet.Formula.Core;
+
+namespace BlazorDatasheet.Core.Data;
 
 public class Workbook
 {
     private readonly List<Sheet> _sheets = new();
     public IEnumerable<Sheet> Sheets => _sheets;
+    private readonly FormulaEngine.FormulaEngine _formulaEngine;
+    private readonly WorkbookEnvironment _environment;
 
-    internal Workbook(Sheet sheet)
+    internal Workbook(Sheet sheet) : this()
     {
         AddSheet(sheet);
     }
 
     public Workbook()
     {
+        _environment = new WorkbookEnvironment(this);
+        _formulaEngine = new FormulaEngine.FormulaEngine(_environment);
     }
 
     public Sheet AddSheet(int numRows, int numColumns, int defaultWidth = 105, int defaultHeight = 24)
@@ -47,6 +54,7 @@ public class Workbook
     {
         sheet.Workbook = this;
         _sheets.Add(sheet);
+        _formulaEngine.AddSheet(sheet);
     }
 
 
@@ -54,7 +62,10 @@ public class Workbook
     {
         var sheetIndex = _sheets.FindIndex(s => s.Name == sheetName);
         if (sheetIndex >= 0)
+        {
+            _formulaEngine.RemoveSheet(_sheets[sheetIndex]);
             _sheets.RemoveAt(sheetIndex);
+        }
     }
 
     public void RenameSheet(string oldName, string newName)
@@ -75,4 +86,6 @@ public class Workbook
     {
         return Sheets.FirstOrDefault(x => x.Name == name);
     }
+
+    public FormulaEngine.FormulaEngine GetFormulaEngine() => _formulaEngine;
 }

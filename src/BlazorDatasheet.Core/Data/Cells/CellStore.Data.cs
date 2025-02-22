@@ -28,7 +28,7 @@ public partial class CellStore
     public bool SetValue(int row, int col, object value)
     {
         var cmd = new SetCellValueCommand(row, col, ConvertToCellValue(row, col, value));
-        return _sheet.Commands.ExecuteCommand(cmd);
+        return Sheet.Commands.ExecuteCommand(cmd);
     }
 
     /// <summary>
@@ -41,7 +41,7 @@ public partial class CellStore
     public bool SetValue(int row, int col, CellValue value)
     {
         var cmd = new SetCellValueCommand(row, col, value);
-        return _sheet.Commands.ExecuteCommand(cmd);
+        return Sheet.Commands.ExecuteCommand(cmd);
     }
 
     /// <summary>
@@ -58,13 +58,13 @@ public partial class CellStore
         // If cell values are being set while the formula engine is not calculating,
         // then these values must override the formula and so the formula should be cleared
         // at those cell positions.
-        if (!_sheet.FormulaEngine.IsCalculating && HasFormula(row, col))
+        if (!Sheet.FormulaEngine.IsCalculating && HasFormula(row, col))
         {
             restoreData.FormulaRestoreData = ClearFormulaImpl(row, col).FormulaRestoreData;
         }
 
         // Validate but don't stop setting cell values if the value is invalid.
-        var validationResult = _sheet.Validators.Validate(value, row, col);
+        var validationResult = Sheet.Validators.Validate(value, row, col);
 
         // Save old validation result and current cell values.
         restoreData.ValidRestoreData = _validStore.Set(row, col, validationResult.IsValid);
@@ -101,7 +101,7 @@ public partial class CellStore
     public bool SetValues(int row, int col, object[][] values)
     {
         var cmd = new SetCellValuesCommand(row, col, values);
-        return _sheet.Commands.ExecuteCommand(cmd);
+        return Sheet.Commands.ExecuteCommand(cmd);
     }
 
     /// <summary>
@@ -114,7 +114,7 @@ public partial class CellStore
     public bool SetValues(int row, int col, CellValue[][] values)
     {
         var cmd = new SetCellValuesCommand(row, col, values);
-        return _sheet.Commands.ExecuteCommand(cmd);
+        return Sheet.Commands.ExecuteCommand(cmd);
     }
 
     /// <summary>
@@ -124,7 +124,7 @@ public partial class CellStore
     public bool SetValues(IRegion region, object? value)
     {
         var cmd = new SetCellValuesCommand(region, value);
-        return _sheet.Commands.ExecuteCommand(cmd);
+        return Sheet.Commands.ExecuteCommand(cmd);
     }
 
     /// <summary>

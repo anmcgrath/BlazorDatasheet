@@ -104,10 +104,11 @@ public class ParameterConverter
         else if (value.ValueType == CellValueType.Array)
             values = value.GetValue<CellValue[][]>()!.SelectMany(x => x).ToArray();
 
-        if (values == null) return CellValue.Sequence(new[]
-        {
-            ToNumber(value)
-        });
+        if (values == null)
+            return CellValue.Sequence(new[]
+            {
+                ToNumber(value)
+            });
 
         var results = new List<CellValue>();
         foreach (var val in values)
@@ -137,7 +138,8 @@ public class ParameterConverter
             if (r.Kind == ReferenceKind.Cell)
             {
                 var c = (CellReference)r;
-                return CellValue.Array(new[] { new[] { _environment.GetCellValue(c.RowIndex, c.ColIndex) } });
+                return CellValue.Array(new[]
+                    { new[] { _environment.GetCellValue(c.RowIndex, c.ColIndex, c.SheetName) } });
             }
 
             if (r.Kind == ReferenceKind.Range)
@@ -187,7 +189,7 @@ public class ParameterConverter
         if (reference.Kind == ReferenceKind.Cell)
         {
             var cellRef = (CellReference)reference;
-            return _environment.GetCellValue(cellRef.RowIndex, cellRef.ColIndex);
+            return _environment.GetCellValue(cellRef.RowIndex, cellRef.ColIndex, cellRef.SheetName);
         }
 
         return CellValue.Error(ErrorType.Na);

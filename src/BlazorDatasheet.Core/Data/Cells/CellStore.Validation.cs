@@ -18,11 +18,11 @@ public partial class CellStore
         foreach (var (row, col) in cellsAffected)
         {
             var cellData = this.GetCellValue(row, col);
-            var result = _sheet.Validators.Validate(cellData, row, col);
+            var result = Sheet.Validators.Validate(cellData, row, col);
             _validStore.Set(row, col, result.IsValid);
         }
 
-        _sheet.MarkDirty(cellsAffected);
+        Sheet.MarkDirty(cellsAffected);
     }
 
     public bool IsValid(int row, int col)

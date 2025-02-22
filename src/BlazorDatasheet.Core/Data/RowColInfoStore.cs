@@ -10,7 +10,7 @@ namespace BlazorDatasheet.Core.Data;
 
 public abstract class RowColInfoStore
 {
-    protected readonly Sheet Sheet;
+    public readonly Sheet Sheet;
     public double DefaultSize { get; }
 
     private readonly Range1DStore<string> _headingStore = new(null);

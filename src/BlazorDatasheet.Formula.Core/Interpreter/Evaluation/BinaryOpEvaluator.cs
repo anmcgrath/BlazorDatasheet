@@ -169,7 +169,7 @@ public class BinaryOpEvaluator
         if (value.IsCellReference())
         {
             var cellRef = (CellReference)value.Data!;
-            return _environment.GetCellValue(cellRef.RowIndex, cellRef.ColIndex);
+            return _environment.GetCellValue(cellRef.RowIndex, cellRef.ColIndex, cellRef.SheetName);
         }
 
         return value;

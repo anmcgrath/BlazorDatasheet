@@ -5,16 +5,15 @@ using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Core.FormulaEngine;
 
-public class SheetEnvironment : IEnvironment
+public class WorkbookEnvironment : IEnvironment
 {
-    // only one sheet for now...
-    private readonly Sheet _sheet;
+    private readonly Workbook _workbook;
     private readonly Dictionary<string, CellValue> _variables = new();
     private readonly Dictionary<string, ISheetFunction> _functions = new();
 
-    public SheetEnvironment(Sheet sheet)
+    public WorkbookEnvironment(Workbook workbook)
     {
-        _sheet = sheet;
+        _workbook = workbook;
     }
 
     public bool VariableExists(string name)
@@ -58,29 +57,42 @@ public class SheetEnvironment : IEnvironment
 
     public IEnumerable<CellValue> GetNonEmptyInRange(Reference reference)
     {
-        return _sheet.Cells.GetNonEmptyCellValues(reference.Region)
+        var sheet = _workbook.GetSheet(reference.SheetName);
+        if (sheet == null)
+            return Array.Empty<CellValue>();
+
+        return sheet.Cells.GetNonEmptyCellValues(reference.Region)
             .Select(x => x.value).ToArray();
     }
 
-    public CellValue GetCellValue(int row, int col) => _sheet.Cells.GetCellValue(row, col);
-
-    public CellFormula? GetFormula(int row, int col)
+    public CellValue GetCellValue(int row, int col, string sheetName)
     {
-        return _sheet.Cells.GetFormula(row, col);
+        var sheet = _workbook.GetSheet(sheetName);
+        return sheet?.Cells.GetCellValue(row, col) ?? CellValue.Empty;
+    }
+
+    public CellFormula? GetFormula(int row, int col, string sheetName)
+    {
+        var sheet = _workbook.GetSheet(sheetName);
+        return sheet?.Cells.GetFormula(row, col);
     }
 
     public CellValue[][] GetRangeValues(Reference reference)
     {
+        var sheet = _workbook.GetSheet(reference.SheetName);
+        if (sheet == null)
+            return [];
+
         if (reference.Kind == ReferenceKind.Range)
         {
             var r = reference.Region;
-            return GetValuesInRange(_sheet.Range(r.Top, r.Bottom, r.Left, r.Right));
+            return GetValuesInRange(sheet.Range(r.Top, r.Bottom, r.Left, r.Right));
         }
 
         if (reference.Kind == ReferenceKind.Cell)
         {
             var cellRef = (CellReference)reference;
-            return new[] { new[] { GetCellValue(cellRef.RowIndex, cellRef.ColIndex) } };
+            return new[] { new[] { GetCellValue(cellRef.RowIndex, cellRef.ColIndex, sheet.Name) } };
         }
 
         return Array.Empty<CellValue[]>();

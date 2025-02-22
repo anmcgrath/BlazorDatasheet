@@ -52,7 +52,7 @@ public class Sheet
     /// <summary>
     /// Manages sheet formula
     /// </summary>
-    public FormulaEngine.FormulaEngine FormulaEngine { get; }
+    public FormulaEngine.FormulaEngine FormulaEngine => Workbook.GetFormulaEngine();
 
     /// <summary>
     /// The bounds of the sheet
@@ -151,7 +151,6 @@ public class Sheet
         Rows = new RowInfoStore(defaultHeight, this);
         Columns = new ColumnInfoStore(defaultWidth, this);
         Selection = new Selection(this);
-        FormulaEngine = new FormulaEngine.FormulaEngine(this);
         ConditionalFormats = new ConditionalFormatManager(this, Cells);
         Workbook = new Workbook(this);
     }
@@ -167,15 +166,6 @@ public class Sheet
     {
         NumCols = numCols;
         NumRows = numRows;
-    }
-
-    internal Sheet(int numRows, int numCols, FormulaEngine.FormulaEngine formulaEngine, int defaultWidth = 105,
-        int defaultHeight = 24) : this(numRows, numCols, defaultWidth,
-        defaultHeight)
-    {
-        NumCols = numCols;
-        NumRows = numRows;
-        FormulaEngine = formulaEngine;
     }
 
     /// <summary>

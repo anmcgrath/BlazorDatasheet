@@ -60,7 +60,7 @@ public class Evaluator
         {
             var r = (Reference)result.Data!;
             if (r.Kind == ReferenceKind.Cell)
-                return _environment.GetCellValue(((CellReference)r).RowIndex, ((CellReference)r).ColIndex);
+                return _environment.GetCellValue(((CellReference)r).RowIndex, ((CellReference)r).ColIndex, r.SheetName);
             else if (r.Kind == ReferenceKind.Range)
             {
                 return CellValue.Array(_environment
@@ -147,7 +147,7 @@ public class Evaluator
         if (_options.DoNotResolveDependencies)
             return CellValue.Reference(cellReference);
 
-        var formula = _environment.GetFormula(cellReference.RowIndex, cellReference.ColIndex);
+        var formula = _environment.GetFormula(cellReference.RowIndex, cellReference.ColIndex, cellReference.SheetName);
         if (formula == null)
             return CellValue.Reference(cellReference);
 

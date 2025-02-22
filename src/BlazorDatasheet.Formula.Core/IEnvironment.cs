@@ -5,7 +5,7 @@ namespace BlazorDatasheet.Formula.Core;
 
 public interface IEnvironment
 {
-    CellValue GetCellValue(int row, int col);
+    CellValue GetCellValue(int row, int col, string sheetName);
 
     /// <summary>
     /// Return a cell formula at <paramref name="row"/>, <paramref name="col"/> if it exists.
@@ -14,7 +14,7 @@ public interface IEnvironment
     /// <param name="col"></param>
     /// <param name="sheetName"></param>
     /// <returns></returns>
-    CellFormula? GetFormula(int row, int col);
+    CellFormula? GetFormula(int row, int col, string sheetName);
 
     public CellValue[][] GetRangeValues(Reference reference);
     bool FunctionExists(string functionIdentifier);

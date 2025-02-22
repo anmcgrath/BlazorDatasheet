@@ -1,7 +1,9 @@
 ﻿using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
+using BlazorDatasheet.Core.Edit;
 using BlazorDatasheet.Core.Events.Data;
 using BlazorDatasheet.Core.Events.Edit;
+using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core;
@@ -15,32 +17,43 @@ namespace BlazorDatasheet.Core.FormulaEngine;
 
 public class FormulaEngine
 {
-    private readonly Sheet _sheet;
-    private readonly CellStore _cells;
-    private readonly SheetEnvironment _environment;
+    private IEnvironment _environment;
     private readonly Parser _parser = new();
     private readonly Evaluator _evaluator;
     internal readonly DependencyManager DependencyManager = new();
+    private List<Sheet> _sheets = new();
 
     public bool IsCalculating { get; private set; }
 
-    public FormulaEngine(Sheet sheet)
+    internal FormulaEngine(IEnvironment environment)
     {
-        _sheet = sheet;
-        _cells = sheet.Cells;
-        _sheet.Editor.BeforeCellEdit += SheetOnBeforeCellEdit;
-        _cells.CellsChanged += SheetOnCellsChanged;
-        _sheet.Rows.Removed += (_, _) => CalculateSheet();
-        _sheet.Columns.Removed += (_, _) => CalculateSheet();
-
-        _environment = new SheetEnvironment(sheet);
+        _environment = environment;
         _evaluator = new Evaluator(_environment);
 
         RegisterDefaultFunctions();
     }
 
+    internal void AddSheet(Sheet sheet)
+    {
+        _sheets.Add(sheet);
+        sheet.Editor.BeforeCellEdit += SheetOnBeforeCellEdit;
+        sheet.Cells.CellsChanged += SheetOnCellsChanged;
+        sheet.Rows.Removed += RowsOnRemoved;
+        sheet.Columns.Removed += RowsOnRemoved;
+    }
+
+    internal void RemoveSheet(Sheet sheet)
+    {
+        _sheets.Remove(sheet);
+        sheet.Editor.BeforeCellEdit -= SheetOnBeforeCellEdit;
+        sheet.Cells.CellsChanged -= SheetOnCellsChanged;
+        sheet.Rows.Removed -= RowsOnRemoved;
+        sheet.Columns.Removed -= RowsOnRemoved;
+    }
+
     private void SheetOnCellsChanged(object? sender, CellDataChangedEventArgs e)
     {
+        var sheet = ((CellStore)sender!).Sheet;
         if (this.IsCalculating)
             return;
 
@@ -69,7 +82,13 @@ public class FormulaEngine
         if (!cellsReferenced)
             return;
 
-        this.CalculateSheet();
+        this.CalculateSheet(sheet);
+    }
+
+    private void RowsOnRemoved(object? sender, RowColRemovedEventArgs e)
+    {
+        var sheet = ((RowColInfoStore)sender!).Sheet;
+        CalculateSheet(sheet);
     }
 
     private bool IsCellReferenced(int row, int col)
@@ -91,7 +110,8 @@ public class FormulaEngine
 
     private void SheetOnBeforeCellEdit(object? sender, BeforeCellEditEventArgs e)
     {
-        var formula = _sheet.Cells.GetFormulaString(e.Cell.Row, e.Cell.Col);
+        var sheet = ((Editor)sender!).Sheet;
+        var formula = sheet.Cells.GetFormulaString(e.Cell.Row, e.Cell.Col);
         if (formula != null)
         {
             e.EditValue = formula;
@@ -135,13 +155,13 @@ public class FormulaEngine
 
     public IEnumerable<DependencyInfo> GetDependencies() => DependencyManager.GetDependencies();
 
-    public void CalculateSheet()
+    public void CalculateSheet(Sheet sheet)
     {
         if (IsCalculating)
             return;
 
         IsCalculating = true;
-        _sheet.BatchUpdates();
+        sheet.BatchUpdates();
 
         var order = DependencyManager.GetCalculationOrder();
         var executionContext = new FormulaExecutionContext();
@@ -181,12 +201,12 @@ public class FormulaEngine
 
                 executionContext.ClearExecuting();
 
-                _sheet.Cells.SetValueImpl(vertex.Region!.Top, vertex.Region!.Left, value);
-                _sheet.MarkDirty(vertex.Region!.Top, vertex.Region!.Left);
+                sheet.Cells.SetValueImpl(vertex.Region!.Top, vertex.Region!.Left, value);
+                sheet.MarkDirty(vertex.Region!.Top, vertex.Region!.Left);
             }
         }
 
-        _sheet.EndBatchUpdates();
+        sheet.EndBatchUpdates();
         IsCalculating = false;
     }
 
@@ -202,7 +222,10 @@ public class FormulaEngine
 
     public void SetVariable(string varName, object value)
     {
-        _environment.SetVariable(varName, value);
-        CalculateSheet();
+        _environment.SetVariable(varName, new CellValue(value));
+        foreach (var sheet in _sheets)
+        {
+            CalculateSheet(sheet);
+        }
     }
 }

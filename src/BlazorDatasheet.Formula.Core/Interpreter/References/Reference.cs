@@ -35,6 +35,7 @@ public abstract class Reference
     /// <returns></returns>
     public abstract IRegion Region { get; protected set; }
     internal abstract void SetRegion(IRegion region);
+    public string SheetName { get; private set; } = "Sheet1";
     internal void SetValidity(bool isValid)
     {
         IsInvalid = !isValid;

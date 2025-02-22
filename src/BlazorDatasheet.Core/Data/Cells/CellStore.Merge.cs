@@ -31,7 +31,7 @@ namespace BlazorDatasheet.Core.Data.Cells
         public void Merge(IRegion region)
         {
             var merge = new MergeCellsCommand(region);
-            _sheet.Commands.ExecuteCommand(merge);
+            Sheet.Commands.ExecuteCommand(merge);
         }
 
         /// <summary>
@@ -41,20 +41,20 @@ namespace BlazorDatasheet.Core.Data.Cells
         /// <param name="regions"></param>
         public void Merge(IEnumerable<IRegion> regions)
         {
-            _sheet.Commands.BeginCommandGroup();
+            Sheet.Commands.BeginCommandGroup();
             foreach (var region in regions)
             {
-                _sheet.Commands.ExecuteCommand(new MergeCellsCommand(region));
+                Sheet.Commands.ExecuteCommand(new MergeCellsCommand(region));
             }
 
-            _sheet.Commands.EndCommandGroup();
+            Sheet.Commands.EndCommandGroup();
         }
 
         internal bool MergeImpl(IRegion region)
         {
             _mergeStore.Add(region, true);
             RegionMerged?.Invoke(this, region);
-            _sheet.MarkDirty(region);
+            Sheet.MarkDirty(region);
             return true;
         }
 
@@ -64,14 +64,14 @@ namespace BlazorDatasheet.Core.Data.Cells
         /// <param name="regions"></param>
         public void UnMerge(IEnumerable<IRegion> regions)
         {
-            _sheet.Commands.BeginCommandGroup();
+            Sheet.Commands.BeginCommandGroup();
 
             foreach (var region in regions)
             {
-                _sheet.Commands.ExecuteCommand(new UnMergeCellsCommand(region));
+                Sheet.Commands.ExecuteCommand(new UnMergeCellsCommand(region));
             }
 
-            _sheet.Commands.EndCommandGroup();
+            Sheet.Commands.EndCommandGroup();
         }
 
         /// <summary>
@@ -90,7 +90,7 @@ namespace BlazorDatasheet.Core.Data.Cells
             }
 
             if (updateRegion != null)
-                _sheet.MarkDirty(updateRegion);
+                Sheet.MarkDirty(updateRegion);
         }
 
         /// <summary>
