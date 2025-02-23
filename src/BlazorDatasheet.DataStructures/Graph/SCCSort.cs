@@ -1,4 +1,4 @@
-﻿namespace BlazorDatasheet.DataStructures.Graph;
+﻿﻿namespace BlazorDatasheet.DataStructures.Graph;
 
 /// <summary>
 /// Implements Tarjan's strongly connected components algorithm
@@ -19,15 +19,22 @@ public class SccSort<T> where T : Vertex
         _graph = graph;
     }
 
-    public IList<IList<T>> Sort()
+    /// <summary>
+    /// Calculates the sort order based on dependencies <paramref name="availableVertices"/>. If <paramref name="availableVertices"/> is null, includes all vertices.
+    /// </summary>
+    /// <param name="availableVertices"></param>
+    /// <returns></returns>
+    public IList<IList<T>> Sort(IEnumerable<T>? availableVertices = null)
     {
         _indices = new();
         _low = new();
         _results = new();
         _stack = new();
         _index = 0;
-        
-        foreach (var v in _graph.GetAll())
+
+        var vertices = availableVertices ?? _graph.GetAll();
+
+        foreach (var v in vertices)
         {
             if (!_indices.ContainsKey(v.Key))
                 StrongConnect(v);
@@ -49,14 +56,14 @@ public class SccSort<T> where T : Vertex
 
         foreach (var w in _graph.Adj(v))
         {
-            if (!_indices.ContainsKey(w.Key))
+            if (!_indices.TryGetValue(w.Key, out var index))
             {
                 // have not yet visited w
                 StrongConnect(w);
                 _low[v.Key] = Math.Min(_low[v.Key], _low[w.Key]);
             }
             else if (_stack.Contains(w))
-                _low[v.Key] = Math.Min(_low[v.Key], _indices[w.Key]);
+                _low[v.Key] = Math.Min(_low[v.Key], index);
         }
 
         if (_low[v.Key] == _indices[v.Key])

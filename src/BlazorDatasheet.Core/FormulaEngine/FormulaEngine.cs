@@ -17,11 +17,16 @@ namespace BlazorDatasheet.Core.FormulaEngine;
 
 public class FormulaEngine
 {
-    private IEnvironment _environment;
+    private readonly IEnvironment _environment;
     private readonly Parser _parser = new();
     private readonly Evaluator _evaluator;
     internal readonly DependencyManager DependencyManager = new();
-    private List<Sheet> _sheets = new();
+    private readonly List<Sheet> _sheets = new();
+
+    /// <summary>
+    /// The formula that require recalculation
+    /// </summary>
+    private readonly HashSet<FormulaVertex> _requiresCalculation = new();
 
     public bool IsCalculating { get; private set; }
 
@@ -29,7 +34,6 @@ public class FormulaEngine
     {
         _environment = environment;
         _evaluator = new Evaluator(_environment);
-
         RegisterDefaultFunctions();
     }
 
@@ -59,38 +63,31 @@ public class FormulaEngine
         if (this.IsCalculating)
             return;
 
-        var cellsReferenced = false;
         foreach (var cell in e.Positions)
         {
-            if (IsCellReferenced(cell.row, cell.col, sheet.Name))
-            {
-                cellsReferenced = true;
-                break;
-            }
+            // check if cell itself is a formula vertex, then it should require calculation
+            var cellVertex = DependencyManager.GetVertex(cell.row, cell.col, sheet.Name);
+            if (cellVertex != null)
+                _requiresCalculation.Add(cellVertex);
+            foreach (var u in DependencyManager.FindDependentFormula(new Region(cell.row, cell.col), sheet.Name))
+                _requiresCalculation.Add(u);
         }
 
-        if (!cellsReferenced)
+        foreach (var region in e.Regions)
         {
-            foreach (var region in e.Regions)
-            {
-                if (RegionContainsReferencedCells(region, sheet.Name))
-                {
-                    cellsReferenced = true;
-                    break;
-                }
-            }
+            foreach (var u in DependencyManager.FindDependentFormula(region, sheet.Name))
+                _requiresCalculation.Add(u);
         }
 
-        if (!cellsReferenced)
+        if (_requiresCalculation.Count == 0)
             return;
 
-        this.CalculateSheet(sheet);
+        this.CalculateSheet(true);
     }
 
     private void RowsOnRemoved(object? sender, RowColRemovedEventArgs e)
     {
-        var sheet = ((RowColInfoStore)sender!).Sheet;
-        CalculateSheet(sheet);
+        CalculateSheet(true);
     }
 
     private bool IsCellReferenced(int row, int col, string sheetName)
@@ -158,15 +155,21 @@ public class FormulaEngine
 
     public IEnumerable<DependencyInfo> GetDependencies() => DependencyManager.GetDependencies();
 
-    public void CalculateSheet(Sheet sheet)
+    public void CalculateSheet(bool calculateAll)
     {
         if (IsCalculating)
             return;
 
-        IsCalculating = true;
-        sheet.BatchUpdates();
+        if (_requiresCalculation.Count == 0 && !calculateAll)
+            return;
 
-        var order = DependencyManager.GetCalculationOrder();
+        IsCalculating = true;
+
+        foreach (var sheet in _sheets)
+            sheet.BatchUpdates();
+
+        var vertices = calculateAll ? null : _requiresCalculation.ToList();
+        var order = DependencyManager.GetCalculationOrder(vertices);
         var executionContext = new FormulaExecutionContext();
 
         foreach (var scc in order)
@@ -208,7 +211,10 @@ public class FormulaEngine
             }
         }
 
-        sheet.EndBatchUpdates();
+        foreach (var sheet in _sheets)
+            sheet.EndBatchUpdates();
+
+        _requiresCalculation.Clear();
         IsCalculating = false;
     }
 
@@ -225,9 +231,6 @@ public class FormulaEngine
     public void SetVariable(string varName, object value)
     {
         _environment.SetVariable(varName, new CellValue(value));
-        foreach (var sheet in _sheets)
-        {
-            CalculateSheet(sheet);
-        }
+        CalculateSheet(true);
     }
 }

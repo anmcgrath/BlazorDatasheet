@@ -289,10 +289,10 @@ public class DependencyManager
     /// Returns the topological sort of the vertices. Each group of vertices is a strongly connected group.
     /// </summary>
     /// <returns></returns>
-    public IList<IList<FormulaVertex>> GetCalculationOrder()
+    public IList<IList<FormulaVertex>> GetCalculationOrder(List<FormulaVertex>? dirtyFormula = null)
     {
         var sort = new SccSort<FormulaVertex>(_dependencyGraph);
-        return sort.Sort();
+        return sort.Sort(dirtyFormula?.Count > 0 ? dirtyFormula : null);
     }
 
     public IEnumerable<DependencyInfo> GetDependencies()
@@ -365,6 +365,25 @@ public class DependencyManager
                 refIndex++;
             }
         }
+    }
+
+    /// <summary>
+    /// Finds the formula that depend on this formula vertex, if it exists.
+    /// </summary>
+    /// <returns></returns>
+    public IEnumerable<FormulaVertex> FindDependentFormula(int row, int col, string sheetName)
+    {
+        return _dependencyGraph.Adj(new FormulaVertex(row, col, sheetName, null));
+    }
+
+    public IEnumerable<FormulaVertex> FindDependentFormula(IRegion region, string sheetName)
+    {
+        return GetReferencedVertexStore(sheetName).GetData(region);
+    }
+
+    public FormulaVertex? GetVertex(int cellRow, int cellCol, string sheetName)
+    {
+        return _dependencyGraph.GetVertex(new FormulaVertex(cellRow, cellCol, sheetName, null).Key);
     }
 }
 

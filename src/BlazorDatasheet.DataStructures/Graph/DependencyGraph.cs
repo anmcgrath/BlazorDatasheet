@@ -71,9 +71,9 @@ public class DependencyGraph<T> where T : Vertex
         return _adj[key].Values;
     }
 
-    public T GetVertex(string key)
+    public T? GetVertex(string key)
     {
-        return _symbolTable[key];
+        return _symbolTable.GetValueOrDefault(key);
     }
 
     /// <summary>
