@@ -50,6 +50,11 @@ public class TestEnvironment : IEnvironment
             .SelectMany(x => x);
     }
 
+    public void SetCellValue(int row, int col, string sheetName, CellValue value)
+    {
+        _cellValues.TryAdd(new CellPosition(row, col), value);
+    }
+
     public void SetVariable(string name, object variable)
     {
         SetVariable(name, new CellValue(variable));

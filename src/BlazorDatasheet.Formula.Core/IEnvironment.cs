@@ -24,4 +24,5 @@ public interface IEnvironment
     void SetVariable(string name, CellValue value);
     void RegisterFunction(string name, ISheetFunction value);
     public IEnumerable<CellValue> GetNonEmptyInRange(Reference reference);
+    void SetCellValue(int row, int col, string sheetName, CellValue value);
 }

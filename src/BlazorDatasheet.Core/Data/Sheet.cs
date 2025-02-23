@@ -92,7 +92,18 @@ public class Sheet
     /// <summary>
     /// The workbook associated with this sheet.
     /// </summary>
-    public Workbook Workbook { get; internal set; }
+    public Workbook Workbook
+    {
+        get
+        {
+            if (_workbook == null)
+                _workbook = new Workbook(this);
+            return _workbook;
+        }
+        internal set => _workbook = value;
+    }
+
+    private Workbook? _workbook;
 
     /// <summary>
     /// Whether the UI associated with the sheet should be updating
@@ -152,13 +163,12 @@ public class Sheet
         Columns = new ColumnInfoStore(defaultWidth, this);
         Selection = new Selection(this);
         ConditionalFormats = new ConditionalFormatManager(this, Cells);
-        Workbook = new Workbook(this);
     }
 
     internal Sheet(int numRows, int numCols, int defaultWidth, int defaultHeight, Workbook workbook) : this(numRows,
         numCols, defaultWidth, defaultHeight)
     {
-        Workbook = workbook;
+        _workbook = workbook;
     }
 
     public Sheet(int numRows, int numCols, int defaultWidth = 105, int defaultHeight = 24) : this(defaultWidth,

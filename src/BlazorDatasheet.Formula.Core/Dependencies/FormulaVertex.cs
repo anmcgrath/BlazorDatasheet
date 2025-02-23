@@ -6,7 +6,7 @@ namespace BlazorDatasheet.Formula.Core.Dependencies;
 
 public class FormulaVertex : Vertex, IEquatable<FormulaVertex>
 {
-    private readonly string _sheetName;
+    public string SheetName { get; private set; }
 
     public FormulaVertex(string name, CellFormula? formula)
     {
@@ -17,7 +17,7 @@ public class FormulaVertex : Vertex, IEquatable<FormulaVertex>
 
     public FormulaVertex(IRegion region, string sheetName, CellFormula? formula)
     {
-        _sheetName = sheetName;
+        SheetName = sheetName;
         Region = region;
         Formula = formula;
         UpdateKey();
@@ -39,7 +39,7 @@ public class FormulaVertex : Vertex, IEquatable<FormulaVertex>
     public sealed override void UpdateKey()
     {
         if (VertexType != VertexType.Named)
-            _key = $"'{_sheetName}'!" + RangeText.ToRegionText(Region!);
+            _key = $"'{SheetName}'!" + RangeText.ToRegionText(Region!);
     }
 
     public IRegion? Region { get; }

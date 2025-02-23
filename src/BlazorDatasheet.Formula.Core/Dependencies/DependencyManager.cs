@@ -144,8 +144,10 @@ public class DependencyManager
 
     public bool HasDependents(int row, int col, string sheetName)
     {
-        return GetReferencedVertexStore(sheetName).Any(row, col) ||
-               _dependencyGraph.HasVertex((new FormulaVertex(row, col, sheetName, null)).Key);
+        var formulaReferenced = _dependencyGraph.HasVertex(new FormulaVertex(row, col, sheetName, null).Key);
+        if (formulaReferenced)
+            return true;
+        return GetReferencedVertexStore(sheetName).Any(row, col);
     }
 
     /// <summary>

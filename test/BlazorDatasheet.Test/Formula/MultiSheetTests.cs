@@ -16,4 +16,15 @@ public class MultiSheetTests
         sheet1.Cells["A1"]!.Formula = "=Sheet2!A2";
         sheet1.Cells["A1"]!.Value.Should().Be("Test");
     }
+    
+    [Test]
+    public void Formula_Recalculated_When_Other_Sheet_Value_Changes()
+    {
+        var workbook = new Workbook();
+        var sheet1 = workbook.AddSheet(10, 10);
+        var sheet2 = workbook.AddSheet(10, 10);
+        sheet1.Cells["A1"]!.Formula = "=Sheet2!A2";
+        sheet2.Cells["A2"]!.Value = "Test";
+        sheet1.Cells["A1"]!.Value.Should().Be("Test");
+    }
 }

@@ -65,6 +65,12 @@ public class WorkbookEnvironment : IEnvironment
             .Select(x => x.value).ToArray();
     }
 
+    public void SetCellValue(int row, int col, string sheetName, CellValue value)
+    {
+        var sheet = _workbook.GetSheet(sheetName);
+        sheet?.Cells.SetValueImpl(row, col, value);
+    }
+
     public CellValue GetCellValue(int row, int col, string sheetName)
     {
         var sheet = _workbook.GetSheet(sheetName);

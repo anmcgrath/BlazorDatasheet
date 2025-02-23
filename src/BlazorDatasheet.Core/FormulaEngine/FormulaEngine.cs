@@ -204,8 +204,7 @@ public class FormulaEngine
 
                 executionContext.ClearExecuting();
 
-                sheet.Cells.SetValueImpl(vertex.Region!.Top, vertex.Region!.Left, value);
-                sheet.MarkDirty(vertex.Region!.Top, vertex.Region!.Left);
+                _environment.SetCellValue(vertex.Region!.Top, vertex.Region!.Left, vertex.SheetName, value);
             }
         }
 
