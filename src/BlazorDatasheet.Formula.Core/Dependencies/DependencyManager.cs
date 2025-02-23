@@ -15,15 +15,36 @@ public class DependencyManager
     /// to each formula vertex that references the region.
     /// E.g. for a formula "=A1 + sum(B1:B2)", the region A1 and B1:B2 will have a reference to the formula vertex
     /// </summary>
-    private readonly RegionDataStore<FormulaVertex> _referencedVertexStore = new(0, false);
+    private readonly RegionDataStore<FormulaVertex> _rferencedVertexStore = new(0, false);
+
+    private readonly Dictionary<string, RegionDataStore<FormulaVertex>> _referencedVertexStores = new();
 
     internal int FormulaCount => _dependencyGraph.Count;
 
-    public DependencyManagerRestoreData SetFormula(int row, int col, CellFormula? formula)
+    private RegionDataStore<FormulaVertex> GetReferencedVertexStore(string sheetName)
     {
-        var formulaVertex = new FormulaVertex(row, col, formula);
+        return _referencedVertexStores.GetValueOrDefault(sheetName) ?? new RegionDataStore<FormulaVertex>();
+    }
+
+    public void AddSheet(string sheetName)
+    {
+        _referencedVertexStores.Add(sheetName, new RegionDataStore<FormulaVertex>());
+    }
+
+    public void RemoveSheet(string sheetName)
+    {
+        _referencedVertexStores.Remove(sheetName);
+    }
+
+    public void RenameSheet(string oldName, string newName)
+    {
+    }
+
+    public DependencyManagerRestoreData SetFormula(int row, int col, string sheetName, CellFormula? formula)
+    {
+        var formulaVertex = new FormulaVertex(row, col, sheetName, formula);
         // Clear any dependency tracking for old formula if there is one
-        var restoreData = ClearFormula(row, col);
+        var restoreData = ClearFormula(row, col, sheetName);
 
         if (formula == null)
             return restoreData;
@@ -46,7 +67,7 @@ public class DependencyManager
                 }
 
                 restoreData.RegionRestoreData.Merge(
-                    _referencedVertexStore.Add(formulaRef.Region.Clone(), formulaVertex));
+                    GetReferencedVertexStore(formulaRef.SheetName).Add(formulaRef.Region.Clone(), formulaVertex));
             }
             else
             {
@@ -55,7 +76,7 @@ public class DependencyManager
         }
 
         // find any formula that reference this formula and add edges to them
-        foreach (var dependents in GetDirectDependents(new Region(row, col)))
+        foreach (var dependents in GetDirectDependents(new Region(row, col), sheetName))
         {
             _dependencyGraph.AddEdge(formulaVertex, dependents);
             restoreData.EdgesAdded.Add((formulaVertex.Key, dependents.Key));
@@ -64,10 +85,10 @@ public class DependencyManager
         return restoreData;
     }
 
-    public DependencyManagerRestoreData ClearFormula(int row, int col)
+    public DependencyManagerRestoreData ClearFormula(int row, int col, string sheetName)
     {
         var restoreData = new DependencyManagerRestoreData();
-        var formulaVertex = new FormulaVertex(row, col, null);
+        var formulaVertex = new FormulaVertex(row, col, sheetName, null);
         if (!_dependencyGraph.HasVertex(formulaVertex.Key))
             return restoreData;
 
@@ -84,11 +105,11 @@ public class DependencyManager
                 switch (formulaRef)
                 {
                     case CellReference cellRef:
-                        dataToDelete = _referencedVertexStore
+                        dataToDelete = GetReferencedVertexStore(cellRef.SheetName)
                             .GetDataRegions(new Region(cellRef.RowIndex, cellRef.ColIndex), formulaVertex).ToList();
                         break;
                     case RangeReference rangeReference:
-                        dataToDelete = _referencedVertexStore
+                        dataToDelete = GetReferencedVertexStore(rangeReference.SheetName)
                             .GetDataRegions(rangeReference.Region, formulaVertex).ToList();
                         break;
                     case NamedReference namedReference:
@@ -97,7 +118,7 @@ public class DependencyManager
                 }
 
                 if (dataToDelete.Count != 0)
-                    restoreData.RegionRestoreData = _referencedVertexStore.Delete(dataToDelete);
+                    restoreData.RegionRestoreData = GetReferencedVertexStore(formulaRef.SheetName).Delete(dataToDelete);
             }
         }
 
@@ -116,31 +137,32 @@ public class DependencyManager
         return restoreData;
     }
 
-    public bool HasDependents(IRegion region)
+    public bool HasDependents(IRegion region, string sheetName)
     {
-        return _referencedVertexStore.Any(region);
+        return GetReferencedVertexStore(sheetName).Any(region);
     }
 
-    public bool HasDependents(int row, int col)
+    public bool HasDependents(int row, int col, string sheetName)
     {
-        return _referencedVertexStore.Any(row, col) ||
-               _dependencyGraph.HasVertex((new FormulaVertex(row, col, null)).Key);
+        return GetReferencedVertexStore(sheetName).Any(row, col) ||
+               _dependencyGraph.HasVertex((new FormulaVertex(row, col, sheetName, null)).Key);
     }
 
     /// <summary>
     /// Returns the vertices that are directly dependent on the given region
     /// </summary>
     /// <param name="region"></param>
+    /// <param name="sheetName"></param>
     /// <returns></returns>
-    public IEnumerable<FormulaVertex> GetDirectDependents(IRegion region)
+    public IEnumerable<FormulaVertex> GetDirectDependents(IRegion region, string sheetName)
     {
-        return _referencedVertexStore.GetData(region);
+        return GetReferencedVertexStore(sheetName).GetData(region);
     }
 
-    public DependencyManagerRestoreData InsertRowAt(int row, int count) =>
-        InsertRowColAt(row, count, Axis.Row);
+    public DependencyManagerRestoreData InsertRowAt(int row, int count, string sheetName) =>
+        InsertRowColAt(row, count, Axis.Row, sheetName);
 
-    public DependencyManagerRestoreData InsertRowColAt(int index, int count, Axis axis)
+    public DependencyManagerRestoreData InsertRowColAt(int index, int count, Axis axis, string sheetName)
     {
         var restoreData = new DependencyManagerRestoreData()
         {
@@ -157,7 +179,7 @@ public class DependencyManager
         // and shift the formula references
         // needs to be done before we shift vertices
 
-        var formulaDependents = GetDirectDependents(affectedRegion);
+        var formulaDependents = GetDirectDependents(affectedRegion, sheetName);
 
         foreach (var dependent in formulaDependents)
         {
@@ -165,12 +187,12 @@ public class DependencyManager
             var existingRegions = dependent.Formula!.References.Select(r => r.Region.Clone()).ToList();
             var existingValidities = dependent.Formula!.References.Select(r => r.IsInvalid).ToList();
             restoreData.ModifiedFormulaReferences.Add(new ReferenceRestoreData(dependent.Formula!, existingRegions,
-                existingValidities));
-            dependent.Formula!.InsertRowColIntoReferences(index, count, axis);
+                existingValidities, sheetName));
+            dependent.Formula!.InsertRowColIntoReferences(index, count, axis, sheetName);
         }
 
         restoreData.Merge(ShiftVerticesInRegion(affectedRegion, dRow, dCol));
-        restoreData.RegionRestoreData = _referencedVertexStore.InsertRowColAt(index, count, axis);
+        restoreData.RegionRestoreData = GetReferencedVertexStore(sheetName).InsertRowColAt(index, count, axis);
 
         return restoreData;
     }
@@ -189,16 +211,16 @@ public class DependencyManager
         return vertices;
     }
 
-    public DependencyManagerRestoreData InsertColAt(int col, int count) =>
-        InsertRowColAt(col, count, Axis.Col);
+    public DependencyManagerRestoreData InsertColAt(int col, int count, string sheetName) =>
+        InsertRowColAt(col, count, Axis.Col, sheetName);
 
-    public DependencyManagerRestoreData RemoveColAt(int col, int count) =>
-        RemoveRowColAt(col, count, Axis.Col);
+    public DependencyManagerRestoreData RemoveColAt(int col, int count, string sheetName) =>
+        RemoveRowColAt(col, count, Axis.Col, sheetName);
 
-    public DependencyManagerRestoreData RemoveRowAt(int row, int count) =>
-        RemoveRowColAt(row, count, Axis.Row);
+    public DependencyManagerRestoreData RemoveRowAt(int row, int count, string sheetName) =>
+        RemoveRowColAt(row, count, Axis.Row, sheetName);
 
-    public DependencyManagerRestoreData RemoveRowColAt(int index, int count, Axis axis)
+    public DependencyManagerRestoreData RemoveRowColAt(int index, int count, Axis axis, string sheetName)
     {
         var restoreData = new DependencyManagerRestoreData()
         {
@@ -213,7 +235,7 @@ public class DependencyManager
         var vertices = GetVerticesInRegion(regionRemoved);
         foreach (var vertex in vertices)
         {
-            restoreData.Merge(ClearFormula(vertex.Region!.Top, vertex.Region!.Left));
+            restoreData.Merge(ClearFormula(vertex.Region!.Top, vertex.Region!.Left, sheetName));
         }
 
         int dCol = axis == Axis.Col ? -count : 0;
@@ -227,8 +249,7 @@ public class DependencyManager
             ? new ColumnRegion(index, int.MaxValue)
             : new RowRegion(index, int.MaxValue);
 
-        var dependentFormula =
-            _referencedVertexStore.GetData(affectedRegion);
+        var dependentFormula = GetReferencedVertexStore(sheetName).GetData(affectedRegion);
 
         foreach (var dependent in dependentFormula)
         {
@@ -236,12 +257,12 @@ public class DependencyManager
             var existingRegions = dependent.Formula!.References.Select(r => r.Region.Clone()).ToList();
             var existingValidities = dependent.Formula!.References.Select(r => r.IsInvalid).ToList();
             restoreData.ModifiedFormulaReferences.Add(new ReferenceRestoreData(dependent.Formula!, existingRegions,
-                existingValidities));
-            dependent.Formula!.RemoveRowColFromReferences(index, count, axis);
+                existingValidities, sheetName));
+            dependent.Formula!.RemoveRowColFromReferences(index, count, axis, sheetName);
         }
 
         restoreData.Merge(ShiftVerticesInRegion(affectedRegion, dRow, dCol));
-        restoreData.RegionRestoreData.Merge(_referencedVertexStore.RemoveRowColAt(index, count, axis));
+        restoreData.RegionRestoreData.Merge(GetReferencedVertexStore(sheetName).RemoveRowColAt(index, count, axis));
         return restoreData;
     }
 
@@ -284,8 +305,8 @@ public class DependencyManager
             }
         }
 
-        var dataREgions = _referencedVertexStore.GetAllDataRegions();
-        foreach (var region in dataREgions)
+        var dataRegions = _referencedVertexStores.SelectMany(x => x.Value.GetAllDataRegions());
+        foreach (var region in dataRegions)
         {
             results.Add(new DependencyInfo(region.Data.Region!, region.Region, DependencyType.Region));
         }
@@ -328,7 +349,7 @@ public class DependencyManager
         }
 
         // 1. shift & restore referenced vertex store
-        _referencedVertexStore.Restore(restoreData.RegionRestoreData);
+        _referencedVertexStores.First().Value.Restore(restoreData.RegionRestoreData);
 
         // 2. restore contrracted/expanded/shifted formula references from the records
 
@@ -372,11 +393,14 @@ internal class ReferenceRestoreData
     public CellFormula Formula { get; }
     public List<IRegion> OldRegions { get; }
     public List<bool> OldInvalidStates { get; }
+    public string SheetName { get; }
 
-    public ReferenceRestoreData(CellFormula formula, List<IRegion> oldRegions, List<bool> oldInvalidStates)
+    public ReferenceRestoreData(CellFormula formula, List<IRegion> oldRegions, List<bool> oldInvalidStates,
+        string sheetName)
     {
         Formula = formula;
         OldRegions = oldRegions;
         OldInvalidStates = oldInvalidStates;
+        SheetName = sheetName;
     }
 }

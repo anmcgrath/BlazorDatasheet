@@ -46,7 +46,7 @@ public partial class CellStore
             restoreData.ValueRestoreData.DataRemoved.Add((row, col, new CellValue(null)));
 
         restoreData.FormulaRestoreData = _formulaStore.Set(row, col, formula);
-        restoreData.DependencyManagerRestoreData = Sheet.FormulaEngine.SetFormula(row, col, formula);
+        restoreData.DependencyManagerRestoreData = Sheet.FormulaEngine.SetFormula(row, col, Sheet.Name, formula);
 
         FormulaChanged?.Invoke(this,
             new CellFormulaChangeEventArgs(row, col,
@@ -80,7 +80,7 @@ public partial class CellStore
             if (formula.data == null)
                 continue;
             var clonedFormula = formula.data.Clone();
-            clonedFormula.ShiftReferences(offset.row, offset.col);
+            clonedFormula.ShiftReferences(offset.row, offset.col, Sheet.Name);
             restoreData.Merge(SetFormulaImpl(formula.row + offset.row, formula.col + offset.col, clonedFormula));
         }
 
@@ -92,7 +92,7 @@ public partial class CellStore
         return new CellStoreRestoreData()
         {
             FormulaRestoreData = _formulaStore.Clear(row, col),
-            DependencyManagerRestoreData = Sheet.FormulaEngine.RemoveFormula(row, col)
+            DependencyManagerRestoreData = Sheet.FormulaEngine.RemoveFormula(row, col, Sheet.Name)
         };
     }
 
@@ -103,7 +103,7 @@ public partial class CellStore
         foreach (var clearedFormula in clearedData.DataRemoved)
         {
             restoreData.DependencyManagerRestoreData.Merge(
-                Sheet.FormulaEngine.RemoveFormula(clearedFormula.row, clearedFormula.col));
+                Sheet.FormulaEngine.RemoveFormula(clearedFormula.row, clearedFormula.col, Sheet.Name));
         }
 
         restoreData.FormulaRestoreData = clearedData;

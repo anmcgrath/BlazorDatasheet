@@ -91,17 +91,38 @@ public class Parser
                 return ParseLogicalExpression();
             case Tag.LeftCurlyBracketToken:
                 return ParseArrayConstant();
-            case Tag.AddressToken:
-                var refToken = (AddressToken)NextToken();
-                var reference = GetReferenceFromAddress(refToken.Address);
-                if (reference == null)
+            case Tag.SheetLocatorToken:
+                var sheetToken = (SheetLocatorToken)NextToken();
+                if (Current.Tag != Tag.AddressToken)
+                {
+                    Error("Expected address token after sheet locator");
                     return new LiteralExpression(CellValue.Error(ErrorType.Ref));
+                }
 
-                _references.Add(reference);
-                return new ReferenceExpression(reference);
+                var parsedRef = ParseReferenceExpression();
+                if (parsedRef == null)
+                    return new LiteralExpression(CellValue.Error(ErrorType.Ref));
+                parsedRef.Reference.SetSheetName(sheetToken.Text);
+                return parsedRef;
+            case Tag.AddressToken:
+                var parsedAddress = ParseReferenceExpression();
+                if (parsedAddress == null)
+                    return new LiteralExpression(CellValue.Error(ErrorType.Ref));
+                return parsedAddress;
         }
 
         return ParseLiteralExpression();
+    }
+
+    private ReferenceExpression? ParseReferenceExpression()
+    {
+        var addressToken = (AddressToken)NextToken();
+        var reference = GetReferenceFromAddress(addressToken.Address);
+        if (reference == null)
+            return null;
+
+        _references.Add(reference);
+        return new ReferenceExpression(reference);
     }
 
     private Expression ParseLogicalExpression()

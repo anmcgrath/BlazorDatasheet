@@ -20,7 +20,7 @@ public class CellReference : Reference
 
     public override string ToAddressText()
     {
-        return RangeText.ToRegionText(Region, IsColFixed, IsColFixed, IsRowFixed, IsRowFixed);
+        return (ExplicitSheetName ? $"'{SheetName}'!" : "") +  RangeText.ToRegionText(Region, IsColFixed, IsColFixed, IsRowFixed, IsRowFixed);
     }
 
     public override bool SameAs(Reference reference)

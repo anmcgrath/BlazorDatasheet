@@ -80,7 +80,7 @@ public class SheetFormulaIntegrationTests
         // Set sheet cell (1, 1) to any old value and the formula should be cleared.
         _sheet.Cells.SetValue(1, 1, "Blah");
         Assert.IsFalse(_sheet.Cells.HasFormula(1, 1));
-        _sheet.FormulaEngine.DependencyManager.HasDependents(0, 0).Should().BeFalse();
+        _sheet.FormulaEngine.DependencyManager.HasDependents(0, 0, _sheet.Name).Should().BeFalse();
     }
 
     [Test]
@@ -217,20 +217,20 @@ public class SheetFormulaIntegrationTests
         sheet.Cells[2, 2].Formula.Should().BeNull();
         sheet.Cells[3, 2].Formula.Should().Be("=B3");
 
-        sheet.FormulaEngine.DependencyManager.GetDirectDependents(new Region(2, 1)) // b3
+        sheet.FormulaEngine.DependencyManager.GetDirectDependents(new Region(2, 1), "Sheet1") // b3
             .Select(x => x.Key)
             .First()
             .Should()
-            .Be("C4"); // (3,2)
+            .Be("'Sheet1'!C4"); // (3,2)
 
         sheet.Commands.Undo();
         sheet.Cells[2, 2].Formula.Should().Be("=B2");
 
-        sheet.FormulaEngine.DependencyManager.GetDirectDependents(new Region(1, 1)) // b2
+        sheet.FormulaEngine.DependencyManager.GetDirectDependents(new Region(1, 1), "Sheet1") // b2
             .Select(x => x.Key)
             .First()
             .Should()
-            .Be("C3"); // (3,2)
+            .Be("'Sheet1'!C3"); // (3,2)
     }
 
     [Test]
@@ -344,7 +344,7 @@ public class SheetFormulaIntegrationTests
         sheet.Cells.ClearCells(new Region(0, 0));
         sheet.Commands.Undo();
         sheet.Cells.GetCellValue(0, 0).GetValue<int>().Should().Be(5);
-        sheet.FormulaEngine.DependencyManager.HasDependents(1, 1).Should().BeTrue();
+        sheet.FormulaEngine.DependencyManager.HasDependents(1, 1, sheet.Name).Should().BeTrue();
     }
 
     [Test]
@@ -354,7 +354,7 @@ public class SheetFormulaIntegrationTests
         _sheet.Columns.RemoveAt(0);
         _sheet.Commands.Undo();
         _sheet.Cells[0, 0].Formula.Should().Be("=A2");
-        _sheet.FormulaEngine.DependencyManager.HasDependents(new Region(1, 0)).Should().BeTrue();
+        _sheet.FormulaEngine.DependencyManager.HasDependents(new Region(1, 0), _sheet.Name).Should().BeTrue();
     }
 
     [Test]

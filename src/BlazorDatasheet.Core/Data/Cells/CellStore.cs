@@ -120,7 +120,8 @@ public partial class CellStore
             ValidRestoreData = _validStore.InsertRowColAt(index, count, axis),
             MergeRestoreData = _mergeStore.InsertRowColAt(index, count, axis),
             FormulaRestoreData = _formulaStore.InsertRowColAt(index, count, axis),
-            DependencyManagerRestoreData = Sheet.FormulaEngine.DependencyManager.InsertRowColAt(index, count, axis)
+            DependencyManagerRestoreData =
+                Sheet.FormulaEngine.DependencyManager.InsertRowColAt(index, count, axis, Sheet.Name)
         };
 
 
@@ -137,7 +138,8 @@ public partial class CellStore
             FormatRestoreData = _formatStore.RemoveRowColAt(index, count, axis),
             MergeRestoreData = _mergeStore.RemoveRowColAt(index, count, axis),
             FormulaRestoreData = _formulaStore.RemoveRowColAt(index, count, axis),
-            DependencyManagerRestoreData = Sheet.FormulaEngine.DependencyManager.RemoveRowColAt(index, count, axis)
+            DependencyManagerRestoreData =
+                Sheet.FormulaEngine.DependencyManager.RemoveRowColAt(index, count, axis, Sheet.Name)
         };
 
         return restoreData;

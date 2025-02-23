@@ -36,6 +36,7 @@ public class FormulaEngine
     internal void AddSheet(Sheet sheet)
     {
         _sheets.Add(sheet);
+        DependencyManager.AddSheet(sheet.Name);
         sheet.Editor.BeforeCellEdit += SheetOnBeforeCellEdit;
         sheet.Cells.CellsChanged += SheetOnCellsChanged;
         sheet.Rows.Removed += RowsOnRemoved;
@@ -45,6 +46,7 @@ public class FormulaEngine
     internal void RemoveSheet(Sheet sheet)
     {
         _sheets.Remove(sheet);
+        DependencyManager.RemoveSheet(sheet.Name);
         sheet.Editor.BeforeCellEdit -= SheetOnBeforeCellEdit;
         sheet.Cells.CellsChanged -= SheetOnCellsChanged;
         sheet.Rows.Removed -= RowsOnRemoved;
@@ -60,7 +62,7 @@ public class FormulaEngine
         var cellsReferenced = false;
         foreach (var cell in e.Positions)
         {
-            if (IsCellReferenced(cell.row, cell.col))
+            if (IsCellReferenced(cell.row, cell.col, sheet.Name))
             {
                 cellsReferenced = true;
                 break;
@@ -71,7 +73,7 @@ public class FormulaEngine
         {
             foreach (var region in e.Regions)
             {
-                if (RegionContainsReferencedCells(region))
+                if (RegionContainsReferencedCells(region, sheet.Name))
                 {
                     cellsReferenced = true;
                     break;
@@ -91,14 +93,14 @@ public class FormulaEngine
         CalculateSheet(sheet);
     }
 
-    private bool IsCellReferenced(int row, int col)
+    private bool IsCellReferenced(int row, int col, string sheetName)
     {
-        return DependencyManager.HasDependents(row, col);
+        return DependencyManager.HasDependents(row, col, sheetName);
     }
 
-    private bool RegionContainsReferencedCells(IRegion region)
+    private bool RegionContainsReferencedCells(IRegion region, string sheetName)
     {
-        return DependencyManager.HasDependents(region);
+        return DependencyManager.HasDependents(region, sheetName);
     }
 
     private void RegisterDefaultFunctions()
@@ -118,9 +120,9 @@ public class FormulaEngine
         }
     }
 
-    internal DependencyManagerRestoreData SetFormula(int row, int col, CellFormula? formula)
+    internal DependencyManagerRestoreData SetFormula(int row, int col, string sheetName, CellFormula? formula)
     {
-        return DependencyManager.SetFormula(row, col, formula);
+        return DependencyManager.SetFormula(row, col, sheetName, formula);
     }
 
     public CellFormula ParseFormula(string formulaString)
@@ -148,9 +150,10 @@ public class FormulaEngine
     /// </summary>
     /// <param name="row"></param>
     /// <param name="col"></param>
-    internal DependencyManagerRestoreData RemoveFormula(int row, int col)
+    /// <param name="sheetName"></param>
+    internal DependencyManagerRestoreData RemoveFormula(int row, int col, string sheetName)
     {
-        return DependencyManager.ClearFormula(row, col);
+        return DependencyManager.ClearFormula(row, col, sheetName);
     }
 
     public IEnumerable<DependencyInfo> GetDependencies() => DependencyManager.GetDependencies();

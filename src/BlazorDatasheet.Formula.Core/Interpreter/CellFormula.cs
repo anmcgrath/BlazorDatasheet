@@ -24,18 +24,23 @@ public class CellFormula
 
     public string ToFormulaString() => "=" + ExpressionTree.Root.ToExpressionText();
 
-    public void ShiftReferences(int offsetRow, int offsetCol)
+    public void ShiftReferences(int offsetRow, int offsetCol, string sheetName)
     {
         foreach (var reference in References)
         {
+            if (reference.SheetName != sheetName)
+                continue;
             reference.Shift(offsetRow, offsetCol);
         }
     }
 
-    internal void InsertRowColIntoReferences(int index, int count, Axis axis)
+    internal void InsertRowColIntoReferences(int index, int count, Axis axis, string sheetName)
     {
         foreach (var reference in References)
         {
+            if (reference.SheetName != sheetName)
+                continue;
+
             if (reference is CellReference cellReference)
             {
                 if (axis == Axis.Row && cellReference.RowIndex >= index)
@@ -60,10 +65,13 @@ public class CellFormula
         }
     }
 
-    internal void RemoveRowColFromReferences(int index, int count, Axis axis)
+    internal void RemoveRowColFromReferences(int index, int count, Axis axis, string sheetName)
     {
         foreach (var reference in References)
         {
+            if (reference.SheetName != sheetName)
+                continue;
+
             if (axis == Axis.Row && reference.Region.Top > index)
             {
                 reference.Shift(-count, 0);
