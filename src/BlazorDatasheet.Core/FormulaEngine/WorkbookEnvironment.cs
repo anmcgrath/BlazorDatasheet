@@ -69,6 +69,7 @@ public class WorkbookEnvironment : IEnvironment
     {
         var sheet = _workbook.GetSheet(sheetName);
         sheet?.Cells.SetValueImpl(row, col, value);
+        sheet?.MarkDirty(row, col);
     }
 
     public CellValue GetCellValue(int row, int col, string sheetName)
