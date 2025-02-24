@@ -1,4 +1,8 @@
-﻿using BlazorDatasheet.Core.Data;
+﻿using System.Linq;
+using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.Formula.Core.Interpreter.References;
+using BlazorDatashet.Formula.Functions.Math;
 using FluentAssertions;
 using NUnit.Framework;
 
@@ -100,5 +104,30 @@ public class MultiSheetTests
         _sheet1.Cells["A1"]!.Formula.Should().Be("='Renamed'!A2");
         _sheet2.Cells["A2"]!.Value = "New";
         _sheet1.Cells["A1"]!.Value.Should().Be("New");
+    }
+
+    [Test]
+    public void Auto_Fill_Ref_Updates_Multi_Sheet_Ref()
+    {
+        _sheet1.Cells["A1"]!.Formula = "='Sheet2'!A2";
+        _sheet1.Cells.CopyImpl(new Region(0, 0), new Region(1, 0), new CopyOptions());
+        _sheet1.Cells["A2"]!.Formula.Should().Be("='Sheet2'!A3");
+    }
+
+    [Test]
+    public void Range_Ref_With_Sheet_Infront_Of_Both_Cells_References_Ok()
+    {
+        var parsedFormula = _sheet1.FormulaEngine.ParseFormula("=sum(Sheet2!A1:Sheet2!:A2)");
+        parsedFormula.ExpressionTree.Errors.Should().BeEmpty();
+        parsedFormula.References.Count().Should().Be(1);
+        parsedFormula.References.First().Should().BeOfType<RangeReference>();
+        parsedFormula.References.First().SheetName.Should().Be("Sheet2");
+    }
+
+    [Test]
+    public void Range_Ref_Across_Sheets_Should_Result_In_Error()
+    {
+        var parsedFormula = _sheet1.FormulaEngine.ParseFormula("=sum(Sheet1!A1:Sheet2!:A2)");
+        parsedFormula.ExpressionTree.Errors.Should().NotBeEmpty();
     }
 }
