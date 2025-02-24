@@ -98,5 +98,7 @@ public class MultiSheetTests
         _sheet1.Cells["A1"]!.Formula = "='Sheet2'!A2";
         _workbook.RenameSheet("Sheet2", "Renamed");
         _sheet1.Cells["A1"]!.Formula.Should().Be("='Renamed'!A2");
+        _sheet2.Cells["A2"]!.Value = "New";
+        _sheet1.Cells["A1"]!.Value.Should().Be("New");
     }
 }

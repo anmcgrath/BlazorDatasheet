@@ -79,6 +79,7 @@ public class Workbook
         if (sheet != null)
         {
             sheet.Name = newName;
+            _formulaEngine.RenameSheet(oldName, newName);
         }
     }
 

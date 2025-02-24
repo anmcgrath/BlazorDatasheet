@@ -233,4 +233,9 @@ public class FormulaEngine
         _environment.SetVariable(varName, new CellValue(value));
         CalculateSheet(true);
     }
+
+    public void RenameSheet(string oldName, string newName)
+    {
+        DependencyManager.RenameSheet(oldName, newName);
+    }
 }

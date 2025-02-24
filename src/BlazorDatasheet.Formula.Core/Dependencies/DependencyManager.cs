@@ -38,6 +38,27 @@ public class DependencyManager
 
     public void RenameSheet(string oldName, string newName)
     {
+        foreach (var vertex in _dependencyGraph.GetAll())
+        {
+            if (vertex.Formula == null)
+                continue;
+
+            if (vertex.SheetName == oldName)
+            {
+                _dependencyGraph.Swap(vertex,
+                    new FormulaVertex(vertex.Region!.Top, vertex.Region.Left, newName, vertex.Formula));
+            }
+
+            foreach (var formulaRef in vertex.Formula!.References)
+            {
+                if (formulaRef.SheetName == oldName)
+                    formulaRef.SetSheetName(newName, formulaRef.ExplicitSheetName);
+            }
+        }
+
+        var existingRefStore = GetReferencedVertexStore(oldName);
+        _referencedVertexStores.Add(newName, existingRefStore);
+        _referencedVertexStores.Remove(oldName);
     }
 
     public DependencyManagerRestoreData SetFormula(int row, int col, string sheetName, CellFormula? formula)
