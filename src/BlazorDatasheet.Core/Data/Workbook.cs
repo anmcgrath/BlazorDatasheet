@@ -8,7 +8,7 @@ public class Workbook
     private readonly List<Sheet> _sheets = new();
     public IEnumerable<Sheet> Sheets => _sheets;
     private readonly FormulaEngine.FormulaEngine _formulaEngine;
-    private readonly WorkbookEnvironment _environment;
+    internal WorkbookEnvironment Environment { get; }
 
     internal Workbook(Sheet sheet) : this()
     {
@@ -17,8 +17,8 @@ public class Workbook
 
     public Workbook()
     {
-        _environment = new WorkbookEnvironment(this);
-        _formulaEngine = new FormulaEngine.FormulaEngine(_environment);
+        Environment = new WorkbookEnvironment(this);
+        _formulaEngine = new FormulaEngine.FormulaEngine(Environment);
     }
 
     public Sheet AddSheet(int numRows, int numColumns, int defaultWidth = 105, int defaultHeight = 24)
