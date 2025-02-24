@@ -339,7 +339,7 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
     {
         var restoreData = new MergeableIntervalStoreRestoreData<T>()
         {
-            Shifts = new List<AppliedShift>() { new AppliedShift(Axis.None, from, +n) }
+            Shifts = new List<AppliedShift>() { new AppliedShift(Axis.None, from, +n, null) }
         };
 
         var overlapping = this.GetIntervals(from, Math.Max(this.End, from));
@@ -378,7 +378,7 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
     {
         var restoreData = new MergeableIntervalStoreRestoreData<T>()
         {
-            Shifts = new List<AppliedShift>() { new AppliedShift(Axis.None, from, -n) }
+            Shifts = new List<AppliedShift>() { new AppliedShift(Axis.None, from, -n, null) }
         };
 
         var overlapping = this.GetIntervals(from, Math.Max(from, this.End));

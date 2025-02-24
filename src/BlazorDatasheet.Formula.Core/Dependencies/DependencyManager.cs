@@ -59,7 +59,7 @@ public class DependencyManager
             // add edges to any formula that already exist
             if (formulaRef is not NamedReference)
             {
-                var formulaInsideRegion = GetVerticesInRegion(formulaRef.Region);
+                var formulaInsideRegion = GetVerticesInRegion(formulaRef.Region, formulaRef.SheetName);
                 foreach (var f in formulaInsideRegion)
                 {
                     _dependencyGraph.AddEdge(f, formulaVertex);
@@ -168,7 +168,7 @@ public class DependencyManager
     {
         var restoreData = new DependencyManagerRestoreData()
         {
-            Shifts = { new AppliedShift(axis, index, count) }
+            Shifts = { new AppliedShift(axis, index, count, sheetName) }
         };
         IRegion affectedRegion = axis == Axis.Col
             ? new ColumnRegion(index, int.MaxValue)
@@ -181,6 +181,7 @@ public class DependencyManager
         // and shift the formula references
         // needs to be done before we shift vertices
 
+
         var formulaDependents = GetDirectDependents(affectedRegion, sheetName);
 
         foreach (var dependent in formulaDependents)
@@ -189,22 +190,22 @@ public class DependencyManager
             var existingRegions = dependent.Formula!.References.Select(r => r.Region.Clone()).ToList();
             var existingValidities = dependent.Formula!.References.Select(r => r.IsInvalid).ToList();
             restoreData.ModifiedFormulaReferences.Add(new ReferenceRestoreData(dependent.Formula!, existingRegions,
-                existingValidities, sheetName));
+                existingValidities, dependent.SheetName));
             dependent.Formula!.InsertRowColIntoReferences(index, count, axis, sheetName);
         }
 
-        restoreData.Merge(ShiftVerticesInRegion(affectedRegion, dRow, dCol));
+        restoreData.Merge(ShiftVerticesInRegion(affectedRegion, dRow, dCol, sheetName));
         restoreData.RegionRestoreData = GetReferencedVertexStore(sheetName).InsertRowColAt(index, count, axis);
 
         return restoreData;
     }
 
-    private List<FormulaVertex> GetVerticesInRegion(IRegion region)
+    private List<FormulaVertex> GetVerticesInRegion(IRegion region, string sheetName)
     {
         var vertices = new List<FormulaVertex>();
         foreach (var v in _dependencyGraph.GetAll())
         {
-            if (region.Intersects(v.Region))
+            if (v.SheetName == sheetName && region.Intersects(v.Region))
             {
                 vertices.Add(v);
             }
@@ -226,7 +227,7 @@ public class DependencyManager
     {
         var restoreData = new DependencyManagerRestoreData()
         {
-            Shifts = { new AppliedShift(axis, index, -count) }
+            Shifts = { new AppliedShift(axis, index, -count, sheetName) }
         };
         IRegion regionRemoved =
             axis == Axis.Col
@@ -234,7 +235,7 @@ public class DependencyManager
                 : new RowRegion(index, index + count - 1);
 
         // remove any formula in the region being removed
-        var vertices = GetVerticesInRegion(regionRemoved);
+        var vertices = GetVerticesInRegion(regionRemoved, sheetName);
         foreach (var vertex in vertices)
         {
             restoreData.Merge(ClearFormula(vertex.Region!.Top, vertex.Region!.Left, sheetName));
@@ -247,32 +248,36 @@ public class DependencyManager
         // and modify the formula references
         // needs to be done before we shift vertices
 
-        IRegion affectedRegion = axis == Axis.Col
-            ? new ColumnRegion(index, int.MaxValue)
-            : new RowRegion(index, int.MaxValue);
-
-        var dependentFormula = GetReferencedVertexStore(sheetName).GetData(affectedRegion);
-
-        foreach (var dependent in dependentFormula)
+        foreach (var kp in _referencedVertexStores)
         {
-            // capture the current references before they are modified
-            var existingRegions = dependent.Formula!.References.Select(r => r.Region.Clone()).ToList();
-            var existingValidities = dependent.Formula!.References.Select(r => r.IsInvalid).ToList();
-            restoreData.ModifiedFormulaReferences.Add(new ReferenceRestoreData(dependent.Formula!, existingRegions,
-                existingValidities, sheetName));
-            dependent.Formula!.RemoveRowColFromReferences(index, count, axis, sheetName);
+            IRegion affectedRegion = axis == Axis.Col
+                ? new ColumnRegion(index, int.MaxValue)
+                : new RowRegion(index, int.MaxValue);
+
+            var dependentFormula = kp.Value.GetData(affectedRegion);
+
+            foreach (var dependent in dependentFormula)
+            {
+                // capture the current references before they are modified
+                var existingRegions = dependent.Formula!.References.Select(r => r.Region.Clone()).ToList();
+                var existingValidities = dependent.Formula!.References.Select(r => r.IsInvalid).ToList();
+                restoreData.ModifiedFormulaReferences.Add(new ReferenceRestoreData(dependent.Formula!, existingRegions,
+                    existingValidities, sheetName));
+                dependent.Formula!.RemoveRowColFromReferences(index, count, axis, sheetName);
+            }
+
+            restoreData.Merge(ShiftVerticesInRegion(affectedRegion, dRow, dCol, kp.Key));
+            restoreData.RegionRestoreData.Merge(GetReferencedVertexStore(sheetName).RemoveRowColAt(index, count, axis));
         }
 
-        restoreData.Merge(ShiftVerticesInRegion(affectedRegion, dRow, dCol));
-        restoreData.RegionRestoreData.Merge(GetReferencedVertexStore(sheetName).RemoveRowColAt(index, count, axis));
         return restoreData;
     }
 
-    private DependencyManagerRestoreData ShiftVerticesInRegion(IRegion region, int dRow, int dCol)
+    private DependencyManagerRestoreData ShiftVerticesInRegion(IRegion region, int dRow, int dCol, string sheetName)
     {
         var restoreData = new DependencyManagerRestoreData();
         // shift any affected vertices by the number inserted
-        var affectedVertices = GetVerticesInRegion(region);
+        var affectedVertices = GetVerticesInRegion(region, sheetName);
         foreach (var v in affectedVertices)
         {
             // need to shift without changing the reference
@@ -327,7 +332,7 @@ public class DependencyManager
             var dRow = shift.Axis == Axis.Row ? -shift.Amount : 0;
             var dCol = shift.Axis == Axis.Col ? -shift.Amount : 0;
 
-            ShiftVerticesInRegion(r, dRow, dCol);
+            ShiftVerticesInRegion(r, dRow, dCol, shift.SheetName);
         }
 
         foreach (var vertex in restoreData.VerticesAdded)

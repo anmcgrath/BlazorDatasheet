@@ -165,7 +165,7 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
         {
             RegionsAdded = regionsAdded,
             RegionsRemoved = regionsRemoved,
-            Shifts = [new(axis, index, count)],
+            Shifts = [new(axis, index, count, null)],
         };
     }
 
@@ -280,7 +280,7 @@ public class RegionDataStore<T> : IStore<T, RegionRestoreData<T>> where T : IEqu
         {
             RegionsRemoved = removed,
             RegionsAdded = dataAdded,
-            Shifts = [new(axis, start - 1, -(end - start + 1))],
+            Shifts = [new(axis, start - 1, -(end - start + 1), null)],
         };
     }
 

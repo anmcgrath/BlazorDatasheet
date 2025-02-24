@@ -120,7 +120,7 @@ public class SparseMatrixStoreByCols<T> : IMatrixDataStore<T>
 
         return new MatrixRestoreData<T>()
         {
-            Shifts = [new AppliedShift(Axis.Row, row, count)]
+            Shifts = [new AppliedShift(Axis.Row, row, count, null)]
         };
     }
 
@@ -147,10 +147,10 @@ public class SparseMatrixStoreByCols<T> : IMatrixDataStore<T>
         {
             _columns.Add(col + i, new SColumn<T>(col + i, _defaultValueIfEmpty));
         }
-        
+
         return new MatrixRestoreData<T>()
         {
-            Shifts = [new AppliedShift(Axis.Col, col, count)]
+            Shifts = [new AppliedShift(Axis.Col, col, count, null)]
         };
     }
 
@@ -187,7 +187,7 @@ public class SparseMatrixStoreByCols<T> : IMatrixDataStore<T>
         return new MatrixRestoreData<T>()
         {
             DataRemoved = deleted,
-            Shifts = [new AppliedShift(Axis.Col, col, -count)]
+            Shifts = [new AppliedShift(Axis.Col, col, -count, null)]
         };
     }
 
@@ -217,7 +217,7 @@ public class SparseMatrixStoreByCols<T> : IMatrixDataStore<T>
         return new MatrixRestoreData<T>()
         {
             DataRemoved = deleted,
-            Shifts = [new AppliedShift(Axis.Row, row, -count)]
+            Shifts = [new AppliedShift(Axis.Row, row, -count, null)]
         };
     }
 
@@ -323,20 +323,20 @@ public class SparseMatrixStoreByCols<T> : IMatrixDataStore<T>
         {
             if (shift.Amount > 0)
             {
-                if(shift.Axis == Axis.Col)
+                if (shift.Axis == Axis.Col)
                     RemoveColAt(shift.Index, shift.Amount);
                 else
                     RemoveRowAt(shift.Index, shift.Amount);
             }
             else
             {
-                if(shift.Axis == Axis.Col)
+                if (shift.Axis == Axis.Col)
                     InsertColAt(shift.Index, -shift.Amount);
                 else
                     InsertRowAt(shift.Index, -shift.Amount);
             }
         }
-        
+
         foreach (var pt in restoreData.DataRemoved)
             Set(pt.row, pt.col, pt.data);
     }

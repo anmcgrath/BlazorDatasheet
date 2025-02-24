@@ -116,7 +116,7 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
         _rows.InsertAt(row, count);
         return new MatrixRestoreData<T>()
         {
-            Shifts = [new AppliedShift(Axis.Row, row, count)]
+            Shifts = [new AppliedShift(Axis.Row, row, count, null)]
         };
     }
 
@@ -127,7 +127,7 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
 
         return new MatrixRestoreData<T>()
         {
-            Shifts = [new AppliedShift(Axis.Col, col, count)]
+            Shifts = [new AppliedShift(Axis.Col, col, count, null)]
         };
     }
 
@@ -145,7 +145,7 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
         return new MatrixRestoreData<T>()
         {
             DataRemoved = removed!,
-            Shifts = [new AppliedShift(Axis.Col, col, -count)]
+            Shifts = [new AppliedShift(Axis.Col, col, -count, null)]
         };
     }
 
@@ -185,7 +185,7 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
         return new MatrixRestoreData<T>()
         {
             DataRemoved = removedData!,
-            Shifts = [new AppliedShift(Axis.Row, row, -count)]
+            Shifts = [new AppliedShift(Axis.Row, row, -count, null)]
         };
     }
 
