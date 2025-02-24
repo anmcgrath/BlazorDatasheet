@@ -188,9 +188,11 @@ public class DependencyManager
         {
             // capture the current references before they are modified
             var existingRegions = dependent.Formula!.References.Select(r => r.Region.Clone()).ToList();
+            var existingSheetNames = dependent.Formula!.References.Select(r => r.SheetName).ToList();
             var existingValidities = dependent.Formula!.References.Select(r => r.IsInvalid).ToList();
+            var sheetNamesAreExplicit = dependent.Formula!.References.Select(x => x.ExplicitSheetName).ToList();
             restoreData.ModifiedFormulaReferences.Add(new ReferenceRestoreData(dependent.Formula!, existingRegions,
-                existingValidities, dependent.SheetName));
+                existingValidities, existingSheetNames, sheetNamesAreExplicit));
             dependent.Formula!.InsertRowColIntoReferences(index, count, axis, sheetName);
         }
 
@@ -261,8 +263,10 @@ public class DependencyManager
                 // capture the current references before they are modified
                 var existingRegions = dependent.Formula!.References.Select(r => r.Region.Clone()).ToList();
                 var existingValidities = dependent.Formula!.References.Select(r => r.IsInvalid).ToList();
+                var sheetNames = dependent.Formula!.References.Select(x => x.SheetName).ToList();
+                var sheetNamesAreExplicit = dependent.Formula!.References.Select(x => x.ExplicitSheetName).ToList();
                 restoreData.ModifiedFormulaReferences.Add(new ReferenceRestoreData(dependent.Formula!, existingRegions,
-                    existingValidities, sheetName));
+                    existingValidities, sheetNames, sheetNamesAreExplicit));
                 dependent.Formula!.RemoveRowColFromReferences(index, count, axis, sheetName);
             }
 
@@ -332,7 +336,7 @@ public class DependencyManager
             var dRow = shift.Axis == Axis.Row ? -shift.Amount : 0;
             var dCol = shift.Axis == Axis.Col ? -shift.Amount : 0;
 
-            ShiftVerticesInRegion(r, dRow, dCol, shift.SheetName);
+            ShiftVerticesInRegion(r, dRow, dCol, shift.SheetName!);
         }
 
         foreach (var vertex in restoreData.VerticesAdded)
@@ -365,6 +369,8 @@ public class DependencyManager
             int refIndex = 0;
             foreach (var formulaReference in regionModification.Formula.References)
             {
+                formulaReference.SetSheetName(regionModification.SheetNames[refIndex],
+                    regionModification.ExplicitSheetReferences[refIndex]);
                 formulaReference.SetRegion(regionModification.OldRegions[refIndex]);
                 formulaReference.SetValidity(!regionModification.OldInvalidStates[refIndex]);
                 refIndex++;
@@ -419,14 +425,17 @@ internal class ReferenceRestoreData
     public CellFormula Formula { get; }
     public List<IRegion> OldRegions { get; }
     public List<bool> OldInvalidStates { get; }
-    public string SheetName { get; }
+    public List<string> SheetNames { get; }
+
+    public List<bool> ExplicitSheetReferences { get; }
 
     public ReferenceRestoreData(CellFormula formula, List<IRegion> oldRegions, List<bool> oldInvalidStates,
-        string sheetName)
+        List<string> sheetNames, List<bool> explicitSheetReferences)
     {
         Formula = formula;
         OldRegions = oldRegions;
         OldInvalidStates = oldInvalidStates;
-        SheetName = sheetName;
+        SheetNames = sheetNames;
+        ExplicitSheetReferences = explicitSheetReferences;
     }
 }

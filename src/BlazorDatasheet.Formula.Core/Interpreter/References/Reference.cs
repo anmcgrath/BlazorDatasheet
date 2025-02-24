@@ -36,12 +36,11 @@ public abstract class Reference
     public abstract IRegion Region { get; protected set; }
     internal abstract void SetRegion(IRegion region);
     public string SheetName { get; private set; } = "Sheet1";
-
-    protected bool ExplicitSheetName { get; set; }
-    internal void SetSheetName(string sheetName)
+    internal bool ExplicitSheetName { get; private set; }
+    internal void SetSheetName(string sheetName, bool explicitSheetName = true)
     {
         SheetName = sheetName;
-        ExplicitSheetName = true;
+        ExplicitSheetName = explicitSheetName;
     }
     internal void SetValidity(bool isValid)
     {
