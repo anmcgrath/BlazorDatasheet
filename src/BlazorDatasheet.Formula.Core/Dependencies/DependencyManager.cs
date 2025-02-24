@@ -249,30 +249,26 @@ public class DependencyManager
         // find anything that depends directly on the regions that are shifted
         // and modify the formula references
         // needs to be done before we shift vertices
+        IRegion affectedRegion = axis == Axis.Col
+            ? new ColumnRegion(index, int.MaxValue)
+            : new RowRegion(index, int.MaxValue);
 
-        foreach (var kp in _referencedVertexStores)
+        var dependentFormula = GetDirectDependents(affectedRegion, sheetName);
+
+        foreach (var dependent in dependentFormula)
         {
-            IRegion affectedRegion = axis == Axis.Col
-                ? new ColumnRegion(index, int.MaxValue)
-                : new RowRegion(index, int.MaxValue);
-
-            var dependentFormula = kp.Value.GetData(affectedRegion);
-
-            foreach (var dependent in dependentFormula)
-            {
-                // capture the current references before they are modified
-                var existingRegions = dependent.Formula!.References.Select(r => r.Region.Clone()).ToList();
-                var existingValidities = dependent.Formula!.References.Select(r => r.IsInvalid).ToList();
-                var sheetNames = dependent.Formula!.References.Select(x => x.SheetName).ToList();
-                var sheetNamesAreExplicit = dependent.Formula!.References.Select(x => x.ExplicitSheetName).ToList();
-                restoreData.ModifiedFormulaReferences.Add(new ReferenceRestoreData(dependent.Formula!, existingRegions,
-                    existingValidities, sheetNames, sheetNamesAreExplicit));
-                dependent.Formula!.RemoveRowColFromReferences(index, count, axis, sheetName);
-            }
-
-            restoreData.Merge(ShiftVerticesInRegion(affectedRegion, dRow, dCol, kp.Key));
-            restoreData.RegionRestoreData.Merge(GetReferencedVertexStore(sheetName).RemoveRowColAt(index, count, axis));
+            // capture the current references before they are modified
+            var existingRegions = dependent.Formula!.References.Select(r => r.Region.Clone()).ToList();
+            var existingValidities = dependent.Formula!.References.Select(r => r.IsInvalid).ToList();
+            var sheetNames = dependent.Formula!.References.Select(x => x.SheetName).ToList();
+            var sheetNamesAreExplicit = dependent.Formula!.References.Select(x => x.ExplicitSheetName).ToList();
+            restoreData.ModifiedFormulaReferences.Add(new ReferenceRestoreData(dependent.Formula!, existingRegions,
+                existingValidities, sheetNames, sheetNamesAreExplicit));
+            dependent.Formula!.RemoveRowColFromReferences(index, count, axis, sheetName);
         }
+
+        restoreData.Merge(ShiftVerticesInRegion(affectedRegion, dRow, dCol, sheetName));
+        restoreData.RegionRestoreData.Merge(GetReferencedVertexStore(sheetName).RemoveRowColAt(index, count, axis));
 
         return restoreData;
     }
