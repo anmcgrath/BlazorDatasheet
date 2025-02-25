@@ -24,11 +24,18 @@ public class CellFormula
 
     public string ToFormulaString() => "=" + ExpressionTree.Root.ToExpressionText();
 
-    public void ShiftReferences(int offsetRow, int offsetCol, string sheetName)
+    /// <summary>
+    /// Shifts all references by <paramref name="offsetRow"/> rows and <paramref name="offsetCol"/> columns.
+    /// References are only shifted if the sheet name matches <paramref name="sheetName"/>.
+    /// </summary>
+    /// <param name="offsetRow"></param>
+    /// <param name="offsetCol"></param>
+    /// <param name="sheetName"></param>
+    public void ShiftReferences(int offsetRow, int offsetCol, string? sheetName)
     {
         foreach (var reference in References)
         {
-            if (reference.SheetName != sheetName)
+            if (sheetName != null && reference.SheetName != sheetName)
                 continue;
             reference.Shift(offsetRow, offsetCol);
         }

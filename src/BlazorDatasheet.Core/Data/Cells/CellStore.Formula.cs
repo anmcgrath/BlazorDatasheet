@@ -80,7 +80,7 @@ public partial class CellStore
             if (formula.data == null)
                 continue;
             var clonedFormula = formula.data.Clone();
-            clonedFormula.ShiftReferences(offset.row, offset.col, Sheet.Name);
+            clonedFormula.ShiftReferences(offset.row, offset.col, null);
             restoreData.Merge(SetFormulaImpl(formula.row + offset.row, formula.col + offset.col, clonedFormula));
         }
 
