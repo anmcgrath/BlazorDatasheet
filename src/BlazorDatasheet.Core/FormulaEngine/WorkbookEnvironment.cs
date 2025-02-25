@@ -59,7 +59,7 @@ public class WorkbookEnvironment : IEnvironment
     {
         var sheet = _workbook.GetSheet(reference.SheetName);
         if (sheet == null)
-            return Array.Empty<CellValue>();
+            return [CellValue.Error(ErrorType.Ref)];
 
         return sheet.Cells.GetNonEmptyCellValues(reference.Region)
             .Select(x => x.value).ToArray();
@@ -75,6 +75,8 @@ public class WorkbookEnvironment : IEnvironment
     public CellValue GetCellValue(int row, int col, string sheetName)
     {
         var sheet = _workbook.GetSheet(sheetName);
+        if (sheet == null)
+            return CellValue.Error(ErrorType.Ref);
         return sheet?.Cells.GetCellValue(row, col) ?? CellValue.Empty;
     }
 

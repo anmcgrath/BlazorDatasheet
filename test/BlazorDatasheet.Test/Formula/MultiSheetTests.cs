@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 using BlazorDatashet.Formula.Functions.Math;
 using FluentAssertions;
@@ -129,5 +130,12 @@ public class MultiSheetTests
     {
         var parsedFormula = _sheet1.FormulaEngine.ParseFormula("=sum(Sheet1!A1:Sheet2!:A2)");
         parsedFormula.ExpressionTree.Errors.Should().NotBeEmpty();
+    }
+
+    [Test]
+    public void Invalid_Reference_Should_Result_In_Error()
+    {
+        _sheet1.Cells["A1"]!.Formula = "=Sheet3!A1"; // Sheet3 does not exist
+        _sheet1.Cells["A1"]!.Value.Should().BeOfType<FormulaError>();
     }
 }
