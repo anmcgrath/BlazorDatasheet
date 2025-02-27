@@ -132,7 +132,7 @@ public static class RangeText
         // if there are no characters after col ref then it is a single col ref
         if (pos == str.Length)
         {
-            if (colIndex < MaxCols)
+            if (colIndex < MaxCols && isFirstFixed)
                 address = new ColAddress(colIndex, colStrSpan.ToString(), isFirstFixed);
             else
                 address = new NamedAddress(colStrSpan.ToString());

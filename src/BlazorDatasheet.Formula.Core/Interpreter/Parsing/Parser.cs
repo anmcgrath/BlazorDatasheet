@@ -92,37 +92,99 @@ public class Parser
             case Tag.LeftCurlyBracketToken:
                 return ParseArrayConstant();
             case Tag.SheetLocatorToken:
-                var sheetToken = (SheetLocatorToken)NextToken();
-                if (Current.Tag != Tag.AddressToken)
-                {
-                    Error("Expected address token after sheet locator");
-                    return new LiteralExpression(CellValue.Error(ErrorType.Ref));
-                }
-
-                var parsedRef = ParseReferenceExpression();
-                if (parsedRef == null)
-                    return new LiteralExpression(CellValue.Error(ErrorType.Ref));
-                parsedRef.Reference.SetSheetName(sheetToken.Text);
-                return parsedRef;
+                return ParseSheetReferenceExpression();
             case Tag.AddressToken:
-                var parsedAddress = ParseReferenceExpression();
-                if (parsedAddress == null)
-                    return new LiteralExpression(CellValue.Error(ErrorType.Ref));
-                return parsedAddress;
+                return ParseReferenceExpressionFromAddress();
         }
 
         return ParseLiteralExpression();
     }
 
-    private ReferenceExpression? ParseReferenceExpression()
+    private Expression ParseSheetReferenceExpression()
+    {
+        var sheetToken = (SheetLocatorToken)NextToken();
+        if (Current.Tag != Tag.AddressToken)
+        {
+            Error("Expected address token after sheet locator");
+            return new LiteralExpression(CellValue.Error(ErrorType.Ref));
+        }
+
+        var parsedRef = ParseReferenceExpressionFromAddress(sheetToken.Text);
+        if (parsedRef is not ReferenceExpression)
+        {
+            Error($"Unexpected expression {parsedRef}");
+            return new LiteralExpression(CellValue.Error(ErrorType.Ref));
+        }
+
+        ((ReferenceExpression)parsedRef).Reference.SetSheetName(sheetToken.Text);
+        return parsedRef;
+    }
+
+    private Expression ParseReferenceExpressionFromAddress(string? sheetName = null)
     {
         var addressToken = (AddressToken)NextToken();
-        var reference = GetReferenceFromAddress(addressToken.Address);
-        if (reference == null)
-            return null;
+        var firstRef = GetReferenceFromAddress(addressToken.Address);
+        if (firstRef == null)
+            return new LiteralExpression(CellValue.Error(ErrorType.Ref));
 
-        _references.Add(reference);
-        return new ReferenceExpression(reference);
+        if (Peek(0).Tag != Tag.ColonToken)
+        {
+            _references.Add(firstRef);
+            return new ReferenceExpression(firstRef);
+        }
+
+        MatchToken(Tag.ColonToken);
+        var firstSheetName = sheetName ?? firstRef.SheetName;
+
+        if (Peek(0).Tag == Tag.SheetLocatorToken)
+        {
+            var sheetToken = NextToken();
+            if (sheetToken.Text != firstSheetName)
+                return ErrorAndReturnLiteral("References must be on the same sheet", ErrorType.Ref);
+        }
+
+        if (Peek(0).Tag == Tag.AddressToken || Peek(0).Tag == Tag.Number)
+        {
+            var tok = NextToken();
+            Address? nextAddr = null;
+            if (tok.Tag == Tag.Number && ((NumberToken)tok).IsInteger)
+                nextAddr = new RowAddress((int)(((NumberToken)tok).Value - 1), false);
+            else if (tok.Tag == Tag.AddressToken)
+                nextAddr = ((AddressToken)tok).Address;
+
+            if (nextAddr == null)
+                return ErrorAndReturnLiteral("Invalid reference", ErrorType.Ref);
+
+            if (nextAddr.Kind != addressToken.Address.Kind)
+                return ErrorAndReturnLiteral($"Invalid reference {addressToken.Address.Kind} to {nextAddr.Kind}",
+                    ErrorType.Ref);
+
+            ReferenceExpression? evalRef = addressToken.Address.Kind switch
+            {
+                AddressKind.CellAddress => new ReferenceExpression(new RangeReference((CellAddress)addressToken.Address,
+                    (CellAddress)nextAddr)),
+                AddressKind.RowAddress => new ReferenceExpression(new RangeReference((RowAddress)addressToken.Address,
+                    (RowAddress)nextAddr)),
+                AddressKind.ColAddress => new ReferenceExpression(new RangeReference((ColAddress)addressToken.Address,
+                    (ColAddress)nextAddr)),
+                _ => null
+            };
+
+            if (evalRef == null) return ErrorAndReturnLiteral("Invalid reference", ErrorType.Ref);
+
+            _references.Add(evalRef.Reference);
+            return evalRef;
+        }
+        else
+            NextToken();
+
+        return ErrorAndReturnLiteral("Invalid reference", ErrorType.Ref);
+    }
+
+    private Expression ErrorAndReturnLiteral(string message, ErrorType errorType)
+    {
+        Error(message);
+        return new LiteralExpression(CellValue.Error(errorType));
     }
 
     private Expression ParseLogicalExpression()
@@ -140,25 +202,12 @@ public class Parser
                 var cellAddress = (CellAddress)address;
                 return new CellReference(cellAddress.RowAddress.RowIndex, cellAddress.ColAddress.ColIndex,
                     cellAddress.ColAddress.IsFixed, cellAddress.RowAddress.IsFixed);
-            case AddressKind.RangeAddress:
-                var rangeAddress = (RangeAddress)address;
-                if (rangeAddress.Start.Kind == AddressKind.CellAddress &&
-                    rangeAddress.End.Kind == AddressKind.CellAddress)
-                    return new RangeReference((CellAddress)rangeAddress.Start, (CellAddress)rangeAddress.End);
-                if (rangeAddress.Start.Kind == AddressKind.ColAddress &&
-                    rangeAddress.End.Kind == AddressKind.ColAddress)
-                    return new RangeReference((ColAddress)rangeAddress.Start, (ColAddress)rangeAddress.End);
-                if (rangeAddress.Start.Kind == AddressKind.RowAddress &&
-                    rangeAddress.End.Kind == AddressKind.RowAddress)
-                    return new RangeReference((RowAddress)rangeAddress.Start, (RowAddress)rangeAddress.End);
-                Error("Invalid range address");
-                return null;
             case AddressKind.NamedAddress:
                 var namedAddress = (NamedAddress)address;
                 return new NamedReference(namedAddress.Name);
         }
 
-        throw new Exception($"Unhandled address type {address.Kind}");
+        return null;
     }
 
     private Expression ParseArrayConstant()

@@ -11,6 +11,7 @@ public class LexerTests
     [TestCase("=Sheet1!A1", "Sheet1")]
     [TestCase("=Sheet2!A1", "Sheet2")]
     [TestCase("='Sheet 1'!A1", "Sheet 1")]
+    [TestCase("='Sheet 1'!A1:'Sheet 1'!:A1", "Sheet 1")]
     public void Sheet_Locator_Token_Tests(string formulaStr, string? expectedSheetName)
     {
         var lexer = new Lexer();

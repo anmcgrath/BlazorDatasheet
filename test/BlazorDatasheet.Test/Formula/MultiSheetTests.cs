@@ -118,7 +118,7 @@ public class MultiSheetTests
     [Test]
     public void Range_Ref_With_Sheet_Infront_Of_Both_Cells_References_Ok()
     {
-        var parsedFormula = _sheet1.FormulaEngine.ParseFormula("=sum(Sheet2!A1:Sheet2!:A2)");
+        var parsedFormula = _sheet1.FormulaEngine.ParseFormula("=sum(Sheet2!A1:Sheet2!A2)");
         parsedFormula.ExpressionTree.Errors.Should().BeEmpty();
         parsedFormula.References.Count().Should().Be(1);
         parsedFormula.References.First().Should().BeOfType<RangeReference>();
