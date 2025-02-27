@@ -138,4 +138,22 @@ public class MultiSheetTests
         _sheet1.Cells["A1"]!.Formula = "=Sheet3!A1"; // Sheet3 does not exist
         _sheet1.Cells["A1"]!.Value.Should().BeOfType<FormulaError>();
     }
+
+    [Test]
+    public void Multi_Sheet_Col_Ref_Evaluate_Correctly()
+    {
+        var r = _sheet1.Range("Sheet2!A:Sheet2!B");
+        r.Region.Should().BeOfType<ColumnRegion>();
+        r.Region.Left.Should().Be(0);
+        r.Region.Right.Should().Be(1);
+    }
+
+    [Test]
+    public void Multi_Sheet_Row_Ref_Evaluate_Correctly()
+    {
+        var r = _sheet1.Range("Sheet2!4:Sheet2!5");
+        r.Region.Should().BeOfType<RowRegion>();
+        r.Region.Top.Should().Be(3);
+        r.Region.Bottom.Should().Be(4);
+    }
 }
