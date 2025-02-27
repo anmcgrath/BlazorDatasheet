@@ -330,14 +330,13 @@ public class Parser
         if (Peek(1).Tag == Tag.LeftParenthToken)
             return ParseFunctionCallExpression();
 
-        var identifierToken = (IdentifierToken)NextToken();
-        if (_environment.VariableExists(identifierToken.Value))
-            return new VariableExpression(identifierToken);
 
-        if (TryConvertToAddress(identifierToken, out var address))
+        var identifierToken = (IdentifierToken)NextToken();
+
+        if (Current.Tag == Tag.ColonToken && TryConvertToAddress(identifierToken, out var address))
             return ParseReferenceExpressionFromAddress(address!);
 
-        return ErrorAndReturnLiteral($"Invalid identifier {identifierToken.Value}", ErrorType.Name);
+        return new VariableExpression(identifierToken);
     }
 
     private Expression ParseFunctionCallExpression()

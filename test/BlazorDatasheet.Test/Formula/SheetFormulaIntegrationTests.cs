@@ -392,4 +392,14 @@ public class SheetFormulaIntegrationTests
         var res = eval.Evaluate(fB1);
         res.Data.Should().Be(3);
     }
+
+    [Test]
+    public void Set_Variable_After_Setting_Formula_Should_Eval_Correctly()
+    {
+        // We test this because if the parser requires the environmental variable to exist,
+        // we will need to re-parse formula when setting a variable.
+        _sheet.Cells.SetFormula(1, 1, "=x");
+        _sheet.FormulaEngine.SetVariable("x", 10);
+        _sheet.Cells.GetValue(1, 1).Should().Be(10);
+    }
 }
