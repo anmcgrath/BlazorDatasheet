@@ -23,7 +23,7 @@ public class DependencyManagerTests
 
     private CellFormula GetFormula(string formulaStr)
     {
-        var parser = new Parser();
+        var parser = new Parser(new TestEnvironment());
         return parser.FromString(formulaStr);
     }
 

@@ -18,7 +18,7 @@ namespace BlazorDatasheet.Core.FormulaEngine;
 public class FormulaEngine
 {
     private readonly IEnvironment _environment;
-    private readonly Parser _parser = new();
+    private readonly Parser _parser;
     private readonly Evaluator _evaluator;
     internal readonly DependencyManager DependencyManager = new();
     private readonly List<Sheet> _sheets = new();
@@ -33,6 +33,7 @@ public class FormulaEngine
     internal FormulaEngine(IEnvironment environment)
     {
         _environment = environment;
+        _parser = new Parser(_environment);
         _evaluator = new Evaluator(_environment);
         RegisterDefaultFunctions();
     }
@@ -237,5 +238,15 @@ public class FormulaEngine
     public void RenameSheet(string oldName, string newName)
     {
         DependencyManager.RenameSheet(oldName, newName);
+    }
+
+    public IEnvironment GetEnvironment()
+    {
+        return _environment;
+    }
+
+    public CellFormula? CloneFormula(CellFormula formula)
+    {
+        return _parser.FromString(formula.ToFormulaString());
     }
 }

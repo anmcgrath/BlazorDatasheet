@@ -383,7 +383,7 @@ public class SheetFormulaIntegrationTests
         var env = new TestEnvironment();
         env.RegisterFunction("if", new IfFunction());
         var eval = new Evaluator(env);
-        var parser = new Parser();
+        var parser = new Parser(env);
         var fA1 = new CellFormula(parser.Parse("=B1"));
         var fB1 = new CellFormula(parser.Parse("=if(true,C1,A1)"));
         env.SetCellValue(0, 2, 3);

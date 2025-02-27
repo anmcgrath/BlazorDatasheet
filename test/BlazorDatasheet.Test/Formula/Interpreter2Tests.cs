@@ -20,7 +20,7 @@ public class InterpreterTests
     {
         _env = new TestEnvironment();
         _evaluator = new Evaluator(_env);
-        _parser = new Parser();
+        _parser = new Parser(_env);
     }
 
     [Test]

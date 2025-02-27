@@ -23,7 +23,7 @@ public class MathFunctionTests
     public object? Eval(string formulaString)
     {
         var eval = new Evaluator(_env);
-        var parser = new Parser();
+        var parser = new Parser(_env);
         return eval.Evaluate(parser.Parse(formulaString)).Data;
     }
 

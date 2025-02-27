@@ -199,7 +199,7 @@ public static class RangeText
     }
 
 
-    private static int ColStrToIndex(ReadOnlySpan<char> text)
+    public static int ColStrToIndex(ReadOnlySpan<char> text)
     {
         var col0 = 'A';
         var result = 0;

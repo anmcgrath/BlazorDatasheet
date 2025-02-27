@@ -90,14 +90,14 @@ public class Evaluator
             case NodeKind.ArrayConstant:
                 return EvaluateArrayConstantExpression((ArrayConstantExpression)expression);
             case NodeKind.Name:
-                return EvaluateNamedExpression((NameExpression)expression);
+                return EvaluateNamedExpression((VariableExpression)expression);
         }
 
         return CellValue.Error(new FormulaError(ErrorType.Na,
             $"Cannot evaluate expression {expression.ToExpressionText()}"));
     }
 
-    private CellValue EvaluateNamedExpression(NameExpression expression)
+    private CellValue EvaluateNamedExpression(VariableExpression expression)
     {
         if (!_environment.VariableExists(expression.NameToken.Value))
             return CellValue.Error(ErrorType.Ref);

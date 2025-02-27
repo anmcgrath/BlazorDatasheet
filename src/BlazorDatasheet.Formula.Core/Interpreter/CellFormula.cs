@@ -111,10 +111,4 @@ public class CellFormula
             }
         }
     }
-
-    public CellFormula Clone()
-    {
-        var parser = new Parser();
-        return new CellFormula(parser.Parse(ToFormulaString()));
-    }
 }
