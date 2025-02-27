@@ -91,16 +91,6 @@ public class FormulaEngine
         CalculateSheet(true);
     }
 
-    private bool IsCellReferenced(int row, int col, string sheetName)
-    {
-        return DependencyManager.HasDependents(row, col, sheetName);
-    }
-
-    private bool RegionContainsReferencedCells(IRegion region, string sheetName)
-    {
-        return DependencyManager.HasDependents(region, sheetName);
-    }
-
     private void RegisterDefaultFunctions()
     {
         _environment.RegisterLogicalFunctions();

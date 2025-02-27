@@ -1,4 +1,5 @@
-﻿using BlazorDatasheet.DataStructures.Geometry;
+﻿using System.Collections;
+using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Graph;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core.Interpreter;
@@ -15,8 +16,6 @@ public class DependencyManager
     /// to each formula vertex that references the region.
     /// E.g. for a formula "=A1 + sum(B1:B2)", the region A1 and B1:B2 will have a reference to the formula vertex
     /// </summary>
-    private readonly RegionDataStore<FormulaVertex> _rferencedVertexStore = new(0, false);
-
     private readonly Dictionary<string, RegionDataStore<FormulaVertex>> _referencedVertexStores = new();
 
     internal int FormulaCount => _dependencyGraph.Count;
@@ -64,10 +63,15 @@ public class DependencyManager
     public DependencyManagerRestoreData SetFormula(int row, int col, string sheetName, CellFormula? formula)
     {
         var formulaVertex = new FormulaVertex(row, col, sheetName, formula);
-        // Clear any dependency tracking for old formula if there is one
-        var restoreData = ClearFormula(row, col, sheetName);
+        return SetFormulaVertex(formulaVertex);
+    }
 
-        if (formula == null)
+    private DependencyManagerRestoreData SetFormulaVertex(FormulaVertex formulaVertex)
+    {
+        // Clear any dependency tracking for old formula if there is one
+        var restoreData = ClearFormula(formulaVertex);
+
+        if (formulaVertex.Formula == null)
             return restoreData;
 
         _dependencyGraph.AddVertex(formulaVertex);
@@ -75,7 +79,7 @@ public class DependencyManager
 
         // find formula inside any of the regions that this formula references
         // and add a dependency edge to them
-        foreach (var formulaRef in formula.References)
+        foreach (var formulaRef in formulaVertex.Formula.References)
         {
             // add edges to any formula that already exist
             if (formulaRef is not NamedReference)
@@ -97,7 +101,7 @@ public class DependencyManager
         }
 
         // find any formula that reference this formula and add edges to them
-        foreach (var dependents in GetDirectDependents(new Region(row, col), sheetName))
+        foreach (var dependents in GetDirectDependents(formulaVertex))
         {
             _dependencyGraph.AddEdge(formulaVertex, dependents);
             restoreData.EdgesAdded.Add((formulaVertex.Key, dependents.Key));
@@ -106,10 +110,9 @@ public class DependencyManager
         return restoreData;
     }
 
-    public DependencyManagerRestoreData ClearFormula(int row, int col, string sheetName)
+    private DependencyManagerRestoreData ClearFormula(FormulaVertex formulaVertex)
     {
         var restoreData = new DependencyManagerRestoreData();
-        var formulaVertex = new FormulaVertex(row, col, sheetName, null);
         if (!_dependencyGraph.HasVertex(formulaVertex.Key))
             return restoreData;
 
@@ -158,6 +161,12 @@ public class DependencyManager
         return restoreData;
     }
 
+    public DependencyManagerRestoreData ClearFormula(int row, int col, string sheetName)
+    {
+        var formulaVertex = new FormulaVertex(row, col, sheetName, null);
+        return ClearFormula(formulaVertex);
+    }
+
     public bool HasDependents(IRegion region, string sheetName)
     {
         return GetReferencedVertexStore(sheetName).Any(region);
@@ -180,6 +189,16 @@ public class DependencyManager
     public IEnumerable<FormulaVertex> GetDirectDependents(IRegion region, string sheetName)
     {
         return GetReferencedVertexStore(sheetName).GetData(region);
+    }
+
+    private IEnumerable<FormulaVertex> GetDirectDependents(FormulaVertex vertex)
+    {
+        if (vertex.VertexType == VertexType.Cell || vertex.VertexType == VertexType.Region)
+        {
+            return GetDirectDependents(vertex.Region!, vertex.SheetName);
+        }
+
+        return _dependencyGraph.Adj(vertex);
     }
 
     public DependencyManagerRestoreData InsertRowAt(int row, int count, string sheetName) =>
@@ -413,6 +432,8 @@ public class DependencyManager
     {
         return _dependencyGraph.GetVertex(new FormulaVertex(cellRow, cellCol, sheetName, null).Key);
     }
+
+    public IEnumerable<FormulaVertex> GetAllVertices() => _dependencyGraph.GetAll();
 }
 
 public class DependencyManagerRestoreData

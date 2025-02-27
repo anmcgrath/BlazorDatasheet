@@ -43,7 +43,10 @@ public class FormulaVertex : Vertex, IEquatable<FormulaVertex>
     }
 
     public IRegion? Region { get; }
-    public CellFormula? Formula { get; private set; }
+    public CellFormula? Formula { get; set; }
+
+    public int? Row => Region?.Top;
+    public int? Col => Region?.Left;
 
     public VertexType VertexType { get; private set; }
 
