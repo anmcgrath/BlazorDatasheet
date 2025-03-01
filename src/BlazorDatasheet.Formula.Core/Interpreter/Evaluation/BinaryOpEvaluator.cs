@@ -79,7 +79,13 @@ public class BinaryOpEvaluator
         var c1 = new CellAddress(regJoined.Top, regJoined.Left);
         var c2 = new CellAddress(regJoined.Bottom, regJoined.Right);
 
-        return CellValue.Reference(new RangeReference(c1, c2));
+        var sheetName = leftRef.SheetName;
+        if (sheetName != rightRef.SheetName)
+            return CellValue.Error(ErrorType.Ref);
+
+        var rangeRef = new RangeReference(c1, c2);
+        rangeRef.SetSheetName(sheetName, true);
+        return CellValue.Reference(rangeRef);
     }
 
     private CellValue EvaluateLessThan(CellValue left, CellValue right)

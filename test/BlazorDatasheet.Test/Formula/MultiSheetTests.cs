@@ -156,4 +156,23 @@ public class MultiSheetTests
         r.Region.Top.Should().Be(3);
         r.Region.Bottom.Should().Be(4);
     }
+
+    [Test]
+    public void Multi_Sheet_Range_Operator_Works_Correctly()
+    {
+        var r = _sheet1.Range("Sheet2!A1:Sheet2!B2:Sheet2!C3");
+        r.Region.Should().BeOfType<Region>();
+        r.Region.Left.Should().Be(0);
+        r.Region.Right.Should().Be(2);
+        r.Region.Top.Should().Be(0);
+        r.Region.Bottom.Should().Be(2);
+    }
+
+    [Test]
+    public void Multi_Sheet_Range_Intersection_Evaluates_Correctly()
+    {
+        _sheet2.Range("Sheet2!A1:Sheet2!B2:Sheet2!C3")!.Value = 2;
+        _sheet1.Cells["A1"]!.Formula = "=sum(Sheet2!A1:Sheet2!B2:Sheet2!C3)";
+        _sheet1.Cells["A1"]!.Value.Should().Be(18);
+    }
 }
