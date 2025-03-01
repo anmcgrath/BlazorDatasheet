@@ -6,10 +6,10 @@ namespace BlazorDatasheet.Formula.Core;
 
 public class CellValue : IComparable, IComparable<CellValue>
 {
-    public object? Data { get; init; }
+    public object? Data { get; private set; }
 
     public bool IsEmpty { get; private set; }
-    public CellValueType ValueType { get; init; }
+    public CellValueType ValueType { get; private set; }
 
     public static readonly CellValue Empty = new CellValue(null);
 
