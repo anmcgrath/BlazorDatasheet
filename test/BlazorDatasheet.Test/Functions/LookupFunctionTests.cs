@@ -21,7 +21,7 @@ public class LookupFunctionTests
     public object? Eval(string formulaString, bool resolveReferences = false)
     {
         var eval = new Evaluator(_env);
-        var parser = new Parser();
+        var parser = new Parser(_env);
         var formula = parser.FromString(formulaString);
         return eval.Evaluate(formula, null, new FormulaEvaluationOptions(!resolveReferences)).Data;
     }

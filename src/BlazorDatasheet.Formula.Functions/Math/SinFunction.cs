@@ -26,4 +26,5 @@ public class SinFunction : ISheetFunction
     }
 
     public bool AcceptsErrors => false;
+    public bool IsVolatile => false;
 }

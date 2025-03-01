@@ -92,7 +92,7 @@ public class SortRangeCommand : BaseCommand, IUndoableCommand
                     sheet.Cells.SetValueImpl(newRowNo, col, val);
                 else
                 {
-                    formula.ShiftReferences((newRowNo - oldRowNo), 0);
+                    formula.ShiftReferences((newRowNo - oldRowNo), 0, sheet.Name);
                     sheet.Cells.SetFormulaImpl(newRowNo, col, formula);
                 }
             }
@@ -166,7 +166,7 @@ public class SortRangeCommand : BaseCommand, IUndoableCommand
                 }
                 else
                 {
-                    formula.ShiftReferences((newRowNo - rowIndices[i]), 0);
+                    formula.ShiftReferences((newRowNo - rowIndices[i]), 0, sheet.Name);
                     sheet.Cells.SetFormulaImpl(newRowNo, col, formula);
                 }
 

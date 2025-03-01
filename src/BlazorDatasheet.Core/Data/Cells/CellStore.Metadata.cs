@@ -21,7 +21,7 @@ public partial class CellStore
     public bool SetCellMetaData(int row, int col, string name, object? value)
     {
         var cmd = new SetMetaDataCommand(row, col, name, value);
-        return _sheet.Commands.ExecuteCommand(cmd);
+        return Sheet.Commands.ExecuteCommand(cmd);
     }
 
     internal void SetMetaDataImpl(int row, int col, string name, object? value)

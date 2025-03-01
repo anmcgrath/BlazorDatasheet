@@ -8,16 +8,24 @@ namespace BlazorDatasheet.Formula.Core.Interpreter.Parsing;
 
 public class Parser
 {
+    private readonly IEnvironment _environment;
     private int _position;
     private Token[] _tokens = null!;
     private List<string> _errors = null!;
     private List<Reference> _references = new();
+    private bool _containsVolatiles;
+
+    public Parser(IEnvironment environment)
+    {
+        _environment = environment;
+    }
 
     public SyntaxTree Parse(Token[] tokens, List<string>? lexErrors = null)
     {
         _position = 0;
         _tokens = tokens;
         _errors = lexErrors ?? new List<string>();
+        _containsVolatiles = false;
         // Formula must start with equals token
         MatchToken(Tag.EqualsToken);
         var expression = ParseExpression();
@@ -35,7 +43,7 @@ public class Parser
 
     public CellFormula FromString(string formulaString)
     {
-        return new CellFormula(Parse(formulaString));
+        return new CellFormula(Parse(formulaString), _containsVolatiles);
     }
 
     private Expression ParseExpression()
@@ -62,7 +70,7 @@ public class Parser
     private Expression ParseBinaryExpression(int parentPrecedence = 0)
     {
         var leftExpression = ParsePrimaryExpression();
-        
+
         while (Current.Tag == Tag.PercentToken)
             leftExpression = new UnaryOperatorExpression(NextToken(), leftExpression, isPostFix: true);
 
@@ -72,6 +80,9 @@ public class Parser
             // If not a binary operator or if the precedence is less than the parent, exit loop
             if (precedence == 0 || precedence <= parentPrecedence)
                 return leftExpression;
+
+            if (Current.Tag.IsVolatileBinaryExpression())
+                _containsVolatiles = true;
 
             var operatorToken = NextToken();
             var right = ParseBinaryExpression(precedence);
@@ -87,20 +98,144 @@ public class Parser
                 return ParseParenthExpression();
             case Tag.IdentifierToken:
                 return ParseIdentifierExpression();
+            case Tag.LogicalToken:
+                return ParseLogicalExpression();
             case Tag.LeftCurlyBracketToken:
                 return ParseArrayConstant();
+            case Tag.SheetLocatorToken:
+                return ParseSheetReferenceExpression();
             case Tag.AddressToken:
-                var refToken = (AddressToken)NextToken();
-                var reference = GetReferenceFromAddress(refToken.Address);
-                if (reference == null)
-                    return new LiteralExpression(CellValue.Error(ErrorType.Ref));
+                return ParseReferenceExpressionFromAddress(((AddressToken)NextToken()).Address);
+        }
 
-                _references.Add(reference);
-                return new ReferenceExpression(reference);
+        if (Peek(1).Tag == Tag.ColonToken && TryConvertToAddress(Current, out var address))
+        {
+            NextToken();
+            return ParseReferenceExpressionFromAddress(address!);
         }
 
         return ParseLiteralExpression();
     }
+
+    private bool TryConvertToAddress(Token token, out Address? addressToken)
+    {
+        addressToken = null;
+
+        if (token.Tag == Tag.AddressToken)
+        {
+            addressToken = ((AddressToken)token).Address;
+            return true;
+        }
+
+        if (token.Tag == Tag.Number)
+        {
+            var numberToken = (NumberToken)token;
+            if (numberToken.IsInteger)
+            {
+                addressToken = new RowAddress((int)numberToken.Value - 1, false);
+                return true;
+            }
+        }
+
+        if (token.Tag == Tag.IdentifierToken && ((IdentifierToken)token).Value.All(char.IsLetter))
+        {
+            var colIndex = RangeText.ColStrToIndex(((IdentifierToken)token).Value);
+            if (colIndex < RangeText.MaxCols)
+            {
+                addressToken = new ColAddress(colIndex, false);
+                return true;
+            }
+
+            return false;
+        }
+
+        return false;
+    }
+
+    private Expression ParseSheetReferenceExpression()
+    {
+        var sheetToken = (SheetLocatorToken)NextToken();
+
+        if (!TryConvertToAddress(NextToken(), out var address))
+        {
+            Error("Expected address token after sheet locator");
+            return new LiteralExpression(CellValue.Error(ErrorType.Ref));
+        }
+
+        var parsedRef = ParseReferenceExpressionFromAddress(address!, sheetToken.Text);
+        if (parsedRef is not ReferenceExpression)
+        {
+            Error($"Unexpected expression {parsedRef}");
+            return new LiteralExpression(CellValue.Error(ErrorType.Ref));
+        }
+
+        ((ReferenceExpression)parsedRef).Reference.SetSheetName(sheetToken.Text);
+        return parsedRef;
+    }
+
+    private Expression ParseReferenceExpressionFromAddress(Address address, string? sheetName = null)
+    {
+        if (Peek(0).Tag != Tag.ColonToken)
+        {
+            var firstRef = GetReferenceFromAddress(address);
+            if (firstRef == null)
+                return new LiteralExpression(CellValue.Error(ErrorType.Ref));
+
+            _references.Add(firstRef);
+            return new ReferenceExpression(firstRef);
+        }
+
+        MatchToken(Tag.ColonToken);
+        var firstSheetName = sheetName ?? null;
+
+        if (Peek(0).Tag == Tag.SheetLocatorToken)
+        {
+            var sheetToken = NextToken();
+            if (sheetToken.Text != firstSheetName)
+                return ErrorAndReturnLiteral("References must be on the same sheet", ErrorType.Ref);
+        }
+
+        if (TryConvertToAddress(NextToken(), out var nextAddr))
+        {
+            if (nextAddr == null)
+                return ErrorAndReturnLiteral("Invalid reference", ErrorType.Ref);
+
+            if (nextAddr.Kind != address.Kind)
+                return ErrorAndReturnLiteral($"Invalid reference {address.Kind} to {nextAddr.Kind}",
+                    ErrorType.Ref);
+
+            ReferenceExpression? evalRef = address.Kind switch
+            {
+                AddressKind.CellAddress => new ReferenceExpression(new RangeReference((CellAddress)address,
+                    (CellAddress)nextAddr)),
+                AddressKind.RowAddress => new ReferenceExpression(new RangeReference((RowAddress)address,
+                    (RowAddress)nextAddr)),
+                AddressKind.ColAddress => new ReferenceExpression(new RangeReference((ColAddress)address,
+                    (ColAddress)nextAddr)),
+                _ => null
+            };
+
+            if (evalRef == null) return ErrorAndReturnLiteral("Invalid reference", ErrorType.Ref);
+
+            _references.Add(evalRef.Reference);
+            return evalRef;
+        }
+
+        return ErrorAndReturnLiteral("Invalid reference", ErrorType.Ref);
+    }
+
+    private Expression ErrorAndReturnLiteral(string message, ErrorType errorType)
+    {
+        Error(message);
+        return new LiteralExpression(CellValue.Error(errorType));
+    }
+
+    private Expression ParseLogicalExpression()
+    {
+        var token = (LogicalToken)NextToken();
+        return new LiteralExpression(CellValue.Logical(token.Value));
+    }
+
 
     private Reference? GetReferenceFromAddress(Address address)
     {
@@ -110,31 +245,18 @@ public class Parser
                 var cellAddress = (CellAddress)address;
                 return new CellReference(cellAddress.RowAddress.RowIndex, cellAddress.ColAddress.ColIndex,
                     cellAddress.ColAddress.IsFixed, cellAddress.RowAddress.IsFixed);
-            case AddressKind.RangeAddress:
-                var rangeAddress = (RangeAddress)address;
-                if (rangeAddress.Start.Kind == AddressKind.CellAddress &&
-                    rangeAddress.End.Kind == AddressKind.CellAddress)
-                    return new RangeReference((CellAddress)rangeAddress.Start, (CellAddress)rangeAddress.End);
-                if (rangeAddress.Start.Kind == AddressKind.ColAddress &&
-                    rangeAddress.End.Kind == AddressKind.ColAddress)
-                    return new RangeReference((ColAddress)rangeAddress.Start, (ColAddress)rangeAddress.End);
-                if (rangeAddress.Start.Kind == AddressKind.RowAddress &&
-                    rangeAddress.End.Kind == AddressKind.RowAddress)
-                    return new RangeReference((RowAddress)rangeAddress.Start, (RowAddress)rangeAddress.End);
-                Error("Invalid range address");
-                return null;
             case AddressKind.NamedAddress:
                 var namedAddress = (NamedAddress)address;
                 return new NamedReference(namedAddress.Name);
         }
 
-        throw new Exception($"Unhandled address type {address.Kind}");
+        return null;
     }
 
     private Expression ParseArrayConstant()
     {
         // Consume left bracket
-        var leftBracket = MatchToken(Tag.LeftCurlyBracketToken);
+        MatchToken(Tag.LeftCurlyBracketToken);
 
         // Collect array items
         var rows = new List<List<LiteralExpression>>();
@@ -215,16 +337,16 @@ public class Parser
 
         var identifierToken = (IdentifierToken)NextToken();
 
-        if (bool.TryParse(identifierToken.Value.ToLower(), out var parsedBool))
-            return new LiteralExpression(CellValue.Logical(parsedBool));
+        if (Current.Tag == Tag.ColonToken && TryConvertToAddress(identifierToken, out var address))
+            return ParseReferenceExpressionFromAddress(address!);
 
-        return new NameExpression(identifierToken);
+        return new VariableExpression(identifierToken);
     }
 
     private Expression ParseFunctionCallExpression()
     {
         var funcToken = (IdentifierToken)NextToken();
-        var leftParenth = MatchToken(Tag.LeftParenthToken);
+        MatchToken(Tag.LeftParenthToken);
         var args = new List<Expression>();
 
         while (Current.Tag != Tag.RightParenthToken)
@@ -238,7 +360,15 @@ public class Parser
         }
 
         MatchToken(Tag.RightParenthToken);
-        return new FunctionExpression(funcToken, args);
+
+        if (!_environment.FunctionExists(funcToken.Value))
+            Error($"Function {funcToken.Value} does not exist");
+
+        var functionDefinition = _environment.GetFunctionDefinition(funcToken.Value);
+        if (functionDefinition != null && functionDefinition.IsVolatile)
+            _containsVolatiles = true;
+
+        return new FunctionExpression(funcToken, args, functionDefinition);
     }
 
     private Expression ParseParenthExpression()

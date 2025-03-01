@@ -22,6 +22,7 @@ public static class RegisterExtensions
         e.RegisterFunction("SIN", new SinFunction());
         e.RegisterFunction("SLOPE", new SlopeFunction());
         e.RegisterFunction("POW", new PowerFunction());
+        e.RegisterFunction("RAND", new RandFunction());
     }
 
     public static void RegisterLookupFunctions(this IEnvironment e)

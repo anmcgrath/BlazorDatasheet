@@ -38,4 +38,5 @@ public class AndFunction : ISheetFunction
     }
 
     public bool AcceptsErrors => false;
+    public bool IsVolatile => false;
 }

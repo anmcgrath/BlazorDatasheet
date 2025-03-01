@@ -33,4 +33,5 @@ public class SumFunction : ISheetFunction
     }
 
     public bool AcceptsErrors => false;
+    public bool IsVolatile => false;
 }

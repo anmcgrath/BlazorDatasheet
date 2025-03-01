@@ -19,7 +19,7 @@ public partial class CellStore
     /// <param name="format"></param>
     internal CellStoreRestoreData MergeFormatImpl(IRegion region, CellFormat format)
     {
-        _sheet.MarkDirty(region);
+        Sheet.MarkDirty(region);
         return new CellStoreRestoreData()
         {
             FormatRestoreData = _formatStore.Add(region, format)

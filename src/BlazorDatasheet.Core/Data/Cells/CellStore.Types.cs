@@ -28,7 +28,7 @@ public partial class CellStore
             restoreData.TypeRestoreData = _typeStore.Clear(region);
         else
             restoreData.TypeRestoreData = _typeStore.Add(region, type);
-        _sheet.MarkDirty(region);
+        Sheet.MarkDirty(region);
         return restoreData;
     }
 
@@ -40,7 +40,7 @@ public partial class CellStore
     /// <returns></returns>
     public void SetType(IRegion region, string type)
     {
-        _sheet.Commands.ExecuteCommand(new SetTypeCommand(region, type));
+        Sheet.Commands.ExecuteCommand(new SetTypeCommand(region, type));
     }
 
     /// <summary>
@@ -51,13 +51,13 @@ public partial class CellStore
     /// <returns></returns>
     public void SetType(IEnumerable<IRegion> regions, string type)
     {
-        _sheet.Commands.BeginCommandGroup();
+        Sheet.Commands.BeginCommandGroup();
         foreach (var region in regions)
         {
-            _sheet.Commands.ExecuteCommand(new SetTypeCommand(region, type));
+            Sheet.Commands.ExecuteCommand(new SetTypeCommand(region, type));
         }
 
-        _sheet.Commands.EndCommandGroup();
+        Sheet.Commands.EndCommandGroup();
     }
 
     /// <summary>

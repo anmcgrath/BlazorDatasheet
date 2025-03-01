@@ -52,7 +52,7 @@ public class Sheet
     /// <summary>
     /// Manages sheet formula
     /// </summary>
-    public FormulaEngine.FormulaEngine FormulaEngine { get; }
+    public FormulaEngine.FormulaEngine FormulaEngine => Workbook.GetFormulaEngine();
 
     /// <summary>
     /// The bounds of the sheet
@@ -83,6 +83,27 @@ public class Sheet
     /// The sheet's active selection
     /// </summary>
     public Selection Selection { get; }
+
+    /// <summary>
+    /// The sheet name.
+    /// </summary>
+    public string Name { get; internal set; } = "Sheet1";
+
+    /// <summary>
+    /// The workbook associated with this sheet.
+    /// </summary>
+    public Workbook Workbook
+    {
+        get
+        {
+            if (_workbook == null)
+                _workbook = new Workbook(this);
+            return _workbook;
+        }
+        internal set => _workbook = value;
+    }
+
+    private Workbook? _workbook;
 
     /// <summary>
     /// Whether the UI associated with the sheet should be updating
@@ -141,8 +162,13 @@ public class Sheet
         Rows = new RowInfoStore(defaultHeight, this);
         Columns = new ColumnInfoStore(defaultWidth, this);
         Selection = new Selection(this);
-        FormulaEngine = new FormulaEngine.FormulaEngine(this);
         ConditionalFormats = new ConditionalFormatManager(this, Cells);
+    }
+
+    internal Sheet(int numRows, int numCols, int defaultWidth, int defaultHeight, Workbook workbook) : this(numRows,
+        numCols, defaultWidth, defaultHeight)
+    {
+        _workbook = workbook;
     }
 
     public Sheet(int numRows, int numCols, int defaultWidth = 105, int defaultHeight = 24) : this(defaultWidth,

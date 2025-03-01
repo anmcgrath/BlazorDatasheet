@@ -49,7 +49,7 @@
     {
         if (Sheet.Editor.EditValue.StartsWith("="))
         {
-            var parser = new Parser();
+            var parser = new Parser(Sheet.FormulaEngine.GetEnvironment());
             var formula = parser.FromString(Sheet.Editor.EditValue);
             if (!formula.References.Any())
             {

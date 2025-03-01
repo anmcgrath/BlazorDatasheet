@@ -1,17 +1,15 @@
 ﻿using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
-using BlazorDatasheet.Core.Events;
+using BlazorDatasheet.Core.Edit;
 using BlazorDatasheet.Core.Events.Data;
 using BlazorDatasheet.Core.Events.Edit;
+using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.DataStructures.Geometry;
-using BlazorDatasheet.DataStructures.Graph;
 using BlazorDatasheet.DataStructures.Store;
-using BlazorDatasheet.DataStructures.Util;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Dependencies;
 using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
-using BlazorDatasheet.Formula.Core.Interpreter.References;
 using BlazorDatashet.Formula.Functions;
 using CellFormula = BlazorDatasheet.Formula.Core.Interpreter.CellFormula;
 
@@ -19,80 +17,75 @@ namespace BlazorDatasheet.Core.FormulaEngine;
 
 public class FormulaEngine
 {
-    private readonly Sheet _sheet;
-    private readonly CellStore _cells;
-    private readonly SheetEnvironment _environment;
-    private readonly Parser _parser = new();
+    private readonly IEnvironment _environment;
+    private readonly Parser _parser;
     private readonly Evaluator _evaluator;
+    internal readonly DependencyManager DependencyManager = new();
+    private readonly List<Sheet> _sheets = new();
 
     /// <summary>
-    /// Keeps track of any ranges referenced by formula.
-    /// This should ideally keep track of the formula that reference the range also,
-    /// but for now it's just whether it's referenced or not.
+    /// The formula that require recalculation
     /// </summary>
-    private readonly RegionDataStore<bool> _observedRanges;
-
-    internal readonly DependencyManager DependencyManager = new();
+    private readonly HashSet<FormulaVertex> _requiresCalculation = new();
 
     public bool IsCalculating { get; private set; }
 
-    public FormulaEngine(Sheet sheet)
+    internal FormulaEngine(IEnvironment environment)
     {
-        _sheet = sheet;
-        _cells = sheet.Cells;
-        _sheet.Editor.BeforeCellEdit += SheetOnBeforeCellEdit;
-        _cells.CellsChanged += SheetOnCellsChanged;
-        _sheet.Rows.Removed += (_, _) => CalculateSheet();
-        _sheet.Columns.Removed += (_, _) => CalculateSheet();
-
-        _environment = new SheetEnvironment(sheet);
+        _environment = environment;
+        _parser = new Parser(_environment);
         _evaluator = new Evaluator(_environment);
-        _observedRanges = new RegionDataStore<bool>();
-
         RegisterDefaultFunctions();
+    }
+
+    internal void AddSheet(Sheet sheet)
+    {
+        _sheets.Add(sheet);
+        DependencyManager.AddSheet(sheet.Name);
+        sheet.Editor.BeforeCellEdit += SheetOnBeforeCellEdit;
+        sheet.Cells.CellsChanged += SheetOnCellsChanged;
+        sheet.Rows.Removed += RowsOnRemoved;
+        sheet.Columns.Removed += RowsOnRemoved;
+    }
+
+    internal void RemoveSheet(Sheet sheet)
+    {
+        _sheets.Remove(sheet);
+        DependencyManager.RemoveSheet(sheet.Name);
+        sheet.Editor.BeforeCellEdit -= SheetOnBeforeCellEdit;
+        sheet.Cells.CellsChanged -= SheetOnCellsChanged;
+        sheet.Rows.Removed -= RowsOnRemoved;
+        sheet.Columns.Removed -= RowsOnRemoved;
     }
 
     private void SheetOnCellsChanged(object? sender, CellDataChangedEventArgs e)
     {
+        var sheet = ((CellStore)sender!).Sheet;
         if (this.IsCalculating)
             return;
 
-        var cellsReferenced = false;
         foreach (var cell in e.Positions)
         {
-            if (IsCellReferenced(cell.row, cell.col))
-            {
-                cellsReferenced = true;
-                break;
-            }
+            // check if cell itself is a formula vertex, then it should require calculation
+            var cellVertex = DependencyManager.GetVertex(cell.row, cell.col, sheet.Name);
+            if (cellVertex != null)
+                _requiresCalculation.Add(cellVertex);
+            foreach (var u in DependencyManager.FindDependentFormula(new Region(cell.row, cell.col), sheet.Name))
+                _requiresCalculation.Add(u);
         }
 
-        if (!cellsReferenced)
+        foreach (var region in e.Regions)
         {
-            foreach (var region in e.Regions)
-            {
-                if (RegionContainsReferencedCells(region))
-                {
-                    cellsReferenced = true;
-                    break;
-                }
-            }
+            foreach (var u in DependencyManager.FindDependentFormula(region, sheet.Name))
+                _requiresCalculation.Add(u);
         }
 
-        if (!cellsReferenced)
-            return;
-
-        this.CalculateSheet();
+        this.CalculateSheet(false);
     }
 
-    private bool IsCellReferenced(int row, int col)
+    private void RowsOnRemoved(object? sender, RowColRemovedEventArgs e)
     {
-        return DependencyManager.HasDependents(row, col);
-    }
-
-    private bool RegionContainsReferencedCells(IRegion region)
-    {
-        return DependencyManager.HasDependents(region);
+        CalculateSheet(true);
     }
 
     private void RegisterDefaultFunctions()
@@ -104,16 +97,17 @@ public class FormulaEngine
 
     private void SheetOnBeforeCellEdit(object? sender, BeforeCellEditEventArgs e)
     {
-        var formula = _sheet.Cells.GetFormulaString(e.Cell.Row, e.Cell.Col);
+        var sheet = ((Editor)sender!).Sheet;
+        var formula = sheet.Cells.GetFormulaString(e.Cell.Row, e.Cell.Col);
         if (formula != null)
         {
             e.EditValue = formula;
         }
     }
 
-    internal DependencyManagerRestoreData SetFormula(int row, int col, CellFormula? formula)
+    internal DependencyManagerRestoreData SetFormula(int row, int col, string sheetName, CellFormula? formula)
     {
-        return DependencyManager.SetFormula(row, col, formula);
+        return DependencyManager.SetFormula(row, col, sheetName, formula);
     }
 
     public CellFormula ParseFormula(string formulaString)
@@ -141,22 +135,29 @@ public class FormulaEngine
     /// </summary>
     /// <param name="row"></param>
     /// <param name="col"></param>
-    internal DependencyManagerRestoreData RemoveFormula(int row, int col)
+    /// <param name="sheetName"></param>
+    internal DependencyManagerRestoreData RemoveFormula(int row, int col, string sheetName)
     {
-        return DependencyManager.ClearFormula(row, col);
+        return DependencyManager.ClearFormula(row, col, sheetName);
     }
 
     public IEnumerable<DependencyInfo> GetDependencies() => DependencyManager.GetDependencies();
 
-    public void CalculateSheet()
+    public void CalculateSheet(bool calculateAll)
     {
         if (IsCalculating)
             return;
 
-        IsCalculating = true;
-        _sheet.BatchUpdates();
+        var vertices = _requiresCalculation.ToList();
+        var order = DependencyManager.GetCalculationOrder(calculateAll ? null : vertices);
+        if (!order.Any())
+            return;
 
-        var order = DependencyManager.GetCalculationOrder();
+        IsCalculating = true;
+
+        foreach (var sheet in _sheets)
+            sheet.BatchUpdates();
+
         var executionContext = new FormulaExecutionContext();
 
         foreach (var scc in order)
@@ -194,12 +195,14 @@ public class FormulaEngine
 
                 executionContext.ClearExecuting();
 
-                _sheet.Cells.SetValueImpl(vertex.Region!.Top, vertex.Region!.Left, value);
-                _sheet.MarkDirty(vertex.Region!.Top, vertex.Region!.Left);
+                _environment.SetCellValue(vertex.Region!.Top, vertex.Region!.Left, vertex.SheetName, value);
             }
         }
 
-        _sheet.EndBatchUpdates();
+        foreach (var sheet in _sheets)
+            sheet.EndBatchUpdates();
+
+        _requiresCalculation.Clear();
         IsCalculating = false;
     }
 
@@ -215,7 +218,22 @@ public class FormulaEngine
 
     public void SetVariable(string varName, object value)
     {
-        _environment.SetVariable(varName, value);
-        CalculateSheet();
+        _environment.SetVariable(varName, new CellValue(value));
+        CalculateSheet(true);
+    }
+
+    public void RenameSheet(string oldName, string newName)
+    {
+        DependencyManager.RenameSheet(oldName, newName);
+    }
+
+    public IEnvironment GetEnvironment()
+    {
+        return _environment;
+    }
+
+    public CellFormula? CloneFormula(CellFormula formula)
+    {
+        return _parser.FromString(formula.ToFormulaString());
     }
 }

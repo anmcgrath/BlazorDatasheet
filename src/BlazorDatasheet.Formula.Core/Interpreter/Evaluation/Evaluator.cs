@@ -60,7 +60,7 @@ public class Evaluator
         {
             var r = (Reference)result.Data!;
             if (r.Kind == ReferenceKind.Cell)
-                return _environment.GetCellValue(((CellReference)r).RowIndex, ((CellReference)r).ColIndex);
+                return _environment.GetCellValue(((CellReference)r).RowIndex, ((CellReference)r).ColIndex, r.SheetName);
             else if (r.Kind == ReferenceKind.Range)
             {
                 return CellValue.Array(_environment
@@ -90,14 +90,14 @@ public class Evaluator
             case NodeKind.ArrayConstant:
                 return EvaluateArrayConstantExpression((ArrayConstantExpression)expression);
             case NodeKind.Name:
-                return EvaluateNamedExpression((NameExpression)expression);
+                return EvaluateNamedExpression((VariableExpression)expression);
         }
 
         return CellValue.Error(new FormulaError(ErrorType.Na,
             $"Cannot evaluate expression {expression.ToExpressionText()}"));
     }
 
-    private CellValue EvaluateNamedExpression(NameExpression expression)
+    private CellValue EvaluateNamedExpression(VariableExpression expression)
     {
         if (!_environment.VariableExists(expression.NameToken.Value))
             return CellValue.Error(ErrorType.Ref);
@@ -147,7 +147,7 @@ public class Evaluator
         if (_options.DoNotResolveDependencies)
             return CellValue.Reference(cellReference);
 
-        var formula = _environment.GetFormula(cellReference.RowIndex, cellReference.ColIndex);
+        var formula = _environment.GetFormula(cellReference.RowIndex, cellReference.ColIndex, cellReference.SheetName);
         if (formula == null)
             return CellValue.Reference(cellReference);
 
@@ -162,10 +162,10 @@ public class Evaluator
     private CellValue EvaluateFunctionCall(FunctionExpression node)
     {
         var id = node.FunctionToken.Value;
-        if (!_environment.FunctionExists(id))
+        if (!node.FunctionExists)
             return CellValue.Error(new FormulaError(ErrorType.Name, $"Function {id} not found"));
 
-        var func = _environment.GetFunctionDefinition(id);
+        var func = node.Function!;
         var nArgsProvided = node.Args.Count();
 
         var paramDefinitions = func.GetParameterDefinitions();
@@ -193,9 +193,7 @@ public class Evaluator
             convertedArgs[argIndex] = _parameterConverter.ConvertVal(arg, paramDefinition.Type);
 
             if (IsConsumable(paramDefinition))
-            {
                 paramIndex++;
-            }
 
             argIndex++;
         }
@@ -211,6 +209,8 @@ public class Evaluator
 
     private int MaxArity(ParameterDefinition[] parameterDefinitions)
     {
+        if (parameterDefinitions.Length == 0)
+            return 0;
         return parameterDefinitions.Last().IsRepeating ? 128 : parameterDefinitions.Length;
     }
 

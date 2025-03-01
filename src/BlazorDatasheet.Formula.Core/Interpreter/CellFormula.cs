@@ -9,11 +9,13 @@ namespace BlazorDatasheet.Formula.Core.Interpreter;
 
 public class CellFormula
 {
+    public bool ContainsVolatiles { get; }
     internal readonly SyntaxTree ExpressionTree;
     public IEnumerable<Reference> References => ExpressionTree.References;
 
-    internal CellFormula(SyntaxTree expressionTree)
+    internal CellFormula(SyntaxTree expressionTree, bool containsVolatiles = false)
     {
+        ContainsVolatiles = containsVolatiles;
         ExpressionTree = expressionTree;
     }
 
@@ -24,18 +26,30 @@ public class CellFormula
 
     public string ToFormulaString() => "=" + ExpressionTree.Root.ToExpressionText();
 
-    public void ShiftReferences(int offsetRow, int offsetCol)
+    /// <summary>
+    /// Shifts all references by <paramref name="offsetRow"/> rows and <paramref name="offsetCol"/> columns.
+    /// References are only shifted if the sheet name matches <paramref name="sheetName"/>.
+    /// </summary>
+    /// <param name="offsetRow"></param>
+    /// <param name="offsetCol"></param>
+    /// <param name="sheetName"></param>
+    public void ShiftReferences(int offsetRow, int offsetCol, string? sheetName)
     {
         foreach (var reference in References)
         {
+            if (sheetName != null && reference.SheetName != sheetName)
+                continue;
             reference.Shift(offsetRow, offsetCol);
         }
     }
 
-    internal void InsertRowColIntoReferences(int index, int count, Axis axis)
+    internal void InsertRowColIntoReferences(int index, int count, Axis axis, string sheetName)
     {
         foreach (var reference in References)
         {
+            if (reference.SheetName != sheetName)
+                continue;
+
             if (reference is CellReference cellReference)
             {
                 if (axis == Axis.Row && cellReference.RowIndex >= index)
@@ -60,10 +74,13 @@ public class CellFormula
         }
     }
 
-    internal void RemoveRowColFromReferences(int index, int count, Axis axis)
+    internal void RemoveRowColFromReferences(int index, int count, Axis axis, string sheetName)
     {
         foreach (var reference in References)
         {
+            if (reference.SheetName != sheetName)
+                continue;
+
             if (axis == Axis.Row && reference.Region.Top > index)
             {
                 reference.Shift(-count, 0);
@@ -95,11 +112,5 @@ public class CellFormula
                     reference.Region.Contract(Edge.Right, count);
             }
         }
-    }
-
-    public CellFormula Clone()
-    {
-        var parser = new Parser();
-        return new CellFormula(parser.Parse(ToFormulaString()));
     }
 }

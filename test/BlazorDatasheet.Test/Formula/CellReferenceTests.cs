@@ -85,7 +85,9 @@ public class CellReferenceTests
     [TestCase("A:B:C", false)]
     public void Parse_Ranges(string refStr, bool isValid)
     {
-        var formulaEngine = new FormulaEngine(new Sheet(1, 1));
+        var workbook = new Workbook();
+        workbook.AddSheet(100, 100);
+        var formulaEngine = workbook.GetFormulaEngine();
         var refCellValue = formulaEngine.Evaluate(formulaEngine.ParseFormula($"={refStr}"), resolveReferences: false);
         var isReferenceType = refCellValue.ValueType == CellValueType.Reference;
         isReferenceType.Should().Be(isValid);
@@ -95,6 +97,5 @@ public class CellReferenceTests
             var reference = (Reference)refCellValue.Data!;
             reference.ToAddressText().Should().Be(refStr);
         }
-
     }
 }

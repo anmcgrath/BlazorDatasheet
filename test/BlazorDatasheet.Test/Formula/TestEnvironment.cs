@@ -39,15 +39,20 @@ public class TestEnvironment : IEnvironment
         var validator = new FunctionParameterValidator();
         validator.ValidateOrThrow(functionDefinition.GetParameterDefinitions());
 
-        if (!_functions.ContainsKey(name))
-            _functions.Add(name, functionDefinition);
-        _functions[name] = functionDefinition;
+        if (!_functions.ContainsKey(name.ToLower()))
+            _functions.Add(name.ToLower(), functionDefinition);
+        _functions[name.ToLower()] = functionDefinition;
     }
 
     public IEnumerable<CellValue> GetNonEmptyInRange(Reference reference)
     {
         return GetRangeValues(reference)
             .SelectMany(x => x);
+    }
+
+    public void SetCellValue(int row, int col, string sheetName, CellValue value)
+    {
+        _cellValues.TryAdd(new CellPosition(row, col), value);
     }
 
     public void SetVariable(string name, object variable)
@@ -62,7 +67,7 @@ public class TestEnvironment : IEnvironment
         _variables[name] = value;
     }
 
-    public CellValue GetCellValue(int row, int col)
+    public CellValue GetCellValue(int row, int col, string sheetName)
     {
         var hasVal = _cellValues.TryGetValue(new CellPosition(row, col), out var val);
         if (hasVal)
@@ -70,7 +75,7 @@ public class TestEnvironment : IEnvironment
         return CellValue.Empty;
     }
 
-    public CellFormula? GetFormula(int row, int col)
+    public CellFormula? GetFormula(int row, int col, string sheetName)
     {
         var hasVal = _formulas.TryGetValue(new CellPosition(row, col), out var val);
         if (hasVal)
@@ -90,7 +95,7 @@ public class TestEnvironment : IEnvironment
         if (reference.Kind == ReferenceKind.Cell)
         {
             var cellRef = (CellReference)reference;
-            return new[] { new[] { GetCellValue(cellRef.RowIndex, cellRef.ColIndex) } };
+            return new[] { new[] { GetCellValue(cellRef.RowIndex, cellRef.ColIndex, cellRef.SheetName) } };
         }
 
         return Array.Empty<CellValue[]>();
@@ -113,7 +118,7 @@ public class TestEnvironment : IEnvironment
             arr[i] = new CellValue[w];
             for (int j = 0; j < w; j++)
             {
-                arr[i][j] = GetCellValue(r0 + i, c0 + j);
+                arr[i][j] = GetCellValue(r0 + i, c0 + j, "Sheet1");
             }
         }
 
@@ -122,12 +127,12 @@ public class TestEnvironment : IEnvironment
 
     public bool FunctionExists(string functionIdentifier)
     {
-        return _functions.ContainsKey(functionIdentifier);
+        return _functions.ContainsKey(functionIdentifier.ToLower());
     }
 
-    public ISheetFunction GetFunctionDefinition(string identifierText)
+    public ISheetFunction? GetFunctionDefinition(string identifierText)
     {
-        return _functions[identifierText];
+        return _functions.GetValueOrDefault(identifierText.ToLower());
     }
 
     public bool VariableExists(string variableIdentifier)

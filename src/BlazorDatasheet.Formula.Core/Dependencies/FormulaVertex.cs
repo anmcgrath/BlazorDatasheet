@@ -6,6 +6,8 @@ namespace BlazorDatasheet.Formula.Core.Dependencies;
 
 public class FormulaVertex : Vertex, IEquatable<FormulaVertex>
 {
+    public string SheetName { get; private set; }
+
     public FormulaVertex(string name, CellFormula? formula)
     {
         _key = name;
@@ -13,33 +15,38 @@ public class FormulaVertex : Vertex, IEquatable<FormulaVertex>
         VertexType = VertexType.Named;
     }
 
-    public FormulaVertex(IRegion region, CellFormula? formula)
+    public FormulaVertex(IRegion region, string sheetName, CellFormula? formula)
     {
+        SheetName = sheetName;
         Region = region;
         Formula = formula;
-        _key = RangeText.ToRegionText(Region);
+        UpdateKey();
         if (region.Width == 1 && region.Height == 1)
             VertexType = VertexType.Cell;
         else
             VertexType = VertexType.Region;
     }
 
-    public FormulaVertex(int row, int col, CellFormula? formula) : this(new Region(row, row, col, col), formula)
+    public FormulaVertex(int row, int col, string sheetName, CellFormula? formula) : this(
+        new Region(row, row, col, col), sheetName, formula)
     {
         VertexType = VertexType.Cell;
     }
 
-    private string _key;
+    private string _key = string.Empty;
     public override string Key => _key;
 
-    public override void UpdateKey()
+    public sealed override void UpdateKey()
     {
         if (VertexType != VertexType.Named)
-            _key = RangeText.ToRegionText(Region);
+            _key = $"'{SheetName}'!" + RangeText.ToRegionText(Region!);
     }
 
     public IRegion? Region { get; }
-    public CellFormula? Formula { get; private set; }
+    public CellFormula? Formula { get; set; }
+
+    public int? Row => Region?.Top;
+    public int? Col => Region?.Left;
 
     public VertexType VertexType { get; private set; }
 

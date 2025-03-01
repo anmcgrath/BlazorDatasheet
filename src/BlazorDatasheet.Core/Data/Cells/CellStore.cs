@@ -13,12 +13,13 @@ namespace BlazorDatasheet.Core.Data.Cells;
 
 public partial class CellStore
 {
-    private Sheet _sheet;
+    public Sheet Sheet { get; }
+
     private readonly CellValue _defaultCellValue = new(null);
 
     public CellStore(Sheet sheet)
     {
-        _sheet = sheet;
+        Sheet = sheet;
         _dataStore = new SparseMatrixStoreByRows<CellValue>(_defaultCellValue);
     }
 
@@ -29,7 +30,7 @@ public partial class CellStore
     /// <returns></returns>
     public IEnumerable<IReadOnlyCell> GetCellsInRegion(IRegion region)
     {
-        return (new SheetRange(_sheet, region))
+        return (new SheetRange(Sheet, region))
             .Positions
             .Select(x => this.GetCell(x.row, x.col));
     }
@@ -55,7 +56,7 @@ public partial class CellStore
     /// <returns></returns>
     public IReadOnlyCell GetCell(int row, int col)
     {
-        return new SheetCell(row, col, _sheet);
+        return new SheetCell(row, col, Sheet);
     }
 
     /// <summary>
@@ -88,7 +89,7 @@ public partial class CellStore
     public void ClearCells(IEnumerable<IRegion> regions)
     {
         var cmd = new ClearCellsCommand(regions);
-        _sheet.Commands.ExecuteCommand(cmd);
+        Sheet.Commands.ExecuteCommand(cmd);
     }
 
     public void ClearCells(IRegion region) => ClearCells(new[] { region });
@@ -102,10 +103,10 @@ public partial class CellStore
         restoreData.Merge(ClearFormulaImpl(toClear));
 
         var affected = restoreData.GetAffectedPositions().ToList();
-        _sheet.BatchUpdates();
+        Sheet.BatchUpdates();
         EmitCellsChanged(toClear);
-        _sheet.MarkDirty(toClear);
-        _sheet.EndBatchUpdates();
+        Sheet.MarkDirty(toClear);
+        Sheet.EndBatchUpdates();
         return restoreData;
     }
 
@@ -119,7 +120,8 @@ public partial class CellStore
             ValidRestoreData = _validStore.InsertRowColAt(index, count, axis),
             MergeRestoreData = _mergeStore.InsertRowColAt(index, count, axis),
             FormulaRestoreData = _formulaStore.InsertRowColAt(index, count, axis),
-            DependencyManagerRestoreData = _sheet.FormulaEngine.DependencyManager.InsertRowColAt(index, count, axis)
+            DependencyManagerRestoreData =
+                Sheet.FormulaEngine.DependencyManager.InsertRowColAt(index, count, axis, Sheet.Name)
         };
 
 
@@ -136,7 +138,8 @@ public partial class CellStore
             FormatRestoreData = _formatStore.RemoveRowColAt(index, count, axis),
             MergeRestoreData = _mergeStore.RemoveRowColAt(index, count, axis),
             FormulaRestoreData = _formulaStore.RemoveRowColAt(index, count, axis),
-            DependencyManagerRestoreData = _sheet.FormulaEngine.DependencyManager.RemoveRowColAt(index, count, axis)
+            DependencyManagerRestoreData =
+                Sheet.FormulaEngine.DependencyManager.RemoveRowColAt(index, count, axis, Sheet.Name)
         };
 
         return restoreData;
@@ -158,7 +161,7 @@ public partial class CellStore
         if (options.CopyFormat)
             restoreData.Merge(CopyFormatImpl(fromRegion, toRegion));
 
-        _sheet.MarkDirty(toRegion);
+        Sheet.MarkDirty(toRegion);
         EmitCellsChanged(toRegion);
         return restoreData;
     }
@@ -170,10 +173,10 @@ public partial class CellStore
         // We then perform the copy inside this new format store and remove the original data.
         // This is then added to the sheet's format store.
         var emptyPalette = new MergeRegionDataStore<CellFormat>();
-        var fixedFromRegion = fromRegion.GetIntersection(_sheet.Region) as Region;
+        var fixedFromRegion = fromRegion.GetIntersection(Sheet.Region) as Region;
         foreach (var position in fixedFromRegion!)
         {
-            emptyPalette.Add(new Region(position.row, position.col), _sheet.GetFormat(position.row, position.col));
+            emptyPalette.Add(new Region(position.row, position.col), Sheet.GetFormat(position.row, position.col));
         }
 
         emptyPalette.Copy(fromRegion, toRegion.TopLeft);
@@ -198,11 +201,11 @@ public partial class CellStore
     /// <returns></returns>
     public bool ContainsReadOnly(IRegion region)
     {
-        foreach (var interval in _sheet.Rows.Formats.GetIntervals(region.Top, region.Bottom))
+        foreach (var interval in Sheet.Rows.Formats.GetIntervals(region.Top, region.Bottom))
             if (interval.Data.IsReadOnly == true)
                 return true;
 
-        foreach (var interval in _sheet.Columns.Formats.GetIntervals(region.Left, region.Right))
+        foreach (var interval in Sheet.Columns.Formats.GetIntervals(region.Left, region.Right))
             if (interval.Data.IsReadOnly == true)
                 return true;
 
@@ -220,10 +223,10 @@ public partial class CellStore
     /// <param name="restoreData"></param>
     internal void Restore(CellStoreRestoreData restoreData)
     {
-        _sheet.BatchUpdates();
+        Sheet.BatchUpdates();
 
         // Set formula through this function so we add the formula back in to the dependency graph
-        _sheet.FormulaEngine.DependencyManager.Restore(restoreData.DependencyManagerRestoreData);
+        Sheet.FormulaEngine.DependencyManager.Restore(restoreData.DependencyManagerRestoreData);
 
         _formulaStore.Restore(restoreData.FormulaRestoreData);
         _validStore.Restore(restoreData.ValidRestoreData);
@@ -234,16 +237,16 @@ public partial class CellStore
 
         foreach (var pt in restoreData.ValueRestoreData.DataRemoved)
         {
-            _sheet.MarkDirty(pt.row, pt.col);
+            Sheet.MarkDirty(pt.row, pt.col);
             EmitCellChanged(pt.row, pt.col);
         }
 
         foreach (var region in restoreData.GetAffectedRegions())
         {
-            _sheet.MarkDirty(region);
+            Sheet.MarkDirty(region);
         }
 
-        _sheet.EndBatchUpdates();
+        Sheet.EndBatchUpdates();
     }
 
 
@@ -254,7 +257,7 @@ public partial class CellStore
     /// <param name="col"></param>
     public SheetCell this[int row, int col]
     {
-        get { return new SheetCell(row, col, _sheet); }
+        get { return new SheetCell(row, col, Sheet); }
     }
 
     /// <summary>
@@ -270,13 +273,13 @@ public partial class CellStore
 
             var rangeStrFormula = $"={cellAddress}";
             var evaluatedValue =
-                _sheet.FormulaEngine.Evaluate(_sheet.FormulaEngine.ParseFormula(rangeStrFormula),
+                Sheet.FormulaEngine.Evaluate(Sheet.FormulaEngine.ParseFormula(rangeStrFormula),
                     resolveReferences: false);
             if (evaluatedValue.ValueType == CellValueType.Reference)
             {
                 var reference = evaluatedValue.GetValue<Reference>();
                 if (reference?.Kind == ReferenceKind.Cell)
-                    return new SheetCell(reference.Region!.Top, reference.Region!.Left, _sheet);
+                    return new SheetCell(reference.Region!.Top, reference.Region!.Left, Sheet);
             }
 
             return null;

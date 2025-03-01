@@ -6,4 +6,5 @@ public enum ReferenceKind
     Range,
     Named,
     Multiple,
+    Intersecting,
 }

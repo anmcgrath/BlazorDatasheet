@@ -23,7 +23,7 @@ public class LogicalFunctionTests
     public object? Eval(string formulaString, bool resolveReferences = false)
     {
         var eval = new Evaluator(_env);
-        var parser = new Parser();
+        var parser = new Parser(_env);
         return eval.Evaluate(parser.FromString(formulaString), null, new FormulaEvaluationOptions(!resolveReferences)).Data;
     }
 

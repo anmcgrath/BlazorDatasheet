@@ -30,4 +30,9 @@ public static class Extensions
                 return 0;
         }
     }
+
+    internal static bool IsVolatileBinaryExpression(this Tag tag)
+    {
+        return tag == Tag.ColonToken;
+    }
 }

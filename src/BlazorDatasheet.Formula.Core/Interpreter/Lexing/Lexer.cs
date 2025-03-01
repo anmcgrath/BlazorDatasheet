@@ -9,7 +9,6 @@ public ref struct Lexer
     private ReadOnlySpan<char> _string;
     private WhiteSpaceOptions _whiteSpaceOptions = WhiteSpaceOptions.RemoveWhitespace;
     private char _current;
-    private LexerReferenceState _referenceState = LexerReferenceState.None;
     public List<string> Errors { get; private set; } = null!;
 
     public Lexer()
@@ -42,6 +41,9 @@ public ref struct Lexer
         return tokens.ToArray();
     }
 
+    private char GetNumberSeparatorChar() => Convert.ToChar(NumberFormatInfo.CurrentInfo.NumberDecimalSeparator);
+    private char GetNegativeSign() => Convert.ToChar(NumberFormatInfo.CurrentInfo.NegativeSign);
+
     private Token ReadToken()
     {
         if (char.IsWhiteSpace(_current))
@@ -64,6 +66,7 @@ public ref struct Lexer
 
         if (char.IsDigit(_current))
             return ReadNumber();
+
         if (_string.Slice(_position).StartsWith(NumberFormatInfo.CurrentInfo.NumberDecimalSeparator))
             return ReadNumber();
 
@@ -72,6 +75,9 @@ public ref struct Lexer
 
         if (_current == '"')
             return ReadStringLiteral();
+
+        if (_current == '\'')
+            return ReadQuotedSheetName();
 
         Token token;
         switch (_current)
@@ -162,11 +168,7 @@ public ref struct Lexer
         Next();
 
         while (char.IsDigit(_current) ||
-               _current == Convert.ToChar(NumberFormatInfo.CurrentInfo.NumberDecimalSeparator) ||
-               _current == 'e' ||
-               (containsE &&
-                _current == Convert.ToChar(NumberFormatInfo.CurrentInfo
-                    .NegativeSign))) // e and - so that we can parse scientific notation.
+               _current == GetNumberSeparatorChar() || _current == 'e' || (containsE && _current == GetNegativeSign()))
         {
             if (_current == 'e')
                 containsE = true;
@@ -177,50 +179,7 @@ public ref struct Lexer
         int length = _position - start;
 
         if (int.TryParse(_string.Slice(start, length), out var parsedInt))
-        {
-            // if we are in the second part of a range parsing...
-            if (_referenceState == LexerReferenceState.ReadingReference)
-            {
-                return new AddressToken(new RowAddress(parsedInt - 1, parsedInt, false), start);
-            }
-
-            // otherwise check if we are going to parse a range
-            if (_current == ':' && _referenceState == LexerReferenceState.None)
-            {
-                _referenceState = LexerReferenceState.ReadingReference;
-                // store posn just in case
-                var tempPosition = _position;
-                Next(); // consume colon
-
-                var rightToken = ReadToken();
-                _referenceState = LexerReferenceState.None;
-
-                var rowStartAddr = new RowAddress(parsedInt - 1, parsedInt, false);
-
-                if (rightToken.Tag == Tag.Number)
-                {
-                    var rightNumToken = (NumberToken)rightToken;
-                    if (rightNumToken.IsInteger)
-                    {
-                        var rowEnd = new RowAddress((int)rightNumToken.Value - 1, (int)rightNumToken.Value, false);
-                        return new AddressToken(new RangeAddress(rowStartAddr, rowEnd), start);
-                    }
-                }
-
-                if (rightToken.Tag == Tag.AddressToken)
-                {
-                    var rightRefToken = (AddressToken)rightToken;
-                    if (rightRefToken.Address.Kind == AddressKind.RowAddress)
-                    {
-                        return new AddressToken(new RangeAddress(rowStartAddr, rightRefToken.Address), start);
-                    }
-                }
-
-                ResetPosition(tempPosition);
-            }
-
             return new NumberToken(parsedInt, start);
-        }
 
         if (double.TryParse(_string.Slice(start, length), out var parsedDouble))
             return new NumberToken(parsedDouble, start);
@@ -236,9 +195,18 @@ public ref struct Lexer
         while (char.IsLetterOrDigit(_current) || _current == '$')
             Next();
 
-
         int length = _position - start;
         var idSlice = _string.Slice(start, length);
+
+        if (bool.TryParse(idSlice, out var parsedBool))
+            return new LogicalToken(idSlice.ToString(), parsedBool, start);
+
+        if (Peek(0) == '!')
+        {
+            // consume '!'
+            Next();
+            return new SheetLocatorToken(idSlice.ToString(), start);
+        }
 
         // if the current identifier is a valid row, column or cell reference then
         // we look to see if it is part of a range (e.g 1:2, a:2, b2:b3 etc.)
@@ -249,50 +217,52 @@ public ref struct Lexer
         if (parsedLeftAddress!.Kind == AddressKind.NamedAddress)
             return new IdentifierToken(idSlice.ToString(), start);
 
-        if (canParseRef && _referenceState == LexerReferenceState.ReadingReference)
-        {
-            return new AddressToken(parsedLeftAddress, start);
-        }
-
-        if (_current == ':' && _referenceState == LexerReferenceState.None) // so we only look ahead one at most
-        {
-            _referenceState = LexerReferenceState.ReadingReference;
-
-            // store temp position so we can come back to it
-            var tempPosition = _position;
-            ReadToken(); // colon
-            var next = ReadToken();
-
-            _referenceState = LexerReferenceState.None;
-
-            if (next.Tag == Tag.AddressToken)
-            {
-                var rightToken = (AddressToken)next;
-                if (rightToken.Address.Kind == parsedLeftAddress.Kind)
-                {
-                    return new AddressToken(new RangeAddress(parsedLeftAddress, rightToken.Address), start);
-                }
-            }
-
-            // in this case we know the second row is not absolute reference
-            if (next.Tag == Tag.Number && parsedLeftAddress.Kind == AddressKind.RowAddress)
-            {
-                var nextTokenAsNum = (NumberToken)next;
-                if (nextTokenAsNum.IsInteger)
-                {
-                    var rowRefRight = new RowAddress((int)nextTokenAsNum.Value - 1, (int)nextTokenAsNum.Value, false);
-                    return new AddressToken(new RangeAddress(parsedLeftAddress, rowRefRight), start);
-                }
-            }
-
-            // otherwise reset our position
-            ResetPosition(tempPosition);
-        }
-
-        if (canParseRef && parsedLeftAddress.Kind == AddressKind.CellAddress)
+        if (canParseRef &&
+            parsedLeftAddress.Kind == AddressKind.CellAddress ||
+            parsedLeftAddress.Kind == AddressKind.ColAddress ||
+            parsedLeftAddress.Kind == AddressKind.RowAddress)
             return new AddressToken(parsedLeftAddress, start);
 
         return new IdentifierToken(idSlice.ToString(), start);
+    }
+
+    private Token ReadQuotedSheetName()
+    {
+        int start = _position;
+        // Consume first '
+        Next();
+
+        if (_current == '\0')
+        {
+            Error("End of file reached unexpectedly");
+            return new BadToken(start);
+        }
+
+        while (_current != '\'')
+        {
+            if (_current == '\0')
+            {
+                Error($"Found EOF");
+                return new BadToken(start);
+            }
+
+            Next();
+        }
+
+        int length = _position - start - 1;
+        var stringValue = _string.Slice(start + 1, length).ToString();
+
+        // consume the last '
+        Next();
+
+        if (Peek(0) == '!')
+        {
+            // consume '!'
+            Next();
+            return new SheetLocatorToken(stringValue, start);
+        }
+
+        return new BadToken(_position);
     }
 
     private Token ReadStringLiteral()
