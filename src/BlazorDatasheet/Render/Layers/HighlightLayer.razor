@@ -58,6 +58,7 @@
             }
 
             _colorRegions = formula.References
+                .Where(x=>x.SheetName == Sheet.Name)
                 .Select((r, i) =>
                 {
                     var colorIndex = (i % 5) + 1;
