@@ -402,4 +402,12 @@ public class SheetFormulaIntegrationTests
         _sheet.FormulaEngine.SetVariable("x", 10);
         _sheet.Cells.GetValue(1, 1).Should().Be(10);
     }
+
+    [Test]
+    public void Range_Operator_Should_Update_With_Changed_Values()
+    {
+        _sheet.Cells["A1"]!.Formula = "=sum(a2:b2:c5)";
+        _sheet.Cells["C4"]!.Value = 10;
+        _sheet.Cells["A1"]!.Value.Should().Be(10);
+    }
 }

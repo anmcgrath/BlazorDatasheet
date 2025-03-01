@@ -81,6 +81,9 @@ public class Parser
             if (precedence == 0 || precedence <= parentPrecedence)
                 return leftExpression;
 
+            if (Current.Tag.IsVolatileBinaryExpression())
+                _containsVolatiles = true;
+
             var operatorToken = NextToken();
             var right = ParseBinaryExpression(precedence);
             leftExpression = new BinaryOperationExpression(leftExpression, operatorToken, right);
