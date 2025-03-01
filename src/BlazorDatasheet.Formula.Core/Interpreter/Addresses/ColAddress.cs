@@ -16,7 +16,7 @@ public class ColAddress : Address
     public ColAddress(int colIndex, bool isFixed) : base(AddressKind.ColAddress)
     {
         ColIndex = colIndex;
-        ColStr = RangeText.ColNumberToLetters(colIndex);
+        ColStr = RangeText.ColIndexToLetters(colIndex);
         IsFixed = isFixed;
     }
 }

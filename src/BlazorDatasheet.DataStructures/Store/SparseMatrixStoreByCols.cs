@@ -1,5 +1,4 @@
 using BlazorDatasheet.DataStructures.Geometry;
-using BlazorDatasheet.DataStructures.Search;
 
 namespace BlazorDatasheet.DataStructures.Store;
 
@@ -24,7 +23,7 @@ public class SparseMatrixStoreByCols<T> : IMatrixDataStore<T>
         return _columns[col].Values.ContainsKey(row);
     }
 
-    public T? Get(int row, int col)
+    public T Get(int row, int col)
     {
         var colExists = _columns.TryGetValue(col, out var column);
         if (!colExists)
@@ -254,7 +253,7 @@ public class SparseMatrixStoreByCols<T> : IMatrixDataStore<T>
             result[i] = new T[region.Width];
             for (int j = 0; j < region.Width; j++)
             {
-                result[i][j] = Get(i, j);
+                result[i][j] = Get(i, j) ?? _defaultValueIfEmpty;
             }
         }
 

@@ -10,7 +10,7 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReado
     public string? FontWeight
     {
         get => GetStyleOrDefault<string>(nameof(FontWeight));
-        set => AddStyle<string>(nameof(FontWeight), value);
+        set => AddStyle(nameof(FontWeight), value);
     }
 
     /// <summary>
@@ -19,7 +19,7 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReado
     public string? BackgroundColor
     {
         get => GetStyleOrDefault<string>(nameof(BackgroundColor));
-        set => AddStyle<string>(nameof(BackgroundColor), value);
+        set => AddStyle(nameof(BackgroundColor), value);
     }
 
     /// <summary>
@@ -28,7 +28,7 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReado
     public string? ForegroundColor
     {
         get => GetStyleOrDefault<string>(nameof(ForegroundColor));
-        set => AddStyle<string>(nameof(ForegroundColor), value);
+        set => AddStyle(nameof(ForegroundColor), value);
     }
 
     /// <summary>
@@ -37,7 +37,7 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReado
     public string? NumberFormat
     {
         get => GetStyleOrDefault<string>(nameof(NumberFormat));
-        set => AddStyle<string>(nameof(NumberFormat), value);
+        set => AddStyle(nameof(NumberFormat), value);
     }
 
     /// <summary>
@@ -46,7 +46,7 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReado
     public string? Icon
     {
         get => GetStyleOrDefault<string>(nameof(Icon));
-        set => AddStyle<string>(nameof(Icon), value);
+        set => AddStyle(nameof(Icon), value);
     }
 
     /// <summary>
@@ -55,7 +55,7 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReado
     public string? IconColor
     {
         get => GetStyleOrDefault<string>(nameof(IconColor));
-        set => AddStyle<string>(nameof(IconColor), value);
+        set => AddStyle(nameof(IconColor), value);
     }
 
     /// <summary>
@@ -64,7 +64,7 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReado
     public bool? IsReadOnly
     {
         get => GetStyleOrDefault<bool?>(nameof(IsReadOnly));
-        set => AddStyle<bool?>(nameof(IsReadOnly), value);
+        set => AddStyle(nameof(IsReadOnly), value);
     }
 
     /// <summary>
@@ -73,7 +73,7 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReado
     public TextAlign? HorizontalTextAlign
     {
         get => GetStyleOrDefault<TextAlign?>(nameof(HorizontalTextAlign));
-        set => AddStyle<TextAlign?>(nameof(HorizontalTextAlign), value);
+        set => AddStyle(nameof(HorizontalTextAlign), value);
     }
 
     /// <summary>
@@ -82,7 +82,7 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReado
     public TextAlign? VerticalTextAlign
     {
         get => GetStyleOrDefault<TextAlign?>(nameof(VerticalTextAlign));
-        set => AddStyle<TextAlign?>(nameof(VerticalTextAlign), value);
+        set => AddStyle(nameof(VerticalTextAlign), value);
     }
 
     /// <summary>
@@ -91,7 +91,7 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReado
     public Border? BorderLeft
     {
         get => GetStyleOrDefault<Border?>(nameof(BorderLeft));
-        set => AddStyle<Border?>(nameof(BorderLeft), value);
+        set => AddStyle(nameof(BorderLeft), value);
     }
 
     /// <summary>
@@ -100,7 +100,7 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReado
     public Border? BorderRight
     {
         get => GetStyleOrDefault<Border?>(nameof(BorderRight));
-        set => AddStyle<Border?>(nameof(BorderRight), value);
+        set => AddStyle(nameof(BorderRight), value);
     }
 
     /// <summary>
@@ -109,7 +109,7 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReado
     public Border? BorderTop
     {
         get => GetStyleOrDefault<Border?>(nameof(BorderTop));
-        set => AddStyle<Border?>(nameof(BorderTop), value);
+        set => AddStyle(nameof(BorderTop), value);
     }
 
     /// <summary>
@@ -121,7 +121,7 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReado
         set => AddStyle<Border?>(nameof(BorderBottom), value);
     }
 
-    private Dictionary<string, object?>? _styles = null;
+    private Dictionary<string, object?>? _styles;
 
     private void AddStyle<T>(string key, T? value)
     {

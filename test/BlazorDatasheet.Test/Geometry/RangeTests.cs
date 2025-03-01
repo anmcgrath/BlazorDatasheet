@@ -76,7 +76,7 @@ public class RangeTests
         string expected)
     {
         var region = new Region(r0, r1, c0, c1);
-        RangeText.ToRegionText(region, col0Fixed, col1Fixed, row0Fixed, row1Fixed)
+        RangeText.RegionToText(region, col0Fixed, col1Fixed, row0Fixed, row1Fixed)
             .Should()
             .Be(expected);
     }
