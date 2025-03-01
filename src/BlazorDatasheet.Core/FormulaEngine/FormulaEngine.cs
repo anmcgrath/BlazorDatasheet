@@ -80,10 +80,7 @@ public class FormulaEngine
                 _requiresCalculation.Add(u);
         }
 
-        if (_requiresCalculation.Count == 0)
-            return;
-
-        this.CalculateSheet(true);
+        this.CalculateSheet(false);
     }
 
     private void RowsOnRemoved(object? sender, RowColRemovedEventArgs e)
@@ -151,7 +148,9 @@ public class FormulaEngine
         if (IsCalculating)
             return;
 
-        if (_requiresCalculation.Count == 0 && !calculateAll)
+        var vertices = _requiresCalculation.ToList();
+        var order = DependencyManager.GetCalculationOrder(calculateAll ? null : vertices);
+        if (!order.Any())
             return;
 
         IsCalculating = true;
@@ -159,8 +158,6 @@ public class FormulaEngine
         foreach (var sheet in _sheets)
             sheet.BatchUpdates();
 
-        var vertices = calculateAll ? null : _requiresCalculation.ToList();
-        var order = DependencyManager.GetCalculationOrder(vertices);
         var executionContext = new FormulaExecutionContext();
 
         foreach (var scc in order)

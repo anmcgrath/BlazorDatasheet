@@ -209,6 +209,8 @@ public class Evaluator
 
     private int MaxArity(ParameterDefinition[] parameterDefinitions)
     {
+        if (parameterDefinitions.Length == 0)
+            return 0;
         return parameterDefinitions.Last().IsRepeating ? 128 : parameterDefinitions.Length;
     }
 

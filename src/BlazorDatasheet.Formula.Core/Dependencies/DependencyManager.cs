@@ -118,12 +118,13 @@ public class DependencyManager
     private DependencyManagerRestoreData ClearFormula(FormulaVertex formulaVertex)
     {
         var restoreData = new DependencyManagerRestoreData();
+        _volatileVertices.Remove(formulaVertex);
+        
         if (!_dependencyGraph.HasVertex(formulaVertex.Key))
             return restoreData;
 
         formulaVertex = _dependencyGraph.GetVertex(formulaVertex.Key)!;
-        _volatileVertices.Remove(formulaVertex);
-
+        
         // remove the references that refer to this formula cell
         var formulaReferences = formulaVertex.Formula?.References;
 
@@ -343,7 +344,10 @@ public class DependencyManager
     public IList<IList<FormulaVertex>> GetCalculationOrder(List<FormulaVertex>? dirtyFormula = null)
     {
         var sort = new SccSort<FormulaVertex>(_dependencyGraph);
-        return sort.Sort(dirtyFormula?.Count > 0 ? dirtyFormula.Concat(_volatileVertices) : null);
+        if (dirtyFormula == null && _volatileVertices.Count == 0)
+            return sort.Sort();
+
+        return sort.Sort((dirtyFormula ?? []).Concat(_volatileVertices));
     }
 
     public IEnumerable<DependencyInfo> GetDependencies()
