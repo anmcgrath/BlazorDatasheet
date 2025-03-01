@@ -1,70 +1,68 @@
-﻿using BlazorDatasheet.DataStructures.Util;
-
-namespace BlazorDatasheet.Core.Color;
+﻿namespace BlazorDatasheet.Core.Color;
 
 public class ColorConverter
 {
-    public static System.Drawing.Color HSVToRGB(double H, double S, double V)
+    public static System.Drawing.Color HsvToRgb(double h, double s, double v)
     {
-        double r = 0, g = 0, b = 0;
+        double r, g, b;
 
-        if (S == 0)
+        if (s == 0)
         {
-            r = V;
-            g = V;
-            b = V;
+            r = v;
+            g = v;
+            b = v;
         }
         else
         {
             int i;
             double f, p, q, t;
 
-            if (H == 360)
-                H = 0;
+            if (Math.Abs(h - 360) < 0.001)
+                h = 0;
             else
-                H = H / 60;
+                h = h / 60;
 
-            i = (int)Math.Truncate(H);
-            f = H - i;
+            i = (int)Math.Truncate(h);
+            f = h - i;
 
-            p = V * (1.0 - S);
-            q = V * (1.0 - (S * f));
-            t = V * (1.0 - (S * (1.0 - f)));
+            p = v * (1.0 - s);
+            q = v * (1.0 - (s * f));
+            t = v * (1.0 - (s * (1.0 - f)));
 
             switch (i)
             {
                 case 0:
-                    r = V;
+                    r = v;
                     g = t;
                     b = p;
                     break;
 
                 case 1:
                     r = q;
-                    g = V;
+                    g = v;
                     b = p;
                     break;
 
                 case 2:
                     r = p;
-                    g = V;
+                    g = v;
                     b = t;
                     break;
 
                 case 3:
                     r = p;
                     g = q;
-                    b = V;
+                    b = v;
                     break;
 
                 case 4:
                     r = t;
                     g = p;
-                    b = V;
+                    b = v;
                     break;
 
                 default:
-                    r = V;
+                    r = v;
                     g = p;
                     b = q;
                     break;
@@ -74,7 +72,7 @@ public class ColorConverter
         return System.Drawing.Color.FromArgb((byte)(r * 255), (byte)(g * 255), (byte)(b * 255));
     }
 
-    public static (double h, double s, double v) RGBToHSV(System.Drawing.Color color)
+    public static (double h, double s, double v) RgbToHsv(System.Drawing.Color color)
     {
         float cmax = Math.Max(color.R, Math.Max(color.G, color.B));
         float cmin = Math.Min(color.R, Math.Min(color.G, color.B));
@@ -83,15 +81,15 @@ public class ColorConverter
         float hue = 0;
         float saturation = 0;
 
-        if (cmax == color.R)
+        if (Math.Abs(cmax - color.R) < 0.001)
         {
             hue = 60 * (((color.G - color.B) / delta) % 6);
         }
-        else if (cmax == color.G)
+        else if (Math.Abs(cmax - color.G) < 0.001)
         {
             hue = 60 * ((color.B - color.R) / delta + 2);
         }
-        else if (cmax == color.B)
+        else if (Math.Abs(cmax - color.B) < 0.001)
         {
             hue = 60 * ((color.R - color.G) / delta + 4);
         }

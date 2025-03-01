@@ -25,12 +25,12 @@ public class NumberScaleConditionalFormat : ConditionalFormatAbstractBase
     private void ComputeLUT(int size)
     {
         _computedLut = new string[size];
-        var hsvStart = ColorConverter.RGBToHSV(_colorStart);
-        var hsvEnd = ColorConverter.RGBToHSV(_colorEnd);
+        var hsvStart = ColorConverter.RgbToHsv(_colorStart);
+        var hsvEnd = ColorConverter.RgbToHsv(_colorEnd);
         for (int i = 0; i < size; i++)
         {
             (double h, double s, double v) = ColorConverter.HsvInterp(hsvStart, hsvEnd, (i / (double)size));
-            var newColor = ColorConverter.HSVToRGB(h, s, v);
+            var newColor = ColorConverter.HsvToRgb(h, s, v);
             _computedLut[i] = $"rgb({newColor.R},{newColor.G},{newColor.B})";
         }
     }

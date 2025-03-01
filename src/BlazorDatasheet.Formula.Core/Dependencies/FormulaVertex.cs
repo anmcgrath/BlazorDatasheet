@@ -39,7 +39,7 @@ public class FormulaVertex : Vertex, IEquatable<FormulaVertex>
     public sealed override void UpdateKey()
     {
         if (VertexType != VertexType.Named)
-            _key = $"'{SheetName}'!" + RangeText.ToRegionText(Region!);
+            _key = $"'{SheetName}'!" + RangeText.RegionToText(Region!);
     }
 
     public IRegion? Region { get; }

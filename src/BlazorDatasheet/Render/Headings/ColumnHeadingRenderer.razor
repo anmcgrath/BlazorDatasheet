@@ -52,7 +52,7 @@
                          data-row="-1"
                          style="display: flex; justify-content: space-between; width: 100%;">
                         <div>
-                            @ChildContent(new HeadingContext(context.col, _sheet.Columns.GetHeading(context.col) ?? RangeText.ColNumberToLetters(context.col)))
+                            @ChildContent(new HeadingContext(context.col, _sheet.Columns.GetHeading(context.col) ?? RangeText.ColIndexToLetters(context.col)))
                         </div>
                         <div style="display: flex; flex-direction: row;">
                             @if (ShowColumnMenu)

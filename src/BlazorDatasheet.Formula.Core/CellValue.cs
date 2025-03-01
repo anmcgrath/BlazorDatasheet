@@ -6,10 +6,10 @@ namespace BlazorDatasheet.Formula.Core;
 
 public class CellValue : IComparable, IComparable<CellValue>
 {
-    public object? Data { get; private set; }
+    public object? Data { get; }
 
     public bool IsEmpty { get; private set; }
-    public CellValueType ValueType { get; private set; }
+    public CellValueType ValueType { get; }
 
     public static readonly CellValue Empty = new CellValue(null);
 
@@ -27,7 +27,7 @@ public class CellValue : IComparable, IComparable<CellValue>
 
         var valType = data.GetType();
         var isNullable = valType.IsNullable();
-        var nullableType = System.Nullable.GetUnderlyingType(valType);
+        var nullableType = Nullable.GetUnderlyingType(valType);
 
         if (valType.IsAssignableTo(typeof(Reference)))
         {
@@ -40,7 +40,7 @@ public class CellValue : IComparable, IComparable<CellValue>
         // try to convert to one of the 
         if (valType == typeof(string) || (isNullable && nullableType == typeof(string)))
         {
-            var converted = TryConvertFromString(data?.ToString(), out var convertedData, out var valueType);
+            var converted = TryConvertFromString(data.ToString(), out var convertedData, out var valueType);
             if (converted)
             {
                 Data = convertedData;
@@ -60,14 +60,12 @@ public class CellValue : IComparable, IComparable<CellValue>
     }
 
     /// <summary>
-    /// Creates a cell value type. If <paramref name="cellValueType"/> is set, this is used to determine the value type.
-    /// Otherwise, the value type is determined by looking at the type of <paramref name="data"/>.
+    /// Creates a cell value type. The <paramref name="cellValueType"/> is used to determine the value type.
     /// </summary>
     /// <param name="data"></param>
     /// <param name="cellValueType"></param>
     internal CellValue(object? data, CellValueType cellValueType)
     {
-        // Set the type and trust it if the it i
         Data = data;
         ValueType = cellValueType;
     }
@@ -129,7 +127,7 @@ public class CellValue : IComparable, IComparable<CellValue>
             return CellValueType.Text;
         }
 
-        if (valType.IsNumeric() || (isNullable && nullableType.IsNumeric()))
+        if (valType.IsNumeric() || (isNullable && nullableType?.IsNumeric() == true))
             return CellValueType.Number;
 
         if (valType == typeof(bool) || (isNullable && nullableType == typeof(bool)))
@@ -166,26 +164,26 @@ public class CellValue : IComparable, IComparable<CellValue>
             if (Data == null && ValueType == CellValueType.Text)
                 return string.Empty;
 
-            if (this.Data?.GetType() == type)
+            if (Data?.GetType() == type)
                 return Data;
             else
             {
                 var conversionType = type;
-                if (System.Nullable.GetUnderlyingType(type) != null)
+                if (Nullable.GetUnderlyingType(type) != null)
                 {
-                    conversionType = System.Nullable.GetUnderlyingType(type);
+                    conversionType = Nullable.GetUnderlyingType(type);
                 }
 
                 if (conversionType == typeof(string))
                     return Data?.ToString();
 
-                if (Data is IConvertible)
+                if (Data is IConvertible && conversionType != null)
                     return Convert.ChangeType(Data, conversionType);
 
                 return Data;
             }
         }
-        catch (Exception e)
+        catch (Exception)
         {
             return null;
         }

@@ -92,7 +92,7 @@ public static class RangeText
             cellReference = new NamedReference(str.ToString());
         return true;
     }
-
+    
     /// <summary>
     /// Returns a reference from a single part of the range string - there shouldn't be any colons in the string
     /// passed to this function.
@@ -184,7 +184,7 @@ public static class RangeText
         return true;
     }
 
-    private static bool IsValidNameChar(char c)
+    public static bool IsValidNameChar(char c)
     {
         return char.IsLetterOrDigit(c) ||
                c == '_' ||
@@ -193,7 +193,7 @@ public static class RangeText
                c == '\\';
     }
 
-    private static bool IsValidStartOfName(char c)
+    public static bool IsValidStartOfName(char c)
     {
         return char.IsLetter(c) || c == '_';
     }
@@ -215,15 +215,15 @@ public static class RangeText
         return result - 1;
     }
 
-    public static string ColNumberToLetters(int n)
+    public static string ColIndexToLetters(int colIndex)
     {
-        var N = n + 1;
+        var n = colIndex + 1;
         string str = "";
-        while (N > 0)
+        while (n > 0)
         {
-            int m = (N - 1) % 26;
+            int m = (n - 1) % 26;
             str = Convert.ToChar('A' + m) + str;
-            N = (N - m) / 26;
+            n = (n - m) / 26;
         }
 
         return str;
@@ -231,22 +231,22 @@ public static class RangeText
 
     public static string ToCellText(int row, int col)
     {
-        return $"{ColNumberToLetters(col)}{row + 1}";
+        return $"{ColIndexToLetters(col)}{row + 1}";
     }
 
-    private static string FS(bool isFixed) => isFixed ? "$" : string.Empty;
+    private static string FixedString(bool isFixed) => isFixed ? "$" : string.Empty;
 
-    public static string ToRegionText(IRegion region,
+    public static string RegionToText(IRegion region,
         bool fixedColStart = false,
         bool fixeColEnd = false,
         bool fixedRowStart = false,
         bool fixedRowEnd = false)
     {
-        var firstCol = ColNumberToLetters(region.Left);
+        var firstCol = ColIndexToLetters(region.Left);
         var firstRow = (region.Top + 1).ToString();
 
         if (region.Width == 1 && region.Height == 1)
-            return $"{FS(fixedColStart)}{firstCol}{FS(fixedRowStart)}{firstRow}";
+            return $"{FixedString(fixedColStart)}{firstCol}{FixedString(fixedRowStart)}{firstRow}";
 
         var isRowRegion = region is RowRegion;
         var isColRegion = region is ColumnRegion;
@@ -254,10 +254,10 @@ public static class RangeText
         firstCol = isColRegion || (!isRowRegion && !isColRegion) ? firstCol : string.Empty;
         firstRow = isRowRegion || (!isRowRegion && !isColRegion) ? firstRow : string.Empty;
 
-        var lastCol = isColRegion || (!isRowRegion && !isColRegion) ? ColNumberToLetters(region.Right) : string.Empty;
+        var lastCol = isColRegion || (!isRowRegion && !isColRegion) ? ColIndexToLetters(region.Right) : string.Empty;
         var lastRow = isRowRegion || (!isRowRegion && !isColRegion) ? (region.Bottom + 1).ToString() : string.Empty;
         return
-            $"{FS(fixedColStart)}{firstCol}{FS(fixedRowStart)}{firstRow}:" +
-            $"{FS(fixeColEnd)}{lastCol}{FS(fixedRowEnd)}{lastRow}";
+            $"{FixedString(fixedColStart)}{firstCol}{FixedString(fixedRowStart)}{firstRow}:" +
+            $"{FixedString(fixeColEnd)}{lastCol}{FixedString(fixedRowEnd)}{lastRow}";
     }
 }
