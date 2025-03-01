@@ -42,9 +42,9 @@ public class WorkbookEnvironment : IEnvironment
         return _functions.ContainsKey(name.ToLower());
     }
 
-    public ISheetFunction GetFunctionDefinition(string name)
+    public ISheetFunction? GetFunctionDefinition(string name)
     {
-        return _functions[name.ToLower()];
+        return _functions.GetValueOrDefault(name.ToLower());
     }
 
     public void RegisterFunction(string name, ISheetFunction value)

@@ -18,6 +18,8 @@ public class DependencyManager
     /// </summary>
     private readonly Dictionary<string, RegionDataStore<FormulaVertex>> _referencedVertexStores = new();
 
+    private readonly HashSet<FormulaVertex> _volatileVertices = new();
+
     internal int FormulaCount => _dependencyGraph.Count;
 
     private RegionDataStore<FormulaVertex> GetReferencedVertexStore(string sheetName)
@@ -77,6 +79,9 @@ public class DependencyManager
         _dependencyGraph.AddVertex(formulaVertex);
         restoreData.VerticesAdded.Add(formulaVertex);
 
+        if (formulaVertex.Formula.ContainsVolatiles)
+            _volatileVertices.Add(formulaVertex);
+
         // find formula inside any of the regions that this formula references
         // and add a dependency edge to them
         foreach (var formulaRef in formulaVertex.Formula.References)
@@ -116,7 +121,8 @@ public class DependencyManager
         if (!_dependencyGraph.HasVertex(formulaVertex.Key))
             return restoreData;
 
-        formulaVertex = _dependencyGraph.GetVertex(formulaVertex.Key);
+        formulaVertex = _dependencyGraph.GetVertex(formulaVertex.Key)!;
+        _volatileVertices.Remove(formulaVertex);
 
         // remove the references that refer to this formula cell
         var formulaReferences = formulaVertex.Formula?.References;
@@ -337,7 +343,7 @@ public class DependencyManager
     public IList<IList<FormulaVertex>> GetCalculationOrder(List<FormulaVertex>? dirtyFormula = null)
     {
         var sort = new SccSort<FormulaVertex>(_dependencyGraph);
-        return sort.Sort(dirtyFormula?.Count > 0 ? dirtyFormula : null);
+        return sort.Sort(dirtyFormula?.Count > 0 ? dirtyFormula.Concat(_volatileVertices) : null);
     }
 
     public IEnumerable<DependencyInfo> GetDependencies()

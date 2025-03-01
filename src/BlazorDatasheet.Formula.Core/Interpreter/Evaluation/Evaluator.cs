@@ -162,10 +162,10 @@ public class Evaluator
     private CellValue EvaluateFunctionCall(FunctionExpression node)
     {
         var id = node.FunctionToken.Value;
-        if (!_environment.FunctionExists(id))
+        if (!node.FunctionExists)
             return CellValue.Error(new FormulaError(ErrorType.Name, $"Function {id} not found"));
 
-        var func = _environment.GetFunctionDefinition(id);
+        var func = node.Function!;
         var nArgsProvided = node.Args.Count();
 
         var paramDefinitions = func.GetParameterDefinitions();
@@ -193,9 +193,7 @@ public class Evaluator
             convertedArgs[argIndex] = _parameterConverter.ConvertVal(arg, paramDefinition.Type);
 
             if (IsConsumable(paramDefinition))
-            {
                 paramIndex++;
-            }
 
             argIndex++;
         }

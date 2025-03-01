@@ -38,4 +38,5 @@ public class AverageFunction : ISheetFunction
     }
 
     public bool AcceptsErrors => false;
+    public bool IsVolatile => false;
 }

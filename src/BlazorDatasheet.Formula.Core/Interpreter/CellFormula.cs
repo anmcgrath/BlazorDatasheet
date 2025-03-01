@@ -9,11 +9,13 @@ namespace BlazorDatasheet.Formula.Core.Interpreter;
 
 public class CellFormula
 {
+    public bool ContainsVolatiles { get; }
     internal readonly SyntaxTree ExpressionTree;
     public IEnumerable<Reference> References => ExpressionTree.References;
 
-    internal CellFormula(SyntaxTree expressionTree)
+    internal CellFormula(SyntaxTree expressionTree, bool containsVolatiles = false)
     {
+        ContainsVolatiles = containsVolatiles;
         ExpressionTree = expressionTree;
     }
 

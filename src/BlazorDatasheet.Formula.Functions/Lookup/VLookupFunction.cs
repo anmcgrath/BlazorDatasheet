@@ -61,4 +61,5 @@ public class VLookupFunction : ISheetFunction
     }
 
     public bool AcceptsErrors => false;
+    public bool IsVolatile => false;
 }

@@ -39,9 +39,9 @@ public class TestEnvironment : IEnvironment
         var validator = new FunctionParameterValidator();
         validator.ValidateOrThrow(functionDefinition.GetParameterDefinitions());
 
-        if (!_functions.ContainsKey(name))
-            _functions.Add(name, functionDefinition);
-        _functions[name] = functionDefinition;
+        if (!_functions.ContainsKey(name.ToLower()))
+            _functions.Add(name.ToLower(), functionDefinition);
+        _functions[name.ToLower()] = functionDefinition;
     }
 
     public IEnumerable<CellValue> GetNonEmptyInRange(Reference reference)
@@ -127,12 +127,12 @@ public class TestEnvironment : IEnvironment
 
     public bool FunctionExists(string functionIdentifier)
     {
-        return _functions.ContainsKey(functionIdentifier);
+        return _functions.ContainsKey(functionIdentifier.ToLower());
     }
 
-    public ISheetFunction GetFunctionDefinition(string identifierText)
+    public ISheetFunction? GetFunctionDefinition(string identifierText)
     {
-        return _functions[identifierText];
+        return _functions.GetValueOrDefault(identifierText.ToLower());
     }
 
     public bool VariableExists(string variableIdentifier)

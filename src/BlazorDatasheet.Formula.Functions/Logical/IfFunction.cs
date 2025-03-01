@@ -44,4 +44,5 @@ public class IfFunction : ISheetFunction
     }
 
     public bool AcceptsErrors => true;
+    public bool IsVolatile => false;
 }

@@ -13,6 +13,7 @@ public class Parser
     private Token[] _tokens = null!;
     private List<string> _errors = null!;
     private List<Reference> _references = new();
+    private bool _containsVolatiles;
 
     public Parser(IEnvironment environment)
     {
@@ -24,6 +25,7 @@ public class Parser
         _position = 0;
         _tokens = tokens;
         _errors = lexErrors ?? new List<string>();
+        _containsVolatiles = false;
         // Formula must start with equals token
         MatchToken(Tag.EqualsToken);
         var expression = ParseExpression();
@@ -41,7 +43,7 @@ public class Parser
 
     public CellFormula FromString(string formulaString)
     {
-        return new CellFormula(Parse(formulaString));
+        return new CellFormula(Parse(formulaString), _containsVolatiles);
     }
 
     private Expression ParseExpression()
@@ -251,7 +253,7 @@ public class Parser
     private Expression ParseArrayConstant()
     {
         // Consume left bracket
-        var leftBracket = MatchToken(Tag.LeftCurlyBracketToken);
+        MatchToken(Tag.LeftCurlyBracketToken);
 
         // Collect array items
         var rows = new List<List<LiteralExpression>>();
@@ -330,7 +332,6 @@ public class Parser
         if (Peek(1).Tag == Tag.LeftParenthToken)
             return ParseFunctionCallExpression();
 
-
         var identifierToken = (IdentifierToken)NextToken();
 
         if (Current.Tag == Tag.ColonToken && TryConvertToAddress(identifierToken, out var address))
@@ -342,7 +343,7 @@ public class Parser
     private Expression ParseFunctionCallExpression()
     {
         var funcToken = (IdentifierToken)NextToken();
-        var leftParenth = MatchToken(Tag.LeftParenthToken);
+        MatchToken(Tag.LeftParenthToken);
         var args = new List<Expression>();
 
         while (Current.Tag != Tag.RightParenthToken)
@@ -356,7 +357,15 @@ public class Parser
         }
 
         MatchToken(Tag.RightParenthToken);
-        return new FunctionExpression(funcToken, args);
+
+        if (!_environment.FunctionExists(funcToken.Value))
+            Error($"Function {funcToken.Value} does not exist");
+
+        var functionDefinition = _environment.GetFunctionDefinition(funcToken.Value);
+        if (functionDefinition != null && functionDefinition.IsVolatile)
+            _containsVolatiles = true;
+
+        return new FunctionExpression(funcToken, args, functionDefinition);
     }
 
     private Expression ParseParenthExpression()

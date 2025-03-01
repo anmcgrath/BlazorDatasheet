@@ -8,10 +8,15 @@ public class FunctionExpression : Expression
     public IdentifierToken FunctionToken { get; }
     public List<Expression> Args { get; }
 
-    public FunctionExpression(IdentifierToken functionToken, List<Expression> args)
+    public ISheetFunction? Function { get; }
+
+    public bool FunctionExists => Function != null;
+
+    public FunctionExpression(IdentifierToken functionToken, List<Expression> args, ISheetFunction? function)
     {
         FunctionToken = functionToken;
         Args = args;
+        Function = function;
     }
 
     public override string ToExpressionText()
