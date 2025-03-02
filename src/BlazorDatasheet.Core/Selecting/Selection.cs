@@ -145,9 +145,11 @@ public class Selection
         if (SelectingRegion == null)
             return;
         SetActiveCellPosition(SelectingStartPosition.row, SelectingStartPosition.col);
+        var oldRegions = Regions.Select(x => x.Clone()).ToList();
         this.Add(SelectingRegion);
         SelectingRegion = null;
         EmitSelectingChanged();
+        EmitSelectionChange(oldRegions);
     }
 
     private void EmitSelectingChanged()
