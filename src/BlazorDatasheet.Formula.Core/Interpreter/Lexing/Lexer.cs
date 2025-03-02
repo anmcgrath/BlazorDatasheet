@@ -192,7 +192,7 @@ public ref struct Lexer
     {
         int start = _position;
         Next(); // consume start character
-        while (char.IsLetterOrDigit(_current) || _current == '$')
+        while (RangeText.IsValidNameChar(_current) || _current == '$')
             Next();
 
         int length = _position - start;
