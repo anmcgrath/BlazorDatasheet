@@ -7,6 +7,7 @@ using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter;
 using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
+using BlazorDatasheet.Formula.Core.Interpreter.References;
 using BlazorDatasheet.Formula.Functions.Logical;
 using FluentAssertions;
 using NUnit.Framework;
@@ -408,6 +409,23 @@ public class SheetFormulaIntegrationTests
     {
         _sheet.Cells["A1"]!.Formula = "=sum(a2:b2:c5)";
         _sheet.Cells["C4"]!.Value = 10;
+        _sheet.Cells["A1"]!.Value.Should().Be(10);
+    }
+
+    [Test]
+    public void Variable_With_Formula_Should_Update_When_Variable_Changes()
+    {
+        _sheet.Cells["A1"]!.Formula = "=x";
+        _sheet.FormulaEngine.SetVariable("x", "=10");
+        _sheet.Cells["A1"]!.Value.Should().Be(10);
+    }
+
+    [Test]
+    public void Named_Range_Variable_Should_Update_When_Variable_Changes()
+    {
+        _sheet.Cells["A1"]!.Formula = "=x";
+        _sheet.FormulaEngine.SetVariable("x", "=A2");
+        _sheet.Cells["A2"]!.Value = 10;
         _sheet.Cells["A1"]!.Value.Should().Be(10);
     }
 }

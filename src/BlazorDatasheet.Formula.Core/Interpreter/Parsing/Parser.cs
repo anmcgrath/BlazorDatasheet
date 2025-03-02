@@ -340,6 +340,7 @@ public class Parser
         if (Current.Tag == Tag.ColonToken && TryConvertToAddress(identifierToken, out var address))
             return ParseReferenceExpressionFromAddress(address!);
 
+        _references.Add(new NamedReference(identifierToken.Value));
         return new VariableExpression(identifierToken);
     }
 
