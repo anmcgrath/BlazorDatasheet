@@ -180,6 +180,12 @@ public class DependencyManager
         return ClearFormula(formulaVertex);
     }
 
+    public DependencyManagerRestoreData ClearFormula(string name)
+    {
+        var formulaVertex = new FormulaVertex(name, null);
+        return ClearFormula(formulaVertex);
+    }
+
     public bool HasDependents(IRegion region, string sheetName)
     {
         return GetReferencedVertexStore(sheetName).Any(region);
@@ -448,6 +454,11 @@ public class DependencyManager
     public FormulaVertex? GetVertex(int cellRow, int cellCol, string sheetName)
     {
         return _dependencyGraph.GetVertex(new FormulaVertex(cellRow, cellCol, sheetName, null).Key);
+    }
+
+    public FormulaVertex? GetVertex(string name)
+    {
+        return _dependencyGraph.GetVertex(name);
     }
 
     public IEnumerable<FormulaVertex> GetAllVertices() => _dependencyGraph.GetAll();

@@ -198,6 +198,23 @@ public static class RangeText
         return char.IsLetter(c) || c == '_';
     }
 
+    public static bool IsValidName(ReadOnlySpan<char> name)
+    {
+        if (name.Length == 0)
+            return false;
+
+        if (!IsValidStartOfName(name[0]))
+            return false;
+
+        for (int i = 1; i < name.Length; i++)
+        {
+            if (!IsValidNameChar(name[i]))
+                return false;
+        }
+
+        return true;
+    }
+
 
     public static int ColStrToIndex(ReadOnlySpan<char> text)
     {

@@ -237,6 +237,7 @@ public class FormulaEngine
     public void ClearVariable(string varName)
     {
         _environment.ClearVariable(varName);
+        DependencyManager.ClearFormula(varName);
         CalculateSheet(true);
     }
 
