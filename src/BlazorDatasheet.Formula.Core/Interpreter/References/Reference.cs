@@ -36,7 +36,10 @@ public abstract class Reference
     public abstract IRegion Region { get; protected set; }
     internal abstract void SetRegion(IRegion region);
     public string SheetName { get; private set; } = "Sheet1";
-    internal bool ExplicitSheetName { get; private set; }
+    /// <summary>
+    /// Whether the sheet name was explicitly set.
+    /// </summary>
+    public bool ExplicitSheetName { get; private set; }
     internal void SetSheetName(string sheetName, bool explicitSheetName = true)
     {
         SheetName = sheetName;
@@ -46,4 +49,13 @@ public abstract class Reference
     {
         IsInvalid = !isValid;
     }
+    
+    protected string GetSheetPrefix()
+    {
+        var hasWhitespace = SheetName.Any(char.IsWhiteSpace);
+        if (ExplicitSheetName)
+            return $"{(hasWhitespace ? "'" : "")}{SheetName}{(hasWhitespace ? "'" : "")}!";
+        return "";
+    }
+
 }

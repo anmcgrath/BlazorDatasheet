@@ -14,6 +14,7 @@ using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 using System.Text;
 using BlazorDatasheet.Core.Events.Sort;
+using BlazorDatasheet.Core.FormulaEngine;
 
 namespace BlazorDatasheet.Core.Data;
 
@@ -148,6 +149,8 @@ public class Sheet
     /// </summary>
     private bool _isBatchingChanges;
 
+    public NamedRangeManager NamedRanges { get; }
+
     /// <summary>
     /// If the sheet is batching dirty regions, they are stored here.
     /// </summary>
@@ -163,6 +166,7 @@ public class Sheet
         Columns = new ColumnInfoStore(defaultWidth, this);
         Selection = new Selection(this);
         ConditionalFormats = new ConditionalFormatManager(this, Cells);
+        NamedRanges = new NamedRangeManager(this);
     }
 
     internal Sheet(int numRows, int numCols, int defaultWidth, int defaultHeight, Workbook workbook) : this(numRows,
@@ -288,8 +292,8 @@ public class Sheet
             return null;
 
         var rangeStrFormula = $"={rangeStr}";
-        var evaluatedValue =
-            FormulaEngine.Evaluate(FormulaEngine.ParseFormula(rangeStrFormula), resolveReferences: false);
+        var evaluatedValue = FormulaEngine.Evaluate(FormulaEngine.ParseFormula(rangeStrFormula, Name, true),
+            resolveReferences: false);
         if (evaluatedValue.ValueType == CellValueType.Reference)
         {
             var reference = evaluatedValue.GetValue<Reference>();

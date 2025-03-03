@@ -1,4 +1,3 @@
-using BlazorDatasheet.DataStructures.Util;
 using BlazorDatasheet.Formula.Core.Interpreter.Addresses;
 using BlazorDatasheet.Formula.Core.Interpreter.Lexing;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
@@ -14,6 +13,7 @@ public class Parser
     private List<string> _errors = null!;
     private List<Reference> _references = new();
     private bool _containsVolatiles;
+    private ParsingContext? _parsingContext;
 
     public Parser(IEnvironment environment)
     {
@@ -30,20 +30,29 @@ public class Parser
         MatchToken(Tag.EqualsToken);
         var expression = ParseExpression();
         MatchToken(Tag.Eof);
+
+        foreach (var reference in _references)
+        {
+            if (!reference.ExplicitSheetName && _parsingContext != null)
+                reference.SetSheetName(_parsingContext.CallingSheetName, _parsingContext.ExplicitSheetNameReference);
+        }
+
         return new SyntaxTree(expression, _references, _errors);
     }
 
-    public SyntaxTree Parse(string formulaString)
+    public SyntaxTree Parse(string formulaString, ParsingContext? parsingContext = null)
     {
+        _parsingContext = parsingContext;
         var lexer = new Lexer();
         var tokens = lexer.Lex(formulaString);
         _references = new();
         return Parse(tokens, lexer.Errors);
     }
 
-    public CellFormula FromString(string formulaString)
+    public CellFormula FromString(string formulaString, ParsingContext? parsingContext = null)
     {
-        return new CellFormula(Parse(formulaString), _containsVolatiles);
+        _parsingContext = parsingContext ?? _parsingContext;
+        return new CellFormula(Parse(formulaString, parsingContext), _containsVolatiles);
     }
 
     private Expression ParseExpression()
@@ -340,6 +349,7 @@ public class Parser
         if (Current.Tag == Tag.ColonToken && TryConvertToAddress(identifierToken, out var address))
             return ParseReferenceExpressionFromAddress(address!);
 
+        _references.Add(new NamedReference(identifierToken.Value));
         return new VariableExpression(identifierToken);
     }
 

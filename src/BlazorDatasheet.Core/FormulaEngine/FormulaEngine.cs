@@ -110,12 +110,12 @@ public class FormulaEngine
         return DependencyManager.SetFormula(row, col, sheetName, formula);
     }
 
-    public CellFormula ParseFormula(string formulaString)
+    public CellFormula ParseFormula(string formulaString, string callingSheetName, bool useExplicitSheetName = false)
     {
-        return _parser.FromString(formulaString);
+        return _parser.FromString(formulaString, new ParsingContext(callingSheetName, useExplicitSheetName));
     }
 
-    public CellValue Evaluate(CellFormula? formula, bool resolveReferences = true)
+    internal CellValue Evaluate(CellFormula? formula, bool resolveReferences = true)
     {
         if (formula == null)
             return CellValue.Empty;
@@ -166,7 +166,7 @@ public class FormulaEngine
 
             foreach (var vertex in scc)
             {
-                if (vertex.Formula == null || vertex.VertexType != VertexType.Cell)
+                if (vertex.Formula == null)
                     continue;
 
                 // if it's part of a scc group, and we don't have circular references, then the value would
@@ -195,7 +195,10 @@ public class FormulaEngine
 
                 executionContext.ClearExecuting();
 
-                _environment.SetCellValue(vertex.Region!.Top, vertex.Region!.Left, vertex.SheetName, value);
+                if (vertex.VertexType == VertexType.Cell)
+                    _environment.SetCellValue(vertex.Region!.Top, vertex.Region!.Left, vertex.SheetName, value);
+                else if (vertex.VertexType == VertexType.Named)
+                    _environment.SetVariable(vertex.Key, value);
             }
         }
 
@@ -218,21 +221,40 @@ public class FormulaEngine
 
     public void SetVariable(string varName, object value)
     {
-        _environment.SetVariable(varName, new CellValue(value));
+        if (value is string s && IsFormula(s))
+        {
+            var formula = ParseFormula(s, "", false);
+            if (formula.References.Any(x => !x.ExplicitSheetName))
+                throw new Exception("Formula references in variables must have explicit sheet names");
+
+            DependencyManager.SetFormula(varName, formula);
+        }
+        else
+        {
+            _environment.SetVariable(varName, new CellValue(value));
+        }
+
         CalculateSheet(true);
     }
 
-    public void RenameSheet(string oldName, string newName)
+    public void ClearVariable(string varName)
+    {
+        _environment.ClearVariable(varName);
+        DependencyManager.ClearFormula(varName);
+        CalculateSheet(true);
+    }
+
+    internal void RenameSheet(string oldName, string newName)
     {
         DependencyManager.RenameSheet(oldName, newName);
     }
 
-    public IEnvironment GetEnvironment()
+    internal IEnvironment GetEnvironment()
     {
         return _environment;
     }
 
-    public CellFormula? CloneFormula(CellFormula formula)
+    internal CellFormula? CloneFormula(CellFormula formula)
     {
         return _parser.FromString(formula.ToFormulaString());
     }

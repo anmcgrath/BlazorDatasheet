@@ -42,11 +42,11 @@ public class MultiSheetTests
     [Test]
     public void Insert_Row_In_Other_Sheet_Updates_References()
     {
-        _sheet1.Cells["A1"]!.Formula = "='Sheet2'!A2";
+        _sheet1.Cells["A1"]!.Formula = "=Sheet2!A2";
         _sheet2.Cells["A2"]!.Value = "Test";
         _sheet2.Rows.InsertAt(0);
         _sheet1.Cells["A1"]!.Value.Should().Be("Test");
-        _sheet1.Cells["A1"]!.Formula.Should().Be("='Sheet2'!A3");
+        _sheet1.Cells["A1"]!.Formula.Should().Be("=Sheet2!A3");
 
         _sheet2.Cells["A3"]!.Value = "Test2";
         _sheet1.Cells["A1"]!.Value.Should().Be("Test2");
@@ -55,12 +55,12 @@ public class MultiSheetTests
     [Test]
     public void Insert_Row_In_Same_Sheet_Keeps_References()
     {
-        _sheet1.Cells["A1"]!.Formula = "='Sheet2'!A2";
+        _sheet1.Cells["A1"]!.Formula = "=Sheet2!A2";
         _sheet2.Cells["A2"]!.Value = "Test";
 
         // Note sheet1 this time
         _sheet1.Rows.InsertAt(0);
-        _sheet1.Cells["A2"]!.Formula.Should().Be("='Sheet2'!A2");
+        _sheet1.Cells["A2"]!.Formula.Should().Be("=Sheet2!A2");
         _sheet1.Cells["A2"]!.Value.Should().Be("Test");
 
         _sheet2.Cells["A2"]!.Value = "Test2";
@@ -70,12 +70,12 @@ public class MultiSheetTests
     [Test]
     public void Remove_Row_In_Other_Sheet_Keeps_References()
     {
-        _sheet1.Cells["A3"]!.Formula = "='Sheet2'!A2";
+        _sheet1.Cells["A3"]!.Formula = "=Sheet2!A2";
         _sheet2.Cells["A2"]!.Value = "Test";
 
         // Note sheet1 this time
         _sheet2.Rows.RemoveAt(0);
-        _sheet1.Cells["A3"]!.Formula.Should().Be("='Sheet2'!A1");
+        _sheet1.Cells["A3"]!.Formula.Should().Be("=Sheet2!A1");
         _sheet1.Cells["A3"]!.Value.Should().Be("Test");
 
         _sheet2.Cells["A1"]!.Value = "Test2";
@@ -85,12 +85,12 @@ public class MultiSheetTests
     [Test]
     public void Remove_Row_In_Same_Sheet_Keeps_References()
     {
-        _sheet1.Cells["A3"]!.Formula = "='Sheet2'!A2";
+        _sheet1.Cells["A3"]!.Formula = "=Sheet2!A2";
         _sheet2.Cells["A2"]!.Value = "Test";
 
         // Note sheet1 this time
         _sheet1.Rows.RemoveAt(0);
-        _sheet1.Cells["A2"]!.Formula.Should().Be("='Sheet2'!A2");
+        _sheet1.Cells["A2"]!.Formula.Should().Be("=Sheet2!A2");
         _sheet1.Cells["A2"]!.Value.Should().Be("Test");
 
         _sheet2.Cells["A2"]!.Value = "Test2";
@@ -100,9 +100,9 @@ public class MultiSheetTests
     [Test]
     public void Rename_Sheet_Renames_Refs()
     {
-        _sheet1.Cells["A1"]!.Formula = "='Sheet2'!A2";
+        _sheet1.Cells["A1"]!.Formula = "=Sheet2!A2";
         _workbook.RenameSheet("Sheet2", "Renamed");
-        _sheet1.Cells["A1"]!.Formula.Should().Be("='Renamed'!A2");
+        _sheet1.Cells["A1"]!.Formula.Should().Be("=Renamed!A2");
         _sheet2.Cells["A2"]!.Value = "New";
         _sheet1.Cells["A1"]!.Value.Should().Be("New");
     }
@@ -110,15 +110,15 @@ public class MultiSheetTests
     [Test]
     public void Auto_Fill_Ref_Updates_Multi_Sheet_Ref()
     {
-        _sheet1.Cells["A1"]!.Formula = "='Sheet2'!A2";
+        _sheet1.Cells["A1"]!.Formula = "=Sheet2!A2";
         _sheet1.Cells.CopyImpl(new Region(0, 0), new Region(1, 0), new CopyOptions());
-        _sheet1.Cells["A2"]!.Formula.Should().Be("='Sheet2'!A3");
+        _sheet1.Cells["A2"]!.Formula.Should().Be("=Sheet2!A3");
     }
 
     [Test]
     public void Range_Ref_With_Sheet_Infront_Of_Both_Cells_References_Ok()
     {
-        var parsedFormula = _sheet1.FormulaEngine.ParseFormula("=sum(Sheet2!A1:Sheet2!A2)");
+        var parsedFormula = _sheet1.FormulaEngine.ParseFormula("=sum(Sheet2!A1:Sheet2!A2)", _sheet1.Name);
         parsedFormula.ExpressionTree.Errors.Should().BeEmpty();
         parsedFormula.References.Count().Should().Be(1);
         parsedFormula.References.First().Should().BeOfType<RangeReference>();
@@ -128,7 +128,7 @@ public class MultiSheetTests
     [Test]
     public void Range_Ref_Across_Sheets_Should_Result_In_Error()
     {
-        var parsedFormula = _sheet1.FormulaEngine.ParseFormula("=sum(Sheet1!A1:Sheet2!:A2)");
+        var parsedFormula = _sheet1.FormulaEngine.ParseFormula("=sum(Sheet1!A1:Sheet2!:A2)", _sheet1.Name);
         parsedFormula.ExpressionTree.Errors.Should().NotBeEmpty();
     }
 
@@ -174,5 +174,13 @@ public class MultiSheetTests
         _sheet2.Range("Sheet2!A1:Sheet2!B2:Sheet2!C3")!.Value = 2;
         _sheet1.Cells["A1"]!.Formula = "=sum(Sheet2!A1:Sheet2!B2:Sheet2!C3)";
         _sheet1.Cells["A1"]!.Value.Should().Be(18);
+    }
+
+    [Test]
+    public void Sheet_Formula_Set_With_No_explicit_sheet_Should_refer_to_own_sheet()
+    {
+        _sheet2.Cells["B1"]!.Formula = "=A1";
+        _sheet2.Cells["A1"]!.Value = 10;
+        _sheet2.Cells["B1"]!.Value.Should().Be(10);
     }
 }

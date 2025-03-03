@@ -24,7 +24,10 @@ public class CellFormula
         return !ExpressionTree.Errors.Any();
     }
 
-    public string ToFormulaString() => "=" + ExpressionTree.Root.ToExpressionText();
+    public string ToFormulaString(bool includeEquals = true)
+    {
+        return includeEquals ? $"={ExpressionTree.Root.ToExpressionText()}" : ExpressionTree.Root.ToExpressionText();
+    }
 
     /// <summary>
     /// Shifts all references by <paramref name="offsetRow"/> rows and <paramref name="offsetCol"/> columns.

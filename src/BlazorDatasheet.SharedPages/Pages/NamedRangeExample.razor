@@ -1,0 +1,89 @@
+﻿@page "/NamedRangeExample"
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events
+@using BlazorDatasheet.Formula.Core
+<h3>NamedRangeExample</h3>
+
+<p>
+    Ranges can be named and referenced by their name. Select a range and type a name in the input field, then press
+    enter, to name the range.
+</p>
+
+<h6>Sheet 1</h6>
+<input type="text" @bind-value:get="SelectedRangeValue" @bind-value:set="OnInput"/>
+
+<div style="width: 550px; height: 300px; overflow: auto">
+    <Datasheet Sheet="Sheet"/>
+</div>
+
+<h6>Sheet 2</h6>
+<div style="width: 550px; height: 300px; overflow: auto">
+    <Datasheet Sheet="Sheet2"/>
+</div>
+
+@code {
+
+    private string? _selectedRangeValue;
+
+    private Sheet ActiveSheet;
+
+    private string? SelectedRangeValue
+    {
+        get => _selectedRangeValue;
+        set
+        {
+            _selectedRangeValue = value;
+            StateHasChanged();
+        }
+    }
+
+    private Sheet Sheet { get; set; }
+    private Sheet Sheet2 { get; set; }
+
+    private void OnInput(string? value)
+    {
+        var newValue = value ?? string.Empty;
+        if (string.IsNullOrEmpty(newValue) || string.IsNullOrEmpty(SelectedRangeValue))
+        {
+            return;
+        }
+
+        ActiveSheet.NamedRanges.Set(newValue, SelectedRangeValue);
+        SelectedRangeValue = newValue;
+    }
+
+    protected override void OnInitialized()
+    {
+        var workbook = new Workbook();
+        Sheet = workbook.AddSheet(100, 100);
+        Sheet2 = workbook.AddSheet(100, 100);
+        Sheet.Selection.SelectionChanged += SelectionOnSelectionChanged;
+        Sheet2.Selection.SelectionChanged += SelectionOnSelectionChanged;
+    }
+
+    private void SelectionOnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        ActiveSheet = e.Sheet;
+        if (ActiveSheet.Selection.IsSelecting || !ActiveSheet.Selection.Regions.Any())
+            return;
+
+        var sheetSelection = ActiveSheet.Selection.Regions;
+        if (sheetSelection.Count > 1)
+        {
+            SelectedRangeValue = null;
+            return;
+        }
+
+        var selectedRegion = sheetSelection[0];
+        var namedRegion = ActiveSheet.NamedRanges.GetRegionName(selectedRegion);
+        if (namedRegion != null)
+        {
+            SelectedRangeValue = namedRegion;
+            return;
+        }
+
+        SelectedRangeValue = RangeText.RegionToText(selectedRegion);
+    }
+
+
+}

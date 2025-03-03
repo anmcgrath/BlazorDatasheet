@@ -169,8 +169,6 @@ public class DependencyGraph<T> where T : Vertex
         }
     }
 
-    private void RemoveIfNoDependents(T v) => RemoveIfNoDependents(v.Key);
-
     private void RemoveIfNoDependents(string vKey)
     {
         if (!IsDependedOn(vKey) && !IsDependentOnAny(vKey))

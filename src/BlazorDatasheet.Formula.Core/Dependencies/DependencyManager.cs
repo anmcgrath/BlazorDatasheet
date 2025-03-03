@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using BlazorDatasheet.DataStructures.Geometry;
+﻿using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Graph;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core.Interpreter;
@@ -68,6 +67,12 @@ public class DependencyManager
         return SetFormulaVertex(formulaVertex);
     }
 
+    public DependencyManagerRestoreData SetFormula(string name, CellFormula? formula)
+    {
+        var formulaVertex = new FormulaVertex(name, formula);
+        return SetFormulaVertex(formulaVertex);
+    }
+
     private DependencyManagerRestoreData SetFormulaVertex(FormulaVertex formulaVertex)
     {
         // Clear any dependency tracking for old formula if there is one
@@ -87,7 +92,7 @@ public class DependencyManager
         foreach (var formulaRef in formulaVertex.Formula.References)
         {
             // add edges to any formula that already exist
-            if (formulaRef is not NamedReference)
+            if (formulaRef is not NamedReference namedRef)
             {
                 var formulaInsideRegion = GetVerticesInRegion(formulaRef.Region, formulaRef.SheetName);
                 foreach (var f in formulaInsideRegion)
@@ -101,7 +106,11 @@ public class DependencyManager
             }
             else
             {
-                throw new NotImplementedException();
+                if (_dependencyGraph.HasVertex(namedRef.Name))
+                {
+                    var v = _dependencyGraph.GetVertex(namedRef.Name)!;
+                    _dependencyGraph.AddEdge(v, formulaVertex);
+                }
             }
         }
 
@@ -119,12 +128,12 @@ public class DependencyManager
     {
         var restoreData = new DependencyManagerRestoreData();
         _volatileVertices.Remove(formulaVertex);
-        
+
         if (!_dependencyGraph.HasVertex(formulaVertex.Key))
             return restoreData;
 
         formulaVertex = _dependencyGraph.GetVertex(formulaVertex.Key)!;
-        
+
         // remove the references that refer to this formula cell
         var formulaReferences = formulaVertex.Formula?.References;
 
@@ -142,9 +151,6 @@ public class DependencyManager
                     case RangeReference rangeReference:
                         dataToDelete = GetReferencedVertexStore(rangeReference.SheetName)
                             .GetDataRegions(rangeReference.Region, formulaVertex).ToList();
-                        break;
-                    case NamedReference namedReference:
-                        throw new NotImplementedException();
                         break;
                 }
 
@@ -171,6 +177,12 @@ public class DependencyManager
     public DependencyManagerRestoreData ClearFormula(int row, int col, string sheetName)
     {
         var formulaVertex = new FormulaVertex(row, col, sheetName, null);
+        return ClearFormula(formulaVertex);
+    }
+
+    public DependencyManagerRestoreData ClearFormula(string name)
+    {
+        var formulaVertex = new FormulaVertex(name, null);
         return ClearFormula(formulaVertex);
     }
 
@@ -205,7 +217,8 @@ public class DependencyManager
             return GetDirectDependents(vertex.Region!, vertex.SheetName);
         }
 
-        return _dependencyGraph.Adj(vertex);
+        return _dependencyGraph.GetAll()
+            .Where(x => x.Formula!.References.Any(r => r is NamedReference n && n.Name == vertex.Key));
     }
 
     public DependencyManagerRestoreData InsertRowAt(int row, int count, string sheetName) =>
@@ -441,6 +454,11 @@ public class DependencyManager
     public FormulaVertex? GetVertex(int cellRow, int cellCol, string sheetName)
     {
         return _dependencyGraph.GetVertex(new FormulaVertex(cellRow, cellCol, sheetName, null).Key);
+    }
+
+    public FormulaVertex? GetVertex(string name)
+    {
+        return _dependencyGraph.GetVertex(name);
     }
 
     public IEnumerable<FormulaVertex> GetAllVertices() => _dependencyGraph.GetAll();

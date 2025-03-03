@@ -37,6 +37,11 @@ public class WorkbookEnvironment : IEnvironment
             _variables[name] = cellValue;
     }
 
+    public void ClearVariable(string name)
+    {
+        _variables.Remove(name);
+    }
+
     public bool FunctionExists(string name)
     {
         return _functions.ContainsKey(name.ToLower());

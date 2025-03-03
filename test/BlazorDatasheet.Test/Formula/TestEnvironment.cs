@@ -55,6 +55,11 @@ public class TestEnvironment : IEnvironment
         _cellValues.TryAdd(new CellPosition(row, col), value);
     }
 
+    public void ClearVariable(string varName)
+    {
+        _variables.Remove(varName);
+    }
+
     public void SetVariable(string name, object variable)
     {
         SetVariable(name, new CellValue(variable));
