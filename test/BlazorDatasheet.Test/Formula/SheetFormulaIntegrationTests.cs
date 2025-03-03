@@ -385,8 +385,8 @@ public class SheetFormulaIntegrationTests
         env.RegisterFunction("if", new IfFunction());
         var eval = new Evaluator(env);
         var parser = new Parser(env);
-        var fA1 = new CellFormula(parser.Parse("=B1"));
-        var fB1 = new CellFormula(parser.Parse("=if(true,C1,A1)"));
+        var fA1 = parser.FromString("=B1");
+        var fB1 = parser.FromString("=if(true,C1,A1)");
         env.SetCellValue(0, 2, 3);
         env.SetCellFormula(0, 0, fA1);
         env.SetCellFormula(0, 1, fB1);
@@ -424,7 +424,7 @@ public class SheetFormulaIntegrationTests
     public void Named_Range_Variable_Should_Update_When_Variable_Changes()
     {
         _sheet.Cells["A1"]!.Formula = "=x";
-        _sheet.FormulaEngine.SetVariable("x", "=A2");
+        _sheet.FormulaEngine.SetVariable("x", "=Sheet1!A2");
         _sheet.Cells["A2"]!.Value = 10;
         _sheet.Cells["A1"]!.Value.Should().Be(10);
     }

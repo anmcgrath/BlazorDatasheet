@@ -49,8 +49,7 @@
     {
         if (Sheet.Editor.EditValue.StartsWith("="))
         {
-            var parser = new Parser(Sheet.FormulaEngine.GetEnvironment());
-            var formula = parser.FromString(Sheet.Editor.EditValue);
+            var formula = Sheet.FormulaEngine.ParseFormula(Sheet.Editor.EditValue, Sheet.Name, false);
             if (!formula.References.Any())
             {
                 _colorRegions = new List<DataRegion<string>>();
@@ -58,7 +57,7 @@
             }
 
             _colorRegions = formula.References
-                .Where(x=>x.SheetName == Sheet.Name)
+                .Where(x => x.SheetName == Sheet.Name)
                 .Select((r, i) =>
                 {
                     var colorIndex = (i % 5) + 1;

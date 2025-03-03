@@ -24,7 +24,7 @@ public partial class CellStore
     /// <param name="formulaString"></param>
     public void SetFormula(int row, int col, string formulaString)
     {
-        var parsed = Sheet.FormulaEngine.ParseFormula(formulaString);
+        var parsed = Sheet.FormulaEngine.ParseFormula(formulaString, Sheet.Name);
         if (parsed.IsValid())
             SetFormula(row, col, parsed);
     }
@@ -59,7 +59,7 @@ public partial class CellStore
 
     internal CellStoreRestoreData SetFormulaImpl(int row, int col, string formula)
     {
-        var parsedFormula = Sheet.FormulaEngine.ParseFormula(formula);
+        var parsedFormula = Sheet.FormulaEngine.ParseFormula(formula, Sheet.Name);
         if (parsedFormula.IsValid())
             return SetFormulaImpl(row, col, parsedFormula);
         return new CellStoreRestoreData();

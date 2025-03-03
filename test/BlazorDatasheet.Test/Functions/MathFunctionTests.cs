@@ -24,7 +24,7 @@ public class MathFunctionTests
     {
         var eval = new Evaluator(_env);
         var parser = new Parser(_env);
-        return eval.Evaluate(parser.Parse(formulaString)).Data;
+        return eval.Evaluate(parser.FromString(formulaString)).Data;
     }
 
     [Test]

@@ -110,12 +110,12 @@ public class FormulaEngine
         return DependencyManager.SetFormula(row, col, sheetName, formula);
     }
 
-    public CellFormula ParseFormula(string formulaString)
+    public CellFormula ParseFormula(string formulaString, string callingSheetName, bool useExplicitSheetName = false)
     {
-        return _parser.FromString(formulaString);
+        return _parser.FromString(formulaString, new ParsingContext(callingSheetName, useExplicitSheetName));
     }
 
-    public CellValue Evaluate(CellFormula? formula, bool resolveReferences = true)
+    internal CellValue Evaluate(CellFormula? formula, bool resolveReferences = true)
     {
         if (formula == null)
             return CellValue.Empty;
@@ -223,7 +223,10 @@ public class FormulaEngine
     {
         if (value is string s && IsFormula(s))
         {
-            var formula = ParseFormula(s);
+            var formula = ParseFormula(s, "", false);
+            if (formula.References.Any(x => !x.ExplicitSheetName))
+                throw new Exception("Formula references in variables must have explicit sheet names");
+
             DependencyManager.SetFormula(varName, formula);
         }
         else
@@ -241,17 +244,17 @@ public class FormulaEngine
         CalculateSheet(true);
     }
 
-    public void RenameSheet(string oldName, string newName)
+    internal void RenameSheet(string oldName, string newName)
     {
         DependencyManager.RenameSheet(oldName, newName);
     }
 
-    public IEnvironment GetEnvironment()
+    internal IEnvironment GetEnvironment()
     {
         return _environment;
     }
 
-    public CellFormula? CloneFormula(CellFormula formula)
+    internal CellFormula? CloneFormula(CellFormula formula)
     {
         return _parser.FromString(formula.ToFormulaString());
     }

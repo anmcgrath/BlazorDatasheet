@@ -192,7 +192,7 @@ public class Editor
 
         if (isFormula)
         {
-            parsedFormula = Sheet.FormulaEngine.ParseFormula(formulaString!);
+            parsedFormula = Sheet.FormulaEngine.ParseFormula(formulaString!, Sheet.Name);
             if (!parsedFormula.IsValid())
             {
                 var args = new InvalidEditEventArgs(EditValue, $"Invalid formula", false);

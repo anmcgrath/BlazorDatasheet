@@ -59,7 +59,7 @@ public class Selection
     /// <summary>
     /// Fired before the active cell position changes. Allows the modification of the new active cell position.
     /// </summary>
-    public event EventHandler<BeforeActiveCellPositionChangedEventArgs> BeforeActiveCellPositionChanged;
+    public event EventHandler<BeforeActiveCellPositionChangedEventArgs>? BeforeActiveCellPositionChanged;
 
     /// <summary>
     /// Fired when the cells that are selected changes.
@@ -600,7 +600,7 @@ public class Selection
 
     private void EmitSelectionChange(IReadOnlyList<IRegion> oldRegions)
     {
-        SelectionChanged?.Invoke(this, new SelectionChangedEventArgs(oldRegions, _regions));
+        SelectionChanged?.Invoke(this, new SelectionChangedEventArgs(oldRegions, _regions, _sheet));
         CellsSelected?.Invoke(this, new CellsSelectedEventArgs(_sheet.Cells.GetCellsInRegions(_regions)));
     }
 

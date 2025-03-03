@@ -40,12 +40,12 @@ public class NamedRangeManager
             Clear(name);
 
         var rangeStrFormula = $"={rangeString}";
-        var formula = _sheet.FormulaEngine.ParseFormula(rangeStrFormula);
+        var formula = _sheet.FormulaEngine.ParseFormula(rangeStrFormula, _sheet.Name, true);
 
         var evaluatedValue = _sheet.FormulaEngine.Evaluate(formula, resolveReferences: false);
         if (evaluatedValue.ValueType == CellValueType.Reference && evaluatedValue.GetValue<Reference>()?.Region != null)
         {
-            _sheet.FormulaEngine.SetVariable(name, rangeStrFormula);
+            _sheet.FormulaEngine.SetVariable(name, formula.ToFormulaString());
             _namedRanges[name] = _sheet.FormulaEngine.DependencyManager.GetVertex(name)!.Formula!;
 
             return true;

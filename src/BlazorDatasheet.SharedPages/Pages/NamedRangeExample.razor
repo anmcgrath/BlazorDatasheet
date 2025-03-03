@@ -10,9 +10,15 @@
     <Datasheet Sheet="Sheet"/>
 </div>
 
+<div style="width: 400px; height: 400px; overflow: auto">
+    <Datasheet Sheet="Sheet2"/>
+</div>
+
 @code {
 
     private string? _selectedRangeValue;
+
+    private Sheet ActiveSheet;
 
     private string? SelectedRangeValue
     {
@@ -25,6 +31,7 @@
     }
 
     private Sheet Sheet { get; set; }
+    private Sheet Sheet2 { get; set; }
 
     private void OnInput(string? value)
     {
@@ -34,22 +41,26 @@
             return;
         }
 
-        Sheet.NamedRanges.Set(newValue, SelectedRangeValue);
+        ActiveSheet.NamedRanges.Set(newValue, SelectedRangeValue);
         SelectedRangeValue = newValue;
     }
 
     protected override void OnInitialized()
     {
-        Sheet = new Sheet(100, 100);
+        var workbook = new Workbook();
+        Sheet = workbook.AddSheet(100, 100);
+        Sheet2 = workbook.AddSheet(100, 100);
         Sheet.Selection.SelectionChanged += SelectionOnSelectionChanged;
+        Sheet2.Selection.SelectionChanged += SelectionOnSelectionChanged;
     }
 
     private void SelectionOnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (Sheet.Selection.IsSelecting || !Sheet.Selection.Regions.Any())
+        ActiveSheet = e.Sheet;
+        if (ActiveSheet.Selection.IsSelecting || !ActiveSheet.Selection.Regions.Any())
             return;
 
-        var sheetSelection = Sheet.Selection.Regions;
+        var sheetSelection = ActiveSheet.Selection.Regions;
         if (sheetSelection.Count > 1)
         {
             SelectedRangeValue = null;
@@ -57,7 +68,7 @@
         }
 
         var selectedRegion = sheetSelection[0];
-        var namedRegion = Sheet.NamedRanges.GetRegionName(selectedRegion);
+        var namedRegion = ActiveSheet.NamedRanges.GetRegionName(selectedRegion);
         if (namedRegion != null)
         {
             SelectedRangeValue = namedRegion;

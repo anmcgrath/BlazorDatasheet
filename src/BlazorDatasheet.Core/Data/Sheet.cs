@@ -292,8 +292,8 @@ public class Sheet
             return null;
 
         var rangeStrFormula = $"={rangeStr}";
-        var evaluatedValue =
-            FormulaEngine.Evaluate(FormulaEngine.ParseFormula(rangeStrFormula), resolveReferences: false);
+        var evaluatedValue = FormulaEngine.Evaluate(FormulaEngine.ParseFormula(rangeStrFormula, Name, true),
+            resolveReferences: false);
         if (evaluatedValue.ValueType == CellValueType.Reference)
         {
             var reference = evaluatedValue.GetValue<Reference>();

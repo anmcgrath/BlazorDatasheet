@@ -76,9 +76,10 @@ public class RangeReference : Reference
 
     public override string ToAddressText()
     {
-        return (ExplicitSheetName ? $"'{SheetName}'!" : "") +  RangeText.RegionToText(Region, IsStartColFixed, IsEndColFixed, IsStartRowFixed, IsEndRowFixed);
+        return GetSheetPrefix() + RangeText.RegionToText(Region, IsStartColFixed,
+            IsEndColFixed, IsStartRowFixed, IsEndRowFixed);
     }
-
+    
     public override bool SameAs(Reference reference)
     {
         if (reference.Kind == ReferenceKind.Range)

@@ -58,15 +58,15 @@ public class NamedRangeTest
     public void Set_Named_Range_String_Returns_Correct_String()
     {
         _sheet.NamedRanges.Set("x", "A1");
-        _sheet.NamedRanges.GetRangeString("x").Should().Be("A1");
+        _sheet.NamedRanges.GetRangeString("x").Should().Be("Sheet1!A1");
     }
 
     [Test]
     public void Named_Ranges_Changes_On_Row_Insert()
     {
-        _sheet.NamedRanges.Set("x", "A1");
+        _sheet.NamedRanges.Set("x", "Sheet1!A1");
         _sheet.Rows.InsertAt(0);
-        _sheet.NamedRanges.GetRangeString("x").Should().Be("A2");
+        _sheet.NamedRanges.GetRangeString("x").Should().Be("Sheet1!A2");
     }
 
     [Test]
@@ -74,9 +74,9 @@ public class NamedRangeTest
     {
         _sheet.NamedRanges.Set("x", "A1:A2");
         _sheet.Rows.RemoveAt(0);
-        _sheet.NamedRanges.GetRangeString("x").Should().Be("A1");
+        _sheet.NamedRanges.GetRangeString("x").Should().Be("Sheet1!A1");
         _sheet.Commands.Undo();
-        _sheet.NamedRanges.GetRangeString("x").Should().Be("A1:A2");
+        _sheet.NamedRanges.GetRangeString("x").Should().Be("Sheet1!A1:A2");
     }
 
     [Test]
