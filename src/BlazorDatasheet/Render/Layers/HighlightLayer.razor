@@ -1,5 +1,6 @@
 ﻿@using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Events.Edit
+@using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.DataStructures.Store
 @using BlazorDatasheet.Formula.Core.Interpreter.Parsing
 @inherits Layer
@@ -56,13 +57,13 @@
                 return;
             }
 
-            _colorRegions = formula.References
-                .Where(x => x.SheetName == Sheet.Name)
-                .Select((r, i) =>
-                {
-                    var colorIndex = (i % 5) + 1;
-                    return new DataRegion<string>($"var(--highlight-color-{colorIndex})", r.Region);
-                }).ToList();
+            _colorRegions = new();
+            foreach (var reference in formula.References)
+            {
+                var colorIndex = (_colorRegions.Count % 5) + 1;
+                var isValid = reference.SheetName == Sheet.Name;
+                _colorRegions.Add(new DataRegion<string>($"var(--highlight-color-{colorIndex})", isValid ? reference.Region : new EmptyRegion()));
+            }
         }
     }
 
