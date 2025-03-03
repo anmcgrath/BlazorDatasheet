@@ -4,13 +4,20 @@
 @using BlazorDatasheet.Formula.Core
 <h3>NamedRangeExample</h3>
 
+<p>
+    Ranges can be named and referenced by their name. Select a range and type a name in the input field, then press
+    enter, to name the range.
+</p>
+
+<h6>Sheet 1</h6>
 <input type="text" @bind-value:get="SelectedRangeValue" @bind-value:set="OnInput"/>
 
-<div style="width: 400px; height: 400px; overflow: auto">
+<div style="width: 550px; height: 300px; overflow: auto">
     <Datasheet Sheet="Sheet"/>
 </div>
 
-<div style="width: 400px; height: 400px; overflow: auto">
+<h6>Sheet 2</h6>
+<div style="width: 550px; height: 300px; overflow: auto">
     <Datasheet Sheet="Sheet2"/>
 </div>
 
