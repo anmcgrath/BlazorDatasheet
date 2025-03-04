@@ -24,7 +24,8 @@ public class LogicalFunctionTests
     {
         var eval = new Evaluator(_env);
         var parser = new Parser(_env);
-        return eval.Evaluate(parser.FromString(formulaString), null, new FormulaEvaluationOptions(!resolveReferences)).Data;
+        return eval.Evaluate(parser.FromString(formulaString), null, new FormulaEvaluationOptions(!resolveReferences))
+            .Data;
     }
 
     [Test]
@@ -48,6 +49,8 @@ public class LogicalFunctionTests
         Eval("=IF(E7,5,4)").Should().Be(5);
 
         Eval("=IF(true,A1):A2").Should().BeOfType<RangeReference>();
+        Eval("=IF(true)").Should().Be(true);
+        Eval("=IF(false)").Should().Be(false);
     }
 
     [Test]
@@ -67,6 +70,14 @@ public class LogicalFunctionTests
         Eval("=AND(A1:A3)").Should().Be(false);
         Eval("=AND(A4)").Should().BeOfType<FormulaError>();
         Eval("=AND(A4:A5)").Should().Be(true);
+    }
+
+    [Test]
+    public void And_With_Error_Should_Be_Error()
+    {
+        _env.SetCellValue(0, 0, new FormulaError(ErrorType.Div0));
+        _env.SetCellValue(1, 0, true);
+        Eval("=AND(A1:A2)").Should().BeOfType<FormulaError>();
     }
 
     [Test]
