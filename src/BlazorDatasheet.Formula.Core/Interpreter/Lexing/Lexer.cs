@@ -61,6 +61,9 @@ public ref struct Lexer
                 return new WhitespaceToken(_string.Slice(start, len).ToString(), start);
         }
 
+        if (_current == '#')
+            return ReadErrorToken();
+
         if (_current == '\0')
             return new EndOfFileToken(_position);
 
@@ -159,6 +162,29 @@ public ref struct Lexer
 
         Next();
         return token;
+    }
+
+    private Token ReadErrorToken()
+    {
+        int start = _position;
+        while (char.IsLetter(_current) ||
+               _current == '#' ||
+               _current == '/' ||
+               _current == '?' ||
+               _current == '!' ||
+               _current == '0')
+            Next();
+
+        int length = _position - start;
+        var errorStr = _string.Slice(start, length);
+        var errorType = ErrorTypes.FromErrorString(errorStr);
+        if (errorType == ErrorType.None)
+        {
+            Error("Invalid error token");
+            return new BadToken(start);
+        }
+
+        return new ErrorToken(errorType, start);
     }
 
     private Token ReadNumber()

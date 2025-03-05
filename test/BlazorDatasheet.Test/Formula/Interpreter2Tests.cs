@@ -255,4 +255,18 @@ public class InterpreterTests
     {
         _parser.FromString("=A1:A2").ContainsVolatiles.Should().BeFalse();
     }
+
+    [Test]
+    [TestCase("=#NULL!", ErrorType.Null)]
+    [TestCase("=#DIV/0!", ErrorType.Div0)]
+    [TestCase("=#VALUE!", ErrorType.Value)]
+    [TestCase("=#REF!", ErrorType.Ref)]
+    [TestCase("=#NAME?", ErrorType.Name)]
+    [TestCase("=#NUM!", ErrorType.Num)]
+    [TestCase("=#N/A", ErrorType.Na)]
+    [TestCase("=#CIRCULAR", ErrorType.Circular)]
+    public void Errors_Parsed_To_Correct_Error_Type(string formula, ErrorType expectedErrorType)
+    {
+        EvalExpression(formula).GetValue<FormulaError>().ErrorType.Should().Be(expectedErrorType);
+    }
 }

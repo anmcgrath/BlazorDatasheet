@@ -115,6 +115,8 @@ public class Parser
                 return ParseSheetReferenceExpression();
             case Tag.AddressToken:
                 return ParseReferenceExpressionFromAddress(((AddressToken)NextToken()).Address);
+            case Tag.ErrorToken:
+                return new ErrorExpression(((ErrorToken)NextToken()).ErrorType);
         }
 
         if (Peek(1).Tag == Tag.ColonToken && TryConvertToAddress(Current, out var address))
