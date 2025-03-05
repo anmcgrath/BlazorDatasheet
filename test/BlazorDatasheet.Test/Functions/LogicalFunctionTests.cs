@@ -78,6 +78,7 @@ public class LogicalFunctionTests
         _env.SetCellValue(0, 0, new FormulaError(ErrorType.Div0));
         _env.SetCellValue(1, 0, true);
         Eval("=AND(A1:A2)").Should().BeOfType<FormulaError>();
+        Eval("=AND(#DIV/0)").Should().BeOfType<FormulaError>();
     }
 
     [Test]

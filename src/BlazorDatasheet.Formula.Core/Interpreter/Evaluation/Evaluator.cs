@@ -91,6 +91,8 @@ public class Evaluator
                 return EvaluateArrayConstantExpression((ArrayConstantExpression)expression);
             case NodeKind.Name:
                 return EvaluateNamedExpression((VariableExpression)expression);
+            case NodeKind.Error:
+                return CellValue.Error(((ErrorExpression)expression).ErrorType);
         }
 
         return CellValue.Error(new FormulaError(ErrorType.Na,

@@ -9,5 +9,6 @@ public enum NodeKind
     FunctionCall,
     ArrayConstant,
     Name,
-    Range
+    Range,
+    Error
 }

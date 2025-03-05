@@ -30,5 +30,6 @@ public enum Tag
     AddressToken,
     LogicalToken,
     Whitespace,
-    SheetLocatorToken
+    SheetLocatorToken,
+    ErrorToken
 }
