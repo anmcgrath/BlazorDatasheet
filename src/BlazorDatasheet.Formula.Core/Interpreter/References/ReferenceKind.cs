@@ -4,7 +4,5 @@ public enum ReferenceKind
 {
     Cell,
     Range,
-    Named,
-    Multiple,
-    Intersecting,
+    Named
 }

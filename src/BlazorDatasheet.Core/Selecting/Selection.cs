@@ -561,21 +561,6 @@ public class Selection
         EmitSelectionChange(oldRegions);
     }
 
-    /// <summary>
-    /// Sets the active cell position to the position specified.
-    /// </summary>
-    /// <param name="row"></param>
-    /// <param name="col"></param>
-    internal void CollapseActiveRegion(int row, int col)
-    {
-        if (IsEmpty() || _sheet.Area == 0 || ActiveRegion == null)
-            return;
-        if (!ActiveRegion.Contains(row, col))
-            Set(row, col);
-        else // position within active selection
-            SetActiveCellPosition(row, col);
-    }
-
     private IRegion GetRegionAfterActive()
     {
         var activeRegionIndex = _regions.IndexOf(ActiveRegion!);

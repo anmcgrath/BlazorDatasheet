@@ -116,15 +116,6 @@ public class Range1DStore<T>
             .ToList();
     }
 
-    public (int start, int end, T? data) GetInterval(int position)
-    {
-        var interval = Intervals.GetIntervals(new OrderedInterval(position, position)).FirstOrDefault();
-        if (interval == null)
-            return (-1, -1, _defaultIfNotFound);
-
-        return (interval.Start, interval.End, interval.Data.Value);
-    }
-
     /// <summary>
     /// Removes the data between the given positions but does not shift the remaining data
     /// </summary>

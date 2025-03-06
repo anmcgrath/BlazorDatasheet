@@ -1,8 +1,6 @@
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Interfaces;
-using BlazorDatasheet.Core.Metadata;
 using BlazorDatasheet.DataStructures.Geometry;
-using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Core.Data;
 
@@ -46,9 +44,9 @@ public class SheetRange
     /// Return all non-empty cells (in terms of Value) in this range.
     /// </summary>
     /// <returns></returns>
-    internal IEnumerable<IReadOnlyCell> GetNonEmptyCells()
+    public IEnumerable<IReadOnlyCell> GetNonEmptyCells()
     {
-        return this.GetNonEmptyPositions().Select(x => Sheet.Cells.GetCell(x.row, x.col));
+        return GetNonEmptyPositions().Select(x => Sheet.Cells.GetCell(x.row, x.col));
     }
 
     /// <summary>
@@ -115,10 +113,7 @@ public class SheetRange
 
     public CellFormat? Format
     {
-        set
-        {
-            Sheet.SetFormat(Region, value);
-        } 
+        set => Sheet.SetFormat(Region, value);
     }
 
     public void AddValidator(IDataValidator validator)

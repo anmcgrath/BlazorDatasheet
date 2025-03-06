@@ -275,16 +275,16 @@ public class SparseMatrixStoreByCols<T> : IMatrixDataStore<T>
     /// <returns></returns>
     public IEnumerable<(int row, int col, T data)> GetNonEmptyData(int r0, int r1, int c0, int c1)
     {
-        List<(int row, int col, T data)> nonEmptyData = new();
         foreach (var kp in _columns)
         {
             if (kp.Key < c0 || kp.Key > c1)
                 continue;
             var nonEmptyInRow = kp.Value.GetNonEmptyDataBetween(r0, r1);
-            nonEmptyData.AddRange(nonEmptyInRow.Select(x => (x.row, kp.Key, x.data)));
+            foreach (var val in nonEmptyInRow)
+            {
+                yield return (val.row, kp.Key, val.data);
+            }
         }
-
-        return nonEmptyData;
     }
 
     public IEnumerable<CellPosition> GetNonEmptyPositions(IRegion region)

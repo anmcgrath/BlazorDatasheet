@@ -4,7 +4,7 @@ namespace BlazorDatasheet.Core.Data.Filter;
 
 public class ValueFilter : IFilter
 {
-    private HashSet<string> _excluded = new();
+    private HashSet<string> _excluded;
 
     public IReadOnlyCollection<string> Excluded => _excluded;
 

@@ -108,12 +108,10 @@ internal class SparseList<T>
     /// <param name="r0"></param>
     /// <param name="r1"></param>
     /// <returns></returns>
-    public List<(int itemIndex, T data)> GetNonEmptyDataBetween(int r0, int r1)
+    public IEnumerable<(int itemIndex, T data)> GetNonEmptyDataBetween(int r0, int r1)
     {
         if (!Values.Any())
-            return new List<(int itemIndex, T data)>();
-
-        var items = new List<(int itemIndex, T data)>();
+            yield break;
 
         var indexStart = Values.Keys.BinarySearchClosest(r0);
         var index = indexStart;
@@ -123,10 +121,8 @@ internal class SparseList<T>
             var itemIndexAti = Values.Keys[i];
             if (itemIndexAti < r0 || itemIndexAti > r1)
                 break;
-            items.Add((itemIndexAti, Values[itemIndexAti]));
+            yield return (itemIndexAti, Values[itemIndexAti]);
         }
-
-        return items;
     }
 
     /// <summary>

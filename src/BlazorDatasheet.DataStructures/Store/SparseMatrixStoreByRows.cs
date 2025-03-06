@@ -84,7 +84,7 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
     public MatrixRestoreData<T> Clear(IRegion region)
     {
         var cleared = new List<(int row, int col, T)>();
-        var nonEmptyRows = _rows.GetNonEmptyDataBetween(region.Top, region.Bottom);
+        var nonEmptyRows = _rows.GetNonEmptyDataBetween(region.Top, region.Bottom).ToList();
         foreach (var row in nonEmptyRows)
         {
             var clearedRowData = row.data.ClearBetween(region.Left, region.Right);
@@ -191,15 +191,12 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
 
     public IEnumerable<CellPosition> GetNonEmptyPositions(int r0, int r1, int c0, int c1)
     {
-        var posns = new System.Collections.Generic.List<CellPosition>();
         var nonEmptyRows = _rows.GetNonEmptyDataBetween(r0, r1);
         foreach (var row in nonEmptyRows)
         {
             foreach (var col in row.data.GetNonEmptyDataBetween(c0, c1))
-                posns.Add(new CellPosition(row.itemIndex, col.itemIndex));
+                yield return new CellPosition(row.itemIndex, col.itemIndex);
         }
-
-        return posns;
     }
 
     public MatrixRestoreData<T> Copy(IRegion fromRegion, IRegion toRegion)
@@ -242,7 +239,7 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
 
     public IEnumerable<(int row, int col, T data)> GetNonEmptyData(IRegion region)
     {
-        var data = new System.Collections.Generic.List<(int row, int col, T data)>();
+        var data = new List<(int row, int col, T data)>();
         var nonEmptyRows = _rows.GetNonEmptyDataBetween(region.Top, region.Bottom);
         foreach (var row in nonEmptyRows)
         {
@@ -287,14 +284,14 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
 
     public RowDataCollection<T> GetNonEmptyRowData(IRegion region)
     {
-        var nonEmptyRows = _rows.GetNonEmptyDataBetween(region.Top, region.Bottom);
+        var nonEmptyRows = _rows.GetNonEmptyDataBetween(region.Top, region.Bottom).ToList();
         var rowIndices = new int[nonEmptyRows.Count];
         var rowDataArray = new RowData<T>[nonEmptyRows.Count];
         for (int i = 0; i < nonEmptyRows.Count; i++)
         {
             var row = nonEmptyRows[i];
             rowIndices[i] = row.itemIndex;
-            var nonEmptyCols = row.data.GetNonEmptyDataBetween(region.Left, region.Right);
+            var nonEmptyCols = row.data.GetNonEmptyDataBetween(region.Left, region.Right).ToList();
             var colIndices = nonEmptyCols.Select(x => x.itemIndex).ToArray();
             var colData = nonEmptyCols.Select(x => x.data).ToArray();
             var rowData = new RowData<T>(rowIndices[i], colIndices, colData);

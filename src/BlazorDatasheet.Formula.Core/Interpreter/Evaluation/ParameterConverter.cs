@@ -89,12 +89,6 @@ public class ParameterConverter
         return CellValue.Sequence(results.ToArray());
     }
 
-    private bool IsLogicalOrError(CellValue value)
-    {
-        return value.ValueType == CellValueType.Logical ||
-               value.ValueType == CellValueType.Error;
-    }
-
     private CellValue ToNumberSequence(CellValue value)
     {
         CellValue[]? values = null;

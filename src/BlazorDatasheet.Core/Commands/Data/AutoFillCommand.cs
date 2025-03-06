@@ -143,16 +143,6 @@ public class AutoFillCommand : BaseCommand, IUndoableCommand
         return 0;
     }
 
-    private double GetSize(Direction direction, IRegion region)
-    {
-        if (direction == Direction.Down || direction == Direction.Up)
-            return region.Height;
-        if (direction == Direction.Left || direction == Direction.Right)
-            return region.Width;
-
-        return 0;
-    }
-
     /// <summary>
     /// 
     /// </summary>

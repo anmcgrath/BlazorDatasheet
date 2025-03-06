@@ -337,15 +337,6 @@ public ref struct Lexer
             _current = _string[_position];
     }
 
-    private void ResetPosition(int position)
-    {
-        _position = position;
-        if (_position > _string.Length - 1)
-            _current = '\0';
-        else
-            _current = _string[_position];
-    }
-
     private char Peek(int offset)
     {
         if (_position + offset > _string.Length - 1)
