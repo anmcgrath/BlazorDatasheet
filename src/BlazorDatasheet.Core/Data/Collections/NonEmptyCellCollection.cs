@@ -1,14 +1,14 @@
 ﻿using System.Collections;
 using BlazorDatasheet.Core.Interfaces;
 
-namespace BlazorDatasheet.Core.Data;
+namespace BlazorDatasheet.Core.Data.Collections;
 
-public class NonEmptyRowCellCollection : IEnumerable<IReadOnlyCell>
+public class NonEmptyCellCollection : IEnumerable<IReadOnlyCell>
 {
     private readonly int _rowIndex;
     private readonly Sheet _sheet;
 
-    public NonEmptyRowCellCollection(int rowIndex, Sheet sheet)
+    public NonEmptyCellCollection(int rowIndex, Sheet sheet)
     {
         _rowIndex = rowIndex;
         _sheet = sheet;
@@ -16,7 +16,7 @@ public class NonEmptyRowCellCollection : IEnumerable<IReadOnlyCell>
 
     public IEnumerator<IReadOnlyCell> GetEnumerator()
     {
-        return new SheetRowEnumerator(_rowIndex, _sheet);
+        return new SparseRowEnumerator(_rowIndex, _sheet);
     }
 
     IEnumerator IEnumerable.GetEnumerator()

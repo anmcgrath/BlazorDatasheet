@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 
-namespace BlazorDatasheet.Core.Data;
+namespace BlazorDatasheet.Core.Data.Collections;
 
 public class NonEmptyRowCollection : IEnumerable<SheetRow>
 {
@@ -14,12 +14,10 @@ public class NonEmptyRowCollection : IEnumerable<SheetRow>
 
     public IEnumerator<SheetRow> GetEnumerator()
     {
-        return new MultiSparseSourceIterator<SheetRow>(
+        return new SparseSourceEnumerator<SheetRow>(
             [
                 _store.Sheet.Cells.GetFormulaStore(),
                 _store.Sheet.Cells.GetCellDataStore(),
-                _store.Sheet.Cells.GetFormatStore(),
-                _store.Sheet.Cells.GetTypeStore(),
                 _store.SizeStore,
                 _store.Formats,
                 _store.HeadingStore

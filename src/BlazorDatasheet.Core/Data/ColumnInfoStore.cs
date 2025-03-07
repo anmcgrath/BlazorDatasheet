@@ -50,6 +50,18 @@ public class ColumnInfoStore : RowColInfoStore
     }
 
     /// <summary>
+    /// Returns the physical width of the col. This is non-zero even if the col is
+    /// hidden. For visual height, use <seealso cref="GetVisualWidth"/>
+    /// </summary>
+    /// <param name="col"></param>
+    /// <returns></returns>
+    public double GetPhysicalWidth(int col)
+    {
+        return SizeStore.Get(col);
+    }
+
+
+    /// <summary>
     /// Returns the distance between the left positions of two columns.
     /// </summary>
     /// <param name="start"></param>

@@ -1,13 +1,13 @@
 ﻿using System.Collections;
 using BlazorDatasheet.DataStructures.Store;
 
-namespace BlazorDatasheet.Core.Data;
+namespace BlazorDatasheet.Core.Data.Collections;
 
-internal class MultiSparseSourceIterator<T> : IEnumerator<T>
+internal class SparseSourceEnumerator<T> : IEnumerator<T>
 {
     private int _currentIndex = -1;
 
-    internal MultiSparseSourceIterator(IEnumerable<ISparseSource> sources, int maxLength, Func<int, T> itemFactory)
+    internal SparseSourceEnumerator(IEnumerable<ISparseSource> sources, int maxLength, Func<int, T> itemFactory)
     {
         _sources = sources;
         _maxLength = maxLength;

@@ -1,21 +1,24 @@
-﻿using BlazorDatasheet.Core.Interfaces;
+﻿using BlazorDatasheet.Core.Data.Collections;
+using BlazorDatasheet.Core.Formats;
+using BlazorDatasheet.Core.Interfaces;
 
 namespace BlazorDatasheet.Core.Data;
 
 public class SheetRow
 {
-    private readonly Sheet _sheet;
+    public Sheet Sheet { get; }
     public int Row { get; }
     public int RowIndex { get; }
-    public string? Heading => _sheet.Rows.GetHeading(RowIndex);
-    public double Height => _sheet.Rows.GetPhysicalHeight(RowIndex);
-    public NonEmptyRowCellCollection NonEmptyCells { get; }
+    public string? Heading => Sheet.Rows.GetHeading(RowIndex);
+    public double Height => Sheet.Rows.GetPhysicalHeight(RowIndex);
+    public NonEmptyCellCollection NonEmptyCells { get; }
+    public IReadonlyCellFormat Format => Sheet.Rows.Formats.Get(RowIndex) ?? new CellFormat();
 
     public SheetRow(int rowIndex, Sheet sheet)
     {
-        _sheet = sheet;
+        Sheet = sheet;
         RowIndex = rowIndex;
         Row = rowIndex + 1;
-        NonEmptyCells = new NonEmptyRowCellCollection(rowIndex, sheet);
+        NonEmptyCells = new NonEmptyCellCollection(rowIndex, sheet);
     }
 }

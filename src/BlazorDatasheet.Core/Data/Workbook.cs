@@ -15,6 +15,12 @@ public class Workbook
         AddSheet(sheet);
     }
 
+    internal Workbook(IEnumerable<Sheet> sheets) : this()
+    {
+        foreach (var sheet in sheets)
+            AddSheet(sheet);
+    }
+
     public Workbook()
     {
         Environment = new WorkbookEnvironment(this);

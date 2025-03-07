@@ -1,17 +1,14 @@
-﻿using System.Collections;
-using BlazorDatasheet.Core.Interfaces;
+﻿using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.DataStructures.Store;
 
-namespace BlazorDatasheet.Core.Data;
+namespace BlazorDatasheet.Core.Data.Collections;
 
-internal class SheetRowEnumerator : MultiSparseSourceIterator<IReadOnlyCell>, IEnumerator<IReadOnlyCell>
+internal class SparseRowEnumerator : SparseSourceEnumerator<IReadOnlyCell>
 {
-    public SheetRowEnumerator(int rowIndex, Sheet sheet) : base(
+    public SparseRowEnumerator(int rowIndex, Sheet sheet) : base(
         [
             new ColSparseSourceWrapper(sheet.Cells.GetFormulaStore(), rowIndex),
             new ColSparseSourceWrapper(sheet.Cells.GetCellDataStore(), rowIndex),
-            new ColSparseSourceWrapper(sheet.Cells.GetFormatStore(), rowIndex),
-            new ColSparseSourceWrapper(sheet.Cells.GetTypeStore(), rowIndex)
         ],
         sheet.NumCols,
         col => sheet.Cells.GetCell(rowIndex, col))
