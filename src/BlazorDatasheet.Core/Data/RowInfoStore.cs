@@ -1,8 +1,9 @@
+using System.Collections;
 using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.Data;
 
-public class RowInfoStore : RowColInfoStore
+public class RowInfoStore : RowColInfoStore, IEnumerable<SheetRow>
 {
     private double _headingWidth = 60;
 
@@ -73,5 +74,25 @@ public class RowInfoStore : RowColInfoStore
     public double GetVisualTop(int rowIndex)
     {
         return CumulativeSizeStore.GetCumulative(rowIndex);
+    }
+
+    public IEnumerator<SheetRow> GetEnumerator()
+    {
+        return new MultiSparseSourceIterator(
+            [
+                Sheet.Cells.GetFormulaStore(),
+                Sheet.Cells.GetCellDataStore(),
+                Sheet.Cells.GetFormatStore(),
+                Sheet.Cells.GetTypeStore(),
+                SizeStore,
+                Formats,
+                HeadingStore
+            ], Sheet.NumRows
+        );
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
     }
 }

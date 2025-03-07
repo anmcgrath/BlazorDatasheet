@@ -9,7 +9,7 @@ namespace BlazorDatasheet.DataStructures.Intervals;
 /// When a new interval is added, the data from that interval is merged into any existing.
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public class MergeableIntervalStore<T> where T : IMergeable<T>
+public class MergeableIntervalStore<T> : ISparseSource where T : IMergeable<T>
 {
     /// <summary>
     ///  The minimum value of all ranges
@@ -447,6 +447,31 @@ public class MergeableIntervalStore<T> where T : IMergeable<T>
         }
 
         this.UpdateStartEndPositions();
+    }
+
+    public int GetNextNonEmptyIndex(int index)
+    {
+        if (!_intervals.Any())
+            return -1;
+
+        if (index > End)
+            return -1;
+
+        var i0 = _intervals.Keys.BinarySearchIndexOf(index);
+
+
+        // either the index or the next highest value
+        if (i0 < 0)
+            i0 = ~i0;
+
+        if (i0 > _intervals.Count - 1)
+            return -1;
+
+        var interval = _intervals.Values[i0];
+        if (interval.Contains(index + 1))
+            return index + 1;
+
+        return interval.Start;
     }
 }
 

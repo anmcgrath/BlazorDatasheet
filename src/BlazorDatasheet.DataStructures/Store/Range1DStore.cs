@@ -5,7 +5,7 @@ namespace BlazorDatasheet.DataStructures.Store;
 /// <summary>
 /// Contains non-overlapping data in ranges
 /// </summary>
-public class Range1DStore<T>
+public class Range1DStore<T> : ISparseSource
 {
     protected readonly MergeableIntervalStore<OverwritingValue<T>> Intervals;
     private readonly T? _defaultIfNotFound;
@@ -14,6 +14,7 @@ public class Range1DStore<T>
     /// The minimum range of all intervals
     /// </summary>
     public int Start => Intervals.Start;
+
     /// <summary>
     /// The maximum range of all intervals
     /// </summary>
@@ -135,6 +136,8 @@ public class Range1DStore<T>
     {
         Intervals.Restore(restoreData);
     }
+
+    public int GetNextNonEmptyIndex(int index) => Intervals.GetNextNonEmptyIndex(index);
 }
 
 public class OverwritingValue<R> : IMergeable<OverwritingValue<R>>

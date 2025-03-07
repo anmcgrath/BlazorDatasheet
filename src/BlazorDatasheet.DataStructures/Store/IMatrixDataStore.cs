@@ -2,7 +2,7 @@ using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.DataStructures.Store;
 
-public interface IMatrixDataStore<T> : IStore<T, MatrixRestoreData<T>>
+public interface IMatrixDataStore<T> : IStore<T, MatrixRestoreData<T>>, ISparseSource
 {
     /// <summary>
     /// Returns the data at the row, column specified. If it is empty, returns the default of T.

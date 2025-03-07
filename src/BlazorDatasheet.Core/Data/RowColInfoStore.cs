@@ -13,7 +13,7 @@ public abstract class RowColInfoStore
     public readonly Sheet Sheet;
     public double DefaultSize { get; }
 
-    private readonly Range1DStore<string> _headingStore = new(null);
+    protected readonly Range1DStore<string> HeadingStore = new(null);
 
     // stores and manages the *cumulative* sizes, for visual purposes.
     protected readonly CumulativeRange1DStore CumulativeSizeStore;
@@ -109,7 +109,7 @@ public abstract class RowColInfoStore
     /// <returns></returns>
     internal RowColInfoRestoreData SetHeadingsImpl(int start, int end, string heading)
     {
-        var restoreData = _headingStore.Set(start, end, heading);
+        var restoreData = HeadingStore.Set(start, end, heading);
         Sheet.MarkDirty(GetSpannedRegion(start, end));
         return new RowColInfoRestoreData()
         {
@@ -130,7 +130,7 @@ public abstract class RowColInfoStore
         {
             CumulativeSizesRestoreData = CumulativeSizeStore.Delete(start, end),
             SizesRestoreData = SizeStore.Delete(start, end),
-            HeadingsRestoreData = _headingStore.Delete(start, end),
+            HeadingsRestoreData = HeadingStore.Delete(start, end),
             VisibilityRestoreData = _visible.Delete(start, end),
             RowColFormatRestoreData = new RowColFormatRestoreData()
             {
@@ -357,7 +357,7 @@ public abstract class RowColInfoStore
         {
             CumulativeSizesRestoreData = CumulativeSizeStore.InsertAt(start, count),
             SizesRestoreData = SizeStore.InsertAt(start, count),
-            HeadingsRestoreData = _headingStore.InsertAt(start, count),
+            HeadingsRestoreData = HeadingStore.InsertAt(start, count),
             VisibilityRestoreData = _visible.InsertAt(start, count),
             RowColFormatRestoreData = new RowColFormatRestoreData()
             {
@@ -377,14 +377,14 @@ public abstract class RowColInfoStore
     /// <returns></returns>
     public string? GetHeading(int index)
     {
-        return _headingStore.Get(index);
+        return HeadingStore.Get(index);
     }
 
     internal void Restore(RowColInfoRestoreData data)
     {
         CumulativeSizeStore.Restore(data.CumulativeSizesRestoreData);
         SizeStore.Restore(data.SizesRestoreData);
-        _headingStore.Restore(data.HeadingsRestoreData);
+        HeadingStore.Restore(data.HeadingsRestoreData);
         _visible.Restore(data.VisibilityRestoreData);
         Formats.Restore(data.RowColFormatRestoreData.Format1DRestoreData);
 
