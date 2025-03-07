@@ -169,7 +169,7 @@ public class DataStoreByRowsTests
         IMatrixDataStore<string> store = GetStore<string>();
         store.Set(10, 5, "A");
         store.Set(10, 100, "B");
-        var nextCol = store.GetNextNonBlankColumn(10, 5);
+        var nextCol = store.GetNextNonEmptyIndexInRow(10, 5);
         Assert.AreEqual(100, nextCol);
         Assert.AreEqual("B", store.Get(10, nextCol));
     }
@@ -179,7 +179,7 @@ public class DataStoreByRowsTests
     {
         var store = GetStore<string>();
         store.Set(5, 10, "A");
-        var nextRow = store.GetNextNonBlankColumn(5, 10);
+        var nextRow = store.GetNextNonEmptyIndexInRow(5, 10);
         nextRow.Should().Be(-1);
     }
 
@@ -292,14 +292,14 @@ public class DataStoreByRowsTests
     [Test]
     public void Get_Next_Non_Empty_Row_With_No_Rows_Returns_Negative_1()
     {
-        IMatrixDataStore<string> store = GetStore<string>();
+        var store = GetStore<string>();
         store.GetNextNonEmptyIndex(0).Should().Be(-1);
     }
 
     [Test]
     public void Get_Next_Non_Empty_Row_With_Single_Row_Returns_Correct()
     {
-        IMatrixDataStore<string> store = GetStore<string>();
+        var store = GetStore<string>();
         store.Set(5, 0, "Test");
         store.GetNextNonEmptyIndex(1).Should().Be(5);
         store.GetNextNonEmptyIndex(5).Should().Be(-1);

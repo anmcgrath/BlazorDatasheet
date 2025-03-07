@@ -13,14 +13,14 @@ public abstract class RowColInfoStore
     public readonly Sheet Sheet;
     public double DefaultSize { get; }
 
-    protected readonly Range1DStore<string> HeadingStore = new(null);
+    internal readonly Range1DStore<string> HeadingStore = new(null);
 
     // stores and manages the *cumulative* sizes, for visual purposes.
     protected readonly CumulativeRange1DStore CumulativeSizeStore;
 
     // stores the individual sizes. This may be different to cumulative,
     // since cumulative includes 0 sizes when rows/columns are invisible.
-    protected readonly Range1DStore<double> SizeStore;
+    internal readonly Range1DStore<double> SizeStore;
 
     /// <summary>
     /// Stores formats that apply to the whole row/column

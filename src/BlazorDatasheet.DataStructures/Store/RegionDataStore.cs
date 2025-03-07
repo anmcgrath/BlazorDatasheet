@@ -8,7 +8,7 @@ namespace BlazorDatasheet.DataStructures.Store;
 /// A wrapper around an RTree enabling storing data in regions.
 /// </summary>
 /// <typeparam name="T">Data type</typeparam>
-public class RegionDataStore<T> : ISparseSource, IStore<T, RegionRestoreData<T>> where T : IEquatable<T>
+public class RegionDataStore<T> : ISparseSource, IRowSource, IStore<T, RegionRestoreData<T>> where T : IEquatable<T>
 {
     protected readonly int MinArea;
     protected readonly bool ExpandWhenInsertAfter;
@@ -541,5 +541,22 @@ public class RegionDataStore<T> : ISparseSource, IStore<T, RegionRestoreData<T>>
         if (nextRowIndex == int.MaxValue || nextRowIndex == index)
             return -1;
         return nextRowIndex;
+    }
+
+    public int GetNextNonEmptyIndexInRow(int row, int col)
+    {
+        var regions = Tree.Search(new Envelope(col, row, double.MaxValue, double.MaxValue)).Select(x => x.Region);
+        int nextColIndex = int.MaxValue;
+        foreach (var region in regions)
+        {
+            if (region.Spans(col + 1, Axis.Col))
+                return col + 1;
+            if (region.Left > col)
+                nextColIndex = Math.Min(nextColIndex, region.Left);
+        }
+
+        if (nextColIndex == int.MaxValue || nextColIndex == col)
+            return -1;
+        return nextColIndex;
     }
 }

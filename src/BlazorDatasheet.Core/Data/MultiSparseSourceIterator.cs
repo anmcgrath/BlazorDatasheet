@@ -3,18 +3,20 @@ using BlazorDatasheet.DataStructures.Store;
 
 namespace BlazorDatasheet.Core.Data;
 
-public class MultiSparseSourceIterator : IEnumerator<SheetRow>
+internal class MultiSparseSourceIterator<T> : IEnumerator<T>
 {
     private int _currentIndex = -1;
 
-    internal MultiSparseSourceIterator(IEnumerable<ISparseSource> sources, int maxLength)
+    internal MultiSparseSourceIterator(IEnumerable<ISparseSource> sources, int maxLength, Func<int, T> itemFactory)
     {
         _sources = sources;
         _maxLength = maxLength;
+        _itemFactory = itemFactory;
     }
 
     private IEnumerable<ISparseSource> _sources;
     private readonly int _maxLength;
+    private readonly Func<int, T> _itemFactory;
 
     public bool MoveNext()
     {
@@ -49,7 +51,7 @@ public class MultiSparseSourceIterator : IEnumerator<SheetRow>
         _currentIndex = -1;
     }
 
-    public SheetRow Current => new SheetRow(_currentIndex);
+    public T Current => _itemFactory(_currentIndex);
 
     object? IEnumerator.Current => Current;
 

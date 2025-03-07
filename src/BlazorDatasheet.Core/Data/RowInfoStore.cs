@@ -3,12 +3,13 @@ using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.Data;
 
-public class RowInfoStore : RowColInfoStore, IEnumerable<SheetRow>
+public class RowInfoStore : RowColInfoStore
 {
     private double _headingWidth = 60;
 
     public RowInfoStore(double defaultHeight, Sheet sheet) : base(defaultHeight, sheet, Axis.Row)
     {
+        NonEmpty = new(this);
     }
 
     /// <summary>
@@ -23,6 +24,11 @@ public class RowInfoStore : RowColInfoStore, IEnumerable<SheetRow>
             EmitSizeModified(-1, -1);
         }
     }
+
+    /// <summary>
+    /// The collection of non-empty rows. Non-empty rows include those that have data, formats, or row heights set.
+    /// </summary>
+    public NonEmptyRowCollection NonEmpty { get; }
 
     /// <summary>
     /// Returns the row index at the position <paramref name="yPosition"/>
@@ -74,25 +80,5 @@ public class RowInfoStore : RowColInfoStore, IEnumerable<SheetRow>
     public double GetVisualTop(int rowIndex)
     {
         return CumulativeSizeStore.GetCumulative(rowIndex);
-    }
-
-    public IEnumerator<SheetRow> GetEnumerator()
-    {
-        return new MultiSparseSourceIterator(
-            [
-                Sheet.Cells.GetFormulaStore(),
-                Sheet.Cells.GetCellDataStore(),
-                Sheet.Cells.GetFormatStore(),
-                Sheet.Cells.GetTypeStore(),
-                SizeStore,
-                Formats,
-                HeadingStore
-            ], Sheet.NumRows
-        );
-    }
-
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return GetEnumerator();
     }
 }
