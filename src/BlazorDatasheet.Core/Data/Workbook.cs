@@ -56,7 +56,7 @@ public class Workbook
         return sheet;
     }
 
-    private void AddSheet(Sheet sheet)
+    public void AddSheet(Sheet sheet)
     {
         sheet.Workbook = this;
         _sheets.Add(sheet);

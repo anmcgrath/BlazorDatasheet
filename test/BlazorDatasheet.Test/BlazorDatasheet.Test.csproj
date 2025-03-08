@@ -24,6 +24,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\src\BlazorDatasheet.Serialization.Json\BlazorDatasheet.Serialization.Json.csproj" />
       <ProjectReference Include="..\..\src\BlazorDatasheet.SharedPages\BlazorDatasheet.SharedPages.csproj" />
       <ProjectReference Include="..\..\src\BlazorDatasheet\BlazorDatasheet.csproj" />
     </ItemGroup>

@@ -106,6 +106,7 @@ public class SheetCell : IReadOnlyCell
     public bool IsVisible => _sheet.IsCellVisible(Row, Col);
 
     public CellValueType ValueType => _sheet.Cells.GetCellValue(Row, Col).ValueType;
+    public CellValue CellValue => _sheet.Cells.GetCellValue(Row, Col);
 
     public object? GetMetaData(string name)
     {

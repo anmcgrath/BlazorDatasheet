@@ -35,6 +35,7 @@ public class CellValueOnly : IReadOnlyCell
     public bool IsValid => true;
     public string? Formula { get; }
     public object? Value => _value;
+    public CellValue CellValue => new CellValue(_value);
 
     public object? GetMetaData(string name)
     {
