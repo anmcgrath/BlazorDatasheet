@@ -20,6 +20,7 @@ public class NonEmptyRowCollection : IEnumerable<SheetRow>
                 _store.Sheet.Cells.GetCellDataStore(),
                 _store.SizeStore,
                 _store.Formats,
+                _store.Visible,
                 _store.HeadingStore
             ], _store.Sheet.NumRows, rowIndex => new SheetRow(rowIndex, _store.Sheet)
         );

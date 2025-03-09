@@ -37,7 +37,7 @@ public abstract class RowColInfoStore
     /// The default is true, if the row/colum is NOT visible, there will be
     /// data in the store for that index.
     /// </summary>
-    private readonly Range1DStore<bool> _visible = new(true);
+    internal readonly Range1DStore<bool> Visible = new(true);
 
     private readonly Axis _axis;
 
@@ -131,7 +131,7 @@ public abstract class RowColInfoStore
             CumulativeSizesRestoreData = CumulativeSizeStore.Delete(start, end),
             SizesRestoreData = SizeStore.Delete(start, end),
             HeadingsRestoreData = HeadingStore.Delete(start, end),
-            VisibilityRestoreData = _visible.Delete(start, end),
+            VisibilityRestoreData = Visible.Delete(start, end),
             RowColFormatRestoreData = new RowColFormatRestoreData()
             {
                 Format1DRestoreData = Formats.Clear(start, end)
@@ -161,7 +161,7 @@ public abstract class RowColInfoStore
             minRow = Math.Min(interval.Start, minRow);
             maxRow = Math.Max(interval.End, maxRow);
 
-            restoreData.VisibilityRestoreData.Merge(_visible.Clear(interval.Start, interval.End));
+            restoreData.VisibilityRestoreData.Merge(Visible.Clear(interval.Start, interval.End));
             restoreData.CumulativeSizesRestoreData.Merge(CumulativeSizeStore.Set(interval.Start, interval.End,
                 DefaultSize));
 
@@ -201,7 +201,7 @@ public abstract class RowColInfoStore
             minRow = Math.Min(interval.Start, minRow);
             maxRow = Math.Max(interval.End, maxRow);
 
-            restoreData.VisibilityRestoreData.Merge(_visible.Set(interval.Start, interval.End, false));
+            restoreData.VisibilityRestoreData.Merge(Visible.Set(interval.Start, interval.End, false));
             restoreData.CumulativeSizesRestoreData.Merge(CumulativeSizeStore.Set(interval.Start, interval.End, 0));
         }
 
@@ -221,7 +221,7 @@ public abstract class RowColInfoStore
     {
         if (index < 0 || index >= Sheet.GetSize(_axis))
             return false;
-        return _visible.Get(index);
+        return Visible.Get(index);
     }
 
     /// <summary>
@@ -234,7 +234,7 @@ public abstract class RowColInfoStore
     {
         var totalCount = Math.Min(end - start + 1, Sheet.GetSize(_axis));
         int invisibleCount = 0;
-        var invisible = _visible.GetOverlapping(start, end);
+        var invisible = Visible.GetOverlapping(start, end);
         foreach (var i in invisible)
         {
             var nOverlap = Math.Min(i.end, end) - Math.Max(i.start, start) + 1;
@@ -275,7 +275,7 @@ public abstract class RowColInfoStore
 
         start = Math.Max(start, 0);
         end = Math.Min(end, Sheet.GetSize(_axis) - 1);
-        var hidden = _visible.GetOverlapping(start, end);
+        var hidden = Visible.GetOverlapping(start, end);
 
         if (!hidden.Any())
             return Enumerable.Range(start, end - start + 1).ToList();
@@ -314,9 +314,9 @@ public abstract class RowColInfoStore
 
         direction = Math.Abs(direction) / direction;
 
-        var nextNonVisibleInterval = _visible.GetNext(index, direction);
+        var nextNonVisibleInterval = Visible.GetNext(index, direction);
         int nextIndex = index + direction;
-        if (_visible.Get(nextIndex))
+        if (Visible.Get(nextIndex))
             return (nextIndex >= Sheet.GetSize(_axis) || nextIndex < 0 ? -1 : nextIndex);
 
         while (nextNonVisibleInterval != null)
@@ -326,14 +326,14 @@ public abstract class RowColInfoStore
             else
                 nextIndex = nextNonVisibleInterval.Value.Start + direction;
 
-            if (_visible.Get(nextIndex) && !nextIndex.Equals(index))
+            if (Visible.Get(nextIndex) && !nextIndex.Equals(index))
                 break;
 
-            nextNonVisibleInterval = _visible.GetNext(nextIndex, direction);
+            nextNonVisibleInterval = Visible.GetNext(nextIndex, direction);
         }
 
         if (nextNonVisibleInterval == null)
-            nextIndex = direction == 1 ? _visible.End + 1 : _visible.Start - 1;
+            nextIndex = direction == 1 ? Visible.End + 1 : Visible.Start - 1;
 
         if (nextIndex >= Sheet.GetSize(_axis) || nextIndex < 0)
             return -1;
@@ -343,7 +343,7 @@ public abstract class RowColInfoStore
 
     public IEnumerable<Interval> GetVisible()
     {
-        return _visible.GetAllIntervals();
+        return Visible.GetAllIntervals();
     }
 
     /// <summary>
@@ -358,7 +358,7 @@ public abstract class RowColInfoStore
             CumulativeSizesRestoreData = CumulativeSizeStore.InsertAt(start, count),
             SizesRestoreData = SizeStore.InsertAt(start, count),
             HeadingsRestoreData = HeadingStore.InsertAt(start, count),
-            VisibilityRestoreData = _visible.InsertAt(start, count),
+            VisibilityRestoreData = Visible.InsertAt(start, count),
             RowColFormatRestoreData = new RowColFormatRestoreData()
             {
                 Format1DRestoreData = Formats.ShiftRight(start, count)
@@ -385,7 +385,7 @@ public abstract class RowColInfoStore
         CumulativeSizeStore.Restore(data.CumulativeSizesRestoreData);
         SizeStore.Restore(data.SizesRestoreData);
         HeadingStore.Restore(data.HeadingsRestoreData);
-        _visible.Restore(data.VisibilityRestoreData);
+        Visible.Restore(data.VisibilityRestoreData);
         Formats.Restore(data.RowColFormatRestoreData.Format1DRestoreData);
 
         foreach (var change in data.CumulativeSizesRestoreData.RemovedIntervals.Concat(data.CumulativeSizesRestoreData

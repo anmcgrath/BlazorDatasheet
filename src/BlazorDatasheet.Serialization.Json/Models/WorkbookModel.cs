@@ -1,5 +1,6 @@
 ﻿using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Formats;
+using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core;
 
 namespace BlazorDatasheet.Serialization.Json.Models;
@@ -8,10 +9,6 @@ internal class WorkbookModel
 {
     public List<CellFormat> Formats { get; set; } = new();
     public List<SheetModel> Sheets { get; set; } = new();
-
-    public WorkbookModel()
-    {
-    }
 
     private static int GetOrAddFormatIndex(CellFormat format, List<CellFormat> formats)
     {
@@ -42,20 +39,56 @@ internal class WorkbookModel
                 if (Math.Abs(row.Height - sheet.Rows.DefaultSize) > 0.001)
                     rowModel.Height = row.Height;
 
-                rowModel.FormatIndex = GetOrAddFormatIndex((CellFormat)row.Format, model.Formats);
+                if (!row.IsVisible)
+                    rowModel.Hidden = !row.IsVisible;
 
+                rowModel.FormatIndex = GetOrAddFormatIndex((CellFormat)row.Format, model.Formats);
                 rowModel.Heading = row.Heading;
                 foreach (var cell in row.NonEmptyCells)
                 {
-                    var cellModel = new CellModel();
-                    cellModel.CellValue = cell.CellValue;
-                    cellModel.Formula = cell.Formula;
-                    cellModel.ColIndex = cell.Col;
+                    var cellModel = new CellModel
+                    {
+                        CellValue = cell.CellValue,
+                        Formula = cell.Formula,
+                        ColIndex = cell.Col
+                    };
+
                     rowModel.Cells.Add(cellModel);
                 }
 
                 sheetModel.Rows.Add(rowModel);
             }
+
+            foreach (var col in sheet.Columns.NonEmpty)
+            {
+                var columnModel = new ColumnModel
+                {
+                    ColIndex = col.ColIndex
+                };
+
+                if (Math.Abs(col.Width - sheet.Columns.DefaultSize) > 0.001)
+                    columnModel.Width = col.Width;
+
+                if (!string.IsNullOrEmpty(col.Heading))
+                    columnModel.Heading = col.Heading;
+
+                if (!col.Visible)
+                    columnModel.Hidden = !col.Visible;
+
+                if (col.Format?.IsDefaultFormat() == false)
+                    columnModel.FormatIndex = GetOrAddFormatIndex(col.Format, model.Formats);
+
+                sheetModel.Columns.Add(columnModel);
+            }
+
+            sheetModel.Merges = sheet.Cells.GetMerges(sheet.Region)
+                .Select(x => new DataRegion<bool>(RangeText.RegionToText(x), true))
+                .ToList();
+
+            sheetModel.CellFormats = sheet.Cells.GetFormatData(sheet.Region)
+                .Select(x =>
+                    new DataRegion<int>(RangeText.RegionToText(x.Region), GetOrAddFormatIndex(x.Data, model.Formats)))
+                .ToList();
 
             model.Sheets.Add(sheetModel);
         }
@@ -77,6 +110,13 @@ internal class WorkbookModel
                     sheet.Rows.SetHeadings(rowModel.RowIndex, rowModel.RowIndex, rowModel.Heading);
                 if (rowModel.Height != null)
                     sheet.Rows.SetSize(rowModel.RowIndex, rowModel.Height.Value);
+
+                if (rowModel.FormatIndex < Formats.Count && !Formats[rowModel.FormatIndex].IsDefaultFormat())
+                    sheet.SetFormat(new RowRegion(rowModel.RowIndex), Formats[rowModel.FormatIndex]);
+
+                if (rowModel.Hidden)
+                    sheet.Rows.Hide(rowModel.RowIndex, 1);
+
                 foreach (var cellModel in rowModel.Cells)
                 {
                     var cellValue = ToCellValue(cellModel);
@@ -85,6 +125,31 @@ internal class WorkbookModel
                     if (cellModel.Formula != null)
                         sheet.Cells.SetFormula(rowModel.RowIndex, cellModel.ColIndex, cellModel.Formula);
                 }
+            }
+
+            foreach (var colModel in sheetModel.Columns)
+            {
+                if (colModel.Heading != null)
+                    sheet.Columns.SetHeadings(colModel.ColIndex, colModel.ColIndex, colModel.Heading);
+                if (colModel.Width != null)
+                    sheet.Columns.SetSize(colModel.ColIndex, colModel.Width.Value);
+                if (colModel.FormatIndex < Formats.Count && !Formats[colModel.FormatIndex].IsDefaultFormat())
+                    sheet.SetFormat(new ColumnRegion(colModel.ColIndex, colModel.ColIndex),
+                        Formats[colModel.FormatIndex]);
+                if (colModel.Hidden)
+                    sheet.Columns.Hide(colModel.ColIndex, 1);
+            }
+
+            foreach (var merge in sheetModel.Merges)
+            {
+                sheet.Range(merge.RegionString)!.Merge();
+            }
+
+            foreach (var cellFormat in sheetModel.CellFormats)
+            {
+                if (cellFormat.Value >= Formats.Count)
+                    continue;
+                sheet.Range(cellFormat.RegionString)!.Format = Formats[cellFormat.Value];
             }
 
             sheet.EndBatchUpdates();

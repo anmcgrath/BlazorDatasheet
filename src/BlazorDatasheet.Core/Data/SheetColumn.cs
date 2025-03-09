@@ -1,4 +1,6 @@
-﻿namespace BlazorDatasheet.Core.Data;
+﻿using BlazorDatasheet.Core.Formats;
+
+namespace BlazorDatasheet.Core.Data;
 
 public class SheetColumn
 {
@@ -6,7 +8,9 @@ public class SheetColumn
     public int Column { get; }
     public int ColIndex { get; }
     public string? Heading => Sheet.Columns.GetHeading(ColIndex);
-    public double Height => Sheet.Columns.GetPhysicalWidth(ColIndex);
+    public double Width => Sheet.Columns.GetPhysicalWidth(ColIndex);
+    public bool Visible => Sheet.Columns.IsVisible(ColIndex);
+    public CellFormat? Format => Sheet.Columns.Formats.Get(ColIndex);
 
     public SheetColumn(int colIndex, Sheet sheet)
     {

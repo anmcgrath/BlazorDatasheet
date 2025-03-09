@@ -57,7 +57,7 @@ public class CellJsonConverter : JsonConverter<CellModel>
     {
         writer.WriteStartObject();
         writer.WriteNumber("c", value.ColIndex);
-        
+
         if (!string.IsNullOrEmpty(value.Formula))
             writer.WriteString("f", value.Formula);
 

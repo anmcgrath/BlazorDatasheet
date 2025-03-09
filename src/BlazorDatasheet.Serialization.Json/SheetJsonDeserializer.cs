@@ -11,7 +11,7 @@ public class SheetJsonDeserializer
     {
         var options = new JsonSerializerOptions()
         {
-            Converters = { new CellJsonConverter() }
+            Converters = { new CellJsonConverter() },
         };
 
         var workbookModel = JsonSerializer.Deserialize<WorkbookModel>(json, options);

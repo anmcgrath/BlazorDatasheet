@@ -48,7 +48,7 @@ public partial class CellStore
     }
 
 
-    internal IEnumerable<DataRegion<CellFormat>> GetFormatData(IRegion region)
+    public IEnumerable<DataRegion<CellFormat>> GetFormatData(IRegion region)
     {
         return _formatStore.GetDataRegions(region);
     }

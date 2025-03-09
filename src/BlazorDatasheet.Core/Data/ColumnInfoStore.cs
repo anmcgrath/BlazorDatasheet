@@ -1,3 +1,4 @@
+using BlazorDatasheet.Core.Data.Collections;
 using BlazorDatasheet.Core.Data.Filter;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Intervals;
@@ -8,6 +9,7 @@ namespace BlazorDatasheet.Core.Data;
 public class ColumnInfoStore : RowColInfoStore
 {
     public ColumnFilterCollection Filters { get; }
+    public NonEmptyColumnCollection NonEmpty { get; }
 
     private double _headingHeight = 24;
 
@@ -27,6 +29,7 @@ public class ColumnInfoStore : RowColInfoStore
     public ColumnInfoStore(double defaultHeight, Sheet sheet) : base(defaultHeight, sheet, Axis.Col)
     {
         Filters = new ColumnFilterCollection(sheet);
+        NonEmpty = new NonEmptyColumnCollection(this);
     }
 
     /// <summary>

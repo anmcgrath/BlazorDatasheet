@@ -32,6 +32,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\BlazorDatasheet.Serialization.Json\BlazorDatasheet.Serialization.Json.csproj" />
       <ProjectReference Include="..\BlazorDatasheet\BlazorDatasheet.csproj" />
     </ItemGroup>
 

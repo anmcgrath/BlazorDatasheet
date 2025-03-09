@@ -9,6 +9,7 @@ public class SheetRow
     public Sheet Sheet { get; }
     public int Row { get; }
     public int RowIndex { get; }
+    public bool IsVisible => Sheet.Rows.IsVisible(RowIndex);
     public string? Heading => Sheet.Rows.GetHeading(RowIndex);
     public double Height => Sheet.Rows.GetPhysicalHeight(RowIndex);
     public NonEmptyCellCollection NonEmptyCells { get; }

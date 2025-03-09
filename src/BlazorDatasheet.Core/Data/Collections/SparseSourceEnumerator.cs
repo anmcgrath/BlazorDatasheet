@@ -38,6 +38,9 @@ internal class SparseSourceEnumerator<T> : IEnumerator<T>
         if (nextIndex == int.MaxValue)
             return false;
 
+        if (nextIndex == _currentIndex)
+            return false;
+
         _currentIndex = nextIndex;
 
         if (_currentIndex >= _maxLength)
