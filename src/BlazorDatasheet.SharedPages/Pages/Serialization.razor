@@ -1,0 +1,44 @@
+﻿@page "/Serialization"
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Serialization.Json
+<h3>Serialization</h3>
+
+<Datasheet Sheet="_sheet1"/>
+
+<button @onclick="SerializeFirst">Serialize</button>
+<button @onclick="DeserializeIntoSecond">De-serialize</button>
+
+<textarea style="width: 500px; height: 500px;" value="@_json"></textarea>
+
+<Datasheet Sheet="_sheet2"></Datasheet>
+
+@code {
+
+    private Sheet _sheet1;
+    private Sheet _sheet2;
+    private string _json = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        var w1 = new Workbook();
+        var w2 = new Workbook();
+        _sheet1 = w1.AddSheet(5, 5);
+        _sheet2 = w2.AddSheet(5, 5);
+
+        base.OnInitialized();
+    }
+
+    protected void SerializeFirst()
+    {
+        var serializer = new SheetJsonSerializer();
+        _json = serializer.Serialize(_sheet1.Workbook);
+    }
+
+    protected void DeserializeIntoSecond()
+    {
+        var deserializer = new SheetJsonDeserializer();
+        var w2 = deserializer.Deserialize(_json);
+        _sheet2 = w2.Sheets.First();
+    }
+
+}
