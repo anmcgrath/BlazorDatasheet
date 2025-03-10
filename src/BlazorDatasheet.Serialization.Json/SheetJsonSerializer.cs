@@ -1,7 +1,9 @@
 ﻿using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Serialization.Json.Contracts;
 using BlazorDatasheet.Serialization.Json.Converters;
 using BlazorDatasheet.Serialization.Json.Models;
 
@@ -16,7 +18,16 @@ public class SheetJsonSerializer
         {
             WriteIndented = true,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-            Converters = { new CellJsonConverter() }
+            Converters =
+            {
+                new CellJsonConverter(),
+                new ConditionalFormatJsonConverter(),
+                new ColorJsonConverter()
+            },
+            TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+            {
+                Modifiers = { DatasheetContracts.IgnoreEmptyArray }
+            }
         });
     }
 

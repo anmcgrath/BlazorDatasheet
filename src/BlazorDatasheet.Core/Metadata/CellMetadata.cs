@@ -54,4 +54,6 @@ public class CellMetadata : IMergeable<CellMetadata>, IEquatable<CellMetadata>
         return _data.OrderBy(x => x.Key)
             .SequenceEqual(other._data.OrderBy(x => x.Key));
     }
+
+    public IEnumerable<KeyValuePair<string, object>> GetItems() => _data ?? new Dictionary<string, object>();
 }

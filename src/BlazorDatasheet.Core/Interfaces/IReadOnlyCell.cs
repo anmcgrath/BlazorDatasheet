@@ -16,6 +16,7 @@ public interface IReadOnlyCell
     public object? Value { get; }
     public CellValue CellValue { get; }
     object? GetMetaData(string name);
+    IEnumerable<KeyValuePair<string, object>> MetaData { get; }
     CellValueType ValueType { get; }
     bool IsVisible { get; }
     bool HasFormula();

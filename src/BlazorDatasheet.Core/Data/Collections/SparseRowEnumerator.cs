@@ -9,6 +9,7 @@ internal class SparseRowEnumerator : SparseSourceEnumerator<IReadOnlyCell>
         [
             new ColSparseSourceWrapper(sheet.Cells.GetFormulaStore(), rowIndex),
             new ColSparseSourceWrapper(sheet.Cells.GetCellDataStore(), rowIndex),
+            new ColSparseSourceWrapper(sheet.Cells.GetMetaDataStore(), rowIndex)
         ],
         sheet.NumCols,
         col => sheet.Cells.GetCell(rowIndex, col))

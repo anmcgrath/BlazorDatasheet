@@ -18,6 +18,7 @@ public class NonEmptyRowCollection : IEnumerable<SheetRow>
             [
                 _store.Sheet.Cells.GetFormulaStore(),
                 _store.Sheet.Cells.GetCellDataStore(),
+                _store.Sheet.Cells.GetMetaDataStore(),
                 _store.SizeStore,
                 _store.Formats,
                 _store.Visible,

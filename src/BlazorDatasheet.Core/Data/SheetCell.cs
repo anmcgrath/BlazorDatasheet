@@ -113,6 +113,17 @@ public class SheetCell : IReadOnlyCell
         return _sheet.Cells.GetMetaData(Row, Col, name);
     }
 
+    public IEnumerable<KeyValuePair<string, object>> MetaData
+    {
+        get
+        {
+            var collection = _sheet.Cells.GetMetaDataStore().GetData(Row, Col).ToList();
+            if (collection?.Any() == true)
+                return collection.First().GetItems();
+            return [];
+        }
+    }
+
     public void Clear()
     {
         _sheet.Cells.ClearCellsImpl(new[] { new Region(Row, Col) });

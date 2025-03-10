@@ -11,7 +11,12 @@ public class SheetJsonDeserializer
     {
         var options = new JsonSerializerOptions()
         {
-            Converters = { new CellJsonConverter() },
+            Converters =
+            {
+                new CellJsonConverter(),
+                new ConditionalFormatJsonConverter(),
+                new ColorJsonConverter()
+            },
         };
 
         var workbookModel = JsonSerializer.Deserialize<WorkbookModel>(json, options);

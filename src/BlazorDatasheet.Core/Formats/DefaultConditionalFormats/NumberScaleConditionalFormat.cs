@@ -7,8 +7,8 @@ namespace BlazorDatasheet.Core.Formats.DefaultConditionalFormats;
 
 public class NumberScaleConditionalFormat : ConditionalFormatAbstractBase
 {
-    private readonly System.Drawing.Color _colorStart;
-    private readonly System.Drawing.Color _colorEnd;
+    public System.Drawing.Color ColorStart { get; }
+    public System.Drawing.Color ColorEnd { get; }
     private string[] _computedLut;
     private double cachedMean;
     private double cachedMin;
@@ -16,8 +16,8 @@ public class NumberScaleConditionalFormat : ConditionalFormatAbstractBase
 
     public NumberScaleConditionalFormat(System.Drawing.Color colorStart, System.Drawing.Color colorEnd)
     {
-        _colorStart = colorStart;
-        _colorEnd = colorEnd;
+        ColorStart = colorStart;
+        ColorEnd = colorEnd;
         ComputeLUT(20);
         this.IsShared = true;
     }
@@ -25,8 +25,8 @@ public class NumberScaleConditionalFormat : ConditionalFormatAbstractBase
     private void ComputeLUT(int size)
     {
         _computedLut = new string[size];
-        var hsvStart = ColorConverter.RgbToHsv(_colorStart);
-        var hsvEnd = ColorConverter.RgbToHsv(_colorEnd);
+        var hsvStart = ColorConverter.RgbToHsv(ColorStart);
+        var hsvEnd = ColorConverter.RgbToHsv(ColorEnd);
         for (int i = 0; i < size; i++)
         {
             (double h, double s, double v) = ColorConverter.HsvInterp(hsvStart, hsvEnd, (i / (double)size));

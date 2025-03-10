@@ -1,5 +1,7 @@
 ﻿@page "/Serialization"
+@using System.Drawing
 @using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Formats.DefaultConditionalFormats
 @using BlazorDatasheet.Serialization.Json
 <h3>Serialization</h3>
 
@@ -8,7 +10,7 @@
 <button @onclick="SerializeFirst">Serialize</button>
 <button @onclick="DeserializeIntoSecond">De-serialize</button>
 
-<textarea style="width: 500px; height: 500px;" value="@_json"></textarea>
+<textarea style="width: 500px; height: 500px;" @bind="@_json"></textarea>
 
 <Datasheet Sheet="_sheet2"></Datasheet>
 
@@ -23,6 +25,7 @@
         var w1 = new Workbook();
         var w2 = new Workbook();
         _sheet1 = w1.AddSheet(5, 5);
+        _sheet1.ConditionalFormats.Apply(_sheet1.Range("C:C"), new NumberScaleConditionalFormat(Color.Red, Color.Blue));
         _sheet2 = w2.AddSheet(5, 5);
 
         base.OnInitialized();

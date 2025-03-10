@@ -305,6 +305,7 @@ public class RegionStoreTests
         store.GetNextNonEmptyIndexInRow(0, 1).Should().Be(2);
         store.GetNextNonEmptyIndexInRow(0, 2).Should().Be(3);
         store.GetNextNonEmptyIndexInRow(0, 3).Should().Be(4);
+        store.GetNextNonEmptyIndexInRow(0, 5).Should().Be(-1);
         store.GetNextNonEmptyIndexInRow(1, 5).Should().Be(8);
         store.GetNextNonEmptyIndexInRow(1, 10).Should().Be(-1);
         store.GetNextNonEmptyIndexInRow(5, 0).Should().Be(-1);

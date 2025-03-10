@@ -545,7 +545,7 @@ public class RegionDataStore<T> : ISparseSource, IRowSource, IStore<T, RegionRes
 
     public int GetNextNonEmptyIndexInRow(int row, int col)
     {
-        var regions = Tree.Search(new Envelope(col, row, double.MaxValue, double.MaxValue)).Select(x => x.Region);
+        var regions = Tree.Search(new Envelope(col + 1, row, double.MaxValue, row + 1)).Select(x => x.Region);
         int nextColIndex = int.MaxValue;
         foreach (var region in regions)
         {

@@ -42,7 +42,9 @@ internal class WorkbookModel
                 if (!row.IsVisible)
                     rowModel.Hidden = !row.IsVisible;
 
-                rowModel.FormatIndex = GetOrAddFormatIndex((CellFormat)row.Format, model.Formats);
+                if (!row.Format.IsDefaultFormat())
+                    rowModel.FormatIndex = GetOrAddFormatIndex((CellFormat)row.Format, model.Formats);
+
                 rowModel.Heading = row.Heading;
                 foreach (var cell in row.NonEmptyCells)
                 {
@@ -50,7 +52,8 @@ internal class WorkbookModel
                     {
                         CellValue = cell.CellValue,
                         Formula = cell.Formula,
-                        ColIndex = cell.Col
+                        ColIndex = cell.Col,
+                        MetaData = cell.MetaData.ToDictionary(x => x.Key, x => x.Value)
                     };
 
                     rowModel.Cells.Add(cellModel);
@@ -90,6 +93,14 @@ internal class WorkbookModel
                     new DataRegion<int>(RangeText.RegionToText(x.Region), GetOrAddFormatIndex(x.Data, model.Formats)))
                 .ToList();
 
+            sheetModel.ConditionalFormats = sheet.ConditionalFormats.GetAllFormats()
+                .Select(x => new ConditionalFormatModel()
+                {
+                    RegionString = RangeText.RegionToText(x.Region),
+                    Rule = x.Data
+                })
+                .ToList();
+
             model.Sheets.Add(sheetModel);
         }
 
@@ -111,8 +122,9 @@ internal class WorkbookModel
                 if (rowModel.Height != null)
                     sheet.Rows.SetSize(rowModel.RowIndex, rowModel.Height.Value);
 
-                if (rowModel.FormatIndex < Formats.Count && !Formats[rowModel.FormatIndex].IsDefaultFormat())
-                    sheet.SetFormat(new RowRegion(rowModel.RowIndex), Formats[rowModel.FormatIndex]);
+                if (rowModel.FormatIndex != null && rowModel.FormatIndex < Formats.Count &&
+                    !Formats[rowModel.FormatIndex.Value].IsDefaultFormat())
+                    sheet.SetFormat(new RowRegion(rowModel.RowIndex), Formats[rowModel.FormatIndex.Value]);
 
                 if (rowModel.Hidden)
                     sheet.Rows.Hide(rowModel.RowIndex, 1);
@@ -124,6 +136,10 @@ internal class WorkbookModel
                         sheet.Cells.SetValue(rowModel.RowIndex, cellModel.ColIndex, ToCellValue(cellModel));
                     if (cellModel.Formula != null)
                         sheet.Cells.SetFormula(rowModel.RowIndex, cellModel.ColIndex, cellModel.Formula);
+                    foreach (var kp in cellModel.MetaData)
+                    {
+                        sheet.Cells.SetCellMetaData(rowModel.RowIndex, cellModel.ColIndex, kp.Key, kp.Value);
+                    }
                 }
             }
 
@@ -152,6 +168,11 @@ internal class WorkbookModel
                 sheet.Range(cellFormat.RegionString)!.Format = Formats[cellFormat.Value];
             }
 
+            foreach (var cf in sheetModel.ConditionalFormats)
+            {
+                sheet.ConditionalFormats.Apply(sheet.Range(cf.RegionString), cf.Rule);
+            }
+
             sheet.EndBatchUpdates();
             sheet.ScreenUpdating = true;
             workbook.AddSheet(sheet);
@@ -162,21 +183,6 @@ internal class WorkbookModel
 
     private CellValue ToCellValue(CellModel cellModel)
     {
-        if (cellModel.CellValue.IsEmpty)
-            return CellValue.Empty;
-
-        switch (cellModel.CellValue.ValueType)
-        {
-            case CellValueType.Logical:
-                return CellValue.Logical((bool)cellModel.CellValue.Data!);
-            case CellValueType.Number:
-                return CellValue.Number((double)cellModel.CellValue.Data!);
-            case CellValueType.Text:
-                return CellValue.Text((string)cellModel.CellValue.Data!);
-            case CellValueType.Date:
-                return CellValue.Date((DateTime)cellModel.CellValue.Data!);
-            default:
-                return CellValue.Empty;
-        }
+        return cellModel.CellValue;
     }
 }
