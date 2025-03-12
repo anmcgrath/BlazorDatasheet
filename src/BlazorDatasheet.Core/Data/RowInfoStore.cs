@@ -82,4 +82,9 @@ public class RowInfoStore : RowColInfoStore
     {
         return CumulativeSizeStore.GetCumulative(rowIndex);
     }
+
+    public SheetRow this[int rowIndex]
+    {
+        get => new SheetRow(rowIndex, Sheet);
+    }
 }

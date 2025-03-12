@@ -7,8 +7,11 @@ using BlazorDatasheet.Serialization.Json.Models;
 
 namespace BlazorDatasheet.Serialization.Json.Converters;
 
-internal class ConditionalFormatJsonConverter : JsonConverter<ConditionalFormatModel>
+internal class ConditionalFormatJsonConverter(Func<string, Type?> conditionalFormatTypeResolver)
+    : JsonConverter<ConditionalFormatModel>
 {
+    private readonly Func<string, Type?> _conditionalFormatTypeResolver = conditionalFormatTypeResolver;
+
     public override ConditionalFormatModel? Read(ref Utf8JsonReader reader, Type typeToConvert,
         JsonSerializerOptions options)
     {
@@ -16,10 +19,13 @@ internal class ConditionalFormatJsonConverter : JsonConverter<ConditionalFormatM
             return null;
 
         var format = new ConditionalFormatModel();
+        var ruleType = string.Empty;
+        JsonElement? parsedRule = null;
+
         while (reader.Read())
         {
             if (reader.TokenType == JsonTokenType.EndObject)
-                return format;
+                break;
 
             if (reader.TokenType != JsonTokenType.PropertyName)
                 continue;
@@ -32,26 +38,58 @@ internal class ConditionalFormatJsonConverter : JsonConverter<ConditionalFormatM
                 case "sqref":
                     format.RegionString = reader.GetString();
                     break;
-                case "rule":
-                    if (JsonElement.TryParseValue(ref reader, out var el))
-                    {
-                        format.Rule = el.Value.Deserialize<NumberScaleConditionalFormat>(options);
-                    }
-
+                case "ruleType":
+                    ruleType = reader.GetString();
+                    break;
+                case "ruleOptions":
+                    parsedRule = JsonElement.ParseValue(ref reader);
                     break;
             }
         }
 
+        if (string.IsNullOrEmpty(ruleType))
+            return null;
+
+        if (parsedRule == null)
+            return null;
+
+        ConditionalFormatAbstractBase? rule = null;
+        var ruleTypeDefn = GetDefaultCfType(ruleType) ?? _conditionalFormatTypeResolver(ruleType);
+
+        if (ruleTypeDefn != null)
+            rule = parsedRule.Value.Deserialize(ruleTypeDefn, options) as ConditionalFormatAbstractBase;
+
+        if (rule == null)
+            return null;
+
+        format.Rule = rule;
+
         return format;
+    }
+
+    private Type? GetDefaultCfType(string ruleType)
+    {
+        switch (ruleType)
+        {
+            case nameof(NumberScaleConditionalFormat):
+                return typeof(NumberScaleConditionalFormat);
+        }
+
+        return null;
     }
 
     public override void Write(Utf8JsonWriter writer, ConditionalFormatModel value, JsonSerializerOptions options)
     {
+        var ruleType = GetDefaultCfType(value.RuleType) ?? _conditionalFormatTypeResolver(value.RuleType);
+        if (ruleType == null)
+            throw new Exception(
+                $"Could not write conditional format with rule type {value.RuleType}. Ensure it is included in the CF resolver.");
+
         writer.WriteStartObject();
         writer.WriteString("sqref", value.RegionString);
-
-        writer.WritePropertyName("rule");
-        JsonSerializer.Serialize(writer, (NumberScaleConditionalFormat)value.Rule, options);
+        writer.WriteString("ruleType", value.RuleType);
+        writer.WritePropertyName("ruleOptions");
+        JsonSerializer.Serialize(writer, value.Rule, ruleType, options);
 
         writer.WriteEndObject();
     }

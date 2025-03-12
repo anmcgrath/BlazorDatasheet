@@ -5,6 +5,7 @@ namespace BlazorDatasheet.Serialization.Json.Models;
 
 internal class ConditionalFormatModel
 {
-    [JsonPropertyName("sqref")] public string RegionString { get; set; }
-    public ConditionalFormatAbstractBase Rule { get; set; }
+    public string RegionString { get; set; } = string.Empty;
+    public string RuleType { get; set; } = string.Empty;
+    public ConditionalFormatAbstractBase Rule { get; set; } = null!;
 }

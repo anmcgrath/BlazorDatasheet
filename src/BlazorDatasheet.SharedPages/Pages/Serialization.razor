@@ -37,7 +37,7 @@
     protected void SerializeFirst()
     {
         var serializer = new SheetJsonSerializer();
-        _json = serializer.Serialize(_sheet1.Workbook);
+        _json = serializer.Serialize(_sheet1.Workbook, writeIndented: true);
     }
 
     protected void DeserializeIntoSecond()

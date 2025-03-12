@@ -78,6 +78,7 @@ internal class SheetMapper
             .Select(x => new ConditionalFormatModel()
             {
                 RegionString = RangeText.RegionToText(x.Region),
+                RuleType = x.Data.GetType().Name,
                 Rule = x.Data
             })
             .ToList();

@@ -12,7 +12,7 @@ internal class DatasheetContracts
             if (property.PropertyType.IsGenericType &&
                 property.PropertyType.GetGenericTypeDefinition() == typeof(List<>))
             {
-                property.ShouldSerialize = (object _, object? list) => list != null && ((IList)list).Count > 0;
+                property.ShouldSerialize = (_, list) => list != null && ((IList)list).Count > 0;
             }
         }
     }

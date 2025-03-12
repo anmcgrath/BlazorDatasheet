@@ -98,6 +98,7 @@ internal class CellJsonConverter : JsonConverter<CellModel>
 
     public override void Write(Utf8JsonWriter writer, CellModel value, JsonSerializerOptions options)
     {
+        writer.WriteStartObject();
         writer.WriteNumber("c", value.ColIndex);
 
         if (!string.IsNullOrEmpty(value.Formula))
