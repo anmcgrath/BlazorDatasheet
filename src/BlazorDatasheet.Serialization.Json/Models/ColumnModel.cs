@@ -8,5 +8,7 @@ public class ColumnModel
     public double? Width { get; set; }
     public int ColIndex { get; set; }
     [JsonPropertyName("fi")] public int FormatIndex { get; set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool Hidden { get; set; }
 }

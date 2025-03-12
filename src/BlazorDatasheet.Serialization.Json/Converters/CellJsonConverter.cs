@@ -1,6 +1,8 @@
-﻿using System.Text.Json;
+﻿using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
+using System.Xml;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Serialization.Json.Models;
 
@@ -97,7 +99,6 @@ public class CellJsonConverter : JsonConverter<CellModel>
     public override void Write(Utf8JsonWriter writer, CellModel value, JsonSerializerOptions options)
     {
         writer.WriteStartObject();
-
         writer.WriteNumber("c", value.ColIndex);
 
         if (!string.IsNullOrEmpty(value.Formula))

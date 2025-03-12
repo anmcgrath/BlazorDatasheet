@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Serialization.Json.Converters;
+using BlazorDatasheet.Serialization.Json.Mappers;
 using BlazorDatasheet.Serialization.Json.Models;
 
 namespace BlazorDatasheet.Serialization.Json;
@@ -23,6 +24,6 @@ public class SheetJsonDeserializer
         if (workbookModel is null)
             return new Workbook();
 
-        return workbookModel.FromModel();
+        return WorkbookMapper.FromModel(workbookModel);
     }
 }

@@ -5,6 +5,7 @@ using System.Text.Json.Serialization.Metadata;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Serialization.Json.Contracts;
 using BlazorDatasheet.Serialization.Json.Converters;
+using BlazorDatasheet.Serialization.Json.Mappers;
 using BlazorDatasheet.Serialization.Json.Models;
 
 namespace BlazorDatasheet.Serialization.Json;
@@ -13,7 +14,7 @@ public class SheetJsonSerializer
 {
     public void Serialize(Workbook workbook, Stream stream)
     {
-        var workbookModel = WorkbookModel.Create(workbook);
+        var workbookModel = WorkbookMapper.FromWorkbook(workbook);
         JsonSerializer.Serialize(stream, workbookModel, new JsonSerializerOptions
         {
             WriteIndented = true,

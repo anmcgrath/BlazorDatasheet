@@ -26,6 +26,9 @@
         var w2 = new Workbook();
         _sheet1 = w1.AddSheet(5, 5);
         _sheet1.ConditionalFormats.Apply(_sheet1.Range("C:C"), new NumberScaleConditionalFormat(Color.Red, Color.Blue));
+        _sheet1.Cells["C1"]!.Value = 1;
+        _sheet1.Cells["C2"]!.Value = 2;
+        _sheet1.Range("D:D")!.Type = "boolean";
         _sheet2 = w2.AddSheet(5, 5);
 
         base.OnInitialized();
