@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace BlazorDatasheet.Serialization.Json.Converters;
 
-public class ColorJsonConverter : JsonConverter<System.Drawing.Color>
+internal class ColorJsonConverter : JsonConverter<System.Drawing.Color>
 {
     public override Color Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {

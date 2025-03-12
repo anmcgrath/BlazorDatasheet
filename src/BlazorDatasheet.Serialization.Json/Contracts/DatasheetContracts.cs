@@ -3,7 +3,7 @@ using System.Text.Json.Serialization.Metadata;
 
 namespace BlazorDatasheet.Serialization.Json.Contracts;
 
-public class DatasheetContracts
+internal class DatasheetContracts
 {
     public static void IgnoreEmptyArray(JsonTypeInfo typeInfo)
     {

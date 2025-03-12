@@ -2,7 +2,7 @@
 
 namespace BlazorDatasheet.Serialization.Json.Models;
 
-public class CellModel
+internal class CellModel
 {
     public CellValue CellValue { get; set; } = CellValue.Empty;
     public string? Formula { get; set; }

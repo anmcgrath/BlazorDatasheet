@@ -2,7 +2,7 @@
 
 namespace BlazorDatasheet.Serialization.Json.Models;
 
-public class ColumnModel
+internal class ColumnModel
 {
     public string? Heading { get; set; }
     public double? Width { get; set; }

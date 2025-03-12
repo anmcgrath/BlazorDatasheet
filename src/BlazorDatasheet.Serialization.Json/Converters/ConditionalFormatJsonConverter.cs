@@ -7,7 +7,7 @@ using BlazorDatasheet.Serialization.Json.Models;
 
 namespace BlazorDatasheet.Serialization.Json.Converters;
 
-public class ConditionalFormatJsonConverter : JsonConverter<ConditionalFormatModel>
+internal class ConditionalFormatJsonConverter : JsonConverter<ConditionalFormatModel>
 {
     public override ConditionalFormatModel? Read(ref Utf8JsonReader reader, Type typeToConvert,
         JsonSerializerOptions options)
