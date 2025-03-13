@@ -83,6 +83,7 @@ public class CellReferenceTests
     [TestCase("$C:$D", true)]
     [TestCase("C:D$", false)]
     [TestCase("A:B:C", false)]
+    [TestCase("A10000000000000000", false)]
     public void Parse_Ranges(string refStr, bool isValid)
     {
         var workbook = new Workbook();

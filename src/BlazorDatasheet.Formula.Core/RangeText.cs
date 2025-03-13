@@ -92,7 +92,7 @@ public static class RangeText
             cellReference = new NamedReference(str.ToString());
         return true;
     }
-    
+
     /// <summary>
     /// Returns a reference from a single part of the range string - there shouldn't be any colons in the string
     /// passed to this function.
@@ -165,7 +165,9 @@ public static class RangeText
         if (rowStrLen == 0) // bad parse somehow - shouldn't be possible
             return false;
 
-        int rowIndex = int.Parse(str.Slice(startRowStr, rowStrLen)) - 1;
+        if (!int.TryParse(str.Slice(startRowStr, rowStrLen), out var rowIndex))
+            return false;
+        rowIndex--;
         if (rowIndex > MaxRows)
         {
             address = new NamedAddress(str.ToString());
