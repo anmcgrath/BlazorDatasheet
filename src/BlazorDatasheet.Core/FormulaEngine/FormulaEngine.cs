@@ -237,6 +237,22 @@ public class FormulaEngine
         CalculateSheet(true);
     }
 
+    public void SetVariable(string varName, CellValue value)
+    {
+        _environment.SetVariable(varName, value);
+    }
+
+    public IEnumerable<Variable> GetVariables()
+    {
+        foreach (var varName in _environment.GetVariableNames())
+        {
+            var varValue = _environment.GetVariable(varName);
+            var vertex = DependencyManager.GetVertex(varName);
+            var sheet = vertex?.SheetName;
+            yield return new Variable(varName, vertex?.Formula?.ToFormulaString(), vertex?.SheetName, varValue);
+        }
+    }
+
     public void ClearVariable(string varName)
     {
         _environment.ClearVariable(varName);
