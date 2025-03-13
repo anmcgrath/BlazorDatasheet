@@ -771,7 +771,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         await ScrollToContainRegion(cellRect);
     }
 
-    private async Task ScrollToContainRegion(IRegion region)
+    public async Task ScrollToContainRegion(IRegion region)
     {
         var frozenLeftW = _sheet.Columns.GetVisualLeft(_frozenLeftCount);
         var frozenRightW = _sheet.Columns.GetVisualWidthBetween(_sheet.NumCols - _frozenRightCount, _sheet.NumCols);

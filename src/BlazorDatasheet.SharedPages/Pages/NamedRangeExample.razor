@@ -13,7 +13,7 @@
 <input type="text" @bind-value:get="SelectedRangeValue" @bind-value:set="OnInput"/>
 
 <div style="width: 550px; height: 300px; overflow: auto">
-    <Datasheet Sheet="Sheet"/>
+    <Datasheet @ref="_datasheet" Sheet="Sheet"/>
 </div>
 
 <h6>Sheet 2</h6>
@@ -26,6 +26,7 @@
     private string? _selectedRangeValue;
 
     private Sheet ActiveSheet;
+    private Datasheet _datasheet = null!;
 
     private string? SelectedRangeValue
     {
@@ -40,11 +41,19 @@
     private Sheet Sheet { get; set; }
     private Sheet Sheet2 { get; set; }
 
-    private void OnInput(string? value)
+    private async Task OnInput(string? value)
     {
         var newValue = value ?? string.Empty;
         if (string.IsNullOrEmpty(newValue) || string.IsNullOrEmpty(SelectedRangeValue))
         {
+            return;
+        }
+
+        var region = Sheet.Range(newValue)?.Region;
+        if (region != null)
+        {
+            await _datasheet.ScrollToContainRegion(region);
+            Sheet.Selection.Set(region);
             return;
         }
 
