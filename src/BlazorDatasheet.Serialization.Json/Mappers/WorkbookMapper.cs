@@ -14,6 +14,10 @@ internal class WorkbookMapper
             workbookModel.Sheets.Add(SheetMapper.FromSheet(sheet, workbookModel.Formats));
         }
 
+
+        foreach (var namedVariable in workbook.GetFormulaEngine().GetVariables())
+            workbookModel.Variables.Add(namedVariable);
+
         return workbookModel;
     }
 
@@ -23,6 +27,15 @@ internal class WorkbookMapper
         foreach (var sheetModel in workbookModel.Sheets)
         {
             workbook.AddSheet(SheetMapper.FromModel(sheetModel, workbookModel.Formats));
+        }
+
+
+        foreach (var variable in workbookModel.Variables)
+        {
+            if (variable.Formula != null)
+                workbook.GetFormulaEngine().SetVariable(variable.Name, variable.Formula);
+            else if (variable.Value != null)
+                workbook.GetFormulaEngine().SetVariable(variable.Name, variable.Value);
         }
 
         return workbook;

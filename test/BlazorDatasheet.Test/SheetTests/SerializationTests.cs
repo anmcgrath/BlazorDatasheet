@@ -58,6 +58,32 @@ public class SerializationTests
         return null;
     }
 
+    [Test]
+    public void Variables_Should_Be_Serialized()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Cells["A1"]!.Value = "TestA1";
+        sheet.FormulaEngine.SetVariable("test", "=Sheet1!A1");
+        sheet.FormulaEngine.SetVariable("test2", 10);
+        sheet.FormulaEngine.SetVariable("test3", "=Sheet1!B1:B5");
+
+        var s = new SheetJsonSerializer();
+        var d = new SheetJsonDeserializer();
+
+        var json = s.Serialize(sheet.Workbook);
+        var workbook = d.Deserialize(json);
+
+        var variables = workbook.Sheets.First().FormulaEngine.GetVariables().ToList();
+        variables.Should().NotBeEmpty();
+        var testVar = variables.First(x => x.Name == "test");
+        var test2Var = variables.First(x => x.Name == "test2");
+        var test3Var = variables.First(x => x.Name == "test3");
+
+        testVar.Formula.Should().Be("=Sheet1!A1");
+        test2Var.Value.GetValue<double>().Should().Be(10);
+        test3Var.Formula.Should().Be("=Sheet1!B1:B5");
+    }
+
     private void CompareSheets(Workbook wb1, Workbook wb2)
     {
         var sheets1 = wb1.Sheets.ToArray();

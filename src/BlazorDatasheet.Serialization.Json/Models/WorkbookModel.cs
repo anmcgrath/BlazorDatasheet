@@ -9,4 +9,5 @@ internal class WorkbookModel
 {
     public List<CellFormat> Formats { get; set; } = new();
     public List<SheetModel> Sheets { get; set; } = new();
+    public List<Variable> Variables { get; set; } = new();
 }

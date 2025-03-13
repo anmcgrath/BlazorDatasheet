@@ -85,7 +85,6 @@ internal class SheetMapper
 
         sheetModel.Types = sheet.Cells.GetTypeData().ToDataRegionModelList(x => x);
 
-
         return sheetModel;
     }
 

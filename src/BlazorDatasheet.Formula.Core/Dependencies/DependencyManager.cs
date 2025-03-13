@@ -73,6 +73,12 @@ public class DependencyManager
         return SetFormulaVertex(formulaVertex);
     }
 
+    public CellFormula? GetFormula(string name)
+    {
+        var vertex = GetVertex(name);
+        return vertex?.Formula;
+    }
+
     private DependencyManagerRestoreData SetFormulaVertex(FormulaVertex formulaVertex)
     {
         // Clear any dependency tracking for old formula if there is one

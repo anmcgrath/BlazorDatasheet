@@ -26,7 +26,8 @@ public class SheetJsonDeserializer
             {
                 new CellJsonConverter(),
                 new ConditionalFormatJsonConverter(_conditionalFormatTypeResolver),
-                new ColorJsonConverter()
+                new ColorJsonConverter(),
+                new VariableJsonConverter()
             },
         };
 

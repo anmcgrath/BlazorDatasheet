@@ -74,25 +74,7 @@ internal class CellJsonConverter : JsonConverter<CellModel>
             }
         }
 
-        if (element != null)
-        {
-            switch (valueType)
-            {
-                case CellValueType.Number:
-                    cell.CellValue = CellValue.Number(element.Value.GetDouble());
-                    break;
-                case CellValueType.Text:
-                    cell.CellValue = CellValue.Text(element.Value.GetString() ?? string.Empty);
-                    break;
-                case CellValueType.Date:
-                    cell.CellValue = CellValue.Date(element.Value.GetDateTime());
-                    break;
-                case CellValueType.Logical:
-                    cell.CellValue = CellValue.Logical(element.Value.GetBoolean());
-                    break;
-            }
-        }
-
+        cell.CellValue = CellValueHelper.GetCellValue(valueType, element);
         return cell;
     }
 
@@ -110,27 +92,7 @@ internal class CellJsonConverter : JsonConverter<CellModel>
             JsonSerializer.Serialize(writer, value.MetaData, options);
         }
 
-        if (!value.CellValue.IsEmpty)
-        {
-            writer.WriteNumber("t", (int)value.CellValue.ValueType);
-            writer.WritePropertyName("v");
-            switch (value.CellValue.ValueType)
-            {
-                case CellValueType.Date:
-                    writer.WriteStringValue(value.CellValue.GetValue<DateTime>());
-                    break;
-                case CellValueType.Logical:
-                    writer.WriteBooleanValue(value.CellValue.GetValue<bool>());
-                    break;
-                case CellValueType.Number:
-                    writer.WriteNumberValue(value.CellValue.GetValue<double>());
-                    break;
-                case CellValueType.Text:
-                    writer.WriteStringValue(value.CellValue.GetValue<string>());
-                    break;
-            }
-        }
-
+        CellValueHelper.WriteCellValue(writer, value.CellValue);
         writer.WriteEndObject();
     }
 }

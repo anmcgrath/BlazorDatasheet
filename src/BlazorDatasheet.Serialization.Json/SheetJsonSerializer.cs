@@ -32,7 +32,8 @@ public class SheetJsonSerializer
             {
                 new CellJsonConverter(),
                 new ConditionalFormatJsonConverter(_conditionalFormatTypeResolver),
-                new ColorJsonConverter()
+                new ColorJsonConverter(),
+                new VariableJsonConverter()
             },
             TypeInfoResolver = new DefaultJsonTypeInfoResolver()
             {

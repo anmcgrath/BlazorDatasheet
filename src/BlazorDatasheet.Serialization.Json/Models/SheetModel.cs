@@ -1,4 +1,6 @@
-﻿namespace BlazorDatasheet.Serialization.Json.Models;
+﻿using BlazorDatasheet.Formula.Core;
+
+namespace BlazorDatasheet.Serialization.Json.Models;
 
 internal class SheetModel
 {
