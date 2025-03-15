@@ -1,6 +1,4 @@
-﻿using System.Text.Json.Serialization;
-
-namespace BlazorDatasheet.Serialization.Json;
+﻿namespace BlazorDatasheet.Core.Serialization.Json;
 
 public class SheetSerializationTypeResolverCollection
 {

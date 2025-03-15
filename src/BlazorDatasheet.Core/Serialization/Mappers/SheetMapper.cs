@@ -1,17 +1,20 @@
 ﻿using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Formats;
+using BlazorDatasheet.Core.Metadata;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core;
-using BlazorDatasheet.Serialization.Json.Extensions;
-using BlazorDatasheet.Serialization.Json.Models;
+using BlazorDatasheet.Core.Serialization.Json.Extensions;
+using BlazorDatasheet.Core.Serialization.Json.Models;
+using BlazorDatasheet.DataStructures.Store;
 
-namespace BlazorDatasheet.Serialization.Json.Mappers;
+namespace BlazorDatasheet.Core.Serialization.Json.Mappers;
 
 internal class SheetMapper
 {
     public static SheetModel FromSheet(Sheet sheet, List<CellFormat> formats)
     {
         var sheetModel = new SheetModel();
+
         sheetModel.NumRows = sheet.NumRows;
         sheetModel.NumCols = sheet.NumCols;
         sheetModel.Name = sheet.Name;
@@ -20,8 +23,11 @@ internal class SheetMapper
 
         foreach (var row in sheet.Rows.NonEmpty)
         {
-            var rowModel = new RowModel();
-            rowModel.RowIndex = row.RowIndex;
+            var rowModel = new RowModel
+            {
+                RowIndex = row.RowIndex
+            };
+
             if (Math.Abs(row.Height - sheet.Rows.DefaultSize) > 0.001)
                 rowModel.Height = row.Height;
 
@@ -88,7 +94,7 @@ internal class SheetMapper
             })
             .ToList();
 
-        sheetModel.Types = sheet.Cells.GetTypeData().ToDataRegionModelList(x => x);
+        sheetModel.Types = sheet.Cells.GetTypeStore().ToDataRegionCollection();
         sheetModel.Validators = sheet.Validators.GetAll().ToDataRegionModelList(x => x);
 
         return sheetModel;
@@ -102,43 +108,47 @@ internal class SheetMapper
         sheet.Commands.PauseHistory();
         sheet.ScreenUpdating = false;
         sheet.BatchUpdates();
+
         foreach (var rowModel in sheetModel.Rows)
         {
             if (rowModel.Heading != null)
-                sheet.Rows.SetHeadings(rowModel.RowIndex, rowModel.RowIndex, rowModel.Heading);
+                sheet.Rows.HeadingStore.Set(rowModel.RowIndex, rowModel.RowIndex, rowModel.Heading);
             if (rowModel.Height != null)
-                sheet.Rows.SetSize(rowModel.RowIndex, rowModel.Height.Value);
+                sheet.Rows.SizeStore.Set(rowModel.RowIndex, rowModel.Height.Value);
 
             if (rowModel.FormatIndex != null && rowModel.FormatIndex < formats.Count &&
                 !formats[rowModel.FormatIndex.Value].IsDefaultFormat())
-                sheet.SetFormat(new RowRegion(rowModel.RowIndex), formats[rowModel.FormatIndex.Value]);
+            {
+                sheet.Rows.Formats.Add(rowModel.RowIndex, rowModel.RowIndex, formats[rowModel.FormatIndex.Value]);
+            }
 
             if (rowModel.Hidden)
-                sheet.Rows.Hide(rowModel.RowIndex, 1);
+                sheet.Rows.Visible.Set(rowModel.RowIndex, false);
 
             foreach (var cellModel in rowModel.Cells)
             {
                 if (!cellModel.CellValue.IsEmpty)
-                    sheet.Cells.SetValue(rowModel.RowIndex, cellModel.ColIndex, cellModel.CellValue);
+                    sheet.Cells.GetCellDataStore().Set(rowModel.RowIndex, cellModel.ColIndex, cellModel.CellValue);
                 if (cellModel.Formula != null)
                     sheet.Cells.SetFormula(rowModel.RowIndex, cellModel.ColIndex, cellModel.Formula);
-                foreach (var kp in cellModel.MetaData)
-                {
-                    sheet.Cells.SetCellMetaData(rowModel.RowIndex, cellModel.ColIndex, kp.Key, kp.Value);
-                }
+
+                if (cellModel.MetaData.Count != 0)
+                    sheet.Cells.GetMetaDataStore().Set(rowModel.RowIndex, cellModel.ColIndex,
+                        new CellMetadata(cellModel.MetaData));
             }
         }
 
+
         foreach (var merge in sheetModel.Merges)
         {
-            sheet.Range(merge.RegionString)!.Merge();
+            sheet.Cells.GetMergeStore().Add(sheet.Range(merge.RegionString)!.Region, true);
         }
 
         foreach (var cellFormat in sheetModel.CellFormats)
         {
             if (cellFormat.Value >= formats.Count)
                 continue;
-            sheet.Range(cellFormat.RegionString)!.Format = formats[cellFormat.Value];
+            sheet.Cells.GetFormatStore().Add(sheet.Range(cellFormat.RegionString)!.Region, formats[cellFormat.Value]);
         }
 
         foreach (var cf in sheetModel.ConditionalFormats)
@@ -148,27 +158,31 @@ internal class SheetMapper
 
         foreach (var type in sheetModel.Types)
         {
-            sheet.Range(type.RegionString)!.Type = type.Value;
+            sheet.Cells.GetTypeStore().Add(sheet.Range(type.RegionString)!.Region, type.Value);
         }
 
         foreach (var validator in sheetModel.Validators)
-            sheet.Range(validator.RegionString)!.AddValidator(validator.Value);
+            sheet.Validators.Add(sheet.Range(validator.RegionString)!.Region, validator.Value);
 
         foreach (var colModel in sheetModel.Columns)
         {
             if (colModel.Heading != null)
-                sheet.Columns.SetHeadings(colModel.ColIndex, colModel.ColIndex, colModel.Heading);
+                sheet.Columns.HeadingStore.Set(colModel.ColIndex, colModel.Heading);
             if (colModel.Width != null)
-                sheet.Columns.SetSize(colModel.ColIndex, colModel.Width.Value);
+                sheet.Columns.SizeStore.Set(colModel.ColIndex, colModel.Width.Value);
             if (colModel.FormatIndex != null && colModel.FormatIndex < formats.Count &&
                 !formats[colModel.FormatIndex.Value].IsDefaultFormat())
-                sheet.SetFormat(new ColumnRegion(colModel.ColIndex, colModel.ColIndex),
-                    formats[colModel.FormatIndex.Value]);
-            if (colModel.Hidden)
-                sheet.Columns.Hide(colModel.ColIndex, 1);
+            {
+                sheet.Columns.Formats.Add(colModel.ColIndex, colModel.ColIndex, formats[colModel.FormatIndex.Value]);
+            }
 
-            sheet.Columns.Filters.Set(colModel.ColIndex, colModel.Filters);
+            if (colModel.Hidden)
+                sheet.Columns.Visible.Set(colModel.ColIndex, false);
+
+            sheet.Columns.Filters.Store.Set(colModel.ColIndex, colModel.Filters);
         }
+
+        sheet.Columns.Filters.Apply();
 
         sheet.EndBatchUpdates();
         sheet.ScreenUpdating = true;

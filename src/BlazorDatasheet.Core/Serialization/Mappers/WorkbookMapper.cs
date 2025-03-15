@@ -1,7 +1,7 @@
 ﻿using BlazorDatasheet.Core.Data;
-using BlazorDatasheet.Serialization.Json.Models;
+using BlazorDatasheet.Core.Serialization.Json.Models;
 
-namespace BlazorDatasheet.Serialization.Json.Mappers;
+namespace BlazorDatasheet.Core.Serialization.Json.Mappers;
 
 internal class WorkbookMapper
 {

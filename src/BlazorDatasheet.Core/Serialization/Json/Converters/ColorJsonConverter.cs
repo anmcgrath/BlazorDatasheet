@@ -2,11 +2,12 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace BlazorDatasheet.Serialization.Json.Converters;
+namespace BlazorDatasheet.Core.Serialization.Json.Converters;
 
 internal class ColorJsonConverter : JsonConverter<System.Drawing.Color>
 {
-    public override Color Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    public override System.Drawing.Color Read(ref Utf8JsonReader reader, Type typeToConvert,
+        JsonSerializerOptions options)
     {
         if (reader.TokenType == JsonTokenType.String)
         {
@@ -17,10 +18,10 @@ internal class ColorJsonConverter : JsonConverter<System.Drawing.Color>
             }
         }
 
-        return new Color();
+        return new System.Drawing.Color();
     }
 
-    public override void Write(Utf8JsonWriter writer, Color value, JsonSerializerOptions options)
+    public override void Write(Utf8JsonWriter writer, System.Drawing.Color value, JsonSerializerOptions options)
     {
         writer.WriteStringValue(ColorTranslator.ToHtml(value));
     }

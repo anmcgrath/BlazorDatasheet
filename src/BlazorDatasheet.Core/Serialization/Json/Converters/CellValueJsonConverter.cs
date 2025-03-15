@@ -1,9 +1,9 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using BlazorDatasheet.Formula.Core;
-using BlazorDatasheet.Serialization.Json.Constants;
+using BlazorDatasheet.Core.Serialization.Json.Constants;
 
-namespace BlazorDatasheet.Serialization.Json.Converters;
+namespace BlazorDatasheet.Core.Serialization.Json.Converters;
 
 internal class CellValueJsonConverter : JsonConverter<CellValue>
 {

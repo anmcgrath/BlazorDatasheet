@@ -1,13 +1,10 @@
-﻿using System.Text;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Metadata;
-using System.Xml;
 using BlazorDatasheet.Formula.Core;
-using BlazorDatasheet.Serialization.Json.Constants;
-using BlazorDatasheet.Serialization.Json.Models;
+using BlazorDatasheet.Core.Serialization.Json.Constants;
+using BlazorDatasheet.Core.Serialization.Json.Models;
 
-namespace BlazorDatasheet.Serialization.Json.Converters;
+namespace BlazorDatasheet.Core.Serialization.Json.Converters;
 
 internal class CellJsonConverter : JsonConverter<CellModel>
 {

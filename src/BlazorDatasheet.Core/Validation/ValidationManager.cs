@@ -1,5 +1,4 @@
-﻿using BlazorDatasheet.Core.Commands;
-using BlazorDatasheet.Core.Commands.Formatting;
+﻿using BlazorDatasheet.Core.Commands.Formatting;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Events.Validation;
 using BlazorDatasheet.Core.Interfaces;
@@ -176,7 +175,7 @@ public class ValidationManager
         return null;
     }
 
-    public IEnumerable<DataRegion<IDataValidator>> GetAll()
+    internal IEnumerable<DataRegion<IDataValidator>> GetAll()
     {
         return Store
             .GetAllDataRegions()

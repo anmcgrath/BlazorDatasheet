@@ -60,8 +60,6 @@ public partial class CellStore
         Sheet.Commands.EndCommandGroup();
     }
 
-    public IEnumerable<DataRegion<string>> GetTypeData() => _typeStore.GetAllDataRegions();
-
     /// <summary>
     /// Sets the cell type for a <paramref name="row"/> amd <paramref name="col"/>
     /// </summary>

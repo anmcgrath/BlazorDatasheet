@@ -1,9 +1,9 @@
 ﻿using BlazorDatasheet.DataStructures.Intervals;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core;
-using BlazorDatasheet.Serialization.Json.Models;
+using BlazorDatasheet.Core.Serialization.Json.Models;
 
-namespace BlazorDatasheet.Serialization.Json.Extensions;
+namespace BlazorDatasheet.Core.Serialization.Json.Extensions;
 
 internal static class ConvertExtensions
 {

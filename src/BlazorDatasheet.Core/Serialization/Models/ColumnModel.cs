@@ -1,8 +1,8 @@
 ﻿using System.Text.Json.Serialization;
 using BlazorDatasheet.Core.Data.Filter;
-using BlazorDatasheet.Serialization.Json.Constants;
+using BlazorDatasheet.Core.Serialization.Json.Constants;
 
-namespace BlazorDatasheet.Serialization.Json.Models;
+namespace BlazorDatasheet.Core.Serialization.Json.Models;
 
 internal class ColumnModel
 {

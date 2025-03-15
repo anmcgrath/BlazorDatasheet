@@ -1,11 +1,11 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using BlazorDatasheet.Core.Data;
-using BlazorDatasheet.Serialization.Json.Converters;
-using BlazorDatasheet.Serialization.Json.Mappers;
-using BlazorDatasheet.Serialization.Json.Models;
+using BlazorDatasheet.Core.Serialization.Json.Converters;
+using BlazorDatasheet.Core.Serialization.Json.Mappers;
+using BlazorDatasheet.Core.Serialization.Json.Models;
 
-namespace BlazorDatasheet.Serialization.Json;
+namespace BlazorDatasheet.Core.Serialization.Json;
 
 public class SheetJsonDeserializer
 {

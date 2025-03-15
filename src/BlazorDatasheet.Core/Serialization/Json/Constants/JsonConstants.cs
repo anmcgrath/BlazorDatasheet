@@ -1,4 +1,4 @@
-﻿namespace BlazorDatasheet.Serialization.Json.Constants;
+﻿namespace BlazorDatasheet.Core.Serialization.Json.Constants;
 
 internal class JsonConstants
 {

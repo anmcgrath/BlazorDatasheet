@@ -3,11 +3,11 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using BlazorDatasheet.Core.Data;
-using BlazorDatasheet.Serialization.Json.Contracts;
-using BlazorDatasheet.Serialization.Json.Converters;
-using BlazorDatasheet.Serialization.Json.Mappers;
+using BlazorDatasheet.Core.Serialization.Json.Contracts;
+using BlazorDatasheet.Core.Serialization.Json.Converters;
+using BlazorDatasheet.Core.Serialization.Json.Mappers;
 
-namespace BlazorDatasheet.Serialization.Json;
+namespace BlazorDatasheet.Core.Serialization.Json;
 
 public class SheetJsonSerializer
 {

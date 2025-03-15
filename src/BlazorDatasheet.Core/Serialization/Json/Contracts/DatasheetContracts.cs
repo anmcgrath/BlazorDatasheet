@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Text.Json.Serialization.Metadata;
 
-namespace BlazorDatasheet.Serialization.Json.Contracts;
+namespace BlazorDatasheet.Core.Serialization.Json.Contracts;
 
 internal class DatasheetContracts
 {

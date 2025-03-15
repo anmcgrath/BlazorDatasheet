@@ -3,10 +3,10 @@ using System.Text.Json.Serialization;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Core.Validation;
 using BlazorDatasheet.DataStructures.Store;
-using BlazorDatasheet.Serialization.Json.Constants;
-using BlazorDatasheet.Serialization.Json.Models;
+using BlazorDatasheet.Core.Serialization.Json.Constants;
+using BlazorDatasheet.Core.Serialization.Json.Models;
 
-namespace BlazorDatasheet.Serialization.Json.Converters;
+namespace BlazorDatasheet.Core.Serialization.Json.Converters;
 
 internal class DataValidationJsonConverter : JsonConverter<DataRegionModel<IDataValidator>>
 {

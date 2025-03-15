@@ -9,7 +9,7 @@ using BlazorDatasheet.Core.Formats.DefaultConditionalFormats;
 using BlazorDatasheet.Core.Validation;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core;
-using BlazorDatasheet.Serialization.Json;
+using BlazorDatasheet.Core.Serialization.Json;
 using FluentAssertions;
 using NUnit.Framework;
 
@@ -41,6 +41,8 @@ public class SerializationTests
             sheet.Cells.SetCellMetaData(5, 5, "test1", "testData");
             sheet.Cells.SetCellMetaData(5, 5, "test2", 5);
             sheet.Cells.SetCellMetaData(5, 5, "test3", true);
+
+            sheet.Range("F2:F3").Merge();
 
 
             var s = new SheetJsonSerializer();
@@ -127,6 +129,7 @@ public class SerializationTests
             sheet2.NumCols.Should().Be(sheet1.NumCols);
             sheet2.Rows.NonEmpty.Count().Should().Be(sheet1.Rows.NonEmpty.Count());
             sheet2.Columns.NonEmpty.Count().Should().Be(sheet1.Columns.NonEmpty.Count());
+            sheet2.Cells.GetMerges(sheet1.Region).Should().BeEquivalentTo(sheet1.Cells.GetMerges(sheet1.Region));
 
             var rows1 = Enumerable.Range(0, sheet1.Rows.NonEmpty.Count()).Select(x => new SheetRow(x, sheet1))
                 .ToArray();

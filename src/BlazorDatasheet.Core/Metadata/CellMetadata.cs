@@ -6,6 +6,15 @@ public class CellMetadata : IMergeable<CellMetadata>, IEquatable<CellMetadata>
 {
     private Dictionary<string, object>? _data;
 
+    internal CellMetadata(Dictionary<string, object> data)
+    {
+        _data = data;
+    }
+
+    internal CellMetadata()
+    {
+    }
+
     public void Merge(CellMetadata item)
     {
         if (item._data == null)
