@@ -4,7 +4,7 @@ using BlazorDatasheet.Core.Data.Filter;
 
 namespace BlazorDatasheet.Serialization.Json.Converters;
 
-public class IFilterJsonConverter : JsonConverter<IFilter>
+internal class IFilterJsonConverter : JsonConverter<IFilter>
 {
     private readonly Dictionary<string, Type> _resolver;
 
