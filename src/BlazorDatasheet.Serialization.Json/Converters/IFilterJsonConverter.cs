@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using BlazorDatasheet.Core.Data.Filter;
+using BlazorDatasheet.Serialization.Json.Constants;
 
 namespace BlazorDatasheet.Serialization.Json.Converters;
 
@@ -34,10 +35,10 @@ internal class IFilterJsonConverter : JsonConverter<IFilter>
 
             switch (propertyName)
             {
-                case "type":
+                case JsonConstants.ClassTypeName:
                     filterTypeString = reader.GetString();
                     break;
-                case "options":
+                case JsonConstants.OptionsName:
                     parsedOptions = JsonElement.ParseValue(ref reader);
                     break;
             }
@@ -86,8 +87,8 @@ internal class IFilterJsonConverter : JsonConverter<IFilter>
         if (filterType == null)
             throw new Exception($"Serialization of filter type {filterTypeString} is not supported");
 
-        writer.WriteString("type", filterTypeString);
-        writer.WritePropertyName("options");
+        writer.WriteString(JsonConstants.ClassTypeName, filterTypeString);
+        writer.WritePropertyName(JsonConstants.OptionsName);
         JsonSerializer.Serialize(writer, value, filterType, options);
         writer.WriteEndObject();
     }

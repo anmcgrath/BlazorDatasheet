@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Xml;
 using BlazorDatasheet.Formula.Core;
+using BlazorDatasheet.Serialization.Json.Constants;
 using BlazorDatasheet.Serialization.Json.Models;
 
 namespace BlazorDatasheet.Serialization.Json.Converters;
@@ -32,19 +33,19 @@ internal class CellJsonConverter : JsonConverter<CellModel>
 
             switch (propertyName)
             {
-                case "v":
+                case JsonConstants.CellValueDataName:
                     element = JsonElement.ParseValue(ref reader);
                     break;
-                case "t":
+                case JsonConstants.CellValueTypeName:
                     valueType = (CellValueType)reader.GetInt32();
                     break;
-                case "f":
+                case JsonConstants.FormulaPropertyName:
                     cell.Formula = reader.GetString();
                     break;
-                case "c":
+                case JsonConstants.ColumnIndexName:
                     cell.ColIndex = reader.GetInt32();
                     break;
-                case "m":
+                case JsonConstants.MetaDataName:
                     if (JsonElement.TryParseValue(ref reader, out var el))
                     {
                         cell.MetaData = el.Value.Deserialize<Dictionary<string, object>>(options)!;
@@ -81,14 +82,14 @@ internal class CellJsonConverter : JsonConverter<CellModel>
     public override void Write(Utf8JsonWriter writer, CellModel value, JsonSerializerOptions options)
     {
         writer.WriteStartObject();
-        writer.WriteNumber("c", value.ColIndex);
+        writer.WriteNumber(JsonConstants.ColumnIndexName, value.ColIndex);
 
         if (!string.IsNullOrEmpty(value.Formula))
-            writer.WriteString("f", value.Formula);
+            writer.WriteString(JsonConstants.FormulaPropertyName, value.Formula);
 
         if (value.MetaData.Count > 0)
         {
-            writer.WritePropertyName("m");
+            writer.WritePropertyName(JsonConstants.MetaDataName);
             JsonSerializer.Serialize(writer, value.MetaData, options);
         }
 

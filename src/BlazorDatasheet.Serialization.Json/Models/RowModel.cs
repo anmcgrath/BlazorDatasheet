@@ -1,10 +1,13 @@
 ﻿using System.Text.Json.Serialization;
+using BlazorDatasheet.Serialization.Json.Constants;
 
 namespace BlazorDatasheet.Serialization.Json.Models;
 
 internal class RowModel
 {
+    [JsonPropertyName(JsonConstants.RowIndexName)]
     public int RowIndex { get; set; }
+
     public string? Heading { get; set; }
     public double? Height { get; set; }
     public List<CellModel> Cells { get; set; } = new();
@@ -12,5 +15,6 @@ internal class RowModel
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool Hidden { get; set; }
 
-    [JsonPropertyName("fi")] public int? FormatIndex { get; set; }
+    [JsonPropertyName(JsonConstants.FormatIndex)]
+    public int? FormatIndex { get; set; }
 }

@@ -19,9 +19,10 @@ public class SheetJsonDeserializer
             new CellJsonConverter(),
             new ConditionalFormatJsonConverter(Resolvers.ConditionalFormat),
             new ColorJsonConverter(),
-            new VariableJsonConverter(),
             new DataValidationJsonConverter(Resolvers.DataValidation),
-            new IFilterJsonConverter(Resolvers.Filter)
+            new IFilterJsonConverter(Resolvers.Filter),
+            new CellValueJsonConverter(),
+            new VariableJsonConverter()
         };
     }
 

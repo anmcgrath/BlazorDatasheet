@@ -25,9 +25,10 @@ public class SheetJsonSerializer
                 new CellJsonConverter(),
                 new ConditionalFormatJsonConverter(Resolvers.ConditionalFormat),
                 new ColorJsonConverter(),
-                new VariableJsonConverter(),
                 new DataValidationJsonConverter(Resolvers.DataValidation),
-                new IFilterJsonConverter(Resolvers.Filter)
+                new IFilterJsonConverter(Resolvers.Filter),
+                new VariableJsonConverter(),
+                new CellValueJsonConverter()
             },
             TypeInfoResolver = new DefaultJsonTypeInfoResolver()
             {

@@ -66,7 +66,7 @@ public class SerializationTests
         var s = new SheetJsonSerializer();
         var d = new SheetJsonDeserializer();
 
-        var json = s.Serialize(sheet.Workbook);
+        var json = s.Serialize(sheet.Workbook, true);
         var workbook = d.Deserialize(json);
 
         var variables = workbook.Sheets.First().FormulaEngine.GetVariables().ToList();

@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using BlazorDatasheet.Formula.Core;
+using BlazorDatasheet.Serialization.Json.Constants;
 
 namespace BlazorDatasheet.Serialization.Json.Converters;
 
@@ -11,11 +12,10 @@ internal class VariableJsonConverter : JsonConverter<Variable>
         if (reader.TokenType != JsonTokenType.StartObject)
             return null;
 
-        CellValueType valueType = CellValueType.Empty;
-        JsonElement? cellValueElement = null;
         string? formula = null;
         var variableName = string.Empty;
         string? sheetName = null;
+        CellValue? cellValue = null;
 
         while (reader.Read())
         {
@@ -30,40 +30,39 @@ internal class VariableJsonConverter : JsonConverter<Variable>
 
             switch (propertyName)
             {
-                case "v":
-                    cellValueElement = JsonElement.ParseValue(ref reader);
+                case JsonConstants.CellValueName:
+                    cellValue = JsonSerializer.Deserialize<CellValue>(ref reader, options);
                     break;
-                case "t":
-                    valueType = (CellValueType)reader.GetInt32();
-                    break;
-                case "f":
+                case JsonConstants.FormulaPropertyName:
                     formula = reader.GetString();
                     break;
-                case "sheet":
+                case JsonConstants.SheetName:
                     sheetName = reader.GetString();
                     break;
-                case "n":
+                case JsonConstants.VariableName:
                     variableName = reader.GetString();
                     break;
             }
         }
 
-        var cellValue = CellValueHelper.GetCellValue(valueType, cellValueElement);
         return new Variable(variableName!, formula, sheetName, cellValue);
     }
 
     public override void Write(Utf8JsonWriter writer, Variable value, JsonSerializerOptions options)
     {
         writer.WriteStartObject();
-        writer.WriteString("n", value.Name);
+        writer.WriteString(JsonConstants.VariableName, value.Name);
 
         if (value.SheetName != null)
-            writer.WriteString("sheet", value.SheetName);
+            writer.WriteString(JsonConstants.SheetName, value.SheetName);
 
         if (!string.IsNullOrEmpty(value.Formula))
-            writer.WriteString("f", value.Formula);
+            writer.WriteString(JsonConstants.FormulaPropertyName, value.Formula);
         else if (value.Value != null)
-            CellValueHelper.WriteCellValue(writer, value.Value);
+        {
+            writer.WritePropertyName(JsonConstants.CellValueName);
+            JsonSerializer.Serialize(writer, value.Value, options);
+        }
 
         writer.WriteEndObject();
     }

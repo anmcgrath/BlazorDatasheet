@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using BlazorDatasheet.Formula.Core;
+using BlazorDatasheet.Serialization.Json.Constants;
 
 namespace BlazorDatasheet.Serialization.Json.Converters;
 
@@ -29,8 +30,8 @@ internal class CellValueHelper
     {
         if (!value.IsEmpty)
         {
-            writer.WriteNumber("t", (int)value.ValueType);
-            writer.WritePropertyName("v");
+            writer.WriteNumber(JsonConstants.CellValueTypeName, (int)value.ValueType);
+            writer.WritePropertyName(JsonConstants.CellValueDataName);
             switch (value.ValueType)
             {
                 case CellValueType.Date:

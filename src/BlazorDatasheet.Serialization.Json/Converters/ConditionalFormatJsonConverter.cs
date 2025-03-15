@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Formats.DefaultConditionalFormats;
+using BlazorDatasheet.Serialization.Json.Constants;
 using BlazorDatasheet.Serialization.Json.Models;
 
 namespace BlazorDatasheet.Serialization.Json.Converters;
@@ -39,13 +40,13 @@ internal class ConditionalFormatJsonConverter : JsonConverter<ConditionalFormatM
 
             switch (propertyName)
             {
-                case "sqref":
+                case JsonConstants.ReferenceRangeName:
                     format.RegionString = reader.GetString();
                     break;
-                case "ruleType":
+                case JsonConstants.ClassTypeName:
                     ruleType = reader.GetString();
                     break;
-                case "ruleOptions":
+                case JsonConstants.OptionsName:
                     parsedRule = JsonElement.ParseValue(ref reader);
                     break;
             }
@@ -94,9 +95,9 @@ internal class ConditionalFormatJsonConverter : JsonConverter<ConditionalFormatM
                 $"Could not write conditional format with rule type {value.RuleType}. Ensure it is included in the CF resolver.");
 
         writer.WriteStartObject();
-        writer.WriteString("sqref", value.RegionString);
-        writer.WriteString("ruleType", value.RuleType);
-        writer.WritePropertyName("ruleOptions");
+        writer.WriteString(JsonConstants.ReferenceRangeName, value.RegionString);
+        writer.WriteString(JsonConstants.ClassTypeName, value.RuleType);
+        writer.WritePropertyName(JsonConstants.OptionsName);
         JsonSerializer.Serialize(writer, value.Rule, ruleType, options);
 
         writer.WriteEndObject();

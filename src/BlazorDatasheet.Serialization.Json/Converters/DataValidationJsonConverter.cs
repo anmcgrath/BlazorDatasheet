@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Core.Validation;
 using BlazorDatasheet.DataStructures.Store;
+using BlazorDatasheet.Serialization.Json.Constants;
 using BlazorDatasheet.Serialization.Json.Models;
 
 namespace BlazorDatasheet.Serialization.Json.Converters;
@@ -39,13 +40,13 @@ internal class DataValidationJsonConverter : JsonConverter<DataRegionModel<IData
 
             switch (propertyName)
             {
-                case "sqref":
+                case JsonConstants.ReferenceRangeName:
                     regionString = reader.GetString();
                     break;
-                case "type":
+                case JsonConstants.ClassTypeName:
                     validatorTypeName = reader.GetString();
                     break;
-                case "options":
+                case JsonConstants.OptionsName:
                     parsedOptions = JsonElement.ParseValue(ref reader);
                     break;
             }
@@ -76,7 +77,7 @@ internal class DataValidationJsonConverter : JsonConverter<DataRegionModel<IData
     {
         if (_resolver.TryGetValue(typeName, out var type))
             return type;
-        
+
         switch (typeName)
         {
             case nameof(SourceValidator):
@@ -98,9 +99,9 @@ internal class DataValidationJsonConverter : JsonConverter<DataRegionModel<IData
                 $"Could not write data validator type {validatorTypeName}. Ensure it is included in the validation resolver.");
 
         writer.WriteStartObject();
-        writer.WriteString("sqref", value.RegionString);
-        writer.WriteString("type", validatorTypeName);
-        writer.WritePropertyName("options");
+        writer.WriteString(JsonConstants.ReferenceRangeName, value.RegionString);
+        writer.WriteString(JsonConstants.ClassTypeName, validatorTypeName);
+        writer.WritePropertyName(JsonConstants.OptionsName);
         JsonSerializer.Serialize(writer, value.Value, type, options);
         writer.WriteEndObject();
     }

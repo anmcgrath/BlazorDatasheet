@@ -4,8 +4,8 @@ namespace BlazorDatasheet.Serialization.Json.Models;
 
 internal class DataRegionModel<T>
 {
-    [JsonPropertyName("sqref")] public string RegionString { get; set; }
-    [JsonPropertyName("v")] public T Value { get; set; }
+    public string RegionString { get; set; }
+    public T Value { get; set; }
 
     public DataRegionModel(string regionString, T value)
     {
