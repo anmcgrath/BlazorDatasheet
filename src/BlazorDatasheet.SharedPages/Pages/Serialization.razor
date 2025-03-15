@@ -23,6 +23,7 @@
 
     private Sheet _sheet1;
     private Sheet _sheet2;
+
     private string _json = string.Empty;
 
     protected override void OnInitialized()
@@ -37,7 +38,7 @@
         _sheet1.Range("A1")!.AddValidator(new SourceValidator(["Value1", "Value2"], false));
         _sheet1.Range("A1")!.Type = "select";
         _sheet1.Range("A1")!.Value = "Value3";
-        _sheet2 = w2.AddSheet(5, 5);
+        _sheet2 = new Sheet(2, 2);
 
         base.OnInitialized();
     }
