@@ -19,6 +19,7 @@ public class NonEmptyColumnCollection : IEnumerable<SheetColumn>
                 _store.Formats,
                 _store.Visible,
                 _store.HeadingStore,
+                _store.Filters.Store,
             ], _store.Sheet.NumCols, colIndex => new SheetColumn(colIndex, _store.Sheet)
         );
     }

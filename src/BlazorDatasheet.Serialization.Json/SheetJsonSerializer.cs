@@ -13,19 +13,16 @@ public class SheetJsonSerializer
 {
     private readonly Func<string, Type?> _dataValidationTypeResolver;
     private readonly Func<string, Type?> _conditionalFormatTypeResolver;
+    private readonly Func<string, Type?> _filterTypeResolver;
 
-    public SheetJsonSerializer(Func<string, Type?>? conditionalFormatTypeResolver = null,
-        Func<string, Type?>? dataValidationTypeResolver = null)
+    public SheetJsonSerializer(
+        Func<string, Type?>? conditionalFormatTypeResolver = null,
+        Func<string, Type?>? dataValidationTypeResolver = null,
+        Func<string, Type?>? filterTypeResolver = null)
     {
-        if (conditionalFormatTypeResolver == null)
-            _conditionalFormatTypeResolver = _ => null;
-        else
-            _conditionalFormatTypeResolver = conditionalFormatTypeResolver;
-
-        if (dataValidationTypeResolver == null)
-            _dataValidationTypeResolver = _ => null;
-        else
-            _dataValidationTypeResolver = dataValidationTypeResolver;
+        _conditionalFormatTypeResolver = conditionalFormatTypeResolver ?? (_ => null);
+        _dataValidationTypeResolver = dataValidationTypeResolver ?? (_ => null);
+        _filterTypeResolver = filterTypeResolver ?? (_ => null);
     }
 
     public void Serialize(Workbook workbook, Stream stream, bool writeIndented = false)
@@ -41,7 +38,8 @@ public class SheetJsonSerializer
                 new ConditionalFormatJsonConverter(_conditionalFormatTypeResolver),
                 new ColorJsonConverter(),
                 new VariableJsonConverter(),
-                new DataValidationJsonConverter(_dataValidationTypeResolver)
+                new DataValidationJsonConverter(_dataValidationTypeResolver),
+                new IFilterJsonConverter(_filterTypeResolver)
             },
             TypeInfoResolver = new DefaultJsonTypeInfoResolver()
             {

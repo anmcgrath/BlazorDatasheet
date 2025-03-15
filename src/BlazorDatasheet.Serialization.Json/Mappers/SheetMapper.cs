@@ -64,6 +64,8 @@ internal class SheetMapper
             if (col.Format?.IsDefaultFormat() == false)
                 columnModel.FormatIndex = GetOrAddFormatIndex(col.Format, formats);
 
+            columnModel.Filters = col.Filters.ToList();
+
             sheetModel.Columns.Add(columnModel);
         }
 
@@ -121,19 +123,6 @@ internal class SheetMapper
             }
         }
 
-        foreach (var colModel in sheetModel.Columns)
-        {
-            if (colModel.Heading != null)
-                sheet.Columns.SetHeadings(colModel.ColIndex, colModel.ColIndex, colModel.Heading);
-            if (colModel.Width != null)
-                sheet.Columns.SetSize(colModel.ColIndex, colModel.Width.Value);
-            if (colModel.FormatIndex < formats.Count && !formats[colModel.FormatIndex].IsDefaultFormat())
-                sheet.SetFormat(new ColumnRegion(colModel.ColIndex, colModel.ColIndex),
-                    formats[colModel.FormatIndex]);
-            if (colModel.Hidden)
-                sheet.Columns.Hide(colModel.ColIndex, 1);
-        }
-
         foreach (var merge in sheetModel.Merges)
         {
             sheet.Range(merge.RegionString)!.Merge();
@@ -158,6 +147,22 @@ internal class SheetMapper
 
         foreach (var validator in sheetModel.Validators)
             sheet.Range(validator.RegionString)!.AddValidator(validator.Value);
+
+        foreach (var colModel in sheetModel.Columns)
+        {
+            if (colModel.Heading != null)
+                sheet.Columns.SetHeadings(colModel.ColIndex, colModel.ColIndex, colModel.Heading);
+            if (colModel.Width != null)
+                sheet.Columns.SetSize(colModel.ColIndex, colModel.Width.Value);
+            if (colModel.FormatIndex != null && colModel.FormatIndex < formats.Count &&
+                !formats[colModel.FormatIndex.Value].IsDefaultFormat())
+                sheet.SetFormat(new ColumnRegion(colModel.ColIndex, colModel.ColIndex),
+                    formats[colModel.FormatIndex.Value]);
+            if (colModel.Hidden)
+                sheet.Columns.Hide(colModel.ColIndex, 1);
+
+            sheet.Columns.Filters.Set(colModel.ColIndex, colModel.Filters);
+        }
 
         sheet.EndBatchUpdates();
         sheet.ScreenUpdating = true;

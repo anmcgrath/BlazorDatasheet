@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Data.Filter;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Formats.DefaultConditionalFormats;
 using BlazorDatasheet.Core.Validation;
@@ -96,6 +97,23 @@ public class SerializationTests
         var dSheet = deserialized.Sheets.First();
 
         sheet.Validators.GetAll().Should().BeEquivalentTo(dSheet.Validators.GetAll());
+    }
+
+    [Test]
+    public void Column_Fitlers_Should_Be_Serialized()
+    {
+        var sheet = new Sheet(10, 10);
+        var patternFilter = new PatternFilter(PatternFilterType.Contains, "x");
+        sheet.Columns.Filters.Set(5, patternFilter);
+        var valueFilter = new ValueFilter();
+        valueFilter.Exclude(CellValue.Number(10));
+        valueFilter.Exclude(CellValue.Text("s"));
+        sheet.Columns.Filters.Set(8, valueFilter);
+
+        var json = new SheetJsonSerializer().Serialize(sheet.Workbook);
+        var dSheet = new SheetJsonDeserializer().Deserialize(json).Sheets.First();
+
+        dSheet.Columns.Filters.GetAll().Should().BeEquivalentTo(sheet.Columns.Filters.GetAll());
     }
 
     private void CompareSheets(Workbook wb1, Workbook wb2)

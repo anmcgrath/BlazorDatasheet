@@ -1,4 +1,5 @@
-﻿using BlazorDatasheet.Core.Formats;
+﻿using BlazorDatasheet.Core.Data.Filter;
+using BlazorDatasheet.Core.Formats;
 
 namespace BlazorDatasheet.Core.Data;
 
@@ -11,6 +12,7 @@ public class SheetColumn
     public double Width => Sheet.Columns.GetPhysicalWidth(ColIndex);
     public bool Visible => Sheet.Columns.IsVisible(ColIndex);
     public CellFormat? Format => Sheet.Columns.Formats.Get(ColIndex);
+    public IReadOnlyList<IFilter> Filters => Sheet.Columns.Filters.Get(ColIndex).Filters;
 
     public SheetColumn(int colIndex, Sheet sheet)
     {

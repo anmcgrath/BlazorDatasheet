@@ -232,7 +232,7 @@ public class MergeableIntervalStore<T> : ISparseSource where T : IMergeable<T>
     }
 
     /// <summary>
-    /// Returns the next interval after the given position
+    /// Returns the next interval after the given position. If the position is inside the index it is not returned.
     /// </summary>
     /// <param name="position"></param>
     /// <param name="direction">Positive to the right, negative to the left</param>
@@ -449,30 +449,47 @@ public class MergeableIntervalStore<T> : ISparseSource where T : IMergeable<T>
         this.UpdateStartEndPositions();
     }
 
-    public int GetNextNonEmptyIndex(int index)
+    public int GetNextNonEmptyIndex(int position, int direction = 1)
     {
         if (!_intervals.Any())
             return -1;
 
-        if (index > End)
+        if (position > End && direction > 0 ||
+            position < Start && direction < 0)
             return -1;
 
-        var i0 = _intervals.Keys.BinarySearchIndexOf(index);
-
+        var i0 = _intervals.Keys.BinarySearchIndexOf(position);
 
         // either the index or the next highest value
         if (i0 < 0)
+        {
             i0 = ~i0;
+
+            if (direction < 0)
+                i0--;
+        }
 
         if (i0 > _intervals.Count - 1)
             return -1;
 
         var interval = _intervals.Values[i0];
-        if (interval.Contains(index + 1))
-            return index + 1;
+        if (interval.Contains(position + 1))
+            return position + 1;
+
+        while (interval.End < position + direction)
+        {
+            i0 += direction;
+            position += direction;
+
+            if (i0 > _intervals.Count - 1 || i0 < 0)
+                return -1;
+            interval = _intervals.Values[i0];
+        }
 
         return interval.Start;
     }
+
+    public int GetNextNonEmptyIndex(int index) => GetNextNonEmptyIndex(index, 1);
 }
 
 public class MergeableIntervalStoreRestoreData<T>
