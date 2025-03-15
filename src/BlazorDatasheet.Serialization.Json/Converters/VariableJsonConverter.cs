@@ -30,10 +30,10 @@ internal class VariableJsonConverter : JsonConverter<Variable>
 
             switch (propertyName)
             {
-                case JsonConstants.CellValueName:
+                case JsonConstants.CellValue:
                     cellValue = JsonSerializer.Deserialize<CellValue>(ref reader, options);
                     break;
-                case JsonConstants.FormulaPropertyName:
+                case JsonConstants.Formula:
                     formula = reader.GetString();
                     break;
                 case JsonConstants.SheetName:
@@ -57,10 +57,10 @@ internal class VariableJsonConverter : JsonConverter<Variable>
             writer.WriteString(JsonConstants.SheetName, value.SheetName);
 
         if (!string.IsNullOrEmpty(value.Formula))
-            writer.WriteString(JsonConstants.FormulaPropertyName, value.Formula);
+            writer.WriteString(JsonConstants.Formula, value.Formula);
         else if (value.Value != null)
         {
-            writer.WritePropertyName(JsonConstants.CellValueName);
+            writer.WritePropertyName(JsonConstants.CellValue);
             JsonSerializer.Serialize(writer, value.Value, options);
         }
 

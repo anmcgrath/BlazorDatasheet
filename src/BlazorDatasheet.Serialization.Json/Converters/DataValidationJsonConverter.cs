@@ -40,13 +40,13 @@ internal class DataValidationJsonConverter : JsonConverter<DataRegionModel<IData
 
             switch (propertyName)
             {
-                case JsonConstants.ReferenceRangeName:
+                case JsonConstants.RangeReference:
                     regionString = reader.GetString();
                     break;
-                case JsonConstants.ClassTypeName:
+                case JsonConstants.ClassType:
                     validatorTypeName = reader.GetString();
                     break;
-                case JsonConstants.OptionsName:
+                case JsonConstants.Options:
                     parsedOptions = JsonElement.ParseValue(ref reader);
                     break;
             }
@@ -99,9 +99,9 @@ internal class DataValidationJsonConverter : JsonConverter<DataRegionModel<IData
                 $"Could not write data validator type {validatorTypeName}. Ensure it is included in the validation resolver.");
 
         writer.WriteStartObject();
-        writer.WriteString(JsonConstants.ReferenceRangeName, value.RegionString);
-        writer.WriteString(JsonConstants.ClassTypeName, validatorTypeName);
-        writer.WritePropertyName(JsonConstants.OptionsName);
+        writer.WriteString(JsonConstants.RangeReference, value.RegionString);
+        writer.WriteString(JsonConstants.ClassType, validatorTypeName);
+        writer.WritePropertyName(JsonConstants.Options);
         JsonSerializer.Serialize(writer, value.Value, type, options);
         writer.WriteEndObject();
     }

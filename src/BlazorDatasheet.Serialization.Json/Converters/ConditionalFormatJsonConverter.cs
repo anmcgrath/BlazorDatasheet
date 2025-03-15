@@ -40,13 +40,13 @@ internal class ConditionalFormatJsonConverter : JsonConverter<ConditionalFormatM
 
             switch (propertyName)
             {
-                case JsonConstants.ReferenceRangeName:
+                case JsonConstants.RangeReference:
                     format.RegionString = reader.GetString();
                     break;
-                case JsonConstants.ClassTypeName:
+                case JsonConstants.ClassType:
                     ruleType = reader.GetString();
                     break;
-                case JsonConstants.OptionsName:
+                case JsonConstants.Options:
                     parsedRule = JsonElement.ParseValue(ref reader);
                     break;
             }
@@ -95,9 +95,9 @@ internal class ConditionalFormatJsonConverter : JsonConverter<ConditionalFormatM
                 $"Could not write conditional format with rule type {value.RuleType}. Ensure it is included in the CF resolver.");
 
         writer.WriteStartObject();
-        writer.WriteString(JsonConstants.ReferenceRangeName, value.RegionString);
-        writer.WriteString(JsonConstants.ClassTypeName, value.RuleType);
-        writer.WritePropertyName(JsonConstants.OptionsName);
+        writer.WriteString(JsonConstants.RangeReference, value.RegionString);
+        writer.WriteString(JsonConstants.ClassType, value.RuleType);
+        writer.WritePropertyName(JsonConstants.Options);
         JsonSerializer.Serialize(writer, value.Rule, ruleType, options);
 
         writer.WriteEndObject();

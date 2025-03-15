@@ -5,7 +5,7 @@ namespace BlazorDatasheet.Serialization.Json.Models;
 
 internal class RowModel
 {
-    [JsonPropertyName(JsonConstants.RowIndexName)]
+    [JsonPropertyName(JsonConstants.RowIndex)]
     public int RowIndex { get; set; }
 
     public string? Heading { get; set; }

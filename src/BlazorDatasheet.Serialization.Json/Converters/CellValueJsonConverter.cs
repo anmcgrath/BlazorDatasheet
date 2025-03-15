@@ -23,9 +23,9 @@ public class CellValueJsonConverter : JsonConverter<CellValue>
             string? propertyName = reader.GetString();
             reader.Read();
 
-            if (propertyName == JsonConstants.CellValueTypeName)
+            if (propertyName == JsonConstants.CellValueType)
                 cellValueType = (CellValueType)reader.GetInt32()!;
-            else if (propertyName == JsonConstants.CellValueDataName)
+            else if (propertyName == JsonConstants.CellValueData)
                 cellValueElement = JsonElement.ParseValue(ref reader);
         }
 

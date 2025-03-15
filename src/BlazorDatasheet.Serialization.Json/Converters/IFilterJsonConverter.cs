@@ -35,10 +35,10 @@ internal class IFilterJsonConverter : JsonConverter<IFilter>
 
             switch (propertyName)
             {
-                case JsonConstants.ClassTypeName:
+                case JsonConstants.ClassType:
                     filterTypeString = reader.GetString();
                     break;
-                case JsonConstants.OptionsName:
+                case JsonConstants.Options:
                     parsedOptions = JsonElement.ParseValue(ref reader);
                     break;
             }
@@ -87,8 +87,8 @@ internal class IFilterJsonConverter : JsonConverter<IFilter>
         if (filterType == null)
             throw new Exception($"Serialization of filter type {filterTypeString} is not supported");
 
-        writer.WriteString(JsonConstants.ClassTypeName, filterTypeString);
-        writer.WritePropertyName(JsonConstants.OptionsName);
+        writer.WriteString(JsonConstants.ClassType, filterTypeString);
+        writer.WritePropertyName(JsonConstants.Options);
         JsonSerializer.Serialize(writer, value, filterType, options);
         writer.WriteEndObject();
     }

@@ -30,8 +30,8 @@ internal class CellValueHelper
     {
         if (!value.IsEmpty)
         {
-            writer.WriteNumber(JsonConstants.CellValueTypeName, (int)value.ValueType);
-            writer.WritePropertyName(JsonConstants.CellValueDataName);
+            writer.WriteNumber(JsonConstants.CellValueType, (int)value.ValueType);
+            writer.WritePropertyName(JsonConstants.CellValueData);
             switch (value.ValueType)
             {
                 case CellValueType.Date:

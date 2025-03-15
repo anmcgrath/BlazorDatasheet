@@ -33,19 +33,19 @@ internal class CellJsonConverter : JsonConverter<CellModel>
 
             switch (propertyName)
             {
-                case JsonConstants.CellValueDataName:
+                case JsonConstants.CellValueData:
                     element = JsonElement.ParseValue(ref reader);
                     break;
-                case JsonConstants.CellValueTypeName:
+                case JsonConstants.CellValueType:
                     valueType = (CellValueType)reader.GetInt32();
                     break;
-                case JsonConstants.FormulaPropertyName:
+                case JsonConstants.Formula:
                     cell.Formula = reader.GetString();
                     break;
-                case JsonConstants.ColumnIndexName:
+                case JsonConstants.ColumnIndex:
                     cell.ColIndex = reader.GetInt32();
                     break;
-                case JsonConstants.MetaDataName:
+                case JsonConstants.MetaData:
                     if (JsonElement.TryParseValue(ref reader, out var el))
                     {
                         cell.MetaData = el.Value.Deserialize<Dictionary<string, object>>(options)!;
@@ -82,14 +82,14 @@ internal class CellJsonConverter : JsonConverter<CellModel>
     public override void Write(Utf8JsonWriter writer, CellModel value, JsonSerializerOptions options)
     {
         writer.WriteStartObject();
-        writer.WriteNumber(JsonConstants.ColumnIndexName, value.ColIndex);
+        writer.WriteNumber(JsonConstants.ColumnIndex, value.ColIndex);
 
         if (!string.IsNullOrEmpty(value.Formula))
-            writer.WriteString(JsonConstants.FormulaPropertyName, value.Formula);
+            writer.WriteString(JsonConstants.Formula, value.Formula);
 
         if (value.MetaData.Count > 0)
         {
-            writer.WritePropertyName(JsonConstants.MetaDataName);
+            writer.WritePropertyName(JsonConstants.MetaData);
             JsonSerializer.Serialize(writer, value.MetaData, options);
         }
 
