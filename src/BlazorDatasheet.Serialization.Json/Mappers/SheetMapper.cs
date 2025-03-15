@@ -14,6 +14,9 @@ internal class SheetMapper
         var sheetModel = new SheetModel();
         sheetModel.NumRows = sheet.NumRows;
         sheetModel.NumCols = sheet.NumCols;
+        sheetModel.Name = sheet.Name;
+        sheetModel.DefaultHeight = (int)sheet.Rows.DefaultSize;
+        sheetModel.DefaultWidth = (int)sheet.Columns.DefaultSize;
 
         foreach (var row in sheet.Rows.NonEmpty)
         {
@@ -93,7 +96,9 @@ internal class SheetMapper
 
     public static Sheet FromModel(SheetModel sheetModel, List<CellFormat> formats)
     {
-        var sheet = new Sheet(sheetModel.NumRows, sheetModel.NumCols);
+        var sheet = new Sheet(sheetModel.NumRows, sheetModel.NumCols, sheetModel.DefaultWidth,
+            sheetModel.DefaultHeight);
+
         sheet.Commands.PauseHistory();
         sheet.ScreenUpdating = false;
         sheet.BatchUpdates();

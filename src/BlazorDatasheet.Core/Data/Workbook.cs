@@ -62,6 +62,14 @@ public class Workbook
         _sheets.Add(sheet);
         _formulaEngine.AddSheet(sheet);
     }
+    
+    public void AddSheet(string sheetName, Sheet sheet)
+    {
+        sheet.Name = sheetName;
+        sheet.Workbook = this;
+        _sheets.Add(sheet);
+        _formulaEngine.AddSheet(sheet);
+    }
 
 
     public void RemoveSheet(string sheetName)

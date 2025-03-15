@@ -22,7 +22,9 @@ public class SerializationTests
     {
         Assert.DoesNotThrow(() =>
         {
-            var sheet = new Sheet(10, 10);
+            var wb = new Workbook();
+
+            var sheet = wb.AddSheet("SheetName", 10, 10, 5, 6);
             sheet.Cells["A1"]!.Value = "Hello, World!";
             sheet.Cells["B2"]!.Value = 42;
             sheet.Cells["A3"]!.Value = 3.14;
@@ -116,6 +118,10 @@ public class SerializationTests
         {
             var sheet1 = sheets1[sIndex];
             var sheet2 = sheets2[sIndex];
+
+            sheet1.Name.Should().Be(sheet2.Name);
+            sheet1.Rows.DefaultSize.Should().Be(sheet2.Rows.DefaultSize);
+            sheet1.Columns.DefaultSize.Should().Be(sheet2.Columns.DefaultSize);
 
             sheet2.NumRows.Should().Be(sheet1.NumRows);
             sheet2.NumCols.Should().Be(sheet1.NumCols);
