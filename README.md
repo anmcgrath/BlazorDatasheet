@@ -3,9 +3,10 @@
 [![NuGet Version](https://img.shields.io/nuget/v/BlazorDatasheet)](https://www.nuget.org/packages/BlazorDatasheet/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+
 A simple datasheet component for editing tabular data.
 
-<img width="512" alt="DatasheetScreenshot" src="https://github.com/anmcgrath/BlazorDatasheet/assets/34253568/afb4fd86-f082-4cdf-bac9-5d4f777c7dcc">
+<img width="512" alt="DatasheetScreenshot" src="https://github.com/user-attachments/assets/b58fa2f3-f49d-4b20-9cbb-3ae1039d88bc">
 
 #### Features
 - Data editing
@@ -173,6 +174,9 @@ var range = sheet.Range("A1:C5");
 var range = sheet.Range(new ColumnRegion(0));
 var range = sheet.Range(0, 0, 4, 5);
 ```
+
+### Support
+* [Buy me a coffee](https://buymeacoffee.com/anmcgrath)
 
 ### Community Links
 
