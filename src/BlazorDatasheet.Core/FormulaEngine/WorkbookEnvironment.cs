@@ -42,6 +42,11 @@ public class WorkbookEnvironment : IEnvironment
         _variables.Remove(name);
     }
 
+    public IEnumerable<string> GetVariableNames()
+    {
+        return _variables.Keys;
+    }
+
     public bool FunctionExists(string name)
     {
         return _functions.ContainsKey(name.ToLower());

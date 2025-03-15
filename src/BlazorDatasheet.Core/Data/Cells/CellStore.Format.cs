@@ -1,7 +1,6 @@
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
-using BlazorDatasheet.Formula.Core;
 
 namespace BlazorDatasheet.Core.Data.Cells;
 
@@ -10,7 +9,7 @@ public partial class CellStore
     /// <summary>
     /// Stores individual cell formats.
     /// </summary>
-    private readonly MergeRegionDataStore<CellFormat> _formatStore = new MergeRegionDataStore<CellFormat?>();
+    private readonly MergeRegionDataStore<CellFormat> _formatStore = new();
 
     /// <summary>
     /// Merges the new cell format into any existing formats
@@ -48,7 +47,7 @@ public partial class CellStore
     }
 
 
-    internal IEnumerable<DataRegion<CellFormat>> GetFormatData(IRegion region)
+    public IEnumerable<DataRegion<CellFormat>> GetFormatData(IRegion region)
     {
         return _formatStore.GetDataRegions(region);
     }

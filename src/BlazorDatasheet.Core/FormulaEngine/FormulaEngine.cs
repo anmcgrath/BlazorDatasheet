@@ -5,7 +5,6 @@ using BlazorDatasheet.Core.Events.Data;
 using BlazorDatasheet.Core.Events.Edit;
 using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.DataStructures.Geometry;
-using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Dependencies;
 using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
@@ -223,7 +222,7 @@ public class FormulaEngine
     {
         if (value is string s && IsFormula(s))
         {
-            var formula = ParseFormula(s, "", false);
+            var formula = ParseFormula(s, "");
             if (formula.References.Any(x => !x.ExplicitSheetName))
                 throw new Exception("Formula references in variables must have explicit sheet names");
 
@@ -235,6 +234,21 @@ public class FormulaEngine
         }
 
         CalculateSheet(true);
+    }
+
+    public void SetVariable(string varName, CellValue value)
+    {
+        _environment.SetVariable(varName, value);
+    }
+
+    public IEnumerable<Variable> GetVariables()
+    {
+        foreach (var varName in _environment.GetVariableNames())
+        {
+            var varValue = _environment.GetVariable(varName);
+            var vertex = DependencyManager.GetVertex(varName);
+            yield return new Variable(varName, vertex?.Formula?.ToFormulaString(), vertex?.SheetName, varValue);
+        }
     }
 
     public void ClearVariable(string varName)
@@ -254,7 +268,7 @@ public class FormulaEngine
         return _environment;
     }
 
-    internal CellFormula? CloneFormula(CellFormula formula)
+    internal CellFormula CloneFormula(CellFormula formula)
     {
         return _parser.FromString(formula.ToFormulaString());
     }

@@ -262,4 +262,52 @@ public class RegionStoreTests
 
         store.RemoveRowAt(10, 10);
     }
+
+    [Test]
+    public void Next_Row_Indices_Returns_Negative_One_With_No_Data()
+    {
+        var store = new RegionDataStore<bool>();
+        store.GetNextNonEmptyIndex(0).Should().Be(-1);
+    }
+
+    [Test]
+    public void Next_Row_Indices_With_Data_Returns_Correct()
+    {
+        var store = new RegionDataStore<bool>();
+        store.Add(new Region(1, 3, 0, 0), true);
+        store.Add(new Region(2, 5, 0, 0), true);
+        store.Add(new Region(8, 10, 0, 0), true);
+
+
+        store.GetNextNonEmptyIndex(0).Should().Be(1);
+        store.GetNextNonEmptyIndex(1).Should().Be(2);
+        store.GetNextNonEmptyIndex(3).Should().Be(4);
+        store.GetNextNonEmptyIndex(5).Should().Be(8);
+        store.GetNextNonEmptyIndex(10).Should().Be(-1);
+    }
+
+    [Test]
+    public void Next_Col_Indices_Returns_Negative_One_With_No_Data()
+    {
+        var store = new RegionDataStore<bool>();
+        store.GetNextNonEmptyIndexInRow(5, 0).Should().Be(-1);
+    }
+
+    [Test]
+    public void Next_Col_Indices_With_Data_Returns_Correct()
+    {
+        var store = new RegionDataStore<bool>();
+        store.Add(new Region(0, 1, 1, 3), true);
+        store.Add(new Region(0, 2, 2, 5), true);
+        store.Add(new Region(1, 3, 8, 10), true);
+
+        store.GetNextNonEmptyIndexInRow(0, 0).Should().Be(1);
+        store.GetNextNonEmptyIndexInRow(0, 1).Should().Be(2);
+        store.GetNextNonEmptyIndexInRow(0, 2).Should().Be(3);
+        store.GetNextNonEmptyIndexInRow(0, 3).Should().Be(4);
+        store.GetNextNonEmptyIndexInRow(0, 5).Should().Be(-1);
+        store.GetNextNonEmptyIndexInRow(1, 5).Should().Be(8);
+        store.GetNextNonEmptyIndexInRow(1, 10).Should().Be(-1);
+        store.GetNextNonEmptyIndexInRow(5, 0).Should().Be(-1);
+    }
 }

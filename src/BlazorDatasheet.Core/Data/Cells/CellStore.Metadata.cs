@@ -43,4 +43,6 @@ public partial class CellStore
         var container = _metaDataStore.GetData(row, col).FirstOrDefault() ?? new CellMetadata();
         return container.GetItem(name);
     }
+
+    internal MergeRegionDataStore<CellMetadata> GetMetaDataStore() => _metaDataStore;
 }

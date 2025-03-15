@@ -36,7 +36,7 @@ public partial class HeadingRenderer : SheetComponentBase
 
             _sheet.Selection.SelectionChanged += (_, _) => StateHasChanged();
             _sheet.Selection.SelectingChanged += (_, _) => StateHasChanged();
-            _sheet.Rows.SizeModified += (_, _) => RefreshView();
+            _sheet.Rows.SizeModified += HandleSizeModified;
             _sheet.Rows.Inserted += HandleRowColInserted;
             _sheet.Columns.Inserted += HandleRowColInserted;
             _sheet.Rows.Removed += HandleRowColRemoved;

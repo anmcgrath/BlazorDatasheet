@@ -4,6 +4,18 @@ namespace BlazorDatasheet.Core.Formats;
 
 public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReadonlyCellFormat
 {
+    private Dictionary<string, object?>? _styles;
+    internal IReadOnlyDictionary<string, object?>? Styles => _styles;
+
+    public CellFormat()
+    {
+    }
+
+    internal CellFormat(Dictionary<string, object?> styles)
+    {
+        _styles = styles;
+    }
+
     /// <summary>
     /// CSS font-weight
     /// </summary>
@@ -121,8 +133,6 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReado
         set => AddStyle<Border?>(nameof(BorderBottom), value);
     }
 
-    private Dictionary<string, object?>? _styles;
-
     private void AddStyle<T>(string key, T? value)
     {
         _styles ??= new Dictionary<string, object?>();
@@ -132,7 +142,7 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReado
 
     private T? GetStyleOrDefault<T>(string key)
     {
-        if (_styles == null)
+        if (IsDefaultFormat())
             return default;
 
         return _styles.TryGetValue(key, out var val) ? (T?)val : default;
@@ -140,11 +150,13 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReado
 
     private object? GetStyleOrDefault(string key)
     {
-        if (_styles == null)
+        if (IsDefaultFormat())
             return default;
 
         return _styles.GetValueOrDefault(key);
     }
+
+    public bool IsDefaultFormat() => _styles == null || _styles.Count == 0;
 
     /// <summary>
     /// Returns a new Format object with cloned properties

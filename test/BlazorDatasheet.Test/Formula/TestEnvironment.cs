@@ -60,6 +60,11 @@ public class TestEnvironment : IEnvironment
         _variables.Remove(varName);
     }
 
+    public IEnumerable<string> GetVariableNames()
+    {
+        return _variables.Keys;
+    }
+
     public void SetVariable(string name, object variable)
     {
         SetVariable(name, new CellValue(variable));

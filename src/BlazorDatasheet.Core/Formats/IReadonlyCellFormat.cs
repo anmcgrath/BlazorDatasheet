@@ -38,6 +38,12 @@ public interface IReadonlyCellFormat
     public bool? IsReadOnly { get; }
 
     /// <summary>
+    /// True if no custom styles are set.
+    /// </summary>
+    /// <returns></returns>
+    public bool IsDefaultFormat();
+
+    /// <summary>
     /// Horizontal text align.
     /// </summary>
     public TextAlign? HorizontalTextAlign { get; }

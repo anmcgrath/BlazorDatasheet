@@ -2,7 +2,7 @@ using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.DataStructures.Store;
 
-public interface IMatrixDataStore<T> : IStore<T, MatrixRestoreData<T>>
+public interface IMatrixDataStore<T> : IStore<T, MatrixRestoreData<T>>, ISparseSource, IRowSource
 {
     /// <summary>
     /// Returns the data at the row, column specified. If it is empty, returns the default of T.
@@ -42,7 +42,7 @@ public interface IMatrixDataStore<T> : IStore<T, MatrixRestoreData<T>>
     /// <param name="row"></param>
     /// <param name="col"></param>
     /// <returns>The next non-empty row number in the column. Equals -1 if no non-empty rows exist after the row.</returns>
-    public int GetNextNonBlankColumn(int row, int col);
+    public int GetNextNonEmptyIndexInRow(int row, int col);
 
     /// <summary>
     /// Removes the rows or columns specified from the store and returns the values that were removed.

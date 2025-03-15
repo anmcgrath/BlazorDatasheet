@@ -14,7 +14,7 @@ public abstract class ConditionalFormatAbstractBase : IEquatable<ConditionalForm
     /// Set true if, when one cell value is recalculated, the conditional format should be re-evaluated for all cells
     /// assigned to the conditional format.
     /// </summary>
-    public bool IsShared { get; set; }
+    internal bool IsShared { get; set; }
 
     /// <summary>
     /// Whether the conditional format is True and should be run/applied.
