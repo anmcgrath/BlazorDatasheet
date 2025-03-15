@@ -6,14 +6,18 @@
 @using BlazorDatasheet.Serialization.Json
 <h3>Serialization</h3>
 
-<Datasheet Sheet="_sheet1"/>
+<div>
+    <Datasheet Sheet="_sheet1"/>
+    <button @onclick="SerializeFirst">Serialize</button>
+</div>
 
-<button @onclick="SerializeFirst">Serialize</button>
-<button @onclick="DeserializeIntoSecond">De-serialize</button>
-
-<textarea style="width: 500px; height: 500px;" @bind="@_json"></textarea>
-
-<Datasheet Sheet="_sheet2"></Datasheet>
+<div>
+    <h3>Json Output</h3>
+    <textarea style="width: 500px; height: 500px;" @bind="@_json"></textarea>
+    <br/>
+    <button @onclick="DeserializeIntoSecond">De-serialize</button>
+    <Datasheet Sheet="_sheet2"></Datasheet>
+</div>
 
 @code {
 
