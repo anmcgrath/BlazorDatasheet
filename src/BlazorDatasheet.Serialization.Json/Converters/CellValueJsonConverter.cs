@@ -5,7 +5,7 @@ using BlazorDatasheet.Serialization.Json.Constants;
 
 namespace BlazorDatasheet.Serialization.Json.Converters;
 
-public class CellValueJsonConverter : JsonConverter<CellValue>
+internal class CellValueJsonConverter : JsonConverter<CellValue>
 {
     public override CellValue? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
