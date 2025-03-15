@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Formats.DefaultConditionalFormats;
+using BlazorDatasheet.Core.Validation;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Serialization.Json;
@@ -82,6 +84,18 @@ public class SerializationTests
         testVar.Formula.Should().Be("=Sheet1!A1");
         test2Var.Value.GetValue<double>().Should().Be(10);
         test3Var.Formula.Should().Be("=Sheet1!B1:B5");
+    }
+
+    [Test]
+    public void Validators_Should_Be_Serialized()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Range("A1:A2")!.AddValidator(new SourceValidator(["a", "b"], false));
+        var json = new SheetJsonSerializer().Serialize(sheet.Workbook);
+        var deserialized = new SheetJsonDeserializer().Deserialize(json);
+        var dSheet = deserialized.Sheets.First();
+
+        sheet.Validators.GetAll().Should().BeEquivalentTo(dSheet.Validators.GetAll());
     }
 
     private void CompareSheets(Workbook wb1, Workbook wb2)

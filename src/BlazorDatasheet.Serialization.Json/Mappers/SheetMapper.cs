@@ -84,6 +84,7 @@ internal class SheetMapper
             .ToList();
 
         sheetModel.Types = sheet.Cells.GetTypeData().ToDataRegionModelList(x => x);
+        sheetModel.Validators = sheet.Validators.GetAll().ToDataRegionModelList(x => x);
 
         return sheetModel;
     }
@@ -154,6 +155,9 @@ internal class SheetMapper
         {
             sheet.Range(type.RegionString)!.Type = type.Value;
         }
+
+        foreach (var validator in sheetModel.Validators)
+            sheet.Range(validator.RegionString)!.AddValidator(validator.Value);
 
         sheet.EndBatchUpdates();
         sheet.ScreenUpdating = true;

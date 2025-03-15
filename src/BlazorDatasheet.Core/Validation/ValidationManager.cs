@@ -175,4 +175,11 @@ public class ValidationManager
 
         return null;
     }
+
+    public IEnumerable<DataRegion<IDataValidator>> GetAll()
+    {
+        return Store
+            .GetAllDataRegions()
+            .Select(x => new DataRegion<IDataValidator>(_validators[x.Data], x.Region));
+    }
 }

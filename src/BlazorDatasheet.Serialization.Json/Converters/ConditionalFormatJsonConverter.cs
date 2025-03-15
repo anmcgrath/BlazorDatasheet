@@ -69,6 +69,7 @@ internal class ConditionalFormatJsonConverter(Func<string, Type?> conditionalFor
 
     private Type? GetDefaultCfType(string ruleType)
     {
+        // Default CFs 
         switch (ruleType)
         {
             case nameof(NumberScaleConditionalFormat):

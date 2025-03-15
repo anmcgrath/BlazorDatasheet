@@ -8,14 +8,21 @@ namespace BlazorDatasheet.Serialization.Json;
 
 public class SheetJsonDeserializer
 {
+    private readonly Func<string, Type?> _dataValidationTypeResolver;
     private readonly Func<string, Type?> _conditionalFormatTypeResolver;
 
-    public SheetJsonDeserializer(Func<string, Type?>? conditionalFormatTypeResolver = null)
+    public SheetJsonDeserializer(Func<string, Type?>? conditionalFormatTypeResolver = null,
+        Func<string, Type?>? dataValidationTypeResolver = null)
     {
         if (conditionalFormatTypeResolver == null)
             _conditionalFormatTypeResolver = _ => null;
         else
             _conditionalFormatTypeResolver = conditionalFormatTypeResolver;
+
+        if (dataValidationTypeResolver == null)
+            _dataValidationTypeResolver = _ => null;
+        else
+            _dataValidationTypeResolver = dataValidationTypeResolver;
     }
 
     public Workbook Deserialize(string json)
@@ -27,7 +34,8 @@ public class SheetJsonDeserializer
                 new CellJsonConverter(),
                 new ConditionalFormatJsonConverter(_conditionalFormatTypeResolver),
                 new ColorJsonConverter(),
-                new VariableJsonConverter()
+                new VariableJsonConverter(),
+                new DataValidationJsonConverter(_dataValidationTypeResolver)
             },
         };
 
