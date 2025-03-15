@@ -7,10 +7,14 @@ using BlazorDatasheet.Serialization.Json.Models;
 
 namespace BlazorDatasheet.Serialization.Json.Converters;
 
-internal class ConditionalFormatJsonConverter(Func<string, Type?> conditionalFormatTypeResolver)
-    : JsonConverter<ConditionalFormatModel>
+internal class ConditionalFormatJsonConverter : JsonConverter<ConditionalFormatModel>
 {
-    private readonly Func<string, Type?> _conditionalFormatTypeResolver = conditionalFormatTypeResolver;
+    private readonly Dictionary<string, Type> _resolver;
+
+    public ConditionalFormatJsonConverter(Dictionary<string, Type> resolver)
+    {
+        _resolver = resolver;
+    }
 
     public override ConditionalFormatModel? Read(ref Utf8JsonReader reader, Type typeToConvert,
         JsonSerializerOptions options)
@@ -54,7 +58,7 @@ internal class ConditionalFormatJsonConverter(Func<string, Type?> conditionalFor
             return null;
 
         ConditionalFormatAbstractBase? rule = null;
-        var ruleTypeDefn = GetDefaultCfType(ruleType) ?? _conditionalFormatTypeResolver(ruleType);
+        var ruleTypeDefn = GetConditionalFormatType(ruleType);
 
         if (ruleTypeDefn != null)
             rule = parsedRule.Value.Deserialize(ruleTypeDefn, options) as ConditionalFormatAbstractBase;
@@ -67,8 +71,11 @@ internal class ConditionalFormatJsonConverter(Func<string, Type?> conditionalFor
         return format;
     }
 
-    private Type? GetDefaultCfType(string ruleType)
+    private Type? GetConditionalFormatType(string ruleType)
     {
+        if (_resolver.TryGetValue(ruleType, out var type))
+            return type;
+
         // Default CFs 
         switch (ruleType)
         {
@@ -81,7 +88,7 @@ internal class ConditionalFormatJsonConverter(Func<string, Type?> conditionalFor
 
     public override void Write(Utf8JsonWriter writer, ConditionalFormatModel value, JsonSerializerOptions options)
     {
-        var ruleType = GetDefaultCfType(value.RuleType) ?? _conditionalFormatTypeResolver(value.RuleType);
+        var ruleType = GetConditionalFormatType(value.RuleType);
         if (ruleType == null)
             throw new Exception(
                 $"Could not write conditional format with rule type {value.RuleType}. Ensure it is included in the CF resolver.");

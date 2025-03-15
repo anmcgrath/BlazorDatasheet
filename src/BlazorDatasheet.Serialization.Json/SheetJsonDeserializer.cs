@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using System.Text.Json.Serialization;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Serialization.Json.Converters;
 using BlazorDatasheet.Serialization.Json.Mappers;
@@ -8,34 +9,27 @@ namespace BlazorDatasheet.Serialization.Json;
 
 public class SheetJsonDeserializer
 {
-    private readonly Func<string, Type?> _dataValidationTypeResolver;
-    private readonly Func<string, Type?> _conditionalFormatTypeResolver;
-    private readonly Func<string, Type?> _filterTypeResolver;
+    public SheetSerializationTypeResolverCollection Resolvers { get; } = new();
+    public IList<JsonConverter> Converters { get; }
 
-    public SheetJsonDeserializer(
-        Func<string, Type?>? conditionalFormatTypeResolver = null,
-        Func<string, Type?>? dataValidationTypeResolver = null,
-        Func<string, Type?>? filterTypeResolver = null)
+    public SheetJsonDeserializer()
     {
-        _conditionalFormatTypeResolver = conditionalFormatTypeResolver ?? (_ => null);
-        _dataValidationTypeResolver = dataValidationTypeResolver ?? (_ => null);
-        _filterTypeResolver = filterTypeResolver ?? (_ => null);
+        Converters = new List<JsonConverter>()
+        {
+            new CellJsonConverter(),
+            new ConditionalFormatJsonConverter(Resolvers.ConditionalFormat),
+            new ColorJsonConverter(),
+            new VariableJsonConverter(),
+            new DataValidationJsonConverter(Resolvers.DataValidation),
+            new IFilterJsonConverter(Resolvers.Filter)
+        };
     }
 
     public Workbook Deserialize(string json)
     {
-        var options = new JsonSerializerOptions()
-        {
-            Converters =
-            {
-                new CellJsonConverter(),
-                new ConditionalFormatJsonConverter(_conditionalFormatTypeResolver),
-                new ColorJsonConverter(),
-                new VariableJsonConverter(),
-                new DataValidationJsonConverter(_dataValidationTypeResolver),
-                new IFilterJsonConverter(_filterTypeResolver)
-            },
-        };
+        var options = new JsonSerializerOptions();
+        foreach (var converter in Converters)
+            options.Converters.Add(converter);
 
         var workbookModel = JsonSerializer.Deserialize<WorkbookModel>(json, options);
         if (workbookModel is null)

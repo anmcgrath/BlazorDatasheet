@@ -94,6 +94,7 @@ internal class SheetMapper
     public static Sheet FromModel(SheetModel sheetModel, List<CellFormat> formats)
     {
         var sheet = new Sheet(sheetModel.NumRows, sheetModel.NumCols);
+        sheet.Commands.PauseHistory();
         sheet.ScreenUpdating = false;
         sheet.BatchUpdates();
         foreach (var rowModel in sheetModel.Rows)
@@ -166,6 +167,7 @@ internal class SheetMapper
 
         sheet.EndBatchUpdates();
         sheet.ScreenUpdating = true;
+        sheet.Commands.ResumeHistory();
 
         return sheet;
     }

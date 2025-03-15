@@ -11,19 +11,7 @@ namespace BlazorDatasheet.Serialization.Json;
 
 public class SheetJsonSerializer
 {
-    private readonly Func<string, Type?> _dataValidationTypeResolver;
-    private readonly Func<string, Type?> _conditionalFormatTypeResolver;
-    private readonly Func<string, Type?> _filterTypeResolver;
-
-    public SheetJsonSerializer(
-        Func<string, Type?>? conditionalFormatTypeResolver = null,
-        Func<string, Type?>? dataValidationTypeResolver = null,
-        Func<string, Type?>? filterTypeResolver = null)
-    {
-        _conditionalFormatTypeResolver = conditionalFormatTypeResolver ?? (_ => null);
-        _dataValidationTypeResolver = dataValidationTypeResolver ?? (_ => null);
-        _filterTypeResolver = filterTypeResolver ?? (_ => null);
-    }
+    public SheetSerializationTypeResolverCollection Resolvers { get; } = new();
 
     public void Serialize(Workbook workbook, Stream stream, bool writeIndented = false)
     {
@@ -35,11 +23,11 @@ public class SheetJsonSerializer
             Converters =
             {
                 new CellJsonConverter(),
-                new ConditionalFormatJsonConverter(_conditionalFormatTypeResolver),
+                new ConditionalFormatJsonConverter(Resolvers.ConditionalFormat),
                 new ColorJsonConverter(),
                 new VariableJsonConverter(),
-                new DataValidationJsonConverter(_dataValidationTypeResolver),
-                new IFilterJsonConverter(_filterTypeResolver)
+                new DataValidationJsonConverter(Resolvers.DataValidation),
+                new IFilterJsonConverter(Resolvers.Filter)
             },
             TypeInfoResolver = new DefaultJsonTypeInfoResolver()
             {

@@ -18,7 +18,7 @@ namespace BlazorDatasheet.Test.SheetTests;
 public class SerializationTests
 {
     [Test]
-    public void SerializationTest()
+    public void Sheet_Serialization_Should_Serialize()
     {
         Assert.DoesNotThrow(() =>
         {
@@ -41,24 +41,15 @@ public class SerializationTests
             sheet.Cells.SetCellMetaData(5, 5, "test3", true);
 
 
-            var s = new SheetJsonSerializer(ConditionalFormatTypeResolver);
+            var s = new SheetJsonSerializer();
+            s.Resolvers.ConditionalFormat.Add(nameof(CustomCf), typeof(CustomCf));
             var json = s.Serialize(sheet.Workbook);
 
-            var deserializer = new SheetJsonDeserializer(ConditionalFormatTypeResolver);
+            var deserializer = new SheetJsonDeserializer();
+            deserializer.Resolvers.ConditionalFormat.Add(nameof(CustomCf), typeof(CustomCf));
             var wbDeserialized = deserializer.Deserialize(json);
             CompareSheets(sheet.Workbook, wbDeserialized);
         });
-    }
-
-    private Type? ConditionalFormatTypeResolver(string arg)
-    {
-        switch (arg)
-        {
-            case nameof(CustomCf):
-                return typeof(CustomCf);
-        }
-
-        return null;
     }
 
     [Test]

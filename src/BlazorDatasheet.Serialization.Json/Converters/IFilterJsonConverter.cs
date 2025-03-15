@@ -6,11 +6,11 @@ namespace BlazorDatasheet.Serialization.Json.Converters;
 
 public class IFilterJsonConverter : JsonConverter<IFilter>
 {
-    private readonly Func<string, Type?> _filterResolver;
+    private readonly Dictionary<string, Type> _resolver;
 
-    public IFilterJsonConverter(Func<string, Type?> filterResolver)
+    public IFilterJsonConverter(Dictionary<string, Type> resolver)
     {
-        _filterResolver = filterResolver;
+        _resolver = resolver;
     }
 
     public override IFilter? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
@@ -49,7 +49,7 @@ public class IFilterJsonConverter : JsonConverter<IFilter>
         if (parsedOptions == null)
             return null;
 
-        var typeDefn = GetDefaultFilterType(filterTypeString) ?? _filterResolver(filterTypeString);
+        var typeDefn = GetDefaultFilterType(filterTypeString);
 
         if (typeDefn != null)
         {
@@ -62,7 +62,9 @@ public class IFilterJsonConverter : JsonConverter<IFilter>
 
     private Type? GetDefaultFilterType(string filterTypeString)
     {
-        // Default CFs 
+        if (_resolver.TryGetValue(filterTypeString, out var type))
+            return type;
+
         switch (filterTypeString)
         {
             case nameof(PatternFilter):
@@ -80,7 +82,7 @@ public class IFilterJsonConverter : JsonConverter<IFilter>
     {
         writer.WriteStartObject();
         var filterTypeString = value.GetType().Name;
-        var filterType = GetDefaultFilterType(filterTypeString) ?? _filterResolver(filterTypeString);
+        var filterType = GetDefaultFilterType(filterTypeString);
         if (filterType == null)
             throw new Exception($"Serialization of filter type {filterTypeString} is not supported");
 

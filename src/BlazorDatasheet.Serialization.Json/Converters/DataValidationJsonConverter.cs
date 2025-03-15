@@ -9,11 +9,11 @@ namespace BlazorDatasheet.Serialization.Json.Converters;
 
 internal class DataValidationJsonConverter : JsonConverter<DataRegionModel<IDataValidator>>
 {
-    private readonly Func<string, Type?> _dataValidationTypeResolver;
+    private readonly Dictionary<string, Type> _resolver;
 
-    public DataValidationJsonConverter(Func<string, Type?> dataValidationTypeResolver)
+    public DataValidationJsonConverter(Dictionary<string, Type> resolver)
     {
-        _dataValidationTypeResolver = dataValidationTypeResolver;
+        _resolver = resolver;
     }
 
     public override DataRegionModel<IDataValidator>? Read(ref Utf8JsonReader reader, Type typeToConvert,
@@ -58,7 +58,7 @@ internal class DataValidationJsonConverter : JsonConverter<DataRegionModel<IData
             return null;
 
         var validatorTypeDefn =
-            GetDefaultValidatorType(validatorTypeName) ?? _dataValidationTypeResolver(validatorTypeName);
+            GetDefaultValidatorType(validatorTypeName);
 
         if (validatorTypeDefn != null)
         {
@@ -74,7 +74,9 @@ internal class DataValidationJsonConverter : JsonConverter<DataRegionModel<IData
 
     private Type? GetDefaultValidatorType(string typeName)
     {
-        // Default CFs 
+        if (_resolver.TryGetValue(typeName, out var type))
+            return type;
+        
         switch (typeName)
         {
             case nameof(SourceValidator):
@@ -90,7 +92,7 @@ internal class DataValidationJsonConverter : JsonConverter<DataRegionModel<IData
         JsonSerializerOptions options)
     {
         var validatorTypeName = value.Value.GetType().Name;
-        var type = GetDefaultValidatorType(validatorTypeName) ?? _dataValidationTypeResolver(validatorTypeName);
+        var type = GetDefaultValidatorType(validatorTypeName);
         if (type == null)
             throw new Exception(
                 $"Could not write data validator type {validatorTypeName}. Ensure it is included in the validation resolver.");
