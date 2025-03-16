@@ -586,7 +586,9 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
                 _sheet.Selection.ClearSelections();
             }
 
-            if (args.Row == -1)
+            if (args.Row == -1 && args.Col == -1)
+                return;
+            else if (args.Row == -1)
                 _sheet.Selection.BeginSelectingCol(args.Col);
             else if (args.Col == -1)
                 _sheet.Selection.BeginSelectingRow(args.Row);

@@ -37,8 +37,11 @@
                             @if (ShowRowHeadings)
                             {
                                 <div class="sheet-cell row-head col-head"
+                                     data-row="-1"
+                                     data-col="-1"
                                      style="
                                          width: @(_sheet.Rows.HeadingWidth)px;
+                                     background: var(--col-header-bg-color);
                                      z-index: @(GridLevel + 5);
                                      @(StickyHeaders ? "position: sticky; top: 0; left:0;" : "")
                                      height: @(_sheet.Columns.HeadingHeight)px;">
