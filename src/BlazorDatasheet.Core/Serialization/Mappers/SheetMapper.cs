@@ -114,7 +114,7 @@ internal class SheetMapper
             if (rowModel.Heading != null)
                 sheet.Rows.HeadingStore.Set(rowModel.RowIndex, rowModel.RowIndex, rowModel.Heading);
             if (rowModel.Height != null)
-                sheet.Rows.SizeStore.Set(rowModel.RowIndex, rowModel.Height.Value);
+                sheet.Rows.SetSize(rowModel.RowIndex, rowModel.Height.Value);
 
             if (rowModel.FormatIndex != null && rowModel.FormatIndex < formats.Count &&
                 !formats[rowModel.FormatIndex.Value].IsDefaultFormat())
@@ -171,7 +171,7 @@ internal class SheetMapper
             if (colModel.Heading != null)
                 sheet.Columns.HeadingStore.Set(colModel.ColIndex, colModel.Heading);
             if (colModel.Width != null)
-                sheet.Columns.SizeStore.Set(colModel.ColIndex, colModel.Width.Value);
+                sheet.Columns.SetSize(colModel.ColIndex, colModel.Width.Value);
             if (colModel.FormatIndex != null && colModel.FormatIndex < formats.Count &&
                 !formats[colModel.FormatIndex.Value].IsDefaultFormat())
             {
