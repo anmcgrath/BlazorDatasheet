@@ -1,8 +1,6 @@
-using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
-using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Core.Data.Cells
 {
@@ -21,13 +19,15 @@ namespace BlazorDatasheet.Core.Data.Cells
         /// <summary>
         /// The merged cells in the sheet.
         /// </summary>
-        private readonly RegionDataStore<bool> _mergeStore = new RegionDataStore<bool>(1, expandWhenInsertAfter: false);
+        private readonly RegionDataStore<bool> _mergeStore = new(1, expandWhenInsertAfter: false);
+
+        internal RegionDataStore<bool> GetMergeStore() => _mergeStore;
 
         /// <summary>
         /// Add a range as a merged cell. If the range overlaps any existing merged cells, the merge
         /// will not happen.
         /// </summary>
-        /// <param name="range"></param>
+        /// <param name="region"></param>
         public void Merge(IRegion region)
         {
             var merge = new MergeCellsCommand(region);

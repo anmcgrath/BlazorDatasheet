@@ -1,3 +1,5 @@
+using System.Collections;
+using BlazorDatasheet.Core.Data.Collections;
 using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.Data;
@@ -8,6 +10,7 @@ public class RowInfoStore : RowColInfoStore
 
     public RowInfoStore(double defaultHeight, Sheet sheet) : base(defaultHeight, sheet, Axis.Row)
     {
+        NonEmpty = new(this);
     }
 
     /// <summary>
@@ -22,6 +25,11 @@ public class RowInfoStore : RowColInfoStore
             EmitSizeModified(-1, -1);
         }
     }
+
+    /// <summary>
+    /// The collection of non-empty rows. Non-empty rows include those that have data, formats, or row heights set.
+    /// </summary>
+    public NonEmptyRowCollection NonEmpty { get; }
 
     /// <summary>
     /// Returns the row index at the position <paramref name="yPosition"/>
@@ -73,5 +81,10 @@ public class RowInfoStore : RowColInfoStore
     public double GetVisualTop(int rowIndex)
     {
         return CumulativeSizeStore.GetCumulative(rowIndex);
+    }
+
+    public SheetRow this[int rowIndex]
+    {
+        get => new SheetRow(rowIndex, Sheet);
     }
 }

@@ -28,15 +28,17 @@ public partial class HeadingRenderer : SheetComponentBase
         Axis = axis;
     }
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
+        var refreshView = false;
+
         if (Sheet != _sheet)
         {
             _sheet = Sheet ?? new(0, 0);
 
             _sheet.Selection.SelectionChanged += (_, _) => StateHasChanged();
             _sheet.Selection.SelectingChanged += (_, _) => StateHasChanged();
-            _sheet.Rows.SizeModified += (_, _) => RefreshView();
+            _sheet.Rows.SizeModified += HandleSizeModified;
             _sheet.Rows.Inserted += HandleRowColInserted;
             _sheet.Columns.Inserted += HandleRowColInserted;
             _sheet.Rows.Removed += HandleRowColRemoved;
@@ -46,15 +48,18 @@ public partial class HeadingRenderer : SheetComponentBase
             LayoutProvider = Axis == Axis.Col
                 ? new ColHeadingLayoutProvider(_sheet)
                 : new RowHeadingLayoutProvider(_sheet);
-            StateHasChanged();
+
+            refreshView = true;
         }
 
         if (ViewRegion != _viewRegion)
         {
             _viewRegion = ViewRegion ?? _sheet.Region;
+            refreshView = true;
         }
 
-        base.OnParametersSet();
+        if (refreshView)
+            await RefreshView();
     }
 
     private void HandleRowColInserted(object? sender, RowColInsertedEventArgs? e)
@@ -74,7 +79,7 @@ public partial class HeadingRenderer : SheetComponentBase
         RefreshView();
     }
 
-    public async void RefreshView()
+    public async Task RefreshView()
     {
         if (MainView is not null)
         {

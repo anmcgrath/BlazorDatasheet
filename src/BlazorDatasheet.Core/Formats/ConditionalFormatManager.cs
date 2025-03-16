@@ -56,6 +56,11 @@ public class ConditionalFormatManager
         return regions.Select(x => new SheetRange(_sheet, x)).ToList();
     }
 
+    public IEnumerable<DataRegion<ConditionalFormatAbstractBase>> GetAllFormats()
+    {
+        return _appliedFormats.GetDataRegions(_sheet.Region);
+    }
+
 
     private void HandleCellsChanged(object? sender, CellDataChangedEventArgs args)
     {

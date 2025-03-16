@@ -1,3 +1,4 @@
+using BlazorDatasheet.Core.Data.Collections;
 using BlazorDatasheet.Core.Data.Filter;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Intervals;
@@ -8,6 +9,7 @@ namespace BlazorDatasheet.Core.Data;
 public class ColumnInfoStore : RowColInfoStore
 {
     public ColumnFilterCollection Filters { get; }
+    public NonEmptyColumnCollection NonEmpty { get; }
 
     private double _headingHeight = 24;
 
@@ -27,6 +29,7 @@ public class ColumnInfoStore : RowColInfoStore
     public ColumnInfoStore(double defaultHeight, Sheet sheet) : base(defaultHeight, sheet, Axis.Col)
     {
         Filters = new ColumnFilterCollection(sheet);
+        NonEmpty = new NonEmptyColumnCollection(this);
     }
 
     /// <summary>
@@ -48,6 +51,18 @@ public class ColumnInfoStore : RowColInfoStore
     {
         return CumulativeSizeStore.GetSize(column);
     }
+
+    /// <summary>
+    /// Returns the physical width of the col. This is non-zero even if the col is
+    /// hidden. For visual height, use <seealso cref="GetVisualWidth"/>
+    /// </summary>
+    /// <param name="col"></param>
+    /// <returns></returns>
+    public double GetPhysicalWidth(int col)
+    {
+        return SizeStore.Get(col);
+    }
+
 
     /// <summary>
     /// Returns the distance between the left positions of two columns.

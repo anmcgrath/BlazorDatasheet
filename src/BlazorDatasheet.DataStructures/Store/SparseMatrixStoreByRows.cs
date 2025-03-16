@@ -162,7 +162,12 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
         return -1;
     }
 
-    public int GetNextNonBlankColumn(int row, int col)
+    public int GetNextNonEmptyIndex(int index)
+    {
+        return _rows.GetNextNonEmptyItemKey(index + 1);
+    }
+
+    public int GetNextNonEmptyIndexInRow(int row, int col)
     {
         if (!_rows.ContainsIndex(row))
             return -1;

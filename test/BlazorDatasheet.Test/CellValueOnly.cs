@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Formula.Core;
@@ -35,11 +36,14 @@ public class CellValueOnly : IReadOnlyCell
     public bool IsValid => true;
     public string? Formula { get; }
     public object? Value => _value;
+    public CellValue CellValue => new CellValue(_value);
 
     public object? GetMetaData(string name)
     {
         throw new NotImplementedException();
     }
+
+    public IEnumerable<KeyValuePair<string, object?>> MetaData { get; }
 
     public CellValueType ValueType { get; }
     public bool IsVisible { get; }
