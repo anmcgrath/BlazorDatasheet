@@ -123,7 +123,9 @@ internal class SheetMapper
             }
 
             if (rowModel.Hidden)
-                sheet.Rows.Visible.Set(rowModel.RowIndex, false);
+            {
+                sheet.Rows.Hide(rowModel.RowIndex, 1);
+            }
 
             foreach (var cellModel in rowModel.Cells)
             {
@@ -177,7 +179,7 @@ internal class SheetMapper
             }
 
             if (colModel.Hidden)
-                sheet.Columns.Visible.Set(colModel.ColIndex, false);
+                sheet.Columns.Hide(colModel.ColIndex, 1);
 
             sheet.Columns.Filters.Store.Set(colModel.ColIndex, colModel.Filters);
         }

@@ -161,6 +161,22 @@ public class SerializationTests
             }
         }
     }
+
+    [Test]
+    public void Hidden_Rows_And_Cols_Deserialize_Correctly()
+    {
+        var sheet = new Sheet(10, 10, 10, 10);
+        sheet.Rows.Hide(5, 2);
+        sheet.Columns.Hide(5, 2);
+        var json = new SheetJsonSerializer().Serialize(sheet.Workbook);
+        var d = new SheetJsonDeserializer().Deserialize(json).Sheets.First();
+        d.Rows.CountVisible(0, sheet.NumRows - 1).Should().Be(8);
+        d.Columns.CountVisible(0, sheet.NumCols - 1).Should().Be(8);
+        d.Rows.GetVisualHeight(5).Should().Be(0);
+        d.Rows.GetVisualHeight(6).Should().Be(0);
+        d.Columns.GetVisualWidth(5).Should().Be(0);
+        d.Columns.GetVisualWidth(6).Should().Be(0);
+    }
 }
 
 public class CustomCf : ConditionalFormatAbstractBase
