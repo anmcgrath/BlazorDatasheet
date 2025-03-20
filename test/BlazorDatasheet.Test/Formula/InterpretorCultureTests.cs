@@ -1,8 +1,7 @@
-﻿using System.Globalization;
-using System.Threading;
-using BlazorDatasheet.Formula.Core;
+﻿using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter;
 using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
+using BlazorDatasheet.Formula.Core.Interpreter.Lexing;
 using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
 using BlazorDatashet.Formula.Functions.Math;
 using FluentAssertions;
@@ -40,6 +39,42 @@ public class InterpretorCultureTests
     public void Non_Eng_Culture_Has_Correct_Function_Param_Separator()
     {
         _env.RegisterFunction("SUM", new SumFunction());
-        EvalExpression("=SUM(1;2;3)").Data.Should().Be(6);
+        EvalExpression("=SUM(1,2;2;,3)").Data.Should().Be(3.5);
+    }
+
+
+    [Test]
+    [SetCulture("fr-FR")]
+    public void Non_Eng_Culture_Has_Correct_Array_Defn_Separators()
+    {
+        var parser = new Parser(_env, new FormulaOptions());
+        var evaluator = new Evaluator(_env);
+        var formulaStr = @"={1\2;3\4}";
+        var formula = parser.Parse(formulaStr);
+        var res = (CellValue[][])evaluator.Evaluate(formula).Data!;
+        res.Should().BeOfType<CellValue[][]>();
+        res.Length.Should().Be(2);
+        res[0].Length.Should().Be(2);
+        res[1].Length.Should().Be(2);
+        res[0][0].Data.Should().Be(1);
+        res[0][1].Data.Should().Be(2);
+        res[1][0].Data.Should().Be(3);
+        res[1][1].Data.Should().Be(4);
+        $"={formula.Root.ToExpressionText()}".Should().Be(formulaStr);
+    }
+
+    [Test]
+    [SetCulture("fr-FR")]
+    public void Provide_Custom_Func_Param_Seperator_Should_Eval_Ok()
+    {
+        _env.RegisterFunction("SUM", new SumFunction());
+        var options = new FormulaOptions()
+        {
+            SeparatorSettings = new SeparatorSettings()
+            {
+                FuncParameterSeparator = '.',
+            }
+        };
+        EvalExpression("=SUM(1,2. 3.4)", options).Data.Should().Be(1.2 + 3 + 4);
     }
 }

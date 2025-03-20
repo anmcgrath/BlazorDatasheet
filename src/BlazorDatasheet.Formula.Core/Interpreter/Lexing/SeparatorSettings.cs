@@ -4,12 +4,10 @@ namespace BlazorDatasheet.Formula.Core.Interpreter.Lexing;
 
 public class SeparatorSettings
 {
-    /*
-     *  | Dec_Seperator | Row | Column | Func |
-        |---------------|-----|--------|------|
-        | .             | ;   | ,      | ,    |
-        | ,             | ;   | \      | ;    |
-     */
+    private readonly char _rowSeparator;
+    private readonly char _funcParameterSeparator;
+    private readonly char _columnSeparator;
+
     /// <summary>
     /// The decimal number separator e.g '.' for English, ',' for some other cultures.
     /// </summary>
@@ -18,17 +16,49 @@ public class SeparatorSettings
     /// <summary>
     /// The array row separator which is nearly always ';'
     /// </summary>
-    public char RowSeparator { get; set; }
+    public char RowSeparator
+    {
+        get => _rowSeparator;
+        init
+        {
+            RowSeparatorTag = CharToTag(value);
+            _rowSeparator = value;
+        }
+    }
+
+    internal Tag RowSeparatorTag { get; private set; }
 
     /// <summary>
-    /// The formula parameter separator.
+    /// The function parameter separator.
     /// </summary>
-    public char ListSeparator { get; set; }
+    public char FuncParameterSeparator
+    {
+        get => _funcParameterSeparator;
+        init
+        {
+            FuncParameterSeparatorTag = CharToTag(value);
+            _funcParameterSeparator = value;
+        }
+    }
+
+    internal Tag FuncParameterSeparatorTag { get; private set; }
+
 
     /// <summary>
     /// The array column separator.
     /// </summary>
-    public char ColumnSeparator { get; set; }
+    public char ColumnSeparator
+    {
+        get => _columnSeparator;
+        init
+        {
+            ColumnSeparatorTag = CharToTag(value);
+            _columnSeparator = value;
+        }
+    }
+
+    internal Tag ColumnSeparatorTag { get; private set; }
+
 
     public CultureInfo CultureInfo { get; }
 
@@ -40,7 +70,7 @@ public class SeparatorSettings
     {
         CultureInfo = cultureInfo;
         DecimalNumberSeparator = Convert.ToChar(cultureInfo.NumberFormat.NumberDecimalSeparator);
-        ListSeparator = DecimalNumberSeparator == ',' ? ';' : ',';
+        FuncParameterSeparator = DecimalNumberSeparator == ',' ? ';' : ',';
         ColumnSeparator = DecimalNumberSeparator == ',' ? '\\' : ',';
         RowSeparator = ';';
     }
@@ -50,5 +80,17 @@ public class SeparatorSettings
     /// </summary>
     public SeparatorSettings() : this(CultureInfo.CurrentCulture)
     {
+    }
+
+    private Tag CharToTag(char c)
+    {
+        return c switch
+        {
+            ';' => Tag.SemiColonToken,
+            ',' => Tag.CommaToken,
+            '\\' => Tag.BackslashToken,
+            '.' => Tag.DotToken,
+            _ => Tag.BadToken
+        };
     }
 }

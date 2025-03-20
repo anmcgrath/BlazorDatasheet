@@ -11,12 +11,15 @@ public class FunctionExpression : Expression
     public ISheetFunction? Function { get; }
 
     public bool FunctionExists => Function != null;
+    private char _parameterSeparator;
 
-    public FunctionExpression(IdentifierToken functionToken, List<Expression> args, ISheetFunction? function)
+    public FunctionExpression(IdentifierToken functionToken, List<Expression> args, ISheetFunction? function,
+        char parameterSeparator)
     {
         FunctionToken = functionToken;
         Args = args;
         Function = function;
+        _parameterSeparator = parameterSeparator;
     }
 
     public override string ToExpressionText()

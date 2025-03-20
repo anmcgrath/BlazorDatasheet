@@ -46,7 +46,7 @@ public class Parser
     {
         _parsingContext = parsingContext;
         var lexer = new Lexer();
-        var tokens = lexer.Lex(formulaString, _formulaOptions.SeparatorSettings);
+        var tokens = lexer.Lex(formulaString, _formulaOptions);
         _references = new();
         return Parse(tokens, lexer.Errors);
     }
@@ -281,13 +281,13 @@ public class Parser
             while (true)
             {
                 currentRow.Add(ParseLiteralExpression());
-                if (Current.Tag == Tag.ListSeparatorToken)
+                if (Current.Tag == _formulaOptions.SeparatorSettings.ColumnSeparatorTag)
                 {
                     NextToken();
                     continue;
                 }
 
-                if (Current.Tag == Tag.RowSeparatorToken)
+                if (Current.Tag == _formulaOptions.SeparatorSettings.RowSeparatorTag)
                 {
                     NextToken();
                     rows.Add(new List<LiteralExpression>());
@@ -318,7 +318,8 @@ public class Parser
 
         MatchToken(Tag.RightCurlyBracketToken);
 
-        return new ArrayConstantExpression(rows);
+        return new ArrayConstantExpression(rows, _formulaOptions.SeparatorSettings.ColumnSeparator,
+            _formulaOptions.SeparatorSettings.RowSeparator);
     }
 
     private LiteralExpression ParseLiteralExpression()
@@ -367,7 +368,7 @@ public class Parser
         {
             var arg = ParseExpression();
             args.Add(arg);
-            if (Current.Tag != Tag.ListSeparatorToken)
+            if (Current.Tag != _formulaOptions.SeparatorSettings.FuncParameterSeparatorTag)
                 break;
             else
                 NextToken();
@@ -382,7 +383,8 @@ public class Parser
         if (functionDefinition != null && functionDefinition.IsVolatile)
             _containsVolatiles = true;
 
-        return new FunctionExpression(funcToken, args, functionDefinition);
+        return new FunctionExpression(funcToken, args, functionDefinition,
+            _formulaOptions.SeparatorSettings.FuncParameterSeparator);
     }
 
     private Expression ParseParenthExpression()

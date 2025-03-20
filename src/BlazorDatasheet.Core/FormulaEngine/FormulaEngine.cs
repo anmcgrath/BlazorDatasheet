@@ -28,7 +28,7 @@ public class FormulaEngine
     /// </summary>
     private readonly HashSet<FormulaVertex> _requiresCalculation = new();
 
-    internal FormulaOptions Options { get; private set; }
+    public FormulaOptions Options { get; private set; }
 
     public bool IsCalculating { get; private set; }
 

@@ -84,7 +84,7 @@
             return text;
 
         var lexer = new Lexer();
-        var tokens = lexer.Lex(text, FormulaOptions.SeparatorSettings);
+        var tokens = lexer.Lex(text, FormulaOptions);
 
         var sb = new StringBuilder();
         var span = text.AsSpan();
