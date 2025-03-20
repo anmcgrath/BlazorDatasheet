@@ -39,7 +39,12 @@ public class InterpretorCultureTests
     public void Non_Eng_Culture_Has_Correct_Function_Param_Separator()
     {
         _env.RegisterFunction("SUM", new SumFunction());
-        EvalExpression("=SUM(1,2;2;,3)").Data.Should().Be(3.5);
+        var parser = new Parser(_env, new FormulaOptions());
+        var evaluator = new Evaluator(_env);
+        var formulaStr = @"=SUM(1,2;2;0,3)";
+        var formula = parser.Parse(formulaStr);
+        evaluator.Evaluate(formula).Data.Should().Be(1.2 + 2 + 0.3);
+        $"={formula.Root.ToExpressionText()}".Should().Be(formulaStr);
     }
 
 

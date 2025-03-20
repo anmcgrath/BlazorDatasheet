@@ -318,8 +318,7 @@ public class Parser
 
         MatchToken(Tag.RightCurlyBracketToken);
 
-        return new ArrayConstantExpression(rows, _formulaOptions.SeparatorSettings.ColumnSeparator,
-            _formulaOptions.SeparatorSettings.RowSeparator);
+        return new ArrayConstantExpression(rows, _formulaOptions);
     }
 
     private LiteralExpression ParseLiteralExpression()
@@ -384,7 +383,7 @@ public class Parser
             _containsVolatiles = true;
 
         return new FunctionExpression(funcToken, args, functionDefinition,
-            _formulaOptions.SeparatorSettings.FuncParameterSeparator);
+            _formulaOptions);
     }
 
     private Expression ParseParenthExpression()
