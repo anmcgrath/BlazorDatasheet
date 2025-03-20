@@ -123,7 +123,10 @@ public partial class CellStore
     /// <returns></returns>
     public bool SetValues(IRegion region, object? value)
     {
-        var cmd = new SetCellValuesCommand(region, value);
+        var r = region.GetIntersection(Sheet.Region);
+        if (r == null)
+            return false;
+        var cmd = new SetCellValuesCommand(r, value);
         return Sheet.Commands.ExecuteCommand(cmd);
     }
 
@@ -184,5 +187,26 @@ public partial class CellStore
         var args = new BeforeCellValueConversionEventArgs(value, newValue, row, col, type);
         BeforeCellValueConversion?.Invoke(this, args);
         return args.NewValue;
+    }
+
+    /// <summary>
+    /// Returns the next visible cell with data in the row specified, and after <paramref name="colIndex"/>
+    /// </summary>
+    /// <param name="rowIndex"></param>
+    /// <param name="colIndex"></param>
+    /// <returns></returns>
+    public SheetCell? GetNextInRow(int rowIndex, int colIndex)
+    {
+        var nextColIndex = _dataStore.GetNextNonEmptyIndexInRow(rowIndex, colIndex);
+        if (nextColIndex == -1)
+            return null;
+
+        if (!Sheet.Columns.IsVisible(nextColIndex))
+            return GetNextInRow(rowIndex, Sheet.Columns.GetNextVisible(nextColIndex, 1));
+
+        if (nextColIndex >= Sheet.NumCols)
+            return null;
+
+        return new SheetCell(rowIndex, nextColIndex, Sheet);
     }
 }
