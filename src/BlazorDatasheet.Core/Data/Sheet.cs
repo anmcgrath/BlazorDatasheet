@@ -15,6 +15,7 @@ using BlazorDatasheet.Formula.Core.Interpreter.References;
 using System.Text;
 using BlazorDatasheet.Core.Events.Sort;
 using BlazorDatasheet.Core.FormulaEngine;
+using BlazorDatasheet.Formula.Core.Interpreter;
 
 namespace BlazorDatasheet.Core.Data;
 
@@ -98,13 +99,14 @@ public class Sheet
         get
         {
             if (_workbook == null)
-                _workbook = new Workbook(this);
+                _workbook = new Workbook(this, _givenFormulaOptions);
             return _workbook;
         }
         internal set => _workbook = value;
     }
 
     private Workbook? _workbook;
+    private FormulaOptions? _givenFormulaOptions;
 
     /// <summary>
     /// Whether the UI associated with the sheet should be updating
@@ -175,11 +177,14 @@ public class Sheet
         _workbook = workbook;
     }
 
-    public Sheet(int numRows, int numCols, int defaultWidth = 105, int defaultHeight = 24) : this(defaultWidth,
+    public Sheet(int numRows, int numCols, int defaultWidth = 105, int defaultHeight = 24,
+        FormulaOptions? formulaOptions = null) : this(defaultWidth,
         defaultHeight)
     {
         NumCols = numCols;
         NumRows = numRows;
+        // This ctor is public and can be created without a formula engine.
+        _givenFormulaOptions = formulaOptions;
     }
 
     /// <summary>

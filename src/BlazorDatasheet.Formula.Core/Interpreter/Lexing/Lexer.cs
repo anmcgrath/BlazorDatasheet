@@ -8,6 +8,7 @@ public ref struct Lexer
     private int _position;
     private ReadOnlySpan<char> _string;
     private WhiteSpaceOptions _whiteSpaceOptions = WhiteSpaceOptions.RemoveWhitespace;
+    private SeparatorSettings _separatorSettings = null!;
     private char _current;
     public List<string> Errors { get; private set; } = null!;
 
@@ -18,11 +19,13 @@ public ref struct Lexer
         _current = '\0';
     }
 
-    public Token[] Lex(string text, WhiteSpaceOptions whiteSpaceOptions = WhiteSpaceOptions.RemoveWhitespace)
+    public Token[] Lex(string text, SeparatorSettings separatorSettings,
+        WhiteSpaceOptions whiteSpaceOptions = WhiteSpaceOptions.RemoveWhitespace)
     {
         if (string.IsNullOrEmpty(text))
             return Array.Empty<Token>();
 
+        _separatorSettings = separatorSettings ?? new SeparatorSettings();
         _string = text.AsSpan();
         _position = 0;
         _current = _string[0];
@@ -41,8 +44,7 @@ public ref struct Lexer
         return tokens.ToArray();
     }
 
-    private char GetNumberSeparatorChar() => Convert.ToChar(NumberFormatInfo.CurrentInfo.NumberDecimalSeparator);
-    private char GetNegativeSign() => Convert.ToChar(NumberFormatInfo.CurrentInfo.NegativeSign);
+    private char GetNegativeSign() => Convert.ToChar(_separatorSettings.CultureInfo.NumberFormat.NegativeSign);
 
     private Token ReadToken()
     {
@@ -81,6 +83,18 @@ public ref struct Lexer
 
         if (_current == '\'')
             return ReadQuotedSheetName();
+
+        if (_current == _separatorSettings.RowSeparator)
+        {
+            Next();
+            return new Token(Tag.RowSeparatorToken, _separatorSettings.RowSeparator.ToString(), _position);
+        }
+
+        if (_current == _separatorSettings.ListSeparator)
+        {
+            Next();
+            return new Token(Tag.ListSeparatorToken, _separatorSettings.ListSeparator.ToString(), _position);
+        }
 
         Token token;
         switch (_current)
@@ -140,9 +154,6 @@ public ref struct Lexer
             case ')':
                 token = new Token(Tag.RightParenthToken, ")", _position);
                 break;
-            case ',':
-                token = new Token(Tag.CommaToken, ",", _position);
-                break;
             case '{':
                 token = new Token(Tag.LeftCurlyBracketToken, "{", _position);
                 break;
@@ -151,9 +162,6 @@ public ref struct Lexer
                 break;
             case '!':
                 token = new Token(Tag.BangToken, "!", _position);
-                break;
-            case ';':
-                token = new Token(Tag.SemiColonToken, ";", _position);
                 break;
             default:
                 token = new BadToken(_position);
@@ -194,7 +202,8 @@ public ref struct Lexer
         Next();
 
         while (char.IsDigit(_current) ||
-               _current == GetNumberSeparatorChar() || _current == 'e' || (containsE && _current == GetNegativeSign()))
+               _current == _separatorSettings.DecimalNumberSeparator || _current == 'e' ||
+               (containsE && _current == GetNegativeSign()))
         {
             if (_current == 'e')
                 containsE = true;

@@ -1,5 +1,6 @@
 ﻿using BlazorDatasheet.Core.FormulaEngine;
 using BlazorDatasheet.Formula.Core;
+using BlazorDatasheet.Formula.Core.Interpreter;
 
 namespace BlazorDatasheet.Core.Data;
 
@@ -10,21 +11,21 @@ public class Workbook
     private readonly FormulaEngine.FormulaEngine _formulaEngine;
     internal WorkbookEnvironment Environment { get; }
 
-    internal Workbook(Sheet sheet) : this()
+    internal Workbook(Sheet sheet, FormulaOptions? options = null) : this(options)
     {
         AddSheet(sheet);
     }
 
-    internal Workbook(IEnumerable<Sheet> sheets) : this()
+    internal Workbook(IEnumerable<Sheet> sheets, FormulaOptions? options = null) : this(options)
     {
         foreach (var sheet in sheets)
             AddSheet(sheet);
     }
 
-    public Workbook()
+    public Workbook(FormulaOptions? options = null)
     {
         Environment = new WorkbookEnvironment(this);
-        _formulaEngine = new FormulaEngine.FormulaEngine(Environment);
+        _formulaEngine = new FormulaEngine.FormulaEngine(Environment, options);
     }
 
     public Sheet AddSheet(int numRows, int numColumns, int defaultWidth = 105, int defaultHeight = 24)
@@ -56,14 +57,14 @@ public class Workbook
         return sheet;
     }
 
-    public void AddSheet(Sheet sheet)
+    private void AddSheet(Sheet sheet)
     {
         sheet.Workbook = this;
         _sheets.Add(sheet);
         _formulaEngine.AddSheet(sheet);
     }
-    
-    public void AddSheet(string sheetName, Sheet sheet)
+
+    internal void AddSheet(string sheetName, Sheet sheet)
     {
         sheet.Name = sheetName;
         sheet.Workbook = this;
