@@ -242,15 +242,6 @@ public class InterpreterTests
     }
 
     [Test]
-    public void Non_Eng_Culture_Has_Correct_Decimal_Separator()
-    {
-        var ci = new CultureInfo("fr-FR");
-        Thread.CurrentThread.CurrentCulture = ci;
-        EvalExpression("=0,1").GetValue<double>().Should().BeApproximately(0.1, 1e-6);
-        EvalExpression("=,2").GetValue<double>().Should().BeApproximately(0.2, 1e-6);
-    }
-
-    [Test]
     public void Simple_Range_Formula_Is_Not_volatile()
     {
         _parser.FromString("=A1:A2").ContainsVolatiles.Should().BeFalse();

@@ -8,7 +8,6 @@ public enum Tag
     GreaterThanOrEqualToToken,
     LessThanOrEqualToToken,
     StringToken,
-    CommaToken,
     PlusToken,
     StarToken,
     MinusToken,
@@ -17,7 +16,6 @@ public enum Tag
     IdentifierToken,
     NotEqualToToken,
     GreaterThanToken,
-    SemiColonToken,
     BangToken,
     PercentToken,
     LessThanToken,
@@ -31,5 +29,9 @@ public enum Tag
     LogicalToken,
     Whitespace,
     SheetLocatorToken,
-    ErrorToken
+    ErrorToken,
+    CommaToken,
+    SemiColonToken,
+    BackslashToken,
+    DotToken
 }

@@ -1,6 +1,7 @@
 ﻿@using Microsoft.JSInterop
 @using System.Diagnostics
 @using System.Text
+@using BlazorDatasheet.Formula.Core.Interpreter
 @using BlazorDatasheet.Formula.Core.Interpreter.Lexing
 @implements IAsyncDisposable
 @inject IJSRuntime Js;
@@ -25,6 +26,8 @@
     [Parameter] public EventCallback<string> ValueChanged { get; set; }
 
     [Parameter] public EventCallback<int> CarePositionChanged { get; set; }
+
+    [Parameter, EditorRequired] public required FormulaOptions FormulaOptions { get; set; }
 
     [Parameter] public double CellWidth { get; set; }
     [Parameter] public double CellHeight { get; set; }
@@ -81,7 +84,7 @@
             return text;
 
         var lexer = new Lexer();
-        var tokens = lexer.Lex(text);
+        var tokens = lexer.Lex(text, FormulaOptions);
 
         var sb = new StringBuilder();
         var span = text.AsSpan();
