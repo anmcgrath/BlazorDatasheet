@@ -14,7 +14,7 @@
     @foreach (var val in _values)
     {
         <div class="select-item @(val.Equals(_currentSelected) ? "active" : "")"
-             @onmouseup="() => selectItem(val)">
+             @onmouseup="() => SelectItem(val)">
             @val
         </div>
     }
@@ -24,43 +24,46 @@
 
     private string[] _values = Array.Empty<string>();
 
-    private IReadOnlyCell Cell;
-
     string? _currentSelected;
 
     public override void BeforeEdit(IReadOnlyCell cell, Sheet sheet)
     {
-        Cell = cell;
-
         foreach (var validator in sheet.Validators.Get(cell.Row, cell.Col))
-            if (validator is SourceValidator)
+        {
+            if (validator is SourceValidator sourceValidator)
             {
-                _values = ((SourceValidator)validator).ValidationSource.ToArray();
+                _values = sourceValidator.ValidationSource.ToArray();
                 break;
             }
+        }
     }
 
     public override void BeginEdit(EditEntryMode entryMode, string? editValue, string key)
     {
-        if (entryMode == EditEntryMode.Mouse)
+        switch (entryMode)
         {
-            CurrentValue = editValue ?? string.Empty;
-        }
-        else if (entryMode == EditEntryMode.Key)
-        {
-            if (_values.Any())
+            case EditEntryMode.Mouse:
+                CurrentValue = editValue ?? string.Empty;
+                StateHasChanged();
+                break;
+            case EditEntryMode.Key:
             {
-                var keyUpped = key.ToUpperInvariant();
-                _currentSelected = _values.FirstOrDefault(v => v.ToUpperInvariant().StartsWith(keyUpped));
-            }
+                if (_values.Any())
+                {
+                    var keyUpped = key.ToUpperInvariant();
+                    _currentSelected = _values.FirstOrDefault(v => v.ToUpperInvariant().StartsWith(keyUpped));
+                }
 
-            if (!string.IsNullOrWhiteSpace(_currentSelected))
-            {
-                CurrentValue = _currentSelected;
-            }
-            else
-            {
-                CurrentValue = key;
+                if (!string.IsNullOrWhiteSpace(_currentSelected))
+                {
+                    CurrentValue = _currentSelected;
+                }
+                else
+                {
+                    CurrentValue = key;
+                }
+
+                break;
             }
         }
 
@@ -74,7 +77,7 @@
         {
             if (!string.IsNullOrWhiteSpace(_currentSelected))
             {
-                selectItem(_currentSelected);
+                SelectItem(_currentSelected);
                 return true;
             }
             else
@@ -85,13 +88,13 @@
 
         if (KeyUtil.IsKeyDown(key))
         {
-            hoverItem(1);
+            HoverItem(1);
             return true;
         }
 
         if (KeyUtil.IsKeyUp(key))
         {
-            hoverItem(-1);
+            HoverItem(-1);
             return true;
         }
 
@@ -110,7 +113,7 @@
         return base.HandleKey(key, ctrlKey, shiftKey, altKey, metaKey);
     }
 
-    void hoverItem(int direction)
+    private void HoverItem(int direction)
     {
         var index = !string.IsNullOrWhiteSpace(_currentSelected) ? Array.IndexOf(_values, _currentSelected) : 0;
 
@@ -121,7 +124,7 @@
         StateHasChanged();
     }
 
-    void selectItem(string item)
+    private void SelectItem(string item)
     {
         CurrentValue = item;
         AcceptEdit();
