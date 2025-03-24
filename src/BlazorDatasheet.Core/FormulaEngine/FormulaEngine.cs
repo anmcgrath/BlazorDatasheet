@@ -7,6 +7,7 @@ using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Dependencies;
+using BlazorDatasheet.Formula.Core.Interpreter;
 using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
 using BlazorDatashet.Formula.Functions;
@@ -27,12 +28,15 @@ public class FormulaEngine
     /// </summary>
     private readonly HashSet<FormulaVertex> _requiresCalculation = new();
 
+    public FormulaOptions Options { get; private set; }
+
     public bool IsCalculating { get; private set; }
 
-    internal FormulaEngine(IEnvironment environment)
+    internal FormulaEngine(IEnvironment environment, FormulaOptions? options = null)
     {
+        Options = options ?? new FormulaOptions();
         _environment = environment;
-        _parser = new Parser(_environment);
+        _parser = new Parser(_environment, Options);
         _evaluator = new Evaluator(_environment);
         RegisterDefaultFunctions();
     }

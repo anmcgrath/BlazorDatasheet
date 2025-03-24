@@ -14,9 +14,11 @@ public class Parser
     private List<Reference> _references = new();
     private bool _containsVolatiles;
     private ParsingContext? _parsingContext;
+    private FormulaOptions _formulaOptions;
 
-    public Parser(IEnvironment environment)
+    public Parser(IEnvironment environment, FormulaOptions? formulaOptions = null)
     {
+        _formulaOptions = formulaOptions ?? new FormulaOptions();
         _environment = environment;
     }
 
@@ -44,7 +46,7 @@ public class Parser
     {
         _parsingContext = parsingContext;
         var lexer = new Lexer();
-        var tokens = lexer.Lex(formulaString);
+        var tokens = lexer.Lex(formulaString, _formulaOptions);
         _references = new();
         return Parse(tokens, lexer.Errors);
     }
@@ -279,13 +281,13 @@ public class Parser
             while (true)
             {
                 currentRow.Add(ParseLiteralExpression());
-                if (Current.Tag == Tag.CommaToken)
+                if (Current.Tag == _formulaOptions.SeparatorSettings.ColumnSeparatorTag)
                 {
                     NextToken();
                     continue;
                 }
 
-                if (Current.Tag == Tag.SemiColonToken)
+                if (Current.Tag == _formulaOptions.SeparatorSettings.RowSeparatorTag)
                 {
                     NextToken();
                     rows.Add(new List<LiteralExpression>());
@@ -316,7 +318,7 @@ public class Parser
 
         MatchToken(Tag.RightCurlyBracketToken);
 
-        return new ArrayConstantExpression(rows);
+        return new ArrayConstantExpression(rows, _formulaOptions);
     }
 
     private LiteralExpression ParseLiteralExpression()
@@ -365,7 +367,7 @@ public class Parser
         {
             var arg = ParseExpression();
             args.Add(arg);
-            if (Current.Tag != Tag.CommaToken)
+            if (Current.Tag != _formulaOptions.SeparatorSettings.FuncParameterSeparatorTag)
                 break;
             else
                 NextToken();
@@ -380,7 +382,8 @@ public class Parser
         if (functionDefinition != null && functionDefinition.IsVolatile)
             _containsVolatiles = true;
 
-        return new FunctionExpression(funcToken, args, functionDefinition);
+        return new FunctionExpression(funcToken, args, functionDefinition,
+            _formulaOptions);
     }
 
     private Expression ParseParenthExpression()

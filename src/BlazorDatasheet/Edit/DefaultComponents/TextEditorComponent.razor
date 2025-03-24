@@ -2,19 +2,24 @@
 @using BlazorDatasheet.Core.Interfaces
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Edit
+@using BlazorDatasheet.Formula.Core.Interpreter
 
 <HighlightedInput
     Style="@Style"
     CellWidth="CellWidth"
     CellHeight="CellHeight"
+    FormulaOptions="_formulaOptions"
     CarePositionChanged="OnCaretPositionChanged"
     @bind-Value:set="OnInput"
     @bind-Value:get="CurrentValue"/>
 
 @code {
 
+    private FormulaOptions _formulaOptions = null!;
+
     public override void BeforeEdit(IReadOnlyCell cell, Sheet sheet)
     {
+        _formulaOptions = sheet.FormulaEngine.Options;
         StateHasChanged();
     }
 
