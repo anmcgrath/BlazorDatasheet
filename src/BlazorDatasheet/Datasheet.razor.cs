@@ -230,7 +230,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     /// </summary>
     private EditorLayer _editorLayer = default!;
 
-    private readonly List<IRegion> _dirtyRows = new();
+    private readonly List<IRegion> _dirtyRegions = new();
 
     private bool _sheetIsDirty;
 
@@ -363,7 +363,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
         _renderRequested = false;
         _sheetIsDirty = false;
-        _dirtyRows.Clear();
+        _dirtyRegions.Clear();
 
         await base.OnAfterRenderAsync(firstRender);
     }
@@ -482,7 +482,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
             if (boundedRegion == null)
                 continue;
 
-            _dirtyRows.Add(boundedRegion);
+            _dirtyRegions.Add(boundedRegion);
 
             foreach (var row in _sheet.Rows.GetVisibleIndices(boundedRegion.Top, boundedRegion.Bottom))
             {
@@ -946,14 +946,14 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
     private bool IsRowDirty(int rowIndex)
     {
-        return _sheetIsDirty || _dirtyRows.Any(x => x.SpansRow(rowIndex));
+        return _sheetIsDirty || _dirtyRegions.Any(x => x.SpansRow(rowIndex));
     }
 
     protected override bool ShouldRender()
     {
         _renderRequested = true;
 
-        var shouldRender = _sheet.ScreenUpdating && (_sheetIsDirty || _dirtyRows.Count != 0);
+        var shouldRender = _sheet.ScreenUpdating && (_sheetIsDirty || _dirtyRegions.Count != 0);
         return shouldRender;
     }
 
