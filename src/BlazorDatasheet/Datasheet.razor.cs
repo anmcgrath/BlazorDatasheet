@@ -489,10 +489,10 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
                 foreach (var col in _sheet.Columns.GetVisibleIndices(boundedRegion.Left, boundedRegion.Right))
                 {
                     var position = new CellPosition(row, col);
-                    if (!_visualCellCache.TryAdd(position, new VisualCell(row, col, _sheet, _numberPrecisionDisplay)))
-                    {
-                        _visualCellCache[position] = new VisualCell(row, col, _sheet, _numberPrecisionDisplay);
-                    }
+                    var visualCell = new VisualCell(row, col, _sheet, _numberPrecisionDisplay);
+                    
+                    if (!_visualCellCache.TryAdd(position, visualCell))
+                        _visualCellCache[position] = visualCell;
                 }
             }
         }
