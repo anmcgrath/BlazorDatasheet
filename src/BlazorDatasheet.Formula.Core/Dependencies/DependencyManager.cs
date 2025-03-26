@@ -270,6 +270,14 @@ public class DependencyManager
 
     private List<FormulaVertex> GetVerticesInRegion(IRegion region, string sheetName)
     {
+        if (region.IsSingleCell())
+        {
+            var vertex = _dependencyGraph.GetVertex(new FormulaVertex(region, sheetName, null).SheetName);
+            if (vertex != null)
+                return [vertex];
+            return new List<FormulaVertex>();
+        }
+
         var vertices = new List<FormulaVertex>();
         foreach (var v in _dependencyGraph.GetAll())
         {
