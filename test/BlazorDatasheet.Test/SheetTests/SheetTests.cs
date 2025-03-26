@@ -31,7 +31,7 @@ public class SheetTests
         var copyPasteRegion = new Region(copyPasteRegionR0, copyPasteRegionR1, copyPasteRegionC0, copyPasteRegionC1);
 
         foreach (var posn in copyPasteRegion)
-            sheet.Cells.SetValue(posn.row, posn.col, getCellPosnString(posn.row, posn.col));
+            sheet.Cells.SetValue(posn.row, posn.col, GetCellPositionString(posn.row, posn.col));
 
         var copy = sheet.GetRegionAsDelimitedText(copyPasteRegion);
         Assert.NotNull(copy);
@@ -46,11 +46,15 @@ public class SheetTests
         Assert.True(insertedRegions!.Equals(copyPasteRegion));
 
         foreach (var posn in copyPasteRegion)
-            Assert.AreEqual(getCellPosnString(posn.row, posn.col),
-                sheet.Cells.GetCell(posn.row, posn.col).GetValue<string>());
+        {
+            var sheetCell = sheet.Cells.GetCell(posn.row, posn.col);
+            var cellValue = sheetCell.GetValue<string>();
+            var expected = GetCellPositionString(posn.row, posn.col);
+            cellValue.Should().Be(expected);
+        }
     }
 
-    private string getCellPosnString(int row, int col)
+    private string GetCellPositionString(int row, int col)
     {
         return $"({row},{col})";
     }

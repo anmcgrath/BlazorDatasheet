@@ -183,14 +183,14 @@ public class FormulaEngine
                 {
                     // check whether the formula has already been calculated in this scc group - may be the case if we lucked
                     // out on the first value calculation and it wasn't a circular reference.
-                    if (scc.Count > 1 && executionContext.TryGetExecutedValue(vertex.Formula, out var result))
+                    if (executionContext.TryGetExecutedValue(vertex.Formula, out var result))
                     {
-                        //TODO: This is never hit so we are always recalculating
                         value = result;
                     }
                     else
                     {
                         value = _evaluator.Evaluate(vertex.Formula, executionContext);
+                        executionContext.RecordExecuted(vertex.Formula, value);
                         if (value.IsError() && ((FormulaError)value.Data!).ErrorType == ErrorType.Circular)
                             isCircularGroup = true;
                     }

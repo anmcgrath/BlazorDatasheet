@@ -2,14 +2,17 @@
 
 public class FormulaExecutionContext
 {
-    private readonly List<CellFormula> _executed = new();
     private readonly Dictionary<CellFormula, CellValue> _executedValues = new();
-    public IReadOnlyCollection<CellFormula> ExecutionOrder => _executed;
     private readonly Stack<CellFormula> _executing = new();
 
     internal bool IsExecuting(CellFormula formula)
     {
         return _executing.Contains(formula);
+    }
+
+    public void RecordExecuted(CellFormula formula, CellValue value)
+    {
+        _executedValues.TryAdd(formula, value);
     }
 
     /// <summary>
@@ -36,18 +39,6 @@ public class FormulaExecutionContext
     }
 
     /// <summary>
-    /// Marks the currently executing <see cref="CellFormula"/> as executed
-    /// </summary>
-    public void FinishCurrentExecuting(CellValue value)
-    {
-        if (_executing.TryPop(out var formula))
-        {
-            _executed.Add(formula);
-            _executedValues.Add(formula, value);
-        }
-    }
-
-    /// <summary>
     /// Clears the record of executing <see cref="CellFormula"/>
     /// </summary>
     public void ClearExecuting()
@@ -60,7 +51,6 @@ public class FormulaExecutionContext
     /// </summary>
     public void Clear()
     {
-        _executed.Clear();
         _executing.Clear();
         _executedValues.Clear();
     }

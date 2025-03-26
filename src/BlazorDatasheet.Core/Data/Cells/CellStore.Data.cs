@@ -25,7 +25,7 @@ public partial class CellStore
     /// <param name="col"></param>
     /// <param name="value"></param>
     /// <returns></returns>
-    public bool SetValue(int row, int col, object value)
+    public bool SetValue(int row, int col, object? value)
     {
         var cmd = new SetCellValueCommand(row, col, ConvertToCellValue(row, col, value));
         return Sheet.Commands.ExecuteCommand(cmd);
@@ -100,7 +100,9 @@ public partial class CellStore
     /// <returns></returns>
     public bool SetValues(int row, int col, object[][] values)
     {
-        var cmd = new SetCellValuesCommand(row, col, values);
+        var cmd = new SetCellValuesCommand(row, col,
+            values.Select((r, rowOffset) =>
+                r.Select((v, colOffset) => ConvertToCellValue(row + rowOffset, col + colOffset, v))));
         return Sheet.Commands.ExecuteCommand(cmd);
     }
 
@@ -123,8 +125,20 @@ public partial class CellStore
     /// <returns></returns>
     public bool SetValues(IRegion region, object? value)
     {
-        var cmd = new SetCellValuesCommand(region, value);
-        return Sheet.Commands.ExecuteCommand(cmd);
+        if (region.IsSingleCell())
+            return SetValue(region.Top, region.Left, value);
+
+        var cellValues = new CellValue[region.Height][];
+        for (int i = 0; i < region.Height; i++)
+        {
+            cellValues[i] = new CellValue[region.Width];
+            for (int j = 0; j < region.Width; j++)
+            {
+                cellValues[i][j] = ConvertToCellValue(i + region.Top, j + region.Left, value);
+            }
+        }
+
+        return SetValues(region.Top, region.Left, cellValues);
     }
 
     /// <summary>

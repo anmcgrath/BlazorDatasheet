@@ -5,5 +5,5 @@ namespace BlazorDatasheet.Core.Events.Visual;
 
 public class DirtySheetEventArgs
 {
-    public ConsolidatedDataStore<bool> DirtyRegions { get; init; } = default!;
+    public Range1DStore<bool> DirtyRows { get; init; } = default!;
 }

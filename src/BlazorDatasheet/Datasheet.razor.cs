@@ -230,7 +230,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     /// </summary>
     private EditorLayer _editorLayer = default!;
 
-    private readonly List<IRegion> _dirtyRows = new();
+    private readonly List<IRegion> _dirtyRegions = new();
 
     private bool _sheetIsDirty;
 
@@ -363,7 +363,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
         _renderRequested = false;
         _sheetIsDirty = false;
-        _dirtyRows.Clear();
+        _dirtyRegions.Clear();
 
         await base.OnAfterRenderAsync(firstRender);
     }
@@ -465,9 +465,9 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
     private void SheetOnSheetDirty(object? sender, DirtySheetEventArgs e)
     {
-        var dirtyRegions = e.DirtyRegions
-            .GetDataRegions(_currentViewport.ViewRegion)
-            .Select(x => x.Region)
+        var dirtyRegions = e.DirtyRows
+            .GetAllIntervalData()
+            .Select(x => new RowRegion(x.interval.Start, x.interval.End))
             .ToList();
 
         if (dirtyRegions.Count > 0)
@@ -482,17 +482,17 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
             if (boundedRegion == null)
                 continue;
 
-            _dirtyRows.Add(boundedRegion);
+            _dirtyRegions.Add(boundedRegion);
 
             foreach (var row in _sheet.Rows.GetVisibleIndices(boundedRegion.Top, boundedRegion.Bottom))
             {
                 foreach (var col in _sheet.Columns.GetVisibleIndices(boundedRegion.Left, boundedRegion.Right))
                 {
                     var position = new CellPosition(row, col);
-                    if (!_visualCellCache.TryAdd(position, new VisualCell(row, col, _sheet, _numberPrecisionDisplay)))
-                    {
-                        _visualCellCache[position] = new VisualCell(row, col, _sheet, _numberPrecisionDisplay);
-                    }
+                    var visualCell = new VisualCell(row, col, _sheet, _numberPrecisionDisplay);
+
+                    if (!_visualCellCache.TryAdd(position, visualCell))
+                        _visualCellCache[position] = visualCell;
                 }
             }
         }
@@ -946,14 +946,14 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
     private bool IsRowDirty(int rowIndex)
     {
-        return _sheetIsDirty || _dirtyRows.Any(x => x.SpansRow(rowIndex));
+        return _sheetIsDirty || _dirtyRegions.Any(x => x.SpansRow(rowIndex));
     }
 
     protected override bool ShouldRender()
     {
         _renderRequested = true;
 
-        var shouldRender = _sheet.ScreenUpdating && (_sheetIsDirty || _dirtyRows.Count != 0);
+        var shouldRender = _sheet.ScreenUpdating && (_sheetIsDirty || _dirtyRegions.Count != 0);
         return shouldRender;
     }
 

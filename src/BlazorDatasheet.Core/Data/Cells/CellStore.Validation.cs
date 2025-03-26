@@ -22,7 +22,7 @@ public partial class CellStore
             _validStore.Set(row, col, result.IsValid);
         }
 
-        Sheet.MarkDirty(cellsAffected);
+        Sheet.MarkDirty(region);
     }
 
     public bool IsValid(int row, int col)

@@ -153,6 +153,9 @@ public class Evaluator
         if (formula == null)
             return CellValue.Reference(cellReference);
 
+        if (_formulaExecutionContext.TryGetExecutedValue(formula, out var result))
+            return result;
+
         return DoEvaluate(formula);
     }
 

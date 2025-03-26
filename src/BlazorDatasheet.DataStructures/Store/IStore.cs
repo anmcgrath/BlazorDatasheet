@@ -5,7 +5,7 @@ namespace BlazorDatasheet.DataStructures.Store;
 public interface IStore<T, TRestoreData>
 {
     /// <summary>
-    /// Returns whether the the store contains any non-empty data at the row, column specified.
+    /// Returns whether store contains any non-empty data at the row, column specified.
     /// </summary>
     /// <param name="row"></param>
     /// <param name="col"></param>

@@ -154,9 +154,9 @@ public class Sheet
     public NamedRangeManager NamedRanges { get; }
 
     /// <summary>
-    /// If the sheet is batching dirty regions, they are stored here.
+    /// If the sheet is batching dirty rows, they are stored here.
     /// </summary>
-    private readonly ConsolidatedDataStore<bool> _dirtyRegions = new();
+    private readonly Range1DStore<bool> _dirtyRows = new(false);
 
     private Sheet(int defaultWidth, int defaultHeight)
     {
@@ -330,15 +330,6 @@ public class Sheet
     }
 
     /// <summary>
-    /// Mark the cells specified by positions dirty.
-    /// </summary>
-    /// <param name="positions"></param>
-    internal void MarkDirty(IEnumerable<CellPosition> positions)
-    {
-        MarkDirty(positions.Select(p => new Region(p.row, p.col)));
-    }
-
-    /// <summary>
     /// Marks the cell as dirty and requiring re-render
     /// </summary>
     /// <param name="row"></param>
@@ -358,7 +349,9 @@ public class Sheet
         if (intersection == null)
             return;
 
-        MarkDirty(new List<IRegion>() { intersection });
+        _dirtyRows.Set(region.Top, region.Bottom, true);
+        if (!_isBatchingChanges)
+            EmitSheetDirty();
     }
 
     /// <summary>
@@ -373,17 +366,20 @@ public class Sheet
             if (intersection == null)
                 continue;
 
-            _dirtyRegions.Add(intersection, true);
+            _dirtyRows.Set(region.Top, region.Bottom, true);
         }
 
         if (!_isBatchingChanges)
+            EmitSheetDirty();
+    }
+
+    private void EmitSheetDirty()
+    {
+        SheetDirty?.Invoke(this, new()
         {
-            SheetDirty?.Invoke(this, new DirtySheetEventArgs()
-            {
-                DirtyRegions = _dirtyRegions,
-            });
-            _dirtyRegions.Clear();
-        }
+            DirtyRows = _dirtyRows
+        });
+        _dirtyRows.Clear();
     }
 
     private int _batchRequestNo;
@@ -400,7 +396,7 @@ public class Sheet
         if (_isBatchingChanges)
             return;
 
-        _dirtyRegions.Clear();
+        _dirtyRows.Clear();
         Cells.BatchChanges();
         _isBatchingChanges = true;
     }
@@ -414,9 +410,12 @@ public class Sheet
 
         var beforeArgs = new BeforeRangeSortEventArgs(region, sortOptions);
         BeforeRangeSort?.Invoke(this, beforeArgs);
+
         var cmd = new SortRangeCommand(region, sortOptions);
+
         if (!beforeArgs.Cancel)
             Commands.ExecuteCommand(cmd);
+
         var afterArgs = new RangeSortedEventArgs(region, cmd.SortedRegion, cmd.OldIndices);
         RangeSorted?.Invoke(this, afterArgs);
     }
@@ -435,16 +434,10 @@ public class Sheet
 
         // Checks for batching changes here, because the cells changed event
         // may start batching more dirty changes again from subscribers of that event.
-        if (_dirtyRegions.Any() && _isBatchingChanges)
-        {
-            SheetDirty?.Invoke(this, new DirtySheetEventArgs()
-            {
-                DirtyRegions = _dirtyRegions,
-            });
-        }
+        if (_dirtyRows.Any() && _isBatchingChanges)
+            EmitSheetDirty();
 
         _isBatchingChanges = false;
-        _dirtyRegions.Clear();
     }
 
     /// <summary>

@@ -142,6 +142,8 @@ public class Range1DStore<T> : ISparseSource
         var interval = Intervals.GetNextNonEmptyIndex(index);
         return interval;
     }
+
+    public bool Any() => Intervals.Any();
 }
 
 public class OverwritingValue<R> : IMergeable<OverwritingValue<R>>

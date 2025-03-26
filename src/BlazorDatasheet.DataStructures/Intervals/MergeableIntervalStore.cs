@@ -411,8 +411,8 @@ public class MergeableIntervalStore<T> : ISparseSource where T : IMergeable<T>
     {
         if (_intervals.Any())
         {
-            Start = _intervals.First().Value.Start;
-            End = _intervals.Last().Value.End;
+            Start = _intervals.Values[0].Start;
+            End = _intervals.Values[_intervals.Count - 1].End;
         }
     }
 
