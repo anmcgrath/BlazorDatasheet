@@ -262,6 +262,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
     protected override void OnInitialized()
     {
+        CreateCellRenderFragment();
         ClipboardService = new Clipboard(Js);
         _windowEventService = new WindowEventService(Js);
         RegisterDefaultShortcuts();

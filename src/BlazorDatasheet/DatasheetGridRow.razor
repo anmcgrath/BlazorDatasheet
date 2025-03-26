@@ -7,9 +7,6 @@
 }
 @foreach (var col in _visibleColIndices)
 {
-    var dataCol = col;
-    var dataRow = Row;
-
     if (!Cache.TryGetValue(new CellPosition(Row, col), out var visualCell))
         visualCell = new VisualCell(Row, col, Sheet, NumberPrecisionDisplay);
 
@@ -20,48 +17,14 @@
             colOffset++;
             continue;
         }
-
-        dataCol = visualCell.VisibleMergeColStart;
-        dataRow = visualCell.VisibleMergeRowStart;
     }
 
     <div @key="col"
          style="grid-row: 1; grid-column:@colOffset;">
-        <div
-            data-row="@dataRow"
-            data-col="@dataCol"
-            class="sheet-cell"
-            style="@visualCell.FormatStyleString;">
-            @if (visualCell.Icon != null)
-            {
-                <div
-                    style="margin-right:2px; flex-shrink: 1; float:left; color: @(visualCell.Format?.IconColor ?? "var(--icon-color)");">
-                    @GetIconRenderFragment(visualCell.Icon)
-                </div>
-            }
-            <div style="flex-grow: 1">
-                @switch (visualCell.CellType)
-                {
-                    case "default":
-                    case "text":
-                    case "datetime":
-                        @visualCell.FormattedString
-                        break;
-                    case "boolean":
-                        <BoolRenderer Cell="visualCell" Sheet="Sheet"/>
-                        break;
-                    case "select":
-                        <SelectRenderer Cell="visualCell" Sheet="Sheet"/>
-                        break;
-
-                    default:
-                        <DynamicComponent
-                            Parameters="@GetCellRendererParameters(visualCell)"
-                            Type="@GetCellRendererType(visualCell.CellType)"/>
-                        break;
-                }
-            </div>
-        </div>
+        @if (CellRenderFragment != null)
+        {
+            @CellRenderFragment(visualCell)
+        }
     </div>
     colOffset++;
 }
@@ -79,12 +42,9 @@
 
     [Parameter, EditorRequired] public Dictionary<CellPosition, VisualCell> Cache { get; set; } = null!;
 
-    [CascadingParameter(Name = "Icons")] public Dictionary<string, RenderFragment> Icons { get; set; } = default!;
-
-    [CascadingParameter(Name = "CustomCellTypeDefinitions")]
-    public Dictionary<string, CellTypeDefinition> CustomCellTypeDefinitions { get; set; } = default!;
-
-    [Parameter, EditorRequired] public required int NumberPrecisionDisplay { get; set; }
+    [Parameter] public required RenderFragment<VisualCell>? CellRenderFragment { get; set; }
+    
+    [Parameter] public required int NumberPrecisionDisplay { get; set; }
 
     protected override bool ShouldRender() => IsDirty || _colIndicesChanged;
     private bool _colIndicesChanged = false;
@@ -115,30 +75,6 @@
         if (oldIndices.LastOrDefault() != newIndices.LastOrDefault())
             return true;
         return false;
-    }
-
-    private Type GetCellRendererType(string type)
-    {
-        if (CustomCellTypeDefinitions.TryGetValue(type, out var definition))
-            return definition.RendererType;
-
-        return typeof(TextRenderer);
-    }
-
-    private Dictionary<string, object> GetCellRendererParameters(VisualCell visualCell)
-    {
-        return new Dictionary<string, object>()
-        {
-            { "Cell", visualCell },
-            { "Sheet", Sheet }
-        };
-    }
-
-    private RenderFragment GetIconRenderFragment(string? cellIcon)
-    {
-        if (cellIcon != null && Icons.TryGetValue(cellIcon, out var rf))
-            return rf;
-        return _ => { };
     }
 
 }
