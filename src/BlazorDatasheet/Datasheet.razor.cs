@@ -465,9 +465,9 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
     private void SheetOnSheetDirty(object? sender, DirtySheetEventArgs e)
     {
-        var dirtyRegions = e.DirtyRegions
-            .GetDataRegions(_currentViewport.ViewRegion)
-            .Select(x => x.Region)
+        var dirtyRegions = e.DirtyRows
+            .GetAllIntervalData()
+            .Select(x => new RowRegion(x.interval.Start, x.interval.End))
             .ToList();
 
         if (dirtyRegions.Count > 0)
@@ -490,7 +490,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
                 {
                     var position = new CellPosition(row, col);
                     var visualCell = new VisualCell(row, col, _sheet, _numberPrecisionDisplay);
-                    
+
                     if (!_visualCellCache.TryAdd(position, visualCell))
                         _visualCellCache[position] = visualCell;
                 }

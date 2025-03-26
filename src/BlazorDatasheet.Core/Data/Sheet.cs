@@ -154,9 +154,9 @@ public class Sheet
     public NamedRangeManager NamedRanges { get; }
 
     /// <summary>
-    /// If the sheet is batching dirty regions, they are stored here.
+    /// If the sheet is batching dirty rows, they are stored here.
     /// </summary>
-    private readonly ConsolidatedDataStore<bool> _dirtyRegions = new();
+    private readonly Range1DStore<bool> _dirtyRows = new(false);
 
     private Sheet(int defaultWidth, int defaultHeight)
     {
@@ -349,7 +349,7 @@ public class Sheet
         if (intersection == null)
             return;
 
-        _dirtyRegions.Add(intersection, true);
+        _dirtyRows.Set(region.Top, region.Bottom, true);
         if (!_isBatchingChanges)
             EmitSheetDirty();
     }
@@ -366,7 +366,7 @@ public class Sheet
             if (intersection == null)
                 continue;
 
-            _dirtyRegions.Add(intersection, true);
+            _dirtyRows.Set(region.Top, region.Bottom, true);
         }
 
         if (!_isBatchingChanges)
@@ -377,9 +377,9 @@ public class Sheet
     {
         SheetDirty?.Invoke(this, new()
         {
-            DirtyRegions = _dirtyRegions
+            DirtyRows = _dirtyRows
         });
-        _dirtyRegions.Clear();
+        _dirtyRows.Clear();
     }
 
     private int _batchRequestNo;
@@ -396,7 +396,7 @@ public class Sheet
         if (_isBatchingChanges)
             return;
 
-        _dirtyRegions.Clear();
+        _dirtyRows.Clear();
         Cells.BatchChanges();
         _isBatchingChanges = true;
     }
@@ -410,12 +410,12 @@ public class Sheet
 
         var beforeArgs = new BeforeRangeSortEventArgs(region, sortOptions);
         BeforeRangeSort?.Invoke(this, beforeArgs);
-        
+
         var cmd = new SortRangeCommand(region, sortOptions);
-        
+
         if (!beforeArgs.Cancel)
             Commands.ExecuteCommand(cmd);
-        
+
         var afterArgs = new RangeSortedEventArgs(region, cmd.SortedRegion, cmd.OldIndices);
         RangeSorted?.Invoke(this, afterArgs);
     }
@@ -434,7 +434,7 @@ public class Sheet
 
         // Checks for batching changes here, because the cells changed event
         // may start batching more dirty changes again from subscribers of that event.
-        if (_dirtyRegions.Any() && _isBatchingChanges)
+        if (_dirtyRows.Any() && _isBatchingChanges)
             EmitSheetDirty();
 
         _isBatchingChanges = false;
