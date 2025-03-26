@@ -167,12 +167,12 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
         return _rows.GetNextNonEmptyItemKey(index + 1);
     }
 
-    public int GetNextNonEmptyIndexInRow(int row, int col)
+    public int GetNextNonEmptyIndexInRow(int row, int col, int colDirection = 1)
     {
         if (!_rows.ContainsIndex(row))
             return -1;
 
-        return _rows.Get(row).GetNextNonEmptyItemKey(col + 1);
+        return _rows.Get(row).GetNextNonEmptyItemKey(col + Math.Sign(colDirection), colDirection);
     }
 
     public MatrixRestoreData<T> RemoveRowAt(int row, int count)

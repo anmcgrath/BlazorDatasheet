@@ -201,19 +201,20 @@ public partial class CellStore
     }
 
     /// <summary>
-    /// Returns the next visible cell with data in the row specified, and after <paramref name="colIndex"/>
+    /// Returns the next visible cell with data in the row specified, and after (given <paramref name="colDir"/>) the column index <paramref name="colIndex"/>
     /// </summary>
     /// <param name="rowIndex"></param>
     /// <param name="colIndex"></param>
+    /// <param name="colDir"></param>
     /// <returns></returns>
-    public SheetCell? GetNextInRow(int rowIndex, int colIndex)
+    public SheetCell? GetNextInRow(int rowIndex, int colIndex, int colDir = 1)
     {
-        var nextColIndex = _dataStore.GetNextNonEmptyIndexInRow(rowIndex, colIndex);
+        var nextColIndex = _dataStore.GetNextNonEmptyIndexInRow(rowIndex, colIndex, colDir);
         if (nextColIndex == -1)
             return null;
 
         if (!Sheet.Columns.IsVisible(nextColIndex))
-            return GetNextInRow(rowIndex, Sheet.Columns.GetNextVisible(nextColIndex, 1));
+            return GetNextInRow(rowIndex, Sheet.Columns.GetNextVisible(nextColIndex, colDir));
 
         if (nextColIndex >= Sheet.NumCols)
             return null;

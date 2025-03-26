@@ -543,19 +543,30 @@ public class RegionDataStore<T> : ISparseSource, IRowSource, IStore<T, RegionRes
         return nextRowIndex;
     }
 
-    public int GetNextNonEmptyIndexInRow(int row, int col)
+    public int GetNextNonEmptyIndexInRow(int row, int col, int colDir = 1)
     {
-        var regions = Tree.Search(new Envelope(col + 1, row, double.MaxValue, row + 1)).Select(x => x.Region);
-        int nextColIndex = int.MaxValue;
+        if (colDir == 0)
+            return -1;
+
+        int dir = Math.Sign(colDir);
+
+        var searchEnv = Math.Sign(dir) == 1
+            ? new Envelope(col + 1, row, double.MaxValue, row + 1)
+            : new Envelope(0, row, col, row + 1);
+
+        var regions = Tree.Search(searchEnv).Select(x => x.Region);
+        int nextColIndex = dir == 1 ? int.MaxValue : int.MinValue;
         foreach (var region in regions)
         {
-            if (region.Spans(col + 1, Axis.Col))
-                return col + 1;
-            if (region.Left > col)
+            if (region.Spans(col + dir, Axis.Col))
+                return col + dir;
+            if (dir > 0 && region.Left > col)
                 nextColIndex = Math.Min(nextColIndex, region.Left);
+            else if (dir < 0 && region.Right < col)
+                nextColIndex = Math.Max(nextColIndex, region.Right);
         }
 
-        if (nextColIndex == int.MaxValue || nextColIndex == col)
+        if (nextColIndex == int.MaxValue || nextColIndex == int.MinValue || nextColIndex == col)
             return -1;
         return nextColIndex;
     }
