@@ -82,7 +82,8 @@ public class VisualCell
 
         IsVisible = cell.IsVisible;
 
-        FormatStyleString = GetCellFormatStyleString(Row, Col, format, cell.IsValid, cellValue.ValueType, sheet, Width, Height);
+        FormatStyleString =
+            GetCellFormatStyleString(Row, Col, format, cell.IsValid, cellValue.ValueType, sheet, Width, Height);
         Icon = format.Icon;
         CellType = cell.Type;
         Format = format;
@@ -90,23 +91,6 @@ public class VisualCell
 
     private VisualCell()
     {
-    }
-
-    public static VisualCell Empty(int row, int col, Sheet sheet, ref CellFormat defaultFormat)
-    {
-        var cell =  new VisualCell()
-        {
-            Row = row,
-            Col = col,
-            Height = sheet.Rows.GetVisualHeight(row),
-            Width = sheet.Columns.GetVisualWidth(col),
-            CellType = "default",
-            Format = defaultFormat
-        };
-        
-        cell.FormatStyleString = GetCellFormatStyleString(cell.Row, cell.Col, defaultFormat, true, CellValueType.Text,
-            sheet, cell.Width, cell.Height);
-        return cell;
     }
 
     private static string GetCellFormatStyleString(int row, int col, CellFormat? format, bool isCellValid,
@@ -165,21 +149,25 @@ public class VisualCell
                 sb.AddStyle("align-items", "center");
         }
 
+        if (format.TextWrap == TextWrapping.Overflow || format.TextWrap == TextWrapping.Clip)
+            sb.AddStyle("overflow", "clip");
 
-        var nextCell = sheet.Cells.GetNextInRow(row, col);
-        var distToNextCell = 0d;
-        if (nextCell == null)
-            distToNextCell = sheet.Columns.GetVisualWidthBetween(col, sheet.NumCols);
-        else
-            distToNextCell = sheet.Columns.GetVisualWidthBetween(col, nextCell.Col);
+        if (format.TextWrap == TextWrapping.Overflow)
+        {
+            var nextCell = sheet.Cells.GetNextInRow(row, col);
+            var distToNextCell = 0d;
+            if (nextCell == null)
+                distToNextCell = sheet.Columns.GetVisualWidthBetween(col, sheet.NumCols);
+            else
+                distToNextCell = sheet.Columns.GetVisualWidthBetween(col, nextCell.Col);
 
-        var stack = new StackTrace(3).GetFrame(0).GetMethod().Name;
-        Console.WriteLine(stack);
-        Console.WriteLine(distToNextCell);
+            sb.AddStyle("overflow-clip-margin", $"{distToNextCell - cellWidth}px");
+        }
+        else if (format.TextWrap == TextWrapping.Wrap)
+        {
+            sb.AddStyle("text-wrap", "wrap");
+        }
 
-        // text wrapping
-        sb.AddStyle("overflow", "clip");
-        sb.AddStyle("overflow-clip-margin", $"{distToNextCell - cellWidth}px");
 
         return sb.ToString();
     }

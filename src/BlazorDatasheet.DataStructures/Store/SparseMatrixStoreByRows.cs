@@ -239,7 +239,12 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
         }
 
         foreach (var pt in restoreData.DataRemoved)
-            Set(pt.row, pt.col, pt.data);
+        {
+            if (pt.data?.Equals(_defaultIfEmpty) == true)
+                Clear(pt.row, pt.col);
+            else
+                Set(pt.row, pt.col, pt.data!);
+        }
     }
 
     public IEnumerable<(int row, int col, T data)> GetNonEmptyData(IRegion region)
