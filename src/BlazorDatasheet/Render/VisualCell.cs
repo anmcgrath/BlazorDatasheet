@@ -149,20 +149,22 @@ public class VisualCell
                 sb.AddStyle("align-items", "center");
         }
 
-        if (format.TextWrap == TextWrapping.Overflow || format.TextWrap == TextWrapping.Clip)
-            sb.AddStyle("overflow", "clip");
-
-        if (format.TextWrap == TextWrapping.Overflow)
+        if (format.TextWrap == TextWrapping.Clip)
         {
-            var nextCell = sheet.Cells.GetNextInRow(row, col);
-            var distToNextCell = 0d;
-            if (nextCell == null)
-                distToNextCell = sheet.Columns.GetVisualWidthBetween(col, sheet.NumCols);
-            else
-                distToNextCell = sheet.Columns.GetVisualWidthBetween(col, nextCell.Col);
-
-            sb.AddStyle("overflow-clip-margin", $"{distToNextCell - cellWidth}px");
+            sb.AddStyle("overflow", "clip");
         }
+        else if (format.TextWrap == TextWrapping.Overflow)
+        {
+            sb.AddStyle("overflow", "visible");
+            var nextLeftCol = sheet.Cells.GetNextInRow(row, col, -1)?.Col ?? 0;
+            var nextRightCol = sheet.Cells.GetNextInRow(row, col, 1)?.Col ?? sheet.NumCols;
+            var distLeft = -sheet.Columns.GetVisualWidthBetween(nextLeftCol + 1, col);
+            var distRight = sheet.Columns.GetVisualWidthBetween(col, nextRightCol);
+            Console.WriteLine($"Next right column is {nextRightCol}");
+            Console.WriteLine($"Next left column is {nextLeftCol}");
+            sb.AddStyle("clip-path", $"rect(0px {distRight}px {cellHeight}px {distLeft}px)");
+        }
+
         else if (format.TextWrap == TextWrapping.Wrap)
         {
             sb.AddStyle("text-wrap", "wrap");

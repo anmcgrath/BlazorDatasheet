@@ -179,4 +179,15 @@ public class SheetTests
         var sheet = new Sheet(100, 100);
         sheet.Cells[cellAddress].Should().BeNull();
     }
+
+    [Test]
+    public void Get_Next_Visible_Col_In_Row_Correct()
+    {
+        var sheet = new Sheet(100, 200);
+        sheet.Cells.SetValue(5, 4, "A");
+        sheet.Cells.SetValue(5, 10, "B");
+        sheet.Cells.SetValue(5, 1, "C");
+        sheet.Cells.GetNextInRow(5, 4)!.Col.Should().Be(10);
+        sheet.Cells.GetNextInRow(5, 4, -1)!.Col.Should().Be(1);
+    }
 }

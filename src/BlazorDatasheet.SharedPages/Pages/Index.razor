@@ -52,6 +52,7 @@
     <button @onclick="@(() => _datasheet.SetActiveAsync(true))">Set sheet active</button>
     <button @onclick="ClearBg">Clear BG</button>
     <button @onclick="@SetReadOnly">ReadOnly</button>
+    <button @onclick="@(()=>Sheet.Selection.Ranges.First().Format = new CellFormat(){TextWrap = TextWrapping.Overflow})">Overflow</button>
 </div>
 
 <div>
@@ -85,7 +86,6 @@
     private Sheet Sheet;
     private string Theme => IsDarkMode ? "dark" : "default";
     private bool _isDarkMode;
-    private string FilterValue { get; set; }
 
     private bool StickyHeadings { get; set; } = true;
 
