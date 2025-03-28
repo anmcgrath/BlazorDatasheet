@@ -225,16 +225,15 @@ public class Editor
                 return false;
             }
 
-            EditAccepted?.Invoke(
-                this,
-                new EditAcceptedEventArgs(EditCell.Row, EditCell.Col, beforeAcceptEdit.EditValue,
-                    beforeAcceptEdit.Formula, isFormula ? EditValue : null));
-
-
             if (isFormula && parsedFormula != null)
                 Sheet.Cells.SetFormula(EditCell.Row, EditCell.Col, parsedFormula);
             else
                 Sheet.Cells.SetValue(EditCell.Row, EditCell.Col, editValue);
+            
+            EditAccepted?.Invoke(
+                this,
+                new EditAcceptedEventArgs(EditCell.Row, EditCell.Col, beforeAcceptEdit.EditValue,
+                    beforeAcceptEdit.Formula, isFormula ? EditValue : null));
 
             EditFinished?.Invoke(this, new EditFinishedEventArgs(EditCell.Row, EditCell.Col));
             this.ClearEdit();

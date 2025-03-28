@@ -1,6 +1,6 @@
 ﻿namespace BlazorDatasheet.DataStructures.Geometry;
 
-public struct Size
+public class Size
 {
     public double Width { get; }
     public double Height { get; }

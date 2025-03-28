@@ -154,6 +154,10 @@
                                     PointerInputService="_sheetPointerInputService">
                         <HighlightLayer/>
                         <AutofillLayer/>
+                        @if (GridLevel == 0)
+                        {
+                            <AutofitLayer CellRenderFragment="CellRenderFragment"/>
+                        }
                         <VirtualMergesLayer
                             CellRenderFragment="CellRenderFragment"
                             NumberPrecisionDisplay="NumberPrecisionDisplay"
