@@ -10,7 +10,7 @@ public class SetFormatCommand : BaseCommand, IUndoableCommand
 {
     private readonly CellFormat _cellFormat;
     private readonly bool _clearSurroundingBorders;
-    private readonly IRegion _region;
+    public IRegion Region { get; }
 
     private RowColFormatRestoreData? _colFormatRestoreData;
     private RowColFormatRestoreData? _rowFormatRestoreData;
@@ -28,7 +28,7 @@ public class SetFormatCommand : BaseCommand, IUndoableCommand
     {
         _cellFormat = cellFormat;
         _clearSurroundingBorders = clearSurroundingBorders;
-        _region = region.Clone();
+        Region = region.Clone();
     }
 
     public override bool CanExecute(Sheet sheet) => true;
@@ -38,13 +38,13 @@ public class SetFormatCommand : BaseCommand, IUndoableCommand
         sheet.BatchUpdates();
         _borderCommands = new();
 
-        if (_region is ColumnRegion columnRegion)
+        if (Region is ColumnRegion columnRegion)
             _colFormatRestoreData = sheet.Columns.SetFormatImpl(_cellFormat, columnRegion.Left, columnRegion.Right);
-        else if (_region is RowRegion rowRegion)
+        else if (Region is RowRegion rowRegion)
             _rowFormatRestoreData = sheet.Rows.SetFormatImpl(_cellFormat, rowRegion.Top, rowRegion.Bottom);
         else
         {
-            var region = sheet.Region.GetIntersection(_region);
+            var region = sheet.Region.GetIntersection(Region);
             if (region != null)
                 _cellFormatRestoreData = sheet.Cells.MergeFormatImpl(region, _cellFormat);
         }
@@ -63,14 +63,14 @@ public class SetFormatCommand : BaseCommand, IUndoableCommand
         IRegion? above = null;
         IRegion? left = null;
 
-        if (_region is ColumnRegion)
-            left = new ColumnRegion(_region.Left - 1);
-        else if (_region is RowRegion)
-            above = new RowRegion(_region.Top - 1);
+        if (Region is ColumnRegion)
+            left = new ColumnRegion(Region.Left - 1);
+        else if (Region is RowRegion)
+            above = new RowRegion(Region.Top - 1);
         else
         {
-            left = new Region(_region.Top, _region.Bottom, _region.Left - 1, _region.Left - 1);
-            above = new Region(_region.Top - 1, _region.Top - 1, _region.Left, _region.Right);
+            left = new Region(Region.Top, Region.Bottom, Region.Left - 1, Region.Left - 1);
+            above = new Region(Region.Top - 1, Region.Top - 1, Region.Left, Region.Right);
         }
 
         CellFormat? cfLeft = null, cfAbove = null;
@@ -101,7 +101,7 @@ public class SetFormatCommand : BaseCommand, IUndoableCommand
         if (_cellFormatRestoreData != null)
             sheet.Cells.Restore(_cellFormatRestoreData);
 
-        sheet.MarkDirty(_region);
+        sheet.MarkDirty(Region);
         sheet.EndBatchUpdates();
         return true;
     }

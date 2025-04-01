@@ -53,6 +53,7 @@
     <button @onclick="ClearBg">Clear BG</button>
     <button @onclick="@SetReadOnly">ReadOnly</button>
     <button @onclick="@(()=>Sheet.Selection.Ranges.First().Format = new CellFormat(){TextWrap = TextWrapping.Overflow})">Overflow</button>
+    <button @onclick="@(()=>Sheet.Selection.Ranges.First().Format = new CellFormat(){TextWrap = TextWrapping.Wrap})">Wrap</button>
 </div>
 
 <div>

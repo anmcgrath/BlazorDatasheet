@@ -1,14 +1,19 @@
-﻿@using BlazorDatasheet.Core.Data
+﻿@using BlazorDatasheet.Core.Commands
+@using BlazorDatasheet.Core.Commands.Formatting
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events.Commands
 @using BlazorDatasheet.Core.Events.Edit
-@using BlazorDatasheet.Core.Layout
 @using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Util
 @using Microsoft.JSInterop
 @inherits Layer
 @implements IAsyncDisposable
 @inject IJSRuntime Js
 
 
-<div class="bds-autoFit" style="visibility: hidden; top: 0; display:inline-block;" @ref="_autoFitEl">
+<div class="bds-autoFit"
+     style="visibility: hidden; top: 0; display:inline-block; @_dimensionStyle"
+     @ref="_autoFitEl">
     @if (CurrentCell != null)
     {
         @CellRenderFragment(CurrentCell)
@@ -18,60 +23,98 @@
 
 @code {
 
-    [Parameter, EditorRequired]
-    public required RenderFragment<VisualCell> CellRenderFragment { get; set; }
+    [Parameter, EditorRequired] public required RenderFragment<VisualCell> CellRenderFragment { get; set; }
 
     private ElementReference _autoFitEl = default!;
-    private bool _isAutofitting = true;
+
+    private bool _isAutoFittingColumn = false;
+    private bool _isAutoFittingRow = false;
+
+    private string _dimensionStyle = string.Empty;
+
     private VisualCell? CurrentCell { get; set; }
 
     private IJSObjectReference? _module;
 
     protected override void OnSheetChange(Sheet newSheet, Sheet oldSheet)
     {
-        if (Depth == 0) // main view only
+        oldSheet.Editor.EditAccepted -= EditorOnEditFinished;
+        newSheet.Editor.EditAccepted += EditorOnEditFinished;
+        oldSheet.Commands.BeforeCommandRun -= CommandsOnBeforeCommandRun;
+        newSheet.Commands.BeforeCommandRun += CommandsOnBeforeCommandRun;
+    }
+
+    private void CommandsOnBeforeCommandRun(object? sender, BeforeCommandRunEventArgs e)
+    {
+        if (e.Command is SetFormatCommand cmd)
         {
-            oldSheet.Editor.EditAccepted -= EditorOnEditFinished;
-            newSheet.Editor.EditAccepted += EditorOnEditFinished;
+            Console.WriteLine("Have set format command");
+            if (cmd.Region.IsSingleCell())
+            {
+                AutoFitRow(cmd.Region.Top, cmd.Region.Left);
+            }
         }
     }
 
     private void EditorOnEditFinished(object? sender, EditAcceptedEventArgs e)
     {
-        CurrentCell = new VisualCell(e.Row, e.Col, Sheet, 15);
-        _isAutofitting = true;
+        AutoFitColumn(e.Row, e.Col);
+    }
+
+    internal void AutoFitColumn(int row, int column)
+    {
+        CurrentCell = new VisualCell(row, column, Sheet, 15);
+
+        var sb = new StyleBuilder();
+        sb.AddStyle("max-height", CurrentCell.Height + "px");
+        _dimensionStyle = sb.ToString();
+
+        _isAutoFittingColumn = true;
+        StateHasChanged();
+    }
+
+    internal void AutoFitRow(int row, int column)
+    {
+        CurrentCell = new VisualCell(row, column, Sheet, 15);
+
+        var sb = new StyleBuilder();
+        sb.AddStyle("max-width", CurrentCell.Width + "px");
+        _dimensionStyle = sb.ToString();
+
+        _isAutoFittingRow = true;
         StateHasChanged();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (firstRender && _module == null)
         {
             _module = await Js.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/Render/Layers/AutofitLayer.razor.js");
+            return;
         }
 
-        if (CurrentCell is not null)
+        if (CurrentCell != null && _module != null && (_isAutoFittingColumn || _isAutoFittingRow))
         {
-    // measure and auto-fit
-            if (_module is not null)
+            var res = await _module.InvokeAsync<Size>("measure", _autoFitEl);
+            if (_isAutoFittingColumn && res.Width > CurrentCell.Width)
             {
-                var res = await _module.InvokeAsync<Size>("measure", _autoFitEl);
-                if (res.Width > CurrentCell.Width)
-                {
-                    Sheet.Columns.SetSize(CurrentCell.Col, res.Width);
-                }
-                if (res.Height > CurrentCell.Height)
-                {
-                    Sheet.Rows.SetSize(CurrentCell.Row, res.Height);
-                }
+                Sheet.Columns.SetSize(CurrentCell.Col, res.Width);
             }
+
+            if (_isAutoFittingRow && res.Height > CurrentCell.Height)
+            {
+                Console.WriteLine("Autofitting row");
+                Sheet.Rows.SetSize(CurrentCell.Row, res.Height);
+            }
+
+            _isAutoFittingColumn = false;
+            _isAutoFittingRow = false;
         }
-        _isAutofitting = false;
     }
 
     protected override bool ShouldRender()
     {
-        return _isAutofitting;
+        return _isAutoFittingColumn || _isAutoFittingRow || _module == null;
     }
 
     async ValueTask IAsyncDisposable.DisposeAsync()
