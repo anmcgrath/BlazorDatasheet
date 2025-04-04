@@ -52,9 +52,9 @@ public class CommandManager
     /// <summary>
     /// Executes a command and, if it is an undoable command, adds it to the undo stack.
     /// </summary>
-    /// <param name="command"></param>
-    /// <param name="isRedo"></param>
-    /// <param name="useUndo"></param>
+    /// <param name="command">The command to run.</param>
+    /// <param name="isRedo">Whether the command is executed as part of a redo.</param>
+    /// <param name="useUndo">If set to false, the command won't be added to command history even if it is an undoable command/</param>
     /// <returns></returns>
     public bool ExecuteCommand(ICommand command, bool isRedo = false, bool useUndo = true)
     {
