@@ -77,8 +77,8 @@ public class VisualCell
         Row = row;
         Col = col;
 
-        Width = sheet.Columns.GetVisualWidth(col);
-        Height = sheet.Rows.GetVisualHeight(row);
+        Width = sheet.Columns.GetVisualWidthBetween(Col, Col + VisibleColSpan);
+        Height = sheet.Rows.GetVisualHeightBetween(Row, Row + VisibleRowSpan);
 
         IsVisible = cell.IsVisible;
 
@@ -152,17 +152,6 @@ public class VisualCell
         if (format.TextWrap == TextWrapping.Clip)
         {
             sb.AddStyle("overflow", "clip");
-        }
-        else if (format.TextWrap == TextWrapping.Overflow)
-        {
-            sb.AddStyle("overflow", "visible");
-            var nextLeftCol = sheet.Cells.GetNextInRow(row, col, -1)?.Col ?? 0;
-            var nextRightCol = sheet.Cells.GetNextInRow(row, col, 1)?.Col ?? sheet.NumCols;
-            var distLeft = -sheet.Columns.GetVisualWidthBetween(nextLeftCol + 1, col);
-            var distRight = sheet.Columns.GetVisualWidthBetween(col, nextRightCol);
-            Console.WriteLine($"Next right column is {nextRightCol}");
-            Console.WriteLine($"Next left column is {nextLeftCol}");
-            sb.AddStyle("clip-path", $"rect(0px {distRight}px {cellHeight}px {distLeft}px)");
         }
 
         else if (format.TextWrap == TextWrapping.Wrap)
