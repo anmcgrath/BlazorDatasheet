@@ -297,3 +297,9 @@
 .bds-selected-header {
     background: var(--head-selection-bg-color);
 }
+
+.bds-autoFit {
+    visibility: hidden;
+    top: 0;
+    display: inline-block;
+}

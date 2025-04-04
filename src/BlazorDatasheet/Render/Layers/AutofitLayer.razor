@@ -1,8 +1,11 @@
-﻿@using BlazorDatasheet.Core.Commands
+﻿@using System.Windows.Input
+@using BlazorDatasheet.Core.Commands
 @using BlazorDatasheet.Core.Commands.Formatting
+@using BlazorDatasheet.Core.Commands.RowCols
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Events.Commands
 @using BlazorDatasheet.Core.Events.Edit
+@using BlazorDatasheet.Core.Formats
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Util
 @using Microsoft.JSInterop
@@ -12,7 +15,7 @@
 
 
 <div class="bds-autoFit"
-     style="visibility: hidden; top: 0; display:inline-block; @_dimensionStyle"
+     style="@_dimensionStyle"
      @ref="_autoFitEl">
     @if (CurrentCell != null)
     {
@@ -24,66 +27,60 @@
 @code {
 
     [Parameter, EditorRequired] public required RenderFragment<VisualCell> CellRenderFragment { get; set; }
+    [Parameter, EditorRequired] public required bool DoAutoFit { get; set; }
+    [Parameter, EditorRequired] public required int NumberOfSignificantDigits { get; set; }
 
     private ElementReference _autoFitEl = default!;
 
-    private bool _isAutoFittingColumn = false;
-    private bool _isAutoFittingRow = false;
+    private AutofitMethod _currentAutoFit = AutofitMethod.None;
 
     private string _dimensionStyle = string.Empty;
-
     private VisualCell? CurrentCell { get; set; }
-
     private IJSObjectReference? _module;
+    // Command that triggered the autofit, so that we can attach the set size command to it and undo it when the format is undone.
+    private IUndoableCommand? _currentSetFormatCommand;
 
     protected override void OnSheetChange(Sheet newSheet, Sheet oldSheet)
     {
         oldSheet.Editor.EditAccepted -= EditorOnEditFinished;
         newSheet.Editor.EditAccepted += EditorOnEditFinished;
-        oldSheet.Commands.BeforeCommandRun -= CommandsOnBeforeCommandRun;
-        newSheet.Commands.BeforeCommandRun += CommandsOnBeforeCommandRun;
+        oldSheet.Commands.CommandRun -= CommandsOnCommandRun;
+        newSheet.Commands.CommandRun += CommandsOnCommandRun;
     }
 
-    private void CommandsOnBeforeCommandRun(object? sender, BeforeCommandRunEventArgs e)
+    private void CommandsOnCommandRun(object? sender, CommandRunEventArgs e)
     {
         if (e.Command is SetFormatCommand cmd)
         {
-            Console.WriteLine("Have set format command");
             if (cmd.Region.IsSingleCell())
             {
-                AutoFitRow(cmd.Region.Top, cmd.Region.Left);
+                _currentSetFormatCommand = cmd;
+                AutoFit(cmd.Region.Top, cmd.Region.Left, AutofitMethod.Row);
             }
         }
     }
 
     private void EditorOnEditFinished(object? sender, EditAcceptedEventArgs e)
     {
-        AutoFitColumn(e.Row, e.Col);
+        AutoFit(e.Row, e.Col, AutofitMethod.Column);
     }
 
-    internal void AutoFitColumn(int row, int column)
+    internal void AutoFit(int row, int column, AutofitMethod method)
     {
-        CurrentCell = new VisualCell(row, column, Sheet, 15);
+        if (method == AutofitMethod.None || !DoAutoFit)
+            return;
 
+        _currentAutoFit = method;
+        CurrentCell = new VisualCell(row, column, Sheet, NumberOfSignificantDigits);
         var sb = new StyleBuilder();
-        sb.AddStyle("max-height", CurrentCell.Height + "px");
-        _dimensionStyle = sb.ToString();
 
-        _isAutoFittingColumn = true;
+        sb.AddStyle("max-width", CurrentCell.Width + "px", (method & AutofitMethod.Row) != 0 || CurrentCell.Format?.TextWrap == TextWrapping.Wrap);
+        sb.AddStyle("max-height", CurrentCell.Height + "px", (method & AutofitMethod.Column) != 0 && CurrentCell.Format?.TextWrap != TextWrapping.Wrap);
+
+        _dimensionStyle = sb.ToString();
         StateHasChanged();
     }
 
-    internal void AutoFitRow(int row, int column)
-    {
-        CurrentCell = new VisualCell(row, column, Sheet, 15);
-
-        var sb = new StyleBuilder();
-        sb.AddStyle("max-width", CurrentCell.Width + "px");
-        _dimensionStyle = sb.ToString();
-
-        _isAutoFittingRow = true;
-        StateHasChanged();
-    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -93,28 +90,36 @@
             return;
         }
 
-        if (CurrentCell != null && _module != null && (_isAutoFittingColumn || _isAutoFittingRow))
+        if (CurrentCell != null && _module != null && _currentAutoFit != AutofitMethod.None)
         {
-            var res = await _module.InvokeAsync<Size>("measure", _autoFitEl);
-            if (_isAutoFittingColumn && res.Width > CurrentCell.Width)
+            if (!DoAutoFit)
+                return;
+
+            var res = await _module.InvokeAsync<Size>("measureElement", _autoFitEl);
+
+            if (res.Width > CurrentCell.Width)
             {
-                Sheet.Columns.SetSize(CurrentCell.Col, res.Width);
+                // Expand the width as it will take into account merged cells.
+                var delta = res.Width - CurrentCell.Width;
+                Sheet.Columns.SetSize(CurrentCell.Col, Sheet.Columns.GetPhysicalWidth(CurrentCell.Col) + delta);
             }
 
-            if (_isAutoFittingRow && res.Height > CurrentCell.Height)
+            if (res.Height > CurrentCell.Height)
             {
-                Console.WriteLine("Autofitting row");
-                Sheet.Rows.SetSize(CurrentCell.Row, res.Height);
+                // Expand the height as it will take into account merged cells.
+                var delta = res.Height - CurrentCell.Height;
+                var setRowSizeCommand = new SetSizeCommand(CurrentCell.Row, CurrentCell.Row, Sheet.Rows.GetPhysicalHeight(CurrentCell.Row) + delta, Axis.Row);
+                _currentSetFormatCommand?.AttachAfter(setRowSizeCommand); // so that this is undone when the format is undone
+                Sheet.Commands.ExecuteCommand(setRowSizeCommand, false, _currentSetFormatCommand == null);
             }
 
-            _isAutoFittingColumn = false;
-            _isAutoFittingRow = false;
+            _currentAutoFit = AutofitMethod.None;
         }
     }
 
     protected override bool ShouldRender()
     {
-        return _isAutoFittingColumn || _isAutoFittingRow || _module == null;
+        return (_currentAutoFit != AutofitMethod.None) || _module == null;
     }
 
     async ValueTask IAsyncDisposable.DisposeAsync()

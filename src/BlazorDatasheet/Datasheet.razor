@@ -156,7 +156,10 @@
                         <AutofillLayer/>
                         @if (GridLevel == 0)
                         {
-                            <AutofitLayer CellRenderFragment="CellRenderFragment"/>
+                            <AutofitLayer
+                                DoAutoFit="AutoFit"
+                                NumberOfSignificantDigits="NumberPrecisionDisplay"
+                                CellRenderFragment="CellRenderFragment"/>
                         }
                         <VirtualMergesLayer
                             CellRenderFragment="CellRenderFragment"

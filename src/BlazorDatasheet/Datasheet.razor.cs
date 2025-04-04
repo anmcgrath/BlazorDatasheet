@@ -130,6 +130,12 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     /// </summary>
     [Parameter]
     public int GridLevel { get; set; }
+    
+    /// <summary>
+    /// When true, the datasheet will Auto-fit cells when edited or the format is changed.
+    /// </summary>
+    [Parameter]
+    public bool AutoFit { get; set; }
 
     /// <summary>
     /// Register custom editor components (derived from <see cref="BaseEditor"/>) that will be selected

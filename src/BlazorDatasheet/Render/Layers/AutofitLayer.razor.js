@@ -2,7 +2,7 @@
  *
  * @param {HTMLElement} el
  */
-export function measure(el) {
+export function measureElement(el) {
     if (el) {
         console.log(el.offsetWidth)
         return {
