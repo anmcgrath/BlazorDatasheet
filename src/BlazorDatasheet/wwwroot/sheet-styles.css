@@ -303,3 +303,7 @@
     top: 0;
     display: inline-block;
 }
+
+.cell-container {
+    flex-grow: 1;
+}

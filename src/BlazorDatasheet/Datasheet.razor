@@ -306,7 +306,10 @@
         builder.AddAttribute(30, "data-row", dataRow);
         builder.AddAttribute(40, "data-col", dataCol);
         builder.AddAttribute(50, "class", "sheet-cell");
-        builder.AddAttribute(60, "style", cell.FormatStyleString);
+        var cellStyle = cell.FormatStyleString;
+        if (!string.IsNullOrEmpty(cellStyle))
+            builder.AddAttribute(60, "style", cell.FormatStyleString);
+        
         if (cell.Icon != null)
         {
             builder.OpenElement(70, "div");
@@ -316,7 +319,7 @@
         }
 
         builder.OpenElement(100, "div");
-        builder.AddAttribute(110, "style", "flex-grow: 1");
+        builder.AddAttribute(110, "class", "cell-container");
 
         switch (cell.CellType)
         {

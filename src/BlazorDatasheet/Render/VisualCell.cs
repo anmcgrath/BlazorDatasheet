@@ -149,11 +149,6 @@ public class VisualCell
                 sb.AddStyle("align-items", "center");
         }
 
-        if (format.TextWrap == TextWrapping.Clip)
-        {
-            sb.AddStyle("overflow", "clip");
-        }
-
         else if (format.TextWrap == TextWrapping.Wrap)
         {
             sb.AddStyle("text-wrap", "wrap");
