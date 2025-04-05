@@ -1,0 +1,17 @@
+﻿@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Services
+@using NUnit.Framework
+@inherits Bunit.TestContext
+
+@code {
+
+    [OneTimeSetUp]
+    public void Setup()
+    {
+        JSInterop.Mode = JSRuntimeMode.Loose;
+        Services.AddSingleton<IMenuService>(new MenuService(JSInterop.JSRuntime));
+        var virtualiseModule = JSInterop.SetupModule(matcher => matcher.Identifier == "getVirtualiser");
+        virtualiseModule.Setup<Rect>(x => { return x.Identifier == "calculateViewRect"; })
+            .SetResult(new Rect(0, 0, 100000, 100000));
+    }
+}
