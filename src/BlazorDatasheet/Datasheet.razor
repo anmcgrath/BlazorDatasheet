@@ -313,7 +313,7 @@
         if (cell.Icon != null)
         {
             builder.OpenElement(70, "div");
-            builder.AddAttribute(80, "style", $"margin-right:2px; flex-shrink: 1; float:left; color: {cell.Format?.IconColor ?? "var(--icon-color)"});");
+            builder.AddAttribute(80, "style", $"margin-right:2px; flex-shrink: 1; float:left; color: {cell.Format?.IconColor ?? "var(--icon-color)"};");
             builder.AddContent(90, GetIconRenderFragment(cell.Icon));
             builder.CloseElement();
         }
