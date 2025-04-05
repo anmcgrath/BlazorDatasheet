@@ -1,0 +1,35 @@
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Render
+@using BlazorDatasheet.Render.DefaultComponents
+@using BlazorDatasheet.SharedPages.Pages
+@using FluentAssertions
+@using NUnit.Framework
+@inherits BaseTestComponent
+
+@code {
+
+    [Test]
+    public async Task Custom_Editor_Correctly_Renders()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Cells["A1"]!.Type = "number";
+        
+        var cut = RenderComponent<Datasheet>(parameters =>
+        {
+            parameters.Add(p => p.CustomCellTypeDefinitions, new Dictionary<string, CellTypeDefinition>()
+            {
+                { "number", new CellTypeDefinition(typeof(NumericEditor), typeof(TextRenderer)) }
+            });
+            parameters.Add(p => p.Sheet, sheet);
+        });
+
+        await cut.InvokeAsync(() =>
+        {
+            sheet.Editor.BeginEdit(0, 0);
+        });
+
+        var customEditor = cut.FindComponent<NumericEditor>();
+        customEditor.Should().NotBeNull();
+    }
+
+}
