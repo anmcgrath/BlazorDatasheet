@@ -35,7 +35,7 @@ public class SetCellValueCommand : BaseCommand, IUndoableCommand
         sheet.ScreenUpdating = false;
         _restoreData = sheet.Cells.SetValueImpl(_row, _col, _value);
 
-        sheet.MarkDirty(_row, _col);
+        sheet.MarkDirty(new RowRegion(_row));
         sheet.ScreenUpdating = true;
         return true;
     }

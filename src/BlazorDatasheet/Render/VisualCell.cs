@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Formats;
@@ -76,12 +77,13 @@ public class VisualCell
         Row = row;
         Col = col;
 
-        Width = sheet.Columns.GetVisualWidth(col);
-        Height = sheet.Rows.GetVisualHeight(row);
+        Width = sheet.Columns.GetVisualWidthBetween(Col, Col + VisibleColSpan);
+        Height = sheet.Rows.GetVisualHeightBetween(Row, Row + VisibleRowSpan);
 
         IsVisible = cell.IsVisible;
 
-        FormatStyleString = GetCellFormatStyleString(Row, Col, format, cell.IsValid, cellValue.ValueType);
+        FormatStyleString =
+            GetCellFormatStyleString(Row, Col, format, cell.IsValid, cellValue.ValueType, sheet, Width, Height);
         Icon = format.Icon;
         CellType = cell.Type;
         Format = format;
@@ -91,22 +93,8 @@ public class VisualCell
     {
     }
 
-    public static VisualCell Empty(int row, int col, Sheet sheet, ref CellFormat defaultFormat)
-    {
-        return new VisualCell()
-        {
-            Row = row,
-            Col = col,
-            FormatStyleString = GetCellFormatStyleString(row, col, defaultFormat, true, CellValueType.Text),
-            Height = sheet.Rows.GetVisualHeight(row),
-            Width = sheet.Columns.GetVisualWidth(col),
-            CellType = "default",
-            Format = defaultFormat
-        };
-    }
-
     private static string GetCellFormatStyleString(int row, int col, CellFormat? format, bool isCellValid,
-        CellValueType type)
+        CellValueType type, Sheet sheet, double cellWidth, double cellHeight)
     {
         if (format == null)
             return string.Empty;
@@ -160,6 +148,12 @@ public class VisualCell
             else if (format.VerticalTextAlign == TextAlign.Center)
                 sb.AddStyle("align-items", "center");
         }
+
+        else if (format.TextWrap == TextWrapping.Wrap)
+        {
+            sb.AddStyle("text-wrap", "wrap");
+        }
+
 
         return sb.ToString();
     }

@@ -27,41 +27,12 @@
         }
 
         <div
-            data-row="@row"
-            data-col="@col"
-            style="position: absolute; @GetAbsoluteStyle(row, col, merge.Height, merge.Width) @visualCell.FormatStyleString"
-            class="sheet-cell merged-cell">
-            <div style="display: flex;">
-                @if (visualCell.Icon != null)
-                {
-                    <div
-                        style="margin-right:2px; flex-shrink: 1; float:left; color: @(visualCell.Format?.IconColor ?? "var(--icon-color)");">
-                        @GetIconRenderFragment(visualCell.Icon)
-                    </div>
-                }
-                <div style="flex-grow: 1">
-                    @switch (visualCell.CellType)
-                    {
-                        case "default":
-                        case "text":
-                        case "datetime":
-                            @visualCell.FormattedString
-                            break;
-                        case "boolean":
-                            <BoolRenderer Cell="visualCell" Sheet="Sheet"/>
-                            break;
-                        case "select":
-                            <SelectRenderer Cell="visualCell" Sheet="Sheet"/>
-                            break;
-
-                        default:
-                            <DynamicComponent
-                                Parameters="@GetCellRendererParameters(visualCell)"
-                                Type="@GetCellRendererType(visualCell.CellType)"/>
-                            break;
-                    }
-                </div>
-            </div>
+            style="position: absolute; @GetAbsoluteStyle(row, col, merge.Height, merge.Width)"
+            class="merged-cell">
+            @if (CellRenderFragment != null)
+            {
+                @CellRenderFragment(visualCell)
+            }
         </div>
     }
 }
@@ -70,11 +41,9 @@
 
     [Parameter, EditorRequired] public Dictionary<CellPosition, VisualCell> Cache { get; set; } = null!;
 
-    [Parameter, EditorRequired] public required Dictionary<string, RenderFragment> Icons { get; set; } = default!;
-
-    [Parameter] public required Dictionary<string, CellTypeDefinition> CustomCellTypeDefinitions { get; set; } = default!;
-
     [Parameter, EditorRequired] public required int NumberPrecisionDisplay { get; set; }
+    
+    [Parameter, EditorRequired] public required RenderFragment<VisualCell> CellRenderFragment { get; set; }
 
     protected override void OnSheetChange(Sheet newSheet, Sheet oldSheet)
     {
@@ -85,30 +54,6 @@
     private void CellsOnCellsChanged(object? sender, CellDataChangedEventArgs e)
     {
         StateHasChanged();
-    }
-
-    private Type GetCellRendererType(string type)
-    {
-        if (CustomCellTypeDefinitions.TryGetValue(type, out var definition))
-            return definition.RendererType;
-
-        return typeof(TextRenderer);
-    }
-
-    private Dictionary<string, object> GetCellRendererParameters(VisualCell visualCell)
-    {
-        return new Dictionary<string, object>()
-        {
-            { "Cell", visualCell },
-            { "Sheet", Sheet }
-        };
-    }
-
-    private RenderFragment GetIconRenderFragment(string? cellIcon)
-    {
-        if (cellIcon != null && Icons.TryGetValue(cellIcon, out var rf))
-            return rf;
-        return _ => { };
     }
 
     private string GetAbsoluteStyle(int row, int col, int rowSpan, int colSpan)

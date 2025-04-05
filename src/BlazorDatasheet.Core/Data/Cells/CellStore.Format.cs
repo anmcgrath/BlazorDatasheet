@@ -1,3 +1,4 @@
+using BlazorDatasheet.Core.Events.Visual;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
@@ -6,6 +7,8 @@ namespace BlazorDatasheet.Core.Data.Cells;
 
 public partial class CellStore
 {
+    public event EventHandler<FormatChangedEventArgs>? FormatChanged;
+
     /// <summary>
     /// Stores individual cell formats.
     /// </summary>
@@ -19,10 +22,12 @@ public partial class CellStore
     internal CellStoreRestoreData MergeFormatImpl(IRegion region, CellFormat format)
     {
         Sheet.MarkDirty(region);
-        return new CellStoreRestoreData()
+        var restoreData = new CellStoreRestoreData()
         {
             FormatRestoreData = _formatStore.Add(region, format)
         };
+        FormatChanged?.Invoke(this, new FormatChangedEventArgs(region, format));
+        return restoreData;
     }
 
     internal CellStoreRestoreData CutFormatImpl(IRegion region)

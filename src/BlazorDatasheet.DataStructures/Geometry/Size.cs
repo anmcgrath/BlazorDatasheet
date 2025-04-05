@@ -1,6 +1,6 @@
 ﻿namespace BlazorDatasheet.DataStructures.Geometry;
 
-public struct Size
+public class Size
 {
     public double Width { get; }
     public double Height { get; }
@@ -9,5 +9,10 @@ public struct Size
     {
         Width = width;
         Height = height;
+    }
+
+    public double Get(Axis axis)
+    {
+        return axis == Axis.Col ? Width : Height;
     }
 }

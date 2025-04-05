@@ -133,6 +133,12 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReado
         set => AddStyle<Border?>(nameof(BorderBottom), value);
     }
 
+    public TextWrapping TextWrap
+    {
+        get => GetStyleOrDefault<TextWrapping>(nameof(TextWrapping));
+        set => AddStyle(nameof(TextWrapping), value);
+    }
+
     private void AddStyle<T>(string key, T? value)
     {
         _styles ??= new Dictionary<string, object?>();
@@ -145,7 +151,7 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReado
         if (IsDefaultFormat())
             return default;
 
-        return _styles.TryGetValue(key, out var val) ? (T?)val : default;
+        return _styles!.TryGetValue(key, out var val) ? (T?)val : default;
     }
 
     private object? GetStyleOrDefault(string key)
@@ -153,7 +159,7 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReado
         if (IsDefaultFormat())
             return default;
 
-        return _styles.GetValueOrDefault(key);
+        return _styles!.GetValueOrDefault(key);
     }
 
     public bool IsDefaultFormat() => _styles == null || _styles.Count == 0;

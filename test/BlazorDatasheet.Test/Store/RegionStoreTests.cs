@@ -294,20 +294,30 @@ public class RegionStoreTests
     }
 
     [Test]
-    public void Next_Col_Indices_With_Data_Returns_Correct()
+    [TestCase(0, 0, 1, 1)]
+    [TestCase(0, 1, 2, 1)]
+    [TestCase(0, 2, 3, 1)]
+    [TestCase(0, 3, 4, 1)]
+    [TestCase(0, 5, -1, 1)]
+    [TestCase(1, 5, 8, 1)]
+    [TestCase(1, 10, -1, 1)]
+    [TestCase(5, 0, -1, 1)]
+    [TestCase(0, 0, -1, -1)]
+    [TestCase(0, 1, -1, -1)]
+    [TestCase(0, 2, 1, -1)]
+    [TestCase(0, 3, 2, -1)]
+    [TestCase(0, 4, 3, -1)]
+    [TestCase(1, 5, 4, -1)]
+    [TestCase(1, 6, 5, -1)]
+    [TestCase(3, 7, -1, -1)]
+    [TestCase(3, 8, -1, -1)]
+    public void Next_Col_Indices_With_Data_Returns_Correct(int rowSearch, int colSearch, int expected, int colDir)
     {
         var store = new RegionDataStore<bool>();
         store.Add(new Region(0, 1, 1, 3), true);
         store.Add(new Region(0, 2, 2, 5), true);
         store.Add(new Region(1, 3, 8, 10), true);
 
-        store.GetNextNonEmptyIndexInRow(0, 0).Should().Be(1);
-        store.GetNextNonEmptyIndexInRow(0, 1).Should().Be(2);
-        store.GetNextNonEmptyIndexInRow(0, 2).Should().Be(3);
-        store.GetNextNonEmptyIndexInRow(0, 3).Should().Be(4);
-        store.GetNextNonEmptyIndexInRow(0, 5).Should().Be(-1);
-        store.GetNextNonEmptyIndexInRow(1, 5).Should().Be(8);
-        store.GetNextNonEmptyIndexInRow(1, 10).Should().Be(-1);
-        store.GetNextNonEmptyIndexInRow(5, 0).Should().Be(-1);
+        store.GetNextNonEmptyIndexInRow(rowSearch, colSearch, colDir).Should().Be(expected);
     }
 }

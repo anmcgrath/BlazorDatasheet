@@ -36,6 +36,11 @@ public interface IReadonlyCellFormat
     /// Whether the cell's value can be modified by the user.
     /// </summary>
     public bool? IsReadOnly { get; }
+    
+    /// <summary>
+    /// The text wrapping style.
+    /// </summary>
+    public TextWrapping TextWrap { get; }
 
     /// <summary>
     /// True if no custom styles are set.

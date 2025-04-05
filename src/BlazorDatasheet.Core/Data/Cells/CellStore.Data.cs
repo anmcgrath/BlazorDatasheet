@@ -199,4 +199,41 @@ public partial class CellStore
         BeforeCellValueConversion?.Invoke(this, args);
         return args.NewValue;
     }
+
+    /// <summary>
+    /// Returns the next visible cell with data in the row specified, and after (given <paramref name="colDir"/>) the column index <paramref name="colIndex"/>
+    /// </summary>
+    /// <param name="rowIndex"></param>
+    /// <param name="colIndex"></param>
+    /// <param name="colDir"></param>
+    /// <returns></returns>
+    public SheetCell? GetNextInRow(int rowIndex, int colIndex, int colDir = 1)
+    {
+        var nextIndex = GetNextRowIndexInRow(rowIndex, colIndex, colDir);
+        if (nextIndex == -1)
+            return null;
+        return new SheetCell(rowIndex, nextIndex, Sheet);
+    }
+
+    /// <summary>
+    /// Returns the next visible cell with data in the row specified, and after (given <paramref name="colDir"/>) the column index <paramref name="colIndex"/>
+    /// </summary>
+    /// <param name="rowIndex"></param>
+    /// <param name="colIndex"></param>
+    /// <param name="colDir"></param>
+    /// <returns></returns>
+    public int GetNextRowIndexInRow(int rowIndex, int colIndex, int colDir = 1)
+    {
+        var nextColIndex = _dataStore.GetNextNonEmptyIndexInRow(rowIndex, colIndex, colDir);
+        if (nextColIndex == -1)
+            return -1;
+
+        if (!Sheet.Columns.IsVisible(nextColIndex))
+            return GetNextRowIndexInRow(rowIndex, Sheet.Columns.GetNextVisible(nextColIndex, colDir));
+
+        if (nextColIndex >= Sheet.NumCols || nextColIndex < 0)
+            return -1;
+
+        return nextColIndex;
+    }
 }

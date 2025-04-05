@@ -175,6 +175,21 @@ public class DataStoreByRowsTests
     }
 
     [Test]
+    [TestCase(10, 5, -1, -1)]
+    [TestCase(10, 6, -1, 5)]
+    [TestCase(11, 6, -1, -1)]
+    [TestCase(8, 6, -1, -1)]
+    [TestCase(8, 6, -1, -1)]
+    public void Get_Next_Non_Empty_Col_In_Negative_Direction_Num_Correct(int row, int col, int dir, int expected)
+    {
+        IMatrixDataStore<string> store = GetStore<string>();
+        store.Set(10, 5, "A");
+        store.Set(10, 100, "B");
+        var nextCol = store.GetNextNonEmptyIndexInRow(row, col, dir);
+        nextCol.Should().Be(expected);
+    }
+
+    [Test]
     public void Get_Next_Non_Empty_Col_With_No_Next_Col_Correct()
     {
         var store = GetStore<string>();

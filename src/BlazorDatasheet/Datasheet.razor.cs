@@ -15,6 +15,7 @@ using BlazorDatasheet.Extensions;
 using BlazorDatasheet.KeyboardInput;
 using BlazorDatasheet.Menu;
 using BlazorDatasheet.Render;
+using BlazorDatasheet.Render.Layers;
 using BlazorDatasheet.Services;
 using BlazorDatasheet.Virtualise;
 using Microsoft.AspNetCore.Components;
@@ -130,6 +131,12 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     /// </summary>
     [Parameter]
     public int GridLevel { get; set; }
+    
+    /// <summary>
+    /// When true, the datasheet will Auto-fit cells when edited or the format is changed.
+    /// </summary>
+    [Parameter]
+    public bool AutoFit { get; set; }
 
     /// <summary>
     /// Register custom editor components (derived from <see cref="BaseEditor"/>) that will be selected
@@ -224,6 +231,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     /// Main virtualised view
     /// </summary>
     private Virtualise2D? _mainView;
+    
+    private AutofitLayer? _autofitLayer;
 
     /// <summary>
     /// The editor layer, which renders the cell editor.
@@ -262,6 +271,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
     protected override void OnInitialized()
     {
+        CreateCellRenderFragment();
         ClipboardService = new Clipboard(Js);
         _windowEventService = new WindowEventService(Js);
         RegisterDefaultShortcuts();
@@ -778,6 +788,9 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
     public async Task ScrollToContainRegion(IRegion region)
     {
+        if(_mainView == null)
+            return;
+        
         var frozenLeftW = _sheet.Columns.GetVisualLeft(_frozenLeftCount);
         var frozenRightW = _sheet.Columns.GetVisualWidthBetween(_sheet.NumCols - _frozenRightCount, _sheet.NumCols);
         var frozenTopH = _sheet.Rows.GetVisualTop(_frozenTopCount);
@@ -897,6 +910,11 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         _sheet.Selection.Set(posn.row, posn.col);
         _sheet.Selection.MoveActivePositionByRow(offset.Rows);
         _sheet.Selection.MoveActivePositionByCol(offset.Columns);
+    }
+
+    public void AutoFitRegion(IRegion region, Axis autoFitAxis, AutofitMethod method)
+    {
+        _autofitLayer?.AutoFit(region, autoFitAxis, method);
     }
 
     /// <summary>

@@ -186,6 +186,8 @@
                 sb.AddStyle("text-align", "left");
         }
 
+        if (visualCell.Format?.TextWrap == TextWrapping.Wrap)
+            sb.AddStyle("text-wrap", "wrap");
         sb.AddStyleNotNull("font-weight", visualCell.Format?.FontWeight);
 
         return sb.ToString();

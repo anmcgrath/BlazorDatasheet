@@ -1,0 +1,87 @@
+﻿@using AngleSharp.Css.Dom
+@using BlazorDatasheet.Core.Data
+@using FluentAssertions
+@using NUnit.Framework
+@inherits BaseTestComponent
+
+@code
+{
+    [Test]
+    public async Task Datasheet_With_One_Cell_Defined_Renders_Correctly()
+    {
+        // Arrange
+        var sheet = new Sheet(2, 2);
+
+        //Act
+        var cut = RenderComponent<Datasheet>(parameters =>
+        {
+            parameters.Add(p => p.Sheet, sheet);
+            parameters.Add(p => p.ShowColHeadings, false);
+            parameters.Add(p => p.ShowRowHeadings, false);
+        });
+
+        await cut.InvokeAsync(() =>
+        {
+            cut.Instance.ForceReRender();
+            sheet.Cells.SetValue(1, 1, "Test");
+        });
+
+
+        // Assert
+        var cell = cut.FindAll("div.sheet-cell").Last();
+        cell.MarkupMatches(@"
+            <div class=""sheet-cell"" data-row=""1"" data-col=""1"">
+                <div class=""cell-container"">
+                    Test
+                </div>
+            </div>");
+    }
+
+    [Test]
+    public async Task Datasheet_With_Precision_Set_Renders_Correctly()
+    {
+        var sheet = new Sheet(1, 1);
+
+        var cut = RenderComponent<Datasheet>(parameters =>
+        {
+            parameters.Add(p => p.Sheet, sheet);
+            parameters.Add(p => p.NumberPrecisionDisplay, 2);
+        });
+
+        await cut.InvokeAsync(() =>
+        {
+            cut.Instance.ForceReRender();
+            sheet.Cells.SetValue(0, 0, 1.234567);
+        });
+
+        var cell = cut.FindAll("div.cell-container").Last().FirstChild;
+        cell!.MarkupMatches(@"1.23");
+    }
+
+    [Test]
+    public async Task Begin_Edit_Cell_Triggers_Edit()
+    {
+        var sheet = new Sheet(3, 3);
+
+        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+
+        await cut.InvokeAsync(() =>
+        {
+            cut.Instance.ForceReRender();
+            sheet.Editor.BeginEdit(1, 2);
+        });
+
+        var editor = cut.Find("div.editor-overlay");
+        editor.GetElementCount().Should().Be(1);
+
+        editor.GetStyle()
+            .GetTop()
+            .Should()
+            .Be(sheet.Rows.GetVisualTop(1) + 1 + "px");
+
+        editor.GetStyle()
+            .GetLeft()
+            .Should()
+            .Be(sheet.Columns.GetVisualLeft(2) + 1 + "px");
+    }
+}

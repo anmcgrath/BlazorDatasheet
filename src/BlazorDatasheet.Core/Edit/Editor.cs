@@ -208,6 +208,14 @@ public class Editor
         var editValue =
             isFormula ? formulaResult : Sheet.Cells.ConvertToCellValue(EditCell.Row, EditCell.Col, EditValue);
 
+        // don't accept edit if not a formula and the value is the same as previous.
+        if (!isFormula && editValue.IsEqualTo(EditCell.CellValue))
+        {
+            EditFinished?.Invoke(this, new EditFinishedEventArgs(EditCell.Row, EditCell.Col));
+            ClearEdit();
+            return true;
+        }
+
         var beforeAcceptEdit = new BeforeAcceptEditEventArgs(EditCell, editValue, parsedFormula, formulaString);
         BeforeEditAccepted?.Invoke(this, beforeAcceptEdit);
 
@@ -225,16 +233,15 @@ public class Editor
                 return false;
             }
 
-            EditAccepted?.Invoke(
-                this,
-                new EditAcceptedEventArgs(EditCell.Row, EditCell.Col, beforeAcceptEdit.EditValue,
-                    beforeAcceptEdit.Formula, isFormula ? EditValue : null));
-
-
             if (isFormula && parsedFormula != null)
                 Sheet.Cells.SetFormula(EditCell.Row, EditCell.Col, parsedFormula);
             else
                 Sheet.Cells.SetValue(EditCell.Row, EditCell.Col, editValue);
+
+            EditAccepted?.Invoke(
+                this,
+                new EditAcceptedEventArgs(EditCell.Row, EditCell.Col, beforeAcceptEdit.EditValue,
+                    beforeAcceptEdit.Formula, isFormula ? EditValue : null));
 
             EditFinished?.Invoke(this, new EditFinishedEventArgs(EditCell.Row, EditCell.Col));
             this.ClearEdit();

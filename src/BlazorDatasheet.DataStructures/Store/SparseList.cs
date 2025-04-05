@@ -185,17 +185,31 @@ internal class SparseList<T>
     /// Returns the next non-empty item index after & including the index given. If none found, returns -1
     /// </summary>
     /// <param name="key"></param>
+    /// <param name="colDir"></param>
     /// <returns></returns>
-    public int GetNextNonEmptyItemKey(int key)
+    public int GetNextNonEmptyItemKey(int key, int colDir = 1)
     {
-        if (!Values.Any())
+        if (Values.Count == 0)
             return -1;
+
+        var dir = Math.Sign(colDir);
 
         var index = Values.Keys.BinarySearchIndexOf(key, Comparer<int>.Default);
         if (index < 0)
             index = ~index;
 
         if (index >= Values.Keys.Count)
+            return -1;
+
+        if (dir > 0)
+            return Values.Keys[index];
+
+        // now we have case dir < 0
+        if (Values.Keys[index] == key)
+            return key;
+
+        index--;
+        if (index < 0)
             return -1;
 
         return Values.Keys[index];

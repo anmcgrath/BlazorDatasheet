@@ -1,0 +1,224 @@
+﻿@using System.Diagnostics
+@using System.Windows.Input
+@using BlazorDatasheet.Core.Commands
+@using BlazorDatasheet.Core.Commands.Formatting
+@using BlazorDatasheet.Core.Commands.RowCols
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events.Commands
+@using BlazorDatasheet.Core.Events.Edit
+@using BlazorDatasheet.Core.Formats
+@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Util
+@using Microsoft.JSInterop
+@using ICommand = BlazorDatasheet.Core.Commands.ICommand
+@inherits Layer
+@implements IAsyncDisposable
+@inject IJSRuntime Js
+
+
+<div @ref="_autoFitEl">
+    @foreach (var cell in _currentCells)
+    {
+        <div class="bds-autoFit" data-row="@cell.Row" data-col="@cell.Col">
+            <div style="@GetStyle(cell)">
+                @CellRenderFragment(cell)
+            </div>
+        </div>
+    }
+</div>
+
+
+@code {
+
+    [Parameter, EditorRequired] public required RenderFragment<VisualCell> CellRenderFragment { get; set; }
+
+    /// <summary>
+    /// Whether to perform the auto-fit when the user finishes editing or when a cell is formatted.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public required bool AutoFitOnInteraction { get; set; }
+
+    [Parameter, EditorRequired] public required int NumberOfSignificantDigits { get; set; }
+
+    private ElementReference _autoFitEl = default!;
+
+    private Axis _currentAutoFitAxis = Axis.None;
+    private AutofitMethod _currentAutoFitMethod = AutofitMethod.ExpandOnly;
+
+    /// <summary>
+    /// Current styles to apply to each cell. The key is the row/column number, depending on the axis of the auto-fit.
+    /// </summary>
+    private Dictionary<int, string> _dimensionStyles = new();
+
+    private List<VisualCell> _currentCells = new();
+
+    private IJSObjectReference? _module;
+
+    private bool _isAutofitting = false;
+
+    // Command that triggered the auto-fit, so that we can attach the set size command to it and undo it when this is undone.
+    private IUndoableCommand? _currentCommand;
+
+    protected override void OnSheetChange(Sheet newSheet, Sheet oldSheet)
+    {
+        oldSheet.Editor.EditAccepted -= EditorOnEditFinished;
+        newSheet.Editor.EditAccepted += EditorOnEditFinished;
+        oldSheet.Commands.CommandRun -= CommandsOnCommandRun;
+        newSheet.Commands.CommandRun += CommandsOnCommandRun;
+    }
+
+    private void CommandsOnCommandRun(object? sender, CommandRunEventArgs e)
+    {
+        if (!AutoFitOnInteraction)
+            return;
+
+        if (e.Command is SetFormatCommand cmd)
+        {
+            if (cmd.Region.IsSingleCell())
+            {
+                _currentCommand = cmd;
+                AutoFit(cmd.Region, Axis.Row, AutofitMethod.ExpandOnly);
+            }
+        }
+    }
+
+    private string GetStyle(VisualCell cell)
+    {
+        if (_currentAutoFitAxis == Axis.None)
+            return string.Empty;
+
+        var index = _currentAutoFitAxis == Axis.Col ? cell.Col : cell.Row;
+        return _dimensionStyles.GetValueOrDefault(index, string.Empty);
+    }
+
+    private void EditorOnEditFinished(object? sender, EditAcceptedEventArgs e)
+    {
+        if (!AutoFitOnInteraction)
+            return;
+
+        var cell = Sheet.Cells.GetCell(e.Row, e.Col);
+        var wrapped = cell.Format.TextWrap == TextWrapping.Wrap;
+        AutoFit(new Region(cell.Row, cell.Col), wrapped ? Axis.Row : Axis.Col, AutofitMethod.ExpandOnly);
+    }
+
+    internal void AutoFit(IRegion region, Axis axis, AutofitMethod method)
+    {
+        if (axis == Axis.None)
+            return;
+
+        var boundRegion = region.GetIntersection(Sheet.Region);
+        if (boundRegion == null)
+            return;
+
+        _currentAutoFitAxis = axis;
+        _currentAutoFitMethod = method;
+        _dimensionStyles.Clear();
+
+        _currentCells = Sheet.Range(boundRegion).GetNonEmptyCells()
+            .Select(x => new VisualCell(x.Row, x.Col, Sheet, NumberOfSignificantDigits))
+            .ToList();
+
+        for (int i = boundRegion.GetLeadingEdgeOffset(axis); i <= boundRegion.GetTrailingEdgeOffset(axis); i++)
+        {
+            var sb = new StyleBuilder();
+            if (axis == Axis.Row)
+                sb.AddStyle("max-width", Sheet.Columns.GetPhysicalWidth(i) + "px");
+            else if (axis == Axis.Col)
+                sb.AddStyle("max-height", Sheet.Rows.GetPhysicalHeight(i) + "px");
+            _dimensionStyles.Add(i, sb.ToString());
+        }
+
+        StateHasChanged();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && _module == null)
+        {
+            _module = await Js.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/Render/Layers/AutofitLayer.razor.js");
+            return;
+        }
+
+        if (_isAutofitting)
+            return;
+        _isAutofitting = true;
+
+        if (_module == null || _currentCells.Count == 0 || _currentAutoFitAxis == Axis.None)
+            return;
+
+        // measureMaxChildrenDimensions returns an array of cell positions and their sizes
+        var measurements = await _module.InvokeAsync<AutofitMeasurement[]>("measureMaxChildrenDimensions", _autoFitEl);
+        var groupedMeasurements = measurements.GroupBy(x => _currentAutoFitAxis == Axis.Col ? x.Col : x.Row);
+
+        // batch the set size commands from the autofits
+        var commands = new List<ICommand>();
+
+        foreach (var group in groupedMeasurements)
+        {
+            var axisSize = _currentAutoFitAxis == Axis.Col ? Sheet.Columns.GetPhysicalWidth(group.Key) : Sheet.Rows.GetPhysicalHeight(group.Key);
+
+            double deltaExpand = 0;
+            double deltaContract = double.MaxValue;
+
+            foreach (var measurement in group)
+            {
+                var cell = new VisualCell(measurement.Row, measurement.Col, Sheet, NumberOfSignificantDigits);
+                var cellSize = _currentAutoFitAxis == Axis.Col ? cell.Width : cell.Height;
+                var measSize = measurement.Size.Get(_currentAutoFitAxis);
+                if (measSize > cellSize)
+                    deltaExpand = Math.Max(deltaExpand, measSize - cellSize);
+                else if (measSize < axisSize)
+                    deltaContract = Math.Min(deltaContract, axisSize - measSize);
+            }
+
+
+            if (deltaExpand > 0 && (_currentAutoFitMethod == AutofitMethod.ExpandOnly || _currentAutoFitMethod == AutofitMethod.ExpandOrContract))
+            {
+                // Expand the size of the column/row
+                var setSizeCommand = new SetSizeCommand(group.Key, group.Key, axisSize + deltaExpand, _currentAutoFitAxis);
+                commands.Add(setSizeCommand);
+            }
+            else if (deltaContract > 0 && deltaContract < double.MaxValue && _currentAutoFitMethod == AutofitMethod.ExpandOrContract)
+            {
+                // Shrink the size of the column/row
+                var setSizeCommand = new SetSizeCommand(group.Key, group.Key, axisSize - deltaContract, _currentAutoFitAxis);
+                commands.Add(setSizeCommand);
+            }
+        }
+
+        _currentAutoFitAxis = Axis.None;
+        _dimensionStyles.Clear();
+        _currentCells.Clear();
+
+        if (commands.Count > 0)
+        {
+            var cmdGroup = new CommandGroup(commands);
+            // Execute the resize group here.
+            _currentCommand?.AttachAfter(cmdGroup);
+            Sheet.Commands.ExecuteCommand(cmdGroup, false, _currentCommand == null);
+        }
+
+        _isAutofitting = false;
+    }
+
+    protected override bool ShouldRender()
+    {
+        return (_currentAutoFitAxis != Axis.None && _currentCells.Count > 0) || _module == null;
+    }
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        if (_module is not null)
+        {
+            try
+            {
+                await _module.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+        }
+    }
+
+
+}

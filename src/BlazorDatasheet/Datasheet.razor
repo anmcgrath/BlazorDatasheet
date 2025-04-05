@@ -1,6 +1,8 @@
 ﻿@using BlazorDatasheet.Core.Layout
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Menu
+@using BlazorDatasheet.Render
+@using BlazorDatasheet.Render.DefaultComponents
 @using BlazorDatasheet.Render.Headings
 @using BlazorDatasheet.Virtualise
 @using BlazorDatasheet.Render.Layers
@@ -152,10 +154,17 @@
                                     PointerInputService="_sheetPointerInputService">
                         <HighlightLayer/>
                         <AutofillLayer/>
+                        @if (GridLevel == 0)
+                        {
+                            <AutofitLayer
+                                @ref="_autofitLayer"
+                                AutoFitOnInteraction="AutoFit"
+                                NumberOfSignificantDigits="NumberPrecisionDisplay"
+                                CellRenderFragment="CellRenderFragment"/>
+                        }
                         <VirtualMergesLayer
-                            Icons="Icons"
+                            CellRenderFragment="CellRenderFragment"
                             NumberPrecisionDisplay="NumberPrecisionDisplay"
-                            CustomCellTypeDefinitions="CustomCellTypeDefinitions"
                             Cache="_visualCellCache"/>
                         <EditorLayer @ref="_editorLayer" CustomCellTypes="@CustomCellTypeDefinitions"/>
                         <SelectionRendererLayer/>
@@ -167,30 +176,26 @@
 
                     @if (numVisibleCols > 0 && numVisibleRows > 0)
                     {
-                        <CascadingValue Value="Icons" Name="Icons" IsFixed="true">
-                            <CascadingValue Value="CustomCellTypeDefinitions" Name="CustomCellTypeDefinitions"
-                                            IsFixed="true">
-                                <Virtualise2D
-                                    OverscanColumns="OverscanColumns"
-                                    OverscanRows="OverscanRows"
-                                    Class="@("bds-main-view-" + GridLevel)"
-                                    OnViewportChanged="HandleVirtualViewportChanged"
-                                    LayoutProvider="new CellLayoutProvider(_sheet)"
-                                    ViewRegion="MainViewRegion"
-                                    @ref="_mainView"
-                                    Context="vr">
-                                    <RowTemplate>
-                                        <DatasheetGridRow
-                                            NumberPrecisionDisplay="_numberPrecisionDisplay"
-                                            Row="vr.Row"
-                                            VisibleColIndices="vr.VisibleColIndices"
-                                            Sheet="_sheet"
-                                            Cache="_visualCellCache"
-                                            IsDirty="IsRowDirty(vr.Row)"/>
-                                    </RowTemplate>
-                                </Virtualise2D>
-                            </CascadingValue>
-                        </CascadingValue>
+                        <Virtualise2D
+                            OverscanColumns="OverscanColumns"
+                            OverscanRows="OverscanRows"
+                            Class="@("bds-main-view-" + GridLevel)"
+                            OnViewportChanged="HandleVirtualViewportChanged"
+                            LayoutProvider="new CellLayoutProvider(_sheet)"
+                            ViewRegion="MainViewRegion"
+                            @ref="_mainView"
+                            Context="vr">
+                            <RowTemplate>
+                                <DatasheetGridRow
+                                    NumberPrecisionDisplay="_numberPrecisionDisplay"
+                                    Row="vr.Row"
+                                    CellRenderFragment="CellRenderFragment"
+                                    VisibleColIndices="vr.VisibleColIndices"
+                                    Sheet="_sheet"
+                                    Cache="_visualCellCache"
+                                    IsDirty="IsRowDirty(vr.Row)"/>
+                            </RowTemplate>
+                        </Virtualise2D>
                     }
 
                     @if (_frozenRightCount > 0)
@@ -273,5 +278,80 @@
     [Parameter]
     public RenderFragment EmptyRowsTemplate { get; set; } =
         @<div class="sheet-row-head-container sheet-cell">No visible rows.</div>;
+
+    private RenderFragment<VisualCell>? CellRenderFragment { get; set; }
+
+    private RenderFragment GetIconRenderFragment(string? cellIcon)
+    {
+        if (cellIcon != null && Icons.TryGetValue(cellIcon, out var rf))
+            return rf;
+        return _ => { };
+    }
+
+    private Type GetCellRendererType(string type)
+    {
+        if (CustomCellTypeDefinitions.TryGetValue(type, out var definition))
+            return definition.RendererType;
+
+        return typeof(TextRenderer);
+    }
+
+
+    private RenderFragment<VisualCell> CreateComponent() => cell => builder =>
+    {
+        var dataRow = cell.Merge != null ? cell.VisibleMergeRowStart : cell.Row;
+        var dataCol = cell.Merge != null ? cell.VisibleMergeColStart : cell.Col;
+
+        builder.OpenElement(20, "div");
+        builder.AddAttribute(30, "data-row", dataRow);
+        builder.AddAttribute(40, "data-col", dataCol);
+        builder.AddAttribute(50, "class", "sheet-cell");
+        var cellStyle = cell.FormatStyleString;
+        if (!string.IsNullOrEmpty(cellStyle))
+            builder.AddAttribute(60, "style", cell.FormatStyleString);
+        
+        if (cell.Icon != null)
+        {
+            builder.OpenElement(70, "div");
+            builder.AddAttribute(80, "style", $"margin-right:2px; flex-shrink: 1; float:left; color: {cell.Format?.IconColor ?? "var(--icon-color)"};");
+            builder.AddContent(90, GetIconRenderFragment(cell.Icon));
+            builder.CloseElement();
+        }
+
+        builder.OpenElement(100, "div");
+        builder.AddAttribute(110, "class", "cell-container");
+
+        switch (cell.CellType)
+        {
+            case "default":
+            case "text":
+            case "datetime":
+                builder.AddContent(120, cell.FormattedString);
+                break;
+            case "boolean":
+                builder.OpenComponent(120, typeof(BoolRenderer));
+                builder.AddComponentParameter(140, "Cell", cell);
+                builder.AddComponentParameter(160, "Sheet", _sheet);
+                builder.CloseComponent();
+                break;
+            case "select":
+                builder.OpenComponent(120, typeof(SelectRenderer));
+                builder.AddComponentParameter(140, "Cell", cell);
+                builder.AddComponentParameter(160, "Sheet", _sheet);
+                builder.CloseComponent();
+                break;
+            default:
+                builder.OpenComponent(120, GetCellRendererType(cell.CellType));
+                builder.AddComponentParameter(140, "Cell", cell);
+                builder.AddComponentParameter(160, "Sheet", _sheet);
+                builder.CloseComponent();
+                break;
+        }
+
+        builder.CloseElement();
+        builder.CloseElement();
+    };
+
+    private void CreateCellRenderFragment() => CellRenderFragment = CreateComponent();
 
 }
