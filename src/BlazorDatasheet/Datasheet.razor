@@ -157,7 +157,8 @@
                         @if (GridLevel == 0)
                         {
                             <AutofitLayer
-                                DoAutoFit="AutoFit"
+                                @ref="_autofitLayer"
+                                AutoFitOnInteraction="AutoFit"
                                 NumberOfSignificantDigits="NumberPrecisionDisplay"
                                 CellRenderFragment="CellRenderFragment"/>
                         }
