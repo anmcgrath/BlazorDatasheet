@@ -10,4 +10,9 @@ public class Size
         Width = width;
         Height = height;
     }
+
+    public double Get(Axis axis)
+    {
+        return axis == Axis.Col ? Width : Height;
+    }
 }

@@ -17,6 +17,12 @@ public class CommandGroup : BaseCommand, IUndoableCommand
         _successfulCommands = new List<ICommand>();
     }
 
+    public CommandGroup(List<ICommand> commands)
+    {
+        _commands = commands;
+        _successfulCommands = new List<ICommand>();
+    }
+
     public void AddCommand(ICommand command)
     {
         _commands.Add(command);

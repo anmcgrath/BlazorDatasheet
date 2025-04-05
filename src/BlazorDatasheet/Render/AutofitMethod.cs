@@ -1,17 +1,14 @@
 ﻿namespace BlazorDatasheet.Render;
 
-[Flags]
 public enum AutofitMethod
 {
-    None = 0,
+    /// <summary>
+    /// Auto-fit will only expand to the content.
+    /// </summary>
+    ExpandOnly,
 
     /// <summary>
-    /// Auto-fit the row height to the content.
+    /// Auto-fit will expand or contract to fit the content.
     /// </summary>
-    Row = 1,
-
-    /// <summary>
-    /// Auto-fit the column width to the content.
-    /// </summary>
-    Column = 2,
+    ExpandOrContract,
 }
