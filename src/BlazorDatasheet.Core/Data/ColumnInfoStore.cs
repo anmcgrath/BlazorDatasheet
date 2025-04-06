@@ -52,6 +52,11 @@ public class ColumnInfoStore : RowColInfoStore
         return CumulativeSizeStore.GetSize(column);
     }
 
+    public double GetVisualWidth(IRegion region)
+    {
+        return GetVisualWidthBetween(region.Left, region.Right + 1);
+    }
+
     /// <summary>
     /// Returns the physical width of the col. This is non-zero even if the col is
     /// hidden. For visual height, use <seealso cref="GetVisualWidth"/>

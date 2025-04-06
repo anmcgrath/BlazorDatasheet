@@ -50,10 +50,15 @@ public class RowInfoStore : RowColInfoStore
     {
         return CumulativeSizeStore.GetSize(row);
     }
+    
+    public double GetVisualHeight(IRegion region)
+    {
+        return GetVisualHeightBetween(region.Top, region.Bottom + 1);
+    }
 
     /// <summary>
     /// Returns the physical height of the row. This is non-zero even if the row is
-    /// hidden. For visual height, use <seealso cref="GetVisualHeight"/>
+    /// hidden. For visual height, use <seealso cref="GetVisualHeight(int)"/>
     /// </summary>
     /// <param name="row"></param>
     /// <returns></returns>

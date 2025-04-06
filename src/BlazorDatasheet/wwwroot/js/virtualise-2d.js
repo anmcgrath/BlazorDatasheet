@@ -63,9 +63,6 @@
         let left = parent.scrollLeft - offsetLeft
         let width = parent === document.documentElement ? window.innerWidth : parent.clientWidth
         let height = parent === document.documentElement ? window.innerHeight : parent.clientHeight
-        width += 1
-        height += 1
-
 
         let rect = {
             x: left,
@@ -107,27 +104,6 @@
     isScrollable(el) {
         let style = window.getComputedStyle(el)
         return style.overflow !== 'visible' || style.overflowX !== 'visible' || style.overflowY !== 'visible'
-    }
-
-    isInsideSticky(el) {
-        if (el == null || el.parentElement == null)
-            return false
-        let parentStyle = window.getComputedStyle(el.parentElement)
-        return parentStyle.position === 'sticky' || this.isInsideSticky(el.parentElement)
-    }
-
-    isInsideStickyLeft(el) {
-        if (!el.parentElement)
-            return false
-        let parentStyle = window.getComputedStyle(el.parentElement)
-        return parentStyle.position !== 'static' && parentStyle.left !== 'auto'
-    }
-
-    isInsideStickyTop(el) {
-        if (!el.parentElement)
-            return false
-        let parentStyle = window.getComputedStyle(el.parentElement)
-        return parentStyle.position !== 'static' && parentStyle.top !== 'auto'
     }
 
     addVirtualisationHandlers(dotNetHelper, wholeEl, dotnetScrollHandlerName, fillerLeft, fillerTop, fillerRight, fillerBottom) {
@@ -189,16 +165,8 @@
             interactionObserver.observe(filler)
         })
 
-        mutationObserver.observe(filler, {})
+        mutationObserver.observe(filler, { })
         return mutationObserver
-    }
-
-    scrollTo(wholeSheetEl, x, y, behaviour) {
-        let parent = this.findScrollableAncestor(wholeSheetEl) || document.documentElement
-        let offsetLeft = this.getOffsetLeftToScrollableParent(wholeSheetEl)
-        let offseTTop = this.getOffsetTopToScrollableParent(wholeSheetEl)
-
-        parent.scrollTo({left: x + offsetLeft, top: y + offseTTop, behavior: behaviour})
     }
 
     sheetMousePositionListeners = {}
