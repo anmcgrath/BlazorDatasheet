@@ -20,6 +20,7 @@ public class ObjectEditor<T>
     public int CurrentPage { get; private set; }
     public int NColumns { get; private set; }
     public Sheet Sheet { get; }
+    public Region? View { get; set; }
 
     private const string ItemMetaData = "obj";
 
@@ -39,6 +40,22 @@ public class ObjectEditor<T>
         Sheet = sheet;
 
         Sheet.Cells.CellsChanged += SheetOnCellsChanged;
+
+        var items = _dataSource.ToList();
+        var values = new object[items.Count][];
+
+        for (int i = 0; i < items.Count; i++)
+        {
+            values[i] = new object[NColumns];
+            for (int j = 0; j < NColumns; j++)
+            {
+                var data = _valueColumnSelector(j, items[i]);
+                values[i][j] = data;
+                Sheet.Cells.SetCellMetaData(i, j, ItemMetaData, items[i]);
+            }
+        }
+
+        Sheet.Cells.SetValues(0, 0, values);
 
         SetPageSize(pageSize);
     }
@@ -60,10 +77,6 @@ public class ObjectEditor<T>
     {
         PageSize = nPages;
         NumPages = _dataSource.Count() / PageSize;
-        if (Sheet.NumRows < PageSize)
-            Sheet.Rows.InsertAt(0, PageSize - Sheet.NumRows);
-        if (Sheet.NumRows > PageSize)
-            Sheet.Rows.RemoveAt(0, Sheet.NumRows - PageSize);
         RefreshView();
     }
 
@@ -75,24 +88,7 @@ public class ObjectEditor<T>
 
     private void RefreshView()
     {
-        //Sheet.Range(Sheet.Region).Clear();
-
-        var items = _dataSource.Skip(PageSize * CurrentPage).Take(PageSize).ToList();
-        var values = new object[items.Count][];
-
-        for (int i = 0; i < items.Count; i++)
-        {
-            Sheet.Rows.SetHeadings(i, i, _rowHeadingSelector(items[i]));
-            values[i] = new object[NColumns];
-            for (int j = 0; j < NColumns; j++)
-            {
-                var data = _valueColumnSelector(j, items[i]);
-                values[i][j] = data;
-                Sheet.Cells.SetCellMetaData(i, j, ItemMetaData, items[i]);
-            }
-        }
-
-        Sheet.Cells.SetValues(0, 0, values);
+        View = new Region(CurrentPage * PageSize, CurrentPage * PageSize + PageSize - 1, 0, NColumns - 1);
         Sheet.Commands.ClearHistory();
     }
 }

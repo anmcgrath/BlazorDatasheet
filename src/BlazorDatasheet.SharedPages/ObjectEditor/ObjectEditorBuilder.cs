@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Util;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -34,6 +35,20 @@ public class ObjectEditorBuilder<T>
             sheet.Columns.SetHeadings(i, i, _properties[i].Heading ?? _properties[i].PropertyName);
         }
 
+        // If performing a column sort, include all columns
+        sheet.BeforeRangeSort += (_, args) =>
+        {
+            Console.WriteLine($"before range sort {args.Region}");
+            if (args.Region is ColumnRegion c && c.Width == 1 && args.SortOptions.Count == 1)
+            {
+                args.Cancel = true;
+                sheet.SortRange(sheet.Region, new List<ColumnSortOptions>()
+                {
+                    new(c.Left, args.SortOptions.First().Ascending)
+                });
+            }
+        };
+
         return new ObjectEditor<T>(sheet,
             _pageSize,
             _dataSource,
@@ -67,7 +82,7 @@ public class ObjectEditorBuilder<T>
         _pageSize = pageSize;
         return this;
     }
-    
+
     public ObjectEditorBuilder<T> WithRowHeadingSelector(Func<T, string> rowHeadingSelector)
     {
         _rowHeadingSelector = rowHeadingSelector;

@@ -11,11 +11,16 @@
 
 <p>This example shows one method of using metadata and cell change events to create an object property editor for a set of objects.</p>
 
-<p>In this example we have a datasource of 100 people and set up a page size of 10. When the page is changed, the Sheet data is overidden from the new data.</p>
+<p>In this example we have a datasource of 100 people and set up a page size of 10. When the page is changed, the Sheet's view region is changed.</p>
+
+@editor.View
 
 <Datasheet
+    FrozenBottomCount="1"
+    FrozenTopCount="1"
     @ref="dataSheet1"
     CustomCellTypeDefinitions="CustomTypes"
+    ViewRegion="editor.View"
     Sheet="editor.Sheet">
 </Datasheet>
 
