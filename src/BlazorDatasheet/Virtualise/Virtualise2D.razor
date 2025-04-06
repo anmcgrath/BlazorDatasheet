@@ -204,12 +204,14 @@
 
         var layoutProviderRegion = new Region(0, LayoutProvider.NumRows - 1, 0, LayoutProvider.NumColumns - 1);
 
-        // including overflow
+        var initialLeft = LayoutProvider.ComputeColumn(viewRect.X) + _viewRegion.Left;
+        var initialRight = LayoutProvider.ComputeColumn(LayoutProvider.ComputeLeftPosition(_viewRegion.Left) + viewRect.Width + viewRect.X);
+        var initialTop = LayoutProvider.ComputeRow(viewRect.Y) + _viewRegion.Top;
+        var initialBottom = LayoutProvider.ComputeRow(LayoutProvider.ComputeTopPosition(_viewRegion.Top) + viewRect.Height + viewRect.Y);
+        
         Region? view = new Region(
-            LayoutProvider.ComputeRow(viewRect.Y) + _viewRegion.Top - OverscanRows,
-            LayoutProvider.ComputeRow(viewRect.Y + viewRect.Height) + _viewRegion.Top + OverscanRows,
-            LayoutProvider.ComputeColumn(viewRect.X) + _viewRegion.Left - OverscanColumns,
-            LayoutProvider.ComputeColumn(viewRect.X + viewRect.Width) + _viewRegion.Left + OverscanColumns
+            initialTop - OverscanRows, initialBottom + OverscanRows,
+            initialLeft - OverscanColumns, initialRight + OverscanColumns
         );
 
         view = view.GetIntersection(_viewRegion)?.GetIntersection(layoutProviderRegion) as Region;

@@ -259,6 +259,11 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     /// </summary>
     public double TotalSheetHeight => _sheet.Rows.GetVisualHeightBetween(0, _sheet.NumRows) + GetGutterSize(Axis.Col);
 
+    public double TotalViewWidth =>
+        _sheet.Columns.GetVisualWidth(ViewRegion ?? _sheet.Region) + GetGutterSize(Axis.Row);
+
+    public double TotalViewHeight => _sheet.Rows.GetVisualHeight(ViewRegion ?? _sheet.Region) + GetGutterSize(Axis.Col);
+
     /// <summary>
     /// The size of the main region of this datasheet, that is the region of the grid without
     /// any frozen rows or columns.
@@ -788,9 +793,9 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
     public async Task ScrollToContainRegion(IRegion region)
     {
-        if(_mainView == null)
+        if (_mainView == null)
             return;
-        
+
         var frozenLeftW = _sheet.Columns.GetVisualLeft(_frozenLeftCount);
         var frozenRightW = _sheet.Columns.GetVisualWidthBetween(_sheet.NumCols - _frozenRightCount, _sheet.NumCols);
         var frozenTopH = _sheet.Rows.GetVisualTop(_frozenTopCount);
