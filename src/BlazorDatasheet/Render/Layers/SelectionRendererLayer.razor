@@ -5,7 +5,7 @@
 
 @foreach (var region in Sheet.Selection.Regions)
 {
-    var boundedRegion = region.GetIntersection(Sheet.Region);
+    var boundedRegion = region.GetIntersection(ViewRegion);
     var isActiveRegion = region.Equals(Sheet.Selection.ActiveRegion);
     if (boundedRegion == null)
         continue;
@@ -43,7 +43,7 @@
 @if (Sheet.Selection.IsSelecting)
 {
     var selection = Sheet.Selection.SelectingRegion!;
-    var boundedSelecting = selection.GetIntersection(Sheet.Region);
+    var boundedSelecting = selection.GetIntersection(ViewRegion);
     if (boundedSelecting != null)
     {
         <BoxOverlayRenderer

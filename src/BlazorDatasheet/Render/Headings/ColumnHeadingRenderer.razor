@@ -33,7 +33,7 @@
             <ColumnHeadingRenderer
                 ShowColumnMenu="ShowColumnMenu"
                 Sheet="_sheet"
-                ViewRegion="new Region(0, 0, _viewRegion.Left, FrozenStartCount - 1)">
+                ViewRegion="new Region(0, 0, 0, FrozenStartCount - 1)">
                 @ChildContent(context)
             </ColumnHeadingRenderer>
         </div>
@@ -43,7 +43,7 @@
             @ref="MainView"
             LayoutProvider="LayoutProvider"
             OverscanColumns="OverscanColumns"
-            ViewRegion="new Region(0, 0, _viewRegion.Left + FrozenStartCount, _viewRegion.Right - FrozenEndCount)">
+            ViewRegion="new Region(0, 0, _viewRegion.Left, _viewRegion.Right)">
             <GridItemTemplate>
                 <div
                     @key="context.col"
@@ -87,7 +87,7 @@
             <ColumnHeadingRenderer
                 Sheet="_sheet"
                 ShowColumnMenu="ShowColumnMenu"
-                ViewRegion="new Region(0, 0, _viewRegion.Right - FrozenEndCount + 1, _viewRegion.Right)">
+                ViewRegion="new Region(0, 0, _sheet.NumCols-1 - FrozenEndCount + 1, _sheet.NumCols-1)">
                 @ChildContent(context)
             </ColumnHeadingRenderer>
         </div>
@@ -101,7 +101,7 @@
     [Parameter] public int FrozenEndCount { get; set; }
 
     [Parameter] public bool ShowColumnMenu { get; set; }
-    
+
     /// <summary>
     /// The number of columns past the end of the viewport to render.
     /// </summary>

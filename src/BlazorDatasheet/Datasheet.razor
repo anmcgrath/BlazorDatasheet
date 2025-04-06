@@ -52,6 +52,7 @@
 
                             <ColumnHeadingRenderer
                                 OverscanColumns="OverscanColumns"
+                                ViewRegion="MainViewRegion"
                                 Sheet="_sheet"
                                 ShowColumnMenu="_menuOptions.HeaderMenuEnabled"
                                 AlternateAxisHeadingsShown="ShowRowHeadings"
@@ -83,7 +84,7 @@
                             NumberPrecisionDisplay="NumberPrecisionDisplay"
                             CustomCellTypeDefinitions="CustomCellTypeDefinitions"
                             Icons="Icons"
-                            ViewRegion="new(_viewRegion.Top, _viewRegion.Top + _frozenTopCount - 1, _viewRegion.Left, _viewRegion.Right)"
+                            ViewRegion="new(0, _frozenTopCount - 1, _viewRegion.Left, _viewRegion.Right)"
                             Sheet="_sheet">
                             <RowHeaderTemplate>@RowHeaderTemplate(context)</RowHeaderTemplate>
                         </Datasheet>
@@ -145,7 +146,7 @@
                                 CustomCellTypeDefinitions="CustomCellTypeDefinitions"
                                 Icons="Icons"
                                 Sheet="_sheet"
-                                ViewRegion="new(MainViewRegion.Top, MainViewRegion.Bottom, _viewRegion.Left, _viewRegion.Left + _frozenLeftCount - 1)">
+                                ViewRegion="new(MainViewRegion.Top, MainViewRegion.Bottom, 0, _frozenLeftCount - 1)">
                             </Datasheet>
                         </div>
                     }
@@ -215,7 +216,7 @@
                                 CustomCellTypeDefinitions="CustomCellTypeDefinitions"
                                 Icons="Icons"
                                 Sheet="_sheet"
-                                ViewRegion="new Region(MainViewRegion.Top, MainViewRegion.Bottom, _viewRegion.Right - _frozenRightCount + 1, _viewRegion.Right)"/>
+                                ViewRegion="new Region(MainViewRegion.Top, MainViewRegion.Bottom, _sheet.NumRows-1 - _frozenRightCount + 1, _sheet.NumRows-1)"/>
                         </div>
                     }
                 </div>
@@ -238,7 +239,7 @@
                             NumberPrecisionDisplay="NumberPrecisionDisplay"
                             CustomCellTypeDefinitions="CustomCellTypeDefinitions"
                             Icons="Icons"
-                            ViewRegion="new(_viewRegion.Bottom - _frozenBottomCount + 1, _viewRegion.Bottom, _viewRegion.Left, _viewRegion.Right)"
+                            ViewRegion="new(_sheet.NumRows-1 - _frozenBottomCount + 1, _sheet.NumRows-1, _viewRegion.Left, _viewRegion.Right)"
                             Sheet="_sheet"/>
                     </div>
                 }
@@ -309,7 +310,7 @@
         var cellStyle = cell.FormatStyleString;
         if (!string.IsNullOrEmpty(cellStyle))
             builder.AddAttribute(60, "style", cell.FormatStyleString);
-        
+
         if (cell.Icon != null)
         {
             builder.OpenElement(70, "div");
