@@ -128,17 +128,21 @@ public partial class CellStore
         if (region.IsSingleCell())
             return SetValue(region.Top, region.Left, value);
 
-        var cellValues = new CellValue[region.Height][];
-        for (int i = 0; i < region.Height; i++)
+        var boundRegion = region.GetIntersection(Sheet.Region);
+        if (boundRegion == null)
+            return true;
+
+        var cellValues = new CellValue[boundRegion.Height][];
+        for (int i = 0; i < boundRegion.Height; i++)
         {
-            cellValues[i] = new CellValue[region.Width];
-            for (int j = 0; j < region.Width; j++)
+            cellValues[i] = new CellValue[boundRegion.Width];
+            for (int j = 0; j < boundRegion.Width; j++)
             {
-                cellValues[i][j] = ConvertToCellValue(i + region.Top, j + region.Left, value);
+                cellValues[i][j] = ConvertToCellValue(i + boundRegion.Top, j + boundRegion.Left, value);
             }
         }
 
-        return SetValues(region.Top, region.Left, cellValues);
+        return SetValues(boundRegion.Top, boundRegion.Left, cellValues);
     }
 
     /// <summary>
