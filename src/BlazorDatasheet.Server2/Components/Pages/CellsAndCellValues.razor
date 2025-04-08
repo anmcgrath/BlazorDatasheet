@@ -1,5 +1,6 @@
 ﻿@page "/CellsAndCellValues"
 @using BlazorDatasheet.Server2.Components.Examples
+@using BlazorDatasheet.Server2.Components.Examples.Data
 <h3>Cells and cell values</h3>
 
 <div class="block">
@@ -91,7 +92,7 @@
 </div>
 
 <h4>
-    Setting cell value types
+    Setting cell types
 </h4>
 
 <div class="block">
@@ -100,7 +101,7 @@
     discussed above.
 </div>
 
-<CodeExample ComponentType="typeof(SetCellValueType_example)" FileName="SetCellValueType.example.razor"/>
+<CodeExample ComponentType="typeof(SetCellValueType)"/>
 
 <h4>Custom cell types</h4>
 
@@ -108,4 +109,4 @@
     You can defined custom types and intercept the value conversion after the user edits a cell.
 </div>
 
-<CodeExample ComponentType="typeof(CustomTypeConversion_example)" FileName="CustomTypeConversion.example.razor"></CodeExample>
+<CodeExample ComponentType="typeof(CustomTypeConversion)"/>

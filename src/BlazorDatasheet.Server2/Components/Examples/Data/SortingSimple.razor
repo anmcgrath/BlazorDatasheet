@@ -1,0 +1,50 @@
+﻿@using System.Drawing
+@using BlazorDatasheet.Core.Commands.Data
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Formats.DefaultConditionalFormats
+@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Formula.Core
+
+<div style="display: flex; flex-direction: column; gap: 0.3rem; width: 10rem; margin: 0.3rem;">
+    <div>
+        <input @bind-value="_sortAscending" id="ascending-checkbox" type="checkbox"/>
+        <label for="ascending-checkbox">Ascending</label>
+    </div>
+    <button @onclick="()=>SortRegion(new ColumnRegion(0), 0)">Sort column 1 only</button>
+    <button @onclick="()=>SortRegion(new ColumnRegion(1), 0)">Sort column 2 only</button>
+    <button @onclick="()=>SortRegion(new ColumnRegion(0, 1), 0)">Sort sheet by column 1</button>
+    <button  @onclick="()=>SortRegion(new ColumnRegion(0, 1), 1)">Sort sheet by column 2</button>
+</div>
+
+<Datasheet Sheet="_sheet"/>
+
+@code {
+
+    private Sheet _sheet = null!;
+    private bool _sortAscending = false;
+
+    protected override void OnInitialized()
+    {
+        _sheet = new Sheet(10, 2);
+        var r = new Random();
+        var data = new CellValue[10][];
+        for (int i = 0; i < 10; i++)
+        {
+            data[i] = new CellValue[2];
+            data[i][0] = CellValue.Number(r.Next(1, 100));
+            data[i][1] = CellValue.Number(r.Next(1, 100));
+        }
+
+        _sheet.Cells.SetValues(0, 0, data);
+        _sheet.ConditionalFormats.Apply(_sheet.Region, new NumberScaleConditionalFormat(Color.OrangeRed, Color.GreenYellow));
+    }
+
+    private void SortRegion(IRegion region, int colIndex)
+    {
+        _sheet.SortRange(region, new List<ColumnSortOptions>()
+        {
+            new (colIndex, _sortAscending)
+        });
+    }
+
+}

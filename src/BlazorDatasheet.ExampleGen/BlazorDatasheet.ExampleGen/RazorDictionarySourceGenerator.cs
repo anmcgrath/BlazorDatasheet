@@ -16,7 +16,7 @@ namespace BlazorDatasheet.ExampleGen;
 /// When using a simple text file as a baseline, we can create a non-incremental source generator.
 /// </summary>
 [Generator]
-public class SampleSourceGenerator : ISourceGenerator
+public class RazorDictionarySourceGenerator : ISourceGenerator
 {
     public void Initialize(GeneratorInitializationContext context)
     {
@@ -41,11 +41,15 @@ public class SampleSourceGenerator : ISourceGenerator
 
         foreach (var file in context.AdditionalFiles)
         {
-            if (file.Path.EndsWith(".example.razor"))
+            if (file.Path.Contains(@"Components\Examples"))
             {
-                var fileName = Path.GetFileName(file.Path);
+                var i = file.Path.IndexOf(@"Components\", StringComparison.Ordinal);
+                var ns = file.Path.Substring(i, file.Path.Length - i)
+                    .Replace(".razor", "")
+                    .Replace(@"\", ".");
+
                 var source = file.GetText()?.ToString().Replace("\"", "\"\"");
-                builder.AppendLine("{\"" + fileName + "\", @\"" + source + "\"},");
+                builder.AppendLine("{\"" + ns + "\", @\"" + source + "\"},");
             }
         }
 

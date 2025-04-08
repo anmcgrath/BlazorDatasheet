@@ -86,6 +86,10 @@ h1:focus {
         width: 0;
         transition: width 0.2s ease-in-out;
     }
+    
+    .main {
+        margin-top: 3rem;
+    }
 
     .top-menu {
         display: flex;
@@ -284,11 +288,11 @@ code {
 .table {
     margin: 1rem 0;
     border-spacing: 0;
+    font-size: 0.9rem;
 
     th {
         background: #4f46e5;
         font-weight: bold;
-        font-size: 0.9rem;
         color: white;
     }
 
