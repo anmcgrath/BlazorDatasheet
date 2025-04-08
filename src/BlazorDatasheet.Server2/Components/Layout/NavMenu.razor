@@ -1,0 +1,90 @@
+﻿@inject NavigationManager NavigationManager
+@implements IDisposable
+
+<div
+    @onclick="ToggleMenu"
+    style="@(_menuExpanded ? "" : "display:none;")"
+    class="nav-sm-overlay">
+
+</div>
+
+<div class="top-menu">
+    <div>Blazor Datasheet</div>
+    <div class="expand-menu" @onclick="ToggleMenu">
+        <div class="hm"></div>
+        <div class="hm"></div>
+        <div class="hm"></div>
+    </div>
+</div>
+
+<div class="side-menu @(_menuExpanded ? "is-expanded" : "")">
+    <NavLink href="/" Match="NavLinkMatch.All">
+        <div class="menu-heading">
+            <img src="@Assets["bds-logo.svg"]" alt="Blazor datasheet logo"/>
+            <div style="margin-left: 1rem;">Blazor Datasheet</div>
+        </div>
+    </NavLink>
+
+    <p class="menu-label">Getting started</p>
+    <ul class="menu-list">
+        <MenuLink Href="Installation" Text="Installation"/>
+        <MenuLink Href="SimpleExample" Text="Simple sheet"/>
+    </ul>
+    <p class="menu-label">Data</p>
+    <ul class="menu-list">
+        <MenuLink Href="CellsAndCellValues" Text="Cells and cell values"/>
+        <li><a>Data validation</a></li>
+        <li><a>Sorting</a></li>
+        <li><a>Column filters</a></li>
+    </ul>
+    <p class="menu-label">Formatting</p>
+    <ul class="menu-list">
+        <li><a>Basic formatting</a></li>
+        <li><a>Conditional formatting</a></li>
+    </ul>
+    <p class="menu-label">Customisation</p>
+    <ul class="menu-list">
+        <li><a>Cell types</a></li>
+        <li><a>Custom renderer</a></li>
+        <li><a>Custom editor</a></li>
+    </ul>
+    <p class="menu-label">Formula</p>
+    <ul class="menu-list">
+        <li><a>Setting formula</a></li>
+        <li><a>Workbooks/multi-sheet</a></li>
+        <li><a>Named ranges</a></li>
+    </ul>
+    <p class="menu-label">Menu and advanced</p>
+    <ul class="menu-list">
+        <li><a>Custom Menu Items</a></li>
+        <li><a>Serialisation</a></li>
+    </ul>
+</div>
+
+@code{
+
+    private bool _menuExpanded = false;
+
+    protected override void OnInitialized()
+    {
+        NavigationManager.LocationChanged += NavigationManagerOnLocationChanged;
+    }
+
+    private void NavigationManagerOnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        _menuExpanded = false;
+        StateHasChanged();
+    }
+
+    private void ToggleMenu()
+    {
+        _menuExpanded = !_menuExpanded;
+    }
+
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= NavigationManagerOnLocationChanged;
+    }
+
+}

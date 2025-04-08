@@ -1,0 +1,28 @@
+﻿@using BlazorDatasheet.ExampleGen
+
+<div class="code-example">
+    <div class="tabs">
+        <ul>
+            <li class="@(_activeTab == 0 ? "active" : "")"><a @onclick="() => _activeTab=0">Example</a></li>
+            <li class="@(_activeTab == 1 ? "active" : "")"><a @onclick="() => _activeTab=1">Source</a></li>
+        </ul>
+    </div>
+
+    <div style="@(_activeTab != 0 ? "display:none" : "")">
+        <DynamicComponent Type="ComponentType"></DynamicComponent>
+    </div>
+    <div style="@(_activeTab != 1 ? "display:none" : "")">
+        <CodeBlock>
+            @Sources.GetSource(FileName)
+        </CodeBlock>
+    </div>
+</div>
+
+@code {
+
+    [Parameter] public required Type ComponentType { get; set; }
+    [Parameter] public required string FileName { get; set; }
+
+    private int _activeTab = 0;
+
+}

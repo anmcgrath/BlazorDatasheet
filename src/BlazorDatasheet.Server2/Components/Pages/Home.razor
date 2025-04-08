@@ -1,0 +1,49 @@
+﻿@page "/"
+@using System.Drawing
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Formats.DefaultConditionalFormats
+@using BlazorDatasheet.ExampleGen
+@using BlazorDatasheet.Formula.Core
+@using BlazorDatasheet.Server2.Components.Examples
+
+<PageTitle>Home</PageTitle>
+
+<div style="height: 300px; overflow: scroll;">
+    <Datasheet Sheet="_sheet"/>
+</div>
+
+<button class="ui button">
+    Test
+</button>
+
+<CodeExample ComponentType="typeof(Simple_example)" FileName="Simple.example.razor"></CodeExample>
+
+@code{
+
+    private Sheet _sheet = null!;
+
+    protected override void OnInitialized()
+    {
+        _sheet = new Sheet(100, 5);
+        _sheet.BatchUpdates();
+        _sheet.ScreenUpdating = false;
+
+        var data = new CellValue[100][];
+        for (int i = 0; i < 100; i++)
+        {
+            data[i] = new CellValue[5];
+            for (int j = 0; j < 5; j++)
+            {
+                data[i][j] = CellValue.Number(i * j);
+            }
+        }
+
+        _sheet.ConditionalFormats.Apply(_sheet.Region, new NumberScaleConditionalFormat(Color.Aqua, Color.GreenYellow));
+        _sheet.Cells.SetValues(0, 0, data);
+
+        _sheet.ScreenUpdating = true;
+        _sheet.EndBatchUpdates();
+        base.OnInitialized();
+    }
+
+}

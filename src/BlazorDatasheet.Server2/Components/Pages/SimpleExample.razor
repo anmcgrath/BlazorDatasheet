@@ -1,0 +1,43 @@
+﻿@page "/SimpleExample"
+@using BlazorDatasheet.Server2.Components.Examples
+<h3 class="title is-3">Simple example</h3>
+
+<div class="block">
+    The <code>Sheet</code> class is the workhorse of the BlazorDatasheet library. A <code>Datasheet</code> requires a sheet to display.
+    Most of your interaction with the library will be through the <code>Sheet</code> class.
+</div>
+
+<div class="block">
+    A simple <code>Sheet</code> can be displayed in a <code>Datasheet</code> as in the following example.
+</div>
+
+<CodeExample ComponentType="typeof(Simple_example)" FileName="Simple.example.razor"></CodeExample>
+
+<h4 class="title is-4">User interaction</h4>
+
+<div class="block">
+    Users can interact with the datasheet by selecting cells with the mouse or arrow keys. A context menu is shown to the user on right-click. Undo/redo is available for most actions.
+</div>
+
+<h4 class="title is-4">Programmatic control</h4>
+
+<div class="block">
+    Most of the control of the sheet is through the <code>Sheet</code> object.
+    The below example sets the cell at A1 to the value "Test" when the sheet is loaded. Clicking the button will set the selected cell(s) to the value of the text-field.
+</div>
+
+<CodeExample ComponentType="typeof(SimpleProgrammaticControl_example)" FileName="SimpleProgrammaticControl.example.razor"/>
+
+<div class="block">
+    There are multiple ways to access individual cells, for example:
+</div>
+
+<CodeBlock>sheet.Cells[0, 0].Value = "Test";
+sheet.Range("A1:A4").Value = "Test"; // Acts on all cells in the range
+sheet.Cells["A1"].Value = "Test";
+sheet.Cells.SetValue(0, 0, "Test");
+</CodeBlock>
+
+@code {
+    
+}
