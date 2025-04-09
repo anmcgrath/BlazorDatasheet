@@ -41,12 +41,14 @@ public class RazorDictionarySourceGenerator : ISourceGenerator
 
         foreach (var file in context.AdditionalFiles)
         {
-            if (file.Path.Contains(@"Components\Examples"))
+            builder.AppendLine("// "+file.Path);
+
+            if (file.Path.Contains($@"Components{Path.DirectorySeparatorChar}Examples"))
             {
-                var i = file.Path.IndexOf(@"Components\", StringComparison.Ordinal);
+                var i = file.Path.IndexOf(@$"Components{Path.DirectorySeparatorChar}", StringComparison.Ordinal);
                 var ns = file.Path.Substring(i, file.Path.Length - i)
                     .Replace(".razor", "")
-                    .Replace(@"\", ".");
+                    .Replace($@"{Path.DirectorySeparatorChar}", ".");
 
                 var source = file.GetText()?.ToString().Replace("\"", "\"\"");
                 builder.AppendLine("{\"" + ns + "\", @\"" + source + "\"},");
