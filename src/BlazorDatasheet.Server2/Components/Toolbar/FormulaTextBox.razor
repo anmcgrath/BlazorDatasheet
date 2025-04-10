@@ -1,4 +1,5 @@
 ﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events.Edit
 @using BlazorDatasheet.Core.Events.Selection
 @inject IJSRuntime Js
 
@@ -6,8 +7,9 @@
        @bind-value:get="@_currentValue"
        @bind-value:set="InputValueChanged"
        @bind-value:event="oninput"
-       @ref="_editorRef"
-       @onfocus="OnFocusTextBox"/>
+       @onfocus="OnFocusTextBox"
+       @onkeypress="Callback"
+       @ref="_editorRef"/>
 
 @code {
 
@@ -18,7 +20,7 @@
     private ElementReference _editorRef = default!;
 
     private string _currentValue = string.Empty;
-    private bool _requestFocus = false;
+    private bool _inputFocused = false;
 
     protected override void OnInitialized()
     {
@@ -28,7 +30,6 @@
 
     private void EditorOnEditValueChanged(object? sender, string? e)
     {
-        Console.WriteLine("Edit value changed");
         _currentValue = e?.ToString() ?? string.Empty;
         StateHasChanged();
     }
@@ -44,18 +45,7 @@
         StateHasChanged();
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (_requestFocus)
-        {
-            await Js.InvokeVoidAsync("setFocusWithTimeout", _editorRef, 10);
-            await Datasheet.SetActiveAsync(false);
-        }
-
-        _requestFocus = false;
-    }
-
-    private void OnFocusTextBox()
+    private async Task OnFocusTextBox()
     {
         if (Sheet.Selection.IsEmpty())
             return;
@@ -64,7 +54,7 @@
         var col = Sheet.Selection.ActiveCellPosition.col;
 
         Sheet.Editor.BeginEdit(row, col);
-        _requestFocus = true;
+        await Js.InvokeVoidAsync("setFocusWithTimeout", _editorRef, 100);
     }
 
     private void InputValueChanged(string val)
@@ -75,6 +65,14 @@
             Sheet.Editor.EditValue = val;
             StateHasChanged();
         }
+    }
+
+    private async Task Callback(KeyboardEventArgs e)
+    {
+        if (e.Key != "Enter" && e.Key != "Tab" && e.Key != "Escape")
+            return;
+
+        await Datasheet.SetActiveAsync();
     }
 
 }

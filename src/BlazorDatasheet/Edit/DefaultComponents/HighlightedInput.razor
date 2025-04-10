@@ -21,7 +21,8 @@
 </div>
 
 @code {
-    [Parameter] public string Value { get; set; }
+    private string _value = string.Empty;
+    [Parameter] public required string Value { get; set; }
 
     [Parameter] public EventCallback<string> ValueChanged { get; set; }
 
@@ -41,6 +42,15 @@
     private DotNetObjectReference<HighlightedInput>? _dotnetRef;
 
     private bool _isDisposing;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Value != _value)
+        {
+            // Allow for external editors
+            await UpdateInput(Value);
+        }
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -64,6 +74,7 @@
     [JSInvokable]
     public async Task UpdateInput(string input)
     {
+        _value = input;
         await ValueChanged.InvokeAsync(input);
         if (_highlightJs != null && !_isDisposing)
             await _highlightJs.InvokeVoidAsync("setHighlightHtml", GetHighlightedHtmlValue(input));
