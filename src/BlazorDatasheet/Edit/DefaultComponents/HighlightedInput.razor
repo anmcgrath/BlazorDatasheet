@@ -127,14 +127,21 @@
 
     public async ValueTask DisposeAsync()
     {
-        _isDisposing = true;
-        if (_highlightJs != null)
+        try
         {
-            await _highlightJs.InvokeVoidAsync("dispose");
-            await _highlightJs.DisposeAsync();
-        }
+            _isDisposing = true;
+            if (_highlightJs != null)
+            {
+                await _highlightJs.InvokeVoidAsync("dispose");
+                await _highlightJs.DisposeAsync();
+            }
 
-        _dotnetRef?.Dispose();
+            _dotnetRef?.Dispose();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message + " " + e.StackTrace);
+        }
     }
 
 }

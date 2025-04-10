@@ -617,6 +617,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
     private async Task<bool> HandleWindowKeyDown(KeyboardEventArgs e)
     {
+        Console.WriteLine($"Handling key down event. Datasheet is active? {IsDataSheetActive}");
         if (!IsDataSheetActive)
             return false;
 

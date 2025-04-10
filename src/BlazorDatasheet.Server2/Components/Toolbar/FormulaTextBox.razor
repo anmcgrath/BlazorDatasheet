@@ -1,0 +1,80 @@
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events.Selection
+@inject IJSRuntime Js
+
+<input type="text"
+       @bind-value:get="@_currentValue"
+       @bind-value:set="InputValueChanged"
+       @bind-value:event="oninput"
+       @ref="_editorRef"
+       @onfocus="OnFocusTextBox"/>
+
+@code {
+
+    [Parameter] public required Sheet Sheet { get; set; }
+
+    [Parameter] public required Datasheet Datasheet { get; set; }
+
+    private ElementReference _editorRef = default!;
+
+    private string _currentValue = string.Empty;
+    private bool _requestFocus = false;
+
+    protected override void OnInitialized()
+    {
+        Sheet.Selection.ActiveCellPositionChanged += ActiveCellPositionChanged;
+        Sheet.Editor.EditValueChanged += EditorOnEditValueChanged;
+    }
+
+    private void EditorOnEditValueChanged(object? sender, string? e)
+    {
+        Console.WriteLine("Edit value changed");
+        _currentValue = e?.ToString() ?? string.Empty;
+        StateHasChanged();
+    }
+
+    private void ActiveCellPositionChanged(object? sender, ActiveCellPositionChangedEventArgs e)
+    {
+        var cell = Sheet.Cells.GetCell(e.NewPosition);
+        if (cell.Formula != null)
+            _currentValue = cell.Formula;
+        else
+            _currentValue = cell.Value?.ToString() ?? string.Empty;
+
+        StateHasChanged();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_requestFocus)
+        {
+            await Js.InvokeVoidAsync("setFocusWithTimeout", _editorRef, 10);
+            await Datasheet.SetActiveAsync(false);
+        }
+
+        _requestFocus = false;
+    }
+
+    private void OnFocusTextBox()
+    {
+        if (Sheet.Selection.IsEmpty())
+            return;
+
+        var row = Sheet.Selection.ActiveCellPosition.row;
+        var col = Sheet.Selection.ActiveCellPosition.col;
+
+        Sheet.Editor.BeginEdit(row, col);
+        _requestFocus = true;
+    }
+
+    private void InputValueChanged(string val)
+    {
+        var strVal = val.ToString();
+        if (strVal != Sheet.Editor.EditValue)
+        {
+            Sheet.Editor.EditValue = val;
+            StateHasChanged();
+        }
+    }
+
+}

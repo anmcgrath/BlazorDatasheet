@@ -1,49 +1,34 @@
 ﻿@page "/"
-@using System.Drawing
 @using BlazorDatasheet.Core.Data
-@using BlazorDatasheet.Core.Formats.DefaultConditionalFormats
-@using BlazorDatasheet.ExampleGen
-@using BlazorDatasheet.Formula.Core
-@using BlazorDatasheet.Server2.Components.Examples
+@using BlazorDatasheet.Server2.Components.Toolbar
 
 <PageTitle>Home</PageTitle>
 
-<div style="height: 300px; overflow: scroll;">
-    <Datasheet Sheet="_sheet"/>
+@if (_datasheet != null)
+{
+    <DatasheetToolbar Sheet="_sheet" Datasheet="_datasheet"/>
+}
+
+<div style="width: 600px; height: 400px; overflow: scroll;">
+    <Datasheet Sheet="_sheet" @ref="_datasheet"/>
 </div>
-
-<button class="ui button">
-    Test
-</button>
-
-<CodeExample ComponentType="typeof(Simple)" />
 
 @code{
 
     private Sheet _sheet = null!;
+    private Datasheet? _datasheet;
 
     protected override void OnInitialized()
     {
         _sheet = new Sheet(100, 5);
-        _sheet.BatchUpdates();
-        _sheet.ScreenUpdating = false;
+    }
 
-        var data = new CellValue[100][];
-        for (int i = 0; i < 100; i++)
-        {
-            data[i] = new CellValue[5];
-            for (int j = 0; j < 5; j++)
-            {
-                data[i][j] = CellValue.Number(i * j);
-            }
-        }
-
-        _sheet.ConditionalFormats.Apply(_sheet.Region, new NumberScaleConditionalFormat(Color.Aqua, Color.GreenYellow));
-        _sheet.Cells.SetValues(0, 0, data);
-
-        _sheet.ScreenUpdating = true;
-        _sheet.EndBatchUpdates();
-        base.OnInitialized();
+    protected override void OnAfterRender(bool firstRender)
+    {
+        // Force the toolbar to render as it takes the datasheet ref
+        // as a parameter.
+        if(firstRender)
+            StateHasChanged();
     }
 
 }

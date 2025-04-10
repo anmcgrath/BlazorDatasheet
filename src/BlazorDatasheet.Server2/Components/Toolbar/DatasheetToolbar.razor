@@ -1,0 +1,18 @@
+﻿@using BlazorDatasheet.Core.Data
+
+<FormulaTextBox Sheet="Sheet" Datasheet="Datasheet"/>
+
+@code {
+    
+    [Parameter]
+    public required Sheet Sheet { get; set; }
+    
+    [Parameter]
+    public required Datasheet Datasheet { get; set; }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+    }
+
+}
