@@ -1,9 +1,30 @@
-﻿namespace BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
+﻿using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.Formula.Core.Dependencies;
+using BlazorDatasheet.Formula.Core.Interpreter.References;
+
+namespace BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 
 public class FormulaExecutionContext
 {
     private readonly Dictionary<CellFormula, CellValue> _executedValues = new();
     private readonly Stack<CellFormula> _executing = new();
+    private IList<FormulaVertex>? _currentSccGroup;
+
+    public void SetCurrentGroup(ref IList<FormulaVertex> group)
+    {
+        _currentSccGroup = group;
+    }
+
+    internal bool IsInSccGroup(Reference reference)
+    {
+        if (_currentSccGroup == null || _currentSccGroup.Count == 1)
+            return false;
+        
+        if (reference is not NamedReference namedRef)
+            return _currentSccGroup.Any(x => x.Region != null && reference.Region.Contains(x.Region));
+        
+        return _currentSccGroup.Any(x => x.Key == namedRef.Name);
+    }
 
     internal bool IsExecuting(CellFormula formula)
     {

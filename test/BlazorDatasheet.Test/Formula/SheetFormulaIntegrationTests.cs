@@ -21,7 +21,7 @@ public class SheetFormulaIntegrationTests
     [SetUp]
     public void TestSetup()
     {
-        _sheet = new Sheet(10, 10);
+        _sheet = new Sheet(50, 10);
     }
 
     [Test]
@@ -427,5 +427,25 @@ public class SheetFormulaIntegrationTests
         _sheet.FormulaEngine.SetVariable("x", "=Sheet1!A2");
         _sheet.Cells["A2"]!.Value = 10;
         _sheet.Cells["A1"]!.Value.Should().Be(10);
+    }
+
+    // https://github.com/anmcgrath/BlazorDatasheet/issues/206
+    [Test]
+    public void Circula_Ref_Error_Depending_On_Order_Of_Edit()
+    {
+        _sheet.Cells["C1"]!.Formula = "=C9+C10";
+        _sheet.Cells["C2"]!.Formula = "=C11-C8";
+        _sheet.Cells["C3"]!.Formula = "=C1+C2";
+        _sheet.Cells["C4"]!.Formula = "=C8+C3";
+        _sheet.Cells["C8"]!.Formula = "=C12/C14*1000";
+        _sheet.Cells["C9"]!.Value = 250;
+        _sheet.Cells["C10"]!.Value = 130;
+        _sheet.Cells["C11"]!.Formula = "=C12+C13";
+        _sheet.Cells["C12"]!.Value = 950;
+        _sheet.Cells["C13"]!.Value = 456;
+        _sheet.Cells["C14"]!.Value = 2;
+        
+        _sheet.Cells["C4"]!.Formula = "=C8+C3";
+        _sheet.Cells["C4"]!.Value.Should().Be(1786);
     }
 }

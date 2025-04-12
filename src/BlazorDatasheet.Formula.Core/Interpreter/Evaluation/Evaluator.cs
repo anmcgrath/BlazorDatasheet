@@ -149,6 +149,9 @@ public class Evaluator
         if (_options.DoNotResolveDependencies)
             return CellValue.Reference(cellReference);
 
+        if (!_formulaExecutionContext?.IsInSccGroup(cellReference) == true)
+            return CellValue.Reference(cellReference);
+
         var formula = _environment.GetFormula(cellReference.RowIndex, cellReference.ColIndex, cellReference.SheetName);
         if (formula == null)
             return CellValue.Reference(cellReference);
