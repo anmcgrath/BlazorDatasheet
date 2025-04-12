@@ -504,17 +504,20 @@ public class RegionDataStore<T> : ISparseSource, IRowSource, IStore<T, RegionRes
 
     public virtual void Restore(RegionRestoreData<T> restoreData)
     {
-        foreach (var shift in restoreData.Shifts)
+        if (restoreData.Shifts != null)
         {
-            var regionsToShift = GetAfter(shift.Index, shift.Axis);
-            foreach (var region in regionsToShift)
+            foreach (var shift in restoreData.Shifts)
             {
-                Tree.Delete(region);
-                var dCol = shift.Axis == Axis.Col ? -shift.Amount : 0;
-                var dRow = shift.Axis == Axis.Row ? -shift.Amount : 0;
-                region.Region.Shift(dRow, dCol);
-                region.UpdateEnvelope();
-                Tree.Insert(region);
+                var regionsToShift = GetAfter(shift.Index, shift.Axis);
+                foreach (var region in regionsToShift)
+                {
+                    Tree.Delete(region);
+                    var dCol = shift.Axis == Axis.Col ? -shift.Amount : 0;
+                    var dRow = shift.Axis == Axis.Row ? -shift.Amount : 0;
+                    region.Region.Shift(dRow, dCol);
+                    region.UpdateEnvelope();
+                    Tree.Insert(region);
+                }
             }
         }
 

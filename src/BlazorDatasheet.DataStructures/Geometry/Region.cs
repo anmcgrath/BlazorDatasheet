@@ -413,7 +413,22 @@ public class Region : IRegion
         return intersection;
     }
 
-    public bool Intersects(IRegion? region) => GetIntersection(region) != null;
+    public bool Intersects(IRegion? region)
+    {
+        if (region == null)
+            return false;
+
+        if (region.Right < Left)
+            return false;
+        if (region.Left > Right)
+            return false;
+        if (region.Top > Bottom)
+            return false;
+        if (region.Bottom < Top)
+            return false;
+
+        return true;
+    }
 
     public virtual void ExtendTo(int row, int col, IRegion? regionLimit = null)
     {

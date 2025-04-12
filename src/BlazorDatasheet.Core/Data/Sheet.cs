@@ -345,8 +345,7 @@ public class Sheet
     /// <param name="region"></param>
     internal void MarkDirty(IRegion region)
     {
-        var intersection = region.GetIntersection(this.Region);
-        if (intersection == null)
+        if(!region.Intersects(this.Region))
             return;
 
         _dirtyRows.Set(region.Top, region.Bottom, true);
@@ -362,8 +361,7 @@ public class Sheet
     {
         foreach (var region in regions)
         {
-            var intersection = region.GetIntersection(this.Region);
-            if (intersection == null)
+            if(!region.Intersects(this.Region))
                 continue;
 
             _dirtyRows.Set(region.Top, region.Bottom, true);
