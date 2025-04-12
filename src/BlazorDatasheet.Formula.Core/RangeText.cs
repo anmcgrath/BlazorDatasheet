@@ -133,7 +133,7 @@ public static class RangeText
         if (pos == str.Length)
         {
             if (colIndex < MaxCols && isFirstFixed)
-                address = new ColAddress(colIndex, colStrSpan.ToString(), isFirstFixed);
+                address = new ColAddress(colIndex, isFirstFixed);
             else
                 address = new NamedAddress(colStrSpan.ToString());
             return true;
@@ -176,7 +176,7 @@ public static class RangeText
 
         if (hasColRef)
         {
-            var colAddress = new ColAddress(colIndex, colStrSpan.ToString(), isFirstFixed);
+            var colAddress = new ColAddress(colIndex, isFirstFixed);
             var rowAddress = new RowAddress(rowIndex, rowIndex + 1, isSecondFixed);
             address = new CellAddress(rowAddress, colAddress);
             return true;

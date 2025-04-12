@@ -18,7 +18,7 @@ public class CellAddress : Address
     /// <param name="colIndex"></param>
     internal CellAddress(int rowIndex, int colIndex) : base(AddressKind.CellAddress)
     {
-        ColAddress = new ColAddress(colIndex, RangeText.ColIndexToLetters(colIndex), false);
+        ColAddress = new ColAddress(colIndex, false);
         RowAddress = new RowAddress(rowIndex, rowIndex + 1, false);
     }
 }
