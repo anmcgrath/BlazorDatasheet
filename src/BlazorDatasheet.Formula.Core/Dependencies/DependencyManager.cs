@@ -216,9 +216,9 @@ public class DependencyManager
         return GetReferencedVertexStore(sheetName).GetData(region);
     }
 
-    private IEnumerable<FormulaVertex> GetDirectDependents(FormulaVertex vertex)
+    public IEnumerable<FormulaVertex> GetDirectDependents(FormulaVertex vertex)
     {
-        if (vertex.VertexType == VertexType.Cell || vertex.VertexType == VertexType.Region)
+        if (vertex.VertexType == VertexType.Cell)
         {
             return GetDirectDependents(vertex.Region!, vertex.SheetName);
         }
@@ -268,20 +268,23 @@ public class DependencyManager
         return restoreData;
     }
 
-    private List<FormulaVertex> GetVerticesInRegion(IRegion region, string sheetName)
+    private IEnumerable<FormulaVertex> GetVerticesInRegion(IRegion region, string sheetName)
     {
         if (region.IsSingleCell())
         {
             var vertex = _dependencyGraph.GetVertex(new FormulaVertex(region, sheetName, null).Key);
             if (vertex != null)
                 return [vertex];
-            return new List<FormulaVertex>();
+            return Array.Empty<FormulaVertex>();
         }
 
         var vertices = new List<FormulaVertex>();
         foreach (var v in _dependencyGraph.GetAll())
         {
-            if (v.SheetName == sheetName && region.Intersects(v.Region))
+            if(v.Region == null)
+                continue;
+            
+            if (v.SheetName == sheetName && region.Contains(v.Region))
             {
                 vertices.Add(v);
             }
@@ -449,15 +452,6 @@ public class DependencyManager
                 refIndex++;
             }
         }
-    }
-
-    /// <summary>
-    /// Finds the formula that depend on this formula vertex, if it exists.
-    /// </summary>
-    /// <returns></returns>
-    public IEnumerable<FormulaVertex> FindDependentFormula(int row, int col, string sheetName)
-    {
-        return _dependencyGraph.Adj(new FormulaVertex(row, col, sheetName, null));
     }
 
     public IEnumerable<FormulaVertex> FindDependentFormula(IRegion region, string sheetName)

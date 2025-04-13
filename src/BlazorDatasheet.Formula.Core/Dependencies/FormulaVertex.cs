@@ -21,10 +21,11 @@ public class FormulaVertex : Vertex, IEquatable<FormulaVertex>
         Region = region;
         Formula = formula;
         UpdateKey();
-        if (region.Width == 1 && region.Height == 1)
+
+        if (region.IsSingleCell())
             VertexType = VertexType.Cell;
         else
-            VertexType = VertexType.Region;
+            throw new Exception("Region vertex type with a size > 1 cell not supported");
     }
 
     public FormulaVertex(int row, int col, string sheetName, CellFormula? formula) : this(

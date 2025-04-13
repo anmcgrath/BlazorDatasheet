@@ -3,6 +3,5 @@
 public enum VertexType
 {
     Cell,
-    Region,
     Named
 }
