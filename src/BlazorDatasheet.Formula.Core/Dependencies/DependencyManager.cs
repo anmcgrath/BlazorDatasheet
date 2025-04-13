@@ -220,7 +220,7 @@ public class DependencyManager
     {
         if (vertex.VertexType == VertexType.Cell)
         {
-            return _dependencyGraph.Adj(vertex);
+            return GetDirectDependents(new Region(vertex.Row, vertex.Col), vertex.SheetName);
         }
 
         return _dependencyGraph.GetAll()
