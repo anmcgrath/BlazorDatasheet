@@ -165,7 +165,10 @@ public class FormulaEngine
 
         foreach (var scc in order)
         {
+            var sccGroup = scc;
             bool isCircularGroup = false;
+            
+            executionContext.SetCurrentGroup(ref sccGroup);
 
             foreach (var vertex in scc)
             {

@@ -272,7 +272,7 @@ public class DependencyManager
     {
         if (region.IsSingleCell())
         {
-            var vertex = _dependencyGraph.GetVertex(new FormulaVertex(region, sheetName, null).SheetName);
+            var vertex = _dependencyGraph.GetVertex(new FormulaVertex(region, sheetName, null).Key);
             if (vertex != null)
                 return [vertex];
             return new List<FormulaVertex>();
