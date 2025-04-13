@@ -21,7 +21,7 @@ public class FormulaExecutionContext
             return false;
         
         if (reference is not NamedReference namedRef)
-            return _currentSccGroup.Any(x => x.Region != null && reference.Region.Contains(x.Region));
+            return _currentSccGroup.Any(x => x.Position != null && reference.Region.Contains(x.Row, x.Col));
         
         return _currentSccGroup.Any(x => x.Key == namedRef.Name);
     }

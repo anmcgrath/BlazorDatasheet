@@ -1,4 +1,5 @@
-﻿using BlazorDatasheet.DataStructures.Geometry;
+﻿using System.Runtime.CompilerServices;
+using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Graph;
 using BlazorDatasheet.Formula.Core.Interpreter;
 
@@ -10,27 +11,17 @@ public class FormulaVertex : Vertex, IEquatable<FormulaVertex>
 
     public FormulaVertex(string name, CellFormula? formula)
     {
-        _key = name;
+        _key = GetKey(name);
         Formula = formula;
         VertexType = VertexType.Named;
     }
 
-    public FormulaVertex(IRegion region, string sheetName, CellFormula? formula)
+    public FormulaVertex(int row, int col, string sheetName, CellFormula? formula)
     {
         SheetName = sheetName;
-        Region = region;
+        Position = new CellPosition(row, col);
         Formula = formula;
         UpdateKey();
-
-        if (region.IsSingleCell())
-            VertexType = VertexType.Cell;
-        else
-            throw new Exception("Region vertex type with a size > 1 cell not supported");
-    }
-
-    public FormulaVertex(int row, int col, string sheetName, CellFormula? formula) : this(
-        new Region(row, row, col, col), sheetName, formula)
-    {
         VertexType = VertexType.Cell;
     }
 
@@ -39,17 +30,27 @@ public class FormulaVertex : Vertex, IEquatable<FormulaVertex>
 
     public sealed override void UpdateKey()
     {
-        if (VertexType != VertexType.Named)
-            _key = $"'{SheetName}'!" + RangeText.RegionToText(Region!);
+        if (VertexType == VertexType.Cell)
+            _key = GetKey(Row, Col, SheetName);
     }
 
-    public IRegion? Region { get; }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static string GetKey(int row, int col, string sheetName)
+    {
+        return $"'{sheetName}'!{RangeText.ToCellText(row, col)}";
+    }
+
+    internal static string GetKey(string name)
+    {
+        return name;
+    }
+
+    public CellPosition? Position { get; internal set; }
     public CellFormula? Formula { get; set; }
-
-    public int? Row => Region?.Top;
-    public int? Col => Region?.Left;
-
     public VertexType VertexType { get; private set; }
+
+    public int Row => Position?.row ?? int.MinValue;
+    public int Col => Position?.col ?? int.MinValue;
 
     public bool Equals(FormulaVertex? other)
     {

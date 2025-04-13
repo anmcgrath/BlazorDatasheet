@@ -211,7 +211,7 @@ public class FormulaEngine
                 executionContext.ClearExecuting();
 
                 if (vertex.VertexType == VertexType.Cell)
-                    _environment.SetCellValue(vertex.Region!.Top, vertex.Region!.Left, vertex.SheetName, value);
+                    _environment.SetCellValue(vertex.Row, vertex.Col, vertex.SheetName, value);
                 else if (vertex.VertexType == VertexType.Named)
                     _environment.SetVariable(vertex.Key, value);
             }
