@@ -1,9 +1,0 @@
-@inherits BlazorDatasheet.Render.BaseRenderer
-
-<progress max="200" style="width: 100%" value="@ProgressValue"></progress>
-
-@code {
-
-    private string ProgressValue => Cell.Value?.ToString() ?? "0";
-
-}

@@ -1,0 +1,34 @@
+﻿@page "/BasicFormatting"
+@using BlazorDatasheet.SharedPages.Components.Examples.Formatting
+<h3>Cell formats</h3>
+
+<CodeExample ComponentType="typeof(CellFormatSimpleExample)"/>
+
+<div class="block">
+ Cell formats can be set in the following ways:
+</div>
+
+<CodeBlock Language="csharp">sheet.Range("A1:A2").Format = new CellFormat() { BackgroundColor = "red" };
+sheet.Commands.ExecuteCommand(new SetFormatCommand(new RowRegion(10, 12), new CellFormat() { ForegroundColor = "blue" }));
+sheet.SetFormat(sheet.Range(new ColumnRegion(5)), new CellFormat() { FontWeight = "bold" });
+sheet.Cells[0, 0].Format = new CellFormat() { TextAlign = "center" };
+</CodeBlock>
+
+<div class="block">
+ When a cell format is set, it will be merged into any existing cell formats in the region that it is applied to. Any
+ non-null format paremeters will be merged:
+</div>
+
+<CodeBlock Language="csharp">sheet.Range("A1").Format = new CellFormat() { BackgroundColor = "red" };
+sheet.Range("A1:A2").Format = new CellFormat() { ForegroundColor = "blue" };
+var format = sheet.Cells[0, 0].Format; // backroundColor = "red", foreground = "blue"
+var format2 = sheet.Cells[1, 0].Format; // foreground = "blue"
+</CodeBlock>
+
+<div class="block">
+ It is generally more efficient to set the format on a range of cells, rather than setting the format on each cell.
+</div>
+
+@code {
+
+}

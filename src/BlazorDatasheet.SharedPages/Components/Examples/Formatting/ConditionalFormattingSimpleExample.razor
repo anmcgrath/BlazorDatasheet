@@ -1,0 +1,19 @@
+﻿@using System.Drawing
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Formats
+@using BlazorDatasheet.Core.Formats.DefaultConditionalFormats
+@using BlazorDatasheet.SharedPages.Extensions
+<Datasheet Sheet="_sheet"/>
+
+@code {
+
+    private Sheet _sheet = null!;
+
+    protected override void OnInitialized()
+    {
+        _sheet = new Sheet(4, 4);
+        _sheet.FillRandomNumbers();
+        _sheet.ConditionalFormats.Apply(_sheet.Region, new NumberScaleConditionalFormat(Color.Aqua, Color.Beige));
+    }
+
+}

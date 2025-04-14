@@ -1,0 +1,67 @@
+﻿@using BlazorDatasheet.Core.Commands.Data
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Formula.Core
+@using BlazorDatasheet.Menu
+@using BlazorDatasheet.SharedPages.Extensions
+<div>
+    <input id="sort" type="checkbox" @bind="_menuOptions.SortRangeEnabled"/>
+    <label for="sort">System-defined "Sort"" options</label>
+</div>
+<div>
+    <input id="user-menu-sort" type="checkbox" @bind="_showSortByRow"/>
+    <label for="user-menu-sort">User-defined "Sort By Row" options</label>
+</div>
+
+<div style="width: 550px; height: 300px; overflow: scroll;">
+    <Datasheet
+        Sheet="_sheet"
+        MenuOptions="_menuOptions"
+        Virtualise="true">
+        <MenuItems Context="sheet">
+            @if (_showSortByRow && sheet.Selection.ActiveRegion!.Height > 1)
+            {
+                // Always show a divider, even if the sort menu and its divider are removed
+                if (!_menuOptions.SortRangeEnabled)
+                {
+                    <SheetMenuDivider/>
+                }
+
+                <SheetSubMenu Label="Sort By Row">
+                    <SheetMenuItem
+                        OnClick="() => sheet.SortRange(sheet.Range(Axis.Row, sheet.Selection.ActiveRegion.Top, sheet.Selection.ActiveRegion.Bottom)!.Region, new List<ColumnSortOptions>() { new ColumnSortOptions(sheet.Selection.ActiveCellPosition.col, true) })">
+                        Sort Rows Ascending
+                    </SheetMenuItem>
+                    <SheetMenuItem
+                        OnClick="() => sheet.SortRange(sheet.Range(Axis.Row, sheet.Selection.ActiveRegion.Top, sheet.Selection.ActiveRegion.Bottom)!.Region, new List<ColumnSortOptions>() { new ColumnSortOptions(sheet.Selection.ActiveCellPosition.col, false) })">
+                        Sort Rows Descending
+                    </SheetMenuItem>
+                </SheetSubMenu>
+            }
+        </MenuItems>
+    </Datasheet>
+</div>
+
+@code {
+
+    private readonly Sheet _sheet = new(500, 10);
+    private bool _showSortByRow = true;
+    private SheetMenuOptions _menuOptions = null!;
+
+
+    protected override void OnInitialized()
+    {
+        _sheet.Commands.PauseHistory();
+        _sheet.BatchUpdates();
+        _sheet.FillRandomNumbers();
+
+        _menuOptions = new SheetMenuOptions();
+
+        _sheet.EndBatchUpdates();
+        _sheet.Commands.ResumeHistory();
+        _sheet.ScreenUpdating = true;
+
+        base.OnInitialized();
+    }
+
+}

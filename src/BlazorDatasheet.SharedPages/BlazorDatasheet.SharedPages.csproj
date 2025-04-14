@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Razor">
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
     <PropertyGroup>
         <TargetFramework>net9.0</TargetFramework>
@@ -8,11 +8,11 @@
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-      <WarningLevel>1</WarningLevel>
+        <WarningLevel>1</WarningLevel>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-      <WarningLevel>1</WarningLevel>
+        <WarningLevel>1</WarningLevel>
     </PropertyGroup>
 
 
@@ -28,11 +28,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="wwwroot" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\BlazorDatasheet\BlazorDatasheet.csproj" />
+        <ProjectReference Include="..\BlazorDatasheet.ExampleGen\BlazorDatasheet.ExampleGen\BlazorDatasheet.ExampleGen.csproj" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
+        <ProjectReference Include="..\BlazorDatasheet\BlazorDatasheet.csproj" />
     </ItemGroup>
 
 </Project>

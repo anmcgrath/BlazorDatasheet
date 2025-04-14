@@ -1,0 +1,22 @@
+﻿@page "/DataValidation"
+@using BlazorDatasheet.SharedPages.Components.Examples.Data
+
+<h3>Data validation</h3>
+
+<div class="block">
+    Using data validators, you can restrict values that users can enter into the cell. Validators can be strict or not. Strict validators will not allow entry to complete, while non-strict validators will allow entry but mark the cell as invalid.
+</div>
+
+<div class="block">
+    Two default validators exist, <code>NumberValidator</code> and <code>SourceValidator</code>. These are shown in the example below.
+</div>
+
+<CodeExample ComponentType="typeof(DataValidationBasic)"></CodeExample>
+
+<h4>Custom validators</h4>
+
+<div class="block">
+    Custom validators can be added by implementing the <code>IDataValidator</code> interface. The below example implements a custom validator that requires the number entered is >10.
+</div>
+
+<CodeExample ComponentType="typeof(DataValidationCustom)"/>

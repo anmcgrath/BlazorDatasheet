@@ -1,0 +1,18 @@
+﻿@page "/MultiSheet"
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.SharedPages.Components.Examples.Formula
+<h3>Workbooks & multiple sheets.</h3>
+
+<div class="block">
+    Blazor datasheet has the concept of a workbook to group sheets. When a workbook is created, it is empty and the sheets must be added. A sheet created without workbook creates a workbook which can be accessed through <code>Sheet.Workbook</code>.
+</div>
+
+<div class="block">
+    Sheets in a workbook share the same formula engine. Formula in one sheet can access cells in another sheet using the sheet's name in standard Excel syntax.
+</div>
+
+<CodeExample ComponentType="typeof(MultiSheetExample)"/>
+
+<div class="block">
+    Sheet names are created automatically when a sheet is added to a workbook and follow the format "Sheet 1", "Sheet 2", etc. The sheet name can be changed by using <code>workbook.RenameSheet(oldName, newName)</code>.
+</div>

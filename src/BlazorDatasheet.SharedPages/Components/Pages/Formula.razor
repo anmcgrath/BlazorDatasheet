@@ -1,0 +1,17 @@
+﻿@page "/Formula"
+@using BlazorDatasheet.SharedPages.Components.Examples.Formula
+<h3>Formula</h3>
+
+<div class="block">
+    BlazorDatasheet supports Excel formula. A subset of Excel formula functions have been implemented. Formula must start with '='.
+</div>
+
+<div class="block">
+    Formula will automatically adjust references when rows or columns are inserted/deleted. Formula can use the $ syntax (as in Excel) which will keep references fixed when the auto-fill is used.
+</div>
+
+<CodeExample ComponentType="typeof(FormulaBasic)"/>
+
+@code {
+
+}

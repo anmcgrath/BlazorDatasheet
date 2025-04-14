@@ -1,7 +1,7 @@
 ﻿@using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Render
 @using BlazorDatasheet.Render.DefaultComponents
-@using BlazorDatasheet.SharedPages.Pages
+@using BlazorDatasheet.SharedPages.Components.Examples.Customisation
 @using FluentAssertions
 @using NUnit.Framework
 @inherits BaseTestComponent
@@ -12,13 +12,13 @@
     public async Task Custom_Editor_Correctly_Renders()
     {
         var sheet = new Sheet(10, 10);
-        sheet.Cells["A1"]!.Type = "number";
+        sheet.Cells["A1"]!.Type = "progress";
         
         var cut = RenderComponent<Datasheet>(parameters =>
         {
             parameters.Add(p => p.CustomCellTypeDefinitions, new Dictionary<string, CellTypeDefinition>()
             {
-                { "number", new CellTypeDefinition(typeof(NumericEditor), typeof(TextRenderer)) }
+                { "progress", new CellTypeDefinition(typeof(ProgressEditor), typeof(TextRenderer)) }
             });
             parameters.Add(p => p.Sheet, sheet);
         });
@@ -28,7 +28,7 @@
             sheet.Editor.BeginEdit(0, 0);
         });
 
-        var customEditor = cut.FindComponent<NumericEditor>();
+        var customEditor = cut.FindComponent<ProgressEditor>();
         customEditor.Should().NotBeNull();
     }
 
