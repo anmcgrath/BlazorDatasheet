@@ -17,7 +17,7 @@ public class LexerTests
     {
         var lexer = new Lexer();
         var tokens = lexer.Lex(formulaStr, new FormulaOptions());
-        tokens = tokens.Skip(1).ToArray(); // skip = token
+        tokens = tokens.Skip(1).ToList(); // skip = token
         tokens.First().Should().BeOfType<SheetLocatorToken>();
         tokens.First().Text.Should().BeEquivalentTo(expectedSheetName);
     }

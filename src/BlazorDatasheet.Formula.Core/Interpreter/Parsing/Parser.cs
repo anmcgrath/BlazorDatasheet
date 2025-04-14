@@ -9,7 +9,7 @@ public class Parser
 {
     private readonly IEnvironment _environment;
     private int _position;
-    private Token[] _tokens = null!;
+    private List<Token> _tokens = null!;
     private List<string> _errors = null!;
     private List<Reference> _references = new();
     private bool _containsVolatiles;
@@ -22,7 +22,7 @@ public class Parser
         _environment = environment;
     }
 
-    public SyntaxTree Parse(Token[] tokens, List<string>? lexErrors = null)
+    public SyntaxTree Parse(List<Token> tokens, List<string>? lexErrors = null)
     {
         _position = 0;
         _tokens = tokens;
@@ -402,7 +402,7 @@ public class Parser
     private Token Peek(int offset)
     {
         var index = _position + offset;
-        if (index >= _tokens.Length)
+        if (index >= _tokens.Count)
             return _tokens[^1];
 
         return _tokens[index];
