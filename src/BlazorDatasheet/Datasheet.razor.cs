@@ -617,7 +617,6 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
     private async Task<bool> HandleWindowKeyDown(KeyboardEventArgs e)
     {
-        Console.WriteLine($"Handling key down event. Datasheet is active? {IsDataSheetActive}");
         if (!IsDataSheetActive)
             return false;
 
@@ -932,10 +931,13 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         if (active == IsDataSheetActive)
             return;
 
-        if (active)
-            await _windowEventService.PreventDefault("keydown");
-        else
-            await _windowEventService.CancelPreventDefault("keydown");
+        if (!Sheet.Editor.IsEditing)
+        {
+            if (active)
+                await _windowEventService.PreventDefault("keydown");
+            else
+                await _windowEventService.CancelPreventDefault("keydown");
+        }
 
         IsDataSheetActive = active;
         await OnSheetActiveChanged.InvokeAsync(new SheetActiveEventArgs(this, active));

@@ -15,8 +15,12 @@ class Highligher {
         this.#inputEl.addEventListener('input', e => {
             if (!options.dotnetHelper)
                 return
-            options.dotnetHelper.invokeMethodAsync("UpdateInput", e.target.innerText)
+            options.dotnetHelper.invokeMethodAsync("HandleInput", e.target.innerText)
         })
+
+        this.setInputText = function (text) {
+            this.#inputEl.innerText = text
+        }
 
 
         this.updateCaretPosition = function () {
@@ -26,7 +30,7 @@ class Highligher {
             let caretPosition = -1
             if (isSelectionInside && len === 0)
                 caretPosition = sel.focusOffset
-            options.dotnetHelper.invokeMethodAsync("UpdateCaretPosition", caretPosition)
+            options.dotnetHelper.invokeMethodAsync("HandleCaretPositionUpdate", caretPosition)
         }
 
         const moveCursorToEnd = function (el) {

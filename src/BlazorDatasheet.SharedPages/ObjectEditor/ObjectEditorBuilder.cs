@@ -38,7 +38,6 @@ public class ObjectEditorBuilder<T>
         // If performing a column sort, include all columns
         sheet.BeforeRangeSort += (_, args) =>
         {
-            Console.WriteLine($"before range sort {args.Region}");
             if (args.Region is ColumnRegion c && c.Width == 1 && args.SortOptions.Count == 1)
             {
                 args.Cancel = true;
