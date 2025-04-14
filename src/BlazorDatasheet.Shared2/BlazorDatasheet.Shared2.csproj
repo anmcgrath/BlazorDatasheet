@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+        <WarningLevel>1</WarningLevel>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+        <WarningLevel>1</WarningLevel>
+    </PropertyGroup>
+
+
+    <ItemGroup>
+        <SupportedPlatform Include="browser" />
+    </ItemGroup>
+
+    <ItemGroup Condition="  '$(TargetFramework)' == 'net8.0'  ">
+        <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.*" />
+    </ItemGroup>
+    <ItemGroup Condition="  '$(TargetFramework)' == 'net9.0'  ">
+        <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.*" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\BlazorDatasheet.ExampleGen\BlazorDatasheet.ExampleGen\BlazorDatasheet.ExampleGen.csproj" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
+        <ProjectReference Include="..\BlazorDatasheet\BlazorDatasheet.csproj" />
+    </ItemGroup>
+
+</Project>

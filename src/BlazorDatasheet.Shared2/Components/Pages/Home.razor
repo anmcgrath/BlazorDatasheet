@@ -1,0 +1,135 @@
+﻿@page "/"
+@using System.Drawing
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Formats
+@using BlazorDatasheet.Core.Formats.DefaultConditionalFormats
+@using BlazorDatasheet.Formula.Core
+@using BlazorDatasheet.Shared2.Components.Toolbar
+
+<PageTitle>Home</PageTitle>
+
+<h1>Blazor Datasheet</h1>
+
+<div class="block">
+    BlazorDatasheet is a (simple) component for editing tabular data.
+</div>
+
+<div class="block">
+    @if (_datasheet != null)
+    {
+        <div style="width: 600px;">
+            <DatasheetToolbar
+                Sheet="_sheet"
+                Datasheet="_datasheet"/>
+        </div>
+    }
+
+    <div style="width: 600px; height: 400px; overflow-y: scroll;">
+        <Datasheet
+            FrozenBottomCount="1"
+            Sheet="_sheet" @ref="_datasheet"/>
+    </div>
+</div>
+
+
+<h4>Features</h4>
+
+<div class="block">
+    <ul>
+        <li>Data Editing</li>
+        <ul>
+            <li>Built in editors including text, date, select, boolean, text area, enum</li>
+            <li>Add custom renderers or editors for any data type</li>
+        </ul>
+        <li>Conditional formatting</li>
+        <li>Data validation</li>
+        <li>Keyboard navigation</li>
+        <li>Copy and paste from tabulated data</li>
+        <li>Virtualization - handles many cells at once in both row & col directions.</li>
+        <li>Formula</li>
+        <li>Sorting & column filtering</li>
+        <li>Cell formatting</li>
+        <li>Auto-fill</li>
+        <li>Frozen rows/columns</li>
+        <li>AutoFit rows & columns</li>
+        <li>Undo/redo</li>
+    </ul>
+</div>
+
+@code{
+
+    private Sheet _sheet = null!;
+    private Datasheet? _datasheet;
+
+    protected override void OnInitialized()
+    {
+        _sheet = new Sheet(50, 5);
+        _sheet.Rows.HeadingWidth = 35;
+        _sheet.Commands.PauseHistory();
+        _sheet.BatchUpdates();
+        var values = new CellValue[49][];
+
+        var r = new Random();
+
+        for (int i = 0; i < values.Length; i++)
+        {
+            values[i] = new CellValue[5];
+            var firstName = RandomFirstNameGenerator();
+            var lastName = RandomLastNameGenerator();
+
+            values[i][0] = CellValue.Text(firstName);
+            values[i][1] = CellValue.Text(lastName);
+            values[i][2] = CellValue.Text(RandomEmailGenerator(firstName, lastName));
+            values[i][3] = CellValue.Number(Math.Round(r.NextDouble() * 100000 + 25000, 2));
+            values[i][4] = r.NextDouble() > 0.5 ? CellValue.Logical(true) : CellValue.Logical(false);
+        }
+
+        _sheet.Cells.SetValues(0, 0, values);
+        _sheet.Range("E1:E49")!.Type = "boolean";
+        _sheet.Range("E:E")!.Format = new CellFormat() { HorizontalTextAlign = TextAlign.Center };
+        _sheet.Columns.SetSize(0, 1, 90);
+        _sheet.Columns.SetSize(2, 205);
+        _sheet.Columns.SetSize(4, 50);
+        _sheet.Columns.SetHeadings(0, 0, "First Name");
+        _sheet.Columns.SetHeadings(1, 1, "Last Name");
+        _sheet.Columns.SetHeadings(2, 2, "Email");
+        _sheet.Columns.SetHeadings(3, 3, "Sales");
+        _sheet.Range("D:D")!.Format = new CellFormat() { NumberFormat = "C1", FontWeight = "bold" };
+        _sheet.Cells["D50"]!.Formula = "=SUM(D1:D49)";
+        _sheet.ConditionalFormats.Apply(_sheet.Range("D1:D49"), new NumberScaleConditionalFormat(Color.Tomato, Color.GreenYellow));
+
+        _sheet.EndBatchUpdates();
+        _sheet.Commands.ResumeHistory();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        // Force the toolbar to render as it takes the datasheet ref
+        // as a parameter.
+        if (firstRender)
+            StateHasChanged();
+    }
+
+    private string RandomLastNameGenerator()
+    {
+        var random = new Random();
+        var lastNames = new[] { "Smith", "Johnson", "Williams", "Jones", "Brown", "Davis" };
+        return lastNames[random.Next(lastNames.Length)];
+    }
+
+    private string RandomFirstNameGenerator()
+    {
+        var random = new Random();
+        var firstNames = new[] { "John", "Jane", "Michael", "Emily", "David", "Sarah" };
+        return firstNames[random.Next(firstNames.Length)];
+    }
+
+    private string RandomEmailGenerator(string firstName, string lastName)
+    {
+        var random = new Random();
+        var domains = new[] { "example.com", "test.com", "demo.com" };
+        return $"{firstName.ToLower()}.{lastName.ToLower()}@{domains[random.Next(domains.Length)]}";
+    }
+
+
+}

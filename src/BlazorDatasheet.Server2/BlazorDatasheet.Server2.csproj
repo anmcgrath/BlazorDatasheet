@@ -8,12 +8,13 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\BlazorDatasheet.ExampleGen\BlazorDatasheet.ExampleGen\BlazorDatasheet.ExampleGen.csproj" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
+      <ProjectReference Include="..\BlazorDatasheet.Shared2\BlazorDatasheet.Shared2.csproj" />
       <ProjectReference Include="..\BlazorDatasheet\BlazorDatasheet.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="wwwroot\js\" />
+      <Folder Include="Components\" />
+      <Folder Include="wwwroot\" />
     </ItemGroup>
 
     <ItemGroup>

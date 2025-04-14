@@ -1,5 +1,5 @@
 using BlazorDatasheet.Extensions;
-using BlazorDatasheet.Server2.Components;
+using BlazorDatasheet.Server2;
 
 var builder = WebApplication.CreateBuilder(args);
 
