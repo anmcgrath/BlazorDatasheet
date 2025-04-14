@@ -33,8 +33,7 @@ public class FormulaVertex : Vertex, IEquatable<FormulaVertex>
         if (VertexType == VertexType.Cell)
             _key = GetKey(Row, Col, SheetName);
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    
     internal static string GetKey(int row, int col, string sheetName)
     {
         return $"'{sheetName}'!{RangeText.ToCellText(row, col)}";

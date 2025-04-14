@@ -237,7 +237,7 @@ public static class RangeText
     public static string ColIndexToLetters(int colIndex)
     {
         var n = colIndex + 1;
-        int strLength = n / 26 + (n % 26 > 0 ? 1 : 0);
+        int strLength = n <= 26 ? 1 : (n > 702 ? 3 : 2); // we only support columns up to 16384
         char[] letters = new char[strLength];
         int i = 0;
 
