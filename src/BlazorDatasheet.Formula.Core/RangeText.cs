@@ -237,15 +237,19 @@ public static class RangeText
     public static string ColIndexToLetters(int colIndex)
     {
         var n = colIndex + 1;
-        string str = "";
+        int strLength = n / 26 + (n % 26 > 0 ? 1 : 0);
+        char[] letters = new char[strLength];
+        int i = 0;
+
         while (n > 0)
         {
             int m = (n - 1) % 26;
-            str = Convert.ToChar('A' + m) + str;
+            letters[letters.Length - 1 - i] = Convert.ToChar('A' + m);
             n = (n - m) / 26;
+            i++;
         }
 
-        return str;
+        return new string(letters);
     }
 
     public static string ToCellText(int row, int col)
