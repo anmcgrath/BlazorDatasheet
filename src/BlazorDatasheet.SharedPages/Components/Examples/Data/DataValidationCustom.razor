@@ -1,0 +1,36 @@
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Interfaces
+@using BlazorDatasheet.Formula.Core
+
+<Datasheet Sheet="_sheet"></Datasheet>
+
+@code {
+
+    private Sheet _sheet = null!;
+
+    protected override void OnInitialized()
+    {
+        _sheet = new Sheet(3, 3);
+        _sheet.Range("A:C")!.AddValidator(new CustomValidator(false));
+    }
+
+    public class CustomValidator : IDataValidator
+    {
+        public CustomValidator(bool isStrict)
+        {
+            IsStrict = isStrict;
+        }
+
+        public bool IsValid(CellValue value)
+        {
+            if (value.ValueType != CellValueType.Number)
+                return false;
+
+            return value.GetValue<double>() > 10;
+        }
+
+        public bool IsStrict { get; private set; }
+        public string Message => "The cell value must be greater than 10";
+    }
+
+}

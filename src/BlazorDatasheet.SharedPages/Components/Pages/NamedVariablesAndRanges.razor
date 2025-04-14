@@ -1,0 +1,36 @@
+﻿@page "/NamedVariablesAndRanges"
+@using BlazorDatasheet.SharedPages.Components.Examples.Formula
+<h3>Named variables and ranges</h3>
+
+<h4>Named variables</h4>
+
+<div class="block">
+    Variables can be assigned through the formula engine. Variables themselves can be formula - set a variable as a
+    formula string for this to be interpreted as such. Cells or variables that rely on other variables are recalculated
+    when their dependents change.
+</div>
+
+<div class="block">
+    The example below shows a 10x10 sheet with sin functions in each cell. The phase can be controlled with the formula
+    variable "x", which is set via the range slider below.<code>x</code>
+</div>
+
+<CodeExample ComponentType="typeof(NamedVariableExample)"/>
+
+<h4>Named ranges</h4>
+
+<div class="block">
+    Named ranges can be set and cleared through the sheet's NamedRanges property. The ranges are shifted appropriately
+    when rows or columns are inserted/deleted.
+</div>
+
+<div class="block">
+    In this example, elect a range and type a name in the input field, then press enter, to name the range.
+</div>
+
+<CodeExample ComponentType="typeof(NamedRangeExample)"/>
+
+
+@code {
+
+}

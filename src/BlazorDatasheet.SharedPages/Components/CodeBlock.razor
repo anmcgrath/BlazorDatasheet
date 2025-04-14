@@ -1,0 +1,30 @@
+﻿@inject IJSRuntime Js
+
+<div class="block">
+<pre>
+    <code class="lang-@Language" style="padding: 1rem;" @ref="_codeBlock">
+        @if (ChildContent != null)
+        {
+            @ChildContent
+        }
+    </code>
+</pre>
+</div>
+
+@code {
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    [Parameter] public string Language { get; set; } = "cshtml-razor";
+
+    private ElementReference _codeBlock;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Js.InvokeVoidAsync("hljs.highlightElement", _codeBlock);
+        }
+    }
+
+}

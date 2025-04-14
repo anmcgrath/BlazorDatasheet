@@ -3,26 +3,32 @@
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>BlazorDatasheet.Wasm</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BlazorDatasheet.Wasm2</title>
     <base href="/" />
-    <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />
-    <link href="css/app.css" rel="stylesheet" />
-    <link href="BlazorDatasheet.Wasm.styles.css" rel="stylesheet" />
-    <link href="BlazorDatasheet.styles.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="stylesheet" href="_content/BlazorDatasheet.SharedPages/app.css"/>
+    <link rel="stylesheet" href="_content/BlazorDatasheet.SharedPages/hljs-default.css"/>
     <link href="_content/BlazorDatasheet/sheet-styles.css" rel="stylesheet"/>
 </head>
 
 <body>
-    <div id="app">Loading...</div>
+<div id="app">
+    <svg class="loading-progress">
+        <circle r="40%" cx="50%" cy="50%" />
+        <circle r="40%" cx="50%" cy="50%" />
+    </svg>
+    <div class="loading-progress-text"></div>
+</div>
 
-    <div id="blazor-error-ui">
-        An unhandled error has occurred.
-        <a href="" class="reload">Reload</a>
-        <a class="dismiss">🗙</a>
-    </div>
-    <script src="_framework/blazor.webassembly.js"></script>
-    <script src="_content/BlazorDatasheet/blazor-datasheet.js" type="text/javascript"></script>
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>
+<script src="_framework/blazor.webassembly.js"></script>
+<script src="_content/BlazorDatasheet/blazor-datasheet.js" type="text/javascript"></script>
+<script src="_content/BlazorDatasheet.SharedPages/js/highlight.min.js" type="text/javascript"></script>
 </body>
 
 </html>

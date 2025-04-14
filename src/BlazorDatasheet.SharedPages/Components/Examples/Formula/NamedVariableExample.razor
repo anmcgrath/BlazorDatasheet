@@ -1,0 +1,38 @@
+﻿@using System.Drawing
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Formats.DefaultConditionalFormats
+@using BlazorDatasheet.DataStructures.Geometry
+
+<input type="range" min="0" max="10" step="0.05"
+       @oninput="@(e => _sheet.FormulaEngine.SetVariable("x", e.Value))"/>
+
+<Datasheet Sheet="_sheet" ShowColHeadings="false" ShowRowHeadings="false"/>
+
+@code{
+
+    private Sheet _sheet = null!;
+
+    protected override void OnInitialized()
+    {
+        _sheet = new Sheet(10, 10);
+        _sheet.BatchUpdates();
+        _sheet.Commands.PauseHistory();
+        _sheet.Columns.SetSize(0, 10, 40);
+        _sheet.Rows.SetSize(0, 10, 40);
+
+        for (int i = 0; i < 10; i++)
+        {
+            for (int j = 0; j < 10; j++)
+            {
+                _sheet.Cells.SetFormula(i, j, $"=(1+sin(({i / 10.0}+{j / 10.0})*3.14-x))/2");
+            }
+        }
+
+        var colorCf = new NumberScaleConditionalFormat(Color.LightBlue, Color.GreenYellow);
+        _sheet.ConditionalFormats.Apply(new Region(0, 10, 0, 10), colorCf);
+        _sheet.FormulaEngine.SetVariable("x", 10);
+        _sheet.EndBatchUpdates();
+        _sheet.Commands.ResumeHistory();
+    }
+
+}

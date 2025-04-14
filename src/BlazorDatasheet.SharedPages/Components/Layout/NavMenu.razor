@@ -1,0 +1,89 @@
+﻿@inject NavigationManager NavigationManager
+@implements IDisposable
+
+<div
+        @onclick="ToggleMenu"
+        style="@(_menuExpanded ? "" : "display:none;")"
+        class="nav-sm-overlay">
+
+</div>
+
+<div class="top-menu">
+    <div>Blazor Datasheet</div>
+    <div class="expand-menu" @onclick="ToggleMenu">
+        <div class="hm"></div>
+        <div class="hm"></div>
+        <div class="hm"></div>
+    </div>
+</div>
+
+<div class="side-menu @(_menuExpanded ? "is-expanded" : "")">
+    <NavLink href="" Match="NavLinkMatch.All">
+        <div class="menu-heading">
+            <div style="margin-left: 1rem;">Blazor Datasheet</div>
+        </div>
+    </NavLink>
+
+    <p class="menu-label">Getting started</p>
+    <ul class="menu-list">
+        <MenuLink Href="Installation" Text="Installation"/>
+        <MenuLink Href="SimpleExample" Text="Basics"/>
+    </ul>
+    <p class="menu-label">Data</p>
+    <ul class="menu-list">
+        <MenuLink Href="CellsAndCellValues" Text="Cells and cell values"/>
+        <MenuLink Href="DataValidation" Text="Data validation"/>
+        <MenuLink Href="Sorting" Text="Sorting"/>
+        <MenuLink Href="ColumnFilters" Text="Column filters"/>
+    </ul>
+    <p class="menu-label">Formatting</p>
+    <ul class="menu-list">
+        <MenuLink Href="BasicFormatting" Text="Basic formatting"/>
+        <MenuLink Href="ConditionalFormatting" Text="Conditional formatting"/>
+    </ul>
+    <p class="menu-label">Customisation</p>
+    <ul class="menu-list">
+        <MenuLink Href="CustomRendererAndEditor" Text="Custom renderer/editor"/>
+        <MenuLink Href="CustomHeadings" Text="Custom headings"/>
+    </ul>
+    <p class="menu-label">Formula</p>
+    <ul class="menu-list">
+        <MenuLink Href="Formula" Text="Setting formula"/>
+        <MenuLink Href="MultiSheet" Text="Workbooks/multi-sheet"/>
+        <MenuLink Href="NamedVariablesAndRanges" Text="Variables and named ranges"/>
+    </ul>
+    <p class="menu-label">Menu and advanced</p>
+    <ul class="menu-list">
+        <MenuLink Href="SheetMenuCustomisation" Text="Custom menu items"/>
+        <MenuLink Href="Serialisation" Text="Serialisation"/>
+
+    </ul>
+</div>
+
+@code{
+
+    private bool _menuExpanded = false;
+
+    protected override void OnInitialized()
+    {
+        NavigationManager.LocationChanged += NavigationManagerOnLocationChanged;
+    }
+
+    private void NavigationManagerOnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        _menuExpanded = false;
+        StateHasChanged();
+    }
+
+    private void ToggleMenu()
+    {
+        _menuExpanded = !_menuExpanded;
+    }
+
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= NavigationManagerOnLocationChanged;
+    }
+
+}

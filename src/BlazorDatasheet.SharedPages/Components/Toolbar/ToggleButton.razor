@@ -1,0 +1,50 @@
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events
+@using BlazorDatasheet.Core.Interfaces
+
+<button class="bds-button @GetToggleClass()" @onclick="ToggleValue">
+    @ChildContent
+</button>
+
+@code {
+
+    [Parameter] public RenderFragment ChildContent { get; set; } = default!;
+
+    [Parameter] public required Func<IReadOnlyCell, bool> IsSelected { get; set; }
+
+    [Parameter] public required Action<SheetRange, bool> OnToggle { get; set; }
+
+    [Parameter] public required Sheet Sheet { get; set; }
+    private Sheet _sheet = null!;
+
+    private bool _isActive = true;
+
+    protected override void OnParametersSet()
+    {
+        if (Sheet != _sheet)
+        {
+            _sheet = Sheet;
+            _sheet.Selection.SelectionChanged += SelectionOnSelectionChanged;
+        }
+    }
+
+    private string GetToggleClass()
+    {
+        return _isActive ? "bds-toggled" : "";
+    }
+
+    private void SelectionOnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (Sheet.Selection.IsEmpty()) return;
+        var cell = Sheet.Cells.GetCell(Sheet.Selection.ActiveCellPosition);
+        _isActive = IsSelected(cell);
+        StateHasChanged();
+    }
+
+    private void ToggleValue()
+    {
+        _isActive = !_isActive;
+        OnToggle(Sheet.Selection.Ranges.First(), _isActive);
+    }
+
+}

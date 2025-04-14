@@ -1,0 +1,22 @@
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Edit
+@using BlazorDatasheet.Core.Interfaces
+@inherits BlazorDatasheet.Edit.BaseEditor
+
+<input type="range" 
+       style="width:@(CellWidth)px;height: @(CellHeight)px; outline: none;" 
+       min="0" max="200" @bind-value="CurrentValue" @ref="InputRef"/>
+
+@code {
+
+    public override void BeforeEdit(IReadOnlyCell cell, Sheet sheet)
+    {
+        CurrentValue = cell.Value?.ToString() ?? "0";
+    }
+
+    public override void BeginEdit(EditEntryMode entryMode, string? editValue, string key)
+    {
+        
+    }
+
+}

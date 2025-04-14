@@ -21,7 +21,8 @@
 </div>
 
 @code {
-    [Parameter] public string Value { get; set; }
+    private string _value = string.Empty;
+    [Parameter] public required string Value { get; set; }
 
     [Parameter] public EventCallback<string> ValueChanged { get; set; }
 
@@ -42,6 +43,17 @@
 
     private bool _isDisposing;
 
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Value != _value)
+        {
+            // Allow for external editors
+            _value = Value;
+            await SetInputTextAsync(_value);
+            await SetHighlightTextAsync();
+        }
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -61,16 +73,39 @@
         }
     }
 
+    /// <summary>
+    /// Handles input from the editable div
+    /// </summary>
+    /// <param name="input"></param>
     [JSInvokable]
-    public async Task UpdateInput(string input)
+    public async Task HandleInput(string input)
     {
+        _value = input;
         await ValueChanged.InvokeAsync(input);
+        await SetHighlightTextAsync();
+    }
+
+    /// <summary>
+    /// Sets input text from Blazor -> the editable content. Used for external editors.
+    /// </summary>
+    private async Task SetInputTextAsync(string text)
+    {
         if (_highlightJs != null && !_isDisposing)
-            await _highlightJs.InvokeVoidAsync("setHighlightHtml", GetHighlightedHtmlValue(input));
+        {
+            await _highlightJs.InvokeVoidAsync("setInputText", text);
+        }
+    }
+
+    private async Task SetHighlightTextAsync()
+    {
+        if (_highlightJs != null && !_isDisposing)
+        {
+            await _highlightJs.InvokeVoidAsync("setHighlightHtml", GetHighlightedHtmlValue(_value));
+        }
     }
 
     [JSInvokable]
-    public async Task UpdateCaretPosition(int position)
+    public async Task HandleCaretPositionUpdate(int position)
     {
         await CarePositionChanged.InvokeAsync(position);
     }
@@ -127,14 +162,21 @@
 
     public async ValueTask DisposeAsync()
     {
-        _isDisposing = true;
-        if (_highlightJs != null)
+        try
         {
-            await _highlightJs.InvokeVoidAsync("dispose");
-            await _highlightJs.DisposeAsync();
-        }
+            _isDisposing = true;
+            if (_highlightJs != null)
+            {
+                await _highlightJs.InvokeVoidAsync("dispose");
+                await _highlightJs.DisposeAsync();
+            }
 
-        _dotnetRef?.Dispose();
+            _dotnetRef?.Dispose();
+        }
+        catch (Exception e)
+        {
+            // ignore
+        }
     }
 
 }

@@ -1,0 +1,79 @@
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events
+@using BlazorDatasheet.Formula.Core
+
+<input type="text" @bind-value:get="SelectedRangeValue" @bind-value:set="OnInput"/>
+
+<div style="width: 550px; height: 300px; overflow: auto">
+    <Datasheet @ref="_datasheet" Sheet="_sheet"/>
+</div>
+
+@code {
+
+    private string? _selectedRangeValue;
+    private Datasheet _datasheet = null!;
+
+    private string? SelectedRangeValue
+    {
+        get => _selectedRangeValue;
+        set
+        {
+            _selectedRangeValue = value;
+            StateHasChanged();
+        }
+    }
+
+    private Sheet _sheet = null!;
+
+    private async Task OnInput(string? value)
+    {
+        var newValue = value ?? string.Empty;
+        if (string.IsNullOrEmpty(newValue) || string.IsNullOrEmpty(SelectedRangeValue))
+        {
+            return;
+        }
+
+        var region = _sheet.Range(newValue)?.Region;
+        if (region != null)
+        {
+            await _datasheet.ScrollToContainRegion(region);
+            _sheet.Selection.Set(region);
+            return;
+        }
+
+        _sheet.NamedRanges.Set(newValue, SelectedRangeValue);
+        SelectedRangeValue = newValue;
+    }
+
+    protected override void OnInitialized()
+    {
+        var workbook = new Workbook();
+        _sheet = workbook.AddSheet(100, 100);
+        _sheet.Selection.SelectionChanged += SelectionOnSelectionChanged;
+    }
+
+    private void SelectionOnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_sheet.Selection.IsSelecting || !_sheet.Selection.Regions.Any())
+            return;
+
+        var sheetSelection = _sheet.Selection.Regions;
+        if (sheetSelection.Count > 1)
+        {
+            SelectedRangeValue = null;
+            return;
+        }
+
+        var selectedRegion = sheetSelection[0];
+        var namedRegion = _sheet.NamedRanges.GetRegionName(selectedRegion);
+        if (namedRegion != null)
+        {
+            SelectedRangeValue = namedRegion;
+            return;
+        }
+
+        SelectedRangeValue = RangeText.RegionToText(selectedRegion);
+    }
+
+
+}

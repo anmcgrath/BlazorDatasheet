@@ -1,0 +1,36 @@
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Formats
+@using BlazorDatasheet.Menu
+<Datasheet Sheet="_sheet" MenuOptions="@(new SheetMenuOptions() { HeaderMenuEnabled=false, ContextMenuEnabled=false })">
+</Datasheet>
+
+@code{
+
+    private Sheet _sheet = new Sheet(6, 2);
+
+    protected override void OnInitialized()
+    {
+        var data = new object[4][]
+        {
+            [5],
+            [4],
+            [2.3],
+            [1]
+        };
+        _sheet.BatchUpdates();
+        _sheet.Cells.SetValues(0, 1, data);
+        _sheet.Cells["B5"]!.Formula = "=SUM(B1:B4)";
+        _sheet.Cells["B6"]!.Formula = "=AVERAGE(B1:B4)";
+        _sheet.Cells["A5"]!.Value = "Total:";
+        _sheet.Cells["A6"]!.Value = "Average:";
+        _sheet.Columns.SetSize(1, 50);
+        
+        _sheet.Range("A5:A6")!.Format = new CellFormat()
+        {
+            FontWeight = "bold",
+            HorizontalTextAlign = TextAlign.End
+        };
+        _sheet.EndBatchUpdates();
+    }
+
+}

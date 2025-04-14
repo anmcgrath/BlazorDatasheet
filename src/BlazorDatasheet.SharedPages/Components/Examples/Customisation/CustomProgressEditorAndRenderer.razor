@@ -1,0 +1,26 @@
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Render
+@using BlazorDatasheet.SharedPages.Extensions
+<Datasheet
+    CustomCellTypeDefinitions="_definitions"
+    Sheet="_sheet"></Datasheet>
+
+
+@code{
+
+    private Sheet _sheet = null!;
+    private Dictionary<string, CellTypeDefinition> _definitions = null!;
+
+    protected override void OnInitialized()
+    {
+        _definitions = new Dictionary<string, CellTypeDefinition>()
+        {
+            { "progress", CellTypeDefinition.Create<ProgressEditor, ProgressRenderer>() }
+        };
+
+        _sheet = new Sheet(5, 5);
+        _sheet.FillRandomNumbers(0, 200);
+        _sheet.Cells.SetType(_sheet.Region, "progress");
+    }
+
+}

@@ -1,0 +1,25 @@
+﻿@using BlazorDatasheet.SharedPages.Components
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <base href="/"/>
+    <link rel="stylesheet" href="@Assets["BlazorDatasheet.Server.css"]"/>
+    <link rel="stylesheet" href="_content/BlazorDatasheet.SharedPages/app.css"/>
+    <link rel="stylesheet" href="_content/BlazorDatasheet.SharedPages/hljs-default.css"/>
+    <link href="_content/BlazorDatasheet/sheet-styles.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="_content/BlazorDatasheet.SharedPages/hljs-default.css"/>
+    <ImportMap/>
+    <HeadOutlet @rendermode="InteractiveServer"/>
+</head>
+
+<body>
+<Routes @rendermode="InteractiveServer"/>
+<script src="_framework/blazor.web.js"></script>
+<script src="_content/BlazorDatasheet/blazor-datasheet.js" type="text/javascript"></script>
+<script src="_content/BlazorDatasheet.SharedPages/js/highlight.min.js" type="text/javascript"></script>
+</body>
+
+</html>

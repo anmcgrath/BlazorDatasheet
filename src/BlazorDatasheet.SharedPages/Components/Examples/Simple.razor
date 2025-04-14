@@ -1,0 +1,14 @@
+﻿@using BlazorDatasheet.Core.Data
+
+<Datasheet Sheet="_sheet"/>
+
+@code {
+
+    private Sheet _sheet = null!;
+
+    protected override void OnInitialized()
+    {
+        _sheet = new Sheet(5, 5);
+    }
+
+}

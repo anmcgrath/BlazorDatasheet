@@ -307,3 +307,16 @@
 .cell-container {
     flex-grow: 1;
 }
+
+.bds-sheet-dropper {
+    background: none;
+    color:#999999;
+    margin: 0;
+    padding: 0 2px 0 2px;
+    border: none;
+    cursor: pointer;
+}
+
+.bds-sheet-dropper:hover{
+    background: var(--selection-bg-color);
+}

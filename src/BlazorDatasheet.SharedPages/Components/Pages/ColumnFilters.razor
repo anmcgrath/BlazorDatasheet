@@ -1,0 +1,18 @@
+﻿@page "/ColumnFilters"
+@using BlazorDatasheet.SharedPages.Components.Examples.Data
+
+<h3>Column Filters</h3>
+
+<div class="block">
+    Filters can be applied to individual columns. Filters can be applied by the user using the context menu on the column header, or they can be applied programmatically.
+</div>
+
+<CodeExample ComponentType="typeof(ColumnFilterExample)"/>
+
+<div class="block">
+    Custom filters can be defined by implementing the <code>IFilter</code> interface.
+</div>
+
+@code {
+    
+}

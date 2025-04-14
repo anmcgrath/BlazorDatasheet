@@ -1,0 +1,112 @@
+﻿@page "/CellsAndCellValues"
+@using BlazorDatasheet.SharedPages.Components.Examples
+@using BlazorDatasheet.SharedPages.Components.Examples.Data
+<h3>Cells and cell values</h3>
+
+<div class="block">
+    Internally, the datasheet holds cells as <code>CellValue</code> objects. These have a <code>CellValueType</code> and
+    a data.
+</div>
+
+<div class="block">
+    When setting a value of the sheet, if you don't set as a <code>CellValue</code>, the sheet will store the cell as a
+    <code>CellValue</code> and the sheet will determine the <code>CellValueType</code> based on the object.
+</div>
+
+<div class="block">
+    For example, setting a cell to a string will set the cell type to <code>CellValueType.String</code>, setting a cell
+    to a number type will result in a type of <code>CellValueType.Number</code>, and setting a cell to a date will set
+    the cell type to
+    <code>CellValueType.Date</code>.
+</div>
+
+<div class="block">
+    If a value can be parsed as another type, the sheet will attempt to do so. For example, setting a cell to "1.23"
+    will set the value type as <code>Number</code>, unless the cell type is set to text, or the conversion is
+    intercepted (see below).
+</div>
+
+<table class="table">
+    <thead>
+    <th>#</th>
+    <th>Cell value type</th>
+    <th>Converts from</th>
+    </thead>
+    <tbody>
+    <tr>
+        <td>0</td>
+        <td>Empty</td>
+        <td><code>null</code></td>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td>Error</td>
+        <td><code>FormulaError</code></td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>Array</td>
+        <td><code></code></td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td>Unknown</td>
+        <td><code></code></td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td>Sequence</td>
+        <td><code></code></td>
+    </tr>
+    <tr>
+        <td>5</td>
+        <td>Reference</td>
+        <td><code>CellReference, NamedReference, RangeReference</code></td>
+    </tr>
+    <tr>
+        <td>6</td>
+        <td>Number</td>
+        <td><code>int, double, decimal, long, float, short</code></td>
+    </tr>
+    <tr>
+        <td>7</td>
+        <td>Date</td>
+        <td><code>DateTime</code></td>
+    </tr>
+    <tr>
+        <td>8</td>
+        <td>Text</td>
+        <td><code>string</code></td>
+    </tr>
+    <tr>
+        <td>9</td>
+        <td>Logical</td>
+        <td><code>bool</code></td>
+    </tr>
+
+    </tbody>
+</table>
+
+<div class="block">
+    Cell values are mostly used during formula evaluation.
+</div>
+
+<h4>
+    Setting cell types
+</h4>
+
+<div class="block">
+    The cell type can be set for each cell. This will override the default conversion and determines how the cell is
+    rendered and which editor is used for the cell. Importantly, this is not the same as the <code>CellValueType</code>
+    discussed above.
+</div>
+
+<CodeExample ComponentType="typeof(SetCellValueType)"/>
+
+<h4>Custom cell types</h4>
+
+<div class="block">
+    You can defined custom types and intercept the value conversion after the user edits a cell.
+</div>
+
+<CodeExample ComponentType="typeof(CustomTypeConversion)"/>

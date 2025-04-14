@@ -1,0 +1,83 @@
+﻿@using System.Linq.Expressions
+@using System.Reflection.Metadata
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events
+@using BlazorDatasheet.Core.Formats
+@using BlazorDatasheet.Formula.Core.Interpreter.Parsing
+<div style="position:relative;">
+    <div style="display: flex; flex-direction: row;">
+        <button class="bds-button"
+                popovertarget="col-picker"
+                @onclick="ToggleMenuOpen"
+                @onfocusout="() => _menuOpen = false">
+            @ChildContent
+        </button>
+    </div>
+
+
+    <div style="@(!_menuOpen ? "display:none;" : "")">
+        <div
+            style="
+        position: absolute; 
+        z-index: 100000; 
+        top: 2rem; 
+        left: 0; 
+        width: 95px; 
+        background: white; 
+        padding: 0.5rem; 
+        box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px; 
+        display: flex; 
+        flex-direction: row; 
+        flex-wrap: wrap;
+        gap: 0.2rem;">
+            @foreach (var color in Colors)
+            {
+                <div style="width: 1rem; cursor: pointer; height: 1rem; background: @color;"
+                     @onpointerdown="() => SetColor(color)"></div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+
+    [Parameter] public required Sheet Sheet { get; set; }
+    [Parameter] public required Func<string, CellFormat> FormatSelector { get; set; }
+    [Parameter] public RenderFragment ChildContent { get; set; }
+
+    [Parameter]
+    public List<string> Colors { get; set; } =
+    [
+        "black",
+        "white",
+        "red",
+        "green",
+        "blue",
+        "yellow",
+        "purple",
+        "orange"
+    ];
+
+    private bool _menuOpen = false;
+
+    private void ToggleMenuOpen()
+    {
+        _menuOpen = !_menuOpen;
+    }
+
+    private void SetColor(string color)
+    {
+        if (Sheet.Selection.IsEmpty())
+            return;
+
+        var format = FormatSelector(color);
+        Sheet.Commands.BeginCommandGroup();
+        foreach (var range in Sheet.Selection.Ranges)
+        {
+            range.Format = format;
+        }
+
+        Sheet.Commands.EndCommandGroup();
+    }
+
+}

@@ -1,0 +1,29 @@
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Data.Filter
+
+<Datasheet
+    Sheet="_sheet"/>
+
+@(_sheet.NumRows - _sheet.Rows.CountVisible(0, _sheet.NumRows - 1)) rows are filtered.
+
+<button @onclick="()=>_sheet.Columns.Filters.Clear(0)">Clear filter</button>
+
+@code {
+    private Sheet _sheet = null!;
+
+    protected override void OnInitialized()
+    {
+        _sheet = new Sheet(5, 2);
+        _sheet.Cells.SetValues(0, 0,
+            [
+                ["xx", 1],
+                ["yx", 2],
+                ["zx", 3],
+                [1, 2],
+                [3, 4]
+            ]
+        );
+        _sheet.Columns.Filters.Set(0, new PatternFilter(PatternFilterType.Contains, "x"));
+    }
+
+}
