@@ -1,0 +1,53 @@
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Formula.Core
+
+<Datasheet Sheet="_sheet"/>
+
+<textarea style="width: 500px; height: 500px;" @bind="_log"></textarea>
+
+@code {
+
+    private string _log = string.Empty;
+    private Sheet _sheet = null!;
+
+    protected override void OnInitialized()
+    {
+        _sheet = new Sheet(10, 5);
+
+        _sheet.RangeSorted += (sender, args) => Log($"RangeSorted {args.Region} old indicies {string.Join(",", args.OldIndicies)}");
+        _sheet.BeforeRangeSort += (sender, args) => Log($"BeforeRangeSort {args.Region} cancel {args.Cancel}");
+        _sheet.Columns.Removed += (sender, args) => Log($"{args.Count} columns removed from {args.Index}");
+        _sheet.Columns.Inserted += (sender, args) => Log($"{args.Count} columns inserted at {args.Index}");
+        _sheet.Rows.Removed += (sender, args) => Log($"{args.Count} rows removed from {args.Index}");
+        _sheet.Rows.Inserted += (sender, args) => Log($"{args.Count} rows inserted at {args.Index}");
+        _sheet.Columns.SizeModified += (sender, args) => Log($"Columns {args.IndexStart} to {args.IndexEnd} size changed");
+        _sheet.Rows.SizeModified += (sender, args) => Log($"Rows {args.IndexStart} to {args.IndexEnd} size changed");
+        _sheet.Cells.CellsChanged += (sender, args) => Log($"{string.Join(",", args.Positions)} positions changed, {string.Join(",", args.Regions)} changed");
+        _sheet.Cells.FormatChanged += (sender, args) => Log($"Format changed {args.Region}");
+        _sheet.Cells.FormulaChanged += (sender, args) => Log($"Formula changed at ({args.Row}, {args.Col} from {args.OldFormula?.ToFormulaString()} to {args.NewFormula?.ToFormulaString()})");
+        _sheet.Cells.RegionMerged += (sender, region) => Log($"Region merged at {region}");
+        _sheet.Cells.MetaDataChanged += (sender, args) => Log($"Meta data {args.Name} changed at ({args.Row}, {args.Col}) from {args.OldValue} to {args.NewValue}");
+        _sheet.Cells.RegionUnMerged += (sender, region) => Log($"Region unmerged at {region}");
+        _sheet.Cells.BeforeCellValueConversion += (sender, args) => Log($"BeforeCellValue conversion at ({args.Row}, {args.Column}). Type is {args.CellType}. New value is {args.NewValue.Data} from {args.OriginalValue}");
+        _sheet.Commands.CommandRun += (sender, args) => Log($"Command run {args.Command}");
+        _sheet.Commands.CommandUndone += (sender, args) => Log($"Command undone {args.Command}");
+        _sheet.Selection.SelectingChanged += (sender, region) => Log($"Selecting changed {region}");
+        _sheet.Selection.SelectionChanged += (sender, region) => Log($"Selected changed {region}");
+        _sheet.Selection.CellsSelected += (sender, args) => Log($"Cells selected {args.Cells.Count()} cells");
+        _sheet.Validators.ValidatorChanged += (sender, args) => Log($"Validator changed");
+        _sheet.Editor.EditBegin += (sender, args) => Log($"Edit begin at {RangeText.ToCellText(args.Cell.Row, args.Cell.Col)}. Mode: {args.Mode}. Type: {args.Type}. Value: {args.EditValue}. Soft edit: {args.IsSoftEdit}. Key: {args.Key}");
+        _sheet.Editor.EditValueChanged += (sender, s) => Log($"Edit value changed to {s}");
+        _sheet.Editor.EditAccepted += (sender, args) => Log($"Edit accepted {args.Value.Data}. Formula: {args.Formula}");
+        _sheet.Editor.EditCancelled += (sender, args) => Log($"Edit cancelled {args.Row}, {args.Col}.");
+        _sheet.Editor.InvalidEdit += (sender, args) => Log($"Invalid edit {args.Message}, value {args.EditValue}");
+        _sheet.Editor.BeforeEditAccepted += (sender, args) => Log($"Before edit accepted {args.EditValue}. Formula: {args.FormulaString}");
+        _sheet.Editor.BeforeCellEdit += (sender, args) => Log($"Before edit at {RangeText.ToCellText(args.Cell.Row, args.Cell.Col)}");
+    }
+
+    private void Log(string line)
+    {
+        _log += line + '\n';
+        StateHasChanged();
+    }
+
+}
