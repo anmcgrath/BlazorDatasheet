@@ -1,0 +1,17 @@
+﻿@using BlazorDatasheet.Core.Data
+<Datasheet 
+    ShowRowHeadings="false"
+    Sheet="_sheet"/>
+
+@code {
+
+    private Sheet _sheet = null!;
+
+    protected override void OnInitialized()
+    {
+        _sheet = new Sheet(5, 5);
+        _sheet.Columns.SetHeadings(1, 1, "Custom");
+        _sheet.Columns.SetSize(0, 6, 60);
+    }
+
+}

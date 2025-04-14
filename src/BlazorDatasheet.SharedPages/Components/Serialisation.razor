@@ -1,0 +1,16 @@
+﻿@page "/Serialisation"
+@using BlazorDatasheet.SharedPages.Components.Examples.Serialisation
+<h3>Serialisation</h3>
+
+<div class="block">
+    Blazor datasheet has built-in support for json serialization and deserialization.
+</div>
+
+<CodeExample ComponentType="typeof(JsonSerialisation)"/>
+
+<h4>Custom resolvers</h4>
+
+<div class="block">
+    Serialisation of custom conditional formats, filters or validators can be done by adding custom resolvers to the
+    serializer and deserializer. This maps some id/type to the C# type of the custom object.
+</div>

@@ -1,0 +1,27 @@
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Formats
+
+<Datasheet Sheet="_sheet"/>
+
+@code {
+
+    private Sheet _sheet = null!;
+
+    protected override void OnInitialized()
+    {
+        _sheet = new Sheet(4, 4);
+        _sheet.ConditionalFormats.Apply(_sheet.Region, new CellEmptyConditionalFormat());
+    }
+
+    public class CellEmptyConditionalFormat : ConditionalFormatAbstractBase
+    {
+        public override CellFormat? CalculateFormat(int row, int col, Sheet sheet)
+        {
+            var cell = sheet.Cells.GetCell(row, col);
+            if (cell.CellValue.IsEmpty)
+                return new CellFormat() { BackgroundColor = "#ffff00" };
+            return null;
+        }
+    }
+
+}

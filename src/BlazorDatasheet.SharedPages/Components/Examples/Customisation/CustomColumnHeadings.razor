@@ -1,0 +1,22 @@
+﻿@using BlazorDatasheet.Core.Data
+<Datasheet Sheet="_sheet">
+    <ColumnHeaderTemplate>
+        <marquee width="100%" direction="right" style="font-family: 'Comic Sans MS', 'Century Gothic'">
+            @context.Heading !!!!!!
+            <button @onclick="Callback">!</button>
+        </marquee>
+    </ColumnHeaderTemplate>
+    <RowHeaderTemplate>
+        @context.Heading !!
+    </RowHeaderTemplate>
+</Datasheet>
+
+@code {
+
+    private readonly Sheet _sheet = new Sheet(5, 5);
+
+    private void Callback()
+    {
+    }
+
+}

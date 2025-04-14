@@ -6,32 +6,13 @@
         <ImplicitUsings>enable</ImplicitUsings>
     </PropertyGroup>
 
-    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-      <WarningLevel>1</WarningLevel>
-    </PropertyGroup>
-
-    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-      <WarningLevel>1</WarningLevel>
-    </PropertyGroup>
-    
-
-    <ItemGroup Condition="  '$(TargetFramework)' == 'net8.0'  ">
-        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.*" />
-        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="8.*" PrivateAssets="all" />
-        <PackageReference Include="Microsoft.NET.ILLink.Tasks" Version="8.*" />
-        <PackageReference Include="Microsoft.NET.Sdk.WebAssembly.Pack" Version="8.*" />
-    </ItemGroup>
-    
-    <ItemGroup Condition="  '$(TargetFramework)' == 'net9.0'  ">
-        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.*" />
-        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="9.*" PrivateAssets="all" />
-        <PackageReference Include="Microsoft.NET.ILLink.Tasks" Version="9.*" />
-        <PackageReference Include="Microsoft.NET.Sdk.WebAssembly.Pack" Version="9.*" />
+    <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.2"/>
+        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="9.0.2" PrivateAssets="all"/>
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\BlazorDatasheet.SharedPages\BlazorDatasheet.SharedPages.csproj" />
-      <ProjectReference Include="..\BlazorDatasheet\BlazorDatasheet.csproj" />
     </ItemGroup>
-    
+
 </Project>

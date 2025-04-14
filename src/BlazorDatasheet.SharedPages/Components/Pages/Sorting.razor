@@ -1,0 +1,15 @@
+﻿@page "/Sorting"
+@using BlazorDatasheet.SharedPages.Components.Examples.Data
+<h3>Sorting</h3>
+
+<div class="block">
+    Blazor datasheet has the ability to sort ranges. The order of column options given as a sorting parameter determines the order that each column in the region is sorted.
+</div>
+
+<CodeBlock Language="csharp">_sheet.SortRange(region, new List&ltColumnSortOptions&gt()
+{
+    new ColumnOptions(colIndex, _sortAscending),
+    new ColumnOptions(secondColIndex, _sortAscending),
+});</CodeBlock>
+
+<CodeExample ComponentType="typeof(SortingSimple)"/>

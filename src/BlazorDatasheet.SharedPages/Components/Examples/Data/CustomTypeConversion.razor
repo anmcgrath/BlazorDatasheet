@@ -1,0 +1,26 @@
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events.Data
+@using BlazorDatasheet.Formula.Core
+
+<Datasheet Sheet="_sheet"/>
+
+@code {
+
+    private Sheet _sheet = null!;
+
+    protected override void OnInitialized()
+    {
+        _sheet = new Sheet(5, 1);
+        _sheet.Range("A:A")!.Type = "my-custom-type";
+        _sheet.Cells.BeforeCellValueConversion += CellsOnBeforeCellValueConversion;
+    }
+
+    private void CellsOnBeforeCellValueConversion(object? sender, BeforeCellValueConversionEventArgs e)
+    {
+        if (e.CellType == "my-custom-type")
+        {
+            e.NewValue = CellValue.Text(e?.OriginalValue?.ToString() + " - converted");
+        }
+    }
+
+}

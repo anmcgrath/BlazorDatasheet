@@ -1,0 +1,26 @@
+﻿@page "/ConditionalFormatting"
+@using BlazorDatasheet.SharedPages.Components.Examples.Formatting
+<h3>Conditional Formatting</h3>
+
+<div class="block">
+    Conditional formats can be applied to cells. Conditional formats set the format of the cell based on the cell's value or values of other cells.
+</div>
+
+<div class="block">
+    The <code>NumberScaleConditionalFormat</code> is available to use and interpolates the cell background colour based on the number value of the cell, and its relation to any other cell that the conditional format is applied to.
+</div>
+
+<CodeExample ComponentType="typeof(ConditionalFormattingSimpleExample)"/>
+
+<div>
+    Custom conditional formats can be created by extending the <code>ConditionalFormatAbstractBase</code> class. Below is an example of a custom format where the cell background is yellow for empty cells.
+</div>
+
+<CodeExample ComponentType="typeof(CustomConditionalFormattingExample)"/>
+
+
+@code {
+    
+    
+    
+}

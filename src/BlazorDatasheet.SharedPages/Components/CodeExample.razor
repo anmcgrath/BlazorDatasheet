@@ -1,0 +1,59 @@
+﻿@using BlazorDatasheet.ExampleGen
+
+<div class="code-example">
+    <div class="tabs">
+        <ul>
+            <li class="@(_activeTab == 0 ? "active" : "")"><a @onclick="() => _activeTab=0">Example</a></li>
+            <li class="@(_activeTab == 1 ? "active" : "")"><a @onclick="() => _activeTab=1">Source</a></li>
+            @for (int i = 0; i < AdditionalFiles.Count; i++)
+            {
+                var fileIndex = i;
+                <li class="@(_activeTab == (fileIndex + 2) ? "active" : "")"><a
+                        @onclick="() => _activeTab=fileIndex+2">@NsToFileName(AdditionalFiles[fileIndex])</a></li>
+            }
+        </ul>
+    </div>
+
+    <div style="@(_activeTab != 0 ? "display:none" : "")">
+        <DynamicComponent Type="ComponentType"></DynamicComponent>
+    </div>
+    <div style="@(_activeTab != 1 ? "display:none" : "")">
+        <CodeBlock>
+            @_sourceText
+        </CodeBlock>
+    </div>
+    @for (int i = 0; i < AdditionalFiles.Count; i++)
+    {
+        var fileIndex = i;
+        <div style="@(_activeTab != (fileIndex + 2) ? "display:none" : "")">
+            <CodeBlock>
+                @Sources.GetSource(AdditionalFiles[fileIndex])
+            </CodeBlock>
+        </div>
+    }
+</div>
+
+@code {
+
+    [Parameter] public required Type ComponentType { get; set; }
+    [Parameter] public List<string> AdditionalFiles { get; set; } = new();
+    private string _sourceText = string.Empty;
+
+    private int _activeTab = 0;
+
+    protected override void OnParametersSet()
+    {
+        var ns = ComponentType.Namespace;
+        if (ns == null)
+            throw new ArgumentException("ComponentType must have a namespace");
+        var i = ns.IndexOf("Components", StringComparison.Ordinal);
+        var lookup = ns.Substring(i, ns.Length - i) + "." + ComponentType.Name;
+        _sourceText = Sources.GetSource(lookup);
+    }
+
+    private string NsToFileName(string ns)
+    {
+        return ns.Split(".").Last() + ".razor";
+    }
+
+}

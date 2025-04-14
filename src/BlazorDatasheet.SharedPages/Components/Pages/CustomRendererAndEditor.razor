@@ -1,0 +1,36 @@
+﻿@page "/CustomRendererAndEditor"
+@using BlazorDatasheet.SharedPages.Components.Examples.Customisation
+<h3>Custom editor and renderer</h3>
+
+<div class="block">
+    Custom renderers and editors can be defined for the datasheet. By setting the cell type, the editor and renderer is
+    then chosen from the custom cell type dictionary provided as a parameter to the datasheet.
+</div>
+
+<div class="block">
+    Notes on custom editors and renderers:
+</div>
+
+<ul>
+    <li>Custom renderers have access to the <code>Cell</code> property to get the cell value and type.</li>
+    <li>Custom editors should set the <code>CurrentValue</code> property which will set the cell value if the edit is
+        successful.
+    </li>
+    <li>Custom editors must implement the <code>BeginEdit</code> function which is called when the editor has started
+        the edit.
+    </li>
+    <li>Custom editors can cancel or accept the edit using the <code>CancelEdit</code> and <code>AcceptEdit</code>
+        functions.
+    </li>
+    <li>Overriding <code>BeforeEdit</code> can give the editor access to the cell and the sheet.</li>
+    <li>Setting the html element such as input's @@ref to InputRef in the custom editor will ensure that this element is focused when the editor is opened.</li>
+</ul>
+
+<CodeExample
+    ComponentType="typeof(CustomProgressEditorAndRenderer)"
+    AdditionalFiles="@(new List<string>
+                     {
+                         "Components.Examples.Customisation.ProgressRenderer",
+                         "Components.Examples.Customisation.ProgressEditor",
+                     })"
+/>

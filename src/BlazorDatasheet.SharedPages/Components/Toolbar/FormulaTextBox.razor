@@ -1,0 +1,97 @@
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events.Edit
+@using BlazorDatasheet.Core.Events.Selection
+@using BlazorDatasheet.Events
+@inject IJSRuntime Js
+
+<label for="formula-box" style="color: #979da3">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"
+         class="icon icon-tabler icons-tabler-filled icon-tabler-function">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+        <path
+            d="M17.333 3a3.667 3.667 0 0 1 3.667 3.667v10.666a3.667 3.667 0 0 1 -3.667 3.667h-10.666a3.667 3.667 0 0 1 -3.667 -3.667v-10.666a3.667 3.667 0 0 1 3.667 -3.667zm-3.583 3a2.38 2.38 0 0 0 -2.37 2.145l-.285 2.855h-2.095l-.117 .007a1 1 0 0 0 .117 1.993h1.894l-.265 2.656l-.014 .071a.38 .38 0 0 1 -.365 .273a.25 .25 0 0 1 -.25 -.25v-.25l-.007 -.117a1 1 0 0 0 -1.993 .117v.25l.005 .154a2.25 2.25 0 0 0 2.245 2.096a2.38 2.38 0 0 0 2.37 -2.145l.284 -2.855h2.096l.117 -.007a1 1 0 0 0 -.117 -1.993h-1.895l.266 -2.656l.014 -.071a.381 .381 0 0 1 .365 -.273a.25 .25 0 0 1 .25 .25v.25l.007 .117a1 1 0 0 0 1.993 -.117v-.25l-.005 -.154a2.25 2.25 0 0 0 -2.245 -2.096z"/>
+    </svg>
+</label>
+
+<input type="text"
+       style="width: 100%;"
+       id="formula-box"
+       class="bds-formula-input"
+       @bind-value:get="@_currentValue"
+       @bind-value:set="InputValueChanged"
+       @bind-value:event="oninput"
+       @onfocus="OnFocusTextBox"
+       @onkeydown="Callback"
+       @ref="_editorRef"/>
+
+@code {
+
+    [Parameter] public required Sheet Sheet { get; set; }
+
+    [Parameter] public required Datasheet Datasheet { get; set; }
+
+    private ElementReference _editorRef = default!;
+
+    private string _currentValue = string.Empty;
+    private bool _inputFocused = false;
+
+    protected override void OnInitialized()
+    {
+        Sheet.Selection.ActiveCellPositionChanged += ActiveCellPositionChanged;
+        Sheet.Editor.EditValueChanged += EditorOnEditValueChanged;
+    }
+
+    private void EditorOnEditValueChanged(object? sender, string? e)
+    {
+        _currentValue = e?.ToString() ?? string.Empty;
+        StateHasChanged();
+    }
+
+    private void ActiveCellPositionChanged(object? sender, ActiveCellPositionChangedEventArgs e)
+    {
+        var cell = Sheet.Cells.GetCell(e.NewPosition);
+        if (cell.Formula != null)
+            _currentValue = cell.Formula;
+        else
+            _currentValue = cell.Value?.ToString() ?? string.Empty;
+
+        StateHasChanged();
+    }
+
+    private async Task OnFocusTextBox()
+    {
+        if (Sheet.Selection.IsEmpty())
+            return;
+
+        var row = Sheet.Selection.ActiveCellPosition.row;
+        var col = Sheet.Selection.ActiveCellPosition.col;
+
+        Sheet.Editor.BeginEdit(row, col);
+        await Js.InvokeVoidAsync("setFocusWithTimeout", _editorRef, 100);
+    }
+
+    private void InputValueChanged(string val)
+    {
+        var strVal = val.ToString();
+        if (strVal != Sheet.Editor.EditValue)
+        {
+            Sheet.Editor.EditValue = val;
+            StateHasChanged();
+        }
+    }
+
+    private async Task Callback(KeyboardEventArgs e)
+    {
+        if (e.Key != "Enter" && e.Key != "Tab" && e.Key != "Escape")
+            return;
+
+        await Datasheet.SetActiveAsync();
+    }
+
+    public void Dispose()
+    {
+        Sheet.Selection.ActiveCellPositionChanged -= ActiveCellPositionChanged;
+        Sheet.Editor.EditValueChanged -= EditorOnEditValueChanged;
+    }
+
+}

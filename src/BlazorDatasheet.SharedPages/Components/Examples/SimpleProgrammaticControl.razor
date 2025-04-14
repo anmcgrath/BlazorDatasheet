@@ -1,0 +1,29 @@
+﻿@using BlazorDatasheet.Core.Data
+<Datasheet Sheet="_sheet"></Datasheet>
+
+<div>
+    <input @bind-value="_value" type="text" style="width: 10rem;"/>
+    <button @onclick="SetSelectionToValue">Set</button>
+</div>
+
+@code {
+
+    private Sheet _sheet = null!;
+    private string _value = "Value to set";
+    
+    protected override void OnInitialized()
+    {
+        _sheet = new Sheet(4, 4);
+        _sheet.Cells["A1"]!.Value = "Test";
+    }
+
+    private void SetSelectionToValue()
+    {
+        if (!_sheet.Selection.IsEmpty())
+        {
+            foreach (var range in _sheet.Selection.Ranges)
+                range.Value = _value;
+        }
+    }
+
+}

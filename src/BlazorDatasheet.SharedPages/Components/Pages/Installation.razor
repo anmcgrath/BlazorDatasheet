@@ -1,0 +1,25 @@
+﻿@page "/Installation"
+
+<h3 class="title is-3">Installation</h3>
+
+<div class="block">
+    Install the NuGet package:
+</div>
+
+<CodeBlock>dotnet add package BlazorDatasheet</CodeBlock>
+
+<div class="block">
+    In Program.cs, add the required services:
+</div>
+
+<CodeBlock>builder.Services.AddBlazorDatasheet();</CodeBlock>
+
+<div class="block">
+    In Layout.cshtml, index.html or App.razor add:
+</div>
+
+<CodeBlock>@("""<link href="_content/BlazorDatasheet/sheet-styles.css" rel="stylesheet"/>""")</CodeBlock>
+
+<div class="block">and:</div>
+
+<CodeBlock>@("""<script src="_content/BlazorDatasheet/blazor-datasheet.js" type="text/javascript"></script>""")</CodeBlock>

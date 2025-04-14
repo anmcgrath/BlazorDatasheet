@@ -1,0 +1,21 @@
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Validation
+<Datasheet Sheet="_sheet"></Datasheet>
+
+@code {
+
+    private Sheet _sheet = null!;
+
+    protected override void OnInitialized()
+    {
+        _sheet = new Sheet(2, 2);
+        _sheet.Range("A1")!.Value = "Number";
+        _sheet.Range("B1")!.Value = "Source (strict)";
+        _sheet.Range("A2")!.AddValidator(new NumberValidator(false));
+        _sheet.Range("B2")!.AddValidator(new SourceValidator(["A", "B", "C"], true));
+        
+        // when source validators are used in conjunction with select type, a select list is shown
+        _sheet.Cells["B2"]!.Type = "select";
+    }
+
+}

@@ -1,0 +1,20 @@
+﻿@using BlazorDatasheet.Core.Data
+<p>Sheet 1</p>
+<Datasheet Sheet="@_workbook.GetSheet("Sheet1")"/>
+<p>Sheet 2</p>
+<Datasheet Sheet="@_workbook.GetSheet("Sheet2")"/>
+
+
+@code {
+
+    private readonly Workbook _workbook = new();
+
+    protected override void OnInitialized()
+    {
+        var sheet1 = _workbook.AddSheet(8, 3);
+        var sheet2 = _workbook.AddSheet(8, 3);
+        sheet1.Cells["A1"]!.Formula = "=Sheet2!A1";
+        sheet2.Cells["A1"]!.Value = "Hello from sheet 2";
+    }
+
+}

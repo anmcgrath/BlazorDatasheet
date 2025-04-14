@@ -1,0 +1,34 @@
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Formats
+
+<div class="block">
+    <button @onclick="SetRedBackground">Red Bg</button>
+    <button @onclick="SetBlueBackground">Blue Bg</button>
+</div>
+
+<div style="width: 500px; height: 300px; overflow: scroll;">
+    <Datasheet Sheet="_sheet"></Datasheet>
+</div>
+
+@code {
+
+    private Sheet _sheet = null!;
+
+    protected override void OnInitialized()
+    {
+        _sheet = new Sheet(100, 100);
+    }
+
+    private void SetFormatToSelection(CellFormat format)
+    {
+        _sheet.Commands.BeginCommandGroup();
+        foreach (var range in _sheet.Selection.Ranges)
+            range.Format = format;
+        _sheet.Commands.EndCommandGroup();
+    }
+
+    private void SetRedBackground() => SetFormatToSelection(new CellFormat() { BackgroundColor = "red" });
+
+    private void SetBlueBackground() => SetFormatToSelection(new CellFormat() { BackgroundColor = "blue" });
+
+}
