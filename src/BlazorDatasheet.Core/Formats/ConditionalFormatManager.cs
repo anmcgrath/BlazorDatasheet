@@ -64,13 +64,16 @@ public class ConditionalFormatManager
 
     private void HandleCellsChanged(object? sender, CellDataChangedEventArgs args)
     {
+        if(!_appliedFormats.Any())
+            return;
+        
         // Simply prepare all cells that the conditional format belongs to (if shared)
         var cellCfs =
             args.Positions
                 .SelectMany(x => GetFormatsAppliedToPosition(x.row, x.col));
 
         var rangeCfs = args.Regions
-            .SelectMany(x => GetFormatsAppliedToRegion(x));
+            .SelectMany(GetFormatsAppliedToRegion);
 
         var cfs = cellCfs.Concat(rangeCfs)
             .Distinct()

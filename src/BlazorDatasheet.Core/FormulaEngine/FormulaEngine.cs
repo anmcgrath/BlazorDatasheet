@@ -72,9 +72,18 @@ public class FormulaEngine
             // check if cell itself is a formula vertex, then it should require calculation
             var cellVertex = DependencyManager.GetVertex(cell.row, cell.col, sheet.Name);
             if (cellVertex != null)
-                _requiresCalculation.Add(cellVertex);
-            foreach (var u in DependencyManager.FindDependentFormula(new Region(cell.row, cell.col), sheet.Name))
-                _requiresCalculation.Add(u);
+            {
+                if(!_requiresCalculation.Add(cellVertex))
+                    continue;
+
+                foreach (var u in DependencyManager.GetDirectDependents(cellVertex))
+                    _requiresCalculation.Add(u);
+            }
+            else
+            {
+                foreach (var u in DependencyManager.FindDependentFormula(new Region(cell.row, cell.col), sheet.Name))
+                    _requiresCalculation.Add(u);
+            }
         }
 
         foreach (var region in e.Regions)
@@ -167,7 +176,7 @@ public class FormulaEngine
         {
             var sccGroup = scc;
             bool isCircularGroup = false;
-            
+
             executionContext.SetCurrentGroup(ref sccGroup);
 
             foreach (var vertex in scc)
@@ -202,7 +211,7 @@ public class FormulaEngine
                 executionContext.ClearExecuting();
 
                 if (vertex.VertexType == VertexType.Cell)
-                    _environment.SetCellValue(vertex.Region!.Top, vertex.Region!.Left, vertex.SheetName, value);
+                    _environment.SetCellValue(vertex.Row, vertex.Col, vertex.SheetName, value);
                 else if (vertex.VertexType == VertexType.Named)
                     _environment.SetVariable(vertex.Key, value);
             }

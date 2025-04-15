@@ -45,7 +45,7 @@ public partial class CellStore
         var cells = new List<IReadOnlyCell>();
         foreach (var region in regions)
             cells.AddRange(GetCellsInRegion(region));
-        return cells.ToArray();
+        return cells;
     }
 
     /// <summary>

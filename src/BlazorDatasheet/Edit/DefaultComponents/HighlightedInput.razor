@@ -125,7 +125,7 @@
         var span = text.AsSpan();
         int refCount = 0;
 
-        for (int i = 0; i < tokens.Length - 1; i++)
+        for (int i = 0; i < tokens.Count - 1; i++)
         {
             var start = tokens[i].PositionStart;
             var len = tokens[i + 1].PositionStart - start;

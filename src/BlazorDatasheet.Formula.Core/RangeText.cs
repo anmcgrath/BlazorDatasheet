@@ -133,7 +133,7 @@ public static class RangeText
         if (pos == str.Length)
         {
             if (colIndex < MaxCols && isFirstFixed)
-                address = new ColAddress(colIndex, colStrSpan.ToString(), isFirstFixed);
+                address = new ColAddress(colIndex, isFirstFixed);
             else
                 address = new NamedAddress(colStrSpan.ToString());
             return true;
@@ -176,7 +176,7 @@ public static class RangeText
 
         if (hasColRef)
         {
-            var colAddress = new ColAddress(colIndex, colStrSpan.ToString(), isFirstFixed);
+            var colAddress = new ColAddress(colIndex, isFirstFixed);
             var rowAddress = new RowAddress(rowIndex, rowIndex + 1, isSecondFixed);
             address = new CellAddress(rowAddress, colAddress);
             return true;
@@ -237,15 +237,19 @@ public static class RangeText
     public static string ColIndexToLetters(int colIndex)
     {
         var n = colIndex + 1;
-        string str = "";
+        int strLength = n <= 26 ? 1 : (n > 702 ? 3 : 2); // we only support columns up to 16384
+        char[] letters = new char[strLength];
+        int i = 0;
+
         while (n > 0)
         {
             int m = (n - 1) % 26;
-            str = Convert.ToChar('A' + m) + str;
+            letters[letters.Length - 1 - i] = Convert.ToChar('A' + m);
             n = (n - m) / 26;
+            i++;
         }
 
-        return str;
+        return new string(letters);
     }
 
     public static string ToCellText(int row, int col)

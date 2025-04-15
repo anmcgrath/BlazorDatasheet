@@ -22,14 +22,16 @@ public class CellReferenceTests
     [TestCase("$A$1", 0, 0, true, true)]
     [TestCase("AA102", 101, 26, false, false)]
     [TestCase("AAA102", 101, 702, false, false)]
+    [TestCase("$NTP$1", 0, 9_999, true, true)]
+    [TestCase("BA2", 1, 52, false, false)]
     public void Cell_Str_Parses_Correctly(string cellStr, int rowExpected, int colExpected, bool rowAbsExpected,
         bool colAbsExpected)
     {
         var parsed = RangeText.TryParseSingleCellReference(cellStr, out var refr);
         parsed.Should().Be(true);
         var cellRef = (CellReference)refr!;
-        rowExpected.Should().Be(cellRef.RowIndex);
-        colExpected.Should().Be(cellRef.ColIndex);
+        cellRef.RowIndex.Should().Be(rowExpected);
+        cellRef.ColIndex.Should().Be(colExpected);
         rowAbsExpected.Should().Be(cellRef.IsRowFixed);
         colAbsExpected.Should().Be(cellRef.IsColFixed);
     }

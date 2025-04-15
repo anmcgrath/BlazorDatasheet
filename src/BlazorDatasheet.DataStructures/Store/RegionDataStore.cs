@@ -504,17 +504,20 @@ public class RegionDataStore<T> : ISparseSource, IRowSource, IStore<T, RegionRes
 
     public virtual void Restore(RegionRestoreData<T> restoreData)
     {
-        foreach (var shift in restoreData.Shifts)
+        if (restoreData.Shifts != null)
         {
-            var regionsToShift = GetAfter(shift.Index, shift.Axis);
-            foreach (var region in regionsToShift)
+            foreach (var shift in restoreData.Shifts)
             {
-                Tree.Delete(region);
-                var dCol = shift.Axis == Axis.Col ? -shift.Amount : 0;
-                var dRow = shift.Axis == Axis.Row ? -shift.Amount : 0;
-                region.Region.Shift(dRow, dCol);
-                region.UpdateEnvelope();
-                Tree.Insert(region);
+                var regionsToShift = GetAfter(shift.Index, shift.Axis);
+                foreach (var region in regionsToShift)
+                {
+                    Tree.Delete(region);
+                    var dCol = shift.Axis == Axis.Col ? -shift.Amount : 0;
+                    var dRow = shift.Axis == Axis.Row ? -shift.Amount : 0;
+                    region.Region.Shift(dRow, dCol);
+                    region.UpdateEnvelope();
+                    Tree.Insert(region);
+                }
             }
         }
 
@@ -528,7 +531,7 @@ public class RegionDataStore<T> : ISparseSource, IRowSource, IStore<T, RegionRes
 
     public int GetNextNonEmptyIndex(int index)
     {
-        var regions = Tree.Search(new Envelope(0, 0, double.MaxValue, double.MaxValue)).Select(x => x.Region);
+        var regions = Tree.Search(new Envelope(0, 0, int.MaxValue, int.MaxValue)).Select(x => x.Region);
         int nextRowIndex = int.MaxValue;
         foreach (var region in regions)
         {
@@ -551,7 +554,7 @@ public class RegionDataStore<T> : ISparseSource, IRowSource, IStore<T, RegionRes
         int dir = Math.Sign(colDir);
 
         var searchEnv = Math.Sign(dir) == 1
-            ? new Envelope(col + 1, row, double.MaxValue, row + 1)
+            ? new Envelope(col + 1, row, int.MaxValue, row + 1)
             : new Envelope(0, row, col, row + 1);
 
         var regions = Tree.Search(searchEnv).Select(x => x.Region);

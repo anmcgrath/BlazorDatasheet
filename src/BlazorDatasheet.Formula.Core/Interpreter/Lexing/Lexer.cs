@@ -19,11 +19,11 @@ public ref struct Lexer
         _current = '\0';
     }
 
-    public Token[] Lex(string text, FormulaOptions formulaOptions,
+    public List<Token> Lex(string text, FormulaOptions formulaOptions,
         WhiteSpaceOptions whiteSpaceOptions = WhiteSpaceOptions.RemoveWhitespace)
     {
         if (string.IsNullOrEmpty(text))
-            return Array.Empty<Token>();
+            return new List<Token>();
 
         _formulaOptions = formulaOptions ?? new FormulaOptions();
         _string = text.AsSpan();
@@ -41,7 +41,7 @@ public ref struct Lexer
 
         tokens.Add(new EndOfFileToken(_position));
 
-        return tokens.ToArray();
+        return tokens;
     }
 
     private char GetNegativeSign() =>

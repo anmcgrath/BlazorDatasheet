@@ -220,21 +220,24 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
 
     public void Restore(MatrixRestoreData<T> restoreData)
     {
-        foreach (var shift in restoreData.Shifts)
+        if (restoreData.Shifts != null)
         {
-            if (shift.Amount > 0)
+            foreach (var shift in restoreData.Shifts)
             {
-                if (shift.Axis == Axis.Col)
-                    RemoveColAt(shift.Index, shift.Amount);
+                if (shift.Amount > 0)
+                {
+                    if (shift.Axis == Axis.Col)
+                        RemoveColAt(shift.Index, shift.Amount);
+                    else
+                        RemoveRowAt(shift.Index, shift.Amount);
+                }
                 else
-                    RemoveRowAt(shift.Index, shift.Amount);
-            }
-            else
-            {
-                if (shift.Axis == Axis.Col)
-                    InsertColAt(shift.Index, -shift.Amount);
-                else
-                    InsertRowAt(shift.Index, -shift.Amount);
+                {
+                    if (shift.Axis == Axis.Col)
+                        InsertColAt(shift.Index, -shift.Amount);
+                    else
+                        InsertRowAt(shift.Index, -shift.Amount);
+                }
             }
         }
 

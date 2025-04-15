@@ -46,7 +46,7 @@ public class DependencyManager
             if (vertex.SheetName == oldName)
             {
                 _dependencyGraph.Swap(vertex,
-                    new FormulaVertex(vertex.Region!.Top, vertex.Region.Left, newName, vertex.Formula));
+                    new FormulaVertex(vertex.Row, vertex.Col, newName, vertex.Formula));
             }
 
             foreach (var formulaRef in vertex.Formula!.References)
@@ -199,7 +199,7 @@ public class DependencyManager
 
     public bool HasDependents(int row, int col, string sheetName)
     {
-        var formulaReferenced = _dependencyGraph.HasVertex(new FormulaVertex(row, col, sheetName, null).Key);
+        var formulaReferenced = _dependencyGraph.HasVertex(FormulaVertex.GetKey(row, col, sheetName));
         if (formulaReferenced)
             return true;
         return GetReferencedVertexStore(sheetName).Any(row, col);
@@ -216,11 +216,11 @@ public class DependencyManager
         return GetReferencedVertexStore(sheetName).GetData(region);
     }
 
-    private IEnumerable<FormulaVertex> GetDirectDependents(FormulaVertex vertex)
+    public IEnumerable<FormulaVertex> GetDirectDependents(FormulaVertex vertex)
     {
-        if (vertex.VertexType == VertexType.Cell || vertex.VertexType == VertexType.Region)
+        if (vertex.VertexType == VertexType.Cell)
         {
-            return GetDirectDependents(vertex.Region!, vertex.SheetName);
+            return GetDirectDependents(new Region(vertex.Row, vertex.Col), vertex.SheetName);
         }
 
         return _dependencyGraph.GetAll()
@@ -268,20 +268,23 @@ public class DependencyManager
         return restoreData;
     }
 
-    private List<FormulaVertex> GetVerticesInRegion(IRegion region, string sheetName)
+    private IEnumerable<FormulaVertex> GetVerticesInRegion(IRegion region, string sheetName)
     {
         if (region.IsSingleCell())
         {
-            var vertex = _dependencyGraph.GetVertex(new FormulaVertex(region, sheetName, null).Key);
+            var vertex = _dependencyGraph.GetVertex(FormulaVertex.GetKey(region.Top, region.Left, sheetName));
             if (vertex != null)
                 return [vertex];
-            return new List<FormulaVertex>();
+            return Array.Empty<FormulaVertex>();
         }
 
         var vertices = new List<FormulaVertex>();
         foreach (var v in _dependencyGraph.GetAll())
         {
-            if (v.SheetName == sheetName && region.Intersects(v.Region))
+            if (v.Position == null)
+                continue;
+
+            if (v.SheetName == sheetName && region.Contains(v.Row, v.Col))
             {
                 vertices.Add(v);
             }
@@ -314,7 +317,7 @@ public class DependencyManager
         var vertices = GetVerticesInRegion(regionRemoved, sheetName);
         foreach (var vertex in vertices)
         {
-            restoreData.Merge(ClearFormula(vertex.Region!.Top, vertex.Region!.Left, sheetName));
+            restoreData.Merge(ClearFormula(vertex.Position!.Value.row, vertex.Position!.Value.col, sheetName));
         }
 
         int dCol = axis == Axis.Col ? -count : 0;
@@ -357,7 +360,8 @@ public class DependencyManager
             // need to shift without changing the reference
             // needs to update key in dependency graph
             // and also shift the region it refers to
-            v.Region!.Shift(dRow, dCol);
+            if (v.Position != null)
+                v.Position = new CellPosition(v.Row + dRow, v.Col + dCol);
             _dependencyGraph.RefreshKey(v);
         }
 
@@ -385,14 +389,19 @@ public class DependencyManager
             foreach (var dependent in _dependencyGraph.Adj(vertex))
             {
                 if (dependent.VertexType != VertexType.Named)
-                    results.Add(new DependencyInfo(dependent.Region!, vertex.Region!, DependencyType.CalculationOrder));
+                {
+                    results.Add(new DependencyInfo(new Region(dependent.Row, dependent.Col),
+                        new Region(vertex.Row, vertex.Col),
+                        DependencyType.CalculationOrder));
+                }
             }
         }
 
         var dataRegions = _referencedVertexStores.SelectMany(x => x.Value.GetAllDataRegions());
         foreach (var region in dataRegions)
         {
-            results.Add(new DependencyInfo(region.Data.Region!, region.Region, DependencyType.Region));
+            results.Add(new DependencyInfo(new Region(region.Data.Row, region.Data.Col), region.Region,
+                DependencyType.Region));
         }
 
         return results;
@@ -451,15 +460,6 @@ public class DependencyManager
         }
     }
 
-    /// <summary>
-    /// Finds the formula that depend on this formula vertex, if it exists.
-    /// </summary>
-    /// <returns></returns>
-    public IEnumerable<FormulaVertex> FindDependentFormula(int row, int col, string sheetName)
-    {
-        return _dependencyGraph.Adj(new FormulaVertex(row, col, sheetName, null));
-    }
-
     public IEnumerable<FormulaVertex> FindDependentFormula(IRegion region, string sheetName)
     {
         return GetReferencedVertexStore(sheetName).GetData(region);
@@ -467,7 +467,7 @@ public class DependencyManager
 
     public FormulaVertex? GetVertex(int cellRow, int cellCol, string sheetName)
     {
-        return _dependencyGraph.GetVertex(new FormulaVertex(cellRow, cellCol, sheetName, null).Key);
+        return _dependencyGraph.GetVertex(FormulaVertex.GetKey(cellRow, cellCol, sheetName));
     }
 
     public FormulaVertex? GetVertex(string name)

@@ -36,10 +36,10 @@ namespace BlazorDatasheet.DataStructures.RTree;
 /// <param name="MaxY">The maximum Y value of the bounding box.</param>
 [StructLayout(LayoutKind.Sequential)]
 public readonly record struct Envelope(
-    double MinX,
-    double MinY,
-    double MaxX,
-    double MaxY)
+    int MinX,
+    int MinY,
+    int MaxX,
+    int MaxY)
 {
     /// <summary>
     /// The calculated area of the bounding box.
@@ -113,24 +113,14 @@ public readonly record struct Envelope(
         this.MaxY > other.MinY;
 
     /// <summary>
-    /// A bounding box that contains the entire 2-d plane.
-    /// </summary>
-    public static Envelope InfiniteBounds { get; } =
-        new(
-            MinX: double.NegativeInfinity,
-            MinY: double.NegativeInfinity,
-            MaxX: double.PositiveInfinity,
-            MaxY: double.PositiveInfinity);
-
-    /// <summary>
     /// An empty bounding box.
     /// </summary>
     public static Envelope EmptyBounds { get; } =
         new(
-            MinX: double.PositiveInfinity,
-            MinY: double.PositiveInfinity,
-            MaxX: double.NegativeInfinity,
-            MaxY: double.NegativeInfinity);
+            MinX: int.MinValue,
+            MinY: int.MaxValue,
+            MaxX: int.MinValue,
+            MaxY: int.MinValue);
 
     public bool IsSameAs(in Envelope other) =>
         this.MinX == other.MinX &&
