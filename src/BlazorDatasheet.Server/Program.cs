@@ -1,5 +1,7 @@
 using BlazorDatasheet.Extensions;
 using BlazorDatasheet.Server.Components;
+using BlazorDatasheet.SharedPages;
+using BlazorDatasheet.SharedPages.Components.Pages;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,7 +27,7 @@ app.UseHttpsRedirection();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
-app.MapRazorComponents<App>()
+app.MapRazorComponents<AppServer>()
     .AddInteractiveServerRenderMode();
 
 app.Run();

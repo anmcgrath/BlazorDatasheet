@@ -1,0 +1,30 @@
+﻿@using BlazorDatasheet.Core.Commands.Data
+@using BlazorDatasheet.Core.Commands.Formatting
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Formats
+@using BlazorDatasheet.DataStructures.Geometry
+
+<p>
+    Write the word red in the cell. A set format command will be attached to the set cell value command.
+</p>
+
+<Datasheet Sheet="_sheet"/>
+
+@code {
+
+    private Sheet _sheet = null!;
+
+    protected override void OnInitialized()
+    {
+        _sheet = new Sheet(5, 5);
+        _sheet.Commands.BeforeCommandRun += (sender, args) =>
+        {
+            if (args.Command is SetCellValueCommand c && c.Value.Data?.ToString() == "red")
+            {
+                args.Command.AttachAfter(new SetFormatCommand(new Region(c.Row, c.Col), new CellFormat() { BackgroundColor = "red" }));
+            }
+        };
+
+    }
+
+}

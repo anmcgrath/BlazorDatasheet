@@ -1,0 +1,85 @@
+﻿@page "/Commands"
+
+@using BlazorDatasheet.Core.Commands
+@using BlazorDatasheet.Core.Commands.Data
+@using BlazorDatasheet.Core.Commands.Formatting
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Formats
+@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.SharedPages.Components.Examples.Data
+<h3>Commands</h3>
+
+<div class="block">
+    BlazorDatasheet uses the command pattern extensively. Commands are self-contained classes that encapsulate a single
+    request.
+</div>
+
+<div class="block">
+    Commands can be executed through:
+</div>
+
+<CodeBlock>sheet.Commands.ExecuteCommand()</CodeBlock>
+
+<div class="block">
+    The last command run can be undone using:
+</div>
+
+<CodeBlock>sheet.Commands.Undo()</CodeBlock>
+
+<h4>Creating commands</h4>
+
+<div class="block">
+    Creating custom commands can be done by extending the BaseCommand class. The BaseCommand class implements ICommand
+    and provides some implementations for chaining commands.
+</div>
+
+<div class="block">
+    To make a command undoable, it should implement the IUndoableCommand interface.
+</div>
+
+<h4>Command groups</h4>
+
+<div class="block">
+    A command group can be created by:
+
+    <ol>
+        <li>Instantiating the <code>CommandGroup</code> object with a list of commands and running <code>sheet.Commands.ExecuteCommand()</code>
+        </li>
+        <li>Using <code>sheet.Commands.BeginCommandGroup()</code> and <code>sheet.Commands.EndCommandGroup()</code></li>
+        which will start to collect commands until the end command group is called
+    </ol>
+</div>
+
+<div class="block">
+    A command group collects commands and executes them sequentially. A single undo will undo all commands in the group.
+</div>
+
+<h4>Intercepting commands</h4>
+
+<div class="block">
+    The following events can be used to listen for command execution:
+</div>
+
+<CodeBlock>sheet.Commands.CommandRun // called after a command has been run
+sheet.Commands.CommandUndone // called after a command has been undone
+sheet.Commands.CommandNotExecuted // called when a command is not executed (via the CanExecute method)
+sheet.Commands.BeforeCommandRun // called before a command is run
+</CodeBlock>
+
+<div class="block">
+    The BeforeCommandRun event can be used to prevent a command being run by setting the Cancel property in the
+    args to true.
+</div>
+
+<h4>Chaining commands</h4>
+
+<div class="block">
+    In conjunction with the events described above, commands can be attached to run before or after a command has been
+    run. This command is then un-done in the reverse order when the parent command is un-done. For example:
+</div>
+
+<CodeExample ComponentType="typeof(AttachCommandExample)"/>
+
+<h5>Available commands</h5>
+
+See <a href="https://github.com/anmcgrath/BlazorDatasheet/tree/main/src/BlazorDatasheet.Core/Commands">here</a> to see available commands.

@@ -7,9 +7,9 @@ namespace BlazorDatasheet.Core.Commands.Data;
 
 public class SetCellValueCommand : BaseCommand, IUndoableCommand
 {
-    private readonly int _row;
-    private readonly int _col;
-    private readonly CellValue _value;
+    public readonly int Row;
+    public readonly int Col;
+    public readonly CellValue Value;
     private CellStoreRestoreData _restoreData = null!;
 
     /// <summary>
@@ -20,22 +20,22 @@ public class SetCellValueCommand : BaseCommand, IUndoableCommand
     /// <param name="value"></param>
     public SetCellValueCommand(int row, int col, CellValue value)
     {
-        _row = row;
-        _col = col;
-        _value = value;
+        Row = row;
+        Col = col;
+        Value = value;
     }
 
     public override bool CanExecute(Sheet sheet)
     {
-        return sheet.Region.Contains(_row, _col);
+        return sheet.Region.Contains(Row, Col);
     }
 
     public override bool Execute(Sheet sheet)
     {
         sheet.ScreenUpdating = false;
-        _restoreData = sheet.Cells.SetValueImpl(_row, _col, _value);
+        _restoreData = sheet.Cells.SetValueImpl(Row, Col, Value);
 
-        sheet.MarkDirty(new RowRegion(_row));
+        sheet.MarkDirty(new RowRegion(Row));
         sheet.ScreenUpdating = true;
         return true;
     }
