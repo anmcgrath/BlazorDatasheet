@@ -154,7 +154,10 @@
                     <LayerContainer Depth="@GridLevel" Sheet="_sheet" ViewRegion="MainViewRegion"
                                     PointerInputService="_sheetPointerInputService">
                         <HighlightLayer/>
-                        <AutofillLayer/>
+                        @if (UseAutoFill)
+                        {
+                            <AutofillLayer/>
+                        }
                         @if (GridLevel == 0)
                         {
                             <AutofitLayer

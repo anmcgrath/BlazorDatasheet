@@ -131,7 +131,15 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     /// </summary>
     [Parameter]
     public int GridLevel { get; set; }
-    
+
+    /// <summary>
+    /// When true, the autofill handle will be shown on the bottom right of the cell.
+    /// </summary>
+    [Parameter]
+    public bool UseAutoFill { get; set; } = true;
+
+    private bool _useAutoFill = true;
+
     /// <summary>
     /// When true, the datasheet will Auto-fit cells when edited or the format is changed.
     /// </summary>
@@ -231,7 +239,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     /// Main virtualised view
     /// </summary>
     private Virtualise2D? _mainView;
-    
+
     private AutofitLayer? _autofitLayer;
 
     /// <summary>
@@ -331,6 +339,12 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         if (ShowFormulaDependents != _showFormulaDependents)
         {
             _showFormulaDependents = ShowFormulaDependents;
+            requireRender = true;
+        }
+
+        if (UseAutoFill != _useAutoFill)
+        {
+            _useAutoFill = UseAutoFill;
             requireRender = true;
         }
 
@@ -931,7 +945,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         if (active == IsDataSheetActive)
             return;
 
-        if (!Sheet.Editor.IsEditing)
+        if (!_sheet.Editor.IsEditing)
         {
             if (active)
                 await _windowEventService.PreventDefault("keydown");
@@ -942,8 +956,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         IsDataSheetActive = active;
         await OnSheetActiveChanged.InvokeAsync(new SheetActiveEventArgs(this, active));
     }
-    
-    
+
+
     /// <summary>
     /// Sets the document focus to the sheet container and sets the sheet as active.
     /// </summary>
