@@ -26,11 +26,11 @@
 
     <div style="width: 600px; height: 400px; overflow-y: scroll;">
         <Datasheet
+            UseAutoFill="_useAutoFIll"
             FrozenBottomCount="1"
             Sheet="_sheet" @ref="_datasheet"/>
     </div>
 </div>
-
 
 <h4>Features</h4>
 
@@ -72,6 +72,7 @@
 
     private Sheet _sheet = null!;
     private Datasheet? _datasheet;
+    private bool _useAutoFIll;
 
     protected override void OnInitialized()
     {
