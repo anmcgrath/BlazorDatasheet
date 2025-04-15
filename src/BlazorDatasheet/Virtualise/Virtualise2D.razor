@@ -38,6 +38,7 @@
                 @if (RowTemplate != null)
                 {
                     <div
+                        class="@RowClass"
                         style="display: grid; grid-column: 1 / span @_currentViewport.ViewRegion.Width; grid-row: @rowOffset; grid-template-columns: subgrid; grid-template-rows: subgrid;"
                         @key="row">
                         @RowTemplate(new VirtualRowArgs(row, rowOffset, _currentViewport.ViewRegion.Left, _currentViewport.ViewRegion.Right, _visibleColIndices))
@@ -47,7 +48,7 @@
                 {
                     var colOffset = 1;
 
-                    <div @key="row" style="display: contents;">
+                    <div @key="row" style="display: contents;" class="@RowClass">
                         @foreach (var col in _visibleColIndices)
                         {
                             <div @key="col" style="grid-column: @colOffset; grid-row: @rowOffset; overflow: hidden;">
@@ -105,6 +106,12 @@
     /// </summary>
     [Parameter]
     public string Class { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The class applied to each row div
+    /// </summary>
+    [Parameter]
+    public string RowClass { get; set; } = string.Empty;
 
     [Parameter] public EventCallback<VirtualViewportChangedEventArgs> OnViewportChanged { get; set; }
 
@@ -208,7 +215,7 @@
         var initialRight = LayoutProvider.ComputeColumn(LayoutProvider.ComputeLeftPosition(_viewRegion.Left) + viewRect.Width + viewRect.X);
         var initialTop = LayoutProvider.ComputeRow(viewRect.Y) + _viewRegion.Top;
         var initialBottom = LayoutProvider.ComputeRow(LayoutProvider.ComputeTopPosition(_viewRegion.Top) + viewRect.Height + viewRect.Y);
-        
+
         Region? view = new Region(
             initialTop - OverscanRows, initialBottom + OverscanRows,
             initialLeft - OverscanColumns, initialRight + OverscanColumns
