@@ -4,22 +4,15 @@
 <div class="block">
     <button @onclick="SetRedBackground">Red Bg</button>
     <button @onclick="SetBlueBackground">Blue Bg</button>
-    <button @onclick="SetReadOnly">Set ReadOnly</button>
-    <button @onclick="SetDefaultBackground">Clear format</button>
-    <label>
-        <input type="checkbox" @bind="_copyFormat" />
-        Copy format on autoFill
-    </label>
 </div>
 
 <div style="width: 500px; height: 300px; overflow: scroll;">
-    <Datasheet Sheet="_sheet" AutoFillCopyFormat="@_copyFormat"></Datasheet>
+    <Datasheet Sheet="_sheet"></Datasheet>
 </div>
 
 @code {
 
     private Sheet _sheet = null!;
-    private bool _copyFormat = true;
 
     protected override void OnInitialized()
     {
@@ -38,7 +31,4 @@
 
     private void SetBlueBackground() => SetFormatToSelection(new CellFormat() { BackgroundColor = "blue" });
 
-    private void SetReadOnly() => SetFormatToSelection(new CellFormat() { BackgroundColor = "lightgray", IsReadOnly = true });
-
-    private void SetDefaultBackground() => SetFormatToSelection(new CellFormat() { BackgroundColor = null, IsReadOnly = null });
 }
