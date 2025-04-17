@@ -144,6 +144,21 @@ public class AutofillCommandTests
     }
 
     [Test]
+    public void Auto_Fill_With_CopyFormat_False_Cell_Format_Not_Copied()
+    {
+        var sheet = new Sheet(100, 100)
+        {
+            AutoFillCopyFormat = false
+        };
+        var originalFormat = sheet.GetFormat(1, 0);
+        var f = new CellFormat() { BackgroundColor = "f1" };
+        sheet.SetFormat(new Region(0, 0), f);
+        var cmd = new AutoFillCommand(new Region(0, 0), new Region(0, 1, 0, 0));
+        sheet.Commands.ExecuteCommand(cmd);
+        sheet.GetFormat(1, 0).Should().BeEquivalentTo(originalFormat);
+    }
+
+    [Test]
     public void Auto_Fill_Does_Not_Expand_Into_Readonly_Cells()
     {
         var sheet = new Sheet(100, 100);

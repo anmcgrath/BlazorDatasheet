@@ -141,6 +141,12 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     private bool _useAutoFill = true;
 
     /// <summary>
+    /// When true, the autofill will copy the format
+    /// </summary>
+    [Parameter]
+    public bool AutoFillCopyFormat { get; set; } = true;
+
+    /// <summary>
     /// When true, the datasheet will Auto-fit cells when edited or the format is changed.
     /// </summary>
     [Parameter]
@@ -358,6 +364,11 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         if (NumberPrecisionDisplay != _numberPrecisionDisplay)
         {
             _numberPrecisionDisplay = Math.Min(15, NumberPrecisionDisplay);
+        }
+
+        if (_sheet is not null && _sheet.AutoFillCopyFormat != AutoFillCopyFormat)
+        {
+            _sheet.AutoFillCopyFormat = AutoFillCopyFormat;
         }
 
         if (forceRerender)
