@@ -43,7 +43,8 @@ public class RegionDataStore<T> : ISparseSource, IRowSource, IStore<T, RegionRes
 
     public IEnumerable<DataRegion<T>> GetDataRegions(int row, int col)
     {
-        return GetDataRegions(new Region(row, col));
+        var env = new Envelope(col, row, col, row);
+        return Tree.Search(env);
     }
 
     /// <summary>
@@ -76,6 +77,18 @@ public class RegionDataStore<T> : ISparseSource, IRowSource, IStore<T, RegionRes
     {
         return GetDataRegions(region)
             .Where(x => x.Data.Equals(data) && x.Region.Equals(region));
+    }
+
+    /// <summary>
+    /// Gets Data regions where the data is the same as the <paramref name="data"/> given
+    /// and the region is exactly the same
+    /// </summary>
+    /// <param name="data"></param>
+    /// <returns></returns>
+    public IEnumerable<DataRegion<T>> GetDataRegions(int row, int col, T data)
+    {
+        return GetDataRegions(row, col)
+            .Where(x => x.Data.Equals(data) && x.Region.IsSingleCell() && x.Region.Left == col && x.Region.Top == row);
     }
 
     public IEnumerable<T> GetData(int row, int col)
@@ -554,8 +567,8 @@ public class RegionDataStore<T> : ISparseSource, IRowSource, IStore<T, RegionRes
         int dir = Math.Sign(colDir);
 
         var searchEnv = Math.Sign(dir) == 1
-            ? new Envelope(col + 1, row, int.MaxValue, row + 1)
-            : new Envelope(0, row, col, row + 1);
+            ? new Envelope(col + 1, row, int.MaxValue, row)
+            : new Envelope(0, row, col, row);
 
         var regions = Tree.Search(searchEnv).Select(x => x.Region);
         int nextColIndex = dir == 1 ? int.MaxValue : int.MinValue;

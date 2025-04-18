@@ -27,21 +27,17 @@ namespace BlazorDatasheet.DataStructures.RTree;
 public partial class RTree<T>
 {
 	#region Sort Functions
-	private static readonly IComparer<ISpatialData> s_compareMinX =
-		Comparer<ISpatialData>.Create((x, y) => Comparer<double>.Default.Compare(x.Envelope.MinX, y.Envelope.MinX));
-	private static readonly IComparer<ISpatialData> s_compareMinY =
-		Comparer<ISpatialData>.Create((x, y) => Comparer<double>.Default.Compare(x.Envelope.MinY, y.Envelope.MinY));
-	private static readonly IComparer<T> s_tcompareMinX =
-		Comparer<T>.Create((x, y) => Comparer<double>.Default.Compare(x.Envelope.MinX, y.Envelope.MinX));
-	private static readonly IComparer<T> s_tcompareMinY =
-		Comparer<T>.Create((x, y) => Comparer<double>.Default.Compare(x.Envelope.MinY, y.Envelope.MinY));
+	private static readonly IComparer<ISpatialData> SCompareMinX =
+		Comparer<ISpatialData>.Create((x, y) => Comparer<int>.Default.Compare(x.Envelope.MinX, y.Envelope.MinX));
+	private static readonly IComparer<ISpatialData> SCompareMinY =
+		Comparer<ISpatialData>.Create((x, y) => Comparer<int>.Default.Compare(x.Envelope.MinY, y.Envelope.MinY));
 	#endregion
 
 	#region Search
 	private List<T> DoSearch(in Envelope boundingBox)
 	{
 		if (!Root.Envelope.Intersects(boundingBox))
-			return new List<T>();
+			return [];
 
 		var intersections = new List<T>();
 		var queue = new Queue<Node>();
@@ -53,20 +49,18 @@ public partial class RTree<T>
 
 			if (item.IsLeaf)
 			{
-				for (var index = 0; index < item.Items.Count; index++)
+				foreach (var i in item.Items)
 				{
-					var leafChildItem = item.Items[index];
-					if (leafChildItem.Envelope.Intersects(boundingBox))
-						intersections.Add((T)leafChildItem);
+					if (i.Envelope.Intersects(boundingBox))
+						intersections.Add((T)i);
 				}
 			}
 			else
 			{
-				for (var index = 0; index < item.Items.Count; index++)
+				foreach (var i in item.Items)
 				{
-					var childNode = item.Items[index];
-					if (childNode.Envelope.Intersects(boundingBox))
-						queue.Enqueue((Node)childNode);
+					if (i.Envelope.Intersects(boundingBox))
+						queue.Enqueue((Node)i);
 				}
 			}
 		}
@@ -79,7 +73,7 @@ public partial class RTree<T>
 	private List<Node> FindCoveringArea(in Envelope area, int depth)
 	{
 		var path = new List<Node>();
-		var node = this.Root;
+		var node = Root;
 
 		while (true)
 		{
@@ -89,17 +83,19 @@ public partial class RTree<T>
 			var next = node.Items[0];
 			var nextArea = next.Envelope.Extend(area).Area;
 
-			for (var i = 1; i < node.Items.Count; i++)
+			foreach (var i in node.Items)
 			{
-				var newArea = node.Items[1].Envelope.Extend(area).Area;
+				var newArea = i.Envelope.Extend(area).Area;
 				if (newArea > nextArea)
 					continue;
 
 				if (newArea == nextArea
-					&& node.Items[i].Envelope.Area >= next.Envelope.Area)
+					&& i.Envelope.Area >= next.Envelope.Area)
+				{
 					continue;
+				}
 
-				next = node.Items[i];
+				next = i;
 				nextArea = newArea;
 			}
 
@@ -111,7 +107,7 @@ public partial class RTree<T>
 	{
 		var path = FindCoveringArea(data.Envelope, depth);
 
-		var insertNode = path[path.Count - 1];
+		var insertNode = path[^1];
 		insertNode.Add(data);
 
 		while (--depth >= 0)
@@ -125,13 +121,15 @@ public partial class RTree<T>
 					path[depth - 1].Add(newNode);
 			}
 			else
+			{
 				path[depth].ResetEnvelope();
+			}
 		}
 	}
 
 	#region SplitNode
 	private void SplitRoot(Node newNode) =>
-		this.Root = new Node(new List<ISpatialData> { this.Root, newNode }, this.Root.Height + 1);
+		Root = new Node([Root, newNode], Root.Height + 1);
 
 	private Node SplitNode(Node node)
 	{
@@ -146,20 +144,20 @@ public partial class RTree<T>
 	#region SortChildren
 	private void SortChildren(Node node)
 	{
-		node.Items.Sort(s_compareMinX);
+		node.Items.Sort(SCompareMinX);
 		var splitsByX = GetPotentialSplitMargins(node.Items);
-		node.Items.Sort(s_compareMinY);
+		node.Items.Sort(SCompareMinY);
 		var splitsByY = GetPotentialSplitMargins(node.Items);
 
 		if (splitsByX < splitsByY)
-			node.Items.Sort(s_compareMinX);
+			node.Items.Sort(SCompareMinX);
 	}
 
-	private double GetPotentialSplitMargins(List<ISpatialData> children) =>
+	private int GetPotentialSplitMargins(List<ISpatialData> children) =>
 		GetPotentialEnclosingMargins(children) +
 		GetPotentialEnclosingMargins(children.AsEnumerable().Reverse().ToList());
 
-	private double GetPotentialEnclosingMargins(List<ISpatialData> children)
+	private int GetPotentialEnclosingMargins(List<ISpatialData> children)
 	{
 		var envelope = Envelope.EmptyBounds;
 		var i = 0;
@@ -217,10 +215,9 @@ public partial class RTree<T>
 			return height == 1
 				? new Node(data.Cast<ISpatialData>().ToList(), height)
 				: new Node(
-					new List<ISpatialData>
-					{
+					[
 						BuildNodes(data, height - 1, _maxEntries),
-					},
+					],
 					height);
 		}
 
@@ -261,23 +258,21 @@ public partial class RTree<T>
 	{
 		var envelope = Envelope.EmptyBounds;
 		foreach (var data in items)
-		{
 			envelope = envelope.Extend(data.Envelope);
-		}
+
 		return envelope;
 	}
 
-	private List<T> GetAllChildren(List<T> list, Node n)
+	private static List<T> GetAllChildren(List<T> list, Node n)
 	{
 		if (n.IsLeaf)
 		{
-			list.AddRange(
-				n.Items.Cast<T>());
+			list.AddRange(n.Items.Cast<T>());
 		}
 		else
 		{
 			foreach (var node in n.Items.Cast<Node>())
-				GetAllChildren(list, node);
+				_ = GetAllChildren(list, node);
 		}
 
 		return list;

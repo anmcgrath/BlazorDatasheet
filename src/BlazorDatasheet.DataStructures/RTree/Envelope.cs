@@ -35,23 +35,32 @@ namespace BlazorDatasheet.DataStructures.RTree;
 /// <param name="MaxX">The maximum X value of the bounding box.</param>
 /// <param name="MaxY">The maximum Y value of the bounding box.</param>
 [StructLayout(LayoutKind.Sequential)]
-public readonly record struct Envelope(
-    int MinX,
-    int MinY,
-    int MaxX,
-    int MaxY)
+public readonly record struct Envelope
 {
+    public readonly int MinX;
+    public readonly int MaxX;
+    public readonly int MinY;
+    public readonly int MaxY;
+
     /// <summary>
     /// The calculated area of the bounding box.
     /// </summary>
-    public double Area =>
-        Math.Max(MaxX - MinX, 0) * Math.Max(MaxY - MinY, 0);
+    public readonly int Area;
 
     /// <summary>
     /// Half of the linear perimeter of the bounding box
     /// </summary>
-    public double Margin =>
-        Math.Max(MaxX - MinX, 0) + Math.Max(MaxY - MinY, 0);
+    public readonly int Margin;
+
+    public Envelope(int minX, int minY, int maxX, int maxY)
+    {
+        MinX = minX;
+        MaxX = maxX;
+        MinY = minY;
+        MaxY = maxY;
+        Area = Math.Max(MaxX - MinX, 0) * Math.Max(MaxY - MinY, 0);
+        Margin = Math.Max(MaxX - MinX, 0) + Math.Max(MaxY - MinY, 0);
+    }
 
     /// <summary>
     /// Extends a bounding box to include another bounding box
@@ -61,10 +70,10 @@ public readonly record struct Envelope(
     /// <remarks>Does not affect the current bounding box.</remarks>
     public Envelope Extend(in Envelope other) =>
         new(
-            MinX: Math.Min(this.MinX, other.MinX),
-            MinY: Math.Min(this.MinY, other.MinY),
-            MaxX: Math.Max(this.MaxX, other.MaxX),
-            MaxY: Math.Max(this.MaxY, other.MaxY));
+            minX: Math.Min(MinX, other.MinX),
+            minY: Math.Min(MinY, other.MinY),
+            maxX: Math.Max(MaxX, other.MaxX),
+            maxY: Math.Max(MaxY, other.MaxY));
 
     /// <summary>
     /// Intersects a bounding box to only include the common area
@@ -75,10 +84,10 @@ public readonly record struct Envelope(
     /// <remarks>Does not affect the current bounding box.</remarks>
     public Envelope Intersection(in Envelope other) =>
         new(
-            MinX: Math.Max(this.MinX, other.MinX),
-            MinY: Math.Max(this.MinY, other.MinY),
-            MaxX: Math.Min(this.MaxX, other.MaxX),
-            MaxY: Math.Min(this.MaxY, other.MaxY));
+            minX: Math.Max(MinX, other.MinX),
+            minY: Math.Max(MinY, other.MinY),
+            maxX: Math.Min(MaxX, other.MaxX),
+            maxY: Math.Min(MaxY, other.MaxY));
 
     /// <summary>
     /// Determines whether <paramref name="other"/> is contained
@@ -91,10 +100,10 @@ public readonly record struct Envelope(
     /// <see langword="false" /> otherwise.
     /// </returns>
     public bool Contains(in Envelope other) =>
-        this.MinX <= other.MinX &&
-        this.MinY <= other.MinY &&
-        this.MaxX >= other.MaxX &&
-        this.MaxY >= other.MaxY;
+        MinX <= other.MinX &&
+        MinY <= other.MinY &&
+        MaxX >= other.MaxX &&
+        MaxY >= other.MaxY;
 
     /// <summary>
     /// Determines whether <paramref name="other"/> intersects
@@ -107,24 +116,28 @@ public readonly record struct Envelope(
     /// <see langword="false" /> otherwise.
     /// </returns>
     public bool Intersects(in Envelope other) =>
-        this.MinX < other.MaxX &&
-        this.MinY < other.MaxY &&
-        this.MaxX > other.MinX &&
-        this.MaxY > other.MinY;
+        MinX <= other.MaxX &&
+        MinY <= other.MaxY &&
+        MaxX >= other.MinX &&
+        MaxY >= other.MinY;
+
+    /// <summary>
+    /// A bounding box that contains the entire 2-d plane.
+    /// </summary>
+    public static Envelope InfiniteBounds { get; } =
+        new(
+            minX: int.MinValue,
+            minY: int.MinValue,
+            maxX: int.MaxValue,
+            maxY: int.MaxValue);
 
     /// <summary>
     /// An empty bounding box.
     /// </summary>
     public static Envelope EmptyBounds { get; } =
         new(
-            MinX: int.MinValue,
-            MinY: int.MaxValue,
-            MaxX: int.MinValue,
-            MaxY: int.MinValue);
-
-    public bool IsSameAs(in Envelope other) =>
-        this.MinX == other.MinX &&
-        this.MinY == other.MinY &&
-        this.MaxX == other.MaxX &&
-        this.MaxY == other.MaxY;
+            minX: int.MaxValue,
+            minY: int.MaxValue,
+            maxX: int.MinValue,
+            maxY: int.MinValue);
 }

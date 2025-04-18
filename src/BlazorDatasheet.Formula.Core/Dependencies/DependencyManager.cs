@@ -152,7 +152,7 @@ public class DependencyManager
                 {
                     case CellReference cellRef:
                         dataToDelete = GetReferencedVertexStore(cellRef.SheetName)
-                            .GetDataRegions(new Region(cellRef.RowIndex, cellRef.ColIndex), formulaVertex).ToList();
+                            .GetDataRegions(cellRef.RowIndex, cellRef.ColIndex, formulaVertex).ToList();
                         break;
                     case RangeReference rangeReference:
                         dataToDelete = GetReferencedVertexStore(rangeReference.SheetName)

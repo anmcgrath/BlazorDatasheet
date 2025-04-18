@@ -9,7 +9,7 @@ namespace BlazorDatasheet.DataStructures.Intervals;
 /// When a new interval is added, the data from that interval is merged into any existing.
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public class MergeableIntervalStore<T> : ISparseSource where T : IMergeable<T>
+public class MergeableIntervalStore<T> : ISparseSource where T : IMergeable<T>, IEquatable<T>
 {
     /// <summary>
     ///  The minimum value of all ranges
@@ -117,6 +117,9 @@ public class MergeableIntervalStore<T> : ISparseSource where T : IMergeable<T>
             var oi = overlapping[i];
             if (interval.Contains(oi))
             {
+                if(interval.Data.Equals(oi.Data))
+                    continue;
+                
                 // remove the existing, add a new interval with the merged data
                 var clone = new OrderedInterval<T>(oi.Start, oi.End, oi.Data.Clone());
                 clone.Data.Merge(interval.Data);
@@ -128,6 +131,9 @@ public class MergeableIntervalStore<T> : ISparseSource where T : IMergeable<T>
 
             else if (oi.Contains(interval))
             {
+                if(oi.Data.Equals(interval.Data))
+                    continue;
+                
                 // We have [o, o, i, i, o, o] where o = overlapping interval
                 // and i = interval we are adding
                 // we remove o and add o0, and o1 so that we now have
@@ -204,17 +210,17 @@ public class MergeableIntervalStore<T> : ISparseSource where T : IMergeable<T>
     /// <param name="start"></param>
     /// <param name="end"></param>
     /// <returns></returns>
-    public List<OrderedInterval<T>> GetIntervals(int start, int end)
+    public IList<OrderedInterval<T>> GetIntervals(int start, int end)
     {
         return GetIntervals(new OrderedInterval(start, end));
     }
 
-    public List<OrderedInterval<T>> GetIntervals(OrderedInterval interval)
+    public IList<OrderedInterval<T>> GetIntervals(OrderedInterval interval)
     {
-        var overlapping = new List<OrderedInterval<T>>();
-
         if (!_intervals.Any())
-            return overlapping;
+            return _intervals.Values;
+
+        var overlapping = new List<OrderedInterval<T>>();
 
         var i0 = _intervals.Keys.BinarySearchClosest(interval.Start);
         if (i0 >= 1 && _intervals[_intervals.Keys[i0 - 1]].Overlaps(interval))

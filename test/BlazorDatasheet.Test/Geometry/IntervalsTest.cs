@@ -1,4 +1,6 @@
-﻿using System.Linq;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Intervals;
 using FluentAssertions;
@@ -257,7 +259,7 @@ public class IntervalsTest
     }
 }
 
-public class SimpleMergeableData<T> : IMergeable<SimpleMergeableData<T>>
+public class SimpleMergeableData<T> : IMergeable<SimpleMergeableData<T>>, IEquatable<SimpleMergeableData<T>>
 {
     public T Value { get; set; }
 
@@ -277,5 +279,17 @@ public class SimpleMergeableData<T> : IMergeable<SimpleMergeableData<T>>
         {
             Value = Value
         };
+    }
+
+    public override int GetHashCode()
+    {
+        return EqualityComparer<T>.Default.GetHashCode(Value);
+    }
+
+    public bool Equals(SimpleMergeableData<T>? other)
+    {
+        if (other is null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return EqualityComparer<T>.Default.Equals(Value, other.Value);
     }
 }

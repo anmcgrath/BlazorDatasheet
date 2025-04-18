@@ -146,7 +146,7 @@ public class Range1DStore<T> : ISparseSource
     public bool Any() => Intervals.Any();
 }
 
-public class OverwritingValue<R> : IMergeable<OverwritingValue<R>>
+public class OverwritingValue<R> : IMergeable<OverwritingValue<R>>, IEquatable<OverwritingValue<R>>
 {
     public R? Value { get; private set; }
 
@@ -163,5 +163,12 @@ public class OverwritingValue<R> : IMergeable<OverwritingValue<R>>
     public OverwritingValue<R> Clone()
     {
         return new OverwritingValue<R>(Value);
+    }
+
+    public bool Equals(OverwritingValue<R>? other)
+    {
+        if (other is null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return EqualityComparer<R?>.Default.Equals(Value, other.Value);
     }
 }
