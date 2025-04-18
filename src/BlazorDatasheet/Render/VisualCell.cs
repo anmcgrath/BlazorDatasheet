@@ -149,7 +149,7 @@ public class VisualCell
                 sb.AddStyle("align-items", "center");
         }
 
-        else if (format.TextWrap == TextWrapping.Wrap)
+        if (format.TextWrap == TextWrapping.Wrap)
         {
             sb.AddStyle("text-wrap", "wrap");
         }
