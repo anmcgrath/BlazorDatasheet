@@ -1,27 +1,3 @@
-// MIT License
-//
-// Copyright (c) 2017 viceroypenguin
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// 	of this software and associated documentation files (the "Software"), to deal
-// 	in the Software without restriction, including without limitation the rights
-//  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-//  copies of the Software, and to permit persons to whom the Software is
-// 	furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// 	copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// 	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// 	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// 	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// 	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-//  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-//  SOFTWARE.
-
-// This file contains code from https://github.com/viceroypenguin/RBush
-
 namespace BlazorDatasheet.DataStructures.RTree;
 
 public partial class RTree<T>
@@ -31,47 +7,41 @@ public partial class RTree<T>
 		Comparer<ISpatialData>.Create((x, y) => Comparer<double>.Default.Compare(x.Envelope.MinX, y.Envelope.MinX));
 	private static readonly IComparer<ISpatialData> s_compareMinY =
 		Comparer<ISpatialData>.Create((x, y) => Comparer<double>.Default.Compare(x.Envelope.MinY, y.Envelope.MinY));
-	private static readonly IComparer<T> s_tcompareMinX =
-		Comparer<T>.Create((x, y) => Comparer<double>.Default.Compare(x.Envelope.MinX, y.Envelope.MinX));
-	private static readonly IComparer<T> s_tcompareMinY =
-		Comparer<T>.Create((x, y) => Comparer<double>.Default.Compare(x.Envelope.MinY, y.Envelope.MinY));
 	#endregion
 
 	#region Search
 	private List<T> DoSearch(in Envelope boundingBox)
 	{
-		var intersections = new List<T>();
-		if (Root.Envelope.Intersects(boundingBox))
-		{
-			DoSearch(Root, boundingBox, intersections);
-		}
-		return intersections; // Or return _emptyList if Root didn't intersect and intersections is empty
-	}
+		if (!Root.Envelope.Intersects(boundingBox))
+			return [];
 
-	private void DoSearch(Node node, in Envelope boundingBox, List<T> intersections)
-	{
-		if (node.IsLeaf)
+		var intersections = new List<T>();
+		var queue = new Queue<Node>();
+		queue.Enqueue(Root);
+
+		while (queue.Count != 0)
 		{
-			for (var index = 0; index < node.Items.Count; index++)
+			var item = queue.Dequeue();
+
+			if (item.IsLeaf)
 			{
-				var leafChildItem = node.Items[index];
-				if (leafChildItem.Envelope.Intersects(boundingBox))
+				foreach (var i in item.Items)
 				{
-					intersections.Add((T)leafChildItem);
+					if (i.Envelope.Intersects(boundingBox))
+						intersections.Add((T)i);
+				}
+			}
+			else
+			{
+				foreach (var i in item.Items)
+				{
+					if (i.Envelope.Intersects(boundingBox))
+						queue.Enqueue((Node)i);
 				}
 			}
 		}
-		else
-		{
-			for (var index = 0; index < node.Items.Count; index++)
-			{
-				var childNode = (Node)node.Items[index];
-				if (childNode.Envelope.Intersects(boundingBox))
-				{
-					DoSearch(childNode, boundingBox, intersections);
-				}
-			}
-		}
+
+		return intersections;
 	}
 	#endregion
 
@@ -79,7 +49,7 @@ public partial class RTree<T>
 	private List<Node> FindCoveringArea(in Envelope area, int depth)
 	{
 		var path = new List<Node>();
-		var node = this.Root;
+		var node = Root;
 
 		while (true)
 		{
@@ -89,17 +59,19 @@ public partial class RTree<T>
 			var next = node.Items[0];
 			var nextArea = next.Envelope.Extend(area).Area;
 
-			for (var i = 1; i < node.Items.Count; i++)
+			foreach (var i in node.Items)
 			{
-				var newArea = node.Items[1].Envelope.Extend(area).Area;
+				var newArea = i.Envelope.Extend(area).Area;
 				if (newArea > nextArea)
 					continue;
 
 				if (newArea == nextArea
-					&& node.Items[i].Envelope.Area >= next.Envelope.Area)
+					&& i.Envelope.Area >= next.Envelope.Area)
+				{
 					continue;
+				}
 
-				next = node.Items[i];
+				next = i;
 				nextArea = newArea;
 			}
 
@@ -111,7 +83,7 @@ public partial class RTree<T>
 	{
 		var path = FindCoveringArea(data.Envelope, depth);
 
-		var insertNode = path[path.Count - 1];
+		var insertNode = path[^1];
 		insertNode.Add(data);
 
 		while (--depth >= 0)
@@ -125,13 +97,15 @@ public partial class RTree<T>
 					path[depth - 1].Add(newNode);
 			}
 			else
+			{
 				path[depth].ResetEnvelope();
+			}
 		}
 	}
 
 	#region SplitNode
 	private void SplitRoot(Node newNode) =>
-		this.Root = new Node(new List<ISpatialData> { this.Root, newNode }, this.Root.Height + 1);
+		Root = new Node([Root, newNode], Root.Height + 1);
 
 	private Node SplitNode(Node node)
 	{
@@ -217,10 +191,9 @@ public partial class RTree<T>
 			return height == 1
 				? new Node(data.Cast<ISpatialData>().ToList(), height)
 				: new Node(
-					new List<ISpatialData>
-					{
+					[
 						BuildNodes(data, height - 1, _maxEntries),
-					},
+					],
 					height);
 		}
 
@@ -261,23 +234,21 @@ public partial class RTree<T>
 	{
 		var envelope = Envelope.EmptyBounds;
 		foreach (var data in items)
-		{
 			envelope = envelope.Extend(data.Envelope);
-		}
+
 		return envelope;
 	}
 
-	private List<T> GetAllChildren(List<T> list, Node n)
+	private static List<T> GetAllChildren(List<T> list, Node n)
 	{
 		if (n.IsLeaf)
 		{
-			list.AddRange(
-				n.Items.Cast<T>());
+			list.AddRange(n.Items.Cast<T>());
 		}
 		else
 		{
 			foreach (var node in n.Items.Cast<Node>())
-				GetAllChildren(list, node);
+				_ = GetAllChildren(list, node);
 		}
 
 		return list;

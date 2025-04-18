@@ -554,8 +554,8 @@ public class RegionDataStore<T> : ISparseSource, IRowSource, IStore<T, RegionRes
         int dir = Math.Sign(colDir);
 
         var searchEnv = Math.Sign(dir) == 1
-            ? new Envelope(col + 1, row, int.MaxValue, row + 1)
-            : new Envelope(0, row, col, row + 1);
+            ? new Envelope(col + 1, row, int.MaxValue, row)
+            : new Envelope(0, row, col, row);
 
         var regions = Tree.Search(searchEnv).Select(x => x.Region);
         int nextColIndex = dir == 1 ? int.MaxValue : int.MinValue;
