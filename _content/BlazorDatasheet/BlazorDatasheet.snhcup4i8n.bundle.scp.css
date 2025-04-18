@@ -48,39 +48,6 @@
     }
 /* _content/BlazorDatasheet/Edit/DefaultComponents/HighlightedInput.Razor.rz.scp.css */
 /* _content/BlazorDatasheet/Edit/DefaultComponents/SelectEditorComponent.razor.rz.scp.css */
-.text-input[b-k71ijntl8x] {
-    width: 100%;
-    border: none;
-    height: 100%;
-    box-sizing: border-box;
-}
-
-.text-input:focus[b-k71ijntl8x] {
-    outline: none;
-}
-
-.select-list[b-k71ijntl8x] {
-    min-width: 10rem;
-    z-index: 4;
-    border: var(--sheet-border-style);
-    background: var(--sheet-bg-color);
-    position: absolute;
-    overflow-y: auto;
-    color: var(--sheet-foreground-color);
-    display: block;
-    max-height: 7rem;
-    border-radius: 4px;
-}
-
-.select-item[b-k71ijntl8x] {
-    cursor: pointer;
-    padding: 0.1rem 0.1rem 0.1rem 0.2rem;
-}
-
-.select-item:hover[b-k71ijntl8x],
-.select-item.active[b-k71ijntl8x] {
-    background: var(--selection-bg-color)
-}
 /* _content/BlazorDatasheet/Edit/DefaultComponents/TextEditorComponent.razor.rz.scp.css */
 .text-input[b-ogyzqrxhj5] {
     width: 100%;
