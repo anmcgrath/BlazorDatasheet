@@ -153,6 +153,8 @@ public class Sheet
 
     public NamedRangeManager NamedRanges { get; }
 
+    public bool AutoFillCopyFormat { get; set; } = true;
+
     /// <summary>
     /// If the sheet is batching dirty rows, they are stored here.
     /// </summary>

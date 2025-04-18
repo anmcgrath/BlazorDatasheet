@@ -19,7 +19,7 @@ public class DefaultAutofillPattern : IAutoFillPattern
 
     public ICommand GetCommand(int offset, int repeatNo, IReadOnlyCell cellData, CellPosition newDataPosition)
     {
-        var options = new CopyOptions();
+        var options = new CopyOptions() { CopyFormat = _sheet.AutoFillCopyFormat };
         if (cellData.HasFormula())
             options.CopyValues = false;
 
