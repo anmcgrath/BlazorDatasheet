@@ -1,6 +1,7 @@
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.Formula.Core;
 using FluentAssertions;
 using NUnit.Framework;
 
@@ -93,7 +94,7 @@ public class EditTests
         sheet.Editor.BeginEdit(1, 1);
         sheet.Editor.IsEditing.Should().Be(false);
     }
-    
+
     [Test]
     public void Cell_That_Is_not_visible_should_not_be_edited()
     {
@@ -101,5 +102,15 @@ public class EditTests
         sheet.Rows.Hide(1, 1);
         sheet.Editor.BeginEdit(1, 1);
         sheet.Editor.IsEditing.Should().Be(false);
+    }
+
+    [Test]
+    public void Empty_Edit_Value_Should_Clear_Cell()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Editor.BeginEdit(1, 1);
+        sheet.Editor.EditValue = string.Empty;
+        sheet.Editor.AcceptEdit();
+        sheet.Cells.GetCell(1, 1).CellValue.ValueType.Should().Be(CellValueType.Empty);
     }
 }
