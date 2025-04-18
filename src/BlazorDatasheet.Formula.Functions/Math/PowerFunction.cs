@@ -21,16 +21,10 @@ public class PowerFunction : ISheetFunction
 
     public CellValue Call(CellValue[] args, FunctionCallMetaData metaData)
     {
-        var number = args[0];
-        var exponent = args[1];
+        var number = args[0].GetValue<double>();
+        var exponent = args[1].GetValue<double>();
 
-        if (number.ValueType != CellValueType.Number)
-            return CellValue.Error(ErrorType.Value);
-        
-        if (exponent.ValueType != CellValueType.Number)
-            return CellValue.Error(ErrorType.Value);
-
-        return CellValue.Number(System.Math.Pow((double)number.Data!, (double)exponent.Data!));
+        return CellValue.Number(System.Math.Pow(number, exponent));
     }
 
     public bool AcceptsErrors => false;
