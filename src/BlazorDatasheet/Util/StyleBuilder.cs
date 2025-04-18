@@ -4,7 +4,7 @@ namespace BlazorDatasheet.Util;
 
 public class StyleBuilder
 {
-    private StringBuilder _stringBuilder;
+    private readonly StringBuilder _stringBuilder;
 
     public StyleBuilder()
     {
