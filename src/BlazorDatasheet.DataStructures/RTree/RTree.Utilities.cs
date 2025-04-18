@@ -40,38 +40,38 @@ public partial class RTree<T>
 	#region Search
 	private List<T> DoSearch(in Envelope boundingBox)
 	{
-		if (!Root.Envelope.Intersects(boundingBox))
-			return new List<T>();
-
 		var intersections = new List<T>();
-		var queue = new Queue<Node>();
-		queue.Enqueue(Root);
-
-		while (queue.Count != 0)
+		if (Root.Envelope.Intersects(boundingBox))
 		{
-			var item = queue.Dequeue();
+			DoSearch(Root, boundingBox, intersections);
+		}
+		return intersections; // Or return _emptyList if Root didn't intersect and intersections is empty
+	}
 
-			if (item.IsLeaf)
+	private void DoSearch(Node node, in Envelope boundingBox, List<T> intersections)
+	{
+		if (node.IsLeaf)
+		{
+			for (var index = 0; index < node.Items.Count; index++)
 			{
-				for (var index = 0; index < item.Items.Count; index++)
+				var leafChildItem = node.Items[index];
+				if (leafChildItem.Envelope.Intersects(boundingBox))
 				{
-					var leafChildItem = item.Items[index];
-					if (leafChildItem.Envelope.Intersects(boundingBox))
-						intersections.Add((T)leafChildItem);
-				}
-			}
-			else
-			{
-				for (var index = 0; index < item.Items.Count; index++)
-				{
-					var childNode = item.Items[index];
-					if (childNode.Envelope.Intersects(boundingBox))
-						queue.Enqueue((Node)childNode);
+					intersections.Add((T)leafChildItem);
 				}
 			}
 		}
-
-		return intersections;
+		else
+		{
+			for (var index = 0; index < node.Items.Count; index++)
+			{
+				var childNode = (Node)node.Items[index];
+				if (childNode.Envelope.Intersects(boundingBox))
+				{
+					DoSearch(childNode, boundingBox, intersections);
+				}
+			}
+		}
 	}
 	#endregion
 
