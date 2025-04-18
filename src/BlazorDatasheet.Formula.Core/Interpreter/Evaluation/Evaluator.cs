@@ -195,10 +195,10 @@ public class Evaluator
             var paramDefinition = paramDefinitions[paramIndex];
             var arg = EvaluateExpression(node.Args[argIndex]);
 
-            if (arg.IsError() && !func.AcceptsErrors)
-                return arg;
-
             convertedArgs[argIndex] = _parameterConverter.ConvertVal(arg, paramDefinition.Type);
+            
+            if (convertedArgs[argIndex].IsError() && !func.AcceptsErrors)
+                return convertedArgs[argIndex];
 
             if (IsConsumable(paramDefinition))
                 paramIndex++;
