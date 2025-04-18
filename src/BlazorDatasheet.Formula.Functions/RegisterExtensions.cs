@@ -12,6 +12,7 @@ public static class RegisterExtensions
         e.RegisterFunction("AND", new AndFunction());
         e.RegisterFunction("IF", new IfFunction());
         e.RegisterFunction("OR", new OrFunction());
+        e.RegisterFunction("NOT", new NotFunction());
     }
 
     public static void RegisterMathFunctions(this IEnvironment e)
