@@ -444,8 +444,15 @@ public class SheetFormulaIntegrationTests
         _sheet.Cells["C12"]!.Value = 950;
         _sheet.Cells["C13"]!.Value = 456;
         _sheet.Cells["C14"]!.Value = 2;
-        
+
         _sheet.Cells["C4"]!.Formula = "=C8+C3";
         _sheet.Cells["C4"]!.Value.Should().Be(1786);
+    }
+
+    [Test]
+    public void Empty_Cell_Should_Equal_Empty_String()
+    {
+        _sheet.Cells["B1"]!.Formula = "=A1=\"\"";
+        _sheet.Cells["B1"]!.Value.Should().Be(true);
     }
 }

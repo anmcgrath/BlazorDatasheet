@@ -98,7 +98,7 @@ public class CellValueCoercer
 
 
         if (cellValue.IsEmpty)
-            return false;
+            return true; // val = false
 
         if (cellValue.ValueType == CellValueType.Logical)
         {
@@ -146,10 +146,10 @@ public class CellValueCoercer
             return false;
         }
 
-        if (cellValue.Data == null)
+        if (cellValue.IsEmpty)
             str = string.Empty;
         else
-            str = cellValue.Data.ToString()!;
+            str = cellValue.Data!.ToString()!;
 
         return true;
     }

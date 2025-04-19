@@ -205,8 +205,11 @@ public class Editor
         }
 
         var formulaResult = isFormula ? Sheet.FormulaEngine.Evaluate(parsedFormula) : CellValue.Empty;
+        
         var editValue =
-            isFormula ? formulaResult : Sheet.Cells.ConvertToCellValue(EditCell.Row, EditCell.Col, EditValue);
+            isFormula ? formulaResult :
+                Sheet.Cells.ConvertToCellValue(EditCell.Row, EditCell.Col, 
+                    string.IsNullOrEmpty(EditValue) ? null : EditValue); // set empty string to null to clear cell
 
         // don't accept edit if not a formula and the value is the same as previous.
         if (!isFormula && editValue.IsEqualTo(EditCell.CellValue))
