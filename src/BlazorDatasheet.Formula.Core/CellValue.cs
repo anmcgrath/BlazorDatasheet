@@ -15,7 +15,7 @@ public class CellValue : IComparable, IComparable<CellValue>
 
     public CellValue(object? data)
     {
-        if (data == null)
+        if (data == null || (data is string str && str.Length == 0))
         {
             Data = null;
             IsEmpty = true;
@@ -289,6 +289,11 @@ public class CellValue : IComparable, IComparable<CellValue>
 
     public bool IsEqualTo(CellValue value)
     {
+        // special handling of empty cell vs empty string.
+        if (value.IsEmpty && string.IsNullOrEmpty(Data?.ToString()) ||
+            IsEmpty && string.IsNullOrEmpty(value.Data?.ToString()))
+            return true;
+
         if (ValueType != value.ValueType)
             return false;
 
