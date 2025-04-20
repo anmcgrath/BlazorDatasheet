@@ -9,15 +9,32 @@
 @using BlazorDatasheet.Formula.Core.Interpreter
 @using BlazorDatasheet.Formula.Core.Interpreter.Lexing
 
-<HighlightedInput
-    Style="@Style"
-    CellWidth="CellWidth"
-    CellHeight="CellHeight"
-    FormulaOptions="_formulaOptions"
-    CarePositionChanged="OnCaretPositionChanged"
-    SoftEdit="_isSoftEdit"
-    @bind-Value:set="OnInput"
-    @bind-Value:get="CurrentValue"/>
+<div style="display: flex; flex-direction: column;">
+    <div>
+        <HighlightedInput
+            Style="@Style"
+            CellWidth="CellWidth"
+            CellHeight="CellHeight"
+            FormulaOptions="_formulaOptions"
+            InputSizeChanged="HighlightInputSizeChanged"
+            CaretPositionChanged="OnCaretPositionChanged"
+            SoftEdit="_isSoftEdit"
+            @bind-Value:set="OnInput"
+            @bind-Value:get="CurrentValue"/>
+    </div>
+
+    @if (_functionSuggestions != null && _functionSuggestions.Any())
+    {
+        <div class="bds-func-suggestions"
+             style="position: relative; top:@(_highlightInputHeight)px;">
+            @foreach (var formula in _functionSuggestions)
+            {
+                <div class="bds-func-suggestions-item">@formula.Name</div>
+            }
+        </div>
+    }
+</div>
+
 
 @code {
 
@@ -25,7 +42,9 @@
     private FormulaOptions _formulaOptions = null!;
     private bool _isSoftEdit = false;
     private int _currentCaretPosition = 0;
+    private double _highlightInputHeight = 0;
     private Selection _currentRangeSelection = null!;
+    private List<FunctionDefinition>? _functionSuggestions;
 
     public override void BeforeEdit(IReadOnlyCell cell, Sheet sheet)
     {
@@ -39,8 +58,25 @@
     private void OnInput(string value)
     {
         _currentRangeSelection.ClearSelections();
+
         var newValue = value ?? string.Empty;
         CurrentValue = newValue;
+
+        var len = Math.Min(_currentCaretPosition + 1, CurrentValue.Length);
+        if (len <= 0)
+            len = CurrentValue.Length;
+
+        var subStr = CurrentValue.AsSpan().Slice(0, len);
+        var tokens = new Lexer().Lex(subStr, _formulaOptions);
+        if (tokens.Count > 1 && tokens[^2].Tag == Tag.IdentifierToken)
+        {
+            var idToken = (IdentifierToken)tokens[^2];
+            _functionSuggestions = _sheet.FormulaEngine.GetDefinitionsStartingWith(idToken.Value).ToList();
+        }
+        else
+        {
+            _functionSuggestions = null;
+        }
     }
 
     public override void BeginEdit(EditEntryMode entryMode, string? editValue, string key)
@@ -108,11 +144,20 @@
 
             if (_currentRangeSelection.ActiveRegion != null)
                 CurrentValue = _currentSnapshot + RangeText.RegionToText(_currentRangeSelection.ActiveRegion);
-            
+
             return true;
         }
 
         return false;
+    }
+
+    private void HighlightInputSizeChanged(Size size)
+    {
+        if (Math.Abs(size.Height - _highlightInputHeight) > 0.01)
+        {
+            _highlightInputHeight = size.Height;
+            StateHasChanged();
+        }
     }
 
 }

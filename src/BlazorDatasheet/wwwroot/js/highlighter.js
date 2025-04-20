@@ -23,6 +23,15 @@ class Highligher {
             options.dotnetHelper.invokeMethodAsync("HandleInput", e.target.innerText)
         })
 
+        this.resizeObserver = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                if (entry.target === this.#inputEl) {
+                    options.dotnetHelper.invokeMethodAsync("HandleInputSizeChanged", entry.target.getBoundingClientRect())
+                }
+            }
+        })
+        this.resizeObserver.observe(this.#inputEl)
+
         this.setInputText = function (text) {
             this.#inputEl.innerText = text
         }
@@ -63,6 +72,10 @@ class Highligher {
         document.addEventListener('selectionchange', this.updateCaretPosition)
     }
 
+    onResize(e) {
+
+    }
+
     onKeyDown(e) {
         if (!this.options.preventDefaultArrowKeys)
             return
@@ -85,6 +98,11 @@ class Highligher {
     }
 
     dispose() {
+        if (this.#inputEl) {
+            this.#inputEl.removeEventListener('keydown', this.onKeyDown)
+            this.#inputEl.removeEventListener('mousedown', this.onMouseDown)
+        }
+        this.resizeObserver.disconnect()
         document.removeEventListener('selectionchange', this.updateCaretPosition)
     }
 

@@ -73,7 +73,7 @@ public class FormulaEngine
             var cellVertex = DependencyManager.GetVertex(cell.row, cell.col, sheet.Name);
             if (cellVertex != null)
             {
-                if(!_requiresCalculation.Add(cellVertex))
+                if (!_requiresCalculation.Add(cellVertex))
                     continue;
 
                 foreach (var u in DependencyManager.GetDirectDependents(cellVertex))
@@ -116,6 +116,9 @@ public class FormulaEngine
             e.EditValue = formula;
         }
     }
+
+    public IEnumerable<FunctionDefinition> GetDefinitionsStartingWith(string identifierText) =>
+        _environment.SearchForFunctions(identifierText);
 
     internal DependencyManagerRestoreData SetFormula(int row, int col, string sheetName, CellFormula? formula)
     {
