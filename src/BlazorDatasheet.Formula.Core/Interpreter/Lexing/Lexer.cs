@@ -19,14 +19,14 @@ public ref struct Lexer
         _current = '\0';
     }
 
-    public List<Token> Lex(string text, FormulaOptions formulaOptions,
+    public List<Token> Lex(ReadOnlySpan<char> text, FormulaOptions formulaOptions,
         WhiteSpaceOptions whiteSpaceOptions = WhiteSpaceOptions.RemoveWhitespace)
     {
-        if (string.IsNullOrEmpty(text))
+        if (text.IsEmpty)
             return new List<Token>();
 
         _formulaOptions = formulaOptions ?? new FormulaOptions();
-        _string = text.AsSpan();
+        _string = text;
         _position = 0;
         _current = _string[0];
         _whiteSpaceOptions = whiteSpaceOptions;
