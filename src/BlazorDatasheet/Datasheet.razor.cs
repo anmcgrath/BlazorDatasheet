@@ -695,7 +695,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         if (shift)
         {
             var oldActiveRegion = _sheet.Selection.ActiveRegion?.Clone();
-            GrowActiveSelection(offset);
+            _sheet.Selection.GrowActiveSelection(offset);
             if (oldActiveRegion == null) return false;
             var r = _sheet.Selection.ActiveRegion!.Break(oldActiveRegion).FirstOrDefault();
 
@@ -870,50 +870,6 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         if (axis == Axis.Col && ShowColHeadings)
             return _sheet.Columns.HeadingHeight;
         return 0;
-    }
-
-    /// <summary>
-    /// Increases the size of the active selection, around the active cell position
-    /// </summary>
-    private void GrowActiveSelection(Offset offset)
-    {
-        if (_sheet.Selection.ActiveRegion == null)
-            return;
-
-        var selPosition = _sheet.Selection.ActiveCellPosition;
-        if (offset.Columns != 0)
-        {
-            if (offset.Columns == -1)
-            {
-                if (selPosition.col < _sheet.Selection.ActiveRegion.GetEdge(Edge.Right).Right)
-                    _sheet.Selection.ContractEdge(Edge.Right, 1);
-                else
-                    _sheet.Selection.ExpandEdge(Edge.Left, 1);
-            }
-            else if (offset.Columns == 1)
-                if (selPosition.col > _sheet.Selection.ActiveRegion.GetEdge(Edge.Left).Left)
-                    _sheet.Selection.ContractEdge(Edge.Left, 1);
-                else
-                    _sheet.Selection.ExpandEdge(Edge.Right, 1);
-        }
-
-        if (offset.Rows != 0)
-        {
-            if (offset.Rows == -1)
-            {
-                if (selPosition.row < _sheet.Selection.ActiveRegion.GetEdge(Edge.Bottom).Bottom)
-                    _sheet.Selection.ContractEdge(Edge.Bottom, 1);
-                else
-                    _sheet.Selection.ExpandEdge(Edge.Top, 1);
-            }
-            else if (offset.Rows == 1)
-            {
-                if (selPosition.row > _sheet.Selection.ActiveRegion.GetEdge(Edge.Top).Top)
-                    _sheet.Selection.ContractEdge(Edge.Top, 1);
-                else
-                    _sheet.Selection.ExpandEdge(Edge.Bottom, 1);
-            }
-        }
     }
 
     private void CollapseAndMoveSelection(Offset offset)

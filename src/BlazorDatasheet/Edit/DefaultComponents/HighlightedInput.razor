@@ -32,7 +32,8 @@
 
     [Parameter] public double CellWidth { get; set; }
     [Parameter] public double CellHeight { get; set; }
-
+    private bool _softEdit;
+    [Parameter] public bool SoftEdit { get; set; }
     [Parameter] public string? Style { get; set; }
 
     private ElementReference _highlightInputEl;
@@ -51,6 +52,7 @@
             _value = Value;
             await SetInputTextAsync(_value);
             await SetHighlightTextAsync();
+            await SetCursorToEndAsync();
         }
     }
 
@@ -66,7 +68,8 @@
                 InitialHtml = GetHighlightedHtmlValue(Value),
                 DotnetHelper = _dotnetRef,
                 InputEl = _highlightInputEl,
-                HighlightResultEl = _highlightResultEl
+                HighlightResultEl = _highlightResultEl,
+                PreventDefaultArrowKeys = SoftEdit
             };
             _highlightJs = await module.InvokeAsync<IJSObjectReference>("createHighlighter", options);
             await module.DisposeAsync();
@@ -93,6 +96,7 @@
         if (_highlightJs != null && !_isDisposing)
         {
             await _highlightJs.InvokeVoidAsync("setInputText", text);
+            await _highlightJs.InvokeVoidAsync("setHighlightHtml", GetHighlightedHtmlValue(_value));
         }
     }
 
@@ -101,6 +105,14 @@
         if (_highlightJs != null && !_isDisposing)
         {
             await _highlightJs.InvokeVoidAsync("setHighlightHtml", GetHighlightedHtmlValue(_value));
+        }
+    }
+
+    private async Task SetCursorToEndAsync()
+    {
+        if (_highlightJs != null && !_isDisposing)
+        {
+            await _highlightJs.InvokeVoidAsync("moveCursorToEnd", _highlightInputEl);
         }
     }
 

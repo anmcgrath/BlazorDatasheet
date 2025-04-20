@@ -6,21 +6,28 @@ class Highligher {
         if (!options.inputEl)
             return
 
+        this.options = options;
+
         let self = this
         this.#inputEl = options.inputEl
         this.#inputEl.innerText = options.initialText
         this.#highlightResultEl = options.highlightResultEl
         this.#highlightResultEl.innerHTML = options.initialHtml
 
+        this.#inputEl.addEventListener('keydown', this.onKeyDown.bind(this))
+
         this.#inputEl.addEventListener('input', e => {
             if (!options.dotnetHelper)
                 return
+
             options.dotnetHelper.invokeMethodAsync("HandleInput", e.target.innerText)
         })
 
         this.setInputText = function (text) {
             this.#inputEl.innerText = text
         }
+
+        this.#inputEl.addEventListener('mousedown', this.onMouseDown.bind(this))
 
 
         this.updateCaretPosition = function () {
@@ -33,7 +40,10 @@ class Highligher {
             options.dotnetHelper.invokeMethodAsync("HandleCaretPositionUpdate", caretPosition)
         }
 
-        const moveCursorToEnd = function (el) {
+        this.moveCursorToEnd = function (el) {
+            if (document.activeElement !== el)
+                return
+
             const range = document.createRange();
             const selection = window.getSelection();
             range.setStart(el, el.childNodes.length);
@@ -42,16 +52,33 @@ class Highligher {
             selection.addRange(range);
         };
 
+
         this.focusAndMoveCursorToEnd = function () {
             options.inputEl.focus()
-            moveCursorToEnd(options.inputEl)
+            this.moveCursorToEnd(options.inputEl)
         }
 
-        setTimeout(this.focusAndMoveCursorToEnd, 0);
+        setTimeout(this.focusAndMoveCursorToEnd.bind(this), 0);
 
         document.addEventListener('selectionchange', this.updateCaretPosition)
     }
 
+    onKeyDown(e) {
+        if (!this.options.preventDefaultArrowKeys)
+            return
+
+        if (e.key.startsWith('Arrow')) {
+            e.preventDefault()
+        }
+    }
+
+    onMouseDown() {
+        this.options.preventDefaultArrowKeys = false
+    }
+
+    cancelPreventDefault() {
+        this.options.preventDefaultArrowKeys = false
+    }
 
     setHighlightHtml(html) {
         this.#highlightResultEl.innerHTML = html

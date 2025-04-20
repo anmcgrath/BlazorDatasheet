@@ -2,7 +2,12 @@
 @using BlazorDatasheet.Core.Interfaces
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Edit
+@using BlazorDatasheet.Core.Selecting
+@using BlazorDatasheet.Core.Util
+@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Formula.Core
 @using BlazorDatasheet.Formula.Core.Interpreter
+@using BlazorDatasheet.Formula.Core.Interpreter.Lexing
 
 <HighlightedInput
     Style="@Style"
@@ -10,21 +15,30 @@
     CellHeight="CellHeight"
     FormulaOptions="_formulaOptions"
     CarePositionChanged="OnCaretPositionChanged"
+    SoftEdit="_isSoftEdit"
     @bind-Value:set="OnInput"
     @bind-Value:get="CurrentValue"/>
 
 @code {
 
+    private Sheet _sheet = null!;
     private FormulaOptions _formulaOptions = null!;
+    private bool _isSoftEdit = false;
+    private int _currentCaretPosition = 0;
+    private Selection _currentRangeSelection = null!;
 
     public override void BeforeEdit(IReadOnlyCell cell, Sheet sheet)
     {
+        _sheet = sheet;
+        _isSoftEdit = _sheet.Editor.IsSoftEdit;
+        _currentRangeSelection = new Selection(_sheet);
         _formulaOptions = sheet.FormulaEngine.Options;
         StateHasChanged();
     }
 
     private void OnInput(string value)
     {
+        _currentRangeSelection.ClearSelections();
         var newValue = value ?? string.Empty;
         CurrentValue = newValue;
     }
@@ -43,6 +57,62 @@
 
     private void OnCaretPositionChanged(int position)
     {
+        _currentCaretPosition = position;
+        StateHasChanged();
+    }
+
+    private string _currentSnapshot = string.Empty;
+
+    public override bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
+    {
+        if (!_sheet.Editor.IsSoftEdit)
+            return false;
+
+        if (!_sheet.FormulaEngine.IsFormula(CurrentValue))
+            return false;
+
+        if (KeyUtil.IsArrowKey(key))
+        {
+            if (_currentRangeSelection.IsEmpty())
+            {
+                // if edit is soft edit then we must be at the end of the input
+                var lexer = new Lexer();
+                var tokens = lexer.Lex(CurrentValue, _formulaOptions);
+                if (tokens.Count == 1)
+                    return false; // shouldn't be possible but you never know
+
+                var token = tokens[^2]; // EoF is last
+
+                if (token.Tag.GetBinaryOperatorPrecedence() > 0 ||
+                    token.Tag == Tag.CommaToken ||
+                    token.Tag == Tag.EqualsToken ||
+                    token.Tag == Tag.ColonToken ||
+                    token.Tag == Tag.LeftParenthToken)
+                {
+                    _currentSnapshot = CurrentValue;
+                    _currentRangeSelection.Set(new Region(_sheet.Editor.EditCell!.Row, _sheet.Editor.EditCell!.Col));
+                }
+            }
+
+            if (_currentRangeSelection.IsEmpty())
+                return false;
+
+            var offset = KeyUtil.GetMovementFromArrowKey(key);
+            if (shiftKey)
+                _currentRangeSelection.GrowActiveSelection(offset);
+            else
+            {
+                _currentRangeSelection.MoveActivePositionByCol(offset.Columns);
+                _currentRangeSelection.MoveActivePositionByRow(offset.Rows);
+            }
+
+            if (_currentRangeSelection.ActiveRegion != null)
+                CurrentValue = _currentSnapshot + RangeText.RegionToText(_currentRangeSelection.ActiveRegion);
+            
+            return true;
+        }
+
+        return false;
     }
 
 }
