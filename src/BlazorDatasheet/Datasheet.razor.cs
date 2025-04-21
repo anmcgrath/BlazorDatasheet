@@ -590,6 +590,10 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
     private void HandleCellMouseDown(object? sender, SheetPointerEventArgs args)
     {
+        if (_sheet.Editor.IsEditing &&
+            _editorLayer.HandleMouseDown(args.Row, args.Col, args.CtrlKey, args.ShiftKey, args.AltKey, args.MetaKey))
+            return;
+
         // if rmc and inside a selection, don't do anything
         if (args.MouseButton == 2 && _sheet.Selection.Contains(args.Row, args.Col))
             return;
@@ -781,6 +785,10 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
     private void HandleCellMouseOver(object? sender, SheetPointerEventArgs args)
     {
+        if (_sheet.Editor.IsEditing &&
+            _editorLayer.HandleMouseDown(args.Row, args.Col, args.CtrlKey, args.ShiftKey, args.AltKey, args.MetaKey))
+            return;
+        
         _sheet.Selection.UpdateSelectingEndPosition(args.Row, args.Col);
     }
 

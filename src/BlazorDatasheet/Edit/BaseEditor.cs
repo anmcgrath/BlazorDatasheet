@@ -47,13 +47,13 @@ public abstract class BaseEditor : SheetComponentBase, ICellEditor
     /// <summary>
     /// The cell width in px
     /// </summary>
-    [Parameter, EditorRequired] 
+    [Parameter, EditorRequired]
     public required double CellWidth { get; set; }
 
     /// <summary>
     /// The cell height in px
     /// </summary>
-    [Parameter, EditorRequired] 
+    [Parameter, EditorRequired]
     public required double CellHeight { get; set; }
 
     public virtual void BeforeEdit(IReadOnlyCell cell, Sheet sheet)
@@ -62,7 +62,46 @@ public abstract class BaseEditor : SheetComponentBase, ICellEditor
 
     public abstract void BeginEdit(EditEntryMode entryMode, string? editValue, string key);
 
+    /// <summary>
+    /// Handle the key input from the datasheet. Return true if the event is considered handled and the datasheet shouldn't further process this event.
+    /// </summary>
+    /// <param name="key"></param>
+    /// <param name="ctrlKey"></param>
+    /// <param name="shiftKey"></param>
+    /// <param name="altKey"></param>
+    /// <param name="metaKey"></param>
+    /// <returns></returns>
     public virtual bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
+    {
+        return false;
+    }
+
+    /// <summary>
+    /// Handle mouse up input from the datasheet. Return true if the event is considered handled and the datasheet shouldn't further process this event.
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <param name="ctrlKey"></param>
+    /// <param name="shiftKey"></param>
+    /// <param name="altKey"></param>
+    /// <param name="metaKey"></param>
+    /// <returns></returns>
+    public virtual bool HandleMouseUp(int row, int col, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
+    {
+        return false;
+    }
+
+    /// <summary>
+    /// Handle mouse down input from the datasheet. Return true if the event is considered handled and the datasheet shouldn't further process this event.
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <param name="ctrlKey"></param>
+    /// <param name="shiftKey"></param>
+    /// <param name="altKey"></param>
+    /// <param name="metaKey"></param>
+    /// <returns></returns>
+    public virtual bool HandleMouseDown(int row, int col, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
     {
         return false;
     }
