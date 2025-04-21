@@ -75,7 +75,6 @@ public class SelectionInputManager
 
     public void Clear()
     {
-        _selection.Clear();
         _selection.ClearSelections();
         _selection.EndSelecting();
     }

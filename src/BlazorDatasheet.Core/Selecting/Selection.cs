@@ -666,6 +666,9 @@ public class Selection
         }
     }
 
+    /// <summary>
+    /// Clears data in the selection.
+    /// </summary>
     public void Clear()
     {
         _sheet.Cells.ClearCells(this.Regions);
