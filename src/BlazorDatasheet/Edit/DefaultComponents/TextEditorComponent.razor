@@ -1,4 +1,5 @@
 @inherits BaseEditor
+@using System.Text
 @using BlazorDatasheet.Core.Interfaces
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Edit
@@ -9,10 +10,12 @@
 @using BlazorDatasheet.Formula.Core
 @using BlazorDatasheet.Formula.Core.Interpreter
 @using BlazorDatasheet.Formula.Core.Interpreter.Lexing
+@using BlazorDatasheet.Render
 
 <div>
     <HighlightedInput
         Style="@Style"
+        @ref="_highlightedInput"
         CellWidth="CellWidth"
         CellHeight="CellHeight"
         FormulaOptions="_formulaOptions"
@@ -53,10 +56,13 @@
 
     private Sheet _sheet = null!;
     private FormulaOptions _formulaOptions = null!;
+    private HighlightedInput _highlightedInput = default!;
     private bool _isSoftEdit = false;
     private int _currentCaretPosition = 0;
     private double _highlightInputHeight = 0;
-    private Selection _currentRangeSelection = null!;
+    private string _currentSnapshot = string.Empty;
+    private SelectionInputManager _selectionInputManager = null!;
+    private bool _canAcceptRanges = true;
     private List<FunctionDefinition>? _functionSuggestions;
     private FormulaHintBoxResult? _formulaHint;
 
@@ -64,23 +70,59 @@
     {
         _sheet = sheet;
         _isSoftEdit = _sheet.Editor.IsSoftEdit;
-        _currentRangeSelection = new Selection(_sheet);
+        _selectionInputManager = new SelectionInputManager(new Selection(_sheet));
         _formulaOptions = sheet.FormulaEngine.Options;
         StateHasChanged();
     }
 
     private void OnInput(string value)
     {
-        _currentRangeSelection.ClearSelections();
-
         var newValue = value ?? string.Empty;
         CurrentValue = newValue;
 
+        HandleInputChanged();
+        SuggestFunctions();
+    }
+
+    private void HandleInputChanged()
+    {
+        _currentSnapshot = CurrentValue;
+
+        // if edit is soft edit then we must be at the end of the input
+        var lexer = new Lexer();
+        var tokens = lexer.Lex(CurrentValue, _formulaOptions);
+
+        if (tokens.Count <= 1)
+        {
+            _canAcceptRanges = false;
+            return;
+        }
+
+        var token = tokens[^2]; // EoF is last
+
+        if (token.Tag.GetBinaryOperatorPrecedence() > 0 ||
+            token.Tag == Tag.CommaToken ||
+            token.Tag == Tag.EqualsToken ||
+            token.Tag == Tag.ColonToken ||
+            token.Tag == Tag.LeftParenthToken)
+        {
+            _canAcceptRanges = true;
+        }
+        else
+        {
+            _canAcceptRanges = false;
+        }
+
+        _selectionInputManager.Clear();
+    }
+
+    private void SuggestFunctions()
+    {
         var len = Math.Min(_currentCaretPosition + 1, CurrentValue.Length);
         if (len <= 0)
             len = CurrentValue.Length;
-        
-        if(!FormulaEngine.IsFormula(CurrentValue))
+
+        if (!FormulaEngine.IsFormula(CurrentValue))
             return;
 
         var subStr = CurrentValue.AsSpan().Slice(0, len);
@@ -106,6 +148,8 @@
         {
             CurrentValue = editValue?.ToString() ?? string.Empty;
         }
+
+        HandleInputChanged();
     }
 
     private void OnCaretPositionChanged(int position)
@@ -115,7 +159,27 @@
         StateHasChanged();
     }
 
-    private string _currentSnapshot = string.Empty;
+    private void SetEditValueToSelectionPreview()
+    {
+        var selection = _selectionInputManager.Selection;
+        var sb = new StringBuilder();
+        for (var i = 0; i < selection.Regions.Count; i++)
+        {
+            var region = selection.Regions[i];
+            sb.Append(RangeText.RegionToText(region));
+            if (i != selection.Regions.Count - 1)
+                sb.Append(",");
+        }
+
+        if (selection.IsSelecting)
+        {
+            if (selection.Regions.Count > 0)
+                sb.Append(",");
+            sb.Append(RangeText.RegionToText(selection.SelectingRegion!));
+        }
+
+        CurrentValue = _currentSnapshot + sb;
+    }
 
     public override bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
     {
@@ -127,43 +191,18 @@
 
         if (KeyUtil.IsArrowKey(key))
         {
-            if (_currentRangeSelection.IsEmpty())
+            if (_canAcceptRanges)
             {
-                // if edit is soft edit then we must be at the end of the input
-                var lexer = new Lexer();
-                var tokens = lexer.Lex(CurrentValue, _formulaOptions);
-                if (tokens.Count == 1)
-                    return false; // shouldn't be possible but you never know
-
-                var token = tokens[^2]; // EoF is last
-
-                if (token.Tag.GetBinaryOperatorPrecedence() > 0 ||
-                    token.Tag == Tag.CommaToken ||
-                    token.Tag == Tag.EqualsToken ||
-                    token.Tag == Tag.ColonToken ||
-                    token.Tag == Tag.LeftParenthToken)
+                if (_selectionInputManager.Selection.IsEmpty())
                 {
-                    _currentSnapshot = CurrentValue;
-                    _currentRangeSelection.Set(new Region(_sheet.Editor.EditCell!.Row, _sheet.Editor.EditCell!.Col));
+                    _selectionInputManager.Selection.Set(_sheet.Editor.EditCell!.Row, _sheet.Editor.EditCell!.Col);
                 }
+
+                var offset = KeyUtil.GetMovementFromArrowKey(key);
+                _selectionInputManager.HandleArrowKeyDown(shiftKey, offset);
+                SetEditValueToSelectionPreview();
+                return true;
             }
-
-            if (_currentRangeSelection.IsEmpty())
-                return false;
-
-            var offset = KeyUtil.GetMovementFromArrowKey(key);
-            if (shiftKey)
-                _currentRangeSelection.GrowActiveSelection(offset);
-            else
-            {
-                _currentRangeSelection.MoveActivePositionByCol(offset.Columns);
-                _currentRangeSelection.MoveActivePositionByRow(offset.Rows);
-            }
-
-            if (_currentRangeSelection.ActiveRegion != null)
-                CurrentValue = _currentSnapshot + RangeText.RegionToText(_currentRangeSelection.ActiveRegion);
-
-            return true;
         }
 
         return false;
@@ -176,6 +215,44 @@
             _highlightInputHeight = size.Height;
             StateHasChanged();
         }
+    }
+
+    public override bool HandleMouseDown(int row, int col, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
+    {
+        if (_canAcceptRanges)
+        {
+            _selectionInputManager.HandlePointerDown(row, col, shiftKey, ctrlKey, metaKey, 1);
+            SetEditValueToSelectionPreview();
+            return true;
+        }
+
+        return false;
+    }
+
+    public override bool HandleMouseOver(int row, int col, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
+    {
+        if (_canAcceptRanges)
+        {
+            _selectionInputManager.HandlePointerOver(row, col);
+            SetEditValueToSelectionPreview();
+            return true;
+        }
+
+        return false;
+    }
+
+    public override async Task<bool> HandleWindowMouseUpAsync()
+    {
+        _selectionInputManager.HandleWindowMouseUp();
+
+        if (_canAcceptRanges)
+        {
+            SetEditValueToSelectionPreview();
+            await _highlightedInput.FocusAndMoveCursorToEndAsync();
+            return true;
+        }
+
+        return true;
     }
 
 }

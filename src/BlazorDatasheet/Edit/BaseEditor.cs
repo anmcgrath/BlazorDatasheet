@@ -86,13 +86,13 @@ public abstract class BaseEditor : SheetComponentBase, ICellEditor
     /// <param name="altKey"></param>
     /// <param name="metaKey"></param>
     /// <returns></returns>
-    public virtual bool HandleMouseUp(int row, int col, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
+    public virtual bool HandleMouseDown(int row, int col, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
     {
         return false;
     }
 
     /// <summary>
-    /// Handle mouse down input from the datasheet. Return true if the event is considered handled and the datasheet shouldn't further process this event.
+    /// Handle mouse over input from the datasheet. Return true if the event is considered handled and the datasheet shouldn't further process this event.
     /// </summary>
     /// <param name="row"></param>
     /// <param name="col"></param>
@@ -101,9 +101,14 @@ public abstract class BaseEditor : SheetComponentBase, ICellEditor
     /// <param name="altKey"></param>
     /// <param name="metaKey"></param>
     /// <returns></returns>
-    public virtual bool HandleMouseDown(int row, int col, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
+    public virtual bool HandleMouseOver(int row, int col, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
     {
         return false;
+    }
+
+    public virtual Task<bool> HandleWindowMouseUpAsync()
+    {
+        return Task.FromResult(false);
     }
 
     public virtual void HandleEditValueChange(string? s)

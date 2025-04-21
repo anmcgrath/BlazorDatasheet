@@ -110,11 +110,11 @@
         }
     }
 
-    private async Task SetCursorToEndAsync()
+    internal async Task FocusAndMoveCursorToEndAsync()
     {
         if (_highlightJs != null && !_isDisposing)
         {
-            await _highlightJs.InvokeVoidAsync("moveCursorToEnd", _highlightInputEl);
+            await _highlightJs.InvokeVoidAsync("focusAndMoveCursorToEnd");
         }
     }
 
