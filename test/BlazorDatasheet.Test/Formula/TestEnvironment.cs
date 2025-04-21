@@ -47,7 +47,7 @@ public class TestEnvironment : IEnvironment
     public IEnumerable<FunctionDefinition> SearchForFunctions(string functionName)
     {
         var funcLower = functionName.ToLower();
-        return _functions.Where(x => x.Key.Contains(funcLower))
+        return _functions.Where(x => x.Key.StartsWith(funcLower))
             .Select(x => new FunctionDefinition(x.Key, x.Value));
     }
 

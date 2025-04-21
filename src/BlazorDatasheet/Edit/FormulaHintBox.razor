@@ -2,7 +2,7 @@
 @using BlazorDatasheet.Formula.Core
 
 <div class="bds-func-suggestions-item">
-    <span style="font-weight: @(ArgIndex == -1 ? "bold" : "normal")">@FunctionName</span>
+    <span style="font-weight: @(ArgIndex == -1 ? "bold" : "normal")">@FunctionName.ToUpper()</span>
     <span>(</span>
 
     @{
