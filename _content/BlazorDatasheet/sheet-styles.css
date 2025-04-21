@@ -356,7 +356,7 @@
 }
 
 .bds-func-suggestions{
-    width:200px;
+    min-width:100px;
     margin-top:4px;
     background: var(--sheet-bg-color);
     box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
