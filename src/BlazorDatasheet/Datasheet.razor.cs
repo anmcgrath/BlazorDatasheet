@@ -166,12 +166,12 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     public bool Virtualise { get; set; } = true;
 
     /// <summary>
-    /// The number of decimal places to round a number to. Default is 15.
+    /// The number of decimal places to round a number to. Default is 13.
     /// </summary>
     [Parameter]
-    public int NumberPrecisionDisplay { get; set; } = 15;
+    public int NumberPrecisionDisplay { get; set; } = 13;
 
-    private int _numberPrecisionDisplay = 15;
+    private int _numberPrecisionDisplay = 13;
 
     /// <summary>
     /// Any user-defined items to render in the context menu
