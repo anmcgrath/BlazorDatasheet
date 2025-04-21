@@ -1,12 +1,13 @@
 ﻿@using Microsoft.JSInterop
 @using System.Diagnostics
 @using System.Text
+@using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Formula.Core.Interpreter
 @using BlazorDatasheet.Formula.Core.Interpreter.Lexing
 @implements IAsyncDisposable
 @inject IJSRuntime Js;
 
-<div spellcheck="false" style="display: contents; @Style">
+<div spellcheck="false" style="position: relative; @Style">
 
     <span class="highlight-result"
           style="min-width:@(CellWidth - 2)px;min-height: @(CellHeight - 2)px;"
@@ -18,6 +19,7 @@
           style="min-width:@(CellWidth - 2)px;min-height: @(CellHeight - 2)px;"
           @ref="_highlightInputEl">
     </span>
+
 </div>
 
 @code {
@@ -26,13 +28,15 @@
 
     [Parameter] public EventCallback<string> ValueChanged { get; set; }
 
-    [Parameter] public EventCallback<int> CarePositionChanged { get; set; }
+    [Parameter] public EventCallback<int> CaretPositionChanged { get; set; }
+    [Parameter] public EventCallback<Size> InputSizeChanged { get; set; }
 
     [Parameter, EditorRequired] public required FormulaOptions FormulaOptions { get; set; }
 
     [Parameter] public double CellWidth { get; set; }
     [Parameter] public double CellHeight { get; set; }
-
+    private bool _softEdit;
+    [Parameter] public bool SoftEdit { get; set; }
     [Parameter] public string? Style { get; set; }
 
     private ElementReference _highlightInputEl;
@@ -66,7 +70,8 @@
                 InitialHtml = GetHighlightedHtmlValue(Value),
                 DotnetHelper = _dotnetRef,
                 InputEl = _highlightInputEl,
-                HighlightResultEl = _highlightResultEl
+                HighlightResultEl = _highlightResultEl,
+                PreventDefaultArrowKeys = SoftEdit
             };
             _highlightJs = await module.InvokeAsync<IJSObjectReference>("createHighlighter", options);
             await module.DisposeAsync();
@@ -93,6 +98,7 @@
         if (_highlightJs != null && !_isDisposing)
         {
             await _highlightJs.InvokeVoidAsync("setInputText", text);
+            await _highlightJs.InvokeVoidAsync("setHighlightHtml", GetHighlightedHtmlValue(_value));
         }
     }
 
@@ -104,10 +110,24 @@
         }
     }
 
+    internal async Task FocusAndMoveCursorToEndAsync()
+    {
+        if (_highlightJs != null && !_isDisposing)
+        {
+            await _highlightJs.InvokeVoidAsync("focusAndMoveCursorToEnd");
+        }
+    }
+
     [JSInvokable]
     public async Task HandleCaretPositionUpdate(int position)
     {
-        await CarePositionChanged.InvokeAsync(position);
+        await CaretPositionChanged.InvokeAsync(position);
+    }
+
+    [JSInvokable]
+    public async Task HandleInputSizeChanged(Size size)
+    {
+        await InputSizeChanged.InvokeAsync(size);
     }
 
     private string GetHighlightedHtmlValue(string? text)

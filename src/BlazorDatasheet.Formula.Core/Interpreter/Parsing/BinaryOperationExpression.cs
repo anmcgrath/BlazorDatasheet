@@ -16,6 +16,7 @@ public class BinaryOperationExpression : Expression
     }
 
     public override NodeKind Kind => NodeKind.BinaryOperation;
+    public override IEnumerable<Node> GetChildren() => [Left, Right];
 
     public override string ToExpressionText()
     {

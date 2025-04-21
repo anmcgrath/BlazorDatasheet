@@ -1,0 +1,37 @@
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Formula.Core
+
+<div class="bds-func-suggestions-item">
+    <span style="font-weight: @(ArgIndex == -1 ? "bold" : "normal")">@FunctionName.ToUpper()</span>
+    <span>(</span>
+
+    @{
+        var definitions = Function.GetParameterDefinitions();
+    }
+    @for (var i = 0; i < definitions.Length; i++)
+    {
+        var paramDefinition = definitions[i];
+        <span style="font-weight: @(i == ArgIndex ? "bold" : "normal")">@paramDefinition.Name</span>
+        @if (i < definitions.Length - 1)
+        {
+            <span>, </span>
+        }
+    }
+    @if (definitions.Length > 0 && definitions.Last().IsRepeating)
+    {
+        <span>,</span>
+        <span
+            style="font-weight: @(ArgIndex >= definitions.Length ? "bold" : "normal")">[@definitions.Last().Name...]</span>
+    }
+    <span>)</span>
+</div>
+
+@code{
+
+    [Parameter] public required string FunctionName { get; set; }
+
+    [Parameter] public required ISheetFunction Function { get; set; }
+
+    [Parameter] public required int ArgIndex { get; set; }
+
+}

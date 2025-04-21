@@ -146,6 +146,37 @@
         return _activeCellEditor.HandleKey(key, ctrlKey, shiftKey, altKey, metaKey);
     }
 
+    public bool HandleMouseDown(int row, int col, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
+    {
+        if (!_sheet.Editor.IsEditing)
+            return false;
+
+        if (_activeCellEditor == null)
+            return false;
+
+        return _activeCellEditor.HandleMouseDown(row, col, ctrlKey, shiftKey, altKey, metaKey);
+    }
+
+    public bool HandleMouseOver(int row, int col, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
+    {
+        if (!_sheet.Editor.IsEditing)
+            return false;
+
+        if (_activeCellEditor == null)
+            return false;
+
+        return _activeCellEditor.HandleMouseOver(row, col, ctrlKey, shiftKey, altKey, metaKey);
+    }
+
+    public async Task<bool> HandleWindowMouseUpAsync()
+    {
+        if (!_sheet.Editor.IsEditing)
+            return false;
+        if (_activeCellEditor == null)
+            return false;
+        return await _activeCellEditor.HandleWindowMouseUpAsync();
+    }
+
     private void HandleEditorRequestCancelEdit(object? sender, EventArgs args)
     {
         _sheet.Editor.CancelEdit();
@@ -223,7 +254,7 @@
 
         sb.AddStyle("width", w + "px");
         sb.AddStyle("height", h + "px");
-        
+
         sb.AddStyle("max-width", LayerWidth + "px");
         sb.AddStyle("max-height", LayerHeight + "px");
 

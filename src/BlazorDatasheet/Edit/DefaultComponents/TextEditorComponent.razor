@@ -1,24 +1,76 @@
 @inherits BaseEditor
+@using System.Text
 @using BlazorDatasheet.Core.Interfaces
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Edit
+@using BlazorDatasheet.Core.FormulaEngine
+@using BlazorDatasheet.Core.Selecting
+@using BlazorDatasheet.Core.Util
+@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Formula.Core
 @using BlazorDatasheet.Formula.Core.Interpreter
+@using BlazorDatasheet.Formula.Core.Interpreter.Lexing
+@using BlazorDatasheet.Render
 
-<HighlightedInput
-    Style="@Style"
-    CellWidth="CellWidth"
-    CellHeight="CellHeight"
-    FormulaOptions="_formulaOptions"
-    CarePositionChanged="OnCaretPositionChanged"
-    @bind-Value:set="OnInput"
-    @bind-Value:get="CurrentValue"/>
+<div>
+    <HighlightedInput
+        Style="@Style"
+        @ref="_highlightedInput"
+        CellWidth="CellWidth"
+        CellHeight="CellHeight"
+        FormulaOptions="_formulaOptions"
+        InputSizeChanged="HighlightInputSizeChanged"
+        CaretPositionChanged="OnCaretPositionChanged"
+        SoftEdit="_isSoftEdit"
+        @bind-Value:set="OnInput"
+        @bind-Value:get="CurrentValue"/>
+</div>
+
+<!-- shows hints when caret position is inside a formula -->
+@if (_formulaHint != null && _sheet.FormulaEngine.FunctionExists(_formulaHint.FunctionName))
+{
+    <div class="bds-func-suggestions"
+         style="position: absolute; top:@(_highlightInputHeight)px;">
+        <FormulaHintBox
+            ArgIndex="@_formulaHint.ParameterIndex"
+            FunctionName="@_formulaHint.FunctionName"
+            Function="@_sheet.FormulaEngine.GetFunction(_formulaHint.FunctionName)"
+        />
+    </div>
+}
+
+
+<!-- shows functions that are available based on the typed function name -->s
+@if (_functionSuggestions != null && _functionSuggestions.Any())
+{
+    <div class="bds-func-suggestions"
+         style="position: absolute; top:@(_highlightInputHeight)px;">
+        @foreach (var formula in _functionSuggestions)
+        {
+            <div class="bds-func-suggestions-item">@formula.Name</div>
+        }
+    </div>
+}
 
 @code {
 
+    private Sheet _sheet = null!;
     private FormulaOptions _formulaOptions = null!;
+    private HighlightedInput _highlightedInput = default!;
+    private bool _isSoftEdit = false;
+    private int _currentCaretPosition = 0;
+    private double _highlightInputHeight = 0;
+    private string _currentSnapshot = string.Empty;
+    private SelectionInputManager _selectionInputManager = null!;
+    private bool _canAcceptRanges = true;
+    private List<FunctionDefinition>? _functionSuggestions;
+    private FormulaHintBoxResult? _formulaHint;
 
     public override void BeforeEdit(IReadOnlyCell cell, Sheet sheet)
     {
+        _sheet = sheet;
+        _isSoftEdit = _sheet.Editor.IsSoftEdit;
+        _selectionInputManager = new SelectionInputManager(new Selection(_sheet));
         _formulaOptions = sheet.FormulaEngine.Options;
         StateHasChanged();
     }
@@ -27,6 +79,63 @@
     {
         var newValue = value ?? string.Empty;
         CurrentValue = newValue;
+
+        HandleInputChanged();
+        SuggestFunctions();
+    }
+
+    private void HandleInputChanged()
+    {
+        _currentSnapshot = CurrentValue;
+
+        // if edit is soft edit then we must be at the end of the input
+        var lexer = new Lexer();
+        var tokens = lexer.Lex(CurrentValue, _formulaOptions);
+
+        if (tokens.Count <= 1)
+        {
+            _canAcceptRanges = false;
+            return;
+        }
+
+        var token = tokens[^2]; // EoF is last
+
+        if (token.Tag.GetBinaryOperatorPrecedence() > 0 ||
+            token.Tag == Tag.CommaToken ||
+            token.Tag == Tag.EqualsToken ||
+            token.Tag == Tag.ColonToken ||
+            token.Tag == Tag.LeftParenthToken)
+        {
+            _canAcceptRanges = true;
+        }
+        else
+        {
+            _canAcceptRanges = false;
+        }
+
+        _selectionInputManager.Clear();
+    }
+
+    private void SuggestFunctions()
+    {
+        var len = Math.Min(_currentCaretPosition + 1, CurrentValue.Length);
+        if (len <= 0)
+            len = CurrentValue.Length;
+
+        if (!FormulaEngine.IsFormula(CurrentValue))
+            return;
+
+        var subStr = CurrentValue.AsSpan().Slice(0, len);
+        var tokens = new Lexer().Lex(subStr, _formulaOptions);
+        if (tokens.Count > 1 && tokens[^2].Tag == Tag.IdentifierToken)
+        {
+            var idToken = (IdentifierToken)tokens[^2];
+            _functionSuggestions = _sheet.FormulaEngine.GetDefinitionsStartingWith(idToken.Value).ToList();
+        }
+        else
+        {
+            _functionSuggestions = null;
+        }
     }
 
     public override void BeginEdit(EditEntryMode entryMode, string? editValue, string key)
@@ -39,10 +148,111 @@
         {
             CurrentValue = editValue?.ToString() ?? string.Empty;
         }
+
+        HandleInputChanged();
     }
 
     private void OnCaretPositionChanged(int position)
     {
+        _currentCaretPosition = position;
+        _formulaHint = new FormulaHintBoxCalculator(_formulaOptions).Calculate(CurrentValue, position);
+        StateHasChanged();
+    }
+
+    private void SetEditValueToSelectionPreview()
+    {
+        var selection = _selectionInputManager.Selection;
+        var sb = new StringBuilder();
+        for (var i = 0; i < selection.Regions.Count; i++)
+        {
+            var region = selection.Regions[i];
+            sb.Append(RangeText.RegionToText(region));
+            if (i != selection.Regions.Count - 1)
+                sb.Append(",");
+        }
+
+        if (selection.IsSelecting)
+        {
+            if (selection.Regions.Count > 0)
+                sb.Append(",");
+            sb.Append(RangeText.RegionToText(selection.SelectingRegion!));
+        }
+
+        CurrentValue = _currentSnapshot + sb;
+    }
+
+    public override bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
+    {
+        if (!_sheet.Editor.IsSoftEdit)
+            return false;
+
+        if (!FormulaEngine.IsFormula(CurrentValue))
+            return false;
+
+        if (KeyUtil.IsArrowKey(key))
+        {
+            if (_canAcceptRanges)
+            {
+                if (_selectionInputManager.Selection.IsEmpty())
+                {
+                    _selectionInputManager.Selection.Set(_sheet.Editor.EditCell!.Row, _sheet.Editor.EditCell!.Col);
+                }
+
+                var offset = KeyUtil.GetMovementFromArrowKey(key);
+                _selectionInputManager.HandleArrowKeyDown(shiftKey, offset);
+                SetEditValueToSelectionPreview();
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void HighlightInputSizeChanged(Size size)
+    {
+        if (Math.Abs(size.Height - _highlightInputHeight) > 0.01)
+        {
+            _highlightInputHeight = size.Height;
+            StateHasChanged();
+        }
+    }
+
+    public override bool HandleMouseDown(int row, int col, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
+    {
+        if (_canAcceptRanges)
+        {
+            _selectionInputManager.HandlePointerDown(row, col, shiftKey, ctrlKey, metaKey, 1);
+            SetEditValueToSelectionPreview();
+            return true;
+        }
+
+        return false;
+    }
+
+    public override bool HandleMouseOver(int row, int col, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
+    {
+        if (_canAcceptRanges)
+        {
+            _selectionInputManager.HandlePointerOver(row, col);
+            SetEditValueToSelectionPreview();
+            return true;
+        }
+
+        return false;
+    }
+
+    public override async Task<bool> HandleWindowMouseUpAsync()
+    {
+        _selectionInputManager.HandleWindowMouseUp();
+
+        if (_canAcceptRanges)
+        {
+            SetEditValueToSelectionPreview();
+            await _highlightedInput.FocusAndMoveCursorToEndAsync();
+            return true;
+        }
+
+        return true;
     }
 
 }

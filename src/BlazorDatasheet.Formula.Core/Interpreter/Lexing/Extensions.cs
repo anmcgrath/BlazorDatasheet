@@ -4,7 +4,7 @@ namespace BlazorDatasheet.Formula.Core.Interpreter.Lexing;
 
 public static class Extensions
 {
-    internal static int GetBinaryOperatorPrecedence(this Tag tag)
+    public static int GetBinaryOperatorPrecedence(this Tag tag)
     {
         switch (tag)
         {

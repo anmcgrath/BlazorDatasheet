@@ -166,12 +166,12 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     public bool Virtualise { get; set; } = true;
 
     /// <summary>
-    /// The number of decimal places to round a number to. Default is 15.
+    /// The number of decimal places to round a number to. Default is 13.
     /// </summary>
     [Parameter]
-    public int NumberPrecisionDisplay { get; set; } = 15;
+    public int NumberPrecisionDisplay { get; set; } = 13;
 
-    private int _numberPrecisionDisplay = 15;
+    private int _numberPrecisionDisplay = 13;
 
     /// <summary>
     /// Any user-defined items to render in the context menu
@@ -272,6 +272,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
     public double TotalViewHeight => _sheet.Rows.GetVisualHeight(ViewRegion ?? _sheet.Region) + GetGutterSize(Axis.Col);
 
+    private SelectionInputManager _selectionManager = default!;
+
     /// <summary>
     /// The size of the main region of this datasheet, that is the region of the grid without
     /// any frozen rows or columns.
@@ -300,6 +302,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         {
             RemoveEvents(_sheet);
             _sheet = Sheet ?? new(0, 0);
+            _selectionManager = new SelectionInputManager(_sheet.Selection);
             AddEvents(_sheet);
             _visualCellCache.Clear();
             requireRender = true;
@@ -399,40 +402,40 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
     private void RemoveEvents(Sheet sheet)
     {
-        _sheet.Editor.EditBegin -= EditorOnEditBegin;
-        _sheet.Editor.EditFinished -= EditorOnEditFinished;
-        _sheet.SheetDirty -= SheetOnSheetDirty;
-        _sheet.ScreenUpdatingChanged -= ScreenUpdatingChanged;
+        sheet.Editor.EditBegin -= EditorOnEditBegin;
+        sheet.Editor.EditFinished -= EditorOnEditFinished;
+        sheet.SheetDirty -= SheetOnSheetDirty;
+        sheet.ScreenUpdatingChanged -= ScreenUpdatingChanged;
 
         if (GridLevel == 0)
         {
-            _sheet.Rows.Inserted -= HandleRowColInserted;
-            _sheet.Columns.Inserted -= HandleRowColInserted;
-            _sheet.Rows.Removed -= HandleRowColRemoved;
-            _sheet.Columns.Removed -= HandleRowColRemoved;
+            sheet.Rows.Inserted -= HandleRowColInserted;
+            sheet.Columns.Inserted -= HandleRowColInserted;
+            sheet.Rows.Removed -= HandleRowColRemoved;
+            sheet.Columns.Removed -= HandleRowColRemoved;
         }
 
-        _sheet.Rows.SizeModified -= HandleSizeModified;
-        _sheet.Columns.SizeModified -= HandleSizeModified;
+        sheet.Rows.SizeModified -= HandleSizeModified;
+        sheet.Columns.SizeModified -= HandleSizeModified;
     }
 
     private void AddEvents(Sheet sheet)
     {
-        _sheet.Editor.EditBegin += EditorOnEditBegin;
-        _sheet.Editor.EditFinished += EditorOnEditFinished;
-        _sheet.SheetDirty += SheetOnSheetDirty;
-        _sheet.ScreenUpdatingChanged += ScreenUpdatingChanged;
+        sheet.Editor.EditBegin += EditorOnEditBegin;
+        sheet.Editor.EditFinished += EditorOnEditFinished;
+        sheet.SheetDirty += SheetOnSheetDirty;
+        sheet.ScreenUpdatingChanged += ScreenUpdatingChanged;
         if (GridLevel == 0)
         {
-            _sheet.Rows.Inserted += HandleRowColInserted;
-            _sheet.Columns.Inserted += HandleRowColInserted;
-            _sheet.Rows.Removed += HandleRowColRemoved;
-            _sheet.Columns.Removed += HandleRowColRemoved;
+            sheet.Rows.Inserted += HandleRowColInserted;
+            sheet.Columns.Inserted += HandleRowColInserted;
+            sheet.Rows.Removed += HandleRowColRemoved;
+            sheet.Columns.Removed += HandleRowColRemoved;
         }
 
-        _sheet.Rows.SizeModified += HandleSizeModified;
-        _sheet.Columns.SizeModified += HandleSizeModified;
-        _sheet.SetDialogService(new SimpleDialogService(Js));
+        sheet.Rows.SizeModified += HandleSizeModified;
+        sheet.Columns.SizeModified += HandleSizeModified;
+        sheet.SetDialogService(new SimpleDialogService(Js));
     }
 
     private async Task AddWindowEventsAsync()
@@ -590,6 +593,10 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
     private void HandleCellMouseDown(object? sender, SheetPointerEventArgs args)
     {
+        if (_sheet.Editor.IsEditing &&
+            _editorLayer.HandleMouseDown(args.Row, args.Col, args.CtrlKey, args.ShiftKey, args.AltKey, args.MetaKey))
+            return;
+
         // if rmc and inside a selection, don't do anything
         if (args.MouseButton == 2 && _sheet.Selection.Contains(args.Row, args.Col))
             return;
@@ -604,29 +611,13 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
             }
         }
 
-        if (args.ShiftKey && _sheet.Selection.ActiveRegion != null)
-        {
-            _sheet.Selection.ExtendTo(args.Row, args.Col);
-        }
-        else
-        {
-            if (!args.MetaKey && !args.CtrlKey)
-            {
-                _sheet.Selection.ClearSelections();
-            }
-
-            if (args.Row == -1 && args.Col == -1)
-                return;
-            else if (args.Row == -1)
-                _sheet.Selection.BeginSelectingCol(args.Col);
-            else if (args.Col == -1)
-                _sheet.Selection.BeginSelectingRow(args.Row);
-            else
-                _sheet.Selection.BeginSelectingCell(args.Row, args.Col);
-
-            if (args.MouseButton == 2) // RMC
-                _sheet.Selection.EndSelecting();
-        }
+        _selectionManager.HandlePointerDown(
+            row: args.Row,
+            col: args.Col,
+            shift: args.ShiftKey,
+            ctrl: args.CtrlKey,
+            meta: args.MetaKey,
+            mouseButton: args.MouseButton);
     }
 
     private async Task<bool> HandleWindowKeyDown(KeyboardEventArgs e)
@@ -678,10 +669,13 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         return false;
     }
 
-    private Task<bool> HandleWindowMouseUp(MouseEventArgs arg)
+    private async Task<bool> HandleWindowMouseUp(MouseEventArgs arg)
     {
-        _sheet.Selection.EndSelecting();
-        return Task.FromResult(false);
+        if (await _editorLayer.HandleWindowMouseUpAsync())
+            return true;
+
+        _selectionManager.HandleWindowMouseUp();
+        return false;
     }
 
     private async Task<bool> HandleArrowKeysDown(bool shift, Offset offset)
@@ -692,42 +686,10 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
         if (!accepted) return false;
 
-        if (shift)
-        {
-            var oldActiveRegion = _sheet.Selection.ActiveRegion?.Clone();
-            GrowActiveSelection(offset);
-            if (oldActiveRegion == null) return false;
-            var r = _sheet.Selection.ActiveRegion!.Break(oldActiveRegion).FirstOrDefault();
+        _selectionManager.HandleArrowKeyDown(shift, offset);
 
-            if (r == null)
-            {
-                // if r is null we are instead shrinking the region, so instead break the old region with the new
-                // but we contract the new region to ensure that it is now visible
-                var rNew = _sheet.Selection.ActiveRegion.Clone();
-                Edge edge = Edge.None;
-                if (offset.Rows == 1)
-                    edge = Edge.Top;
-                else if (offset.Rows == -1)
-                    edge = Edge.Bottom;
-                else if (offset.Columns == 1)
-                    edge = Edge.Left;
-                else if (offset.Columns == -1)
-                    edge = Edge.Right;
-
-                rNew.Contract(edge, 1);
-                r = oldActiveRegion.Break(rNew).FirstOrDefault();
-            }
-
-            if (r != null && IsDataSheetActive)
-                await ScrollToContainRegion(r);
-        }
-        else
-        {
-            CollapseAndMoveSelection(offset);
-
-            if (IsDataSheetActive)
-                await ScrollToActiveCellPosition();
-        }
+        if (!shift && IsDataSheetActive)
+            await ScrollToActiveCellPosition();
 
         return true;
     }
@@ -781,7 +743,11 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
     private void HandleCellMouseOver(object? sender, SheetPointerEventArgs args)
     {
-        _sheet.Selection.UpdateSelectingEndPosition(args.Row, args.Col);
+        if (_sheet.Editor.IsEditing &&
+            _editorLayer.HandleMouseOver(args.Row, args.Col, args.CtrlKey, args.ShiftKey, args.AltKey, args.MetaKey))
+            return;
+
+        _selectionManager.HandlePointerOver(args.Row, args.Col);
     }
 
     private async Task<bool> AcceptEditAndMoveActiveSelection(Axis axis, int amount)
@@ -870,65 +836,6 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         if (axis == Axis.Col && ShowColHeadings)
             return _sheet.Columns.HeadingHeight;
         return 0;
-    }
-
-    /// <summary>
-    /// Increases the size of the active selection, around the active cell position
-    /// </summary>
-    private void GrowActiveSelection(Offset offset)
-    {
-        if (_sheet.Selection.ActiveRegion == null)
-            return;
-
-        var selPosition = _sheet.Selection.ActiveCellPosition;
-        if (offset.Columns != 0)
-        {
-            if (offset.Columns == -1)
-            {
-                if (selPosition.col < _sheet.Selection.ActiveRegion.GetEdge(Edge.Right).Right)
-                    _sheet.Selection.ContractEdge(Edge.Right, 1);
-                else
-                    _sheet.Selection.ExpandEdge(Edge.Left, 1);
-            }
-            else if (offset.Columns == 1)
-                if (selPosition.col > _sheet.Selection.ActiveRegion.GetEdge(Edge.Left).Left)
-                    _sheet.Selection.ContractEdge(Edge.Left, 1);
-                else
-                    _sheet.Selection.ExpandEdge(Edge.Right, 1);
-        }
-
-        if (offset.Rows != 0)
-        {
-            if (offset.Rows == -1)
-            {
-                if (selPosition.row < _sheet.Selection.ActiveRegion.GetEdge(Edge.Bottom).Bottom)
-                    _sheet.Selection.ContractEdge(Edge.Bottom, 1);
-                else
-                    _sheet.Selection.ExpandEdge(Edge.Top, 1);
-            }
-            else if (offset.Rows == 1)
-            {
-                if (selPosition.row > _sheet.Selection.ActiveRegion.GetEdge(Edge.Top).Top)
-                    _sheet.Selection.ContractEdge(Edge.Top, 1);
-                else
-                    _sheet.Selection.ExpandEdge(Edge.Bottom, 1);
-            }
-        }
-    }
-
-    private void CollapseAndMoveSelection(Offset offset)
-    {
-        if (_sheet.Selection.ActiveRegion == null)
-            return;
-
-        if (_sheet.Selection.IsSelecting)
-            return;
-
-        var posn = _sheet.Selection.ActiveCellPosition;
-
-        _sheet.Selection.Set(posn.row, posn.col);
-        _sheet.Selection.MoveActivePositionByRow(offset.Rows);
-        _sheet.Selection.MoveActivePositionByCol(offset.Columns);
     }
 
     public void AutoFitRegion(IRegion region, Axis autoFitAxis, AutofitMethod method)

@@ -5,6 +5,11 @@ namespace BlazorDatasheet.Formula.Core.Interpreter.Parsing;
 public class VariableExpression : Expression
 {
     public override NodeKind Kind => NodeKind.Name;
+    public override IEnumerable<Node> GetChildren()
+    {
+        return [];
+    }
+
     public IdentifierToken NameToken { get; }
 
     public VariableExpression(IdentifierToken nameToken)

@@ -65,6 +65,13 @@ public class WorkbookEnvironment : IEnvironment
             _functions[name.ToLower()] = value;
     }
 
+    public IEnumerable<FunctionDefinition> SearchForFunctions(string functionName)
+    {
+        var funcLower = functionName.ToLower();
+        return _functions.Where(x => x.Key.StartsWith(funcLower))
+            .Select(x => new FunctionDefinition(x.Key, x.Value));
+    }
+
     public IEnumerable<CellValue> GetNonEmptyInRange(Reference reference)
     {
         var sheet = _workbook.GetSheet(reference.SheetName);

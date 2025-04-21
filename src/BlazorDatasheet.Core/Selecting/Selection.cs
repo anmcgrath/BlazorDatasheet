@@ -372,6 +372,51 @@ public class Selection
     }
 
     /// <summary>
+    /// Increases the size of the active selection, around the active cell position
+    /// </summary>
+    public void GrowActiveSelection(Offset offset)
+    {
+        if (ActiveRegion == null)
+            return;
+
+        var selPosition = ActiveCellPosition;
+        if (offset.Columns != 0)
+        {
+            if (offset.Columns == -1)
+            {
+                if (selPosition.col < ActiveRegion.GetEdge(Edge.Right).Right)
+                    ContractEdge(Edge.Right, 1);
+                else
+                    ExpandEdge(Edge.Left, 1);
+            }
+            else if (offset.Columns == 1)
+                if (selPosition.col > ActiveRegion.GetEdge(Edge.Left).Left)
+                    ContractEdge(Edge.Left, 1);
+                else
+                    ExpandEdge(Edge.Right, 1);
+        }
+
+        if (offset.Rows != 0)
+        {
+            if (offset.Rows == -1)
+            {
+                if (selPosition.row < ActiveRegion.GetEdge(Edge.Bottom).Bottom)
+                    ContractEdge(Edge.Bottom, 1);
+                else
+                    ExpandEdge(Edge.Top, 1);
+            }
+            else if (offset.Rows == 1)
+            {
+                if (selPosition.row > ActiveRegion.GetEdge(Edge.Top).Top)
+                    ContractEdge(Edge.Top, 1);
+                else
+                    ExpandEdge(Edge.Bottom, 1);
+            }
+        }
+    }
+
+
+    /// <summary>
     /// Move the active cell position to the next most relevant position
     /// If there's nowhere to go, collapse and move down. Otherwise, move through all regions,
     /// setting them as active where appropriate.
@@ -621,6 +666,9 @@ public class Selection
         }
     }
 
+    /// <summary>
+    /// Clears data in the selection.
+    /// </summary>
     public void Clear()
     {
         _sheet.Cells.ClearCells(this.Regions);

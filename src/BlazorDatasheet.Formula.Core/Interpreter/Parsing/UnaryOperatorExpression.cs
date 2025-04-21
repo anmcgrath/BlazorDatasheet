@@ -24,4 +24,6 @@ public class UnaryOperatorExpression : Expression
         else
             return OperatorToken.Text + Expression.ToExpressionText();
     }
+    
+    public override IEnumerable<Node> GetChildren() => [Expression];
 }
