@@ -19,4 +19,5 @@ public class ReferenceExpression : Expression
     }
 
     public override NodeKind Kind => NodeKind.Range;
+    public override IEnumerable<Node> GetChildren() => [];
 }

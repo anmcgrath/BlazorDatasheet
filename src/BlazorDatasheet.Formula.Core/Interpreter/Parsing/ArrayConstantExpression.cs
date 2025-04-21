@@ -6,6 +6,12 @@ public class ArrayConstantExpression : Expression
 {
     private readonly FormulaOptions _options;
     public override NodeKind Kind => NodeKind.ArrayConstant;
+
+    public override IEnumerable<Node> GetChildren()
+    {
+        return Rows.SelectMany(x => x);
+    }
+
     public List<List<LiteralExpression>> Rows { get; }
 
     public ArrayConstantExpression(List<List<LiteralExpression>> rows, FormulaOptions options)

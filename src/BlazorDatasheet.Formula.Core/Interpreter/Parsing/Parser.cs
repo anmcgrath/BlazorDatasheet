@@ -362,9 +362,12 @@ public class Parser
         var funcToken = (IdentifierToken)NextToken();
         MatchToken(Tag.LeftParenthToken);
         var args = new List<Expression>();
+        var argIndices = new List<int>();
 
         while (Current.Tag != Tag.RightParenthToken)
         {
+            argIndices.Add(Current.PositionStart);
+
             var arg = ParseExpression();
             args.Add(arg);
             if (Current.Tag != _formulaOptions.SeparatorSettings.FuncParameterSeparatorTag)
@@ -373,7 +376,7 @@ public class Parser
                 NextToken();
         }
 
-        MatchToken(Tag.RightParenthToken);
+        var rightParenth = MatchToken(Tag.RightParenthToken);
 
         if (!_environment.FunctionExists(funcToken.Value))
             Error($"Function {funcToken.Value} does not exist");
@@ -383,7 +386,7 @@ public class Parser
             _containsVolatiles = true;
 
         return new FunctionExpression(funcToken, args, functionDefinition,
-            _formulaOptions);
+            _formulaOptions, argIndices.ToArray(), rightParenth);
     }
 
     private Expression ParseParenthExpression()

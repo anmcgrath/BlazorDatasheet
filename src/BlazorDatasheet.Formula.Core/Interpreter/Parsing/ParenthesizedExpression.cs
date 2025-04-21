@@ -21,4 +21,6 @@ public class ParenthesizedExpression : Expression
     {
         return "(" + this.Expression.ToExpressionText() + ")";
     }
+    
+    public override IEnumerable<Node> GetChildren() => [Expression];
 }

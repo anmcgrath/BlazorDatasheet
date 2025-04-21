@@ -10,6 +10,7 @@ public class ErrorExpression : Expression
     }
 
     public override NodeKind Kind => NodeKind.Error;
+    public override IEnumerable<Node> GetChildren() => [];
 
     public override string ToExpressionText()
     {

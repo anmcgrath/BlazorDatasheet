@@ -232,7 +232,7 @@ public class FormulaEngine
     /// </summary>
     /// <param name="formula"></param>
     /// <returns></returns>
-    public bool IsFormula(string formula)
+    public static bool IsFormula(string formula)
     {
         return formula.StartsWith('=');
     }
@@ -290,5 +290,27 @@ public class FormulaEngine
     internal CellFormula CloneFormula(CellFormula formula)
     {
         return _parser.FromString(formula.ToFormulaString());
+    }
+
+    /// <summary>
+    /// Returns whether the function with name <paramref name="functionName"/> has been registered.
+    /// </summary>
+    /// <param name="functionName"></param>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public bool FunctionExists(string functionName)
+    {
+        return _environment.FunctionExists(functionName);
+    }
+
+    /// <summary>
+    /// Returns the registered function with name <paramref name="functionName"/>
+    /// </summary>
+    /// <param name="functionName"></param>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public ISheetFunction? GetFunction(string functionName)
+    {
+        return _environment.GetFunctionDefinition(functionName);
     }
 }

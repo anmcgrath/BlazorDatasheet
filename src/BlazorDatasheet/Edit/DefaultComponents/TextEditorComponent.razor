@@ -2,6 +2,7 @@
 @using BlazorDatasheet.Core.Interfaces
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Edit
+@using BlazorDatasheet.Core.FormulaEngine
 @using BlazorDatasheet.Core.Selecting
 @using BlazorDatasheet.Core.Util
 @using BlazorDatasheet.DataStructures.Geometry
@@ -9,32 +10,42 @@
 @using BlazorDatasheet.Formula.Core.Interpreter
 @using BlazorDatasheet.Formula.Core.Interpreter.Lexing
 
-<div style="display: flex; flex-direction: column;">
-    <div>
-        <HighlightedInput
-            Style="@Style"
-            CellWidth="CellWidth"
-            CellHeight="CellHeight"
-            FormulaOptions="_formulaOptions"
-            InputSizeChanged="HighlightInputSizeChanged"
-            CaretPositionChanged="OnCaretPositionChanged"
-            SoftEdit="_isSoftEdit"
-            @bind-Value:set="OnInput"
-            @bind-Value:get="CurrentValue"/>
-    </div>
-
-    @if (_functionSuggestions != null && _functionSuggestions.Any())
-    {
-        <div class="bds-func-suggestions"
-             style="position: relative; top:@(_highlightInputHeight)px;">
-            @foreach (var formula in _functionSuggestions)
-            {
-                <div class="bds-func-suggestions-item">@formula.Name</div>
-            }
-        </div>
-    }
+<div>
+    <HighlightedInput
+        Style="@Style"
+        CellWidth="CellWidth"
+        CellHeight="CellHeight"
+        FormulaOptions="_formulaOptions"
+        InputSizeChanged="HighlightInputSizeChanged"
+        CaretPositionChanged="OnCaretPositionChanged"
+        SoftEdit="_isSoftEdit"
+        @bind-Value:set="OnInput"
+        @bind-Value:get="CurrentValue"/>
 </div>
 
+@if (_formulaHint != null && _sheet.FormulaEngine.FunctionExists(_formulaHint.FunctionName))
+{
+    <div class="bds-func-suggestions"
+         style="position: absolute; top:@(_highlightInputHeight)px;">
+        <FormulaHintBox
+            ArgIndex="@_formulaHint.ParameterIndex"
+            FunctionName="@_formulaHint.FunctionName"
+            Function="@_sheet.FormulaEngine.GetFunction(_formulaHint.FunctionName)"
+        />
+    </div>
+}
+
+
+@if (_functionSuggestions != null && _functionSuggestions.Any())
+{
+    <div class="bds-func-suggestions"
+         style="position: absolute; top:@(_highlightInputHeight)px;">
+        @foreach (var formula in _functionSuggestions)
+        {
+            <div class="bds-func-suggestions-item">@formula.Name</div>
+        }
+    </div>
+}
 
 @code {
 
@@ -45,6 +56,7 @@
     private double _highlightInputHeight = 0;
     private Selection _currentRangeSelection = null!;
     private List<FunctionDefinition>? _functionSuggestions;
+    private FormulaHintBoxResult? _formulaHint;
 
     public override void BeforeEdit(IReadOnlyCell cell, Sheet sheet)
     {
@@ -94,6 +106,7 @@
     private void OnCaretPositionChanged(int position)
     {
         _currentCaretPosition = position;
+        _formulaHint = new FormulaHintBoxCalculator(_formulaOptions).Calculate(CurrentValue, position);
         StateHasChanged();
     }
 
@@ -104,7 +117,7 @@
         if (!_sheet.Editor.IsSoftEdit)
             return false;
 
-        if (!_sheet.FormulaEngine.IsFormula(CurrentValue))
+        if (!FormulaEngine.IsFormula(CurrentValue))
             return false;
 
         if (KeyUtil.IsArrowKey(key))

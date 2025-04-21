@@ -187,7 +187,7 @@ public class Editor
 
         // Determine if it's a formula, and calculate.
         CellFormula? parsedFormula = null;
-        var isFormula = Sheet.FormulaEngine.IsFormula(this.EditValue);
+        var isFormula = FormulaEngine.FormulaEngine.IsFormula(this.EditValue);
         var formulaString = isFormula ? this.EditValue : null;
 
         if (isFormula)

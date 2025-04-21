@@ -15,6 +15,7 @@ class Highligher {
         this.#highlightResultEl.innerHTML = options.initialHtml
 
         this.#inputEl.addEventListener('keydown', this.onKeyDown.bind(this))
+        this.#inputEl.addEventListener('mousedown', this.onMouseDown.bind(this))
 
         this.#inputEl.addEventListener('input', e => {
             if (!options.dotnetHelper)
@@ -34,29 +35,35 @@ class Highligher {
 
         this.setInputText = function (text) {
             this.#inputEl.innerText = text
+            this.moveCursorToEnd(this.#inputEl)
         }
-
-        this.#inputEl.addEventListener('mousedown', this.onMouseDown.bind(this))
-
 
         this.updateCaretPosition = function () {
             let sel = window.getSelection()
-            let isSelectionInside = sel.focusNode.parentElement === options.inputEl
+            let isSelectionInside = sel.focusNode.parentElement === options.inputEl ||
+                sel.focusNode === options.inputEl
             let len = sel.toString().length
             let caretPosition = -1
+
             if (isSelectionInside && len === 0)
                 caretPosition = sel.focusOffset
+
             options.dotnetHelper.invokeMethodAsync("HandleCaretPositionUpdate", caretPosition)
         }
 
         this.moveCursorToEnd = function (el) {
             if (document.activeElement !== el)
                 return
+            if (el.childNodes.length === 0)
+                return
 
             const range = document.createRange();
-            const selection = window.getSelection();
-            range.setStart(el, el.childNodes.length);
-            range.collapse(true);
+            const selection = document.getSelection();
+
+            range.selectNodeContents(el.childNodes[0])
+            range.setStart(el.childNodes[0], 0);
+            range.setEnd(el.childNodes[0], el.innerText.length);
+            range.collapse(false);
             selection.removeAllRanges();
             selection.addRange(range);
         };
@@ -79,6 +86,9 @@ class Highligher {
     onKeyDown(e) {
         if (!this.options.preventDefaultArrowKeys)
             return
+
+        if (e.key === "Enter")
+            e.preventDefault()
 
         if (e.key.startsWith('Arrow')) {
             e.preventDefault()
