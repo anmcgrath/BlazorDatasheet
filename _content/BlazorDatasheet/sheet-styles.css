@@ -354,3 +354,16 @@
 .bds-select-item.active {
     background: var(--selection-bg-color)
 }
+
+.bds-func-suggestions{
+    width:200px;
+    margin-top:4px;
+    background: var(--sheet-bg-color);
+    box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
+}
+
+.bds-func-suggestions-item{
+    padding: 2px 4px;
+}
+
+
