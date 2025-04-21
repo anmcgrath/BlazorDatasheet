@@ -23,6 +23,7 @@
         @bind-Value:get="CurrentValue"/>
 </div>
 
+<!-- shows hints when caret position is inside a formula -->
 @if (_formulaHint != null && _sheet.FormulaEngine.FunctionExists(_formulaHint.FunctionName))
 {
     <div class="bds-func-suggestions"
@@ -36,6 +37,7 @@
 }
 
 
+<!-- shows functions that are available based on the typed function name -->s
 @if (_functionSuggestions != null && _functionSuggestions.Any())
 {
     <div class="bds-func-suggestions"
@@ -77,6 +79,9 @@
         var len = Math.Min(_currentCaretPosition + 1, CurrentValue.Length);
         if (len <= 0)
             len = CurrentValue.Length;
+        
+        if(!FormulaEngine.IsFormula(CurrentValue))
+            return;
 
         var subStr = CurrentValue.AsSpan().Slice(0, len);
         var tokens = new Lexer().Lex(subStr, _formulaOptions);
