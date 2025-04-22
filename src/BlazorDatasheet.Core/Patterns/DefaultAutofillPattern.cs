@@ -1,6 +1,7 @@
 using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Events.Data;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.DataStructures.Geometry;
 
@@ -19,7 +20,10 @@ public class DefaultAutofillPattern : IAutoFillPattern
 
     public ICommand GetCommand(int offset, int repeatNo, IReadOnlyCell cellData, CellPosition newDataPosition)
     {
-        var options = new CopyOptions();
+        var beforeAutoFillEventArgs = new BeforeAutoFillEventArgs();
+        _sheet.BeforeAutoFill?.Invoke(this, beforeAutoFillEventArgs);
+
+        var options = new CopyOptions() { CopyFormat = beforeAutoFillEventArgs.CopyFormat };
         if (cellData.HasFormula())
             options.CopyValues = false;
 
