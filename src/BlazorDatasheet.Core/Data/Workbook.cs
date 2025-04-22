@@ -1,4 +1,6 @@
-﻿using BlazorDatasheet.Core.FormulaEngine;
+﻿using BlazorDatasheet.Core.Events.Data;
+using BlazorDatasheet.Core.FormulaEngine;
+using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter;
 
@@ -10,6 +12,11 @@ public class Workbook
     public IEnumerable<Sheet> Sheets => _sheets;
     private readonly FormulaEngine.FormulaEngine _formulaEngine;
     internal WorkbookEnvironment Environment { get; }
+
+    public event EventHandler<WorkbookSheetAddedEventArgs>? SheetAdded;
+    public event EventHandler<WorkbookSheetRemovedEventArgs>? SheetRemoved;
+    public event EventHandler<WorkbookSheetRenamedEventArgs>? SheetRenamed;
+
 
     internal Workbook(Sheet sheet, FormulaOptions? options = null) : this(options)
     {
@@ -61,15 +68,14 @@ public class Workbook
     {
         sheet.Workbook = this;
         _sheets.Add(sheet);
+        SheetAdded?.Invoke(this, new WorkbookSheetAddedEventArgs(sheet));
         _formulaEngine.AddSheet(sheet);
     }
 
     internal void AddSheet(string sheetName, Sheet sheet)
     {
         sheet.Name = sheetName;
-        sheet.Workbook = this;
-        _sheets.Add(sheet);
-        _formulaEngine.AddSheet(sheet);
+        AddSheet(sheet);
     }
 
 
@@ -78,8 +84,10 @@ public class Workbook
         var sheetIndex = _sheets.FindIndex(s => s.Name == sheetName);
         if (sheetIndex >= 0)
         {
+            var sheet = _sheets[sheetIndex];
             _formulaEngine.RemoveSheet(_sheets[sheetIndex]);
             _sheets.RemoveAt(sheetIndex);
+            SheetRemoved?.Invoke(this, new WorkbookSheetRemovedEventArgs(sheet));
         }
     }
 
@@ -95,6 +103,7 @@ public class Workbook
         {
             sheet.Name = newName;
             _formulaEngine.RenameSheet(oldName, newName);
+            SheetRenamed?.Invoke(this, new WorkbookSheetRenamedEventArgs(sheet, oldName, newName));
         }
     }
 
