@@ -1,5 +1,7 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Events.Data;
 using FluentAssertions;
 using NUnit.Framework;
 
@@ -51,5 +53,46 @@ public class WorkbookCrudTests
         var sheet1 = workbook.AddSheet(1, 1);
         workbook.RenameSheet(sheet1.Name, "NewName");
         workbook.Sheets.First().Name.Should().Be("NewName");
+    }
+
+    [Test]
+    public void Workbook_Events_Fire_On_Adding_Sheet()
+    {
+        var workbook = new Workbook();
+        int addCount = 0;
+        workbook.SheetAdded += (sender, args) => addCount++;
+        workbook.AddSheet(10, 10);
+        workbook.AddSheet("sheetName", new Sheet(10, 10));
+        workbook.AddSheet("sheetName2", 1, 1);
+        addCount.Should().Be(3);
+    }
+
+    [Test]
+    public void Workbook_Events_Fire_On_Removeing_Sheet()
+    {
+        var workbook = new Workbook();
+        workbook.AddSheet(10, 10);
+        workbook.AddSheet(10, 10);
+        workbook.AddSheet(10, 10);
+        int removeCount = 0;
+        workbook.SheetRemoved += (sender, args) => removeCount++;
+        workbook.RemoveSheet("Sheet1");
+        workbook.RemoveSheet("Sheet2");
+        workbook.RemoveSheet("Sheet3");
+        removeCount.Should().Be(3);
+    }
+
+    [Test]
+    public void Workbook_Rename_Fire_On_Renaming_Sheet()
+    {
+        var workbook = new Workbook();
+        var sheet = workbook.AddSheet(10, 10);
+        WorkbookSheetRenamedEventArgs? a = null;
+        workbook.SheetRenamed += (sender, args) => { a = args; };
+        workbook.RenameSheet(sheet.Name, "NewName");
+        a.Should().NotBeNull();
+        a.NewName.Should().Be("NewName");
+        a.OldName.Should().Be("Sheet1");
+        a.Sheet.Should().Be(sheet);
     }
 }
