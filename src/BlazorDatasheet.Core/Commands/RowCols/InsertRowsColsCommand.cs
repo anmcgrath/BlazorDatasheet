@@ -2,6 +2,7 @@
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Data.Filter;
 using BlazorDatasheet.Core.Formats;
+using BlazorDatasheet.Core.Metadata;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Intervals;
 using BlazorDatasheet.DataStructures.Store;
@@ -21,6 +22,7 @@ internal class InsertRowsColsCommand : BaseCommand, IUndoableCommand
     private RegionRestoreData<ConditionalFormatAbstractBase> _cfRestoreData = null!;
     private CellStoreRestoreData _cellStoreRestoreData = null!;
     private RowColInfoRestoreData _rowColInfoRestoreData = null!;
+    private RegionRestoreData<CellMetadata> _metaDataStore = null!;
     private MergeableIntervalStoreRestoreData<OverwritingValue<List<IFilter>?>> _filterRestoreData = null!;
 
     /// <summary>
@@ -46,6 +48,7 @@ internal class InsertRowsColsCommand : BaseCommand, IUndoableCommand
         _cellStoreRestoreData = sheet.Cells.InsertRowColAt(_index, _count, _axis);
         _cfRestoreData = sheet.ConditionalFormats.InsertRowColAt(_index, _count, _axis);
         _rowColInfoRestoreData = sheet.GetRowColStore(_axis).InsertImpl(_index, _count);
+        _metaDataStore = sheet.Cells.GetMetaDataStore().InsertRowColAt(_index, _count, _axis);
 
         if (_axis == Axis.Col)
         {
@@ -61,6 +64,7 @@ internal class InsertRowsColsCommand : BaseCommand, IUndoableCommand
         sheet.ScreenUpdating = false;
         sheet.Remove(_axis, _count);
         sheet.Validators.Store.Restore(_validatorRestoreData);
+        sheet.Cells.GetMetaDataStore().Restore(_metaDataStore);
         sheet.Cells.Restore(_cellStoreRestoreData);
         sheet.ConditionalFormats.Restore(_cfRestoreData);
         sheet.GetRowColStore(_axis).Restore(_rowColInfoRestoreData);
