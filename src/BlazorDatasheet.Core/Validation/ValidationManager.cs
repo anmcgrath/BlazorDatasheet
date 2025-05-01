@@ -84,6 +84,12 @@ public class ValidationManager
         ValidatorChanged?.Invoke(this, args);
     }
 
+    internal void AddImpl(int validatorIndex, IRegion region)
+    {
+        if (_validators.TryGetValue(validatorIndex, out var validator))
+            AddImpl(validator, region);
+    }
+
     /// <summary>
     /// Adds the data validator to a cell position
     /// </summary>
