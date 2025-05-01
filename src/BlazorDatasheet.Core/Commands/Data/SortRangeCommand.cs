@@ -65,14 +65,16 @@ public class SortRangeCommand : BaseCommand, IUndoableCommand
         var typeData =
             (ConsolidatedDataStore<string>)sheet.Cells.GetTypeStore().GetSubStore(_region, false);
         var metaDataCollection = sheet.Cells.GetMetaDataStore().GetSubStore(_region, false);
+        var validData = sheet.Validators.Store.GetSubStore(_region, false);
 
         // clear any row data that has been shifted (which should be all non-empty rows)
         for (int i = 0; i < rowData.Length; i++)
         {
             var row = rowData[i].Row;
-            var rowReg = new Region(row, row, _region.Left, _region.Right);
-            sheet.Cells.ClearCellsImpl(new[] { rowReg });
-            _typeRestoreData.Merge(sheet.Cells.GetTypeStore().Clear(rowReg));
+            var rowRegion = new Region(row, row, _region.Left, _region.Right);
+            sheet.Cells.ClearCellsImpl([rowRegion]);
+            sheet.Validators.Store.Clear(SortedRegion);
+            _typeRestoreData.Merge(sheet.Cells.GetTypeStore().Clear(rowRegion));
         }
 
         for (int i = 0; i < rowData.Length; i++)
@@ -87,6 +89,7 @@ public class SortRangeCommand : BaseCommand, IUndoableCommand
                 var formula = formulaData.Get(oldRowNo, col);
                 var type = typeData.Get(oldRowNo, col);
                 var metaData = metaDataCollection.GetData(oldRowNo, col);
+                var validators = validData.GetData(oldRowNo, col);
 
                 sheet.Cells.SetCellTypeImpl(new Region(newRowNo, col), type);
                 foreach (var item in metaData)
@@ -96,6 +99,9 @@ public class SortRangeCommand : BaseCommand, IUndoableCommand
                         sheet.Cells.SetMetaDataImpl(newRowNo, col, kp.Key, kp.Value);
                     }
                 }
+
+                foreach (var validator in validators)
+                    sheet.Validators.AddImpl(validator, new Region(newRowNo, col));
 
                 if (formula == null)
                     sheet.Cells.SetValueImpl(newRowNo, col, val);
@@ -154,9 +160,11 @@ public class SortRangeCommand : BaseCommand, IUndoableCommand
         var formulaCollection = sheet.Cells.GetFormulaStore().GetSubStore(SortedRegion, false);
         var typeCollection = (ConsolidatedDataStore<string>)sheet.Cells.GetTypeStore().GetSubStore(SortedRegion, false);
         var metaDataCollection = sheet.Cells.GetMetaDataStore().GetSubStore(SortedRegion, false);
+        var validatorCollection = sheet.Validators.Store.GetSubStore(SortedRegion, false);
 
         sheet.BatchUpdates();
         sheet.Cells.ClearCellsImpl(new[] { SortedRegion });
+        sheet.Validators.Store.Clear(SortedRegion);
         sheet.Cells.GetTypeStore().Clear(SortedRegion);
 
         var rowData = rowCollection.Rows;
@@ -170,6 +178,8 @@ public class SortRangeCommand : BaseCommand, IUndoableCommand
                 var formula = formulaCollection.Get(rowIndices[i], col);
                 var type = typeCollection.Get(rowIndices[i], col);
                 var metaData = metaDataCollection.GetData(rowIndices[i], col);
+                var validators = validatorCollection.GetData(rowIndices[i], col);
+
                 if (formula == null)
                 {
                     var val = rowData[i].Values[j];
@@ -186,6 +196,11 @@ public class SortRangeCommand : BaseCommand, IUndoableCommand
                 {
                     foreach (var kp in item.GetItems())
                         sheet.Cells.SetMetaDataImpl(newRowNo, col, kp.Key, kp.Value);
+                }
+
+                foreach (var index in validators)
+                {
+                    sheet.Validators.AddImpl(index, new Region(newRowNo, col));
                 }
             }
         }
