@@ -148,7 +148,14 @@ public class Sheet
     /// <summary>
     /// Fired before a auto fill occurs. The value can be modified.
     /// </summary>
-    public EventHandler<BeforeAutoFillEventArgs>? BeforeAutoFill;
+    public event EventHandler<BeforeAutoFillEventArgs>? BeforeAutoFill;
+
+    internal BeforeAutoFillEventArgs EmitBeforeAutoFill()
+    {
+        var args = new BeforeAutoFillEventArgs();
+        BeforeAutoFill?.Invoke(this, args);
+        return args;
+    }
 
     #endregion EVENTS
 
