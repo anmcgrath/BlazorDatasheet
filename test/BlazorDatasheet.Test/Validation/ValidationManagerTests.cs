@@ -121,6 +121,21 @@ public class ValidationManagerTests
         public string Message => "Always invalid";
     }
 
+    [Test]
+    public void Validators_Shift_On_Column_Sort()
+    {
+        var sheet = new Sheet(100, 100);
+        sheet.Cells["A1"].Value = 10;
+        sheet.Cells["A2"].Value = 5;
+        sheet.Validators.Add(1, 0, new AlwaysTrueValidator(false));
+        sheet.SortRange(new ColumnRegion(0), [new(0, true)]);
+        sheet.Validators.Get(0, 0).First().Should().BeOfType<AlwaysTrueValidator>();
+        sheet.Validators.Get(1, 0).Should().BeEmpty();
+        sheet.Commands.Undo();
+        sheet.Validators.Get(1, 0).First().Should().BeOfType<AlwaysTrueValidator>();
+        sheet.Validators.Get(0, 0).Should().BeEmpty();
+    }
+
     internal class AlwaysTrueValidator : IDataValidator
     {
         public AlwaysTrueValidator(bool isStrict)
