@@ -10,7 +10,7 @@ class Highligher {
 
         let self = this
         this.#inputEl = options.inputEl
-        this.#inputEl.innerText = options.initialText
+        this.#inputEl.textContent = options.initialText
         this.#highlightResultEl = options.highlightResultEl
         this.#highlightResultEl.innerHTML = options.initialHtml
 
@@ -21,7 +21,7 @@ class Highligher {
             if (!options.dotnetHelper)
                 return
 
-            options.dotnetHelper.invokeMethodAsync("HandleInput", e.target.innerText)
+            options.dotnetHelper.invokeMethodAsync("HandleInput", e.target.textContent)
         })
 
         this.resizeObserver = new ResizeObserver((entries) => {
@@ -34,7 +34,7 @@ class Highligher {
         this.resizeObserver.observe(this.#inputEl)
 
         this.setInputText = function (text) {
-            this.#inputEl.innerText = text
+            this.#inputEl.textContent = text
             this.moveCursorToEnd(this.#inputEl)
         }
 
@@ -62,7 +62,7 @@ class Highligher {
 
             range.selectNodeContents(el.childNodes[0])
             range.setStart(el.childNodes[0], 0);
-            range.setEnd(el.childNodes[0], el.innerText.length);
+            range.setEnd(el.childNodes[0], el.textContent.length);
             range.collapse(false);
             selection.removeAllRanges();
             selection.addRange(range);
