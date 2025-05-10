@@ -1,21 +1,22 @@
+using System.Text;
 using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Commands.Formatting;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Edit;
+using BlazorDatasheet.Core.Events.Data;
+using BlazorDatasheet.Core.Events.Sort;
 using BlazorDatasheet.Core.Events.Visual;
 using BlazorDatasheet.Core.Formats;
+using BlazorDatasheet.Core.FormulaEngine;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Core.Selecting;
 using BlazorDatasheet.Core.Validation;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core;
-using BlazorDatasheet.Formula.Core.Interpreter.References;
-using System.Text;
-using BlazorDatasheet.Core.Events.Sort;
-using BlazorDatasheet.Core.FormulaEngine;
 using BlazorDatasheet.Formula.Core.Interpreter;
+using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Core.Data;
 
@@ -143,6 +144,18 @@ public class Sheet
     /// Fired when <see cref="ScreenUpdating"/> is changed
     /// </summary>
     public EventHandler<SheetScreenUpdatingEventArgs>? ScreenUpdatingChanged;
+
+    /// <summary>
+    /// Fired before a auto fill occurs. The value can be modified.
+    /// </summary>
+    public event EventHandler<BeforeAutoFillEventArgs>? BeforeAutoFill;
+
+    internal BeforeAutoFillEventArgs EmitBeforeAutoFill()
+    {
+        var args = new BeforeAutoFillEventArgs();
+        BeforeAutoFill?.Invoke(this, args);
+        return args;
+    }
 
     #endregion EVENTS
 

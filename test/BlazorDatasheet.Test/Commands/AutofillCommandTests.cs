@@ -1,10 +1,8 @@
-using System.Linq;
-using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Events.Data;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Interfaces;
-using BlazorDatasheet.Core.Patterns;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core;
 using FluentAssertions;
@@ -141,6 +139,21 @@ public class AutofillCommandTests
         var cmd = new AutoFillCommand(new Region(0, 0), new Region(0, 1, 0, 0));
         sheet.Commands.ExecuteCommand(cmd);
         sheet.GetFormat(1, 0).Should().BeEquivalentTo(f);
+    }
+
+    [Test]
+    public void Auto_Fill_With_CopyFormat_False_Cell_Format_Not_Copied()
+    {
+        var sheet = new Sheet(100, 100);
+
+        sheet.BeforeAutoFill += (_, args) => args.CopyFormat = false;
+
+        var originalFormat = sheet.GetFormat(1, 0);
+        var f = new CellFormat() { BackgroundColor = "f1" };
+        sheet.SetFormat(new Region(0, 0), f);
+        var cmd = new AutoFillCommand(new Region(0, 0), new Region(0, 1, 0, 0));
+        sheet.Commands.ExecuteCommand(cmd);
+        sheet.GetFormat(1, 0).Should().BeEquivalentTo(originalFormat);
     }
 
     [Test]
