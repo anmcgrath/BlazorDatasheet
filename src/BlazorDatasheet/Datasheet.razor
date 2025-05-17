@@ -154,7 +154,7 @@
                     <LayerContainer Depth="@GridLevel" Sheet="_sheet" ViewRegion="MainViewRegion"
                                     PointerInputService="_sheetPointerInputService">
                         <HighlightLayer/>
-                        @if (UseAutoFill)
+                        @if (UseAutoFill && !IsReadOnly)
                         {
                             <AutofillLayer/>
                         }
