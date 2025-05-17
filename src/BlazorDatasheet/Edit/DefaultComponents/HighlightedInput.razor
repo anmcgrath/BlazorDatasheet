@@ -1,5 +1,4 @@
 ﻿@using Microsoft.JSInterop
-@using System.Diagnostics
 @using System.Text
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Formula.Core.Interpreter
@@ -35,7 +34,6 @@
 
     [Parameter] public double CellWidth { get; set; }
     [Parameter] public double CellHeight { get; set; }
-    private bool _softEdit;
     [Parameter] public bool SoftEdit { get; set; }
     [Parameter] public string? Style { get; set; }
 
@@ -193,7 +191,7 @@
 
             _dotnetRef?.Dispose();
         }
-        catch (Exception e)
+        catch (Exception)
         {
             // ignore
         }
