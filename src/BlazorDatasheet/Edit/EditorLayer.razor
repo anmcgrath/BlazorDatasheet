@@ -26,6 +26,8 @@
 
     [Parameter, EditorRequired] public Dictionary<string, CellTypeDefinition> CustomCellTypes { get; set; } = null!;
 
+    [Parameter] public bool Disabled { get; set; }
+
     private Sheet _sheet = new(0, 0);
 
     /// The type of the active editor, which is an ICellEditor
@@ -70,6 +72,9 @@
     private void EditorOnEditBegin(object? sender, EditBeginEventArgs e)
     {
         if (!ViewRegion!.Contains(e.Cell.Row, e.Cell.Col))
+            return;
+
+        if (Disabled)
             return;
 
         ActiveEditorType = GetEditorType(e.Type);

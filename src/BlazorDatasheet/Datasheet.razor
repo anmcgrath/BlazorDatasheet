@@ -171,7 +171,7 @@
                             CellRenderFragment="CellRenderFragment"
                             NumberPrecisionDisplay="NumberPrecisionDisplay"
                             Cache="_visualCellCache"/>
-                        <EditorLayer @ref="_editorLayer" CustomCellTypes="@CustomCellTypeDefinitions"/>
+                        <EditorLayer Disabled="@IsReadOnly" @ref="_editorLayer" CustomCellTypes="@CustomCellTypeDefinitions"/>
                         <SelectionRendererLayer/>
                         @if (_showFormulaDependents)
                         {
