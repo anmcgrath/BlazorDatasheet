@@ -1,14 +1,13 @@
 @namespace BlazorDatasheet.Render.DefaultComponents
 @inherits BaseRenderer
 
-<div style="margin-top:auto;margin-bottom: auto;">
-    <input type="checkbox" disabled="@Cell.Format?.IsReadOnly" @bind="Checked"/>
+<div style="margin-top:auto;margin-bottom: auto; @(IsReadonly ? "pointer-events:none;" : "")">
+    <input type="checkbox" disabled="@(Cell.Format?.IsReadOnly == true || IsReadonly)" @bind="Checked"/>
 </div>
 
 @code {
 
     private bool _checked;
-    private bool IsReadOnly { get; init; }
 
     public bool Checked
     {

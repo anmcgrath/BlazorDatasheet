@@ -6,11 +6,13 @@
 
 <CascadingValue Value="@MenuId">
     <CascadingValue Value="@CurrentContext">
-        <div id="@MenuId" popover="manual" class="sheetPopover">
-            <div class="sheetMenu">
-                @ChildContent(CurrentContext)
+        <CascadingValue Value="@Disabled">
+            <div id="@MenuId" popover="manual" class="sheetPopover">
+                <div class="sheetMenu">
+                    @ChildContent(CurrentContext)
+                </div>
             </div>
-        </div>
+        </CascadingValue>
     </CascadingValue>
 </CascadingValue>
 
@@ -52,6 +54,8 @@
     [Parameter] public EventCallback<MenuShownEventArgs> OnMenuOpen { get; set; }
 
     [Parameter] public EventCallback OnMenuClose { get; set; }
+
+    [Parameter] public bool Disabled { get; set; }
 
     public object? CurrentContext { get; set; } = null;
 

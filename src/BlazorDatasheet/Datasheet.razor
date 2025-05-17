@@ -12,12 +12,13 @@
 <div class="vars" theme="@_theme">
     <SelectionMenu
         MenuOptions="_menuOptions"
+        Disabled="@IsReadOnly"
         DefaultFilterTypes="DefaultFilterTypes"/>
 
     <SheetMenuTarget MenuId="SelectionMenu"
                      MenuData="_sheet"
                      Margin="0"
-                     Disabled="!_menuOptions.ContextMenuEnabled"
+                     DisableMenuTarget="!_menuOptions.ContextMenuEnabled"
                      Trigger="@MenuTrigger.OnContextMenu"
                      Placement="@MenuPlacement.BottomRight">
 
@@ -154,7 +155,7 @@
                     <LayerContainer Depth="@GridLevel" Sheet="_sheet" ViewRegion="MainViewRegion"
                                     PointerInputService="_sheetPointerInputService">
                         <HighlightLayer/>
-                        @if (UseAutoFill)
+                        @if (UseAutoFill && !IsReadOnly)
                         {
                             <AutofillLayer/>
                         }
@@ -170,7 +171,7 @@
                             CellRenderFragment="CellRenderFragment"
                             NumberPrecisionDisplay="NumberPrecisionDisplay"
                             Cache="_visualCellCache"/>
-                        <EditorLayer @ref="_editorLayer" CustomCellTypes="@CustomCellTypeDefinitions"/>
+                        <EditorLayer Disabled="@IsReadOnly" @ref="_editorLayer" CustomCellTypes="@CustomCellTypeDefinitions"/>
                         <SelectionRendererLayer/>
                         @if (_showFormulaDependents)
                         {
@@ -335,20 +336,23 @@
                 break;
             case "boolean":
                 builder.OpenComponent(120, typeof(BoolRenderer));
-                builder.AddComponentParameter(140, "Cell", cell);
-                builder.AddComponentParameter(160, "Sheet", _sheet);
+                builder.AddComponentParameter(140, nameof(BaseRenderer.Cell), cell);
+                builder.AddComponentParameter(160, nameof(BaseRenderer.Sheet), _sheet);
+                builder.AddComponentParameter(180, nameof(BaseRenderer.IsReadonly), IsReadOnly);
                 builder.CloseComponent();
                 break;
             case "select":
                 builder.OpenComponent(120, typeof(SelectRenderer));
-                builder.AddComponentParameter(140, "Cell", cell);
-                builder.AddComponentParameter(160, "Sheet", _sheet);
+                builder.AddComponentParameter(140, nameof(BaseRenderer.Cell), cell);
+                builder.AddComponentParameter(160, nameof(BaseRenderer.Sheet), _sheet);
+                builder.AddComponentParameter(180, nameof(BaseRenderer.IsReadonly), IsReadOnly);
                 builder.CloseComponent();
                 break;
             default:
                 builder.OpenComponent(120, GetCellRendererType(cell.CellType));
-                builder.AddComponentParameter(140, "Cell", cell);
-                builder.AddComponentParameter(160, "Sheet", _sheet);
+                builder.AddComponentParameter(140, nameof(BaseRenderer.Cell), cell);
+                builder.AddComponentParameter(160, nameof(BaseRenderer.Sheet), _sheet);
+                builder.AddComponentParameter(180, nameof(BaseRenderer.IsReadonly), IsReadOnly);
                 builder.CloseComponent();
                 break;
         }

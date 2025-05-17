@@ -12,7 +12,7 @@
         @(Cell.Value?.ToString())
     </div>
     <div style="margin-right: 0; width: 16px;">
-        <CaretButton OnPress="@BeginEdit"/>
+        <CaretButton Disabled="@IsReadonly" OnPress="@BeginEdit"/>
     </div>
 </div>
 

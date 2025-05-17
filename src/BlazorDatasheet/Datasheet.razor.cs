@@ -581,14 +581,14 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
         ShortcutManager.Register(["KeyY"], [KeyboardModifiers.Ctrl, KeyboardModifiers.Meta],
             _ => _sheet.Commands.Redo(),
-            _ => !_sheet.Editor.IsEditing);
+            _ => !_sheet.Editor.IsEditing && !IsReadOnly);
         ShortcutManager.Register(["KeyZ"], [KeyboardModifiers.Ctrl, KeyboardModifiers.Meta],
             _ => _sheet.Commands.Undo(),
-            _ => !_sheet.Editor.IsEditing);
+            _ => !_sheet.Editor.IsEditing && !IsReadOnly);
 
         ShortcutManager.Register(["Delete", "Backspace"], KeyboardModifiers.Any,
             _ => _sheet.Commands.ExecuteCommand(new ClearCellsCommand(_sheet.Selection.Regions)),
-            _ => _sheet.Selection.Regions.Any() && !_sheet.Editor.IsEditing);
+            _ => _sheet.Selection.Regions.Any() && !_sheet.Editor.IsEditing && !IsReadOnly);
     }
 
     private void HandleCellMouseDown(object? sender, SheetPointerEventArgs args)
@@ -703,6 +703,9 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
             return Task.FromResult(false);
 
         if (_sheet.Editor.IsEditing)
+            return Task.FromResult(false);
+
+        if (IsReadOnly)
             return Task.FromResult(false);
 
         var posnToInput = _sheet.Selection.GetInputPosition();
