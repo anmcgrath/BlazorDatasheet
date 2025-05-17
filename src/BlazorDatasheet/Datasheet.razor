@@ -12,12 +12,13 @@
 <div class="vars" theme="@_theme">
     <SelectionMenu
         MenuOptions="_menuOptions"
+        Disabled="@IsReadOnly"
         DefaultFilterTypes="DefaultFilterTypes"/>
 
     <SheetMenuTarget MenuId="SelectionMenu"
                      MenuData="_sheet"
                      Margin="0"
-                     Disabled="!_menuOptions.ContextMenuEnabled"
+                     DisableMenuTarget="!_menuOptions.ContextMenuEnabled"
                      Trigger="@MenuTrigger.OnContextMenu"
                      Placement="@MenuPlacement.BottomRight">
 

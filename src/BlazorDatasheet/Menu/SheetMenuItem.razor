@@ -2,7 +2,7 @@
 @inject IMenuService MenuService
 @inherits SheetComponentBase
 
-<div class="sheet-menu-item"
+<div class="sheet-menu-item @(Disabled ? "sheet-menu-item-disabled" : "")"
      @onmouseup="HandleMouseUp"
      @onmouseover="HandleMouseOver">
     @ChildContent
@@ -14,8 +14,18 @@
         cursor: pointer;
     }
 
+    .sheet-menu-item-disabled {
+        cursor: default;
+        color: var(--sheet-foreground-color-disabled) !important;
+    }
+
+    .sheet-menu-item-disabled:hover {
+        color: var(--sheet-foreground-color-disabled) !important;
+        background-color: transparent !important;
+    }
+
     .sheet-menu-item:hover {
-        background-color: var(--sheet-menu-hover-color);
+        background-color: var(--sheet-menu-hover-color)
     }
 </style>
 
@@ -29,8 +39,13 @@
 
     [Parameter] public string? SubmenuId { get; set; } = null;
 
+    [CascadingParameter] public bool Disabled { get; set; }
+
     private async Task HandleMouseUp(MouseEventArgs args)
     {
+        if(Disabled)
+            return;
+        
         if (OnClick.HasDelegate)
             await OnClick.InvokeAsync(args);
         if (SubmenuId == null)

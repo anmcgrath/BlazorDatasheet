@@ -1,12 +1,15 @@
 @inherits SheetComponentBase
 
-<SheetMenuTarget MenuId="@SubMenuId" MenuData="@CurrentContext" Placement="@MenuPlacement.Right" Trigger="@MenuTrigger.OnHover" Margin="0">
+<SheetMenuTarget DisableMenuTarget="@Disabled" MenuId="@SubMenuId" MenuData="@CurrentContext"
+                 Placement="@MenuPlacement.Right"
+                 Trigger="@MenuTrigger.OnHover" Margin="0">
     <SheetMenuItem SubmenuId="@SubMenuId">
         <div style="display: flex; justify-content: space-between; width: 100%; height: 100%; pointer-events: none;">
             <div>@Label</div>
             <div style="color: black; width: 0.7em; height: 0.7rem;">
                 <!-- from heroicons.com -->
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                     stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
                 </svg>
             </div>
@@ -14,7 +17,7 @@
     </SheetMenuItem>
 </SheetMenuTarget>
 
-<SheetMenu MenuId="@SubMenuId" ParentMenuId="@MenuId">
+<SheetMenu MenuId="@SubMenuId" Disabled="@Disabled" ParentMenuId="@MenuId">
     @ChildContent
 </SheetMenu>
 
@@ -27,8 +30,10 @@
 
     // parent menu id
     [CascadingParameter] public string MenuId { get; set; } = null!;
-    
+
     [CascadingParameter] public object? CurrentContext { get; set; }
+
+    [CascadingParameter] public bool Disabled { get; set; }
 
     public string SubMenuId { get; set; } = Guid.NewGuid().ToString();
 

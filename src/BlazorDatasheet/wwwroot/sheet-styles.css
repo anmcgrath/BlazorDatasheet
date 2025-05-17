@@ -6,6 +6,7 @@
 
 .vars[theme='default'] {
     --sheet-foreground-color: #454545;
+    --sheet-foreground-color-disabled: #a5a5a5;
     --sheet-bg-color: #ffffff;
     --sheet-border-style: 1px solid #c5c5c5;
     --row-header-bg-color: #fafafa;
@@ -37,6 +38,7 @@
 
 .vars[theme='dark'] {
     --sheet-foreground-color: #a9a9a9;
+    --sheet-foreground-color-disabled: #807f7f;
     --sheet-bg-color: #262626;
     --sheet-border-style: 1px solid #3f3f3f;
     --row-header-bg-color: #2d2d2d;
@@ -310,14 +312,14 @@
 
 .bds-sheet-dropper {
     background: none;
-    color:#999999;
+    color: #999999;
     margin: 0;
     padding: 0 2px 0 2px;
     border: none;
     cursor: pointer;
 }
 
-.bds-sheet-dropper:hover{
+.bds-sheet-dropper:hover {
     background: var(--selection-bg-color);
 }
 
@@ -355,14 +357,14 @@
     background: var(--selection-bg-color)
 }
 
-.bds-func-suggestions{
-    min-width:100px;
-    margin-top:4px;
+.bds-func-suggestions {
+    min-width: 100px;
+    margin-top: 4px;
     background: var(--sheet-bg-color);
     box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
 }
 
-.bds-func-suggestions-item{
+.bds-func-suggestions-item {
     padding: 2px 4px;
 }
 

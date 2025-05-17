@@ -9,7 +9,7 @@
 @using BlazorDatasheet.Menu.Filters
 @inject IMenuService MenuService;
 
-<SheetMenu MenuId="@ContextMenus.Selection" OnMenuClose="OnSelectionMenuClose">
+<SheetMenu Disabled="@Disabled" MenuId="@ContextMenus.Selection" OnMenuClose="OnSelectionMenuClose">
 
     @{
         var sheet = context as Sheet;
@@ -32,7 +32,7 @@
             }
             @if (MenuOptions.AlignmentEnabled)
             {
-                <SheetSubMenu Label="Horiz. Alignment">
+                <SheetSubMenu Label="Horiz. Alignment ">
                     <SheetMenuItem
                         OnClick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { HorizontalTextAlign = TextAlign.Start }))">
                         Left
@@ -178,6 +178,7 @@
 
     [Parameter] public SheetMenuOptions MenuOptions { get; set; } = new();
     [Parameter] public Type[] DefaultFilterTypes { get; set; } = default!;
+    [Parameter] public bool Disabled { get; set; }
 
     private SheetSubMenu _filterSubMenu = default!;
     private bool HasOpenedFilterMenu { get; set; }
