@@ -1,3 +1,6 @@
+// import eagerly to avoid lag when first edit occurs.
+import("./js/highlighter.js");
+
 window.writeTextToClipboard = async function (text) {
     if (window.isSecureContext) {
         await window.navigator.clipboard.writeText(text)
