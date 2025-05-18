@@ -34,10 +34,15 @@ public class CellMetadata : IMergeable<CellMetadata>, IEquatable<CellMetadata>
         };
     }
 
-    public void SetItem(string key, object item)
+    public void SetItem(string key, object? item)
     {
         if (_data == null)
             _data = new();
+        if (item == null)
+        {
+            _data.Remove(key);
+            return;
+        }
         if (!_data.TryAdd(key, item))
             _data[key] = item;
     }
@@ -60,8 +65,8 @@ public class CellMetadata : IMergeable<CellMetadata>, IEquatable<CellMetadata>
         if (other._data == null || _data == null)
             return false;
 
-        return _data.OrderBy(x => x.Key)
-            .SequenceEqual(other._data.OrderBy(x => x.Key));
+        return _data.Count == other._data.Count &&
+               _data.All(kp => other._data.ContainsKey(kp.Key) && other._data[kp.Key] == kp.Value);
     }
 
     public IEnumerable<KeyValuePair<string, object>> GetItems() => _data ?? new Dictionary<string, object>();

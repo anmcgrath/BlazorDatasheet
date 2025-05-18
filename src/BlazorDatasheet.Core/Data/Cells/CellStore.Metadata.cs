@@ -1,5 +1,5 @@
-using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Commands.Data;
+using BlazorDatasheet.Core.Events.Data;
 using BlazorDatasheet.Core.Metadata;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
@@ -28,6 +28,8 @@ public partial class CellStore
     {
         var newMetaData = new CellMetadata();
         newMetaData.SetItem(name, value);
+        MetaDataChanged?.Invoke(this,
+            new CellMetaDataChangeEventArgs(row, col, name, _metaDataStore.GetData(row, col), value));
         _metaDataStore.Add(new Region(row, col), newMetaData);
     }
 
