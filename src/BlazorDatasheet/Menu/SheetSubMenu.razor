@@ -31,7 +31,7 @@
     // parent menu id
     [CascadingParameter] public string MenuId { get; set; } = null!;
 
-    [CascadingParameter] public object? CurrentContext { get; set; }
+    [CascadingParameter(Name = "Context")] public object? CurrentContext { get; set; }
 
     [CascadingParameter] public bool Disabled { get; set; }
 
