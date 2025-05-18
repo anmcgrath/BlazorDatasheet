@@ -1,7 +1,7 @@
 ﻿using System.Text.Json.Serialization;
 using BlazorDatasheet.Core.Serialization.Json.Constants;
 
-namespace BlazorDatasheet.Core.Serialization.Json.Models;
+namespace BlazorDatasheet.Core.Serialization.Models;
 
 internal class RowModel
 {

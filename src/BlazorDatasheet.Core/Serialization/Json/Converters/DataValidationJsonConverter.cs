@@ -4,7 +4,7 @@ using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Core.Validation;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Core.Serialization.Json.Constants;
-using BlazorDatasheet.Core.Serialization.Json.Models;
+using BlazorDatasheet.Core.Serialization.Models;
 
 namespace BlazorDatasheet.Core.Serialization.Json.Converters;
 

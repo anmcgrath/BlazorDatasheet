@@ -1,5 +1,3 @@
-using BlazorDatasheet.DataStructures.Util;
-
 namespace BlazorDatasheet.DataStructures.Geometry;
 
 /// <summary>

@@ -1,5 +1,4 @@
 @using BlazorDatasheet.Core.Commands.Data
-@using BlazorDatasheet.Core.Commands.Formatting
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Data.Filter
 @using BlazorDatasheet.Core.Formats
@@ -180,7 +179,7 @@
     [Parameter] public Type[] DefaultFilterTypes { get; set; } = default!;
     [Parameter] public bool Disabled { get; set; }
 
-    private SheetSubMenu _filterSubMenu = default!;
+    private SheetSubMenu? _filterSubMenu;
     private bool HasOpenedFilterMenu { get; set; }
 
     private List<IFilter> ColumnFilters { get; set; } = new();
@@ -191,7 +190,7 @@
             MenuService.MenuShown += OnSubmenuShown;
     }
 
-    private async void OnSubmenuShown(object? sender, MenuShownEventArgs args)
+    private void OnSubmenuShown(object? sender, MenuShownEventArgs args)
     {
         if (args.MenuId == _filterSubMenu?.SubMenuId && !HasOpenedFilterMenu)
         {

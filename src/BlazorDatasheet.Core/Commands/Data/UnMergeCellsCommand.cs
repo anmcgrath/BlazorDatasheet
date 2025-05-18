@@ -13,7 +13,7 @@ public class UnMergeCellsCommand : BaseCommand, IUndoableCommand
     /// Note that the value in the merged range will return to the top left cell, while the
     ///   other cells will be blank.
     /// </summary>
-    /// <param name="range">The range in which to merge. </param>
+    /// <param name="region">The region in which to merge. </param>
     public UnMergeCellsCommand(IRegion region)
     {
         _region = region.Clone();

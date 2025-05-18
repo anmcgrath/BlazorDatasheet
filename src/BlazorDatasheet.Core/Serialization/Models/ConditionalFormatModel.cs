@@ -1,7 +1,6 @@
-﻿using System.Text.Json.Serialization;
-using BlazorDatasheet.Core.Formats;
+﻿using BlazorDatasheet.Core.Formats;
 
-namespace BlazorDatasheet.Core.Serialization.Json.Models;
+namespace BlazorDatasheet.Core.Serialization.Models;
 
 internal class ConditionalFormatModel
 {

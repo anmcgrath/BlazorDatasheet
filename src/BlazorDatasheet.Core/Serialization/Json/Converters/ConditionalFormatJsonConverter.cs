@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Formats.DefaultConditionalFormats;
 using BlazorDatasheet.Core.Serialization.Json.Constants;
-using BlazorDatasheet.Core.Serialization.Json.Models;
+using BlazorDatasheet.Core.Serialization.Models;
 
 namespace BlazorDatasheet.Core.Serialization.Json.Converters;
 

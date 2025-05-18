@@ -1,9 +1,7 @@
-﻿using BlazorDatasheet.Core.Data;
-using BlazorDatasheet.Core.Formats;
-using BlazorDatasheet.DataStructures.Geometry;
+﻿using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Formula.Core;
 
-namespace BlazorDatasheet.Core.Serialization.Json.Models;
+namespace BlazorDatasheet.Core.Serialization.Models;
 
 internal class WorkbookModel
 {

@@ -3,7 +3,7 @@ namespace BlazorDatasheet.Formula.Core.Interpreter.Lexing;
 public class Token
 {
     public Tag Tag { get; }
-    public string Text { get; } = null;
+    public string Text { get; } = string.Empty;
     public int PositionStart { get; }
 
     protected Token(Tag tag, int positionStart)

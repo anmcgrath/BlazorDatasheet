@@ -158,8 +158,6 @@ public class Parser
                 addressToken = new ColAddress(colIndex, false);
                 return true;
             }
-
-            return false;
         }
 
         return false;

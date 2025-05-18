@@ -83,7 +83,9 @@ public class RegionDataStore<T> : ISparseSource, IRowSource, IStore<T, RegionRes
     /// Gets Data regions where the data is the same as the <paramref name="data"/> given
     /// and the region is exactly the same
     /// </summary>
+    /// <param name="col"></param>
     /// <param name="data"></param>
+    /// <param name="row"></param>
     /// <returns></returns>
     public IEnumerable<DataRegion<T>> GetDataRegions(int row, int col, T data)
     {

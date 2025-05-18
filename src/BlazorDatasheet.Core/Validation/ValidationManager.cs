@@ -25,7 +25,7 @@ public class ValidationManager
     public event EventHandler<ValidatorChangedEventArgs> ValidatorChanged;
 
     /// <summary>
-    /// Add a <see cref="IDataValidator"> to a cell.
+    /// Add a <see cref="IDataValidator"/> to a cell.
     /// </summary>
     /// <param name="col"></param>
     /// <param name="validator"></param>
@@ -50,7 +50,7 @@ public class ValidationManager
     }
 
     /// <summary>
-    /// Add a <see cref="IDataValidator"> to a region with the <see cref="SetValidatorCommand"/>
+    /// Add a <see cref="IDataValidator"/> to a region with the <see cref="SetValidatorCommand"/>
     /// </summary>
     /// <param name="region"></param>
     /// <param name="validator"></param>
@@ -106,7 +106,7 @@ public class ValidationManager
     /// Clears the data validator from the region
     /// </summary>
     /// <param name="validator"></param>
-    /// <param name="???"></param>
+    /// <param name="region"></param>
     public void Clear(IDataValidator validator, IRegion region)
     {
         var index = GetValidatorIndex(validator);

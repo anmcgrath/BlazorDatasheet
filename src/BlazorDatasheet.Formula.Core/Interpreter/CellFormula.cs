@@ -61,7 +61,7 @@ public class CellFormula
                     reference.Shift(0, count);
             }
 
-            if (reference is RangeReference rangeReference)
+            if (reference is RangeReference)
             {
                 if (axis == Axis.Row && reference.Region.Top >= index)
                     reference.Shift(count, 0);
@@ -106,7 +106,7 @@ public class CellFormula
                 continue;
             }
 
-            if (reference is RangeReference rangeReference)
+            if (reference is RangeReference)
             {
                 if (axis == Axis.Row && reference.Region.SpansRow(index))
                     reference.Region.Contract(Edge.Bottom, count);

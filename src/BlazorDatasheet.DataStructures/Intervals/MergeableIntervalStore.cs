@@ -117,9 +117,9 @@ public class MergeableIntervalStore<T> : ISparseSource where T : IMergeable<T>, 
             var oi = overlapping[i];
             if (interval.Contains(oi))
             {
-                if(interval.Data.Equals(oi.Data))
+                if (interval.Data.Equals(oi.Data))
                     continue;
-                
+
                 // remove the existing, add a new interval with the merged data
                 var clone = new OrderedInterval<T>(oi.Start, oi.End, oi.Data.Clone());
                 clone.Data.Merge(interval.Data);
@@ -131,9 +131,9 @@ public class MergeableIntervalStore<T> : ISparseSource where T : IMergeable<T>, 
 
             else if (oi.Contains(interval))
             {
-                if(oi.Data.Equals(interval.Data))
+                if (oi.Data.Equals(interval.Data))
                     continue;
-                
+
                 // We have [o, o, i, i, o, o] where o = overlapping interval
                 // and i = interval we are adding
                 // we remove o and add o0, and o1 so that we now have
@@ -284,7 +284,8 @@ public class MergeableIntervalStore<T> : ISparseSource where T : IMergeable<T>, 
     /// <summary>
     /// Remove the interval from storage
     /// </summary>
-    /// <param name="interval"></param>
+    /// <param name="start"></param>
+    /// <param name="end"></param>
     /// <returns>The ordered intervals that were removed during the process.</returns>
     public MergeableIntervalStoreRestoreData<T> Clear(int start, int end)
     {

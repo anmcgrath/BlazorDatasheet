@@ -65,9 +65,6 @@ public class CellValueCoercer
                 val = parsedDouble;
                 return true;
             }
-
-            val = double.NaN;
-            return false;
         }
 
         val = double.NaN;

@@ -4,7 +4,7 @@ public static class TypeExtensions
 {
     public static bool IsNullable(this Type propType)
     {
-        return System.Nullable.GetUnderlyingType(propType) != null;
+        return Nullable.GetUnderlyingType(propType) != null;
     }
 
     public static bool IsNumeric(this Type propType)
