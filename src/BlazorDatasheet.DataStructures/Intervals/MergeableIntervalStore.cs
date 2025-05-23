@@ -435,7 +435,15 @@ public class MergeableIntervalStore<T> : ISparseSource where T : IMergeable<T>, 
     {
         foreach (var shift in restoreData.Shifts)
         {
-            foreach (var interval in GetIntervals(shift.Index, int.MaxValue))
+            var intervals = GetIntervals(shift.Index, int.MaxValue);
+            IEnumerable<OrderedInterval<T>> intervalsOrdered;
+            
+            if (shift.Amount > 0)
+                intervalsOrdered = intervals.OrderBy(i => i.Start);
+            else
+                intervalsOrdered = intervals.OrderByDescending(i => i.Start);
+
+            foreach (var interval in intervalsOrdered)
             {
                 _intervals.Remove(interval.Start);
                 interval.Shift(-shift.Amount);

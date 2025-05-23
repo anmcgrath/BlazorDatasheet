@@ -184,4 +184,17 @@ public class RemoveRowColCommandTests
         cmd.Undo(sheet);
         sheet.GetFormat(0, 1)?.HorizontalTextAlign.Should().Be(TextAlign.Center);
     }
+
+    [Test]
+    public void Remove_Col_Before_Format_And_Undo_Does_Not_Throw_Error()
+    {
+        Assert.DoesNotThrow(() =>
+        {
+            var sheet = new Sheet(10, 10);
+            sheet.Range("E:E").Format = new CellFormat() { HorizontalTextAlign = TextAlign.Center };
+            sheet.Range("D:D").Format = new CellFormat() { NumberFormat = "C1", FontWeight = "bold" };
+            sheet.Columns.RemoveAt(2);
+            sheet.Commands.Undo();
+        });
+    }
 }
