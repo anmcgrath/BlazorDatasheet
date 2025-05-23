@@ -10,42 +10,6 @@
 .date-input:focus[b-0nxgffd6dp] {
     outline: none;
 }
-/* _content/BlazorDatasheet/Edit/DefaultComponents/EnumEditorComponent.razor.rz.scp.css */
-.text-input[b-iq1kfthgeg] {
-    width: 100%;
-    border: none;
-    padding: 2px;
-    height: 100%;
-    box-sizing: border-box;
-}
-
-.text-input:focus[b-iq1kfthgeg] {
-    outline: none;
-}
-
-.select-list[b-iq1kfthgeg] {
-    min-width: 10rem;
-    z-index: 3;
-    border: var(--sheet-border-style);
-    background: var(--sheet-bg-color);
-    position: absolute;
-    overflow-y: auto;
-    color: var(--sheet-foreground-color);
-    display: block;
-    max-height: 7rem;
-    border-radius: 4px;
-}
-
-.select-item[b-iq1kfthgeg] {
-    cursor: pointer;
-    padding: 0.1rem;
-    padding-left: 0.2rem;
-}
-
-    .select-item:hover[b-iq1kfthgeg],
-    .select-item.active[b-iq1kfthgeg] {
-        background: var(--selection-bg-color)
-    }
 /* _content/BlazorDatasheet/Edit/DefaultComponents/HighlightedInput.Razor.rz.scp.css */
 /* _content/BlazorDatasheet/Edit/DefaultComponents/SelectEditorComponent.razor.rz.scp.css */
 /* _content/BlazorDatasheet/Edit/DefaultComponents/TextEditorComponent.razor.rz.scp.css */
