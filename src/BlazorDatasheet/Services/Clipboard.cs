@@ -9,9 +9,6 @@ public class Clipboard : IClipboard
 {
     private readonly IJSRuntime _js;
 
-    private string? _lastCopiedText;
-    private IRegion? _lastCopiedRegion;
-
     public Clipboard(IJSRuntime jsRuntime)
     {
         _js = jsRuntime;
@@ -21,13 +18,9 @@ public class Clipboard : IClipboard
     {
         if (region == null)
             return;
-        
-        var text = sheet.GetRegionAsDelimitedText(region);
-        
-        await _js.InvokeVoidAsync("writeTextToClipboard", text);
-        
-        _lastCopiedRegion = region;
-        _lastCopiedText = text;
 
+        var text = sheet.GetRegionAsDelimitedText(region);
+
+        await _js.InvokeVoidAsync("writeTextToClipboard", text);
     }
 }

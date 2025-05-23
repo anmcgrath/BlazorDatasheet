@@ -232,7 +232,7 @@ public class Editor
                 var args = new InvalidEditEventArgs(EditValue, msg, false);
                 InvalidEdit?.Invoke(this, args);
                 if (!args.Handled)
-                    Sheet?.Dialog?.Alert(msg);
+                    Sheet.Dialog?.Alert(msg);
                 return false;
             }
 

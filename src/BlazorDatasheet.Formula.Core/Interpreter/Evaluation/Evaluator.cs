@@ -11,7 +11,7 @@ public class Evaluator
     private readonly UnaryOpEvaluator _uOp;
     private readonly IEnvironment _environment;
     private FormulaEvaluationOptions _options = FormulaEvaluationOptions.Default;
-    private FormulaExecutionContext _formulaExecutionContext = default!;
+    private FormulaExecutionContext? _formulaExecutionContext;
 
     public Evaluator(IEnvironment environment)
     {
@@ -33,12 +33,12 @@ public class Evaluator
 
     private CellValue DoEvaluate(CellFormula formula)
     {
-        if (_formulaExecutionContext.IsExecuting(formula))
+        if (_formulaExecutionContext?.IsExecuting(formula) == true)
         {
             return CellValue.Error(ErrorType.Circular);
         }
 
-        _formulaExecutionContext.SetExecuting(formula);
+        _formulaExecutionContext?.SetExecuting(formula);
         return Evaluate(formula.ExpressionTree);
     }
 
@@ -156,7 +156,7 @@ public class Evaluator
         if (formula == null)
             return CellValue.Reference(cellReference);
 
-        if (_formulaExecutionContext.TryGetExecutedValue(formula, out var result))
+        if (_formulaExecutionContext?.TryGetExecutedValue(formula, out var result) == true)
             return result;
 
         return DoEvaluate(formula);
@@ -196,7 +196,7 @@ public class Evaluator
             var arg = EvaluateExpression(node.Args[argIndex]);
 
             convertedArgs[argIndex] = _parameterConverter.ConvertVal(arg, paramDefinition.Type);
-            
+
             if (convertedArgs[argIndex].IsError() && !func.AcceptsErrors)
                 return convertedArgs[argIndex];
 

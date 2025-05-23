@@ -1,6 +1,4 @@
-﻿using System.Text.Json.Serialization;
-
-namespace BlazorDatasheet.Core.Serialization.Json.Models;
+﻿namespace BlazorDatasheet.Core.Serialization.Models;
 
 internal class DataRegionModel<T>
 {

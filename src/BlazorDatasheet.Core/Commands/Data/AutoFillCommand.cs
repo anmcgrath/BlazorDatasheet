@@ -148,7 +148,6 @@ public class AutoFillCommand : BaseCommand, IUndoableCommand
     /// </summary>
     /// <param name="offset"></param>
     /// <param name="direction"></param>
-    /// <param name="region"></param>
     /// <param name="sheet"></param>
     /// <returns>Returns only cell values, in order of the pattern that should be evaluated.</returns>
     private IReadOnlyCell[] GetCells(int offset, Direction direction, Sheet sheet)

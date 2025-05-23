@@ -6,13 +6,12 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
 {
     private SparseList<SparseList<T>> _rows;
     private readonly T? _defaultIfEmpty;
-    private readonly SparseList<T> _emptyRow;
 
     public SparseMatrixStoreByRows(T defaultIfEmpty)
     {
         _defaultIfEmpty = defaultIfEmpty;
-        _emptyRow = new SparseList<T>(defaultIfEmpty);
-        _rows = new SparseList<SparseList<T>>(_emptyRow);
+        var emptyRow = new SparseList<T>(defaultIfEmpty);
+        _rows = new SparseList<SparseList<T>>(emptyRow);
     }
 
     public SparseMatrixStoreByRows() : this(default(T))
@@ -24,7 +23,7 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
         return _rows.Get(row).ContainsIndex(col);
     }
 
-    public T? Get(int row, int col)
+    public T Get(int row, int col)
     {
         return _rows.Get(row)
             .Get(col);
@@ -322,7 +321,7 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
         for (int i = 0; i < region.Height; i++)
         {
             var row = _rows.Get(i + region.Top);
-            var nonEmptyCols = row.GetNonEmptyDataBetween(region.Left, region.Right);
+            var nonEmptyCols = row.GetNonEmptyDataBetween(region.Left, region.Right).ToList();
             var colIndices = nonEmptyCols.Select(x => x.itemIndex).ToArray();
             var colData = nonEmptyCols.Select(x => x.data).ToArray();
             indices[i] = i + region.Top;

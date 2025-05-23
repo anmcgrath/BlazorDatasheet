@@ -33,11 +33,6 @@
 
     [Parameter] public required Datasheet Datasheet { get; set; }
 
-    protected override void OnInitialized()
-    {
-        base.OnInitialized();
-    }
-
     private bool IsSelected(IReadOnlyCell arg)
     {
         return arg.Format.FontWeight == "bold";

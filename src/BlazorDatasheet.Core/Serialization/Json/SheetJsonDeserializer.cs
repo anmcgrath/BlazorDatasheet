@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Serialization.Json.Converters;
 using BlazorDatasheet.Core.Serialization.Json.Mappers;
-using BlazorDatasheet.Core.Serialization.Json.Models;
+using BlazorDatasheet.Core.Serialization.Models;
 
 namespace BlazorDatasheet.Core.Serialization.Json;
 

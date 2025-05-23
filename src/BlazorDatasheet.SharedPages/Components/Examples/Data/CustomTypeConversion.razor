@@ -19,7 +19,7 @@
     {
         if (e.CellType == "my-custom-type")
         {
-            e.NewValue = CellValue.Text(e?.OriginalValue?.ToString() + " - converted");
+            e.NewValue = CellValue.Text(e.OriginalValue?.ToString() + " - converted");
         }
     }
 

@@ -2,7 +2,7 @@
 using BlazorDatasheet.Core.Data.Filter;
 using BlazorDatasheet.Core.Serialization.Json.Constants;
 
-namespace BlazorDatasheet.Core.Serialization.Json.Models;
+namespace BlazorDatasheet.Core.Serialization.Models;
 
 internal class ColumnModel
 {

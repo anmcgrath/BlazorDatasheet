@@ -1,7 +1,6 @@
 ﻿@using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Render
-@using BlazorDatasheet.Render.DefaultComponents
 @{
     var colOffset = 1;
 }
@@ -43,11 +42,11 @@
     [Parameter, EditorRequired] public Dictionary<CellPosition, VisualCell> Cache { get; set; } = null!;
 
     [Parameter] public required RenderFragment<VisualCell>? CellRenderFragment { get; set; }
-    
+
     [Parameter] public required int NumberPrecisionDisplay { get; set; }
 
     protected override bool ShouldRender() => IsDirty || _colIndicesChanged;
-    private bool _colIndicesChanged = false;
+    private bool _colIndicesChanged;
 
     protected override void OnParametersSet()
     {
