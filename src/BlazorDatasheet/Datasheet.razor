@@ -7,6 +7,7 @@
 @using BlazorDatasheet.Virtualise
 @using BlazorDatasheet.Render.Layers
 @using ColumnHeadingRenderer = BlazorDatasheet.Render.Headings.ColumnHeadingRenderer
+@using BlazorDatasheet.Render.AutoScroll
 @inherits SheetComponentBase
 
 <div class="vars" theme="@_theme">
@@ -152,6 +153,14 @@
                         </div>
                     }
 
+                    @if (GridLevel == 0)
+                    {
+                        <AutoScroller
+                            Options="AutoScrollOptions"
+                            Enabled="UseAutoScroll"
+                            Selection="_sheet.Selection"/>
+                    }
+
                     <LayerContainer Depth="@GridLevel" Sheet="_sheet" ViewRegion="MainViewRegion"
                                     PointerInputService="_sheetPointerInputService">
                         <HighlightLayer/>
@@ -171,7 +180,8 @@
                             CellRenderFragment="CellRenderFragment"
                             NumberPrecisionDisplay="NumberPrecisionDisplay"
                             Cache="_visualCellCache"/>
-                        <EditorLayer Disabled="@IsReadOnly" @ref="_editorLayer" CustomCellTypes="@CustomCellTypeDefinitions"/>
+                        <EditorLayer Disabled="@IsReadOnly" @ref="_editorLayer"
+                                     CustomCellTypes="@CustomCellTypeDefinitions"/>
                         <SelectionRendererLayer/>
                         @if (_showFormulaDependents)
                         {
@@ -254,6 +264,7 @@
 
     </SheetMenuTarget>
 </div>
+
 
 @code{
 
