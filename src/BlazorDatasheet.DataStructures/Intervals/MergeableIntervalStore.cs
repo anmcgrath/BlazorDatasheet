@@ -494,7 +494,6 @@ public class MergeableIntervalStore<T> : ISparseSource where T : IMergeable<T>, 
         while (interval.End < position + direction)
         {
             i0 += direction;
-            position += direction;
 
             if (i0 > _intervals.Count - 1 || i0 < 0)
                 return -1;

@@ -96,4 +96,13 @@ public class Range1DStoreTests
         store.GetNext(5, -1).Should().BeNull();
         store.GetNext(5, 1).Should().BeNull();
     }
+
+    [Test]
+    public void Get_Next_Non_Empty_Index_Returns_Correct()
+    {
+        var store = new Range1DStore<double>(-1);
+        store.Set(0, 5);
+        store.Set(1, 6);
+        store.GetNextNonEmptyIndex(0).Should().Be(1);
+    }
 }
