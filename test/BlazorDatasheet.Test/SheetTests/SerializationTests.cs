@@ -177,6 +177,22 @@ public class SerializationTests
         d.Columns.GetVisualWidth(5).Should().Be(0);
         d.Columns.GetVisualWidth(6).Should().Be(0);
     }
+
+    [Test]
+    public void Row_Col_Size_Should_Deserialize_Correctly()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Rows.SetSize(0, 5);
+        sheet.Rows.SetSize(1, 7);
+        sheet.Columns.SetSize(0, 6);
+        sheet.Columns.SetSize(1, 8);
+        var json = new SheetJsonSerializer().Serialize(sheet.Workbook);
+        var d = new SheetJsonDeserializer().Deserialize(json).Sheets.First();
+        d.Rows.GetPhysicalHeight(0).Should().Be(5);
+        d.Rows.GetPhysicalHeight(1).Should().Be(7);
+        d.Columns.GetPhysicalWidth(0).Should().Be(6);
+        d.Columns.GetPhysicalWidth(1).Should().Be(8);
+    }
 }
 
 public class CustomCf : ConditionalFormatAbstractBase
