@@ -2,7 +2,7 @@
 @inject IMenuService MenuService
 @inherits SheetComponentBase
 
-<div class="sheet-menu-item @(Disabled ? "sheet-menu-item-disabled" : "")"
+<div class="sheet-menu-item @(Disabled && DisabledOnReadOnly ? "sheet-menu-item-disabled" : "")"
      @onmouseup="HandleMouseUp"
      @onmouseover="HandleMouseOver">
     @ChildContent
@@ -40,12 +40,18 @@
     [Parameter] public string? SubmenuId { get; set; } = null;
 
     [CascadingParameter] public bool Disabled { get; set; }
+    
+    /// <summary>
+    /// Whether the menu item can be disabled. Default is true.
+    /// </summary>
+    [Parameter]
+    public bool DisabledOnReadOnly { get; set; } = true;
 
     private async Task HandleMouseUp(MouseEventArgs args)
     {
-        if(Disabled)
+        if (Disabled)
             return;
-        
+
         if (OnClick.HasDelegate)
             await OnClick.InvokeAsync(args);
         if (SubmenuId == null)

@@ -1,9 +1,11 @@
 @inherits SheetComponentBase
 
-<SheetMenuTarget DisableMenuTarget="@Disabled" MenuId="@SubMenuId" MenuData="@CurrentContext"
+<SheetMenuTarget DisableMenuTarget="@(Disabled && DisabledOnReadOnly)" 
+                 MenuId="@SubMenuId" 
+                 MenuData="@CurrentContext"
                  Placement="@MenuPlacement.Right"
                  Trigger="@MenuTrigger.OnHover" Margin="0">
-    <SheetMenuItem SubmenuId="@SubMenuId">
+    <SheetMenuItem SubmenuId="@SubMenuId" DisabledOnReadOnly="DisabledOnReadOnly">
         <div style="display: flex; justify-content: space-between; width: 100%; height: 100%; pointer-events: none;">
             <div>@Label</div>
             <div style="color: black; width: 0.7em; height: 0.7rem;">
@@ -17,7 +19,7 @@
     </SheetMenuItem>
 </SheetMenuTarget>
 
-<SheetMenu MenuId="@SubMenuId" Disabled="@Disabled" ParentMenuId="@MenuId">
+<SheetMenu MenuId="@SubMenuId" Disabled="@(Disabled && DisabledOnReadOnly)" ParentMenuId="@MenuId">
     @ChildContent
 </SheetMenu>
 
@@ -34,6 +36,12 @@
     [CascadingParameter(Name = "Context")] public object? CurrentContext { get; set; }
 
     [CascadingParameter] public bool Disabled { get; set; }
+
+    /// <summary>
+    /// Whether the menu item can be disabled. Default is true.
+    /// </summary>
+    [Parameter]
+    public bool DisabledOnReadOnly { get; set; } = true;
 
     public string SubMenuId { get; set; } = Guid.NewGuid().ToString();
 
