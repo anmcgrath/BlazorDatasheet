@@ -157,8 +157,8 @@
                     {
                         <AutoScroller
                             Options="AutoScrollOptions"
-                            Enabled="UseAutoScroll"
-                            Selection="_sheet.Selection"/>
+                            IsActive="IsAutoScrollActive"
+                            Enabled="@UseAutoScroll"/>
                     }
 
                     <LayerContainer Depth="@GridLevel" Sheet="_sheet" ViewRegion="MainViewRegion"
@@ -373,5 +373,4 @@
     };
 
     private void CreateCellRenderFragment() => CellRenderFragment = CreateComponent();
-
 }

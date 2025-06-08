@@ -767,6 +767,12 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         _selectionManager.HandlePointerOver(args.Row, args.Col);
     }
 
+    private bool IsAutoScrollActive()
+    {
+        return _sheet.Selection.IsSelecting;
+    }
+
+
     private async Task<bool> AcceptEditAndMoveActiveSelection(Axis axis, int amount)
     {
         var acceptEdit = !_sheet.Editor.IsEditing || _sheet.Editor.AcceptEdit();

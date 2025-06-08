@@ -1,5 +1,4 @@
-﻿@using BlazorDatasheet.Core.Selecting
-@using BlazorDatasheet.DataStructures.Geometry
+﻿@using BlazorDatasheet.DataStructures.Geometry
 @using Microsoft.JSInterop
 @inject IJSRuntime Js
 @implements IAsyncDisposable
@@ -10,14 +9,21 @@
 
     private bool _enabled;
 
-    [Parameter] public bool Enabled { get; set; } = false;
+    /// <summary>
+    /// Whether the auto-scroller is allowed to run.
+    /// </summary>
+    [Parameter]
+    public bool Enabled { get; set; }
 
     [Parameter] public required AutoScrollOptions Options { get; set; } = new();
 
-    [Parameter, EditorRequired] public required Selection? Selection { get; set; }
+    /// <summary>
+    /// Whether the auto-scroll should scroll.
+    /// </summary>
+    [Parameter, EditorRequired] public required Func<bool> IsActive { get; set; }
 
-    private ElementReference _contentEl = default!;
-    private IJSObjectReference? _autoScroller = null!;
+    private ElementReference _contentEl;
+    private IJSObjectReference? _autoScroller;
     private DotNetObjectReference<AutoScroller>? _dotnetHelper;
     private PeriodicTimer? _pt;
     private double _velX;
@@ -51,7 +57,7 @@
                 if (_pt.Period.Milliseconds != Options.PollIntervalInMs)
                     _pt.Period = TimeSpan.FromMilliseconds(Options.PollIntervalInMs);
 
-                if (_enabled && Selection?.IsSelecting == true)
+                if (_enabled && IsActive())
                 {
                     await _autoScroller.InvokeVoidAsync("scrollBy", _velX, _velY);
                 }
