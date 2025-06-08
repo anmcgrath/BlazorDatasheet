@@ -7,6 +7,7 @@
 @using BlazorDatasheet.Services
 @using BlazorDatasheet.Menu.Filters
 @inject IMenuService MenuService;
+@inherits SheetComponentBase
 
 <SheetMenu Disabled="@Disabled" MenuId="@ContextMenus.Selection" OnMenuClose="OnSelectionMenuClose">
 
@@ -133,7 +134,7 @@
              sheet.Selection.ActiveRegion is ColumnRegion colRegion &&
              colRegion.Width == 1)
         {
-            <SheetSubMenu Label="Filter" @ref="_filterSubMenu">
+            <SheetSubMenu Label="Filter" @ref="_filterSubMenu" DisabledOnReadOnly="false">
                 <div style="font-weight: bold; text-align: center;">Filters</div>
                 @foreach (var filter in ColumnFilters)
                 {
