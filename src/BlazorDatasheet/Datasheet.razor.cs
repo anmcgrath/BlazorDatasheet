@@ -32,7 +32,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     [Inject] private IJSRuntime Js { get; set; } = null!;
     private IWindowEventService _windowEventService = null!;
     [Inject] private IMenuService MenuService { get; set; } = null!;
-    private IClipboard ClipboardService { get; set; } = null!;
+    protected IClipboard ClipboardService { get; set; } = null!;
 
 
     /// <summary>
@@ -41,7 +41,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     [Parameter, EditorRequired]
     public Sheet? Sheet { get; set; }
 
-    private Sheet _sheet = new(1, 1);
+    protected Sheet _sheet = new(1, 1);
 
     /// <summary>
     /// When set, this restricts the datasheet to viewing this region, otherwise the datasheet views the whole sheet.
@@ -49,7 +49,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     [Parameter]
     public Region? ViewRegion { get; set; }
 
-    private Region _viewRegion = new(0, 0);
+    protected Region _viewRegion = new(0, 0);
 
     /// <summary>
     /// Datasheet theme that controls the css variables used to style the sheet.
@@ -57,7 +57,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     [Parameter]
     public string Theme { get; set; } = "default";
 
-    private string _theme = "default";
+    protected string _theme = "default";
 
     /// <summary>
     /// Renders graphics that show which cell formulas are dependent on others.
@@ -83,7 +83,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     [Parameter]
     public bool ShowRowHeadings { get; set; } = true;
 
-    private bool _showRowHeadings;
+    protected bool _showRowHeadings;
 
     /// <summary>
     /// Whether to show the column headings.
@@ -91,7 +91,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     [Parameter]
     public bool ShowColHeadings { get; set; } = true;
 
-    private bool _showColHeadings;
+    protected bool _showColHeadings;
 
     /// <summary>
     /// Specifies how many columns are frozen on the left side of the grid.
@@ -99,7 +99,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     [Parameter]
     public int FrozenLeftCount { get; set; }
 
-    private int _frozenLeftCount;
+    protected int _frozenLeftCount;
 
     /// <summary>
     /// Specifies how many columns are frozen on the right side of the grid.
@@ -107,7 +107,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     [Parameter]
     public int FrozenRightCount { get; set; }
 
-    private int _frozenRightCount;
+    protected int _frozenRightCount;
 
     /// <summary>
     /// Specifies how many rows are frozen on the top side of the grid.
@@ -115,7 +115,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     [Parameter]
     public int FrozenTopCount { get; set; }
 
-    private int _frozenTopCount;
+    protected int _frozenTopCount;
 
     /// <summary>
     /// Specifies how many rows are frozen on the bottom side of the grid.
@@ -123,7 +123,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     [Parameter]
     public int FrozenBottomCount { get; set; }
 
-    private int _frozenBottomCount;
+    protected int _frozenBottomCount;
 
     /// <summary>
     /// An indicator of how deep the grid is. Any sub-grid of the grid should have a higher <see cref="GridLevel"/> than its parent.
@@ -138,7 +138,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     [Parameter]
     public bool UseAutoFill { get; set; } = true;
 
-    private bool _useAutoFill = true;
+    protected bool _useAutoFill = true;
 
     /// <summary>
     /// When true, the datasheet will Auto-fit cells when edited or the format is changed.
@@ -171,7 +171,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     [Parameter]
     public int NumberPrecisionDisplay { get; set; } = 13;
 
-    private int _numberPrecisionDisplay = 13;
+    protected int _numberPrecisionDisplay = 13;
 
     /// <summary>
     /// Any user-defined items to render in the context menu
@@ -187,12 +187,12 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     /// <summary>
     /// Whether the user is focused on the datasheet.
     /// </summary>
-    private bool IsDataSheetActive { get; set; }
+    protected bool IsDataSheetActive { get; set; }
 
     /// <summary>
     /// Whether the mouse is located inside/over the sheet.
     /// </summary>
-    private bool IsMouseInsideSheet { get; set; }
+    protected bool IsMouseInsideSheet { get; set; }
 
     /// <summary>
     /// Whether the row and column headers are sticky
@@ -224,38 +224,38 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     [Parameter]
     public SheetMenuOptions MenuOptions { get; set; } = new();
 
-    private SheetMenuOptions _menuOptions = new();
+    protected SheetMenuOptions _menuOptions = new();
 
-    private DotNetObjectReference<Datasheet>? _dotnetHelper;
+    protected DotNetObjectReference<Datasheet>? _dotnetHelper;
 
-    private SheetPointerInputService? _sheetPointerInputService;
+    protected SheetPointerInputService? _sheetPointerInputService;
 
     /// <summary>
     /// The whole sheet container, useful for checking whether mouse is inside the sheet
     /// </summary>
-    private ElementReference _sheetContainer = default!;
+    protected ElementReference _sheetContainer = default!;
 
     /// <summary>
     /// Main virtualised view
     /// </summary>
-    private Virtualise2D? _mainView;
+    protected Virtualise2D? _mainView;
 
-    private AutofitLayer? _autofitLayer;
+    protected AutofitLayer? _autofitLayer;
 
     /// <summary>
     /// The editor layer, which renders the cell editor.
     /// </summary>
-    private EditorLayer _editorLayer = default!;
+    protected EditorLayer _editorLayer = default!;
 
-    private readonly List<IRegion> _dirtyRegions = new();
+    protected readonly List<IRegion> _dirtyRegions = new();
 
-    private bool _sheetIsDirty;
+    protected bool _sheetIsDirty;
 
-    private bool _renderRequested;
+    protected bool _renderRequested;
 
-    private bool _showFormulaDependents;
+    protected bool _showFormulaDependents;
 
-    private Viewport _currentViewport = new(new(-1, -1), new(0, 0, 0, 0));
+    protected Viewport _currentViewport = new(new(-1, -1), new(0, 0, 0, 0));
 
     /// <summary>
     /// Width of the sheet, including any gutters (row headings etc.)
@@ -272,13 +272,13 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
     public double TotalViewHeight => _sheet.Rows.GetVisualHeight(ViewRegion ?? _sheet.Region) + GetGutterSize(Axis.Col);
 
-    private SelectionInputManager _selectionManager = default!;
+    protected SelectionInputManager _selectionManager = default!;
 
     /// <summary>
     /// The size of the main region of this datasheet, that is the region of the grid without
     /// any frozen rows or columns.
     /// </summary>
-    private Region MainViewRegion => new(
+    protected Region MainViewRegion => new(
         Math.Max(FrozenTopCount, _viewRegion.Top),
         Math.Min(_viewRegion.Bottom - _frozenBottomCount, _viewRegion.Bottom),
         Math.Max(FrozenLeftCount, _viewRegion.Left),
@@ -400,7 +400,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         await base.OnAfterRenderAsync(firstRender);
     }
 
-    private void RemoveEvents(Sheet sheet)
+    protected virtual void RemoveEvents(Sheet sheet)
     {
         sheet.Editor.EditBegin -= EditorOnEditBegin;
         sheet.Editor.EditFinished -= EditorOnEditFinished;
@@ -419,7 +419,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         sheet.Columns.SizeModified -= HandleSizeModified;
     }
 
-    private void AddEvents(Sheet sheet)
+    protected virtual void AddEvents(Sheet sheet)
     {
         sheet.Editor.EditBegin += EditorOnEditBegin;
         sheet.Editor.EditFinished += EditorOnEditFinished;
@@ -438,7 +438,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         sheet.SetDialogService(new SimpleDialogService(Js));
     }
 
-    private async Task AddWindowEventsAsync()
+    protected virtual async Task AddWindowEventsAsync()
     {
         await _windowEventService.RegisterMouseEvent("mousedown", HandleWindowMouseDown);
         await _windowEventService.RegisterKeyEvent("keydown", HandleWindowKeyDown);
@@ -447,11 +447,11 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         await _windowEventService.RegisterMouseEvent("mouseup", HandleWindowMouseUp);
     }
 
-    private void HandleRowColInserted(object? sender, RowColInsertedEventArgs? e) => ForceReRender();
+    protected virtual void HandleRowColInserted(object? sender, RowColInsertedEventArgs? e) => ForceReRender();
 
-    private void HandleRowColRemoved(object? sender, RowColRemovedEventArgs? e) => ForceReRender();
+    protected virtual void HandleRowColRemoved(object? sender, RowColRemovedEventArgs? e) => ForceReRender();
 
-    private void HandleSizeModified(object? sender, SizeModifiedEventArgs e) => ForceReRender();
+    protected virtual void HandleSizeModified(object? sender, SizeModifiedEventArgs e) => ForceReRender();
 
     /// <summary>
     /// Re-render all cells, regardless of whether they are dirty and refreshes the viewport
@@ -472,13 +472,13 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         await _mainView.RefreshView();
     }
 
-    private void ScreenUpdatingChanged(object? sender, SheetScreenUpdatingEventArgs e)
+    protected virtual void ScreenUpdatingChanged(object? sender, SheetScreenUpdatingEventArgs e)
     {
         if (e.IsScreenUpdating && _renderRequested)
             this.StateHasChanged();
     }
 
-    private void HandleVirtualViewportChanged(VirtualViewportChangedEventArgs args)
+    protected virtual void HandleVirtualViewportChanged(VirtualViewportChangedEventArgs args)
     {
         _currentViewport = args.Viewport;
 
@@ -493,9 +493,9 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         MakeRegionsDirty(args.NewRegions);
     }
 
-    private Dictionary<CellPosition, VisualCell> _visualCellCache = new();
+    protected Dictionary<CellPosition, VisualCell> _visualCellCache = new();
 
-    private void SheetOnSheetDirty(object? sender, DirtySheetEventArgs e)
+    protected virtual void SheetOnSheetDirty(object? sender, DirtySheetEventArgs e)
     {
         var dirtyRegions = e.DirtyRows
             .GetAllIntervalData()
@@ -506,7 +506,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
             MakeRegionsDirty(dirtyRegions);
     }
 
-    private void MakeRegionsDirty(IEnumerable<IRegion?> dirtyRegions)
+    protected virtual void MakeRegionsDirty(IEnumerable<IRegion?> dirtyRegions)
     {
         foreach (var region in dirtyRegions)
         {
@@ -532,12 +532,12 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         StateHasChanged();
     }
 
-    private async void EditorOnEditFinished(object? sender, EditFinishedEventArgs e)
+    protected virtual async void EditorOnEditFinished(object? sender, EditFinishedEventArgs e)
     {
         await _windowEventService.PreventDefault("keydown");
     }
 
-    private async void EditorOnEditBegin(object? sender, EditBeginEventArgs e)
+    protected virtual async void EditorOnEditBegin(object? sender, EditBeginEventArgs e)
     {
         await _windowEventService.CancelPreventDefault("keydown");
     }
@@ -549,7 +549,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
             new ShortcutExecutionContext(this, _sheet));
     }
 
-    private void RegisterDefaultShortcuts()
+    protected virtual void RegisterDefaultShortcuts()
     {
         ShortcutManager.Register(["Escape"], KeyboardModifiers.Any,
             _ => _sheet.Editor.CancelEdit());
@@ -591,7 +591,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
             _ => _sheet.Selection.Regions.Any() && !_sheet.Editor.IsEditing && !IsReadOnly);
     }
 
-    private void HandleCellMouseDown(object? sender, SheetPointerEventArgs args)
+    protected virtual void HandleCellMouseDown(object? sender, SheetPointerEventArgs args)
     {
         if (_sheet.Editor.IsEditing &&
             _editorLayer.HandleMouseDown(args.Row, args.Col, args.CtrlKey, args.ShiftKey, args.AltKey, args.MetaKey))
@@ -620,7 +620,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
             mouseButton: args.MouseButton);
     }
 
-    private async Task<bool> HandleWindowKeyDown(KeyboardEventArgs e)
+    protected virtual async Task<bool> HandleWindowKeyDown(KeyboardEventArgs e)
     {
         if (!IsDataSheetActive)
             return false;
@@ -663,13 +663,13 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         return false;
     }
 
-    private async Task<bool> HandleWindowMouseDown(MouseEventArgs e)
+    protected virtual async Task<bool> HandleWindowMouseDown(MouseEventArgs e)
     {
         await SetActiveAsync(IsMouseInsideSheet);
         return false;
     }
 
-    private async Task<bool> HandleWindowMouseUp(MouseEventArgs arg)
+    protected virtual async Task<bool> HandleWindowMouseUp(MouseEventArgs arg)
     {
         if (await _editorLayer.HandleWindowMouseUpAsync())
             return true;
@@ -678,7 +678,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         return false;
     }
 
-    private async Task<bool> HandleArrowKeysDown(bool shift, Offset offset)
+    protected virtual async Task<bool> HandleArrowKeysDown(bool shift, Offset offset)
     {
         var accepted = true;
         if (_sheet.Editor.IsEditing)
@@ -694,7 +694,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         return true;
     }
 
-    private Task<bool> HandleWindowPaste(ClipboardEventArgs arg)
+    protected virtual Task<bool> HandleWindowPaste(ClipboardEventArgs arg)
     {
         if (!IsDataSheetActive)
             return Task.FromResult(false);
@@ -718,7 +718,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         return Task.FromResult(true);
     }
 
-    private async Task<bool> HandleWindowCopy(ClipboardEventArgs arg)
+    protected virtual async Task<bool> HandleWindowCopy(ClipboardEventArgs arg)
     {
         if (!IsDataSheetActive || _sheet.Editor.IsEditing)
             return false;
@@ -727,7 +727,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     }
 
 
-    private async void HandleCellDoubleClick(object? sender, SheetPointerEventArgs args)
+    protected virtual async void HandleCellDoubleClick(object? sender, SheetPointerEventArgs args)
     {
         if (args.Row < 0 || args.Col < 0 || args.Row >= _sheet.NumRows || args.Col >= _sheet.NumCols)
             return;
@@ -735,7 +735,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         await BeginEdit(args.Row, args.Col, EditEntryMode.Mouse);
     }
 
-    private async Task BeginEdit(int row, int col, EditEntryMode mode, string entryChar = "")
+    protected virtual async Task BeginEdit(int row, int col, EditEntryMode mode, string entryChar = "")
     {
         if (this.IsReadOnly)
             return;
@@ -744,7 +744,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         _sheet.Editor.BeginEdit(row, col, mode == EditEntryMode.Key, mode, entryChar);
     }
 
-    private void HandleCellMouseOver(object? sender, SheetPointerEventArgs args)
+    protected virtual void HandleCellMouseOver(object? sender, SheetPointerEventArgs args)
     {
         if (_sheet.Editor.IsEditing &&
             _editorLayer.HandleMouseOver(args.Row, args.Col, args.CtrlKey, args.ShiftKey, args.AltKey, args.MetaKey))
@@ -753,7 +753,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         _selectionManager.HandlePointerOver(args.Row, args.Col);
     }
 
-    private async Task<bool> AcceptEditAndMoveActiveSelection(Axis axis, int amount)
+    protected virtual async Task<bool> AcceptEditAndMoveActiveSelection(Axis axis, int amount)
     {
         var acceptEdit = !_sheet.Editor.IsEditing || _sheet.Editor.AcceptEdit();
 
@@ -766,7 +766,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         return acceptEdit;
     }
 
-    private async Task ScrollToActiveCellPosition()
+    protected virtual async Task ScrollToActiveCellPosition()
     {
         var cellRect =
             _sheet.Cells.GetMerge(_sheet.Selection.ActiveCellPosition.row, _sheet.Selection.ActiveCellPosition.col) ??
@@ -832,7 +832,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
             await _mainView.ScrollBy(scrollXDist, scrollYDist);
     }
 
-    private double GetGutterSize(Axis axis)
+    protected virtual double GetGutterSize(Axis axis)
     {
         if (axis == Axis.Row && ShowRowHeadings)
             return _sheet.Rows.HeadingWidth;
@@ -905,7 +905,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         ForceReRender();
     }
 
-    private bool IsRowDirty(int rowIndex)
+    protected virtual bool IsRowDirty(int rowIndex)
     {
         return _sheetIsDirty || _dirtyRegions.Any(x => x.SpansRow(rowIndex));
     }
