@@ -15,6 +15,7 @@ using BlazorDatasheet.Extensions;
 using BlazorDatasheet.KeyboardInput;
 using BlazorDatasheet.Menu;
 using BlazorDatasheet.Render;
+using BlazorDatasheet.Render.AutoScroll;
 using BlazorDatasheet.Render.Layers;
 using BlazorDatasheet.Services;
 using BlazorDatasheet.Virtualise;
@@ -178,6 +179,19 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     /// </summary>
     [Parameter]
     public RenderFragment<Sheet>? MenuItems { get; set; }
+
+    /// <summary>
+    /// Provides options to the auto-scroll feature, that scrolls when the user is selecting with a mouse
+    /// outside the scrollable parent.
+    /// </summary>
+    [Parameter]
+    public AutoScrollOptions AutoScrollOptions { get; set; } = new();
+
+    /// <summary>
+    /// Whether to use the <see cref="AutoScroller"/> component
+    /// </summary>
+    [Parameter]
+    public bool UseAutoScroll { get; set; }
 
     /// <summary>
     /// The datasheet keyboard shortcut manager
