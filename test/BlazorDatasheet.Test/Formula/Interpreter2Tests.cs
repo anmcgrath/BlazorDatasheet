@@ -260,4 +260,16 @@ public class InterpreterTests
     {
         EvalExpression(formula).GetValue<FormulaError>().ErrorType.Should().Be(expectedErrorType);
     }
+
+    [Test]
+    [TestCase("=1*-1", -1)]
+    [TestCase("=(20+3)*-1", -23)]
+    [TestCase("=(20+3)*+1", 23)]
+    [TestCase("=(20   +   (+3))*--  --(-(1))", -23)]
+    public void Operations_With_Unary_Operators_Evaluate_Correctly(string formula, double result)
+    {
+        var parsed = _parser.Parse(formula);
+        var expr = _evaluator.Evaluate(parsed);
+        expr.Data.Should().Be(result);
+    }
 }
