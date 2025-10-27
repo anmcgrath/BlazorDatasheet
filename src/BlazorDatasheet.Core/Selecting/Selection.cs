@@ -212,7 +212,15 @@ public class Selection
         if (ActiveRegion == null)
             return;
 
-        var newRegion = new Region(ActiveCellPosition.row, row, ActiveCellPosition.col, col);
+        IRegion newRegion;
+
+        if (col == -1 && row != -1)
+            newRegion = new RowRegion(ActiveCellPosition.row, row);
+        else if (row == -1 && col != -1)
+            newRegion = new ColumnRegion(ActiveCellPosition.col, col);
+        else
+            newRegion = new Region(ActiveCellPosition.row, row, ActiveCellPosition.col, col);
+
         var expanded = _sheet.ExpandRegionOverMerges(newRegion);
 
         if (expanded != null)
@@ -444,14 +452,14 @@ public class Selection
                 currRow = merge.Bottom;
         }
 
-        currRow = _sheet.Rows.GetNextVisible(currRow, rowDir);
-        if (currRow == -1)
-            currRow = rowDir == 1 ? ActiveRegion.Bottom + 1 : ActiveRegion.Top - 1;
-
         // Fix the active region to surrounds of the sheet
         var activeRegionFixed = ActiveRegion.GetIntersection(_sheet.Region);
         if (activeRegionFixed == null)
             return;
+
+        currRow = _sheet.Rows.GetNextVisible(currRow, rowDir);
+        if (currRow == -1)
+            currRow = rowDir == 1 ? activeRegionFixed.Bottom + 1 : activeRegionFixed.Top - 1;
 
         // If the active region is only one cell and there are no other regions,
         // clear the regions and move the whole thing down
@@ -539,14 +547,14 @@ public class Selection
                 currCol = merge.Right;
         }
 
-        currCol = _sheet.Columns.GetNextVisible(currCol, colDir);
-        if (currCol == -1)
-            currCol = colDir == 1 ? ActiveRegion.Right + 1 : ActiveRegion.Left - 1;
-
         // Fix the active region to surrounds of the sheet
         var activeRegionFixed = ActiveRegion.GetIntersection(_sheet.Region);
         if (activeRegionFixed == null)
             return;
+
+        currCol = _sheet.Columns.GetNextVisible(currCol, colDir);
+        if (currCol == -1)
+            currCol = colDir == 1 ? activeRegionFixed.Right + 1 : activeRegionFixed.Left - 1;
 
         // If the active region is only one cell and there are no other regions,
         // clear the regions and move the whole thing down
