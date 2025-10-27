@@ -157,7 +157,7 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReado
     private object? GetStyleOrDefault(string key)
     {
         if (IsDefaultFormat())
-            return default;
+            return null;
 
         return _styles!.GetValueOrDefault(key);
     }
@@ -259,7 +259,28 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReado
 
         foreach (var kp in _styles)
         {
-            if (other.GetStyleOrDefault(kp.Key)?.Equals(GetStyleOrDefault(kp.Key)) == false)
+            var otherStyle = other.GetStyleOrDefault(kp.Key);
+            var thisStyle = GetStyleOrDefault(kp.Key);
+
+            if (otherStyle == null)
+                return false;
+
+            if (!otherStyle.Equals(thisStyle))
+                return false;
+        }
+
+        if (other._styles == null)
+            return false;
+
+        foreach (var kp in other._styles)
+        {
+            var otherStyle = other.GetStyleOrDefault(kp.Key);
+            var thisStyle = GetStyleOrDefault(kp.Key);
+
+            if (thisStyle == null)
+                return false;
+
+            if (!thisStyle.Equals(otherStyle))
                 return false;
         }
 
