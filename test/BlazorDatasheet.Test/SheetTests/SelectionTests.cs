@@ -3,6 +3,7 @@ using System.Linq;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Selecting;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.Render;
 using FluentAssertions;
 using NUnit.Framework;
 
@@ -190,5 +191,35 @@ public class SelectionManagerTests
                 .Should()
                 .NotBe(position.GetEdgePosition(edge.GetOpposite()));
         }
+    }
+
+    [Test]
+    public void Select_Row_Header_Then_Shift_Select_Row_Header_Should_Extend_Row_Selection()
+    {
+        var manager = new SelectionInputManager(_sheet.Selection);
+        // Start selecting Row 2
+        manager.HandlePointerDown(1, -1, false, false, false, 0);
+        manager.HandleWindowMouseUp();
+        // Extend selection to Row 3, should now be selecting rows 2:3
+        manager.HandlePointerDown(2, -1, shift: true, false, false, 0);
+        manager.HandleWindowMouseUp();
+        manager.Selection.ActiveRegion.Should().BeOfType<RowRegion>();
+        manager.Selection.ActiveRegion.Height.Should().Be(2);
+        manager.Selection.ActiveRegion.Top.Should().Be(1);
+    }
+    
+    [Test]
+    public void Select_Col_Header_Then_Shift_Select_Col_Header_Should_Extend_Col_Selection()
+    {
+        var manager = new SelectionInputManager(_sheet.Selection);
+        // Start selecting Col 
+        manager.HandlePointerDown(-1, 1, false, false, false, 0);
+        manager.HandleWindowMouseUp();
+        // Extend selection to Row C, should now be selecting rows B:C
+        manager.HandlePointerDown(-1, 2, shift: true, false, false, 0);
+        manager.HandleWindowMouseUp();
+        manager.Selection.ActiveRegion.Should().BeOfType<ColumnRegion>();
+        manager.Selection.ActiveRegion.Width.Should().Be(2);
+        manager.Selection.ActiveRegion.Left.Should().Be(1);
     }
 }

@@ -212,7 +212,15 @@ public class Selection
         if (ActiveRegion == null)
             return;
 
-        var newRegion = new Region(ActiveCellPosition.row, row, ActiveCellPosition.col, col);
+        IRegion newRegion;
+
+        if (col == -1 && row != -1)
+            newRegion = new RowRegion(ActiveCellPosition.row, row);
+        else if (row == -1 && col != -1)
+            newRegion = new ColumnRegion(ActiveCellPosition.col, col);
+        else
+            newRegion = new Region(ActiveCellPosition.row, row, ActiveCellPosition.col, col);
+
         var expanded = _sheet.ExpandRegionOverMerges(newRegion);
 
         if (expanded != null)
