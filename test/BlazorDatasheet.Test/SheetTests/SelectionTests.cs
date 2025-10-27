@@ -207,7 +207,7 @@ public class SelectionManagerTests
         manager.Selection.ActiveRegion.Height.Should().Be(2);
         manager.Selection.ActiveRegion.Top.Should().Be(1);
     }
-    
+
     [Test]
     public void Select_Col_Header_Then_Shift_Select_Col_Header_Should_Extend_Col_Selection()
     {
@@ -221,5 +221,35 @@ public class SelectionManagerTests
         manager.Selection.ActiveRegion.Should().BeOfType<ColumnRegion>();
         manager.Selection.ActiveRegion.Width.Should().Be(2);
         manager.Selection.ActiveRegion.Left.Should().Be(1);
+    }
+
+    [Test]
+    public void Active_Cell_Should_Move_To_Top_With_Row_Selection_And_Enter()
+    {
+        var manager = new SelectionInputManager(_sheet.Selection);
+        manager.HandlePointerDown(-1, 1, false, false, false, 0);
+        manager.HandleWindowMouseUp();
+
+        for (int i = 0; i < _sheet.NumRows; i++)
+        {
+            manager.Selection.MoveActivePositionByRow(1);
+        }
+
+        manager.Selection.ActiveCellPosition.row.Should().Be(0);
+    }
+
+    [Test]
+    public void Active_Cell_Should_Move_To_Left_With_Col_Selection_And_Enter()
+    {
+        var manager = new SelectionInputManager(_sheet.Selection);
+        manager.HandlePointerDown(1, -1, false, false, false, 0);
+        manager.HandleWindowMouseUp();
+
+        for (int i = 0; i < _sheet.NumCols; i++)
+        {
+            manager.Selection.MoveActivePositionByCol(1);
+        }
+
+        manager.Selection.ActiveCellPosition.col.Should().Be(0);
     }
 }
