@@ -7,6 +7,7 @@
 @using BlazorDatasheet.Virtualise
 @using BlazorDatasheet.Render.Layers
 @using ColumnHeadingRenderer = BlazorDatasheet.Render.Headings.ColumnHeadingRenderer
+@using BlazorDatasheet.Render.AutoScroll
 @inherits SheetComponentBase
 
 <div class="vars" theme="@_theme">
@@ -80,6 +81,7 @@
                             ShowRowHeadings="@ShowRowHeadings"
                             ShowFormulaDependents="@ShowFormulaDependents"
                             StickyHeaders="StickyHeaders"
+                            @ref="_frozenTop"
                             FrozenLeftCount="_frozenLeftCount"
                             FrozenRightCount="_frozenRightCount"
                             NumberPrecisionDisplay="NumberPrecisionDisplay"
@@ -141,6 +143,7 @@
                                 ShowColHeadings="false"
                                 ShowRowHeadings="false"
                                 ShowFormulaDependents="@ShowFormulaDependents"
+                                @ref="_frozenLeft"
                                 FrozenLeftCount="0"
                                 FrozenRightCount="0"
                                 NumberPrecisionDisplay="NumberPrecisionDisplay"
@@ -150,6 +153,14 @@
                                 ViewRegion="new(MainViewRegion.Top, MainViewRegion.Bottom, 0, _frozenLeftCount - 1)">
                             </Datasheet>
                         </div>
+                    }
+
+                    @if (GridLevel == 0)
+                    {
+                        <AutoScroller
+                            Options="AutoScrollOptions"
+                            IsActive="IsAutoScrollActive"
+                            Enabled="@UseAutoScroll"/>
                     }
 
                     <LayerContainer Depth="@GridLevel" Sheet="_sheet" ViewRegion="MainViewRegion"
@@ -171,7 +182,8 @@
                             CellRenderFragment="CellRenderFragment"
                             NumberPrecisionDisplay="NumberPrecisionDisplay"
                             Cache="_visualCellCache"/>
-                        <EditorLayer Disabled="@IsReadOnly" @ref="_editorLayer" CustomCellTypes="@CustomCellTypeDefinitions"/>
+                        <EditorLayer Disabled="@IsReadOnly" @ref="_editorLayer"
+                                     CustomCellTypes="@CustomCellTypeDefinitions"/>
                         <SelectionRendererLayer/>
                         @if (_showFormulaDependents)
                         {
@@ -215,6 +227,7 @@
                                 ShowColHeadings="false"
                                 ShowFormulaDependents="@ShowFormulaDependents"
                                 ShowRowHeadings="false"
+                                @ref="_frozenRight"
                                 FrozenRightCount="0"
                                 FrozenLeftCount="0"
                                 NumberPrecisionDisplay="NumberPrecisionDisplay"
@@ -239,6 +252,7 @@
                             ShowFormulaDependents="@ShowFormulaDependents"
                             ShowRowHeadings="@ShowRowHeadings"
                             StickyHeaders="StickyHeaders"
+                            @ref="_frozenBottom"
                             FrozenLeftCount="_frozenLeftCount"
                             FrozenRightCount="_frozenRightCount"
                             NumberPrecisionDisplay="NumberPrecisionDisplay"
@@ -254,6 +268,7 @@
 
     </SheetMenuTarget>
 </div>
+
 
 @code{
 
@@ -362,5 +377,4 @@
     };
 
     private void CreateCellRenderFragment() => CellRenderFragment = CreateComponent();
-
 }

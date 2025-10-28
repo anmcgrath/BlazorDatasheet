@@ -91,7 +91,7 @@
         switch (cellType)
         {
             case "default":
-                return typeof(TextEditorComponent);
+                break;
             case "boolean":
                 return typeof(BoolEditorComponent);
             case "select":
@@ -198,10 +198,11 @@
         {
             _activeCellEditor.RequestCancelEdit -= HandleEditorRequestCancelEdit;
             _activeCellEditor.RequestAcceptEdit -= HandleEditorRequestAcceptEdit;
+            _activeCellEditor = null;
+            
+            IsEditing = false;
+            StateHasChanged();
         }
-
-        IsEditing = false;
-        StateHasChanged();
     }
 
     private string GetEditorDisplayStyling()
