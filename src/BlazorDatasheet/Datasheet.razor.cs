@@ -10,6 +10,7 @@ using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Core.Util;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Edit;
+using BlazorDatasheet.Edit.DefaultComponents;
 using BlazorDatasheet.Events;
 using BlazorDatasheet.Extensions;
 using BlazorDatasheet.KeyboardInput;
@@ -769,7 +770,16 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
     private bool IsAutoScrollActive()
     {
-        return _sheet.Selection.IsSelecting;
+        if (_sheet.Selection.IsSelecting)
+            return true;
+
+        if (_sheet.Editor.IsEditing && _editorLayer.ActiveEditorContainer?.Instance is TextEditorComponent te)
+        {
+            if (te.SelectionInputManager.Selection.IsSelecting)
+                return true;
+        }
+
+        return false;
     }
 
 

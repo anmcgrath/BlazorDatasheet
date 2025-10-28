@@ -61,7 +61,7 @@
     private int _currentCaretPosition = 0;
     private double _highlightInputHeight = 0;
     private string _currentSnapshot = string.Empty;
-    private SelectionInputManager _selectionInputManager = null!;
+    internal SelectionInputManager SelectionInputManager = null!;
     private bool _canAcceptRanges = true;
     private List<FunctionDefinition>? _functionSuggestions;
     private FormulaHintBoxResult? _formulaHint;
@@ -70,7 +70,7 @@
     {
         _sheet = sheet;
         _isSoftEdit = _sheet.Editor.IsSoftEdit;
-        _selectionInputManager = new SelectionInputManager(new Selection(_sheet));
+        SelectionInputManager = new SelectionInputManager(new Selection(_sheet));
         _formulaOptions = sheet.FormulaEngine.Options;
         StateHasChanged();
     }
@@ -113,7 +113,7 @@
             _canAcceptRanges = false;
         }
 
-        _selectionInputManager.Clear();
+        SelectionInputManager.Clear();
     }
 
     private void SuggestFunctions()
@@ -161,7 +161,7 @@
 
     private void SetEditValueToSelectionPreview()
     {
-        var selection = _selectionInputManager.Selection;
+        var selection = SelectionInputManager.Selection;
         var sb = new StringBuilder();
         for (var i = 0; i < selection.Regions.Count; i++)
         {
@@ -193,13 +193,13 @@
         {
             if (_canAcceptRanges)
             {
-                if (_selectionInputManager.Selection.IsEmpty())
+                if (SelectionInputManager.Selection.IsEmpty())
                 {
-                    _selectionInputManager.Selection.Set(_sheet.Editor.EditCell!.Row, _sheet.Editor.EditCell!.Col);
+                    SelectionInputManager.Selection.Set(_sheet.Editor.EditCell!.Row, _sheet.Editor.EditCell!.Col);
                 }
 
                 var offset = KeyUtil.GetMovementFromArrowKey(key);
-                _selectionInputManager.HandleArrowKeyDown(shiftKey, offset);
+                SelectionInputManager.HandleArrowKeyDown(shiftKey, offset);
                 SetEditValueToSelectionPreview();
                 return true;
             }
@@ -221,7 +221,7 @@
     {
         if (_canAcceptRanges)
         {
-            _selectionInputManager.HandlePointerDown(row, col, shiftKey, ctrlKey, metaKey, 1);
+            SelectionInputManager.HandlePointerDown(row, col, shiftKey, ctrlKey, metaKey, 1);
             SetEditValueToSelectionPreview();
             return true;
         }
@@ -233,7 +233,7 @@
     {
         if (_canAcceptRanges)
         {
-            _selectionInputManager.HandlePointerOver(row, col);
+            SelectionInputManager.HandlePointerOver(row, col);
             SetEditValueToSelectionPreview();
             return true;
         }
@@ -243,7 +243,7 @@
 
     public override async Task<bool> HandleWindowMouseUpAsync()
     {
-        _selectionInputManager.HandleWindowMouseUp();
+        SelectionInputManager.HandleWindowMouseUp();
 
         if (_canAcceptRanges)
         {

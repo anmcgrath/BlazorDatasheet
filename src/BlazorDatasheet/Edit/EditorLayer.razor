@@ -198,6 +198,7 @@
         {
             _activeCellEditor.RequestCancelEdit -= HandleEditorRequestCancelEdit;
             _activeCellEditor.RequestAcceptEdit -= HandleEditorRequestAcceptEdit;
+            _activeCellEditor = null;
         }
 
         IsEditing = false;
