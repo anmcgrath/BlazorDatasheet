@@ -189,7 +189,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     public AutoScrollOptions AutoScrollOptions { get; set; } = new();
 
     /// <summary>
-    /// Whether to use the <see cref="AutoScroller"/> component
+    /// Whether to use the <see cref="AutoScroller"/> component, which scrolls when the user is selecting with a mouse.
     /// </summary>
     [Parameter]
     public bool UseAutoScroll { get; set; }
@@ -271,6 +271,11 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     private bool _showFormulaDependents;
 
     private Viewport _currentViewport = new(new(-1, -1), new(0, 0, 0, 0));
+
+    private Datasheet? _frozenLeft;
+    private Datasheet? _frozenRight;
+    private Datasheet? _frozenTop;
+    private Datasheet? _frozenBottom;
 
     /// <summary>
     /// Width of the sheet, including any gutters (row headings etc.)
@@ -608,9 +613,16 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
     private void HandleCellMouseDown(object? sender, SheetPointerEventArgs args)
     {
-        if (_sheet.Editor.IsEditing &&
-            _editorLayer.HandleMouseDown(args.Row, args.Col, args.CtrlKey, args.ShiftKey, args.AltKey, args.MetaKey))
-            return;
+        if (_sheet.Editor.IsEditing)
+        {
+            var activeEditor = GetActiveEditorLayer();
+            if (activeEditor != null && activeEditor.HandleMouseDown(args.Row, args.Col, args.CtrlKey, args.ShiftKey,
+                    args.AltKey,
+                    args.MetaKey))
+            {
+                return;
+            }
+        }
 
         // if rmc and inside a selection, don't do anything
         if (args.MouseButton == 2 && _sheet.Selection.Contains(args.Row, args.Col))
@@ -643,8 +655,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         if (MenuService.IsMenuOpen())
             return false;
 
-        var editorHandled = _editorLayer.HandleKeyDown(e.Key, e.CtrlKey, e.ShiftKey, e.AltKey, e.MetaKey);
-        if (editorHandled)
+        var editorHandled = GetActiveEditorLayer()?.HandleKeyDown(e.Key, e.CtrlKey, e.ShiftKey, e.AltKey, e.MetaKey);
+        if (editorHandled == true)
             return true;
 
         var modifiers = e.GetModifiers();
@@ -686,8 +698,12 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
     private async Task<bool> HandleWindowMouseUp(MouseEventArgs arg)
     {
-        if (await _editorLayer.HandleWindowMouseUpAsync())
-            return true;
+        if (_sheet.Editor.IsEditing)
+        {
+            var activeEditor = GetActiveEditorLayer();
+            if (activeEditor != null && await activeEditor.HandleWindowMouseUpAsync())
+                return true;
+        }
 
         _selectionManager.HandleWindowMouseUp();
         return false;
@@ -761,9 +777,16 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
     private void HandleCellMouseOver(object? sender, SheetPointerEventArgs args)
     {
-        if (_sheet.Editor.IsEditing &&
-            _editorLayer.HandleMouseOver(args.Row, args.Col, args.CtrlKey, args.ShiftKey, args.AltKey, args.MetaKey))
-            return;
+        if (_sheet.Editor.IsEditing)
+        {
+            var activeEditor = GetActiveEditorLayer();
+            if (activeEditor != null)
+            {
+                if (activeEditor.HandleMouseOver(args.Row, args.Col, args.CtrlKey, args.ShiftKey, args.AltKey,
+                        args.MetaKey))
+                    return;
+            }
+        }
 
         _selectionManager.HandlePointerOver(args.Row, args.Col);
     }
@@ -773,7 +796,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         if (_sheet.Selection.IsSelecting)
             return true;
 
-        if (_sheet.Editor.IsEditing && _editorLayer.ActiveEditorContainer?.Instance is TextEditorComponent te)
+        if (_sheet.Editor.IsEditing && GetActiveEditorLayer()?.ActiveEditorContainer?.Instance is TextEditorComponent te)
         {
             if (te.SelectionInputManager.Selection.IsSelecting)
                 return true;
@@ -946,6 +969,40 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
         var shouldRender = _sheet.ScreenUpdating && (_sheetIsDirty || _dirtyRegions.Count != 0);
         return shouldRender;
+    }
+
+    private bool Contains(int row, int col)
+    {
+        return col <= _viewRegion.Right - _frozenRightCount &&
+               col >= _viewRegion.Left + _frozenLeftCount &&
+               row <= _viewRegion.Bottom - _frozenBottomCount &&
+               row >= _viewRegion.Top + _frozenTopCount;
+    }
+
+    internal EditorLayer? GetActiveEditorLayer()
+    {
+        if (!_sheet.Editor.IsEditing)
+            return null;
+
+        var editRow = _sheet.Editor.EditCell!.Row;
+        var editCol = _sheet.Editor.EditCell!.Col;
+
+        if (Contains(editRow, editCol))
+            return _editorLayer;
+
+        if (_frozenLeft?.Contains(editRow, editCol) == true)
+            return _frozenLeft._editorLayer;
+
+        if (_frozenRight?.Contains(editRow, editCol) == true)
+            return _frozenRight._editorLayer;
+
+        if (_frozenTop?.Contains(editRow, editCol) == true)
+            return _frozenTop._editorLayer;
+
+        if (_frozenBottom?.Contains(editRow, editCol) == true)
+            return _frozenBottom._editorLayer;
+
+        return null;
     }
 
     public async ValueTask DisposeAsync()
