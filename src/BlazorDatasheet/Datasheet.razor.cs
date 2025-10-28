@@ -712,6 +712,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     private async Task<bool> HandleArrowKeysDown(bool shift, Offset offset)
     {
         var accepted = true;
+        var oldActiveRegion = _sheet.Selection.ActiveRegion?.Clone();
+
         if (_sheet.Editor.IsEditing)
             accepted = _sheet.Editor.IsSoftEdit && _sheet.Editor.AcceptEdit();
 
@@ -721,6 +723,20 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
         if (!shift && IsDataSheetActive)
             await ScrollToActiveCellPosition();
+
+        var activeRegion = _sheet.Selection.ActiveRegion;
+
+        if (shift && IsDataSheetActive && oldActiveRegion != null && activeRegion != null)
+        {
+            var newRegions = activeRegion.Area > oldActiveRegion.Area
+                ? activeRegion.Break(oldActiveRegion)
+                : oldActiveRegion.Break(activeRegion);
+            
+            if (newRegions.Count == 1)
+            {
+                await ScrollToContainRegion(newRegions.First());
+            }
+        }
 
         return true;
     }
@@ -796,7 +812,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         if (_sheet.Selection.IsSelecting)
             return true;
 
-        if (_sheet.Editor.IsEditing && GetActiveEditorLayer()?.ActiveEditorContainer?.Instance is TextEditorComponent te)
+        if (_sheet.Editor.IsEditing &&
+            GetActiveEditorLayer()?.ActiveEditorContainer?.Instance is TextEditorComponent te)
         {
             if (te.SelectionInputManager.Selection.IsSelecting)
                 return true;
