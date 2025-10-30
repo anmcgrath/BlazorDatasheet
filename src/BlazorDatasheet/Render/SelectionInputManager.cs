@@ -3,7 +3,7 @@ using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Render;
 
-public class SelectionInputManager
+internal class SelectionInputManager
 {
     private readonly Selection _selection;
     public Selection Selection => _selection;

@@ -12,7 +12,9 @@ public class Selection
     /// <summary>
     /// The region that is active for accepting user input, usually the most recent region added
     /// </summary>
-    public IRegion? ActiveRegion { get; private set; }
+    public IRegion? ActiveRegion => _activeRegionIndex >= 0 ? _regions[_activeRegionIndex] : null;
+
+    private int _activeRegionIndex = -1;
 
     private readonly List<IRegion> _regions = new();
 
@@ -70,6 +72,11 @@ public class Selection
     /// Fired when the active cell position changes.
     /// </summary>
     public EventHandler<ActiveCellPositionChangedEventArgs>? ActiveCellPositionChanged;
+
+    /// <summary>
+    /// Fired when the active region changes
+    /// </summary>
+    public EventHandler<ActiveRegionChangedEvent>? ActiveRegionChanged;
 
     public Selection(Sheet sheet)
     {
@@ -167,8 +174,8 @@ public class Selection
     public void ClearSelections()
     {
         var oldRegions = CloneRegions();
+        SetActiveRegionIndex(-1);
         _regions.Clear();
-        ActiveRegion = null;
         EmitSelectionChange(oldRegions);
     }
 
@@ -196,8 +203,29 @@ public class Selection
                 _regions.Add(expandedRegion);
         }
 
-        ActiveRegion = _regions.LastOrDefault();
+        SetActiveRegionIndex(_regions.Count - 1);
         EmitSelectionChange(oldRegions);
+    }
+
+    /// <summary>
+    /// Sets the active region out with the updated region
+    /// </summary>
+    /// <param name="newRegion"></param>
+    private void SwapActiveRegion(IRegion newRegion)
+    {
+        var oldRegion = ActiveRegion;
+
+        if (_activeRegionIndex >= 0 && _activeRegionIndex < _regions.Count)
+            _regions[_activeRegionIndex] = newRegion;
+
+        ActiveRegionChanged?.Invoke(this, new ActiveRegionChangedEvent(oldRegion, ActiveRegion));
+    }
+
+    private void SetActiveRegionIndex(int index)
+    {
+        var oldRegion = ActiveRegion;
+        _activeRegionIndex = index;
+        ActiveRegionChanged?.Invoke(this, new ActiveRegionChangedEvent(oldRegion, ActiveRegion));
     }
 
     /// <summary>
@@ -224,7 +252,8 @@ public class Selection
         var expanded = _sheet.ExpandRegionOverMerges(newRegion);
 
         if (expanded != null)
-            ActiveRegion.Set(expanded);
+            SwapActiveRegion(expanded);
+
         EmitSelectionChange(oldRegions);
     }
 
@@ -252,7 +281,7 @@ public class Selection
         var expanded = _sheet.ExpandRegionOverMerges(newRegion);
         expanded = expanded?.GetIntersection(_sheet.Region);
         if (expanded != null)
-            ActiveRegion.Set(expanded);
+            SwapActiveRegion(expanded);
 
         EmitSelectionChange(oldRegions);
     }
@@ -292,7 +321,7 @@ public class Selection
 
         if (contracted != null &&
             (contracted.Contains(activeCellRegion) || contracted is RowRegion or ColumnRegion))
-            ActiveRegion.Set(contracted);
+            SwapActiveRegion(contracted);
         else
         {
             ExpandEdge(edge.GetOpposite(), amount);
@@ -320,6 +349,8 @@ public class Selection
     public void Set(List<IRegion> regions)
     {
         _regions.Clear();
+        _activeRegionIndex = -1;
+
         if (_sheet.Area == 0 || regions.Count == 0)
             return;
 
@@ -343,7 +374,7 @@ public class Selection
                 constrainedRegions.Add(intersection);
         }
 
-        ActiveRegion = null;
+        SetActiveRegionIndex(-1);
         _regions.Clear();
         Set(constrainedRegions);
     }
@@ -489,14 +520,16 @@ public class Selection
             newRow = activeRegionFixed.Top;
             if (newCol > activeRegionFixed.Right)
             {
-                var newActiveRegion = GetRegionAfterActive();
+                var newActiveRegionIndex = GetRegionIndexAfterActive();
+                var newActiveRegion = _regions[newActiveRegionIndex];
                 var newActiveRegionFixed = newActiveRegion.GetIntersection(_sheet.Region);
                 if (newActiveRegionFixed == null)
                     return;
 
                 newCol = newActiveRegionFixed.Left;
                 newRow = newActiveRegionFixed.Top;
-                ActiveRegion = newActiveRegion;
+
+                SetActiveRegionIndex(newActiveRegionIndex);
             }
         }
         else if (newRow < activeRegionFixed.Top)
@@ -505,13 +538,14 @@ public class Selection
             newRow = activeRegionFixed.Bottom;
             if (newCol < activeRegionFixed.Left)
             {
-                var newActiveRegion = GetRegionAfterActive();
+                var newActiveRegionIndex = GetRegionIndexAfterActive();
+                var newActiveRegion = _regions[newActiveRegionIndex];
                 var newActiveRegionFixed = newActiveRegion.GetIntersection(_sheet.Region);
                 if (newActiveRegionFixed == null)
                     return;
                 newCol = newActiveRegionFixed.Right;
                 newRow = newActiveRegionFixed.Bottom;
-                ActiveRegion = newActiveRegion;
+                SetActiveRegionIndex(newActiveRegionIndex);
             }
         }
 
@@ -585,13 +619,14 @@ public class Selection
             newRow++;
             if (newRow > activeRegionFixed.Bottom)
             {
-                var newActiveRegion = GetRegionAfterActive();
+                var newActiveRegionIndex = GetRegionIndexAfterActive();
+                var newActiveRegion = _regions[newActiveRegionIndex];
                 var newActiveRegionFixed = newActiveRegion.GetIntersection(_sheet.Region);
                 if (newActiveRegionFixed == null)
                     return;
                 newCol = newActiveRegionFixed.Left;
                 newRow = newActiveRegionFixed.Top;
-                ActiveRegion = newActiveRegion;
+                SetActiveRegionIndex(newActiveRegionIndex);
             }
         }
         else if (newCol < activeRegionFixed.Left)
@@ -600,13 +635,14 @@ public class Selection
             newRow--;
             if (newRow < activeRegionFixed.Top)
             {
-                var newActiveRegion = GetRegionAfterActive();
+                var newActiveRegionIndex = GetRegionIndexAfterActive();
+                var newActiveRegion = _regions[newActiveRegionIndex];
                 var newActiveRegionFixed = newActiveRegion.GetIntersection(_sheet.Region);
                 if (newActiveRegionFixed == null)
                     return;
                 newCol = newActiveRegionFixed.Right;
                 newRow = newActiveRegionFixed.Bottom;
-                ActiveRegion = newActiveRegion;
+                SetActiveRegionIndex(newActiveRegionIndex);
             }
         }
 
@@ -614,15 +650,15 @@ public class Selection
         EmitSelectionChange(oldRegions);
     }
 
-    private IRegion GetRegionAfterActive()
+    private int GetRegionIndexAfterActive()
     {
-        var activeRegionIndex = _regions.IndexOf(ActiveRegion!);
-        if (activeRegionIndex == -1)
+        var index = _activeRegionIndex;
+        if (index == -1)
             throw new Exception("No range is active?");
-        activeRegionIndex++;
-        if (activeRegionIndex >= _regions.Count)
-            activeRegionIndex = 0;
-        return _regions[activeRegionIndex];
+        index++;
+        if (index >= _regions.Count)
+            index = 0;
+        return index;
     }
 
     private IRegion GetRegionBeforeActive()
@@ -698,14 +734,13 @@ public class Selection
     {
         var activeRegionIndex = ActiveRegion != null ? _regions.IndexOf(ActiveRegion!) : -1;
         var regions = _regions.Select(x => x.Clone()).ToList();
-        var activeRegionClone = activeRegionIndex != -1 ? regions[activeRegionIndex] : null;
-        return new SelectionSnapshot(activeRegionClone, regions, ActiveCellPosition);
+        return new SelectionSnapshot(_activeRegionIndex, regions, ActiveCellPosition);
     }
 
     internal void Restore(SelectionSnapshot selectionSnapshot)
     {
         var oldRegions = CloneRegions();
-        this.ActiveRegion = selectionSnapshot.ActiveRegion;
+        SetActiveRegionIndex(selectionSnapshot.ActiveRegionIndex);
         _regions.Clear();
         _regions.AddRange(selectionSnapshot.Regions);
         ActiveCellPosition = selectionSnapshot.ActiveCellPosition;

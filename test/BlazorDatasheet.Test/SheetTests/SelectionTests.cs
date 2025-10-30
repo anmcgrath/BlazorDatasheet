@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Selecting;
@@ -251,5 +252,40 @@ public class SelectionManagerTests
         }
 
         manager.Selection.ActiveCellPosition.col.Should().Be(0);
+    }
+
+    [Test]
+    public void Setting_Active_Region_In_Various_Ways_Fires_Active_Region_Event()
+    {
+        IRegion? oldRegion = null;
+        IRegion? newRegion = null;
+
+        _sheet.Selection.ActiveRegionChanged += (sender, ev) =>
+        {
+            oldRegion = ev.OldRegion;
+            newRegion = ev.NewRegion;
+        };
+
+        var initialRegion = new Region(2, 2);
+
+
+        var fns = new List<Action>()
+        {
+            () => _sheet.Selection.ExpandEdge(Edge.Bottom, 1),
+            () => _sheet.Selection.ContractEdge(Edge.Bottom, 1),
+            () =>
+            {
+                _sheet.Selection.BeginSelectingCell(10, 10);
+                _sheet.Selection.EndSelecting();
+            }
+        };
+
+        foreach (var fn in fns)
+        {
+            _sheet.Selection.Set(2, 2);
+            fn.Invoke();
+            newRegion.Should().BeEquivalentTo(_sheet.Selection.ActiveRegion);
+            oldRegion.Should().BeEquivalentTo(initialRegion);
+        }
     }
 }
