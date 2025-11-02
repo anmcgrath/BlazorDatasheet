@@ -5,6 +5,7 @@ using BlazorDatasheet.Core.Data.Filter;
 using BlazorDatasheet.Core.Edit;
 using BlazorDatasheet.Core.Events.Edit;
 using BlazorDatasheet.Core.Events.Layout;
+using BlazorDatasheet.Core.Events.Selection;
 using BlazorDatasheet.Core.Events.Visual;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Core.Util;
@@ -429,6 +430,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
         if (GridLevel == 0)
         {
+            sheet.Selection.ActiveRegionChanged -= ActiveRegionChanged;
             sheet.Rows.Inserted -= HandleRowColInserted;
             sheet.Columns.Inserted -= HandleRowColInserted;
             sheet.Rows.Removed -= HandleRowColRemoved;
@@ -445,8 +447,10 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         sheet.Editor.EditFinished += EditorOnEditFinished;
         sheet.SheetDirty += SheetOnSheetDirty;
         sheet.ScreenUpdatingChanged += ScreenUpdatingChanged;
+
         if (GridLevel == 0)
         {
+            sheet.Selection.ActiveRegionChanged += ActiveRegionChanged;
             sheet.Rows.Inserted += HandleRowColInserted;
             sheet.Columns.Inserted += HandleRowColInserted;
             sheet.Rows.Removed += HandleRowColRemoved;
@@ -456,6 +460,28 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         sheet.Rows.SizeModified += HandleSizeModified;
         sheet.Columns.SizeModified += HandleSizeModified;
         sheet.SetDialogService(new SimpleDialogService(Js));
+    }
+
+    private async void ActiveRegionChanged(object? sender, ActiveRegionChangedEvent e)
+    {
+        var oldActiveRegion = e.OldRegion;
+        var activeRegion = e.NewRegion;
+
+        if (activeRegion == null)
+            return;
+
+        if (oldActiveRegion == null)
+        {
+            await ScrollToContainRegion(activeRegion);
+            return;
+        }
+
+        var newRegions = activeRegion.Area > oldActiveRegion.Area
+            ? activeRegion.Break(oldActiveRegion)
+            : oldActiveRegion.Break(activeRegion);
+
+        if (newRegions.Count == 1)
+            await ScrollToContainRegion(newRegions[0]);
     }
 
     private async Task AddWindowEventsAsync()
@@ -712,7 +738,6 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     private async Task<bool> HandleArrowKeysDown(bool shift, Offset offset)
     {
         var accepted = true;
-        var oldActiveRegion = _sheet.Selection.ActiveRegion?.Clone();
 
         if (_sheet.Editor.IsEditing)
             accepted = _sheet.Editor.IsSoftEdit && _sheet.Editor.AcceptEdit();
@@ -723,20 +748,6 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
         if (!shift && IsDataSheetActive)
             await ScrollToActiveCellPosition();
-
-        var activeRegion = _sheet.Selection.ActiveRegion;
-
-        if (shift && IsDataSheetActive && oldActiveRegion != null && activeRegion != null)
-        {
-            var newRegions = activeRegion.Area > oldActiveRegion.Area
-                ? activeRegion.Break(oldActiveRegion)
-                : oldActiveRegion.Break(activeRegion);
-            
-            if (newRegions.Count == 1)
-            {
-                await ScrollToContainRegion(newRegions.First());
-            }
-        }
 
         return true;
     }
@@ -870,32 +881,67 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         var regionRect = region.GetRect(_sheet);
         double scrollYDist = 0, scrollXDist = 0;
 
+        var moveLeft = regionRect.X < constrainedViewRect.X;
+        var moveRight = regionRect.Right > constrainedViewRect.Right;
+        var moveUp = regionRect.Y < constrainedViewRect.Y;
+        var moveDown = regionRect.Bottom > constrainedViewRect.Bottom;
+
         // If the region is outside the contained view rect but NOT within the frozen cols
-        if ((regionRect.X < constrainedViewRect.X || regionRect.Right > constrainedViewRect.Right) &&
-            !(region.Left <= _frozenLeftCount - 1 || region.Right >= _sheet.NumCols - _frozenRightCount))
+        if ((moveLeft || moveRight) &&
+            !(region.Right <= _frozenLeftCount - 1 || region.Left >= _sheet.NumCols - _frozenRightCount))
         {
+            doScroll = true;
+
             var rightDist = regionRect.Right - constrainedViewRect.Right;
             var leftDist = regionRect.X - constrainedViewRect.X;
 
-            scrollXDist = Math.Abs(rightDist) < Math.Abs(leftDist)
-                ? rightDist
-                : leftDist;
-
-            doScroll = true;
+            if (moveRight && moveLeft)
+            {
+                doScroll = false;
+            }
+            else if (moveRight)
+            {
+                // left edge distance should not end up closer to left edge than the right edge distance
+                if (Math.Abs(regionRect.Right + rightDist - constrainedViewRect.Right) <
+                    Math.Abs(regionRect.X + rightDist - constrainedViewRect.X))
+                    scrollXDist = rightDist;
+            }
+            else if (moveLeft)
+            {
+                // right edge distance should not end up closer than the left edge distance
+                if (Math.Abs(regionRect.X + leftDist - constrainedViewRect.X) <
+                    Math.Abs(regionRect.Right + leftDist - constrainedViewRect.Right))
+                    scrollXDist = leftDist;
+            }
         }
 
         // If the region is outside the contained view rect but NOT within the frozen rows
-        if ((regionRect.Y < constrainedViewRect.Y || regionRect.Bottom > constrainedViewRect.Bottom)
-            && !(region.Bottom <= _frozenTopCount - 1 || region.Top >= _sheet.NumRows - _frozenBottomCount))
+        if ((moveUp || moveDown) &&
+            !(region.Bottom <= _frozenTopCount - 1 || region.Top >= _sheet.NumRows - _frozenBottomCount))
         {
+            doScroll = true;
+
             var bottomDist = regionRect.Bottom - constrainedViewRect.Bottom;
             var topDist = regionRect.Y - constrainedViewRect.Y;
 
-            scrollYDist = Math.Abs(bottomDist) < Math.Abs(topDist)
-                ? bottomDist
-                : topDist;
-
-            doScroll = true;
+            if (moveUp && moveDown)
+            {
+                doScroll = false;
+            }
+            else if (moveDown)
+            {
+                // top edge distance should not end up closer to top edge than the right edge distance
+                if (Math.Abs(regionRect.Bottom + bottomDist - constrainedViewRect.Bottom) <
+                    Math.Abs(regionRect.Y + bottomDist - constrainedViewRect.Y))
+                    scrollYDist = bottomDist;
+            }
+            else if (moveUp)
+            {
+                // right edge distance should not end up closer than the left edge distance
+                if (Math.Abs(regionRect.Y + topDist - constrainedViewRect.Y) <
+                    Math.Abs(regionRect.Bottom + topDist - constrainedViewRect.Bottom))
+                    scrollYDist = topDist;
+            }
         }
 
         if (doScroll)

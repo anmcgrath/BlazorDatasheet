@@ -44,7 +44,7 @@ public class Selection
     /// <summary>
     /// The position that the selecting process was started at
     /// </summary>
-    public CellPosition SelectingStartPosition { get; private set; }
+    private CellPosition _selectingStartPosition;
 
     public bool IsSelecting => SelectingRegion != null;
 
@@ -91,7 +91,7 @@ public class Selection
             return;
 
         this.SelectingRegion = new Region(row, col);
-        this.SelectingStartPosition = new CellPosition(row, col);
+        this._selectingStartPosition = new CellPosition(row, col);
         this._selectingMode = SelectionMode.Cell;
         this.SelectingRegion = _sheet.ExpandRegionOverMerges(SelectingRegion);
         EmitSelectingChanged();
@@ -102,7 +102,7 @@ public class Selection
         if (_sheet.Area == 0)
             return;
         this.SelectingRegion = new ColumnRegion(col, col);
-        this.SelectingStartPosition = new CellPosition(0, col);
+        this._selectingStartPosition = new CellPosition(0, col);
         this._selectingMode = SelectionMode.Column;
         this.SelectingRegion = _sheet.ExpandRegionOverMerges(SelectingRegion);
         EmitSelectingChanged();
@@ -113,7 +113,7 @@ public class Selection
         if (_sheet.Area == 0)
             return;
         this.SelectingRegion = new RowRegion(row, row);
-        this.SelectingStartPosition = new CellPosition(row, 0);
+        this._selectingStartPosition = new CellPosition(row, 0);
         this._selectingMode = SelectionMode.Row;
         this.SelectingRegion = _sheet.ExpandRegionOverMerges(SelectingRegion);
         EmitSelectingChanged();
@@ -127,13 +127,13 @@ public class Selection
         switch (_selectingMode)
         {
             case SelectionMode.Column:
-                SelectingRegion = new ColumnRegion(SelectingStartPosition.col, col);
+                SelectingRegion = new ColumnRegion(_selectingStartPosition.col, col);
                 break;
             case SelectionMode.Row:
-                SelectingRegion = new RowRegion(SelectingStartPosition.row, row);
+                SelectingRegion = new RowRegion(_selectingStartPosition.row, row);
                 break;
             case SelectionMode.Cell:
-                SelectingRegion = new Region(SelectingStartPosition.row, row, SelectingStartPosition.col, col);
+                SelectingRegion = new Region(_selectingStartPosition.row, row, _selectingStartPosition.col, col);
                 break;
         }
 
@@ -151,7 +151,7 @@ public class Selection
     {
         if (SelectingRegion == null)
             return;
-        SetActiveCellPosition(SelectingStartPosition.row, SelectingStartPosition.col);
+        SetActiveCellPosition(_selectingStartPosition.row, _selectingStartPosition.col);
         var oldRegions = Regions.Select(x => x.Clone()).ToList();
         this.Add(SelectingRegion);
         SelectingRegion = null;
@@ -213,6 +213,9 @@ public class Selection
     /// <param name="newRegion"></param>
     private void SwapActiveRegion(IRegion newRegion)
     {
+        if (newRegion == ActiveRegion)
+            return;
+
         var oldRegion = ActiveRegion;
 
         if (_activeRegionIndex >= 0 && _activeRegionIndex < _regions.Count)
@@ -223,6 +226,9 @@ public class Selection
 
     private void SetActiveRegionIndex(int index)
     {
+        if (index == _activeRegionIndex)
+            return;
+
         var oldRegion = ActiveRegion;
         _activeRegionIndex = index;
         ActiveRegionChanged?.Invoke(this, new ActiveRegionChangedEvent(oldRegion, ActiveRegion));
@@ -463,9 +469,10 @@ public class Selection
     /// <param name="rowDir"></param>
     public void MoveActivePositionByRow(int rowDir)
     {
-        var oldRegions = CloneRegions();
         if (ActiveRegion == null || rowDir == 0)
             return;
+        
+        var oldRegions = CloneRegions();
 
         rowDir = Math.Sign(rowDir);
 
@@ -561,9 +568,10 @@ public class Selection
     /// <param name="colDir"></param>
     public void MoveActivePositionByCol(int colDir)
     {
-        var oldRegions = CloneRegions();
         if (ActiveRegion == null || colDir == 0)
             return;
+        
+        var oldRegions = CloneRegions();
 
         colDir = Math.Sign(colDir);
 
@@ -732,7 +740,6 @@ public class Selection
 
     internal SelectionSnapshot GetSelectionSnapshot()
     {
-        var activeRegionIndex = ActiveRegion != null ? _regions.IndexOf(ActiveRegion!) : -1;
         var regions = _regions.Select(x => x.Clone()).ToList();
         return new SelectionSnapshot(_activeRegionIndex, regions, ActiveCellPosition);
     }
