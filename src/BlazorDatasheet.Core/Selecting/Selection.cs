@@ -471,7 +471,7 @@ public class Selection
     {
         if (ActiveRegion == null || rowDir == 0)
             return;
-        
+
         var oldRegions = CloneRegions();
 
         rowDir = Math.Sign(rowDir);
@@ -570,7 +570,7 @@ public class Selection
     {
         if (ActiveRegion == null || colDir == 0)
             return;
-        
+
         var oldRegions = CloneRegions();
 
         colDir = Math.Sign(colDir);
@@ -736,6 +736,36 @@ public class Selection
         var setEventArgs = new ActiveCellPositionChangedEventArgs(oldPosition, newPosition);
         this.ActiveCellPosition = newPosition;
         ActiveCellPositionChanged?.Invoke(this, setEventArgs);
+    }
+
+    /// <summary>
+    /// Makes the active cell position <paramref name="row"/>, <paramref name="col"/>
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    public void Activate(int row, int col)
+    {
+        if (ActiveRegion == null || !_regions.Any())
+            return;
+
+        if (ActiveRegion.Contains(row, col))
+        {
+            SetActiveCellPosition(row, col);
+            return;
+        }
+
+        for (int i = 0; i < _regions.Count; i++)
+        {
+            var region = _regions[i];
+            if (region.Contains(row, col))
+            {
+                SetActiveRegionIndex(i);
+                SetActiveCellPosition(row, col);
+                return;
+            }
+        }
+
+        Set(row, col);
     }
 
     internal SelectionSnapshot GetSelectionSnapshot()

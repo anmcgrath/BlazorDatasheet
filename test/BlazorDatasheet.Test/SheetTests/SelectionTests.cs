@@ -288,4 +288,32 @@ public class SelectionManagerTests
             oldRegion.Should().BeEquivalentTo(initialRegion);
         }
     }
+
+    [Test]
+    public void Active_Position_Inside_Active_Region_Should_Set_To_PositionSpecified()
+    {
+        _sheet.Selection.Set(new List<IRegion>() { new Region(4, 5, 4, 5), new Region(0, 2, 0, 1) });
+        _sheet.Selection.Activate(1, 1);
+        _sheet.Selection.ActiveRegion.Left.Should().Be(0); //
+        _sheet.Selection.ActiveCellPosition.Should().Be(new CellPosition(1, 1));
+    }
+
+    [Test]
+    public void Active_Position_Inside_Non_Active_Region_Should_Set_To_Active_Region()
+    {
+        _sheet.Selection.Set(new List<IRegion>() { new Region(4, 5, 4, 5), new Region(0, 2, 0, 1) });
+        _sheet.Selection.Activate(4, 5);
+        _sheet.Selection.ActiveRegion.Left.Should().Be(4); //
+        _sheet.Selection.ActiveCellPosition.Should().Be(new CellPosition(4, 5));
+    }
+
+    [Test]
+    public void Active_Position_Inside_No_Regions_Should_Set_Active_region_and_position_appropriately()
+    {
+        _sheet.Selection.Set(new List<IRegion>() { new Region(4, 5, 4, 5), new Region(0, 2, 0, 1) });
+        _sheet.Selection.Activate(9, 9);
+        _sheet.Selection.ActiveRegion.Should().BeEquivalentTo(new Region(9, 9));
+        _sheet.Selection.ActiveCellPosition.Should().Be(new CellPosition(9, 9));
+        _sheet.Selection.Regions.Count.Should().Be(1);
+    }
 }
