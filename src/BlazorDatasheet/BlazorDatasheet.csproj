@@ -12,7 +12,7 @@
         <PackageTags>blazor,editor,excel,spreadsheet,datasheet</PackageTags>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <Version>0.5.2.1</Version>
-        <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+        <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
         <PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
     
@@ -30,6 +30,9 @@
     </ItemGroup>
     <ItemGroup Condition="  '$(TargetFramework)' == 'net9.0'  ">
         <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.*" />
+    </ItemGroup>
+    <ItemGroup Condition="  '$(TargetFramework)' == 'net10.0'  ">
+        <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="10.*" />
     </ItemGroup>
 
     <ItemGroup>
