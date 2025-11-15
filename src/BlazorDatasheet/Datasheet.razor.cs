@@ -5,16 +5,19 @@ using BlazorDatasheet.Core.Data.Filter;
 using BlazorDatasheet.Core.Edit;
 using BlazorDatasheet.Core.Events.Edit;
 using BlazorDatasheet.Core.Events.Layout;
+using BlazorDatasheet.Core.Events.Selection;
 using BlazorDatasheet.Core.Events.Visual;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Core.Util;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Edit;
+using BlazorDatasheet.Edit.DefaultComponents;
 using BlazorDatasheet.Events;
 using BlazorDatasheet.Extensions;
 using BlazorDatasheet.KeyboardInput;
 using BlazorDatasheet.Menu;
 using BlazorDatasheet.Render;
+using BlazorDatasheet.Render.AutoScroll;
 using BlazorDatasheet.Render.Layers;
 using BlazorDatasheet.Services;
 using BlazorDatasheet.Virtualise;
@@ -180,6 +183,19 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     public RenderFragment<Sheet>? MenuItems { get; set; }
 
     /// <summary>
+    /// Provides options to the auto-scroll feature, that scrolls when the user is selecting with a mouse
+    /// outside the scrollable parent.
+    /// </summary>
+    [Parameter]
+    public AutoScrollOptions AutoScrollOptions { get; set; } = new();
+
+    /// <summary>
+    /// Whether to use the <see cref="AutoScroller"/> component, which scrolls when the user is selecting with a mouse.
+    /// </summary>
+    [Parameter]
+    public bool UseAutoScroll { get; set; }
+
+    /// <summary>
     /// The datasheet keyboard shortcut manager
     /// </summary>
     public ShortcutManager ShortcutManager { get; } = new();
@@ -256,6 +272,11 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     private bool _showFormulaDependents;
 
     private Viewport _currentViewport = new(new(-1, -1), new(0, 0, 0, 0));
+
+    private Datasheet? _frozenLeft;
+    private Datasheet? _frozenRight;
+    private Datasheet? _frozenTop;
+    private Datasheet? _frozenBottom;
 
     /// <summary>
     /// Width of the sheet, including any gutters (row headings etc.)
@@ -409,6 +430,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
         if (GridLevel == 0)
         {
+            sheet.Selection.ActiveRegionChanged -= ActiveRegionChanged;
             sheet.Rows.Inserted -= HandleRowColInserted;
             sheet.Columns.Inserted -= HandleRowColInserted;
             sheet.Rows.Removed -= HandleRowColRemoved;
@@ -425,8 +447,10 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         sheet.Editor.EditFinished += EditorOnEditFinished;
         sheet.SheetDirty += SheetOnSheetDirty;
         sheet.ScreenUpdatingChanged += ScreenUpdatingChanged;
+
         if (GridLevel == 0)
         {
+            sheet.Selection.ActiveRegionChanged += ActiveRegionChanged;
             sheet.Rows.Inserted += HandleRowColInserted;
             sheet.Columns.Inserted += HandleRowColInserted;
             sheet.Rows.Removed += HandleRowColRemoved;
@@ -436,6 +460,28 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         sheet.Rows.SizeModified += HandleSizeModified;
         sheet.Columns.SizeModified += HandleSizeModified;
         sheet.SetDialogService(new SimpleDialogService(Js));
+    }
+
+    private async void ActiveRegionChanged(object? sender, ActiveRegionChangedEvent e)
+    {
+        var oldActiveRegion = e.OldRegion;
+        var activeRegion = e.NewRegion;
+
+        if (activeRegion == null)
+            return;
+
+        if (oldActiveRegion == null)
+        {
+            await ScrollToContainRegion(activeRegion);
+            return;
+        }
+
+        var newRegions = activeRegion.Area > oldActiveRegion.Area
+            ? activeRegion.Break(oldActiveRegion)
+            : oldActiveRegion.Break(activeRegion);
+
+        if (newRegions.Count == 1)
+            await ScrollToContainRegion(newRegions[0]);
     }
 
     private async Task AddWindowEventsAsync()
@@ -593,9 +639,16 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
     private void HandleCellMouseDown(object? sender, SheetPointerEventArgs args)
     {
-        if (_sheet.Editor.IsEditing &&
-            _editorLayer.HandleMouseDown(args.Row, args.Col, args.CtrlKey, args.ShiftKey, args.AltKey, args.MetaKey))
-            return;
+        if (_sheet.Editor.IsEditing)
+        {
+            var activeEditor = GetActiveEditorLayer();
+            if (activeEditor != null && activeEditor.HandleMouseDown(args.Row, args.Col, args.CtrlKey, args.ShiftKey,
+                    args.AltKey,
+                    args.MetaKey))
+            {
+                return;
+            }
+        }
 
         // if rmc and inside a selection, don't do anything
         if (args.MouseButton == 2 && _sheet.Selection.Contains(args.Row, args.Col))
@@ -628,8 +681,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         if (MenuService.IsMenuOpen())
             return false;
 
-        var editorHandled = _editorLayer.HandleKeyDown(e.Key, e.CtrlKey, e.ShiftKey, e.AltKey, e.MetaKey);
-        if (editorHandled)
+        var editorHandled = GetActiveEditorLayer()?.HandleKeyDown(e.Key, e.CtrlKey, e.ShiftKey, e.AltKey, e.MetaKey);
+        if (editorHandled == true)
             return true;
 
         var modifiers = e.GetModifiers();
@@ -671,8 +724,12 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
     private async Task<bool> HandleWindowMouseUp(MouseEventArgs arg)
     {
-        if (await _editorLayer.HandleWindowMouseUpAsync())
-            return true;
+        if (_sheet.Editor.IsEditing)
+        {
+            var activeEditor = GetActiveEditorLayer();
+            if (activeEditor != null && await activeEditor.HandleWindowMouseUpAsync())
+                return true;
+        }
 
         _selectionManager.HandleWindowMouseUp();
         return false;
@@ -681,6 +738,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     private async Task<bool> HandleArrowKeysDown(bool shift, Offset offset)
     {
         var accepted = true;
+
         if (_sheet.Editor.IsEditing)
             accepted = _sheet.Editor.IsSoftEdit && _sheet.Editor.AcceptEdit();
 
@@ -746,12 +804,35 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
     private void HandleCellMouseOver(object? sender, SheetPointerEventArgs args)
     {
-        if (_sheet.Editor.IsEditing &&
-            _editorLayer.HandleMouseOver(args.Row, args.Col, args.CtrlKey, args.ShiftKey, args.AltKey, args.MetaKey))
-            return;
+        if (_sheet.Editor.IsEditing)
+        {
+            var activeEditor = GetActiveEditorLayer();
+            if (activeEditor != null)
+            {
+                if (activeEditor.HandleMouseOver(args.Row, args.Col, args.CtrlKey, args.ShiftKey, args.AltKey,
+                        args.MetaKey))
+                    return;
+            }
+        }
 
         _selectionManager.HandlePointerOver(args.Row, args.Col);
     }
+
+    private bool IsAutoScrollActive()
+    {
+        if (_sheet.Selection.IsSelecting)
+            return true;
+
+        if (_sheet.Editor.IsEditing &&
+            GetActiveEditorLayer()?.ActiveEditorContainer?.Instance is TextEditorComponent te)
+        {
+            if (te.SelectionInputManager.Selection.IsSelecting)
+                return true;
+        }
+
+        return false;
+    }
+
 
     private async Task<bool> AcceptEditAndMoveActiveSelection(Axis axis, int amount)
     {
@@ -800,32 +881,67 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         var regionRect = region.GetRect(_sheet);
         double scrollYDist = 0, scrollXDist = 0;
 
+        var moveLeft = regionRect.X < constrainedViewRect.X;
+        var moveRight = regionRect.Right > constrainedViewRect.Right;
+        var moveUp = regionRect.Y < constrainedViewRect.Y;
+        var moveDown = regionRect.Bottom > constrainedViewRect.Bottom;
+
         // If the region is outside the contained view rect but NOT within the frozen cols
-        if ((regionRect.X < constrainedViewRect.X || regionRect.Right > constrainedViewRect.Right) &&
-            !(region.Left <= _frozenLeftCount - 1 || region.Right >= _sheet.NumCols - _frozenRightCount))
+        if ((moveLeft || moveRight) &&
+            !(region.Right <= _frozenLeftCount - 1 || region.Left >= _sheet.NumCols - _frozenRightCount))
         {
+            doScroll = true;
+
             var rightDist = regionRect.Right - constrainedViewRect.Right;
             var leftDist = regionRect.X - constrainedViewRect.X;
 
-            scrollXDist = Math.Abs(rightDist) < Math.Abs(leftDist)
-                ? rightDist
-                : leftDist;
-
-            doScroll = true;
+            if (moveRight && moveLeft)
+            {
+                doScroll = false;
+            }
+            else if (moveRight)
+            {
+                // left edge distance should not end up closer to left edge than the right edge distance
+                if (Math.Abs(regionRect.Right + rightDist - constrainedViewRect.Right) <
+                    Math.Abs(regionRect.X + rightDist - constrainedViewRect.X))
+                    scrollXDist = rightDist;
+            }
+            else if (moveLeft)
+            {
+                // right edge distance should not end up closer than the left edge distance
+                if (Math.Abs(regionRect.X + leftDist - constrainedViewRect.X) <
+                    Math.Abs(regionRect.Right + leftDist - constrainedViewRect.Right))
+                    scrollXDist = leftDist;
+            }
         }
 
         // If the region is outside the contained view rect but NOT within the frozen rows
-        if ((regionRect.Y < constrainedViewRect.Y || regionRect.Bottom > constrainedViewRect.Bottom)
-            && !(region.Bottom <= _frozenTopCount - 1 || region.Top >= _sheet.NumRows - _frozenBottomCount))
+        if ((moveUp || moveDown) &&
+            !(region.Bottom <= _frozenTopCount - 1 || region.Top >= _sheet.NumRows - _frozenBottomCount))
         {
+            doScroll = true;
+
             var bottomDist = regionRect.Bottom - constrainedViewRect.Bottom;
             var topDist = regionRect.Y - constrainedViewRect.Y;
 
-            scrollYDist = Math.Abs(bottomDist) < Math.Abs(topDist)
-                ? bottomDist
-                : topDist;
-
-            doScroll = true;
+            if (moveUp && moveDown)
+            {
+                doScroll = false;
+            }
+            else if (moveDown)
+            {
+                // top edge distance should not end up closer to top edge than the right edge distance
+                if (Math.Abs(regionRect.Bottom + bottomDist - constrainedViewRect.Bottom) <
+                    Math.Abs(regionRect.Y + bottomDist - constrainedViewRect.Y))
+                    scrollYDist = bottomDist;
+            }
+            else if (moveUp)
+            {
+                // right edge distance should not end up closer than the left edge distance
+                if (Math.Abs(regionRect.Y + topDist - constrainedViewRect.Y) <
+                    Math.Abs(regionRect.Bottom + topDist - constrainedViewRect.Bottom))
+                    scrollYDist = topDist;
+            }
         }
 
         if (doScroll)
@@ -916,6 +1032,40 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
         var shouldRender = _sheet.ScreenUpdating && (_sheetIsDirty || _dirtyRegions.Count != 0);
         return shouldRender;
+    }
+
+    private bool Contains(int row, int col)
+    {
+        return col <= _viewRegion.Right - _frozenRightCount &&
+               col >= _viewRegion.Left + _frozenLeftCount &&
+               row <= _viewRegion.Bottom - _frozenBottomCount &&
+               row >= _viewRegion.Top + _frozenTopCount;
+    }
+
+    internal EditorLayer? GetActiveEditorLayer()
+    {
+        if (!_sheet.Editor.IsEditing)
+            return null;
+
+        var editRow = _sheet.Editor.EditCell!.Row;
+        var editCol = _sheet.Editor.EditCell!.Col;
+
+        if (Contains(editRow, editCol))
+            return _editorLayer;
+
+        if (_frozenLeft?.Contains(editRow, editCol) == true)
+            return _frozenLeft._editorLayer;
+
+        if (_frozenRight?.Contains(editRow, editCol) == true)
+            return _frozenRight._editorLayer;
+
+        if (_frozenTop?.Contains(editRow, editCol) == true)
+            return _frozenTop._editorLayer;
+
+        if (_frozenBottom?.Contains(editRow, editCol) == true)
+            return _frozenBottom._editorLayer;
+
+        return null;
     }
 
     public async ValueTask DisposeAsync()

@@ -88,7 +88,7 @@ public class Region : IRegion
     /// Sets the region's start and end to those of <paramref name="region"/>
     /// </summary>
     /// <param name="region"></param>
-    public void Set(IRegion region)
+    private void Set(IRegion region)
     {
         Start = region.Start;
         End = region.End;
