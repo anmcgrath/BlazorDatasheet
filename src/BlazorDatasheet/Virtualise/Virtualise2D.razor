@@ -248,18 +248,28 @@
         var newRegions = newViewport.ViewRegion.Break(_currentViewport.ViewRegion).Cast<Region>().ToList();
         var removedRegions = _currentViewport.ViewRegion.Break(newViewport.ViewRegion).Cast<Region>().ToList();
         _currentViewport = newViewport;
-        _visibleColIndices = LayoutProvider.GetVisibleColumnIndices(view.Left, view.Right);
-        _visibleRowIndices = LayoutProvider.GetVisibleRowIndices(view.Top, view.Bottom);
 
-        var csb = new StringBuilder();
-        foreach (var visibleCol in _visibleColIndices)
-            csb.Append($"{LayoutProvider.ComputeWidth(visibleCol, 1)}px ");
-        var rsb = new StringBuilder();
-        foreach (var visibleRow in _visibleRowIndices)
-            rsb.Append($"{LayoutProvider.ComputeHeight(visibleRow, 1)}px ");
+        var newVisibleColIndices = LayoutProvider.GetVisibleColumnIndices(view.Left, view.Right);
+        var newVisibleRowIndices = LayoutProvider.GetVisibleRowIndices(view.Top, view.Bottom);
 
-        _contentColTemplate = csb.ToString();
-        _contentRowTemplate = rsb.ToString();
+        var colsChanged = newVisibleColIndices.Count != _visibleColIndices.Count
+            || newVisibleColIndices.FirstOrDefault() != _visibleColIndices.FirstOrDefault()
+            || newVisibleColIndices.LastOrDefault() != _visibleColIndices.LastOrDefault();
+
+        var rowsChanged = newVisibleRowIndices.Count != _visibleRowIndices.Count
+            || newVisibleRowIndices.FirstOrDefault() != _visibleRowIndices.FirstOrDefault()
+            || newVisibleRowIndices.LastOrDefault() != _visibleRowIndices.LastOrDefault();
+
+        _visibleColIndices = newVisibleColIndices;
+        _visibleRowIndices = newVisibleRowIndices;
+
+        var newContentColTemplate = BuildVisibleColumnTemplate();
+        if (colsChanged || !string.Equals(_contentColTemplate, newContentColTemplate, StringComparison.Ordinal))
+            _contentColTemplate = newContentColTemplate;
+
+        var newContentRowTemplate = BuildVisibleRowTemplate();
+        if (rowsChanged || !string.Equals(_contentRowTemplate, newContentRowTemplate, StringComparison.Ordinal))
+            _contentRowTemplate = newContentRowTemplate;
 
         _requiresRender = true;
 
@@ -314,6 +324,22 @@
     {
         _requiresRender = false;
         base.OnAfterRender(firstRender);
+    }
+
+    private string BuildVisibleColumnTemplate()
+    {
+        var csb = new StringBuilder();
+        foreach (var visibleCol in _visibleColIndices)
+            csb.Append($"{LayoutProvider.ComputeWidth(visibleCol, 1)}px ");
+        return csb.ToString();
+    }
+
+    private string BuildVisibleRowTemplate()
+    {
+        var rsb = new StringBuilder();
+        foreach (var visibleRow in _visibleRowIndices)
+            rsb.Append($"{LayoutProvider.ComputeHeight(visibleRow, 1)}px ");
+        return rsb.ToString();
     }
 
 }
