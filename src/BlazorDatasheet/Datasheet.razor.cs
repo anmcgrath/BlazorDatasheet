@@ -30,7 +30,7 @@ using Microsoft.JSInterop;
 
 namespace BlazorDatasheet;
 
-public partial class Datasheet : SheetComponentBase, IAsyncDisposable
+public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollService
 {
     [Inject] private IJSRuntime Js { get; set; } = null!;
     private IWindowEventService _windowEventService = null!;
@@ -277,6 +277,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     private Datasheet? _frozenRight;
     private Datasheet? _frozenTop;
     private Datasheet? _frozenBottom;
+
+    private IScrollService? ScrollServiceForCascade => GridLevel == 0 ? this : null;
 
     /// <summary>
     /// Width of the sheet, including any gutters (row headings etc.)
@@ -844,7 +846,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         if (_sheet.Editor.IsEditing &&
             GetActiveEditorLayer()?.ActiveEditorContainer?.Instance is TextEditorComponent te)
         {
-            if (te.SelectionInputManager.Selection.IsSelecting)
+            if (te.SelectionInputManager?.Selection.IsSelecting == true)
                 return true;
         }
 
@@ -883,17 +885,18 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         var frozenTopH = _sheet.Rows.GetVisualTop(_frozenTopCount);
         var frozenBottomH = _sheet.Rows.GetVisualHeightBetween(_sheet.NumRows - _frozenBottomCount, _sheet.NumRows);
 
-        // the viewRect we have from the viewport includes the frozen cols 
-        // so we need to consider those when considering whether the region is outside of the view
         var currentViewRect = await _mainView.CalculateViewRect(_sheetContainer);
         if (currentViewRect == null)
             return;
 
+        var gutterRow = _showRowHeadings ? _sheet.Rows.HeadingWidth : 0;
+        var gutterCol = _showColHeadings ? _sheet.Columns.HeadingHeight : 0;
+
         var constrainedViewRect = new Rect(
             currentViewRect.X + frozenLeftW,
             currentViewRect.Y + frozenTopH,
-            currentViewRect.Width - frozenRightW - frozenLeftW - GetGutterSize(Axis.Row),
-            currentViewRect.Height - frozenBottomH - frozenTopH - GetGutterSize(Axis.Col));
+            currentViewRect.Width - frozenRightW - frozenLeftW - gutterRow,
+            currentViewRect.Height - frozenBottomH - frozenTopH - gutterCol);
 
         var doScroll = false;
         var regionRect = region.GetRect(_sheet);
@@ -904,7 +907,6 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
         var moveUp = regionRect.Y < constrainedViewRect.Y;
         var moveDown = regionRect.Bottom > constrainedViewRect.Bottom;
 
-        // If the region is outside the contained view rect but NOT within the frozen cols
         if ((moveLeft || moveRight) &&
             !(region.Right <= _frozenLeftCount - 1 || region.Left >= _sheet.NumCols - _frozenRightCount))
         {
@@ -919,21 +921,18 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
             }
             else if (moveRight)
             {
-                // left edge distance should not end up closer to left edge than the right edge distance
                 if (Math.Abs(regionRect.Right + rightDist - constrainedViewRect.Right) <
                     Math.Abs(regionRect.X + rightDist - constrainedViewRect.X))
                     scrollXDist = rightDist;
             }
             else if (moveLeft)
             {
-                // right edge distance should not end up closer than the left edge distance
                 if (Math.Abs(regionRect.X + leftDist - constrainedViewRect.X) <
                     Math.Abs(regionRect.Right + leftDist - constrainedViewRect.Right))
                     scrollXDist = leftDist;
             }
         }
 
-        // If the region is outside the contained view rect but NOT within the frozen rows
         if ((moveUp || moveDown) &&
             !(region.Bottom <= _frozenTopCount - 1 || region.Top >= _sheet.NumRows - _frozenBottomCount))
         {
@@ -948,14 +947,12 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
             }
             else if (moveDown)
             {
-                // top edge distance should not end up closer to top edge than the right edge distance
                 if (Math.Abs(regionRect.Bottom + bottomDist - constrainedViewRect.Bottom) <
                     Math.Abs(regionRect.Y + bottomDist - constrainedViewRect.Y))
                     scrollYDist = bottomDist;
             }
             else if (moveUp)
             {
-                // right edge distance should not end up closer than the left edge distance
                 if (Math.Abs(regionRect.Y + topDist - constrainedViewRect.Y) <
                     Math.Abs(regionRect.Bottom + topDist - constrainedViewRect.Bottom))
                     scrollYDist = topDist;

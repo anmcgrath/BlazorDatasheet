@@ -8,8 +8,10 @@
 @using BlazorDatasheet.Render.Layers
 @using ColumnHeadingRenderer = BlazorDatasheet.Render.Headings.ColumnHeadingRenderer
 @using BlazorDatasheet.Render.AutoScroll
+@using BlazorDatasheet.Services
 @inherits SheetComponentBase
 
+<ConditionalCascadingValue TValue="IScrollService" Value="ScrollServiceForCascade">
 <div class="vars" theme="@_theme">
     <SelectionMenu
         MenuOptions="_menuOptions"
@@ -268,6 +270,7 @@
 
     </SheetMenuTarget>
 </div>
+</ConditionalCascadingValue>
 
 
 @code{

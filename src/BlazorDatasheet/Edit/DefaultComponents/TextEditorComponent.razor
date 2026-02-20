@@ -4,6 +4,7 @@
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Edit
 @using BlazorDatasheet.Core.FormulaEngine
+@using BlazorDatasheet.Core.Events.Selection
 @using BlazorDatasheet.Core.Selecting
 @using BlazorDatasheet.Core.Util
 @using BlazorDatasheet.DataStructures.Geometry
@@ -57,11 +58,11 @@
     private Sheet _sheet = null!;
     private FormulaOptions _formulaOptions = null!;
     private HighlightedInput _highlightedInput = default!;
-    private bool _isSoftEdit = false;
-    private int _currentCaretPosition = 0;
-    private double _highlightInputHeight = 0;
+    private bool _isSoftEdit;
+    private int _currentCaretPosition;
+    private double _highlightInputHeight;
     private string _currentSnapshot = string.Empty;
-    internal SelectionInputManager SelectionInputManager = null!;
+    internal SelectionInputManager? SelectionInputManager;
     private bool _canAcceptRanges = true;
     private List<FunctionDefinition>? _functionSuggestions;
     private FormulaHintBoxResult? _formulaHint;
@@ -70,9 +71,40 @@
     {
         _sheet = sheet;
         _isSoftEdit = _sheet.Editor.IsSoftEdit;
+
+        if (SelectionInputManager != null)
+            SelectionInputManager.Selection.ActiveRegionChanged -= OnFormulaSelectionActiveRegionChanged;
+
         SelectionInputManager = new SelectionInputManager(new Selection(_sheet));
+        SelectionInputManager.Selection.ActiveRegionChanged += OnFormulaSelectionActiveRegionChanged;
+
         _formulaOptions = sheet.FormulaEngine.Options;
         StateHasChanged();
+    }
+
+    private async void OnFormulaSelectionActiveRegionChanged(object? sender, ActiveRegionChangedEvent e)
+    {
+        var oldRegion = e.OldRegion;
+        var newRegion = e.NewRegion;
+
+        if (newRegion == null)
+            return;
+
+        if (newRegion.IsSingleCell())
+            await ScrollService!.ScrollToContainRegion(newRegion);
+
+        if (oldRegion == null)
+        {
+            await ScrollService!.ScrollToContainRegion(newRegion);
+            return;
+        }
+
+        var newRegions = newRegion.Area > oldRegion.Area
+            ? newRegion.Break(oldRegion)
+            : oldRegion.Break(newRegion);
+
+        if (newRegions.Count == 1)
+            await ScrollService!.ScrollToContainRegion(newRegions[0]);
     }
 
     private void OnInput(string value)
@@ -113,7 +145,7 @@
             _canAcceptRanges = false;
         }
 
-        SelectionInputManager.Clear();
+        SelectionInputManager?.Clear();
     }
 
     private void SuggestFunctions()
@@ -161,7 +193,10 @@
 
     private void SetEditValueToSelectionPreview()
     {
-        var selection = SelectionInputManager.Selection;
+        var selection = SelectionInputManager?.Selection;
+        if (selection == null)
+            return;
+        
         var sb = new StringBuilder();
         for (var i = 0; i < selection.Regions.Count; i++)
         {
@@ -193,13 +228,13 @@
         {
             if (_canAcceptRanges)
             {
-                if (SelectionInputManager.Selection.IsEmpty())
+                if (SelectionInputManager?.Selection.IsEmpty() == true)
                 {
                     SelectionInputManager.Selection.Set(_sheet.Editor.EditCell!.Row, _sheet.Editor.EditCell!.Col);
                 }
 
                 var offset = KeyUtil.GetMovementFromArrowKey(key);
-                SelectionInputManager.HandleArrowKeyDown(shiftKey, offset);
+                SelectionInputManager?.HandleArrowKeyDown(shiftKey, offset);
                 SetEditValueToSelectionPreview();
                 return true;
             }
@@ -221,7 +256,7 @@
     {
         if (_canAcceptRanges)
         {
-            SelectionInputManager.HandlePointerDown(row, col, shiftKey, ctrlKey, metaKey, 1);
+            SelectionInputManager?.HandlePointerDown(row, col, shiftKey, ctrlKey, metaKey, 1);
             SetEditValueToSelectionPreview();
             return true;
         }
@@ -233,7 +268,7 @@
     {
         if (_canAcceptRanges)
         {
-            SelectionInputManager.HandlePointerOver(row, col);
+            SelectionInputManager?.HandlePointerOver(row, col);
             SetEditValueToSelectionPreview();
             return true;
         }
@@ -243,13 +278,12 @@
 
     public override async Task<bool> HandleWindowMouseUpAsync()
     {
-        SelectionInputManager.HandleWindowMouseUp();
+        SelectionInputManager?.HandleWindowMouseUp();
 
         if (_canAcceptRanges)
         {
             SetEditValueToSelectionPreview();
             await _highlightedInput.FocusAndMoveCursorToEndAsync();
-            return true;
         }
 
         return true;
