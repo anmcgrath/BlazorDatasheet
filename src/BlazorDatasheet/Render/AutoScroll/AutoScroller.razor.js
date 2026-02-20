@@ -33,7 +33,8 @@
     subscribe(el, dotnetHelper) {
         this.dotnetHelper = dotnetHelper
         this.ancestor = this.findScrollableAncestor(el) ?? document.documentElement
-        window.addEventListener('mousemove', this.throttle(this.onMouseMove.bind(this), 20))
+        this._throttledMouseMove = this.throttle(this.onMouseMove.bind(this), 20)
+        window.addEventListener('mousemove', this._throttledMouseMove)
     }
 
     /***
@@ -46,9 +47,18 @@
         let rect = this.ancestor.getBoundingClientRect()
         let insideX = rect.left < e.clientX && rect.right > e.clientX
         let insideY = rect.top < e.clientY && rect.bottom > e.clientY
+
+        if (insideX && insideY) {
+            if (this._outsideAncestor) {
+                this._outsideAncestor = false
+                this.dotnetHelper.invokeMethodAsync("HandleMouseOutsideOfScrollableAncestor", {x: 0, y: 0})
+            }
+            return
+        }
+
+        this._outsideAncestor = true
         let edgeX = e.clientX > rect.right ? rect.right : rect.left
         let edgeY = e.clientY > rect.bottom ? rect.bottom : rect.top
-
         let dx = insideX ? 0 : e.clientX - edgeX
         let dy = insideY ? 0 : e.clientY - edgeY
 
@@ -56,7 +66,8 @@
     }
 
     dispose() {
-        window.removeEventListener('mousemove', this.onMouseMove)
+        if (this._throttledMouseMove)
+            window.removeEventListener('mousemove', this._throttledMouseMove)
         this.dotnetHelper = null
     }
 

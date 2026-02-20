@@ -23,6 +23,7 @@
     [Parameter, EditorRequired] public required Func<bool> IsActive { get; set; }
 
     private ElementReference _contentEl;
+    private IJSObjectReference? _module;
     private IJSObjectReference? _autoScroller;
     private DotNetObjectReference<AutoScroller>? _dotnetHelper;
     private PeriodicTimer? _pt;
@@ -31,15 +32,14 @@
 
     protected override void OnParametersSet()
     {
-        if (_enabled != Enabled)
+        if (!Enabled)
         {
-            if (_enabled && _pt != null)
-            {
-                _pt.Period = TimeSpan.FromMilliseconds(Options.PollIntervalInMs);
-            }
-
-            _enabled = Enabled;
+            _velX = 0;
+            _velY = 0;
         }
+        _enabled = Enabled;
+        if (_pt != null)
+            _pt.Period = TimeSpan.FromMilliseconds(Options.PollIntervalInMs);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -47,8 +47,8 @@
         if (firstRender)
         {
             _dotnetHelper = DotNetObjectReference.Create(this);
-            var module = await Js.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/Render/AutoScroll/AutoScroller.razor.js");
-            _autoScroller = await module.InvokeAsync<IJSObjectReference>("createAutoScroller");
+            _module = await Js.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/Render/AutoScroll/AutoScroller.razor.js");
+            _autoScroller = await _module.InvokeAsync<IJSObjectReference>("createAutoScroller");
             await _autoScroller.InvokeVoidAsync("subscribe", _contentEl, _dotnetHelper);
 
             _pt = new PeriodicTimer(TimeSpan.FromMilliseconds(Options.PollIntervalInMs));
@@ -75,6 +75,9 @@
                 await _autoScroller.DisposeAsync();
             }
 
+            if (_module != null)
+                await _module.DisposeAsync();
+
             _dotnetHelper?.Dispose();
             _pt?.Dispose();
         }
@@ -88,8 +91,8 @@
     public Task HandleMouseOutsideOfScrollableAncestor(Point2d point)
     {
         var p = 1.2;
-        _velX = Math.Max(Math.Pow(Math.Abs(point.X), p), Options.MaxVelocity) * Math.Sign(point.X);
-        _velY = Math.Max(Math.Pow(Math.Abs(point.Y), p), Options.MaxVelocity) * Math.Sign(point.Y);
+        _velX = Math.Min(Math.Pow(Math.Abs(point.X), p), Options.MaxVelocity) * Math.Sign(point.X);
+        _velY = Math.Min(Math.Pow(Math.Abs(point.Y), p), Options.MaxVelocity) * Math.Sign(point.Y);
         return Task.CompletedTask;
     }
 
