@@ -1,7 +1,9 @@
-﻿using System.Globalization;
-using System.Threading;
+﻿using System.Linq;
 using BlazorDatasheet.Formula.Core;
+using BlazorDatasheet.Formula.Core.Interpreter;
 using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
+using BlazorDatasheet.Formula.Core.Interpreter.Lexing;
+using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
 using BlazorDatashet.Formula.Functions.Math;
 using FluentAssertions;
 using NUnit.Framework;
@@ -149,6 +151,8 @@ public class InterpreterTests
     [TestCase("3<<")]
     [TestCase("><><3<<")]
     [TestCase("+<3")]
+    [TestCase("=0:1")]
+    [TestCase("=1048577:1048578")]
     public void Garbage_Formulas_Result_In_Error(string exp)
     {
         EvalExpression(exp).IsError().Should().Be(true);
@@ -235,6 +239,8 @@ public class InterpreterTests
     [TestCase("=1-2", -1)]
     [TestCase("=1e-2", 1e-2)]
     [TestCase("=4e5", 4e5)]
+    [TestCase("=1E3", 1e3)]
+    [TestCase("=1e+3", 1e3)]
     [TestCase("=10000000000000", 10000000000000)]
     public void Number_Evalutes_To_Correct_Number(string formula, double expected)
     {
@@ -265,11 +271,36 @@ public class InterpreterTests
     [TestCase("=1*-1", -1)]
     [TestCase("=(20+3)*-1", -23)]
     [TestCase("=(20+3)*+1", 23)]
+    [TestCase("=-1+2", 1)]
     [TestCase("=(20   +   (+3))*--  --(-(1))", -23)]
     public void Operations_With_Unary_Operators_Evaluate_Correctly(string formula, double result)
     {
         var parsed = _parser.Parse(formula);
         var expr = _evaluator.Evaluate(parsed);
         expr.Data.Should().Be(result);
+    }
+
+    [Test]
+    public void Parse_List_Does_Not_Leak_References_Across_Calls()
+    {
+        var lexer = new Lexer();
+
+        var firstTokens = lexer.Lex("=A1", new FormulaOptions());
+        var firstSyntaxTree = _parser.Parse(firstTokens, lexer.Errors);
+        firstSyntaxTree.References.Should().HaveCount(1);
+
+        var secondTokens = lexer.Lex("=1", new FormulaOptions());
+        var secondSyntaxTree = _parser.Parse(secondTokens, lexer.Errors);
+        secondSyntaxTree.References.Should().BeEmpty();
+    }
+
+    [Test]
+    public void FromString_Does_Not_Reuse_Existing_Parsing_Context_When_Not_Provided()
+    {
+        var formulaWithContext = _parser.FromString("=A1", new ParsingContext("CustomSheet", false));
+        formulaWithContext.References.First().SheetName.Should().Be("CustomSheet");
+
+        var formulaWithoutContext = _parser.FromString("=A1");
+        formulaWithoutContext.References.First().SheetName.Should().Be("Sheet1");
     }
 }

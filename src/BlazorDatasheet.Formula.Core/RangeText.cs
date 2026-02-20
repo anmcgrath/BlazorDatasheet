@@ -56,7 +56,7 @@ public static class RangeText
 
         if (pos > str.Length - 1)
         {
-            if (!isFixedCol && !isFixedCol) // doesn't contain any $
+            if (!isFixedCol && !isFixedRow) // doesn't contain any $
             {
                 cellReference = new NamedReference(str.ToString());
                 return true;

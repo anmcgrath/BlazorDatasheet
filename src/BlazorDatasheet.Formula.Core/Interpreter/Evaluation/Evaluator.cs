@@ -10,8 +10,10 @@ public class Evaluator
     private readonly BinaryOpEvaluator _bOp;
     private readonly UnaryOpEvaluator _uOp;
     private readonly IEnvironment _environment;
-    private FormulaEvaluationOptions _options = FormulaEvaluationOptions.Default;
-    private FormulaExecutionContext? _formulaExecutionContext;
+
+    private readonly record struct EvalContext(
+        FormulaEvaluationOptions Options,
+        FormulaExecutionContext ExecutionContext);
 
     public Evaluator(IEnvironment environment)
     {
@@ -25,68 +27,64 @@ public class Evaluator
     public CellValue Evaluate(CellFormula cellFormula, FormulaExecutionContext? executionContext = null,
         FormulaEvaluationOptions? options = null)
     {
-        _options = options ?? FormulaEvaluationOptions.Default;
-        _formulaExecutionContext = executionContext ?? new FormulaExecutionContext();
-        var evaluatedValue = DoEvaluate(cellFormula);
-        return evaluatedValue;
+        var ctx = new EvalContext(
+            options ?? FormulaEvaluationOptions.Default,
+            executionContext ?? new FormulaExecutionContext());
+        return DoEvaluate(cellFormula, ctx);
     }
 
-    private CellValue DoEvaluate(CellFormula formula)
+    private CellValue DoEvaluate(CellFormula formula, EvalContext ctx)
     {
-        if (_formulaExecutionContext?.IsExecuting(formula) == true)
-        {
+        if (ctx.ExecutionContext.IsExecuting(formula))
             return CellValue.Error(ErrorType.Circular);
-        }
 
-        _formulaExecutionContext?.SetExecuting(formula);
-        return Evaluate(formula.ExpressionTree);
+        ctx.ExecutionContext.SetExecuting(formula);
+        return EvaluateTree(formula.ExpressionTree, ctx);
     }
 
     /// <summary>
     /// Evaluates a syntax tree
     /// </summary>
-    /// <param name="tree"></param>
-    /// <returns></returns>
-    internal CellValue Evaluate(SyntaxTree tree)
+    internal CellValue Evaluate(SyntaxTree tree) =>
+        EvaluateTree(tree, new EvalContext(FormulaEvaluationOptions.Default, new FormulaExecutionContext()));
+
+    private CellValue EvaluateTree(SyntaxTree tree, EvalContext ctx)
     {
         if (tree.Errors.Count > 0)
             return CellValue.Error(ErrorType.Na);
 
-        var result = EvaluateExpression(tree.Root);
+        var result = EvaluateExpression(tree.Root, ctx);
         // If we haven't resolved references yet, do that
         // We do this at the end of evaluation so that we can pass
         // references to functions.
-        if (!_options.DoNotResolveDependencies && result.ValueType == CellValueType.Reference)
+        if (!ctx.Options.DoNotResolveDependencies && result.ValueType == CellValueType.Reference)
         {
             var r = (Reference)result.Data!;
             if (r.Kind == ReferenceKind.Cell)
                 return _environment.GetCellValue(((CellReference)r).RowIndex, ((CellReference)r).ColIndex, r.SheetName);
             else if (r.Kind == ReferenceKind.Range)
-            {
-                return CellValue.Array(_environment
-                    .GetRangeValues(r));
-            }
+                return CellValue.Array(_environment.GetRangeValues(r));
         }
 
         return result;
     }
 
-    private CellValue EvaluateExpression(Expression expression)
+    private CellValue EvaluateExpression(Expression expression, EvalContext ctx)
     {
         switch (expression.Kind)
         {
             case NodeKind.Literal:
                 return EvaluateLiteral((LiteralExpression)expression);
             case NodeKind.BinaryOperation:
-                return EvaluateBinaryExpression((BinaryOperationExpression)expression);
+                return EvaluateBinaryExpression((BinaryOperationExpression)expression, ctx);
             case NodeKind.ParenthesizedExpression:
-                return EvaluateParenthesizedExpression((ParenthesizedExpression)expression);
+                return EvaluateParenthesizedExpression((ParenthesizedExpression)expression, ctx);
             case NodeKind.FunctionCall:
-                return EvaluateFunctionCall((FunctionExpression)expression);
+                return EvaluateFunctionCall((FunctionExpression)expression, ctx);
             case NodeKind.Range:
-                return EvaluateReferenceExpression((ReferenceExpression)expression);
+                return EvaluateReferenceExpression((ReferenceExpression)expression, ctx);
             case NodeKind.UnaryOperation:
-                return EvaluateUnaryExpression((UnaryOperatorExpression)expression);
+                return EvaluateUnaryExpression((UnaryOperatorExpression)expression, ctx);
             case NodeKind.ArrayConstant:
                 return EvaluateArrayConstantExpression((ArrayConstantExpression)expression);
             case NodeKind.Name:
@@ -122,20 +120,20 @@ public class Evaluator
         return CellValue.Array(values);
     }
 
-    private CellValue EvaluateUnaryExpression(UnaryOperatorExpression expression)
+    private CellValue EvaluateUnaryExpression(UnaryOperatorExpression expression, EvalContext ctx)
     {
-        var val = EvaluateExpression(expression.Expression);
+        var val = EvaluateExpression(expression.Expression, ctx);
         return _uOp.Evaluate(expression.OperatorToken.Tag, val);
     }
 
-    private CellValue EvaluateReferenceExpression(ReferenceExpression expression)
+    private CellValue EvaluateReferenceExpression(ReferenceExpression expression, EvalContext ctx)
     {
         //TODO check it's valid (inside sheet)
         if (expression.Reference.IsInvalid)
             return CellValue.Error(ErrorType.Ref);
 
         if (expression.Reference.Kind == ReferenceKind.Cell)
-            return EvaluateCellReference((CellReference)expression.Reference);
+            return EvaluateCellReference((CellReference)expression.Reference, ctx);
 
         if (expression.Reference.Kind == ReferenceKind.Range)
             return EvaluateRangeReference((RangeReference)expression.Reference);
@@ -144,22 +142,22 @@ public class Evaluator
         return CellValue.Reference(expression.Reference);
     }
 
-    private CellValue EvaluateCellReference(CellReference cellReference)
+    private CellValue EvaluateCellReference(CellReference cellReference, EvalContext ctx)
     {
-        if (_options.DoNotResolveDependencies)
+        if (ctx.Options.DoNotResolveDependencies)
             return CellValue.Reference(cellReference);
 
-        if (!_formulaExecutionContext?.IsInSccGroup(cellReference) == true)
+        if (!ctx.ExecutionContext.IsInSccGroup(cellReference))
             return CellValue.Reference(cellReference);
 
         var formula = _environment.GetFormula(cellReference.RowIndex, cellReference.ColIndex, cellReference.SheetName);
         if (formula == null)
             return CellValue.Reference(cellReference);
 
-        if (_formulaExecutionContext?.TryGetExecutedValue(formula, out var result) == true)
+        if (ctx.ExecutionContext.TryGetExecutedValue(formula, out var result))
             return result;
 
-        return DoEvaluate(formula);
+        return DoEvaluate(formula, ctx);
     }
 
     private CellValue EvaluateRangeReference(RangeReference reference)
@@ -167,7 +165,7 @@ public class Evaluator
         return CellValue.Reference(reference);
     }
 
-    private CellValue EvaluateFunctionCall(FunctionExpression node)
+    private CellValue EvaluateFunctionCall(FunctionExpression node, EvalContext ctx)
     {
         var id = node.FunctionToken.Value;
         if (!node.FunctionExists)
@@ -193,7 +191,7 @@ public class Evaluator
                argIndex < nArgsProvided)
         {
             var paramDefinition = paramDefinitions[paramIndex];
-            var arg = EvaluateExpression(node.Args[argIndex]);
+            var arg = EvaluateExpression(node.Args[argIndex], ctx);
 
             convertedArgs[argIndex] = _parameterConverter.ConvertVal(arg, paramDefinition.Type);
 
@@ -227,16 +225,16 @@ public class Evaluator
         return parameterDefinitions.Count(x => x.Requirement == ParameterRequirement.Required);
     }
 
-    private CellValue EvaluateBinaryExpression(BinaryOperationExpression expression)
+    private CellValue EvaluateBinaryExpression(BinaryOperationExpression expression, EvalContext ctx)
     {
-        var left = EvaluateExpression(expression.Left);
-        var right = EvaluateExpression(expression.Right);
+        var left = EvaluateExpression(expression.Left, ctx);
+        var right = EvaluateExpression(expression.Right, ctx);
 
         return _bOp.Evaluate(left, expression.OpToken.Tag, right);
     }
 
-    private CellValue EvaluateParenthesizedExpression(ParenthesizedExpression expression) =>
-        EvaluateExpression(expression.Expression);
+    private CellValue EvaluateParenthesizedExpression(ParenthesizedExpression expression, EvalContext ctx) =>
+        EvaluateExpression(expression.Expression, ctx);
 
     private CellValue EvaluateLiteral(LiteralExpression expression)
     {
