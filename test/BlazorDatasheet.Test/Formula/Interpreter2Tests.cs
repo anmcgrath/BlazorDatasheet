@@ -151,6 +151,8 @@ public class InterpreterTests
     [TestCase("3<<")]
     [TestCase("><><3<<")]
     [TestCase("+<3")]
+    [TestCase("=0:1")]
+    [TestCase("=1048577:1048578")]
     public void Garbage_Formulas_Result_In_Error(string exp)
     {
         EvalExpression(exp).IsError().Should().Be(true);
@@ -293,12 +295,12 @@ public class InterpreterTests
     }
 
     [Test]
-    public void FromString_Reuses_Existing_Parsing_Context_When_Not_Provided()
+    public void FromString_Does_Not_Reuse_Existing_Parsing_Context_When_Not_Provided()
     {
         var formulaWithContext = _parser.FromString("=A1", new ParsingContext("CustomSheet", false));
         formulaWithContext.References.First().SheetName.Should().Be("CustomSheet");
 
         var formulaWithoutContext = _parser.FromString("=A1");
-        formulaWithoutContext.References.First().SheetName.Should().Be("CustomSheet");
+        formulaWithoutContext.References.First().SheetName.Should().Be("Sheet1");
     }
 }

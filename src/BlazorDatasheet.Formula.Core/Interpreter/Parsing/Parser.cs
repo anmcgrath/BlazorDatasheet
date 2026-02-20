@@ -54,9 +54,8 @@ public class Parser
 
     public CellFormula FromString(string formulaString, ParsingContext? parsingContext = null)
     {
-        var context = parsingContext ?? _parsingContext;
-        _parsingContext = context;
-        return new CellFormula(Parse(formulaString, context), _containsVolatiles);
+        _parsingContext = parsingContext;
+        return new CellFormula(Parse(formulaString, parsingContext), _containsVolatiles);
     }
 
     private Expression ParseExpression()
@@ -147,8 +146,12 @@ public class Parser
             var numberToken = (NumberToken)token;
             if (numberToken.IsInteger)
             {
-                addressToken = new RowAddress((int)numberToken.Value - 1, false);
-                return true;
+                var rowNumber = (int)numberToken.Value;
+                if (rowNumber is >= 1 and <= RangeText.MaxRows)
+                {
+                    addressToken = new RowAddress(rowNumber - 1, false);
+                    return true;
+                }
             }
         }
 
