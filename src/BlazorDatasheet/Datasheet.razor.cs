@@ -299,11 +299,26 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     /// The size of the main region of this datasheet, that is the region of the grid without
     /// any frozen rows or columns.
     /// </summary>
-    private Region MainViewRegion => new(
-        Math.Max(FrozenTopCount, _viewRegion.Top),
-        Math.Min(_viewRegion.Bottom - _frozenBottomCount, _viewRegion.Bottom),
-        Math.Max(FrozenLeftCount, _viewRegion.Left),
-        Math.Min(_viewRegion.Right - _frozenRightCount, _viewRegion.Right));
+    private Region MainViewRegion => DatasheetViewRegionCalculator.GetMainViewRegion(
+        _viewRegion,
+        _sheet.NumRows,
+        _sheet.NumCols,
+        _frozenTopCount,
+        _frozenBottomCount,
+        _frozenLeftCount,
+        _frozenRightCount);
+
+    private Region FrozenTopViewRegion =>
+        DatasheetViewRegionCalculator.GetFrozenTopRegion(_viewRegion, _sheet.NumRows, _frozenTopCount);
+
+    private Region FrozenBottomViewRegion =>
+        DatasheetViewRegionCalculator.GetFrozenBottomRegion(_viewRegion, _sheet.NumRows, _frozenBottomCount);
+
+    private Region FrozenLeftViewRegion =>
+        DatasheetViewRegionCalculator.GetFrozenLeftRegion(MainViewRegion, _sheet.NumCols, _frozenLeftCount);
+
+    private Region FrozenRightViewRegion =>
+        DatasheetViewRegionCalculator.GetFrozenRightRegion(MainViewRegion, _sheet.NumCols, _frozenRightCount);
 
     protected override void OnInitialized()
     {
@@ -335,9 +350,11 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
             requireRender = true;
         }
 
-        if (!_viewRegion.Equals(ViewRegion))
+        var constrainedViewRegion =
+            DatasheetViewRegionCalculator.GetConstrainedViewRegion(ViewRegion, _sheet.NumRows, _sheet.NumCols);
+        if (!_viewRegion.Equals(constrainedViewRegion))
         {
-            _viewRegion = ViewRegion ?? _sheet.Region;
+            _viewRegion = constrainedViewRegion;
             forceRerender = true;
         }
 
@@ -504,7 +521,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
     /// </summary>
     public void ForceReRender()
     {
-        _viewRegion = ViewRegion ?? _sheet.Region;
+        _viewRegion =
+            DatasheetViewRegionCalculator.GetConstrainedViewRegion(ViewRegion, _sheet.NumRows, _sheet.NumCols);
         _sheetIsDirty = true;
         StateHasChanged();
         RefreshView();

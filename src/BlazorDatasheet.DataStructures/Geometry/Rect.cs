@@ -1,6 +1,6 @@
 ﻿namespace BlazorDatasheet.DataStructures.Geometry;
 
-public class Rect
+public class Rect : IEquatable<Rect>
 {
     public double X { get; }
     public double Height { get; }
@@ -45,6 +45,39 @@ public class Rect
         }
 
         return intersection;
+    }
+
+    public bool Equals(Rect? other)
+    {
+        if (ReferenceEquals(null, other))
+            return false;
+        if (ReferenceEquals(this, other))
+            return true;
+
+        return X == other.X &&
+               Y == other.Y &&
+               Width == other.Width &&
+               Height == other.Height;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is Rect other && Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(X, Y, Width, Height);
+    }
+
+    public static bool operator ==(Rect? left, Rect? right)
+    {
+        return Equals(left, right);
+    }
+
+    public static bool operator !=(Rect? left, Rect? right)
+    {
+        return !Equals(left, right);
     }
 
     public override string ToString()

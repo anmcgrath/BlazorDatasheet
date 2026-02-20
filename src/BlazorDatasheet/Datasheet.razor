@@ -87,7 +87,7 @@
                             NumberPrecisionDisplay="NumberPrecisionDisplay"
                             CustomCellTypeDefinitions="CustomCellTypeDefinitions"
                             Icons="Icons"
-                            ViewRegion="new(0, _frozenTopCount - 1, _viewRegion.Left, _viewRegion.Right)"
+                            ViewRegion="FrozenTopViewRegion"
                             Sheet="_sheet">
                             <RowHeaderTemplate>@RowHeaderTemplate(context)</RowHeaderTemplate>
                         </Datasheet>
@@ -150,7 +150,7 @@
                                 CustomCellTypeDefinitions="CustomCellTypeDefinitions"
                                 Icons="Icons"
                                 Sheet="_sheet"
-                                ViewRegion="new(MainViewRegion.Top, MainViewRegion.Bottom, 0, _frozenLeftCount - 1)">
+                                ViewRegion="FrozenLeftViewRegion">
                             </Datasheet>
                         </div>
                     }
@@ -234,7 +234,7 @@
                                 CustomCellTypeDefinitions="CustomCellTypeDefinitions"
                                 Icons="Icons"
                                 Sheet="_sheet"
-                                ViewRegion="new Region(MainViewRegion.Top, MainViewRegion.Bottom, _sheet.NumRows-1 - _frozenRightCount + 1, _sheet.NumRows-1)"/>
+                                ViewRegion="FrozenRightViewRegion"/>
                         </div>
                     }
                 </div>
@@ -258,7 +258,7 @@
                             NumberPrecisionDisplay="NumberPrecisionDisplay"
                             CustomCellTypeDefinitions="CustomCellTypeDefinitions"
                             Icons="Icons"
-                            ViewRegion="new(_sheet.NumRows-1 - _frozenBottomCount + 1, _sheet.NumRows-1, _viewRegion.Left, _viewRegion.Right)"
+                            ViewRegion="FrozenBottomViewRegion"
                             Sheet="_sheet"/>
                     </div>
                 }
