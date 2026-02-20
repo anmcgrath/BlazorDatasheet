@@ -41,6 +41,9 @@
     resizeMap = {}
 
     calculateViewRect(wholeEl) {
+        if (wholeEl == null)
+            return null
+        
         let parent = this.findScrollableAncestor(wholeEl) || document.documentElement
         let wholeSheetRect = wholeEl.getBoundingClientRect()
 
@@ -165,7 +168,7 @@
             interactionObserver.observe(filler)
         })
 
-        mutationObserver.observe(filler, { })
+        mutationObserver.observe(filler, {})
         return mutationObserver
     }
 
