@@ -1,0 +1,65 @@
+name: Publish NuGet Packages
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore src/BlazorDatasheet.sln
+
+      - name: Run tests
+        run: dotnet test test/BlazorDatasheet.Test --configuration Release --no-restore --verbosity normal
+
+  publish:
+    name: Pack and Publish NuGet Packages
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # required for Source Link to embed correct commit info
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      - name: Restore dependencies
+        run: dotnet restore src/BlazorDatasheet.sln
+
+      - name: Pack BlazorDatasheet.DataStructures
+        run: dotnet pack src/BlazorDatasheet.DataStructures/BlazorDatasheet.DataStructures.csproj --configuration Release --no-restore --output ./nupkg -p:Version=${{ steps.version.outputs.VERSION }}
+
+      - name: Pack BlazorDatasheet.Formula.Core
+        run: dotnet pack src/BlazorDatasheet.Formula.Core/BlazorDatasheet.Formula.Core.csproj --configuration Release --no-restore --output ./nupkg -p:Version=${{ steps.version.outputs.VERSION }}
+
+      - name: Pack BlazorDatasheet.Formula.Functions
+        run: dotnet pack src/BlazorDatasheet.Formula.Functions/BlazorDatasheet.Formula.Functions.csproj --configuration Release --no-restore --output ./nupkg -p:Version=${{ steps.version.outputs.VERSION }}
+
+      - name: Pack BlazorDatasheet.Core
+        run: dotnet pack src/BlazorDatasheet.Core/BlazorDatasheet.Core.csproj --configuration Release --no-restore --output ./nupkg -p:Version=${{ steps.version.outputs.VERSION }}
+
+      - name: Pack BlazorDatasheet
+        run: dotnet pack src/BlazorDatasheet/BlazorDatasheet.csproj --configuration Release --no-restore --output ./nupkg -p:Version=${{ steps.version.outputs.VERSION }}
+
+      - name: Push packages to NuGet.org
+        run: dotnet nuget push "./nupkg/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+      - name: Push symbols to NuGet.org
+        run: dotnet nuget push "./nupkg/*.snupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate

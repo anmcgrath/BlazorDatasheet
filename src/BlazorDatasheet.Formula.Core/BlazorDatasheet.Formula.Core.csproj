@@ -5,7 +5,23 @@
         <Nullable>enable</Nullable>
         <Version>0.5.2.1</Version>
         <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+        <Title>BlazorDatasheet.Formula.Core</Title>
+        <Authors>Andrew McGrath</Authors>
+        <Description>Formula parser, interpreter, cell references, and dependency tracking for BlazorDatasheet.</Description>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageProjectUrl>https://github.com/anmcgrath/BlazorDatasheet</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/anmcgrath/BlazorDatasheet.git</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageTags>blazor,datasheet</PackageTags>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
     </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.*" PrivateAssets="All" />
+    </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\BlazorDatasheet.DataStructures\BlazorDatasheet.DataStructures.csproj" />
