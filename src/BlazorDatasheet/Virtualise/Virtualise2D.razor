@@ -219,9 +219,9 @@
         var layoutProviderRegion = new Region(0, LayoutProvider.NumRows - 1, 0, LayoutProvider.NumColumns - 1);
 
         var initialLeft = LayoutProvider.ComputeColumn(viewRect.X) + _viewRegion.Left;
-        var initialRight = LayoutProvider.ComputeColumn(LayoutProvider.ComputeLeftPosition(_viewRegion.Left) + viewRect.Width + viewRect.X);
+        var initialRight = LayoutProvider.ComputeColumn(viewRect.X + viewRect.Width) + _viewRegion.Left;
         var initialTop = LayoutProvider.ComputeRow(viewRect.Y) + _viewRegion.Top;
-        var initialBottom = LayoutProvider.ComputeRow(LayoutProvider.ComputeTopPosition(_viewRegion.Top) + viewRect.Height + viewRect.Y);
+        var initialBottom = LayoutProvider.ComputeRow(viewRect.Y + viewRect.Height) + _viewRegion.Top;
 
         Region? view = new Region(
             initialTop - OverscanRows, initialBottom + OverscanRows,

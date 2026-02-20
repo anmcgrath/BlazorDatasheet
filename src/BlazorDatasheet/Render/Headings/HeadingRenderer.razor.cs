@@ -48,6 +48,7 @@ public partial class HeadingRenderer : SheetComponentBase
             LayoutProvider = Axis == Axis.Col
                 ? new ColHeadingLayoutProvider(_sheet)
                 : new RowHeadingLayoutProvider(_sheet);
+            LayoutProvider.ViewRegion = _viewRegion;
 
             refreshView = true;
         }
@@ -55,6 +56,7 @@ public partial class HeadingRenderer : SheetComponentBase
         if (ViewRegion != _viewRegion)
         {
             _viewRegion = ViewRegion ?? _sheet.Region;
+            LayoutProvider.ViewRegion = _viewRegion;
             refreshView = true;
         }
 

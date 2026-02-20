@@ -43,27 +43,16 @@
     calculateViewRect(wholeEl) {
         if (wholeEl == null)
             return null
-        
+
         let parent = this.findScrollableAncestor(wholeEl) || document.documentElement
-        let wholeSheetRect = wholeEl.getBoundingClientRect()
+        let parentRect = parent === document.documentElement
+            ? { top: 0, left: 0, bottom: window.innerHeight, right: window.innerWidth }
+            : parent.getBoundingClientRect()
 
-        // find the position within the grid where the content should start from
-        // if the el top left is visible, left and top should be <= 0
-        // if the el left is less than the container edge it should be the distance past the left
-        // edge that the el top left corner is (this is given by the parent scrollLeft/scrollTop IF 
-        // THERE IS NOTHING BETWEEN IT AND THE SCROLL CONTAINER
-        // which is why we remove the offsetTop/offsetLeft
+        let wholeRect = wholeEl.getBoundingClientRect()
 
-        // if position is sticky, the offset top and left are always zero.
-
-        // need to find the offset from the next scrollable element and include that in the scroll calculation
-
-
-        let offsetLeft = this.getOffsetLeftToScrollableParent(wholeEl)
-        let offseTTop = this.getOffsetTopToScrollableParent(wholeEl)
-
-        let top = parent.scrollTop - offseTTop
-        let left = parent.scrollLeft - offsetLeft
+        let top = (parentRect.top + (parent.clientTop || 0)) - wholeRect.top
+        let left = (parentRect.left + (parent.clientLeft || 0)) - wholeRect.left
         let width = parent === document.documentElement ? window.innerWidth : parent.clientWidth
         let height = parent === document.documentElement ? window.innerHeight : parent.clientHeight
 
