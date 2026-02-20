@@ -152,11 +152,9 @@ public class Selection
         if (SelectingRegion == null)
             return;
         SetActiveCellPosition(_selectingStartPosition.row, _selectingStartPosition.col);
-        var oldRegions = Regions.Select(x => x.Clone()).ToList();
         this.Add(SelectingRegion);
         SelectingRegion = null;
         EmitSelectingChanged();
-        EmitSelectionChange(oldRegions);
     }
 
     private void EmitSelectingChanged()
@@ -331,6 +329,7 @@ public class Selection
         else
         {
             ExpandEdge(edge.GetOpposite(), amount);
+            return;
         }
 
         EmitSelectionChange(oldRegions);
@@ -505,6 +504,7 @@ public class Selection
         {
             // We end up with a new region of area 1 (or the size of the merged cell it is not on)
             _regions.Clear();
+            _activeRegionIndex = -1;
 
             var offsetPosn = new CellPosition(currRow, currCol);
             offsetPosn = _sheet.Region.GetConstrained(offsetPosn);
@@ -545,7 +545,7 @@ public class Selection
             newRow = activeRegionFixed.Bottom;
             if (newCol < activeRegionFixed.Left)
             {
-                var newActiveRegionIndex = GetRegionIndexAfterActive();
+                var newActiveRegionIndex = GetRegionIndexBeforeActive();
                 var newActiveRegion = _regions[newActiveRegionIndex];
                 var newActiveRegionFixed = newActiveRegion.GetIntersection(_sheet.Region);
                 if (newActiveRegionFixed == null)
@@ -604,6 +604,7 @@ public class Selection
         {
             // We end up with a new region of area 1 (or the size of the merged cell it is not on)
             _regions.Clear();
+            _activeRegionIndex = -1;
 
             var offsetPosn = new CellPosition(currRow, currCol);
             offsetPosn = _sheet.Region.GetConstrained(offsetPosn);
@@ -619,8 +620,8 @@ public class Selection
 
         // Move the posn and attempt to bring into either the next region
         // or the next cell in the region
-        var newRow = ActiveCellPosition.row;
-        var newCol = ActiveCellPosition.col + colDir;
+        var newRow = currRow;
+        var newCol = currCol;
         if (newCol > activeRegionFixed.Right)
         {
             newCol = activeRegionFixed.Left;
@@ -643,7 +644,7 @@ public class Selection
             newRow--;
             if (newRow < activeRegionFixed.Top)
             {
-                var newActiveRegionIndex = GetRegionIndexAfterActive();
+                var newActiveRegionIndex = GetRegionIndexBeforeActive();
                 var newActiveRegion = _regions[newActiveRegionIndex];
                 var newActiveRegionFixed = newActiveRegion.GetIntersection(_sheet.Region);
                 if (newActiveRegionFixed == null)
@@ -669,15 +670,15 @@ public class Selection
         return index;
     }
 
-    private IRegion GetRegionBeforeActive()
+    private int GetRegionIndexBeforeActive()
     {
-        var activeRegionIndex = _regions.IndexOf(ActiveRegion!);
-        if (activeRegionIndex == -1)
+        var index = _activeRegionIndex;
+        if (index == -1)
             throw new Exception("No range is active?");
-        activeRegionIndex--;
-        if (activeRegionIndex < 0)
-            activeRegionIndex = _regions.Count - 1;
-        return _regions[activeRegionIndex];
+        index--;
+        if (index < 0)
+            index = _regions.Count - 1;
+        return index;
     }
 
     private void EmitSelectionChange(IReadOnlyList<IRegion> oldRegions)

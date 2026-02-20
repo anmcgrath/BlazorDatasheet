@@ -30,8 +30,10 @@ internal class SelectionInputManager
             return;
 
         var posn = _selection.ActiveCellPosition;
-        
-        _selection.Set(posn.row, posn.col);
+
+        if (!_selection.ActiveRegion.IsSingleCell())
+            _selection.Set(posn.row, posn.col);
+
         _selection.MoveActivePositionByRow(offset.Rows);
         _selection.MoveActivePositionByCol(offset.Columns);
     }
