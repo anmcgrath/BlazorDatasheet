@@ -53,28 +53,17 @@ internal class SparseList<T>
 
     public void InsertAt(int itemIndex, int nItems)
     {
-        // Find where the next col should be inserted at in the dict
-        var index = Values.Keys.BinarySearchIndexOf(itemIndex - 1, Comparer<int>.Default);
-        if (index < 0)
-            index = ~index;
-        else
-            index++; // this is the next index after the value
-
-        if (index < 0 || index >= Values.Count)
+        if (nItems <= 0 || Values.Count == 0)
             return;
 
-        var nValues = Values.Keys.Count;
-        // Work backwards from the end of the data to where we have
-        // inserted the col and increase the col values by 1
-        // (when we insert a col we don't add any new cols to Values)
-        for (int i = nValues - 1; i >= index; i--)
+        var shiftedValues = new SortedList<int, T>(Values.Count);
+        foreach (var value in Values)
         {
-            // Shuffle up the values
-            var val = Values.Values[i];
-            var newIndexNum = Values.Keys[i] + nItems;
-            Values.RemoveAt(i);
-            Values.Add(newIndexNum, val);
+            var shiftedIndex = value.Key >= itemIndex ? value.Key + nItems : value.Key;
+            shiftedValues.Add(shiftedIndex, value.Value);
         }
+
+        Values = shiftedValues;
     }
 
     /// <summary>
@@ -143,41 +132,23 @@ internal class SparseList<T>
     public List<(int indexDeleted, T value)> DeleteAt(int itemIndex, int nItems)
     {
         var deleted = new List<(int indexDeleted, T)>();
+        if (nItems <= 0 || Values.Count == 0)
+            return deleted;
 
-        // Find where the next row should be inserted after in the dict
-        var startIndex = Values.Keys.BinarySearchIndexOf(itemIndex, Comparer<int>.Default);
-        if (startIndex < 0)
-            startIndex = ~startIndex; // the index points to the next row 
-
-        if (startIndex > Values.Count - 1)
-            return new List<(int indexDeleted, T)>();
-
-        int startItemIndex = Values.Keys[startIndex];
-        if (startItemIndex < itemIndex)
-            startIndex++;
-
-        var endIndex = Values.Keys.BinarySearchClosest(itemIndex + nItems - 1);
-        endIndex = Math.Min(endIndex, Values.Count - 1);
-
-        var endItemIndex = Values.Keys[endIndex];
-        if (endItemIndex > itemIndex + nItems - 1)
-            endIndex--;
-
-        for (int i = 0; i <= (endIndex - startIndex); i++)
+        long endIndex = (long)itemIndex + nItems - 1;
+        var shiftedValues = new SortedList<int, T>(Values.Count);
+        foreach (var value in Values)
         {
-            deleted.Add((Values.GetKeyAtIndex(startIndex), Values.GetValueAtIndex(startIndex)));
-            Values.RemoveAt(startIndex);
+            if (value.Key >= itemIndex && value.Key <= endIndex)
+                deleted.Add((value.Key, value.Value));
+            else
+            {
+                var shiftedIndex = value.Key > endIndex ? value.Key - nItems : value.Key;
+                shiftedValues.Add(shiftedIndex, value.Value);
+            }
         }
 
-        for (int i = startIndex; i < Values.Count; i++)
-        {
-            // Shuffle down the values
-            var val = Values.Values[i];
-            var newItemIndex = Values.Keys[i] - nItems;
-            Values.RemoveAt(i);
-            Values.Add(newItemIndex, val);
-        }
-
+        Values = shiftedValues;
         return deleted;
     }
 

@@ -117,7 +117,7 @@ public class CellLayoutProvider : IGridLayoutProvider
 
     public int ComputeRow(double y)
     {
-        return _sheet.Rows.GetRowIndex(y) + ViewRegion.Left;
+        return _sheet.Rows.GetRowIndex(y) + ViewRegion.Top;
     }
 
 

@@ -1070,6 +1070,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        RemoveEvents(_sheet);
+
         if (_dotnetHelper is not null)
             _dotnetHelper.Dispose();
 
