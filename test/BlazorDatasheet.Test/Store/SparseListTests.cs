@@ -76,4 +76,57 @@ public class SparseListTests
         _list.GetNextNonEmptyItemKey(11).Should().Be(15);
         _list.GetNextNonEmptyItemKey(11).Should().Be(15);
     }
+
+    [Test]
+    public void Insert_Data_At_Large_Sparse_Set_Shifts_All_Data_At_And_After_Index()
+    {
+        const int insertAt = 7500;
+        const int shift = 200;
+        var entries = Enumerable.Range(0, 5000)
+            .Select(i => (key: i * 3, value: i))
+            .ToList();
+
+        foreach (var entry in entries)
+            _list.Set(entry.key, entry.value);
+
+        _list.InsertAt(insertAt, shift);
+
+        var expected = entries
+            .Select(x => (itemIndex: x.key >= insertAt ? x.key + shift : x.key, data: x.value))
+            .OrderBy(x => x.itemIndex)
+            .ToList();
+
+        _list.GetNonEmptyData().Should().Equal(expected);
+    }
+
+    [Test]
+    public void Delete_Data_At_Large_Sparse_Set_Removes_Range_And_Shifts_Following_Data()
+    {
+        const int deleteAt = 7500;
+        const int nItems = 200;
+        var deleteEnd = deleteAt + nItems - 1;
+        var entries = Enumerable.Range(0, 5000)
+            .Select(i => (key: i * 3, value: i))
+            .ToList();
+
+        foreach (var entry in entries)
+            _list.Set(entry.key, entry.value);
+
+        var deleted = _list.DeleteAt(deleteAt, nItems);
+
+        var expectedDeleted = entries
+            .Where(x => x.key >= deleteAt && x.key <= deleteEnd)
+            .Select(x => (indexDeleted: x.key, value: x.value))
+            .ToList();
+
+        deleted.Should().Equal(expectedDeleted);
+
+        var expectedRemaining = entries
+            .Where(x => x.key < deleteAt || x.key > deleteEnd)
+            .Select(x => (itemIndex: x.key > deleteEnd ? x.key - nItems : x.key, data: x.value))
+            .OrderBy(x => x.itemIndex)
+            .ToList();
+
+        _list.GetNonEmptyData().Should().Equal(expectedRemaining);
+    }
 }
