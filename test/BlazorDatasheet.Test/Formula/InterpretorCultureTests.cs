@@ -1,4 +1,5 @@
-﻿using BlazorDatasheet.Formula.Core;
+﻿using System.Globalization;
+using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter;
 using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 using BlazorDatasheet.Formula.Core.Interpreter.Lexing;
@@ -32,6 +33,18 @@ public class InterpretorCultureTests
     {
         EvalExpression("=0,1").GetValue<double>().Should().BeApproximately(0.1, 1e-6);
         EvalExpression("=,2").GetValue<double>().Should().BeApproximately(0.2, 1e-6);
+    }
+
+    [Test]
+    [SetCulture("en-US")]
+    public void Decimal_Separator_Uses_Formula_Options_Culture()
+    {
+        var options = new FormulaOptions
+        {
+            SeparatorSettings = new SeparatorSettings(new CultureInfo("fr-FR"))
+        };
+
+        EvalExpression("=,2", options).GetValue<double>().Should().BeApproximately(0.2, 1e-6);
     }
 
     [Test]

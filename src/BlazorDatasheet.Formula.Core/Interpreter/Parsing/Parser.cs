@@ -27,6 +27,7 @@ public class Parser
         _position = 0;
         _tokens = tokens;
         _errors = lexErrors ?? new List<string>();
+        _references = new();
         _containsVolatiles = false;
         // Formula must start with equals token
         MatchToken(Tag.EqualsToken);
@@ -53,23 +54,24 @@ public class Parser
 
     public CellFormula FromString(string formulaString, ParsingContext? parsingContext = null)
     {
-        _parsingContext = parsingContext ?? _parsingContext;
-        return new CellFormula(Parse(formulaString, parsingContext), _containsVolatiles);
+        var context = parsingContext ?? _parsingContext;
+        _parsingContext = context;
+        return new CellFormula(Parse(formulaString, context), _containsVolatiles);
     }
 
     private Expression ParseExpression()
     {
-        return ParseUnaryExpression();
+        return ParseBinaryExpression();
     }
 
     private Expression ParseUnaryExpression()
     {
         if (IsUnaryOperator(Current))
         {
-            return new UnaryOperatorExpression(NextToken(), ParseExpression());
+            return new UnaryOperatorExpression(NextToken(), ParseUnaryExpression());
         }
 
-        return ParseBinaryExpression();
+        return ParsePrimaryExpression();
     }
 
     private bool IsUnaryOperator(Token token)
@@ -80,7 +82,7 @@ public class Parser
 
     private Expression ParseBinaryExpression(int parentPrecedence = 0)
     {
-        var leftExpression = IsUnaryOperator(Current) ? ParseUnaryExpression() : ParsePrimaryExpression();
+        var leftExpression = ParseUnaryExpression();
 
         while (Current.Tag == Tag.PercentToken)
             leftExpression = new UnaryOperatorExpression(NextToken(), leftExpression, isPostFix: true);

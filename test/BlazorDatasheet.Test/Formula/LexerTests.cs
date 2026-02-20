@@ -12,6 +12,7 @@ public class LexerTests
     [TestCase("=Sheet1!A1", "Sheet1")]
     [TestCase("=Sheet2!A1", "Sheet2")]
     [TestCase("='Sheet 1'!A1", "Sheet 1")]
+    [TestCase("='Sheet''1'!A1", "Sheet'1")]
     [TestCase("='Sheet 1'!A1:'Sheet 1'!:A1", "Sheet 1")]
     public void Sheet_Locator_Token_Tests(string formulaStr, string? expectedSheetName)
     {
@@ -29,5 +30,14 @@ public class LexerTests
         var tokens = lexer.Lex("='Sheet1!A1", new FormulaOptions());
         tokens.Should().NotContainEquivalentOf(new SheetLocatorToken("Sheet1", 1));
         tokens.Should().ContainEquivalentOf(new BadToken(1));
+    }
+
+    [Test]
+    public void Escaped_Quotes_In_String_Are_Lexed()
+    {
+        var lexer = new Lexer();
+        var tokens = lexer.Lex("=\"a\"\"b\"", new FormulaOptions());
+        tokens[1].Should().BeOfType<StringToken>();
+        ((StringToken)tokens[1]).Value.Should().Be("a\"b");
     }
 }
