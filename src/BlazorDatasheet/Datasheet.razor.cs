@@ -264,6 +264,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     private EditorLayer _editorLayer = default!;
 
     private readonly List<IRegion> _dirtyRegions = new();
+    private readonly HashSet<int> _dirtyRowIndices = new();
 
     private bool _sheetIsDirty;
 
@@ -436,6 +437,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         _renderRequested = false;
         _sheetIsDirty = false;
         _dirtyRegions.Clear();
+        _dirtyRowIndices.Clear();
 
         await base.OnAfterRenderAsync(firstRender);
     }
@@ -584,6 +586,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
             foreach (var row in _sheet.Rows.GetVisibleIndices(boundedRegion.Top, boundedRegion.Bottom))
             {
+                _dirtyRowIndices.Add(row);
                 foreach (var col in _sheet.Columns.GetVisibleIndices(boundedRegion.Left, boundedRegion.Right))
                 {
                     var position = new CellPosition(row, col);
@@ -1038,7 +1041,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     private bool IsRowDirty(int rowIndex)
     {
-        return _sheetIsDirty || _dirtyRegions.Any(x => x.SpansRow(rowIndex));
+        return _sheetIsDirty || _dirtyRowIndices.Contains(rowIndex);
     }
 
     protected override bool ShouldRender()

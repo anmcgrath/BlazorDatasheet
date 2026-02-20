@@ -1,4 +1,4 @@
-using System.Globalization;
+using System.Text;
 using BlazorDatasheet.Formula.Core.Interpreter.Addresses;
 
 namespace BlazorDatasheet.Formula.Core.Interpreter.Lexing;
@@ -47,6 +47,9 @@ public ref struct Lexer
     private char GetNegativeSign() =>
         Convert.ToChar(_formulaOptions.SeparatorSettings.CultureInfo.NumberFormat.NegativeSign);
 
+    private char GetPositiveSign() =>
+        Convert.ToChar(_formulaOptions.SeparatorSettings.CultureInfo.NumberFormat.PositiveSign);
+
     private Token ReadToken()
     {
         if (char.IsWhiteSpace(_current))
@@ -73,7 +76,7 @@ public ref struct Lexer
         if (char.IsDigit(_current))
             return ReadNumber();
 
-        if (_string.Slice(_position).StartsWith(NumberFormatInfo.CurrentInfo.NumberDecimalSeparator))
+        if (_current == _formulaOptions.SeparatorSettings.DecimalNumberSeparator)
             return ReadNumber();
 
         if (char.IsLetter(_current) || _current == '$')
@@ -199,15 +202,27 @@ public ref struct Lexer
     private Token ReadNumber()
     {
         int start = _position;
-        bool containsE = false;
+        bool containsExponentMarker = false;
+        bool canReadExponentSign = false;
+        var negativeSign = GetNegativeSign();
+        var positiveSign = GetPositiveSign();
         Next();
 
         while (char.IsDigit(_current) ||
-               _current == _formulaOptions.SeparatorSettings.DecimalNumberSeparator || _current == 'e' ||
-               (containsE && _current == GetNegativeSign()))
+               _current == _formulaOptions.SeparatorSettings.DecimalNumberSeparator ||
+               ((_current == 'e' || _current == 'E') && !containsExponentMarker) ||
+               (canReadExponentSign &&
+                (_current == negativeSign || _current == positiveSign || _current == '-' || _current == '+')))
         {
-            if (_current == 'e')
-                containsE = true;
+            if (_current == 'e' || _current == 'E')
+            {
+                containsExponentMarker = true;
+                canReadExponentSign = true;
+            }
+            else
+            {
+                canReadExponentSign = false;
+            }
 
             Next();
         }
@@ -268,14 +283,8 @@ public ref struct Lexer
         int start = _position;
         // Consume first '
         Next();
-
-        if (_current == '\0')
-        {
-            Error("End of file reached unexpectedly");
-            return new BadToken(start);
-        }
-
-        while (_current != '\'')
+        var valueBuilder = new StringBuilder();
+        while (true)
         {
             if (_current == '\0')
             {
@@ -283,11 +292,25 @@ public ref struct Lexer
                 return new BadToken(start);
             }
 
+            if (_current == '\'')
+            {
+                // escaped quote in sheet name: ''
+                if (Peek(1) == '\'')
+                {
+                    valueBuilder.Append('\'');
+                    Next();
+                    Next();
+                    continue;
+                }
+
+                break;
+            }
+
+            valueBuilder.Append(_current);
             Next();
         }
 
-        int length = _position - start - 1;
-        var stringValue = _string.Slice(start + 1, length).ToString();
+        var stringValue = valueBuilder.ToString();
 
         // consume the last '
         Next();
@@ -307,14 +330,8 @@ public ref struct Lexer
         int start = _position;
         // Consume first ""
         Next();
-
-        if (_current == '\0')
-        {
-            Error("End of file reached unexpectedly");
-            return new BadToken(start);
-        }
-
-        while (_current != '"')
+        var valueBuilder = new StringBuilder();
+        while (true)
         {
             if (_current == '\0')
             {
@@ -322,11 +339,25 @@ public ref struct Lexer
                 return new BadToken(start);
             }
 
+            if (_current == '"')
+            {
+                // escaped quote in string literal: ""
+                if (Peek(1) == '"')
+                {
+                    valueBuilder.Append('"');
+                    Next();
+                    Next();
+                    continue;
+                }
+
+                break;
+            }
+
+            valueBuilder.Append(_current);
             Next();
         }
 
-        int length = _position - start - 1;
-        var stringValue = _string.Slice(start + 1, length).ToString();
+        var stringValue = valueBuilder.ToString();
 
         // consume the last ""
         Next();
