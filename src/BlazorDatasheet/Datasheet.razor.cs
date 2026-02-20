@@ -8,6 +8,7 @@ using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.Core.Events.Selection;
 using BlazorDatasheet.Core.Events.Visual;
 using BlazorDatasheet.Core.Interfaces;
+using BlazorDatasheet.Core.Layout;
 using BlazorDatasheet.Core.Util;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Edit;
@@ -278,6 +279,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     private Datasheet? _frozenRight;
     private Datasheet? _frozenTop;
     private Datasheet? _frozenBottom;
+    private CellLayoutProvider _cellLayoutProvider = null!;
 
     private IScrollService? ScrollServiceForCascade => GridLevel == 0 ? this : null;
 
@@ -326,6 +328,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     protected override void OnInitialized()
     {
         CreateCellRenderFragment();
+        _cellLayoutProvider = new CellLayoutProvider(_sheet);
         ClipboardService = new Clipboard(Js);
         _windowEventService = new WindowEventService(Js);
         RegisterDefaultShortcuts();
@@ -341,6 +344,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         {
             RemoveEvents(_sheet);
             _sheet = Sheet ?? new(0, 0);
+            _cellLayoutProvider = new CellLayoutProvider(_sheet);
             _selectionManager = new SelectionInputManager(_sheet.Selection);
             AddEvents(_sheet);
             _visualCellCache.Clear();
@@ -582,12 +586,19 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             if (boundedRegion == null)
                 continue;
 
+            var visibleCols = new List<int>();
+            foreach (var col in _sheet.Columns.GetVisibleIndices(boundedRegion.Left, boundedRegion.Right))
+                visibleCols.Add(col);
+
+            if (visibleCols.Count == 0)
+                continue;
+
             _dirtyRegions.Add(boundedRegion);
 
             foreach (var row in _sheet.Rows.GetVisibleIndices(boundedRegion.Top, boundedRegion.Bottom))
             {
                 _dirtyRowIndices.Add(row);
-                foreach (var col in _sheet.Columns.GetVisibleIndices(boundedRegion.Left, boundedRegion.Right))
+                foreach (var col in visibleCols)
                 {
                     var position = new CellPosition(row, col);
                     var visualCell = new VisualCell(row, col, _sheet, _numberPrecisionDisplay);

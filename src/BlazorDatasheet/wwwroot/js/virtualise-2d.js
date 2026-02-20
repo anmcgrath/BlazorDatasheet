@@ -5,40 +5,41 @@
             return null
 
         let parent = element.parentElement
+        while (parent != null && parent !== document.body && parent !== document.documentElement) {
+            let style = window.getComputedStyle(parent)
+            if (style.overflowY !== 'visible' || style.overflowX !== 'visible' || style.overflow !== 'visible')
+                return parent
+            parent = parent.parentElement
+        }
 
-        if (parent == null || element === document.body || element === document.documentElement)
-            return null
-
-        let overflowY = window.getComputedStyle(parent).overflowY
-        let overflowX = window.getComputedStyle(parent).overflowX
-        let overflow = window.getComputedStyle(parent).overflow
-
-        if (overflowY !== 'visible' || overflowX !== 'visible' || overflow !== 'visible')
-            return parent
-
-        return this.findScrollableAncestor(parent)
+        return null
     }
 
     disposeVirtualisationHandlers(el) {
-        this.leftHandlerMutMap[el].disconnect()
-        this.rightHandlerMutMap[el].disconnect()
-        this.topHandlerMutMap[el].disconnect()
-        this.bottomHandlerMutMap[el].disconnect()
-        this.interactionMap[el].disconnect()
+        let left = this.leftHandlerMutMap.get(el)
+        let right = this.rightHandlerMutMap.get(el)
+        let top = this.topHandlerMutMap.get(el)
+        let bottom = this.bottomHandlerMutMap.get(el)
+        let interaction = this.interactionMap.get(el)
 
-        this.leftHandlerMutMap[el] = {}
-        this.rightHandlerMutMap[el] = {}
-        this.topHandlerMutMap[el] = {}
-        this.bottomHandlerMutMap[el] = {}
-        this.interactionMap[el] = {}
+        left?.disconnect()
+        right?.disconnect()
+        top?.disconnect()
+        bottom?.disconnect()
+        interaction?.disconnect()
+
+        this.leftHandlerMutMap.delete(el)
+        this.rightHandlerMutMap.delete(el)
+        this.topHandlerMutMap.delete(el)
+        this.bottomHandlerMutMap.delete(el)
+        this.interactionMap.delete(el)
     }
 
-    leftHandlerMutMap = {}
-    rightHandlerMutMap = {}
-    topHandlerMutMap = {}
-    bottomHandlerMutMap = {}
-    interactionMap = {}
-    resizeMap = {}
+    leftHandlerMutMap = new WeakMap()
+    rightHandlerMutMap = new WeakMap()
+    topHandlerMutMap = new WeakMap()
+    bottomHandlerMutMap = new WeakMap()
+    interactionMap = new WeakMap()
 
     calculateViewRect(wholeEl) {
         if (wholeEl == null)
@@ -71,33 +72,6 @@
         parent.scrollBy({left: x, top: y, behavior: "auto"})
     }
 
-    getOffsetLeftToScrollableParent(el) {
-        let offset = el.offsetLeft
-        let parent = el.offsetParent
-
-        while (parent !== null && !this.isScrollable(parent)) {
-            offset += parent.offsetLeft
-            parent = parent.offsetParent
-        }
-        return offset
-    }
-
-    getOffsetTopToScrollableParent(el) {
-        let offset = el.offsetTop
-        let parent = el.offsetParent
-
-        while (parent !== null && !this.isScrollable(parent)) {
-            offset += parent.offsetTop
-            parent = parent.offsetParent
-        }
-        return offset
-    }
-
-    isScrollable(el) {
-        let style = window.getComputedStyle(el)
-        return style.overflow !== 'visible' || style.overflowX !== 'visible' || style.overflowY !== 'visible'
-    }
-
     addVirtualisationHandlers(dotNetHelper, wholeEl, dotnetScrollHandlerName, fillerLeft, fillerTop, fillerRight, fillerBottom) {
         // return initial scroll event to render the sheet
         let parent = this.findScrollableAncestor(wholeEl)
@@ -114,21 +88,26 @@
         if (dotNetHelper)
             dotNetHelper.invokeMethodAsync(dotnetScrollHandlerName, viewRect);
 
-        let self = this
         let observer = new IntersectionObserver((entries, observer) => {
+            let shouldNotify = false
             for (let i = 0; i < entries.length; i++) {
                 if (!entries[i].isIntersecting)
                     continue
 
-                if (entries[i].target.getBoundingClientRect().width <= 0 ||
-                    entries[i].target.getBoundingClientRect().height <= 0)
+                let rect = entries[i].target.getBoundingClientRect()
+                if (rect.width <= 0 || rect.height <= 0)
                     continue
 
-                let viewRect = getRect(wholeEl)
-                if (dotNetHelper)
-                    dotNetHelper.invokeMethodAsync(dotnetScrollHandlerName, viewRect);
+                shouldNotify = true
+                break
             }
 
+            if (!shouldNotify)
+                return
+
+            let viewRect = getRect(wholeEl)
+            if (dotNetHelper)
+                dotNetHelper.invokeMethodAsync(dotnetScrollHandlerName, viewRect);
         }, {root: parent, threshold: 0})
 
         observer.observe(fillerTop)
@@ -136,16 +115,14 @@
         observer.observe(fillerLeft)
         observer.observe(fillerRight)
 
-        this.interactionMap[wholeEl] = observer
+        this.interactionMap.set(wholeEl, observer)
 
-        this.topHandlerMutMap[wholeEl] = this.createMutationObserver(fillerTop, observer)
-        this.bottomHandlerMutMap[wholeEl] = this.createMutationObserver(fillerBottom, observer)
-        this.leftHandlerMutMap[wholeEl] = this.createMutationObserver(fillerLeft, observer)
-        this.rightHandlerMutMap[wholeEl] = this.createMutationObserver(fillerRight, observer)
+        this.topHandlerMutMap.set(wholeEl, this.createMutationObserver(fillerTop, observer))
+        this.bottomHandlerMutMap.set(wholeEl, this.createMutationObserver(fillerBottom, observer))
+        this.leftHandlerMutMap.set(wholeEl, this.createMutationObserver(fillerLeft, observer))
+        this.rightHandlerMutMap.set(wholeEl, this.createMutationObserver(fillerRight, observer))
 
     }
-
-    dotNetHelperMap = {}
 
     createMutationObserver(filler, interactionObserver) {
         // if we are scrolling too fast (or rendering too slow) we may have a situation where
@@ -161,7 +138,6 @@
         return mutationObserver
     }
 
-    sheetMousePositionListeners = {}
 }
 
 

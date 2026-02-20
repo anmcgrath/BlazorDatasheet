@@ -141,7 +141,6 @@
     private Size _lastTotalSize = new(-1, -1);
     private List<int> _visibleRowIndices = new();
     private List<int> _visibleColIndices = new();
-    private bool _requiresRender = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -162,7 +161,6 @@
                 _fillerBottom);
         }
 
-        _requiresRender = false;
     }
 
     protected override async Task OnParametersSetAsync()
@@ -281,8 +279,6 @@
         _contentColTemplate = csb.ToString();
         _contentRowTemplate = rsb.ToString();
 
-        _requiresRender = true;
-
         await OnViewportChanged.InvokeAsync(new VirtualViewportChangedEventArgs(_currentViewport, newRegions, removedRegions));
         await InvokeAsync(StateHasChanged);
     }
@@ -332,7 +328,6 @@
 
     protected override void OnAfterRender(bool firstRender)
     {
-        _requiresRender = false;
         base.OnAfterRender(firstRender);
     }
 

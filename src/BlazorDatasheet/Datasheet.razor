@@ -200,7 +200,7 @@
                             OverscanRows="OverscanRows"
                             Class="@("bds-main-view-" + GridLevel)"
                             OnViewportChanged="HandleVirtualViewportChanged"
-                            LayoutProvider="new CellLayoutProvider(_sheet)"
+                            LayoutProvider="_cellLayoutProvider"
                             ViewRegion="MainViewRegion"
                             RowClass="bds-row"
                             @ref="_mainView"
