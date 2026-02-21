@@ -163,4 +163,36 @@ public class DependencyManagerTests
         _dm.HasDependents(1, 0, "Sheet1").Should().BeTrue();
         _dm.HasDependents(2, 0, "Sheet1").Should().BeTrue();
     }
+
+    [Test]
+    public void Insert_Shift_And_Restore_Roundtrip_Restores_References_And_Dependencies()
+    {
+        _dm.SetFormula(0, 0, "Sheet1", GetFormula("=A3+Sheet2!A2"));
+        _dm.HasDependents(2, 0, "Sheet1").Should().BeTrue();
+        _dm.HasDependents(1, 0, "Sheet2").Should().BeTrue();
+
+        var shiftRestore = _dm.InsertRowColAt(1, 2, Axis.Row, "Sheet1");
+        _dm.GetVertex(0, 0, "Sheet1")!.Formula!.ToFormulaString().Should().Be("=A5+Sheet2!A2");
+
+        _dm.Restore(shiftRestore);
+        _dm.GetVertex(0, 0, "Sheet1")!.Formula!.ToFormulaString().Should().Be("=A3+Sheet2!A2");
+        _dm.HasDependents(2, 0, "Sheet1").Should().BeTrue();
+        _dm.HasDependents(1, 0, "Sheet2").Should().BeTrue();
+    }
+
+    [Test]
+    public void Remove_Shift_And_Restore_Roundtrip_Restores_References_And_Dependencies()
+    {
+        _dm.SetFormula(0, 0, "Sheet1", GetFormula("=A5+Sheet2!A2"));
+        _dm.HasDependents(4, 0, "Sheet1").Should().BeTrue();
+        _dm.HasDependents(1, 0, "Sheet2").Should().BeTrue();
+
+        var shiftRestore = _dm.RemoveRowColAt(1, 2, Axis.Row, "Sheet1");
+        _dm.GetVertex(0, 0, "Sheet1")!.Formula!.ToFormulaString().Should().Be("=A3+Sheet2!A2");
+
+        _dm.Restore(shiftRestore);
+        _dm.GetVertex(0, 0, "Sheet1")!.Formula!.ToFormulaString().Should().Be("=A5+Sheet2!A2");
+        _dm.HasDependents(4, 0, "Sheet1").Should().BeTrue();
+        _dm.HasDependents(1, 0, "Sheet2").Should().BeTrue();
+    }
 }

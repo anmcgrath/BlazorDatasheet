@@ -119,6 +119,48 @@ public class GraphTests
         dg.GetDependentsOf("A2").Select(x => x.Key).Should().BeEquivalentTo(["B"]);
         dg.GetPrecedentsOf("A2").Select(x => x.Key).Should().BeEquivalentTo(["C"]);
     }
+
+    [Test]
+    public void Graph_Reciprocal_Dependency_Invariant_Holds_After_Mutations()
+    {
+        var dg = new DependencyGraph<MutableTestVertex>();
+        var a = new MutableTestVertex("A");
+        var b = new MutableTestVertex("B");
+        var c = new MutableTestVertex("C");
+        var d = new MutableTestVertex("D");
+
+        dg.AddEdge(a, b);
+        dg.AddEdge(a, c);
+        dg.AddEdge(d, a);
+        AssertGraphReciprocalInvariant(dg);
+
+        a.SetNextKey("A2");
+        dg.RefreshKey(a);
+        AssertGraphReciprocalInvariant(dg);
+
+        dg.Swap(d, new MutableTestVertex("D2"));
+        AssertGraphReciprocalInvariant(dg);
+
+        dg.RemoveVertex("A2", false);
+        AssertGraphReciprocalInvariant(dg);
+    }
+
+    private static void AssertGraphReciprocalInvariant(DependencyGraph<MutableTestVertex> graph)
+    {
+        var vertices = graph.GetAll().ToList();
+        foreach (var vertex in vertices)
+        {
+            foreach (var dependent in graph.GetDependentsOf(vertex))
+            {
+                graph.GetPrecedentsOf(dependent).Select(x => x.Key).Should().Contain(vertex.Key);
+            }
+
+            foreach (var precedent in graph.GetPrecedentsOf(vertex))
+            {
+                graph.GetDependentsOf(precedent).Select(x => x.Key).Should().Contain(vertex.Key);
+            }
+        }
+    }
 }
 
 public class TestVertex : Vertex, IEquatable<TestVertex>
