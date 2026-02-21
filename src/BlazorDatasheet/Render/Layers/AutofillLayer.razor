@@ -4,7 +4,6 @@
 @using BlazorDatasheet.Core.Events
 @using BlazorDatasheet.Core.Layout
 @using BlazorDatasheet.DataStructures.Geometry
-@using BlazorDatasheet.Events
 @using BlazorDatasheet.Extensions
 @using BlazorDatasheet.Services
 @using Microsoft.JSInterop
@@ -16,6 +15,7 @@
 {
     <!-- render dragger (bottom right corner) -->
     <div id="auto-filler"
+         @ref="_draggerElement"
          class="unselectable auto-fill"
          @onpointerdown="DraggerMouseDown"
          @onpointerup="DraggerMouseUp"
@@ -37,16 +37,21 @@
         Height="Sheet.Rows.GetVisualHeightBetween(_dragPreviewRegion.Top, _dragPreviewRegion.Bottom + 1)"/>
 }
 
-@code{
+@code {
 
-    private bool _isDragging = false;
+    [Parameter] public EventCallback<bool> AutofillDraggingChanged { get; set; }
+
+    private bool _isDragging;
 
     // Document start position of the pointer
-    private Point2d _dragStartDocumentPosition = new Point2d();
+    private Point2d _dragStartDocumentPosition = new();
+    private Point2d _dragStartScrollableOffset = new();
+    private MouseEventArgs? _lastDragMouseEvent;
     private IRegion? _dragPreviewRegion;
-    private CellLayoutProvider _cellLayoutProvider = new CellLayoutProvider(new Sheet(0, 0));
-    private bool _pointerEventsRegistered;
+    private CellLayoutProvider _cellLayoutProvider = new(new Sheet(0, 0));
     private IWindowEventService _windowEventService = null!;
+    private IJSObjectReference? _module;
+    private ElementReference _draggerElement;
 
     protected override void OnInitialized()
     {
@@ -61,12 +66,19 @@
         _cellLayoutProvider = new CellLayoutProvider(newSheet);
     }
 
-    private void OnSelectionChanged(object? sender, SelectionChangedEventArgs args)
+    protected override void OnViewRegionChange(Region newRegion, Region? oldRegion)
     {
-        StateHasChanged();
+        if (!_isDragging || _lastDragMouseEvent == null)
+            return;
+
+        _ = InvokeAsync(async () =>
+        {
+            await UpdateDragPreviewFromMouseAsync(_lastDragMouseEvent);
+            StateHasChanged();
+        });
     }
 
-    private void OnSelectingChanged(object? sender, IRegion? args)
+    private void OnSelectionChanged(object? sender, SelectionChangedEventArgs args)
     {
         StateHasChanged();
     }
@@ -75,38 +87,50 @@
     {
         if (firstRender)
         {
+            _module = await Js.InvokeAsync<IJSObjectReference>("import",
+                "./_content/BlazorDatasheet/Render/Layers/AutofillLayer.razor.js");
+
             await _windowEventService.RegisterMouseEvent("mousemove", HandleWindowMouseMove, 50);
             await _windowEventService.RegisterMouseEvent("mouseup", HandleWindowMouseUp);
         }
     }
 
-    private Task<bool> HandleWindowMouseUp(MouseEventArgs arg)
-    {
-        if (!_isDragging || _dragPreviewRegion == null)
-            return Task.FromResult(false);
-
-        Sheet.Commands.ExecuteCommand(new AutoFillCommand(Sheet.Selection.ActiveRegion!, _dragPreviewRegion.Clone()));
-
-
-        _isDragging = false;
-        _dragPreviewRegion = null;
-
-        return Task.FromResult(true);
-    }
-
-    private Task<bool> HandleWindowMouseMove(MouseEventArgs e)
+    private async Task<bool> HandleWindowMouseUp(MouseEventArgs arg)
     {
         if (!_isDragging)
-            return Task.FromResult(false);
+            return false;
 
+        if (_dragPreviewRegion != null && Sheet.Selection.ActiveRegion != null)
+            Sheet.Commands.ExecuteCommand(new AutoFillCommand(Sheet.Selection.ActiveRegion, _dragPreviewRegion.Clone()));
+
+        _dragPreviewRegion = null;
+        await SetDraggingAsync(false);
+        await InvokeAsync(StateHasChanged);
+
+        return true;
+    }
+
+    private async Task<bool> HandleWindowMouseMove(MouseEventArgs e)
+    {
+        if (!_isDragging)
+            return false;
+
+        _lastDragMouseEvent = e;
+        await UpdateDragPreviewFromMouseAsync(e);
+        await InvokeAsync(StateHasChanged);
+
+        return true;
+    }
+
+    private async Task UpdateDragPreviewFromMouseAsync(MouseEventArgs e)
+    {
         if (Sheet.Selection.ActiveRegion == null)
-            return Task.FromResult(false);
+            return;
 
-        var dx = e.PageX - _dragStartDocumentPosition.X;
-        var dy = e.PageY - _dragStartDocumentPosition.Y;
+        var (dx, dy) = await GetAdjustedDragDeltaAsync(e.PageX, e.PageY);
 
         if (Math.Abs(dx) < 5 && Math.Abs(dy) < 5)
-            return Task.FromResult(true);
+            return;
 
         var selRect = Sheet.Selection.ActiveRegion.GetRect(Sheet);
         var sheetX = selRect.X + selRect.Width + dx;
@@ -116,13 +140,36 @@
         if (Sheet.Selection.ActiveRegion.Contains(cellAtMouse))
             _dragPreviewRegion = CalculateContractRegion(dx, dy, cellAtMouse);
         else
-            _dragPreviewRegion = CalculateExpandRegion(sheetX, sheetY, cellAtMouse);
+            _dragPreviewRegion = CalculateExpandRegion(cellAtMouse);
 
         _dragPreviewRegion = Sheet.Region.GetIntersection(_dragPreviewRegion);
+    }
 
-        this.StateHasChanged();
+    private async Task<(double dx, double dy)> GetAdjustedDragDeltaAsync(double pageX, double pageY)
+    {
+        var dx = pageX - _dragStartDocumentPosition.X;
+        var dy = pageY - _dragStartDocumentPosition.Y;
 
-        return Task.FromResult(true);
+        var currentScrollOffset = await GetScrollableOffsetAsync();
+        dx += currentScrollOffset.X - _dragStartScrollableOffset.X;
+        dy += currentScrollOffset.Y - _dragStartScrollableOffset.Y;
+
+        return (dx, dy);
+    }
+
+    private async Task<Point2d> GetScrollableOffsetAsync()
+    {
+        if (_module == null)
+            return new Point2d();
+
+        try
+        {
+            return await _module.InvokeAsync<Point2d>("getScrollableOffset", _draggerElement);
+        }
+        catch
+        {
+            return new Point2d();
+        }
     }
 
     private IRegion CalculateContractRegion(double dx, double dy, CellPosition cellMousePosition)
@@ -138,24 +185,29 @@
         return new Region(top, bottom, left, right);
     }
 
-    private IRegion? CalculateExpandRegion(double sheetX, double sheetY, CellPosition cellMousePosition)
+    private IRegion? CalculateExpandRegion(CellPosition cellMousePosition)
     {
         if (Sheet.Selection.ActiveRegion == null)
             return null;
 
-        var selRect = Sheet.Selection.ActiveRegion.GetRect(Sheet);
-        var axis = GetExpansionAxis(sheetX, sheetY, selRect);
+        var axis = GetExpansionAxis(cellMousePosition);
 
-        var expandTo = axis == Axis.Col ? new Region(Sheet.Selection.ActiveRegion.Bottom, cellMousePosition.col) : new Region(cellMousePosition.row, Sheet.Selection.ActiveRegion.Left);
+        var expandTo = axis == Axis.Col
+            ? new Region(Sheet.Selection.ActiveRegion.Bottom, cellMousePosition.col)
+            : new Region(cellMousePosition.row, Sheet.Selection.ActiveRegion.Left);
 
-        var expandedRegion = Sheet.Selection.ActiveRegion.GetBoundingRegion(expandTo);
-        return expandedRegion;
+        return Sheet.Selection.ActiveRegion.GetBoundingRegion(expandTo);
     }
 
-    private Axis GetExpansionAxis(double sheetX, double sheetY, Rect selectionRect)
+    private Axis GetExpansionAxis(CellPosition cellMousePosition)
     {
-        var containsX = sheetX >= selectionRect.X && sheetX <= selectionRect.X + selectionRect.Width;
-        var containsY = sheetY >= selectionRect.Y && sheetY <= selectionRect.Y + selectionRect.Height;
+        if (Sheet.Selection.ActiveRegion == null)
+            return Axis.Row;
+
+        var selection = Sheet.Selection.ActiveRegion;
+
+        var containsX = cellMousePosition.col >= selection.Left && cellMousePosition.col <= selection.Right;
+        var containsY = cellMousePosition.row >= selection.Top && cellMousePosition.row <= selection.Bottom;
 
         if (containsY && !containsX)
             return Axis.Col;
@@ -163,94 +215,48 @@
         if (containsX && !containsY)
             return Axis.Row;
 
-        var p = new Point2d(sheetX, sheetY);
+        var dx = cellMousePosition.col < selection.Left
+            ? selection.Left - cellMousePosition.col
+            : cellMousePosition.col - selection.Right;
 
-        var closestCorner = GetCorners(selectionRect)
-            .Select<Point2d, (Point2d p, double dist)>(x => ((x, GetDistSq(x, p))))
-            .MinBy(x => x.dist);
+        var dy = cellMousePosition.row < selection.Top
+            ? selection.Top - cellMousePosition.row
+            : cellMousePosition.row - selection.Bottom;
 
-        var dx = sheetX - closestCorner.p.X;
-        var dy = sheetY - closestCorner.p.Y;
-
-        if (Math.Abs(dx) >= Math.Abs(dy))
-            return Axis.Col;
-        else
-            return Axis.Row;
+        return Math.Abs(dx) >= Math.Abs(dy) ? Axis.Col : Axis.Row;
     }
 
-    private double GetDistSq(Point2d p1, Point2d p2)
-    {
-        return Math.Pow(p1.X - p2.X, 2) + Math.Pow(p1.Y - p2.Y, 2);
-    }
-
-    private List<Point2d> GetCorners(Rect rect)
-    {
-        return new List<Point2d>()
-        {
-            new Point2d(rect.X, rect.Y),
-            new Point2d(rect.X + rect.Width, rect.Y),
-            new Point2d(rect.X + rect.Width, rect.Y + rect.Height),
-            new Point2d(rect.X, rect.Y + rect.Height),
-        };
-    }
-
-    private Direction GetDirection(double dx, double dy)
-    {
-        if (dx >= dy)
-        {
-            if (dx > 0)
-                return Direction.Right;
-            if (dx < 0)
-                return Direction.Left;
-            return Direction.None;
-        }
-        else
-        {
-            if (dy > 0)
-                return Direction.Down;
-            if (dy < 0)
-                return Direction.Up;
-        }
-
-        return Direction.None;
-    }
-
-
-    private void SelectionOnSelectionChanged(object? sender, SelectionChangedEventArgs args)
-    {
-        StateHasChanged();
-    }
-
-    private void SelectionOnSelectingChanged(object? sender, IRegion? e)
-    {
-        StateHasChanged();
-    }
-
-    private Task DraggerMouseDown(PointerEventArgs e)
+    private async Task DraggerMouseDown(PointerEventArgs e)
     {
         if (Sheet.Selection.ActiveRegion == null)
-            return Task.CompletedTask;
+            return;
 
-        _isDragging = true;
-
+        _dragPreviewRegion = null;
         _dragStartDocumentPosition = new Point2d(e.PageX, e.PageY);
-        return Task.CompletedTask;
+        _dragStartScrollableOffset = await GetScrollableOffsetAsync();
+        _lastDragMouseEvent = new MouseEventArgs { PageX = e.PageX, PageY = e.PageY };
+
+        await SetDraggingAsync(true);
     }
 
-    private void DraggerMouseUp(PointerEventArgs obj)
+    private async Task DraggerMouseUp(PointerEventArgs obj)
     {
         // if the user mouses up on the dragger (which doesn't move)
         // then we should just cancel out of the drag
-        _isDragging = false;
         _dragPreviewRegion = null;
-        this.StateHasChanged();
+        await SetDraggingAsync(false);
+        StateHasChanged();
     }
 
-    private void PointerMouseUp(object? sender, SheetPointerEventArgs? arg)
+    private async Task SetDraggingAsync(bool isDragging)
     {
-        _isDragging = false;
-        _dragPreviewRegion = null;
-        this.StateHasChanged();
+        if (_isDragging == isDragging)
+            return;
+
+        _isDragging = isDragging;
+
+        if (AutofillDraggingChanged.HasDelegate)
+            await AutofillDraggingChanged.InvokeAsync(isDragging);
     }
 
     private string GetDraggerStyleString()
@@ -265,7 +271,7 @@
         var w = 8d;
         var h = 8d;
         var sb = new StringBuilder();
-        sb.Append($"display:block;position:absolute;");
+        sb.Append("display:block;position:absolute;");
         sb.Append($"left:{x - w / 2}px; top:{y - w / 2}px;");
         sb.Append($"width:{w}px;height:{h}px;");
         sb.Append("background:var(--selection-border-color);");
@@ -275,6 +281,20 @@
 
     public async ValueTask DisposeAsync()
     {
+        Sheet.Selection.SelectionChanged -= OnSelectionChanged;
+
+        await SetDraggingAsync(false);
+
+        try
+        {
+            if (_module != null)
+                await _module.DisposeAsync();
+        }
+        catch
+        {
+            // ignored
+        }
+
         await _windowEventService.DisposeAsync();
     }
 

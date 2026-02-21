@@ -170,7 +170,7 @@
                         <HighlightLayer/>
                         @if (UseAutoFill && !IsReadOnly)
                         {
-                            <AutofillLayer/>
+                            <AutofillLayer AutofillDraggingChanged="HandleAutofillDraggingChanged"/>
                         }
                         @if (GridLevel == 0)
                         {

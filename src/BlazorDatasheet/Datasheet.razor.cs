@@ -37,6 +37,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     private IWindowEventService _windowEventService = null!;
     [Inject] private IMenuService MenuService { get; set; } = null!;
     private IClipboard ClipboardService { get; set; } = null!;
+    private bool _isAutofillDragging;
 
 
     /// <summary>
@@ -854,6 +855,12 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     private bool IsAutoScrollActive()
     {
+        if (UseAutoScroll == false)
+            return false;
+
+        if (_isAutofillDragging)
+            return true;
+
         if (_sheet.Selection.IsSelecting)
             return true;
 
@@ -865,6 +872,12 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         }
 
         return false;
+    }
+
+    private Task HandleAutofillDraggingChanged(bool isDragging)
+    {
+        _isAutofillDragging = isDragging;
+        return Task.CompletedTask;
     }
 
 
