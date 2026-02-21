@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using BlazorDatasheet.Core.FormulaEngine;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core;
@@ -19,6 +20,7 @@ public class DependencyManagerTests
     {
         _dm = new DependencyManager();
         _dm.AddSheet("Sheet1");
+        _dm.AddSheet("Sheet2");
     }
 
     private CellFormula GetFormula(string formulaStr)
@@ -113,5 +115,52 @@ public class DependencyManagerTests
         _dm.GetCalculationOrder().SelectMany(x => x).Select(x => x.Position)
             .Should()
             .BeEquivalentTo([new CellPosition(0, 0)]);
+    }
+
+    [Test]
+    public void Rename_Sheet_With_Existing_Formulas_On_Sheet_Does_Not_Throw_And_Keeps_Dependencies()
+    {
+        _dm.SetFormula(0, 0, "Sheet1", GetFormula("=A2"));
+        _dm.SetFormula(1, 0, "Sheet1", GetFormula("=Sheet2!A1"));
+
+        Action action = () => _dm.RenameSheet("Sheet1", "Renamed");
+
+        action.Should().NotThrow();
+        _dm.GetVertex(0, 0, "Renamed").Should().NotBeNull();
+        _dm.GetVertex(1, 0, "Renamed").Should().NotBeNull();
+        _dm.GetVertex(1, 0, "Renamed")!.Formula!.ToFormulaString().Should().Be("=Sheet2!A1");
+        _dm.HasDependents(1, 0, "Renamed").Should().BeTrue();
+    }
+
+    [Test]
+    public void Clear_Formula_With_Multi_Sheet_References_And_Restore_Restores_All_Referenced_Stores()
+    {
+        _dm.SetFormula(0, 0, "Sheet1", GetFormula("=A2+Sheet2!A2"));
+        _dm.HasDependents(1, 0, "Sheet1").Should().BeTrue();
+        _dm.HasDependents(1, 0, "Sheet2").Should().BeTrue();
+
+        var restoreData = _dm.ClearFormula(0, 0, "Sheet1");
+        _dm.HasDependents(1, 0, "Sheet1").Should().BeFalse();
+        _dm.HasDependents(1, 0, "Sheet2").Should().BeFalse();
+
+        _dm.Restore(restoreData);
+        _dm.HasDependents(1, 0, "Sheet1").Should().BeTrue();
+        _dm.HasDependents(1, 0, "Sheet2").Should().BeTrue();
+    }
+
+    [Test]
+    public void Clear_Formula_With_Multiple_References_In_Same_Sheet_Restore_Restores_All_References()
+    {
+        _dm.SetFormula(0, 0, "Sheet1", GetFormula("=A2+A3"));
+        _dm.HasDependents(1, 0, "Sheet1").Should().BeTrue();
+        _dm.HasDependents(2, 0, "Sheet1").Should().BeTrue();
+
+        var restoreData = _dm.ClearFormula(0, 0, "Sheet1");
+        _dm.HasDependents(1, 0, "Sheet1").Should().BeFalse();
+        _dm.HasDependents(2, 0, "Sheet1").Should().BeFalse();
+
+        _dm.Restore(restoreData);
+        _dm.HasDependents(1, 0, "Sheet1").Should().BeTrue();
+        _dm.HasDependents(2, 0, "Sheet1").Should().BeTrue();
     }
 }
