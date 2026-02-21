@@ -246,12 +246,8 @@ public class DependencyManager
         {
             Shifts = { new AppliedShift(axis, index, count, sheetName) }
         };
-        IRegion affectedRegion = axis == Axis.Col
-            ? new ColumnRegion(index, int.MaxValue)
-            : new RowRegion(index, int.MaxValue);
-
-        int dCol = axis == Axis.Col ? count : 0;
-        int dRow = axis == Axis.Row ? count : 0;
+        var affectedRegion = GetAffectedRegion(axis, index);
+        var (dRow, dCol) = GetShiftDelta(axis, count);
 
         // find anything that depends directly on the regions that are shifted
         // and shift the formula references
@@ -318,10 +314,7 @@ public class DependencyManager
         {
             Shifts = { new AppliedShift(axis, index, -count, sheetName) }
         };
-        IRegion regionRemoved =
-            axis == Axis.Col
-                ? new ColumnRegion(index, index + count - 1)
-                : new RowRegion(index, index + count - 1);
+        var regionRemoved = GetRemovedRegion(axis, index, count);
 
         // remove any formula in the region being removed
         var vertices = GetVerticesInRegion(regionRemoved, sheetName);
@@ -331,15 +324,12 @@ public class DependencyManager
                 restoreData.Merge(ClearFormula(position.row, position.col, sheetName));
         }
 
-        int dCol = axis == Axis.Col ? -count : 0;
-        int dRow = axis == Axis.Row ? -count : 0;
+        var (dRow, dCol) = GetShiftDelta(axis, -count);
 
         // find anything that depends directly on the regions that are shifted
         // and modify the formula references
         // needs to be done before we shift vertices
-        IRegion affectedRegion = axis == Axis.Col
-            ? new ColumnRegion(index, int.MaxValue)
-            : new RowRegion(index, int.MaxValue);
+        var affectedRegion = GetAffectedRegion(axis, index);
 
         var dependentFormulas = GetDirectDependents(affectedRegion, sheetName);
 
@@ -422,12 +412,8 @@ public class DependencyManager
     {
         foreach (var shift in restoreData.Shifts)
         {
-            IRegion r = shift.Axis == Axis.Col
-                ? new ColumnRegion(shift.Index, int.MaxValue)
-                : new RowRegion(shift.Index, int.MaxValue);
-
-            var dRow = shift.Axis == Axis.Row ? -shift.Amount : 0;
-            var dCol = shift.Axis == Axis.Col ? -shift.Amount : 0;
+            var r = GetAffectedRegion(shift.Axis, shift.Index);
+            var (dRow, dCol) = GetShiftDelta(shift.Axis, -shift.Amount);
 
             if (shift.SheetName != null)
                 ShiftVerticesInRegion(r, dRow, dCol, shift.SheetName);
@@ -460,7 +446,7 @@ public class DependencyManager
                 store.Restore(sheetRestoreData);
         }
 
-        // 2. restore contrracted/expanded/shifted formula references from the records
+        // 2. restore contracted/expanded/shifted formula references from the records
 
         foreach (var regionModification in restoreData.ModifiedFormulaReferences)
         {
@@ -488,6 +474,27 @@ public class DependencyManager
             formulaReference.SetValidity(!regionModification.OldInvalidStates[refIndex]);
             refIndex++;
         }
+    }
+
+    private static IRegion GetAffectedRegion(Axis axis, int index)
+    {
+        return axis == Axis.Col
+            ? new ColumnRegion(index, int.MaxValue)
+            : new RowRegion(index, int.MaxValue);
+    }
+
+    private static IRegion GetRemovedRegion(Axis axis, int index, int count)
+    {
+        return axis == Axis.Col
+            ? new ColumnRegion(index, index + count - 1)
+            : new RowRegion(index, index + count - 1);
+    }
+
+    private static (int dRow, int dCol) GetShiftDelta(Axis axis, int amount)
+    {
+        var dRow = axis == Axis.Row ? amount : 0;
+        var dCol = axis == Axis.Col ? amount : 0;
+        return (dRow, dCol);
     }
 
     public IEnumerable<FormulaVertex> FindDependentFormula(IRegion region, string sheetName)
