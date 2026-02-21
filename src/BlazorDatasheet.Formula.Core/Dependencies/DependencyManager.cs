@@ -173,10 +173,10 @@ public class DependencyManager
         // we should only delete edges that show cells that this formula is dependent on
         // if there are formula that depend on this formula, they shouldn't be removed?
 
-        foreach (var vertex in _dependencyGraph.Adj(formulaVertex))
+        foreach (var vertex in _dependencyGraph.GetDependentsOf(formulaVertex))
             restoreData.EdgesRemoved.Add((formulaVertex.Key, vertex.Key));
 
-        foreach (var vertex in _dependencyGraph.Prec(formulaVertex))
+        foreach (var vertex in _dependencyGraph.GetPrecedentsOf(formulaVertex))
             restoreData.EdgesRemoved.Add((vertex.Key, formulaVertex.Key));
 
         _dependencyGraph.RemoveVertex(formulaVertex, false);
@@ -391,7 +391,7 @@ public class DependencyManager
         var results = new List<DependencyInfo>();
         foreach (var vertex in _dependencyGraph.GetAll())
         {
-            foreach (var dependent in _dependencyGraph.Adj(vertex))
+            foreach (var dependent in _dependencyGraph.GetDependentsOf(vertex))
             {
                 if (dependent.VertexType != VertexType.Named)
                 {

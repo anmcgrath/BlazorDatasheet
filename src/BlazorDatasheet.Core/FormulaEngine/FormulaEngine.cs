@@ -47,8 +47,8 @@ public class FormulaEngine
         DependencyManager.AddSheet(sheet.Name);
         sheet.Editor.BeforeCellEdit += SheetOnBeforeCellEdit;
         sheet.Cells.CellsChanged += SheetOnCellsChanged;
-        sheet.Rows.Removed += RowsOnRemoved;
-        sheet.Columns.Removed += RowsOnRemoved;
+        sheet.Rows.Removed += RowColsOnRemoved;
+        sheet.Columns.Removed += RowColsOnRemoved;
     }
 
     internal void RemoveSheet(Sheet sheet)
@@ -57,8 +57,8 @@ public class FormulaEngine
         DependencyManager.RemoveSheet(sheet.Name);
         sheet.Editor.BeforeCellEdit -= SheetOnBeforeCellEdit;
         sheet.Cells.CellsChanged -= SheetOnCellsChanged;
-        sheet.Rows.Removed -= RowsOnRemoved;
-        sheet.Columns.Removed -= RowsOnRemoved;
+        sheet.Rows.Removed -= RowColsOnRemoved;
+        sheet.Columns.Removed -= RowColsOnRemoved;
     }
 
     private void SheetOnCellsChanged(object? sender, CellDataChangedEventArgs e)
@@ -95,7 +95,7 @@ public class FormulaEngine
         this.CalculateSheet(false);
     }
 
-    private void RowsOnRemoved(object? sender, RowColRemovedEventArgs e)
+    private void RowColsOnRemoved(object? sender, RowColRemovedEventArgs e)
     {
         CalculateSheet(true);
     }

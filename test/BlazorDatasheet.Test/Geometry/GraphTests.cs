@@ -43,14 +43,14 @@ public class GraphTests
         dg.AddEdge(v2, v3);
         Assert.AreEqual(3, dg.Count);
         Assert.AreEqual(2, dg.E);
-        Assert.AreEqual(1, dg.Prec(v2).Count());
+        Assert.AreEqual(1, dg.GetPrecedentsOf(v2).Count());
 
         dg.RemoveVertex(v1);
         Assert.AreEqual(2, dg.Count);
         Assert.AreEqual(1, dg.E);
 
 
-        Assert.AreEqual(0, dg.Prec(v2).Count());
+        Assert.AreEqual(0, dg.GetPrecedentsOf(v2).Count());
 
         // Add edges & vertices back in
 
@@ -58,7 +58,7 @@ public class GraphTests
         dg.AddEdge(v2, v3);
         Assert.AreEqual(3, dg.Count);
         Assert.AreEqual(2, dg.E);
-        Assert.AreEqual(1, dg.Prec(v2).Count());
+        Assert.AreEqual(1, dg.GetPrecedentsOf(v2).Count());
     }
 
     [Test]
@@ -71,14 +71,14 @@ public class GraphTests
         dg.AddVertex(w);
         dg.AddEdge(v, w); // w depends on v
 
-        dg.Prec(w).Should().BeEquivalentTo([v]);
-        dg.Adj(v).Should().BeEquivalentTo([w]);
+        dg.GetPrecedentsOf(w).Should().BeEquivalentTo([v]);
+        dg.GetDependentsOf(v).Should().BeEquivalentTo([w]);
 
         var u = new TestVertex("3");
         dg.Swap(v, u); // now w depends on u
 
-        dg.Adj(w).Should().BeEmpty();
-        dg.Prec(w).Should().BeEquivalentTo([u]);
+        dg.GetDependentsOf(w).Should().BeEmpty();
+        dg.GetPrecedentsOf(w).Should().BeEquivalentTo([u]);
     }
 
     [Test]
@@ -116,8 +116,8 @@ public class GraphTests
         dg.HasVertex("A2").Should().BeTrue();
         dg.HasVertex("B").Should().BeTrue();
         dg.HasVertex("C").Should().BeTrue();
-        dg.Adj("A2").Select(x => x.Key).Should().BeEquivalentTo(["B"]);
-        dg.Prec("A2").Select(x => x.Key).Should().BeEquivalentTo(["C"]);
+        dg.GetDependentsOf("A2").Select(x => x.Key).Should().BeEquivalentTo(["B"]);
+        dg.GetPrecedentsOf("A2").Select(x => x.Key).Should().BeEquivalentTo(["C"]);
     }
 }
 

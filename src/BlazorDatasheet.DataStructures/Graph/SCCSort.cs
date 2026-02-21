@@ -54,7 +54,7 @@ public class SccSort<T> where T : Vertex
         _index++;
         _stack.Push(v);
 
-        foreach (var w in _graph.Adj(v))
+        foreach (var w in _graph.GetDependentsOf(v))
         {
             if (!_indices.TryGetValue(w.Key, out var index))
             {

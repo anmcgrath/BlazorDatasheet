@@ -3,8 +3,7 @@
 public class DependencyGraph<T> where T : Vertex
 {
     /// <summary>
-    /// Adjacency list - specifies directed edges between vertices
-    /// Note this is a dictionary of a dictionary
+    /// Adjacency list for dependency edges (v -> w means w depends on v).
     /// </summary>
     private readonly Dictionary<string, Dictionary<string, T>> _adj;
 
@@ -59,16 +58,43 @@ public class DependencyGraph<T> where T : Vertex
     public IEnumerable<T> GetAll() => _symbolTable.Values;
 
     /// <summary>
-    /// Return the vertices adjacent (vertices that depend on v) to Vertex v
+    /// Returns vertices that directly depend on the given vertex key.
     /// </summary>
-    /// <param name="key"></param>
-    /// <returns></returns>
-    public IEnumerable<T> Adj(string key)
+    public IEnumerable<T> GetDependentsOf(string key)
     {
         var isPresent = _symbolTable.ContainsKey(key);
         if (!isPresent)
             return Enumerable.Empty<T>();
         return _adj[key].Values;
+    }
+
+    /// <summary>
+    /// Returns vertices that directly depend on the given vertex.
+    /// </summary>
+    public IEnumerable<T> GetDependentsOf(T v) => GetDependentsOf(v.Key);
+
+    /// <summary>
+    /// Returns vertices that the given vertex depends on.
+    /// </summary>
+    public IEnumerable<T> GetPrecedentsOf(T v) => GetPrecedentsOf(v.Key);
+
+    /// <summary>
+    /// Returns vertices that the given vertex key depends on.
+    /// </summary>
+    public IEnumerable<T> GetPrecedentsOf(string key)
+    {
+        var isPresent = _symbolTable.ContainsKey(key);
+        if (!isPresent)
+            return Enumerable.Empty<T>();
+        return _prec[key].Values;
+    }
+
+    /// <summary>
+    /// Legacy alias. Prefer <see cref="GetDependentsOf(string)"/>.
+    /// </summary>
+    public IEnumerable<T> Adj(string key)
+    {
+        return GetDependentsOf(key);
     }
 
     public T? GetVertex(string key)
@@ -77,30 +103,21 @@ public class DependencyGraph<T> where T : Vertex
     }
 
     /// <summary>
-    /// Return the vertices adjacent (vertices that depend on v) to Vertex v
+    /// Legacy alias. Prefer <see cref="GetDependentsOf(Vertex)"/>.
     /// </summary>
-    /// <param name="v"></param>
-    /// <returns></returns>
     public IEnumerable<T> Adj(T v) => Adj(v.Key);
 
     /// <summary>
-    /// Return the precedent vertices (vertices that are dependent on by v) to Vertex v
+    /// Legacy alias. Prefer <see cref="GetPrecedentsOf(Vertex)"/>.
     /// </summary>
-    /// <param name="v"></param>
-    /// <returns></returns>
     public IEnumerable<T> Prec(T v) => Prec(v.Key);
 
     /// <summary>
-    /// Return the precedent vertices (vertices that are dependent on by v) to Vertex v
+    /// Legacy alias. Prefer <see cref="GetPrecedentsOf(string)"/>.
     /// </summary>
-    /// <param name="key"></param>
-    /// <returns></returns>
     public IEnumerable<T> Prec(string key)
     {
-        var isPresent = _symbolTable.ContainsKey(key);
-        if (!isPresent)
-            return Enumerable.Empty<T>();
-        return _prec[key].Values;
+        return GetPrecedentsOf(key);
     }
 
 
@@ -117,8 +134,8 @@ public class DependencyGraph<T> where T : Vertex
     {
         if (!_symbolTable.ContainsKey(vKey))
             return;
-        var adj = Adj(vKey).ToList();
-        var prec = Prec(vKey).ToList();
+        var adj = GetDependentsOf(vKey).ToList();
+        var prec = GetPrecedentsOf(vKey).ToList();
 
         // Remove edges
         foreach (var w in adj)
@@ -224,8 +241,8 @@ public class DependencyGraph<T> where T : Vertex
     {
         if (_symbolTable.ContainsKey(existing.Key))
         {
-            var dependedOnBy = Adj(existing).ToList();
-            var dependents = Prec(existing).ToList();
+            var dependedOnBy = GetDependentsOf(existing).ToList();
+            var dependents = GetPrecedentsOf(existing).ToList();
             RemoveVertex(existing, false);
             AddVertex(newVertex);
 
@@ -244,12 +261,12 @@ public class DependencyGraph<T> where T : Vertex
     /// <returns></returns>
     public bool IsDependedOn(string vKey)
     {
-        return Adj(vKey).Any();
+        return GetDependentsOf(vKey).Any();
     }
 
     public bool IsDependentOnAny(string vKey)
     {
-        return Prec(vKey).Any();
+        return GetPrecedentsOf(vKey).Any();
     }
 
     /// <summary>
@@ -298,8 +315,8 @@ public class DependencyGraph<T> where T : Vertex
     public void RefreshKey(T v)
     {
         var currKey = v.Key;
-        var prec = Prec(currKey).Select(x => x.Key).ToList();
-        var adj = Adj(currKey).Select(x => x.Key).ToList();
+        var prec = GetPrecedentsOf(currKey).Select(x => x.Key).ToList();
+        var adj = GetDependentsOf(currKey).Select(x => x.Key).ToList();
         RemoveVertex(currKey, false);
 
         v.UpdateKey();

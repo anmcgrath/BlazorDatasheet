@@ -27,7 +27,7 @@ public class TopologicalSort<T> where T:Vertex
     private void dfs(DependencyGraph<T> g, T v)
     {
         _marked.Add(v.Key);
-        foreach (var w in g.Adj(v))
+        foreach (var w in g.GetDependentsOf(v))
         {
             if (!Marked(w))
                 dfs(g, w);
