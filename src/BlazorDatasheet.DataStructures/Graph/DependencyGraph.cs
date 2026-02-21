@@ -1,4 +1,6 @@
-﻿namespace BlazorDatasheet.DataStructures.Graph;
+﻿using System.Diagnostics;
+
+namespace BlazorDatasheet.DataStructures.Graph;
 
 public class DependencyGraph<T> where T : Vertex
 {
@@ -53,6 +55,8 @@ public class DependencyGraph<T> where T : Vertex
             _prec.Add(v.Key, new Dictionary<string, T>());
             _numVertices++;
         }
+
+        AssertGraphInvariants();
     }
 
     public IEnumerable<T> GetAll() => _symbolTable.Values;
@@ -156,6 +160,8 @@ public class DependencyGraph<T> where T : Vertex
             _adj.Remove(vKey);
             _prec.Remove(vKey);
         }
+
+        AssertGraphInvariants();
     }
 
     /// <summary>
@@ -182,6 +188,8 @@ public class DependencyGraph<T> where T : Vertex
                     RemoveIfNoDependents(vKey);
                     RemoveIfNoDependents(wKey);
                 }
+
+                AssertGraphInvariants();
             }
         }
     }
@@ -209,6 +217,8 @@ public class DependencyGraph<T> where T : Vertex
             _adj[v.Key].Add(w.Key, w);
             _prec[w.Key].Add(v.Key, v);
             _numEdges++;
+
+            AssertGraphInvariants();
         }
     }
 
@@ -229,6 +239,8 @@ public class DependencyGraph<T> where T : Vertex
             _adj[vKey].Add(wKey, w);
             _prec[w.Key].Add(v.Key, v);
             _numEdges++;
+
+            AssertGraphInvariants();
         }
     }
 
@@ -251,6 +263,8 @@ public class DependencyGraph<T> where T : Vertex
 
             foreach (var v in dependents)
                 AddEdge(v, newVertex);
+
+            AssertGraphInvariants();
         }
     }
 
@@ -327,6 +341,43 @@ public class DependencyGraph<T> where T : Vertex
 
         foreach (var p in prec)
             AddEdge(p, v.Key);
+
+        AssertGraphInvariants();
+    }
+
+    [Conditional("DEBUG")]
+    private void AssertGraphInvariants()
+    {
+        Debug.Assert(_symbolTable.Count == _numVertices,
+            "Vertex count is out of sync with symbol table.");
+        Debug.Assert(_adj.Count == _symbolTable.Count && _prec.Count == _symbolTable.Count,
+            "Adjacency/precedent maps must match symbol table size.");
+
+        var edgeCount = 0;
+        foreach (var (fromKey, dependents) in _adj)
+        {
+            Debug.Assert(_symbolTable.ContainsKey(fromKey), "Adjacency contains unknown source vertex.");
+            foreach (var (toKey, dependentVertex) in dependents)
+            {
+                edgeCount++;
+                Debug.Assert(_symbolTable.ContainsKey(toKey), "Adjacency contains unknown dependent vertex.");
+                Debug.Assert(_prec.TryGetValue(toKey, out var precedents) && precedents.ContainsKey(fromKey),
+                    "Reverse edge is missing from precedent map.");
+                Debug.Assert(ReferenceEquals(_symbolTable[toKey], dependentVertex),
+                    "Adjacency vertex instance must match symbol table entry.");
+            }
+        }
+
+        foreach (var (toKey, precedents) in _prec)
+        {
+            foreach (var fromKey in precedents.Keys)
+            {
+                Debug.Assert(_adj.TryGetValue(fromKey, out var dependents) && dependents.ContainsKey(toKey),
+                    "Forward edge is missing from adjacency map.");
+            }
+        }
+
+        Debug.Assert(edgeCount == _numEdges, "Edge count is out of sync with adjacency map.");
     }
 }
 
