@@ -63,7 +63,10 @@ public class FormulaEngine
 
     private void SheetOnCellsChanged(object? sender, CellDataChangedEventArgs e)
     {
-        var sheet = ((CellStore)sender!).Sheet;
+        if (sender is not CellStore cellStore)
+            return;
+
+        var sheet = cellStore.Sheet;
         if (this.IsCalculating)
             return;
 
@@ -109,7 +112,10 @@ public class FormulaEngine
 
     private void SheetOnBeforeCellEdit(object? sender, BeforeCellEditEventArgs e)
     {
-        var sheet = ((Editor)sender!).Sheet;
+        if (sender is not Editor editor)
+            return;
+
+        var sheet = editor.Sheet;
         var formula = sheet.Cells.GetFormulaString(e.Cell.Row, e.Cell.Col);
         if (formula != null)
         {
@@ -221,7 +227,7 @@ public class FormulaEngine
 
         var value = _evaluator.Evaluate(formula, executionContext);
         executionContext.RecordExecuted(formula, value);
-        if (value.IsError() && ((FormulaError)value.Data!).ErrorType == ErrorType.Circular)
+        if (value.Data is FormulaError formulaError && formulaError.ErrorType == ErrorType.Circular)
             isCircularGroup = true;
         return value;
     }

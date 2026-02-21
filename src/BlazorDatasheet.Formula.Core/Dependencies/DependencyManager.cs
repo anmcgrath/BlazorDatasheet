@@ -40,7 +40,8 @@ public class DependencyManager
     {
         foreach (var vertex in _dependencyGraph.GetAll().ToList())
         {
-            if (vertex.Formula == null)
+            var formula = vertex.Formula;
+            if (formula == null)
                 continue;
 
             if (vertex.SheetName == oldName)
@@ -49,7 +50,7 @@ public class DependencyManager
                     new FormulaVertex(vertex.Row, vertex.Col, newName, vertex.Formula));
             }
 
-            foreach (var formulaRef in vertex.Formula!.References)
+            foreach (var formulaRef in formula.References)
             {
                 if (formulaRef.SheetName == oldName)
                     formulaRef.SetSheetName(newName, formulaRef.ExplicitSheetName);
@@ -115,8 +116,9 @@ public class DependencyManager
             {
                 if (_dependencyGraph.HasVertex(namedRef.Name))
                 {
-                    var v = _dependencyGraph.GetVertex(namedRef.Name)!;
-                    _dependencyGraph.AddEdge(v, formulaVertex);
+                    var existingVertex = _dependencyGraph.GetVertex(namedRef.Name);
+                    if (existingVertex != null)
+                        _dependencyGraph.AddEdge(existingVertex, formulaVertex);
                 }
             }
         }
@@ -139,7 +141,10 @@ public class DependencyManager
         if (!_dependencyGraph.HasVertex(formulaVertex.Key))
             return restoreData;
 
-        formulaVertex = _dependencyGraph.GetVertex(formulaVertex.Key)!;
+        var existingFormulaVertex = _dependencyGraph.GetVertex(formulaVertex.Key);
+        if (existingFormulaVertex == null)
+            return restoreData;
+        formulaVertex = existingFormulaVertex;
 
         // remove the references that refer to this formula cell
         var formulaReferences = formulaVertex.Formula?.References;
@@ -229,7 +234,7 @@ public class DependencyManager
         }
 
         return _dependencyGraph.GetAll()
-            .Where(x => x.Formula!.References.Any(r => r is NamedReference n && n.Name == vertex.Key));
+            .Where(x => x.Formula?.References.Any(r => r is NamedReference n && n.Name == vertex.Key) == true);
     }
 
     public DependencyManagerRestoreData InsertRowAt(int row, int count, string sheetName) =>
@@ -322,7 +327,8 @@ public class DependencyManager
         var vertices = GetVerticesInRegion(regionRemoved, sheetName);
         foreach (var vertex in vertices)
         {
-            restoreData.Merge(ClearFormula(vertex.Position!.Value.row, vertex.Position!.Value.col, sheetName));
+            if (vertex.Position is { } position)
+                restoreData.Merge(ClearFormula(position.row, position.col, sheetName));
         }
 
         int dCol = axis == Axis.Col ? -count : 0;
@@ -423,7 +429,8 @@ public class DependencyManager
             var dRow = shift.Axis == Axis.Row ? -shift.Amount : 0;
             var dCol = shift.Axis == Axis.Col ? -shift.Amount : 0;
 
-            ShiftVerticesInRegion(r, dRow, dCol, shift.SheetName!);
+            if (shift.SheetName != null)
+                ShiftVerticesInRegion(r, dRow, dCol, shift.SheetName);
         }
 
         foreach (var vertex in restoreData.VerticesAdded)
