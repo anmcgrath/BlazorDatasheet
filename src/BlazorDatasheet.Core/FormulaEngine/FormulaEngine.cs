@@ -175,44 +175,58 @@ public class FormulaEngine
             return;
 
         IsCalculating = true;
-        var batchedSheets = new List<Sheet>(_sheets.Count);
+        var batchedSheets = BeginCalculation();
         try
         {
-            foreach (var sheet in _sheets)
-            {
-                sheet.BatchUpdates();
-                batchedSheets.Add(sheet);
-            }
-
             var executionContext = new FormulaExecutionContext();
 
             foreach (var scc in order)
-            {
-                var sccGroup = scc;
-                bool isCircularGroup = false;
-
-                executionContext.SetCurrentGroup(ref sccGroup);
-
-                foreach (var vertex in scc)
-                {
-                    var formula = vertex.Formula;
-                    if (formula == null)
-                        continue;
-
-                    var value = EvaluateFormulaInGroup(formula, executionContext, ref isCircularGroup);
-
-                    executionContext.ClearExecuting();
-                    ApplyVertexValue(vertex, value);
-                }
-            }
+                EvaluateStronglyConnectedGroup(scc, executionContext);
         }
         finally
         {
-            foreach (var sheet in batchedSheets)
-                sheet.EndBatchUpdates();
+            EndCalculation(batchedSheets);
+        }
+    }
 
-            _requiresCalculation.Clear();
-            IsCalculating = false;
+    private List<Sheet> BeginCalculation()
+    {
+        var batchedSheets = new List<Sheet>(_sheets.Count);
+        foreach (var sheet in _sheets)
+        {
+            sheet.BatchUpdates();
+            batchedSheets.Add(sheet);
+        }
+
+        return batchedSheets;
+    }
+
+    private void EndCalculation(IEnumerable<Sheet> batchedSheets)
+    {
+        foreach (var sheet in batchedSheets)
+            sheet.EndBatchUpdates();
+
+        _requiresCalculation.Clear();
+        IsCalculating = false;
+    }
+
+    private void EvaluateStronglyConnectedGroup(IList<FormulaVertex> stronglyConnectedGroup,
+        FormulaExecutionContext executionContext)
+    {
+        var group = stronglyConnectedGroup;
+        bool isCircularGroup = false;
+
+        executionContext.SetCurrentGroup(ref group);
+
+        foreach (var vertex in stronglyConnectedGroup)
+        {
+            var formula = vertex.Formula;
+            if (formula == null)
+                continue;
+
+            var value = EvaluateFormulaInGroup(formula, executionContext, ref isCircularGroup);
+            executionContext.ClearExecuting();
+            ApplyVertexValue(vertex, value);
         }
     }
 
