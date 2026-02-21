@@ -38,7 +38,7 @@ public class DependencyManager
 
     public void RenameSheet(string oldName, string newName)
     {
-        foreach (var vertex in _dependencyGraph.GetAll())
+        foreach (var vertex in _dependencyGraph.GetAll().ToList())
         {
             if (vertex.Formula == null)
                 continue;
@@ -107,7 +107,8 @@ public class DependencyManager
                     restoreData.EdgesAdded.Add((f.Key, formulaVertex.Key));
                 }
 
-                restoreData.RegionRestoreData.Merge(
+                restoreData.MergeRegionRestoreData(
+                    formulaRef.SheetName,
                     GetReferencedVertexStore(formulaRef.SheetName).Add(formulaRef.Region.Clone(), formulaVertex));
             }
             else
@@ -161,7 +162,11 @@ public class DependencyManager
                 }
 
                 if (dataToDelete.Count != 0)
-                    restoreData.RegionRestoreData = GetReferencedVertexStore(formulaRef.SheetName).Delete(dataToDelete);
+                {
+                    restoreData.MergeRegionRestoreData(
+                        formulaRef.SheetName,
+                        GetReferencedVertexStore(formulaRef.SheetName).Delete(dataToDelete));
+                }
             }
         }
 
@@ -263,7 +268,9 @@ public class DependencyManager
         }
 
         restoreData.Merge(ShiftVerticesInRegion(affectedRegion, dRow, dCol, sheetName));
-        restoreData.RegionRestoreData = GetReferencedVertexStore(sheetName).InsertRowColAt(index, count, axis);
+        restoreData.MergeRegionRestoreData(
+            sheetName,
+            GetReferencedVertexStore(sheetName).InsertRowColAt(index, count, axis));
 
         return restoreData;
     }
@@ -345,7 +352,9 @@ public class DependencyManager
         }
 
         restoreData.Merge(ShiftVerticesInRegion(affectedRegion, dRow, dCol, sheetName));
-        restoreData.RegionRestoreData.Merge(GetReferencedVertexStore(sheetName).RemoveRowColAt(index, count, axis));
+        restoreData.MergeRegionRestoreData(
+            sheetName,
+            GetReferencedVertexStore(sheetName).RemoveRowColAt(index, count, axis));
 
         return restoreData;
     }
@@ -442,7 +451,11 @@ public class DependencyManager
         }
 
         // 1. shift & restore referenced vertex store
-        _referencedVertexStores.First().Value.Restore(restoreData.RegionRestoreData);
+        foreach (var (sheetName, sheetRestoreData) in restoreData.RegionRestoreDataBySheet)
+        {
+            if (_referencedVertexStores.TryGetValue(sheetName, out var store))
+                store.Restore(sheetRestoreData);
+        }
 
         // 2. restore contrracted/expanded/shifted formula references from the records
 
@@ -480,7 +493,7 @@ public class DependencyManager
 
 public class DependencyManagerRestoreData
 {
-    public RegionRestoreData<FormulaVertex> RegionRestoreData { get; set; } = new();
+    public Dictionary<string, RegionRestoreData<FormulaVertex>> RegionRestoreDataBySheet { get; } = new();
     public List<FormulaVertex> VerticesRemoved { get; set; } = new();
     public List<FormulaVertex> VerticesAdded { get; set; } = new();
     public readonly List<(string, string)> EdgesRemoved = new();
@@ -488,9 +501,20 @@ public class DependencyManagerRestoreData
     public readonly List<AppliedShift> Shifts = new();
     internal readonly List<ReferenceRestoreData> ModifiedFormulaReferences = new();
 
+    public void MergeRegionRestoreData(string sheetName, RegionRestoreData<FormulaVertex> restoreData)
+    {
+        if (RegionRestoreDataBySheet.TryGetValue(sheetName, out var existing))
+            existing.Merge(restoreData);
+        else
+            RegionRestoreDataBySheet[sheetName] = restoreData;
+    }
+
     public void Merge(DependencyManagerRestoreData other)
     {
-        RegionRestoreData.Merge(other.RegionRestoreData);
+        foreach (var (sheetName, sheetRestoreData) in other.RegionRestoreDataBySheet)
+        {
+            MergeRegionRestoreData(sheetName, sheetRestoreData);
+        }
         VerticesAdded.AddRange(other.VerticesAdded);
         VerticesRemoved.AddRange(other.VerticesRemoved);
         EdgesAdded.AddRange(other.EdgesAdded);

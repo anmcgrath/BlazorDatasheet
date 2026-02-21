@@ -169,62 +169,70 @@ public class FormulaEngine
             return;
 
         IsCalculating = true;
-
-        foreach (var sheet in _sheets)
-            sheet.BatchUpdates();
-
-        var executionContext = new FormulaExecutionContext();
-
-        foreach (var scc in order)
+        var batchedSheets = new List<Sheet>(_sheets.Count);
+        try
         {
-            var sccGroup = scc;
-            bool isCircularGroup = false;
-
-            executionContext.SetCurrentGroup(ref sccGroup);
-
-            foreach (var vertex in scc)
+            foreach (var sheet in _sheets)
             {
-                if (vertex.Formula == null)
-                    continue;
+                sheet.BatchUpdates();
+                batchedSheets.Add(sheet);
+            }
 
-                // if it's part of a scc group, and we don't have circular references, then the value would
-                // already have been evaluated.
-                CellValue value;
+            var executionContext = new FormulaExecutionContext();
 
-                // To speed up time in scc group, if one vertex is circular the rest will be.
-                if (isCircularGroup)
-                    value = CellValue.Error(ErrorType.Circular);
-                else
+            foreach (var scc in order)
+            {
+                var sccGroup = scc;
+                bool isCircularGroup = false;
+
+                executionContext.SetCurrentGroup(ref sccGroup);
+
+                foreach (var vertex in scc)
                 {
-                    // check whether the formula has already been calculated in this scc group - may be the case if we lucked
-                    // out on the first value calculation and it wasn't a circular reference.
-                    if (executionContext.TryGetExecutedValue(vertex.Formula, out var result))
-                    {
-                        value = result;
-                    }
+                    if (vertex.Formula == null)
+                        continue;
+
+                    // if it's part of a scc group, and we don't have circular references, then the value would
+                    // already have been evaluated.
+                    CellValue value;
+
+                    // To speed up time in scc group, if one vertex is circular the rest will be.
+                    if (isCircularGroup)
+                        value = CellValue.Error(ErrorType.Circular);
                     else
                     {
-                        value = _evaluator.Evaluate(vertex.Formula, executionContext);
-                        executionContext.RecordExecuted(vertex.Formula, value);
-                        if (value.IsError() && ((FormulaError)value.Data!).ErrorType == ErrorType.Circular)
-                            isCircularGroup = true;
+                        // check whether the formula has already been calculated in this scc group - may be the case if we lucked
+                        // out on the first value calculation and it wasn't a circular reference.
+                        if (executionContext.TryGetExecutedValue(vertex.Formula, out var result))
+                        {
+                            value = result;
+                        }
+                        else
+                        {
+                            value = _evaluator.Evaluate(vertex.Formula, executionContext);
+                            executionContext.RecordExecuted(vertex.Formula, value);
+                            if (value.IsError() && ((FormulaError)value.Data!).ErrorType == ErrorType.Circular)
+                                isCircularGroup = true;
+                        }
                     }
+
+                    executionContext.ClearExecuting();
+
+                    if (vertex.VertexType == VertexType.Cell)
+                        _environment.SetCellValue(vertex.Row, vertex.Col, vertex.SheetName, value);
+                    else if (vertex.VertexType == VertexType.Named)
+                        _environment.SetVariable(vertex.Key, value);
                 }
-
-                executionContext.ClearExecuting();
-
-                if (vertex.VertexType == VertexType.Cell)
-                    _environment.SetCellValue(vertex.Row, vertex.Col, vertex.SheetName, value);
-                else if (vertex.VertexType == VertexType.Named)
-                    _environment.SetVariable(vertex.Key, value);
             }
         }
+        finally
+        {
+            foreach (var sheet in batchedSheets)
+                sheet.EndBatchUpdates();
 
-        foreach (var sheet in _sheets)
-            sheet.EndBatchUpdates();
-
-        _requiresCalculation.Clear();
-        IsCalculating = false;
+            _requiresCalculation.Clear();
+            IsCalculating = false;
+        }
     }
 
     /// <summary>

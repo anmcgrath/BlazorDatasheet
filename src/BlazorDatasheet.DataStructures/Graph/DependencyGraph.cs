@@ -117,8 +117,8 @@ public class DependencyGraph<T> where T : Vertex
     {
         if (!_symbolTable.ContainsKey(vKey))
             return;
-        var adj = Adj(vKey);
-        var prec = Prec(vKey);
+        var adj = Adj(vKey).ToList();
+        var prec = Prec(vKey).ToList();
 
         // Remove edges
         foreach (var w in adj)
@@ -300,7 +300,7 @@ public class DependencyGraph<T> where T : Vertex
         var currKey = v.Key;
         var prec = Prec(currKey).Select(x => x.Key).ToList();
         var adj = Adj(currKey).Select(x => x.Key).ToList();
-        RemoveVertex(currKey);
+        RemoveVertex(currKey, false);
 
         v.UpdateKey();
         AddVertex(v);
