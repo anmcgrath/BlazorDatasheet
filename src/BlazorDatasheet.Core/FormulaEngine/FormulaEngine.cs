@@ -189,39 +189,14 @@ public class FormulaEngine
 
                 foreach (var vertex in scc)
                 {
-                    if (vertex.Formula == null)
+                    var formula = vertex.Formula;
+                    if (formula == null)
                         continue;
 
-                    // if it's part of a scc group, and we don't have circular references, then the value would
-                    // already have been evaluated.
-                    CellValue value;
-
-                    // To speed up time in scc group, if one vertex is circular the rest will be.
-                    if (isCircularGroup)
-                        value = CellValue.Error(ErrorType.Circular);
-                    else
-                    {
-                        // check whether the formula has already been calculated in this scc group - may be the case if we lucked
-                        // out on the first value calculation and it wasn't a circular reference.
-                        if (executionContext.TryGetExecutedValue(vertex.Formula, out var result))
-                        {
-                            value = result;
-                        }
-                        else
-                        {
-                            value = _evaluator.Evaluate(vertex.Formula, executionContext);
-                            executionContext.RecordExecuted(vertex.Formula, value);
-                            if (value.IsError() && ((FormulaError)value.Data!).ErrorType == ErrorType.Circular)
-                                isCircularGroup = true;
-                        }
-                    }
+                    var value = EvaluateFormulaInGroup(formula, executionContext, ref isCircularGroup);
 
                     executionContext.ClearExecuting();
-
-                    if (vertex.VertexType == VertexType.Cell)
-                        _environment.SetCellValue(vertex.Row, vertex.Col, vertex.SheetName, value);
-                    else if (vertex.VertexType == VertexType.Named)
-                        _environment.SetVariable(vertex.Key, value);
+                    ApplyVertexValue(vertex, value);
                 }
             }
         }
@@ -233,6 +208,30 @@ public class FormulaEngine
             _requiresCalculation.Clear();
             IsCalculating = false;
         }
+    }
+
+    private CellValue EvaluateFormulaInGroup(CellFormula formula, FormulaExecutionContext executionContext,
+        ref bool isCircularGroup)
+    {
+        if (isCircularGroup)
+            return CellValue.Error(ErrorType.Circular);
+
+        if (executionContext.TryGetExecutedValue(formula, out var cachedValue))
+            return cachedValue;
+
+        var value = _evaluator.Evaluate(formula, executionContext);
+        executionContext.RecordExecuted(formula, value);
+        if (value.IsError() && ((FormulaError)value.Data!).ErrorType == ErrorType.Circular)
+            isCircularGroup = true;
+        return value;
+    }
+
+    private void ApplyVertexValue(FormulaVertex vertex, CellValue value)
+    {
+        if (vertex.VertexType == VertexType.Cell)
+            _environment.SetCellValue(vertex.Row, vertex.Col, vertex.SheetName, value);
+        else if (vertex.VertexType == VertexType.Named)
+            _environment.SetVariable(vertex.Key, value);
     }
 
     /// <summary>

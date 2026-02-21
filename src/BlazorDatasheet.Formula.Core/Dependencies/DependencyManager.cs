@@ -257,14 +257,12 @@ public class DependencyManager
 
         foreach (var dependent in formulaDependents)
         {
-            // capture the current references before they are modified
-            var existingRegions = dependent.Formula!.References.Select(r => r.Region.Clone()).ToList();
-            var existingSheetNames = dependent.Formula!.References.Select(r => r.SheetName).ToList();
-            var existingValidities = dependent.Formula!.References.Select(r => r.IsInvalid).ToList();
-            var sheetNamesAreExplicit = dependent.Formula!.References.Select(x => x.ExplicitSheetName).ToList();
-            restoreData.ModifiedFormulaReferences.Add(new ReferenceRestoreData(dependent.Formula!, existingRegions,
-                existingValidities, existingSheetNames, sheetNamesAreExplicit));
-            dependent.Formula!.InsertRowColIntoReferences(index, count, axis, sheetName);
+            var formula = dependent.Formula;
+            if (formula == null)
+                continue;
+
+            restoreData.ModifiedFormulaReferences.Add(CaptureReferenceRestoreData(formula));
+            formula.InsertRowColIntoReferences(index, count, axis, sheetName);
         }
 
         restoreData.Merge(ShiftVerticesInRegion(affectedRegion, dRow, dCol, sheetName));
@@ -337,18 +335,16 @@ public class DependencyManager
             ? new ColumnRegion(index, int.MaxValue)
             : new RowRegion(index, int.MaxValue);
 
-        var dependentFormula = GetDirectDependents(affectedRegion, sheetName);
+        var dependentFormulas = GetDirectDependents(affectedRegion, sheetName);
 
-        foreach (var dependent in dependentFormula)
+        foreach (var dependent in dependentFormulas)
         {
-            // capture the current references before they are modified
-            var existingRegions = dependent.Formula!.References.Select(r => r.Region.Clone()).ToList();
-            var existingValidities = dependent.Formula!.References.Select(r => r.IsInvalid).ToList();
-            var sheetNames = dependent.Formula!.References.Select(x => x.SheetName).ToList();
-            var sheetNamesAreExplicit = dependent.Formula!.References.Select(x => x.ExplicitSheetName).ToList();
-            restoreData.ModifiedFormulaReferences.Add(new ReferenceRestoreData(dependent.Formula!, existingRegions,
-                existingValidities, sheetNames, sheetNamesAreExplicit));
-            dependent.Formula!.RemoveRowColFromReferences(index, count, axis, sheetName);
+            var formula = dependent.Formula;
+            if (formula == null)
+                continue;
+
+            restoreData.ModifiedFormulaReferences.Add(CaptureReferenceRestoreData(formula));
+            formula.RemoveRowColFromReferences(index, count, axis, sheetName);
         }
 
         restoreData.Merge(ShiftVerticesInRegion(affectedRegion, dRow, dCol, sheetName));
@@ -461,15 +457,29 @@ public class DependencyManager
 
         foreach (var regionModification in restoreData.ModifiedFormulaReferences)
         {
-            int refIndex = 0;
-            foreach (var formulaReference in regionModification.Formula.References)
-            {
-                formulaReference.SetSheetName(regionModification.SheetNames[refIndex],
-                    regionModification.ExplicitSheetReferences[refIndex]);
-                formulaReference.SetRegion(regionModification.OldRegions[refIndex]);
-                formulaReference.SetValidity(!regionModification.OldInvalidStates[refIndex]);
-                refIndex++;
-            }
+            RestoreFormulaReferences(regionModification);
+        }
+    }
+
+    private static ReferenceRestoreData CaptureReferenceRestoreData(CellFormula formula)
+    {
+        var existingRegions = formula.References.Select(r => r.Region.Clone()).ToList();
+        var existingValidities = formula.References.Select(r => r.IsInvalid).ToList();
+        var sheetNames = formula.References.Select(x => x.SheetName).ToList();
+        var explicitSheetNames = formula.References.Select(x => x.ExplicitSheetName).ToList();
+        return new ReferenceRestoreData(formula, existingRegions, existingValidities, sheetNames, explicitSheetNames);
+    }
+
+    private static void RestoreFormulaReferences(ReferenceRestoreData regionModification)
+    {
+        int refIndex = 0;
+        foreach (var formulaReference in regionModification.Formula.References)
+        {
+            formulaReference.SetSheetName(regionModification.SheetNames[refIndex],
+                regionModification.ExplicitSheetReferences[refIndex]);
+            formulaReference.SetRegion(regionModification.OldRegions[refIndex]);
+            formulaReference.SetValidity(!regionModification.OldInvalidStates[refIndex]);
+            refIndex++;
         }
     }
 
