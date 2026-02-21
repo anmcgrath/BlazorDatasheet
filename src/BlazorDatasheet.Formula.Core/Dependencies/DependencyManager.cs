@@ -94,41 +94,8 @@ public class DependencyManager
         if (formulaVertex.Formula.ContainsVolatiles)
             _volatileVertices.Add(formulaVertex);
 
-        // find formula inside any of the regions that this formula references
-        // and add a dependency edge to them
-        foreach (var formulaRef in formulaVertex.Formula.References)
-        {
-            // add edges to any formula that already exist
-            if (formulaRef is not NamedReference namedRef)
-            {
-                var formulaInsideRegion = GetVerticesInRegion(formulaRef.Region, formulaRef.SheetName);
-                foreach (var f in formulaInsideRegion)
-                {
-                    _dependencyGraph.AddEdge(f, formulaVertex);
-                    restoreData.EdgesAdded.Add((f.Key, formulaVertex.Key));
-                }
-
-                restoreData.MergeRegionRestoreData(
-                    formulaRef.SheetName,
-                    GetReferencedVertexStore(formulaRef.SheetName).Add(formulaRef.Region.Clone(), formulaVertex));
-            }
-            else
-            {
-                if (_dependencyGraph.HasVertex(namedRef.Name))
-                {
-                    var existingVertex = _dependencyGraph.GetVertex(namedRef.Name);
-                    if (existingVertex != null)
-                        _dependencyGraph.AddEdge(existingVertex, formulaVertex);
-                }
-            }
-        }
-
-        // find any formula that reference this formula and add edges to them
-        foreach (var dependents in GetDirectDependents(formulaVertex))
-        {
-            _dependencyGraph.AddEdge(formulaVertex, dependents);
-            restoreData.EdgesAdded.Add((formulaVertex.Key, dependents.Key));
-        }
+        AddIncomingEdgesForFormulaReferences(formulaVertex, restoreData);
+        AddOutgoingEdgesToDirectDependents(formulaVertex, restoreData);
 
         return restoreData;
     }
@@ -146,43 +113,8 @@ public class DependencyManager
             return restoreData;
         formulaVertex = existingFormulaVertex;
 
-        // remove the references that refer to this formula cell
-        var formulaReferences = formulaVertex.Formula?.References;
-
-        if (formulaReferences != null)
-        {
-            foreach (var formulaRef in formulaReferences)
-            {
-                List<DataRegion<FormulaVertex>> dataToDelete = [];
-                switch (formulaRef)
-                {
-                    case CellReference cellRef:
-                        dataToDelete = GetReferencedVertexStore(cellRef.SheetName)
-                            .GetDataRegions(cellRef.RowIndex, cellRef.ColIndex, formulaVertex).ToList();
-                        break;
-                    case RangeReference rangeReference:
-                        dataToDelete = GetReferencedVertexStore(rangeReference.SheetName)
-                            .GetDataRegions(rangeReference.Region, formulaVertex).ToList();
-                        break;
-                }
-
-                if (dataToDelete.Count != 0)
-                {
-                    restoreData.MergeRegionRestoreData(
-                        formulaRef.SheetName,
-                        GetReferencedVertexStore(formulaRef.SheetName).Delete(dataToDelete));
-                }
-            }
-        }
-
-        // we should only delete edges that show cells that this formula is dependent on
-        // if there are formula that depend on this formula, they shouldn't be removed?
-
-        foreach (var vertex in _dependencyGraph.GetDependentsOf(formulaVertex))
-            restoreData.EdgesRemoved.Add((formulaVertex.Key, vertex.Key));
-
-        foreach (var vertex in _dependencyGraph.GetPrecedentsOf(formulaVertex))
-            restoreData.EdgesRemoved.Add((vertex.Key, formulaVertex.Key));
+        RemoveReferenceTrackingForFormula(formulaVertex, restoreData);
+        RecordRemovedEdges(formulaVertex, restoreData);
 
         _dependencyGraph.RemoveVertex(formulaVertex, false);
         restoreData.VerticesRemoved.Add(formulaVertex);
@@ -410,48 +342,130 @@ public class DependencyManager
 
     public void Restore(DependencyManagerRestoreData restoreData)
     {
+        RestoreShiftedVertices(restoreData);
+        RestoreVertices(restoreData);
+        RestoreEdges(restoreData);
+        RestoreReferencedVertexStores(restoreData);
+        RestoreModifiedFormulaReferences(restoreData);
+    }
+
+    private void AddIncomingEdgesForFormulaReferences(FormulaVertex formulaVertex, DependencyManagerRestoreData restoreData)
+    {
+        foreach (var formulaRef in formulaVertex.Formula!.References)
+        {
+            if (formulaRef is NamedReference namedRef)
+            {
+                if (_dependencyGraph.GetVertex(namedRef.Name) is { } existingVertex)
+                    _dependencyGraph.AddEdge(existingVertex, formulaVertex);
+                continue;
+            }
+
+            foreach (var precedent in GetVerticesInRegion(formulaRef.Region, formulaRef.SheetName))
+            {
+                _dependencyGraph.AddEdge(precedent, formulaVertex);
+                restoreData.EdgesAdded.Add((precedent.Key, formulaVertex.Key));
+            }
+
+            restoreData.MergeRegionRestoreData(
+                formulaRef.SheetName,
+                GetReferencedVertexStore(formulaRef.SheetName).Add(formulaRef.Region.Clone(), formulaVertex));
+        }
+    }
+
+    private void AddOutgoingEdgesToDirectDependents(FormulaVertex formulaVertex, DependencyManagerRestoreData restoreData)
+    {
+        foreach (var dependent in GetDirectDependents(formulaVertex))
+        {
+            _dependencyGraph.AddEdge(formulaVertex, dependent);
+            restoreData.EdgesAdded.Add((formulaVertex.Key, dependent.Key));
+        }
+    }
+
+    private void RemoveReferenceTrackingForFormula(FormulaVertex formulaVertex, DependencyManagerRestoreData restoreData)
+    {
+        var formulaReferences = formulaVertex.Formula?.References;
+        if (formulaReferences == null)
+            return;
+
+        foreach (var formulaRef in formulaReferences)
+        {
+            var dataToDelete = GetTrackedRegionsForReference(formulaRef, formulaVertex);
+            if (dataToDelete.Count == 0)
+                continue;
+
+            restoreData.MergeRegionRestoreData(
+                formulaRef.SheetName,
+                GetReferencedVertexStore(formulaRef.SheetName).Delete(dataToDelete));
+        }
+    }
+
+    private List<DataRegion<FormulaVertex>> GetTrackedRegionsForReference(Reference formulaRef, FormulaVertex formulaVertex)
+    {
+        return formulaRef switch
+        {
+            CellReference cellRef => GetReferencedVertexStore(cellRef.SheetName)
+                .GetDataRegions(cellRef.RowIndex, cellRef.ColIndex, formulaVertex)
+                .ToList(),
+            RangeReference rangeRef => GetReferencedVertexStore(rangeRef.SheetName)
+                .GetDataRegions(rangeRef.Region, formulaVertex)
+                .ToList(),
+            _ => []
+        };
+    }
+
+    private void RecordRemovedEdges(FormulaVertex formulaVertex, DependencyManagerRestoreData restoreData)
+    {
+        foreach (var dependent in _dependencyGraph.GetDependentsOf(formulaVertex))
+            restoreData.EdgesRemoved.Add((formulaVertex.Key, dependent.Key));
+
+        foreach (var precedent in _dependencyGraph.GetPrecedentsOf(formulaVertex))
+            restoreData.EdgesRemoved.Add((precedent.Key, formulaVertex.Key));
+    }
+
+    private void RestoreShiftedVertices(DependencyManagerRestoreData restoreData)
+    {
         foreach (var shift in restoreData.Shifts)
         {
-            var r = GetAffectedRegion(shift.Axis, shift.Index);
+            if (shift.SheetName == null)
+                continue;
+
+            var affectedRegion = GetAffectedRegion(shift.Axis, shift.Index);
             var (dRow, dCol) = GetShiftDelta(shift.Axis, -shift.Amount);
-
-            if (shift.SheetName != null)
-                ShiftVerticesInRegion(r, dRow, dCol, shift.SheetName);
+            ShiftVerticesInRegion(affectedRegion, dRow, dCol, shift.SheetName);
         }
+    }
 
+    private void RestoreVertices(DependencyManagerRestoreData restoreData)
+    {
         foreach (var vertex in restoreData.VerticesAdded)
-        {
             _dependencyGraph.RemoveVertex(vertex);
-        }
 
         foreach (var vertex in restoreData.VerticesRemoved)
-        {
             _dependencyGraph.AddVertex(vertex);
-        }
+    }
 
+    private void RestoreEdges(DependencyManagerRestoreData restoreData)
+    {
         foreach (var edge in restoreData.EdgesAdded)
-        {
             _dependencyGraph.RemoveEdge(edge.Item1, edge.Item2);
-        }
 
         foreach (var edge in restoreData.EdgesRemoved)
-        {
             _dependencyGraph.AddEdge(edge.Item1, edge.Item2);
-        }
+    }
 
-        // 1. shift & restore referenced vertex store
+    private void RestoreReferencedVertexStores(DependencyManagerRestoreData restoreData)
+    {
         foreach (var (sheetName, sheetRestoreData) in restoreData.RegionRestoreDataBySheet)
         {
             if (_referencedVertexStores.TryGetValue(sheetName, out var store))
                 store.Restore(sheetRestoreData);
         }
+    }
 
-        // 2. restore contracted/expanded/shifted formula references from the records
-
+    private static void RestoreModifiedFormulaReferences(DependencyManagerRestoreData restoreData)
+    {
         foreach (var regionModification in restoreData.ModifiedFormulaReferences)
-        {
             RestoreFormulaReferences(regionModification);
-        }
     }
 
     private static ReferenceRestoreData CaptureReferenceRestoreData(CellFormula formula)
