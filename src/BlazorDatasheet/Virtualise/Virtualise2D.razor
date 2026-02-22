@@ -19,11 +19,7 @@
     display: grid;
     grid-template-columns: @_wholeElColTemplate;
     grid-template-rows: @_wholeElRowTemplate;
-    grid-template-areas:
-    'fT fT fT'
-    'fL C  fR'
-    'fB fB fB'">
-
+    grid-template-areas: 'fT fT fT' 'fL C fR' 'fB fB fB'">
     <div aria-hidden="true" @ref="_fillerTop" style="grid-area: fT"></div>
     <div aria-hidden="true" @ref="_fillerRight" style=" grid-area: fR"></div>
     <div
@@ -138,9 +134,9 @@
     private string _contentRowTemplate = string.Empty;
 
     private Viewport _currentViewport = new(new(-1, -1), new(0, 0, 0, 0));
+    private Size _lastTotalSize = new(-1, -1);
     private List<int> _visibleRowIndices = new();
     private List<int> _visibleColIndices = new();
-    private bool _requiresRender = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -160,15 +156,14 @@
                 _fillerRight,
                 _fillerBottom);
         }
-
-        _requiresRender = false;
     }
 
     protected override async Task OnParametersSetAsync()
     {
-        if (!_viewRegion.Equals(ViewRegion))
+        var nextViewRegion = ViewRegion ?? new Region(0, LayoutProvider.NumRows - 1, 0, LayoutProvider.NumColumns - 1);
+        if (!_viewRegion.Equals(nextViewRegion))
         {
-            _viewRegion = ViewRegion ?? new Region(0, LayoutProvider.NumRows - 1, 0, LayoutProvider.NumColumns - 1);
+            _viewRegion = nextViewRegion;
             await RefreshView();
         }
 
@@ -182,7 +177,7 @@
             var rect = await CalculateViewRect(_contentEl);
             if (rect == null)
                 return;
-            await HandleScroll(rect);
+            await HandleScrollCore(rect, forceRefresh: true);
         }
     }
 
@@ -204,6 +199,11 @@
     [JSInvokable(nameof(HandleScroll))]
     public async Task HandleScroll(Rect viewRect)
     {
+        await HandleScrollCore(viewRect, forceRefresh: false);
+    }
+
+    private async Task HandleScrollCore(Rect viewRect, bool forceRefresh)
+    {
         var totalSize = GetTotalViewSize();
         var totalRect = new Rect(0, 0, totalSize.Width, totalSize.Height);
         // just in-case the total size shrinks and the view rect is now outside of the total view (e.g new sheet or filters applied).
@@ -212,9 +212,9 @@
         var layoutProviderRegion = new Region(0, LayoutProvider.NumRows - 1, 0, LayoutProvider.NumColumns - 1);
 
         var initialLeft = LayoutProvider.ComputeColumn(viewRect.X) + _viewRegion.Left;
-        var initialRight = LayoutProvider.ComputeColumn(LayoutProvider.ComputeLeftPosition(_viewRegion.Left) + viewRect.Width + viewRect.X);
+        var initialRight = LayoutProvider.ComputeColumn(viewRect.X + viewRect.Width) + _viewRegion.Left;
         var initialTop = LayoutProvider.ComputeRow(viewRect.Y) + _viewRegion.Top;
-        var initialBottom = LayoutProvider.ComputeRow(LayoutProvider.ComputeTopPosition(_viewRegion.Top) + viewRect.Height + viewRect.Y);
+        var initialBottom = LayoutProvider.ComputeRow(viewRect.Y + viewRect.Height) + _viewRegion.Top;
 
         Region? view = new Region(
             initialTop - OverscanRows, initialBottom + OverscanRows,
@@ -225,6 +225,19 @@
 
         if (view == null)
             return;
+
+        var newViewport = new Viewport(view, viewRect);
+        var viewRegionChanged = !view.Equals(_currentViewport.ViewRegion);
+        var totalSizeChanged = !_lastTotalSize.Equals(totalSize);
+        var viewRectChanged = !_currentViewport.ViewRect.Equals(viewRect);
+
+        if (!forceRefresh && !viewRegionChanged && !totalSizeChanged)
+        {
+            _currentViewport = newViewport;
+            if (viewRectChanged)
+                await OnViewportChanged.InvokeAsync(new VirtualViewportChangedEventArgs(_currentViewport, new(), new()));
+            return;
+        }
 
         var left = LayoutProvider.ComputeLeftPosition(view.Left);
         var right = LayoutProvider.ComputeRightPosition(view.Right);
@@ -244,10 +257,10 @@
         _wholeElColTemplate = $"{fillLeft}px {contentWidth}px {fillRight}px";
         _wholeElRowTemplate = $"{fillTop}px {contentHeight}px {fillBottom}px";
 
-        var newViewport = new Viewport(view, viewRect);
         var newRegions = newViewport.ViewRegion.Break(_currentViewport.ViewRegion).Cast<Region>().ToList();
         var removedRegions = _currentViewport.ViewRegion.Break(newViewport.ViewRegion).Cast<Region>().ToList();
         _currentViewport = newViewport;
+        _lastTotalSize = totalSize;
         _visibleColIndices = LayoutProvider.GetVisibleColumnIndices(view.Left, view.Right);
         _visibleRowIndices = LayoutProvider.GetVisibleRowIndices(view.Top, view.Bottom);
 
@@ -261,8 +274,6 @@
         _contentColTemplate = csb.ToString();
         _contentRowTemplate = rsb.ToString();
 
-        _requiresRender = true;
-
         await OnViewportChanged.InvokeAsync(new VirtualViewportChangedEventArgs(_currentViewport, newRegions, removedRegions));
         await InvokeAsync(StateHasChanged);
     }
@@ -275,7 +286,7 @@
         await _virtualiser.InvokeVoidAsync("scrollParentBy", x, y, _contentEl);
         // update the viewport as it may not have triggered an interaction observer event
         var viewRect = await CalculateViewRect(_contentEl);
-        if (viewRect != null && viewRect != _currentViewport.ViewRect)
+        if (viewRect != null && !viewRect.Equals(_currentViewport.ViewRect))
         {
             // we can assume ViewRegion hasn't changed, otherwise it would have changed from the interaction event
             _currentViewport = new Viewport(_currentViewport.ViewRegion, viewRect);
@@ -312,7 +323,6 @@
 
     protected override void OnAfterRender(bool firstRender)
     {
-        _requiresRender = false;
         base.OnAfterRender(firstRender);
     }
 

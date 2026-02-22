@@ -1,6 +1,7 @@
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Edit;
 using BlazorDatasheet.Core.Interfaces;
+using BlazorDatasheet.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 
@@ -8,6 +9,8 @@ namespace BlazorDatasheet.Edit;
 
 public abstract class BaseEditor : SheetComponentBase, ICellEditor
 {
+    [CascadingParameter] protected IScrollService? ScrollService { get; set; }
+
     [Parameter] public EventCallback<string> OnValueChanged { get; set; }
 
     private string _currentValue = string.Empty;
@@ -115,7 +118,7 @@ public abstract class BaseEditor : SheetComponentBase, ICellEditor
     {
         if (s != _currentValue)
         {
-            _currentValue = s;
+            _currentValue = s ?? string.Empty;
             StateHasChanged();
         }
     }

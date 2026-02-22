@@ -6,8 +6,12 @@
     <button @onclick="SetBlueBackground">Blue Bg</button>
 </div>
 
-<div style="width: 500px; height: 300px; overflow: scroll;">
-    <Datasheet Sheet="_sheet"></Datasheet>
+<div style="width: 700px; height: 500px; overflow: scroll;">
+    <Datasheet 
+        UseAutoScroll="true" 
+        FrozenLeftCount="2"
+        FrozenRightCount="1"
+        Sheet="_sheet"></Datasheet>
 </div>
 
 @code {

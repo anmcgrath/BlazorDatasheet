@@ -1,0 +1,99 @@
+﻿@using BlazorDatasheet.DataStructures.Geometry
+@using Microsoft.JSInterop
+@inject IJSRuntime Js
+@implements IAsyncDisposable
+
+<div @ref="_contentEl" class="bds-autoscroll"></div>
+
+@code {
+
+    private bool _enabled;
+
+    /// <summary>
+    /// Whether the auto-scroller is allowed to run.
+    /// </summary>
+    [Parameter]
+    public bool Enabled { get; set; }
+
+    [Parameter] public required AutoScrollOptions Options { get; set; } = new();
+
+    /// <summary>
+    /// Whether the auto-scroll should scroll.
+    /// </summary>
+    [Parameter, EditorRequired] public required Func<bool> IsActive { get; set; }
+
+    private ElementReference _contentEl;
+    private IJSObjectReference? _module;
+    private IJSObjectReference? _autoScroller;
+    private DotNetObjectReference<AutoScroller>? _dotnetHelper;
+    private PeriodicTimer? _pt;
+    private double _velX;
+    private double _velY;
+
+    protected override void OnParametersSet()
+    {
+        if (!Enabled)
+        {
+            _velX = 0;
+            _velY = 0;
+        }
+        _enabled = Enabled;
+        if (_pt != null)
+            _pt.Period = TimeSpan.FromMilliseconds(Options.PollIntervalInMs);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _dotnetHelper = DotNetObjectReference.Create(this);
+            _module = await Js.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/Render/AutoScroll/AutoScroller.razor.js");
+            _autoScroller = await _module.InvokeAsync<IJSObjectReference>("createAutoScroller");
+            await _autoScroller.InvokeVoidAsync("subscribe", _contentEl, _dotnetHelper);
+
+            _pt = new PeriodicTimer(TimeSpan.FromMilliseconds(Options.PollIntervalInMs));
+            while (await _pt.WaitForNextTickAsync())
+            {
+                if (_pt.Period.Milliseconds != Options.PollIntervalInMs)
+                    _pt.Period = TimeSpan.FromMilliseconds(Options.PollIntervalInMs);
+
+                if (_enabled && IsActive())
+                {
+                    await _autoScroller.InvokeVoidAsync("scrollBy", _velX, _velY);
+                }
+            }
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_autoScroller != null)
+            {
+                await _autoScroller.InvokeVoidAsync("dispose");
+                await _autoScroller.DisposeAsync();
+            }
+
+            if (_module != null)
+                await _module.DisposeAsync();
+
+            _dotnetHelper?.Dispose();
+            _pt?.Dispose();
+        }
+        catch (Exception)
+        {
+            // ignored
+        }
+    }
+
+    [JSInvokable(nameof(HandleMouseOutsideOfScrollableAncestor))]
+    public Task HandleMouseOutsideOfScrollableAncestor(Point2d point)
+    {
+        var p = 1.2;
+        _velX = Math.Min(Math.Pow(Math.Abs(point.X), p), Options.MaxVelocity) * Math.Sign(point.X);
+        _velY = Math.Min(Math.Pow(Math.Abs(point.Y), p), Options.MaxVelocity) * Math.Sign(point.Y);
+        return Task.CompletedTask;
+    }
+
+}

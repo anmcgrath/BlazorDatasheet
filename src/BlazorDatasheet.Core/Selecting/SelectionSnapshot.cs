@@ -4,13 +4,13 @@ namespace BlazorDatasheet.Core.Selecting;
 
 internal class SelectionSnapshot
 {
-    public IRegion? ActiveRegion { get; }
+    public int ActiveRegionIndex { get; }
     public IReadOnlyList<IRegion> Regions { get; }
     public CellPosition ActiveCellPosition { get; private set; }
 
-    public SelectionSnapshot(IRegion? activeRegion, IReadOnlyList<IRegion> regions, CellPosition activeCellPosition)
+    public SelectionSnapshot(int activeRegionIndex, IReadOnlyList<IRegion> regions, CellPosition activeCellPosition)
     {
-        ActiveRegion = activeRegion;
+        ActiveRegionIndex = activeRegionIndex;
         Regions = regions;
         ActiveCellPosition = activeCellPosition;
     }

@@ -151,7 +151,7 @@ public class RegionStoreTests
     {
         var store = new RegionDataStore<bool>();
         var restore1 = store.Add(new Region(1, 1), true);
-        var restoreData = store.RemoveColAt(0, 1);
+        var restoreData = store.RemoveColAt(0, 2);
         store.Restore(restoreData);
         store.GetData(1, 1).Should().BeEquivalentTo([true]);
         store.Restore(restore1);
@@ -192,7 +192,7 @@ public class RegionStoreTests
         var store = new RegionDataStore<int>();
         var r = new Region(1, 5, 1, 5);
         store.Add(r, 1);
-        var restoreData = store.RemoveColAt(0, 1);
+        var restoreData = store.RemoveColAt(0, 2);
         store.GetAllDataRegions()
             .Select(x => x.Region)
             .Should().BeEquivalentTo([new Region(1, 5, 0, 3)]);

@@ -112,12 +112,12 @@ public class CellLayoutProvider : IGridLayoutProvider
 
     public int ComputeColumn(double x)
     {
-        return _sheet.Columns.GetColumnIndex(x) + ViewRegion.Left;
+        return _sheet.Columns.GetColumnIndex(_sheet.Columns.GetVisualLeft(ViewRegion.Left) + x) - ViewRegion.Left;
     }
 
     public int ComputeRow(double y)
     {
-        return _sheet.Rows.GetRowIndex(y) + ViewRegion.Top;
+        return _sheet.Rows.GetRowIndex(_sheet.Rows.GetVisualTop(ViewRegion.Top) + y) - ViewRegion.Top;
     }
 
 

@@ -27,13 +27,13 @@
         }
     </div>
 
-    @if (FrozenStartCount > 0)
+    @if (FrozenColumnsLeftCount > 0)
     {
         <div style="position: sticky; @GetStickyLeftPositionInfo(); z-index: 4;">
             <ColumnHeadingRenderer
                 ShowColumnMenu="ShowColumnMenu"
                 Sheet="_sheet"
-                ViewRegion="new Region(0, 0, 0, FrozenStartCount - 1)">
+                ViewRegion="new Region(0, 0, 0, FrozenColumnsLeftCount - 1)">
                 @ChildContent(context)
             </ColumnHeadingRenderer>
         </div>
@@ -81,13 +81,13 @@
         </Virtualise2D>
     </div>
 
-    @if (FrozenEndCount > 0)
+    @if (FrozenColumnsRightCount > 0)
     {
         <div style="position: sticky; right: 0; z-index: 4">
             <ColumnHeadingRenderer
                 Sheet="_sheet"
                 ShowColumnMenu="ShowColumnMenu"
-                ViewRegion="new Region(0, 0, _sheet.NumCols-1 - FrozenEndCount + 1, _sheet.NumCols-1)">
+                ViewRegion="new Region(0, 0, _sheet.NumCols-1 - FrozenColumnsRightCount + 1, _sheet.NumCols-1)">
                 @ChildContent(context)
             </ColumnHeadingRenderer>
         </div>
@@ -96,9 +96,9 @@
 
 @code {
 
-    [Parameter] public int FrozenStartCount { get; set; }
+    [Parameter] public int FrozenColumnsLeftCount { get; set; }
 
-    [Parameter] public int FrozenEndCount { get; set; }
+    [Parameter] public int FrozenColumnsRightCount { get; set; }
 
     [Parameter] public bool ShowColumnMenu { get; set; }
 

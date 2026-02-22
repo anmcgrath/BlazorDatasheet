@@ -1,7 +1,14 @@
-﻿namespace BlazorDatasheet.Core.Layout;
+﻿using BlazorDatasheet.DataStructures.Geometry;
+
+namespace BlazorDatasheet.Core.Layout;
 
 public interface IGridLayoutProvider
 {
+    /// <summary>
+    /// The current view region of the layout provider.
+    /// </summary>
+    public IRegion ViewRegion { get; set; }
+
     /// <summary>
     /// The total width of the grid
     /// </summary>
