@@ -546,10 +546,6 @@ public class Sheet
         Commands.EndCommandGroup();
     }
 
-    public void ClearFormat(IRegion region)
-    {
-    }
-
     #endregion FORMAT
 
     public string? GetRegionAsDelimitedText(IRegion inputRegion, char tabDelimiter = '\t', string newLineDelim = "\n")
