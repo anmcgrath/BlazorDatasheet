@@ -12,215 +12,239 @@
 @inherits SheetComponentBase
 
 <ConditionalCascadingValue TValue="IScrollService" Value="ScrollServiceForCascade">
-<div class="vars" theme="@_theme">
-    <SelectionMenu
-        MenuOptions="_menuOptions"
-        Disabled="@IsReadOnly"
-        DefaultFilterTypes="DefaultFilterTypes"/>
+    <div class="vars" theme="@_theme">
+        <SelectionMenu
+            MenuOptions="_menuOptions"
+            Disabled="@IsReadOnly"
+            DefaultFilterTypes="DefaultFilterTypes"/>
 
-    <SheetMenuTarget MenuId="SelectionMenu"
-                     MenuData="_sheet"
-                     Margin="0"
-                     DisableMenuTarget="!_menuOptions.ContextMenuEnabled"
-                     Trigger="@MenuTrigger.OnContextMenu"
-                     Placement="@MenuPlacement.BottomRight">
+        <SheetMenuTarget MenuId="SelectionMenu"
+                         MenuData="_sheet"
+                         Margin="0"
+                         DisableMenuTarget="!_menuOptions.ContextMenuEnabled"
+                         Trigger="@MenuTrigger.OnContextMenu"
+                         Placement="@MenuPlacement.BottomRight">
 
-        <div
-            @onmouseover="() => IsMouseInsideSheet = true"
-            @onmouseout="() => IsMouseInsideSheet = false"
-            class="sheet"
-            style="@(GridLevel == 0 ? $"width:{TotalViewWidth}px; height:{TotalViewHeight}px;" : "")"
-            @ref="_sheetContainer">
-            <div style="display: flex; flex-direction: column; align-items:flex-start;">
+            <div
+                @onmouseover="() => IsMouseInsideSheet = true"
+                @onmouseout="() => IsMouseInsideSheet = false"
+                class="sheet"
+                style="@(GridLevel == 0 ? $"width:{TotalViewWidth}px; height:{TotalViewHeight}px;" : "")"
+                @ref="_sheetContainer">
+                <div style="display: flex; flex-direction: column; align-items:flex-start;">
 
-                @if (ShowColHeadings)
-                {
-                    <!-- Column headings -->
-                    <div class="sheet-col-head-container"
-                         style="z-index: @(GridLevel + 2); @(StickyHeaders ? "position: sticky; top: 0;" : "")">
-                        <div style="display: flex; flex-direction: row; align-items: flex-start;">
-
-                            @if (ShowRowHeadings)
-                            {
-                                <div class="sheet-cell row-head col-head"
-                                     data-row="-1"
-                                     data-col="-1"
-                                     style="
-                                         width: @(_sheet.Rows.HeadingWidth)px;
-                                     background: var(--col-header-bg-color);
-                                     z-index: @(GridLevel + 5);
-                                     @(StickyHeaders ? "position: sticky; top: 0; left:0;" : "")
-                                     height: @(_sheet.Columns.HeadingHeight)px;">
-                                </div>
-                            }
-
-                            <ColumnHeadingRenderer
-                                OverscanColumns="OverscanColumns"
-                                ViewRegion="MainViewRegion"
-                                Sheet="_sheet"
-                                ShowColumnMenu="_menuOptions.HeaderMenuEnabled"
-                                AlternateAxisHeadingsShown="ShowRowHeadings"
-                                FrozenStartCount="_frozenLeftCount"
-                                FrozenEndCount="_frozenRightCount">
-                                @ColumnHeaderTemplate(context)
-                            </ColumnHeadingRenderer>
-                        </div>
-                    </div>
-                }
-
-                @if (_frozenTopCount > 0)
-                {
-                    <div
-                        style="position: sticky; z-index: @(GridLevel + 2); top: @(ShowColHeadings && StickyHeaders ? _sheet.Columns.HeadingHeight + "px" : "0");"
-                        class="bds-frozen-top">
-                        <!-- Top sticky -->
-                        <Datasheet
-                            OverscanColumns="OverscanColumns"
-                            OverscanRows="OverscanRows"
-                            Theme="@_theme"
-                            GridLevel="GridLevel + 1"
-                            ShowColHeadings="false"
-                            ShowRowHeadings="@ShowRowHeadings"
-                            ShowFormulaDependents="@ShowFormulaDependents"
-                            StickyHeaders="StickyHeaders"
-                            @ref="_frozenTop"
-                            FrozenLeftCount="_frozenLeftCount"
-                            FrozenRightCount="_frozenRightCount"
-                            NumberPrecisionDisplay="NumberPrecisionDisplay"
-                            CustomCellTypeDefinitions="CustomCellTypeDefinitions"
-                            Icons="Icons"
-                            ViewRegion="FrozenTopViewRegion"
-                            Sheet="_sheet">
-                            <RowHeaderTemplate>@RowHeaderTemplate(context)</RowHeaderTemplate>
-                        </Datasheet>
-                    </div>
-                }
-
-                @{
-                    var numVisibleRows = _sheet.Rows.CountVisible(_viewRegion.Top, _viewRegion.Bottom);
-                    var numVisibleCols = _sheet.Columns.CountVisible(_viewRegion.Left, _viewRegion.Right);
-                }
-                @if (GridLevel == 0)
-                {
-                    if (numVisibleCols == 0 && numVisibleRows == 0)
+                    @if (ShowColHeadings)
                     {
-                        <div></div>
-                    }
-                    else if (numVisibleRows == 0)
-                    {
-                        @EmptyRowsTemplate
-                    }
-                    else if (numVisibleCols == 0)
-                    {
-                        @EmptyColumnsTemplate
-                    }
-                }
+                        <!-- Column headings -->
+                        <div class="sheet-col-head-container"
+                             style="z-index: @(GridLevel + 2); @(StickyHeaders ? "position: sticky; top: 0;" : "")">
+                            <div style="display: flex; flex-direction: row; align-items: flex-start;">
 
-                <div style="display: flex; flex-direction: row; align-items: flex-start;">
+                                @if (ShowRowHeadings)
+                                {
+                                    <div class="sheet-cell row-head col-head"
+                                         data-row="-1"
+                                         data-col="-1"
+                                         style="
+                                             width: @(_sheet.Rows.HeadingWidth)px;
+                                         background: var(--col-header-bg-color);
+                                         z-index: @(GridLevel + 5);
+                                         @(StickyHeaders ? "position: sticky; top: 0; left:0;" : "")
+                                         height: @(_sheet.Columns.HeadingHeight)px;">
+                                    </div>
+                                }
 
-                    @if (ShowRowHeadings)
-                    {
-                        <div class="sheet-row-head-container"
-                             style="z-index: @(GridLevel + 1);@(StickyHeaders ? "position: sticky; left: 0;" : "")">
-                            <RowHeadingRenderer
-                                OverscanRows="OverscanRows"
-                                AlternateAxisHeadingsShown="ShowColHeadings"
-                                ViewRegion="MainViewRegion"
-                                Sheet="_sheet">
-                                @RowHeaderTemplate(context)
-                            </RowHeadingRenderer>
+                                <ColumnHeadingRenderer
+                                    OverscanColumns="OverscanColumns"
+                                    ViewRegion="MainViewRegion"
+                                    Sheet="_sheet"
+                                    ShowColumnMenu="_menuOptions.HeaderMenuEnabled"
+                                    AlternateAxisHeadingsShown="ShowRowHeadings"
+                                    FrozenStartCount="_frozenLeftCount"
+                                    FrozenEndCount="_frozenRightCount">
+                                    @ColumnHeaderTemplate(context)
+                                </ColumnHeadingRenderer>
+                            </div>
                         </div>
                     }
 
-                    @if (_frozenLeftCount > 0)
+                    @if (_frozenTopCount > 0)
                     {
-                        <!-- Left sticky -->
-                        <div class="bds-frozen-left"
-                             style="position: sticky; z-index: @(GridLevel + 1); left: @(ShowRowHeadings && StickyHeaders ? _sheet.Rows.HeadingWidth + "px" : "0");">
+                        <div
+                            style="position: sticky; z-index: @(GridLevel + 2); top: @(ShowColHeadings && StickyHeaders ? _sheet.Columns.HeadingHeight + "px" : "0");"
+                            class="bds-frozen-top">
+                            <!-- Top sticky -->
                             <Datasheet
                                 OverscanColumns="OverscanColumns"
                                 OverscanRows="OverscanRows"
                                 Theme="@_theme"
                                 GridLevel="GridLevel + 1"
                                 ShowColHeadings="false"
-                                ShowRowHeadings="false"
+                                ShowRowHeadings="@ShowRowHeadings"
                                 ShowFormulaDependents="@ShowFormulaDependents"
-                                @ref="_frozenLeft"
-                                FrozenLeftCount="0"
-                                FrozenRightCount="0"
+                                StickyHeaders="StickyHeaders"
+                                @ref="_frozenTop"
+                                FrozenLeftCount="_frozenLeftCount"
+                                FrozenRightCount="_frozenRightCount"
                                 NumberPrecisionDisplay="NumberPrecisionDisplay"
                                 CustomCellTypeDefinitions="CustomCellTypeDefinitions"
                                 Icons="Icons"
-                                Sheet="_sheet"
-                                ViewRegion="FrozenLeftViewRegion">
+                                ViewRegion="FrozenTopViewRegion"
+                                Sheet="_sheet">
+                                <RowHeaderTemplate>@RowHeaderTemplate(context)</RowHeaderTemplate>
                             </Datasheet>
                         </div>
                     }
 
+                    @{
+                        var numVisibleRows = _sheet.Rows.CountVisible(_viewRegion.Top, _viewRegion.Bottom);
+                        var numVisibleCols = _sheet.Columns.CountVisible(_viewRegion.Left, _viewRegion.Right);
+                    }
                     @if (GridLevel == 0)
                     {
-                        <AutoScroller
-                            Options="AutoScrollOptions"
-                            IsActive="IsAutoScrollActive"
-                            Enabled="@UseAutoScroll"/>
+                        if (numVisibleCols == 0 && numVisibleRows == 0)
+                        {
+                            <div></div>
+                        }
+                        else if (numVisibleRows == 0)
+                        {
+                            @EmptyRowsTemplate
+                        }
+                        else if (numVisibleCols == 0)
+                        {
+                            @EmptyColumnsTemplate
+                        }
                     }
 
-                    <LayerContainer Depth="@GridLevel" Sheet="_sheet" ViewRegion="MainViewRegion"
-                                    PointerInputService="_sheetPointerInputService">
-                        <HighlightLayer/>
-                        @if (UseAutoFill && !IsReadOnly)
+                    <div style="display: flex; flex-direction: row; align-items: flex-start;">
+
+                        @if (ShowRowHeadings)
                         {
-                            <AutofillLayer AutofillDraggingChanged="HandleAutofillDraggingChanged"/>
+                            <div class="sheet-row-head-container"
+                                 style="z-index: @(GridLevel + 1);@(StickyHeaders ? "position: sticky; left: 0;" : "")">
+                                <RowHeadingRenderer
+                                    OverscanRows="OverscanRows"
+                                    AlternateAxisHeadingsShown="ShowColHeadings"
+                                    ViewRegion="MainViewRegion"
+                                    Sheet="_sheet">
+                                    @RowHeaderTemplate(context)
+                                </RowHeadingRenderer>
+                            </div>
                         }
+
+                        @if (_frozenLeftCount > 0)
+                        {
+                            <!-- Left sticky -->
+                            <div class="bds-frozen-left"
+                                 style="position: sticky; z-index: @(GridLevel + 1); left: @(ShowRowHeadings && StickyHeaders ? _sheet.Rows.HeadingWidth + "px" : "0");">
+                                <Datasheet
+                                    OverscanColumns="OverscanColumns"
+                                    OverscanRows="OverscanRows"
+                                    Theme="@_theme"
+                                    GridLevel="GridLevel + 1"
+                                    ShowColHeadings="false"
+                                    ShowRowHeadings="false"
+                                    ShowFormulaDependents="@ShowFormulaDependents"
+                                    @ref="_frozenLeft"
+                                    FrozenLeftCount="0"
+                                    FrozenRightCount="0"
+                                    NumberPrecisionDisplay="NumberPrecisionDisplay"
+                                    CustomCellTypeDefinitions="CustomCellTypeDefinitions"
+                                    Icons="Icons"
+                                    Sheet="_sheet"
+                                    ViewRegion="FrozenLeftViewRegion">
+                                </Datasheet>
+                            </div>
+                        }
+
                         @if (GridLevel == 0)
                         {
-                            <AutofitLayer
-                                @ref="_autofitLayer"
-                                AutoFitOnInteraction="AutoFit"
-                                NumberOfSignificantDigits="NumberPrecisionDisplay"
-                                CellRenderFragment="CellRenderFragment"/>
+                            <AutoScroller
+                                Options="AutoScrollOptions"
+                                IsActive="IsAutoScrollActive"
+                                Enabled="@UseAutoScroll"/>
                         }
-                        <VirtualMergesLayer
-                            CellRenderFragment="CellRenderFragment"
-                            NumberPrecisionDisplay="NumberPrecisionDisplay"
-                            Cache="_visualCellCache"/>
-                        <EditorLayer Disabled="@IsReadOnly" @ref="_editorLayer"
-                                     CustomCellTypes="@CustomCellTypeDefinitions"/>
-                        <SelectionRendererLayer/>
-                        @if (_showFormulaDependents)
+
+                        <LayerContainer Depth="@GridLevel" Sheet="_sheet" ViewRegion="MainViewRegion"
+                                        PointerInputService="_sheetPointerInputService">
+                            <HighlightLayer/>
+                            @if (UseAutoFill && !IsReadOnly)
+                            {
+                                <AutofillLayer AutofillDraggingChanged="HandleAutofillDraggingChanged"/>
+                            }
+                            @if (GridLevel == 0)
+                            {
+                                <AutofitLayer
+                                    @ref="_autofitLayer"
+                                    AutoFitOnInteraction="AutoFit"
+                                    NumberOfSignificantDigits="NumberPrecisionDisplay"
+                                    CellRenderFragment="CellRenderFragment"/>
+                            }
+                            <VirtualMergesLayer
+                                CellRenderFragment="CellRenderFragment"
+                                NumberPrecisionDisplay="NumberPrecisionDisplay"
+                                Cache="_visualCellCache"/>
+                            <EditorLayer Disabled="@IsReadOnly" @ref="_editorLayer"
+                                         CustomCellTypes="@CustomCellTypeDefinitions"/>
+                            <SelectionRendererLayer/>
+                            @if (_showFormulaDependents)
+                            {
+                                <FormulaDependenciesLayer/>
+                            }
+                        </LayerContainer>
+
+                        @if (numVisibleCols > 0 && numVisibleRows > 0)
                         {
-                            <FormulaDependenciesLayer/>
+                            <Virtualise2D
+                                OverscanColumns="OverscanColumns"
+                                OverscanRows="OverscanRows"
+                                Class="@("bds-main-view-" + GridLevel)"
+                                OnViewportChanged="HandleVirtualViewportChanged"
+                                LayoutProvider="_cellLayoutProvider"
+                                ViewRegion="MainViewRegion"
+                                RowClass="bds-row"
+                                @ref="_mainView"
+                                Context="vr">
+                                <RowTemplate>
+                                    <DatasheetGridRow
+                                        NumberPrecisionDisplay="_numberPrecisionDisplay"
+                                        Row="vr.Row"
+                                        CellRenderFragment="CellRenderFragment"
+                                        VisibleColIndices="vr.VisibleColIndices"
+                                        Sheet="_sheet"
+                                        Cache="_visualCellCache"
+                                        IsDirty="IsRowDirty(vr.Row)"/>
+                                </RowTemplate>
+                            </Virtualise2D>
                         }
-                    </LayerContainer>
 
-                    @if (numVisibleCols > 0 && numVisibleRows > 0)
-                    {
-                        <Virtualise2D
-                            OverscanColumns="OverscanColumns"
-                            OverscanRows="OverscanRows"
-                            Class="@("bds-main-view-" + GridLevel)"
-                            OnViewportChanged="HandleVirtualViewportChanged"
-                            LayoutProvider="_cellLayoutProvider"
-                            ViewRegion="MainViewRegion"
-                            RowClass="bds-row"
-                            @ref="_mainView"
-                            Context="vr">
-                            <RowTemplate>
-                                <DatasheetGridRow
-                                    NumberPrecisionDisplay="_numberPrecisionDisplay"
-                                    Row="vr.Row"
-                                    CellRenderFragment="CellRenderFragment"
-                                    VisibleColIndices="vr.VisibleColIndices"
+                        @if (_frozenRightCount > 0)
+                        {
+                            <div class="bds-frozen-right" style="position: sticky; right: 0; z-index:@(GridLevel + 1);">
+                                <Datasheet
+                                    OverscanColumns="OverscanColumns"
+                                    OverscanRows="OverscanRows"
+                                    Theme="@_theme"
+                                    GridLevel="GridLevel + 1"
+                                    ShowColHeadings="false"
+                                    ShowFormulaDependents="@ShowFormulaDependents"
+                                    ShowRowHeadings="false"
+                                    @ref="_frozenRight"
+                                    FrozenRightCount="0"
+                                    FrozenLeftCount="0"
+                                    NumberPrecisionDisplay="NumberPrecisionDisplay"
+                                    CustomCellTypeDefinitions="CustomCellTypeDefinitions"
+                                    Icons="Icons"
                                     Sheet="_sheet"
-                                    Cache="_visualCellCache"
-                                    IsDirty="IsRowDirty(vr.Row)"/>
-                            </RowTemplate>
-                        </Virtualise2D>
-                    }
+                                    ViewRegion="FrozenRightViewRegion"/>
+                            </div>
+                        }
+                    </div>
 
-                    @if (_frozenRightCount > 0)
+                    @if (_frozenBottomCount > 0)
                     {
-                        <div class="bds-frozen-right" style="position: sticky; right: 0; z-index:@(GridLevel + 1);">
+                        <div class="bds-frozen-bottom" style="position: sticky; z-index: @(GridLevel + 1); bottom: 0;">
+                            <!-- Bottom sticky -->
                             <Datasheet
                                 OverscanColumns="OverscanColumns"
                                 OverscanRows="OverscanRows"
@@ -228,48 +252,24 @@
                                 GridLevel="GridLevel + 1"
                                 ShowColHeadings="false"
                                 ShowFormulaDependents="@ShowFormulaDependents"
-                                ShowRowHeadings="false"
-                                @ref="_frozenRight"
-                                FrozenRightCount="0"
-                                FrozenLeftCount="0"
+                                ShowRowHeadings="@ShowRowHeadings"
+                                StickyHeaders="StickyHeaders"
+                                @ref="_frozenBottom"
+                                FrozenLeftCount="_frozenLeftCount"
+                                FrozenRightCount="_frozenRightCount"
                                 NumberPrecisionDisplay="NumberPrecisionDisplay"
                                 CustomCellTypeDefinitions="CustomCellTypeDefinitions"
                                 Icons="Icons"
-                                Sheet="_sheet"
-                                ViewRegion="FrozenRightViewRegion"/>
+                                ViewRegion="FrozenBottomViewRegion"
+                                Sheet="_sheet"/>
                         </div>
                     }
+
                 </div>
-
-                @if (_frozenBottomCount > 0)
-                {
-                    <div class="bds-frozen-bottom" style="position: sticky; z-index: @(GridLevel + 1); bottom: 0;">
-                        <!-- Bottom sticky -->
-                        <Datasheet
-                            OverscanColumns="OverscanColumns"
-                            OverscanRows="OverscanRows"
-                            Theme="@_theme"
-                            GridLevel="GridLevel + 1"
-                            ShowColHeadings="false"
-                            ShowFormulaDependents="@ShowFormulaDependents"
-                            ShowRowHeadings="@ShowRowHeadings"
-                            StickyHeaders="StickyHeaders"
-                            @ref="_frozenBottom"
-                            FrozenLeftCount="_frozenLeftCount"
-                            FrozenRightCount="_frozenRightCount"
-                            NumberPrecisionDisplay="NumberPrecisionDisplay"
-                            CustomCellTypeDefinitions="CustomCellTypeDefinitions"
-                            Icons="Icons"
-                            ViewRegion="FrozenBottomViewRegion"
-                            Sheet="_sheet"/>
-                    </div>
-                }
-
             </div>
-        </div>
 
-    </SheetMenuTarget>
-</div>
+        </SheetMenuTarget>
+    </div>
 </ConditionalCascadingValue>
 
 

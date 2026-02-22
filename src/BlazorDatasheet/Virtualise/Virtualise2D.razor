@@ -19,11 +19,7 @@
     display: grid;
     grid-template-columns: @_wholeElColTemplate;
     grid-template-rows: @_wholeElRowTemplate;
-    grid-template-areas:
-    'fT fT fT'
-    'fL C  fR'
-    'fB fB fB'">
-
+    grid-template-areas: 'fT fT fT' 'fL C fR' 'fB fB fB'">
     <div aria-hidden="true" @ref="_fillerTop" style="grid-area: fT"></div>
     <div aria-hidden="true" @ref="_fillerRight" style=" grid-area: fR"></div>
     <div
@@ -160,7 +156,6 @@
                 _fillerRight,
                 _fillerBottom);
         }
-
     }
 
     protected override async Task OnParametersSetAsync()
