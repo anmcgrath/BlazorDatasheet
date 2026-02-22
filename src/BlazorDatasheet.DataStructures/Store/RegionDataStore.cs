@@ -195,9 +195,9 @@ public class RegionDataStore<T> : ISparseSource, IRowSource, IStore<T, RegionRes
     public RegionRestoreData<T> RemoveRowColAt(int index, int count, Axis axis)
     {
         if (axis == Axis.Col)
-            return RemoveColAt(index, index + count - 1);
+            return RemoveColAt(index, count);
         else
-            return RemoveRowAt(index, index + count - 1);
+            return RemoveRowAt(index, count);
     }
 
     /// <summary>
@@ -205,10 +205,10 @@ public class RegionDataStore<T> : ISparseSource, IRowSource, IStore<T, RegionRes
     /// Returns any data that is removed during this operation.
     /// </summary>
     /// <param name="rowStart"></param>
-    /// <param name="rowEnd"></param>
+    /// <param name="count"></param>
     /// <returns>Any data that is removed during this operation</returns>
-    public RegionRestoreData<T> RemoveRowAt(int rowStart, int rowEnd) =>
-        RemoveRowsOrColumsAndShift(rowStart, rowEnd, Axis.Row);
+    public RegionRestoreData<T> RemoveRowAt(int rowStart, int count) =>
+        RemoveRowsOrColumsAndShift(rowStart, rowStart + count - 1, Axis.Row);
 
     /// <summary>
     /// Updates the region positions by handling column deletes. Regions are shifted/contracted appropriately.
@@ -218,7 +218,7 @@ public class RegionDataStore<T> : ISparseSource, IRowSource, IStore<T, RegionRes
     /// <param name="count"></param>
     /// <returns>Any data that is removed during this operation</returns>
     public RegionRestoreData<T> RemoveColAt(int colStart, int count) =>
-        RemoveRowsOrColumsAndShift(colStart, count, Axis.Col);
+        RemoveRowsOrColumsAndShift(colStart, colStart + count - 1, Axis.Col);
 
     /// <summary>
     /// Removes a number of rows or columns and shifts/contracts regions appropriately.
