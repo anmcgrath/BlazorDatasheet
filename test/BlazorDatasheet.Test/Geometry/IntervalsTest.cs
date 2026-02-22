@@ -257,6 +257,51 @@ public class IntervalsTest
         store.Clear();
         store.GetAllIntervals().Should().BeEmpty();
     }
+
+    [Test]
+    public void GetNextNonEmptyIndex_Direction_Negative_Returns_Correct_Position()
+    {
+        var store = new MergeableIntervalStore<SimpleMergeableData<int>>();
+        store.Add(0, 3, new SimpleMergeableData<int>(1));
+        store.Add(7, 10, new SimpleMergeableData<int>(2));
+
+        // From position 5 (not in any interval), going left → last position of [0,3] = 3
+        store.GetNextNonEmptyIndex(5, -1).Should().Be(3);
+
+        // From position 6 (not in any interval), going left → last position of [0,3] = 3
+        store.GetNextNonEmptyIndex(6, -1).Should().Be(3);
+
+        // From position 8 (inside [7,10]), going left → 7 (position - 1 = 7 is in interval)
+        store.GetNextNonEmptyIndex(8, -1).Should().Be(7);
+    }
+
+    [Test]
+    public void Add_EqualData_Coalesces_Into_Single_Interval()
+    {
+        var store = new MergeableIntervalStore<SimpleMergeableData<int>>();
+        store.Add(3, 5, new SimpleMergeableData<int>(1));
+
+        // Adding [0,10] with same data should produce a single [0,10] interval
+        store.Add(0, 10, new SimpleMergeableData<int>(1));
+
+        store.GetAllIntervals().Count.Should().Be(1);
+        store.GetAllIntervals()[0].Start.Should().Be(0);
+        store.GetAllIntervals()[0].End.Should().Be(10);
+    }
+
+    [Test]
+    public void Add_EqualData_Coalesces_And_Restores_Correctly()
+    {
+        var store = new MergeableIntervalStore<SimpleMergeableData<int>>();
+        store.Add(3, 5, new SimpleMergeableData<int>(1));
+        var restore = store.Add(0, 10, new SimpleMergeableData<int>(1));
+
+        store.Restore(restore);
+
+        store.GetAllIntervals().Count.Should().Be(1);
+        store.GetAllIntervals()[0].Start.Should().Be(3);
+        store.GetAllIntervals()[0].End.Should().Be(5);
+    }
 }
 
 public class SimpleMergeableData<T> : IMergeable<SimpleMergeableData<T>>, IEquatable<SimpleMergeableData<T>>
