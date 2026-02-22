@@ -118,7 +118,13 @@ public class MergeableIntervalStore<T> : ISparseSource where T : IMergeable<T>, 
             if (interval.Contains(oi))
             {
                 if (interval.Data.Equals(oi.Data))
+                {
+                    // Remove oi so it can be coalesced with prefix/suffix below
+                    _intervals.Remove(oi.Start);
+                    restoreData.RemovedIntervals.Add(oi);
+                    intervalsToAdd.Add(new OrderedInterval<T>(oi.Start, oi.End, oi.Data.Clone()));
                     continue;
+                }
 
                 // remove the existing, add a new interval with the merged data
                 var clone = new OrderedInterval<T>(oi.Start, oi.End, oi.Data.Clone());
@@ -195,10 +201,28 @@ public class MergeableIntervalStore<T> : ISparseSource where T : IMergeable<T>, 
                 intervalsToAdd.Add(new OrderedInterval<T>(oi.End + 1, overlapping[i + 1].Start - 1, interval.Data));
         }
 
-        foreach (var newOi in intervalsToAdd)
+        // Post-process: merge adjacent equal-data intervals
+        intervalsToAdd.Sort((a, b) => a.Start.CompareTo(b.Start));
+        var coalesced = new List<OrderedInterval<T>>(intervalsToAdd.Count);
+        foreach (var item in intervalsToAdd)
+        {
+            if (coalesced.Count > 0
+                && coalesced[^1].End + 1 == item.Start
+                && coalesced[^1].Data.Equals(item.Data))
+            {
+                var last = coalesced[^1];
+                coalesced[^1] = new OrderedInterval<T>(last.Start, item.End, last.Data);
+            }
+            else
+            {
+                coalesced.Add(item);
+            }
+        }
+
+        foreach (var newOi in coalesced)
             _intervals.Add(newOi.Start, newOi);
 
-        restoreData.AddedIntervals.AddRange(intervalsToAdd);
+        restoreData.AddedIntervals.AddRange(coalesced);
 
         UpdateStartEndPositions();
         return restoreData;
@@ -488,10 +512,10 @@ public class MergeableIntervalStore<T> : ISparseSource where T : IMergeable<T>, 
             return -1;
 
         var interval = _intervals.Values[i0];
-        if (interval.Contains(position + 1))
-            return position + 1;
+        if (interval.Contains(position + direction))
+            return position + direction;
 
-        while (interval.End < position + direction)
+        while (direction > 0 ? interval.End < position + 1 : interval.Start > position - 1)
         {
             i0 += direction;
 
@@ -500,7 +524,7 @@ public class MergeableIntervalStore<T> : ISparseSource where T : IMergeable<T>, 
             interval = _intervals.Values[i0];
         }
 
-        return interval.Start;
+        return direction > 0 ? interval.Start : interval.End;
     }
 
     public int GetNextNonEmptyIndex(int index) => GetNextNonEmptyIndex(index, 1);
