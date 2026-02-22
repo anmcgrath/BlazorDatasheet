@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Events;
 using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.Core.Layout;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -34,16 +35,11 @@ public partial class HeadingRenderer : SheetComponentBase
 
         if (Sheet != _sheet)
         {
-            _sheet = Sheet ?? new(0, 0);
+            if (Sheet is not null)
+                UnSubscribeEvents(Sheet);
 
-            _sheet.Selection.SelectionChanged += (_, _) => StateHasChanged();
-            _sheet.Selection.SelectingChanged += (_, _) => StateHasChanged();
-            _sheet.Rows.SizeModified += HandleSizeModified;
-            _sheet.Rows.Inserted += HandleRowColInserted;
-            _sheet.Columns.Inserted += HandleRowColInserted;
-            _sheet.Rows.Removed += HandleRowColRemoved;
-            _sheet.Columns.Removed += HandleRowColRemoved;
-            _sheet.Columns.SizeModified += HandleSizeModified;
+            _sheet = Sheet ?? new(0, 0);
+            SubscribeEvents(_sheet);
 
             LayoutProvider = Axis == Axis.Col
                 ? new ColHeadingLayoutProvider(_sheet)
@@ -63,6 +59,34 @@ public partial class HeadingRenderer : SheetComponentBase
         if (refreshView)
             await RefreshView();
     }
+
+    private void UnSubscribeEvents(Sheet sheet)
+    {
+        sheet.Selection.SelectionChanged -= SelectionChanged;
+        sheet.Selection.SelectingChanged -= SelectingChanged;
+        sheet.Rows.SizeModified -= HandleSizeModified;
+        sheet.Rows.Inserted -= HandleRowColInserted;
+        sheet.Columns.Inserted -= HandleRowColInserted;
+        sheet.Rows.Removed -= HandleRowColRemoved;
+        sheet.Columns.Removed -= HandleRowColRemoved;
+        sheet.Columns.SizeModified -= HandleSizeModified;
+    }
+
+    private void SubscribeEvents(Sheet sheet)
+    {
+        sheet.Selection.SelectionChanged += SelectionChanged;
+        sheet.Selection.SelectingChanged += SelectingChanged;
+        sheet.Rows.SizeModified += HandleSizeModified;
+        sheet.Rows.Inserted += HandleRowColInserted;
+        sheet.Columns.Inserted += HandleRowColInserted;
+        sheet.Rows.Removed += HandleRowColRemoved;
+        sheet.Columns.Removed += HandleRowColRemoved;
+        sheet.Columns.SizeModified += HandleSizeModified;
+    }
+
+    private void SelectingChanged(object? sender, IRegion? e) => StateHasChanged();
+
+    private void SelectionChanged(object? sender, SelectionChangedEventArgs e) => StateHasChanged();
 
     private void HandleRowColInserted(object? sender, RowColInsertedEventArgs? e)
     {
