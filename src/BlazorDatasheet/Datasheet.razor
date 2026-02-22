@@ -38,13 +38,11 @@
                         <!-- Column headings -->
                         <div class="sheet-col-head-container"
                              style="z-index: @(GridLevel + 2); @(StickyHeaders ? "position: sticky; top: 0;" : "")">
-                            <div style="display: flex; flex-direction: row; align-items: flex-start;">
+                            <div style="display: flex; align-items: start;">
 
                                 @if (ShowRowHeadings)
                                 {
-                                    <div class="sheet-cell row-head col-head"
-                                         data-row="-1"
-                                         data-col="-1"
+                                    <div class="sheet-cell row-head col-head" data-row="-1" data-col="-1"
                                          style="
                                              width: @(_sheet.Rows.HeadingWidth)px;
                                          background: var(--col-header-bg-color);
@@ -71,7 +69,7 @@
                     @if (_frozenTopCount > 0)
                     {
                         <div
-                            style="position: sticky; z-index: @(GridLevel + 2); top: @(ShowColHeadings && StickyHeaders ? _sheet.Columns.HeadingHeight + "px" : "0");"
+                            style="z-index: @(GridLevel + 2); top: @(TopMainContentOffset)px;"
                             class="bds-frozen-top">
                             <!-- Top sticky -->
                             <Datasheet
@@ -116,12 +114,12 @@
                         }
                     }
 
-                    <div style="display: flex; flex-direction: row; align-items: flex-start;">
+                    <div style="display: flex; align-items: start;">
 
                         @if (ShowRowHeadings)
                         {
                             <div class="sheet-row-head-container"
-                                 style="z-index: @(GridLevel + 1);@(StickyHeaders ? "position: sticky; left: 0;" : "")">
+                                 style="z-index: @(GridLevel + 1); @(StickyHeaders ? "position: sticky; left: 0;" : "")">
                                 <RowHeadingRenderer
                                     OverscanRows="OverscanRows"
                                     AlternateAxisHeadingsShown="ShowColHeadings"
@@ -136,7 +134,7 @@
                         {
                             <!-- Left sticky -->
                             <div class="bds-frozen-left"
-                                 style="position: sticky; z-index: @(GridLevel + 1); left: @(ShowRowHeadings && StickyHeaders ? _sheet.Rows.HeadingWidth + "px" : "0");">
+                                 style="z-index: @(GridLevel + 1); left: @(LeftMainContentOffset)px;">
                                 <Datasheet
                                     OverscanColumns="OverscanColumns"
                                     OverscanRows="OverscanRows"
@@ -220,7 +218,7 @@
 
                         @if (_frozenRightCount > 0)
                         {
-                            <div class="bds-frozen-right" style="position: sticky; right: 0; z-index:@(GridLevel + 1);">
+                            <div class="bds-frozen-right" style="right: 0; z-index:@(GridLevel + 1);">
                                 <Datasheet
                                     OverscanColumns="OverscanColumns"
                                     OverscanRows="OverscanRows"
@@ -243,7 +241,7 @@
 
                     @if (_frozenBottomCount > 0)
                     {
-                        <div class="bds-frozen-bottom" style="position: sticky; z-index: @(GridLevel + 1); bottom: 0;">
+                        <div class="bds-frozen-bottom" style="z-index: @(GridLevel + 1); bottom: 0;">
                             <!-- Bottom sticky -->
                             <Datasheet
                                 OverscanColumns="OverscanColumns"
@@ -319,6 +317,9 @@
 
         return typeof(TextRenderer);
     }
+
+    private double LeftMainContentOffset => StickyHeaders ? this.GetGutterSize(Axis.Row) : 0;
+    private double TopMainContentOffset => StickyHeaders ? this.GetGutterSize(Axis.Col) : 0;
 
 
     private RenderFragment<VisualCell> CreateComponent() => cell => builder =>

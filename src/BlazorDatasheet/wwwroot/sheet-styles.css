@@ -119,18 +119,22 @@
 }
 
 .bds-frozen-left {
+    position: sticky;
     box-shadow: 2px 0 0 var(--frozen-border-color);
 }
 
 .bds-frozen-right {
+    position: sticky;
     box-shadow: -2px 0 0 var(--frozen-border-color);
 }
 
 .bds-frozen-top {
+    position: sticky;
     box-shadow: 0 2px 0 var(--frozen-border-color);
 }
 
 .bds-frozen-bottom {
+    position: sticky;
     box-shadow: 0 -2px 0 var(--frozen-border-color);
 }
 
