@@ -321,10 +321,10 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         DatasheetViewRegionCalculator.GetFrozenBottomRegion(_viewRegion, _sheet.NumRows, _frozenBottomCount);
 
     private Region FrozenLeftViewRegion =>
-        DatasheetViewRegionCalculator.GetFrozenLeftRegion(MainViewRegion, _sheet.NumCols, _frozenLeftCount);
+        DatasheetViewRegionCalculator.GetFrozenLeftRegion(_viewRegion, _sheet.NumCols, _frozenLeftCount);
 
     private Region FrozenRightViewRegion =>
-        DatasheetViewRegionCalculator.GetFrozenRightRegion(MainViewRegion, _sheet.NumCols, _frozenRightCount);
+        DatasheetViewRegionCalculator.GetFrozenRightRegion(_viewRegion, _sheet.NumCols, _frozenRightCount);
 
     protected override void OnInitialized()
     {

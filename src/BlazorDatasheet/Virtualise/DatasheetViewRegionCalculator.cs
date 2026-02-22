@@ -40,43 +40,43 @@ internal static class DatasheetViewRegionCalculator
         return new Region(mainTop, mainBottom, mainLeft, mainRight);
     }
 
-    public static Region GetFrozenTopRegion(Region constrainedViewRegion, int numRows, int frozenTopCount)
+    public static Region GetFrozenTopRegion(Region viewRegion, int numRows, int frozenTopCount)
     {
         if (numRows <= 0)
-            return new Region(0, 0, constrainedViewRegion.Left, constrainedViewRegion.Right);
+            return new Region(0, 0, viewRegion.Left, viewRegion.Right);
 
         var topFreeze = Math.Clamp(frozenTopCount, 0, numRows);
         var bottom = Math.Clamp(topFreeze - 1, 0, numRows - 1);
-        return new Region(0, bottom, constrainedViewRegion.Left, constrainedViewRegion.Right);
+        return new Region(0, bottom, viewRegion.Left, viewRegion.Right);
     }
 
-    public static Region GetFrozenBottomRegion(Region constrainedViewRegion, int numRows, int frozenBottomCount)
+    public static Region GetFrozenBottomRegion(Region viewRegion, int numRows, int frozenBottomCount)
     {
         if (numRows <= 0)
-            return new Region(0, 0, constrainedViewRegion.Left, constrainedViewRegion.Right);
+            return new Region(0, 0, viewRegion.Left, viewRegion.Right);
 
         var bottomFreeze = Math.Clamp(frozenBottomCount, 0, numRows);
         var top = Math.Clamp(numRows - bottomFreeze, 0, numRows - 1);
-        return new Region(top, numRows - 1, constrainedViewRegion.Left, constrainedViewRegion.Right);
+        return new Region(top, numRows - 1, viewRegion.Left, viewRegion.Right);
     }
 
-    public static Region GetFrozenLeftRegion(Region mainViewRegion, int numCols, int frozenLeftCount)
+    public static Region GetFrozenLeftRegion(Region viewRegion, int numCols, int frozenLeftCount)
     {
         if (numCols <= 0)
-            return new Region(mainViewRegion.Top, mainViewRegion.Bottom, 0, 0);
+            return new Region(viewRegion.Top, viewRegion.Bottom, 0, 0);
 
         var leftFreeze = Math.Clamp(frozenLeftCount, 0, numCols);
         var right = Math.Clamp(leftFreeze - 1, 0, numCols - 1);
-        return new Region(mainViewRegion.Top, mainViewRegion.Bottom, 0, right);
+        return new Region(viewRegion.Top, viewRegion.Bottom, 0, right);
     }
 
-    public static Region GetFrozenRightRegion(Region mainViewRegion, int numCols, int frozenRightCount)
+    public static Region GetFrozenRightRegion(Region viewRegion, int numCols, int frozenRightCount)
     {
         if (numCols <= 0)
-            return new Region(mainViewRegion.Top, mainViewRegion.Bottom, 0, 0);
+            return new Region(viewRegion.Top, viewRegion.Bottom, 0, 0);
 
         var rightFreeze = Math.Clamp(frozenRightCount, 0, numCols);
         var left = Math.Clamp(numCols - rightFreeze, 0, numCols - 1);
-        return new Region(mainViewRegion.Top, mainViewRegion.Bottom, left, numCols - 1);
+        return new Region(viewRegion.Top, viewRegion.Bottom, left, numCols - 1);
     }
 }

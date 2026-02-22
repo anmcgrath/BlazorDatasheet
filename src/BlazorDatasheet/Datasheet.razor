@@ -26,8 +26,8 @@
                          Placement="@MenuPlacement.BottomRight">
 
             <div
-                @onmouseover="() => IsMouseInsideSheet = true"
-                @onmouseout="() => IsMouseInsideSheet = false"
+                @onmouseover="@(_ => IsMouseInsideSheet = true)"
+                @onmouseout="@(_ => IsMouseInsideSheet = false)"
                 class="sheet"
                 style="@(GridLevel == 0 ? $"width:{TotalViewWidth}px; height:{TotalViewHeight}px;" : "")"
                 @ref="_sheetContainer">
