@@ -42,7 +42,7 @@ public class CellValueCoercer
 
         if (cellValue.ValueType == CellValueType.Number)
         {
-            val = (double)cellValue.Data!;
+            val = cellValue.NumberValue;
             return true;
         }
 
@@ -54,7 +54,7 @@ public class CellValueCoercer
 
         if (cellValue.ValueType == CellValueType.Logical)
         {
-            val = ((bool)cellValue.Data!) ? 1 : 0;
+            val = cellValue.LogicalValue ? 1 : 0;
             return true;
         }
 
@@ -99,13 +99,13 @@ public class CellValueCoercer
 
         if (cellValue.ValueType == CellValueType.Logical)
         {
-            val = (bool)cellValue.Data!;
+            val = cellValue.LogicalValue;
             return true;
         }
 
         if (cellValue.ValueType == CellValueType.Number)
         {
-            val = ((double)cellValue.Data!) != 0;
+            val = cellValue.NumberValue != 0;
             return true;
         }
 
@@ -181,8 +181,7 @@ public class CellValueCoercer
 
         if (cellValue.ValueType == CellValueType.Number)
         {
-            var num = (double)cellValue.Data!;
-            dateTime = new DateTime(1900, 1, 1).AddDays(num);
+            dateTime = new DateTime(1900, 1, 1).AddDays(cellValue.NumberValue);
         }
 
         if (cellValue.ValueType == CellValueType.Text)
