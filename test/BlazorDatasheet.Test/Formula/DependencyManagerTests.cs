@@ -133,6 +133,18 @@ public class DependencyManagerTests
     }
 
     [Test]
+    public void Rename_Sheet_Then_Insert_Shifts_Formula_Vertex_Position()
+    {
+        _dm.SetFormula(1, 0, "Sheet1", GetFormula("=A1"));
+        _dm.RenameSheet("Sheet1", "Renamed");
+
+        _dm.InsertRowColAt(1, 2, Axis.Row, "Renamed");
+
+        _dm.GetVertex(3, 0, "Renamed").Should().NotBeNull();
+        _dm.GetVertex(1, 0, "Renamed").Should().BeNull();
+    }
+
+    [Test]
     public void Clear_Formula_With_Multi_Sheet_References_And_Restore_Restores_All_Referenced_Stores()
     {
         _dm.SetFormula(0, 0, "Sheet1", GetFormula("=A2+Sheet2!A2"));

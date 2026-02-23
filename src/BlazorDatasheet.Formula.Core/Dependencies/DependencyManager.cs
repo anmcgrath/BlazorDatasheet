@@ -17,6 +17,11 @@ public class DependencyManager
     /// </summary>
     private readonly Dictionary<string, RegionDataStore<FormulaVertex>> _referencedVertexStores = new();
 
+    /// <summary>
+    /// Stores the location of formula vertices
+    /// </summary>
+    private readonly Dictionary<string, RegionDataStore<FormulaVertex>> _formulaLocations = new();
+
     private readonly HashSet<FormulaVertex> _volatileVertices = new();
 
     internal int FormulaCount => _dependencyGraph.Count;
@@ -26,14 +31,22 @@ public class DependencyManager
         return _referencedVertexStores.GetValueOrDefault(sheetName) ?? new RegionDataStore<FormulaVertex>();
     }
 
+    private RegionDataStore<FormulaVertex> GetFormulaLocationStore(string sheetName)
+    {
+        return _formulaLocations.GetValueOrDefault(sheetName) ??
+               new RegionDataStore<FormulaVertex>(expandWhenInsertAfter: false);
+    }
+
     public void AddSheet(string sheetName)
     {
         _referencedVertexStores.Add(sheetName, new RegionDataStore<FormulaVertex>());
+        _formulaLocations.Add(sheetName, new RegionDataStore<FormulaVertex>(expandWhenInsertAfter: false));
     }
 
     public void RemoveSheet(string sheetName)
     {
         _referencedVertexStores.Remove(sheetName);
+        _formulaLocations.Remove(sheetName);
     }
 
     public void RenameSheet(string oldName, string newName)
@@ -60,6 +73,19 @@ public class DependencyManager
         var existingRefStore = GetReferencedVertexStore(oldName);
         _referencedVertexStores.Add(newName, existingRefStore);
         _referencedVertexStores.Remove(oldName);
+        
+        var renamedLocationStore = new RegionDataStore<FormulaVertex>(expandWhenInsertAfter: false);
+        foreach (var vertex in _dependencyGraph.GetAll())
+        {
+            if (vertex.VertexType == VertexType.Cell &&
+                vertex.SheetName == newName)
+            {
+                renamedLocationStore.Add(new Region(vertex.Row, vertex.Col), vertex);
+            }
+        }
+
+        _formulaLocations.Add(newName, renamedLocationStore);
+        _formulaLocations.Remove(oldName);
     }
 
     public DependencyManagerRestoreData SetFormula(int row, int col, string sheetName, CellFormula? formula)
@@ -91,6 +117,14 @@ public class DependencyManager
         _dependencyGraph.AddVertex(formulaVertex);
         restoreData.VerticesAdded.Add(formulaVertex);
 
+        if (formulaVertex.VertexType == VertexType.Cell)
+        {
+            var store = GetFormulaLocationStore(formulaVertex.SheetName);
+            restoreData.MergeFormulaLocationRestoreData(
+                formulaVertex.SheetName,
+                store.Add(new Region(formulaVertex.Row, formulaVertex.Col), formulaVertex));
+        }
+
         if (formulaVertex.Formula.ContainsVolatiles)
             _volatileVertices.Add(formulaVertex);
 
@@ -118,6 +152,14 @@ public class DependencyManager
 
         _dependencyGraph.RemoveVertex(formulaVertex, false);
         restoreData.VerticesRemoved.Add(formulaVertex);
+        
+        if (formulaVertex.VertexType == VertexType.Cell)
+        {
+            var store = GetFormulaLocationStore(formulaVertex.SheetName);
+            restoreData.MergeFormulaLocationRestoreData(
+                formulaVertex.SheetName,
+                store.Clear(new Region(formulaVertex.Row, formulaVertex.Col)));
+        }
 
         return restoreData;
     }
@@ -202,6 +244,10 @@ public class DependencyManager
         restoreData.MergeRegionRestoreData(
             sheetName,
             GetReferencedVertexStore(sheetName).InsertRowColAt(index, count, axis));
+        
+        restoreData.MergeFormulaLocationRestoreData(
+            sheetName,
+            GetFormulaLocationStore(sheetName).InsertRowColAt(index, count, axis));
 
         return restoreData;
     }
@@ -216,19 +262,7 @@ public class DependencyManager
             return Array.Empty<FormulaVertex>();
         }
 
-        var vertices = new List<FormulaVertex>();
-        foreach (var v in _dependencyGraph.GetAll())
-        {
-            if (v.Position == null)
-                continue;
-
-            if (v.SheetName == sheetName && region.Contains(v.Row, v.Col))
-            {
-                vertices.Add(v);
-            }
-        }
-
-        return vertices;
+        return GetFormulaLocationStore(sheetName).GetData(region).ToList();
     }
 
     public DependencyManagerRestoreData InsertColAt(int col, int count, string sheetName) =>
@@ -279,6 +313,10 @@ public class DependencyManager
         restoreData.MergeRegionRestoreData(
             sheetName,
             GetReferencedVertexStore(sheetName).RemoveRowColAt(index, count, axis));
+
+        restoreData.MergeFormulaLocationRestoreData(
+            sheetName,
+            GetFormulaLocationStore(sheetName).RemoveRowColAt(index, count, axis));
 
         return restoreData;
     }
@@ -346,6 +384,7 @@ public class DependencyManager
         RestoreVertices(restoreData);
         RestoreEdges(restoreData);
         RestoreReferencedVertexStores(restoreData);
+        RestoreFormulaLocationStores(restoreData);
         RestoreModifiedFormulaReferences(restoreData);
     }
 
@@ -462,6 +501,15 @@ public class DependencyManager
         }
     }
 
+    private void RestoreFormulaLocationStores(DependencyManagerRestoreData restoreData)
+    {
+        foreach (var (sheetName, sheetRestoreData) in restoreData.FormulaLocationRestoreDataBySheet)
+        {
+            if (_formulaLocations.TryGetValue(sheetName, out var store))
+                store.Restore(sheetRestoreData);
+        }
+    }
+
     private static void RestoreModifiedFormulaReferences(DependencyManagerRestoreData restoreData)
     {
         foreach (var regionModification in restoreData.ModifiedFormulaReferences)
@@ -532,6 +580,7 @@ public class DependencyManager
 public class DependencyManagerRestoreData
 {
     public Dictionary<string, RegionRestoreData<FormulaVertex>> RegionRestoreDataBySheet { get; } = new();
+    public Dictionary<string, RegionRestoreData<FormulaVertex>> FormulaLocationRestoreDataBySheet { get; } = new();
     public List<FormulaVertex> VerticesRemoved { get; set; } = new();
     public List<FormulaVertex> VerticesAdded { get; set; } = new();
     public readonly List<(string, string)> EdgesRemoved = new();
@@ -547,12 +596,26 @@ public class DependencyManagerRestoreData
             RegionRestoreDataBySheet[sheetName] = restoreData;
     }
 
+    public void MergeFormulaLocationRestoreData(string sheetName, RegionRestoreData<FormulaVertex> restoreData)
+    {
+        if (FormulaLocationRestoreDataBySheet.TryGetValue(sheetName, out var existing))
+            existing.Merge(restoreData);
+        else
+            FormulaLocationRestoreDataBySheet[sheetName] = restoreData;
+    }
+
     public void Merge(DependencyManagerRestoreData other)
     {
         foreach (var (sheetName, sheetRestoreData) in other.RegionRestoreDataBySheet)
         {
             MergeRegionRestoreData(sheetName, sheetRestoreData);
         }
+
+        foreach (var (sheetName, sheetRestoreData) in other.FormulaLocationRestoreDataBySheet)
+        {
+            MergeFormulaLocationRestoreData(sheetName, sheetRestoreData);
+        }
+
         VerticesAdded.AddRange(other.VerticesAdded);
         VerticesRemoved.AddRange(other.VerticesRemoved);
         EdgesAdded.AddRange(other.EdgesAdded);
