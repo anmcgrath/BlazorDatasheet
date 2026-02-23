@@ -1,4 +1,4 @@
-﻿using BlazorDatasheet.DataStructures.Util;
+using BlazorDatasheet.DataStructures.Util;
 using BlazorDatasheet.Formula.Core.Extensions;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 
@@ -6,19 +6,37 @@ namespace BlazorDatasheet.Formula.Core;
 
 public class CellValue : IComparable, IComparable<CellValue>
 {
-    public object? Data { get; }
+    private readonly double _number;
+    private readonly object? _objectData;
 
-    public bool IsEmpty { get; private set; }
+    public object? Data => ValueType switch {
+        CellValueType.Number  => _number,
+        CellValueType.Logical => _number != 0,
+        _                     => _objectData
+    };
+
+    public bool IsEmpty => ValueType == CellValueType.Empty;
     public CellValueType ValueType { get; }
+
+    /// <summary>
+    /// Returns the numeric value directly without boxing. Valid when ValueType is Number.
+    /// </summary>
+    public double NumberValue => _number;
+
+    /// <summary>
+    /// Returns the logical value directly without boxing. Valid when ValueType is Logical.
+    /// </summary>
+    public bool LogicalValue => _number != 0;
 
     public static readonly CellValue Empty = new CellValue(null);
 
     public CellValue(object? data)
     {
+        _number = 0;
+        _objectData = null;
+
         if (data == null || (data is string str && str.Length == 0))
         {
-            Data = null;
-            IsEmpty = true;
             ValueType = CellValueType.Empty;
             return;
         }
@@ -31,32 +49,52 @@ public class CellValue : IComparable, IComparable<CellValue>
 
         if (valType.IsAssignableTo(typeof(Reference)))
         {
-            Data = data;
+            _objectData = data;
             ValueType = CellValueType.Reference;
             return;
         }
 
-        // If object is a string then either set the value type as string or 
-        // try to convert to one of the 
+        // If object is a string then either set the value type as string or
+        // try to convert to one of the
         if (valType == typeof(string) || (isNullable && nullableType == typeof(string)))
         {
             var converted = TryConvertFromString(data.ToString(), out var convertedData, out var valueType);
             if (converted)
             {
-                Data = convertedData;
                 ValueType = valueType!.Value;
+                if (ValueType == CellValueType.Number)
+                    _number = (double)convertedData!;
+                else if (ValueType == CellValueType.Logical)
+                    _number = ((bool)convertedData!) ? 1.0 : 0.0;
+                else
+                    _objectData = convertedData;
             }
             else
             {
-                Data = data;
+                _objectData = data;
                 ValueType = CellValueType.Text;
             }
         }
         else
         {
             ValueType = GetValueType(data, valType, isNullable, nullableType);
-            Data = (ValueType == CellValueType.Number) ? Convert.ToDouble(data) : data;
+            if (ValueType == CellValueType.Number)
+                _number = Convert.ToDouble(data);
+            else if (ValueType == CellValueType.Logical)
+                _number = Convert.ToBoolean(data) ? 1.0 : 0.0;
+            else
+                _objectData = data;
         }
+    }
+
+    /// <summary>
+    /// Creates a cell value from a scalar (number or logical). Avoids boxing.
+    /// </summary>
+    internal CellValue(double number, CellValueType cellValueType)
+    {
+        _number = number;
+        _objectData = null;
+        ValueType = cellValueType;
     }
 
     /// <summary>
@@ -66,7 +104,8 @@ public class CellValue : IComparable, IComparable<CellValue>
     /// <param name="cellValueType"></param>
     internal CellValue(object? data, CellValueType cellValueType)
     {
-        Data = data;
+        _objectData = data;
+        _number = 0;
         ValueType = cellValueType;
     }
 
@@ -211,7 +250,7 @@ public class CellValue : IComparable, IComparable<CellValue>
 
     public static CellValue Logical(bool val)
     {
-        return new CellValue(val, CellValueType.Logical);
+        return new CellValue(val ? 1.0 : 0.0, CellValueType.Logical);
     }
 
     public static CellValue Text(string text)

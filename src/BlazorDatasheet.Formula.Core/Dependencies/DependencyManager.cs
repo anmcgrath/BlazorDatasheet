@@ -305,7 +305,7 @@ public class DependencyManager
     /// Returns the topological sort of the vertices. Each group of vertices is a strongly connected group.
     /// </summary>
     /// <returns></returns>
-    public IList<IList<FormulaVertex>> GetCalculationOrder(List<FormulaVertex>? dirtyFormula = null)
+    public IList<IList<FormulaVertex>> GetCalculationOrder(IEnumerable<FormulaVertex>? dirtyFormula = null)
     {
         var sort = new SccSort<FormulaVertex>(_dependencyGraph);
         if (dirtyFormula == null && _volatileVertices.Count == 0)

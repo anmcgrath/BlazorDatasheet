@@ -9,7 +9,7 @@ public class WorkbookEnvironment : IEnvironment
 {
     private readonly Workbook _workbook;
     private readonly Dictionary<string, CellValue> _variables = new();
-    private readonly Dictionary<string, ISheetFunction> _functions = new();
+    private readonly Dictionary<string, ISheetFunction> _functions = new(StringComparer.OrdinalIgnoreCase);
 
     public WorkbookEnvironment(Workbook workbook)
     {
@@ -49,26 +49,25 @@ public class WorkbookEnvironment : IEnvironment
 
     public bool FunctionExists(string name)
     {
-        return _functions.ContainsKey(name.ToLower());
+        return _functions.ContainsKey(name);
     }
 
     public ISheetFunction? GetFunctionDefinition(string name)
     {
-        return _functions.GetValueOrDefault(name.ToLower());
+        return _functions.GetValueOrDefault(name);
     }
 
     public void RegisterFunction(string name, ISheetFunction value)
     {
-        if (!_functions.ContainsKey(name.ToLower()))
-            _functions.Add(name.ToLower(), value);
+        if (!_functions.ContainsKey(name))
+            _functions.Add(name, value);
         else
-            _functions[name.ToLower()] = value;
+            _functions[name] = value;
     }
 
     public IEnumerable<FunctionDefinition> SearchForFunctions(string functionName)
     {
-        var funcLower = functionName.ToLower();
-        return _functions.Where(x => x.Key.StartsWith(funcLower))
+        return _functions.Where(x => x.Key.StartsWith(functionName, StringComparison.OrdinalIgnoreCase))
             .Select(x => new FunctionDefinition(x.Key, x.Value));
     }
 
