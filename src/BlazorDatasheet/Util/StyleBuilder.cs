@@ -14,20 +14,20 @@ public class StyleBuilder
     public StyleBuilder AddStyle(string name, string value, bool check)
     {
         if (check)
-            _stringBuilder.Append($"{name}:{value};");
+            _stringBuilder.Append($"{name}: {value};");
         return this;
     }
 
     public StyleBuilder AddStyleNotNull(string name, string? value)
     {
         if (value != null)
-            _stringBuilder.Append($"{name}:{value};");
+            _stringBuilder.Append($"{name}: {value};");
         return this;
     }
 
     public StyleBuilder AddStyle(string name, string value)
     {
-        _stringBuilder.Append($"{name}:{value};");
+        _stringBuilder.Append($"{name}: {value};");
         return this;
     }
 

@@ -38,7 +38,7 @@
             </ColumnHeadingRenderer>
         </div>
     }
-    <div class="sheet-col-head-container" style="z-index: 2;">
+    <div class="bds-sheet-col-head-container" style="z-index: 2;">
         <Virtualise2D
             @ref="MainView"
             LayoutProvider="LayoutProvider"
@@ -48,7 +48,7 @@
                 <div
                     @key="context.col"
                     style="width: 100%; height: 100%; display: flex; justify-content: start; position: relative; overflow-x: visible;">
-                    <div class="col-head sheet-cell @GetSelectedClass(context.col)" data-col="@context.col"
+                    <div class="bds-col-head bds-sheet-cell @GetSelectedClass(context.col)" data-col="@context.col"
                          data-row="-1"
                          style="display: flex; justify-content: space-between; width: 100%;">
                         <div>
@@ -64,7 +64,7 @@
                         </div>
                     </div>
 
-                    <div class="unselectable"
+                    <div class="bds-unselectable"
                          @onmousedown="_ => HandleMouseDownOnResizer(context.col)"
                          style="position: absolute; 
                          right: 0; 

@@ -102,7 +102,7 @@ class PointerInputService {
         let y = e.clientY - rect.y;
         let targetClassList = e.target.classList;
         let row, col = -1
-        let cell = e.target.closest('.sheet-cell')
+        let cell = e.target.closest('.bds-sheet-cell')
 
         if (!cell)
             return null
