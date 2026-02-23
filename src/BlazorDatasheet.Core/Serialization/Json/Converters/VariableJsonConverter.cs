@@ -15,7 +15,7 @@ internal class VariableJsonConverter : JsonConverter<Variable>
         string? formula = null;
         var variableName = string.Empty;
         string? sheetName = null;
-        CellValue? cellValue = null;
+        CellValue cellValue = CellValue.Empty;
 
         while (reader.Read())
         {
@@ -58,7 +58,7 @@ internal class VariableJsonConverter : JsonConverter<Variable>
 
         if (!string.IsNullOrEmpty(value.Formula))
             writer.WriteString(JsonConstants.Formula, value.Formula);
-        else if (value.Value != null)
+        else if (!value.Value.IsEmpty)
         {
             writer.WritePropertyName(JsonConstants.CellValue);
             JsonSerializer.Serialize(writer, value.Value, options);

@@ -128,14 +128,14 @@ public class SortRangeCommand : BaseCommand, IUndoableCommand
             var xValue = x.GetColumnData(sortOption.ColumnIndex + _region.Left);
             var yValue = y.GetColumnData(sortOption.ColumnIndex + _region.Left);
 
-            if (xValue?.Data == null && yValue?.Data == null)
+            if (xValue.IsEmpty && yValue.IsEmpty)
                 continue;
 
             // null comparisons shouldn't depend on the sort order -
             // null values always end up last.
-            if (xValue?.Data == null)
+            if (xValue.IsEmpty)
                 return 1;
-            if (yValue?.Data == null)
+            if (yValue.IsEmpty)
                 return -1;
 
             int comparison = xValue.CompareTo(yValue);

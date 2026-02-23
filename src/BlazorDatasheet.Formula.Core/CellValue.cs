@@ -4,15 +4,16 @@ using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Formula.Core;
 
-public class CellValue : IComparable, IComparable<CellValue>
+public readonly struct CellValue : IComparable, IComparable<CellValue>, IEquatable<CellValue>
 {
     private readonly double _number;
     private readonly object? _objectData;
 
-    public object? Data => ValueType switch {
-        CellValueType.Number  => _number,
+    public object? Data => ValueType switch
+    {
+        CellValueType.Number => _number,
         CellValueType.Logical => _number != 0,
-        _                     => _objectData
+        _ => _objectData
     };
 
     public bool IsEmpty => ValueType == CellValueType.Empty;
@@ -28,7 +29,7 @@ public class CellValue : IComparable, IComparable<CellValue>
     /// </summary>
     public bool LogicalValue => _number != 0;
 
-    public static readonly CellValue Empty = new CellValue(null);
+    public static readonly CellValue Empty = default;
 
     public CellValue(object? data)
     {
@@ -118,7 +119,7 @@ public class CellValue : IComparable, IComparable<CellValue>
         return ValueType == CellValueType.Array;
     }
 
-    private bool TryConvertFromString(string? value, out object? converted, out CellValueType? valueType)
+    private static bool TryConvertFromString(string? value, out object? converted, out CellValueType? valueType)
     {
         if (value == null)
         {
@@ -153,7 +154,7 @@ public class CellValue : IComparable, IComparable<CellValue>
         return false;
     }
 
-    private CellValueType GetValueType(object? value, Type valType, bool isNullable, Type? nullableType)
+    private static CellValueType GetValueType(object? value, Type valType, bool isNullable, Type? nullableType)
     {
         if (value == null)
             return CellValueType.Empty;
@@ -283,10 +284,18 @@ public class CellValue : IComparable, IComparable<CellValue>
         return ValueType == CellValueType.Error;
     }
 
-    public int CompareTo(CellValue? other)
+    public int CompareTo(CellValue other)
     {
-        if (other == null)
+        if (this.IsEmpty && other.IsEmpty)
+            return 0;
+        if (this.IsEmpty)
+            return -1;
+        if (other.IsEmpty)
             return 1;
+
+        if (this.ValueType == CellValueType.Number && other.ValueType == CellValueType.Number)
+            return _number.CompareTo(other._number);
+
         if (this.Data == null && other.Data == null)
             return 0;
         if (this.Data == null)
@@ -296,10 +305,10 @@ public class CellValue : IComparable, IComparable<CellValue>
 
         // special consideration for comparing dates to numbers
         if (this.ValueType == CellValueType.Number && other.ValueType == CellValueType.Date)
-            return ((IComparable)this.Data).CompareTo(((DateTime)other.Data).ToNumber());
+            return _number.CompareTo(((DateTime)other.Data).ToNumber());
 
         if (this.ValueType == CellValueType.Date && other.ValueType == CellValueType.Number)
-            return ((DateTime)this.Data).ToNumber().CompareTo((IComparable)other.Data);
+            return ((DateTime)this.Data).ToNumber().CompareTo(other._number);
 
         if (this.ValueType == other.ValueType)
             return ((IComparable)this.Data).CompareTo((IComparable)other.Data);
@@ -326,6 +335,16 @@ public class CellValue : IComparable, IComparable<CellValue>
                ((Reference)Data!).Kind == ReferenceKind.Cell;
     }
 
+    public bool Equals(CellValue other)
+    {
+        return IsEqualTo(other);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is CellValue other && Equals(other);
+    }
+
     public bool IsEqualTo(CellValue value)
     {
         // special handling of empty cell vs empty string.
@@ -336,8 +355,14 @@ public class CellValue : IComparable, IComparable<CellValue>
         if (ValueType != value.ValueType)
             return false;
 
-        if (ValueType == CellValueType.Empty || ValueType == CellValueType.Empty)
-            return value.Data == null && Data == null;
+        if (ValueType == CellValueType.Number)
+            return _number.Equals(value._number);
+        
+        if (ValueType == CellValueType.Logical)
+            return LogicalValue == value.LogicalValue;
+
+        if (ValueType == CellValueType.Empty)
+            return true;
 
         return ((IComparable)Data!).CompareTo(value.Data) == 0;
     }
@@ -406,6 +431,22 @@ public class CellValue : IComparable, IComparable<CellValue>
 
     public override int GetHashCode()
     {
-        return Data == null ? -1 : Data.GetHashCode();
+        return ValueType switch
+        {
+            CellValueType.Number => HashCode.Combine(ValueType, _number),
+            CellValueType.Logical => HashCode.Combine(ValueType, _number != 0),
+            CellValueType.Empty => 0,
+            _ => HashCode.Combine(ValueType, _objectData)
+        };
+    }
+
+    public static bool operator ==(CellValue left, CellValue right)
+    {
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(CellValue left, CellValue right)
+    {
+        return !(left == right);
     }
 }
