@@ -163,9 +163,8 @@ public class FormulaEngine
         if (IsCalculating)
             return;
 
-        var vertices = _requiresCalculation.ToList();
-        var order = DependencyManager.GetCalculationOrder(calculateAll ? null : vertices);
-        if (!order.Any())
+        var order = DependencyManager.GetCalculationOrder(calculateAll ? null : _requiresCalculation);
+        if (order.Count == 0)
             return;
 
         IsCalculating = true;
