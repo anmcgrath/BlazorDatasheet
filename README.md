@@ -45,12 +45,6 @@ In _Layout.cshtml or index.html add
 <link href="_content/BlazorDatasheet/sheet-styles.css" rel="stylesheet"/>
 ```
 
-and
-
-```htmlinblazor
-<script src="_content/BlazorDatasheet/blazor-datasheet.js" type="text/javascript"></script>
-```
-
 Blazor Datasheet provides a **Datasheet** Blazor component that accepts a Sheet.
 
 A Sheet holds the data and configuration for a Datasheet. The data is set per Cell, or can be built using the ObjectEditorBuilder, which creates a datasheet based on a list of objects.

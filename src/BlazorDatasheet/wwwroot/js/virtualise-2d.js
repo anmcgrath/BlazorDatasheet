@@ -1,20 +1,21 @@
-﻿class Virtualiser2d {
+﻿import { calculateViewRect as calculateViewRectShared, findScrollableAncestor as findScrollableAncestorShared } from "./view-rect.js"
 
+class Virtualiser2d {
+
+    /**
+     * Finds the nearest ancestor that can scroll.
+     * @param {HTMLElement | null} element Element to start from.
+     * @returns {HTMLElement | null} The nearest scrollable ancestor, or null when none exists.
+     */
     findScrollableAncestor(element) {
-        if (!element)
-            return null
-
-        let parent = element.parentElement
-        while (parent != null && parent !== document.body && parent !== document.documentElement) {
-            let style = window.getComputedStyle(parent)
-            if (style.overflowY !== 'visible' || style.overflowX !== 'visible' || style.overflow !== 'visible')
-                return parent
-            parent = parent.parentElement
-        }
-
-        return null
+        return findScrollableAncestorShared(element)
     }
 
+    /**
+     * Disconnects and removes all virtualisation observers attached to the element.
+     * @param {HTMLElement} el Datasheet root element.
+     * @returns {void}
+     */
     disposeVirtualisationHandlers(el) {
         let left = this.leftHandlerMutMap.get(el)
         let right = this.rightHandlerMutMap.get(el)
@@ -41,37 +42,38 @@
     bottomHandlerMutMap = new WeakMap()
     interactionMap = new WeakMap()
 
+    /**
+     * Calculates the visible viewport rectangle relative to the sheet root.
+     * @param {HTMLElement | null} wholeEl Datasheet root element.
+     * @returns {{x:number, y:number, width:number, height:number} | null} Visible rect in sheet coordinates.
+     */
     calculateViewRect(wholeEl) {
-        if (wholeEl == null)
-            return null
-
-        let parent = this.findScrollableAncestor(wholeEl) || document.documentElement
-        let parentRect = parent === document.documentElement
-            ? { top: 0, left: 0, bottom: window.innerHeight, right: window.innerWidth }
-            : parent.getBoundingClientRect()
-
-        let wholeRect = wholeEl.getBoundingClientRect()
-
-        let top = (parentRect.top + (parent.clientTop || 0)) - wholeRect.top
-        let left = (parentRect.left + (parent.clientLeft || 0)) - wholeRect.left
-        let width = parent === document.documentElement ? window.innerWidth : parent.clientWidth
-        let height = parent === document.documentElement ? window.innerHeight : parent.clientHeight
-
-        let rect = {
-            x: left,
-            y: top,
-            width: width,
-            height: height
-        }
-
-        return rect
+        return calculateViewRectShared(wholeEl, this.findScrollableAncestor.bind(this))
     }
 
+    /**
+     * Scrolls the nearest scrollable container for the supplied element.
+     * @param {number} x Horizontal scroll delta in pixels.
+     * @param {number} y Vertical scroll delta in pixels.
+     * @param {HTMLElement} el Element whose scrollable ancestor should be moved.
+     * @returns {void}
+     */
     scrollParentBy(x, y, el) {
         let parent = this.findScrollableAncestor(el) || document.documentElement
         parent.scrollBy({left: x, top: y, behavior: "auto"})
     }
 
+    /**
+     * Wires up intersection and resize observers used by 2D virtualisation.
+     * @param {any} dotNetHelper Blazor JS interop helper.
+     * @param {HTMLElement} wholeEl Datasheet root element.
+     * @param {string} dotnetScrollHandlerName .NET method name used for viewport callbacks.
+     * @param {HTMLElement} fillerLeft Left virtualisation filler.
+     * @param {HTMLElement} fillerTop Top virtualisation filler.
+     * @param {HTMLElement} fillerRight Right virtualisation filler.
+     * @param {HTMLElement} fillerBottom Bottom virtualisation filler.
+     * @returns {void}
+     */
     addVirtualisationHandlers(dotNetHelper, wholeEl, dotnetScrollHandlerName, fillerLeft, fillerTop, fillerRight, fillerBottom) {
         // return initial scroll event to render the sheet
         let parent = this.findScrollableAncestor(wholeEl)
@@ -124,6 +126,12 @@
 
     }
 
+    /**
+     * Creates a resize observer that re-registers the filler element with the intersection observer.
+     * @param {HTMLElement} filler Filler element being watched for size changes.
+     * @param {IntersectionObserver} interactionObserver Intersection observer used for virtualisation updates.
+     * @returns {ResizeObserver} Resize observer instance.
+     */
     createMutationObserver(filler, interactionObserver) {
         // if we are scrolling too fast (or rendering too slow) we may have a situation where
         // the filler elements get resized and end up in the observable scroll area which won't re-trigger
@@ -141,6 +149,10 @@
 }
 
 
+/**
+ * Creates a new 2D virtualiser instance.
+ * @returns {Virtualiser2d} Virtualiser instance.
+ */
 export function getVirtualiser() {
     return new Virtualiser2d()
 }
