@@ -1,5 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.37012.4 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorDatasheet", "BlazorDatasheet\BlazorDatasheet.csproj", "{E4E7B0BD-68EC-45E1-9915-DAA712F8DD6B}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{88903F7E-79AF-45FD-A777-4E0A101AB65C}"
@@ -27,6 +30,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorDatasheet.Wasm", "BlazorDatasheet.Wasm\BlazorDatasheet.Wasm.csproj", "{1581D334-6CF6-4414-9709-BB351B53FB5B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorDatasheet.Server", "BlazorDatasheet.Server\BlazorDatasheet.Server.csproj", "{6D529946-9F4C-4B80-9D23-F2B6F6B1D55B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorApp1", "BlazorApp1\BlazorApp1.csproj", "{72796873-8CA6-442C-9401-0C64064B01CA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -78,6 +83,13 @@ Global
 		{6D529946-9F4C-4B80-9D23-F2B6F6B1D55B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6D529946-9F4C-4B80-9D23-F2B6F6B1D55B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6D529946-9F4C-4B80-9D23-F2B6F6B1D55B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{72796873-8CA6-442C-9401-0C64064B01CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{72796873-8CA6-442C-9401-0C64064B01CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{72796873-8CA6-442C-9401-0C64064B01CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{72796873-8CA6-442C-9401-0C64064B01CA}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{8D866B46-349C-4B1C-B5A6-146DAECCA089} = {88903F7E-79AF-45FD-A777-4E0A101AB65C}
@@ -86,5 +98,8 @@ Global
 		{BA82A760-B53F-47A9-98E8-40AE114CAB18} = {D4CCB344-2274-4E01-BD76-9AA86511EC10}
 		{1581D334-6CF6-4414-9709-BB351B53FB5B} = {D4CCB344-2274-4E01-BD76-9AA86511EC10}
 		{6D529946-9F4C-4B80-9D23-F2B6F6B1D55B} = {D4CCB344-2274-4E01-BD76-9AA86511EC10}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F643B0F3-CA7B-46D2-9755-C58F99FA5D34}
 	EndGlobalSection
 EndGlobal
