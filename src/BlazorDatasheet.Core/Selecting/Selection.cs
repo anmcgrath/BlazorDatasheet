@@ -12,7 +12,8 @@ public class Selection
     /// <summary>
     /// The region that is active for accepting user input, usually the most recent region added
     /// </summary>
-    public IRegion? ActiveRegion => _activeRegionIndex >= 0 ? _regions[_activeRegionIndex] : null;
+    public IRegion? ActiveRegion =>
+        _activeRegionIndex >= 0 && _activeRegionIndex < _regions.Count ? _regions[_activeRegionIndex] : null;
 
     private int _activeRegionIndex = -1;
 
@@ -778,9 +779,12 @@ public class Selection
     internal void Restore(SelectionSnapshot selectionSnapshot)
     {
         var oldRegions = CloneRegions();
-        SetActiveRegionIndex(selectionSnapshot.ActiveRegionIndex);
         _regions.Clear();
         _regions.AddRange(selectionSnapshot.Regions);
+        var nextActiveRegionIndex = _regions.Count == 0
+            ? -1
+            : Math.Clamp(selectionSnapshot.ActiveRegionIndex, 0, _regions.Count - 1);
+        SetActiveRegionIndex(nextActiveRegionIndex);
         ActiveCellPosition = selectionSnapshot.ActiveCellPosition;
         EmitSelectionChange(oldRegions);
     }

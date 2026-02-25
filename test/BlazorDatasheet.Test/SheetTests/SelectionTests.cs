@@ -388,4 +388,19 @@ public class SelectionManagerTests
         _sheet.Selection.ActiveCellPosition.Should().Be(new CellPosition(9, 9));
         _sheet.Selection.Regions.Count.Should().Be(1);
     }
+
+    [Test]
+    public void Restore_With_More_Regions_Than_Current_Does_Not_Throw_And_Restores_Active_Region()
+    {
+        var selection = _sheet.Selection;
+        selection.Set(new List<IRegion> { new Region(0, 0), new Region(1, 1) });
+        var snapshot = selection.GetSelectionSnapshot();
+
+        selection.Set(2, 2);
+        var restoreAction = () => selection.Restore(snapshot);
+
+        restoreAction.Should().NotThrow();
+        selection.ActiveRegion.Should().BeEquivalentTo(new Region(1, 1));
+        selection.Regions.Count.Should().Be(2);
+    }
 }
