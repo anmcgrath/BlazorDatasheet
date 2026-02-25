@@ -548,8 +548,30 @@ public class Sheet
 
     #endregion FORMAT
 
-    public string? GetRegionAsDelimitedText(IRegion inputRegion, char tabDelimiter = '\t', string newLineDelim = "\n")
+    /// <summary>
+    /// Gets the region values as a delimited string
+    /// </summary>
+    /// <param name="inputRegion">The region to grab</param>
+    /// <param name="tabDelimiter">Separator between columns in each row</param>
+    /// <param name="newLineDelim">New line character, defaults to Environment.NewLine</param>
+    /// <param name="includeColHeaders">Optional, includes the column headers in the first row, for the region</param>
+    /// <param name="includeRowHeaders">Optional, includes the column headers in the first column, for each line</param>
+    /// <returns></returns>
+    public string? GetRegionAsDelimitedText(IRegion inputRegion, char tabDelimiter = '\t', string? newLineDelim = null,
+        bool includeColHeaders = false, bool includeRowHeaders = false)
     {
+        newLineDelim ??= Environment.NewLine;
+        var tabDelimiterAsString = tabDelimiter.ToString();
+
+        string SanitizeDelimitedText(string value)
+        {
+            return value
+                .Replace("\r\n", " ")
+                .Replace('\n', ' ')
+                .Replace('\r', ' ')
+                .Replace(tabDelimiterAsString, " ");
+        }
+
         if (inputRegion.Area == 0)
             return string.Empty;
 
@@ -566,8 +588,30 @@ public class Sheet
         var c0 = range.TopLeft.col;
         var c1 = range.BottomRight.col;
 
+        if (includeColHeaders)
+        {
+            if (includeRowHeaders)
+                strBuilder.Append(tabDelimiter);
+
+            for (int col = c0; col <= c1; col++)
+            {
+                var heading = Columns.GetHeading(col) ?? RangeText.ColIndexToLetters(col);
+                strBuilder.Append(SanitizeDelimitedText(heading));
+                if (col != c1)
+                    strBuilder.Append(tabDelimiter);
+            }
+
+            strBuilder.Append(newLineDelim);
+        }
+
         for (int row = r0; row <= r1; row++)
         {
+            if (includeRowHeaders)
+            {
+                var rowHeading = Rows.GetHeading(row) ?? (row + 1).ToString();
+                strBuilder.Append(SanitizeDelimitedText(rowHeading));
+                strBuilder.Append(tabDelimiter);
+            }
             for (int col = c0; col <= c1; col++)
             {
                 var cell = Cells.GetCell(row, col);
@@ -578,7 +622,7 @@ public class Sheet
                 {
                     if (value is string s)
                     {
-                        strBuilder.Append(s.Replace(newLineDelim, " ").Replace(tabDelimiter, ' '));
+                        strBuilder.Append(SanitizeDelimitedText(s));
                     }
                     else
                     {
@@ -590,7 +634,8 @@ public class Sheet
                     strBuilder.Append(tabDelimiter);
             }
 
-            strBuilder.Append(newLineDelim);
+            if (row != r1)
+                strBuilder.Append(newLineDelim);
         }
 
         return strBuilder.ToString();
