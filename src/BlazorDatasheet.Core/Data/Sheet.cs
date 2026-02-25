@@ -2,9 +2,11 @@ using System.Text;
 using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Commands.Formatting;
+using BlazorDatasheet.Core.Commands.RowCols;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Edit;
 using BlazorDatasheet.Core.Events.Data;
+using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.Core.Events.Sort;
 using BlazorDatasheet.Core.Events.Visual;
 using BlazorDatasheet.Core.Formats;
@@ -93,6 +95,11 @@ public class Sheet
     public string Name { get; internal set; } = "Sheet1";
 
     /// <summary>
+    /// The frozen rows/columns on the sheet.
+    /// </summary>
+    public FreezeState FreezeState { get; private set; } = new FreezeState(0, 0, 0, 0);
+
+    /// <summary>
     /// The workbook associated with this sheet.
     /// </summary>
     public Workbook Workbook
@@ -139,6 +146,8 @@ public class Sheet
     public event EventHandler<BeforeRangeSortEventArgs>? BeforeRangeSort;
 
     public event EventHandler<RangeSortedEventArgs>? RangeSorted;
+
+    public event EventHandler<SheetFrozenRowColsEventArgs>? RowColsFrozen;
 
     /// <summary>
     /// Fired when <see cref="ScreenUpdating"/> is changed
@@ -612,6 +621,7 @@ public class Sheet
                 strBuilder.Append(SanitizeDelimitedText(rowHeading));
                 strBuilder.Append(tabDelimiter);
             }
+
             for (int col = c0; col <= c1; col++)
             {
                 var cell = Cells.GetCell(row, col);
@@ -679,5 +689,65 @@ public class Sheet
     public void SetDialogService(IDialogService? service)
     {
         Dialog = service;
+    }
+
+    /// <summary>
+    /// Freeze the number of row/columns specified
+    /// </summary>
+    /// <param name="top">The number of rows at the top of the sheet</param>
+    /// <param name="bottom">The number of rows at the bottom of the sheet</param>
+    /// <param name="left">The number of columns at the left of the sheet</param>
+    /// <param name="right">The number of columns at the right of the sheet</param>
+    public void FreezeRowCols(int top, int bottom, int left, int right)
+    {
+        Commands.ExecuteCommand(new FreezeRowColsCommand(top, bottom, left, right));
+    }
+
+    internal void FreezeRowColsImpl(int top, int bottom, int left, int right)
+    {
+        if (top < 0 || bottom < 0 || left < 0 || right < 0 || (top + bottom) > Region.Height ||
+            (left + right) > Region.Width)
+            throw new ArgumentException(
+                $"Invalid frozen row/cols top, bottom, left and right: {top}, {bottom}, {left}, {right}");
+
+        var oldState = FreezeState;
+        FreezeState = new FreezeState(top, bottom, left, right);
+        RowColsFrozen?.Invoke(this, new SheetFrozenRowColsEventArgs(oldState, FreezeState));
+    }
+
+    /// <summary>
+    /// Freezes the top <paramref name="number"/> of rows
+    /// </summary>
+    /// <param name="number"></param>
+    public void FreezeTopRows(int number)
+    {
+        FreezeRowCols(number, FreezeState.Bottom, FreezeState.Left, FreezeState.Right);
+    }
+
+    /// <summary>
+    /// Freezes the bottom <paramref name="number"/> of rows
+    /// </summary>
+    /// <param name="number"></param>
+    public void FreezeBottomRows(int number)
+    {
+        FreezeRowCols(FreezeState.Top, number, FreezeState.Left, FreezeState.Right);
+    }
+
+    /// <summary>
+    /// Freezes the left <paramref name="number"/> of columns
+    /// </summary>
+    /// <param name="number"></param>
+    public void FreezeLeftColumns(int number)
+    {
+        FreezeRowCols(FreezeState.Top, FreezeState.Bottom, number, FreezeState.Right);
+    }
+
+    /// <summary>
+    /// Freezes the right <paramref name="number"/> of columns
+    /// </summary>
+    /// <param name="number"></param>
+    public void FreezeRightColumns(int number)
+    {
+        FreezeRowCols(FreezeState.Top, FreezeState.Bottom, FreezeState.Left, number);
     }
 }
