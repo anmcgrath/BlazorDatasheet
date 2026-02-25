@@ -7,8 +7,8 @@
 <CascadingValue Value="@MenuId">
     <CascadingValue Value="@CurrentContext" Name="Context">
         <CascadingValue Value="@Disabled">
-            <div id="@MenuId" popover="manual" class="sheetPopover">
-                <div class="sheetMenu">
+            <div id="@MenuId" popover="manual" class="bds-sheet-popover">
+                <div class="bds-sheet-menu">
                     @ChildContent(CurrentContext)
                 </div>
             </div>
@@ -17,7 +17,7 @@
 </CascadingValue>
 
 <style>
-    .sheetMenu {
+    .bds-sheet-menu {
         display: flex;
         flex-direction: column;
         background: var(--sheet-menu-bg-color);
@@ -30,7 +30,7 @@
         color: var(--sheet-foreground-color);
     }
 
-    .sheetPopover {
+    .bds-sheet-popover {
         position: fixed;
         inset: 0;
         width: fit-content;

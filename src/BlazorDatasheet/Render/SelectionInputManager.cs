@@ -3,7 +3,7 @@ using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Render;
 
-public class SelectionInputManager
+internal class SelectionInputManager
 {
     private readonly Selection _selection;
     public Selection Selection => _selection;
@@ -31,7 +31,9 @@ public class SelectionInputManager
 
         var posn = _selection.ActiveCellPosition;
 
-        _selection.Set(posn.row, posn.col);
+        if (!_selection.ActiveRegion.IsSingleCell())
+            _selection.Set(posn.row, posn.col);
+
         _selection.MoveActivePositionByRow(offset.Rows);
         _selection.MoveActivePositionByCol(offset.Columns);
     }

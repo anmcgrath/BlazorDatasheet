@@ -3,14 +3,14 @@
 @inherits HeadingRenderer
 
 <div style="display: flex; flex-direction: column;">
-    <div class="sheet-row-head-container" style=" position: sticky; left: 0;">
+    <div class="bds-sheet-row-head-container" style=" position: sticky; left: 0;">
         <Virtualise2D
             OverscanRows="OverscanRows"
             @ref="MainView"
             LayoutProvider="LayoutProvider"
             ViewRegion="new Region(_viewRegion.Top, _viewRegion.Bottom, 0, 0)">
             <GridItemTemplate>
-                <div class="row-head sheet-cell @GetSelectedClass(context.row)" data-row="@context.row" data-col="-1">
+                <div class="bds-row-head bds-sheet-cell @GetSelectedClass(context.row)" data-row="@context.row" data-col="-1">
                     @ChildContent(new HeadingContext(context.row, _sheet.Rows.GetHeading(context.row)))
                 </div>
             </GridItemTemplate>
