@@ -1,17 +1,7 @@
-// import eagerly to avoid lag when first edit occurs.
-import("./js/highlighter.js");
-
-window.writeTextToClipboard = async function (text) {
-    if (window.isSecureContext) {
-        await window.navigator.clipboard.writeText(text)
-    } else {
-        console.log("Copy failed as window was not considered a secure context.")
-    }
-
-}
-
-window.setFocusWithTimeout = function (el, timeout) {
-    setTimeout(() => {
-        el.focus()
-    }, timeout)
-}
+// Deprecated shim. Blazor now auto-loads "_content/BlazorDatasheet/BlazorDatasheet.lib.module.js".
+// Kept for backward compatibility with apps that still include this script explicitly.
+import("./BlazorDatasheet.lib.module.js")
+    .then(module => module.setupGlobals())
+    .catch(() => {
+        // Ignore: this script is a non-essential compatibility layer.
+    })
