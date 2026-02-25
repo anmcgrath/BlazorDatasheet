@@ -186,7 +186,7 @@ public class SelectionManagerTests
         _sheet.Cells.Merge(merge);
         // intersect on right edge of region
         var r = new Region(1, 5, 2, 4);
-        _sheet.ContractRegionOverMerges(r)
+        _sheet.Selection.ContractRegionOverMerges(r)
             .Should()
             .BeEquivalentTo(new Region(1, 5, 2, 3));
     }
@@ -196,7 +196,7 @@ public class SelectionManagerTests
     {
         var merge = new Region(1, 4, 1, 4);
         _sheet.Cells.Merge(merge);
-        _sheet.ContractRegionOverMerges(new Region(2, 3, 2, 3))
+        _sheet.Selection.ContractRegionOverMerges(new Region(2, 3, 2, 3))
             .Should()
             .BeNull();
     }
@@ -206,7 +206,7 @@ public class SelectionManagerTests
     {
         var merge = new Region(1, 4, 1, 4);
         _sheet.Cells.Merge(merge);
-        _sheet.ContractRegionOverMerges(merge)
+        _sheet.Selection.ContractRegionOverMerges(merge)
             .Should()
             .BeEquivalentTo(merge);
     }
@@ -216,7 +216,7 @@ public class SelectionManagerTests
     {
         _sheet.Cells.Merge(new Region(2, 3, 2, 3));
         var region = new Region(0, 10, 1, 11);
-        _sheet.ContractRegionOverMerges(region)
+        _sheet.Selection.ContractRegionOverMerges(region)
             .Should()
             .BeEquivalentTo(region);
     }
