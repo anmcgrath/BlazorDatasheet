@@ -52,7 +52,7 @@ public class FreezeRowColsTests
         var sheet = new Sheet(10, 10);
         SheetFrozenRowColsEventArgs? eventArgs = null;
 
-        sheet.RowColsFrozen += (_, args) => eventArgs = args;
+        sheet.FrozenRowCols += (_, args) => eventArgs = args;
 
         sheet.FreezeRowCols(2, 1, 1, 2);
 

@@ -147,7 +147,7 @@ public class Sheet
 
     public event EventHandler<RangeSortedEventArgs>? RangeSorted;
 
-    public event EventHandler<SheetFrozenRowColsEventArgs>? RowColsFrozen;
+    public event EventHandler<SheetFrozenRowColsEventArgs>? FrozenRowCols;
 
     /// <summary>
     /// Fired when <see cref="ScreenUpdating"/> is changed
@@ -712,7 +712,7 @@ public class Sheet
 
         var oldState = FreezeState;
         FreezeState = new FreezeState(top, bottom, left, right);
-        RowColsFrozen?.Invoke(this, new SheetFrozenRowColsEventArgs(oldState, FreezeState));
+        FrozenRowCols?.Invoke(this, new SheetFrozenRowColsEventArgs(oldState, FreezeState));
     }
 
     /// <summary>
