@@ -12,6 +12,7 @@ public class SccSort<T> where T : Vertex
     private Dictionary<string, int> _low = null!;
     private List<IList<T>> _results = null!;
     private Stack<T> _stack = null!;
+    private HashSet<T> _onStack = null!;
     private int _index;
 
     public SccSort(DependencyGraph<T> graph)
@@ -30,6 +31,7 @@ public class SccSort<T> where T : Vertex
         _low = new();
         _results = new();
         _stack = new();
+        _onStack = new();
         _index = 0;
 
         var vertices = availableVertices ?? _graph.GetAll();
@@ -53,8 +55,9 @@ public class SccSort<T> where T : Vertex
         _low[v.Key] = _index;
         _index++;
         _stack.Push(v);
+        _onStack.Add(v);
 
-        foreach (var w in _graph.Adj(v))
+        foreach (var w in _graph.GetDependentsOf(v))
         {
             if (!_indices.TryGetValue(w.Key, out var index))
             {
@@ -62,7 +65,7 @@ public class SccSort<T> where T : Vertex
                 StrongConnect(w);
                 _low[v.Key] = Math.Min(_low[v.Key], _low[w.Key]);
             }
-            else if (_stack.Contains(w))
+            else if (_onStack.Contains(w))
                 _low[v.Key] = Math.Min(_low[v.Key], index);
         }
 
@@ -74,6 +77,7 @@ public class SccSort<T> where T : Vertex
             do
             {
                 w = _stack.Pop();
+                _onStack.Remove(w);
                 g.Add(w);
             } while (v.Key != w.Key);
 

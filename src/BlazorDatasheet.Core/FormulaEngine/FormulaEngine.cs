@@ -47,8 +47,8 @@ public class FormulaEngine
         DependencyManager.AddSheet(sheet.Name);
         sheet.Editor.BeforeCellEdit += SheetOnBeforeCellEdit;
         sheet.Cells.CellsChanged += SheetOnCellsChanged;
-        sheet.Rows.Removed += RowsOnRemoved;
-        sheet.Columns.Removed += RowsOnRemoved;
+        sheet.Rows.Removed += RowColsOnRemoved;
+        sheet.Columns.Removed += RowColsOnRemoved;
     }
 
     internal void RemoveSheet(Sheet sheet)
@@ -57,13 +57,16 @@ public class FormulaEngine
         DependencyManager.RemoveSheet(sheet.Name);
         sheet.Editor.BeforeCellEdit -= SheetOnBeforeCellEdit;
         sheet.Cells.CellsChanged -= SheetOnCellsChanged;
-        sheet.Rows.Removed -= RowsOnRemoved;
-        sheet.Columns.Removed -= RowsOnRemoved;
+        sheet.Rows.Removed -= RowColsOnRemoved;
+        sheet.Columns.Removed -= RowColsOnRemoved;
     }
 
     private void SheetOnCellsChanged(object? sender, CellDataChangedEventArgs e)
     {
-        var sheet = ((CellStore)sender!).Sheet;
+        if (sender is not CellStore cellStore)
+            return;
+
+        var sheet = cellStore.Sheet;
         if (this.IsCalculating)
             return;
 
@@ -95,7 +98,7 @@ public class FormulaEngine
         this.CalculateSheet(false);
     }
 
-    private void RowsOnRemoved(object? sender, RowColRemovedEventArgs e)
+    private void RowColsOnRemoved(object? sender, RowColRemovedEventArgs e)
     {
         CalculateSheet(true);
     }
@@ -109,7 +112,10 @@ public class FormulaEngine
 
     private void SheetOnBeforeCellEdit(object? sender, BeforeCellEditEventArgs e)
     {
-        var sheet = ((Editor)sender!).Sheet;
+        if (sender is not Editor editor)
+            return;
+
+        var sheet = editor.Sheet;
         var formula = sheet.Cells.GetFormulaString(e.Cell.Row, e.Cell.Col);
         if (formula != null)
         {
@@ -163,68 +169,88 @@ public class FormulaEngine
         if (IsCalculating)
             return;
 
-        var vertices = _requiresCalculation.ToList();
-        var order = DependencyManager.GetCalculationOrder(calculateAll ? null : vertices);
-        if (!order.Any())
+        var order = DependencyManager.GetCalculationOrder(calculateAll ? null : _requiresCalculation);
+        if (order.Count == 0)
             return;
 
         IsCalculating = true;
-
-        foreach (var sheet in _sheets)
-            sheet.BatchUpdates();
-
-        var executionContext = new FormulaExecutionContext();
-
-        foreach (var scc in order)
+        var batchedSheets = BeginCalculation();
+        try
         {
-            var sccGroup = scc;
-            bool isCircularGroup = false;
+            var executionContext = new FormulaExecutionContext();
 
-            executionContext.SetCurrentGroup(ref sccGroup);
+            foreach (var scc in order)
+                EvaluateStronglyConnectedGroup(scc, executionContext);
+        }
+        finally
+        {
+            EndCalculation(batchedSheets);
+        }
+    }
 
-            foreach (var vertex in scc)
-            {
-                if (vertex.Formula == null)
-                    continue;
-
-                // if it's part of a scc group, and we don't have circular references, then the value would
-                // already have been evaluated.
-                CellValue value;
-
-                // To speed up time in scc group, if one vertex is circular the rest will be.
-                if (isCircularGroup)
-                    value = CellValue.Error(ErrorType.Circular);
-                else
-                {
-                    // check whether the formula has already been calculated in this scc group - may be the case if we lucked
-                    // out on the first value calculation and it wasn't a circular reference.
-                    if (executionContext.TryGetExecutedValue(vertex.Formula, out var result))
-                    {
-                        value = result;
-                    }
-                    else
-                    {
-                        value = _evaluator.Evaluate(vertex.Formula, executionContext);
-                        executionContext.RecordExecuted(vertex.Formula, value);
-                        if (value.IsError() && ((FormulaError)value.Data!).ErrorType == ErrorType.Circular)
-                            isCircularGroup = true;
-                    }
-                }
-
-                executionContext.ClearExecuting();
-
-                if (vertex.VertexType == VertexType.Cell)
-                    _environment.SetCellValue(vertex.Row, vertex.Col, vertex.SheetName, value);
-                else if (vertex.VertexType == VertexType.Named)
-                    _environment.SetVariable(vertex.Key, value);
-            }
+    private List<Sheet> BeginCalculation()
+    {
+        var batchedSheets = new List<Sheet>(_sheets.Count);
+        foreach (var sheet in _sheets)
+        {
+            sheet.BatchUpdates();
+            batchedSheets.Add(sheet);
         }
 
-        foreach (var sheet in _sheets)
+        return batchedSheets;
+    }
+
+    private void EndCalculation(IEnumerable<Sheet> batchedSheets)
+    {
+        foreach (var sheet in batchedSheets)
             sheet.EndBatchUpdates();
 
         _requiresCalculation.Clear();
         IsCalculating = false;
+    }
+
+    private void EvaluateStronglyConnectedGroup(IList<FormulaVertex> stronglyConnectedGroup,
+        FormulaExecutionContext executionContext)
+    {
+        var group = stronglyConnectedGroup;
+        bool isCircularGroup = false;
+
+        executionContext.SetCurrentGroup(ref group);
+
+        foreach (var vertex in stronglyConnectedGroup)
+        {
+            var formula = vertex.Formula;
+            if (formula == null)
+                continue;
+
+            var value = EvaluateFormulaInGroup(formula, executionContext, ref isCircularGroup);
+            executionContext.ClearExecuting();
+            ApplyVertexValue(vertex, value);
+        }
+    }
+
+    private CellValue EvaluateFormulaInGroup(CellFormula formula, FormulaExecutionContext executionContext,
+        ref bool isCircularGroup)
+    {
+        if (isCircularGroup)
+            return CellValue.Error(ErrorType.Circular);
+
+        if (executionContext.TryGetExecutedValue(formula, out var cachedValue))
+            return cachedValue;
+
+        var value = _evaluator.Evaluate(formula, executionContext);
+        executionContext.RecordExecuted(formula, value);
+        if (value.Data is FormulaError formulaError && formulaError.ErrorType == ErrorType.Circular)
+            isCircularGroup = true;
+        return value;
+    }
+
+    private void ApplyVertexValue(FormulaVertex vertex, CellValue value)
+    {
+        if (vertex.VertexType == VertexType.Cell)
+            _environment.SetCellValue(vertex.Row, vertex.Col, vertex.SheetName, value);
+        else if (vertex.VertexType == VertexType.Named)
+            _environment.SetVariable(vertex.Key, value);
     }
 
     /// <summary>

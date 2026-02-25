@@ -12,7 +12,7 @@ namespace BlazorDatasheet.Test.Formula;
 public class TestEnvironment : IEnvironment
 {
     private Dictionary<CellPosition, CellValue> _cellValues = new();
-    private Dictionary<string, ISheetFunction> _functions = new();
+    private Dictionary<string, ISheetFunction> _functions = new(StringComparer.OrdinalIgnoreCase);
     private Dictionary<string, CellValue> _variables = new();
     private Dictionary<CellPosition, CellFormula> _formulas = new();
 
@@ -39,15 +39,14 @@ public class TestEnvironment : IEnvironment
         var validator = new FunctionParameterValidator();
         validator.ValidateOrThrow(functionDefinition.GetParameterDefinitions());
 
-        if (!_functions.ContainsKey(name.ToLower()))
-            _functions.Add(name.ToLower(), functionDefinition);
-        _functions[name.ToLower()] = functionDefinition;
+        if (!_functions.ContainsKey(name))
+            _functions.Add(name, functionDefinition);
+        _functions[name] = functionDefinition;
     }
 
     public IEnumerable<FunctionDefinition> SearchForFunctions(string functionName)
     {
-        var funcLower = functionName.ToLower();
-        return _functions.Where(x => x.Key.StartsWith(funcLower))
+        return _functions.Where(x => x.Key.StartsWith(functionName, StringComparison.OrdinalIgnoreCase))
             .Select(x => new FunctionDefinition(x.Key, x.Value));
     }
 
@@ -144,12 +143,12 @@ public class TestEnvironment : IEnvironment
 
     public bool FunctionExists(string functionIdentifier)
     {
-        return _functions.ContainsKey(functionIdentifier.ToLower());
+        return _functions.ContainsKey(functionIdentifier);
     }
 
     public ISheetFunction? GetFunctionDefinition(string identifierText)
     {
-        return _functions.GetValueOrDefault(identifierText.ToLower());
+        return _functions.GetValueOrDefault(identifierText);
     }
 
     public bool VariableExists(string variableIdentifier)

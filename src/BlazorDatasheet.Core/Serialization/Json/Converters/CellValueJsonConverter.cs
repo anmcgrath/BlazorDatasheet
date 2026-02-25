@@ -7,7 +7,7 @@ namespace BlazorDatasheet.Core.Serialization.Json.Converters;
 
 internal class CellValueJsonConverter : JsonConverter<CellValue>
 {
-    public override CellValue? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    public override CellValue Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         if (reader.TokenType != JsonTokenType.StartObject)
             throw new JsonException();
@@ -30,7 +30,7 @@ internal class CellValueJsonConverter : JsonConverter<CellValue>
         }
 
         if (cellValueType == null || cellValueElement == null)
-            return null;
+            return CellValue.Empty;
 
         return CellValueHelper.GetCellValue(cellValueType.Value, cellValueElement);
     }

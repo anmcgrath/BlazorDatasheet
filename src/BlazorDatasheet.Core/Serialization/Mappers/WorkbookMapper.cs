@@ -34,7 +34,7 @@ internal class WorkbookMapper
         {
             if (variable.Formula != null)
                 workbook.GetFormulaEngine().SetVariable(variable.Name, variable.Formula);
-            else if (variable.Value != null)
+            else if (!variable.Value.IsEmpty)
                 workbook.GetFormulaEngine().SetVariable(variable.Name, variable.Value);
         }
 
