@@ -2,29 +2,29 @@
 @inject IMenuService MenuService
 @inherits SheetComponentBase
 
-<div class="sheet-menu-item @(Disabled && DisabledOnReadOnly ? "sheet-menu-item-disabled" : "")"
+<div class="bds-sheet-menu-item @(Disabled && DisabledOnReadOnly ? "bds-sheet-menu-item-disabled" : "")"
      @onmouseup="HandleMouseUp"
      @onmouseover="HandleMouseOver">
     @ChildContent
 </div>
 
 <style>
-    .sheet-menu-item {
+    .bds-sheet-menu-item {
         padding: 2px 14px;
         cursor: pointer;
     }
 
-    .sheet-menu-item-disabled {
+    .bds-sheet-menu-item-disabled {
         cursor: default;
         color: var(--sheet-foreground-color-disabled) !important;
     }
 
-    .sheet-menu-item-disabled:hover {
+    .bds-sheet-menu-item-disabled:hover {
         color: var(--sheet-foreground-color-disabled) !important;
         background-color: transparent !important;
     }
 
-    .sheet-menu-item:hover {
+    .bds-sheet-menu-item:hover {
         background-color: var(--sheet-menu-hover-color)
     }
 </style>

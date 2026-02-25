@@ -28,10 +28,10 @@
 
 
         // Assert
-        var cell = cut.FindAll("div.sheet-cell").Last();
+        var cell = cut.FindAll("div.bds-sheet-cell").Last();
         cell.MarkupMatches(@"
-            <div class=""sheet-cell"" data-row=""1"" data-col=""1"">
-                <div class=""cell-container"">
+            <div class=""bds-sheet-cell"" data-row=""1"" data-col=""1"">
+                <div class=""bds-cell-container"">
                     Test
                 </div>
             </div>");
@@ -54,7 +54,7 @@
             sheet.Cells.SetValue(0, 0, 1.234567);
         });
 
-        var cell = cut.FindAll("div.cell-container").Last().FirstChild;
+        var cell = cut.FindAll("div.bds-cell-container").Last().FirstChild;
         cell!.MarkupMatches(@"1.23");
     }
 

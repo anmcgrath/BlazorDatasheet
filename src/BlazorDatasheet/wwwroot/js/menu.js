@@ -9,7 +9,7 @@ class MenuService {
     }
 
     handleWindowMouseDown(event) {
-        let insideMenu = event.target.closest('.sheetMenu') != null
+        let insideMenu = event.target.closest('.bds-sheet-menu') != null
         if (insideMenu)
             return
 

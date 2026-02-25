@@ -8,13 +8,13 @@
 
 <div spellcheck="false" style="position: relative; @Style">
 
-    <span class="highlight-result"
+    <span class="bds-highlight-result"
           style="min-width:@(CellWidth - 2)px;min-height: @(CellHeight - 2)px;"
           @ref="_highlightResultEl">
     </span>
 
     <span contenteditable="true"
-          class="highlight-input"
+          class="bds-highlight-input"
           style="min-width:@(CellWidth - 2)px;min-height: @(CellHeight - 2)px;"
           @ref="_highlightInputEl">
     </span>
@@ -170,11 +170,11 @@
         switch (tokenTag)
         {
             case Tag.Number:
-                return "number-highlight";
+                return "bds-number-highlight";
             case Tag.StringToken:
-                return "string-highlight";
+                return "bds-string-highlight";
             default:
-                return "default-highlight";
+                return "bds-default-highlight";
         }
     }
 

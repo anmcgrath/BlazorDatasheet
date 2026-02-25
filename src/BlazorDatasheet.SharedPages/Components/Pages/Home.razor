@@ -26,8 +26,17 @@
 
     <div style="width: 600px; height: 400px; overflow-y: scroll;">
         <Datasheet
+            UseAutoScroll="_useAutoScroll"
             FrozenBottomCount="1"
             Sheet="_sheet" @ref="_datasheet"/>
+    </div>
+</div>
+
+<h4>Options</h4>
+<div style="display: flex; flex-direction: column;">
+    <div>
+        <input type="checkbox" id="autoScrollOn" @bind="_useAutoScroll"/>
+        <label for="autoScrollOn">Autoscroll</label>
     </div>
 </div>
 
@@ -72,9 +81,11 @@
     private Sheet _sheet = null!;
     private Datasheet? _datasheet;
 
+    private bool _useAutoScroll;
+
     protected override void OnInitialized()
     {
-        _sheet = new Sheet(50, 5);
+        _sheet = new Sheet(1000, 5);
         _sheet.Rows.HeadingWidth = 35;
         _sheet.Commands.PauseHistory();
         _sheet.BatchUpdates();

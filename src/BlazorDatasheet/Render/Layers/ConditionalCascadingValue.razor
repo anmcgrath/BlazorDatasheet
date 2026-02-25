@@ -1,0 +1,17 @@
+@typeparam TValue
+
+@if (Value != null)
+{
+    <CascadingValue Value="Value" IsFixed="true">
+        @ChildContent
+    </CascadingValue>
+}
+else
+{
+    @ChildContent
+}
+
+@code {
+    [Parameter] public TValue? Value { get; set; }
+    [Parameter] public RenderFragment ChildContent { get; set; } = default!;
+}

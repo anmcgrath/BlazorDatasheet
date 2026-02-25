@@ -1,0 +1,59 @@
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Layout
+@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Virtualise
+@using FluentAssertions
+@using NUnit.Framework
+@inherits BaseTestComponent
+
+@code {
+
+    [Test]
+    public async Task Visible_Column_Resize_Rebuilds_Content_Template_Without_Index_Change()
+    {
+        var sheet = new Sheet(5, 5);
+        var layout = new CellLayoutProvider(sheet);
+
+        var cut = RenderComponent<Virtualise2D>(parameters =>
+        {
+            parameters.Add(p => p.LayoutProvider, layout);
+            parameters.Add(p => p.ViewRegion, new Region(0, 4, 0, 4));
+            parameters.Add(p => p.OverscanColumns, 0);
+            parameters.Add(p => p.OverscanRows, 0);
+        });
+
+        var viewRect = new Rect(0, 0, 500, 500);
+
+        await cut.InvokeAsync(() => cut.Instance.HandleScroll(viewRect));
+        sheet.Columns.SetSize(2, 155);
+        await cut.InvokeAsync(() => cut.Instance.HandleScroll(viewRect));
+
+        var contentContainer = cut.Find("div[style*='grid-area: C']");
+        contentContainer.GetAttribute("style")!.Should().Contain("155px");
+    }
+
+    [Test]
+    public async Task Visible_Row_Resize_Rebuilds_Content_Template_Without_Index_Change()
+    {
+        var sheet = new Sheet(5, 5);
+        var layout = new CellLayoutProvider(sheet);
+
+        var cut = RenderComponent<Virtualise2D>(parameters =>
+        {
+            parameters.Add(p => p.LayoutProvider, layout);
+            parameters.Add(p => p.ViewRegion, new Region(0, 4, 0, 4));
+            parameters.Add(p => p.OverscanColumns, 0);
+            parameters.Add(p => p.OverscanRows, 0);
+        });
+
+        var viewRect = new Rect(0, 0, 500, 500);
+
+        await cut.InvokeAsync(() => cut.Instance.HandleScroll(viewRect));
+        sheet.Rows.SetSize(1, 61);
+        await cut.InvokeAsync(() => cut.Instance.HandleScroll(viewRect));
+
+        var contentContainer = cut.Find("div[style*='grid-area: C']");
+        contentContainer.GetAttribute("style")!.Should().Contain("61px");
+    }
+
+}

@@ -1,9 +1,11 @@
 ﻿using BlazorDatasheet.Core.Layout;
+using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Render.Layout;
 
 public class EmptyLayoutProvider : IGridLayoutProvider
 {
+    public IRegion ViewRegion { get; set; } = new Region(0, 0);
     public double TotalWidth => 0;
     public double TotalHeight => 0;
     public int NumRows => 0;

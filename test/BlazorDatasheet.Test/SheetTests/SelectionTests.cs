@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Selecting;
@@ -77,6 +78,20 @@ public class SelectionManagerTests
     }
 
     [Test]
+    public void Cycle_Active_Position_Backward_Through_Ranges()
+    {
+        var selection = new Selection(_sheet);
+        var r1 = new Region(0, 0, 0, 0);
+        var r2 = new Region(1, 1, 1, 1);
+
+        selection.Set(new List<IRegion>() { r1, r2 });
+        selection.MoveActivePositionByRow(-1);
+
+        selection.ActiveRegion.Should().BeEquivalentTo(r1);
+        selection.ActiveCellPosition.Should().Be(r1.TopLeft);
+    }
+
+    [Test]
     public void Selection_Event_Changed_Fires_Correctly()
     {
         var nTimesChanged = 0;
@@ -87,6 +102,19 @@ public class SelectionManagerTests
         selection.Set(new Region(2, 2));
         selection.ClearSelections();
         Assert.AreEqual(3, nTimesChanged);
+    }
+
+    [Test]
+    public void End_Selecting_Fires_Selection_Changed_Once()
+    {
+        var selection = new Selection(_sheet);
+        var nTimesChanged = 0;
+        selection.SelectionChanged += (sender, ranges) => { nTimesChanged++; };
+
+        selection.BeginSelectingCell(1, 1);
+        selection.EndSelecting();
+
+        nTimesChanged.Should().Be(1);
     }
 
     [Test]
@@ -106,6 +134,24 @@ public class SelectionManagerTests
         Assert.AreEqual(4, _sheet.Selection.ActiveRegion.Area);
         _sheet.Selection.MoveActivePositionByRow(1);
         Assert.AreEqual(new CellPosition(2, 0), _sheet.Selection.ActiveCellPosition);
+    }
+
+    [Test]
+    public void Active_Selection_By_Col_Skips_Hidden_Columns()
+    {
+        _sheet.Columns.Hide(1, 1);
+        _sheet.Selection.Set(new Region(0, 1, 0, 2));
+        _sheet.Selection.MoveActivePositionByCol(1);
+        _sheet.Selection.ActiveCellPosition.Should().Be(new CellPosition(0, 2));
+    }
+
+    [Test]
+    public void Active_Selection_By_Col_Leaves_Merged_Cell_From_Edge()
+    {
+        _sheet.Cells.Merge(new Region(0, 1, 0, 1));
+        _sheet.Selection.Set(new Region(0, 1, 0, 2));
+        _sheet.Selection.MoveActivePositionByCol(1);
+        _sheet.Selection.ActiveCellPosition.Should().Be(new CellPosition(0, 2));
     }
 
     [Test]
@@ -194,6 +240,18 @@ public class SelectionManagerTests
     }
 
     [Test]
+    public void Contract_Selection_Fallback_Fires_Selection_Changed_Once()
+    {
+        _sheet.Selection.Set(1, 1);
+        var nTimesChanged = 0;
+        _sheet.Selection.SelectionChanged += (sender, args) => { nTimesChanged++; };
+
+        _sheet.Selection.ContractEdge(Edge.Bottom, 1);
+
+        nTimesChanged.Should().Be(1);
+    }
+
+    [Test]
     public void Select_Row_Header_Then_Shift_Select_Row_Header_Should_Extend_Row_Selection()
     {
         var manager = new SelectionInputManager(_sheet.Selection);
@@ -251,5 +309,98 @@ public class SelectionManagerTests
         }
 
         manager.Selection.ActiveCellPosition.col.Should().Be(0);
+    }
+
+    [Test]
+    public void Setting_Active_Region_In_Various_Ways_Fires_Active_Region_Event()
+    {
+        IRegion? oldRegion = null;
+        IRegion? newRegion = null;
+
+        _sheet.Selection.ActiveRegionChanged += (sender, ev) =>
+        {
+            oldRegion = ev.OldRegion;
+            newRegion = ev.NewRegion;
+        };
+
+        var initialRegion = new Region(2, 2);
+
+
+        var fns = new List<Action>()
+        {
+            () => _sheet.Selection.ExpandEdge(Edge.Bottom, 1),
+            () => _sheet.Selection.ContractEdge(Edge.Bottom, 1),
+            () =>
+            {
+                _sheet.Selection.BeginSelectingCell(10, 10);
+                _sheet.Selection.EndSelecting();
+            }
+        };
+
+        foreach (var fn in fns)
+        {
+            _sheet.Selection.Set(2, 2);
+            fn.Invoke();
+            newRegion.Should().BeEquivalentTo(_sheet.Selection.ActiveRegion);
+            oldRegion.Should().BeEquivalentTo(initialRegion);
+        }
+    }
+
+    [Test]
+    public void HandleArrowKeyDown_OnSingleCellSelection_RaisesActiveRegionChanged_With_MovedRegion()
+    {
+        var manager = new SelectionInputManager(_sheet.Selection);
+        manager.Selection.Set(0, 0);
+
+        IRegion? newRegion = null;
+        manager.Selection.ActiveRegionChanged += (sender, ev) => { newRegion = ev.NewRegion; };
+
+        manager.HandleArrowKeyDown(false, new Offset(1, 0));
+
+        newRegion.Should().BeEquivalentTo(new Region(1, 0));
+        manager.Selection.ActiveRegion.Should().BeEquivalentTo(new Region(1, 0));
+    }
+
+    [Test]
+    public void Active_Position_Inside_Active_Region_Should_Set_To_PositionSpecified()
+    {
+        _sheet.Selection.Set(new List<IRegion>() { new Region(4, 5, 4, 5), new Region(0, 2, 0, 1) });
+        _sheet.Selection.Activate(1, 1);
+        _sheet.Selection.ActiveRegion.Left.Should().Be(0); //
+        _sheet.Selection.ActiveCellPosition.Should().Be(new CellPosition(1, 1));
+    }
+
+    [Test]
+    public void Active_Position_Inside_Non_Active_Region_Should_Set_To_Active_Region()
+    {
+        _sheet.Selection.Set(new List<IRegion>() { new Region(4, 5, 4, 5), new Region(0, 2, 0, 1) });
+        _sheet.Selection.Activate(4, 5);
+        _sheet.Selection.ActiveRegion.Left.Should().Be(4); //
+        _sheet.Selection.ActiveCellPosition.Should().Be(new CellPosition(4, 5));
+    }
+
+    [Test]
+    public void Active_Position_Inside_No_Regions_Should_Set_Active_region_and_position_appropriately()
+    {
+        _sheet.Selection.Set(new List<IRegion>() { new Region(4, 5, 4, 5), new Region(0, 2, 0, 1) });
+        _sheet.Selection.Activate(9, 9);
+        _sheet.Selection.ActiveRegion.Should().BeEquivalentTo(new Region(9, 9));
+        _sheet.Selection.ActiveCellPosition.Should().Be(new CellPosition(9, 9));
+        _sheet.Selection.Regions.Count.Should().Be(1);
+    }
+
+    [Test]
+    public void Restore_With_More_Regions_Than_Current_Does_Not_Throw_And_Restores_Active_Region()
+    {
+        var selection = _sheet.Selection;
+        selection.Set(new List<IRegion> { new Region(0, 0), new Region(1, 1) });
+        var snapshot = selection.GetSelectionSnapshot();
+
+        selection.Set(2, 2);
+        var restoreAction = () => selection.Restore(snapshot);
+
+        restoreAction.Should().NotThrow();
+        selection.ActiveRegion.Should().BeEquivalentTo(new Region(1, 1));
+        selection.Regions.Count.Should().Be(2);
     }
 }

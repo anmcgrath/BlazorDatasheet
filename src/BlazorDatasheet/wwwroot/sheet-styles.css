@@ -63,15 +63,7 @@
     --header-selected-bg-color: #203d6a;
 }
 
-.active-sheet {
-    border: none;
-}
-
-.inactive-sheet {
-    border: none;
-}
-
-.sheet {
+.bds-sheet {
     background: var(--sheet-bg-color);
     font-size: var(--sheet-font-size);
     box-sizing: border-box;
@@ -83,30 +75,30 @@
     contain: style;
 }
 
-.sheet-layer-container {
+.bds-sheet-layer-container {
     position: relative;
     pointer-events: none;
     top: 0;
     left: 0;
 }
 
-.sheet-col-head-container, .sheet-row-head-container {
+.bds-sheet-col-head-container, .bds-sheet-row-head-container {
     display: flex;
     flex-direction: column;
     align-items: start;
 }
 
-.sheet-row-head-container {
+.bds-sheet-row-head-container {
     background: var(--row-header-bg-color);
     color: var(--row-header-foreground-color);
 }
 
-.sheet-col-head-container {
+.bds-sheet-col-head-container {
     background: var(--col-header-bg-color);
     color: var(--col-header-foreground-color);
 }
 
-.sheet-button {
+.bds-sheet-button {
     background: var(--sheet-button-bg-color);
     border: var(--sheet-button-border);
     color: var(--sheet-foreground-color);
@@ -119,18 +111,22 @@
 }
 
 .bds-frozen-left {
+    position: sticky;
     box-shadow: 2px 0 0 var(--frozen-border-color);
 }
 
 .bds-frozen-right {
+    position: sticky;
     box-shadow: -2px 0 0 var(--frozen-border-color);
 }
 
 .bds-frozen-top {
+    position: sticky;
     box-shadow: 0 2px 0 var(--frozen-border-color);
 }
 
 .bds-frozen-bottom {
+    position: sticky;
     box-shadow: 0 -2px 0 var(--frozen-border-color);
 }
 
@@ -138,11 +134,11 @@
 
 }
 
-.sheet-button:hover {
+.bds-sheet-button:hover {
     background: var(--sheet-button-bg-hover-color);
 }
 
-.sheet-cell {
+.bds-sheet-cell {
     user-select: none;
     -moz-user-select: none;
     -webkit-user-select: none;
@@ -162,64 +158,31 @@
     pointer-events: all;
 }
 
-.sheet-left {
-    border-left: var(--sheet-border-style);
-}
-
-.sheet-top {
-}
-
-.sheet-table {
-    table-layout: fixed;
-    border-collapse: separate;
-    border-spacing: 0;
-}
-
-.col-sticky {
-    position: sticky;
-    top: 0;
-    z-index: 5;
-}
-
-.col-nonsticky {
-    border-bottom: var(--sheet-border-style);
-}
-
-.row-sticky {
-    position: sticky;
-    z-index: 3;
-    left: 0;
-}
-
-.row-head {
+.bds-row-head {
     text-align: right;
     border-left: var(--sheet-border-style);
     justify-content: end;
     align-items: center;
 }
 
-.col-head {
+.bds-col-head {
     text-align: right;
     border-top: var(--sheet-border-style);
 }
 
-.col-head, .row-head {
+.bds-col-head, .bds-row-head {
     font-weight: bold;
 }
 
-.col-head:hover, .row-head:hover {
+.bds-col-head:hover, .bds-row-head:hover {
     background: var(--head-selection-bg-color);
 }
 
-.col-head:active {
+.bds-col-head:active {
     background: var(--header-selected-bg-color);
 }
 
-.invalid-cell {
-    color: var(--invalid-cell-foreground-color) !important;
-}
-
-.unselectable {
+.bds-unselectable {
     -webkit-user-drag: none;
     user-select: none;
     -moz-user-select: none;
@@ -227,15 +190,15 @@
     -ms-user-select: none;
 }
 
-.number-highlight {
+.bds-number-highlight {
     color: var(--num-highlight-color)
 }
 
-.string-highlight {
+.bds-string-highlight {
     color: var(--string-highlight-color)
 }
 
-.default-highlight {
+.bds-default-highlight {
     color: var(--sheet-foreground-color)
 }
 
@@ -248,18 +211,18 @@
     display: inline-block;
 }
 
-.highlight-input {
+.bds-highlight-input {
     outline: 0 solid transparent;
     color: transparent;
     caret-color: var(--sheet-foreground-color);
     -webkit-user-modify: read-write-plaintext-only;
 }
 
-.highlight-input:focus {
+.bds-highlight-input:focus {
     outline: 0 solid transparent;
 }
 
-.highlight-input, .highlight-result {
+.bds-highlight-input, .bds-highlight-result {
     display: block;
     position: absolute;
     box-sizing: border-box;
@@ -269,18 +232,18 @@
     z-index: 1;
 }
 
-.highlight-result {
+.bds-highlight-result {
     pointer-events: none;
     background: inherit;
 }
 
-.bds-frozen-left .highlight-input, .bds-frozen-left .highlight-result {
+.bds-frozen-left .bds-highlight-input, .bds-frozen-left .bds-highlight-result {
     text-wrap: wrap;
     overflow-wrap: anywhere;
     white-space: pre-wrap;
 }
 
-.bds-frozen-right .highlight-input, .bds-frozen-right .highlight-result {
+.bds-frozen-right .bds-highlight-input, .bds-frozen-right .bds-highlight-result {
     text-wrap: wrap;
     overflow-wrap: anywhere;
     white-space: break-spaces;
@@ -306,7 +269,7 @@
     display: inline-block;
 }
 
-.cell-container {
+.bds-cell-container {
     flex-grow: 1;
 }
 

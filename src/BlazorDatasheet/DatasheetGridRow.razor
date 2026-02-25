@@ -76,4 +76,9 @@
         return false;
     }
 
+    protected override void OnAfterRender(bool firstRender)
+    {
+        _colIndicesChanged = false;
+    }
+
 }
