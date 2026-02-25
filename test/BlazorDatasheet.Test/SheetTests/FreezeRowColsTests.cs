@@ -1,6 +1,7 @@
 using System;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Events.Layout;
+using BlazorDatasheet.DataStructures.Geometry;
 using FluentAssertions;
 using NUnit.Framework;
 
@@ -81,6 +82,25 @@ public class FreezeRowColsTests
         sheet.FreezeBottomRows(3);
         sheet.FreezeLeftColumns(4);
         sheet.FreezeRightColumns(5);
+
+        sheet.FreezeState.Should().BeEquivalentTo(new
+        {
+            Top = 2,
+            Bottom = 3,
+            Left = 4,
+            Right = 5
+        });
+    }
+
+    [Test]
+    public void Freeze_Edge_Helper_Methods_Update_Expected_Sides()
+    {
+        var sheet = new Sheet(20, 20);
+
+        sheet.Freeze(Edge.Top, 2);
+        sheet.Freeze(Edge.Bottom, 3);
+        sheet.Freeze(Edge.Left, 4);
+        sheet.Freeze(Edge.Right, 5);
 
         sheet.FreezeState.Should().BeEquivalentTo(new
         {

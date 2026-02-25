@@ -750,4 +750,24 @@ public class Sheet
     {
         FreezeRowCols(FreezeState.Top, FreezeState.Bottom, FreezeState.Left, number);
     }
+
+    /// <summary>
+    /// Freeze the <paramref name="edge"/> by the <paramref name="number"/> of columns
+    /// </summary>
+    /// <param name="edge"></param>
+    /// <param name="number"></param>
+    public void Freeze(Edge edge, int number)
+    {
+        switch (edge)
+        {
+            case Edge.Bottom:
+                FreezeBottomRows(number); break;
+            case Edge.Left:
+                FreezeLeftColumns(number); break;
+            case Edge.Top:
+                FreezeTopRows(number); break;
+            case Edge.Right:
+                FreezeRightColumns(number); break;
+        }
+    }
 }
