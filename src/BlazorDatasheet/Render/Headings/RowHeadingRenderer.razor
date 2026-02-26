@@ -1,4 +1,4 @@
-﻿@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Virtualise
 @inherits HeadingRenderer
 
@@ -12,9 +12,7 @@
                 LayoutProvider="LayoutProvider"
                 ViewRegion="TopHeadingRegion">
                 <GridItemTemplate>
-                    <div class="bds-row-head bds-sheet-cell @GetSelectedClass(context.row)" data-row="@context.row" data-col="-1">
-                        @ChildContent(new HeadingContext(context.row, _sheet.Rows.GetHeading(context.row)))
-                    </div>
+                    @RowHeadingItem(context.row)
                 </GridItemTemplate>
             </Virtualise2D>
         </div>
@@ -29,9 +27,7 @@
                 LayoutProvider="LayoutProvider"
                 ViewRegion="MainHeadingRegion">
                 <GridItemTemplate>
-                    <div class="bds-row-head bds-sheet-cell @GetSelectedClass(context.row)" data-row="@context.row" data-col="-1">
-                        @ChildContent(new HeadingContext(context.row, _sheet.Rows.GetHeading(context.row)))
-                    </div>
+                    @RowHeadingItem(context.row)
                 </GridItemTemplate>
             </Virtualise2D>
         </div>
@@ -46,9 +42,7 @@
                 LayoutProvider="LayoutProvider"
                 ViewRegion="BottomHeadingRegion">
                 <GridItemTemplate>
-                    <div class="bds-row-head bds-sheet-cell @GetSelectedClass(context.row)" data-row="@context.row" data-col="-1">
-                        @ChildContent(new HeadingContext(context.row, _sheet.Rows.GetHeading(context.row)))
-                    </div>
+                    @RowHeadingItem(context.row)
                 </GridItemTemplate>
             </Virtualise2D>
         </div>
@@ -56,6 +50,11 @@
 </div>
 
 @code {
+
+    private RenderFragment RowHeadingItem(int row) =>
+        @<div class="bds-row-head bds-sheet-cell @GetSelectedClass(row)" data-row="@row" data-col="-1">
+            @ChildContent(new HeadingContext(row, _sheet.Rows.GetHeading(row)))
+        </div>;
 
     /// <summary>
     /// The number of rows past the end of the viewport to render.
@@ -72,12 +71,6 @@
     private int MainTop => Math.Clamp(Math.Max(_sheet.FreezeState.Top, _viewRegion.Top), _viewRegion.Top, _viewRegion.Bottom);
     private int MainBottom => Math.Clamp(Math.Min(_sheet.NumRows - _sheet.FreezeState.Bottom - 1, _viewRegion.Bottom), MainTop, _viewRegion.Bottom);
 
-    private bool HasVisibleRows(Region? region)
-    {
-        if (region == null)
-            return false;
-
-        return _sheet.Rows.CountVisible(region.Top, region.Bottom) > 0;
-    }
+    private bool HasVisibleRows(Region? region) => _sheet.HasVisibleRows(region);
 
 }

@@ -242,7 +242,6 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     private bool _showFormulaDependents;
 
-    private Viewport _currentViewport = new(new(-1, -1), new(0, 0, 0, 0));
 
     private CellLayoutProvider _cellLayoutProvider = null!;
 
@@ -290,15 +289,20 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     private Region FrozenRightViewRegion =>
         DatasheetViewRegionCalculator.GetFrozenRightRegion(_viewRegion, _sheet.NumCols, _sheet.FreezeState.Right);
 
-    private Region MainRowsBandRegion => new(MainViewRegion.Top, MainViewRegion.Bottom, _viewRegion.Left, _viewRegion.Right);
-    private Region MainColsBandRegion => new(_viewRegion.Top, _viewRegion.Bottom, MainViewRegion.Left, MainViewRegion.Right);
+    private Region MainRowsBandRegion =>
+        new(MainViewRegion.Top, MainViewRegion.Bottom, _viewRegion.Left, _viewRegion.Right);
+
+    private Region MainColsBandRegion =>
+        new(_viewRegion.Top, _viewRegion.Bottom, MainViewRegion.Left, MainViewRegion.Right);
 
     private Region? TopLeftPaneRegion => _sheet.FreezeState.Top > 0 && _sheet.FreezeState.Left > 0
         ? GetIntersection(FrozenTopViewRegion, FrozenLeftViewRegion)
         : null;
+
     private Region? TopCenterPaneRegion => _sheet.FreezeState.Top > 0
         ? GetIntersection(FrozenTopViewRegion, MainColsBandRegion)
         : null;
+
     private Region? TopRightPaneRegion => _sheet.FreezeState.Top > 0 && _sheet.FreezeState.Right > 0
         ? GetIntersection(FrozenTopViewRegion, FrozenRightViewRegion)
         : null;
@@ -306,7 +310,9 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     private Region? MainLeftPaneRegion => _sheet.FreezeState.Left > 0
         ? GetIntersection(MainRowsBandRegion, FrozenLeftViewRegion)
         : null;
+
     private Region? MainCenterPaneRegion => GetIntersection(MainRowsBandRegion, MainColsBandRegion);
+
     private Region? MainRightPaneRegion => _sheet.FreezeState.Right > 0
         ? GetIntersection(MainRowsBandRegion, FrozenRightViewRegion)
         : null;
@@ -314,9 +320,11 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     private Region? BottomLeftPaneRegion => _sheet.FreezeState.Bottom > 0 && _sheet.FreezeState.Left > 0
         ? GetIntersection(FrozenBottomViewRegion, FrozenLeftViewRegion)
         : null;
+
     private Region? BottomCenterPaneRegion => _sheet.FreezeState.Bottom > 0
         ? GetIntersection(FrozenBottomViewRegion, MainColsBandRegion)
         : null;
+
     private Region? BottomRightPaneRegion => _sheet.FreezeState.Bottom > 0 && _sheet.FreezeState.Right > 0
         ? GetIntersection(FrozenBottomViewRegion, FrozenRightViewRegion)
         : null;
@@ -529,7 +537,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     private void SheetOnFrozenRowCols(object? sender, SheetFrozenRowColsEventArgs e)
     {
-        //ForceReRender();
+        ForceReRender();
     }
 
     public async void RefreshView()
@@ -550,8 +558,6 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     private void HandleVirtualViewportChanged(VirtualViewportChangedEventArgs args)
     {
-        _currentViewport = args.Viewport;
-
         foreach (var region in args.RemovedRegions)
         {
             foreach (var position in region)
@@ -580,7 +586,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     {
         foreach (var region in dirtyRegions)
         {
-            var boundedRegion = region?.GetIntersection(_currentViewport.ViewRegion) as Region;
+            var boundedRegion = region?.GetIntersection(_viewRegion) as Region;
             if (boundedRegion == null)
                 continue;
 
@@ -1070,22 +1076,19 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         return _sheetIsDirty || _dirtyRowIndices.Contains(rowIndex);
     }
 
-    private bool HasVisibleCells(Region? region)
-    {
-        if (region == null)
-            return false;
-
-        var visibleRows = _sheet.Rows.CountVisible(region.Top, region.Bottom);
-        var visibleCols = _sheet.Columns.CountVisible(region.Left, region.Right);
-        return visibleRows > 0 && visibleCols > 0;
-    }
+    private bool HasVisibleCells(Region? region) => _sheet.HasVisibleCells(region);
 
     private Region? GetIntersection(Region a, Region b) => a.GetIntersection(b) as Region;
 
-    private void RegisterEditorLayer(EditorLayer? editorLayer)
+    private void RegisterEditorLayer(EditorLayer? editorLayer, bool isRegistering)
     {
-        if (editorLayer != null)
+        if (editorLayer == null)
+            return;
+
+        if (isRegistering)
             _editorLayers.Add(editorLayer);
+        else
+            _editorLayers.Remove(editorLayer);
     }
 
     private void RegisterAutofitLayer(AutofitLayer? autofitLayer)

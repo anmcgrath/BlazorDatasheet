@@ -8,7 +8,9 @@
 @using BlazorDatasheet.Services
 @using BlazorDatasheet.Virtualise
 
-@if (ViewRegion != null && Sheet.Columns.CountVisible(ViewRegion.Left, ViewRegion.Right) > 0 && Sheet.Rows.CountVisible(ViewRegion.Top, ViewRegion.Bottom) > 0)
+@implements IDisposable
+
+@if (Sheet.HasVisibleCells(ViewRegion))
 {
     if (RenderAutoScroller)
     {
@@ -94,7 +96,7 @@
     [Parameter] public bool RenderAutoScroller { get; set; }
     [Parameter] public bool RenderAutofitLayer { get; set; }
     [Parameter] public string CssClass { get; set; } = string.Empty;
-    [Parameter] public Action<EditorLayer?>? EditorLayerChanged { get; set; }
+    [Parameter] public Action<EditorLayer?, bool>? EditorLayerChanged { get; set; }
     [Parameter] public Action<AutofitLayer?>? AutofitLayerChanged { get; set; }
 
     private Virtualise2D? _mainView;
@@ -103,8 +105,12 @@
 
     protected override void OnAfterRender(bool firstRender)
     {
-        EditorLayerChanged?.Invoke(_editorLayer);
-        AutofitLayerChanged?.Invoke(_autofitLayer);
+        if (firstRender)
+        {
+            EditorLayerChanged?.Invoke(_editorLayer, true);
+            AutofitLayerChanged?.Invoke(_autofitLayer);
+        }
+
         base.OnAfterRender(firstRender);
     }
 
@@ -112,5 +118,11 @@
     {
         if (_mainView != null)
             await _mainView.RefreshView();
+    }
+
+    public void Dispose()
+    {
+        if (_editorLayer != null)
+            EditorLayerChanged?.Invoke(_editorLayer, false);
     }
 }

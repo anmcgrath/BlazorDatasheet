@@ -9,7 +9,7 @@
 @using BlazorDatasheet.Virtualise
 @if (HasAnyVisiblePane)
 {
-    <div style="display: flex; align-items: start; @(ContainerStyle)" class="@ContainerClass">
+    <div style="display: flex; align-items: start;" class="@ContainerClass">
         @if (HasVisibleCells(LeftRegion))
         {
             <div class="bds-frozen-left" style="z-index: @ZIndex; left: @LeftOffsetPx;">
@@ -120,7 +120,7 @@
     [Parameter, EditorRequired] public EventCallback<bool> AutofillDraggingChanged { get; set; }
     [Parameter, EditorRequired] public Func<bool> IsAutoScrollActive { get; set; } = () => false;
     [Parameter, EditorRequired] public AutoScrollOptions AutoScrollOptions { get; set; } = null!;
-    [Parameter, EditorRequired] public Action<EditorLayer?> EditorLayerChanged { get; set; } = _ => { };
+    [Parameter, EditorRequired] public Action<EditorLayer?, bool> EditorLayerChanged { get; set; } = (_, _) => { };
     [Parameter, EditorRequired] public Action<AutofitLayer?> AutofitLayerChanged { get; set; } = _ => { };
     [Parameter] public SheetPointerInputService? PointerInputService { get; set; }
     [Parameter] public int GridLevel { get; set; }
@@ -135,7 +135,6 @@
     [Parameter] public bool RenderAutoScroller { get; set; }
     [Parameter] public bool RenderAutofitLayer { get; set; }
     [Parameter] public string ContainerClass { get; set; } = string.Empty;
-    [Parameter] public string ContainerStyle { get; set; } = string.Empty;
     [Parameter] public string CenterPaneClass { get; set; } = string.Empty;
     [Parameter] public int ZIndex { get; set; } = 1;
     [Parameter] public double LeftOffset { get; set; }
@@ -148,19 +147,11 @@
 
     public bool HasAnyVisiblePane => HasVisibleCells(LeftRegion) || HasVisibleCells(CenterRegion) || HasVisibleCells(RightRegion);
 
-    private bool HasVisibleCells(Region? region)
-    {
-        if (region == null)
-            return false;
+    private bool HasVisibleCells(Region? region) => Sheet.HasVisibleCells(region);
 
-        var visibleRows = Sheet.Rows.CountVisible(region.Top, region.Bottom);
-        var visibleCols = Sheet.Columns.CountVisible(region.Left, region.Right);
-        return visibleRows > 0 && visibleCols > 0;
-    }
-
-    private void HandleEditorLayerChanged(EditorLayer? layer)
+    private void HandleEditorLayerChanged(EditorLayer? layer, bool isRegistering)
     {
-        EditorLayerChanged(layer);
+        EditorLayerChanged(layer, isRegistering);
     }
 
     private void HandleAutofitLayerChanged(AutofitLayer? layer)
