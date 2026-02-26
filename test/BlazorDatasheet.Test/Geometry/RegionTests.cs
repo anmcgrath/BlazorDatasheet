@@ -70,6 +70,106 @@ public class RegionTests
         Assert.AreEqual(24, region.Area);
     }
 
+    [TestCase(Edge.Top)]
+    [TestCase(Edge.Bottom)]
+    [TestCase(Edge.Left)]
+    [TestCase(Edge.Right)]
+    public void GetEdge_Size_Zero_Returns_Empty_Region(Edge edge)
+    {
+        var region = new Region(1, 4, 2, 6);
+
+        var edgeRegion = region.GetEdge(edge, 0);
+
+        edgeRegion.Should().BeOfType<EmptyRegion>();
+    }
+
+    [TestCase(Edge.Top)]
+    [TestCase(Edge.Bottom)]
+    [TestCase(Edge.Left)]
+    [TestCase(Edge.Right)]
+    public void GetEdge_Negative_Size_Returns_Empty_Region(Edge edge)
+    {
+        var region = new Region(1, 4, 2, 6);
+
+        var edgeRegion = region.GetEdge(edge, -1);
+
+        edgeRegion.Should().BeOfType<EmptyRegion>();
+    }
+
+    [TestCase(Edge.Top)]
+    [TestCase(Edge.Bottom)]
+    [TestCase(Edge.Left)]
+    [TestCase(Edge.Right)]
+    public void GetEdge_Size_Over_Dimension_Clamps_To_Whole_Region(Edge edge)
+    {
+        var region = new Region(1, 3, 2, 4);
+
+        var edgeRegion = region.GetEdge(edge, 99);
+
+        AssertRegionBounds(edgeRegion, top: 1, bottom: 3, left: 2, right: 4);
+    }
+
+    [Test]
+    public void GetEdge_Size_Two_Returns_Correct_Band()
+    {
+        var region = new Region(1, 4, 2, 6);
+
+        var top = region.GetEdge(Edge.Top, 2);
+        var bottom = region.GetEdge(Edge.Bottom, 2);
+        var left = region.GetEdge(Edge.Left, 2);
+        var right = region.GetEdge(Edge.Right, 2);
+
+        AssertRegionBounds(top, top: 1, bottom: 2, left: 2, right: 6);
+        AssertRegionBounds(bottom, top: 3, bottom: 4, left: 2, right: 6);
+        AssertRegionBounds(left, top: 1, bottom: 4, left: 2, right: 3);
+        AssertRegionBounds(right, top: 1, bottom: 4, left: 5, right: 6);
+    }
+
+    [TestCase(Edge.Top, 1, 1, 2, 6)]
+    [TestCase(Edge.Bottom, 4, 4, 2, 6)]
+    [TestCase(Edge.Left, 1, 4, 2, 2)]
+    [TestCase(Edge.Right, 1, 4, 6, 6)]
+    public void GetEdge_Default_Overload_Returns_Single_Cell_Thickness(
+        Edge edge,
+        int expectedTop,
+        int expectedBottom,
+        int expectedLeft,
+        int expectedRight)
+    {
+        var region = new Region(1, 4, 2, 6);
+
+        var edgeRegion = region.GetEdge(edge);
+
+        AssertRegionBounds(edgeRegion, expectedTop, expectedBottom, expectedLeft, expectedRight);
+    }
+
+    [TestCase(Edge.Top, 3, 1, 3, 2, 6)]
+    [TestCase(Edge.Bottom, 3, 2, 4, 2, 6)]
+    [TestCase(Edge.Left, 4, 1, 4, 2, 5)]
+    [TestCase(Edge.Right, 4, 1, 4, 3, 6)]
+    public void GetEdge_Valid_Size_Returns_Correct_Edge_Band(
+        Edge edge,
+        int size,
+        int expectedTop,
+        int expectedBottom,
+        int expectedLeft,
+        int expectedRight)
+    {
+        var region = new Region(1, 4, 2, 6);
+
+        var edgeRegion = region.GetEdge(edge, size);
+
+        AssertRegionBounds(edgeRegion, expectedTop, expectedBottom, expectedLeft, expectedRight);
+    }
+
+    private static void AssertRegionBounds(IRegion region, int top, int bottom, int left, int right)
+    {
+        region.Top.Should().Be(top);
+        region.Bottom.Should().Be(bottom);
+        region.Left.Should().Be(left);
+        region.Right.Should().Be(right);
+    }
+
     [Test]
     public void Contains_Cell_Inside_Returns_True()
     {

@@ -24,4 +24,19 @@ public static class EdgeExtensions
 
         return Edge.None;
     }
+
+    public static Axis GetAxis(this Edge edge)
+    {
+        switch (edge)
+        {
+            case Edge.Bottom:
+            case Edge.Top:
+                return Axis.Row;
+            case Edge.Left:
+            case Edge.Right:
+                return Axis.Col;
+            default:
+                return Axis.None;
+        }
+    }
 }
