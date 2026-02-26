@@ -1,5 +1,180 @@
-<h3>DatasheetPaneRow</h3>
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Layout
+@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Edit
+@using BlazorDatasheet.Render
+@using BlazorDatasheet.Render.AutoScroll
+@using BlazorDatasheet.Render.Layers
+@using BlazorDatasheet.Services
+@using BlazorDatasheet.Virtualise
+@if (HasAnyVisiblePane)
+{
+    <div style="display: flex; align-items: start; @(ContainerStyle)" class="@ContainerClass">
+        @if (HasVisibleCells(LeftRegion))
+        {
+            <div class="bds-frozen-left" style="z-index: @ZIndex; left: @LeftOffsetPx;">
+                <DatasheetPane
+                    @ref="_leftPane"
+                    CssClass="@($"bds-pane-left-{GridLevel}")"
+                    ViewRegion="LeftRegion!"
+                    Sheet="Sheet"
+                    CellLayoutProvider="CellLayoutProvider"
+                    Cache="Cache"
+                    CellRenderFragment="CellRenderFragment"
+                    NumberPrecisionDisplay="NumberPrecisionDisplay"
+                    IsRowDirty="IsRowDirty"
+                    OnViewportChanged="OnViewportChanged"
+                    ShowFormulaDependents="ShowFormulaDependents"
+                    UseAutoFill="UseAutoFill"
+                    IsReadOnly="IsReadOnly"
+                    CustomCellTypeDefinitions="CustomCellTypeDefinitions"
+                    AutofillDraggingChanged="AutofillDraggingChanged"
+                    PointerInputService="PointerInputService"
+                    GridLevel="GridLevel"
+                    OverscanColumns="OverscanColumns"
+                    OverscanRows="OverscanRows"
+                    IsAutoScrollActive="IsAutoScrollActive"
+                    AutoScrollOptions="AutoScrollOptions"
+                    UseAutoScroll="UseAutoScroll"
+                    AutoFit="AutoFit"
+                    EditorLayerChanged="HandleEditorLayerChanged"/>
+            </div>
+        }
+
+        @if (HasVisibleCells(CenterRegion))
+        {
+            <DatasheetPane
+                @ref="_centerPane"
+                CssClass="@CenterPaneClass"
+                ViewRegion="CenterRegion!"
+                Sheet="Sheet"
+                CellLayoutProvider="CellLayoutProvider"
+                Cache="Cache"
+                CellRenderFragment="CellRenderFragment"
+                NumberPrecisionDisplay="NumberPrecisionDisplay"
+                IsRowDirty="IsRowDirty"
+                OnViewportChanged="OnViewportChanged"
+                ShowFormulaDependents="ShowFormulaDependents"
+                UseAutoFill="UseAutoFill"
+                IsReadOnly="IsReadOnly"
+                CustomCellTypeDefinitions="CustomCellTypeDefinitions"
+                AutofillDraggingChanged="AutofillDraggingChanged"
+                PointerInputService="PointerInputService"
+                GridLevel="GridLevel"
+                OverscanColumns="OverscanColumns"
+                OverscanRows="OverscanRows"
+                IsAutoScrollActive="IsAutoScrollActive"
+                AutoScrollOptions="AutoScrollOptions"
+                UseAutoScroll="UseAutoScroll"
+                AutoFit="AutoFit"
+                RenderAutoScroller="RenderAutoScroller"
+                RenderAutofitLayer="RenderAutofitLayer"
+                EditorLayerChanged="HandleEditorLayerChanged"
+                AutofitLayerChanged="HandleAutofitLayerChanged"/>
+        }
+
+        @if (HasVisibleCells(RightRegion))
+        {
+            <div class="bds-frozen-right" style="right: 0; z-index: @ZIndex;">
+                <DatasheetPane
+                    @ref="_rightPane"
+                    CssClass="@($"bds-pane-right-{GridLevel}")"
+                    ViewRegion="RightRegion!"
+                    Sheet="Sheet"
+                    CellLayoutProvider="CellLayoutProvider"
+                    Cache="Cache"
+                    CellRenderFragment="CellRenderFragment"
+                    NumberPrecisionDisplay="NumberPrecisionDisplay"
+                    IsRowDirty="IsRowDirty"
+                    OnViewportChanged="OnViewportChanged"
+                    ShowFormulaDependents="ShowFormulaDependents"
+                    UseAutoFill="UseAutoFill"
+                    IsReadOnly="IsReadOnly"
+                    CustomCellTypeDefinitions="CustomCellTypeDefinitions"
+                    AutofillDraggingChanged="AutofillDraggingChanged"
+                    PointerInputService="PointerInputService"
+                    GridLevel="GridLevel"
+                    OverscanColumns="OverscanColumns"
+                    OverscanRows="OverscanRows"
+                    IsAutoScrollActive="IsAutoScrollActive"
+                    AutoScrollOptions="AutoScrollOptions"
+                    UseAutoScroll="UseAutoScroll"
+                    AutoFit="AutoFit"
+                    EditorLayerChanged="HandleEditorLayerChanged"/>
+            </div>
+        }
+    </div>
+}
 
 @code {
-    
+    [Parameter, EditorRequired] public Sheet Sheet { get; set; } = null!;
+    [Parameter, EditorRequired] public Region? LeftRegion { get; set; }
+    [Parameter, EditorRequired] public Region? CenterRegion { get; set; }
+    [Parameter, EditorRequired] public Region? RightRegion { get; set; }
+    [Parameter, EditorRequired] public IGridLayoutProvider CellLayoutProvider { get; set; } = null!;
+    [Parameter, EditorRequired] public Dictionary<CellPosition, VisualCell> Cache { get; set; } = null!;
+    [Parameter, EditorRequired] public RenderFragment<VisualCell> CellRenderFragment { get; set; } = null!;
+    [Parameter, EditorRequired] public Func<int, bool> IsRowDirty { get; set; } = _ => false;
+    [Parameter, EditorRequired] public Dictionary<string, CellTypeDefinition> CustomCellTypeDefinitions { get; set; } = null!;
+    [Parameter, EditorRequired] public EventCallback<VirtualViewportChangedEventArgs> OnViewportChanged { get; set; }
+    [Parameter, EditorRequired] public EventCallback<bool> AutofillDraggingChanged { get; set; }
+    [Parameter, EditorRequired] public Func<bool> IsAutoScrollActive { get; set; } = () => false;
+    [Parameter, EditorRequired] public AutoScrollOptions AutoScrollOptions { get; set; } = null!;
+    [Parameter, EditorRequired] public Action<EditorLayer?> EditorLayerChanged { get; set; } = _ => { };
+    [Parameter, EditorRequired] public Action<AutofitLayer?> AutofitLayerChanged { get; set; } = _ => { };
+    [Parameter] public SheetPointerInputService? PointerInputService { get; set; }
+    [Parameter] public int GridLevel { get; set; }
+    [Parameter] public int OverscanColumns { get; set; } = 2;
+    [Parameter] public int OverscanRows { get; set; } = 6;
+    [Parameter] public int NumberPrecisionDisplay { get; set; } = 13;
+    [Parameter] public bool ShowFormulaDependents { get; set; }
+    [Parameter] public bool UseAutoFill { get; set; } = true;
+    [Parameter] public bool IsReadOnly { get; set; }
+    [Parameter] public bool UseAutoScroll { get; set; }
+    [Parameter] public bool AutoFit { get; set; }
+    [Parameter] public bool RenderAutoScroller { get; set; }
+    [Parameter] public bool RenderAutofitLayer { get; set; }
+    [Parameter] public string ContainerClass { get; set; } = string.Empty;
+    [Parameter] public string ContainerStyle { get; set; } = string.Empty;
+    [Parameter] public string CenterPaneClass { get; set; } = string.Empty;
+    [Parameter] public int ZIndex { get; set; } = 1;
+    [Parameter] public double LeftOffset { get; set; }
+
+    private DatasheetPane? _leftPane;
+    private DatasheetPane? _centerPane;
+    private DatasheetPane? _rightPane;
+
+    private string LeftOffsetPx => $"{LeftOffset}px";
+
+    public bool HasAnyVisiblePane => HasVisibleCells(LeftRegion) || HasVisibleCells(CenterRegion) || HasVisibleCells(RightRegion);
+
+    private bool HasVisibleCells(Region? region)
+    {
+        if (region == null)
+            return false;
+
+        var visibleRows = Sheet.Rows.CountVisible(region.Top, region.Bottom);
+        var visibleCols = Sheet.Columns.CountVisible(region.Left, region.Right);
+        return visibleRows > 0 && visibleCols > 0;
+    }
+
+    private void HandleEditorLayerChanged(EditorLayer? layer)
+    {
+        EditorLayerChanged(layer);
+    }
+
+    private void HandleAutofitLayerChanged(AutofitLayer? layer)
+    {
+        AutofitLayerChanged(layer);
+    }
+
+    public async Task RefreshViews()
+    {
+        if (_leftPane != null)
+            await _leftPane.RefreshView();
+        if (_centerPane != null)
+            await _centerPane.RefreshView();
+        if (_rightPane != null)
+            await _rightPane.RefreshView();
+    }
 }

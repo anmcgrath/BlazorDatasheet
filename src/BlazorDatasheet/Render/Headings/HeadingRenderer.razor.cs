@@ -111,7 +111,11 @@ public partial class HeadingRenderer : SheetComponentBase
         {
             await MainView.RefreshView();
         }
+
+        await RefreshAdditionalViews();
     }
+
+    protected virtual Task RefreshAdditionalViews() => Task.CompletedTask;
 
     protected string GetSelectedClass(int index)
     {

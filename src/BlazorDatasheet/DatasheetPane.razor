@@ -1,5 +1,116 @@
-<h3>DatasheetPane</h3>
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Layout
+@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Edit
+@using BlazorDatasheet.Render.AutoScroll
+@using BlazorDatasheet.Render
+@using BlazorDatasheet.Render.Layers
+@using BlazorDatasheet.Services
+@using BlazorDatasheet.Virtualise
+
+@if (ViewRegion != null && Sheet.Columns.CountVisible(ViewRegion.Left, ViewRegion.Right) > 0 && Sheet.Rows.CountVisible(ViewRegion.Top, ViewRegion.Bottom) > 0)
+{
+    if (RenderAutoScroller)
+    {
+        <AutoScroller
+            Options="AutoScrollOptions"
+            IsActive="IsAutoScrollActive"
+            Enabled="@UseAutoScroll"/>
+    }
+
+    <LayerContainer Depth="@GridLevel" Sheet="Sheet" ViewRegion="ViewRegion"
+                    PointerInputService="PointerInputService">
+        <HighlightLayer/>
+        @if (UseAutoFill && !IsReadOnly)
+        {
+            <AutofillLayer AutofillDraggingChanged="AutofillDraggingChanged"/>
+        }
+        @if (RenderAutofitLayer)
+        {
+            <AutofitLayer
+                @ref="_autofitLayer"
+                AutoFitOnInteraction="AutoFit"
+                NumberOfSignificantDigits="NumberPrecisionDisplay"
+                CellRenderFragment="CellRenderFragment"/>
+        }
+        <VirtualMergesLayer
+            CellRenderFragment="CellRenderFragment"
+            NumberPrecisionDisplay="NumberPrecisionDisplay"
+            Cache="Cache"/>
+        <EditorLayer Disabled="@IsReadOnly" @ref="_editorLayer"
+                     CustomCellTypes="@CustomCellTypeDefinitions"/>
+        <SelectionRendererLayer/>
+        @if (ShowFormulaDependents)
+        {
+            <FormulaDependenciesLayer/>
+        }
+    </LayerContainer>
+
+    <Virtualise2D
+        OverscanColumns="OverscanColumns"
+        OverscanRows="OverscanRows"
+        Class="@CssClass"
+        OnViewportChanged="OnViewportChanged"
+        LayoutProvider="CellLayoutProvider"
+        ViewRegion="ViewRegion"
+        RowClass="bds-row"
+        @ref="_mainView"
+        Context="vr">
+        <RowTemplate>
+            <DatasheetGridRow
+                NumberPrecisionDisplay="NumberPrecisionDisplay"
+                Row="vr.Row"
+                CellRenderFragment="CellRenderFragment"
+                VisibleColIndices="vr.VisibleColIndices"
+                Sheet="Sheet"
+                Cache="Cache"
+                IsDirty="IsRowDirty(vr.Row)"/>
+        </RowTemplate>
+    </Virtualise2D>
+}
 
 @code {
-    
+    [Parameter, EditorRequired] public Sheet Sheet { get; set; } = null!;
+    [Parameter, EditorRequired] public Region ViewRegion { get; set; } = null!;
+    [Parameter, EditorRequired] public IGridLayoutProvider CellLayoutProvider { get; set; } = null!;
+    [Parameter, EditorRequired] public Dictionary<CellPosition, VisualCell> Cache { get; set; } = null!;
+    [Parameter, EditorRequired] public RenderFragment<VisualCell> CellRenderFragment { get; set; } = null!;
+    [Parameter, EditorRequired] public Func<int, bool> IsRowDirty { get; set; } = _ => false;
+    [Parameter, EditorRequired] public Dictionary<string, CellTypeDefinition> CustomCellTypeDefinitions { get; set; } = null!;
+    [Parameter, EditorRequired] public EventCallback<VirtualViewportChangedEventArgs> OnViewportChanged { get; set; }
+    [Parameter, EditorRequired] public EventCallback<bool> AutofillDraggingChanged { get; set; }
+    [Parameter, EditorRequired] public Func<bool> IsAutoScrollActive { get; set; } = () => false;
+    [Parameter, EditorRequired] public AutoScrollOptions AutoScrollOptions { get; set; } = null!;
+    [Parameter] public SheetPointerInputService? PointerInputService { get; set; }
+    [Parameter] public int GridLevel { get; set; }
+    [Parameter] public int OverscanColumns { get; set; } = 2;
+    [Parameter] public int OverscanRows { get; set; } = 6;
+    [Parameter] public int NumberPrecisionDisplay { get; set; } = 13;
+    [Parameter] public bool ShowFormulaDependents { get; set; }
+    [Parameter] public bool UseAutoFill { get; set; } = true;
+    [Parameter] public bool IsReadOnly { get; set; }
+    [Parameter] public bool UseAutoScroll { get; set; }
+    [Parameter] public bool AutoFit { get; set; }
+    [Parameter] public bool RenderAutoScroller { get; set; }
+    [Parameter] public bool RenderAutofitLayer { get; set; }
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+    [Parameter] public Action<EditorLayer?>? EditorLayerChanged { get; set; }
+    [Parameter] public Action<AutofitLayer?>? AutofitLayerChanged { get; set; }
+
+    private Virtualise2D? _mainView;
+    private EditorLayer? _editorLayer;
+    private AutofitLayer? _autofitLayer;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        EditorLayerChanged?.Invoke(_editorLayer);
+        AutofitLayerChanged?.Invoke(_autofitLayer);
+        base.OnAfterRender(firstRender);
+    }
+
+    public async Task RefreshView()
+    {
+        if (_mainView != null)
+            await _mainView.RefreshView();
+    }
 }

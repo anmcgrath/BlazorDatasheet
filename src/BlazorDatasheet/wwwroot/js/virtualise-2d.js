@@ -1,4 +1,4 @@
-﻿import { calculateViewRect as calculateViewRectShared, findScrollableAncestor as findScrollableAncestorShared } from "./view-rect.js"
+﻿import { calculateViewRect as calculateViewRectShared, findScrollableAncestor as findScrollableAncestorShared } from "./scroll-container.js"
 
 class Virtualiser2d {
 

@@ -86,4 +86,33 @@
             .Should()
             .Be(sheet.Columns.GetVisualLeft(2) + 1 + "px");
     }
+
+    [Test]
+    public void Datasheet_With_No_Frozen_Sections_Renders_Main_Pane_Row_Only()
+    {
+        var sheet = new Sheet(5, 5);
+        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+
+        cut.FindAll("div.bds-pane-row-main").Count.Should().Be(1);
+        cut.FindAll("div.bds-pane-row-top").Count.Should().Be(0);
+        cut.FindAll("div.bds-pane-row-bottom").Count.Should().Be(0);
+    }
+
+    [Test]
+    public void Datasheet_With_All_Frozen_Sections_Renders_Three_Pane_Rows()
+    {
+        var sheet = new Sheet(20, 20);
+        sheet.FreezeRowCols(1, 1, 1, 1);
+
+        var cut = RenderComponent<Datasheet>(parameters =>
+        {
+            parameters.Add(p => p.Sheet, sheet);
+            parameters.Add(p => p.ShowColHeadings, false);
+            parameters.Add(p => p.ShowRowHeadings, false);
+        });
+
+        cut.FindAll("div.bds-pane-row-main").Count.Should().Be(1);
+        cut.FindAll("div.bds-pane-row-top").Count.Should().Be(1);
+        cut.FindAll("div.bds-pane-row-bottom").Count.Should().Be(1);
+    }
 }
