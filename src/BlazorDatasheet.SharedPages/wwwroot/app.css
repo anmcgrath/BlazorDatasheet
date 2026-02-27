@@ -312,35 +312,39 @@ code {
 
 .bds-button {
     appearance: none;
-    background-color: #FAFBFC;
-    border: 1px solid rgba(27, 31, 35, 0.15);
+    background-color: #f8fafc;
+    border: 1px solid #c5d0df;
     border-radius: 6px;
-    box-shadow: rgba(27, 31, 35, 0.04) 0 1px 0, rgba(255, 255, 255, 0.25) 0 1px 0 inset;
+    box-shadow: rgba(15, 23, 42, 0.06) 0 1px 1px, rgba(255, 255, 255, 0.75) 0 1px 0 inset;
     box-sizing: border-box;
-    color: #24292E;
+    color: #1f2937;
     cursor: pointer;
     font-weight: 500;
-    line-height: 20px;
-    padding: 2px 8px;
+    line-height: 1;
+    min-height: 24px;
+    min-width: 24px;
+    padding: 4px 8px;
     user-select: none;
     -webkit-user-select: none;
     vertical-align: middle;
+    transition: background-color 120ms ease-in-out, border-color 120ms ease-in-out, box-shadow 120ms ease-in-out;
 }
 
 .bds-button:hover {
-    background-color: #F3F4F6;
+    background-color: #eef2f7;
+    border-color: #b6c3d6;
     text-decoration: none;
-    transition-duration: 0.1s;
 }
 
 .bds-button:active, .bds-toggled {
-    background-color: #EDEFF2;
-    box-shadow: rgba(225, 228, 232, 0.2) 0 1px 0 inset;
-    transition: none 0s;
+    background-color: #e6edf7;
+    border-color: #98acc7;
+    box-shadow: rgba(148, 163, 184, 0.24) 0 1px 0 inset;
 }
 
-.bds-button:focus {
-    outline: 1px transparent;
+.bds-button:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 1px;
 }
 
 .bds-button:before {
@@ -348,7 +352,15 @@ code {
 }
 
 .bds-formula-input{
-    padding: 0.2rem .3rem;
-    border: 1px solid rgba(27, 31, 35, 0.15);
+    padding: 0.28rem 0.45rem;
+    border: 1px solid #c5d0df;
+    border-radius: 6px;
+    color: #1f2937;
+    background: #ffffff;
     margin-bottom: 0.5rem;
+}
+
+.bds-formula-input:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 1px;
 }
