@@ -99,7 +99,7 @@
                                 <div class="bds-frozen-top" style="z-index: @(GridLevel + 2); top: @(TopMainContentOffset)px;">
                                     <DatasheetPaneRow
                                         @ref="_topPaneRow"
-                                        ContainerClass="bds-pane-row-top"
+                                        ContainerClass="bds-pane-row"
                                         LeftRegion="TopLeftPaneRegion"
                                         CenterRegion="TopCenterPaneRegion"
                                         RightRegion="TopRightPaneRegion"
@@ -132,7 +132,7 @@
 
                             <DatasheetPaneRow
                                 @ref="_mainPaneRow"
-                                ContainerClass="bds-pane-row-main"
+                                ContainerClass="bds-pane-row"
                                 CenterPaneClass="@($"bds-main-view-{GridLevel}")"
                                 LeftRegion="MainLeftPaneRegion"
                                 CenterRegion="MainCenterPaneRegion"
@@ -169,7 +169,7 @@
                                 <div class="bds-frozen-bottom" style="z-index: @(GridLevel + 1); bottom: 0;">
                                     <DatasheetPaneRow
                                         @ref="_bottomPaneRow"
-                                        ContainerClass="bds-pane-row-bottom"
+                                        ContainerClass="bds-pane-row"
                                         LeftRegion="BottomLeftPaneRegion"
                                         CenterRegion="BottomCenterPaneRegion"
                                         RightRegion="BottomRightPaneRegion"
