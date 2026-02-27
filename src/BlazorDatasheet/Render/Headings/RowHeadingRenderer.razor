@@ -5,7 +5,7 @@
 <div style="display: flex; flex-direction: column;">
     @if (_sheet.FreezeState.Top > 0 && HasVisibleRows(TopHeadingRegion))
     {
-        <div class="bds-sheet-row-head-container">
+        <div class="bds-sheet-row-head-container bds-frozen-top" style="position: sticky; @GetStickyPositionTopInfo();">
             <Virtualise2D
                 OverscanRows="OverscanRows"
                 @ref="_topView"
@@ -35,7 +35,7 @@
 
     @if (_sheet.FreezeState.Bottom > 0 && HasVisibleRows(BottomHeadingRegion))
     {
-        <div class="bds-sheet-row-head-container">
+        <div class="bds-sheet-row-head-container bds-frozen-bottom" style="position: sticky; bottom: 0;">
             <Virtualise2D
                 OverscanRows="OverscanRows"
                 @ref="_bottomView"
@@ -72,5 +72,10 @@
     private int MainBottom => Math.Clamp(Math.Min(_sheet.NumRows - _sheet.FreezeState.Bottom - 1, _viewRegion.Bottom), MainTop, _viewRegion.Bottom);
 
     private bool HasVisibleRows(Region? region) => _sheet.HasVisibleRows(region);
+
+    private string GetStickyPositionTopInfo()
+    {
+        return $"top: {(AlternateAxisHeadingsShown ? _sheet.Columns.HeadingHeight : 0)}px;";
+    }
 
 }
