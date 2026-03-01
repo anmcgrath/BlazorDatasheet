@@ -118,7 +118,7 @@
                             }
 
                             <DatasheetPaneRow
-                                @ref="_topPaneRow"
+                                @ref="_mainPaneRow"
                                 ViewRegion="@(new Region(_sheet.FreezeState.Top, _sheet.NumRows - _sheet.FreezeState.Bottom, 0, _sheet.NumCols - 1))"
                                 ContainerClass="bds-pane-row"
                                 Sheet="_sheet"
@@ -145,7 +145,7 @@
                                 <div class="bds-frozen-bottom" style="z-index: @(PaneRowZIndex + 1); bottom: 0;">
                                     <DatasheetPaneRow
                                         ViewRegion="_sheet.GetFrozenBottomRegion()"
-                                        @ref="_topPaneRow"
+                                        @ref="_bottomPaneRow"
                                         ContainerClass="bds-pane-row"
                                         Sheet="_sheet"
                                         CellRenderFragment="CellRenderFragment!"

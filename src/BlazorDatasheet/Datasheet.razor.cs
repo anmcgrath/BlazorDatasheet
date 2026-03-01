@@ -916,10 +916,6 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         ForceReRender();
     }
 
-    private bool HasVisibleCells(Region? region) => _sheet.HasVisibleCells(region);
-
-    private Region? GetIntersection(Region a, Region b) => a.GetIntersection(b) as Region;
-
     private void RegisterEditorLayer(EditorLayer? editorLayer, bool isRegistering)
     {
         if (editorLayer == null)

@@ -32,7 +32,7 @@
                     AutoScrollOptions="AutoScrollOptions"
                     UseAutoScroll="UseAutoScroll"
                     AutoFit="AutoFit"
-                    EditorLayerChanged="HandleEditorLayerChanged"/>
+                    EditorLayerChanged="EditorLayerChanged"/>
             </div>
         }
 
@@ -60,8 +60,8 @@
                 AutoFit="AutoFit"
                 RenderAutoScroller="RenderAutoScroller"
                 RenderAutofitLayer="RenderAutofitLayer"
-                EditorLayerChanged="HandleEditorLayerChanged"
-                AutofitLayerChanged="HandleAutofitLayerChanged"/>
+                EditorLayerChanged="EditorLayerChanged"
+                AutofitLayerChanged="AutofitLayerChanged"/>
         }
 
         @if (_frozenRightRegion != null)
@@ -87,7 +87,7 @@
                     AutoScrollOptions="AutoScrollOptions"
                     UseAutoScroll="UseAutoScroll"
                     AutoFit="AutoFit"
-                    EditorLayerChanged="HandleEditorLayerChanged"/>
+                    EditorLayerChanged="EditorLayerChanged"/>
             </div>
         }
     </div>
@@ -143,20 +143,9 @@
             _frozenLeftRegion = _viewRegion.GetIntersection(Sheet.GetFrozenLeftRegion());
             _frozenRightRegion = _viewRegion.GetIntersection(Sheet.GetFrozenRightRegion());
             _centreRegion = new Region(_viewRegion.Top, _viewRegion.Bottom, Sheet.FreezeState.Left, Sheet.NumCols - Sheet.FreezeState.Right);
-            Console.WriteLine($"Centre region is {_centreRegion}");
         }
 
         base.OnParametersSet();
-    }
-
-    private void HandleEditorLayerChanged(EditorLayer? layer, bool isRegistering)
-    {
-        EditorLayerChanged(layer, isRegistering);
-    }
-
-    private void HandleAutofitLayerChanged(AutofitLayer? layer)
-    {
-        AutofitLayerChanged(layer);
     }
 
     public async Task RefreshViews()
