@@ -30,28 +30,28 @@ public interface IGridLayoutProvider
     public int NumColumns { get; }
 
     /// <summary>
-    /// The left position (start) of the column given
+    /// The left position (start) of the column given, relative to the left edge of <see cref="ViewRegion"/>
     /// </summary>
     /// <param name="col"></param>
     /// <returns></returns>
     double ComputeLeftPosition(int col);
 
     /// <summary>
-    /// The right position (end) of the column given. This is the column left + column width
+    /// The right position (end) of the column given, relative to the left edge of <see cref="ViewRegion"/>. This is the column left + column width
     /// </summary>
     /// <param name="col"></param>
     /// <returns></returns>
     double ComputeRightPosition(int col) => ComputeLeftPosition(col) + ComputeWidth(col, 1);
 
     /// <summary>
-    /// The top position (start) of the row given.
+    /// The top position (start) of the row given, relative to the top edge of <see cref="ViewRegion"/>
     /// </summary>
     /// <param name="row"></param>
     /// <returns></returns>
     double ComputeTopPosition(int row);
 
     /// <summary>
-    /// The bottom position (end) of the row given. This is the row start + row height
+    /// The bottom position (end) of the row given, relative to the top edge of <see cref="ViewRegion"/>. This is the row start + row height
     /// </summary>
     /// <param name="row"></param>
     /// <returns></returns>
@@ -82,20 +82,27 @@ public interface IGridLayoutProvider
     double ComputeHeightBetween(int startRow, int endRow) => ComputeHeight(startRow, endRow - startRow);
 
     /// <summary>
-    /// Computes the column at position <paramref name="x"/>
+    /// Computes the view-relative column index at view-relative pixel position <paramref name="x"/>.
+    /// Both input and output are relative to <see cref="ViewRegion"/>.<see cref="IRegion.Left"/>
     /// </summary>
     /// <param name="x"></param>
     /// <returns></returns>
     int ComputeColumn(double x);
 
     /// <summary>
-    /// Computes the row at position <paramref name="y"/>
+    /// Computes the view-relative row index at view-relative pixel position <paramref name="y"/>.
+    /// Both input and output are relative to <see cref="ViewRegion"/>.<see cref="IRegion.Top"/>
     /// </summary>
     /// <param name="y"></param>
     /// <returns></returns>
     int ComputeRow(double y);
 
+    /// <summary>
     /// Computes the height of <paramref name="rowSpan"/> rows, including <paramref name="startRow"/>
+    /// </summary>
+    /// <param name="startRow"></param>
+    /// <param name="rowSpan"></param>
+    /// <returns></returns>
     double ComputeHeight(int startRow, int rowSpan);
 
     /// <summary>
