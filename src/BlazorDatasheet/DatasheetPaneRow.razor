@@ -1,29 +1,24 @@
 ﻿@using BlazorDatasheet.Core.Data
-@using BlazorDatasheet.Core.Layout
 @using BlazorDatasheet.DataStructures.Geometry
-@using BlazorDatasheet.Edit
+@using BlazorDatasheet.Extensions
 @using BlazorDatasheet.Render
 @using BlazorDatasheet.Render.AutoScroll
 @using BlazorDatasheet.Render.Layers
 @using BlazorDatasheet.Services
-@using BlazorDatasheet.Virtualise
-@if (HasAnyVisiblePane)
+@if (ViewRegion.Height > 0)
 {
-    <div style="display: flex; align-items: start;" class="@ContainerClass">
-        @if (HasVisibleCells(LeftRegion))
+    <div style="display: flex; align-items: start; position: relative; z-index: @ZIndex;" class="@ContainerClass">
+        @if (_frozenLeftRegion != null)
         {
-            <div class="bds-frozen-left" style="z-index: @ZIndex; left: @LeftOffsetPx;">
+            <div class="bds-frozen-left"
+                 style="z-index: 5; left: @(Sheet.Rows.HeadingWidth)px;">
                 <DatasheetPane
                     @ref="_leftPane"
                     CssClass="@($"bds-pane-left-{GridLevel}")"
-                    ViewRegion="LeftRegion!"
+                    ViewRegion="_frozenLeftRegion"
                     Sheet="Sheet"
-                    CellLayoutProvider="CellLayoutProvider"
-                    Cache="Cache"
                     CellRenderFragment="CellRenderFragment"
                     NumberPrecisionDisplay="NumberPrecisionDisplay"
-                    IsRowDirty="IsRowDirty"
-                    OnViewportChanged="OnViewportChanged"
                     ShowFormulaDependents="ShowFormulaDependents"
                     UseAutoFill="UseAutoFill"
                     IsReadOnly="IsReadOnly"
@@ -41,19 +36,15 @@
             </div>
         }
 
-        @if (HasVisibleCells(CenterRegion))
+        @if (_centreRegion != null)
         {
             <DatasheetPane
                 @ref="_centerPane"
                 CssClass="@CenterPaneClass"
-                ViewRegion="CenterRegion!"
+                ViewRegion="_centreRegion"
                 Sheet="Sheet"
-                CellLayoutProvider="CellLayoutProvider"
-                Cache="Cache"
                 CellRenderFragment="CellRenderFragment"
                 NumberPrecisionDisplay="NumberPrecisionDisplay"
-                IsRowDirty="IsRowDirty"
-                OnViewportChanged="OnViewportChanged"
                 ShowFormulaDependents="ShowFormulaDependents"
                 UseAutoFill="UseAutoFill"
                 IsReadOnly="IsReadOnly"
@@ -73,20 +64,16 @@
                 AutofitLayerChanged="HandleAutofitLayerChanged"/>
         }
 
-        @if (HasVisibleCells(RightRegion))
+        @if (_frozenRightRegion != null)
         {
-            <div class="bds-frozen-right" style="right: 0; z-index: @ZIndex;">
+            <div class="bds-frozen-right" style="right: 0; z-index: 5;">
                 <DatasheetPane
                     @ref="_rightPane"
                     CssClass="@($"bds-pane-right-{GridLevel}")"
-                    ViewRegion="RightRegion!"
                     Sheet="Sheet"
-                    CellLayoutProvider="CellLayoutProvider"
-                    Cache="Cache"
+                    ViewRegion="_frozenRightRegion"
                     CellRenderFragment="CellRenderFragment"
                     NumberPrecisionDisplay="NumberPrecisionDisplay"
-                    IsRowDirty="IsRowDirty"
-                    OnViewportChanged="OnViewportChanged"
                     ShowFormulaDependents="ShowFormulaDependents"
                     UseAutoFill="UseAutoFill"
                     IsReadOnly="IsReadOnly"
@@ -107,16 +94,18 @@
 }
 
 @code {
+
+    /// <summary>
+    /// The ViewRegion this pane row covers
+    /// </summary>
+    [Parameter, EditorRequired]
+    public required IRegion ViewRegion { get; set; }
+
+    private IRegion? _viewRegion;
+
     [Parameter, EditorRequired] public Sheet Sheet { get; set; } = null!;
-    [Parameter, EditorRequired] public Region? LeftRegion { get; set; }
-    [Parameter, EditorRequired] public Region? CenterRegion { get; set; }
-    [Parameter, EditorRequired] public Region? RightRegion { get; set; }
-    [Parameter, EditorRequired] public IGridLayoutProvider CellLayoutProvider { get; set; } = null!;
-    [Parameter, EditorRequired] public Dictionary<CellPosition, VisualCell> Cache { get; set; } = null!;
     [Parameter, EditorRequired] public RenderFragment<VisualCell> CellRenderFragment { get; set; } = null!;
-    [Parameter, EditorRequired] public Func<int, bool> IsRowDirty { get; set; } = _ => false;
     [Parameter, EditorRequired] public Dictionary<string, CellTypeDefinition> CustomCellTypeDefinitions { get; set; } = null!;
-    [Parameter, EditorRequired] public EventCallback<VirtualViewportChangedEventArgs> OnViewportChanged { get; set; }
     [Parameter, EditorRequired] public EventCallback<bool> AutofillDraggingChanged { get; set; }
     [Parameter, EditorRequired] public Func<bool> IsAutoScrollActive { get; set; } = () => false;
     [Parameter, EditorRequired] public AutoScrollOptions AutoScrollOptions { get; set; } = null!;
@@ -137,17 +126,28 @@
     [Parameter] public string ContainerClass { get; set; } = string.Empty;
     [Parameter] public string CenterPaneClass { get; set; } = string.Empty;
     [Parameter] public int ZIndex { get; set; } = 1;
-    [Parameter] public double LeftOffset { get; set; }
 
     private DatasheetPane? _leftPane;
     private DatasheetPane? _centerPane;
     private DatasheetPane? _rightPane;
 
-    private string LeftOffsetPx => $"{LeftOffset}px";
+    private IRegion? _frozenLeftRegion;
+    private IRegion? _frozenRightRegion;
+    private IRegion? _centreRegion;
 
-    public bool HasAnyVisiblePane => HasVisibleCells(LeftRegion) || HasVisibleCells(CenterRegion) || HasVisibleCells(RightRegion);
+    protected override void OnParametersSet()
+    {
+        if (_viewRegion == null || !_viewRegion.Equals(ViewRegion))
+        {
+            _viewRegion = ViewRegion;
+            _frozenLeftRegion = _viewRegion.GetIntersection(Sheet.GetFrozenLeftRegion());
+            _frozenRightRegion = _viewRegion.GetIntersection(Sheet.GetFrozenRightRegion());
+            _centreRegion = new Region(_viewRegion.Top, _viewRegion.Bottom, Sheet.FreezeState.Left, Sheet.NumCols - Sheet.FreezeState.Right);
+            Console.WriteLine($"Centre region is {_centreRegion}");
+        }
 
-    private bool HasVisibleCells(Region? region) => Sheet.HasVisibleCells(region);
+        base.OnParametersSet();
+    }
 
     private void HandleEditorLayerChanged(EditorLayer? layer, bool isRegistering)
     {
@@ -168,4 +168,5 @@
         if (_rightPane != null)
             await _rightPane.RefreshView();
     }
+
 }

@@ -1,16 +1,13 @@
 ﻿@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Extensions
 @using BlazorDatasheet.Menu
 @using BlazorDatasheet.Render
 @using BlazorDatasheet.Render.DefaultComponents
 @using BlazorDatasheet.Render.Headings
-@using BlazorDatasheet.Virtualise
-@using BlazorDatasheet.Render.Layers
 @using ColumnHeadingRenderer = BlazorDatasheet.Render.Headings.ColumnHeadingRenderer
-@using BlazorDatasheet.Render.AutoScroll
-@using BlazorDatasheet.Services
 @inherits SheetComponentBase
 
-<ConditionalCascadingValue TValue="IScrollService" Value="ScrollServiceForCascade">
+<CascadingValue Value="@ScrollServiceForCascade" IsFixed="true">
     <div class="vars"
          theme="@_theme"
          style="--row-heading-w: @_sheet.Rows.HeadingWidth; --col-heading-h:@_sheet.Columns.HeadingHeight;">
@@ -24,14 +21,14 @@
 
             <div
                 @onmouseover="SetMouseOver" @onmouseout="SetMouseOut" class="bds-sheet"
-                style="@(GridLevel == 0 ? $"width:{TotalViewWidth}px; height:{TotalViewHeight}px;" : "")"
+                style="width:@(TotalViewWidth)px; height:@(TotalViewHeight)px;"
                 @ref="_sheetContainer">
                 <div style="display: flex; flex-direction: column; align-items:flex-start;">
 
                     @if (ShowColHeadings)
                     {
                         <div class="bds-sheet-col-head-container"
-                             style="z-index: @(GridLevel + 2); @(StickyHeaders ? "position: sticky; top: 0;" : "")">
+                             style="z-index: @ColumnHeadingZIndex; @(StickyHeaders ? "position: sticky; top: 0;" : "")">
                             <div style="display: flex; align-items: start;">
 
                                 @if (ShowRowHeadings)
@@ -40,7 +37,7 @@
                                          style="
                                              width: @(_sheet.Rows.HeadingWidth)px;
                                          background: var(--col-header-bg-color);
-                                         z-index: @(GridLevel + 5);
+                                         z-index: @CornerHeadingZIndex;
                                          @(StickyHeaders ? "position: sticky; top: 0; left:0;" : "")
                                          height: @(_sheet.Columns.HeadingHeight)px;">
                                     </div>
@@ -62,27 +59,24 @@
                         var numVisibleRows = _sheet.Rows.CountVisible(_viewRegion.Top, _viewRegion.Bottom);
                         var numVisibleCols = _sheet.Columns.CountVisible(_viewRegion.Left, _viewRegion.Right);
                     }
-                    @if (GridLevel == 0)
+                    @if (numVisibleCols == 0 && numVisibleRows == 0)
                     {
-                        if (numVisibleCols == 0 && numVisibleRows == 0)
-                        {
-                            <div></div>
-                        }
-                        else if (numVisibleRows == 0)
-                        {
-                            @EmptyRowsTemplate
-                        }
-                        else if (numVisibleCols == 0)
-                        {
-                            @EmptyColumnsTemplate
-                        }
+                        <div></div>
+                    }
+                    else if (numVisibleRows == 0)
+                    {
+                        @EmptyRowsTemplate
+                    }
+                    else if (numVisibleCols == 0)
+                    {
+                        @EmptyColumnsTemplate
                     }
 
                     <div style="display: flex; align-items: start;">
                         @if (ShowRowHeadings)
                         {
                             <div class="bds-sheet-row-head-container"
-                                 style="z-index: @(GridLevel + 1); @(StickyHeaders ? "position: sticky; left: 0;" : "")">
+                                 style="z-index: @RowHeadingZIndex; @(StickyHeaders ? "position: sticky; left: 0;" : "")">
                                 <RowHeadingRenderer
                                     OverscanRows="OverscanRows"
                                     AlternateAxisHeadingsShown="ShowColHeadings"
@@ -94,107 +88,81 @@
                         }
 
                         <div style="display: flex; flex-direction: column; align-items: start;">
-                            @if (_sheet.FreezeState.Top > 0 && (HasVisibleCells(TopLeftPaneRegion) || HasVisibleCells(TopCenterPaneRegion) || HasVisibleCells(TopRightPaneRegion)))
+                            @if (_sheet.FreezeState.Top > 0)
                             {
-                                <div class="bds-frozen-top" style="z-index: @(GridLevel + 2); top: @(TopMainContentOffset)px;">
+                                <div class="bds-frozen-top"
+                                     style="z-index: @(PaneRowZIndex + 1); top: @(TopMainContentOffset)px;">
                                     <DatasheetPaneRow
+                                        ViewRegion="@(_sheet.GetFrozenTopRegion())"
                                         @ref="_topPaneRow"
                                         ContainerClass="bds-pane-row"
-                                        LeftRegion="TopLeftPaneRegion"
-                                        CenterRegion="TopCenterPaneRegion"
-                                        RightRegion="TopRightPaneRegion"
                                         Sheet="_sheet"
-                                        CellLayoutProvider="_cellLayoutProvider"
-                                        Cache="_visualCellCache"
                                         CellRenderFragment="CellRenderFragment!"
                                         NumberPrecisionDisplay="_numberPrecisionDisplay"
-                                        IsRowDirty="IsRowDirty"
-                                        OnViewportChanged="HandleVirtualViewportChanged"
                                         ShowFormulaDependents="_showFormulaDependents"
                                         UseAutoFill="UseAutoFill"
                                         IsReadOnly="IsReadOnly"
                                         CustomCellTypeDefinitions="CustomCellTypeDefinitions"
                                         AutofillDraggingChanged="HandleAutofillDraggingChanged"
                                         PointerInputService="_sheetPointerInputService"
-                                        GridLevel="GridLevel"
                                         OverscanColumns="OverscanColumns"
                                         OverscanRows="OverscanRows"
                                         IsAutoScrollActive="IsAutoScrollActive"
                                         AutoScrollOptions="AutoScrollOptions"
                                         UseAutoScroll="UseAutoScroll"
                                         AutoFit="AutoFit"
-                                        LeftOffset="LeftMainContentOffset"
-                                        ZIndex="@(GridLevel + 1)"
+                                        ZIndex="@PaneRowZIndex"
                                         EditorLayerChanged="RegisterEditorLayer"
                                         AutofitLayerChanged="RegisterAutofitLayer"/>
                                 </div>
                             }
 
                             <DatasheetPaneRow
-                                @ref="_mainPaneRow"
+                                @ref="_topPaneRow"
+                                ViewRegion="@(new Region(_sheet.FreezeState.Top, _sheet.NumRows - _sheet.FreezeState.Bottom, 0, _sheet.NumCols - 1))"
                                 ContainerClass="bds-pane-row"
-                                CenterPaneClass="@($"bds-main-view-{GridLevel}")"
-                                LeftRegion="MainLeftPaneRegion"
-                                CenterRegion="MainCenterPaneRegion"
-                                RightRegion="MainRightPaneRegion"
                                 Sheet="_sheet"
-                                CellLayoutProvider="_cellLayoutProvider"
-                                Cache="_visualCellCache"
                                 CellRenderFragment="CellRenderFragment!"
                                 NumberPrecisionDisplay="_numberPrecisionDisplay"
-                                IsRowDirty="IsRowDirty"
-                                OnViewportChanged="HandleVirtualViewportChanged"
                                 ShowFormulaDependents="_showFormulaDependents"
                                 UseAutoFill="UseAutoFill"
                                 IsReadOnly="IsReadOnly"
                                 CustomCellTypeDefinitions="CustomCellTypeDefinitions"
                                 AutofillDraggingChanged="HandleAutofillDraggingChanged"
                                 PointerInputService="_sheetPointerInputService"
-                                GridLevel="GridLevel"
                                 OverscanColumns="OverscanColumns"
                                 OverscanRows="OverscanRows"
                                 IsAutoScrollActive="IsAutoScrollActive"
                                 AutoScrollOptions="AutoScrollOptions"
                                 UseAutoScroll="UseAutoScroll"
                                 AutoFit="AutoFit"
-                                RenderAutoScroller="@(GridLevel == 0)"
-                                RenderAutofitLayer="@(GridLevel == 0)"
-                                LeftOffset="LeftMainContentOffset"
-                                ZIndex="@(GridLevel + 1)"
+                                ZIndex="@PaneRowZIndex"
                                 EditorLayerChanged="RegisterEditorLayer"
                                 AutofitLayerChanged="RegisterAutofitLayer"/>
 
-                            @if (_sheet.FreezeState.Bottom > 0 && (HasVisibleCells(BottomLeftPaneRegion) || HasVisibleCells(BottomCenterPaneRegion) || HasVisibleCells(BottomRightPaneRegion)))
+                            @if (_sheet.FreezeState.Bottom > 0)
                             {
-                                <div class="bds-frozen-bottom" style="z-index: @(GridLevel + 1); bottom: 0;">
+                                <div class="bds-frozen-bottom" style="z-index: @(PaneRowZIndex + 1); bottom: 0;">
                                     <DatasheetPaneRow
-                                        @ref="_bottomPaneRow"
+                                        ViewRegion="_sheet.GetFrozenBottomRegion()"
+                                        @ref="_topPaneRow"
                                         ContainerClass="bds-pane-row"
-                                        LeftRegion="BottomLeftPaneRegion"
-                                        CenterRegion="BottomCenterPaneRegion"
-                                        RightRegion="BottomRightPaneRegion"
                                         Sheet="_sheet"
-                                        CellLayoutProvider="_cellLayoutProvider"
-                                        Cache="_visualCellCache"
                                         CellRenderFragment="CellRenderFragment!"
                                         NumberPrecisionDisplay="_numberPrecisionDisplay"
-                                        IsRowDirty="IsRowDirty"
-                                        OnViewportChanged="HandleVirtualViewportChanged"
                                         ShowFormulaDependents="_showFormulaDependents"
                                         UseAutoFill="UseAutoFill"
                                         IsReadOnly="IsReadOnly"
                                         CustomCellTypeDefinitions="CustomCellTypeDefinitions"
                                         AutofillDraggingChanged="HandleAutofillDraggingChanged"
                                         PointerInputService="_sheetPointerInputService"
-                                        GridLevel="GridLevel"
                                         OverscanColumns="OverscanColumns"
                                         OverscanRows="OverscanRows"
                                         IsAutoScrollActive="IsAutoScrollActive"
                                         AutoScrollOptions="AutoScrollOptions"
                                         UseAutoScroll="UseAutoScroll"
                                         AutoFit="AutoFit"
-                                        LeftOffset="LeftMainContentOffset"
-                                        ZIndex="@(GridLevel + 1)"
+                                        ZIndex="@PaneRowZIndex"
                                         EditorLayerChanged="RegisterEditorLayer"
                                         AutofitLayerChanged="RegisterAutofitLayer"/>
                                 </div>
@@ -213,7 +181,7 @@
             DefaultFilterTypes="DefaultFilterTypes"/>
 
     </div>
-</ConditionalCascadingValue>
+</CascadingValue>
 
 
 @code{

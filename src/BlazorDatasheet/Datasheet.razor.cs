@@ -99,13 +99,6 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     private bool _showColHeadings;
 
     /// <summary>
-    /// An indicator of how deep the grid is. Any sub-grid of the grid should have a higher <see cref="GridLevel"/> than its parent.
-    /// This is used internally and should not be used in most circumstances.
-    /// </summary>
-    [Parameter]
-    public int GridLevel { get; set; }
-
-    /// <summary>
     /// When true, the autofill handle will be shown on the bottom right of the cell.
     /// </summary>
     [Parameter]
@@ -233,11 +226,6 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     /// </summary>
     private readonly HashSet<EditorLayer> _editorLayers = new();
 
-    private readonly List<IRegion> _dirtyRegions = new();
-    private readonly HashSet<int> _dirtyRowIndices = new();
-
-    private bool _sheetIsDirty;
-
     private bool _renderRequested;
 
     private bool _showFormulaDependents;
@@ -245,7 +233,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     private CellLayoutProvider _cellLayoutProvider = null!;
 
-    private IScrollService? ScrollServiceForCascade => GridLevel == 0 ? this : null;
+    private IScrollService ScrollServiceForCascade => this;
 
     /// <summary>
     /// Width of the sheet, including any gutters (row headings etc.)
@@ -262,72 +250,12 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     public double TotalViewHeight => _sheet.Rows.GetVisualHeight(ViewRegion ?? _sheet.Region) + GetGutterSize(Axis.Col);
 
+    private int PaneRowZIndex => 10;
+    private int RowHeadingZIndex => 20;
+    private int ColumnHeadingZIndex => 30;
+    private int CornerHeadingZIndex => 40;
+
     private SelectionInputManager _selectionManager = default!;
-
-    /// <summary>
-    /// The size of the main region of this datasheet, that is the region of the grid without
-    /// any frozen rows or columns.
-    /// </summary>
-    private Region MainViewRegion => DatasheetViewRegionCalculator.GetMainViewRegion(
-        _viewRegion,
-        _sheet.NumRows,
-        _sheet.NumCols,
-        _sheet.FreezeState.Top,
-        _sheet.FreezeState.Bottom,
-        _sheet.FreezeState.Left,
-        _sheet.FreezeState.Right);
-
-    private Region FrozenTopViewRegion =>
-        DatasheetViewRegionCalculator.GetFrozenTopRegion(_viewRegion, _sheet.NumRows, _sheet.FreezeState.Top);
-
-    private Region FrozenBottomViewRegion =>
-        DatasheetViewRegionCalculator.GetFrozenBottomRegion(_viewRegion, _sheet.NumRows, _sheet.FreezeState.Bottom);
-
-    private Region FrozenLeftViewRegion =>
-        DatasheetViewRegionCalculator.GetFrozenLeftRegion(_viewRegion, _sheet.NumCols, _sheet.FreezeState.Left);
-
-    private Region FrozenRightViewRegion =>
-        DatasheetViewRegionCalculator.GetFrozenRightRegion(_viewRegion, _sheet.NumCols, _sheet.FreezeState.Right);
-
-    private Region MainRowsBandRegion =>
-        new(MainViewRegion.Top, MainViewRegion.Bottom, _viewRegion.Left, _viewRegion.Right);
-
-    private Region MainColsBandRegion =>
-        new(_viewRegion.Top, _viewRegion.Bottom, MainViewRegion.Left, MainViewRegion.Right);
-
-    private Region? TopLeftPaneRegion => _sheet.FreezeState.Top > 0 && _sheet.FreezeState.Left > 0
-        ? GetIntersection(FrozenTopViewRegion, FrozenLeftViewRegion)
-        : null;
-
-    private Region? TopCenterPaneRegion => _sheet.FreezeState.Top > 0
-        ? GetIntersection(FrozenTopViewRegion, MainColsBandRegion)
-        : null;
-
-    private Region? TopRightPaneRegion => _sheet.FreezeState.Top > 0 && _sheet.FreezeState.Right > 0
-        ? GetIntersection(FrozenTopViewRegion, FrozenRightViewRegion)
-        : null;
-
-    private Region? MainLeftPaneRegion => _sheet.FreezeState.Left > 0
-        ? GetIntersection(MainRowsBandRegion, FrozenLeftViewRegion)
-        : null;
-
-    private Region? MainCenterPaneRegion => GetIntersection(MainRowsBandRegion, MainColsBandRegion);
-
-    private Region? MainRightPaneRegion => _sheet.FreezeState.Right > 0
-        ? GetIntersection(MainRowsBandRegion, FrozenRightViewRegion)
-        : null;
-
-    private Region? BottomLeftPaneRegion => _sheet.FreezeState.Bottom > 0 && _sheet.FreezeState.Left > 0
-        ? GetIntersection(FrozenBottomViewRegion, FrozenLeftViewRegion)
-        : null;
-
-    private Region? BottomCenterPaneRegion => _sheet.FreezeState.Bottom > 0
-        ? GetIntersection(FrozenBottomViewRegion, MainColsBandRegion)
-        : null;
-
-    private Region? BottomRightPaneRegion => _sheet.FreezeState.Bottom > 0 && _sheet.FreezeState.Right > 0
-        ? GetIntersection(FrozenBottomViewRegion, FrozenRightViewRegion)
-        : null;
 
     protected override void OnInitialized()
     {
@@ -351,7 +279,6 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             _cellLayoutProvider = new CellLayoutProvider(_sheet);
             _selectionManager = new SelectionInputManager(_sheet.Selection);
             AddEvents(_sheet);
-            _visualCellCache.Clear();
             _editorLayers.Clear();
             requireRender = true;
         }
@@ -405,7 +332,6 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             ForceReRender();
         else if (requireRender)
         {
-            _sheetIsDirty = true;
             StateHasChanged();
         }
 
@@ -416,9 +342,6 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     {
         if (firstRender)
         {
-            if (GridLevel > 0)
-                return;
-
             _scrollContainerModule =
                 await Js.InvokeAsync<IJSObjectReference>("import",
                     "./_content/BlazorDatasheet/js/scroll-container.js");
@@ -436,9 +359,6 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         }
 
         _renderRequested = false;
-        _sheetIsDirty = false;
-        _dirtyRegions.Clear();
-        _dirtyRowIndices.Clear();
 
         await base.OnAfterRenderAsync(firstRender);
     }
@@ -447,19 +367,13 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     {
         sheet.Editor.EditBegin -= EditorOnEditBegin;
         sheet.Editor.EditFinished -= EditorOnEditFinished;
-        sheet.SheetDirty -= SheetOnSheetDirty;
         sheet.ScreenUpdatingChanged -= ScreenUpdatingChanged;
         sheet.FrozenRowCols -= SheetOnFrozenRowCols;
-
-        if (GridLevel == 0)
-        {
-            sheet.Selection.ActiveRegionChanged -= ActiveRegionChanged;
-            sheet.Rows.Inserted -= HandleRowColInserted;
-            sheet.Columns.Inserted -= HandleRowColInserted;
-            sheet.Rows.Removed -= HandleRowColRemoved;
-            sheet.Columns.Removed -= HandleRowColRemoved;
-        }
-
+        sheet.Selection.ActiveRegionChanged -= ActiveRegionChanged;
+        sheet.Rows.Inserted -= HandleRowColInserted;
+        sheet.Columns.Inserted -= HandleRowColInserted;
+        sheet.Rows.Removed -= HandleRowColRemoved;
+        sheet.Columns.Removed -= HandleRowColRemoved;
         sheet.Rows.SizeModified -= HandleSizeModified;
         sheet.Columns.SizeModified -= HandleSizeModified;
     }
@@ -468,19 +382,13 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     {
         sheet.Editor.EditBegin += EditorOnEditBegin;
         sheet.Editor.EditFinished += EditorOnEditFinished;
-        sheet.SheetDirty += SheetOnSheetDirty;
         sheet.ScreenUpdatingChanged += ScreenUpdatingChanged;
         sheet.FrozenRowCols += SheetOnFrozenRowCols;
-
-        if (GridLevel == 0)
-        {
-            sheet.Selection.ActiveRegionChanged += ActiveRegionChanged;
-            sheet.Rows.Inserted += HandleRowColInserted;
-            sheet.Columns.Inserted += HandleRowColInserted;
-            sheet.Rows.Removed += HandleRowColRemoved;
-            sheet.Columns.Removed += HandleRowColRemoved;
-        }
-
+        sheet.Selection.ActiveRegionChanged += ActiveRegionChanged;
+        sheet.Rows.Inserted += HandleRowColInserted;
+        sheet.Columns.Inserted += HandleRowColInserted;
+        sheet.Rows.Removed += HandleRowColRemoved;
+        sheet.Columns.Removed += HandleRowColRemoved;
         sheet.Rows.SizeModified += HandleSizeModified;
         sheet.Columns.SizeModified += HandleSizeModified;
         sheet.SetDialogService(new SimpleDialogService(Js));
@@ -528,9 +436,6 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     /// </summary>
     public void ForceReRender()
     {
-        _viewRegion =
-            DatasheetViewRegionCalculator.GetConstrainedViewRegion(ViewRegion, _sheet.NumRows, _sheet.NumCols);
-        _sheetIsDirty = true;
         StateHasChanged();
         RefreshView();
     }
@@ -554,66 +459,6 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     {
         if (e.IsScreenUpdating && _renderRequested)
             this.StateHasChanged();
-    }
-
-    private void HandleVirtualViewportChanged(VirtualViewportChangedEventArgs args)
-    {
-        foreach (var region in args.RemovedRegions)
-        {
-            foreach (var position in region)
-            {
-                _visualCellCache.Remove(position);
-            }
-        }
-
-        MakeRegionsDirty(args.NewRegions);
-    }
-
-    private Dictionary<CellPosition, VisualCell> _visualCellCache = new();
-
-    private void SheetOnSheetDirty(object? sender, DirtySheetEventArgs e)
-    {
-        var dirtyRegions = e.DirtyRows
-            .GetAllIntervalData()
-            .Select(x => new RowRegion(x.interval.Start, x.interval.End))
-            .ToList();
-
-        if (dirtyRegions.Count > 0)
-            MakeRegionsDirty(dirtyRegions);
-    }
-
-    private void MakeRegionsDirty(IEnumerable<IRegion?> dirtyRegions)
-    {
-        foreach (var region in dirtyRegions)
-        {
-            var boundedRegion = region?.GetIntersection(_viewRegion) as Region;
-            if (boundedRegion == null)
-                continue;
-
-            var visibleCols = new List<int>();
-            foreach (var col in _sheet.Columns.GetVisibleIndices(boundedRegion.Left, boundedRegion.Right))
-                visibleCols.Add(col);
-
-            if (visibleCols.Count == 0)
-                continue;
-
-            _dirtyRegions.Add(boundedRegion);
-
-            foreach (var row in _sheet.Rows.GetVisibleIndices(boundedRegion.Top, boundedRegion.Bottom))
-            {
-                _dirtyRowIndices.Add(row);
-                foreach (var col in visibleCols)
-                {
-                    var position = new CellPosition(row, col);
-                    var visualCell = new VisualCell(row, col, _sheet, _numberPrecisionDisplay);
-
-                    if (!_visualCellCache.TryAdd(position, visualCell))
-                        _visualCellCache[position] = visualCell;
-                }
-            }
-        }
-
-        StateHasChanged();
     }
 
     private async void EditorOnEditFinished(object? sender, EditFinishedEventArgs e)
@@ -907,7 +752,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     public async Task ScrollToContainRegion(IRegion region)
     {
-        if (GridLevel > 0 || _scrollContainerModule == null)
+        if (_scrollContainerModule == null)
             return;
 
         var frozenLeftW = _sheet.Columns.GetVisualLeft(_sheet.FreezeState.Left);
@@ -1071,11 +916,6 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         ForceReRender();
     }
 
-    private bool IsRowDirty(int rowIndex)
-    {
-        return _sheetIsDirty || _dirtyRowIndices.Contains(rowIndex);
-    }
-
     private bool HasVisibleCells(Region? region) => _sheet.HasVisibleCells(region);
 
     private Region? GetIntersection(Region a, Region b) => a.GetIntersection(b) as Region;
@@ -1101,7 +941,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     {
         _renderRequested = true;
 
-        var shouldRender = _sheet.ScreenUpdating && (_sheetIsDirty || _dirtyRegions.Count != 0);
+        var shouldRender = _sheet.ScreenUpdating;
         return shouldRender;
     }
 

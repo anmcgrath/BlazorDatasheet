@@ -1,14 +1,14 @@
 ﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events.Visual
 @using BlazorDatasheet.Core.Layout
 @using BlazorDatasheet.DataStructures.Geometry
-@using BlazorDatasheet.Edit
 @using BlazorDatasheet.Render.AutoScroll
 @using BlazorDatasheet.Render
 @using BlazorDatasheet.Render.Layers
 @using BlazorDatasheet.Services
 @using BlazorDatasheet.Virtualise
 
-@implements IDisposable
+@implements IAsyncDisposable
 
 @if (Sheet.HasVisibleCells(ViewRegion))
 {
@@ -20,8 +20,10 @@
             Enabled="@UseAutoScroll"/>
     }
 
-    <LayerContainer Depth="@GridLevel" Sheet="Sheet" ViewRegion="ViewRegion"
-                    PointerInputService="PointerInputService">
+    <LayerContainer
+        Sheet="Sheet"
+        ViewRegion="@ViewRegion"
+        PointerInputService="PointerInputService">
         <HighlightLayer/>
         @if (UseAutoFill && !IsReadOnly)
         {
@@ -38,9 +40,11 @@
         <VirtualMergesLayer
             CellRenderFragment="CellRenderFragment"
             NumberPrecisionDisplay="NumberPrecisionDisplay"
-            Cache="Cache"/>
+            Cache="_visualCellCache"/>
+
         <EditorLayer Disabled="@IsReadOnly" @ref="_editorLayer"
                      CustomCellTypes="@CustomCellTypeDefinitions"/>
+
         <SelectionRendererLayer/>
         @if (ShowFormulaDependents)
         {
@@ -52,8 +56,8 @@
         OverscanColumns="OverscanColumns"
         OverscanRows="OverscanRows"
         Class="@CssClass"
-        OnViewportChanged="OnViewportChanged"
-        LayoutProvider="CellLayoutProvider"
+        OnViewportChanged="HandleVirtualViewportChanged"
+        LayoutProvider="_cellLayoutProvider"
         ViewRegion="ViewRegion"
         RowClass="bds-row"
         @ref="_mainView"
@@ -65,21 +69,32 @@
                 CellRenderFragment="CellRenderFragment"
                 VisibleColIndices="vr.VisibleColIndices"
                 Sheet="Sheet"
-                Cache="Cache"
+                Cache="_visualCellCache"
                 IsDirty="IsRowDirty(vr.Row)"/>
         </RowTemplate>
     </Virtualise2D>
 }
 
 @code {
-    [Parameter, EditorRequired] public Sheet Sheet { get; set; } = null!;
-    [Parameter, EditorRequired] public Region ViewRegion { get; set; } = null!;
-    [Parameter, EditorRequired] public IGridLayoutProvider CellLayoutProvider { get; set; } = null!;
-    [Parameter, EditorRequired] public Dictionary<CellPosition, VisualCell> Cache { get; set; } = null!;
+
+    /// <summary>
+    /// The sheet, which may change.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public Sheet Sheet { get; set; } = null!;
+
+    private Sheet? _sheet;
+
+    /// <summary>
+    /// The the view that this pane will handle
+    /// </summary>
+    [Parameter, EditorRequired]
+    public required IRegion ViewRegion { get; set; } = null!;
+
+    private IGridLayoutProvider _cellLayoutProvider = null!;
+
     [Parameter, EditorRequired] public RenderFragment<VisualCell> CellRenderFragment { get; set; } = null!;
-    [Parameter, EditorRequired] public Func<int, bool> IsRowDirty { get; set; } = _ => false;
     [Parameter, EditorRequired] public Dictionary<string, CellTypeDefinition> CustomCellTypeDefinitions { get; set; } = null!;
-    [Parameter, EditorRequired] public EventCallback<VirtualViewportChangedEventArgs> OnViewportChanged { get; set; }
     [Parameter, EditorRequired] public EventCallback<bool> AutofillDraggingChanged { get; set; }
     [Parameter, EditorRequired] public Func<bool> IsAutoScrollActive { get; set; } = () => false;
     [Parameter, EditorRequired] public AutoScrollOptions AutoScrollOptions { get; set; } = null!;
@@ -103,6 +118,29 @@
     private EditorLayer? _editorLayer;
     private AutofitLayer? _autofitLayer;
 
+
+    private readonly List<IRegion> _dirtyRegions = new();
+    private readonly HashSet<int> _dirtyRowIndices = new();
+    private Dictionary<CellPosition, VisualCell> _visualCellCache = new();
+
+
+    protected override void OnParametersSet()
+    {
+        if (_sheet == null || _sheet != Sheet)
+        {
+            RemoveSheetEvents();
+
+            _sheet = Sheet;
+
+            _cellLayoutProvider = new CellLayoutProvider(Sheet, ViewRegion);
+            _visualCellCache.Clear();
+
+            AddSheetEvents();
+        }
+
+        _cellLayoutProvider.ViewRegion = ViewRegion;
+    }
+
     protected override void OnAfterRender(bool firstRender)
     {
         if (firstRender)
@@ -111,7 +149,98 @@
             AutofitLayerChanged?.Invoke(_autofitLayer);
         }
 
+        ClearDirty();
+
         base.OnAfterRender(firstRender);
+    }
+
+    private void ClearDirty()
+    {
+        _dirtyRegions.Clear();
+        _dirtyRowIndices.Clear();
+    }
+
+    private void HandleVirtualViewportChanged(VirtualViewportChangedEventArgs args)
+    {
+        foreach (var region in args.RemovedRegions)
+        {
+            foreach (var position in region)
+            {
+                _visualCellCache.Remove(position);
+            }
+        }
+
+        MakeRegionsDirty(args.NewRegions);
+    }
+
+    private void SheetOnSheetDirty(object? sender, DirtySheetEventArgs e)
+    {
+        var dirtyRegions = e.DirtyRows
+            .GetAllIntervalData()
+            .Select(x => new RowRegion(x.interval.Start, x.interval.End))
+            .ToList();
+
+        if (dirtyRegions.Count > 0)
+            MakeRegionsDirty(dirtyRegions);
+    }
+
+
+    private void MakeRegionsDirty(IEnumerable<IRegion?> dirtyRegions)
+    {
+        if (_sheet == null)
+            return;
+
+        foreach (var region in dirtyRegions)
+        {
+            var boundedRegion = region?.GetIntersection(ViewRegion) as Region;
+            if (boundedRegion == null)
+                continue;
+
+            var visibleCols = new List<int>();
+            foreach (var col in _sheet.Columns.GetVisibleIndices(boundedRegion.Left, boundedRegion.Right))
+                visibleCols.Add(col);
+
+            if (visibleCols.Count == 0)
+                continue;
+
+            _dirtyRegions.Add(boundedRegion);
+
+            foreach (var row in _sheet.Rows.GetVisibleIndices(boundedRegion.Top, boundedRegion.Bottom))
+            {
+                _dirtyRowIndices.Add(row);
+                foreach (var col in visibleCols)
+                {
+                    var position = new CellPosition(row, col);
+                    var visualCell = new VisualCell(row, col, _sheet, NumberPrecisionDisplay);
+
+                    if (!_visualCellCache.TryAdd(position, visualCell))
+                        _visualCellCache[position] = visualCell;
+                }
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    private bool IsRowDirty(int rowIndex)
+    {
+        return _dirtyRowIndices.Contains(rowIndex);
+    }
+
+    private void AddSheetEvents()
+    {
+        if (_sheet == null)
+            return;
+
+        _sheet.SheetDirty += SheetOnSheetDirty;
+    }
+
+    private void RemoveSheetEvents()
+    {
+        if (_sheet == null)
+            return;
+
+        _sheet.SheetDirty -= SheetOnSheetDirty;
     }
 
     public async Task RefreshView()
@@ -120,9 +249,11 @@
             await _mainView.RefreshView();
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        if (_editorLayer != null)
-            EditorLayerChanged?.Invoke(_editorLayer, false);
+        RemoveSheetEvents();
+        if (_mainView != null) await _mainView.DisposeAsync();
+        if (_autofitLayer != null) await ((IAsyncDisposable)_autofitLayer).DisposeAsync();
     }
+
 }

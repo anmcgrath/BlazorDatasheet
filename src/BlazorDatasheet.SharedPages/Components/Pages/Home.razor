@@ -91,10 +91,6 @@
         _sheet.Commands.PauseHistory();
         _sheet.BatchUpdates();
 
-        _sheet.Freeze(Edge.Bottom, 4);
-        _sheet.Freeze(Edge.Top, 3);
-        _sheet.Freeze(Edge.Left, 2);
-        _sheet.Freeze(Edge.Right, 1);
         var values = new CellValue[49][];
 
         var r = new Random();

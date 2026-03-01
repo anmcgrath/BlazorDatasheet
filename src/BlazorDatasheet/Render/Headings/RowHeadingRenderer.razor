@@ -5,7 +5,7 @@
 <div style="display: flex; flex-direction: column;">
     @if (_sheet.FreezeState.Top > 0 && HasVisibleRows(TopHeadingRegion))
     {
-        <div class="bds-sheet-row-head-container bds-frozen-top" style="position: sticky; @GetStickyPositionTopInfo();">
+        <div class="bds-sheet-row-head-container bds-frozen-top" style="position: sticky; @GetStickyPositionTopInfo(); z-index: 4;">
             <Virtualise2D
                 OverscanRows="OverscanRows"
                 @ref="_topView"
@@ -20,7 +20,7 @@
 
     @if (HasVisibleRows(MainHeadingRegion))
     {
-        <div class="bds-sheet-row-head-container">
+        <div class="bds-sheet-row-head-container" style="z-index: 2; position: relative;">
             <Virtualise2D
                 OverscanRows="OverscanRows"
                 @ref="MainView"
@@ -35,7 +35,7 @@
 
     @if (_sheet.FreezeState.Bottom > 0 && HasVisibleRows(BottomHeadingRegion))
     {
-        <div class="bds-sheet-row-head-container bds-frozen-bottom" style="position: sticky; bottom: 0;">
+        <div class="bds-sheet-row-head-container bds-frozen-bottom" style="position: sticky; bottom: 0; z-index: 4;">
             <Virtualise2D
                 OverscanRows="OverscanRows"
                 @ref="_bottomView"
