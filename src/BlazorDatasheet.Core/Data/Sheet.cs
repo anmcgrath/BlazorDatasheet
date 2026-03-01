@@ -694,7 +694,7 @@ public class Sheet
     /// <summary>
     /// Returns whether the region has any visible cells (both visible rows and visible columns).
     /// </summary>
-    public bool HasVisibleCells(Region? region)
+    public bool HasVisibleCells(IRegion? region)
     {
         if (region == null)
             return false;
@@ -705,7 +705,7 @@ public class Sheet
     /// <summary>
     /// Returns whether the region has any visible rows.
     /// </summary>
-    public bool HasVisibleRows(Region? region)
+    public bool HasVisibleRows(IRegion? region)
     {
         if (region == null)
             return false;
