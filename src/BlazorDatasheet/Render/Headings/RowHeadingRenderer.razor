@@ -1,11 +1,13 @@
 @using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Extensions
 @using BlazorDatasheet.Virtualise
 @inherits HeadingRenderer
 
 <div style="display: flex; flex-direction: column;">
-    @if (_sheet.FreezeState.Top > 0 && HasVisibleRows(TopHeadingRegion))
+    @if (TopHeadingRegion != null && HasVisibleRows(TopHeadingRegion))
     {
-        <div class="bds-sheet-row-head-container bds-frozen-top" style="position: sticky; @GetStickyPositionTopInfo(); z-index: 4;">
+        <div class="bds-sheet-row-head-container bds-frozen-top"
+             style="position: sticky; @GetStickyPositionTopInfo(); z-index: 4;">
             <Virtualise2D
                 OverscanRows="OverscanRows"
                 @ref="_topView"
@@ -33,7 +35,7 @@
         </div>
     }
 
-    @if (_sheet.FreezeState.Bottom > 0 && HasVisibleRows(BottomHeadingRegion))
+    @if (BottomHeadingRegion != null && HasVisibleRows(BottomHeadingRegion))
     {
         <div class="bds-sheet-row-head-container bds-frozen-bottom" style="position: sticky; bottom: 0; z-index: 4;">
             <Virtualise2D
@@ -62,16 +64,14 @@
     [Parameter]
     public int OverscanRows { get; set; } = 6;
 
-    private Region TopHeadingRegion => DatasheetViewRegionCalculator.GetFrozenTopRegion(_viewRegion, _sheet.NumRows, _sheet.FreezeState.Top);
+    private IRegion? TopHeadingRegion => _viewRegion.GetIntersection(_sheet.GetFrozenTopRegion());
 
-    private Region MainHeadingRegion => new(MainTop, MainBottom, 0, 0);
+    private IRegion MainHeadingRegion => new Region(_sheet.FreezeState.Top, _viewRegion.Bottom - _sheet.FreezeState.Bottom, 0,
+        0);
 
-    private Region BottomHeadingRegion => DatasheetViewRegionCalculator.GetFrozenBottomRegion(_viewRegion, _sheet.NumRows, _sheet.FreezeState.Bottom);
+    private IRegion? BottomHeadingRegion => _viewRegion.GetIntersection(_sheet.GetFrozenBottomRegion());
 
-    private int MainTop => Math.Clamp(Math.Max(_sheet.FreezeState.Top, _viewRegion.Top), _viewRegion.Top, _viewRegion.Bottom);
-    private int MainBottom => Math.Clamp(Math.Min(_sheet.NumRows - _sheet.FreezeState.Bottom - 1, _viewRegion.Bottom), MainTop, _viewRegion.Bottom);
-
-    private bool HasVisibleRows(Region? region) => _sheet.HasVisibleRows(region);
+    private bool HasVisibleRows(IRegion? region) => _sheet.HasVisibleRows(region);
 
     private string GetStickyPositionTopInfo()
     {
