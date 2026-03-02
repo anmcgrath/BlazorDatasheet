@@ -29,4 +29,9 @@ public sealed record FreezeState
         Left = left;
         Right = right;
     }
+
+    public bool Any()
+    {
+        return Top > 0 || Bottom > 0 || Left > 0 || Right > 0;
+    }
 }
