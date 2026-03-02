@@ -12,14 +12,6 @@
 
 @if (Sheet.HasVisibleCells(ViewRegion))
 {
-    if (RenderAutoScroller)
-    {
-        <AutoScroller
-            Options="AutoScrollOptions"
-            IsActive="IsAutoScrollActive"
-            Enabled="@UseAutoScroll"/>
-    }
-
     <LayerContainer
         Sheet="Sheet"
         ViewRegion="@ViewRegion"

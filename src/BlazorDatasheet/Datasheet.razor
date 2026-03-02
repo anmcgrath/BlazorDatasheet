@@ -2,6 +2,7 @@
 @using BlazorDatasheet.Extensions
 @using BlazorDatasheet.Menu
 @using BlazorDatasheet.Render
+@using BlazorDatasheet.Render.AutoScroll
 @using BlazorDatasheet.Render.DefaultComponents
 @using BlazorDatasheet.Render.Headings
 @using ColumnHeadingRenderer = BlazorDatasheet.Render.Headings.ColumnHeadingRenderer
@@ -86,6 +87,11 @@
                                 </RowHeadingRenderer>
                             </div>
                         }
+                        
+                        <AutoScroller
+                            Options="AutoScrollOptions"
+                            IsActive="IsAutoScrollActive"
+                            Enabled="@UseAutoScroll"/>
 
                         <div style="display: flex; flex-direction: column; align-items: start;">
                             @if (_sheet.FreezeState.Top > 0)
