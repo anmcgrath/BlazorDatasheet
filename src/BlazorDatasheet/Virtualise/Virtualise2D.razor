@@ -11,15 +11,9 @@
 }
 
 <div
-    class="@Class"
+    class="bds-virtual-grid-container @Class"
     @ref="_contentEl"
-    style="
-        width: @(totalSize.Width)px;
-    height: @(totalSize.Height)px;
-    display: grid;
-    grid-template-columns: @_wholeElColTemplate;
-    grid-template-rows: @_wholeElRowTemplate;
-    grid-template-areas: 'fT fT fT' 'fL C fR' 'fB fB fB'">
+    style=" width: @(totalSize.Width)px;height: @(totalSize.Height)px;grid-template-columns: @_wholeElColTemplate;grid-template-rows: @_wholeElRowTemplate;">
     <div aria-hidden="true" @ref="_fillerTop" style="grid-area: fT"></div>
     <div aria-hidden="true" @ref="_fillerRight" style=" grid-area: fR"></div>
     <div

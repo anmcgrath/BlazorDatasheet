@@ -348,3 +348,8 @@
 .bds-func-suggestions-item {
     padding: 2px 4px;
 }
+
+.bds-virtual-grid-container {
+    grid-template-areas: 'fT fT fT' 'fL C fR' 'fB fB fB';
+    display: grid;
+}
