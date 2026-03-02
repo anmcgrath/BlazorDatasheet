@@ -177,11 +177,13 @@
     border-left: var(--sheet-border-style);
     justify-content: end;
     align-items: center;
+    background: var(--row-header-bg-color);
 }
 
 .bds-col-head {
     text-align: right;
     border-top: var(--sheet-border-style);
+    background: var(--col-header-bg-color);
 }
 
 .bds-col-head, .bds-row-head {

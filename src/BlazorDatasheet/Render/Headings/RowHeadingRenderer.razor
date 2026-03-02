@@ -7,7 +7,7 @@
     @if (TopHeadingRegion != null && HasVisibleRows(TopHeadingRegion))
     {
         <div class="bds-sheet-row-head-container bds-frozen-top"
-             style="position: sticky; @GetStickyPositionTopInfo(); z-index: 4;">
+             style="position: sticky; top:var(--gutter-top-height); z-index: 4;">
             <Virtualise2D
                 OverscanRows="OverscanRows"
                 @ref="_topView"
@@ -72,10 +72,5 @@
     private IRegion? BottomHeadingRegion => _viewRegion.GetIntersection(_sheet.GetFrozenBottomRegion());
 
     private bool HasVisibleRows(IRegion? region) => _sheet.HasVisibleRows(region);
-
-    private string GetStickyPositionTopInfo()
-    {
-        return $"top: {(AlternateAxisHeadingsShown ? _sheet.Columns.HeadingHeight : 0)}px;";
-    }
 
 }

@@ -11,7 +11,7 @@
 <CascadingValue Value="@ScrollServiceForCascade" IsFixed="true">
     <div class="vars"
          theme="@_theme"
-         style="--row-heading-w: @_sheet.Rows.HeadingWidth; --col-heading-h:@_sheet.Columns.HeadingHeight;">
+         style="--gutter-top-height: @GetGutterSize(Axis.Col)px; --gutter-left-width:@GetGutterSize(Axis.Row)px;">
 
         <SheetMenuTarget MenuId="SelectionMenu"
                          MenuData="_sheet"
@@ -48,8 +48,7 @@
                                     OverscanColumns="OverscanColumns"
                                     ViewRegion="_viewRegion"
                                     Sheet="_sheet"
-                                    ShowColumnMenu="_menuOptions.HeaderMenuEnabled"
-                                    AlternateAxisHeadingsShown="ShowRowHeadings">
+                                    ShowColumnMenu="_menuOptions.HeaderMenuEnabled">
                                     @ColumnHeaderTemplate(context)
                                 </ColumnHeadingRenderer>
                             </div>
@@ -80,7 +79,6 @@
                                  style="z-index: @RowHeadingZIndex; @(StickyHeaders ? "position: sticky; left: 0;" : "")">
                                 <RowHeadingRenderer
                                     OverscanRows="OverscanRows"
-                                    AlternateAxisHeadingsShown="ShowColHeadings"
                                     ViewRegion="_viewRegion"
                                     Sheet="_sheet">
                                     @RowHeaderTemplate(context)
