@@ -13,7 +13,7 @@
 @using BlazorDatasheet.Formula.Core.Interpreter.Lexing
 @using BlazorDatasheet.Render
 
-<div>
+<div class="bds-text-editor">
     <HighlightedInput
         Style="@Style"
         @ref="_highlightedInput"
@@ -196,7 +196,7 @@
         var selection = SelectionInputManager?.Selection;
         if (selection == null)
             return;
-        
+
         var sb = new StringBuilder();
         for (var i = 0; i < selection.Regions.Count; i++)
         {
