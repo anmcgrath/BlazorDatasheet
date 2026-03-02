@@ -34,7 +34,7 @@
         <!-- now render the border around the whole region. No fill on active region because we've filled it already -->
         <BoxOverlayRenderer
             BackgroundVisible="@(!isActiveRegion)"
-            BorderThickness="@(isActiveRegion ? 2 : 0)"
+            BorderThickness="@(isActiveRegion ? "var(--selection-border-thickness)" : "0px")"
             X="GetLayerColumnX(boundedRegion.Left)"
             Y="GetLayerRowY(boundedRegion.Top)"
             Width="Sheet.Columns.GetVisualWidthBetween(boundedRegion.Left, boundedRegion.Right + 1)"

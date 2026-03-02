@@ -2,6 +2,7 @@
     --sheet-font-weight: normal;
     --sheet-font-size: 0.75rem;
     --sheet-font-family: "Segoe UI Variable", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, "Helvetica Neue", Arial, sans-serif;
+    --selection-border-thickness: 2px;
 }
 
 .vars[theme='default'] {
@@ -219,7 +220,7 @@
     color: var(--sheet-foreground-color)
 }
 
-.editor-overlay {
+.bds-editor-container {
     background: var(--sheet-bg-color);
     box-shadow: 0 2px 8px var(--shadow-overlay-color);
     border-radius: 2px;

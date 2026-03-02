@@ -18,7 +18,7 @@
 
     [Parameter] public int ZIndex { get; set; }
 
-    [Parameter] public double BorderThickness { get; set; }
+    [Parameter] public string BorderThickness { get; set; } = string.Empty;
 
     [Parameter] public string BackgroundColor { get; set; } = "var(--selection-bg-color)";
 
@@ -37,8 +37,8 @@
         sb.AddStyle($"width", $"{Width}px;");
         sb.AddStyle($"height", $"{Height}px;");
         sb.AddStyle("z-index", ZIndex.ToString());
-        sb.AddStyle("outline", $"{BorderThickness}px {BorderStyle} {BorderColor}", BorderThickness != 0);
-        sb.AddStyle("outline-offset", $"{-BorderThickness/2}px", BorderThickness != 0);
+        sb.AddStyle("outline", $"{BorderThickness} {BorderStyle} {BorderColor}");
+        sb.AddStyle("outline-offset", $"calc(-1 * {BorderThickness} / 2)");
         sb.AddStyle("background", BackgroundColor, BackgroundVisible);
 
         return sb.ToString();
