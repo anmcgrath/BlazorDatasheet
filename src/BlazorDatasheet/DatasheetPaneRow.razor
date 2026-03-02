@@ -76,7 +76,7 @@
             _frozenLeftRegion = _viewRegion.GetIntersection(PaneContext.Sheet.GetFrozenLeftRegion());
             _frozenRightRegion = _viewRegion.GetIntersection(PaneContext.Sheet.GetFrozenRightRegion());
             _centreRegion = new Region(_viewRegion.Top, _viewRegion.Bottom, PaneContext.Sheet.FreezeState.Left,
-                PaneContext.Sheet.NumCols - PaneContext.Sheet.FreezeState.Right);
+                _viewRegion.Right - PaneContext.Sheet.FreezeState.Right);
         }
 
         base.OnParametersSet();
