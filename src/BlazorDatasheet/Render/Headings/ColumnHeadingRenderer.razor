@@ -59,7 +59,7 @@
 
     @if (_sheet.FreezeState.Right > 0 && HasVisibleCols(RightHeadingRegion))
     {
-        <div style="position: sticky; right: 0; z-index: 4; background: red;" class="bds-frozen-right">
+        <div style="position: sticky; right: 0; z-index: 4;" class="bds-frozen-right">
             <Virtualise2D
                 @ref="_rightView"
                 LayoutProvider="LayoutProvider"
