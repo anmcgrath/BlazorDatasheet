@@ -232,6 +232,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
 
     private CellLayoutProvider _cellLayoutProvider = null!;
+    private PaneContext? _paneContext;
 
     private IScrollService ScrollServiceForCascade => this;
 
@@ -264,6 +265,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         ClipboardService = new Clipboard(Js);
         _windowEventService = new WindowEventService(Js);
         RegisterDefaultShortcuts();
+        UpdatePaneContextIfNeeded();
         base.OnInitialized();
     }
 
@@ -328,6 +330,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             _numberPrecisionDisplay = Math.Min(15, NumberPrecisionDisplay);
         }
 
+        UpdatePaneContextIfNeeded();
+
         if (forceRerender)
             ForceReRender();
         else if (requireRender)
@@ -356,6 +360,11 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             _sheetPointerInputService.PointerDoubleClick += HandleCellDoubleClick;
 
             await AddWindowEventsAsync();
+
+            if (UpdatePaneContextIfNeeded())
+            {
+                StateHasChanged();
+            }
         }
 
         _renderRequested = false;
@@ -931,6 +940,42 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     {
         if (autofitLayer != null)
             _autofitLayer = autofitLayer;
+    }
+
+    private bool UpdatePaneContextIfNeeded()
+    {
+        if (CellRenderFragment == null)
+            return false;
+
+        var autofillDraggingChanged = EventCallback.Factory.Create<bool>(this, HandleAutofillDraggingChanged);
+
+        if (_paneContext != null &&
+            ReferenceEquals(_paneContext.Sheet, _sheet) &&
+            ReferenceEquals(_paneContext.CellRenderFragment, CellRenderFragment) &&
+            ReferenceEquals(_paneContext.CustomCellTypeDefinitions, CustomCellTypeDefinitions) &&
+            _paneContext.AutofillDraggingChanged.Equals(autofillDraggingChanged) &&
+            ReferenceEquals(_paneContext.PointerInputService, _sheetPointerInputService) &&
+            _paneContext.NumberPrecisionDisplay == _numberPrecisionDisplay &&
+            _paneContext.ShowFormulaDependents == _showFormulaDependents &&
+            _paneContext.UseAutoFill == _useAutoFill &&
+            _paneContext.IsReadOnly == IsReadOnly &&
+            _paneContext.AutoFit == AutoFit)
+        {
+            return false;
+        }
+
+        _paneContext = new PaneContext(
+            _sheet,
+            CellRenderFragment,
+            CustomCellTypeDefinitions,
+            autofillDraggingChanged,
+            _sheetPointerInputService,
+            _numberPrecisionDisplay,
+            _showFormulaDependents,
+            _useAutoFill,
+            IsReadOnly,
+            AutoFit);
+        return true;
     }
 
     protected override bool ShouldRender()

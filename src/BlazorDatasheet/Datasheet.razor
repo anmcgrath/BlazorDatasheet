@@ -24,13 +24,13 @@
                 @onmouseover="SetMouseOver" @onmouseout="SetMouseOut" class="bds-sheet"
                 style="width:@(TotalViewWidth)px; height:@(TotalViewHeight)px;"
                 @ref="_sheetContainer">
-                <div style="display: flex; flex-direction: column; align-items:flex-start;">
+                <div class="bds-sheet-layout" style="display: flex; flex-direction: column; align-items:flex-start;">
 
                     @if (ShowColHeadings)
                     {
                         <div class="bds-sheet-col-head-container"
                              style="z-index: @ColumnHeadingZIndex; @(StickyHeaders ? "position: sticky; top: 0;" : "")">
-                            <div style="display: flex; align-items: start;">
+                            <div class="bds-sheet-header-row" style="display: flex; align-items: start;">
 
                                 @if (ShowRowHeadings)
                                 {
@@ -57,23 +57,23 @@
                     }
 
                     @{
-                        var numVisibleRows = _sheet.Rows.CountVisible(_viewRegion.Top, _viewRegion.Bottom);
-                        var numVisibleCols = _sheet.Columns.CountVisible(_viewRegion.Left, _viewRegion.Right);
+                        var hasVisibleRows = _sheet.Rows.CountVisible(_viewRegion.Top, _viewRegion.Bottom) > 0;
+                        var hasVisibleCols = _sheet.Columns.CountVisible(_viewRegion.Left, _viewRegion.Right) > 0;
                     }
-                    @if (numVisibleCols == 0 && numVisibleRows == 0)
+                    @if (!hasVisibleCols && !hasVisibleRows)
                     {
                         <div></div>
                     }
-                    else if (numVisibleRows == 0)
+                    else if (!hasVisibleRows)
                     {
                         @EmptyRowsTemplate
                     }
-                    else if (numVisibleCols == 0)
+                    else if (!hasVisibleCols)
                     {
                         @EmptyColumnsTemplate
                     }
 
-                    <div style="display: flex; align-items: start;">
+                    <div class="bds-sheet-main-row" style="display: flex; align-items: start;">
                         @if (ShowRowHeadings)
                         {
                             <div class="bds-sheet-row-head-container"
@@ -87,93 +87,51 @@
                                 </RowHeadingRenderer>
                             </div>
                         }
-                        
+
                         <AutoScroller
                             Options="AutoScrollOptions"
                             IsActive="IsAutoScrollActive"
                             Enabled="@UseAutoScroll"/>
 
-                        <div style="display: flex; flex-direction: column; align-items: start;">
-                            @if (_sheet.FreezeState.Top > 0)
-                            {
-                                <div class="bds-frozen-top"
-                                     style="z-index: @(PaneRowZIndex + 1); top: @(TopMainContentOffset)px;">
-                                    <DatasheetPaneRow
-                                        ViewRegion="@(_sheet.GetFrozenTopRegion())"
-                                        @ref="_topPaneRow"
-                                        ContainerClass="bds-pane-row"
-                                        Sheet="_sheet"
-                                        CellRenderFragment="CellRenderFragment!"
-                                        NumberPrecisionDisplay="_numberPrecisionDisplay"
-                                        ShowFormulaDependents="_showFormulaDependents"
-                                        UseAutoFill="UseAutoFill"
-                                        IsReadOnly="IsReadOnly"
-                                        CustomCellTypeDefinitions="CustomCellTypeDefinitions"
-                                        AutofillDraggingChanged="HandleAutofillDraggingChanged"
-                                        PointerInputService="_sheetPointerInputService"
-                                        OverscanColumns="OverscanColumns"
-                                        OverscanRows="OverscanRows"
-                                        IsAutoScrollActive="IsAutoScrollActive"
-                                        AutoScrollOptions="AutoScrollOptions"
-                                        UseAutoScroll="UseAutoScroll"
-                                        AutoFit="AutoFit"
-                                        ZIndex="@PaneRowZIndex"
-                                        EditorLayerChanged="RegisterEditorLayer"
-                                        AutofitLayerChanged="RegisterAutofitLayer"/>
-                                </div>
-                            }
+                        <CascadingValue Value="_paneContext" IsFixed="false">
+                            <div class="bds-sheet-pane-rows"
+                                 style="display: flex; flex-direction: column; align-items: start;">
+                                @if (_sheet.FreezeState.Top > 0)
+                                {
+                                    <div class="bds-frozen-top"
+                                         style="z-index: @(PaneRowZIndex + 1); top: @(TopMainContentOffset)px;">
+                                        <DatasheetPaneRow
+                                            ViewRegion="@(_sheet.GetFrozenTopRegion())"
+                                            @ref="_topPaneRow"
+                                            OverscanColumns="OverscanColumns"
+                                            OverscanRows="OverscanRows"
+                                            EditorLayerChanged="RegisterEditorLayer"
+                                            AutofitLayerChanged="RegisterAutofitLayer"/>
+                                    </div>
+                                }
 
-                            <DatasheetPaneRow
-                                @ref="_mainPaneRow"
-                                ViewRegion="@(new Region(_sheet.FreezeState.Top, _sheet.NumRows - _sheet.FreezeState.Bottom, 0, _sheet.NumCols - 1))"
-                                ContainerClass="bds-pane-row"
-                                Sheet="_sheet"
-                                CellRenderFragment="CellRenderFragment!"
-                                NumberPrecisionDisplay="_numberPrecisionDisplay"
-                                ShowFormulaDependents="_showFormulaDependents"
-                                UseAutoFill="UseAutoFill"
-                                IsReadOnly="IsReadOnly"
-                                CustomCellTypeDefinitions="CustomCellTypeDefinitions"
-                                AutofillDraggingChanged="HandleAutofillDraggingChanged"
-                                PointerInputService="_sheetPointerInputService"
-                                OverscanColumns="OverscanColumns"
-                                OverscanRows="OverscanRows"
-                                IsAutoScrollActive="IsAutoScrollActive"
-                                AutoScrollOptions="AutoScrollOptions"
-                                UseAutoScroll="UseAutoScroll"
-                                AutoFit="AutoFit"
-                                ZIndex="@PaneRowZIndex"
-                                EditorLayerChanged="RegisterEditorLayer"
-                                AutofitLayerChanged="RegisterAutofitLayer"/>
+                                <DatasheetPaneRow
+                                    @ref="_mainPaneRow"
+                                    ViewRegion="@(new Region(_sheet.FreezeState.Top, _sheet.NumRows - _sheet.FreezeState.Bottom, 0, _sheet.NumCols - 1))"
+                                    OverscanColumns="OverscanColumns"
+                                    OverscanRows="OverscanRows"
+                                    EditorLayerChanged="RegisterEditorLayer"
+                                    AutofitLayerChanged="RegisterAutofitLayer"/>
 
-                            @if (_sheet.FreezeState.Bottom > 0)
-                            {
-                                <div class="bds-frozen-bottom" style="z-index: @(PaneRowZIndex + 1); bottom: 0;">
-                                    <DatasheetPaneRow
-                                        ViewRegion="_sheet.GetFrozenBottomRegion()"
-                                        @ref="_bottomPaneRow"
-                                        ContainerClass="bds-pane-row"
-                                        Sheet="_sheet"
-                                        CellRenderFragment="CellRenderFragment!"
-                                        NumberPrecisionDisplay="_numberPrecisionDisplay"
-                                        ShowFormulaDependents="_showFormulaDependents"
-                                        UseAutoFill="UseAutoFill"
-                                        IsReadOnly="IsReadOnly"
-                                        CustomCellTypeDefinitions="CustomCellTypeDefinitions"
-                                        AutofillDraggingChanged="HandleAutofillDraggingChanged"
-                                        PointerInputService="_sheetPointerInputService"
-                                        OverscanColumns="OverscanColumns"
-                                        OverscanRows="OverscanRows"
-                                        IsAutoScrollActive="IsAutoScrollActive"
-                                        AutoScrollOptions="AutoScrollOptions"
-                                        UseAutoScroll="UseAutoScroll"
-                                        AutoFit="AutoFit"
-                                        ZIndex="@PaneRowZIndex"
-                                        EditorLayerChanged="RegisterEditorLayer"
-                                        AutofitLayerChanged="RegisterAutofitLayer"/>
-                                </div>
-                            }
-                        </div>
+                                @if (_sheet.FreezeState.Bottom > 0)
+                                {
+                                    <div class="bds-frozen-bottom" style="z-index: @(PaneRowZIndex + 1); bottom: 0;">
+                                        <DatasheetPaneRow
+                                            ViewRegion="_sheet.GetFrozenBottomRegion()"
+                                            @ref="_bottomPaneRow"
+                                            OverscanColumns="OverscanColumns"
+                                            OverscanRows="OverscanRows"
+                                            EditorLayerChanged="RegisterEditorLayer"
+                                            AutofitLayerChanged="RegisterAutofitLayer"/>
+                                    </div>
+                                }
+                            </div>
+                        </CascadingValue>
                     </div>
 
                 </div>

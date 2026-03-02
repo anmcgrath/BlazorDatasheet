@@ -1,5 +1,6 @@
 ﻿@using AngleSharp.Css.Dom
 @using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.DataStructures.Geometry
 @using FluentAssertions
 @using NUnit.Framework
 @inherits BaseTestComponent
@@ -114,5 +115,70 @@
         cut.FindAll("div.bds-pane-row-main").Count.Should().Be(1);
         cut.FindAll("div.bds-pane-row-top").Count.Should().Be(1);
         cut.FindAll("div.bds-pane-row-bottom").Count.Should().Be(1);
+    }
+
+    [Test]
+    public void Datasheet_With_All_Frozen_Sections_Renders_Three_Pane_Row_Containers()
+    {
+        var sheet = new Sheet(20, 20);
+        sheet.FreezeRowCols(1, 1, 1, 1);
+
+        var cut = RenderComponent<Datasheet>(parameters =>
+        {
+            parameters.Add(p => p.Sheet, sheet);
+            parameters.Add(p => p.ShowColHeadings, false);
+            parameters.Add(p => p.ShowRowHeadings, false);
+        });
+
+        cut.FindAll("div.bds-pane-row").Count.Should().Be(3);
+        cut.FindAll("div.bds-frozen-top").Count.Should().Be(1);
+        cut.FindAll("div.bds-frozen-bottom").Count.Should().Be(1);
+    }
+
+    [Test]
+    public void Datasheet_Autofill_Respects_ReadOnly_State()
+    {
+        var sheet = new Sheet(4, 4);
+        sheet.Selection.Set(new Region(0, 0));
+
+        var editableCut = RenderComponent<Datasheet>(parameters =>
+        {
+            parameters.Add(p => p.Sheet, sheet);
+            parameters.Add(p => p.ShowColHeadings, false);
+            parameters.Add(p => p.ShowRowHeadings, false);
+            parameters.Add(p => p.UseAutoFill, true);
+            parameters.Add(p => p.IsReadOnly, false);
+        });
+        editableCut.FindAll("#auto-filler").Count.Should().BeGreaterThan(0);
+
+        var readOnlyCut = RenderComponent<Datasheet>(parameters =>
+        {
+            parameters.Add(p => p.Sheet, sheet);
+            parameters.Add(p => p.ShowColHeadings, false);
+            parameters.Add(p => p.ShowRowHeadings, false);
+            parameters.Add(p => p.UseAutoFill, true);
+            parameters.Add(p => p.IsReadOnly, true);
+        });
+        readOnlyCut.FindAll("#auto-filler").Count.Should().Be(0);
+    }
+
+    [Test]
+    public void Datasheet_Formula_Dependency_Layer_Is_Gated_By_Parameter()
+    {
+        var sheet = new Sheet(4, 4);
+
+        var hiddenCut = RenderComponent<Datasheet>(parameters =>
+        {
+            parameters.Add(p => p.Sheet, sheet);
+            parameters.Add(p => p.ShowFormulaDependents, false);
+        });
+        hiddenCut.FindAll("#svg_layer").Count.Should().Be(0);
+
+        var visibleCut = RenderComponent<Datasheet>(parameters =>
+        {
+            parameters.Add(p => p.Sheet, sheet);
+            parameters.Add(p => p.ShowFormulaDependents, true);
+        });
+        visibleCut.FindAll("#svg_layer").Count.Should().BeGreaterThan(0);
     }
 }

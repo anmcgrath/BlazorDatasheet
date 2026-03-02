@@ -2,7 +2,6 @@
 @using BlazorDatasheet.Core.Events.Visual
 @using BlazorDatasheet.Core.Layout
 @using BlazorDatasheet.DataStructures.Geometry
-@using BlazorDatasheet.Render.AutoScroll
 @using BlazorDatasheet.Render
 @using BlazorDatasheet.Render.Layers
 @using BlazorDatasheet.Services
@@ -10,35 +9,35 @@
 
 @implements IAsyncDisposable
 
-@if (Sheet.HasVisibleCells(ViewRegion))
+@if (PaneContext.Sheet.HasVisibleCells(ViewRegion))
 {
     <LayerContainer
-        Sheet="Sheet"
+        Sheet="PaneContext.Sheet"
         ViewRegion="@ViewRegion"
-        PointerInputService="PointerInputService">
+        PointerInputService="PaneContext.PointerInputService">
         <HighlightLayer/>
-        @if (UseAutoFill && !IsReadOnly)
+        @if (PaneContext.UseAutoFill && !PaneContext.IsReadOnly)
         {
-            <AutofillLayer AutofillDraggingChanged="AutofillDraggingChanged"/>
+            <AutofillLayer AutofillDraggingChanged="PaneContext.AutofillDraggingChanged"/>
         }
         @if (RenderAutofitLayer)
         {
             <AutofitLayer
                 @ref="_autofitLayer"
-                AutoFitOnInteraction="AutoFit"
-                NumberOfSignificantDigits="NumberPrecisionDisplay"
-                CellRenderFragment="CellRenderFragment"/>
+                AutoFitOnInteraction="PaneContext.AutoFit"
+                NumberOfSignificantDigits="PaneContext.NumberPrecisionDisplay"
+                CellRenderFragment="PaneContext.CellRenderFragment"/>
         }
         <VirtualMergesLayer
-            CellRenderFragment="CellRenderFragment"
-            NumberPrecisionDisplay="NumberPrecisionDisplay"
+            CellRenderFragment="PaneContext.CellRenderFragment"
+            NumberPrecisionDisplay="PaneContext.NumberPrecisionDisplay"
             Cache="_visualCellCache"/>
 
-        <EditorLayer Disabled="@IsReadOnly" @ref="_editorLayer"
-                     CustomCellTypes="@CustomCellTypeDefinitions"/>
+        <EditorLayer Disabled="@PaneContext.IsReadOnly" @ref="_editorLayer"
+                     CustomCellTypes="@PaneContext.CustomCellTypeDefinitions"/>
 
         <SelectionRendererLayer/>
-        @if (ShowFormulaDependents)
+        @if (PaneContext.ShowFormulaDependents)
         {
             <FormulaDependenciesLayer/>
         }
@@ -47,7 +46,6 @@
     <Virtualise2D
         OverscanColumns="OverscanColumns"
         OverscanRows="OverscanRows"
-        Class="@CssClass"
         OnViewportChanged="HandleVirtualViewportChanged"
         LayoutProvider="_cellLayoutProvider"
         ViewRegion="ViewRegion"
@@ -56,11 +54,11 @@
         Context="vr">
         <RowTemplate>
             <DatasheetGridRow
-                NumberPrecisionDisplay="NumberPrecisionDisplay"
+                NumberPrecisionDisplay="PaneContext.NumberPrecisionDisplay"
                 Row="vr.Row"
-                CellRenderFragment="CellRenderFragment"
+                CellRenderFragment="PaneContext.CellRenderFragment"
                 VisibleColIndices="vr.VisibleColIndices"
-                Sheet="Sheet"
+                Sheet="PaneContext.Sheet"
                 Cache="_visualCellCache"
                 IsDirty="IsRowDirty(vr.Row)"/>
         </RowTemplate>
@@ -69,11 +67,7 @@
 
 @code {
 
-    /// <summary>
-    /// The sheet, which may change.
-    /// </summary>
-    [Parameter, EditorRequired]
-    public Sheet Sheet { get; set; } = null!;
+    [CascadingParameter] private PaneContext PaneContext { get; set; } = null!;
 
     private Sheet? _sheet;
 
@@ -85,24 +79,9 @@
 
     private IGridLayoutProvider _cellLayoutProvider = null!;
 
-    [Parameter, EditorRequired] public RenderFragment<VisualCell> CellRenderFragment { get; set; } = null!;
-    [Parameter, EditorRequired] public Dictionary<string, CellTypeDefinition> CustomCellTypeDefinitions { get; set; } = null!;
-    [Parameter, EditorRequired] public EventCallback<bool> AutofillDraggingChanged { get; set; }
-    [Parameter, EditorRequired] public Func<bool> IsAutoScrollActive { get; set; } = () => false;
-    [Parameter, EditorRequired] public AutoScrollOptions AutoScrollOptions { get; set; } = null!;
-    [Parameter] public SheetPointerInputService? PointerInputService { get; set; }
-    [Parameter] public int GridLevel { get; set; }
     [Parameter] public int OverscanColumns { get; set; } = 2;
     [Parameter] public int OverscanRows { get; set; } = 6;
-    [Parameter] public int NumberPrecisionDisplay { get; set; } = 13;
-    [Parameter] public bool ShowFormulaDependents { get; set; }
-    [Parameter] public bool UseAutoFill { get; set; } = true;
-    [Parameter] public bool IsReadOnly { get; set; }
-    [Parameter] public bool UseAutoScroll { get; set; }
-    [Parameter] public bool AutoFit { get; set; }
-    [Parameter] public bool RenderAutoScroller { get; set; }
     [Parameter] public bool RenderAutofitLayer { get; set; }
-    [Parameter] public string CssClass { get; set; } = string.Empty;
     [Parameter] public Action<EditorLayer?, bool>? EditorLayerChanged { get; set; }
     [Parameter] public Action<AutofitLayer?>? AutofitLayerChanged { get; set; }
 
@@ -118,13 +97,15 @@
 
     protected override void OnParametersSet()
     {
-        if (_sheet == null || _sheet != Sheet)
+        var sheet = PaneContext.Sheet;
+
+        if (_sheet == null || _sheet != sheet)
         {
             RemoveSheetEvents();
 
-            _sheet = Sheet;
+            _sheet = sheet;
 
-            _cellLayoutProvider = new CellLayoutProvider(Sheet, ViewRegion);
+            _cellLayoutProvider = new CellLayoutProvider(sheet, ViewRegion);
             _visualCellCache.Clear();
 
             AddSheetEvents();
@@ -203,7 +184,7 @@
                 foreach (var col in visibleCols)
                 {
                     var position = new CellPosition(row, col);
-                    var visualCell = new VisualCell(row, col, _sheet, NumberPrecisionDisplay);
+                    var visualCell = new VisualCell(row, col, _sheet, PaneContext.NumberPrecisionDisplay);
 
                     if (!_visualCellCache.TryAdd(position, visualCell))
                         _visualCellCache[position] = visualCell;
@@ -247,6 +228,11 @@
         RemoveSheetEvents();
         if (_mainView != null) await _mainView.DisposeAsync();
         if (_autofitLayer != null) await ((IAsyncDisposable)_autofitLayer).DisposeAsync();
+    }
+
+    protected override bool ShouldRender()
+    {
+        return _dirtyRowIndices.Any();
     }
 
 }

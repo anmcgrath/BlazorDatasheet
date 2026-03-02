@@ -1,37 +1,19 @@
-﻿@using BlazorDatasheet.Core.Data
-@using BlazorDatasheet.DataStructures.Geometry
+﻿@using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Extensions
 @using BlazorDatasheet.Render
-@using BlazorDatasheet.Render.AutoScroll
 @using BlazorDatasheet.Render.Layers
-@using BlazorDatasheet.Services
 @if (ViewRegion.Height > 0)
 {
-    <div style="display: flex; align-items: start; position: relative; z-index: @ZIndex;" class="@ContainerClass">
+    <div style="display: flex; align-items: start; position: relative;" class="bds-pane-row">
         @if (_frozenLeftRegion != null)
         {
             <div class="bds-frozen-left"
-                 style="z-index: 5; left: @(Sheet.Rows.HeadingWidth)px;">
+                 style="z-index: 5; left: @(PaneContext.Sheet.Rows.HeadingWidth)px;">
                 <DatasheetPane
                     @ref="_leftPane"
-                    CssClass="@($"bds-pane-left-{GridLevel}")"
                     ViewRegion="_frozenLeftRegion"
-                    Sheet="Sheet"
-                    CellRenderFragment="CellRenderFragment"
-                    NumberPrecisionDisplay="NumberPrecisionDisplay"
-                    ShowFormulaDependents="ShowFormulaDependents"
-                    UseAutoFill="UseAutoFill"
-                    IsReadOnly="IsReadOnly"
-                    CustomCellTypeDefinitions="CustomCellTypeDefinitions"
-                    AutofillDraggingChanged="AutofillDraggingChanged"
-                    PointerInputService="PointerInputService"
-                    GridLevel="GridLevel"
                     OverscanColumns="OverscanColumns"
                     OverscanRows="OverscanRows"
-                    IsAutoScrollActive="IsAutoScrollActive"
-                    AutoScrollOptions="AutoScrollOptions"
-                    UseAutoScroll="UseAutoScroll"
-                    AutoFit="AutoFit"
                     EditorLayerChanged="EditorLayerChanged"/>
             </div>
         }
@@ -40,26 +22,9 @@
         {
             <DatasheetPane
                 @ref="_centerPane"
-                CssClass="@CenterPaneClass"
                 ViewRegion="_centreRegion"
-                Sheet="Sheet"
-                CellRenderFragment="CellRenderFragment"
-                NumberPrecisionDisplay="NumberPrecisionDisplay"
-                ShowFormulaDependents="ShowFormulaDependents"
-                UseAutoFill="UseAutoFill"
-                IsReadOnly="IsReadOnly"
-                CustomCellTypeDefinitions="CustomCellTypeDefinitions"
-                AutofillDraggingChanged="AutofillDraggingChanged"
-                PointerInputService="PointerInputService"
-                GridLevel="GridLevel"
                 OverscanColumns="OverscanColumns"
                 OverscanRows="OverscanRows"
-                IsAutoScrollActive="IsAutoScrollActive"
-                AutoScrollOptions="AutoScrollOptions"
-                UseAutoScroll="UseAutoScroll"
-                AutoFit="AutoFit"
-                RenderAutoScroller="RenderAutoScroller"
-                RenderAutofitLayer="RenderAutofitLayer"
                 EditorLayerChanged="EditorLayerChanged"
                 AutofitLayerChanged="AutofitLayerChanged"/>
         }
@@ -69,24 +34,9 @@
             <div class="bds-frozen-right" style="right: 0; z-index: 5;">
                 <DatasheetPane
                     @ref="_rightPane"
-                    CssClass="@($"bds-pane-right-{GridLevel}")"
-                    Sheet="Sheet"
                     ViewRegion="_frozenRightRegion"
-                    CellRenderFragment="CellRenderFragment"
-                    NumberPrecisionDisplay="NumberPrecisionDisplay"
-                    ShowFormulaDependents="ShowFormulaDependents"
-                    UseAutoFill="UseAutoFill"
-                    IsReadOnly="IsReadOnly"
-                    CustomCellTypeDefinitions="CustomCellTypeDefinitions"
-                    AutofillDraggingChanged="AutofillDraggingChanged"
-                    PointerInputService="PointerInputService"
-                    GridLevel="GridLevel"
                     OverscanColumns="OverscanColumns"
                     OverscanRows="OverscanRows"
-                    IsAutoScrollActive="IsAutoScrollActive"
-                    AutoScrollOptions="AutoScrollOptions"
-                    UseAutoScroll="UseAutoScroll"
-                    AutoFit="AutoFit"
                     EditorLayerChanged="EditorLayerChanged"/>
             </div>
         }
@@ -103,29 +53,12 @@
 
     private IRegion? _viewRegion;
 
-    [Parameter, EditorRequired] public Sheet Sheet { get; set; } = null!;
-    [Parameter, EditorRequired] public RenderFragment<VisualCell> CellRenderFragment { get; set; } = null!;
-    [Parameter, EditorRequired] public Dictionary<string, CellTypeDefinition> CustomCellTypeDefinitions { get; set; } = null!;
-    [Parameter, EditorRequired] public EventCallback<bool> AutofillDraggingChanged { get; set; }
-    [Parameter, EditorRequired] public Func<bool> IsAutoScrollActive { get; set; } = () => false;
-    [Parameter, EditorRequired] public AutoScrollOptions AutoScrollOptions { get; set; } = null!;
+    [CascadingParameter] private PaneContext PaneContext { get; set; } = null!;
+
     [Parameter, EditorRequired] public Action<EditorLayer?, bool> EditorLayerChanged { get; set; } = (_, _) => { };
     [Parameter, EditorRequired] public Action<AutofitLayer?> AutofitLayerChanged { get; set; } = _ => { };
-    [Parameter] public SheetPointerInputService? PointerInputService { get; set; }
-    [Parameter] public int GridLevel { get; set; }
     [Parameter] public int OverscanColumns { get; set; } = 2;
     [Parameter] public int OverscanRows { get; set; } = 6;
-    [Parameter] public int NumberPrecisionDisplay { get; set; } = 13;
-    [Parameter] public bool ShowFormulaDependents { get; set; }
-    [Parameter] public bool UseAutoFill { get; set; } = true;
-    [Parameter] public bool IsReadOnly { get; set; }
-    [Parameter] public bool UseAutoScroll { get; set; }
-    [Parameter] public bool AutoFit { get; set; }
-    [Parameter] public bool RenderAutoScroller { get; set; }
-    [Parameter] public bool RenderAutofitLayer { get; set; }
-    [Parameter] public string ContainerClass { get; set; } = string.Empty;
-    [Parameter] public string CenterPaneClass { get; set; } = string.Empty;
-    [Parameter] public int ZIndex { get; set; } = 1;
 
     private DatasheetPane? _leftPane;
     private DatasheetPane? _centerPane;
@@ -140,9 +73,10 @@
         if (_viewRegion == null || !_viewRegion.Equals(ViewRegion))
         {
             _viewRegion = ViewRegion;
-            _frozenLeftRegion = _viewRegion.GetIntersection(Sheet.GetFrozenLeftRegion());
-            _frozenRightRegion = _viewRegion.GetIntersection(Sheet.GetFrozenRightRegion());
-            _centreRegion = new Region(_viewRegion.Top, _viewRegion.Bottom, Sheet.FreezeState.Left, Sheet.NumCols - Sheet.FreezeState.Right);
+            _frozenLeftRegion = _viewRegion.GetIntersection(PaneContext.Sheet.GetFrozenLeftRegion());
+            _frozenRightRegion = _viewRegion.GetIntersection(PaneContext.Sheet.GetFrozenRightRegion());
+            _centreRegion = new Region(_viewRegion.Top, _viewRegion.Bottom, PaneContext.Sheet.FreezeState.Left,
+                PaneContext.Sheet.NumCols - PaneContext.Sheet.FreezeState.Right);
         }
 
         base.OnParametersSet();
