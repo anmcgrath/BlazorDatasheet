@@ -72,7 +72,7 @@
             sheet.Editor.BeginEdit(1, 2);
         });
 
-        var editors = cut.FindAll("div.editor-overlay");
+        var editors = cut.FindAll("div.bds-editor-overlay");
         editors.Count.Should().Be(1);
 
         var editor = editors.First();

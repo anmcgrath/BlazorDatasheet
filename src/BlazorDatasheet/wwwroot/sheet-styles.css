@@ -220,7 +220,7 @@
     color: var(--sheet-foreground-color)
 }
 
-.bds-editor-container {
+.bds-editor-overlay {
     background: var(--sheet-bg-color);
     box-shadow: 0 2px 8px var(--shadow-overlay-color);
     border-radius: 2px;
