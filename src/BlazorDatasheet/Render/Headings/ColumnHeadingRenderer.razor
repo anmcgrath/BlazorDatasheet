@@ -10,7 +10,7 @@
 @inject IJSRuntime Js;
 
 <div style="display: flex; flex-direction: row">
-    
+
     @if (_sheet.FreezeState.Left > 0 && HasVisibleCols(LeftHeadingRegion))
     {
         <div style="position: sticky; left:var(--gutter-left-width); z-index: 4;" class="bds-frozen-left">
@@ -59,31 +59,31 @@
 
 @code {
 
-    private RenderFragment ColHeadingItem(int col) => @<div
-                                                          @key="col"
-                                                          style="width: 100%; height: 100%; display: flex; justify-content: start; position: relative; overflow-x: visible;">
-                                                          <div
-                                                              class="bds-col-head bds-sheet-cell @GetSelectedClass(col)"
-                                                              data-col="@col"
-                                                              data-row="-1"
-                                                              style="display: flex; justify-content: space-between; width: 100%;">
-                                                              <div>
-                                                                  @ChildContent(new HeadingContext(col, _sheet.Columns.GetHeading(col) ?? RangeText.ColIndexToLetters(col)))
-                                                              </div>
-                                                              <div style="display: flex; flex-direction: row;">
-                                                                  @if (ShowColumnMenu)
-                                                                  {
-                                                                      <SheetMenuTarget MenuId="@ContextMenus.Selection"
-                                                                                       MenuData="Sheet">
-                                                                          <CaretButton/>
-                                                                      </SheetMenuTarget>
-                                                                  }
-                                                              </div>
-                                                          </div>
+    private RenderFragment ColHeadingItem(int col) =>
+        @<div @key="col"
+              style="width: 100%; height: 100%; display: flex; justify-content: start; position: relative; overflow-x: visible;">
+            <div
+                class="bds-col-head bds-sheet-cell @GetSelectedClass(col)"
+                data-col="@col"
+                data-row="-1"
+                style="display: flex; justify-content: space-between; width: 100%;">
+                <div>
+                    @ChildContent(new HeadingContext(col, _sheet.Columns.GetHeading(col) ?? RangeText.ColIndexToLetters(col)))
+                </div>
+                <div style="display: flex; flex-direction: row;">
+                    @if (ShowColumnMenu)
+                    {
+                        <SheetMenuTarget MenuId="@ContextMenus.Selection"
+                                         MenuData="Sheet">
+                            <CaretButton/>
+                        </SheetMenuTarget>
+                    }
+                </div>
+            </div>
 
-                                                          <div class="bds-unselectable"
-                                                               @onmousedown="_ => HandleMouseDownOnResizer(col)"
-                                                               style="position: absolute;
+            <div class="bds-unselectable"
+                 @onmousedown="_ => HandleMouseDownOnResizer(col)"
+                 style="position: absolute;
                  right: 0;
                  z-index: 4;
                  margin-right:-5px;
@@ -92,8 +92,8 @@
                  float: left;
                  display: inline-block;
                  cursor: col-resize;">
-                                                          </div>
-                                                      </div>;
+            </div>
+        </div>;
 
     [Parameter] public bool ShowColumnMenu { get; set; }
 
@@ -166,9 +166,9 @@
         var newItem = new PreviewItem
         {
             Coord = new PixelCoord(x, 0, 2, totalHeight),
-            BorderColor = "black",
-            BorderThickness = "1px",
-            BorderStyle = "solid",
+            BackgroundColor = "rgba(0,0,0,0.2)",
+            BackgroundVisible = true,
+            BorderStyle = "none",
             ZIndex = 4
         };
         PreviewService.Update(_resizePreviewItem, newItem);
