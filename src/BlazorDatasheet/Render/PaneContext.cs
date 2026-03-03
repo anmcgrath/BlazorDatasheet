@@ -1,5 +1,6 @@
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Render.Layers;
+using BlazorDatasheet.Render.Layers.Preview;
 using BlazorDatasheet.Services;
 using Microsoft.AspNetCore.Components;
 
@@ -11,6 +12,7 @@ internal sealed record PaneContext(
     Dictionary<string, CellTypeDefinition> CustomCellTypeDefinitions,
     EventCallback<bool> AutofillDraggingChanged,
     SheetPointerInputService? PointerInputService,
+    PreviewService PreviewService,
     int NumberPrecisionDisplay,
     bool ShowFormulaDependents,
     bool UseAutoFill,

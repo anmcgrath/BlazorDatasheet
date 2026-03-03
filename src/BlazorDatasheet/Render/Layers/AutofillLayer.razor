@@ -5,6 +5,7 @@
 @using BlazorDatasheet.Core.Layout
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Extensions
+@using BlazorDatasheet.Render.Layers.Preview
 @using BlazorDatasheet.Services
 @using Microsoft.JSInterop
 @inherits Layer
@@ -24,23 +25,13 @@
 }
 
 
-<!-- drag preview -->
-@if (_isDragging && _dragPreviewRegion != null)
-{
-    <BoxOverlayRenderer
-        BackgroundVisible="false"
-        BorderThickness="var(--selection-border-thickness)"
-        BorderStyle="dashed"
-        X="GetLayerColumnX(_dragPreviewRegion.Left)"
-        Y="GetLayerRowY(_dragPreviewRegion.Top)"
-        Width="Sheet.Columns.GetVisualWidthBetween(_dragPreviewRegion.Left, _dragPreviewRegion.Right + 1)"
-        Height="Sheet.Rows.GetVisualHeightBetween(_dragPreviewRegion.Top, _dragPreviewRegion.Bottom + 1)"/>
-}
-
 @code {
 
     [Parameter] public EventCallback<bool> AutofillDraggingChanged { get; set; }
 
+    [CascadingParameter] private PreviewService? PreviewService { get; set; }
+
+    private PreviewItem? _previewItem;
     private bool _isDragging;
 
     // Document start position of the pointer
@@ -103,6 +94,7 @@
         if (_dragPreviewRegion != null && Sheet.Selection.ActiveRegion != null)
             Sheet.Commands.ExecuteCommand(new AutoFillCommand(Sheet.Selection.ActiveRegion, _dragPreviewRegion.Clone()));
 
+        RemovePreviewItem();
         _dragPreviewRegion = null;
         await SetDraggingAsync(false);
         await InvokeAsync(StateHasChanged);
@@ -143,6 +135,32 @@
             _dragPreviewRegion = CalculateExpandRegion(cellAtMouse);
 
         _dragPreviewRegion = Sheet.Region.GetIntersection(_dragPreviewRegion);
+        UpdatePreviewItem();
+    }
+
+    private void UpdatePreviewItem()
+    {
+        if (PreviewService == null || _dragPreviewRegion == null)
+            return;
+
+        var newItem = new PreviewItem
+        {
+            Coord = new RegionCoord(_dragPreviewRegion),
+            BorderStyle = "dashed",
+            BorderThickness = "var(--selection-border-thickness)",
+            BackgroundVisible = false
+        };
+        PreviewService.Update(_previewItem, newItem);
+        _previewItem = newItem;
+    }
+
+    private void RemovePreviewItem()
+    {
+        if (_previewItem != null && PreviewService != null)
+        {
+            PreviewService.Remove(_previewItem);
+            _previewItem = null;
+        }
     }
 
     private async Task<(double dx, double dy)> GetAdjustedDragDeltaAsync(double pageX, double pageY)
@@ -243,6 +261,7 @@
     {
         // if the user mouses up on the dragger (which doesn't move)
         // then we should just cancel out of the drag
+        RemovePreviewItem();
         _dragPreviewRegion = null;
         await SetDraggingAsync(false);
         StateHasChanged();
@@ -281,6 +300,7 @@
 
     public async ValueTask DisposeAsync()
     {
+        RemovePreviewItem();
         Sheet.Selection.SelectionChanged -= OnSelectionChanged;
 
         await SetDraggingAsync(false);

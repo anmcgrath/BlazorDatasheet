@@ -1,6 +1,7 @@
 ﻿@using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Formula.Core
 @using BlazorDatasheet.Menu
+@using BlazorDatasheet.Render.Layers.Preview
 @using BlazorDatasheet.Services
 @using BlazorDatasheet.Virtualise
 @using Microsoft.JSInterop
@@ -9,24 +10,7 @@
 @inject IJSRuntime Js;
 
 <div style="display: flex; flex-direction: row">
-
-    <div style="position: relative; top: 0; left: 0;">
-        @if (IsDragging)
-        {
-            var resizeWidth = Math.Max(_minResizeWidth, _sheet.Columns.GetVisualWidth(ActiveResizerIndex) + CurrentColResizeAmount);
-            var resizerX = (_sheet.Columns.GetVisualLeft(ActiveResizerIndex) - _sheet.Columns.GetVisualLeft(_viewRegion.Left)) + resizeWidth;
-            <BoxOverlayRenderer
-                Y="0"
-                Width="2"
-                BorderColor="black"
-                ZIndex="4"
-                BorderThickness="1"
-                BorderStyle="solid"
-                X="resizerX"
-                Height="_sheet.Columns.HeadingHeight"/>
-        }
-    </div>
-
+    
     @if (_sheet.FreezeState.Left > 0 && HasVisibleCols(LeftHeadingRegion))
     {
         <div style="position: sticky; left:var(--gutter-left-width); z-index: 4;" class="bds-frozen-left">
@@ -113,6 +97,10 @@
 
     [Parameter] public bool ShowColumnMenu { get; set; }
 
+    [Parameter] public PreviewService? PreviewService { get; set; }
+
+    private PreviewItem? _resizePreviewItem;
+
     /// <summary>
     /// The number of columns past the end of the viewport to render.
     /// </summary>
@@ -158,11 +146,42 @@
         if (IsDragging)
         {
             CurrentColResizeAmount = MouseX - MouseXStart;
+            UpdateResizePreviewItem();
             StateHasChanged();
             return Task.FromResult(true);
         }
 
         return Task.FromResult(false);
+    }
+
+    private void UpdateResizePreviewItem()
+    {
+        if (PreviewService == null)
+            return;
+
+        var resizeWidth = Math.Max(_minResizeWidth, _sheet.Columns.GetVisualWidth(ActiveResizerIndex) + CurrentColResizeAmount);
+        var x = _sheet.Columns.GetVisualLeft(ActiveResizerIndex) + resizeWidth;
+        var totalHeight = _sheet.Rows.GetVisualTop(_sheet.NumRows);
+
+        var newItem = new PreviewItem
+        {
+            Coord = new PixelCoord(x, 0, 2, totalHeight),
+            BorderColor = "black",
+            BorderThickness = "1px",
+            BorderStyle = "solid",
+            ZIndex = 4
+        };
+        PreviewService.Update(_resizePreviewItem, newItem);
+        _resizePreviewItem = newItem;
+    }
+
+    private void RemoveResizePreviewItem()
+    {
+        if (_resizePreviewItem != null && PreviewService != null)
+        {
+            PreviewService.Remove(_resizePreviewItem);
+            _resizePreviewItem = null;
+        }
     }
 
     private void HandleMouseDownOnResizer(int col)
@@ -177,6 +196,7 @@
     {
         if (IsDragging)
         {
+            RemoveResizePreviewItem();
             IsDragging = false;
             var resizeWidth = Math.Max(_minResizeWidth, _sheet.Columns.GetVisualWidth(ActiveResizerIndex) + CurrentColResizeAmount);
             if (_sheet.Selection.Regions.All(x => x is ColumnRegion) && _sheet.Selection.Regions.Any(x => x.SpansCol(ActiveResizerIndex)))

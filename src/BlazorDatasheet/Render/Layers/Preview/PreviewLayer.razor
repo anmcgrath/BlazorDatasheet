@@ -1,0 +1,87 @@
+@using BlazorDatasheet.DataStructures.Geometry
+@inherits Layer
+@implements IDisposable
+
+@foreach (var item in PreviewService.Items)
+{
+    double x = 0, y = 0, w = 0, h = 0;
+    var visible = true;
+
+    switch (item.Coord)
+    {
+        case RegionCoord rc:
+        {
+            var clipped = rc.Region.GetIntersection(ViewRegion);
+            if (clipped == null)
+            {
+                visible = false;
+                break;
+            }
+
+            x = GetLayerColumnX(clipped.Left);
+            y = GetLayerRowY(clipped.Top);
+            w = Sheet.Columns.GetVisualWidthBetween(clipped.Left, clipped.Right + 1);
+            h = Sheet.Rows.GetVisualHeightBetween(clipped.Top, clipped.Bottom + 1);
+            break;
+        }
+        case PixelCoord pc:
+        {
+            x = GetLayerX(pc.X);
+            y = GetLayerY(pc.Y);
+            w = pc.Width;
+            h = pc.Height;
+
+            if (x + w < 0 || x > LayerWidth || y + h < 0 || y > LayerHeight)
+            {
+                visible = false;
+            }
+
+            break;
+        }
+        default:
+            visible = false;
+            break;
+    }
+
+    if (visible)
+    {
+        <BoxOverlayRenderer
+            X="x"
+            Y="y"
+            Width="w"
+            Height="h"
+            ZIndex="item.ZIndex"
+            BorderColor="@item.BorderColor"
+            BorderThickness="@item.BorderThickness"
+            BorderStyle="@item.BorderStyle"
+            BackgroundColor="@(item.BackgroundColor ?? "transparent")"
+            BackgroundVisible="item.BackgroundVisible"/>
+    }
+}
+
+@code {
+
+    [CascadingParameter] private PreviewService PreviewService { get; set; } = null!;
+
+    private bool _disposed;
+
+    protected override void OnInitialized()
+    {
+        PreviewService.Changed += OnPreviewChanged;
+        base.OnInitialized();
+    }
+
+    private void OnPreviewChanged()
+    {
+        if (_disposed)
+            return;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        PreviewService.Changed -= OnPreviewChanged;
+    }
+
+}

@@ -20,6 +20,7 @@ using BlazorDatasheet.Menu;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Render.AutoScroll;
 using BlazorDatasheet.Render.Layers;
+using BlazorDatasheet.Render.Layers.Preview;
 using BlazorDatasheet.Services;
 using BlazorDatasheet.Virtualise;
 using Microsoft.AspNetCore.Components;
@@ -233,6 +234,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     private CellLayoutProvider _cellLayoutProvider = null!;
     private PaneContext? _paneContext;
+    private readonly PreviewService _previewService = new();
 
     private IScrollService ScrollServiceForCascade => this;
 
@@ -970,6 +972,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             CustomCellTypeDefinitions,
             autofillDraggingChanged,
             _sheetPointerInputService,
+            _previewService,
             _numberPrecisionDisplay,
             _showFormulaDependents,
             _useAutoFill,

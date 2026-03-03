@@ -4,6 +4,7 @@
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Render
 @using BlazorDatasheet.Render.Layers
+@using BlazorDatasheet.Render.Layers.Preview
 @using BlazorDatasheet.Services
 @using BlazorDatasheet.Virtualise
 
@@ -14,7 +15,8 @@
     <LayerContainer
         Sheet="PaneContext.Sheet"
         ViewRegion="@ViewRegion"
-        PointerInputService="PaneContext.PointerInputService">
+        PointerInputService="PaneContext.PointerInputService"
+        PreviewService="PaneContext.PreviewService">
         <HighlightLayer/>
         @if (PaneContext.UseAutoFill && !PaneContext.IsReadOnly)
         {
@@ -37,6 +39,7 @@
                      CustomCellTypes="@PaneContext.CustomCellTypeDefinitions"/>
 
         <SelectionRendererLayer/>
+        <PreviewLayer/>
         @if (PaneContext.ShowFormulaDependents)
         {
             <FormulaDependenciesLayer/>

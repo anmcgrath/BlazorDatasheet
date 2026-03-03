@@ -1,5 +1,6 @@
 ﻿@using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Render.Layers.Preview
 @using BlazorDatasheet.Services
 <div class="bds-sheet-layer-container" style="z-index: 1;">
     <div style="position: absolute;
@@ -14,7 +15,9 @@
                 <CascadingValue Value="LayerHeight">
                     <CascadingValue Value="LayerWidth">
                         <CascadingValue Value="PointerInputService">
-                            @ChildContent
+                            <CascadingValue Value="PreviewService" IsFixed="true">
+                                @ChildContent
+                            </CascadingValue>
                         </CascadingValue>
                     </CascadingValue>
                 </CascadingValue>
@@ -35,6 +38,8 @@
     private Sheet _sheet = new(0, 0);
 
     [Parameter, EditorRequired] public SheetPointerInputService? PointerInputService { get; set; }
+
+    [Parameter] public PreviewService? PreviewService { get; set; }
 
     /// <summary>
     /// The width, in px, of the rendered layer region
