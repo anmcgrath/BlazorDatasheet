@@ -723,10 +723,12 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         if (_sheet.Selection.IsSelecting)
             return true;
 
-        if (_sheet.Editor.IsEditing &&
-            GetActiveEditorLayer()?.ActiveEditorContainer?.Instance is TextEditorComponent te)
+        if (_sheet.Editor.IsEditing)
         {
-            if (te.SelectionInputManager?.Selection.IsSelecting == true)
+            var editorInstance = GetActiveEditorLayer()?.ActiveEditorContainer?.Instance;
+            TextEditorComponent? te = editorInstance as TextEditorComponent
+                                      ?? (editorInstance as SelectEditorComponent)?.TextEditor;
+            if (te?.SelectionInputManager?.Selection.IsSelecting == true)
                 return true;
         }
 

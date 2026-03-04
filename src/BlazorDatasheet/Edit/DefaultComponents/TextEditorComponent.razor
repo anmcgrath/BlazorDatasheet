@@ -63,6 +63,7 @@
     private double _highlightInputHeight;
     private string _currentSnapshot = string.Empty;
     internal SelectionInputManager? SelectionInputManager;
+    public bool IsFormulaValue => FormulaEngine.IsFormula(CurrentValue);
     private bool _canAcceptRanges = true;
     private List<FunctionDefinition>? _functionSuggestions;
     private FormulaHintBoxResult? _formulaHint;
@@ -215,6 +216,8 @@
 
         CurrentValue = _currentSnapshot + sb;
     }
+
+    public async Task FocusAsync() => await _highlightedInput.FocusAndMoveCursorToEndAsync();
 
     public override bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
     {

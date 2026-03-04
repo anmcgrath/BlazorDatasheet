@@ -21,6 +21,7 @@
     private void BeginEdit()
     {
         Sheet.Editor.BeginEdit(Cell.Row, Cell.Col, true, EditEntryMode.Mouse);
+        Sheet.Selection.EndSelecting();
     }
 
 }
