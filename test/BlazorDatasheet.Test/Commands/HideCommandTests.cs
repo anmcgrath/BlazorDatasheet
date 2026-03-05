@@ -36,7 +36,7 @@ public class HideCommandTests
     {
         var sheet = new Sheet(100, 100);
         sheet.Rows.Hide(5, 5);
-        sheet.Rows.CountVisible(1, 100).Should().Be(95);
+        sheet.Rows.CountVisible(1, 100).Should().Be(94);
         sheet.Rows.CountVisible(5, 9).Should().Be(0);
         sheet.Rows.CountVisible(6, 7).Should().Be(0);
         sheet.Rows.CountVisible(4, 6).Should().Be(1);

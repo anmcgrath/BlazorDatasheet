@@ -85,9 +85,15 @@ public abstract class RowColInfoStore
     /// <returns></returns>
     internal RowColInfoRestoreData SetSizesImpl(int start, int end, double size)
     {
+        var cumulativeSizesRestoreData = CumulativeSizeStore.Set(start, end, size);
+        foreach (var hidden in Visible.GetOverlapping(start, end))
+        {
+            cumulativeSizesRestoreData.Merge(CumulativeSizeStore.Set(hidden.start, hidden.end, 0));
+        }
+
         var restoreData = new RowColInfoRestoreData()
         {
-            CumulativeSizesRestoreData = CumulativeSizeStore.Set(start, end, size),
+            CumulativeSizesRestoreData = cumulativeSizesRestoreData,
             SizesRestoreData = SizeStore.Set(start, end, size)
         };
 
@@ -232,7 +238,16 @@ public abstract class RowColInfoStore
     /// <returns></returns>
     public int CountVisible(int start, int end)
     {
-        var totalCount = Math.Min(end - start + 1, Sheet.GetSize(_axis));
+        var sheetSize = Sheet.GetSize(_axis);
+        if (sheetSize == 0)
+            return 0;
+
+        start = Math.Max(start, 0);
+        end = Math.Min(end, sheetSize - 1);
+        if (start > end)
+            return 0;
+
+        var totalCount = end - start + 1;
         int invisibleCount = 0;
         var invisible = Visible.GetOverlapping(start, end);
         foreach (var i in invisible)
@@ -275,6 +290,9 @@ public abstract class RowColInfoStore
 
         start = Math.Max(start, 0);
         end = Math.Min(end, Sheet.GetSize(_axis) - 1);
+        if (start > end)
+            return new List<int>();
+
         var hidden = Visible.GetOverlapping(start, end);
 
         if (!hidden.Any())
@@ -512,6 +530,7 @@ internal class RowColInfoRestoreData
     public void Merge(RowColInfoRestoreData other)
     {
         CumulativeSizesRestoreData.Merge(other.CumulativeSizesRestoreData);
+        SizesRestoreData.Merge(other.SizesRestoreData);
         HeadingsRestoreData.Merge(other.HeadingsRestoreData);
         VisibilityRestoreData.Merge(other.VisibilityRestoreData);
         RowColFormatRestoreData.Merge(other.RowColFormatRestoreData);
