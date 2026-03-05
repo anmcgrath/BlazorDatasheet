@@ -53,25 +53,14 @@
 
     protected override void OnParametersSet()
     {
-        var updateSizes = false;
-
         if (_sheet != Sheet)
-        {
             _sheet = Sheet;
-            updateSizes = true;
-        }
 
         if (ViewRegion != _viewRegion)
-        {
             _viewRegion = ViewRegion ?? new Region(0, 0);
-            updateSizes = true;
-        }
 
-        if (updateSizes)
-        {
-            LayerWidth = _sheet.Columns.GetVisualWidthBetween(_viewRegion.Left, _viewRegion.Right + 1);
-            LayerHeight = _sheet.Rows.GetVisualHeightBetween(_viewRegion.Top, _viewRegion.Bottom + 1);
-        }
+        LayerWidth = _sheet.Columns.GetVisualWidthBetween(_viewRegion.Left, _viewRegion.Right + 1);
+        LayerHeight = _sheet.Rows.GetVisualHeightBetween(_viewRegion.Top, _viewRegion.Bottom + 1);
 
         base.OnParametersSet();
     }
