@@ -8,7 +8,7 @@
 
     [CascadingParameter] protected double LayerHeight { get; set; }
 
-    [CascadingParameter] protected IRegion? ViewRegion { get; set; }
+    [CascadingParameter] protected IRegion ViewRegion { get; set; } = new EmptyRegion();
 
     [CascadingParameter] protected Sheet Sheet { get; set; } = new(0, 0);
     private Sheet _sheet = new(0, 0);
@@ -41,7 +41,7 @@
         if (ViewRegion != _viewRegion)
         {
             var oldRegion = _viewRegion;
-            _viewRegion = ViewRegion ?? new EmptyRegion();
+            _viewRegion = ViewRegion;
             updatePositions = true;
             OnViewRegionChange(_viewRegion, oldRegion);
         }

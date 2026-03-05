@@ -12,7 +12,7 @@
 @implements IAsyncDisposable
 @inject IJSRuntime Js;
 
-@if (!Sheet.Editor.IsEditing && Sheet.Selection.ActiveRegion != null)
+@if (!Sheet.Editor.IsEditing && Sheet.Selection.ActiveRegion != null && ViewRegion?.Contains(Sheet.Selection.ActiveRegion.BottomRight) == true)
 {
     <!-- render dragger (bottom right corner) -->
     <div id="auto-filler"

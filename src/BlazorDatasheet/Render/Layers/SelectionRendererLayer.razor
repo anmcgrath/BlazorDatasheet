@@ -23,7 +23,7 @@
             {
                 <BoxOverlayRenderer
                     BackgroundVisible="true"
-                    BorderThickness="0"
+                    BorderThickness="0px"
                     X="GetLayerColumnX(brokenRegion.Left)"
                     Y="GetLayerRowY(brokenRegion.Top)"
                     Width="Sheet.Columns.GetVisualWidthBetween(brokenRegion.Left, brokenRegion.Right + 1)"
@@ -49,7 +49,7 @@
         {
             <BoxOverlayRenderer
                 BackgroundVisible="@true"
-                BorderThickness="2"
+                BorderThickness="var(--selection-border-thickness)"
                 X="@GetLayerColumnX(boundedSelecting.Left)"
                 Y="@GetLayerRowY(boundedSelecting.Top)"
                 Width="Sheet.Columns.GetVisualWidthBetween(boundedSelecting.Left, boundedSelecting.Right + 1)"
