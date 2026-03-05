@@ -12,8 +12,9 @@
 @using BlazorDatasheet.Formula.Core.Interpreter
 @using BlazorDatasheet.Formula.Core.Interpreter.Lexing
 @using BlazorDatasheet.Render
+@using BlazorDatasheet.Render.Popover
 
-<div class="bds-text-editor">
+<div class="bds-text-editor" id="@_anchorId">
     <HighlightedInput
         Style="@Style"
         @ref="_highlightedInput"
@@ -28,30 +29,31 @@
 </div>
 
 <!-- shows hints when caret position is inside a formula -->
-@if (_formulaHint != null && _sheet.FormulaEngine.FunctionExists(_formulaHint.FunctionName))
-{
-    <div class="bds-func-suggestions"
-         style="position: absolute; top:@(_highlightInputHeight)px;">
+<BdsPopover
+    AnchorId="@_anchorId"
+    IsOpen="@(_formulaHint != null && _sheet.FormulaEngine.FunctionExists(_formulaHint.FunctionName))"
+    CssClass="bds-func-suggestions">
+    @if (_formulaHint != null)
+    {
         <FormulaHintBox
             ArgIndex="@_formulaHint.ParameterIndex"
             FunctionName="@_formulaHint.FunctionName"
-            Function="@_sheet.FormulaEngine.GetFunction(_formulaHint.FunctionName)"
-        />
-    </div>
-}
+            Function="@_sheet.FormulaEngine.GetFunction(_formulaHint.FunctionName)"/>
+    }
+</BdsPopover>
 
-
-<!-- shows functions that are available based on the typed function name -->s
-@if (_functionSuggestions != null && _functionSuggestions.Any())
-{
-    <div class="bds-func-suggestions"
-         style="position: absolute; top:@(_highlightInputHeight)px;">
+<!-- shows functions that are available based on the typed function name -->
+<BdsPopover AnchorId="@_anchorId"
+            IsOpen="@(_functionSuggestions != null && _functionSuggestions.Any())"
+            CssClass="bds-func-suggestions">
+    @if (_functionSuggestions != null)
+    {
         @foreach (var formula in _functionSuggestions)
         {
             <div class="bds-func-suggestions-item">@formula.Name</div>
         }
-    </div>
-}
+    }
+</BdsPopover>
 
 @code {
 
@@ -67,6 +69,7 @@
     private bool _canAcceptRanges = true;
     private List<FunctionDefinition>? _functionSuggestions;
     private FormulaHintBoxResult? _formulaHint;
+    private readonly string _anchorId = $"bds-select-anchor-{Guid.NewGuid():N}";
 
     public override void BeforeEdit(IReadOnlyCell cell, Sheet sheet)
     {

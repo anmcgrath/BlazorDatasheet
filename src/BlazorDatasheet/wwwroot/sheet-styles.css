@@ -330,6 +330,13 @@
     align-items: center;
 }
 
+.bds-text-editor {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+}
+
 .bds-select-editor-input .bds-text-editor {
     flex-grow: 1;
     flex-shrink: 1;
