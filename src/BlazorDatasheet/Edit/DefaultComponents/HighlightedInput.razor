@@ -138,10 +138,10 @@
 
         var lexer = new Lexer();
         var tokens = lexer.Lex(text, FormulaOptions);
+        var tokenColors = FormulaReferenceColorizer.GetReferenceColorIndices(tokens);
 
         var sb = new StringBuilder();
         var span = text.AsSpan();
-        int refCount = 0;
 
         for (int i = 0; i < tokens.Count - 1; i++)
         {
@@ -150,11 +150,9 @@
             var section = span.Slice(start, len);
             sb.Append($"<span ");
             sb.Append($"class=\"{GetClass(tokens[i].Tag)}\" ");
-            if (tokens[i].Tag == Tag.AddressToken)
+            if (tokenColors.TryGetValue(i, out var colorIndex))
             {
-                var colorIndex = (refCount % 5) + 1;
                 sb.Append($"style=\"color:var(--highlight-color-{colorIndex})\"");
-                refCount++;
             }
 
             sb.Append(">");
