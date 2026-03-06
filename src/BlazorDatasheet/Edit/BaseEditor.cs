@@ -13,6 +13,8 @@ public abstract class BaseEditor : SheetComponentBase, ICellEditor
 
     [Parameter] public EventCallback<string> OnValueChanged { get; set; }
 
+    private bool _isAutoScrollActive;
+
     private string _currentValue = string.Empty;
 
     public string CurrentValue
@@ -41,6 +43,10 @@ public abstract class BaseEditor : SheetComponentBase, ICellEditor
     /// </summary>
     public ElementReference InputRef = new ElementReference();
 
+    public bool IsAutoScrollActive => _isAutoScrollActive;
+
+    public event EventHandler<bool>? AutoScrollActiveChanged;
+
     /// <summary>
     /// Style to apply to the editor such as background and font.
     /// </summary>
@@ -62,6 +68,17 @@ public abstract class BaseEditor : SheetComponentBase, ICellEditor
     public virtual void BeforeEdit(IReadOnlyCell cell, Sheet sheet)
     {
     }
+
+    protected void SetAutoScrollActive(bool isActive)
+    {
+        if (_isAutoScrollActive == isActive)
+            return;
+
+        _isAutoScrollActive = isActive;
+        AutoScrollActiveChanged?.Invoke(this, isActive);
+    }
+
+    internal void ResetAutoScrollActive() => SetAutoScrollActive(false);
 
     public abstract void BeginEdit(EditEntryMode entryMode, string? editValue, string key);
 

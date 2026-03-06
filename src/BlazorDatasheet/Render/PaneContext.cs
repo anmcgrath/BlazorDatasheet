@@ -1,4 +1,5 @@
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Render.AutoScroll;
 using BlazorDatasheet.Render.Layers;
 using BlazorDatasheet.Render.Layers.Preview;
 using BlazorDatasheet.Services;
@@ -10,7 +11,7 @@ internal sealed record PaneContext(
     Sheet Sheet,
     RenderFragment<VisualCell> CellRenderFragment,
     Dictionary<string, CellTypeDefinition> CustomCellTypeDefinitions,
-    EventCallback<bool> AutofillDraggingChanged,
+    AutoScrollState AutoScrollState,
     SheetPointerInputService? PointerInputService,
     PreviewService PreviewService,
     int NumberPrecisionDisplay,

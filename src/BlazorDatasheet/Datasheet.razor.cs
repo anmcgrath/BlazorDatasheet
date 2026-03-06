@@ -38,7 +38,6 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     private IWindowEventService _windowEventService = null!;
     [Inject] private IMenuService MenuService { get; set; } = null!;
     private IClipboard ClipboardService { get; set; } = null!;
-    private bool _isAutofillDragging;
 
 
     /// <summary>
@@ -235,6 +234,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     private CellLayoutProvider _cellLayoutProvider = null!;
     private PaneContext? _paneContext;
     private readonly PreviewService _previewService = new();
+    private readonly AutoScrollState _autoScrollState = new();
 
     private IScrollService ScrollServiceForCascade => this;
 
@@ -376,12 +376,14 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         sheet.ScreenUpdatingChanged -= ScreenUpdatingChanged;
         sheet.FrozenRowCols -= SheetOnFrozenRowCols;
         sheet.Selection.ActiveRegionChanged -= ActiveRegionChanged;
+        sheet.Selection.SelectingChanged -= SelectingChanged;
         sheet.Rows.Inserted -= HandleRowColInserted;
         sheet.Columns.Inserted -= HandleRowColInserted;
         sheet.Rows.Removed -= HandleRowColRemoved;
         sheet.Columns.Removed -= HandleRowColRemoved;
         sheet.Rows.SizeModified -= HandleSizeModified;
         sheet.Columns.SizeModified -= HandleSizeModified;
+        _autoScrollState.SetSheetSelectionActive(false);
     }
 
     private void AddEvents(Sheet sheet)
@@ -391,6 +393,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         sheet.ScreenUpdatingChanged += ScreenUpdatingChanged;
         sheet.FrozenRowCols += SheetOnFrozenRowCols;
         sheet.Selection.ActiveRegionChanged += ActiveRegionChanged;
+        sheet.Selection.SelectingChanged += SelectingChanged;
         sheet.Rows.Inserted += HandleRowColInserted;
         sheet.Columns.Inserted += HandleRowColInserted;
         sheet.Rows.Removed += HandleRowColRemoved;
@@ -398,6 +401,12 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         sheet.Rows.SizeModified += HandleSizeModified;
         sheet.Columns.SizeModified += HandleSizeModified;
         sheet.SetDialogService(new SimpleDialogService(Js));
+        _autoScrollState.SetSheetSelectionActive(sheet.Selection.IsSelecting);
+    }
+
+    private void SelectingChanged(object? sender, IRegion? selectingRegion)
+    {
+        _autoScrollState.SetSheetSelectionActive(selectingRegion != null);
     }
 
     private async void ActiveRegionChanged(object? sender, ActiveRegionChangedEvent e)
@@ -731,36 +740,6 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         _selectionManager.HandlePointerOver(args.Row, args.Col);
     }
 
-    private bool IsAutoScrollActive()
-    {
-        if (UseAutoScroll == false)
-            return false;
-
-        if (_isAutofillDragging)
-            return true;
-
-        if (_sheet.Selection.IsSelecting)
-            return true;
-
-        if (_sheet.Editor.IsEditing)
-        {
-            var editorInstance = GetActiveEditorLayer()?.ActiveEditorContainer?.Instance;
-            TextEditorComponent? te = editorInstance as TextEditorComponent
-                                      ?? (editorInstance as SelectEditorComponent)?.TextEditor;
-            if (te?.SelectionInputManager?.Selection.IsSelecting == true)
-                return true;
-        }
-
-        return false;
-    }
-
-    private Task HandleAutofillDraggingChanged(bool isDragging)
-    {
-        _isAutofillDragging = isDragging;
-        return Task.CompletedTask;
-    }
-
-
     private async Task<bool> AcceptEditAndMoveActiveSelection(Axis axis, int amount)
     {
         var acceptEdit = !_sheet.Editor.IsEditing || _sheet.Editor.AcceptEdit();
@@ -970,13 +949,11 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         if (CellRenderFragment == null)
             return false;
 
-        var autofillDraggingChanged = EventCallback.Factory.Create<bool>(this, HandleAutofillDraggingChanged);
-
         if (_paneContext != null &&
             ReferenceEquals(_paneContext.Sheet, _sheet) &&
             ReferenceEquals(_paneContext.CellRenderFragment, CellRenderFragment) &&
             ReferenceEquals(_paneContext.CustomCellTypeDefinitions, CustomCellTypeDefinitions) &&
-            _paneContext.AutofillDraggingChanged.Equals(autofillDraggingChanged) &&
+            ReferenceEquals(_paneContext.AutoScrollState, _autoScrollState) &&
             ReferenceEquals(_paneContext.PointerInputService, _sheetPointerInputService) &&
             _paneContext.NumberPrecisionDisplay == _numberPrecisionDisplay &&
             _paneContext.ShowFormulaDependents == _showFormulaDependents &&
@@ -991,7 +968,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             _sheet,
             CellRenderFragment,
             CustomCellTypeDefinitions,
-            autofillDraggingChanged,
+            _autoScrollState,
             _sheetPointerInputService,
             _previewService,
             _numberPrecisionDisplay,

@@ -5,6 +5,7 @@
 @using BlazorDatasheet.Core.Layout
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Extensions
+@using BlazorDatasheet.Render
 @using BlazorDatasheet.Render.Layers.Preview
 @using BlazorDatasheet.Services
 @using Microsoft.JSInterop
@@ -26,8 +27,7 @@
 
 
 @code {
-
-    [Parameter] public EventCallback<bool> AutofillDraggingChanged { get; set; }
+    [CascadingParameter] private PaneContext PaneContext { get; set; } = null!;
 
     [CascadingParameter] private PreviewService? PreviewService { get; set; }
 
@@ -274,8 +274,7 @@
 
         _isDragging = isDragging;
 
-        if (AutofillDraggingChanged.HasDelegate)
-            await AutofillDraggingChanged.InvokeAsync(isDragging);
+        PaneContext.AutoScrollState.SetAutofillDragging(isDragging);
     }
 
     private string GetDraggerStyleString()

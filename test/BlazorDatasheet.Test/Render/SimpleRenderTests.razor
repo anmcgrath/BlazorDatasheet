@@ -1,8 +1,12 @@
 ﻿@using AngleSharp.Css.Dom
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Render
+@using BlazorDatasheet.Render.AutoScroll
+@using BlazorDatasheet.Render.DefaultComponents
 @using FluentAssertions
 @using NUnit.Framework
+@using System.Reflection
 @inherits BaseTestComponent
 
 @code
@@ -94,9 +98,9 @@
         var sheet = new Sheet(5, 5);
         var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
 
+        cut.FindAll("div.bds-frozen-top").Count.Should().Be(0);
+        cut.FindAll("div.bds-frozen-bottom").Count.Should().Be(0);
         cut.FindAll("div.bds-pane-row").Count.Should().Be(1);
-        cut.FindAll("div.bds-pane-row-top").Count.Should().Be(0);
-        cut.FindAll("div.bds-pane-row-bottom").Count.Should().Be(0);
     }
 
     [Test]
@@ -180,5 +184,65 @@
             parameters.Add(p => p.ShowFormulaDependents, true);
         });
         visibleCut.FindAll("#svg_layer").Count.Should().BeGreaterThan(0);
+    }
+
+    [Test]
+    public async Task Datasheet_Tracks_Sheet_Selection_AutoScroll_State()
+    {
+        var sheet = new Sheet(4, 4);
+        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+        var autoScrollState = GetAutoScrollState(cut.Instance);
+
+        autoScrollState.IsSheetSelectionActive.Should().BeFalse();
+        autoScrollState.IsActive.Should().BeFalse();
+
+        await cut.InvokeAsync(() => sheet.Selection.BeginSelectingCell(0, 0));
+
+        autoScrollState.IsSheetSelectionActive.Should().BeTrue();
+        autoScrollState.IsActive.Should().BeTrue();
+
+        await cut.InvokeAsync(sheet.Selection.EndSelecting);
+
+        autoScrollState.IsSheetSelectionActive.Should().BeFalse();
+        autoScrollState.IsActive.Should().BeFalse();
+    }
+
+    [Test]
+    public async Task Datasheet_Clears_Editor_AutoScroll_State_When_Edit_Finishes()
+    {
+        TrackingAutoScrollEditor.LastInstance = null;
+
+        var sheet = new Sheet(4, 4);
+        sheet.Cells[0, 0]!.Type = "tracking";
+
+        var cut = RenderComponent<Datasheet>(parameters =>
+        {
+            parameters.Add(p => p.Sheet, sheet);
+            parameters.Add(p => p.CustomCellTypeDefinitions, new Dictionary<string, CellTypeDefinition>
+            {
+                { "tracking", CellTypeDefinition.Create<TrackingAutoScrollEditor, TextRenderer>() }
+            });
+        });
+
+        var autoScrollState = GetAutoScrollState(cut.Instance);
+
+        await cut.InvokeAsync(() => sheet.Editor.BeginEdit(0, 0));
+        cut.WaitForAssertion(() => TrackingAutoScrollEditor.LastInstance.Should().NotBeNull());
+
+        await cut.InvokeAsync(() => TrackingAutoScrollEditor.LastInstance!.SetTrackedAutoScroll(true));
+        autoScrollState.IsEditorSelectionActive.Should().BeTrue();
+        autoScrollState.IsActive.Should().BeTrue();
+
+        await cut.InvokeAsync(sheet.Editor.CancelEdit);
+
+        autoScrollState.IsEditorSelectionActive.Should().BeFalse();
+        autoScrollState.IsActive.Should().BeFalse();
+    }
+
+    private static AutoScrollState GetAutoScrollState(Datasheet datasheet)
+    {
+        var field = typeof(Datasheet).GetField("_autoScrollState", BindingFlags.Instance | BindingFlags.NonPublic);
+        field.Should().NotBeNull();
+        return field!.GetValue(datasheet).Should().BeOfType<AutoScrollState>().Subject;
     }
 }

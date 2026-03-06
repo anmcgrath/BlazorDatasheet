@@ -5,6 +5,7 @@
 @using BlazorDatasheet.Core.Validation
 @using BlazorDatasheet.Render.Popover
 @inherits BaseEditor
+@implements IDisposable
 
 <div class="bds-select-editor" id="@_anchorId">
     <TextEditorComponent @ref="_textEditor"
@@ -49,6 +50,7 @@
     public override void BeforeEdit(IReadOnlyCell cell, Sheet sheet)
     {
         _sheet = sheet;
+        ResetAutoScrollActive();
 
         foreach (var validator in sheet.Validators.Get(cell.Row, cell.Col))
         {
@@ -60,13 +62,16 @@
         }
 
         _filteredValues = _allValues;
+        SubscribeToTextEditorAutoScroll();
         _textEditor.BeforeEdit(cell, sheet);
+        SyncAutoScrollState();
     }
 
     public override void BeginEdit(EditEntryMode entryMode, string? editValue, string key)
     {
         _textEditor.BeginEdit(entryMode, editValue, key);
         CurrentValue = _textEditor.CurrentValue;
+        SyncAutoScrollState();
 
         if (entryMode == EditEntryMode.Key)
         {
@@ -94,6 +99,7 @@
     {
         base.HandleEditValueChange(s);
         _textEditor?.HandleEditValueChange(s);
+        SyncAutoScrollState();
 
         SyncDropdownToCurrentValue();
 
@@ -148,6 +154,7 @@
         {
             var handled = _textEditor.HandleKey(key, ctrlKey, shiftKey, altKey, metaKey);
             CurrentValue = _textEditor.CurrentValue;
+            SyncAutoScrollState();
             return handled;
         }
 
@@ -183,22 +190,45 @@
         // Let the text editor handle other keys (typing)
         var result = _textEditor.HandleKey(key, ctrlKey, shiftKey, altKey, metaKey);
         CurrentValue = _textEditor.CurrentValue;
+        SyncAutoScrollState();
         return result;
     }
 
     public override bool HandleMouseDown(int row, int col, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
     {
-        return _textEditor.HandleMouseDown(row, col, ctrlKey, shiftKey, altKey, metaKey);
+        var handled = _textEditor.HandleMouseDown(row, col, ctrlKey, shiftKey, altKey, metaKey);
+        SyncAutoScrollState();
+        return handled;
     }
 
     public override bool HandleMouseOver(int row, int col, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
     {
-        return _textEditor.HandleMouseOver(row, col, ctrlKey, shiftKey, altKey, metaKey);
+        var handled = _textEditor.HandleMouseOver(row, col, ctrlKey, shiftKey, altKey, metaKey);
+        SyncAutoScrollState();
+        return handled;
     }
 
     public override async Task<bool> HandleWindowMouseUpAsync()
     {
-        return await _textEditor.HandleWindowMouseUpAsync();
+        var handled = await _textEditor.HandleWindowMouseUpAsync();
+        SyncAutoScrollState();
+        return handled;
+    }
+
+    private void SubscribeToTextEditorAutoScroll()
+    {
+        _textEditor.AutoScrollActiveChanged -= HandleTextEditorAutoScrollActiveChanged;
+        _textEditor.AutoScrollActiveChanged += HandleTextEditorAutoScrollActiveChanged;
+    }
+
+    private void HandleTextEditorAutoScrollActiveChanged(object? sender, bool isActive)
+    {
+        SetAutoScrollActive(isActive);
+    }
+
+    private void SyncAutoScrollState()
+    {
+        SetAutoScrollActive(_textEditor.IsAutoScrollActive);
     }
 
     private void HoverItem(int direction)
@@ -241,6 +271,12 @@
 
         _dropdownOpen = false;
         StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        if (_textEditor != null)
+            _textEditor.AutoScrollActiveChanged -= HandleTextEditorAutoScrollActiveChanged;
     }
 
 }
