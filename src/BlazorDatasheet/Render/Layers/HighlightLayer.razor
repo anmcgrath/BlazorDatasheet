@@ -8,7 +8,7 @@
 <div class="highlight-layer">
     @foreach (var cr in _colorRegions)
     {
-        var r = cr.Region.GetIntersection(Sheet.Region);
+        var r = cr.Region.GetIntersection(ViewRegion);
         if (r == null)
             continue;
         var x = GetLayerColumnX(r.Left);
@@ -23,7 +23,11 @@
             ZIndex="12"
             BorderStyle="solid"
             BorderColor="@cr.Data"
-            BorderThickness="var(--selection-border-thickness)"/>
+            BorderThickness="var(--selection-border-thickness)"
+            ShowBorderLeft="r.Left == cr.Region.Left"
+            ShowBorderRight="r.Right == cr.Region.Right"
+            ShowBorderTop="r.Top == cr.Region.Top"
+            ShowBorderBottom="r.Bottom == cr.Region.Bottom"/>
     }
 </div>
 
@@ -61,9 +65,8 @@
             foreach (var reference in formula.References)
             {
                 var colorIndex = (_colorRegions.Count % 5) + 1;
-                var boundedRegion = reference.Region.GetIntersection(ViewRegion);
-                var isValid = boundedRegion != null && reference.SheetName == Sheet.Name;
-                _colorRegions.Add(new DataRegion<string>($"var(--highlight-color-{colorIndex})", isValid ? boundedRegion! : new EmptyRegion()));
+                var isValid = reference.Region.GetIntersection(ViewRegion) != null && reference.SheetName == Sheet.Name;
+                _colorRegions.Add(new DataRegion<string>($"var(--highlight-color-{colorIndex})", isValid ? reference.Region : new EmptyRegion()));
             }
         }
     }
