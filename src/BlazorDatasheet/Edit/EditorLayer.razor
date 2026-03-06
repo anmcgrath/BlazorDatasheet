@@ -129,6 +129,11 @@
             _activeCellEditor.RequestCancelEdit += HandleEditorRequestCancelEdit;
             _activeCellEditor.RequestAcceptEdit += HandleEditorRequestAcceptEdit;
             _activeCellEditor.BeginEdit(_sheet.Editor.CurrentEntryMode, _sheet.Editor.EditValue, _sheet.Editor.EditKey);
+
+            // BeginEdit may synchronously accept/cancel (e.g. BoolEditor), clearing _activeCellEditor
+            if (_activeCellEditor == null)
+                return;
+
             PaneContext.AutoScrollState.SetEditorSelectionActive(_activeCellEditor.IsAutoScrollActive);
 
             if (_sheet.Editor.CurrentEntryMode != EditEntryMode.None)
