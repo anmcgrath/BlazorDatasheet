@@ -86,4 +86,10 @@
         StateHasChanged();
     }
 
+    public void Dispose()
+    {
+        Sheet.Selection.SelectionChanged -= OnSelectionChanged;
+        Sheet.Selection.SelectingChanged -= OnSelectingChanged;
+    }
+
 }

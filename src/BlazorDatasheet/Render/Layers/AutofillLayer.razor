@@ -37,6 +37,7 @@
     // Document start position of the pointer
     private Point2d _dragStartDocumentPosition = new();
     private Point2d _dragStartScrollableOffset = new();
+    private Point2d _cachedScrollOffset = new();
     private MouseEventArgs? _lastDragMouseEvent;
     private IRegion? _dragPreviewRegion;
     private CellLayoutProvider _cellLayoutProvider = new(new Sheet(0, 0));
@@ -64,6 +65,7 @@
 
         _ = InvokeAsync(async () =>
         {
+            _cachedScrollOffset = await GetScrollableOffsetAsync();
             await UpdateDragPreviewFromMouseAsync(_lastDragMouseEvent);
             StateHasChanged();
         });
@@ -114,15 +116,15 @@
         return true;
     }
 
-    private async Task UpdateDragPreviewFromMouseAsync(MouseEventArgs e)
+    private Task UpdateDragPreviewFromMouseAsync(MouseEventArgs e)
     {
         if (Sheet.Selection.ActiveRegion == null)
-            return;
+            return Task.CompletedTask;
 
-        var (dx, dy) = await GetAdjustedDragDeltaAsync(e.PageX, e.PageY);
+        var (dx, dy) = GetAdjustedDragDelta(e.PageX, e.PageY);
 
         if (Math.Abs(dx) < 5 && Math.Abs(dy) < 5)
-            return;
+            return Task.CompletedTask;
 
         var selRect = Sheet.Selection.ActiveRegion.GetRect(Sheet);
         var sheetX = selRect.X + selRect.Width + dx;
@@ -136,6 +138,7 @@
 
         _dragPreviewRegion = Sheet.Region.GetIntersection(_dragPreviewRegion);
         UpdatePreviewItem();
+        return Task.CompletedTask;
     }
 
     private void UpdatePreviewItem()
@@ -163,14 +166,13 @@
         }
     }
 
-    private async Task<(double dx, double dy)> GetAdjustedDragDeltaAsync(double pageX, double pageY)
+    private (double dx, double dy) GetAdjustedDragDelta(double pageX, double pageY)
     {
         var dx = pageX - _dragStartDocumentPosition.X;
         var dy = pageY - _dragStartDocumentPosition.Y;
 
-        var currentScrollOffset = await GetScrollableOffsetAsync();
-        dx += currentScrollOffset.X - _dragStartScrollableOffset.X;
-        dy += currentScrollOffset.Y - _dragStartScrollableOffset.Y;
+        dx += _cachedScrollOffset.X - _dragStartScrollableOffset.X;
+        dy += _cachedScrollOffset.Y - _dragStartScrollableOffset.Y;
 
         return (dx, dy);
     }
@@ -252,6 +254,7 @@
         _dragPreviewRegion = null;
         _dragStartDocumentPosition = new Point2d(e.PageX, e.PageY);
         _dragStartScrollableOffset = await GetScrollableOffsetAsync();
+        _cachedScrollOffset = _dragStartScrollableOffset;
         _lastDragMouseEvent = new MouseEventArgs { PageX = e.PageX, PageY = e.PageY };
 
         await SetDraggingAsync(true);

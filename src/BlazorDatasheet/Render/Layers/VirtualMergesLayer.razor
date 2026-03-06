@@ -88,7 +88,10 @@
         return sb.ToString();
     }
 
-    protected override bool ShouldRender() => true;
+    public void Dispose()
+    {
+        Sheet.Cells.CellsChanged -= CellsOnCellsChanged;
+    }
 
     private string GetRelativeCellStyle(int row, int col, int mergeHeight, int mergeWidth)
     {

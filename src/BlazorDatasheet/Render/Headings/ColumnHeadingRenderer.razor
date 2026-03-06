@@ -82,7 +82,7 @@
             </div>
 
             <div class="bds-unselectable"
-                 @onmousedown="_ => HandleMouseDownOnResizer(col)"
+                 @onmousedown="GetResizerMouseDownHandler(col)"
                  style="position: absolute;
                  right: 0;
                  z-index: 4;
@@ -106,6 +106,18 @@
     /// </summary>
     [Parameter]
     public int OverscanColumns { get; set; } = 2;
+
+    private readonly Dictionary<int, Action<MouseEventArgs>> _resizerHandlerCache = new();
+
+    private Action<MouseEventArgs> GetResizerMouseDownHandler(int col)
+    {
+        if (!_resizerHandlerCache.TryGetValue(col, out var handler))
+        {
+            handler = _ => HandleMouseDownOnResizer(col);
+            _resizerHandlerCache[col] = handler;
+        }
+        return handler;
+    }
 
     private double MouseX { get; set; }
     private double MouseXStart { get; set; }
@@ -236,11 +248,12 @@
         if (_rightView != null)
             await _rightView.RefreshView();
     }
-
+ 
     private bool HasVisibleCols(Region? region) => _sheet.HasVisibleCols(region);
 
     public async ValueTask DisposeAsync()
     {
+        Dispose();
         await _windowEventService.DisposeAsync();
     }
 

@@ -4,6 +4,7 @@
 @using BlazorDatasheet.DataStructures.Store
 @using BlazorDatasheet.Formula.Core.Interpreter.Parsing
 @inherits Layer
+@implements IDisposable
 
 <div class="highlight-layer">
     @foreach (var cr in _colorRegions)
@@ -35,6 +36,7 @@
 @code {
 
     private List<DataRegion<string>> _colorRegions = new();
+    private string? _lastParsedFormula;
 
     protected override void OnSheetChange(Sheet newSheet, Sheet oldSheet)
     {
@@ -47,6 +49,7 @@
     private void EditorOnEditFinished(object? sender, EditFinishedEventArgs e)
     {
         _colorRegions.Clear();
+        _lastParsedFormula = null;
         StateHasChanged();
     }
 
@@ -73,8 +76,29 @@
 
     private void EditorOnEditValueChanged(object? sender, string? e)
     {
+        if (string.IsNullOrEmpty(e) || !e.StartsWith("="))
+        {
+            if (_colorRegions.Count > 0)
+            {
+                _colorRegions.Clear();
+                _lastParsedFormula = null;
+                StateHasChanged();
+            }
+            return;
+        }
+
+        if (e == _lastParsedFormula)
+            return;
+
+        _lastParsedFormula = e;
         HighlightRanges();
         StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        Sheet.Editor.EditValueChanged -= EditorOnEditValueChanged;
+        Sheet.Editor.EditFinished -= EditorOnEditFinished;
     }
 
 }
