@@ -116,11 +116,10 @@
 }
 
 .bds-pane-row {
-    overflow: clip;
+    overflow: visible;
 }
 
 .bds-frozen-left {
-    overflow: clip;
     position: sticky;
     box-shadow: 2px 0 0 var(--frozen-border-color);
     background: var(--sheet-bg-color);
@@ -128,7 +127,6 @@
 
 .bds-frozen-right {
     position: sticky;
-    overflow: clip;
     box-shadow: -2px 0 0 var(--frozen-border-color);
     background: var(--sheet-bg-color);
 }
@@ -171,6 +169,7 @@
     background: var(--sheet-bg-color);
     border: var(--sheet-border-style);
     pointer-events: all;
+    overflow: clip;
 }
 
 .bds-row-head {
@@ -220,7 +219,7 @@
     color: var(--sheet-foreground-color)
 }
 
-.bds-editor-container {
+.bds-editor-overlay {
     background: var(--sheet-bg-color);
     box-shadow: 0 2px 8px var(--shadow-overlay-color);
     border-radius: 2px;
@@ -316,27 +315,108 @@
     outline: none;
 }
 
-.bds-select-list {
-    min-width: 10rem;
-    z-index: 4;
-    border: var(--sheet-border-style);
+.bds-select-editor {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+}
+
+.bds-select-editor-input {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+}
+
+.bds-text-editor {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+}
+
+.bds-select-editor-input .bds-text-editor {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+}
+
+.bds-popover {
+    position: fixed;
+    position-area: block-end span-inline-end;
+    position-try-fallbacks: flip-block;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+}
+
+.bds-select-dropdown-popover {
+    border: 1px solid color-mix(in srgb, var(--sheet-foreground-color) 16%, transparent);
     background: var(--sheet-bg-color);
-    position: absolute;
-    overflow-y: auto;
     color: var(--sheet-foreground-color);
-    display: block;
-    max-height: 7rem;
+    margin-top: 2px;
+    overflow-y: auto;
+    max-height: 14rem;
+    min-width: 12rem;
     border-radius: 4px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16), 0 2px 6px rgba(0, 0, 0, 0.08);
+    padding: 4px;
+}
+
+.bds-select-dropdown-popover:popover-open {
+    display: block;
 }
 
 .bds-select-item {
     cursor: pointer;
-    padding: 0.1rem 0.1rem 0.1rem 0.4rem;
+    min-height: 26px;
+    padding: 3px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    transition: background-color 120ms ease, color 120ms ease;
 }
 
-.bds-select-item:hover,
+.bds-select-item:hover {
+    background: color-mix(in srgb, var(--head-selection-bg-color) 60%, transparent);
+}
+
 .bds-select-item.active {
-    background: var(--selection-bg-color)
+    background: var(--head-selection-bg-color);
+    color: var(--col-header-foreground-color);
+    font-weight: 600;
+    position: relative;
+}
+
+.bds-select-item.active::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 4px;
+    bottom: 4px;
+    width: 3px;
+    border-radius: 999px;
+    background: var(--header-selected-bg-color);
+}
+
+.bds-select-item.bds-select-item-empty {
+    cursor: default;
+    opacity: 0.75;
+}
+
+.bds-select-dropdown-popover::-webkit-scrollbar {
+    width: 10px;
+}
+
+.bds-select-dropdown-popover::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--sheet-foreground-color) 24%, transparent);
+    border-radius: 999px;
 }
 
 .bds-func-suggestions {

@@ -1,4 +1,4 @@
-import { findScrollableAncestor } from "/_content/BlazorDatasheet/js/scroll-utils.js";
+import { findScrollableAncestor } from "../../js/scroll-utils.js";
 
 export function getScrollableOffset(element) {
     const ancestor = findScrollableAncestor(element) ?? document.documentElement;
