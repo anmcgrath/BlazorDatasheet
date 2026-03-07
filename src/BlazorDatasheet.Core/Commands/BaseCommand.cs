@@ -2,6 +2,9 @@
 
 namespace BlazorDatasheet.Core.Commands;
 
+/// <summary>
+/// Chainable command
+/// </summary>
 public abstract class BaseCommand : ICommand
 {
     private readonly List<ICommand> _chainedAfterCommands = new();

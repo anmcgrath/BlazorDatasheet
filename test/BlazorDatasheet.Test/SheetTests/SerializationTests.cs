@@ -111,6 +111,16 @@ public class SerializationTests
         dSheet.Columns.Filters.GetAll().Should().BeEquivalentTo(sheet.Columns.Filters.GetAll());
     }
 
+    [Test]
+    public void FrozenValsShouldBeSerialized()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.FreezeRowCols(1, 2, 3, 4);
+        var json = new SheetJsonSerializer().Serialize(sheet.Workbook);
+        var deserialized = new SheetJsonDeserializer().Deserialize(json);
+        sheet.FreezeState.Should().BeEquivalentTo(deserialized.Sheets.First().FreezeState);
+    }
+
     private void CompareSheets(Workbook wb1, Workbook wb2)
     {
         var sheets1 = wb1.Sheets.ToArray();

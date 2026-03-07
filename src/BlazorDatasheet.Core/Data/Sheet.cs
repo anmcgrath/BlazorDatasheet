@@ -2,9 +2,11 @@ using System.Text;
 using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Commands.Formatting;
+using BlazorDatasheet.Core.Commands.RowCols;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Edit;
 using BlazorDatasheet.Core.Events.Data;
+using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.Core.Events.Sort;
 using BlazorDatasheet.Core.Events.Visual;
 using BlazorDatasheet.Core.Formats;
@@ -93,6 +95,11 @@ public class Sheet
     public string Name { get; internal set; } = "Sheet1";
 
     /// <summary>
+    /// The frozen rows/columns on the sheet.
+    /// </summary>
+    public FreezeState FreezeState { get; private set; } = new FreezeState(0, 0, 0, 0);
+
+    /// <summary>
     /// The workbook associated with this sheet.
     /// </summary>
     public Workbook Workbook
@@ -139,6 +146,8 @@ public class Sheet
     public event EventHandler<BeforeRangeSortEventArgs>? BeforeRangeSort;
 
     public event EventHandler<RangeSortedEventArgs>? RangeSorted;
+
+    public event EventHandler<SheetFrozenRowColsEventArgs>? FrozenRowCols;
 
     /// <summary>
     /// Fired when <see cref="ScreenUpdating"/> is changed
@@ -548,8 +557,30 @@ public class Sheet
 
     #endregion FORMAT
 
-    public string? GetRegionAsDelimitedText(IRegion inputRegion, char tabDelimiter = '\t', string newLineDelim = "\n")
+    /// <summary>
+    /// Gets the region values as a delimited string
+    /// </summary>
+    /// <param name="inputRegion">The region to grab</param>
+    /// <param name="tabDelimiter">Separator between columns in each row</param>
+    /// <param name="newLineDelim">New line character, defaults to Environment.NewLine</param>
+    /// <param name="includeColHeaders">Optional, includes the column headers in the first row, for the region</param>
+    /// <param name="includeRowHeaders">Optional, includes the column headers in the first column, for each line</param>
+    /// <returns></returns>
+    public string? GetRegionAsDelimitedText(IRegion inputRegion, char tabDelimiter = '\t', string? newLineDelim = null,
+        bool includeColHeaders = false, bool includeRowHeaders = false)
     {
+        newLineDelim ??= Environment.NewLine;
+        var tabDelimiterAsString = tabDelimiter.ToString();
+
+        string SanitizeDelimitedText(string value)
+        {
+            return value
+                .Replace("\r\n", " ")
+                .Replace('\n', ' ')
+                .Replace('\r', ' ')
+                .Replace(tabDelimiterAsString, " ");
+        }
+
         if (inputRegion.Area == 0)
             return string.Empty;
 
@@ -566,8 +597,31 @@ public class Sheet
         var c0 = range.TopLeft.col;
         var c1 = range.BottomRight.col;
 
+        if (includeColHeaders)
+        {
+            if (includeRowHeaders)
+                strBuilder.Append(tabDelimiter);
+
+            for (int col = c0; col <= c1; col++)
+            {
+                var heading = Columns.GetHeading(col) ?? RangeText.ColIndexToLetters(col);
+                strBuilder.Append(SanitizeDelimitedText(heading));
+                if (col != c1)
+                    strBuilder.Append(tabDelimiter);
+            }
+
+            strBuilder.Append(newLineDelim);
+        }
+
         for (int row = r0; row <= r1; row++)
         {
+            if (includeRowHeaders)
+            {
+                var rowHeading = Rows.GetHeading(row) ?? (row + 1).ToString();
+                strBuilder.Append(SanitizeDelimitedText(rowHeading));
+                strBuilder.Append(tabDelimiter);
+            }
+
             for (int col = c0; col <= c1; col++)
             {
                 var cell = Cells.GetCell(row, col);
@@ -578,7 +632,7 @@ public class Sheet
                 {
                     if (value is string s)
                     {
-                        strBuilder.Append(s.Replace(newLineDelim, " ").Replace(tabDelimiter, ' '));
+                        strBuilder.Append(SanitizeDelimitedText(s));
                     }
                     else
                     {
@@ -590,7 +644,8 @@ public class Sheet
                     strBuilder.Append(tabDelimiter);
             }
 
-            strBuilder.Append(newLineDelim);
+            if (row != r1)
+                strBuilder.Append(newLineDelim);
         }
 
         return strBuilder.ToString();
@@ -637,110 +692,82 @@ public class Sheet
     }
 
     /// <summary>
-    /// Expands the <paramref name="region"/> so that it covers any merged cells
+    /// Freeze the number of row/columns specified
     /// </summary>
-    internal IRegion? ExpandRegionOverMerges(IRegion? region)
+    /// <param name="top">The number of rows at the top of the sheet</param>
+    /// <param name="bottom">The number of rows at the bottom of the sheet</param>
+    /// <param name="left">The number of columns at the left of the sheet</param>
+    /// <param name="right">The number of columns at the right of the sheet</param>
+    public void FreezeRowCols(int top, int bottom, int left, int right)
     {
-        if (region is ColumnRegion || region is RowRegion)
-            return region;
+        Commands.ExecuteCommand(new FreezeRowColsCommand(top, bottom, left, right));
+    }
 
-        // Look at the four sides of the active region
-        // If any of the sides are touching active regions, we check whether the selection
-        // covers the region entirely. If not, expand the sides so that they cover.
-        // Continue until there are no more merge intersections that we don't fully cover.
-        var boundedRegion = region?.Copy();
+    internal void FreezeRowColsImpl(int top, int bottom, int left, int right)
+    {
+        if (top < 0 || bottom < 0 || left < 0 || right < 0 || (top + bottom) > Region.Height ||
+            (left + right) > Region.Width)
+            throw new ArgumentException(
+                $"Invalid frozen row/cols top, bottom, left and right: {top}, {bottom}, {left}, {right}");
 
-        if (boundedRegion == null)
-            return null;
-
-        List<IRegion> mergeOverlaps;
-        do
-        {
-            var top = boundedRegion.GetEdge(Edge.Top);
-            var right = boundedRegion.GetEdge(Edge.Right);
-            var left = boundedRegion.GetEdge(Edge.Left);
-            var bottom = boundedRegion.GetEdge(Edge.Bottom);
-
-            mergeOverlaps =
-                this.Cells
-                    .GetMerges(new[] { top, right, left, bottom })
-                    .Where(x => !boundedRegion.Contains(x))
-                    .ToList();
-
-            // Expand bounded selection to cover all the merges
-            foreach (var merge in mergeOverlaps)
-            {
-                boundedRegion = boundedRegion.GetBoundingRegion(merge);
-            }
-        } while (mergeOverlaps.Any());
-
-        return boundedRegion;
+        var oldState = FreezeState;
+        FreezeState = new FreezeState(top, bottom, left, right);
+        FrozenRowCols?.Invoke(this, new SheetFrozenRowColsEventArgs(oldState, FreezeState));
     }
 
     /// <summary>
-    /// Contracts the <paramref name="region"/> so that its edges no longer intersects any merged regions.
-    /// Returns null if it's not possible to contract.
+    /// Freezes the top <paramref name="number"/> of rows
     /// </summary>
-    internal IRegion? ContractRegionOverMerges(IRegion? region)
+    /// <param name="number"></param>
+    public void FreezeTopRows(int number)
     {
-        if (region is ColumnRegion || region is RowRegion)
-            return region;
+        FreezeRowCols(number, FreezeState.Bottom, FreezeState.Left, FreezeState.Right);
+    }
 
-        // Look at the four sides of the active region
-        // If any of the sides are touching active regions, we check whether the selection
-        // covers the region entirely. If not, contract the sides
-        // Continue until there are no more merge intersections that we don't fully cover.
-        var boundedRegion = region?.Copy();
+    /// <summary>
+    /// Freezes the bottom <paramref name="number"/> of rows
+    /// </summary>
+    /// <param name="number"></param>
+    public void FreezeBottomRows(int number)
+    {
+        FreezeRowCols(FreezeState.Top, number, FreezeState.Left, FreezeState.Right);
+    }
 
-        if (boundedRegion == null)
-            return null;
+    /// <summary>
+    /// Freezes the left <paramref name="number"/> of columns
+    /// </summary>
+    /// <param name="number"></param>
+    public void FreezeLeftColumns(int number)
+    {
+        FreezeRowCols(FreezeState.Top, FreezeState.Bottom, number, FreezeState.Right);
+    }
 
-        List<IRegion> mergeOverlaps;
-        do
+    /// <summary>
+    /// Freezes the right <paramref name="number"/> of columns
+    /// </summary>
+    /// <param name="number"></param>
+    public void FreezeRightColumns(int number)
+    {
+        FreezeRowCols(FreezeState.Top, FreezeState.Bottom, FreezeState.Left, number);
+    }
+
+    /// <summary>
+    /// Freeze the <paramref name="edge"/> by the <paramref name="number"/> of columns
+    /// </summary>
+    /// <param name="edge"></param>
+    /// <param name="number"></param>
+    public void Freeze(Edge edge, int number)
+    {
+        switch (edge)
         {
-            var top = boundedRegion.GetEdge(Edge.Top);
-            var right = boundedRegion.GetEdge(Edge.Right);
-            var left = boundedRegion.GetEdge(Edge.Left);
-            var bottom = boundedRegion.GetEdge(Edge.Bottom);
-
-            mergeOverlaps =
-                this.Cells
-                    .GetMerges(new[] { top, right, left, bottom })
-                    .Where(x => !x.Equals(boundedRegion) && !(boundedRegion.Contains(x) && x.Area < boundedRegion.Area))
-                    .Distinct()
-                    .ToList();
-
-            // Expand bounded selection to cover all the merges
-            foreach (var merge in mergeOverlaps)
-            {
-                var mergeSpansRight = merge.SpansCol(boundedRegion.Right);
-                var mergeSpansLeft = merge.SpansCol(boundedRegion.Left);
-                var mergeSpansBottom = merge.SpansRow(boundedRegion.Bottom);
-                var mergeSpansTop = merge.SpansRow(boundedRegion.Top);
-
-                // if both sides of the boundedRect are inside the merge
-                // it is impossible to contract
-                if (mergeSpansRight && mergeSpansLeft && boundedRegion.Width < merge.Width)
-                    return null;
-                if (mergeSpansBottom && mergeSpansTop && boundedRegion.Height < merge.Height)
-                    return null;
-
-                var intersection = merge.GetIntersection(boundedRegion);
-                if (intersection == null)
-                    continue;
-
-                if (mergeSpansRight && boundedRegion.Right != merge.Right)
-                    boundedRegion.Contract(Edge.Right, intersection.Width);
-                if (mergeSpansLeft && boundedRegion.Left != merge.Left)
-                    boundedRegion.Contract(Edge.Left, intersection.Width);
-
-                if (mergeSpansBottom && boundedRegion.Bottom != merge.Bottom)
-                    boundedRegion.Contract(Edge.Bottom, intersection.Height);
-                if (mergeSpansTop && boundedRegion.Top != merge.Top)
-                    boundedRegion.Contract(Edge.Top, intersection.Height);
-            }
-        } while (mergeOverlaps.Any());
-
-        return boundedRegion;
+            case Edge.Bottom:
+                FreezeBottomRows(number); break;
+            case Edge.Left:
+                FreezeLeftColumns(number); break;
+            case Edge.Top:
+                FreezeTopRows(number); break;
+            case Edge.Right:
+                FreezeRightColumns(number); break;
+        }
     }
 }

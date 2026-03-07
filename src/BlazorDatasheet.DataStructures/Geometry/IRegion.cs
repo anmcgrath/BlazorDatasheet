@@ -165,6 +165,14 @@ public interface IRegion : IEquatable<IRegion>
     public IRegion GetEdge(Edge edge);
 
     /// <summary>
+    /// Gets an edge region of size <paramref name="size"/> (either width/height, depending on axis)
+    /// </summary>
+    /// <param name="edge"></param>
+    /// <param name="size">If left/right, the columns from the edge, if up/down, the rows from the edge</param>
+    /// <returns></returns>
+    public IRegion GetEdge(Edge edge, int size);
+
+    /// <summary>
     /// Returns the position of the edge, which aligns with the edge axis
     /// </summary>
     /// <param name="edge"></param>

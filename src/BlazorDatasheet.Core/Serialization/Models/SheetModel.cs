@@ -1,4 +1,5 @@
-﻿using BlazorDatasheet.Core.Interfaces;
+﻿using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Interfaces;
 
 namespace BlazorDatasheet.Core.Serialization.Models;
 
@@ -6,6 +7,7 @@ internal class SheetModel
 {
     public string Name { get; set; }
     public List<RowModel> Rows { get; set; } = new();
+    public FreezeStateModel FreezeState { get; set; } = new();
     public List<ColumnModel> Columns { get; set; } = new();
     public List<DataRegionModel<int>> CellFormats { get; set; } = new();
     public List<DataRegionModel<bool>> Merges { get; set; } = new();

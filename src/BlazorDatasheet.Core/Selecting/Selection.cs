@@ -94,7 +94,7 @@ public class Selection
         this.SelectingRegion = new Region(row, col);
         this._selectingStartPosition = new CellPosition(row, col);
         this._selectingMode = SelectionMode.Cell;
-        this.SelectingRegion = _sheet.ExpandRegionOverMerges(SelectingRegion);
+        this.SelectingRegion = ExpandRegionOverMerges(SelectingRegion);
         EmitSelectingChanged();
     }
 
@@ -105,7 +105,7 @@ public class Selection
         this.SelectingRegion = new ColumnRegion(col, col);
         this._selectingStartPosition = new CellPosition(0, col);
         this._selectingMode = SelectionMode.Column;
-        this.SelectingRegion = _sheet.ExpandRegionOverMerges(SelectingRegion);
+        this.SelectingRegion = ExpandRegionOverMerges(SelectingRegion);
         EmitSelectingChanged();
     }
 
@@ -116,7 +116,7 @@ public class Selection
         this.SelectingRegion = new RowRegion(row, row);
         this._selectingStartPosition = new CellPosition(row, 0);
         this._selectingMode = SelectionMode.Row;
-        this.SelectingRegion = _sheet.ExpandRegionOverMerges(SelectingRegion);
+        this.SelectingRegion = ExpandRegionOverMerges(SelectingRegion);
         EmitSelectingChanged();
     }
 
@@ -138,7 +138,7 @@ public class Selection
                 break;
         }
 
-        SelectingRegion = _sheet.ExpandRegionOverMerges(SelectingRegion);
+        SelectingRegion = ExpandRegionOverMerges(SelectingRegion);
         EmitSelectingChanged();
     }
 
@@ -197,7 +197,7 @@ public class Selection
 
         foreach (var region in regions)
         {
-            var expandedRegion = _sheet.ExpandRegionOverMerges(region);
+            var expandedRegion = ExpandRegionOverMerges(region);
             if (expandedRegion != null)
                 _regions.Add(expandedRegion);
         }
@@ -254,7 +254,7 @@ public class Selection
         else
             newRegion = new Region(ActiveCellPosition.row, row, ActiveCellPosition.col, col);
 
-        var expanded = _sheet.ExpandRegionOverMerges(newRegion);
+        var expanded = ExpandRegionOverMerges(newRegion);
 
         if (expanded != null)
             SwapActiveRegion(expanded);
@@ -283,7 +283,7 @@ public class Selection
         var nextVisible = _sheet.GetRowColStore(axis).GetNextVisible(edgePosition, dir);
         newRegion.Expand(edge, Math.Max(Math.Abs(amount), Math.Abs(nextVisible - edgePosition)));
 
-        var expanded = _sheet.ExpandRegionOverMerges(newRegion);
+        var expanded = ExpandRegionOverMerges(newRegion);
         expanded = expanded?.GetIntersection(_sheet.Region);
         if (expanded != null)
             SwapActiveRegion(expanded);
@@ -320,7 +320,7 @@ public class Selection
         var newRegion = ActiveRegion.Clone();
         newRegion.Contract(edge, Math.Abs(nextVisible - edgePosition));
 
-        var contracted = _sheet.ContractRegionOverMerges(newRegion);
+        var contracted = ContractRegionOverMerges(newRegion);
         var activeCellRegion = _sheet.Cells.GetMerge(ActiveCellPosition.row, ActiveCellPosition.col) ??
                                new Region(ActiveCellPosition.row, ActiveCellPosition.col);
 
@@ -510,7 +510,7 @@ public class Selection
             var offsetPosn = new CellPosition(currRow, currCol);
             offsetPosn = _sheet.Region.GetConstrained(offsetPosn);
             var newRegion = new Region(offsetPosn.row, offsetPosn.col);
-            newRegion = _sheet.ExpandRegionOverMerges(newRegion) as Region;
+            newRegion = ExpandRegionOverMerges(newRegion) as Region;
             SetActiveCellPosition(offsetPosn.row, offsetPosn.col);
             if (newRegion != null)
                 this.Add(newRegion);
@@ -610,7 +610,7 @@ public class Selection
             var offsetPosn = new CellPosition(currRow, currCol);
             offsetPosn = _sheet.Region.GetConstrained(offsetPosn);
             var newRegion = new Region(offsetPosn.row, offsetPosn.col);
-            newRegion = _sheet.ExpandRegionOverMerges(newRegion) as Region;
+            newRegion = ExpandRegionOverMerges(newRegion) as Region;
             SetActiveCellPosition(offsetPosn.row, offsetPosn.col);
             if (newRegion != null)
                 this.Add(newRegion);
@@ -792,5 +792,114 @@ public class Selection
     private IReadOnlyList<IRegion> CloneRegions()
     {
         return _regions.Select(x => x.Clone()).ToList();
+    }
+    
+    
+    /// <summary>
+    /// Expands the <paramref name="region"/> so that it covers any merged cells
+    /// </summary>
+    internal IRegion? ExpandRegionOverMerges(IRegion? region)
+    {
+        if (region is ColumnRegion || region is RowRegion)
+            return region;
+
+        // Look at the four sides of the active region
+        // If any of the sides are touching active regions, we check whether the selection
+        // covers the region entirely. If not, expand the sides so that they cover.
+        // Continue until there are no more merge intersections that we don't fully cover.
+        var boundedRegion = region?.Copy();
+
+        if (boundedRegion == null)
+            return null;
+
+        List<IRegion> mergeOverlaps;
+        do
+        {
+            var top = boundedRegion.GetEdge(Edge.Top);
+            var right = boundedRegion.GetEdge(Edge.Right);
+            var left = boundedRegion.GetEdge(Edge.Left);
+            var bottom = boundedRegion.GetEdge(Edge.Bottom);
+
+            mergeOverlaps =
+                _sheet.Cells
+                    .GetMerges(new[] { top, right, left, bottom })
+                    .Where(x => !boundedRegion.Contains(x))
+                    .ToList();
+
+            // Expand bounded selection to cover all the merges
+            foreach (var merge in mergeOverlaps)
+            {
+                boundedRegion = boundedRegion.GetBoundingRegion(merge);
+            }
+        } while (mergeOverlaps.Any());
+
+        return boundedRegion;
+    }
+
+    /// <summary>
+    /// Contracts the <paramref name="region"/> so that its edges no longer intersects any merged regions.
+    /// Returns null if it's not possible to contract.
+    /// </summary>
+    internal IRegion? ContractRegionOverMerges(IRegion? region)
+    {
+        if (region is ColumnRegion || region is RowRegion)
+            return region;
+
+        // Look at the four sides of the active region
+        // If any of the sides are touching active regions, we check whether the selection
+        // covers the region entirely. If not, contract the sides
+        // Continue until there are no more merge intersections that we don't fully cover.
+        var boundedRegion = region?.Copy();
+
+        if (boundedRegion == null)
+            return null;
+
+        List<IRegion> mergeOverlaps;
+        do
+        {
+            var top = boundedRegion.GetEdge(Edge.Top);
+            var right = boundedRegion.GetEdge(Edge.Right);
+            var left = boundedRegion.GetEdge(Edge.Left);
+            var bottom = boundedRegion.GetEdge(Edge.Bottom);
+
+            mergeOverlaps =
+                _sheet.Cells
+                    .GetMerges(new[] { top, right, left, bottom })
+                    .Where(x => !x.Equals(boundedRegion) && !(boundedRegion.Contains(x) && x.Area < boundedRegion.Area))
+                    .Distinct()
+                    .ToList();
+
+            // Expand bounded selection to cover all the merges
+            foreach (var merge in mergeOverlaps)
+            {
+                var mergeSpansRight = merge.SpansCol(boundedRegion.Right);
+                var mergeSpansLeft = merge.SpansCol(boundedRegion.Left);
+                var mergeSpansBottom = merge.SpansRow(boundedRegion.Bottom);
+                var mergeSpansTop = merge.SpansRow(boundedRegion.Top);
+
+                // if both sides of the boundedRect are inside the merge
+                // it is impossible to contract
+                if (mergeSpansRight && mergeSpansLeft && boundedRegion.Width < merge.Width)
+                    return null;
+                if (mergeSpansBottom && mergeSpansTop && boundedRegion.Height < merge.Height)
+                    return null;
+
+                var intersection = merge.GetIntersection(boundedRegion);
+                if (intersection == null)
+                    continue;
+
+                if (mergeSpansRight && boundedRegion.Right != merge.Right)
+                    boundedRegion.Contract(Edge.Right, intersection.Width);
+                if (mergeSpansLeft && boundedRegion.Left != merge.Left)
+                    boundedRegion.Contract(Edge.Left, intersection.Width);
+
+                if (mergeSpansBottom && boundedRegion.Bottom != merge.Bottom)
+                    boundedRegion.Contract(Edge.Bottom, intersection.Height);
+                if (mergeSpansTop && boundedRegion.Top != merge.Top)
+                    boundedRegion.Contract(Edge.Top, intersection.Height);
+            }
+        } while (mergeOverlaps.Any());
+
+        return boundedRegion;
     }
 }

@@ -20,6 +20,13 @@ internal class SheetMapper
         sheetModel.Name = sheet.Name;
         sheetModel.DefaultHeight = (int)sheet.Rows.DefaultSize;
         sheetModel.DefaultWidth = (int)sheet.Columns.DefaultSize;
+        sheetModel.FreezeState = new FreezeStateModel()
+        {
+            Top = sheet.FreezeState.Top,
+            Bottom = sheet.FreezeState.Bottom,
+            Left = sheet.FreezeState.Left,
+            Right = sheet.FreezeState.Right
+        };
 
         foreach (var row in sheet.Rows.NonEmpty)
         {
@@ -108,6 +115,9 @@ internal class SheetMapper
         sheet.Commands.PauseHistory();
         sheet.ScreenUpdating = false;
         sheet.BatchUpdates();
+
+        sheet.FreezeRowColsImpl(sheetModel.FreezeState.Top, sheetModel.FreezeState.Bottom, sheetModel.FreezeState.Left,
+            sheetModel.FreezeState.Right);
 
         foreach (var rowModel in sheetModel.Rows)
         {

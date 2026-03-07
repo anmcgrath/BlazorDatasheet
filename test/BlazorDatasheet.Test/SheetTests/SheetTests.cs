@@ -190,4 +190,110 @@ public class SheetTests
         sheet.Cells.GetNextInRow(5, 4)!.Col.Should().Be(10);
         sheet.Cells.GetNextInRow(5, 4, -1)!.Col.Should().Be(1);
     }
+
+    [Test]
+    public void GetRegionAsDelimitedText_No_Trailing_Newline()
+    {
+        var sheet = new Sheet(2, 2);
+        sheet.Cells.SetValue(0, 0, "a");
+        sheet.Cells.SetValue(0, 1, "b");
+        var result = sheet.GetRegionAsDelimitedText(new Region(0, 0, 0, 1), newLineDelim: "\n");
+        result.Should().Be("a\tb");
+    }
+
+    [Test]
+    public void GetRegionAsDelimitedText_IncludeColHeaders_Uses_Default_Letter_Headers()
+    {
+        var sheet = new Sheet(2, 2);
+        sheet.Cells.SetValue(0, 0, "a");
+        sheet.Cells.SetValue(0, 1, "b");
+        sheet.Cells.SetValue(1, 0, "c");
+        sheet.Cells.SetValue(1, 1, "d");
+        var result = sheet.GetRegionAsDelimitedText(new Region(0, 1, 0, 1), newLineDelim: "\n", includeColHeaders: true);
+        result.Should().Be("A\tB\na\tb\nc\td");
+    }
+
+    [Test]
+    public void GetRegionAsDelimitedText_IncludeColHeaders_Uses_Custom_Column_Headings()
+    {
+        var sheet = new Sheet(2, 2);
+        sheet.Columns.SetHeadings(0, 0, "Name");
+        sheet.Columns.SetHeadings(1, 1, "Age");
+        sheet.Cells.SetValue(0, 0, "Alice");
+        sheet.Cells.SetValue(0, 1, "30");
+        var result = sheet.GetRegionAsDelimitedText(new Region(0, 0, 0, 1), newLineDelim: "\n", includeColHeaders: true);
+        result.Should().Be("Name\tAge\nAlice\t30");
+    }
+
+    [Test]
+    public void GetRegionAsDelimitedText_IncludeRowHeaders_Uses_Default_OneBasedRow_Numbers()
+    {
+        var sheet = new Sheet(2, 2);
+        sheet.Cells.SetValue(0, 0, "a");
+        sheet.Cells.SetValue(0, 1, "b");
+        sheet.Cells.SetValue(1, 0, "c");
+        sheet.Cells.SetValue(1, 1, "d");
+        var result = sheet.GetRegionAsDelimitedText(new Region(0, 1, 0, 1), newLineDelim: "\n", includeRowHeaders: true);
+        result.Should().Be("1\ta\tb\n2\tc\td");
+    }
+
+    [Test]
+    public void GetRegionAsDelimitedText_IncludeRowHeaders_Uses_Custom_Row_Headings()
+    {
+        var sheet = new Sheet(2, 2);
+        sheet.Rows.SetHeadings(0, 0, "First");
+        sheet.Rows.SetHeadings(1, 1, "Second");
+        sheet.Cells.SetValue(0, 0, "a");
+        sheet.Cells.SetValue(1, 0, "b");
+        var result = sheet.GetRegionAsDelimitedText(new Region(0, 1, 0, 0), newLineDelim: "\n", includeRowHeaders: true);
+        result.Should().Be("First\ta\nSecond\tb");
+    }
+
+    [Test]
+    public void GetRegionAsDelimitedText_BothHeaders_Produces_Aligned_Output()
+    {
+        var sheet = new Sheet(2, 2);
+        sheet.Cells.SetValue(0, 0, "a");
+        sheet.Cells.SetValue(0, 1, "b");
+        sheet.Cells.SetValue(1, 0, "c");
+        sheet.Cells.SetValue(1, 1, "d");
+        var result = sheet.GetRegionAsDelimitedText(new Region(0, 1, 0, 1), newLineDelim: "\n",
+            includeColHeaders: true, includeRowHeaders: true);
+        result.Should().Be("\tA\tB\n1\ta\tb\n2\tc\td");
+    }
+
+    [Test]
+    public void GetRegionAsDelimitedText_IncludeColHeaders_UsesCorrectLetters_ForPartialRegion()
+    {
+        var sheet = new Sheet(2, 4);
+        sheet.Cells.SetValue(0, 2, "x");
+        sheet.Cells.SetValue(0, 3, "y");
+        var result = sheet.GetRegionAsDelimitedText(new Region(0, 0, 2, 3), newLineDelim: "\n", includeColHeaders: true);
+        result.Should().Be("C\tD\nx\ty");
+    }
+
+    [Test]
+    public void GetRegionAsDelimitedText_Replaces_StandaloneLf_WhenDefaultLineDelimiterIsUsed()
+    {
+        var sheet = new Sheet(1, 1);
+        sheet.Cells.SetValue(0, 0, "a\nb");
+
+        var result = sheet.GetRegionAsDelimitedText(new Region(0, 0, 0, 0), newLineDelim: "\r\n");
+
+        result.Should().Be("a b");
+    }
+
+    [Test]
+    public void GetRegionAsDelimitedText_Sanitizes_Row_And_Column_Headers()
+    {
+        var sheet = new Sheet(1, 1);
+        sheet.Columns.SetHeadings(0, 0, "X\tY");
+        sheet.Rows.SetHeadings(0, 0, "r\n1");
+        sheet.Cells.SetValue(0, 0, "v");
+
+        var result = sheet.GetRegionAsDelimitedText(new Region(0, 0, 0, 0), newLineDelim: "\n",
+            includeColHeaders: true, includeRowHeaders: true);
+
+        result.Should().Be("\tX Y\nr 1\tv");
+    }
 }

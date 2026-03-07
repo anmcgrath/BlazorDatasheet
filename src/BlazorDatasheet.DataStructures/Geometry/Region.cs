@@ -174,19 +174,27 @@ public class Region : IRegion
     /// <returns></returns>
     public IRegion GetEdge(Edge edge)
     {
-        switch (edge)
-        {
-            case Edge.Top:
-                return new Region(this.Start.row, this.Start.row, this.Start.col, this.End.col);
-            case Edge.Bottom:
-                return new Region(this.End.row, this.End.row, this.Start.col, this.End.col);
-            case Edge.Left:
-                return new Region(this.Start.row, this.End.row, this.Start.col, this.Start.col);
-            case Edge.Right:
-                return new Region(this.Start.row, this.End.row, this.End.col, this.End.col);
-        }
+        return GetEdge(edge, 1);
+    }
 
-        return default;
+    public IRegion GetEdge(Edge edge, int size)
+    {
+        if (size <= 0)
+            return new EmptyRegion();
+
+        var edgeRegion = edge switch
+        {
+            Edge.Top => new Region(Top, Top + size - 1, Left, Right),
+            Edge.Bottom => new Region(Bottom - size + 1, Bottom, Left, Right),
+            Edge.Left => new Region(Top, Bottom, Left, Left + size - 1),
+            Edge.Right => new Region(Top, Bottom, Right - size + 1, Right),
+            _ => throw new ArgumentOutOfRangeException(nameof(edge), edge, null)
+        };
+
+        if (GetSize(edge.GetAxis()) <= size)
+            return edgeRegion.GetIntersection(this)!;
+
+        return edgeRegion;
     }
 
     public int GetEdgePosition(Edge edge)
