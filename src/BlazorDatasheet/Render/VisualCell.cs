@@ -113,6 +113,10 @@ public class VisualCell
             sb.AddStyle("border-bottom", $"{format.BorderBottom.Width}px solid {format.BorderBottom.Color};");
         if (format.BorderRight != null)
             sb.AddStyle("border-right", $"{format.BorderRight.Width}px solid {format.BorderRight.Color};");
+        if (format.BorderTop != null)
+            sb.AddStyle("border-top", $"{format.BorderTop.Width}px solid {format.BorderTop.Color};");
+        if (format.BorderLeft != null)
+            sb.AddStyle("border-left", $"{format.BorderLeft.Width}px solid {format.BorderLeft.Color};");
 
         // if number and no align is set, move to right
         if (type == CellValueType.Number && format.HorizontalTextAlign == null)
