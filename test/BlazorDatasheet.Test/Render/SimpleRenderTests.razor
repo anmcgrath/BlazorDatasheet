@@ -94,7 +94,7 @@
         var sheet = new Sheet(5, 5);
         var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
 
-        cut.FindAll("div.bds-pane-row-main").Count.Should().Be(1);
+        cut.FindAll("div.bds-pane-row").Count.Should().Be(1);
         cut.FindAll("div.bds-pane-row-top").Count.Should().Be(0);
         cut.FindAll("div.bds-pane-row-bottom").Count.Should().Be(0);
     }
@@ -112,9 +112,9 @@
             parameters.Add(p => p.ShowRowHeadings, false);
         });
 
-        cut.FindAll("div.bds-pane-row-main").Count.Should().Be(1);
-        cut.FindAll("div.bds-pane-row-top").Count.Should().Be(1);
-        cut.FindAll("div.bds-pane-row-bottom").Count.Should().Be(1);
+        cut.FindAll("div.bds-pane-row").Count.Should().Be(3);
+        cut.FindAll("div.bds-frozen-top").Count.Should().Be(1);
+        cut.FindAll("div.bds-frozen-bottom").Count.Should().Be(1);
     }
 
     [Test]
