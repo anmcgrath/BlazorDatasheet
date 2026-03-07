@@ -22,11 +22,13 @@ using BlazorDatasheet.Render.AutoScroll;
 using BlazorDatasheet.Render.Layers;
 using BlazorDatasheet.Render.Layers.Preview;
 using BlazorDatasheet.Services;
+using BlazorDatasheet.Util;
 using BlazorDatasheet.Virtualise;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using ClipboardEventArgs = BlazorDatasheet.Core.Events.ClipboardEventArgs;
 using Microsoft.JSInterop;
+using static BlazorDatasheet.Util.JsInteropHelper;
 
 [assembly: InternalsVisibleTo("BlazorDatasheet.Test")]
 
@@ -206,6 +208,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     private SheetMenuOptions _menuOptions = new();
 
     private DotNetObjectReference<Datasheet>? _dotnetHelper;
+    private bool _isDisposing;
     private IJSObjectReference? _scrollContainerModule;
 
     private SheetPointerInputService? _sheetPointerInputService;
@@ -341,22 +344,35 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (firstRender && !_isDisposing)
         {
             _scrollContainerModule =
                 await Js.InvokeAsync<IJSObjectReference>("import",
                     "./_content/BlazorDatasheet/js/scroll-container.js");
+
+            if (_isDisposing)
+            {
+                await DisposeJsObjectReferenceAsync(_scrollContainerModule);
+                _scrollContainerModule = null;
+                return;
+            }
 
             _dotnetHelper = DotNetObjectReference.Create(this);
 
             _sheetPointerInputService = new SheetPointerInputService(Js, _sheetContainer);
             await _sheetPointerInputService.Init();
 
+            if (_isDisposing)
+                return;
+
             _sheetPointerInputService.PointerDown += HandleCellMouseDown;
             _sheetPointerInputService.PointerEnter += HandleCellMouseOver;
             _sheetPointerInputService.PointerDoubleClick += HandleCellDoubleClick;
 
             await AddWindowEventsAsync();
+
+            if (_isDisposing)
+                return;
 
             if (UpdatePaneContextIfNeeded())
             {
@@ -994,17 +1010,28 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     public async ValueTask DisposeAsync()
     {
+        _isDisposing = true;
         RemoveEvents(_sheet);
 
         if (_dotnetHelper is not null)
+        {
             _dotnetHelper.Dispose();
+            _dotnetHelper = null;
+        }
 
         if (_sheetPointerInputService is not null)
+        {
             await _sheetPointerInputService.DisposeAsync();
+            _sheetPointerInputService = null;
+        }
 
         if (_scrollContainerModule is not null)
-            await _scrollContainerModule.DisposeAsync();
+        {
+            await DisposeJsObjectReferenceAsync(_scrollContainerModule);
+            _scrollContainerModule = null;
+        }
 
         await _windowEventService.DisposeAsync();
     }
+
 }
