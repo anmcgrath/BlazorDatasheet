@@ -8,7 +8,7 @@
 
     [CascadingParameter] protected double LayerHeight { get; set; }
 
-    [CascadingParameter] protected IRegion? ViewRegion { get; set; }
+    [CascadingParameter] protected IRegion ViewRegion { get; set; } = new EmptyRegion();
 
     [CascadingParameter] protected Sheet Sheet { get; set; } = new(0, 0);
     private Sheet _sheet = new(0, 0);
@@ -28,29 +28,22 @@
 
     protected override void OnParametersSet()
     {
-        var updatePositions = false;
-
         if (_sheet != Sheet)
         {
             var oldSheet = _sheet;
             _sheet = Sheet;
-            updatePositions = true;
             OnSheetChange(_sheet, oldSheet);
         }
 
         if (ViewRegion != _viewRegion)
         {
             var oldRegion = _viewRegion;
-            _viewRegion = ViewRegion ?? new EmptyRegion();
-            updatePositions = true;
+            _viewRegion = ViewRegion;
             OnViewRegionChange(_viewRegion, oldRegion);
         }
 
-        if (updatePositions)
-        {
-            Left = Sheet.Columns.GetVisualLeft(_viewRegion.Left);
-            Top = Sheet.Rows.GetVisualTop(_viewRegion.Top);
-        }
+        Left = Sheet.Columns.GetVisualLeft(_viewRegion.Left);
+        Top = Sheet.Rows.GetVisualTop(_viewRegion.Top);
 
         base.OnParametersSet();
     }

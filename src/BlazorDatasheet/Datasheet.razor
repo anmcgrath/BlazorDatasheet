@@ -48,7 +48,8 @@
                                     OverscanColumns="OverscanColumns"
                                     ViewRegion="_viewRegion"
                                     Sheet="_sheet"
-                                    ShowColumnMenu="_menuOptions.HeaderMenuEnabled">
+                                    ShowColumnMenu="_menuOptions.HeaderMenuEnabled"
+                                    PreviewService="_previewService">
                                     @ColumnHeaderTemplate(context)
                                 </ColumnHeadingRenderer>
                             </div>
@@ -110,7 +111,7 @@
 
                                 <DatasheetPaneRow
                                     @ref="_mainPaneRow"
-                                    ViewRegion="@(new Region(_sheet.FreezeState.Top, _sheet.NumRows - _sheet.FreezeState.Bottom, 0, _sheet.NumCols - 1))"
+                                    ViewRegion="@(new Region(_viewRegion.Top + _sheet.FreezeState.Top, _viewRegion.Bottom - _sheet.FreezeState.Bottom, _viewRegion.Left, _viewRegion.Right))"
                                     OverscanColumns="OverscanColumns"
                                     OverscanRows="OverscanRows"
                                     EditorLayerChanged="RegisterEditorLayer"

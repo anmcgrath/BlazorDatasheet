@@ -20,6 +20,7 @@ using BlazorDatasheet.Menu;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Render.AutoScroll;
 using BlazorDatasheet.Render.Layers;
+using BlazorDatasheet.Render.Layers.Preview;
 using BlazorDatasheet.Services;
 using BlazorDatasheet.Virtualise;
 using Microsoft.AspNetCore.Components;
@@ -233,6 +234,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     private CellLayoutProvider _cellLayoutProvider = null!;
     private PaneContext? _paneContext;
+    private readonly PreviewService _previewService = new();
 
     private IScrollService ScrollServiceForCascade => this;
 
@@ -291,13 +293,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             requireRender = true;
         }
 
-        var constrainedViewRegion =
-            DatasheetViewRegionCalculator.GetConstrainedViewRegion(ViewRegion, _sheet.NumRows, _sheet.NumCols);
-        if (!_viewRegion.Equals(constrainedViewRegion))
-        {
-            _viewRegion = constrainedViewRegion;
+        if (RecalculateViewRegion())
             forceRerender = true;
-        }
 
         if (_showColHeadings != ShowColHeadings || _showRowHeadings != ShowRowHeadings)
         {
@@ -434,11 +431,35 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         await _windowEventService.RegisterMouseEvent("mouseup", HandleWindowMouseUp);
     }
 
-    private void HandleRowColInserted(object? sender, RowColInsertedEventArgs? e) => ForceReRender();
+    private bool RecalculateViewRegion()
+    {
+        var constrainedViewRegion =
+            DatasheetViewRegionCalculator.GetConstrainedViewRegion(ViewRegion, _sheet.NumRows, _sheet.NumCols);
+        if (!_viewRegion.Equals(constrainedViewRegion))
+        {
+            _viewRegion = constrainedViewRegion;
+            return true;
+        }
+        return false;
+    }
 
-    private void HandleRowColRemoved(object? sender, RowColRemovedEventArgs? e) => ForceReRender();
+    private void HandleRowColInserted(object? sender, RowColInsertedEventArgs? e)
+    {
+        RecalculateViewRegion();
+        ForceReRender();
+    }
 
-    private void HandleSizeModified(object? sender, SizeModifiedEventArgs e) => ForceReRender();
+    private void HandleRowColRemoved(object? sender, RowColRemovedEventArgs? e)
+    {
+        RecalculateViewRegion();
+        ForceReRender();
+    }
+
+    private void HandleSizeModified(object? sender, SizeModifiedEventArgs e)
+    {
+        RecalculateViewRegion();
+        ForceReRender();
+    }
 
     /// <summary>
     /// Re-render all cells, regardless of whether they are dirty and refreshes the viewport
@@ -721,10 +742,12 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         if (_sheet.Selection.IsSelecting)
             return true;
 
-        if (_sheet.Editor.IsEditing &&
-            GetActiveEditorLayer()?.ActiveEditorContainer?.Instance is TextEditorComponent te)
+        if (_sheet.Editor.IsEditing)
         {
-            if (te.SelectionInputManager?.Selection.IsSelecting == true)
+            var editorInstance = GetActiveEditorLayer()?.ActiveEditorContainer?.Instance;
+            TextEditorComponent? te = editorInstance as TextEditorComponent
+                                      ?? (editorInstance as SelectEditorComponent)?.TextEditor;
+            if (te?.SelectionInputManager?.Selection.IsSelecting == true)
                 return true;
         }
 
@@ -970,6 +993,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             CustomCellTypeDefinitions,
             autofillDraggingChanged,
             _sheetPointerInputService,
+            _previewService,
             _numberPrecisionDisplay,
             _showFormulaDependents,
             _useAutoFill,

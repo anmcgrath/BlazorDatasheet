@@ -1,9 +1,11 @@
 ﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events.Layout
 @using BlazorDatasheet.Core.Events.Visual
 @using BlazorDatasheet.Core.Layout
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Render
 @using BlazorDatasheet.Render.Layers
+@using BlazorDatasheet.Render.Layers.Preview
 @using BlazorDatasheet.Services
 @using BlazorDatasheet.Virtualise
 
@@ -14,7 +16,8 @@
     <LayerContainer
         Sheet="PaneContext.Sheet"
         ViewRegion="@ViewRegion"
-        PointerInputService="PaneContext.PointerInputService">
+        PointerInputService="PaneContext.PointerInputService"
+        PreviewService="PaneContext.PreviewService">
         <HighlightLayer/>
         @if (PaneContext.UseAutoFill && !PaneContext.IsReadOnly)
         {
@@ -37,6 +40,7 @@
                      CustomCellTypes="@PaneContext.CustomCellTypeDefinitions"/>
 
         <SelectionRendererLayer/>
+        <PreviewLayer/>
         @if (PaneContext.ShowFormulaDependents)
         {
             <FormulaDependenciesLayer/>
@@ -92,6 +96,7 @@
 
     private readonly List<IRegion> _dirtyRegions = new();
     private readonly HashSet<int> _dirtyRowIndices = new();
+    private bool _forceRender;
     private Dictionary<CellPosition, VisualCell> _visualCellCache = new();
 
 
@@ -131,6 +136,7 @@
     {
         _dirtyRegions.Clear();
         _dirtyRowIndices.Clear();
+        _forceRender = false;
     }
 
     private void HandleVirtualViewportChanged(VirtualViewportChangedEventArgs args)
@@ -206,6 +212,8 @@
             return;
 
         _sheet.SheetDirty += SheetOnSheetDirty;
+        _sheet.Columns.SizeModified += HandleSizeModified;
+        _sheet.Rows.SizeModified += HandleSizeModified;
     }
 
     private void RemoveSheetEvents()
@@ -214,6 +222,14 @@
             return;
 
         _sheet.SheetDirty -= SheetOnSheetDirty;
+        _sheet.Columns.SizeModified -= HandleSizeModified;
+        _sheet.Rows.SizeModified -= HandleSizeModified;
+    }
+
+    private void HandleSizeModified(object? sender, SizeModifiedEventArgs e)
+    {
+        _forceRender = true;
+        StateHasChanged();
     }
 
     public async Task RefreshView()
@@ -232,7 +248,7 @@
 
     protected override bool ShouldRender()
     {
-        return _dirtyRowIndices.Any();
+        return _forceRender || _dirtyRowIndices.Any();
     }
 
 }

@@ -1,5 +1,6 @@
 ﻿@using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Render.Layers.Preview
 @using BlazorDatasheet.Services
 <div class="bds-sheet-layer-container" style="z-index: 1;">
     <div style="position: absolute;
@@ -14,7 +15,9 @@
                 <CascadingValue Value="LayerHeight">
                     <CascadingValue Value="LayerWidth">
                         <CascadingValue Value="PointerInputService">
-                            @ChildContent
+                            <CascadingValue Value="PreviewService" IsFixed="true">
+                                @ChildContent
+                            </CascadingValue>
                         </CascadingValue>
                     </CascadingValue>
                 </CascadingValue>
@@ -36,6 +39,8 @@
 
     [Parameter, EditorRequired] public SheetPointerInputService? PointerInputService { get; set; }
 
+    [Parameter] public PreviewService? PreviewService { get; set; }
+
     /// <summary>
     /// The width, in px, of the rendered layer region
     /// </summary>
@@ -48,25 +53,14 @@
 
     protected override void OnParametersSet()
     {
-        var updateSizes = false;
-
         if (_sheet != Sheet)
-        {
             _sheet = Sheet;
-            updateSizes = true;
-        }
 
         if (ViewRegion != _viewRegion)
-        {
             _viewRegion = ViewRegion ?? new Region(0, 0);
-            updateSizes = true;
-        }
 
-        if (updateSizes)
-        {
-            LayerWidth = _sheet.Columns.GetVisualWidthBetween(_viewRegion.Left, _viewRegion.Right + 1);
-            LayerHeight = _sheet.Rows.GetVisualHeightBetween(_viewRegion.Top, _viewRegion.Bottom + 1);
-        }
+        LayerWidth = _sheet.Columns.GetVisualWidthBetween(_viewRegion.Left, _viewRegion.Right + 1);
+        LayerHeight = _sheet.Rows.GetVisualHeightBetween(_viewRegion.Top, _viewRegion.Bottom + 1);
 
         base.OnParametersSet();
     }

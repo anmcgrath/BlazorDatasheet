@@ -8,37 +8,109 @@
 
 @code {
 
-    [Parameter] public double X { get; set; }
+    /// <summary>
+    /// X position (in px)
+    /// </summary>
+    [Parameter]
+    public double X { get; set; }
 
-    [Parameter] public double Y { get; set; }
+    /// <summary>
+    /// Y position (in box)
+    /// </summary>
+    [Parameter]
+    public double Y { get; set; }
 
-    [Parameter] public double Width { get; set; }
+    /// <summary>
+    /// Width (in px)
+    /// </summary>
+    [Parameter]
+    public double Width { get; set; }
 
-    [Parameter] public double Height { get; set; }
+    /// <summary>
+    /// Height (in px)
+    /// </summary>
+    [Parameter]
+    public double Height { get; set; }
 
-    [Parameter] public int ZIndex { get; set; }
+    /// <summary>
+    /// Overlay z-index
+    /// </summary>
+    [Parameter]
+    public int ZIndex { get; set; }
 
-    [Parameter] public string BorderThickness { get; set; } = string.Empty;
+    /// <summary>
+    /// Border thickness, must include units.
+    /// </summary>
+    [Parameter]
+    public string BorderThickness { get; set; } = "0px";
 
-    [Parameter] public string BackgroundColor { get; set; } = "var(--selection-bg-color)";
+    /// <summary>
+    /// Whether to show border left. Default is true.
+    /// </summary>
+    [Parameter]
+    public bool ShowBorderLeft { get; set; } = true;
 
-    [Parameter] public string BorderColor { get; set; } = "var(--selection-border-color);";
+    /// <summary>
+    /// Whether to show border right. Default is true.
+    /// </summary>
+    [Parameter]
+    public bool ShowBorderRight { get; set; } = true;
 
-    [Parameter] public bool BackgroundVisible { get; set; }
+    /// <summary>
+    /// Whether to show border top. Default is true.
+    /// </summary>
+    [Parameter]
+    public bool ShowBorderTop { get; set; } = true;
 
-    [Parameter] public string BorderStyle { get; set; } = "solid";
+    /// <summary>
+    /// Whether to show border bottom. Default is true.
+    /// </summary>
+    [Parameter]
+    public bool ShowBorderBottom { get; set; } = true;
+
+    /// <summary>
+    /// Fill colour for the overlay renderer
+    /// </summary>
+    [Parameter]
+    public string BackgroundColor { get; set; } = "var(--selection-bg-color)";
+
+    /// <summary>
+    /// Border colour, default is var(--selection-border-color)
+    /// </summary>
+    [Parameter]
+    public string BorderColor { get; set; } = "var(--selection-border-color);";
+
+    /// <summary>
+    /// Whether to show the box overlay bg at all.
+    /// </summary>
+    [Parameter]
+    public bool BackgroundVisible { get; set; }
+
+    /// <summary>
+    /// Border style e.g solid, dashed
+    /// </summary>
+    [Parameter]
+    public string BorderStyle { get; set; } = "solid";
 
     private string GetSizeStyleString()
     {
         var sb = new StyleBuilder();
 
-        sb.AddStyle($"left", $"{X}px");
-        sb.AddStyle($"top", $"{Y}px");
-        sb.AddStyle($"width", $"{Width}px;");
-        sb.AddStyle($"height", $"{Height}px;");
+        sb.AddStyle($"left", $"calc({X}px - {BorderThickness} / 2)");
+        sb.AddStyle($"top", $"calc({Y}px - {BorderThickness} / 2)");
+        sb.AddStyle($"width", $"calc({Width}px + {BorderThickness})");
+        sb.AddStyle($"height", $"calc({Height}px + {BorderThickness})");
         sb.AddStyle("z-index", ZIndex.ToString());
-        sb.AddStyle("outline", $"{BorderThickness} {BorderStyle} {BorderColor}");
-        sb.AddStyle("outline-offset", $"calc(-1 * {BorderThickness} / 2)");
+
+        if (ShowBorderBottom)
+            sb.AddStyle("border-bottom", $"{BorderThickness} {BorderStyle} {BorderColor}");
+        if (ShowBorderRight)
+            sb.AddStyle("border-right", $"{BorderThickness} {BorderStyle} {BorderColor}");
+        if (ShowBorderTop)
+            sb.AddStyle("border-top", $"{BorderThickness} {BorderStyle} {BorderColor}");
+        if (ShowBorderLeft)
+            sb.AddStyle("border-left", $"{BorderThickness} {BorderStyle} {BorderColor}");
+        
         sb.AddStyle("background", BackgroundColor, BackgroundVisible);
 
         return sb.ToString();

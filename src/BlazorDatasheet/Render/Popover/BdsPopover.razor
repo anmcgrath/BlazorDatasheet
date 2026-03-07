@@ -1,0 +1,72 @@
+@using Microsoft.JSInterop
+@implements IAsyncDisposable
+@inject IJSRuntime Js;
+
+<style>#@AnchorId { anchor-name: --@AnchorId; }</style>
+
+<div popover="manual"
+     id="@_popoverId"
+     class="bds-popover @CssClass"
+     style="position-anchor: --@AnchorId">
+    @ChildContent
+</div>
+
+@code {
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter, EditorRequired] public string AnchorId { get; set; } = default!;
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+
+    private readonly string _popoverId = $"bds-popover-{Guid.NewGuid():N}";
+    private IJSObjectReference? _module;
+    private bool _previousIsOpen;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (IsOpen == _previousIsOpen)
+            return;
+
+        _previousIsOpen = IsOpen;
+
+        if (IsOpen)
+        {
+            await EnsureModuleAsync();
+            if (_module != null)
+                await _module.InvokeVoidAsync("show", _popoverId);
+        }
+        else
+        {
+            await EnsureModuleAsync();
+            if (_module != null)
+                await _module.InvokeVoidAsync("hide", _popoverId);
+        }
+    }
+
+    private async Task EnsureModuleAsync()
+    {
+        _module ??= await Js.InvokeAsync<IJSObjectReference>(
+            "import", "./_content/BlazorDatasheet/js/popover.js");
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_previousIsOpen)
+            {
+                await EnsureModuleAsync();
+                if (_module != null)
+                    await _module.InvokeVoidAsync("hide", _popoverId);
+            }
+
+            if (_module != null)
+                await _module.DisposeAsync();
+        }
+        catch
+        {
+            // ignore during disposal
+        }
+    }
+
+}

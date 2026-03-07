@@ -23,7 +23,7 @@
             ZIndex="12"
             BorderStyle="solid"
             BorderColor="@cr.Data"
-            BorderThickness="1"/>
+            BorderThickness="var(--selection-border-thickness)"/>
     }
 </div>
 
@@ -61,8 +61,9 @@
             foreach (var reference in formula.References)
             {
                 var colorIndex = (_colorRegions.Count % 5) + 1;
-                var isValid = reference.SheetName == Sheet.Name;
-                _colorRegions.Add(new DataRegion<string>($"var(--highlight-color-{colorIndex})", isValid ? reference.Region : new EmptyRegion()));
+                var boundedRegion = reference.Region.GetIntersection(ViewRegion);
+                var isValid = boundedRegion != null && reference.SheetName == Sheet.Name;
+                _colorRegions.Add(new DataRegion<string>($"var(--highlight-color-{colorIndex})", isValid ? boundedRegion! : new EmptyRegion()));
             }
         }
     }

@@ -1,11 +1,12 @@
-﻿@using BlazorDatasheet.Core.Data
+﻿@using System.Text
+@using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Events.Data
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Render.DefaultComponents
 @using BlazorDatasheet.Util
 @inherits Layer
 
-@if (Sheet.Cells.AnyMerges() && ViewRegion != null && Sheet.Rows.CountVisible(0, Sheet.NumRows) > 0)
+@if (Sheet.Cells.AnyMerges() && Sheet.Rows.CountVisible(0, Sheet.NumRows) > 0)
 {
     var merges = Sheet.Cells.GetMerges(ViewRegion)
         .Select(x => x.GetIntersection(Sheet.Region));
@@ -13,6 +14,9 @@
     foreach (var merge in merges)
     {
         if (merge == null)
+            continue;
+
+        if (!merge.Intersects(ViewRegion))
             continue;
 
         var row = merge.Top;
@@ -27,11 +31,14 @@
         }
 
         <div
-            style="position: absolute; @GetAbsoluteStyle(row, col, merge.Height, merge.Width)"
+            style="position: absolute; @GetAbsoluteMergedCellContainerStyle(row, col, merge.Height, merge.Width)"
             class="merged-cell">
             @if (CellRenderFragment != null)
             {
-                @CellRenderFragment(visualCell)
+                <div
+                    style="position: relative; width: @(visualCell.Width)px; height: @(visualCell.Height)px; @GetRelativeCellStyle(row, col, merge.Height, merge.Width)">
+                    @CellRenderFragment(visualCell)
+                </div>
             }
         </div>
     }
@@ -42,7 +49,7 @@
     [Parameter, EditorRequired] public Dictionary<CellPosition, VisualCell> Cache { get; set; } = null!;
 
     [Parameter, EditorRequired] public required int NumberPrecisionDisplay { get; set; }
-    
+
     [Parameter, EditorRequired] public required RenderFragment<VisualCell> CellRenderFragment { get; set; }
 
     protected override void OnSheetChange(Sheet newSheet, Sheet oldSheet)
@@ -56,22 +63,42 @@
         StateHasChanged();
     }
 
-    private string GetAbsoluteStyle(int row, int col, int rowSpan, int colSpan)
+    private string GetAbsoluteMergedCellContainerStyle(int row, int col, int rowSpan, int colSpan)
     {
         var sb = new StyleBuilder();
-        var top = GetLayerRowY(row);
-        var left = GetLayerColumnX(col);
-        var width = Sheet.Columns.GetVisualWidthBetween(col, col + colSpan);
-        var height = Sheet.Rows.GetVisualHeightBetween(row, row + rowSpan);
 
-        sb.AddStyle("top", $"{top - 1}px");
-        sb.AddStyle($"left", $"{left - 1}px;");
-        sb.AddStyle("width", $"{width + 1}px");
-        sb.AddStyle("height", $"{height + 1}px");
+        var visualColStart = Math.Max(ViewRegion.Left, col);
+        var visualRowStart = Math.Max(ViewRegion.Top, row);
+        var visualColEnd = Math.Min(ViewRegion.Right + 1, col + colSpan);
+        var visualRowEnd = Math.Min(ViewRegion.Bottom + 1, row + rowSpan);
+
+        var top = GetLayerRowY(visualRowStart);
+        var left = GetLayerColumnX(visualColStart);
+        var bottom = GetLayerRowY(visualRowEnd);
+        var right = GetLayerColumnX(visualColEnd);
+
+        var width = right - left;
+        var height = bottom - top;
+
+        sb.AddStyle("top", $"{top}px");
+        sb.AddStyle($"left", $"{left}px;");
+        sb.AddStyle("width", $"{width}px");
+        sb.AddStyle("height", $"{height}px");
 
         return sb.ToString();
     }
 
     protected override bool ShouldRender() => true;
+
+    private string GetRelativeCellStyle(int row, int col, int mergeHeight, int mergeWidth)
+    {
+        var left = col < ViewRegion.Left ? -Sheet.Columns.GetVisualWidthBetween(col, ViewRegion.Left) : 0;
+        var top = row < ViewRegion.Top ? -Sheet.Rows.GetVisualHeightBetween(row, ViewRegion.Top) : 0;
+
+        var sb = new StyleBuilder();
+        sb.AddStyle("left", $"{left}px");
+        sb.AddStyle("top", $"{top}px");
+        return sb.ToString();
+    }
 
 }

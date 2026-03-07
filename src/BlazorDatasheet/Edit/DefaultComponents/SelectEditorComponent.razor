@@ -3,76 +3,154 @@
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Edit
 @using BlazorDatasheet.Core.Validation
+@using BlazorDatasheet.Render.Popover
 @inherits BaseEditor
 
-<input @bind="CurrentValue"
-       @bind:event="oninput"
-       class="bds-select-text-input"
-       style="@Style; width: @(CellWidth - 2)px; height: @(CellHeight - 2)px;"
-       @ref="InputRef"/>
-<div class="bds-select-list">
-    @foreach (var val in _values)
+<div class="bds-select-editor" id="@_anchorId">
+    <TextEditorComponent @ref="_textEditor"
+                         Style="@Style"
+                         CellWidth="@CellWidth"
+                         CellHeight="@CellHeight"
+                         OnValueChanged="OnTextValueChanged"/>
+</div>
+
+<BdsPopover AnchorId="@_anchorId" IsOpen="@_dropdownOpen" CssClass="bds-select-dropdown-popover">
+    @if (_filteredValues.Length == 0)
     {
-        <div class="bds-select-item @(val.Equals(_currentSelected) ? "active" : "")"
-             @onmouseup="() => SelectItem(val)">
-            @val
+        <div class="bds-select-item bds-select-item-empty" aria-disabled="true">
+            No matches
         </div>
     }
-</div>
+    else
+    {
+        @foreach (var val in _filteredValues)
+        {
+            <div class="bds-select-item @(val.Equals(_currentSelected) ? "active" : "")"
+                 title="@val"
+                 @onmouseup="() => SelectItem(val)">
+                @val
+            </div>
+        }
+    }
+</BdsPopover>
 
 @code {
 
-    private string[] _values = Array.Empty<string>();
+    private TextEditorComponent _textEditor = default!;
+    internal TextEditorComponent? TextEditor => _textEditor;
+    private Sheet _sheet = null!;
+    private string[] _allValues = Array.Empty<string>();
+    private string[] _filteredValues = Array.Empty<string>();
+    private string? _currentSelected;
+    private bool _dropdownOpen;
 
-    string? _currentSelected;
+    private readonly string _anchorId = $"bds-select-anchor-{Guid.NewGuid():N}";
 
     public override void BeforeEdit(IReadOnlyCell cell, Sheet sheet)
     {
+        _sheet = sheet;
+
         foreach (var validator in sheet.Validators.Get(cell.Row, cell.Col))
         {
             if (validator is SourceValidator sourceValidator)
             {
-                _values = sourceValidator.ValidationSource.ToArray();
+                _allValues = sourceValidator.ValidationSource.ToArray();
                 break;
             }
         }
+
+        _filteredValues = _allValues;
+        _textEditor.BeforeEdit(cell, sheet);
     }
 
     public override void BeginEdit(EditEntryMode entryMode, string? editValue, string key)
     {
-        switch (entryMode)
+        _textEditor.BeginEdit(entryMode, editValue, key);
+        CurrentValue = _textEditor.CurrentValue;
+
+        if (entryMode == EditEntryMode.Key)
         {
-            case EditEntryMode.Mouse:
-                CurrentValue = editValue ?? string.Empty;
-                StateHasChanged();
-                break;
-            case EditEntryMode.Key:
-            {
-                if (_values.Any())
-                {
-                    var keyUpped = key.ToUpperInvariant();
-                    _currentSelected = _values.FirstOrDefault(v => v.ToUpperInvariant().StartsWith(keyUpped));
-                }
-
-                if (!string.IsNullOrWhiteSpace(_currentSelected))
-                {
-                    CurrentValue = _currentSelected;
-                }
-                else
-                {
-                    CurrentValue = key;
-                }
-
-                break;
-            }
+            FilterDropdown();
+            AutoSelectFirst();
+        }
+        else
+        {
+            _filteredValues = _allValues;
         }
 
-        if (CurrentValue == null)
-            CurrentValue = string.Empty;
+        OpenDropdown();
+    }
+
+    private void OnTextValueChanged(string value)
+    {
+        CurrentValue = value;
+
+        SyncDropdownToCurrentValue();
+
+        StateHasChanged();
+    }
+
+    public override void HandleEditValueChange(string? s)
+    {
+        base.HandleEditValueChange(s);
+        _textEditor?.HandleEditValueChange(s);
+
+        SyncDropdownToCurrentValue();
+
+        StateHasChanged();
+    }
+
+    private void SyncDropdownToCurrentValue()
+    {
+        if (_textEditor.IsFormulaValue)
+        {
+            CloseDropdown();
+            return;
+        }
+
+        FilterDropdown();
+        AutoSelectFirst();
+
+        if (!_dropdownOpen)
+            OpenDropdown();
+    }
+
+    private void FilterDropdown()
+    {
+        if (string.IsNullOrWhiteSpace(CurrentValue))
+        {
+            _filteredValues = _allValues;
+            return;
+        }
+
+        var upper = CurrentValue.ToUpperInvariant();
+        _filteredValues = _allValues.Where(v => v.ToUpperInvariant().Contains(upper)).ToArray();
+    }
+
+    private void AutoSelectFirst()
+    {
+        if (_filteredValues.Length > 0)
+        {
+            var upper = (CurrentValue ?? string.Empty).ToUpperInvariant();
+            _currentSelected = _filteredValues.FirstOrDefault(v => v.ToUpperInvariant().StartsWith(upper))
+                               ?? _filteredValues[0];
+        }
+        else
+        {
+            _currentSelected = null;
+        }
     }
 
     public override bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
     {
+        // In formula mode, delegate everything to the text editor
+        if (_textEditor.IsFormulaValue)
+        {
+            var handled = _textEditor.HandleKey(key, ctrlKey, shiftKey, altKey, metaKey);
+            CurrentValue = _textEditor.CurrentValue;
+            return handled;
+        }
+
         if (KeyUtil.IsEnter(key))
         {
             if (!string.IsNullOrWhiteSpace(_currentSelected))
@@ -80,54 +158,89 @@
                 SelectItem(_currentSelected);
                 return true;
             }
-            else
-            {
-                return false;
-            }
+
+            return false;
         }
 
-        if (KeyUtil.IsKeyDown(key))
+        if (KeyUtil.IsKeyDown(key) && _dropdownOpen)
         {
             HoverItem(1);
             return true;
         }
 
-        if (KeyUtil.IsKeyUp(key))
+        if (KeyUtil.IsKeyUp(key) && _dropdownOpen)
         {
             HoverItem(-1);
             return true;
         }
 
-        if (!string.IsNullOrWhiteSpace(CurrentValue))
+        if (key == "Escape" && _dropdownOpen)
         {
-            var keyUpped = CurrentValue.ToUpperInvariant();
-            _currentSelected = _values.FirstOrDefault(v => v.ToUpperInvariant().StartsWith(keyUpped));
-
-            if (!string.IsNullOrWhiteSpace(_currentSelected))
-            {
-                StateHasChanged();
-                return true;
-            }
+            CloseDropdown();
+            return true;
         }
 
-        return base.HandleKey(key, ctrlKey, shiftKey, altKey, metaKey);
+        // Let the text editor handle other keys (typing)
+        var result = _textEditor.HandleKey(key, ctrlKey, shiftKey, altKey, metaKey);
+        CurrentValue = _textEditor.CurrentValue;
+        return result;
+    }
+
+    public override bool HandleMouseDown(int row, int col, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
+    {
+        return _textEditor.HandleMouseDown(row, col, ctrlKey, shiftKey, altKey, metaKey);
+    }
+
+    public override bool HandleMouseOver(int row, int col, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
+    {
+        return _textEditor.HandleMouseOver(row, col, ctrlKey, shiftKey, altKey, metaKey);
+    }
+
+    public override async Task<bool> HandleWindowMouseUpAsync()
+    {
+        return await _textEditor.HandleWindowMouseUpAsync();
     }
 
     private void HoverItem(int direction)
     {
-        var index = !string.IsNullOrWhiteSpace(_currentSelected) ? Array.IndexOf(_values, _currentSelected) : 0;
+        if (_filteredValues.Length == 0)
+            return;
 
-        index = direction > 0 ? Math.Min(index + 1, _values.Length - 1) : Math.Max(index - 1, 0);
+        var index = !string.IsNullOrWhiteSpace(_currentSelected)
+            ? Array.IndexOf(_filteredValues, _currentSelected)
+            : -1;
 
-        _currentSelected = _values[index];
+        index = direction > 0
+            ? Math.Min(index + 1, _filteredValues.Length - 1)
+            : Math.Max(index - 1, 0);
 
+        _currentSelected = _filteredValues[index];
         StateHasChanged();
     }
 
     private void SelectItem(string item)
     {
         CurrentValue = item;
+        CloseDropdown();
         AcceptEdit();
+    }
+
+    private void OpenDropdown()
+    {
+        if (_textEditor.IsFormulaValue)
+            return;
+
+        _dropdownOpen = true;
+        StateHasChanged();
+    }
+
+    private void CloseDropdown()
+    {
+        if (!_dropdownOpen)
+            return;
+
+        _dropdownOpen = false;
+        StateHasChanged();
     }
 
 }
