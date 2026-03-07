@@ -1,22 +1,4 @@
-/**
- * Finds the nearest ancestor that can scroll.
- * @param {HTMLElement | null} element Element to start from.
- * @returns {HTMLElement | null} The nearest scrollable ancestor, or null when none exists.
- */
-export function findScrollableAncestor(element) {
-    if (!element)
-        return null
-
-    let parent = element.parentElement
-    while (parent != null && parent !== document.body && parent !== document.documentElement) {
-        let style = window.getComputedStyle(parent)
-        if (style.overflowY !== 'visible' || style.overflowX !== 'visible' || style.overflow !== 'visible')
-            return parent
-        parent = parent.parentElement
-    }
-
-    return null
-}
+import { findScrollableAncestor } from "./scroll-utils.js"
 
 /**
  * Calculates the visible viewport rectangle relative to the sheet root.
@@ -46,4 +28,16 @@ export function calculateViewRect(wholeEl, findScrollableAncestorFn = findScroll
         width: width,
         height: height
     }
+}
+
+/**
+ * Scrolls the nearest scrollable container for the supplied element.
+ * @param {number} x Horizontal scroll delta in pixels.
+ * @param {number} y Vertical scroll delta in pixels.
+ * @param {HTMLElement} el Element whose scrollable ancestor should be moved.
+ * @returns {void}
+ */
+export function scrollParentBy(x, y, el) {
+    let parent = findScrollableAncestor(el) || document.documentElement
+    parent.scrollBy({left: x, top: y, behavior: "auto"})
 }
