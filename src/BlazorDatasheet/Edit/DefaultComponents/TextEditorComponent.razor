@@ -13,6 +13,7 @@
 @using BlazorDatasheet.Formula.Core.Interpreter.Lexing
 @using BlazorDatasheet.Render
 @using BlazorDatasheet.Render.Popover
+@implements IDisposable
 
 <div class="bds-text-editor" id="@_anchorId">
     <HighlightedInput
@@ -75,12 +76,17 @@
     {
         _sheet = sheet;
         _isSoftEdit = _sheet.Editor.IsSoftEdit;
+        ResetAutoScrollActive();
 
         if (SelectionInputManager != null)
+        {
             SelectionInputManager.Selection.ActiveRegionChanged -= OnFormulaSelectionActiveRegionChanged;
+            SelectionInputManager.Selection.SelectingChanged -= OnFormulaSelectionSelectingChanged;
+        }
 
         SelectionInputManager = new SelectionInputManager(new Selection(_sheet));
         SelectionInputManager.Selection.ActiveRegionChanged += OnFormulaSelectionActiveRegionChanged;
+        SelectionInputManager.Selection.SelectingChanged += OnFormulaSelectionSelectingChanged;
 
         _formulaOptions = sheet.FormulaEngine.Options;
         StateHasChanged();
@@ -109,6 +115,11 @@
 
         if (newRegions.Count == 1)
             await ScrollService!.ScrollToContainRegion(newRegions[0]);
+    }
+
+    private void OnFormulaSelectionSelectingChanged(object? sender, IRegion? selectingRegion)
+    {
+        SetAutoScrollActive(selectingRegion != null);
     }
 
     private void OnInput(string value)
@@ -293,6 +304,15 @@
         }
 
         return true;
+    }
+
+    public void Dispose()
+    {
+        if (SelectionInputManager == null)
+            return;
+
+        SelectionInputManager.Selection.ActiveRegionChanged -= OnFormulaSelectionActiveRegionChanged;
+        SelectionInputManager.Selection.SelectingChanged -= OnFormulaSelectionSelectingChanged;
     }
 
 }

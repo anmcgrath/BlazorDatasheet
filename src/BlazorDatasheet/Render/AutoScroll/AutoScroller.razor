@@ -16,11 +16,7 @@
     public bool Enabled { get; set; }
 
     [Parameter] public required AutoScrollOptions Options { get; set; } = new();
-
-    /// <summary>
-    /// Whether the auto-scroll should scroll.
-    /// </summary>
-    [Parameter, EditorRequired] public required Func<bool> IsActive { get; set; }
+    [Parameter, EditorRequired] public required AutoScrollState State { get; set; }
 
     private ElementReference _contentEl;
     private IJSObjectReference? _module;
@@ -57,7 +53,7 @@
                 if (_pt.Period.Milliseconds != Options.PollIntervalInMs)
                     _pt.Period = TimeSpan.FromMilliseconds(Options.PollIntervalInMs);
 
-                if (_enabled && IsActive())
+                if (_enabled && State.IsActive)
                 {
                     await _autoScroller.InvokeVoidAsync("scrollBy", _velX, _velY);
                 }

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using ClipboardEventArgs = BlazorDatasheet.Core.Events.ClipboardEventArgs;
+using static BlazorDatasheet.Util.JsInteropHelper;
 
 namespace BlazorDatasheet.Services;
 
@@ -11,6 +12,8 @@ public class WindowEventService : IWindowEventService
 {
     private readonly IJSRuntime? _js;
     private IJSObjectReference? _windowEventObj;
+    private bool _isDisposed;
+    private bool _isInitializing;
 
     private DotNetObjectReference<WindowEventService>? _dotNetHelper;
 
@@ -66,13 +69,41 @@ public class WindowEventService : IWindowEventService
 
     private async Task CreateDotnetHelperIfNotExists()
     {
-        if (_windowEventObj == null && _js != null)
+        if (_windowEventObj == null && _js != null && !_isDisposed && !_isInitializing)
         {
-            _dotNetHelper = DotNetObjectReference.Create(this);
-            var module =
-                await _js.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/js/window-events.js");
-            _windowEventObj = await module.InvokeAsync<IJSObjectReference>("createWindowEventsService", _dotNetHelper);
-            await module.DisposeAsync();
+            _isInitializing = true;
+            DotNetObjectReference<WindowEventService>? dotNetHelper = null;
+            IJSObjectReference? module = null;
+
+            try
+            {
+                module =
+                    await _js.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/js/window-events.js");
+
+                if (_isDisposed)
+                    return;
+
+                dotNetHelper = DotNetObjectReference.Create(this);
+                var windowEventObj = await module.InvokeAsync<IJSObjectReference>("createWindowEventsService", dotNetHelper);
+
+                if (_isDisposed)
+                {
+                    await DisposeJsObjectReferenceAsync(windowEventObj);
+                    return;
+                }
+
+                _dotNetHelper = dotNetHelper;
+                _windowEventObj = windowEventObj;
+                dotNetHelper = null;
+            }
+            finally
+            {
+                _isInitializing = false;
+                dotNetHelper?.Dispose();
+
+                if (module != null)
+                    await DisposeJsObjectReferenceAsync(module);
+            }
         }
     }
 
@@ -130,20 +161,36 @@ public class WindowEventService : IWindowEventService
 
     public async ValueTask DisposeAsync()
     {
+        _isDisposed = true;
+        var windowEventObj = _windowEventObj;
+        _windowEventObj = null;
+        var dotNetHelper = _dotNetHelper;
+        _dotNetHelper = null;
+
         try
         {
-            if (_windowEventObj != null)
+            if (windowEventObj != null)
             {
-                await _windowEventObj.InvokeVoidAsync("dispose");
-                await _windowEventObj.DisposeAsync();
-                _windowEventObj = null;
-            }
+                try
+                {
+                    await windowEventObj.InvokeVoidAsync("dispose");
+                }
+                catch (JSDisconnectedException)
+                {
+                    // Ignore disconnects during server-side component teardown.
+                }
 
-            _dotNetHelper?.Dispose();
+                await DisposeJsObjectReferenceAsync(windowEventObj);
+            }
         }
         catch (Exception)
         {
             // ignored
         }
+        finally
+        {
+            dotNetHelper?.Dispose();
+        }
     }
+
 }

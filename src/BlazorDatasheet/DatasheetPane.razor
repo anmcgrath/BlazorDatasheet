@@ -21,7 +21,7 @@
         <HighlightLayer/>
         @if (PaneContext.UseAutoFill && !PaneContext.IsReadOnly)
         {
-            <AutofillLayer AutofillDraggingChanged="PaneContext.AutofillDraggingChanged"/>
+            <AutofillLayer/>
         }
         @if (RenderAutofitLayer)
         {
@@ -94,10 +94,10 @@
     private AutofitLayer? _autofitLayer;
 
 
-    private readonly List<IRegion> _dirtyRegions = new();
     private readonly HashSet<int> _dirtyRowIndices = new();
     private bool _forceRender;
     private Dictionary<CellPosition, VisualCell> _visualCellCache = new();
+    private IRegion? _currentViewPortRegion;
 
 
     protected override void OnParametersSet()
@@ -134,13 +134,13 @@
 
     private void ClearDirty()
     {
-        _dirtyRegions.Clear();
         _dirtyRowIndices.Clear();
         _forceRender = false;
     }
 
     private void HandleVirtualViewportChanged(VirtualViewportChangedEventArgs args)
     {
+        _currentViewPortRegion = args.Viewport.ViewRegion;
         foreach (var region in args.RemovedRegions)
         {
             foreach (var position in region)
@@ -171,7 +171,7 @@
 
         foreach (var region in dirtyRegions)
         {
-            var boundedRegion = region?.GetIntersection(ViewRegion) as Region;
+            var boundedRegion = region?.GetIntersection(_currentViewPortRegion ?? ViewRegion) as Region;
             if (boundedRegion == null)
                 continue;
 
@@ -181,8 +181,6 @@
 
             if (visibleCols.Count == 0)
                 continue;
-
-            _dirtyRegions.Add(boundedRegion);
 
             foreach (var row in _sheet.Rows.GetVisibleIndices(boundedRegion.Top, boundedRegion.Bottom))
             {

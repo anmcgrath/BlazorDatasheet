@@ -38,7 +38,11 @@
             X="GetLayerColumnX(boundedRegion.Left)"
             Y="GetLayerRowY(boundedRegion.Top)"
             Width="Sheet.Columns.GetVisualWidthBetween(boundedRegion.Left, boundedRegion.Right + 1)"
-            Height="Sheet.Rows.GetVisualHeightBetween(boundedRegion.Top, boundedRegion.Bottom + 1)"/>
+            Height="Sheet.Rows.GetVisualHeightBetween(boundedRegion.Top, boundedRegion.Bottom + 1)"
+            ShowBorderLeft="boundedRegion.Left == region.Left"
+            ShowBorderRight="boundedRegion.Right == region.Right"
+            ShowBorderTop="boundedRegion.Top == region.Top"
+            ShowBorderBottom="boundedRegion.Bottom == region.Bottom"/>
     }
 
     @if (Sheet.Selection.IsSelecting)
@@ -53,7 +57,11 @@
                 X="@GetLayerColumnX(boundedSelecting.Left)"
                 Y="@GetLayerRowY(boundedSelecting.Top)"
                 Width="Sheet.Columns.GetVisualWidthBetween(boundedSelecting.Left, boundedSelecting.Right + 1)"
-                Height="Sheet.Rows.GetVisualHeightBetween(boundedSelecting.Top, boundedSelecting.Bottom + 1)"/>
+                Height="Sheet.Rows.GetVisualHeightBetween(boundedSelecting.Top, boundedSelecting.Bottom + 1)"
+                ShowBorderLeft="boundedSelecting.Left == selection.Left"
+                ShowBorderRight="boundedSelecting.Right == selection.Right"
+                ShowBorderTop="boundedSelecting.Top == selection.Top"
+                ShowBorderBottom="boundedSelecting.Bottom == selection.Bottom"/>
         }
     }
 </div>
@@ -76,6 +84,12 @@
     private void OnSelectingChanged(object? sender, IRegion? args)
     {
         StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        Sheet.Selection.SelectionChanged -= OnSelectionChanged;
+        Sheet.Selection.SelectingChanged -= OnSelectingChanged;
     }
 
 }

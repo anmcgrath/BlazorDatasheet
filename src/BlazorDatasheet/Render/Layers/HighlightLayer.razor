@@ -4,11 +4,12 @@
 @using BlazorDatasheet.DataStructures.Store
 @using BlazorDatasheet.Formula.Core.Interpreter.Parsing
 @inherits Layer
+@implements IDisposable
 
 <div class="highlight-layer">
     @foreach (var cr in _colorRegions)
     {
-        var r = cr.Region.GetIntersection(Sheet.Region);
+        var r = cr.Region.GetIntersection(ViewRegion);
         if (r == null)
             continue;
         var x = GetLayerColumnX(r.Left);
@@ -23,7 +24,11 @@
             ZIndex="12"
             BorderStyle="solid"
             BorderColor="@cr.Data"
-            BorderThickness="var(--selection-border-thickness)"/>
+            BorderThickness="var(--selection-border-thickness)"
+            ShowBorderLeft="r.Left == cr.Region.Left"
+            ShowBorderRight="r.Right == cr.Region.Right"
+            ShowBorderTop="r.Top == cr.Region.Top"
+            ShowBorderBottom="r.Bottom == cr.Region.Bottom"/>
     }
 </div>
 
@@ -31,6 +36,7 @@
 @code {
 
     private List<DataRegion<string>> _colorRegions = new();
+    private string? _lastParsedFormula;
 
     protected override void OnSheetChange(Sheet newSheet, Sheet oldSheet)
     {
@@ -43,6 +49,7 @@
     private void EditorOnEditFinished(object? sender, EditFinishedEventArgs e)
     {
         _colorRegions.Clear();
+        _lastParsedFormula = null;
         StateHasChanged();
     }
 
@@ -61,17 +68,37 @@
             foreach (var reference in formula.References)
             {
                 var colorIndex = (_colorRegions.Count % 5) + 1;
-                var boundedRegion = reference.Region.GetIntersection(ViewRegion);
-                var isValid = boundedRegion != null && reference.SheetName == Sheet.Name;
-                _colorRegions.Add(new DataRegion<string>($"var(--highlight-color-{colorIndex})", isValid ? boundedRegion! : new EmptyRegion()));
+                var isValid = reference.Region.GetIntersection(ViewRegion) != null && reference.SheetName == Sheet.Name;
+                _colorRegions.Add(new DataRegion<string>($"var(--highlight-color-{colorIndex})", isValid ? reference.Region : new EmptyRegion()));
             }
         }
     }
 
     private void EditorOnEditValueChanged(object? sender, string? e)
     {
+        if (string.IsNullOrEmpty(e) || !e.StartsWith("="))
+        {
+            if (_colorRegions.Count > 0)
+            {
+                _colorRegions.Clear();
+                _lastParsedFormula = null;
+                StateHasChanged();
+            }
+            return;
+        }
+
+        if (e == _lastParsedFormula)
+            return;
+
+        _lastParsedFormula = e;
         HighlightRanges();
         StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        Sheet.Editor.EditValueChanged -= EditorOnEditValueChanged;
+        Sheet.Editor.EditFinished -= EditorOnEditFinished;
     }
 
 }

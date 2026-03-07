@@ -1,0 +1,23 @@
+@using BlazorDatasheet.Core.Edit
+@using BlazorDatasheet.Edit
+@inherits BaseEditor
+
+@code {
+    public static TrackingAutoScrollEditor? LastInstance { get; set; }
+
+    protected override void OnInitialized()
+    {
+        LastInstance = this;
+        base.OnInitialized();
+    }
+
+    public override void BeginEdit(EditEntryMode entryMode, string? editValue, string key)
+    {
+        CurrentValue = editValue ?? string.Empty;
+    }
+
+    public void SetTrackedAutoScroll(bool isActive)
+    {
+        SetAutoScrollActive(isActive);
+    }
+}

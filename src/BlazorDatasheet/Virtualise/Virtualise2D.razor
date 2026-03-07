@@ -3,6 +3,7 @@
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Render.Layout
 @using Microsoft.JSInterop
+@using static BlazorDatasheet.Util.JsInteropHelper
 @inject IJSRuntime Js;
 @implements IAsyncDisposable
 
@@ -131,24 +132,60 @@
     private Size _lastTotalSize = new(-1, -1);
     private List<int> _visibleRowIndices = new();
     private List<int> _visibleColIndices = new();
+    private bool _isDisposed;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (firstRender && !_isDisposed)
         {
-            _dotnetHelper = DotNetObjectReference.Create(this);
             var module =
                 await Js.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/js/virtualise-2d.js");
-            _virtualiser = await module.InvokeAsync<IJSObjectReference>("getVirtualiser");
 
-            await _virtualiser.InvokeVoidAsync("addVirtualisationHandlers",
-                _dotnetHelper,
-                _contentEl,
-                nameof(HandleScroll),
-                _fillerLeft,
-                _fillerTop,
-                _fillerRight,
-                _fillerBottom);
+            if (_isDisposed)
+            {
+                await DisposeJsObjectReferenceAsync(module);
+                return;
+            }
+
+            var dotnetHelper = DotNetObjectReference.Create(this);
+            try
+            {
+                var virtualiser = await module.InvokeAsync<IJSObjectReference>("getVirtualiser");
+
+                if (_isDisposed)
+                {
+                    await DisposeJsObjectReferenceAsync(virtualiser);
+                    dotnetHelper.Dispose();
+                    return;
+                }
+
+                await virtualiser.InvokeVoidAsync("addVirtualisationHandlers",
+                    dotnetHelper,
+                    _contentEl,
+                    nameof(HandleScroll),
+                    _fillerLeft,
+                    _fillerTop,
+                    _fillerRight,
+                    _fillerBottom);
+
+                if (_isDisposed)
+                {
+                    await SafeDisposeVirtualiserAsync(virtualiser);
+                    dotnetHelper.Dispose();
+                    return;
+                }
+
+                _virtualiser = virtualiser;
+                _dotnetHelper = dotnetHelper;
+                dotnetHelper = null;
+            }
+            finally
+            {
+                if (dotnetHelper != null)
+                    dotnetHelper.Dispose();
+
+                await DisposeJsObjectReferenceAsync(module);
+            }
         }
     }
 
@@ -298,26 +335,45 @@
 
     public async ValueTask DisposeAsync()
     {
+        _isDisposed = true;
+
+        var virtualiser = _virtualiser;
+        _virtualiser = null;
+        var dotnetHelper = _dotnetHelper;
+        _dotnetHelper = null;
+
         try
         {
-            if (_virtualiser != null)
-            {
-                await _virtualiser.InvokeAsync<string>("disposeVirtualisationHandlers", _contentEl);
-                await _virtualiser.DisposeAsync();
-                _virtualiser = null;
-            }
-
-            _dotnetHelper?.Dispose();
+            if (virtualiser != null)
+                await SafeDisposeVirtualiserAsync(virtualiser);
         }
         catch (Exception)
         {
             // Ignore
+        }
+        finally
+        {
+            dotnetHelper?.Dispose();
         }
     }
 
     protected override void OnAfterRender(bool firstRender)
     {
         base.OnAfterRender(firstRender);
+    }
+
+    private async Task SafeDisposeVirtualiserAsync(IJSObjectReference virtualiser)
+    {
+        try
+        {
+            await virtualiser.InvokeAsync<string>("disposeVirtualisationHandlers", _contentEl);
+        }
+        catch (JSDisconnectedException)
+        {
+            // Ignore disconnects during server-side component teardown.
+        }
+
+        await DisposeJsObjectReferenceAsync(virtualiser);
     }
 
 }

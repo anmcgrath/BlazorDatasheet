@@ -25,6 +25,7 @@
 @code {
 
     [Parameter, EditorRequired] public Dictionary<string, CellTypeDefinition> CustomCellTypes { get; set; } = null!;
+    [CascadingParameter] private PaneContext PaneContext { get; set; } = null!;
 
     [Parameter] public bool Disabled { get; set; }
 
@@ -122,10 +123,18 @@
             if (_activeCellEditor == null)
                 return;
 
+            _activeCellEditor.ResetAutoScrollActive();
+            AttachEditorAutoScroll(_activeCellEditor);
             _activeCellEditor.BeforeEdit(_sheet.Editor.EditCell!, Sheet);
             _activeCellEditor.RequestCancelEdit += HandleEditorRequestCancelEdit;
             _activeCellEditor.RequestAcceptEdit += HandleEditorRequestAcceptEdit;
             _activeCellEditor.BeginEdit(_sheet.Editor.CurrentEntryMode, _sheet.Editor.EditValue, _sheet.Editor.EditKey);
+
+            // BeginEdit may synchronously accept/cancel (e.g. BoolEditor), clearing _activeCellEditor
+            if (_activeCellEditor == null)
+                return;
+
+            PaneContext.AutoScrollState.SetEditorSelectionActive(_activeCellEditor.IsAutoScrollActive);
 
             if (_sheet.Editor.CurrentEntryMode != EditEntryMode.None)
             {
@@ -196,13 +205,31 @@
     {
         if (_activeCellEditor != null)
         {
+            DetachEditorAutoScroll(_activeCellEditor);
             _activeCellEditor.RequestCancelEdit -= HandleEditorRequestCancelEdit;
             _activeCellEditor.RequestAcceptEdit -= HandleEditorRequestAcceptEdit;
             _activeCellEditor = null;
-            
+
+            PaneContext.AutoScrollState.SetEditorSelectionActive(false);
             IsEditing = false;
             StateHasChanged();
         }
+    }
+
+    private void AttachEditorAutoScroll(BaseEditor editor)
+    {
+        editor.AutoScrollActiveChanged -= HandleEditorAutoScrollActiveChanged;
+        editor.AutoScrollActiveChanged += HandleEditorAutoScrollActiveChanged;
+    }
+
+    private void DetachEditorAutoScroll(BaseEditor editor)
+    {
+        editor.AutoScrollActiveChanged -= HandleEditorAutoScrollActiveChanged;
+    }
+
+    private void HandleEditorAutoScrollActiveChanged(object? sender, bool isActive)
+    {
+        PaneContext.AutoScrollState.SetEditorSelectionActive(isActive);
     }
 
     private string GetEditorDisplayStyling()
