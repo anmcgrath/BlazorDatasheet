@@ -4,17 +4,11 @@
 
 @code {
 
-    /// <summary>
-    /// How deep (number of sub-grids) this container is
-    /// </summary>
-    [CascadingParameter]
-    public int Depth { get; set; }
-
     [CascadingParameter] protected double LayerWidth { get; set; }
 
     [CascadingParameter] protected double LayerHeight { get; set; }
 
-    [CascadingParameter] protected Region? ViewRegion { get; set; }
+    [CascadingParameter] protected IRegion? ViewRegion { get; set; }
 
     [CascadingParameter] protected Sheet Sheet { get; set; } = new(0, 0);
     private Sheet _sheet = new(0, 0);
@@ -30,7 +24,7 @@
     protected double Top { get; private set; }
 
 
-    private Region _viewRegion = new(0, 0);
+    private IRegion _viewRegion = new EmptyRegion();
 
     protected override void OnParametersSet()
     {
@@ -38,16 +32,18 @@
 
         if (_sheet != Sheet)
         {
+            var oldSheet = _sheet;
             _sheet = Sheet;
             updatePositions = true;
-            OnSheetChange(_sheet, Sheet);
+            OnSheetChange(_sheet, oldSheet);
         }
 
         if (ViewRegion != _viewRegion)
         {
-            _viewRegion = ViewRegion ?? new(0, 0);
+            var oldRegion = _viewRegion;
+            _viewRegion = ViewRegion ?? new EmptyRegion();
             updatePositions = true;
-            OnViewRegionChange(_viewRegion, ViewRegion);
+            OnViewRegionChange(_viewRegion, oldRegion);
         }
 
         if (updatePositions)
@@ -63,7 +59,7 @@
     {
     }
 
-    protected virtual void OnViewRegionChange(Region newRegion, Region? oldRegion)
+    protected virtual void OnViewRegionChange(IRegion newRegion, IRegion? oldRegion)
     {
     }
 

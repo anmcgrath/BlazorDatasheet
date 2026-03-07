@@ -1,5 +1,6 @@
 ﻿@using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Formats
+@using BlazorDatasheet.DataStructures.Geometry
 
 <div class="block">
     <button @onclick="SetRedBackground">Red Bg</button>
@@ -7,10 +8,8 @@
 </div>
 
 <div style="width: 700px; height: 500px; overflow: scroll;">
-    <Datasheet 
-        UseAutoScroll="true" 
-        FrozenLeftCount="2"
-        FrozenRightCount="1"
+    <Datasheet
+        UseAutoScroll="true"
         Sheet="_sheet"></Datasheet>
 </div>
 
@@ -21,6 +20,10 @@
     protected override void OnInitialized()
     {
         _sheet = new Sheet(100, 100);
+        _sheet.Freeze(Edge.Left, 2);
+        _sheet.Freeze(Edge.Right, 1);
+        _sheet.Freeze(Edge.Top, 1);
+        _sheet.Freeze(Edge.Bottom, 3);
     }
 
     private void SetFormatToSelection(CellFormat format)

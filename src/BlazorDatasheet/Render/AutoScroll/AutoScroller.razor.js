@@ -1,23 +1,6 @@
-﻿export class AutoScroller {
+﻿import { findScrollableAncestor } from "/_content/BlazorDatasheet/js/scroll-utils.js"
 
-    findScrollableAncestor(element) {
-        if (!element)
-            return null
-
-        let parent = element.parentElement
-
-        if (parent == null || element === document.body || element === document.documentElement)
-            return null
-
-        let overflowY = window.getComputedStyle(parent).overflowY
-        let overflowX = window.getComputedStyle(parent).overflowX
-        let overflow = window.getComputedStyle(parent).overflow
-
-        if (overflowY !== 'visible' || overflowX !== 'visible' || overflow !== 'visible')
-            return parent
-
-        return this.findScrollableAncestor(parent)
-    }
+export class AutoScroller {
 
     scrollBy(x, y) {
         if (x === 0 && y === 0)
@@ -32,7 +15,7 @@
      */
     subscribe(el, dotnetHelper) {
         this.dotnetHelper = dotnetHelper
-        this.ancestor = this.findScrollableAncestor(el) ?? document.documentElement
+        this.ancestor = findScrollableAncestor(el) ?? document.documentElement
         this._throttledMouseMove = this.throttle(this.onMouseMove.bind(this), 20)
         window.addEventListener('mousemove', this._throttledMouseMove)
     }

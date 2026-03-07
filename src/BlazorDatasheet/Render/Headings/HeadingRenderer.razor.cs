@@ -14,7 +14,6 @@ public partial class HeadingRenderer : SheetComponentBase
 {
     [Parameter, EditorRequired] public Sheet? Sheet { get; set; }
     [Parameter] public Region? ViewRegion { get; set; }
-    [Parameter] public bool AlternateAxisHeadingsShown { get; set; }
     [Parameter, EditorRequired] public RenderFragment<HeadingContext> ChildContent { get; set; } = null!;
 
     protected Virtualise2D? MainView;
@@ -111,7 +110,11 @@ public partial class HeadingRenderer : SheetComponentBase
         {
             await MainView.RefreshView();
         }
+
+        await RefreshAdditionalViews();
     }
+
+    protected virtual Task RefreshAdditionalViews() => Task.CompletedTask;
 
     protected string GetSelectedClass(int index)
     {

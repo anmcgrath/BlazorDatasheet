@@ -27,78 +27,89 @@
         }
     </div>
 
-    @if (FrozenColumnsLeftCount > 0)
+    @if (_sheet.FreezeState.Left > 0 && HasVisibleCols(LeftHeadingRegion))
     {
-        <div style="position: sticky; @GetStickyLeftPositionInfo(); z-index: 4;">
-            <ColumnHeadingRenderer
-                ShowColumnMenu="ShowColumnMenu"
-                Sheet="_sheet"
-                ViewRegion="new Region(0, 0, 0, FrozenColumnsLeftCount - 1)">
-                @ChildContent(context)
-            </ColumnHeadingRenderer>
+        <div style="position: sticky; left:var(--gutter-left-width); z-index: 4;" class="bds-frozen-left">
+            <Virtualise2D
+                @ref="_leftView"
+                LayoutProvider="LayoutProvider"
+                OverscanColumns="OverscanColumns"
+                ViewRegion="LeftHeadingRegion">
+                <GridItemTemplate>
+                    @ColHeadingItem(context.col)
+                </GridItemTemplate>
+            </Virtualise2D>
         </div>
     }
-    <div class="bds-sheet-col-head-container" style="z-index: 2;">
-        <Virtualise2D
-            @ref="MainView"
-            LayoutProvider="LayoutProvider"
-            OverscanColumns="OverscanColumns"
-            ViewRegion="new Region(0, 0, _viewRegion.Left, _viewRegion.Right)">
-            <GridItemTemplate>
-                <div
-                    @key="context.col"
-                    style="width: 100%; height: 100%; display: flex; justify-content: start; position: relative; overflow-x: visible;">
-                    <div class="bds-col-head bds-sheet-cell @GetSelectedClass(context.col)" data-col="@context.col"
-                         data-row="-1"
-                         style="display: flex; justify-content: space-between; width: 100%;">
-                        <div>
-                            @ChildContent(new HeadingContext(context.col, _sheet.Columns.GetHeading(context.col) ?? RangeText.ColIndexToLetters(context.col)))
-                        </div>
-                        <div style="display: flex; flex-direction: row;">
-                            @if (ShowColumnMenu)
-                            {
-                                <SheetMenuTarget MenuId="@ContextMenus.Selection" MenuData="Sheet">
-                                    <CaretButton/>
-                                </SheetMenuTarget>
-                            }
-                        </div>
-                    </div>
 
-                    <div class="bds-unselectable"
-                         @onmousedown="_ => HandleMouseDownOnResizer(context.col)"
-                         style="position: absolute; 
-                         right: 0; 
-                         z-index: 4; 
-                         margin-right:-5px; 
-                         width: 10px; 
-                         height: 100%; 
-                         float: left; 
-                         display: inline-block; 
-                         cursor: col-resize;">
-                    </div>
-                </div>
-            </GridItemTemplate>
-        </Virtualise2D>
-    </div>
-
-    @if (FrozenColumnsRightCount > 0)
+    @if (HasVisibleCols(MainHeadingRegion))
     {
-        <div style="position: sticky; right: 0; z-index: 4">
-            <ColumnHeadingRenderer
-                Sheet="_sheet"
-                ShowColumnMenu="ShowColumnMenu"
-                ViewRegion="new Region(0, 0, _sheet.NumCols-1 - FrozenColumnsRightCount + 1, _sheet.NumCols-1)">
-                @ChildContent(context)
-            </ColumnHeadingRenderer>
+        <div class="bds-sheet-col-head-container" style="z-index: 2;">
+            <Virtualise2D
+                @ref="MainView"
+                LayoutProvider="LayoutProvider"
+                OverscanColumns="OverscanColumns"
+                ViewRegion="MainHeadingRegion">
+                <GridItemTemplate>
+                    @ColHeadingItem(context.col)
+                </GridItemTemplate>
+            </Virtualise2D>
+        </div>
+    }
+
+    @if (_sheet.FreezeState.Right > 0 && HasVisibleCols(RightHeadingRegion))
+    {
+        <div style="position: sticky; right: 0; z-index: 4;" class="bds-frozen-right">
+            <Virtualise2D
+                @ref="_rightView"
+                LayoutProvider="LayoutProvider"
+                OverscanColumns="OverscanColumns"
+                ViewRegion="RightHeadingRegion">
+                <GridItemTemplate>
+                    @ColHeadingItem(context.col)
+                </GridItemTemplate>
+            </Virtualise2D>
         </div>
     }
 </div>
 
 @code {
 
-    [Parameter] public int FrozenColumnsLeftCount { get; set; }
+    private RenderFragment ColHeadingItem(int col) => @<div
+                                                          @key="col"
+                                                          style="width: 100%; height: 100%; display: flex; justify-content: start; position: relative; overflow-x: visible;">
+                                                          <div
+                                                              class="bds-col-head bds-sheet-cell @GetSelectedClass(col)"
+                                                              data-col="@col"
+                                                              data-row="-1"
+                                                              style="display: flex; justify-content: space-between; width: 100%;">
+                                                              <div>
+                                                                  @ChildContent(new HeadingContext(col, _sheet.Columns.GetHeading(col) ?? RangeText.ColIndexToLetters(col)))
+                                                              </div>
+                                                              <div style="display: flex; flex-direction: row;">
+                                                                  @if (ShowColumnMenu)
+                                                                  {
+                                                                      <SheetMenuTarget MenuId="@ContextMenus.Selection"
+                                                                                       MenuData="Sheet">
+                                                                          <CaretButton/>
+                                                                      </SheetMenuTarget>
+                                                                  }
+                                                              </div>
+                                                          </div>
 
-    [Parameter] public int FrozenColumnsRightCount { get; set; }
+                                                          <div class="bds-unselectable"
+                                                               @onmousedown="_ => HandleMouseDownOnResizer(col)"
+                                                               style="position: absolute;
+                 right: 0;
+                 z-index: 4;
+                 margin-right:-5px;
+                 width: 10px;
+                 height: 100%;
+                 float: left;
+                 display: inline-block;
+                 cursor: col-resize;">
+                                                          </div>
+                                                      </div>;
 
     [Parameter] public bool ShowColumnMenu { get; set; }
 
@@ -115,6 +126,15 @@
     private double CurrentColResizeAmount { get; set; }
     private int _minResizeWidth = 15;
     private IWindowEventService _windowEventService = null!;
+
+    private Region LeftHeadingRegion => DatasheetViewRegionCalculator.GetFrozenLeftRegion(_viewRegion, _sheet.NumCols, _sheet.FreezeState.Left);
+
+    private Region MainHeadingRegion => new(0, 0, MainLeft, MainRight);
+
+    private Region RightHeadingRegion => DatasheetViewRegionCalculator.GetFrozenRightRegion(_viewRegion, _sheet.NumCols, _sheet.FreezeState.Right);
+
+    private int MainLeft => Math.Clamp(Math.Max(_sheet.FreezeState.Left, _viewRegion.Left), _viewRegion.Left, _viewRegion.Right);
+    private int MainRight => Math.Clamp(Math.Min(_sheet.NumCols - _sheet.FreezeState.Right - 1, _viewRegion.Right), MainLeft, _viewRegion.Right);
 
     protected override void OnInitialized()
     {
@@ -137,7 +157,7 @@
         MouseX = arg.PageX;
         if (IsDragging)
         {
-            CurrentColResizeAmount = MouseX - MouseXStart; // 10 being the minimum width we can resize to
+            CurrentColResizeAmount = MouseX - MouseXStart;
             StateHasChanged();
             return Task.FromResult(true);
         }
@@ -177,7 +197,7 @@
                 _sheet.Columns.SetSize(ActiveResizerIndex, resizeWidth);
             }
 
-            await MainView.RefreshView();
+            await RefreshHeadingViews();
 
             return true;
         }
@@ -185,10 +205,19 @@
         return false;
     }
 
-    private string GetStickyLeftPositionInfo()
+    private async Task RefreshHeadingViews()
     {
-        return $"left: {(AlternateAxisHeadingsShown ? _sheet.Rows.HeadingWidth : 0)}px;";
+        if (_leftView != null)
+            await _leftView.RefreshView();
+
+        if (MainView != null)
+            await MainView.RefreshView();
+
+        if (_rightView != null)
+            await _rightView.RefreshView();
     }
+
+    private bool HasVisibleCols(Region? region) => _sheet.HasVisibleCols(region);
 
     public async ValueTask DisposeAsync()
     {

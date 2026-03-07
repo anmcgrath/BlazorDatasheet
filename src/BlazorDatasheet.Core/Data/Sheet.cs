@@ -692,6 +692,37 @@ public class Sheet
     }
 
     /// <summary>
+    /// Returns whether the region has any visible cells (both visible rows and visible columns).
+    /// </summary>
+    public bool HasVisibleCells(IRegion? region)
+    {
+        if (region == null)
+            return false;
+        return Rows.CountVisible(region.Top, region.Bottom) > 0
+               && Columns.CountVisible(region.Left, region.Right) > 0;
+    }
+
+    /// <summary>
+    /// Returns whether the region has any visible rows.
+    /// </summary>
+    public bool HasVisibleRows(IRegion? region)
+    {
+        if (region == null)
+            return false;
+        return Rows.CountVisible(region.Top, region.Bottom) > 0;
+    }
+
+    /// <summary>
+    /// Returns whether the region has any visible columns.
+    /// </summary>
+    public bool HasVisibleCols(Region? region)
+    {
+        if (region == null)
+            return false;
+        return Columns.CountVisible(region.Left, region.Right) > 0;
+    }
+
+    /// <summary>
     /// Freeze the number of row/columns specified
     /// </summary>
     /// <param name="top">The number of rows at the top of the sheet</param>

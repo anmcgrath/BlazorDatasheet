@@ -3,59 +3,60 @@
 @using BlazorDatasheet.DataStructures.Geometry
 @inherits Layer
 
-@foreach (var region in Sheet.Selection.Regions)
-{
-    var boundedRegion = region.GetIntersection(ViewRegion);
-    var isActiveRegion = region.Equals(Sheet.Selection.ActiveRegion);
-    if (boundedRegion == null)
-        continue;
-    <!-- if it's the active region, render around the active position -->
-    if (isActiveRegion)
+<div class="bds-selection-layer">
+    @foreach (var region in Sheet.Selection.Regions)
     {
-        var inputRegion = Sheet.Cells.GetMerge(Sheet.Selection.ActiveCellPosition.row, Sheet.Selection.ActiveCellPosition.col) ??
-                          new Region(Sheet.Selection.ActiveCellPosition.row, Sheet.Selection.ActiveCellPosition.col);
-        
-        var brokenRegions = boundedRegion
-            .Break(inputRegion);
-        
-        foreach (var brokenRegion in brokenRegions)
+        var boundedRegion = region.GetIntersection(ViewRegion);
+        var isActiveRegion = region.Equals(Sheet.Selection.ActiveRegion);
+        if (boundedRegion == null)
+            continue;
+        <!-- if it's the active region, render around the active position -->
+        if (isActiveRegion)
+        {
+            var inputRegion = Sheet.Cells.GetMerge(Sheet.Selection.ActiveCellPosition.row, Sheet.Selection.ActiveCellPosition.col) ??
+                              new Region(Sheet.Selection.ActiveCellPosition.row, Sheet.Selection.ActiveCellPosition.col);
+
+            var brokenRegions = boundedRegion
+                .Break(inputRegion);
+
+            foreach (var brokenRegion in brokenRegions)
+            {
+                <BoxOverlayRenderer
+                    BackgroundVisible="true"
+                    BorderThickness="0"
+                    X="GetLayerColumnX(brokenRegion.Left)"
+                    Y="GetLayerRowY(brokenRegion.Top)"
+                    Width="Sheet.Columns.GetVisualWidthBetween(brokenRegion.Left, brokenRegion.Right + 1)"
+                    Height="Sheet.Rows.GetVisualHeightBetween(brokenRegion.Top, brokenRegion.Bottom + 1)"/>
+            }
+        }
+
+        <!-- now render the border around the whole region. No fill on active region because we've filled it already -->
+        <BoxOverlayRenderer
+            BackgroundVisible="@(!isActiveRegion)"
+            BorderThickness="@(isActiveRegion ? "var(--selection-border-thickness)" : "0px")"
+            X="GetLayerColumnX(boundedRegion.Left)"
+            Y="GetLayerRowY(boundedRegion.Top)"
+            Width="Sheet.Columns.GetVisualWidthBetween(boundedRegion.Left, boundedRegion.Right + 1)"
+            Height="Sheet.Rows.GetVisualHeightBetween(boundedRegion.Top, boundedRegion.Bottom + 1)"/>
+    }
+
+    @if (Sheet.Selection.IsSelecting)
+    {
+        var selection = Sheet.Selection.SelectingRegion!;
+        var boundedSelecting = selection.GetIntersection(ViewRegion);
+        if (boundedSelecting != null)
         {
             <BoxOverlayRenderer
-                BackgroundVisible="true"
-                BorderThickness="0"
-                X="GetLayerColumnX(brokenRegion.Left)"
-                Y="GetLayerRowY(brokenRegion.Top)"
-                Width="Sheet.Columns.GetVisualWidthBetween(brokenRegion.Left, brokenRegion.Right + 1)"
-                Height="Sheet.Rows.GetVisualHeightBetween(brokenRegion.Top, brokenRegion.Bottom + 1)"/>
+                BackgroundVisible="@true"
+                BorderThickness="2"
+                X="@GetLayerColumnX(boundedSelecting.Left)"
+                Y="@GetLayerRowY(boundedSelecting.Top)"
+                Width="Sheet.Columns.GetVisualWidthBetween(boundedSelecting.Left, boundedSelecting.Right + 1)"
+                Height="Sheet.Rows.GetVisualHeightBetween(boundedSelecting.Top, boundedSelecting.Bottom + 1)"/>
         }
     }
-
-    <!-- now render the border around the whole region. No fill on active region because we've filled it already -->
-    <BoxOverlayRenderer
-        BackgroundVisible="@(!isActiveRegion)"
-        BorderThickness="@(isActiveRegion ? 2 : 0)"
-        X="GetLayerColumnX(boundedRegion.Left)"
-        Y="GetLayerRowY(boundedRegion.Top)"
-        Width="Sheet.Columns.GetVisualWidthBetween(boundedRegion.Left, boundedRegion.Right + 1)"
-        Height="Sheet.Rows.GetVisualHeightBetween(boundedRegion.Top, boundedRegion.Bottom + 1)"/>
-}
-
-@if (Sheet.Selection.IsSelecting)
-{
-    var selection = Sheet.Selection.SelectingRegion!;
-    var boundedSelecting = selection.GetIntersection(ViewRegion);
-    if (boundedSelecting != null)
-    {
-        <BoxOverlayRenderer
-            BackgroundVisible="@true"
-            BorderThickness="2"
-            X="@GetLayerColumnX(boundedSelecting.Left)"
-            Y="@GetLayerRowY(boundedSelecting.Top)"
-            Width="Sheet.Columns.GetVisualWidthBetween(boundedSelecting.Left, boundedSelecting.Right + 1)"
-            Height="Sheet.Rows.GetVisualHeightBetween(boundedSelecting.Top, boundedSelecting.Bottom + 1)"/>
-    }
-}
-
+</div>
 
 @code {
 

@@ -11,15 +11,9 @@
 }
 
 <div
-    class="@Class"
+    class="bds-virtual-grid-container @Class"
     @ref="_contentEl"
-    style="
-        width: @(totalSize.Width)px;
-    height: @(totalSize.Height)px;
-    display: grid;
-    grid-template-columns: @_wholeElColTemplate;
-    grid-template-rows: @_wholeElRowTemplate;
-    grid-template-areas: 'fT fT fT' 'fL C fR' 'fB fB fB'">
+    style=" width: @(totalSize.Width)px;height: @(totalSize.Height)px;grid-template-columns: @_wholeElColTemplate;grid-template-rows: @_wholeElRowTemplate;">
     <div aria-hidden="true" @ref="_fillerTop" style="grid-area: fT"></div>
     <div aria-hidden="true" @ref="_fillerRight" style=" grid-area: fR"></div>
     <div
@@ -111,13 +105,13 @@
 
     [Parameter] public EventCallback<VirtualViewportChangedEventArgs> OnViewportChanged { get; set; }
 
-    private Region _viewRegion = new(-1, -1);
+    private IRegion _viewRegion = new EmptyRegion();
 
     /// <summary>
     /// Set this to limit the view of the virtualised grid to the region specified
     /// </summary>
     [Parameter]
-    public Region? ViewRegion { get; set; }
+    public IRegion? ViewRegion { get; set; }
 
     private IJSObjectReference? _virtualiser = null!;
     private DotNetObjectReference<Virtualise2D>? _dotnetHelper;

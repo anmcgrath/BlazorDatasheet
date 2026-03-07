@@ -43,6 +43,12 @@ public class CellLayoutProvider : IGridLayoutProvider
         _sheet = sheet;
     }
 
+    public CellLayoutProvider(Sheet sheet, IRegion region)
+    {
+        _sheet = sheet;
+        _region = region;
+    }
+
     public CellPosition ComputeCell(double x, double y)
     {
         return new CellPosition(ComputeRow(y), ComputeColumn(x));

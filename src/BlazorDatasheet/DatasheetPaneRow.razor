@@ -1,5 +1,95 @@
-<h3>DatasheetPaneRow</h3>
+﻿@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Extensions
+@using BlazorDatasheet.Render
+@using BlazorDatasheet.Render.Layers
+@if (ViewRegion.Height > 0)
+{
+    <div style="display: flex; align-items: start; position: relative;" class="bds-pane-row">
+        @if (_frozenLeftRegion != null)
+        {
+            <div class="bds-frozen-left"
+                 style="z-index: 5; left: @(PaneContext.Sheet.Rows.HeadingWidth)px;">
+                <DatasheetPane
+                    @ref="_leftPane"
+                    ViewRegion="_frozenLeftRegion"
+                    OverscanColumns="OverscanColumns"
+                    OverscanRows="OverscanRows"
+                    EditorLayerChanged="EditorLayerChanged"/>
+            </div>
+        }
+
+        @if (_centreRegion != null)
+        {
+            <DatasheetPane
+                @ref="_centerPane"
+                ViewRegion="_centreRegion"
+                OverscanColumns="OverscanColumns"
+                OverscanRows="OverscanRows"
+                EditorLayerChanged="EditorLayerChanged"
+                AutofitLayerChanged="AutofitLayerChanged"/>
+        }
+
+        @if (_frozenRightRegion != null)
+        {
+            <div class="bds-frozen-right" style="right: 0; z-index: 5;">
+                <DatasheetPane
+                    @ref="_rightPane"
+                    ViewRegion="_frozenRightRegion"
+                    OverscanColumns="OverscanColumns"
+                    OverscanRows="OverscanRows"
+                    EditorLayerChanged="EditorLayerChanged"/>
+            </div>
+        }
+    </div>
+}
 
 @code {
-    
+
+    /// <summary>
+    /// The ViewRegion this pane row covers
+    /// </summary>
+    [Parameter, EditorRequired]
+    public required IRegion ViewRegion { get; set; }
+
+    private IRegion? _viewRegion;
+
+    [CascadingParameter] private PaneContext PaneContext { get; set; } = null!;
+
+    [Parameter, EditorRequired] public Action<EditorLayer?, bool> EditorLayerChanged { get; set; } = (_, _) => { };
+    [Parameter, EditorRequired] public Action<AutofitLayer?> AutofitLayerChanged { get; set; } = _ => { };
+    [Parameter] public int OverscanColumns { get; set; } = 2;
+    [Parameter] public int OverscanRows { get; set; } = 6;
+
+    private DatasheetPane? _leftPane;
+    private DatasheetPane? _centerPane;
+    private DatasheetPane? _rightPane;
+
+    private IRegion? _frozenLeftRegion;
+    private IRegion? _frozenRightRegion;
+    private IRegion? _centreRegion;
+
+    protected override void OnParametersSet()
+    {
+        if (_viewRegion == null || !_viewRegion.Equals(ViewRegion))
+        {
+            _viewRegion = ViewRegion;
+            _frozenLeftRegion = _viewRegion.GetIntersection(PaneContext.Sheet.GetFrozenLeftRegion());
+            _frozenRightRegion = _viewRegion.GetIntersection(PaneContext.Sheet.GetFrozenRightRegion());
+            _centreRegion = new Region(_viewRegion.Top, _viewRegion.Bottom, PaneContext.Sheet.FreezeState.Left,
+                _viewRegion.Right - PaneContext.Sheet.FreezeState.Right);
+        }
+
+        base.OnParametersSet();
+    }
+
+    public async Task RefreshViews()
+    {
+        if (_leftPane != null)
+            await _leftPane.RefreshView();
+        if (_centerPane != null)
+            await _centerPane.RefreshView();
+        if (_rightPane != null)
+            await _rightPane.RefreshView();
+    }
+
 }

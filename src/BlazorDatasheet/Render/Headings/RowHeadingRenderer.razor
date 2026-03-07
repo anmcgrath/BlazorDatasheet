@@ -1,29 +1,76 @@
-﻿@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Extensions
 @using BlazorDatasheet.Virtualise
 @inherits HeadingRenderer
 
 <div style="display: flex; flex-direction: column;">
-    <div class="bds-sheet-row-head-container" style=" position: sticky; left: 0;">
-        <Virtualise2D
-            OverscanRows="OverscanRows"
-            @ref="MainView"
-            LayoutProvider="LayoutProvider"
-            ViewRegion="new Region(_viewRegion.Top, _viewRegion.Bottom, 0, 0)">
-            <GridItemTemplate>
-                <div class="bds-row-head bds-sheet-cell @GetSelectedClass(context.row)" data-row="@context.row" data-col="-1">
-                    @ChildContent(new HeadingContext(context.row, _sheet.Rows.GetHeading(context.row)))
-                </div>
-            </GridItemTemplate>
-        </Virtualise2D>
-    </div>
+    @if (TopHeadingRegion != null && HasVisibleRows(TopHeadingRegion))
+    {
+        <div class="bds-sheet-row-head-container bds-frozen-top"
+             style="position: sticky; top:var(--gutter-top-height); z-index: 4;">
+            <Virtualise2D
+                OverscanRows="OverscanRows"
+                @ref="_topView"
+                LayoutProvider="LayoutProvider"
+                ViewRegion="TopHeadingRegion">
+                <GridItemTemplate>
+                    @RowHeadingItem(context.row)
+                </GridItemTemplate>
+            </Virtualise2D>
+        </div>
+    }
+
+    @if (HasVisibleRows(MainHeadingRegion))
+    {
+        <div class="bds-sheet-row-head-container" style="z-index: 2; position: relative;">
+            <Virtualise2D
+                OverscanRows="OverscanRows"
+                @ref="MainView"
+                LayoutProvider="LayoutProvider"
+                ViewRegion="MainHeadingRegion">
+                <GridItemTemplate>
+                    @RowHeadingItem(context.row)
+                </GridItemTemplate>
+            </Virtualise2D>
+        </div>
+    }
+
+    @if (BottomHeadingRegion != null && HasVisibleRows(BottomHeadingRegion))
+    {
+        <div class="bds-sheet-row-head-container bds-frozen-bottom" style="position: sticky; bottom: 0; z-index: 4;">
+            <Virtualise2D
+                OverscanRows="OverscanRows"
+                @ref="_bottomView"
+                LayoutProvider="LayoutProvider"
+                ViewRegion="BottomHeadingRegion">
+                <GridItemTemplate>
+                    @RowHeadingItem(context.row)
+                </GridItemTemplate>
+            </Virtualise2D>
+        </div>
+    }
 </div>
 
 @code {
+
+    private RenderFragment RowHeadingItem(int row) =>
+        @<div class="bds-row-head bds-sheet-cell @GetSelectedClass(row)" data-row="@row" data-col="-1">
+            @ChildContent(new HeadingContext(row, _sheet.Rows.GetHeading(row)))
+        </div>;
 
     /// <summary>
     /// The number of rows past the end of the viewport to render.
     /// </summary>
     [Parameter]
     public int OverscanRows { get; set; } = 6;
+
+    private IRegion? TopHeadingRegion => _viewRegion.GetIntersection(_sheet.GetFrozenTopRegion());
+
+    private IRegion MainHeadingRegion => new Region(_sheet.FreezeState.Top, _viewRegion.Bottom - _sheet.FreezeState.Bottom, 0,
+        0);
+
+    private IRegion? BottomHeadingRegion => _viewRegion.GetIntersection(_sheet.GetFrozenBottomRegion());
+
+    private bool HasVisibleRows(IRegion? region) => _sheet.HasVisibleRows(region);
 
 }

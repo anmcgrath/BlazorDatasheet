@@ -66,7 +66,7 @@
         _cellLayoutProvider = new CellLayoutProvider(newSheet);
     }
 
-    protected override void OnViewRegionChange(Region newRegion, Region? oldRegion)
+    protected override void OnViewRegionChange(IRegion newRegion, IRegion? oldRegion)
     {
         if (!_isDragging || _lastDragMouseEvent == null)
             return;

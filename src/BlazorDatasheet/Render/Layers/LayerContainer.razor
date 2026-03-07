@@ -1,24 +1,20 @@
 ﻿@using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Services
-<div class="bds-sheet-layer-container" style="z-index: @(Depth);">
+<div class="bds-sheet-layer-container" style="z-index: 1;">
     <div style="position: absolute;
         top: 0;
         left: 0;
         max-width:@(LayerWidth)px;
     max-height:@(LayerHeight)px;
     width:@(LayerWidth)px;
-    height:@(LayerHeight)px;
-    @(Depth > 0 ? "overflow:hidden;" : "")
-    ">
+    height:@(LayerHeight)px;">
         <CascadingValue Value="ViewRegion">
             <CascadingValue Value="Sheet">
-                <CascadingValue Value="Depth" IsFixed="true">
-                    <CascadingValue Value="LayerHeight">
-                        <CascadingValue Value="LayerWidth">
-                            <CascadingValue Value="PointerInputService">
-                                @ChildContent
-                            </CascadingValue>
+                <CascadingValue Value="LayerHeight">
+                    <CascadingValue Value="LayerWidth">
+                        <CascadingValue Value="PointerInputService">
+                            @ChildContent
                         </CascadingValue>
                     </CascadingValue>
                 </CascadingValue>
@@ -31,15 +27,9 @@
 
     [Parameter] public RenderFragment ChildContent { get; set; } = default!;
 
-    /// <summary>
-    /// How deep (number of sub-grids) this container is
-    /// </summary>
-    [Parameter]
-    public int Depth { get; set; }
+    [Parameter, EditorRequired] public IRegion? ViewRegion { get; set; }
 
-    [Parameter, EditorRequired] public Region? ViewRegion { get; set; }
-
-    private Region _viewRegion = new(0, 0);
+    private IRegion _viewRegion = new EmptyRegion();
 
     [Parameter, EditorRequired] public Sheet Sheet { get; set; } = new(0, 0);
     private Sheet _sheet = new(0, 0);
