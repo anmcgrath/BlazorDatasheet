@@ -320,4 +320,125 @@ public class DataStoreByRowsTests
         store.GetNextNonEmptyIndex(5).Should().Be(-1);
         store.GetNextNonEmptyIndex(6).Should().Be(-1);
     }
+
+    [Test]
+    public void Large_Sparse_Dataset_Get_Is_Correct()
+    {
+        var store = GetStore<int>();
+        // Set 10,000 cells spread across large coordinate space
+        for (int i = 0; i < 10000; i++)
+        {
+            store.Set(i * 100, i * 50, i);
+        }
+
+        // Verify all values are retrievable
+        for (int i = 0; i < 10000; i++)
+        {
+            store.Get(i * 100, i * 50).Should().Be(i);
+        }
+
+        // Verify empty cells return default
+        store.Get(1, 1).Should().Be(default(int));
+    }
+
+    [Test]
+    public void ClearBetween_Region_Correctness()
+    {
+        var store = GetStore<string>();
+        store.Set(0, 0, "A");
+        store.Set(0, 5, "B");
+        store.Set(0, 10, "C");
+        store.Set(0, 15, "D");
+
+        // Clear cols 3-12 in row 0
+        store.Clear(new Region(0, 0, 3, 12));
+
+        store.Get(0, 0).Should().Be("A");
+        store.Get(0, 5).Should().BeNull();
+        store.Get(0, 10).Should().BeNull();
+        store.Get(0, 15).Should().Be("D");
+    }
+
+    [Test]
+    public void Range_Query_After_Mutations_Returns_Correct_Data()
+    {
+        var store = GetStore<int>();
+        store.Set(0, 0, 1);
+        store.Set(1, 0, 2);
+        store.Set(2, 0, 3);
+        store.Set(3, 0, 4);
+
+        // Query range
+        var positions = store.GetNonEmptyPositions(0, 3, 0, 0).ToList();
+        positions.Should().HaveCount(4);
+
+        // Mutate: clear middle
+        store.Clear(1, 0);
+        store.Clear(2, 0);
+
+        // Query again - cache should be invalidated
+        positions = store.GetNonEmptyPositions(0, 3, 0, 0).ToList();
+        positions.Should().HaveCount(2);
+
+        // Add new data
+        store.Set(5, 0, 5);
+        positions = store.GetNonEmptyPositions(0, 10, 0, 0).ToList();
+        positions.Should().HaveCount(3);
+    }
+
+    [Test]
+    public void Bulk_Load_From_Jagged_Array_Loads_Non_Default_Cells()
+    {
+        var store = new SparseMatrixStoreByRows<int>();
+        store.BulkLoad(
+        [
+            [0, 1, 0],
+            [],
+            [2, 0, 3]
+        ], rowOffset: 10, colOffset: 20);
+
+        store.Get(10, 20).Should().Be(0);
+        store.Get(10, 21).Should().Be(1);
+        store.Get(10, 22).Should().Be(0);
+        store.Get(11, 20).Should().Be(0);
+        store.Get(12, 20).Should().Be(2);
+        store.Get(12, 21).Should().Be(0);
+        store.Get(12, 22).Should().Be(3);
+        store.GetNonEmptyPositions(10, 12, 20, 22).Should().BeEquivalentTo(
+        [
+            new CellPosition(10, 21),
+            new CellPosition(12, 20),
+            new CellPosition(12, 22)
+        ]);
+    }
+
+    [Test]
+    public void Bulk_Load_From_2D_Array_Replaces_Store_Contents()
+    {
+        var store = new SparseMatrixStoreByRows<int>();
+        store.Set(0, 0, 99);
+
+        store.BulkLoad(new[,]
+        {
+            { 1, 0, 2 },
+            { 0, 0, 0 },
+            { 3, 4, 0 }
+        });
+
+        store.Get(0, 0).Should().Be(1);
+        store.Get(0, 1).Should().Be(0);
+        store.Get(0, 2).Should().Be(2);
+        store.Get(1, 0).Should().Be(0);
+        store.Get(2, 0).Should().Be(3);
+        store.Get(2, 1).Should().Be(4);
+        store.Get(2, 2).Should().Be(0);
+        store.Get(10, 10).Should().Be(0);
+        store.GetNonEmptyPositions(0, 2, 0, 2).Should().BeEquivalentTo(
+        [
+            new CellPosition(0, 0),
+            new CellPosition(0, 2),
+            new CellPosition(2, 0),
+            new CellPosition(2, 1)
+        ]);
+    }
 }
