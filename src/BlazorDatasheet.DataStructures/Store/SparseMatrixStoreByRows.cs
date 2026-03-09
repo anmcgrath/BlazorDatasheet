@@ -38,6 +38,28 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
         _sortedRowKeys = null;
     }
 
+    public void BulkLoadInto(T[][] values, int rowOffset = 0, int colOffset = 0)
+    {
+        for (int rowIndex = 0; rowIndex < values.Length; rowIndex++)
+        {
+            var rowValues = values[rowIndex];
+            if (rowValues.Length == 0)
+                continue;
+
+            var rowData = BuildRowDictionary(rowValues, colOffset);
+            if (rowData == null)
+                continue;
+
+            int targetRow = rowIndex + rowOffset;
+            if (_rows.TryGetValue(targetRow, out var existingRow))
+                existingRow.LoadBulkData(rowData);
+            else
+                _rows[targetRow] = SparseRow<T>.FromBulkData(_defaultIfEmpty!, rowData);
+        }
+
+        InvalidateRowCache();
+    }
+
     public void BulkLoad(T[,] values, int rowOffset = 0, int colOffset = 0)
     {
         int rowCount = values.GetLength(0);
@@ -72,6 +94,12 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
 
     private SparseRow<T>? BuildRowData(T[] rowValues, int colOffset)
     {
+        var data = BuildRowDictionary(rowValues, colOffset);
+        return data == null ? null : SparseRow<T>.FromBulkData(_defaultIfEmpty!, data);
+    }
+
+    private Dictionary<int, T>? BuildRowDictionary(T[] rowValues, int colOffset)
+    {
         int nonDefaultCount = 0;
         for (int colIndex = 0; colIndex < rowValues.Length; colIndex++)
         {
@@ -92,7 +120,7 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
             data[colIndex + colOffset] = value;
         }
 
-        return SparseRow<T>.FromBulkData(_defaultIfEmpty!, data);
+        return data;
     }
 
     private SparseRow<T>? BuildRowData(T[,] values, int rowIndex, int colCount, int colOffset)

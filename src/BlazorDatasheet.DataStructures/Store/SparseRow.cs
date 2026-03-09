@@ -19,6 +19,14 @@ internal class SparseRow<T>
         };
     }
 
+    internal void LoadBulkData(Dictionary<int, T> data)
+    {
+        foreach (var item in data)
+            _data[item.Key] = item.Value;
+
+        InvalidateCache();
+    }
+
     private int[] EnsureSortedKeys()
     {
         if (_sortedKeys == null)
