@@ -256,14 +256,27 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
 
     public MatrixRestoreData<T> InsertRowAt(int row, int count)
     {
-        var newRows = new Dictionary<int, SparseRow<T>>(_rows.Count);
-        foreach (var kvp in _rows)
+        if (count <= 0 || _rows.Count == 0)
         {
-            var newKey = kvp.Key >= row ? kvp.Key + count : kvp.Key;
-            newRows[newKey] = kvp.Value;
+            return new MatrixRestoreData<T>()
+            {
+                Shifts = [new AppliedShift(Axis.Row, row, count, null)]
+            };
         }
 
-        _rows = newRows;
+        var keys = EnsureSortedRowKeys();
+        var startIdx = Array.BinarySearch(keys, row);
+        if (startIdx < 0)
+            startIdx = ~startIdx;
+
+        for (int i = keys.Length - 1; i >= startIdx; i--)
+        {
+            var key = keys[i];
+            var rowData = _rows[key];
+            _rows.Remove(key);
+            _rows[key + count] = rowData;
+        }
+
         InvalidateRowCache();
         return new MatrixRestoreData<T>()
         {
@@ -337,27 +350,40 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
 
     public MatrixRestoreData<T> RemoveRowAt(int row, int count)
     {
-        long endIndex = (long)row + count - 1;
-        var removedData = new List<(int row, int col, T data)>();
-        var newRows = new Dictionary<int, SparseRow<T>>(_rows.Count);
-
-        foreach (var kvp in _rows)
+        if (count <= 0 || _rows.Count == 0)
         {
-            if (kvp.Key >= row && kvp.Key <= endIndex)
+            return new MatrixRestoreData<T>()
             {
-                var nonEmptyColData = kvp.Value.GetNonEmptyData();
-                removedData.AddRange(nonEmptyColData.Select(x =>
-                    (kvp.Key, x.itemIndex, x.data)
-                ));
-            }
-            else
-            {
-                var newKey = kvp.Key > endIndex ? kvp.Key - count : kvp.Key;
-                newRows[newKey] = kvp.Value;
-            }
+                Shifts = [new AppliedShift(Axis.Row, row, -count, null)]
+            };
         }
 
-        _rows = newRows;
+        var keys = EnsureSortedRowKeys();
+        long endIndex = (long)row + count - 1;
+        var removedData = new List<(int row, int col, T data)>();
+        var startIdx = Array.BinarySearch(keys, row);
+        if (startIdx < 0)
+            startIdx = ~startIdx;
+
+        int i = startIdx;
+        while (i < keys.Length && keys[i] <= endIndex)
+        {
+            var key = keys[i];
+            var rowData = _rows[key];
+            var nonEmptyColData = rowData.GetNonEmptyData();
+            removedData.AddRange(nonEmptyColData.Select(x => (key, x.itemIndex, x.data)));
+            _rows.Remove(key);
+            i++;
+        }
+
+        for (; i < keys.Length; i++)
+        {
+            var key = keys[i];
+            var rowData = _rows[key];
+            _rows.Remove(key);
+            _rows[key - count] = rowData;
+        }
+
         InvalidateRowCache();
 
         return new MatrixRestoreData<T>()

@@ -76,14 +76,19 @@ internal class SparseRow<T>
         if (nItems <= 0 || _data.Count == 0)
             return;
 
-        var newData = new Dictionary<int, T>(_data.Count);
-        foreach (var kvp in _data)
+        var keys = EnsureSortedKeys();
+        var startIdx = Array.BinarySearch(keys, itemIndex);
+        if (startIdx < 0)
+            startIdx = ~startIdx;
+
+        for (int i = keys.Length - 1; i >= startIdx; i--)
         {
-            var shiftedIndex = kvp.Key >= itemIndex ? kvp.Key + nItems : kvp.Key;
-            newData[shiftedIndex] = kvp.Value;
+            var key = keys[i];
+            var value = _data[key];
+            _data.Remove(key);
+            _data[key + nItems] = value;
         }
 
-        _data = newData;
         InvalidateCache();
     }
 
@@ -148,21 +153,32 @@ internal class SparseRow<T>
         if (nItems <= 0 || _data.Count == 0)
             return deleted;
 
+        var keys = EnsureSortedKeys();
         long endIndex = (long)itemIndex + nItems - 1;
-        var newData = new Dictionary<int, T>(_data.Count);
-        foreach (var kvp in _data)
+        var startIdx = Array.BinarySearch(keys, itemIndex);
+        if (startIdx < 0)
+            startIdx = ~startIdx;
+
+        int i = startIdx;
+        while (i < keys.Length && keys[i] <= endIndex)
         {
-            if (kvp.Key >= itemIndex && kvp.Key <= endIndex)
-                deleted.Add((kvp.Key, kvp.Value));
-            else
-            {
-                var shiftedIndex = kvp.Key > endIndex ? kvp.Key - nItems : kvp.Key;
-                newData[shiftedIndex] = kvp.Value;
-            }
+            var key = keys[i];
+            deleted.Add((key, _data[key]));
+            _data.Remove(key);
+            i++;
         }
 
-        _data = newData;
-        InvalidateCache();
+        for (; i < keys.Length; i++)
+        {
+            var key = keys[i];
+            var value = _data[key];
+            _data.Remove(key);
+            _data[key - nItems] = value;
+        }
+
+        if (deleted.Count > 0 || startIdx < keys.Length)
+            InvalidateCache();
+
         return deleted;
     }
 
