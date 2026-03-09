@@ -1,6 +1,9 @@
+using System.Drawing;
 using System.Linq;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Formats;
+using BlazorDatasheet.Core.Formats.DefaultConditionalFormats;
+using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.DataStructures.Geometry;
 using NUnit.Framework;
 
@@ -57,6 +60,27 @@ public class ConditionalFormatTests
         var formatApplied = cm.GetFormatResult(0, 0);
         Assert.NotNull(formatApplied);
         Assert.AreEqual(sheet.Region.Area.ToString(), formatApplied!.BackgroundColor);
+    }
+
+    [Test]
+    public void Shared_Conditional_Format_Recomputes_When_Using_Bulk_Load_Constructor()
+    {
+        var values = new[]
+        {
+            new[] { CellValue.Number(1d) },
+            new[] { CellValue.Number(2d) },
+            new[] { CellValue.Number(3d) }
+        };
+        var bulkSheet = new Sheet(3, 1, values);
+        var cf = new NumberScaleConditionalFormat(Color.Red, Color.Green);
+
+        bulkSheet.ConditionalFormats.Apply(bulkSheet.Region, cf);
+        var initialBackground = bulkSheet.ConditionalFormats.GetFormatResult(1, 0)!.BackgroundColor;
+
+        bulkSheet.Cells.SetValue(2, 0, CellValue.Number(100d));
+        var updatedBackground = bulkSheet.ConditionalFormats.GetFormatResult(1, 0)!.BackgroundColor;
+
+        Assert.AreNotEqual(initialBackground, updatedBackground);
     }
 
     [Test]
