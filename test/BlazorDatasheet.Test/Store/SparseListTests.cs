@@ -5,9 +5,9 @@ using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Store;
 
-public class SparseListTests
+public class SparseRowTests
 {
-    private SparseList<int> _list;
+    private SparseRow<int> _list;
 
     [SetUp]
     public void Setup()
@@ -96,7 +96,7 @@ public class SparseListTests
             .OrderBy(x => x.itemIndex)
             .ToList();
 
-        _list.GetNonEmptyData().Should().Equal(expected);
+        _list.GetNonEmptyData().OrderBy(x => x.itemIndex).ToList().Should().Equal(expected);
     }
 
     [Test]
@@ -127,6 +127,6 @@ public class SparseListTests
             .OrderBy(x => x.itemIndex)
             .ToList();
 
-        _list.GetNonEmptyData().Should().Equal(expectedRemaining);
+        _list.GetNonEmptyData().OrderBy(x => x.itemIndex).ToList().Should().Equal(expectedRemaining);
     }
 }

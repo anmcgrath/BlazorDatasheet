@@ -23,6 +23,14 @@ public partial class CellStore
         _dataStore = new SparseMatrixStoreByRows<CellValue>(_defaultCellValue);
     }
 
+    internal CellStore(Sheet sheet, CellValue[][] values)
+    {
+        Sheet = sheet;
+        var dataStore = new SparseMatrixStoreByRows<CellValue>(_defaultCellValue);
+        dataStore.BulkLoad(values);
+        _dataStore = dataStore;
+    }
+
     /// <summary>
     /// Returns all cells in the specified region
     /// </summary>

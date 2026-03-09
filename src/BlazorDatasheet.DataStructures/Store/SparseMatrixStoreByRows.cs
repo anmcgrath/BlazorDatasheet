@@ -4,62 +4,190 @@ namespace BlazorDatasheet.DataStructures.Store;
 
 public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
 {
-    private SparseList<SparseList<T>> _rows;
+    private Dictionary<int, SparseRow<T>> _rows = new();
+    private int[]? _sortedRowKeys;
     private readonly T? _defaultIfEmpty;
+    private readonly EqualityComparer<T> _valueComparer = EqualityComparer<T>.Default;
 
     public SparseMatrixStoreByRows(T defaultIfEmpty)
     {
         _defaultIfEmpty = defaultIfEmpty;
-        var emptyRow = new SparseList<T>(defaultIfEmpty);
-        _rows = new SparseList<SparseList<T>>(emptyRow);
     }
 
     public SparseMatrixStoreByRows() : this(default(T))
     {
     }
 
+    public void BulkLoad(T[][] values, int rowOffset = 0, int colOffset = 0)
+    {
+        var rows = new Dictionary<int, SparseRow<T>>(values.Length);
+        for (int rowIndex = 0; rowIndex < values.Length; rowIndex++)
+        {
+            var rowValues = values[rowIndex];
+            if (rowValues.Length == 0)
+                continue;
+
+            var rowData = BuildRowData(rowValues, colOffset);
+            if (rowData == null)
+                continue;
+
+            rows[rowIndex + rowOffset] = rowData;
+        }
+
+        _rows = rows;
+        _sortedRowKeys = null;
+    }
+
+    public void BulkLoadInto(T[][] values, int rowOffset = 0, int colOffset = 0)
+    {
+        for (int rowIndex = 0; rowIndex < values.Length; rowIndex++)
+        {
+            var rowValues = values[rowIndex];
+            if (rowValues.Length == 0)
+                continue;
+
+            var rowData = BuildRowDictionary(rowValues, colOffset);
+            if (rowData == null)
+                continue;
+
+            int targetRow = rowIndex + rowOffset;
+            if (_rows.TryGetValue(targetRow, out var existingRow))
+                existingRow.LoadBulkData(rowData);
+            else
+                _rows[targetRow] = SparseRow<T>.FromBulkData(_defaultIfEmpty!, rowData);
+        }
+
+        InvalidateRowCache();
+    }
+
+    public void BulkLoad(T[,] values, int rowOffset = 0, int colOffset = 0)
+    {
+        int rowCount = values.GetLength(0);
+        int colCount = values.GetLength(1);
+        var rows = new Dictionary<int, SparseRow<T>>(rowCount);
+
+        for (int rowIndex = 0; rowIndex < rowCount; rowIndex++)
+        {
+            var rowData = BuildRowData(values, rowIndex, colCount, colOffset);
+            if (rowData == null)
+                continue;
+
+            rows[rowIndex + rowOffset] = rowData;
+        }
+
+        _rows = rows;
+        _sortedRowKeys = null;
+    }
+
+    private int[] EnsureSortedRowKeys()
+    {
+        if (_sortedRowKeys == null)
+        {
+            _sortedRowKeys = _rows.Keys.ToArray();
+            Array.Sort(_sortedRowKeys);
+        }
+
+        return _sortedRowKeys;
+    }
+
+    private void InvalidateRowCache() => _sortedRowKeys = null;
+
+    private SparseRow<T>? BuildRowData(T[] rowValues, int colOffset)
+    {
+        var data = BuildRowDictionary(rowValues, colOffset);
+        return data == null ? null : SparseRow<T>.FromBulkData(_defaultIfEmpty!, data);
+    }
+
+    private Dictionary<int, T>? BuildRowDictionary(T[] rowValues, int colOffset)
+    {
+        int nonDefaultCount = 0;
+        for (int colIndex = 0; colIndex < rowValues.Length; colIndex++)
+        {
+            if (!_valueComparer.Equals(rowValues[colIndex], _defaultIfEmpty!))
+                nonDefaultCount++;
+        }
+
+        if (nonDefaultCount == 0)
+            return null;
+
+        var data = new Dictionary<int, T>(nonDefaultCount);
+        for (int colIndex = 0; colIndex < rowValues.Length; colIndex++)
+        {
+            var value = rowValues[colIndex];
+            if (_valueComparer.Equals(value, _defaultIfEmpty!))
+                continue;
+
+            data[colIndex + colOffset] = value;
+        }
+
+        return data;
+    }
+
+    private SparseRow<T>? BuildRowData(T[,] values, int rowIndex, int colCount, int colOffset)
+    {
+        int nonDefaultCount = 0;
+        for (int colIndex = 0; colIndex < colCount; colIndex++)
+        {
+            if (!_valueComparer.Equals(values[rowIndex, colIndex], _defaultIfEmpty!))
+                nonDefaultCount++;
+        }
+
+        if (nonDefaultCount == 0)
+            return null;
+
+        var data = new Dictionary<int, T>(nonDefaultCount);
+        for (int colIndex = 0; colIndex < colCount; colIndex++)
+        {
+            var value = values[rowIndex, colIndex];
+            if (_valueComparer.Equals(value, _defaultIfEmpty!))
+                continue;
+
+            data[colIndex + colOffset] = value;
+        }
+
+        return SparseRow<T>.FromBulkData(_defaultIfEmpty!, data);
+    }
+
     public bool Contains(int row, int col)
     {
-        return _rows.Get(row).ContainsIndex(col);
+        return _rows.TryGetValue(row, out var rowData) && rowData.ContainsIndex(col);
     }
 
     public T Get(int row, int col)
     {
-        return _rows.Get(row)
-            .Get(col);
+        if (_rows.TryGetValue(row, out var rowData))
+            return rowData.Get(col);
+        return _defaultIfEmpty!;
     }
 
     public MatrixRestoreData<T> Set(int row, int col, T value)
     {
         var restoreData = new MatrixRestoreData<T>();
-        SparseList<T> rowList;
-        if (!_rows.ContainsIndex(row))
+        if (!_rows.TryGetValue(row, out var rowData))
         {
-            rowList = new SparseList<T>(_defaultIfEmpty);
-            _rows.Set(row, rowList);
-        }
-        else
-        {
-            rowList = _rows.Get(row);
+            rowData = new SparseRow<T>(_defaultIfEmpty!);
+            _rows[row] = rowData;
+            InvalidateRowCache();
         }
 
-        var currValue = rowList.Get(col);
-        rowList.Set(col, value);
+        var currValue = rowData.Get(col);
+        rowData.Set(col, value);
         restoreData.DataRemoved = new() { (row, col, currValue) };
         return restoreData;
     }
 
     public MatrixRestoreData<T> Clear(int row, int col)
     {
-        var rowExists = _rows.ContainsIndex(row);
-        if (!rowExists)
+        if (!_rows.TryGetValue(row, out var rowData))
             return new MatrixRestoreData<T>();
 
-        var rowList = _rows.Get(row);
-        var restoreData = rowList.Clear(col);
+        var restoreData = rowData.Clear(col);
 
-        if (rowList.IsEmpty())
-            _rows.Values.Remove(row);
+        if (rowData.IsEmpty())
+        {
+            _rows.Remove(row);
+            InvalidateRowCache();
+        }
 
         if (restoreData == null)
             return new MatrixRestoreData<T>();
@@ -83,17 +211,33 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
     public MatrixRestoreData<T> Clear(IRegion region)
     {
         var cleared = new List<(int row, int col, T)>();
-        var nonEmptyRows = _rows.GetNonEmptyDataBetween(region.Top, region.Bottom).ToList();
-        foreach (var row in nonEmptyRows)
+        var keys = EnsureSortedRowKeys();
+
+        var startIdx = Array.BinarySearch(keys, region.Top);
+        if (startIdx < 0) startIdx = ~startIdx;
+
+        var rowsToRemove = new List<int>();
+        for (int i = startIdx; i < keys.Length; i++)
         {
-            var clearedRowData = row.data.ClearBetween(region.Left, region.Right);
+            var rowKey = keys[i];
+            if (rowKey > region.Bottom)
+                break;
+
+            var rowData = _rows[rowKey];
+            var clearedRowData = rowData.ClearBetween(region.Left, region.Right);
             cleared.AddRange(clearedRowData.Select(x =>
-                (row.itemIndex, x.itemIndexCleared, x.Item2)
+                (rowKey, x.itemIndexCleared, x.Item2)
             ));
 
-            if (row.data.IsEmpty())
-                _rows.Values.Remove(row.itemIndex);
+            if (rowData.IsEmpty())
+                rowsToRemove.Add(rowKey);
         }
+
+        foreach (var rowKey in rowsToRemove)
+            _rows.Remove(rowKey);
+
+        if (rowsToRemove.Count > 0)
+            InvalidateRowCache();
 
         return new MatrixRestoreData<T>()
         {
@@ -112,7 +256,28 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
 
     public MatrixRestoreData<T> InsertRowAt(int row, int count)
     {
-        _rows.InsertAt(row, count);
+        if (count <= 0 || _rows.Count == 0)
+        {
+            return new MatrixRestoreData<T>()
+            {
+                Shifts = [new AppliedShift(Axis.Row, row, count, null)]
+            };
+        }
+
+        var keys = EnsureSortedRowKeys();
+        var startIdx = Array.BinarySearch(keys, row);
+        if (startIdx < 0)
+            startIdx = ~startIdx;
+
+        for (int i = keys.Length - 1; i >= startIdx; i--)
+        {
+            var key = keys[i];
+            var rowData = _rows[key];
+            _rows.Remove(key);
+            _rows[key + count] = rowData;
+        }
+
+        InvalidateRowCache();
         return new MatrixRestoreData<T>()
         {
             Shifts = [new AppliedShift(Axis.Row, row, count, null)]
@@ -122,7 +287,7 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
     public MatrixRestoreData<T> InsertColAt(int col, int count)
     {
         foreach (var row in _rows.Values)
-            row.Value.InsertAt(col, count);
+            row.InsertAt(col, count);
 
         return new MatrixRestoreData<T>()
         {
@@ -133,11 +298,11 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
     public MatrixRestoreData<T> RemoveColAt(int col, int count)
     {
         var removed = new List<(int row, int col, T data)>();
-        foreach (var row in _rows.Values)
+        foreach (var kvp in _rows)
         {
-            var removedColData = row.Value.DeleteAt(col, count);
+            var removedColData = kvp.Value.DeleteAt(col, count);
             removed.AddRange(removedColData.Select(x =>
-                (row.Key, x.indexDeleted, x.value)
+                (kvp.Key, x.indexDeleted, x.value)
             ));
         }
 
@@ -150,12 +315,14 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
 
     public int GetNextNonBlankRow(int row, int col)
     {
-        var rowIndex = _rows.GetNextNonEmptyItemKey(row + 1);
-        while (rowIndex != -1)
+        var keys = EnsureSortedRowKeys();
+        var startIdx = Array.BinarySearch(keys, row + 1);
+        if (startIdx < 0) startIdx = ~startIdx;
+
+        for (int i = startIdx; i < keys.Length; i++)
         {
-            if (_rows.Get(rowIndex).ContainsIndex(col))
-                return rowIndex;
-            rowIndex = _rows.GetNextNonEmptyItemKey(rowIndex + 1);
+            if (_rows[keys[i]].ContainsIndex(col))
+                return keys[i];
         }
 
         return -1;
@@ -163,28 +330,61 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
 
     public int GetNextNonEmptyIndex(int index)
     {
-        return _rows.GetNextNonEmptyItemKey(index + 1);
+        var keys = EnsureSortedRowKeys();
+        var startIdx = Array.BinarySearch(keys, index + 1);
+        if (startIdx < 0) startIdx = ~startIdx;
+
+        if (startIdx >= keys.Length)
+            return -1;
+
+        return keys[startIdx];
     }
 
     public int GetNextNonEmptyIndexInRow(int row, int col, int colDirection = 1)
     {
-        if (!_rows.ContainsIndex(row))
+        if (!_rows.TryGetValue(row, out var rowData))
             return -1;
 
-        return _rows.Get(row).GetNextNonEmptyItemKey(col + Math.Sign(colDirection), colDirection);
+        return rowData.GetNextNonEmptyItemKey(col + Math.Sign(colDirection), colDirection);
     }
 
     public MatrixRestoreData<T> RemoveRowAt(int row, int count)
     {
-        var removedRows = _rows.DeleteAt(row, count);
-        var removedData = new List<(int row, int col, T data)>();
-        foreach (var removedRow in removedRows)
+        if (count <= 0 || _rows.Count == 0)
         {
-            var nonEmptyColData = removedRow.value.GetNonEmptyData();
-            removedData.AddRange(nonEmptyColData.Select(x =>
-                (removedRow.indexDeleted, x.itemIndex, x.data)
-            ));
+            return new MatrixRestoreData<T>()
+            {
+                Shifts = [new AppliedShift(Axis.Row, row, -count, null)]
+            };
         }
+
+        var keys = EnsureSortedRowKeys();
+        long endIndex = (long)row + count - 1;
+        var removedData = new List<(int row, int col, T data)>();
+        var startIdx = Array.BinarySearch(keys, row);
+        if (startIdx < 0)
+            startIdx = ~startIdx;
+
+        int i = startIdx;
+        while (i < keys.Length && keys[i] <= endIndex)
+        {
+            var key = keys[i];
+            var rowData = _rows[key];
+            var nonEmptyColData = rowData.GetNonEmptyData();
+            removedData.AddRange(nonEmptyColData.Select(x => (key, x.itemIndex, x.data)));
+            _rows.Remove(key);
+            i++;
+        }
+
+        for (; i < keys.Length; i++)
+        {
+            var key = keys[i];
+            var rowData = _rows[key];
+            _rows.Remove(key);
+            _rows[key - count] = rowData;
+        }
+
+        InvalidateRowCache();
 
         return new MatrixRestoreData<T>()
         {
@@ -195,11 +395,18 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
 
     public IEnumerable<CellPosition> GetNonEmptyPositions(int r0, int r1, int c0, int c1)
     {
-        var nonEmptyRows = _rows.GetNonEmptyDataBetween(r0, r1);
-        foreach (var row in nonEmptyRows)
+        var keys = EnsureSortedRowKeys();
+        var startIdx = Array.BinarySearch(keys, r0);
+        if (startIdx < 0) startIdx = ~startIdx;
+
+        for (int i = startIdx; i < keys.Length; i++)
         {
-            foreach (var col in row.data.GetNonEmptyDataBetween(c0, c1))
-                yield return new CellPosition(row.itemIndex, col.itemIndex);
+            var rowKey = keys[i];
+            if (rowKey > r1)
+                yield break;
+
+            foreach (var col in _rows[rowKey].GetNonEmptyDataBetween(c0, c1))
+                yield return new CellPosition(rowKey, col.itemIndex);
         }
     }
 
@@ -252,11 +459,18 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
     public IEnumerable<(int row, int col, T data)> GetNonEmptyData(IRegion region)
     {
         var data = new List<(int row, int col, T data)>();
-        var nonEmptyRows = _rows.GetNonEmptyDataBetween(region.Top, region.Bottom);
-        foreach (var row in nonEmptyRows)
+        var keys = EnsureSortedRowKeys();
+        var startIdx = Array.BinarySearch(keys, region.Top);
+        if (startIdx < 0) startIdx = ~startIdx;
+
+        for (int i = startIdx; i < keys.Length; i++)
         {
-            foreach (var col in row.data.GetNonEmptyDataBetween(region.Left, region.Right))
-                data.Add((row.itemIndex, col.itemIndex, col.data));
+            var rowKey = keys[i];
+            if (rowKey > region.Bottom)
+                break;
+
+            foreach (var col in _rows[rowKey].GetNonEmptyDataBetween(region.Left, region.Right))
+                data.Add((rowKey, col.itemIndex, col.data));
         }
 
         return data;
@@ -267,8 +481,10 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
         var res = new T[region.Height][];
         for (int i = 0; i < region.Height; i++)
         {
-            var rowData = _rows.Get(i + region.Top);
-            res[i] = rowData.GetDataBetween(region.Left, region.Right);
+            if (_rows.TryGetValue(i + region.Top, out var rowData))
+                res[i] = rowData.GetDataBetween(region.Left, region.Right);
+            else
+                res[i] = Enumerable.Repeat(_defaultIfEmpty!, region.Width).ToArray();
         }
 
         return res;
@@ -284,33 +500,53 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
 
         int rowOffset = newStoreResetsOffsets ? r0 : 0;
 
-        var nonEmptyRows = _rows.GetNonEmptyDataBetween(r0, r1);
-        foreach (var row in nonEmptyRows)
+        var keys = EnsureSortedRowKeys();
+        var startIdx = Array.BinarySearch(keys, r0);
+        if (startIdx < 0) startIdx = ~startIdx;
+
+        for (int i = startIdx; i < keys.Length; i++)
         {
-            var subList = row.data.GetSubList(c0, c1, newStoreResetsOffsets);
-            store._rows.Set(row.itemIndex - rowOffset, subList);
+            var rowKey = keys[i];
+            if (rowKey > r1)
+                break;
+
+            var subRow = _rows[rowKey].GetSubList(c0, c1, newStoreResetsOffsets);
+            if (!subRow.IsEmpty())
+            {
+                store._rows[rowKey - rowOffset] = subRow;
+            }
         }
 
+        store.InvalidateRowCache();
         return store;
     }
 
     public RowDataCollection<T> GetNonEmptyRowData(IRegion region)
     {
-        var nonEmptyRows = _rows.GetNonEmptyDataBetween(region.Top, region.Bottom).ToList();
-        var rowIndices = new int[nonEmptyRows.Count];
-        var rowDataArray = new RowData<T>[nonEmptyRows.Count];
-        for (int i = 0; i < nonEmptyRows.Count; i++)
+        var keys = EnsureSortedRowKeys();
+        var startIdx = Array.BinarySearch(keys, region.Top);
+        if (startIdx < 0) startIdx = ~startIdx;
+
+        var rowIndicesList = new List<int>();
+        var rowDataList = new List<RowData<T>>();
+
+        for (int i = startIdx; i < keys.Length; i++)
         {
-            var row = nonEmptyRows[i];
-            rowIndices[i] = row.itemIndex;
-            var nonEmptyCols = row.data.GetNonEmptyDataBetween(region.Left, region.Right).ToList();
+            var rowKey = keys[i];
+            if (rowKey > region.Bottom)
+                break;
+
+            var nonEmptyCols = _rows[rowKey].GetNonEmptyDataBetween(region.Left, region.Right).ToList();
+            if (nonEmptyCols.Count == 0)
+                continue;
+
+            rowIndicesList.Add(rowKey);
             var colIndices = nonEmptyCols.Select(x => x.itemIndex).ToArray();
             var colData = nonEmptyCols.Select(x => x.data).ToArray();
-            var rowData = new RowData<T>(rowIndices[i], colIndices, colData);
-            rowDataArray[i] = rowData;
+            rowDataList.Add(new RowData<T>(rowKey, colIndices, colData));
         }
 
-        return new RowDataCollection<T>(rowIndices, rowDataArray);
+        return new RowDataCollection<T>(rowIndicesList.ToArray(), rowDataList.ToArray());
     }
 
     public RowDataCollection<T> GetRowData(IRegion region)
@@ -320,12 +556,20 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
 
         for (int i = 0; i < region.Height; i++)
         {
-            var row = _rows.Get(i + region.Top);
-            var nonEmptyCols = row.GetNonEmptyDataBetween(region.Left, region.Right).ToList();
-            var colIndices = nonEmptyCols.Select(x => x.itemIndex).ToArray();
-            var colData = nonEmptyCols.Select(x => x.data).ToArray();
-            indices[i] = i + region.Top;
-            rows[i] = new RowData<T>(i + region.Top, colIndices, colData);
+            var rowIndex = i + region.Top;
+            indices[i] = rowIndex;
+
+            if (_rows.TryGetValue(rowIndex, out var rowData))
+            {
+                var nonEmptyCols = rowData.GetNonEmptyDataBetween(region.Left, region.Right).ToList();
+                var colIndices = nonEmptyCols.Select(x => x.itemIndex).ToArray();
+                var colData = nonEmptyCols.Select(x => x.data).ToArray();
+                rows[i] = new RowData<T>(rowIndex, colIndices, colData);
+            }
+            else
+            {
+                rows[i] = new RowData<T>(rowIndex, Array.Empty<int>(), Array.Empty<T>());
+            }
         }
 
         return new RowDataCollection<T>(indices, rows);

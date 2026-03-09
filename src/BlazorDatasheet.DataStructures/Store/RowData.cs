@@ -15,10 +15,10 @@ public class RowData<T>
 
     public T? GetColumnData(int columnIndex)
     {
-        var index = Array.IndexOf(ColumnIndices, columnIndex);
+        var index = Array.BinarySearch(ColumnIndices, columnIndex);
         if (index < 0)
             return default(T);
-        
+
         return Values[index];
     }
 }

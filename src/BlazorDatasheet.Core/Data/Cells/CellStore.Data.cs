@@ -91,6 +91,76 @@ public partial class CellStore
         return SetValueImpl(row, col, ConvertToCellValue(row, col, value));
     }
 
+    internal CellStoreRestoreData SetValuesBulkImpl(int row, int col, CellValue[][] values)
+    {
+        var restoreData = new CellStoreRestoreData();
+        if (values.Length == 0 || values[0].Length == 0)
+            return restoreData;
+
+        var region = new Region(row, row + values.Length - 1, col, col + values[0].Length - 1);
+
+        if (!Sheet.FormulaEngine.IsCalculating)
+            restoreData.Merge(ClearFormulaImpl([region]));
+
+        restoreData.ValueRestoreData = _dataStore.Clear(region);
+        var oldValuePositions = restoreData.ValueRestoreData.DataRemoved
+            .Select(x => (x.row, x.col))
+            .ToHashSet();
+
+        var valueStore = (SparseMatrixStoreByRows<CellValue>)_dataStore;
+        valueStore.BulkLoadInto(values, row, col);
+
+        for (int rowOffset = 0; rowOffset < values.Length; rowOffset++)
+        {
+            var rowValues = values[rowOffset];
+            for (int colOffset = 0; colOffset < rowValues.Length; colOffset++)
+            {
+                if (rowValues[colOffset].IsEmpty)
+                    continue;
+
+                var position = (row + rowOffset, col + colOffset);
+                if (!oldValuePositions.Contains(position))
+                    restoreData.ValueRestoreData.DataRemoved.Add((position.Item1, position.Item2, CellValue.Empty));
+            }
+        }
+
+        restoreData.ValidRestoreData = _validStore.Clear(region);
+        var oldValidPositions = restoreData.ValidRestoreData.DataRemoved
+            .Select(x => (x.row, x.col))
+            .ToHashSet();
+
+        var validValues = new bool?[values.Length][];
+        for (int rowOffset = 0; rowOffset < values.Length; rowOffset++)
+        {
+            validValues[rowOffset] = new bool?[values[rowOffset].Length];
+            for (int colOffset = 0; colOffset < values[rowOffset].Length; colOffset++)
+            {
+                var validationResult = Sheet.Validators.Validate(values[rowOffset][colOffset], row + rowOffset, col + colOffset);
+                validValues[rowOffset][colOffset] = validationResult.IsValid;
+
+                var position = (row + rowOffset, col + colOffset);
+                if (!oldValidPositions.Contains(position))
+                    restoreData.ValidRestoreData.DataRemoved.Add((position.Item1, position.Item2, default(bool?)));
+            }
+        }
+
+        ((SparseMatrixStoreByRows<bool?>)_validStore).BulkLoadInto(validValues, row, col);
+
+        EmitCellsChanged(region);
+        Sheet.MarkDirty(region);
+
+        return restoreData;
+    }
+
+    internal static bool IsRectangular(CellValue[][] values)
+    {
+        if (values.Length == 0)
+            return false;
+
+        var width = values[0].Length;
+        return values.All(x => x.Length == width);
+    }
+
     /// <summary>
     /// Sets values, starting from <paramref name="row"/>,<paramref name="col"/>. Cell values are implicitly converted.
     /// </summary>
@@ -100,9 +170,11 @@ public partial class CellStore
     /// <returns></returns>
     public bool SetValues(int row, int col, object[][] values)
     {
-        var cmd = new SetCellValuesCommand(row, col,
-            values.Select((r, rowOffset) =>
-                r.Select((v, colOffset) => ConvertToCellValue(row + rowOffset, col + colOffset, v))));
+        var converted = values
+            .Select((r, rowOffset) =>
+                r.Select((v, colOffset) => ConvertToCellValue(row + rowOffset, col + colOffset, v)).ToArray())
+            .ToArray();
+        var cmd = new SetCellValuesCommand(row, col, converted);
         return Sheet.Commands.ExecuteCommand(cmd);
     }
 

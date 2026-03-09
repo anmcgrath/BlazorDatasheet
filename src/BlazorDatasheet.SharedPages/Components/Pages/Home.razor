@@ -86,18 +86,15 @@
 
     protected override void OnInitialized()
     {
-        _sheet = new Sheet(1000, 5);
-        _sheet.Rows.HeadingWidth = 35;
-        _sheet.Commands.PauseHistory();
-        _sheet.BatchUpdates();
-
-        var values = new CellValue[49][];
+        var nRows = 400;
+        var nCols = 5;
+        var values = new CellValue[nRows - 1][];
 
         var r = new Random();
 
         for (int i = 0; i < values.Length; i++)
         {
-            values[i] = new CellValue[5];
+            values[i] = new CellValue[nCols];
             var firstName = RandomFirstNameGenerator();
             var lastName = RandomLastNameGenerator();
 
@@ -108,8 +105,12 @@
             values[i][4] = r.NextDouble() > 0.5 ? CellValue.Logical(true) : CellValue.Logical(false);
         }
 
-        _sheet.Cells.SetValues(0, 0, values);
-        _sheet.Range("E1:E49")!.Type = "boolean";
+        _sheet = new Sheet(nRows, 5, values);
+        _sheet.Rows.HeadingWidth = 35;
+        _sheet.Commands.PauseHistory();
+        _sheet.BatchUpdates();
+
+        _sheet.Range("E:E")!.Type = "boolean";
         _sheet.Range("E:E")!.Format = new CellFormat() { HorizontalTextAlign = TextAlign.Center };
         _sheet.Columns.SetSize(0, 1, 90);
         _sheet.Columns.SetSize(2, 205);
@@ -119,8 +120,8 @@
         _sheet.Columns.SetHeadings(2, 2, "Email");
         _sheet.Columns.SetHeadings(3, 3, "Sales");
         _sheet.Range("D:D")!.Format = new CellFormat() { NumberFormat = "C1", FontWeight = "bold" };
-        _sheet.Cells["D50"]!.Formula = "=SUM(D1:D49)";
-        _sheet.ConditionalFormats.Apply(_sheet.Range("D1:D49"), new NumberScaleConditionalFormat(Color.Tomato, Color.GreenYellow));
+        _sheet.Cells[$"D{nRows}"]!.Formula = $"=SUM(D1:D{nRows - 1})";
+        _sheet.ConditionalFormats.Apply(_sheet.Range($"D1:D{nRows - 1}"), new NumberScaleConditionalFormat(Color.IndianRed, Color.DarkSeaGreen));
 
         _sheet.EndBatchUpdates();
         _sheet.Commands.ResumeHistory();

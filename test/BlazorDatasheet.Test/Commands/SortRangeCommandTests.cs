@@ -190,4 +190,50 @@ public class SortRangeCommandTests
         sheet.Cells[0, 1].Value.Should().Be(1);
         sheet.Cells[1, 1].Value.Should().Be(2);
     }
+
+    [Test]
+    public void Sort_Command_Moves_Metadata_Without_Leaving_Stale_Data()
+    {
+        var sheet = new Sheet(5, 5);
+        sheet.Cells[0, 0].Value = 2;
+        sheet.Cells[1, 0].Value = 1;
+        sheet.Cells.SetCellMetaData(0, 0, "tag", "first");
+
+        var cmd = new SortRangeCommand(new ColumnRegion(0), new ColumnSortOptions(0, true));
+        cmd.Execute(sheet);
+
+        sheet.Cells[0, 0].Value.Should().Be(1);
+        sheet.Cells[1, 0].Value.Should().Be(2);
+        sheet.Cells.GetMetaData(0, 0, "tag").Should().BeNull();
+        sheet.Cells.GetMetaData(1, 0, "tag").Should().Be("first");
+
+        cmd.Undo(sheet);
+
+        sheet.Cells[0, 0].Value.Should().Be(2);
+        sheet.Cells[1, 0].Value.Should().Be(1);
+        sheet.Cells.GetMetaData(0, 0, "tag").Should().Be("first");
+        sheet.Cells.GetMetaData(1, 0, "tag").Should().BeNull();
+    }
+
+    [Test]
+    public void Sort_Command_Can_Be_Repeated_Without_Metadata_Sticking_To_Old_Rows()
+    {
+        var sheet = new Sheet(5, 5);
+        sheet.Cells[0, 0].Value = 3;
+        sheet.Cells[1, 0].Value = 1;
+        sheet.Cells[2, 0].Value = 2;
+        sheet.Cells.SetCellMetaData(0, 0, "tag", "first");
+
+        sheet.Commands.ExecuteCommand(new SortRangeCommand(new ColumnRegion(0), new ColumnSortOptions(0, true)));
+
+        sheet.Cells.GetMetaData(2, 0, "tag").Should().Be("first");
+        sheet.Cells.GetMetaData(0, 0, "tag").Should().BeNull();
+
+        sheet.Commands.ExecuteCommand(new SortRangeCommand(new ColumnRegion(0), new ColumnSortOptions(0, false)));
+
+        sheet.Cells[0, 0].Value.Should().Be(3);
+        sheet.Cells.GetMetaData(0, 0, "tag").Should().Be("first");
+        sheet.Cells.GetMetaData(1, 0, "tag").Should().BeNull();
+        sheet.Cells.GetMetaData(2, 0, "tag").Should().BeNull();
+    }
 }

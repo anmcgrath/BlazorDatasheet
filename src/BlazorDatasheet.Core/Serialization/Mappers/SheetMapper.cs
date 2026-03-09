@@ -119,6 +119,8 @@ internal class SheetMapper
         sheet.FreezeRowColsImpl(sheetModel.FreezeState.Top, sheetModel.FreezeState.Bottom, sheetModel.FreezeState.Left,
             sheetModel.FreezeState.Right);
 
+        BulkLoadCellValues(sheetModel, sheet);
+
         foreach (var rowModel in sheetModel.Rows)
         {
             if (rowModel.Heading != null)
@@ -139,8 +141,6 @@ internal class SheetMapper
 
             foreach (var cellModel in rowModel.Cells)
             {
-                if (!cellModel.CellValue.IsEmpty)
-                    sheet.Cells.GetCellDataStore().Set(rowModel.RowIndex, cellModel.ColIndex, cellModel.CellValue);
                 if (cellModel.Formula != null)
                     sheet.Cells.SetFormula(rowModel.RowIndex, cellModel.ColIndex, cellModel.Formula);
 
@@ -201,6 +201,50 @@ internal class SheetMapper
         sheet.Commands.ResumeHistory();
 
         return sheet;
+    }
+
+    private static void BulkLoadCellValues(SheetModel sheetModel, Sheet sheet)
+    {
+        var rowsWithValues = sheetModel.Rows
+            .Where(x => x.Cells.Any(cell => !cell.CellValue.IsEmpty && cell.Formula == null))
+            .OrderBy(x => x.RowIndex)
+            .ToList();
+
+        if (rowsWithValues.Count == 0)
+            return;
+
+        int startRow = rowsWithValues.First().RowIndex;
+        int endRow = rowsWithValues.Last().RowIndex;
+        var values = new CellValue[endRow - startRow + 1][];
+
+        foreach (var rowModel in rowsWithValues)
+        {
+            int maxCol = rowModel.Cells
+                .Where(cell => !cell.CellValue.IsEmpty && cell.Formula == null)
+                .Select(cell => cell.ColIndex)
+                .DefaultIfEmpty(-1)
+                .Max();
+
+            if (maxCol < 0)
+                continue;
+
+            var rowValues = new CellValue[maxCol + 1];
+            for (int i = 0; i < rowValues.Length; i++)
+                rowValues[i] = CellValue.Empty;
+
+            foreach (var cellModel in rowModel.Cells)
+            {
+                if (!cellModel.CellValue.IsEmpty && cellModel.Formula == null)
+                    rowValues[cellModel.ColIndex] = cellModel.CellValue;
+            }
+
+            values[rowModel.RowIndex - startRow] = rowValues;
+        }
+
+        for (int i = 0; i < values.Length; i++)
+            values[i] ??= [];
+
+        ((SparseMatrixStoreByRows<CellValue>)sheet.Cells.GetCellDataStore()).BulkLoad(values, startRow);
     }
 
 

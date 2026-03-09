@@ -180,9 +180,14 @@ public class Sheet
     /// </summary>
     private readonly Range1DStore<bool> _dirtyRows = new(false);
 
-    private Sheet(int defaultWidth, int defaultHeight)
+    private Sheet(int numRows, int numCols, double defaultWidth, double defaultHeight,
+        FormulaOptions? formulaOptions, CellValue[][]? values)
     {
-        Cells = new CellStore(this);
+        NumCols = numCols;
+        NumRows = numRows;
+        _givenFormulaOptions = formulaOptions;
+
+        Cells = values == null ? new CellStore(this) : new CellStore(this, values);
         Commands = new CommandManager(this);
         Editor = new Editor(this);
         Validators = new ValidationManager(this);
@@ -193,20 +198,26 @@ public class Sheet
         NamedRanges = new NamedRangeManager(this);
     }
 
-    internal Sheet(int numRows, int numCols, int defaultWidth, int defaultHeight, Workbook workbook) : this(numRows,
-        numCols, defaultWidth, defaultHeight)
+    public Sheet(int numRows, int numCols, CellValue[][] values) : this(numRows, numCols, 105, 24, null, values)
+    {
+    }
+
+    internal Sheet(int numRows, int numCols, double defaultWidth, double defaultHeight, Workbook workbook) : this(
+        numRows, numCols, defaultWidth, defaultHeight, null, null)
     {
         _workbook = workbook;
     }
 
     public Sheet(int numRows, int numCols, int defaultWidth = 105, int defaultHeight = 24,
-        FormulaOptions? formulaOptions = null) : this(defaultWidth,
-        defaultHeight)
+        FormulaOptions? formulaOptions = null) : this(numRows, numCols, (double)defaultWidth, defaultHeight,
+        formulaOptions, null)
     {
-        NumCols = numCols;
-        NumRows = numRows;
-        // This ctor is public and can be created without a formula engine.
-        _givenFormulaOptions = formulaOptions;
+    }
+
+    public Sheet(int numRows, int numCols, double defaultWidth, double defaultHeight,
+        FormulaOptions? formulaOptions = null) : this(numRows, numCols, defaultWidth, defaultHeight, formulaOptions,
+        null)
+    {
     }
 
     /// <summary>

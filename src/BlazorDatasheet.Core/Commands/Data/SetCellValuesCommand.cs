@@ -7,7 +7,7 @@ namespace BlazorDatasheet.Core.Commands.Data;
 
 public class SetCellValuesCommand : BaseCommand, IUndoableCommand
 {
-    private readonly IEnumerable<IEnumerable<CellValue>> _cellValues;
+    private readonly CellValue[][] _cellValues;
     private readonly int _row;
     private readonly int _col;
     private readonly CellStoreRestoreData _restoreData = new();
@@ -34,7 +34,7 @@ public class SetCellValuesCommand : BaseCommand, IUndoableCommand
     /// <param name="values"></param>
     public SetCellValuesCommand(int row, int col, IEnumerable<IEnumerable<CellValue>> values)
     {
-        _cellValues = values;
+        _cellValues = values.Select(x => x.ToArray()).ToArray();
         _row = row;
         _col = col;
     }
@@ -48,7 +48,9 @@ public class SetCellValuesCommand : BaseCommand, IUndoableCommand
     {
         _row = region.Top;
         _col = region.Left;
-        _cellValues = Enumerable.Repeat(Enumerable.Repeat(value, region.Width), region.Height);
+        _cellValues = Enumerable.Range(0, region.Height)
+            .Select(_ => Enumerable.Repeat(value, region.Width).ToArray())
+            .ToArray();
     }
 
     public override bool CanExecute(Sheet sheet) => true;
@@ -66,6 +68,12 @@ public class SetCellValuesCommand : BaseCommand, IUndoableCommand
 
     private void ExecuteSetCellValueData(Sheet sheet)
     {
+        if (CellStore.IsRectangular(_cellValues))
+        {
+            _restoreData.Merge(sheet.Cells.SetValuesBulkImpl(_row, _col, _cellValues));
+            return;
+        }
+
         var rowEnd = _row;
         var colEnd = _col;
 

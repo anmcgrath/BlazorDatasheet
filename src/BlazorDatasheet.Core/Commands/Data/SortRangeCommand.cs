@@ -1,5 +1,6 @@
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
+using BlazorDatasheet.Core.Metadata;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core;
@@ -13,6 +14,7 @@ public class SortRangeCommand : BaseCommand, IUndoableCommand
     private readonly List<ColumnSortOptions> _sortOptions;
     public int[] OldIndices = Array.Empty<int>();
     private readonly RegionRestoreData<string> _typeRestoreData = new();
+    private readonly RegionRestoreData<CellMetadata> _metaDataRestoreData = new();
 
     /// <summary>
     /// Sorts the specified region on values using the specified sort options.
@@ -67,15 +69,11 @@ public class SortRangeCommand : BaseCommand, IUndoableCommand
         var metaDataCollection = sheet.Cells.GetMetaDataStore().GetSubStore(_region, false);
         var validData = sheet.Validators.Store.GetSubStore(_region, false);
 
-        // clear any row data that has been shifted (which should be all non-empty rows)
-        for (int i = 0; i < rowData.Length; i++)
-        {
-            var row = rowData[i].Row;
-            var rowRegion = new Region(row, row, _region.Left, _region.Right);
-            sheet.Cells.ClearCellsImpl([rowRegion]);
-            sheet.Validators.Store.Clear(SortedRegion);
-            _typeRestoreData.Merge(sheet.Cells.GetTypeStore().Clear(rowRegion));
-        }
+        var affectedRegions = GetAffectedRegions(rowData, SortedRegion);
+        sheet.Cells.ClearCellsImpl(affectedRegions);
+        _typeRestoreData.Merge(ClearRegions(sheet.Cells.GetTypeStore(), affectedRegions));
+        _metaDataRestoreData.Merge(ClearRegions(sheet.Cells.GetMetaDataStore(), affectedRegions));
+        ClearRegions(sheet.Validators.Store, affectedRegions);
 
         for (int i = 0; i < rowData.Length; i++)
         {
@@ -161,14 +159,16 @@ public class SortRangeCommand : BaseCommand, IUndoableCommand
         var typeCollection = (ConsolidatedDataStore<string>)sheet.Cells.GetTypeStore().GetSubStore(SortedRegion, false);
         var metaDataCollection = sheet.Cells.GetMetaDataStore().GetSubStore(SortedRegion, false);
         var validatorCollection = sheet.Validators.Store.GetSubStore(SortedRegion, false);
-
-        sheet.BatchUpdates();
-        sheet.Cells.ClearCellsImpl(new[] { SortedRegion });
-        sheet.Validators.Store.Clear(SortedRegion);
-        sheet.Cells.GetTypeStore().Clear(SortedRegion);
-
         var rowData = rowCollection.Rows;
         var rowIndices = rowCollection.RowIndicies;
+
+        sheet.BatchUpdates();
+        var affectedRegions = GetAffectedRegions(rowData, SortedRegion);
+        sheet.Cells.ClearCellsImpl(affectedRegions);
+        ClearRegions(sheet.Validators.Store, affectedRegions);
+        ClearRegions(sheet.Cells.GetTypeStore(), affectedRegions);
+        ClearRegions(sheet.Cells.GetMetaDataStore(), affectedRegions);
+
         for (int i = 0; i < OldIndices.Length; i++)
         {
             var newRowNo = OldIndices[i];
@@ -211,9 +211,40 @@ public class SortRangeCommand : BaseCommand, IUndoableCommand
         };
 
         sheet.Cells.Restore(restoreData);
+        sheet.Cells.GetMetaDataStore().Restore(_metaDataRestoreData);
         sheet.EndBatchUpdates();
 
         return true;
+    }
+
+    private List<IRegion> GetAffectedRegions(Span<RowData<CellValue>> rowData, IRegion sortedRegion)
+    {
+        return GetAffectedRegions(rowData.ToArray(), sortedRegion);
+    }
+
+    private static List<IRegion> GetAffectedRegions(RowData<CellValue>[] rowData, IRegion sortedRegion)
+    {
+        var affectedRegions = new List<IRegion> { sortedRegion };
+        for (int i = 0; i < rowData.Length; i++)
+        {
+            var row = rowData[i].Row;
+            if (row >= sortedRegion.Top && row <= sortedRegion.Bottom)
+                continue;
+
+            affectedRegions.Add(new Region(row, row, sortedRegion.Left, sortedRegion.Right));
+        }
+
+        return affectedRegions;
+    }
+
+    private static RegionRestoreData<T> ClearRegions<T>(RegionDataStore<T> store, IEnumerable<IRegion> regions)
+        where T : IEquatable<T>
+    {
+        var restoreData = new RegionRestoreData<T>();
+        foreach (var region in regions)
+            restoreData.Merge(store.Clear(region));
+
+        return restoreData;
     }
 }
 
