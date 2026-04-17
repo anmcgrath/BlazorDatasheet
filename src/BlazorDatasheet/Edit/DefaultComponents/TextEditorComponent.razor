@@ -271,7 +271,7 @@
 
     public override bool HandleMouseDown(int row, int col, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
     {
-        if (_canAcceptRanges)
+        if (_canAcceptRanges && IsFormulaValue)
         {
             SelectionInputManager?.HandlePointerDown(row, col, shiftKey, ctrlKey, metaKey, 1);
             SetEditValueToSelectionPreview();
@@ -283,7 +283,7 @@
 
     public override bool HandleMouseOver(int row, int col, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
     {
-        if (_canAcceptRanges)
+        if (_canAcceptRanges && IsFormulaValue)
         {
             SelectionInputManager?.HandlePointerOver(row, col);
             SetEditValueToSelectionPreview();
@@ -297,7 +297,7 @@
     {
         SelectionInputManager?.HandleWindowMouseUp();
 
-        if (_canAcceptRanges)
+        if (_canAcceptRanges && IsFormulaValue)
         {
             SetEditValueToSelectionPreview();
             await _highlightedInput.FocusAndMoveCursorToEndAsync();
