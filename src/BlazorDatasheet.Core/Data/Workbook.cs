@@ -3,6 +3,7 @@ using BlazorDatasheet.Core.FormulaEngine;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter;
+using BlazorDatashet.Formula.Functions;
 
 namespace BlazorDatasheet.Core.Data;
 
@@ -31,8 +32,19 @@ public class Workbook
 
     public Workbook(FormulaOptions? options = null)
     {
-        Environment = new WorkbookEnvironment(this);
+        var registry = BuildDefaultRegistry(options);
+        Environment = new WorkbookEnvironment(this, registry);
         _formulaEngine = new FormulaEngine.FormulaEngine(Environment, options);
+    }
+
+    public static FunctionRegistry BuildDefaultRegistry(FormulaOptions? options)
+    {
+        var builder = new FunctionRegistryBuilder();
+        builder.RegisterLogicalFunctions();
+        builder.RegisterMathFunctions();
+        builder.RegisterLookupFunctions();
+        options?.ConfigureFunctions?.Invoke(builder);
+        return builder.Build();
     }
 
     public Sheet AddSheet(int numRows, int numColumns, int defaultWidth = 105, int defaultHeight = 24)

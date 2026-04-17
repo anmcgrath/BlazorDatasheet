@@ -171,13 +171,12 @@ public class Evaluator
         if (!node.FunctionExists)
             return CellValue.Error(new FormulaError(ErrorType.Name, $"Function {id} not found"));
 
-        var func = node.Function!;
-        var nArgsProvided = node.Args.Count();
+        var func = node.FunctionDescriptor!;
+        var nArgsProvided = node.Args.Count;
+        var paramDefinitions = func.ParameterDefinitions;
 
-        var paramDefinitions = func.GetParameterDefinitions();
-
-        if (nArgsProvided < MinArity(paramDefinitions) ||
-            nArgsProvided > MaxArity(paramDefinitions))
+        if (nArgsProvided < func.MinArity ||
+            nArgsProvided > func.MaxArity)
         {
             return CellValue.Error(ErrorType.Na, "Incorrect number of function arguments");
         }
@@ -204,25 +203,13 @@ public class Evaluator
             argIndex++;
         }
 
-        var funcResult = func.Call(convertedArgs, new FunctionCallMetaData(paramDefinitions));
+        var funcResult = func.Invoke(convertedArgs);
         return funcResult;
     }
 
     private bool IsConsumable(ParameterDefinition param)
     {
         return !param.IsRepeating;
-    }
-
-    private int MaxArity(ParameterDefinition[] parameterDefinitions)
-    {
-        if (parameterDefinitions.Length == 0)
-            return 0;
-        return parameterDefinitions.Last().IsRepeating ? 128 : parameterDefinitions.Length;
-    }
-
-    private int MinArity(ParameterDefinition[] parameterDefinitions)
-    {
-        return parameterDefinitions.Count(x => x.Requirement == ParameterRequirement.Required);
     }
 
     private CellValue EvaluateBinaryExpression(BinaryOperationExpression expression, EvalContext ctx)

@@ -29,7 +29,7 @@ public class LookupFunctionTests
     [Test]
     public void VLookup_With_Range_False_Tests()
     {
-        _env.RegisterFunction("VLOOKUP", new VLookupFunction());
+        _env.RegisterFunction(VLookupFunction.Descriptor);
         Eval("=VLOOKUP(2,{1;2},1,false)").Should().Be(2);
         // a lookup value outside of the array should be false
         Eval("=VLOOKUP(2,{1;3},1,false)").Should().BeOfType<FormulaError>();
@@ -40,7 +40,7 @@ public class LookupFunctionTests
     [Test]
     public void VLookup_With_Range_True_Tests()
     {
-        _env.RegisterFunction("VLOOKUP", new VLookupFunction());
+        _env.RegisterFunction(VLookupFunction.Descriptor);
         Eval("=VLOOKUP(3,{1;2;4},1)").Should().Be(2);
         Eval("=VLOOKUP(5,{1;2;4},1,true)").Should().Be(4);
         // a lookup value outside of the array should be false

@@ -3,9 +3,9 @@
 public class FunctionDefinition
 {
     public string Name { get; }
-    public ISheetFunction Function { get; }
+    public FunctionDescriptor Function { get; }
 
-    public FunctionDefinition(string name, ISheetFunction function)
+    public FunctionDefinition(string name, FunctionDescriptor function)
     {
         Name = name;
         Function = function;

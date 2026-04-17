@@ -32,14 +32,14 @@
 <!-- shows hints when caret position is inside a formula -->
 <BdsPopover
     AnchorId="@_anchorId"
-    IsOpen="@(_formulaHint != null && _sheet.FormulaEngine.FunctionExists(_formulaHint.FunctionName))"
+    IsOpen="@(_formulaHint != null && _sheet.FormulaEngine.GetFunction(_formulaHint.FunctionName) != null)"
     CssClass="bds-func-suggestions">
-    @if (_formulaHint != null)
+    @if (_formulaHint != null && _sheet.FormulaEngine.GetFunction(_formulaHint.FunctionName) is { } hintFunction)
     {
         <FormulaHintBox
             ArgIndex="@_formulaHint.ParameterIndex"
             FunctionName="@_formulaHint.FunctionName"
-            Function="@_sheet.FormulaEngine.GetFunction(_formulaHint.FunctionName)"/>
+            Function="@hintFunction"/>
     }
 </BdsPopover>
 

@@ -10,7 +10,6 @@ using BlazorDatasheet.Formula.Core.Dependencies;
 using BlazorDatasheet.Formula.Core.Interpreter;
 using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
-using BlazorDatashet.Formula.Functions;
 using CellFormula = BlazorDatasheet.Formula.Core.Interpreter.CellFormula;
 
 namespace BlazorDatasheet.Core.FormulaEngine;
@@ -38,7 +37,6 @@ public class FormulaEngine
         _environment = environment;
         _parser = new Parser(_environment, Options);
         _evaluator = new Evaluator(_environment);
-        RegisterDefaultFunctions();
     }
 
     internal void AddSheet(Sheet sheet)
@@ -101,13 +99,6 @@ public class FormulaEngine
     private void RowColsOnRemoved(object? sender, RowColRemovedEventArgs e)
     {
         CalculateSheet(true);
-    }
-
-    private void RegisterDefaultFunctions()
-    {
-        _environment.RegisterLogicalFunctions();
-        _environment.RegisterMathFunctions();
-        _environment.RegisterLookupFunctions();
     }
 
     private void SheetOnBeforeCellEdit(object? sender, BeforeCellEditEventArgs e)
@@ -319,24 +310,10 @@ public class FormulaEngine
     }
 
     /// <summary>
-    /// Returns whether the function with name <paramref name="functionName"/> has been registered.
+    /// Returns the registered function with name <paramref name="functionName"/>, or null if not registered.
     /// </summary>
-    /// <param name="functionName"></param>
-    /// <returns></returns>
-    /// <exception cref="NotImplementedException"></exception>
-    public bool FunctionExists(string functionName)
+    public FunctionDescriptor? GetFunction(string functionName)
     {
-        return _environment.FunctionExists(functionName);
-    }
-
-    /// <summary>
-    /// Returns the registered function with name <paramref name="functionName"/>
-    /// </summary>
-    /// <param name="functionName"></param>
-    /// <returns></returns>
-    /// <exception cref="NotImplementedException"></exception>
-    public ISheetFunction? GetFunction(string functionName)
-    {
-        return _environment.GetFunctionDefinition(functionName);
+        return _environment.TryGetFunction(functionName, out var function) ? function : null;
     }
 }

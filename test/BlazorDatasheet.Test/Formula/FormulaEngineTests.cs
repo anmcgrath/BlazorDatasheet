@@ -11,7 +11,7 @@ public class FormulaEngineTests
     public void CalculateSheet_WhenEvaluationThrows_ResetsIsCalculating()
     {
         var environment = new TestEnvironment();
-        environment.RegisterFunction("THROWFN", new ThrowingFunction());
+        environment.RegisterFunction(ThrowingFunction.Descriptor);
         var formulaEngine = new BlazorDatasheet.Core.FormulaEngine.FormulaEngine(environment);
 
         Action action = () => formulaEngine.SetVariable("x", "=THROWFN()");
@@ -21,11 +21,12 @@ public class FormulaEngineTests
     }
 }
 
-internal class ThrowingFunction : ISheetFunction
+internal static class ThrowingFunction
 {
-    public ParameterDefinition[] GetParameterDefinitions() => [];
-    public CellValue Call(CellValue[] args, FunctionCallMetaData metaData) =>
-        throw new InvalidOperationException("Boom");
-    public bool AcceptsErrors => false;
-    public bool IsVolatile => false;
+    public static FunctionDescriptor Descriptor { get; } = new(
+        "THROWFN",
+        [],
+        (_, _) => throw new InvalidOperationException("Boom"),
+        acceptsErrors: false,
+        isVolatile: false);
 }

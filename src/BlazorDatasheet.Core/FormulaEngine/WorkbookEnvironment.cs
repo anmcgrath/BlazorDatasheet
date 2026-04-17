@@ -1,4 +1,5 @@
-﻿using BlazorDatasheet.Core.Data;
+﻿using System.Diagnostics.CodeAnalysis;
+using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
@@ -9,11 +10,12 @@ public class WorkbookEnvironment : IEnvironment
 {
     private readonly Workbook _workbook;
     private readonly Dictionary<string, CellValue> _variables = new();
-    private readonly Dictionary<string, ISheetFunction> _functions = new(StringComparer.OrdinalIgnoreCase);
+    private readonly FunctionRegistry _functionRegistry;
 
-    public WorkbookEnvironment(Workbook workbook)
+    public WorkbookEnvironment(Workbook workbook, FunctionRegistry functionRegistry)
     {
         _workbook = workbook;
+        _functionRegistry = functionRegistry;
     }
 
     public bool VariableExists(string name)
@@ -47,28 +49,14 @@ public class WorkbookEnvironment : IEnvironment
         return _variables.Keys;
     }
 
-    public bool FunctionExists(string name)
+    public bool TryGetFunction(string name, [MaybeNullWhen(false)] out FunctionDescriptor functionDescriptor)
     {
-        return _functions.ContainsKey(name);
-    }
-
-    public ISheetFunction? GetFunctionDefinition(string name)
-    {
-        return _functions.GetValueOrDefault(name);
-    }
-
-    public void RegisterFunction(string name, ISheetFunction value)
-    {
-        if (!_functions.ContainsKey(name))
-            _functions.Add(name, value);
-        else
-            _functions[name] = value;
+        return _functionRegistry.TryGetFunction(name, out functionDescriptor);
     }
 
     public IEnumerable<FunctionDefinition> SearchForFunctions(string functionName)
     {
-        return _functions.Where(x => x.Key.StartsWith(functionName, StringComparison.OrdinalIgnoreCase))
-            .Select(x => new FunctionDefinition(x.Key, x.Value));
+        return _functionRegistry.SearchForFunctions(functionName);
     }
 
     public IEnumerable<CellValue> GetNonEmptyInRange(Reference reference)

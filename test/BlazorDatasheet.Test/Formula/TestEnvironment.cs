@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Util;
@@ -12,7 +13,7 @@ namespace BlazorDatasheet.Test.Formula;
 public class TestEnvironment : IEnvironment
 {
     private Dictionary<CellPosition, CellValue> _cellValues = new();
-    private Dictionary<string, ISheetFunction> _functions = new(StringComparer.OrdinalIgnoreCase);
+    private Dictionary<string, FunctionDescriptor> _functions = new(StringComparer.OrdinalIgnoreCase);
     private Dictionary<string, CellValue> _variables = new();
     private Dictionary<CellPosition, CellFormula> _formulas = new();
 
@@ -34,14 +35,10 @@ public class TestEnvironment : IEnvironment
             _formulas[position] = formula;
     }
 
-    public void RegisterFunction(string name, ISheetFunction functionDefinition)
+    public void RegisterFunction(FunctionDescriptor functionDefinition)
     {
-        var validator = new FunctionParameterValidator();
-        validator.ValidateOrThrow(functionDefinition.GetParameterDefinitions());
-
-        if (!_functions.ContainsKey(name))
-            _functions.Add(name, functionDefinition);
-        _functions[name] = functionDefinition;
+        if (!_functions.TryAdd(functionDefinition.Name, functionDefinition))
+            throw new InvalidOperationException($"Function '{functionDefinition.Name}' has already been registered.");
     }
 
     public IEnumerable<FunctionDefinition> SearchForFunctions(string functionName)
@@ -141,14 +138,9 @@ public class TestEnvironment : IEnvironment
         return arr;
     }
 
-    public bool FunctionExists(string functionIdentifier)
+    public bool TryGetFunction(string identifierText, [MaybeNullWhen(false)] out FunctionDescriptor functionDescriptor)
     {
-        return _functions.ContainsKey(functionIdentifier);
-    }
-
-    public ISheetFunction? GetFunctionDefinition(string identifierText)
-    {
-        return _functions.GetValueOrDefault(identifierText);
+        return _functions.TryGetValue(identifierText, out functionDescriptor);
     }
 
     public bool VariableExists(string variableIdentifier)

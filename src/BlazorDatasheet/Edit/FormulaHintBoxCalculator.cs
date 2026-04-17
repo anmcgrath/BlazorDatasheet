@@ -1,5 +1,6 @@
-﻿using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.FormulaEngine;
+using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter;
 using BlazorDatasheet.Formula.Core.Interpreter.Lexing;
 using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
@@ -8,6 +9,9 @@ namespace BlazorDatasheet.Edit;
 
 internal class FormulaHintBoxCalculator
 {
+    private static readonly ParsingEnvironment s_parsingEnvironment =
+        new(Workbook.BuildDefaultRegistry(options: null));
+
     private FormulaOptions _options;
 
     public FormulaHintBoxCalculator(FormulaOptions options)
@@ -30,9 +34,7 @@ internal class FormulaHintBoxCalculator
 
     private FormulaHintBoxResult? ExtractResult(List<Token> tokens, int cursorPosition)
     {
-        // now we have a position start, so we can find the function node in the parsed expression
-        // we don't care if the function exists, so we can have a dummy environment
-        var parser = new Parser(new WorkbookEnvironment(new Workbook(_options)), _options);
+        var parser = new Parser(s_parsingEnvironment, _options);
         var tree = parser.Parse(tokens, []);
         var funcNodes = tree.Root.FindNodes(node =>
         {

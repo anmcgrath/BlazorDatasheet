@@ -9,9 +9,9 @@ public class FunctionExpression : Expression
     public IdentifierToken FunctionToken { get; }
     public List<Expression> Args { get; }
 
-    public ISheetFunction? Function { get; }
+    public FunctionDescriptor? FunctionDescriptor { get; }
 
-    public bool FunctionExists => Function != null;
+    public bool FunctionExists => FunctionDescriptor != null;
 
     private int[] _argPositionStarts;
     private readonly Token _rightParenthToken;
@@ -19,7 +19,7 @@ public class FunctionExpression : Expression
     public FunctionExpression(
         IdentifierToken functionToken,
         List<Expression> args,
-        ISheetFunction? function,
+        FunctionDescriptor? function,
         FormulaOptions options,
         int[] argPositionStarts,
         Token rightParenthToken)
@@ -27,7 +27,7 @@ public class FunctionExpression : Expression
         _options = options;
         FunctionToken = functionToken;
         Args = args;
-        Function = function;
+        FunctionDescriptor = function;
         _argPositionStarts = argPositionStarts;
         _rightParenthToken = rightParenthToken;
     }
