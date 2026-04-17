@@ -30,7 +30,7 @@ public class MathFunctionTests
     [Test]
     public void Sin_Function_Tests()
     {
-        _env.RegisterFunction("sin", new SinFunction());
+        _env.RegisterFunction(SinFunction.Descriptor);
         Eval("=sin(true)").Should().Be(Math.Sin(1));
         _env.SetCellValue(0, 0, true);
         Eval("=sin(A1)").Should().Be(Math.Sin(1));
@@ -44,7 +44,7 @@ public class MathFunctionTests
     [Test]
     public void Sum_Function_Tests()
     {
-        _env.RegisterFunction("sum", new SumFunction());
+        _env.RegisterFunction(SumFunction.Descriptor);
         var res1 = Eval("=sum(1, 2)");
         res1.Should().Be(3);
         Eval("=sum(1/0)").Should().BeOfType<FormulaError>();
@@ -69,7 +69,7 @@ public class MathFunctionTests
     [Test]
     public void Sum_With_True_Cell_Value_Should_Return_0()
     {
-        _env.RegisterFunction("sum", new SumFunction());
+        _env.RegisterFunction(SumFunction.Descriptor);
         _env.SetCellValue(0, 0, true);
         Eval("=sum(A1)").Should().Be(0);
     }
@@ -78,7 +78,7 @@ public class MathFunctionTests
     public void Sum_With_Text_Cell_Value_Should_Return_0()
     {
         // correct behaviour from excel - if sum range contains text it should be valuated as 0
-        _env.RegisterFunction("sum", new SumFunction());
+        _env.RegisterFunction(SumFunction.Descriptor);
         _env.SetCellValue(0, 0, "abc");
         Eval("=sum(A1)").Should().Be(0);
     }
@@ -86,7 +86,7 @@ public class MathFunctionTests
     [Test]
     public void Pow_Function_Tests()
     {
-        _env.RegisterFunction("pow", new PowerFunction());
+        _env.RegisterFunction(PowerFunction.Descriptor);
         Eval("=pow(5,true)").Should().Be(Math.Pow(5, 1));
         _env.SetCellValue(0, 0, true);
         Eval("=pow(5,A1)").Should().Be(Math.Pow(5, 1));
@@ -102,7 +102,7 @@ public class MathFunctionTests
     [Test]
     public void Intercept_Function_Tests()
     {
-        _env.RegisterFunction("intercept", new InterceptFunction());
+        _env.RegisterFunction(InterceptFunction.Descriptor);
         // ys
         _env.SetCellValue(0, 0, 1d);
         _env.SetCellValue(1, 0, 3d);
@@ -131,7 +131,7 @@ public class MathFunctionTests
     [Test]
     public void Slope_Function_Tests()
     {
-        _env.RegisterFunction("slope", new SlopeFunction());
+        _env.RegisterFunction(SlopeFunction.Descriptor);
         // ys
         _env.SetCellValue(0, 0, 1d);
         _env.SetCellValue(1, 0, 3d);

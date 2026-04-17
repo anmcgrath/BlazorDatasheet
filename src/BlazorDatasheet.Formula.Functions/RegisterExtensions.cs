@@ -7,27 +7,27 @@ namespace BlazorDatashet.Formula.Functions;
 
 public static class RegisterExtensions
 {
-    public static void RegisterLogicalFunctions(this IEnvironment e)
+    public static void RegisterLogicalFunctions(this FunctionRegistryBuilder builder)
     {
-        e.RegisterFunction("AND", new AndFunction());
-        e.RegisterFunction("IF", new IfFunction());
-        e.RegisterFunction("OR", new OrFunction());
-        e.RegisterFunction("NOT", new NotFunction());
+        builder.Add(AndFunction.Descriptor);
+        builder.Add(IfFunction.Descriptor);
+        builder.Add(OrFunction.Descriptor);
+        builder.Add(NotFunction.Descriptor);
     }
 
-    public static void RegisterMathFunctions(this IEnvironment e)
+    public static void RegisterMathFunctions(this FunctionRegistryBuilder builder)
     {
-        e.RegisterFunction("AVERAGE", new AverageFunction());
-        e.RegisterFunction("INTERCEPT", new InterceptFunction());
-        e.RegisterFunction("SUM", new SumFunction());
-        e.RegisterFunction("SIN", new SinFunction());
-        e.RegisterFunction("SLOPE", new SlopeFunction());
-        e.RegisterFunction("POW", new PowerFunction());
-        e.RegisterFunction("RAND", new RandFunction());
+        builder.Add(AverageFunction.Descriptor);
+        builder.Add(InterceptFunction.Descriptor);
+        builder.Add(SumFunction.Descriptor);
+        builder.Add(SinFunction.Descriptor);
+        builder.Add(SlopeFunction.Descriptor);
+        builder.Add(PowerFunction.Descriptor);
+        builder.Add(RandFunction.Descriptor);
     }
 
-    public static void RegisterLookupFunctions(this IEnvironment e)
+    public static void RegisterLookupFunctions(this FunctionRegistryBuilder builder)
     {
-        e.RegisterFunction("VLOOKUP", new VLookupFunction());
+        builder.Add(VLookupFunction.Descriptor);
     }
 }

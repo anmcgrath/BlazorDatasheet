@@ -1,48 +1,36 @@
-﻿using BlazorDatasheet.Formula.Core;
+using BlazorDatasheet.Formula.Core;
 
 namespace BlazorDatasheet.Formula.Functions.Logical;
 
-public class IfFunction : ISheetFunction
+public static class IfFunction
 {
-    public ParameterDefinition[] GetParameterDefinitions()
-    {
-        return new[]
-        {
-            new ParameterDefinition(
-                "logical1",
-                ParameterType.Logical,
-                ParameterRequirement.Required
-            ),
-            new ParameterDefinition(
-                "val_if_true",
-                ParameterType.Any,
-                ParameterRequirement.Optional
-            ),
-            new ParameterDefinition(
-                "val_if_false",
-                ParameterType.Any,
-                ParameterRequirement.Optional
-            ),
-        };
-    }
+    private static readonly ParameterDefinition[] Parameters =
+    [
+        new("logical1", ParameterType.Logical, ParameterRequirement.Required),
+        new("val_if_true", ParameterType.Any, ParameterRequirement.Optional, shape: ParameterShape.ScalarOrArray),
+        new("val_if_false", ParameterType.Any, ParameterRequirement.Optional, shape: ParameterShape.ScalarOrArray)
+    ];
 
-    public CellValue Call(CellValue[] args, FunctionCallMetaData metaData)
+    public static FunctionDescriptor Descriptor { get; } = new(
+        name: "IF",
+        parameterDefinitions: Parameters,
+        invoker: Evaluate,
+        acceptsErrors: true,
+        isVolatile: false,
+        returnShape: ReturnShape.Scalar);
+
+    private static CellValue Evaluate(CellValue[] args, FunctionCallMetaData metaData)
     {
         if (args[0].IsError())
             return args[0];
 
-        var isTrue = args.First().GetValue<bool>();
+        var isTrue = args[0].GetValue<bool>();
         if (args.Length > 1 && isTrue)
-        {
             return args[1];
-        }
 
         if (args.Length > 2 && !isTrue)
             return args[2];
 
         return CellValue.Logical(isTrue);
     }
-
-    public bool AcceptsErrors => true;
-    public bool IsVolatile => false;
 }

@@ -6,7 +6,7 @@
     <span>(</span>
 
     @{
-        var definitions = Function.GetParameterDefinitions();
+        var definitions = Function.ParameterDefinitions;
     }
     @for (var i = 0; i < definitions.Length; i++)
     {
@@ -30,7 +30,7 @@
 
     [Parameter] public required string FunctionName { get; set; }
 
-    [Parameter] public required ISheetFunction Function { get; set; }
+    [Parameter] public required FunctionDescriptor Function { get; set; }
 
     [Parameter] public required int ArgIndex { get; set; }
 

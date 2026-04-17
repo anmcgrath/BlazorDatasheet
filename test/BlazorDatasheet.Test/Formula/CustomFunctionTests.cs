@@ -61,26 +61,3 @@ public class CustomFunctionTests
         Assert.DoesNotThrow(() => { _validator.ValidateOrThrow(defns); });
     }
 }
-
-public class CustomFunctionDefinition : ISheetFunction
-{
-    private readonly ParameterDefinition[] _parameterDefinitions;
-
-    public CustomFunctionDefinition(params ParameterDefinition[] parameterDefinitions)
-    {
-        _parameterDefinitions = parameterDefinitions;
-    }
-
-    public ParameterDefinition[] GetParameterDefinitions()
-    {
-        return _parameterDefinitions;
-    }
-
-    public CellValue Call(CellValue[] args, FunctionCallMetaData metaData)
-    {
-        return CellValue.Empty;
-    }
-
-    public bool AcceptsErrors => false;
-    public bool IsVolatile => false;
-}

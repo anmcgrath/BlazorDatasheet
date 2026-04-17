@@ -381,10 +381,10 @@ public class Parser
 
         var rightParenth = MatchToken(Tag.RightParenthToken);
 
-        if (!_environment.FunctionExists(funcToken.Value))
+        var functionExists = _environment.TryGetFunction(funcToken.Value, out var functionDefinition);
+        if (!functionExists)
             Error($"Function {funcToken.Value} does not exist");
 
-        var functionDefinition = _environment.GetFunctionDefinition(funcToken.Value);
         if (functionDefinition != null && functionDefinition.IsVolatile)
             _containsVolatiles = true;
 

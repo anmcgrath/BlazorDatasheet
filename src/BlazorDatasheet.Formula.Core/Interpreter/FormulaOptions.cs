@@ -5,4 +5,5 @@ namespace BlazorDatasheet.Formula.Core.Interpreter;
 public class FormulaOptions
 {
     public SeparatorSettings SeparatorSettings { get; init; } = new();
+    public Action<FunctionRegistryBuilder>? ConfigureFunctions { get; init; }
 }

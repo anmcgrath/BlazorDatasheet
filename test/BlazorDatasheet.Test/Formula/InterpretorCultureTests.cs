@@ -12,7 +12,7 @@ namespace BlazorDatasheet.Test.Formula;
 
 public class InterpretorCultureTests
 {
-    private IEnvironment _env;
+    private TestEnvironment _env;
 
     [SetUp]
     public void Setup()
@@ -51,7 +51,7 @@ public class InterpretorCultureTests
     [SetCulture("fr-FR")]
     public void Non_Eng_Culture_Has_Correct_Function_Param_Separator()
     {
-        _env.RegisterFunction("SUM", new SumFunction());
+        _env.RegisterFunction(SumFunction.Descriptor);
         var parser = new Parser(_env, new FormulaOptions());
         var evaluator = new Evaluator(_env);
         var formulaStr = @"=SUM(1,2;2;0,3)";
@@ -85,7 +85,7 @@ public class InterpretorCultureTests
     [SetCulture("fr-FR")]
     public void Provide_Custom_Func_Param_Seperator_Should_Eval_Ok()
     {
-        _env.RegisterFunction("SUM", new SumFunction());
+        _env.RegisterFunction(SumFunction.Descriptor);
         var options = new FormulaOptions()
         {
             SeparatorSettings = new SeparatorSettings()

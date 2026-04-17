@@ -1,32 +1,24 @@
-﻿using BlazorDatasheet.Formula.Core;
+using BlazorDatasheet.Formula.Core;
 
 namespace BlazorDatashet.Formula.Functions.Math;
 
-public class PowerFunction : ISheetFunction
+public static class PowerFunction
 {
-    public ParameterDefinition[] GetParameterDefinitions()
+    private static readonly ParameterDefinition[] Parameters =
+    [
+        new("number", ParameterType.Number, ParameterRequirement.Required),
+        new("exponent", ParameterType.Number, ParameterRequirement.Required)
+    ];
+
+    public static FunctionDescriptor Descriptor { get; } = new(
+        name: "POW",
+        parameterDefinitions: Parameters,
+        invoker: Evaluate,
+        acceptsErrors: false,
+        isVolatile: false);
+
+    private static CellValue Evaluate(CellValue[] args, FunctionCallMetaData metaData)
     {
-        return new[]
-        {
-            new ParameterDefinition("number",
-                ParameterType.Number,
-                ParameterRequirement.Required,
-                isRepeating: false),
-            new ParameterDefinition("exponent",
-                ParameterType.Number,
-                ParameterRequirement.Required,
-                isRepeating: false)
-        };
+        return CellValue.Number(System.Math.Pow(args[0].GetValue<double>(), args[1].GetValue<double>()));
     }
-
-    public CellValue Call(CellValue[] args, FunctionCallMetaData metaData)
-    {
-        var number = args[0].GetValue<double>();
-        var exponent = args[1].GetValue<double>();
-
-        return CellValue.Number(System.Math.Pow(number, exponent));
-    }
-
-    public bool AcceptsErrors => false;
-    public bool IsVolatile => false;
 }

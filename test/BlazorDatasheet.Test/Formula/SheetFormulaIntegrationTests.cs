@@ -382,7 +382,7 @@ public class SheetFormulaIntegrationTests
     public void Simple_Non_Circular_Strongly_Grouped_Reference_Calculates_Correctly()
     {
         var env = new TestEnvironment();
-        env.RegisterFunction("if", new IfFunction());
+        env.RegisterFunction(IfFunction.Descriptor);
         var eval = new Evaluator(env);
         var parser = new Parser(env);
         var fA1 = parser.FromString("=B1");

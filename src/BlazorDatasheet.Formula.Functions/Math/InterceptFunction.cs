@@ -3,23 +3,27 @@ using BlazorDatasheet.Formula.Core.Regression;
 
 namespace BlazorDatashet.Formula.Functions.Math;
 
-public class InterceptFunction : ISheetFunction
+public static class InterceptFunction
 {
-    public ParameterDefinition[] GetParameterDefinitions()
-    {
-        return new[]
-        {
-            new ParameterDefinition("known_ys", ParameterType.Array, ParameterRequirement.Required),
-            new ParameterDefinition("known_xs", ParameterType.Array, ParameterRequirement.Required)
-        };
-    }
+    private static readonly ParameterDefinition[] Parameters =
+    [
+        new("known_ys", ParameterType.Array, ParameterRequirement.Required, shape: ParameterShape.Array),
+        new("known_xs", ParameterType.Array, ParameterRequirement.Required, shape: ParameterShape.Array)
+    ];
 
-    public CellValue Call(CellValue[] args, FunctionCallMetaData metaData)
+    public static FunctionDescriptor Descriptor { get; } = new(
+        name: "INTERCEPT",
+        parameterDefinitions: Parameters,
+        invoker: Evaluate,
+        acceptsErrors: false,
+        isVolatile: false);
+
+    private static CellValue Evaluate(CellValue[] args, FunctionCallMetaData metaData)
     {
         var allY = args[0].GetValue<CellValue[][]>()!;
         var allX = args[1].GetValue<CellValue[][]>()!;
 
-        if (!allX.Any() || !allY.Any())
+        if (allX.Length == 0 || allY.Length == 0)
             return CellValue.Error(ErrorType.Na, "Empty array");
 
         if (allX.Length != allY.Length)
@@ -52,7 +56,4 @@ public class InterceptFunction : ISheetFunction
 
         return CellValue.Number(fun.YIntercept);
     }
-
-    public bool AcceptsErrors => false;
-    public bool IsVolatile => false;
 }

@@ -31,7 +31,7 @@ public class LogicalFunctionTests
     [Test]
     public void If_Function_Tests()
     {
-        _env.RegisterFunction("IF", new IfFunction());
+        _env.RegisterFunction(IfFunction.Descriptor);
         Eval("=IF(true,5,4)").Should().Be(5);
         Eval("=IF(false,5,4)").Should().Be(4);
         Eval("=IF(\"s\",5,4)").Should().BeOfType<FormulaError>();
@@ -56,7 +56,7 @@ public class LogicalFunctionTests
     [Test]
     public void And_Function_Tests()
     {
-        _env.RegisterFunction("AND", new AndFunction());
+        _env.RegisterFunction(AndFunction.Descriptor);
         Eval("=AND(true)").Should().Be(true);
         Eval("=AND(false)").Should().Be(false);
         Eval("=AND(true, true, true, true)").Should().Be(true);
@@ -84,7 +84,7 @@ public class LogicalFunctionTests
     [Test]
     public void Or_Function_Tests()
     {
-        _env.RegisterFunction("OR", new OrFunction());
+        _env.RegisterFunction(OrFunction.Descriptor);
         Eval("=OR(true)").Should().Be(true);
         Eval("=OR(false)").Should().Be(false);
         Eval("=OR(true, true, true, true)").Should().Be(true);

@@ -2,36 +2,40 @@ using BlazorDatasheet.Formula.Core;
 
 namespace BlazorDatashet.Formula.Functions.Math;
 
-public class SumFunction : ISheetFunction
+public static class SumFunction
 {
-    public ParameterDefinition[] GetParameterDefinitions()
-    {
-        return new[]
-        {
-            new ParameterDefinition(
-                "number",
-                ParameterType.NumberSequence,
-                ParameterRequirement.Required,
-                isRepeating: true)
-        };
-    }
+    private static readonly ParameterDefinition[] Parameters =
+    [
+        new(
+            "number",
+            ParameterType.NumberSequence,
+            ParameterRequirement.Required,
+            isRepeating: true,
+            shape: ParameterShape.ScalarOrArray)
+    ];
 
-    public CellValue Call(CellValue[] args, FunctionCallMetaData metaData)
+    public static FunctionDescriptor Descriptor { get; } = new(
+        name: "SUM",
+        parameterDefinitions: Parameters,
+        invoker: Evaluate,
+        acceptsErrors: false,
+        isVolatile: false);
+
+    private static CellValue Evaluate(CellValue[] args, FunctionCallMetaData metaData)
     {
         var sum = 0d;
         foreach (var arg in args)
         {
             var seq = (CellValue[])arg.Data!;
             foreach (var item in seq)
+            {
                 if (item.IsError())
                     return item;
-                else
-                    sum += item.GetValue<double>();
+
+                sum += item.GetValue<double>();
+            }
         }
 
         return CellValue.Number(sum);
     }
-
-    public bool AcceptsErrors => false;
-    public bool IsVolatile => false;
 }

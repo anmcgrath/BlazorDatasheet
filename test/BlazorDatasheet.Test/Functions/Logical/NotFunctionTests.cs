@@ -27,7 +27,7 @@ public class NotFunctionTests
     public void Setup()
     {
         _env = new();
-        _env.RegisterFunction("NOT", new NotFunction());
+        _env.RegisterFunction(NotFunction.Descriptor);
     }
 
     [Test]

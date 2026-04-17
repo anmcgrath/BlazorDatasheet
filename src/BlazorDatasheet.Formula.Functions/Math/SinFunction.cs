@@ -2,25 +2,22 @@ using BlazorDatasheet.Formula.Core;
 
 namespace BlazorDatashet.Formula.Functions.Math;
 
-public class SinFunction : ISheetFunction
+public static class SinFunction
 {
-    public ParameterDefinition[] GetParameterDefinitions()
-    {
-        return new[]
-        {
-            new ParameterDefinition("x",
-                ParameterType.Number,
-                ParameterRequirement.Required,
-                isRepeating: false)
-        };
-    }
+    private static readonly ParameterDefinition[] Parameters =
+    [
+        new("x", ParameterType.Number, ParameterRequirement.Required)
+    ];
 
-    public CellValue Call(CellValue[] args, FunctionCallMetaData metaData)
-    {
-        var val = args[0];
-        return CellValue.Number(System.Math.Sin((double)val.Data!));
-    }
+    public static FunctionDescriptor Descriptor { get; } = new(
+        name: "SIN",
+        parameterDefinitions: Parameters,
+        invoker: Evaluate,
+        acceptsErrors: false,
+        isVolatile: false);
 
-    public bool AcceptsErrors => false;
-    public bool IsVolatile => false;
+    private static CellValue Evaluate(CellValue[] args, FunctionCallMetaData metaData)
+    {
+        return CellValue.Number(System.Math.Sin(args[0].GetValue<double>()));
+    }
 }

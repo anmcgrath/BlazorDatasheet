@@ -1,23 +1,23 @@
-﻿using BlazorDatasheet.Formula.Core;
+using BlazorDatasheet.Formula.Core;
 
 namespace BlazorDatasheet.Formula.Functions.Logical;
 
-public class NotFunction : ISheetFunction
+public static class NotFunction
 {
-    public ParameterDefinition[] GetParameterDefinitions()
-    {
-        return new ParameterDefinition[]
-        {
-            new("value", ParameterType.Logical, ParameterRequirement.Required)
-        };
-    }
+    private static readonly ParameterDefinition[] Parameters =
+    [
+        new("value", ParameterType.Logical, ParameterRequirement.Required)
+    ];
 
-    public CellValue Call(CellValue[] args, FunctionCallMetaData metaData)
-    {
-        var val = args[0].GetValue<bool>();
-        return CellValue.Logical(!val);
-    }
+    public static FunctionDescriptor Descriptor { get; } = new(
+        name: "NOT",
+        parameterDefinitions: Parameters,
+        invoker: Evaluate,
+        acceptsErrors: false,
+        isVolatile: false);
 
-    public bool AcceptsErrors => false;
-    public bool IsVolatile => false;
+    private static CellValue Evaluate(CellValue[] args, FunctionCallMetaData metaData)
+    {
+        return CellValue.Logical(!args[0].GetValue<bool>());
+    }
 }

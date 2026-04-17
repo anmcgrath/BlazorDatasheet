@@ -213,7 +213,7 @@ public class InterpreterTests
         2d / (100 * 100 * 100))] // matches behaviour of excel but not google sheets (google sheets is error)
     public void Percent_Operator_Evaluates_To_Correct_Value(string formula, double value)
     {
-        _env.RegisterFunction("sum", new SumFunction());
+        _env.RegisterFunction(SumFunction.Descriptor);
         EvalExpression(formula).Data.Should().Be(value);
     }
 
@@ -302,5 +302,25 @@ public class InterpreterTests
 
         var formulaWithoutContext = _parser.FromString("=A1");
         formulaWithoutContext.References.First().SheetName.Should().Be("Sheet1");
+    }
+
+    [Test]
+    public void Known_Function_Binds_Descriptor_In_Parse_Tree()
+    {
+        _env.RegisterFunction(SumFunction.Descriptor);
+        var parsed = _parser.Parse("=SUM(1)");
+
+        var fn = parsed.Root.Should().BeOfType<FunctionExpression>().Subject;
+        fn.FunctionDescriptor.Should().NotBeNull();
+        fn.FunctionDescriptor!.Name.Should().Be("SUM");
+    }
+
+    [Test]
+    public void Unknown_Function_Produces_Error_On_Evaluation()
+    {
+        var result = EvalExpression("=MISSING_FN(1)");
+
+        result.IsError().Should().BeTrue();
+        result.GetValue<FormulaError>().ErrorType.Should().Be(ErrorType.Na);
     }
 }

@@ -1,9 +1,9 @@
-﻿namespace BlazorDatasheet.Formula.Core;
+using System.Diagnostics.CodeAnalysis;
+
+namespace BlazorDatasheet.Formula.Core;
 
 public interface IFunctionProvider
 {
-    bool FunctionExists(string functionIdentifier);
-    ISheetFunction? GetFunctionDefinition(string identifierText);
-    void RegisterFunction(string name, ISheetFunction value);
+    bool TryGetFunction(string functionIdentifier, [MaybeNullWhen(false)] out FunctionDescriptor functionDescriptor);
     IEnumerable<FunctionDefinition> SearchForFunctions(string functionName);
 }

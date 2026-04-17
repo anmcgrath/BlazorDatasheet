@@ -1,26 +1,21 @@
-﻿using BlazorDatasheet.Formula.Core;
+using BlazorDatasheet.Formula.Core;
 
 namespace BlazorDatashet.Formula.Functions.Math;
 
-public class RandFunction : ISheetFunction
+public static class RandFunction
 {
-    private Random _random;
+    private static readonly ParameterDefinition[] Parameters = [];
+    private static readonly Random Random = new();
 
-    public ParameterDefinition[] GetParameterDefinitions()
+    public static FunctionDescriptor Descriptor { get; } = new(
+        name: "RAND",
+        parameterDefinitions: Parameters,
+        invoker: Evaluate,
+        acceptsErrors: false,
+        isVolatile: true);
+
+    private static CellValue Evaluate(CellValue[] args, FunctionCallMetaData metaData)
     {
-        return [];
+        return CellValue.Number(Random.NextDouble());
     }
-
-    public RandFunction()
-    {
-        _random = new Random();
-    }
-
-    public CellValue Call(CellValue[] args, FunctionCallMetaData metaData)
-    {
-        return CellValue.Number(_random.NextDouble());
-    }
-
-    public bool AcceptsErrors => false;
-    public bool IsVolatile => true;
 }
