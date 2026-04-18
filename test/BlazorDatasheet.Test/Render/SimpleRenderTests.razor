@@ -43,6 +43,36 @@
     }
 
     [Test]
+    public void Datasheet_With_Headings_Hidden_Does_Not_Render_Heading_Wrappers()
+    {
+        var sheet = new Sheet(2, 2);
+
+        var cut = RenderComponent<Datasheet>(parameters =>
+        {
+            parameters.Add(p => p.Sheet, sheet);
+            parameters.Add(p => p.ShowColHeadings, false);
+            parameters.Add(p => p.ShowRowHeadings, false);
+        });
+
+        cut.FindAll("div.bds-sheet-col-head-container").Should().BeEmpty();
+        cut.FindAll("div.bds-sheet-row-head-container").Should().BeEmpty();
+    }
+
+    [Test]
+    public void Datasheet_With_Frozen_Sections_And_Headings_Renders_Heading_Cells()
+    {
+        var sheet = new Sheet(20, 20);
+        sheet.FreezeRowCols(1, 1, 1, 1);
+
+        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+
+        cut.FindAll("div.bds-sheet-col-head-container").Count.Should().Be(2);
+        cut.FindAll("div.bds-sheet-row-head-container").Count.Should().Be(4);
+        cut.FindAll("div.bds-col-head.bds-sheet-cell").Should().NotBeEmpty();
+        cut.FindAll("div.bds-row-head.bds-sheet-cell").Should().NotBeEmpty();
+    }
+
+    [Test]
     public async Task Datasheet_With_Precision_Set_Renders_Correctly()
     {
         var sheet = new Sheet(1, 1);

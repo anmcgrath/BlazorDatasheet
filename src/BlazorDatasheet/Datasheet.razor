@@ -21,7 +21,7 @@
                          Placement="@MenuPlacement.BottomRight">
 
             <div
-                @onmouseover="SetMouseOver" @onmouseout="SetMouseOut" class="bds-sheet"
+                @onmouseover="SetMouseOver" @onmouseout="SetMouseOut" class="@SheetClass"
                 style="width:@(TotalViewWidth)px; height:@(TotalViewHeight)px;"
                 @ref="_sheetContainer">
                 <div class="bds-sheet-layout" style="display: flex; flex-direction: column; align-items:flex-start;">
@@ -196,6 +196,22 @@
 
     private double LeftMainContentOffset => StickyHeaders ? this.GetGutterSize(Axis.Row) : 0;
     private double TopMainContentOffset => StickyHeaders ? this.GetGutterSize(Axis.Col) : 0;
+
+    private string SheetClass
+    {
+        get
+        {
+            var classes = new List<string> { "bds-sheet" };
+
+            if (!ShowColHeadings)
+                classes.Add("bds-sheet-top-border");
+
+            if (!ShowRowHeadings)
+                classes.Add("bds-sheet-left-border");
+
+            return string.Join(" ", classes);
+        }
+    }
 
 
     private RenderFragment<VisualCell> CreateComponent() => cell => builder =>
