@@ -121,7 +121,7 @@
         _sheet.Columns.SetHeadings(3, 3, "Sales");
         _sheet.Range("D:D")!.Format = new CellFormat() { NumberFormat = "C1", FontWeight = "bold" };
         _sheet.Cells[$"D{nRows}"]!.Formula = $"=SUM(D1:D{nRows - 1})";
-        _sheet.ConditionalFormats.Apply(_sheet.Range($"D1:D{nRows - 1}"), new NumberScaleConditionalFormat(Color.IndianRed, Color.DarkSeaGreen));
+        _sheet.ConditionalFormats.Apply(_sheet.Range($"D1:D{nRows - 1}"), NumberScaleConditionalFormat.RedWhiteBlue);
 
         _sheet.EndBatchUpdates();
         _sheet.Commands.ResumeHistory();
