@@ -77,6 +77,29 @@
     line-height: 1.35;
     border-radius: 8px;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+    position: relative;
+}
+
+.bds-sheet-top-border::before,
+.bds-sheet-left-border::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    z-index: 1;
+}
+
+.bds-sheet-top-border::before {
+    border-top: var(--sheet-border-style);
+    left: 0;
+    right: 0;
+    top: 0;
+}
+
+.bds-sheet-left-border::after {
+    border-left: var(--sheet-border-style);
+    bottom: 0;
+    left: 0;
+    top: 0;
 }
 
 .bds-sheet-layer-container {

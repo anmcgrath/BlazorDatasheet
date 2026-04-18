@@ -28,6 +28,9 @@
     <div style="width: 600px; height: 400px; overflow-y: scroll;">
         <Datasheet
             UseAutoScroll="_useAutoScroll"
+            StickyHeaders="_stickyHeaders"
+            ShowColHeadings="_showColHeadings"
+            ShowRowHeadings="_showRowHeadings"
             Sheet="_sheet"
             @ref="_datasheet"/>
     </div>
@@ -38,6 +41,18 @@
     <div>
         <input type="checkbox" id="autoScrollOn" @bind="_useAutoScroll"/>
         <label for="autoScrollOn">Autoscroll</label>
+    </div>
+    <div>
+        <input type="checkbox" id="stickyHeadersOn" @bind="_stickyHeaders"/>
+        <label for="stickyHeadersOn">Sticky headings</label>
+    </div>
+    <div>
+        <input type="checkbox" id="showColHeadingsOn" @bind="_showColHeadings"/>
+        <label for="showColHeadingsOn">Column headings</label>
+    </div>
+    <div>
+        <input type="checkbox" id="showRowHeadingsOn" @bind="_showRowHeadings"/>
+        <label for="showRowHeadingsOn">Row headings</label>
     </div>
 </div>
 
@@ -83,6 +98,9 @@
     private Datasheet? _datasheet;
 
     private bool _useAutoScroll;
+    private bool _stickyHeaders = true;
+    private bool _showColHeadings = true;
+    private bool _showRowHeadings = true;
 
     protected override void OnInitialized()
     {
