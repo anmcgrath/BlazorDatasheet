@@ -84,6 +84,39 @@ public class ConditionalFormatTests
     }
 
     [Test]
+    public void Number_Scale_Does_Not_Clear_Foreground_Color_When_Auto_Text_Color_Is_Disabled()
+    {
+        sheet.Cells.SetValue(0, 0, 1);
+        var foregroundCf = new ConditionalFormat((_, _) => true,
+            _ => new CellFormat { ForegroundColor = "rgb(10,20,30)" });
+        var numberScaleCf = new NumberScaleConditionalFormat(Color.Red, Color.Green);
+
+        sheet.ConditionalFormats.Apply(new Region(0, 0), foregroundCf);
+        sheet.ConditionalFormats.Apply(new Region(0, 0), numberScaleCf);
+
+        var format = sheet.ConditionalFormats.GetFormatResult(0, 0);
+
+        Assert.NotNull(format!.BackgroundColor);
+        Assert.AreEqual("rgb(10,20,30)", format.ForegroundColor);
+    }
+
+    [Test]
+    public void Number_Scale_Sets_Foreground_Color_When_Auto_Text_Color_Is_Enabled()
+    {
+        sheet.Cells.SetValue(0, 0, 1);
+        var numberScaleCf = new NumberScaleConditionalFormat(Color.Red, Color.Green)
+        {
+            AutoTextColor = true
+        };
+
+        sheet.ConditionalFormats.Apply(new Region(0, 0), numberScaleCf);
+
+        var format = sheet.ConditionalFormats.GetFormatResult(0, 0);
+
+        Assert.NotNull(format!.ForegroundColor);
+    }
+
+    [Test]
     public void Conditional_Format_Shifts_When_Row_Inserted_And_Removed_Before()
     {
         // Create a new conditional format that is always run and sets the background colour to the row number

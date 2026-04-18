@@ -1,5 +1,6 @@
 ﻿@using System.Drawing
 @using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Formats
 @using BlazorDatasheet.Core.Formats.DefaultConditionalFormats
 @using BlazorDatasheet.DataStructures.Geometry
 
@@ -19,6 +20,11 @@
         _sheet.Commands.PauseHistory();
         _sheet.Columns.SetSize(0, 10, 40);
         _sheet.Rows.SetSize(0, 10, 40);
+        _sheet.SetFormat(new AllRegion(), new CellFormat()
+        {
+            NumberFormat = "N3",
+            HorizontalTextAlign = TextAlign.Start
+        });
 
         for (int i = 0; i < 10; i++)
         {
@@ -28,7 +34,8 @@
             }
         }
 
-        var colorCf = new NumberScaleConditionalFormat(Color.LightBlue, Color.GreenYellow);
+        var colorCf = NumberScaleConditionalFormat.Viridis;
+        colorCf.AutoTextColor = true;
         _sheet.ConditionalFormats.Apply(new Region(0, 10, 0, 10), colorCf);
         _sheet.FormulaEngine.SetVariable("x", 10);
         _sheet.EndBatchUpdates();

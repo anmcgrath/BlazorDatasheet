@@ -83,6 +83,30 @@ public class SerializationTests
     }
 
     [Test]
+    public void Multi_Stop_Number_Scale_Should_Be_Serialized()
+    {
+        var sheet = new Sheet(3, 1);
+        sheet.Cells.SetValue(0, 0, 1);
+        sheet.Cells.SetValue(1, 0, 2);
+        sheet.Cells.SetValue(2, 0, 3);
+        var cf = NumberScaleConditionalFormat.Viridis;
+        sheet.ConditionalFormats.Apply(sheet.Region, cf);
+        var originalBackground = sheet.ConditionalFormats.GetFormatResult(1, 0)!.BackgroundColor;
+
+        var json = new SheetJsonSerializer().Serialize(sheet.Workbook);
+        var deserialized = new SheetJsonDeserializer().Deserialize(json);
+        var deserializedSheet = deserialized.Sheets.First();
+        var deserializedCf = deserializedSheet.ConditionalFormats.GetAllFormats().Single().Data
+            .Should().BeOfType<NumberScaleConditionalFormat>().Subject;
+
+        deserializedCf.ColorStops.Should().NotBeNull();
+        deserializedCf.ColorStops!.Select(x => x.ToArgb()).Should()
+            .Equal(cf.ColorStops!.Select(x => x.ToArgb()));
+        deserializedCf.LutSize.Should().Be(40);
+        deserializedSheet.ConditionalFormats.GetFormatResult(1, 0)!.BackgroundColor.Should().Be(originalBackground);
+    }
+
+    [Test]
     public void Validators_Should_Be_Serialized()
     {
         var sheet = new Sheet(10, 10);
