@@ -59,8 +59,11 @@ public class DependencyManager
 
             if (vertex.SheetName == oldName)
             {
-                _dependencyGraph.Swap(vertex,
-                    new FormulaVertex(vertex.Row, vertex.Col, newName, vertex.Formula));
+                var renamedVertex = new FormulaVertex(vertex.Row, vertex.Col, newName, vertex.Formula);
+                _dependencyGraph.Swap(vertex, renamedVertex);
+
+                if (_volatileVertices.Remove(vertex))
+                    _volatileVertices.Add(renamedVertex);
             }
 
             foreach (var formulaRef in formula.References)

@@ -165,6 +165,20 @@ public class DependencyManagerTests
     }
 
     [Test]
+    public void Rename_Sheet_Updates_Volatile_Formula_Vertex()
+    {
+        _dm.SetFormula(0, 0, "Sheet1", GetFormula("=VOLATILEFN()", VolatileFunction.Descriptor));
+
+        _dm.RenameSheet("Sheet1", "Renamed");
+
+        _dm.GetCalculationOrder([])
+            .SelectMany(x => x)
+            .Select(x => x.Key)
+            .Should()
+            .Equal("'Renamed'!A1");
+    }
+
+    [Test]
     public void Clear_Formula_With_Multi_Sheet_References_And_Restore_Restores_All_Referenced_Stores()
     {
         _dm.SetFormula(0, 0, "Sheet1", GetFormula("=A2+Sheet2!A2"));
