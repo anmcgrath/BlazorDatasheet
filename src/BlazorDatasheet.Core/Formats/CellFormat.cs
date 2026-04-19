@@ -26,6 +26,24 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReado
     }
 
     /// <summary>
+    /// CSS font-style
+    /// </summary>
+    public string? FontStyle
+    {
+        get => GetStyleOrDefault<string>(nameof(FontStyle));
+        set => AddStyle(nameof(FontStyle), value);
+    }
+
+    /// <summary>
+    /// CSS text-decoration
+    /// </summary>
+    public string? TextDecoration
+    {
+        get => GetStyleOrDefault<string>(nameof(TextDecoration));
+        set => AddStyle(nameof(TextDecoration), value);
+    }
+
+    /// <summary>
     /// CSS background color
     /// </summary>
     public string? BackgroundColor

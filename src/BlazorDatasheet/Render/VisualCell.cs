@@ -108,6 +108,8 @@ public class VisualCell
 
         sb.AddStyle("background-color", format.BackgroundColor!, format.BackgroundColor != null);
         sb.AddStyle("font-weight", format.FontWeight!, format.FontWeight != null);
+        sb.AddStyle("font-style", format.FontStyle!, format.FontStyle != null);
+        sb.AddStyle("text-decoration", format.TextDecoration!, format.TextDecoration != null);
 
         if (format.BorderBottom != null)
             sb.AddStyle("border-bottom", $"{format.BorderBottom.Width}px solid {format.BorderBottom.Color};");

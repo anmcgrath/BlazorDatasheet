@@ -1,31 +1,43 @@
 ﻿@using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Events
+@using BlazorDatasheet.Core.Events.Visual
 @using BlazorDatasheet.Core.Interfaces
 
-<button class="bds-button @GetToggleClass()" @onclick="ToggleValue">
+@implements IDisposable
+
+<button class="bds-button bds-toolbar-button @GetToggleClass()"
+        type="button"
+        title="@Title"
+        aria-label="@Title"
+        aria-pressed="@_isActive"
+        disabled="@IsDisabled"
+        @onclick="ToggleValue">
     @ChildContent
 </button>
 
 @code {
-
     [Parameter] public RenderFragment ChildContent { get; set; } = default!;
-
     [Parameter] public required Func<IReadOnlyCell, bool> IsSelected { get; set; }
-
-    [Parameter] public required Action<SheetRange, bool> OnToggle { get; set; }
-
+    [Parameter] public required Action<IEnumerable<SheetRange>, bool> OnToggle { get; set; }
     [Parameter] public required Sheet Sheet { get; set; }
-    private Sheet _sheet = null!;
+    [Parameter] public EventCallback OnInteracted { get; set; }
+    [Parameter] public string Title { get; set; } = "Toggle";
 
-    private bool _isActive = true;
+    private Sheet? _sheet;
+    private bool _isActive;
+
+    private bool IsDisabled => Sheet.Selection.IsEmpty();
 
     protected override void OnParametersSet()
     {
-        if (Sheet != _sheet)
-        {
-            _sheet = Sheet;
-            _sheet.Selection.SelectionChanged += SelectionOnSelectionChanged;
-        }
+        if (Sheet == _sheet)
+            return;
+
+        DetachEvents();
+        _sheet = Sheet;
+        _sheet.Selection.SelectionChanged += SelectionOnSelectionChanged;
+        _sheet.Cells.FormatChanged += FormatOnFormatChanged;
+        RefreshActiveState();
     }
 
     private string GetToggleClass()
@@ -35,16 +47,51 @@
 
     private void SelectionOnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (Sheet.Selection.IsEmpty()) return;
+        RefreshActiveState();
+    }
+
+    private void FormatOnFormatChanged(object? sender, FormatChangedEventArgs e)
+    {
+        RefreshActiveState();
+    }
+
+    private void RefreshActiveState()
+    {
+        if (Sheet.Selection.IsEmpty())
+        {
+            _isActive = false;
+            StateHasChanged();
+            return;
+        }
+
         var cell = Sheet.Cells.GetCell(Sheet.Selection.ActiveCellPosition);
         _isActive = IsSelected(cell);
         StateHasChanged();
     }
 
-    private void ToggleValue()
+    private async Task ToggleValue()
     {
+        if (Sheet.Selection.IsEmpty())
+            return;
+
         _isActive = !_isActive;
-        OnToggle(Sheet.Selection.Ranges.First(), _isActive);
+        OnToggle(Sheet.Selection.Ranges.ToList(), _isActive);
+
+        if (OnInteracted.HasDelegate)
+            await OnInteracted.InvokeAsync();
     }
 
+    private void DetachEvents()
+    {
+        if (_sheet == null)
+            return;
+
+        _sheet.Selection.SelectionChanged -= SelectionOnSelectionChanged;
+        _sheet.Cells.FormatChanged -= FormatOnFormatChanged;
+    }
+
+    public void Dispose()
+    {
+        DetachEvents();
+    }
 }

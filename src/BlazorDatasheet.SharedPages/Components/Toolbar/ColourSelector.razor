@@ -1,83 +1,140 @@
-﻿@using System.Linq.Expressions
-@using System.Reflection.Metadata
-@using BlazorDatasheet.Core.Data
-@using BlazorDatasheet.Core.Events
+﻿@using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Formats
-@using BlazorDatasheet.Formula.Core.Interpreter.Parsing
-<div style="position:relative;">
-    <div style="display: flex; flex-direction: row;">
-        <button class="bds-button"
-                popovertarget="col-picker"
-                @onclick="ToggleMenuOpen"
-                @onfocusout="() => _menuOpen = false">
+
+<div class="bds-color-selector" @onkeydown="OnKeyDown">
+    <button class="bds-button bds-toolbar-button bds-color-button"
+            type="button"
+            title="@Title"
+            aria-label="@Title"
+            aria-haspopup="true"
+            aria-expanded="@_menuOpen"
+            disabled="@IsDisabled"
+            @onclick="ToggleMenuOpen">
+        @if (ChildContent != null)
+        {
             @ChildContent
-        </button>
-    </div>
+        }
+        <span class="bds-color-swatch" style="background: @SwatchColor"></span>
+    </button>
 
-
-    <div style="@(!_menuOpen ? "display:none;" : "")">
-        <div
-            style="
-        position: absolute; 
-        z-index: 100000; 
-        top: 2rem; 
-        left: 0; 
-        width: 95px; 
-        background: white; 
-        padding: 0.5rem; 
-        box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px; 
-        display: flex; 
-        flex-direction: row; 
-        flex-wrap: wrap;
-        gap: 0.2rem;">
+    @if (_menuOpen)
+    {
+        <div class="bds-color-menu-backdrop" @onpointerdown="CloseMenu"></div>
+        <div class="bds-color-menu @(Placement == MenuPlacement.End ? "bds-color-menu-end" : "")"
+             role="menu"
+             @onpointerdown:stopPropagation>
             @foreach (var color in Colors)
             {
-                <div style="width: 1rem; cursor: pointer; height: 1rem; background: @color;"
-                     @onpointerdown="() => SetColor(color)"></div>
+                <button class="bds-color-choice"
+                        type="button"
+                        title="@color.Name"
+                        aria-label="@($"{Title}: {color.Name}")"
+                        style="background: @color.Value"
+                        @onpointerdown="@(() => SetColor(color.Value))">
+                </button>
+            }
+
+            @if (AllowClear)
+            {
+                <button class="bds-color-clear"
+                        type="button"
+                        @onpointerdown="ClearColor">
+                    Clear
+                </button>
             }
         </div>
-    </div>
+    }
 </div>
 
 @code {
-
     [Parameter] public required Sheet Sheet { get; set; }
-    [Parameter] public required Func<string, CellFormat> FormatSelector { get; set; }
-    [Parameter] public RenderFragment ChildContent { get; set; }
+    [Parameter] public required Func<string?, CellFormat> FormatSelector { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string Title { get; set; } = "Color";
+    [Parameter] public string? CurrentColor { get; set; }
+    [Parameter] public bool AllowClear { get; set; } = true;
+    [Parameter] public bool ApplyToSelection { get; set; } = true;
+    [Parameter] public MenuPlacement Placement { get; set; } = MenuPlacement.Start;
+    [Parameter] public EventCallback<string?> ColorSelected { get; set; }
+    [Parameter] public EventCallback OnInteracted { get; set; }
 
     [Parameter]
-    public List<string> Colors { get; set; } =
+    public IReadOnlyList<ToolbarColor> Colors { get; set; } =
     [
-        "black",
-        "white",
-        "red",
-        "green",
-        "blue",
-        "yellow",
-        "purple",
-        "orange"
+        new("Black", "#111827"),
+        new("Gray", "#6b7280"),
+        new("White", "#ffffff"),
+        new("Red", "#dc2626"),
+        new("Rose", "#e11d48"),
+        new("Orange", "#f97316"),
+        new("Amber", "#f59e0b"),
+        new("Yellow", "#facc15"),
+        new("Green", "#16a34a"),
+        new("Teal", "#0d9488"),
+        new("Blue", "#2563eb"),
+        new("Indigo", "#4f46e5"),
+        new("Violet", "#7c3aed"),
+        new("Pink", "#db2777")
     ];
 
-    private bool _menuOpen = false;
+    private bool _menuOpen;
+    private bool IsDisabled => ApplyToSelection && Sheet.Selection.IsEmpty();
+    private string SwatchColor => string.IsNullOrWhiteSpace(CurrentColor) ? "transparent" : CurrentColor;
 
     private void ToggleMenuOpen()
     {
+        if (IsDisabled)
+            return;
+
         _menuOpen = !_menuOpen;
     }
 
-    private void SetColor(string color)
+    private void CloseMenu()
     {
-        if (Sheet.Selection.IsEmpty())
+        _menuOpen = false;
+    }
+
+    private void OnKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape")
+            _menuOpen = false;
+    }
+
+    private async Task SetColor(string? color)
+    {
+        if (ApplyToSelection && Sheet.Selection.IsEmpty())
             return;
 
-        var format = FormatSelector(color);
+        if (ColorSelected.HasDelegate)
+            await ColorSelected.InvokeAsync(color);
+
+        if (ApplyToSelection)
+            ApplyFormat(FormatSelector(color));
+
+        _menuOpen = false;
+
+        if (OnInteracted.HasDelegate)
+            await OnInteracted.InvokeAsync();
+    }
+
+    private async Task ClearColor()
+    {
+        await SetColor(null);
+    }
+
+    private void ApplyFormat(CellFormat format)
+    {
         Sheet.Commands.BeginCommandGroup();
         foreach (var range in Sheet.Selection.Ranges)
-        {
             range.Format = format;
-        }
-
         Sheet.Commands.EndCommandGroup();
     }
 
+    public sealed record ToolbarColor(string Name, string Value);
+
+    public enum MenuPlacement
+    {
+        Start,
+        End
+    }
 }

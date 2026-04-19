@@ -8,6 +8,16 @@ public interface IReadonlyCellFormat
     public string? FontWeight { get; }
 
     /// <summary>
+    /// CSS font-style
+    /// </summary>
+    public string? FontStyle { get; }
+
+    /// <summary>
+    /// CSS text-decoration
+    /// </summary>
+    public string? TextDecoration { get; }
+
+    /// <summary>
     /// CSS background color
     /// </summary>
     public string? BackgroundColor { get; }
