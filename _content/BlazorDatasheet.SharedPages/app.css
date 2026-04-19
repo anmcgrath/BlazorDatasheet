@@ -364,3 +364,263 @@ code {
     outline: 2px solid #2563eb;
     outline-offset: 1px;
 }
+
+.bds-toolbar {
+    background: #f8fafc;
+    border: 1px solid #d7e0ec;
+    border-radius: 8px;
+    box-shadow: rgba(15, 23, 42, 0.06) 0 1px 2px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 6px;
+    overflow: visible;
+    padding: 6px;
+    width: 100%;
+}
+
+.bds-toolbar-row {
+    align-items: center;
+    display: flex;
+    gap: 4px;
+    min-width: 0;
+    overflow: visible;
+    width: 100%;
+}
+
+.bds-toolbar-command-row {
+    flex-wrap: wrap;
+}
+
+.bds-toolbar-group {
+    align-items: center;
+    display: flex;
+    flex: 0 0 auto;
+    gap: 2px;
+    min-height: 30px;
+}
+
+.bds-toolbar-range {
+    flex: 0 0 84px;
+}
+
+.bds-toolbar-formula {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.bds-toolbar-divider {
+    align-self: stretch;
+    background: #d7e0ec;
+    flex: 0 0 1px;
+    margin: 4px 3px;
+}
+
+.bds-toolbar-select {
+    appearance: none;
+    background-color: #ffffff;
+    background-image: linear-gradient(45deg, transparent 50%, #475569 50%), linear-gradient(135deg, #475569 50%, transparent 50%);
+    background-position: calc(100% - 12px) 11px, calc(100% - 8px) 11px;
+    background-repeat: no-repeat;
+    background-size: 4px 4px, 4px 4px;
+    border: 1px solid #c5d0df;
+    border-radius: 6px;
+    box-shadow: rgba(255, 255, 255, 0.85) 0 1px 0 inset;
+    color: #1f2937;
+    cursor: pointer;
+    font: 500 12px/1.2 "Segoe UI Variable", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    height: 28px;
+    max-width: 100%;
+    min-width: 0;
+    padding: 0 24px 0 8px;
+    transition: border-color 120ms ease-in-out, box-shadow 120ms ease-in-out, background-color 120ms ease-in-out;
+}
+
+.bds-toolbar-select:hover:not(:disabled) {
+    background-color: #f8fafc;
+    border-color: #9fb0c8;
+}
+
+.bds-toolbar-select:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 1px;
+}
+
+.bds-toolbar-select:disabled {
+    color: #94a3b8;
+    cursor: not-allowed;
+    opacity: 0.72;
+}
+
+.bds-format-select {
+    width: 104px;
+}
+
+.bds-number-format-input {
+    height: 28px;
+    margin-bottom: 0;
+    padding: 0 8px;
+    width: 120px;
+}
+
+.bds-border-select {
+    width: 96px;
+}
+
+.bds-icon-select {
+    width: 118px;
+}
+
+.bds-toolbar-button {
+    align-items: center;
+    display: inline-flex;
+    height: 28px;
+    justify-content: center;
+    min-height: 28px;
+    min-width: 28px;
+    padding: 0 7px;
+}
+
+.bds-toolbar-button svg {
+    display: block;
+    flex: 0 0 auto;
+}
+
+.bds-toolbar-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.48;
+}
+
+.bds-color-selector {
+    position: relative;
+}
+
+.bds-color-button {
+    gap: 5px;
+}
+
+.bds-color-swatch {
+    border: 1px solid #94a3b8;
+    border-radius: 3px;
+    box-shadow: rgba(255, 255, 255, 0.8) 0 0 0 1px inset;
+    box-sizing: border-box;
+    display: inline-block;
+    height: 10px;
+    width: 10px;
+}
+
+.bds-color-menu-backdrop {
+    position: fixed;
+    inset: 0;
+    background: transparent;
+    z-index: 99999;
+}
+
+.bds-color-menu {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    box-shadow: rgba(15, 23, 42, 0.16) 0 10px 24px, rgba(15, 23, 42, 0.08) 0 2px 6px;
+    display: grid;
+    gap: 5px;
+    grid-template-columns: repeat(7, 18px);
+    left: 0;
+    max-width: calc(100vw - 16px);
+    padding: 8px;
+    position: absolute;
+    top: calc(100% + 6px);
+    z-index: 100000;
+}
+
+.bds-color-menu-end {
+    left: auto;
+    right: 0;
+}
+
+@media (max-width: 640px) {
+    .bds-color-menu {
+        left: auto;
+        right: 0;
+    }
+}
+
+.bds-color-choice {
+    appearance: none;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    box-sizing: border-box;
+    cursor: pointer;
+    height: 18px;
+    padding: 0;
+    width: 18px;
+}
+
+.bds-color-choice:hover,
+.bds-color-choice:focus-visible {
+    border-color: #2563eb;
+    outline: 2px solid rgba(37, 99, 235, 0.22);
+    outline-offset: 1px;
+}
+
+.bds-color-clear {
+    appearance: none;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    color: #334155;
+    cursor: pointer;
+    font: 500 12px/1 "Segoe UI Variable", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    grid-column: 1 / -1;
+    height: 24px;
+}
+
+.bds-color-clear:hover,
+.bds-color-clear:focus-visible {
+    background: #eef2f7;
+    border-color: #9fb0c8;
+}
+
+.bds-border-color-preview {
+    border-bottom: 3px solid;
+    display: inline-block;
+    height: 14px;
+    width: 16px;
+}
+
+.bds-toolbar .bds-formula-input {
+    box-sizing: border-box;
+    height: 28px;
+    margin-bottom: 0;
+}
+
+.bds-toolbar-range .bds-formula-input {
+    width: 80px;
+}
+
+.bds-toolbar-formula label {
+    align-items: center;
+    display: inline-flex;
+    height: 28px;
+    margin: 0 4px 0 0;
+    vertical-align: middle;
+}
+
+.bds-toolbar-formula label svg {
+    height: 20px;
+    width: 20px;
+}
+
+.bds-toolbar-formula input {
+    width: calc(100% - 30px);
+}
+
+@media (max-width: 640px) {
+    .bds-toolbar-input-row {
+        flex-wrap: wrap;
+    }
+
+    .bds-toolbar-formula {
+        flex-basis: 100%;
+    }
+}
