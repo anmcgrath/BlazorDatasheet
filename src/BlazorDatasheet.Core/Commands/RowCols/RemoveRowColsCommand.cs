@@ -57,7 +57,7 @@ public class RemoveRowColsCommand : BaseCommand, IUndoableCommand
         if (_count <= 0)
             return false;
 
-        _nRemoved = Math.Min(sheet.GetSize(_axis) - _index + 1, _count);
+        _nRemoved = Math.Min(sheet.GetSize(_axis) - _index, _count);
         sheet.Remove(_axis, _nRemoved);
 
         _cellStoreRestoreData = sheet.Cells.RemoveRowColAt(_index, _nRemoved, _axis);
