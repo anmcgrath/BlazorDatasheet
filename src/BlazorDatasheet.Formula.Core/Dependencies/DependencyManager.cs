@@ -346,10 +346,10 @@ public class DependencyManager
     public IList<IList<FormulaVertex>> GetCalculationOrder(IEnumerable<FormulaVertex>? dirtyFormula = null)
     {
         var sort = new SccSort<FormulaVertex>(_dependencyGraph);
-        if (dirtyFormula == null && _volatileVertices.Count == 0)
+        if (dirtyFormula == null)
             return sort.Sort();
 
-        return sort.Sort((dirtyFormula ?? []).Concat(_volatileVertices));
+        return sort.Sort(dirtyFormula.Concat(_volatileVertices));
     }
 
     public IEnumerable<DependencyInfo> GetDependencies()

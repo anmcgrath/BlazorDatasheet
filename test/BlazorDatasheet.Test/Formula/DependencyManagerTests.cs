@@ -23,9 +23,13 @@ public class DependencyManagerTests
         _dm.AddSheet("Sheet2");
     }
 
-    private CellFormula GetFormula(string formulaStr)
+    private CellFormula GetFormula(string formulaStr, params FunctionDescriptor[] functions)
     {
-        var parser = new Parser(new TestEnvironment());
+        var environment = new TestEnvironment();
+        foreach (var function in functions)
+            environment.RegisterFunction(function);
+
+        var parser = new Parser(environment);
         return parser.FromString(formulaStr);
     }
 
@@ -66,6 +70,22 @@ public class DependencyManagerTests
             .ToList();
 
         sorted.Should().BeEquivalentTo([2, 1, 0]);
+    }
+
+    [Test]
+    public void Full_Calculation_Order_Includes_All_Formulas_When_Volatiles_Exist()
+    {
+        _dm.SetFormula(0, 0, "Sheet1", GetFormula("=VOLATILEFN()", VolatileFunction.Descriptor));
+        _dm.SetFormula(1, 0, "Sheet1", GetFormula("=A3"));
+
+        _dm.GetCalculationOrder()
+            .SelectMany(x => x)
+            .Select(x => x.Position)
+            .Should()
+            .BeEquivalentTo([
+                new CellPosition(0, 0),
+                new CellPosition(1, 0)
+            ]);
     }
 
     [Test]
@@ -207,4 +227,14 @@ public class DependencyManagerTests
         _dm.HasDependents(4, 0, "Sheet1").Should().BeTrue();
         _dm.HasDependents(1, 0, "Sheet2").Should().BeTrue();
     }
+}
+
+internal static class VolatileFunction
+{
+    public static FunctionDescriptor Descriptor { get; } = new(
+        "VOLATILEFN",
+        [],
+        (_, _) => CellValue.Number(1),
+        acceptsErrors: false,
+        isVolatile: true);
 }
