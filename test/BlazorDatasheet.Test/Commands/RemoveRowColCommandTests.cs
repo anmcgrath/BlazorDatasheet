@@ -150,6 +150,34 @@ public class RemoveRowColCommandTests
     }
 
     [Test]
+    public void Remove_Rows_Past_End_Removes_Only_Remaining_Rows_And_Undo_Restores()
+    {
+        var sheet = new Sheet(4, 1);
+        sheet.Cells.SetValue(3, 0, "'last");
+
+        sheet.Rows.RemoveAt(3, 2);
+
+        sheet.NumRows.Should().Be(3);
+        sheet.Commands.Undo();
+        sheet.NumRows.Should().Be(4);
+        sheet.Cells.GetValue(3, 0).Should().Be("'last");
+    }
+
+    [Test]
+    public void Remove_Cols_Past_End_Removes_Only_Remaining_Cols_And_Undo_Restores()
+    {
+        var sheet = new Sheet(1, 4);
+        sheet.Cells.SetValue(0, 3, "'last");
+
+        sheet.Columns.RemoveAt(3, 2);
+
+        sheet.NumCols.Should().Be(3);
+        sheet.Commands.Undo();
+        sheet.NumCols.Should().Be(4);
+        sheet.Cells.GetValue(0, 3).Should().Be("'last");
+    }
+
+    [Test]
     public void Remove_Row_At_End_Of_Format_region_Then_Undo_restores_Format()
     {
         var sheet = new Sheet(5, 5);
