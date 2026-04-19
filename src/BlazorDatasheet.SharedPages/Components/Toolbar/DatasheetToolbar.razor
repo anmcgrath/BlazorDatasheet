@@ -1,81 +1,578 @@
-﻿@using BlazorDatasheet.Core.Data
+﻿@using BlazorDatasheet.Core.Commands.Formatting
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events
+@using BlazorDatasheet.Core.Events.Commands
+@using BlazorDatasheet.Core.Events.Visual
 @using BlazorDatasheet.Core.Formats
 @using BlazorDatasheet.Core.Interfaces
+@using BlazorDatasheet.DataStructures.Geometry
 
-<div style="display: flex; flex-direction: column; gap: 0.2rem;">
-    <div style="display: flex; flex-direction: row; gap: 0.2rem;">
-        <ToggleButton
-            Sheet="Sheet"
-            IsSelected="IsSelected"
-            OnToggle="OnToggle">
-            @BoldIcon
-        </ToggleButton>
-        <ColourSelector
-            FormatSelector="@(s => new CellFormat() { BackgroundColor = s })"
-            Sheet="Sheet">
-            @PaintIcon
-        </ColourSelector>
-        <ColourSelector
-            FormatSelector="@(s => new CellFormat() { ForegroundColor = s })"
-            Sheet="Sheet">
-            @TextIcon
-        </ColourSelector>
+@implements IDisposable
+
+<div class="bds-toolbar" role="toolbar" aria-label="Datasheet toolbar">
+    <div class="bds-toolbar-row bds-toolbar-input-row">
+        <div class="bds-toolbar-group bds-toolbar-range">
+            <RangeSelector Datasheet="Datasheet" Sheet="Sheet" />
+        </div>
+
+        <div class="bds-toolbar-group bds-toolbar-formula">
+            <FormulaTextBox Sheet="Sheet" Datasheet="Datasheet" />
+        </div>
     </div>
-    <div style="display: flex; flex-direction: row;">
-        <RangeSelector Datasheet="Datasheet" Sheet="Sheet"/>
-        <FormulaTextBox Sheet="Sheet" Datasheet="Datasheet"/>
+
+    <div class="bds-toolbar-row bds-toolbar-command-row">
+        <div class="bds-toolbar-group">
+            <button class="bds-button bds-toolbar-button" type="button" title="Undo" disabled="@(!CanUndo)" @onclick="Undo">
+                @UndoIcon
+            </button>
+            <button class="bds-button bds-toolbar-button" type="button" title="Redo" disabled="@(!CanRedo)" @onclick="Redo">
+                @RedoIcon
+            </button>
+        </div>
+
+        <div class="bds-toolbar-divider" aria-hidden="true"></div>
+
+        <div class="bds-toolbar-group">
+            <select class="bds-toolbar-select bds-format-select"
+                    title="Number format"
+                    value="@SelectedNumberFormat"
+                    disabled="@IsSelectionEmpty"
+                    @onchange="OnNumberFormatChanged">
+                @foreach (var option in NumberFormats)
+                {
+                    <option value="@option.Value">@option.Label</option>
+                }
+                @if (IsCustomNumberFormat)
+                {
+                    <option value="__custom__">Custom…</option>
+                }
+            </select>
+            <input class="bds-formula-input bds-number-format-input"
+                   type="text"
+                   title="Custom number format"
+                   placeholder="Custom format"
+                   value="@CurrentNumberFormat"
+                   disabled="@IsSelectionEmpty"
+                   @onchange="OnCustomNumberFormatChanged" />
+            <button class="bds-button bds-toolbar-button"
+                    type="button"
+                    title="Clear formatting"
+                    disabled="@IsSelectionEmpty"
+                    @onclick="ClearFormattingAsync">
+                @ClearFormatIcon
+            </button>
+        </div>
+
+        <div class="bds-toolbar-group">
+            <ToggleButton Sheet="Sheet"
+                          Title="Bold"
+                          IsSelected="IsBold"
+                          OnInteracted="RefocusDatasheetAsync"
+                          OnToggle="SetBold">
+                @BoldIcon
+            </ToggleButton>
+
+            <ToggleButton Sheet="Sheet"
+                          Title="Italic"
+                          IsSelected="IsItalic"
+                          OnInteracted="RefocusDatasheetAsync"
+                          OnToggle="SetItalic">
+                @ItalicIcon
+            </ToggleButton>
+
+            <ToggleButton Sheet="Sheet"
+                          Title="Underline"
+                          IsSelected="IsUnderline"
+                          OnInteracted="RefocusDatasheetAsync"
+                          OnToggle="SetUnderline">
+                @UnderlineIcon
+            </ToggleButton>
+
+            <ToggleButton Sheet="Sheet"
+                          Title="Read only"
+                          IsSelected="IsReadOnly"
+                          OnInteracted="RefocusDatasheetAsync"
+                          OnToggle="SetReadOnly">
+                @LockIcon
+            </ToggleButton>
+
+            <ToggleButton Sheet="Sheet"
+                          Title="Wrap text"
+                          IsSelected="IsWrapped"
+                          OnInteracted="RefocusDatasheetAsync"
+                          OnToggle="SetWrap">
+                @WrapIcon
+            </ToggleButton>
+        </div>
+
+        <div class="bds-toolbar-group">
+            <ColourSelector
+                Title="Text color"
+                CurrentColor="@ActiveFormat.ForegroundColor"
+                FormatSelector="@(color => new CellFormat { ForegroundColor = color })"
+                OnInteracted="RefocusDatasheetAsync"
+                Sheet="Sheet">
+                @TextColorIcon
+            </ColourSelector>
+            <ColourSelector
+                Title="Fill color"
+                CurrentColor="@ActiveFormat.BackgroundColor"
+                FormatSelector="@(color => new CellFormat { BackgroundColor = color })"
+                OnInteracted="RefocusDatasheetAsync"
+                Sheet="Sheet">
+                @FillColorIcon
+            </ColourSelector>
+        </div>
+
+        <div class="bds-toolbar-group">
+            @foreach (var alignment in HorizontalAlignments)
+            {
+                <button class="bds-button bds-toolbar-button @GetHorizontalAlignClass(alignment.Value)"
+                        type="button"
+                        title="@alignment.Label"
+                        disabled="@IsSelectionEmpty"
+                        aria-pressed="@(ActiveFormat.HorizontalTextAlign == alignment.Value)"
+                        @onclick="@(() => ApplyFormatAndRefocusAsync(new CellFormat { HorizontalTextAlign = alignment.Value }))">
+                    @alignment.Icon
+                </button>
+            }
+        </div>
+
+        <div class="bds-toolbar-group">
+            @foreach (var alignment in VerticalAlignments)
+            {
+                <button class="bds-button bds-toolbar-button @GetVerticalAlignClass(alignment.Value)"
+                        type="button"
+                        title="@alignment.Label"
+                        disabled="@IsSelectionEmpty"
+                        aria-pressed="@(ActiveFormat.VerticalTextAlign == alignment.Value)"
+                        @onclick="@(() => ApplyFormatAndRefocusAsync(new CellFormat { VerticalTextAlign = alignment.Value }))">
+                    @alignment.Icon
+                </button>
+            }
+        </div>
+
+        <div class="bds-toolbar-group">
+            <select class="bds-toolbar-select bds-border-select"
+                    title="Borders"
+                    value=""
+                    disabled="@IsSelectionEmpty"
+                    @onchange="OnBorderPresetChanged">
+                <option value="">Borders</option>
+                @foreach (var option in BorderPresets)
+                {
+                    <option value="@option.Value">@option.Label</option>
+                }
+            </select>
+
+            <ColourSelector
+                Title="Border color"
+                CurrentColor="@_borderColor"
+                AllowClear="false"
+                ApplyToSelection="false"
+                Placement="ColourSelector.MenuPlacement.End"
+                ColorSelected="SetBorderColor"
+                FormatSelector="@(_ => new CellFormat())"
+                Sheet="Sheet">
+                <span class="bds-border-color-preview" style="border-color: @_borderColor"></span>
+            </ColourSelector>
+        </div>
+
+        <div class="bds-toolbar-group">
+            <button class="bds-button bds-toolbar-button" type="button" title="Merge cells" disabled="@(!CanMerge)" @onclick="MergeCells">
+                @MergeIcon
+            </button>
+            <button class="bds-button bds-toolbar-button" type="button" title="Unmerge cells" disabled="@(!CanUnmerge)" @onclick="UnmergeCells">
+                @UnmergeIcon
+            </button>
+        </div>
     </div>
 </div>
 
 @code {
-
     [Parameter] public required Sheet Sheet { get; set; }
-
     [Parameter] public required Datasheet Datasheet { get; set; }
 
-    private bool IsSelected(IReadOnlyCell arg)
-    {
-        return arg.Format.FontWeight == "bold";
-    }
+    private const string DefaultBorderColor = "#64748b";
 
-    private void OnToggle(SheetRange arg1, bool arg2)
+    private Sheet? _sheet;
+    private string _borderColor = DefaultBorderColor;
+
+    private CellFormat ActiveFormat
     {
-        arg1.Format = new CellFormat()
+        get
         {
-            FontWeight = arg2 ? "bold" : "normal"
-        };
+            if (Sheet.Selection.IsEmpty())
+                return new CellFormat();
+
+            var activeCell = Sheet.Selection.ActiveCellPosition;
+            return Sheet.GetFormat(activeCell.row, activeCell.col);
+        }
     }
 
-    private RenderFragment BoldIcon => @<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
-                                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                             stroke-linecap="round" stroke-linejoin="round"
-                                             class="icon icon-tabler icons-tabler-outline icon-tabler-bold">
-        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-        <path d="M7 5h6a3.5 3.5 0 0 1 0 7h-6z"/>
-        <path d="M13 12h1a3.5 3.5 0 0 1 0 7h-7v-7"/>
+    private bool IsSelectionEmpty => Sheet.Selection.IsEmpty();
+    private bool CanUndo => Sheet.Commands.GetUndoCommands().Any();
+    private bool CanRedo => Sheet.Commands.GetRedoCommands().Any();
+
+    private bool CanMerge
+    {
+        get
+        {
+            if (IsSelectionEmpty)
+                return false;
+
+            return Sheet.Selection.Regions.Any(region => region.Top != region.Bottom || region.Left != region.Right);
+        }
+    }
+
+    private bool CanUnmerge => !IsSelectionEmpty && Sheet.Selection.Regions.Any(region => Sheet.Cells.AnyMerges(region));
+    private string CurrentNumberFormat => ActiveFormat.NumberFormat ?? "";
+
+    private bool IsCustomNumberFormat =>
+        !string.IsNullOrEmpty(CurrentNumberFormat) &&
+        NumberFormats.All(f => f.Value != CurrentNumberFormat);
+
+    private string SelectedNumberFormat =>
+        IsCustomNumberFormat ? "__custom__" : CurrentNumberFormat;
+
+    private IReadOnlyList<FormatOption> NumberFormats { get; } =
+    [
+        new("General", ""),
+        new("Currency", "C2"),
+        new("Number", "N2"),
+        new("Percent", "P2"),
+        new("Scientific", "E2")
+    ];
+
+    private IReadOnlyList<BorderOption> BorderPresets { get; } =
+    [
+        new("All borders", "all"),
+        new("Outside borders", "outside"),
+        new("Inside borders", "inside"),
+        new("Top border", "top"),
+        new("Right border", "right"),
+        new("Bottom border", "bottom"),
+        new("Left border", "left"),
+        new("No borders", "none")
+    ];
+
+    private IReadOnlyList<AlignmentOption> HorizontalAlignments => [
+        new("Align left", TextAlign.Start, AlignLeftIcon),
+        new("Align center", TextAlign.Center, AlignCenterIcon),
+        new("Align right", TextAlign.End, AlignRightIcon)
+    ];
+
+    private IReadOnlyList<AlignmentOption> VerticalAlignments => [
+        new("Align top", TextAlign.Start, AlignTopIcon),
+        new("Align middle", TextAlign.Center, AlignMiddleIcon),
+        new("Align bottom", TextAlign.End, AlignBottomIcon)
+    ];
+
+    protected override void OnParametersSet()
+    {
+        if (Sheet == _sheet)
+            return;
+
+        DetachEvents();
+        _sheet = Sheet;
+        _sheet.Selection.SelectionChanged += OnSelectionChanged;
+        _sheet.Cells.FormatChanged += OnFormatChanged;
+        _sheet.Commands.CommandRun += OnCommandRun;
+        _sheet.Commands.CommandUndone += OnCommandUndone;
+    }
+
+    private void OnSelectionChanged(object? sender, SelectionChangedEventArgs e) => StateHasChanged();
+    private void OnFormatChanged(object? sender, FormatChangedEventArgs e) => StateHasChanged();
+    private void OnCommandRun(object? sender, CommandRunEventArgs e) => StateHasChanged();
+    private void OnCommandUndone(object? sender, UndoCommandRunEventArgs e) => StateHasChanged();
+
+    private bool IsBold(IReadOnlyCell cell) => cell.Format.FontWeight == "bold";
+    private bool IsItalic(IReadOnlyCell cell) => cell.Format.FontStyle == "italic";
+    private bool IsUnderline(IReadOnlyCell cell) => cell.Format.TextDecoration == "underline";
+    private bool IsReadOnly(IReadOnlyCell cell) => cell.Format.IsReadOnly == true;
+    private bool IsWrapped(IReadOnlyCell cell) => cell.Format.TextWrap == TextWrapping.Wrap;
+
+    private void SetBold(IEnumerable<SheetRange> ranges, bool isSelected)
+    {
+        ApplyFormat(ranges, new CellFormat { FontWeight = isSelected ? "bold" : "normal" });
+    }
+
+    private void SetItalic(IEnumerable<SheetRange> ranges, bool isSelected)
+    {
+        ApplyFormat(ranges, new CellFormat { FontStyle = isSelected ? "italic" : "normal" });
+    }
+
+    private void SetUnderline(IEnumerable<SheetRange> ranges, bool isSelected)
+    {
+        ApplyFormat(ranges, new CellFormat { TextDecoration = isSelected ? "underline" : "none" });
+    }
+
+    private void SetReadOnly(IEnumerable<SheetRange> ranges, bool isSelected)
+    {
+        ApplyFormat(ranges, new CellFormat { IsReadOnly = isSelected });
+    }
+
+    private void SetWrap(IEnumerable<SheetRange> ranges, bool isSelected)
+    {
+        ApplyFormat(ranges, new CellFormat { TextWrap = isSelected ? TextWrapping.Wrap : TextWrapping.Clip });
+    }
+
+    private async Task OnNumberFormatChanged(ChangeEventArgs args)
+    {
+        var format = args.Value?.ToString();
+        if (format == "__custom__")
+            return;
+
+        ApplyFormat(new CellFormat { NumberFormat = string.IsNullOrWhiteSpace(format) ? null : format });
+        await RefocusDatasheetAsync();
+    }
+
+    private async Task OnCustomNumberFormatChanged(ChangeEventArgs args)
+    {
+        var format = args.Value?.ToString();
+        ApplyFormat(new CellFormat { NumberFormat = string.IsNullOrWhiteSpace(format) ? null : format });
+        await RefocusDatasheetAsync();
+    }
+
+    private async Task ClearFormattingAsync()
+    {
+        if (IsSelectionEmpty)
+            return;
+
+        Sheet.Commands.BeginCommandGroup();
+        foreach (var range in Sheet.Selection.Ranges)
+            Sheet.Commands.ExecuteCommand(new ClearFormatCommand(range.Region));
+        Sheet.Commands.EndCommandGroup();
+
+        await RefocusDatasheetAsync();
+    }
+
+    private async Task OnBorderPresetChanged(ChangeEventArgs args)
+    {
+        var preset = args.Value?.ToString();
+        if (!string.IsNullOrWhiteSpace(preset))
+        {
+            ApplyBorderPreset(preset);
+            await RefocusDatasheetAsync();
+        }
+    }
+
+    private async Task SetBorderColor(string? color)
+    {
+        if (!string.IsNullOrWhiteSpace(color))
+            _borderColor = color;
+        await RefocusDatasheetAsync();
+    }
+
+    private async Task Undo()
+    {
+        Sheet.Commands.Undo();
+        await RefocusDatasheetAsync();
+    }
+
+    private async Task Redo()
+    {
+        Sheet.Commands.Redo();
+        await RefocusDatasheetAsync();
+    }
+
+    private async Task MergeCells()
+    {
+        if (!CanMerge)
+            return;
+
+        Sheet.Cells.Merge(Sheet.Selection.Regions);
+        await RefocusDatasheetAsync();
+    }
+
+    private async Task UnmergeCells()
+    {
+        if (!CanUnmerge)
+            return;
+
+        Sheet.Cells.UnMerge(Sheet.Selection.Regions);
+        await RefocusDatasheetAsync();
+    }
+
+    private async Task ApplyFormatAndRefocusAsync(CellFormat format)
+    {
+        ApplyFormat(format);
+        await RefocusDatasheetAsync();
+    }
+
+    private async Task RefocusDatasheetAsync()
+    {
+        await Datasheet.FocusAsync();
+    }
+
+    private void ApplyFormat(CellFormat format)
+    {
+        ApplyFormat(Sheet.Selection.Ranges.ToList(), format);
+    }
+
+    private void ApplyFormat(IEnumerable<SheetRange> ranges, CellFormat format)
+    {
+        if (Sheet.Selection.IsEmpty())
+            return;
+
+        Sheet.Commands.BeginCommandGroup();
+        foreach (var range in ranges)
+            range.Format = format;
+        Sheet.Commands.EndCommandGroup();
+    }
+
+    private void ApplyBorderPreset(string preset)
+    {
+        if (Sheet.Selection.IsEmpty())
+            return;
+
+        var ranges = Sheet.Selection.Ranges.ToList();
+        Sheet.Commands.BeginCommandGroup();
+        foreach (var range in ranges)
+            ApplyBorderPreset(range.Region, preset);
+        Sheet.Commands.EndCommandGroup();
+    }
+
+    private void ApplyBorderPreset(IRegion region, string preset)
+    {
+        var border = CreateBorder();
+        switch (preset)
+        {
+            case "all":
+                Sheet.SetFormat(region, new CellFormat
+                {
+                    BorderTop = border.Clone(),
+                    BorderRight = border.Clone(),
+                    BorderBottom = border.Clone(),
+                    BorderLeft = border.Clone()
+                });
+                break;
+            case "outside":
+                ApplyOutsideBorders(region, border);
+                break;
+            case "inside":
+                ApplyInsideBorders(region, border);
+                break;
+            case "top":
+                Sheet.SetFormat(new Region(region.Top, region.Top, region.Left, region.Right), new CellFormat { BorderTop = border.Clone() });
+                break;
+            case "right":
+                Sheet.SetFormat(new Region(region.Top, region.Bottom, region.Right, region.Right), new CellFormat { BorderRight = border.Clone() });
+                break;
+            case "bottom":
+                Sheet.SetFormat(new Region(region.Bottom, region.Bottom, region.Left, region.Right), new CellFormat { BorderBottom = border.Clone() });
+                break;
+            case "left":
+                Sheet.SetFormat(new Region(region.Top, region.Bottom, region.Left, region.Left), new CellFormat { BorderLeft = border.Clone() });
+                break;
+            case "none":
+                ClearBorders(region);
+                break;
+        }
+    }
+
+    private void ApplyOutsideBorders(IRegion region, Border border)
+    {
+        Sheet.SetFormat(region, new CellFormat
+        {
+            BorderTop = border.Clone(),
+            BorderLeft = border.Clone()
+        });
+        Sheet.SetFormat(new Region(region.Top, region.Bottom, region.Right, region.Right), new CellFormat { BorderRight = border.Clone() });
+        Sheet.SetFormat(new Region(region.Bottom, region.Bottom, region.Left, region.Right), new CellFormat { BorderBottom = border.Clone() });
+    }
+
+    private void ApplyInsideBorders(IRegion region, Border border)
+    {
+        for (var row = region.Top; row <= region.Bottom; row++)
+        {
+            for (var col = region.Left; col <= region.Right; col++)
+            {
+                var format = new CellFormat();
+                if (col < region.Right)
+                    format.BorderRight = border.Clone();
+                if (row < region.Bottom)
+                    format.BorderBottom = border.Clone();
+
+                if (format.BorderRight != null || format.BorderBottom != null)
+                    Sheet.SetFormat(new Region(row, col), format);
+            }
+        }
+    }
+
+    private Border CreateBorder()
+    {
+        return new Border { Width = 1, Color = _borderColor };
+    }
+
+    private void ClearBorders(IRegion region)
+    {
+        Sheet.SetFormat(region, new CellFormat
+        {
+            BorderTop = null,
+            BorderRight = null,
+            BorderBottom = null,
+            BorderLeft = null
+        });
+
+        if (region.Left > 0)
+            Sheet.SetFormat(new Region(region.Top, region.Bottom, region.Left - 1, region.Left - 1), new CellFormat { BorderRight = null });
+        if (region.Top > 0)
+            Sheet.SetFormat(new Region(region.Top - 1, region.Top - 1, region.Left, region.Right), new CellFormat { BorderBottom = null });
+    }
+
+    private string GetHorizontalAlignClass(TextAlign alignment)
+    {
+        return ActiveFormat.HorizontalTextAlign == alignment ? "bds-toggled" : "";
+    }
+
+    private string GetVerticalAlignClass(TextAlign alignment)
+    {
+        return ActiveFormat.VerticalTextAlign == alignment ? "bds-toggled" : "";
+    }
+
+    private void DetachEvents()
+    {
+        if (_sheet == null)
+            return;
+
+        _sheet.Selection.SelectionChanged -= OnSelectionChanged;
+        _sheet.Cells.FormatChanged -= OnFormatChanged;
+        _sheet.Commands.CommandRun -= OnCommandRun;
+        _sheet.Commands.CommandUndone -= OnCommandUndone;
+    }
+
+    public void Dispose()
+    {
+        DetachEvents();
+    }
+
+    private sealed record FormatOption(string Label, string Value);
+    private sealed record BorderOption(string Label, string Value);
+    private sealed record AlignmentOption(string Label, TextAlign Value, RenderFragment Icon);
+
+    private RenderFragment SvgIcon(string path) => @<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                                        viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        @((MarkupString)path)
     </svg>;
 
-    private RenderFragment PaintIcon => @<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
-                                              viewBox="0 0 24 24" fill="none"
-                                              stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                              stroke-linejoin="round"
-                                              class="icon icon-tabler icons-tabler-outline icon-tabler-bucket-droplet">
-        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-        <path d="M5 16l1.465 1.638a2 2 0 1 1 -3.015 .099l1.55 -1.737z"/>
-        <path
-            d="M13.737 9.737c2.299 -2.3 3.23 -5.095 2.081 -6.245c-1.15 -1.15 -3.945 -.217 -6.244 2.082c-2.3 2.299 -3.231 5.095 -2.082 6.244c1.15 1.15 3.946 .218 6.245 -2.081z"/>
-        <path
-            d="M7.492 11.818c.362 .362 .768 .676 1.208 .934l6.895 4.047c1.078 .557 2.255 -.075 3.692 -1.512c1.437 -1.437 2.07 -2.614 1.512 -3.692c-.372 -.718 -1.72 -3.017 -4.047 -6.895a6.015 6.015 0 0 0 -.934 -1.208"/>
-    </svg>;
-
-    private RenderFragment TextIcon => @<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
-                                             viewBox="0 0 24 24" fill="none"
-                                             stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                             stroke-linejoin="round"
-                                             class="feather feather-type">
-        <polyline points="4 7 4 4 20 4 20 7"></polyline>
-        <line x1="9" y1="20" x2="15" y2="20"></line>
-        <line x1="12" y1="4" x2="12" y2="20"></line>
-    </svg>;
-
+    private RenderFragment BoldIcon => SvgIcon("<path d=\"M7 5h6a3.5 3.5 0 0 1 0 7h-6z\"/><path d=\"M13 12h1a3.5 3.5 0 0 1 0 7h-7v-7\"/>");
+    private RenderFragment ItalicIcon => SvgIcon("<line x1=\"19\" y1=\"4\" x2=\"10\" y2=\"4\"/><line x1=\"14\" y1=\"20\" x2=\"5\" y2=\"20\"/><line x1=\"15\" y1=\"4\" x2=\"9\" y2=\"20\"/>");
+    private RenderFragment UnderlineIcon => SvgIcon("<path d=\"M6 4v7a6 6 0 0 0 12 0V4\"/><line x1=\"4\" y1=\"20\" x2=\"20\" y2=\"20\"/>");
+    private RenderFragment ClearFormatIcon => SvgIcon("<path d=\"M4 7h16\"/><path d=\"m7 7 3 13h4l2-6\"/><path d=\"m14 14 6 6\"/><path d=\"m20 14-6 6\"/>");
+    private RenderFragment FillColorIcon => SvgIcon("<path d=\"M19 11.5 12.5 5 5 12.5a4.95 4.95 0 0 0 7 7l7-7z\"/><path d=\"M12 5 9.5 2.5\"/><path d=\"M17 18h4\"/>");
+    private RenderFragment TextColorIcon => SvgIcon("<path d=\"M4 20h16\"/><path d=\"M8 16 12 4l4 12\"/><path d=\"M9.5 12h5\"/>");
+    private RenderFragment UndoIcon => SvgIcon("<path d=\"M9 14 4 9l5-5\"/><path d=\"M4 9h10a6 6 0 1 1 0 12h-1\"/>");
+    private RenderFragment RedoIcon => SvgIcon("<path d=\"m15 14 5-5-5-5\"/><path d=\"M20 9H10a6 6 0 1 0 0 12h1\"/>");
+    private RenderFragment LockIcon => SvgIcon("<rect x=\"5\" y=\"11\" width=\"14\" height=\"10\" rx=\"2\"/><path d=\"M8 11V7a4 4 0 0 1 8 0v4\"/>");
+    private RenderFragment WrapIcon => SvgIcon("<path d=\"M4 6h16\"/><path d=\"M4 12h11a3 3 0 1 1 0 6h-1\"/><path d=\"m16 16-2 2 2 2\"/><path d=\"M4 18h6\"/>");
+    private RenderFragment MergeIcon => SvgIcon("<path d=\"M4 4h16v16H4z\"/><path d=\"M12 4v16\"/><path d=\"M4 12h16\"/><path d=\"m9 9 3 3-3 3\"/><path d=\"m15 9-3 3 3 3\"/>");
+    private RenderFragment UnmergeIcon => SvgIcon("<path d=\"M4 4h16v16H4z\"/><path d=\"M12 4v16\"/><path d=\"M4 12h16\"/><path d=\"m11 9-3 3 3 3\"/><path d=\"m13 9 3 3-3 3\"/>");
+    private RenderFragment AlignLeftIcon => SvgIcon("<path d=\"M4 6h16\"/><path d=\"M4 12h10\"/><path d=\"M4 18h16\"/>");
+    private RenderFragment AlignCenterIcon => SvgIcon("<path d=\"M4 6h16\"/><path d=\"M7 12h10\"/><path d=\"M4 18h16\"/>");
+    private RenderFragment AlignRightIcon => SvgIcon("<path d=\"M4 6h16\"/><path d=\"M10 12h10\"/><path d=\"M4 18h16\"/>");
+    private RenderFragment AlignTopIcon => SvgIcon("<path d=\"M6 4h12\"/><path d=\"M8 8h8\"/><path d=\"M9 12h6\"/><path d=\"M10 16h4\"/>");
+    private RenderFragment AlignMiddleIcon => SvgIcon("<path d=\"M6 6h12\"/><path d=\"M9 10h6\"/><path d=\"M9 14h6\"/><path d=\"M6 18h12\"/>");
+    private RenderFragment AlignBottomIcon => SvgIcon("<path d=\"M10 8h4\"/><path d=\"M9 12h6\"/><path d=\"M8 16h8\"/><path d=\"M6 20h12\"/>");
 }

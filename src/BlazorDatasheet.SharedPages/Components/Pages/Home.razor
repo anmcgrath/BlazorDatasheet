@@ -105,7 +105,7 @@
             values[i][4] = r.NextDouble() > 0.5 ? CellValue.Logical(true) : CellValue.Logical(false);
         }
 
-        _sheet = new Sheet(nRows, 5, values);
+        _sheet = new Sheet(nRows, 30, values);
         _sheet.Rows.HeadingWidth = 35;
         _sheet.Commands.PauseHistory();
         _sheet.BatchUpdates();
@@ -122,6 +122,7 @@
         _sheet.Range("D:D")!.Format = new CellFormat() { NumberFormat = "C1", FontWeight = "bold" };
         _sheet.Cells[$"D{nRows}"]!.Formula = $"=SUM(D1:D{nRows - 1})";
         _sheet.ConditionalFormats.Apply(_sheet.Range($"D1:D{nRows - 1}"), NumberScaleConditionalFormat.RedWhiteBlue);
+        _sheet.FreezeBottomRows(1);
 
         _sheet.EndBatchUpdates();
         _sheet.Commands.ResumeHistory();
