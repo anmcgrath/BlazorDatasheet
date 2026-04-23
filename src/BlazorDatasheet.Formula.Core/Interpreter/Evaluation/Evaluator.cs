@@ -13,7 +13,8 @@ public class Evaluator
 
     private readonly record struct EvalContext(
         FormulaEvaluationOptions Options,
-        FormulaExecutionContext ExecutionContext);
+        FormulaExecutionContext ExecutionContext,
+        FormulaCallerInfo? Caller);
 
     public Evaluator(IEnvironment environment)
     {
@@ -25,11 +26,13 @@ public class Evaluator
     }
 
     public CellValue Evaluate(CellFormula cellFormula, FormulaExecutionContext? executionContext = null,
-        FormulaEvaluationOptions? options = null)
+        FormulaEvaluationOptions? options = null,
+        FormulaCallerInfo? caller = null)
     {
         var ctx = new EvalContext(
             options ?? FormulaEvaluationOptions.Default,
-            executionContext ?? new FormulaExecutionContext());
+            executionContext ?? new FormulaExecutionContext(),
+            caller);
         return DoEvaluate(cellFormula, ctx);
     }
 
@@ -46,7 +49,7 @@ public class Evaluator
     /// Evaluates a syntax tree
     /// </summary>
     internal CellValue Evaluate(SyntaxTree tree) =>
-        EvaluateTree(tree, new EvalContext(FormulaEvaluationOptions.Default, new FormulaExecutionContext()));
+        EvaluateTree(tree, new EvalContext(FormulaEvaluationOptions.Default, new FormulaExecutionContext(), null));
 
     private CellValue EvaluateTree(SyntaxTree tree, EvalContext ctx)
     {
@@ -157,7 +160,10 @@ public class Evaluator
         if (ctx.ExecutionContext.TryGetExecutedValue(formula, out var result))
             return result;
 
-        return DoEvaluate(formula, ctx);
+        return DoEvaluate(formula, ctx with
+        {
+            Caller = new FormulaCallerInfo(cellReference.RowIndex, cellReference.ColIndex, cellReference.SheetName)
+        });
     }
 
     private CellValue EvaluateRangeReference(RangeReference reference)
@@ -203,7 +209,10 @@ public class Evaluator
             argIndex++;
         }
 
-        var funcResult = func.Invoke(convertedArgs);
+        var callMetaData = new FunctionCallMetaData(
+            func.ParameterDefinitions,
+            ctx.Caller?.ToCellReference());
+        var funcResult = func.Invoke(convertedArgs, callMetaData);
         return funcResult;
     }
 

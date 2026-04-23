@@ -224,22 +224,27 @@ public class FormulaEngine
             if (formula == null)
                 continue;
 
-            var value = EvaluateFormulaInGroup(formula, executionContext, ref isCircularGroup);
+            var value = EvaluateFormulaInGroup(vertex, executionContext, ref isCircularGroup);
             executionContext.ClearExecuting();
             ApplyVertexValue(vertex, value);
         }
     }
 
-    private CellValue EvaluateFormulaInGroup(CellFormula formula, FormulaExecutionContext executionContext,
+    private CellValue EvaluateFormulaInGroup(FormulaVertex vertex, FormulaExecutionContext executionContext,
         ref bool isCircularGroup)
     {
         if (isCircularGroup)
             return CellValue.Error(ErrorType.Circular);
 
+        var formula = vertex.Formula!;
+
         if (executionContext.TryGetExecutedValue(formula, out var cachedValue))
             return cachedValue;
 
-        var value = _evaluator.Evaluate(formula, executionContext);
+        FormulaCallerInfo? caller = vertex.VertexType == VertexType.Cell
+            ? new FormulaCallerInfo(vertex.Row, vertex.Col, vertex.SheetName)
+            : null;
+        var value = _evaluator.Evaluate(formula, executionContext, caller: caller);
         executionContext.RecordExecuted(formula, value);
         if (value.Data is FormulaError formulaError && formulaError.ErrorType == ErrorType.Circular)
             isCircularGroup = true;
