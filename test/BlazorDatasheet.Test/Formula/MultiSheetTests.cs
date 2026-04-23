@@ -140,6 +140,19 @@ public class MultiSheetTests
     }
 
     [Test]
+    public void Remove_Referenced_Sheet_Recalculates_Dependents_To_Ref_Error()
+    {
+        _sheet2.Cells["A1"]!.Value = 10;
+        _sheet1.Cells["A1"]!.Formula = "=Sheet2!A1";
+
+        _workbook.RemoveSheet("Sheet2");
+
+        _sheet1.Cells["A1"]!.Value.Should().BeOfType<FormulaError>();
+        ((FormulaError)_sheet1.Cells["A1"]!.Value!).ErrorType.Should().Be(ErrorType.Ref);
+        _sheet1.FormulaEngine.DependencyManager.FormulaCount.Should().Be(1);
+    }
+
+    [Test]
     public void Multi_Sheet_Col_Ref_Evaluate_Correctly()
     {
         var r = _sheet1.Range("Sheet2!A:Sheet2!B");

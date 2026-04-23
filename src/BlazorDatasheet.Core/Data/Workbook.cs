@@ -99,6 +99,7 @@ public class Workbook
             var sheet = _sheets[sheetIndex];
             _formulaEngine.RemoveSheet(_sheets[sheetIndex]);
             _sheets.RemoveAt(sheetIndex);
+            _formulaEngine.CalculateSheet(true);
             SheetRemoved?.Invoke(this, new WorkbookSheetRemovedEventArgs(sheet));
         }
     }
