@@ -45,6 +45,15 @@ public class DependencyManager
 
     public void RemoveSheet(string sheetName)
     {
+        var verticesOnSheet = _dependencyGraph.GetAll()
+            .Where(x => x.VertexType == VertexType.Cell && x.SheetName == sheetName)
+            .Select(x => x.Position)
+            .Where(x => x != null)
+            .ToList();
+
+        foreach (var position in verticesOnSheet)
+            ClearFormula(position!.Value.row, position.Value.col, sheetName);
+
         _referencedVertexStores.Remove(sheetName);
         _formulaLocations.Remove(sheetName);
     }

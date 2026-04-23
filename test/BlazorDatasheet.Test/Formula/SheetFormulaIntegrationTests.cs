@@ -421,6 +421,71 @@ public class SheetFormulaIntegrationTests
     }
 
     [Test]
+    public void Variable_Reassigned_From_Formula_To_Literal_Uses_Literal_Value()
+    {
+        _sheet.Cells["A1"]!.Formula = "=x";
+        _sheet.FormulaEngine.SetVariable("x", "=10");
+
+        _sheet.FormulaEngine.SetVariable("x", 5);
+
+        _sheet.Cells["A1"]!.Value.Should().Be(5);
+    }
+
+    [Test]
+    public void SetVariable_CellValue_Recalculates_Dependents()
+    {
+        _sheet.Cells["A1"]!.Formula = "=x";
+
+        _sheet.FormulaEngine.SetVariable("x", new CellValue(7));
+
+        _sheet.Cells["A1"]!.Value.Should().Be(7);
+    }
+
+    [Test]
+    public void SetVariable_Formula_Does_Not_Recalculate_Unrelated_Nonvolatile_Formulas()
+    {
+        int evalCount = 0;
+        var workbook = new Workbook(new FormulaOptions
+        {
+            ConfigureFunctions = builder => builder.Add(new FunctionDescriptor(
+                "TRACKFN",
+                [],
+                (_, _) => CellValue.Number(++evalCount)))
+        });
+        var sheet = workbook.AddSheet(10, 10);
+        sheet.Cells["A1"]!.Formula = "=TRACKFN()";
+        sheet.Cells["B1"]!.Formula = "=x";
+        evalCount.Should().Be(1);
+
+        sheet.FormulaEngine.SetVariable("x", "=10");
+
+        sheet.Cells["B1"]!.Value.Should().Be(10);
+        evalCount.Should().Be(1);
+    }
+
+    [Test]
+    public void SetVariable_CellValue_Does_Not_Recalculate_Unrelated_Nonvolatile_Formulas()
+    {
+        int evalCount = 0;
+        var workbook = new Workbook(new FormulaOptions
+        {
+            ConfigureFunctions = builder => builder.Add(new FunctionDescriptor(
+                "TRACKFN",
+                [],
+                (_, _) => CellValue.Number(++evalCount)))
+        });
+        var sheet = workbook.AddSheet(10, 10);
+        sheet.Cells["A1"]!.Formula = "=TRACKFN()";
+        sheet.Cells["B1"]!.Formula = "=x";
+        evalCount.Should().Be(1);
+
+        sheet.FormulaEngine.SetVariable("x", new CellValue(10));
+
+        sheet.Cells["B1"]!.Value.Should().Be(10);
+        evalCount.Should().Be(1);
+    }
+
+    [Test]
     public void Named_Range_Variable_Should_Update_When_Variable_Changes()
     {
         _sheet.Cells["A1"]!.Formula = "=x";
@@ -454,5 +519,36 @@ public class SheetFormulaIntegrationTests
     {
         _sheet.Cells["B1"]!.Formula = "=A1=\"\"";
         _sheet.Cells["B1"]!.Value.Should().Be(true);
+    }
+
+    [Test]
+    public void Self_Referencing_Formula_Returns_Circular_Error()
+    {
+        _sheet.Cells.SetFormula(0, 0, "=A1+1");
+        _sheet.Cells.GetCellValue(0, 0).GetValue<FormulaError>().ErrorType.Should().Be(ErrorType.Circular);
+    }
+
+    [Test]
+    public void Self_Identity_Formula_Returns_Circular_Error()
+    {
+        _sheet.Cells.SetFormula(0, 0, "=A1");
+        _sheet.Cells.GetCellValue(0, 0).GetValue<FormulaError>().ErrorType.Should().Be(ErrorType.Circular);
+    }
+
+    [Test]
+    public void Two_Cell_Cycle_Returns_Circular_Error()
+    {
+        _sheet.Cells.SetFormula(0, 0, "=B1");
+        _sheet.Cells.SetFormula(0, 1, "=A1");
+        _sheet.Cells.GetCellValue(0, 0).GetValue<FormulaError>().ErrorType.Should().Be(ErrorType.Circular);
+        _sheet.Cells.GetCellValue(0, 1).GetValue<FormulaError>().ErrorType.Should().Be(ErrorType.Circular);
+    }
+
+    [Test]
+    public void Non_Self_Referencing_Single_Vertex_Scc_Evaluates_Correctly()
+    {
+        _sheet.Cells.SetValue(0, 0, 5);
+        _sheet.Cells.SetFormula(0, 1, "=A1+1");
+        _sheet.Cells.GetCellValue(0, 1).GetValue<int>().Should().Be(6);
     }
 }
