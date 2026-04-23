@@ -17,7 +17,7 @@ public class FormulaExecutionContext
 
     internal bool IsInSccGroup(Reference reference)
     {
-        if (_currentSccGroup == null || _currentSccGroup.Count == 1)
+        if (_currentSccGroup == null)
             return false;
         
         if (reference is not NamedReference namedRef)

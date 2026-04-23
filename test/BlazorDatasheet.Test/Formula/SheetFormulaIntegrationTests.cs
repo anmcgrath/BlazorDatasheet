@@ -455,4 +455,35 @@ public class SheetFormulaIntegrationTests
         _sheet.Cells["B1"]!.Formula = "=A1=\"\"";
         _sheet.Cells["B1"]!.Value.Should().Be(true);
     }
+
+    [Test]
+    public void Self_Referencing_Formula_Returns_Circular_Error()
+    {
+        _sheet.Cells.SetFormula(0, 0, "=A1+1");
+        _sheet.Cells.GetCellValue(0, 0).GetValue<FormulaError>().ErrorType.Should().Be(ErrorType.Circular);
+    }
+
+    [Test]
+    public void Self_Identity_Formula_Returns_Circular_Error()
+    {
+        _sheet.Cells.SetFormula(0, 0, "=A1");
+        _sheet.Cells.GetCellValue(0, 0).GetValue<FormulaError>().ErrorType.Should().Be(ErrorType.Circular);
+    }
+
+    [Test]
+    public void Two_Cell_Cycle_Returns_Circular_Error()
+    {
+        _sheet.Cells.SetFormula(0, 0, "=B1");
+        _sheet.Cells.SetFormula(0, 1, "=A1");
+        _sheet.Cells.GetCellValue(0, 0).GetValue<FormulaError>().ErrorType.Should().Be(ErrorType.Circular);
+        _sheet.Cells.GetCellValue(0, 1).GetValue<FormulaError>().ErrorType.Should().Be(ErrorType.Circular);
+    }
+
+    [Test]
+    public void Non_Self_Referencing_Single_Vertex_Scc_Evaluates_Correctly()
+    {
+        _sheet.Cells.SetValue(0, 0, 5);
+        _sheet.Cells.SetFormula(0, 1, "=A1+1");
+        _sheet.Cells.GetCellValue(0, 1).GetValue<int>().Should().Be(6);
+    }
 }
