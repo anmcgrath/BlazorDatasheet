@@ -152,4 +152,9 @@ public class TestEnvironment : IEnvironment
     {
         return _variables[variableIdentifier];
     }
+
+    public bool TryGetVariable(string variableIdentifier, out CellValue value)
+    {
+        return _variables.TryGetValue(variableIdentifier, out value);
+    }
 }

@@ -28,6 +28,11 @@ public class WorkbookEnvironment : IEnvironment
         return _variables[name];
     }
 
+    public bool TryGetVariable(string name, out CellValue value)
+    {
+        return _variables.TryGetValue(name, out value);
+    }
+
     public void SetVariable(string name, object value)
     {
         SetVariable(name, new CellValue(value));

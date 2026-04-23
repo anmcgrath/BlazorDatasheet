@@ -1,3 +1,4 @@
+using System.Buffers;
 using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 using SyntaxTree = BlazorDatasheet.Formula.Core.Interpreter.Parsing.SyntaxTree;
@@ -102,9 +103,9 @@ public class Evaluator
 
     private CellValue EvaluateNamedExpression(VariableExpression expression)
     {
-        if (!_environment.VariableExists(expression.NameToken.Value))
+        if (!_environment.TryGetVariable(expression.NameToken.Value, out var value))
             return CellValue.Error(ErrorType.Ref);
-        return _environment.GetVariable(expression.NameToken.Value);
+        return value;
     }
 
     private CellValue EvaluateArrayConstantExpression(ArrayConstantExpression expression)
@@ -160,10 +161,10 @@ public class Evaluator
         if (ctx.ExecutionContext.TryGetExecutedValue(formula, out var result))
             return result;
 
-        return DoEvaluate(formula, ctx with
-        {
-            Caller = new FormulaCallerInfo(cellReference.RowIndex, cellReference.ColIndex, cellReference.SheetName)
-        });
+        return DoEvaluate(formula, new EvalContext(
+            ctx.Options,
+            ctx.ExecutionContext,
+            new FormulaCallerInfo(cellReference.RowIndex, cellReference.ColIndex, cellReference.SheetName)));
     }
 
     private CellValue EvaluateRangeReference(RangeReference reference)
@@ -187,33 +188,45 @@ public class Evaluator
             return CellValue.Error(ErrorType.Na, "Incorrect number of function arguments");
         }
 
-        int paramIndex = 0;
-        int argIndex = 0;
-
-        CellValue[] convertedArgs = new CellValue[nArgsProvided];
-
-        while (paramIndex < paramDefinitions.Length &&
-               argIndex < nArgsProvided)
-        {
-            var paramDefinition = paramDefinitions[paramIndex];
-            var arg = EvaluateExpression(node.Args[argIndex], ctx);
-
-            convertedArgs[argIndex] = _parameterConverter.ConvertVal(arg, paramDefinition.Type);
-
-            if (convertedArgs[argIndex].IsError() && !func.AcceptsErrors)
-                return convertedArgs[argIndex];
-
-            if (IsConsumable(paramDefinition))
-                paramIndex++;
-
-            argIndex++;
-        }
-
+        var acceptsErrors = func.AcceptsErrors;
         var callMetaData = new FunctionCallMetaData(
-            func.ParameterDefinitions,
-            ctx.Caller?.ToCellReference());
-        var funcResult = func.Invoke(convertedArgs, callMetaData);
-        return funcResult;
+            ctx.Caller?.RowIndex,
+            ctx.Caller?.ColIndex,
+            ctx.Caller?.SheetName);
+        CellValue[]? rentedArgs = nArgsProvided == 0 ? null : ArrayPool<CellValue>.Shared.Rent(nArgsProvided);
+        Span<CellValue> convertedArgs = nArgsProvided == 0
+            ? Span<CellValue>.Empty
+            : rentedArgs.AsSpan(0, nArgsProvided);
+
+        try
+        {
+            int paramIndex = 0;
+            int argIndex = 0;
+
+            while (paramIndex < paramDefinitions.Length &&
+                   argIndex < nArgsProvided)
+            {
+                var paramDefinition = paramDefinitions[paramIndex];
+                var arg = EvaluateExpression(node.Args[argIndex], ctx);
+
+                convertedArgs[argIndex] = _parameterConverter.ConvertVal(arg, paramDefinition.Type);
+
+                if (convertedArgs[argIndex].IsError() && !acceptsErrors)
+                    return convertedArgs[argIndex];
+
+                if (IsConsumable(paramDefinition))
+                    paramIndex++;
+
+                argIndex++;
+            }
+
+            return func.Invoke(convertedArgs[..nArgsProvided], callMetaData);
+        }
+        finally
+        {
+            if (rentedArgs != null)
+                ArrayPool<CellValue>.Shared.Return(rentedArgs, clearArray: true);
+        }
     }
 
     private bool IsConsumable(ParameterDefinition param)

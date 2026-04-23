@@ -7,23 +7,44 @@ namespace BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 public class FormulaExecutionContext
 {
     private readonly Dictionary<CellFormula, CellValue> _executedValues = new();
-    private readonly Stack<CellFormula> _executing = new();
+    private readonly HashSet<CellFormula> _executing = new();
     private IList<FormulaVertex>? _currentSccGroup;
+    private HashSet<CellPosition>? _currentSccCells;
+    private HashSet<string>? _currentSccNames;
 
     public void SetCurrentGroup(ref IList<FormulaVertex> group)
     {
         _currentSccGroup = group;
+        _currentSccCells = new HashSet<CellPosition>();
+        _currentSccNames = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var vertex in group)
+        {
+            if (vertex.Position != null)
+                _currentSccCells.Add(new CellPosition(vertex.Row, vertex.Col));
+            else
+                _currentSccNames.Add(vertex.Key);
+        }
     }
 
     internal bool IsInSccGroup(Reference reference)
     {
         if (_currentSccGroup == null)
             return false;
-        
-        if (reference is not NamedReference namedRef)
-            return _currentSccGroup.Any(x => x.Position != null && reference.Region.Contains(x.Row, x.Col));
-        
-        return _currentSccGroup.Any(x => x.Key == namedRef.Name);
+
+        if (reference is NamedReference namedRef)
+            return _currentSccNames?.Contains(namedRef.Name) == true;
+
+        var region = reference.Region;
+        for (var row = region.Top; row <= region.Bottom; row++)
+        {
+            for (var col = region.Left; col <= region.Right; col++)
+            {
+                if (_currentSccCells?.Contains(new CellPosition(row, col)) == true)
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     internal bool IsExecuting(CellFormula formula)
@@ -56,7 +77,7 @@ public class FormulaExecutionContext
 
     internal void SetExecuting(CellFormula formula)
     {
-        _executing.Push(formula);
+        _executing.Add(formula);
     }
 
     /// <summary>
@@ -74,5 +95,8 @@ public class FormulaExecutionContext
     {
         _executing.Clear();
         _executedValues.Clear();
+        _currentSccGroup = null;
+        _currentSccCells = null;
+        _currentSccNames = null;
     }
 }

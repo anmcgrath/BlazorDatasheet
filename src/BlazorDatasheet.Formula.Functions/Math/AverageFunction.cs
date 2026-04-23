@@ -21,7 +21,7 @@ public static class AverageFunction
         acceptsErrors: false,
         isVolatile: false);
 
-    private static CellValue Evaluate(CellValue[] args, FunctionCallMetaData metaData)
+    private static CellValue Evaluate(ReadOnlySpan<CellValue> args, FunctionCallMetaData metaData)
     {
         var sum = 0d;
         var count = 0d;

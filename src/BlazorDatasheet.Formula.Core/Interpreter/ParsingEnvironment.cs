@@ -27,6 +27,7 @@ public sealed class ParsingEnvironment : IEnvironment
     public CellValue[][] GetRangeValues(Reference reference) => throw NotSupported();
     public bool VariableExists(string variableIdentifier) => throw NotSupported();
     public CellValue GetVariable(string variableIdentifier) => throw NotSupported();
+    public bool TryGetVariable(string variableIdentifier, out CellValue value) => throw NotSupported();
     public void SetVariable(string name, CellValue value) => throw NotSupported();
     public IEnumerable<CellValue> GetNonEmptyInRange(Reference reference) => throw NotSupported();
     public void SetCellValue(int row, int col, string sheetName, CellValue value) => throw NotSupported();

@@ -16,7 +16,7 @@ public static class NotFunction
         acceptsErrors: false,
         isVolatile: false);
 
-    private static CellValue Evaluate(CellValue[] args, FunctionCallMetaData metaData)
+    private static CellValue Evaluate(ReadOnlySpan<CellValue> args, FunctionCallMetaData metaData)
     {
         return CellValue.Logical(!args[0].GetValue<bool>());
     }

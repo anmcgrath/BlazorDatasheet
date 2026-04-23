@@ -17,7 +17,7 @@ public static class ColumnFunction
         acceptsErrors: false,
         isVolatile: false);
 
-    private static CellValue Evaluate(CellValue[] args, FunctionCallMetaData metaData)
+    private static CellValue Evaluate(ReadOnlySpan<CellValue> args, FunctionCallMetaData metaData)
     {
         if (args.Length == 0)
             return GetCallerColumn(metaData);

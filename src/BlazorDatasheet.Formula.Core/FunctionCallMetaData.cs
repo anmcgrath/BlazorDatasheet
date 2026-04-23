@@ -1,18 +1,9 @@
-using BlazorDatasheet.Formula.Core.Interpreter.References;
-
 namespace BlazorDatasheet.Formula.Core;
 
-public class FunctionCallMetaData
+public readonly record struct FunctionCallMetaData(
+    int? CallingRowIndex = null,
+    int? CallingColumnIndex = null,
+    string? CallingSheetName = null)
 {
-    internal FunctionCallMetaData(ParameterDefinition[] parameterDefinitions, CellReference? callingCell = null)
-    {
-        ParameterDefinitions = parameterDefinitions;
-        CallingCell = callingCell;
-    }
-
-    public ParameterDefinition[] ParameterDefinitions { get; }
-    public CellReference? CallingCell { get; }
-    public int? CallingRowIndex => CallingCell?.RowIndex;
-    public int? CallingColumnIndex => CallingCell?.ColIndex;
-    public string? CallingSheetName => CallingCell?.SheetName;
+    public bool HasCaller => CallingRowIndex != null && CallingColumnIndex != null && CallingSheetName != null;
 }

@@ -21,7 +21,7 @@ public static class VLookupFunction
         acceptsErrors: false,
         isVolatile: false);
 
-    private static CellValue Evaluate(CellValue[] args, FunctionCallMetaData metaData)
+    private static CellValue Evaluate(ReadOnlySpan<CellValue> args, FunctionCallMetaData metaData)
     {
         var isRangeLookup = args.Length > 3 ? args[3].GetValue<bool>() : true;
 
