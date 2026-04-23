@@ -266,6 +266,7 @@ public class FormulaEngine
         }
         else
         {
+            DependencyManager.ClearFormula(varName);
             _environment.SetVariable(varName, new CellValue(value));
         }
 

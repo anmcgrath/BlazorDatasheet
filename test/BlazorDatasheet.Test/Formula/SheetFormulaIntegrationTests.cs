@@ -421,6 +421,17 @@ public class SheetFormulaIntegrationTests
     }
 
     [Test]
+    public void Variable_Reassigned_From_Formula_To_Literal_Uses_Literal_Value()
+    {
+        _sheet.Cells["A1"]!.Formula = "=x";
+        _sheet.FormulaEngine.SetVariable("x", "=10");
+
+        _sheet.FormulaEngine.SetVariable("x", 5);
+
+        _sheet.Cells["A1"]!.Value.Should().Be(5);
+    }
+
+    [Test]
     public void Named_Range_Variable_Should_Update_When_Variable_Changes()
     {
         _sheet.Cells["A1"]!.Formula = "=x";
