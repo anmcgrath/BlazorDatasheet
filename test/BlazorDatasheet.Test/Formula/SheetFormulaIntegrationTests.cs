@@ -442,6 +442,50 @@ public class SheetFormulaIntegrationTests
     }
 
     [Test]
+    public void SetVariable_Formula_Does_Not_Recalculate_Unrelated_Nonvolatile_Formulas()
+    {
+        int evalCount = 0;
+        var workbook = new Workbook(new FormulaOptions
+        {
+            ConfigureFunctions = builder => builder.Add(new FunctionDescriptor(
+                "TRACKFN",
+                [],
+                (_, _) => CellValue.Number(++evalCount)))
+        });
+        var sheet = workbook.AddSheet(10, 10);
+        sheet.Cells["A1"]!.Formula = "=TRACKFN()";
+        sheet.Cells["B1"]!.Formula = "=x";
+        evalCount.Should().Be(1);
+
+        sheet.FormulaEngine.SetVariable("x", "=10");
+
+        sheet.Cells["B1"]!.Value.Should().Be(10);
+        evalCount.Should().Be(1);
+    }
+
+    [Test]
+    public void SetVariable_CellValue_Does_Not_Recalculate_Unrelated_Nonvolatile_Formulas()
+    {
+        int evalCount = 0;
+        var workbook = new Workbook(new FormulaOptions
+        {
+            ConfigureFunctions = builder => builder.Add(new FunctionDescriptor(
+                "TRACKFN",
+                [],
+                (_, _) => CellValue.Number(++evalCount)))
+        });
+        var sheet = workbook.AddSheet(10, 10);
+        sheet.Cells["A1"]!.Formula = "=TRACKFN()";
+        sheet.Cells["B1"]!.Formula = "=x";
+        evalCount.Should().Be(1);
+
+        sheet.FormulaEngine.SetVariable("x", new CellValue(10));
+
+        sheet.Cells["B1"]!.Value.Should().Be(10);
+        evalCount.Should().Be(1);
+    }
+
+    [Test]
     public void Named_Range_Variable_Should_Update_When_Variable_Changes()
     {
         _sheet.Cells["A1"]!.Formula = "=x";

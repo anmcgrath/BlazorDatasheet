@@ -117,6 +117,16 @@ public class FormulaEngine
     public IEnumerable<FunctionDefinition> GetDefinitionsStartingWith(string identifierText) =>
         _environment.SearchForFunctions(identifierText);
 
+    private void QueueVariableForCalculation(string varName, bool includeVariableVertex)
+    {
+        var variableVertex = DependencyManager.GetVertex(varName) ?? new FormulaVertex(varName, null);
+        if (includeVariableVertex)
+            _requiresCalculation.Add(variableVertex);
+
+        foreach (var dependent in DependencyManager.GetDirectDependents(variableVertex))
+            _requiresCalculation.Add(dependent);
+    }
+
     internal DependencyManagerRestoreData SetFormula(int row, int col, string sheetName, CellFormula? formula)
     {
         return DependencyManager.SetFormula(row, col, sheetName, formula);
@@ -263,21 +273,24 @@ public class FormulaEngine
                 throw new Exception("Formula references in variables must have explicit sheet names");
 
             DependencyManager.SetFormula(varName, formula);
+            QueueVariableForCalculation(varName, true);
         }
         else
         {
             DependencyManager.ClearFormula(varName);
             _environment.SetVariable(varName, new CellValue(value));
+            QueueVariableForCalculation(varName, false);
         }
 
-        CalculateSheet(true);
+        CalculateSheet(false);
     }
 
     public void SetVariable(string varName, CellValue value)
     {
         DependencyManager.ClearFormula(varName);
         _environment.SetVariable(varName, value);
-        CalculateSheet(true);
+        QueueVariableForCalculation(varName, false);
+        CalculateSheet(false);
     }
 
     public IEnumerable<Variable> GetVariables()
