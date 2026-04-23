@@ -275,7 +275,9 @@ public class FormulaEngine
 
     public void SetVariable(string varName, CellValue value)
     {
+        DependencyManager.ClearFormula(varName);
         _environment.SetVariable(varName, value);
+        CalculateSheet(true);
     }
 
     public IEnumerable<Variable> GetVariables()

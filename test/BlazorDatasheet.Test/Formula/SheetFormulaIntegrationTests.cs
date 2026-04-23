@@ -432,6 +432,16 @@ public class SheetFormulaIntegrationTests
     }
 
     [Test]
+    public void SetVariable_CellValue_Recalculates_Dependents()
+    {
+        _sheet.Cells["A1"]!.Formula = "=x";
+
+        _sheet.FormulaEngine.SetVariable("x", new CellValue(7));
+
+        _sheet.Cells["A1"]!.Value.Should().Be(7);
+    }
+
+    [Test]
     public void Named_Range_Variable_Should_Update_When_Variable_Changes()
     {
         _sheet.Cells["A1"]!.Formula = "=x";
