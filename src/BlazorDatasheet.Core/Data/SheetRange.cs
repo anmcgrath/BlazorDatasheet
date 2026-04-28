@@ -103,6 +103,22 @@ public class SheetRange
         Sheet.EndBatchUpdates();
     }
 
+    public void ClearMetaData()
+    {
+        Sheet.BatchUpdates();
+        foreach (var cellPosition in this.Positions)
+        {
+            Sheet.Cells.ClearMetaDataImpl(cellPosition.row, cellPosition.col);
+        }
+
+        Sheet.EndBatchUpdates();
+    }
+
+    public void ClearMetaData(string name)
+    {
+        SetMetaData(name, null);
+    }
+
     /// <summary>
     /// Set the cell type e.g "text", "boolean", "select" on the range.
     /// </summary>
