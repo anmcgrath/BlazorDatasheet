@@ -8,7 +8,7 @@ public class CellMetadata : IMergeable<CellMetadata>, IEquatable<CellMetadata>
 
     internal CellMetadata(Dictionary<string, object> data)
     {
-        _data = data;
+        _data = data.ToDictionary(x => x.Key, x => x.Value);
     }
 
     internal CellMetadata()
@@ -36,15 +36,29 @@ public class CellMetadata : IMergeable<CellMetadata>, IEquatable<CellMetadata>
 
     public void SetItem(string key, object? item)
     {
-        if (_data == null)
-            _data = new();
         if (item == null)
         {
-            _data.Remove(key);
+            RemoveItem(key);
             return;
         }
+
+        if (_data == null)
+            _data = new();
+
         if (!_data.TryAdd(key, item))
             _data[key] = item;
+    }
+
+    public bool RemoveItem(string key)
+    {
+        if (_data == null)
+            return false;
+
+        var removed = _data.Remove(key);
+        if (_data.Count == 0)
+            _data = null;
+
+        return removed;
     }
 
     public object? GetItem(string key)
@@ -69,5 +83,7 @@ public class CellMetadata : IMergeable<CellMetadata>, IEquatable<CellMetadata>
                _data.All(kp => other._data.ContainsKey(kp.Key) && other._data[kp.Key] == kp.Value);
     }
 
-    public IEnumerable<KeyValuePair<string, object>> GetItems() => _data ?? new Dictionary<string, object>();
+    public bool IsEmpty => _data == null || _data.Count == 0;
+
+    public IEnumerable<KeyValuePair<string, object>> GetItems() => _data ?? Enumerable.Empty<KeyValuePair<string, object>>();
 }

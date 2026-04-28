@@ -113,13 +113,28 @@ public class SheetCell : IReadOnlyCell
         return _sheet.Cells.GetMetaData(Row, Col, name);
     }
 
+    public void SetMetaData(string name, object? value)
+    {
+        _sheet.Cells.SetCellMetaData(Row, Col, name, value);
+    }
+
+    public void ClearMetaData()
+    {
+        _sheet.Cells.ClearCellMetaData(Row, Col);
+    }
+
+    public void ClearMetaData(string name)
+    {
+        _sheet.Cells.ClearCellMetaData(Row, Col, name);
+    }
+
     public IEnumerable<KeyValuePair<string, object>> MetaData
     {
         get
         {
-            var collection = _sheet.Cells.GetMetaDataStore().GetData(Row, Col).ToList();
-            if (collection?.Any() == true)
-                return collection.First().GetItems();
+            var metaData = _sheet.Cells.GetCellMetaData(Row, Col);
+            if (metaData != null)
+                return metaData.GetItems();
             return [];
         }
     }
