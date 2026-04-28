@@ -5,5 +5,4 @@ public readonly record struct FunctionCallMetaData(
     int? CallingColumnIndex = null,
     string? CallingSheetName = null)
 {
-    public bool HasCaller => CallingRowIndex != null && CallingColumnIndex != null && CallingSheetName != null;
 }

@@ -12,11 +12,13 @@ public class FormulaExecutionContext
     private HashSet<CellPosition>? _currentSccCells;
     private HashSet<string>? _currentSccNames;
 
-    public void SetCurrentGroup(ref IList<FormulaVertex> group)
+    public void SetCurrentGroup(IList<FormulaVertex> group)
     {
         _currentSccGroup = group;
-        _currentSccCells = new HashSet<CellPosition>();
-        _currentSccNames = new HashSet<string>(StringComparer.Ordinal);
+        _currentSccCells ??= new HashSet<CellPosition>();
+        _currentSccCells.Clear();
+        _currentSccNames ??= new HashSet<string>(StringComparer.Ordinal);
+        _currentSccNames.Clear();
         foreach (var vertex in group)
         {
             if (vertex.Position != null)
@@ -35,13 +37,10 @@ public class FormulaExecutionContext
             return _currentSccNames?.Contains(namedRef.Name) == true;
 
         var region = reference.Region;
-        for (var row = region.Top; row <= region.Bottom; row++)
+        foreach (var cell in _currentSccCells!)
         {
-            for (var col = region.Left; col <= region.Right; col++)
-            {
-                if (_currentSccCells?.Contains(new CellPosition(row, col)) == true)
-                    return true;
-            }
+            if (region.Contains(cell.row, cell.col))
+                return true;
         }
 
         return false;
@@ -57,12 +56,6 @@ public class FormulaExecutionContext
         _executedValues.TryAdd(formula, value);
     }
 
-    /// <summary>
-    /// If the formula has been executed, returns true and sets <paramref name="value"/> to the executed value.
-    /// </summary>
-    /// <param name="formula"></param>
-    /// <param name="value"></param>
-    /// <returns></returns>
     public bool TryGetExecutedValue(CellFormula formula, out CellValue value)
     {
         value = CellValue.Empty;
@@ -80,23 +73,17 @@ public class FormulaExecutionContext
         _executing.Add(formula);
     }
 
-    /// <summary>
-    /// Clears the record of executing <see cref="CellFormula"/>
-    /// </summary>
     public void ClearExecuting()
     {
         _executing.Clear();
     }
 
-    /// <summary>
-    /// Clears the execution context
-    /// </summary>
     public void Clear()
     {
         _executing.Clear();
         _executedValues.Clear();
         _currentSccGroup = null;
-        _currentSccCells = null;
-        _currentSccNames = null;
+        _currentSccCells?.Clear();
+        _currentSccNames?.Clear();
     }
 }

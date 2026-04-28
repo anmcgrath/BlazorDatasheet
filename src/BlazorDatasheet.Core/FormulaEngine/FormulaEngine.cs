@@ -47,8 +47,8 @@ public class FormulaEngine
         sheet.Cells.CellsChanged += SheetOnCellsChanged;
         sheet.Rows.Removed += RowColsOnRemoved;
         sheet.Columns.Removed += RowColsOnRemoved;
-        sheet.Rows.Inserted += RowsOnInserted;
-        sheet.Columns.Inserted += RowsOnInserted;
+        sheet.Rows.Inserted += RowColsOnInserted;
+        sheet.Columns.Inserted += RowColsOnInserted;
     }
 
     internal void RemoveSheet(Sheet sheet)
@@ -59,8 +59,8 @@ public class FormulaEngine
         sheet.Cells.CellsChanged -= SheetOnCellsChanged;
         sheet.Rows.Removed -= RowColsOnRemoved;
         sheet.Columns.Removed -= RowColsOnRemoved;
-        sheet.Rows.Inserted -= RowsOnInserted;
-        sheet.Columns.Inserted -= RowsOnInserted;
+        sheet.Rows.Inserted -= RowColsOnInserted;
+        sheet.Columns.Inserted -= RowColsOnInserted;
     }
 
     private void SheetOnCellsChanged(object? sender, CellDataChangedEventArgs e)
@@ -105,7 +105,7 @@ public class FormulaEngine
         CalculateSheet(true);
     }
 
-    private void RowsOnInserted(object? sender, RowColInsertedEventArgs e)
+    private void RowColsOnInserted(object? sender, RowColInsertedEventArgs e)
     {
         CalculateSheet(true);
     }
@@ -222,10 +222,9 @@ public class FormulaEngine
     private void EvaluateStronglyConnectedGroup(IList<FormulaVertex> stronglyConnectedGroup,
         FormulaExecutionContext executionContext)
     {
-        var group = stronglyConnectedGroup;
         bool isCircularGroup = false;
 
-        executionContext.SetCurrentGroup(ref group);
+        executionContext.SetCurrentGroup(stronglyConnectedGroup);
 
         foreach (var vertex in stronglyConnectedGroup)
         {
