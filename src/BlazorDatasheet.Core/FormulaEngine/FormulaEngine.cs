@@ -47,6 +47,8 @@ public class FormulaEngine
         sheet.Cells.CellsChanged += SheetOnCellsChanged;
         sheet.Rows.Removed += RowColsOnRemoved;
         sheet.Columns.Removed += RowColsOnRemoved;
+        sheet.Rows.Inserted += RowsOnInserted;
+        sheet.Columns.Inserted += RowsOnInserted;
     }
 
     internal void RemoveSheet(Sheet sheet)
@@ -57,6 +59,8 @@ public class FormulaEngine
         sheet.Cells.CellsChanged -= SheetOnCellsChanged;
         sheet.Rows.Removed -= RowColsOnRemoved;
         sheet.Columns.Removed -= RowColsOnRemoved;
+        sheet.Rows.Inserted -= RowsOnInserted;
+        sheet.Columns.Inserted -= RowsOnInserted;
     }
 
     private void SheetOnCellsChanged(object? sender, CellDataChangedEventArgs e)
@@ -97,6 +101,11 @@ public class FormulaEngine
     }
 
     private void RowColsOnRemoved(object? sender, RowColRemovedEventArgs e)
+    {
+        CalculateSheet(true);
+    }
+
+    private void RowsOnInserted(object? sender, RowColInsertedEventArgs e)
     {
         CalculateSheet(true);
     }

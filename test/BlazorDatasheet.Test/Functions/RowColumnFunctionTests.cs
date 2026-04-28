@@ -83,4 +83,26 @@ public class RowColumnFunctionTests
 
         sheet.Cells.GetCellValue(0, 0).GetValue<FormulaError>()!.ErrorType.Should().Be(ErrorType.Value);
     }
+
+    [Test]
+    public void Row_Calculated_Correctly_On_Sheet_Insert_And_Removal()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Cells["B2"]!.Formula = "=ROW()";
+        sheet.Rows.InsertAt(0, 1);
+        sheet.Cells["B3"]!.Value.Should().Be(3);
+        sheet.Rows.RemoveAt(0, 1);
+        sheet.Cells["B2"]!.Value.Should().Be(2);
+    }
+
+    [Test]
+    public void Col_Calculated_Correctly_On_Sheet_Insert_And_Removal()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Cells["B2"]!.Formula = "=COLUMN()";
+        sheet.Columns.InsertAt(0, 1);
+        sheet.Cells["C2"]!.Value.Should().Be(3);
+        sheet.Columns.RemoveAt(0, 1);
+        sheet.Cells["B2"]!.Value.Should().Be(2);
+    }
 }
