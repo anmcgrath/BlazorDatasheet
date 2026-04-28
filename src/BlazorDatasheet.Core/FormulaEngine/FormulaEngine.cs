@@ -47,6 +47,8 @@ public class FormulaEngine
         sheet.Cells.CellsChanged += SheetOnCellsChanged;
         sheet.Rows.Removed += RowColsOnRemoved;
         sheet.Columns.Removed += RowColsOnRemoved;
+        sheet.Rows.Inserted += RowColsOnInserted;
+        sheet.Columns.Inserted += RowColsOnInserted;
     }
 
     internal void RemoveSheet(Sheet sheet)
@@ -57,6 +59,8 @@ public class FormulaEngine
         sheet.Cells.CellsChanged -= SheetOnCellsChanged;
         sheet.Rows.Removed -= RowColsOnRemoved;
         sheet.Columns.Removed -= RowColsOnRemoved;
+        sheet.Rows.Inserted -= RowColsOnInserted;
+        sheet.Columns.Inserted -= RowColsOnInserted;
     }
 
     private void SheetOnCellsChanged(object? sender, CellDataChangedEventArgs e)
@@ -97,6 +101,11 @@ public class FormulaEngine
     }
 
     private void RowColsOnRemoved(object? sender, RowColRemovedEventArgs e)
+    {
+        CalculateSheet(true);
+    }
+
+    private void RowColsOnInserted(object? sender, RowColInsertedEventArgs e)
     {
         CalculateSheet(true);
     }
@@ -213,10 +222,9 @@ public class FormulaEngine
     private void EvaluateStronglyConnectedGroup(IList<FormulaVertex> stronglyConnectedGroup,
         FormulaExecutionContext executionContext)
     {
-        var group = stronglyConnectedGroup;
         bool isCircularGroup = false;
 
-        executionContext.SetCurrentGroup(ref group);
+        executionContext.SetCurrentGroup(stronglyConnectedGroup);
 
         foreach (var vertex in stronglyConnectedGroup)
         {
@@ -224,22 +232,27 @@ public class FormulaEngine
             if (formula == null)
                 continue;
 
-            var value = EvaluateFormulaInGroup(formula, executionContext, ref isCircularGroup);
+            var value = EvaluateFormulaInGroup(vertex, executionContext, ref isCircularGroup);
             executionContext.ClearExecuting();
             ApplyVertexValue(vertex, value);
         }
     }
 
-    private CellValue EvaluateFormulaInGroup(CellFormula formula, FormulaExecutionContext executionContext,
+    private CellValue EvaluateFormulaInGroup(FormulaVertex vertex, FormulaExecutionContext executionContext,
         ref bool isCircularGroup)
     {
         if (isCircularGroup)
             return CellValue.Error(ErrorType.Circular);
 
+        var formula = vertex.Formula!;
+
         if (executionContext.TryGetExecutedValue(formula, out var cachedValue))
             return cachedValue;
 
-        var value = _evaluator.Evaluate(formula, executionContext);
+        FormulaCallerInfo? caller = vertex.VertexType == VertexType.Cell
+            ? new FormulaCallerInfo(vertex.Row, vertex.Col, vertex.SheetName)
+            : null;
+        var value = _evaluator.Evaluate(formula, executionContext, caller: caller);
         executionContext.RecordExecuted(formula, value);
         if (value.Data is FormulaError formulaError && formulaError.ErrorType == ErrorType.Circular)
             isCircularGroup = true;

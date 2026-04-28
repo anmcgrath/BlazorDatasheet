@@ -21,7 +21,7 @@ public static class AndFunction
         acceptsErrors: false,
         isVolatile: false);
 
-    private static CellValue Evaluate(CellValue[] args, FunctionCallMetaData metaData)
+    private static CellValue Evaluate(ReadOnlySpan<CellValue> args, FunctionCallMetaData metaData)
     {
         var isTrue = true;
         foreach (var arg in args)

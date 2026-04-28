@@ -19,7 +19,7 @@ public static class IfFunction
         isVolatile: false,
         returnShape: ReturnShape.Scalar);
 
-    private static CellValue Evaluate(CellValue[] args, FunctionCallMetaData metaData)
+    private static CellValue Evaluate(ReadOnlySpan<CellValue> args, FunctionCallMetaData metaData)
     {
         if (args[0].IsError())
             return args[0];

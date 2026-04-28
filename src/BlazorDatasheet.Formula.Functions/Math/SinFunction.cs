@@ -16,7 +16,7 @@ public static class SinFunction
         acceptsErrors: false,
         isVolatile: false);
 
-    private static CellValue Evaluate(CellValue[] args, FunctionCallMetaData metaData)
+    private static CellValue Evaluate(ReadOnlySpan<CellValue> args, FunctionCallMetaData metaData)
     {
         return CellValue.Number(System.Math.Sin(args[0].GetValue<double>()));
     }

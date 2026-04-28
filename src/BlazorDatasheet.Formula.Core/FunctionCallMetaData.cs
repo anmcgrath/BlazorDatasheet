@@ -1,11 +1,8 @@
 namespace BlazorDatasheet.Formula.Core;
 
-public class FunctionCallMetaData
+public readonly record struct FunctionCallMetaData(
+    int? CallingRowIndex = null,
+    int? CallingColumnIndex = null,
+    string? CallingSheetName = null)
 {
-    internal FunctionCallMetaData(ParameterDefinition[] parameterDefinitions)
-    {
-        ParameterDefinitions = parameterDefinitions;
-    }
-
-    public ParameterDefinition[] ParameterDefinitions { get; }
 }

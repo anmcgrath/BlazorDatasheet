@@ -21,7 +21,7 @@ public static class SumFunction
         acceptsErrors: false,
         isVolatile: false);
 
-    private static CellValue Evaluate(CellValue[] args, FunctionCallMetaData metaData)
+    private static CellValue Evaluate(ReadOnlySpan<CellValue> args, FunctionCallMetaData metaData)
     {
         var sum = 0d;
         foreach (var arg in args)

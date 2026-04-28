@@ -18,12 +18,14 @@ public static class RegisterExtensions
     public static void RegisterMathFunctions(this FunctionRegistryBuilder builder)
     {
         builder.Add(AverageFunction.Descriptor);
+        builder.Add(ColumnFunction.Descriptor);
         builder.Add(InterceptFunction.Descriptor);
         builder.Add(SumFunction.Descriptor);
         builder.Add(SinFunction.Descriptor);
         builder.Add(SlopeFunction.Descriptor);
         builder.Add(PowerFunction.Descriptor);
         builder.Add(RandFunction.Descriptor);
+        builder.Add(RowFunction.Descriptor);
     }
 
     public static void RegisterLookupFunctions(this FunctionRegistryBuilder builder)

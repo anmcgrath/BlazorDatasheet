@@ -19,6 +19,7 @@ public interface IEnvironment : IFunctionProvider
     public CellValue[][] GetRangeValues(Reference reference);
     bool VariableExists(string variableIdentifier);
     CellValue GetVariable(string variableIdentifier);
+    bool TryGetVariable(string variableIdentifier, out CellValue value);
     void SetVariable(string name, CellValue value);
     public IEnumerable<CellValue> GetNonEmptyInRange(Reference reference);
     void SetCellValue(int row, int col, string sheetName, CellValue value);

@@ -7,23 +7,43 @@ namespace BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 public class FormulaExecutionContext
 {
     private readonly Dictionary<CellFormula, CellValue> _executedValues = new();
-    private readonly Stack<CellFormula> _executing = new();
+    private readonly HashSet<CellFormula> _executing = new();
     private IList<FormulaVertex>? _currentSccGroup;
+    private HashSet<CellPosition>? _currentSccCells;
+    private HashSet<string>? _currentSccNames;
 
-    public void SetCurrentGroup(ref IList<FormulaVertex> group)
+    public void SetCurrentGroup(IList<FormulaVertex> group)
     {
         _currentSccGroup = group;
+        _currentSccCells ??= new HashSet<CellPosition>();
+        _currentSccCells.Clear();
+        _currentSccNames ??= new HashSet<string>(StringComparer.Ordinal);
+        _currentSccNames.Clear();
+        foreach (var vertex in group)
+        {
+            if (vertex.Position != null)
+                _currentSccCells.Add(new CellPosition(vertex.Row, vertex.Col));
+            else
+                _currentSccNames.Add(vertex.Key);
+        }
     }
 
     internal bool IsInSccGroup(Reference reference)
     {
         if (_currentSccGroup == null)
             return false;
-        
-        if (reference is not NamedReference namedRef)
-            return _currentSccGroup.Any(x => x.Position != null && reference.Region.Contains(x.Row, x.Col));
-        
-        return _currentSccGroup.Any(x => x.Key == namedRef.Name);
+
+        if (reference is NamedReference namedRef)
+            return _currentSccNames?.Contains(namedRef.Name) == true;
+
+        var region = reference.Region;
+        foreach (var cell in _currentSccCells!)
+        {
+            if (region.Contains(cell.row, cell.col))
+                return true;
+        }
+
+        return false;
     }
 
     internal bool IsExecuting(CellFormula formula)
@@ -36,12 +56,6 @@ public class FormulaExecutionContext
         _executedValues.TryAdd(formula, value);
     }
 
-    /// <summary>
-    /// If the formula has been executed, returns true and sets <paramref name="value"/> to the executed value.
-    /// </summary>
-    /// <param name="formula"></param>
-    /// <param name="value"></param>
-    /// <returns></returns>
     public bool TryGetExecutedValue(CellFormula formula, out CellValue value)
     {
         value = CellValue.Empty;
@@ -56,23 +70,20 @@ public class FormulaExecutionContext
 
     internal void SetExecuting(CellFormula formula)
     {
-        _executing.Push(formula);
+        _executing.Add(formula);
     }
 
-    /// <summary>
-    /// Clears the record of executing <see cref="CellFormula"/>
-    /// </summary>
     public void ClearExecuting()
     {
         _executing.Clear();
     }
 
-    /// <summary>
-    /// Clears the execution context
-    /// </summary>
     public void Clear()
     {
         _executing.Clear();
         _executedValues.Clear();
+        _currentSccGroup = null;
+        _currentSccCells?.Clear();
+        _currentSccNames?.Clear();
     }
 }

@@ -1,9 +1,10 @@
 namespace BlazorDatasheet.Formula.Core;
 
+public delegate CellValue FunctionInvoker(ReadOnlySpan<CellValue> args, FunctionCallMetaData callMetaData);
+
 public sealed class FunctionDescriptor
 {
-    private readonly Func<CellValue[], FunctionCallMetaData, CellValue> _invoker;
-    private readonly FunctionCallMetaData _callMetaData;
+    private readonly FunctionInvoker _invoker;
 
     public string Name { get; }
     public ParameterDefinition[] ParameterDefinitions { get; }
@@ -16,7 +17,7 @@ public sealed class FunctionDescriptor
     public FunctionDescriptor(
         string name,
         ParameterDefinition[] parameterDefinitions,
-        Func<CellValue[], FunctionCallMetaData, CellValue> invoker,
+        FunctionInvoker invoker,
         bool acceptsErrors = false,
         bool isVolatile = false,
         ReturnShape returnShape = ReturnShape.Scalar)
@@ -33,15 +34,14 @@ public sealed class FunctionDescriptor
 
         var validator = new FunctionParameterValidator();
         validator.ValidateOrThrow(ParameterDefinitions);
-        _callMetaData = new FunctionCallMetaData(ParameterDefinitions);
 
         MinArity = ComputeMinArity(ParameterDefinitions);
         MaxArity = ComputeMaxArity(ParameterDefinitions);
     }
 
-    public CellValue Invoke(CellValue[] args)
+    public CellValue Invoke(ReadOnlySpan<CellValue> args, FunctionCallMetaData callMetaData)
     {
-        return _invoker(args, _callMetaData);
+        return _invoker(args, callMetaData);
     }
 
     private static int ComputeMinArity(ParameterDefinition[] parameterDefinitions)
