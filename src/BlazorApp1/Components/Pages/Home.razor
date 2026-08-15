@@ -1,0 +1,51 @@
+﻿@page "/"
+@rendermode InteractiveServer
+
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet
+@using BlazorDatasheet.Core.Formats
+<PageTitle>Home</PageTitle>
+
+<button @onclick="SetOutline">Outline Selected Area</button>
+<button @onclick="NewGrid">Clear Selected Area</button>
+<h1>Hello, world!</h1>
+
+Welcome to your new app.
+<Datasheet @ref="datasheet" Sheet="sheet"></Datasheet>
+
+@code {
+    private Sheet sheet = null!;
+    private Datasheet? datasheet;
+
+    protected override async Task OnInitializedAsync()
+    {
+        NewGrid();
+    }
+
+    private void NewGrid()
+    {
+        sheet = new Sheet(5, 5);
+    }
+
+    private void SetOutline()
+    {
+        // Check if there is a selection in the Datasheet
+        var selectedRegion = datasheet?.Sheet.Selection;
+
+        if (selectedRegion.ActiveRegion != null)
+        {
+            // Create a CellFormat to define the borders
+            var borderFormat = new CellFormat
+            {
+                BorderLeft = new Border { Color="red", Width = 4 },
+                BorderRight = new Border { Color = "red", Width = 4 },
+                BorderTop = new Border { Color = "red", Width = 4 },
+                BorderBottom = new Border { Color = "red", Width = 4 },
+            };
+            SheetRange rng = sheet.Range(selectedRegion.ActiveRegion.Top, selectedRegion.ActiveRegion.Bottom, selectedRegion.ActiveRegion.Left, selectedRegion.ActiveRegion.Right);
+            rng.Format = borderFormat;
+
+           
+        }
+    }
+}

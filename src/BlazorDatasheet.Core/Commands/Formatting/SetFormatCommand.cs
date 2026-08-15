@@ -45,13 +45,13 @@ public class SetFormatCommand : BaseCommand, IUndoableCommand
         else
         {
             var region = sheet.Region.GetIntersection(Region);
-            if (region != null)
+            if (region != null && !_clearSurroundingBorders)
                 _cellFormatRestoreData = sheet.Cells.MergeFormatImpl(region, _cellFormat);
         }
 
         UpdateSurroundingBorders(sheet);
         sheet.EndBatchUpdates();
-
+        
         return true;
     }
 
@@ -60,33 +60,52 @@ public class SetFormatCommand : BaseCommand, IUndoableCommand
         if (!_clearSurroundingBorders)
             return;
 
-        IRegion? above = null;
-        IRegion? left = null;
+        // Define the bounds of the region
+        int top = Region.Top;
+        int bottom = Region.Bottom;
+        int left = Region.Left;
+        int right = Region.Right;
 
-        if (Region is ColumnRegion)
-            left = new ColumnRegion(Region.Left - 1);
-        else if (Region is RowRegion)
-            above = new RowRegion(Region.Top - 1);
-        else
-        {
-            left = new Region(Region.Top, Region.Bottom, Region.Left - 1, Region.Left - 1);
-            above = new Region(Region.Top - 1, Region.Top - 1, Region.Left, Region.Right);
-        }
+        // Create specific regions for the outer borders
+        var topBoundary = new Region(top, top, left, right); // Topmost row of the region
+        var bottomBoundary = new Region(bottom, bottom, left, right); // Bottommost row of the region
+        var leftBoundary = new Region(top, bottom, left, left); // Leftmost column of the region
+        var rightBoundary = new Region(top, bottom, right, right); // Rightmost column of the region
 
-        CellFormat? cfLeft = null, cfAbove = null;
-        if (_cellFormat.BorderLeft != null)
-            cfLeft = new CellFormat() { BorderRight = _cellFormat.BorderLeft.Clone() };
+        // Create cell formats for each border using the existing _cellFormat.
+        CellFormat? cfTop = null, cfBottom = null, cfLeft = null, cfRight = null;
+
         if (_cellFormat.BorderTop != null)
-            cfAbove = new CellFormat() { BorderBottom = _cellFormat.BorderTop.Clone() };
+            cfTop = new CellFormat { BorderTop = _cellFormat.BorderTop.Clone() }; // Apply top border to bottom side of top row
+        if (_cellFormat.BorderBottom != null)
+            cfBottom = new CellFormat { BorderBottom = _cellFormat.BorderBottom.Clone() }; // Apply bottom border to top side of bottom row
+        if (_cellFormat.BorderLeft != null)
+            cfLeft = new CellFormat { BorderLeft = _cellFormat.BorderLeft.Clone() }; // Apply left border to right side of left column
+        if (_cellFormat.BorderRight != null)
+            cfRight = new CellFormat { BorderRight = _cellFormat.BorderRight.Clone() }; // Apply right border to left side of right column
 
-        if (left != null && cfLeft != null)
-            _borderCommands.Add(new SetFormatCommand(left, cfLeft, false));
-        if (above != null && cfAbove != null)
-            _borderCommands.Add(new SetFormatCommand(above, cfAbove, false));
+        // Add border commands if applicable
+        if (cfTop != null)
+            _borderCommands.Add(new SetFormatCommand(topBoundary, cfTop, false));
 
+        if (cfBottom != null)
+            _borderCommands.Add(new SetFormatCommand(bottomBoundary, cfBottom, false));
+
+        if (cfLeft != null)
+            _borderCommands.Add(new SetFormatCommand(leftBoundary, cfLeft, false));
+
+        if (cfRight != null)
+            _borderCommands.Add(new SetFormatCommand(rightBoundary, cfRight, false));
+
+        // Execute all border commands
         foreach (var cmd in _borderCommands)
             cmd.Execute(sheet);
+
+        sheet.EndBatchUpdates();
     }
+
+
+
 
     public bool Undo(Sheet sheet)
     {
