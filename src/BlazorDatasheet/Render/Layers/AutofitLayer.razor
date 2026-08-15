@@ -139,66 +139,71 @@
             return;
         }
 
+        if (_module == null || _currentCells.Count == 0 || _currentAutoFitAxis == Axis.None)
+            return;
+
         if (_isAutofitting)
             return;
         _isAutofitting = true;
 
-        if (_module == null || _currentCells.Count == 0 || _currentAutoFitAxis == Axis.None)
-            return;
-
-        // measureMaxChildrenDimensions returns an array of cell positions and their sizes
-        var measurements = await _module.InvokeAsync<AutofitMeasurement[]>("measureMaxChildrenDimensions", _autoFitEl);
-        var groupedMeasurements = measurements.GroupBy(x => _currentAutoFitAxis == Axis.Col ? x.Col : x.Row);
-
-        // batch the set size commands from the autofits
-        var commands = new List<ICommand>();
-
-        foreach (var group in groupedMeasurements)
+        try
         {
-            var axisSize = _currentAutoFitAxis == Axis.Col ? Sheet.Columns.GetPhysicalWidth(group.Key) : Sheet.Rows.GetPhysicalHeight(group.Key);
+            // measureMaxChildrenDimensions returns an array of cell positions and their sizes
+            var measurements = await _module.InvokeAsync<AutofitMeasurement[]>("measureMaxChildrenDimensions", _autoFitEl);
+            var groupedMeasurements = measurements.GroupBy(x => _currentAutoFitAxis == Axis.Col ? x.Col : x.Row);
 
-            double deltaExpand = 0;
-            double deltaContract = double.MaxValue;
+            // batch the set size commands from the autofits
+            var commands = new List<ICommand>();
 
-            foreach (var measurement in group)
+            foreach (var group in groupedMeasurements)
             {
-                var cell = new VisualCell(measurement.Row, measurement.Col, Sheet, NumberOfSignificantDigits);
-                var cellSize = _currentAutoFitAxis == Axis.Col ? cell.Width : cell.Height;
-                var measSize = measurement.Size.Get(_currentAutoFitAxis);
-                if (measSize > cellSize)
-                    deltaExpand = Math.Max(deltaExpand, measSize - cellSize);
-                else if (measSize < axisSize)
-                    deltaContract = Math.Min(deltaContract, axisSize - measSize);
+                var axisSize = _currentAutoFitAxis == Axis.Col ? Sheet.Columns.GetPhysicalWidth(group.Key) : Sheet.Rows.GetPhysicalHeight(group.Key);
+
+                double deltaExpand = 0;
+                double deltaContract = double.MaxValue;
+
+                foreach (var measurement in group)
+                {
+                    var cell = new VisualCell(measurement.Row, measurement.Col, Sheet, NumberOfSignificantDigits);
+                    var cellSize = _currentAutoFitAxis == Axis.Col ? cell.Width : cell.Height;
+                    var measSize = measurement.Size.Get(_currentAutoFitAxis);
+                    if (measSize > cellSize)
+                        deltaExpand = Math.Max(deltaExpand, measSize - cellSize);
+                    else if (measSize < axisSize)
+                        deltaContract = Math.Min(deltaContract, axisSize - measSize);
+                }
+
+
+                if (deltaExpand > 0 && (_currentAutoFitMethod == AutofitMethod.ExpandOnly || _currentAutoFitMethod == AutofitMethod.ExpandOrContract))
+                {
+                    // Expand the size of the column/row
+                    var setSizeCommand = new SetSizeCommand(group.Key, group.Key, axisSize + deltaExpand, _currentAutoFitAxis);
+                    commands.Add(setSizeCommand);
+                }
+                else if (deltaContract > 0 && deltaContract < double.MaxValue && _currentAutoFitMethod == AutofitMethod.ExpandOrContract)
+                {
+                    // Shrink the size of the column/row
+                    var setSizeCommand = new SetSizeCommand(group.Key, group.Key, axisSize - deltaContract, _currentAutoFitAxis);
+                    commands.Add(setSizeCommand);
+                }
             }
 
+            _currentAutoFitAxis = Axis.None;
+            _dimensionStyles.Clear();
+            _currentCells.Clear();
 
-            if (deltaExpand > 0 && (_currentAutoFitMethod == AutofitMethod.ExpandOnly || _currentAutoFitMethod == AutofitMethod.ExpandOrContract))
+            if (commands.Count > 0)
             {
-                // Expand the size of the column/row
-                var setSizeCommand = new SetSizeCommand(group.Key, group.Key, axisSize + deltaExpand, _currentAutoFitAxis);
-                commands.Add(setSizeCommand);
-            }
-            else if (deltaContract > 0 && deltaContract < double.MaxValue && _currentAutoFitMethod == AutofitMethod.ExpandOrContract)
-            {
-                // Shrink the size of the column/row
-                var setSizeCommand = new SetSizeCommand(group.Key, group.Key, axisSize - deltaContract, _currentAutoFitAxis);
-                commands.Add(setSizeCommand);
+                var cmdGroup = new CommandGroup(commands);
+                // Execute the resize group here.
+                _currentCommand?.AttachAfter(cmdGroup);
+                Sheet.Commands.ExecuteCommand(cmdGroup, false, _currentCommand == null);
             }
         }
-
-        _currentAutoFitAxis = Axis.None;
-        _dimensionStyles.Clear();
-        _currentCells.Clear();
-
-        if (commands.Count > 0)
+        finally
         {
-            var cmdGroup = new CommandGroup(commands);
-            // Execute the resize group here.
-            _currentCommand?.AttachAfter(cmdGroup);
-            Sheet.Commands.ExecuteCommand(cmdGroup, false, _currentCommand == null);
+            _isAutofitting = false;
         }
-
-        _isAutofitting = false;
     }
 
     protected override bool ShouldRender()
