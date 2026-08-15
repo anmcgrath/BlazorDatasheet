@@ -5,6 +5,7 @@
 @using BlazorDatasheet.Render.AutoScroll
 @using BlazorDatasheet.Render.DefaultComponents
 @using BlazorDatasheet.Render.Headings
+@using BlazorDatasheet.Menu
 @using BlazorDatasheet.Render.Layers
 @using FluentAssertions
 @using NUnit.Framework
@@ -198,6 +199,23 @@
 
         await cut.InvokeAsync(() => sheet.Commands.Undo());
         cut.FindAll("div.bds-frozen-left").Should().BeEmpty();
+    }
+
+    [Test]
+    public void Datasheet_Does_Not_Mutate_The_Callers_MenuOptions()
+    {
+        var sheet = new Sheet(4, 4);
+        var menuOptions = new SheetMenuOptions();
+
+        RenderComponent<Datasheet>(parameters =>
+        {
+            parameters.Add(p => p.Sheet, sheet);
+            parameters.Add(p => p.MenuOptions, menuOptions);
+            parameters.Add(p => p.MenuItems, (RenderFragment<Sheet>)(s => @<div>custom</div>));
+        });
+
+        // MenuItems belongs to the datasheet's own copy - the caller's instance is left alone
+        menuOptions.CustomMenuFragment.Should().BeNull();
     }
 
     [Test]

@@ -324,10 +324,13 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             requireRender = true;
         }
 
-        MenuOptions.CustomMenuFragment = MenuItems;
-        if (!MenuOptions.CompareTo(_menuOptions))
+        // work on a copy - storing the caller's instance would make the comparison below compare
+        // an object with itself, so later menu option changes would never be seen.
+        var menuOptions = MenuOptions.Clone();
+        menuOptions.CustomMenuFragment = MenuItems;
+        if (!menuOptions.CompareTo(_menuOptions))
         {
-            _menuOptions = MenuOptions;
+            _menuOptions = menuOptions;
             requireRender = true;
         }
 

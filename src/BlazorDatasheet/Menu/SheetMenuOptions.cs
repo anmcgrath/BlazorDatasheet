@@ -72,6 +72,30 @@ public class SheetMenuOptions
     /// </summary>
     public bool FilterColumnEnabled { get; set; } = true;
 
+    /// <summary>
+    /// Returns a copy of these options, so that a caller-owned instance is never stored or mutated.
+    /// </summary>
+    internal SheetMenuOptions Clone()
+    {
+        return new SheetMenuOptions
+        {
+            CustomMenuFragment = CustomMenuFragment,
+            ContextMenuEnabled = ContextMenuEnabled,
+            HeaderMenuEnabled = HeaderMenuEnabled,
+            InsertColsEnabled = InsertColsEnabled,
+            InsertRowsEnabled = InsertRowsEnabled,
+            DeleteColsEnabled = DeleteColsEnabled,
+            DeleteRowsEnabled = DeleteRowsEnabled,
+            AlignmentEnabled = AlignmentEnabled,
+            ClearEnabled = ClearEnabled,
+            MergeEnabled = MergeEnabled,
+            HideRowsEnabled = HideRowsEnabled,
+            HideColsEnabled = HideColsEnabled,
+            SortRangeEnabled = SortRangeEnabled,
+            FilterColumnEnabled = FilterColumnEnabled
+        };
+    }
+
     internal bool CompareTo(SheetMenuOptions other)
     {
         return other.InsertColsEnabled == InsertColsEnabled &&
