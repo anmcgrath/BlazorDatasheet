@@ -62,10 +62,11 @@
         {
             var module = await Js.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/js/highlighter.js");
             _dotnetRef = DotNetObjectReference.Create(this);
+            var initialText = Value;
             var options = new HighlighterOptions()
             {
-                InitialText = Value,
-                InitialHtml = GetHighlightedHtmlValue(Value),
+                InitialText = initialText,
+                InitialHtml = GetHighlightedHtmlValue(initialText),
                 DotnetHelper = _dotnetRef,
                 InputEl = _highlightInputEl,
                 HighlightResultEl = _highlightResultEl,
@@ -73,6 +74,12 @@
             };
             _highlightJs = await module.InvokeAsync<IJSObjectReference>("createHighlighter", options);
             await module.DisposeAsync();
+
+            // OnParametersSetAsync may have run while the module was still loading - at that point
+            // _highlightJs was null so the DOM update was dropped, and _value has already been latched
+            // so it will never be re-applied. Flush it here.
+            if (_value != initialText)
+                await SetInputTextAsync(_value);
         }
     }
 

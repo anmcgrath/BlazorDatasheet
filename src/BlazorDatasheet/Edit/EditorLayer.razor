@@ -47,6 +47,17 @@
     /// </summary>
     public bool IsEditing { get; set; }
 
+    /// <summary>
+    /// Whether the editor component exists and has been given its starting value. Until this is true
+    /// the edit value can still be overwritten by <see cref="BaseEditor.BeginEdit"/>.
+    /// </summary>
+    internal bool HasActiveEditor => _activeCellEditor != null;
+
+    /// <summary>
+    /// Raised once the editor component has been created and initialised with its starting value.
+    /// </summary>
+    internal event EventHandler? EditorInitialised;
+
     protected override void OnParametersSet()
     {
         if (_sheet != Sheet)
@@ -133,6 +144,8 @@
             // BeginEdit may synchronously accept/cancel (e.g. BoolEditor), clearing _activeCellEditor
             if (_activeCellEditor == null)
                 return;
+
+            EditorInitialised?.Invoke(this, EventArgs.Empty);
 
             PaneContext.AutoScrollState.SetEditorSelectionActive(_activeCellEditor.IsAutoScrollActive);
 

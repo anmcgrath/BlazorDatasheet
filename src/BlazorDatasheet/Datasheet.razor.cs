@@ -229,6 +229,12 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     /// </summary>
     private readonly HashSet<EditorLayer> _editorLayers = new();
 
+    /// <summary>
+    /// Printable characters that arrived after the edit began but before the editor component existed.
+    /// Flushed into the edit value once the editor has been initialised.
+    /// </summary>
+    private string _pendingEditorKeys = string.Empty;
+
     private bool _renderRequested;
 
     private bool _showFormulaDependents;
@@ -518,6 +524,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     private async void EditorOnEditFinished(object? sender, EditFinishedEventArgs e)
     {
+        _pendingEditorKeys = string.Empty;
         await _windowEventService.PreventDefault("keydown");
     }
 
@@ -626,6 +633,31 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         var modifiers = e.GetModifiers();
         if (await HandleShortcuts(e.Key, modifiers) || await HandleShortcuts(e.Code, modifiers))
             return false;
+
+        // A printable key can arrive after the edit has begun but before the editor input has been
+        // focused in the browser - that's at least one interop round trip later, which is easily longer
+        // than the gap between two keystrokes on a high latency connection. The sheet container isn't
+        // focusable, so if the browser isn't going to insert the character itself it has nowhere to go
+        // and would be silently dropped.
+        if (e.Key.Length == 1 && _sheet.Editor.IsEditing && IsDataSheetActive &&
+            !e.MetaKey &&
+            e is SheetKeyboardEventArgs { IsEditableTarget: false } sheetEvent &&
+            ((!e.CtrlKey && !e.AltKey) || sheetEvent.IsAltGraph))
+        {
+            char pending = e.Key == "Space" ? ' ' : e.Key[0];
+            if (char.IsLetterOrDigit(pending) || char.IsPunctuation(pending) || char.IsSymbol(pending) ||
+                char.IsSeparator(pending))
+            {
+                // If the editor component doesn't exist yet its BeginEdit would overwrite the edit
+                // value, so hold on to the character until it has been initialised.
+                if (GetActiveEditorLayer()?.HasActiveEditor == true)
+                    _sheet.Editor.EditValue += pending;
+                else
+                    _pendingEditorKeys += pending;
+
+                return true;
+            }
+        }
 
         // Single characters or numbers or symbols
         if ((e.Key.Length == 1) && !_sheet.Editor.IsEditing && IsDataSheetActive)
@@ -737,6 +769,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             return;
 
         _sheet.Selection.CancelSelecting();
+        _pendingEditorKeys = string.Empty;
         _sheet.Editor.BeginEdit(row, col, mode == EditEntryMode.Key, mode, entryChar);
     }
 
@@ -949,9 +982,27 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             return;
 
         if (isRegistering)
-            _editorLayers.Add(editorLayer);
+        {
+            if (_editorLayers.Add(editorLayer))
+                editorLayer.EditorInitialised += HandleEditorInitialised;
+        }
         else
-            _editorLayers.Remove(editorLayer);
+        {
+            if (_editorLayers.Remove(editorLayer))
+                editorLayer.EditorInitialised -= HandleEditorInitialised;
+        }
+    }
+
+    private void HandleEditorInitialised(object? sender, EventArgs e)
+    {
+        if (_pendingEditorKeys.Length == 0)
+            return;
+
+        var pending = _pendingEditorKeys;
+        _pendingEditorKeys = string.Empty;
+
+        if (_sheet.Editor.IsEditing)
+            _sheet.Editor.EditValue += pending;
     }
 
     private void RegisterAutofitLayer(AutofitLayer? autofitLayer)

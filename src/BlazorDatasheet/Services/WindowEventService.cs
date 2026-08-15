@@ -131,7 +131,7 @@ public class WindowEventService : IWindowEventService
     }
 
     [JSInvokable]
-    public async Task<bool> HandleWindowKeyEvent(KeyboardEventArgs e)
+    public async Task<bool> HandleWindowKeyEvent(SheetKeyboardEventArgs e)
     {
         if (_keyEventListeners == null)
             return false;
