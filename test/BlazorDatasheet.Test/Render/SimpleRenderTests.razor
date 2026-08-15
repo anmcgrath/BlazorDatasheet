@@ -125,6 +125,29 @@
     }
 
     [Test]
+    public async Task Editor_Overlay_Max_Size_Uses_Both_Layer_Axes()
+    {
+        var sheet = new Sheet(3, 3);
+
+        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+
+        await cut.InvokeAsync(() =>
+        {
+            cut.Instance.ForceReRender();
+            sheet.Editor.BeginEdit(1, 1);
+        });
+
+        var expectedWidth = sheet.Columns.GetVisualWidthBetween(0, sheet.NumCols);
+        var expectedHeight = sheet.Rows.GetVisualHeightBetween(0, sheet.NumRows);
+        // guard the test itself - the axes must differ for this to detect a mix-up
+        expectedWidth.Should().NotBe(expectedHeight);
+
+        var editor = cut.Find("div.bds-editor-overlay");
+        editor.GetStyle().GetMaxWidth().Should().Be(expectedWidth + "px");
+        editor.GetStyle().GetMaxHeight().Should().Be(expectedHeight + "px");
+    }
+
+    [Test]
     public void Datasheet_With_No_Frozen_Sections_Renders_Main_Pane_Row_Only()
     {
         var sheet = new Sheet(5, 5);
