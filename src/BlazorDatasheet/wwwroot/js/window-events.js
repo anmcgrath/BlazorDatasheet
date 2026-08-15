@@ -41,7 +41,11 @@
             return
 
         if (this.handlerMap[e.type]) {
-            if (this.preventDefaultMap[e.type]) {
+            // Never suppress the browser default while the event is going into an editable element -
+            // that's the cell editor receiving input. The preventDefault flag is toggled from .NET, so
+            // it always lags the real edit state by an interop round trip; suppressing on the stale flag
+            // swallows the characters typed immediately after an edit begins.
+            if (this.preventDefaultMap[e.type] && !this.isEditableTarget(e)) {
 
                 let preventDefault = true
 
@@ -52,12 +56,26 @@
                     e.preventDefault()
             }
 
-            let respIsHandled = await this.dotnetHelper.invokeMethodAsync(this.handlerMap[e.type], this.serialize(e));
-
-            if (respIsHandled === true) {
-                e.preventDefault();
-            }
+            // Nothing can be prevented past this point - the event has finished dispatching by the time
+            // the interop call resolves - so the handler's return value is only used by .NET.
+            await this.dotnetHelper.invokeMethodAsync(this.handlerMap[e.type], this.serialize(e));
         }
+    }
+
+    /**
+     * Whether the event is targeting something that natively accepts text input.
+     * @param e {Event}
+     */
+    isEditableTarget(e) {
+        let target = e.target
+        if (!target)
+            return false
+
+        if (target.isContentEditable)
+            return true
+
+        let tag = target.tagName
+        return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
     }
 
     async dispose() {
@@ -91,7 +109,11 @@
                 altKey: e.altKey,
                 metaKey: e.metaKey,
                 type: e.type,
-                isComposing: e.isComposing
+                isComposing: e.isComposing,
+                isAltGraph: e.getModifierState('AltGraph'),
+                // Lets .NET know whether the browser will insert this character itself. If it won't
+                // (the editor input isn't focused yet) the character has to be buffered server side.
+                isEditableTarget: this.isEditableTarget(e)
             };
         }
     }
