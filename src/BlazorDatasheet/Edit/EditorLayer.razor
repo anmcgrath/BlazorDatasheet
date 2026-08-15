@@ -10,7 +10,7 @@
 
 @inject IJSRuntime Js;
 
-@if (IsEditing)
+@if (IsEditing && _sheet.Editor.EditCell is not null)
 {
     <div id="editor" class="bds-editor-overlay"
          @onclick="HandleEditorOverlayClick"

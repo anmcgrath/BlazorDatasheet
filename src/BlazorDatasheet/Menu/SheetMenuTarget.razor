@@ -1,5 +1,6 @@
 @using BlazorDatasheet.Services
 @using Microsoft.JSInterop
+@using static BlazorDatasheet.Util.JsInteropHelper
 @inject IMenuService MenuService;
 @inherits SheetComponentBase
 @implements IAsyncDisposable
@@ -47,6 +48,7 @@
     private ElementReference _menuTarget;
     private DotNetObjectReference<SheetMenuTarget>? _dotnetRef;
     private IJSObjectReference? _menuTargetService;
+    private bool _isDisposed;
 
 
     protected override async Task OnParametersSetAsync()
@@ -66,18 +68,48 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && !_disableMenuTarget && Trigger == MenuTrigger.OnContextMenu)
+        if (firstRender && !_disableMenuTarget && !_isDisposed && Trigger == MenuTrigger.OnContextMenu)
         {
-            _dotnetRef = DotNetObjectReference.Create(this);
-
             var module =
                 await _js.InvokeAsync<IJSObjectReference>("import",
                     "./_content/BlazorDatasheet/js/menu-target.js");
 
-            _menuTargetService = await module.InvokeAsync<IJSObjectReference>(
-                "getMenuTargetService", _dotnetRef);
+            if (_isDisposed)
+            {
+                await DisposeJsObjectReferenceAsync(module);
+                return;
+            }
 
-            await _menuTargetService.InvokeVoidAsync("setContextListener", _menuTarget, nameof(TargetOnContextMenu));
+            var dotnetRef = DotNetObjectReference.Create(this);
+
+            try
+            {
+                var menuTargetService = await module.InvokeAsync<IJSObjectReference>(
+                    "getMenuTargetService", dotnetRef);
+
+                if (_isDisposed)
+                {
+                    await SafeDisposeMenuTargetServiceAsync(menuTargetService);
+                    return;
+                }
+
+                await menuTargetService.InvokeVoidAsync("setContextListener", _menuTarget, nameof(TargetOnContextMenu));
+
+                if (_isDisposed)
+                {
+                    await SafeDisposeMenuTargetServiceAsync(menuTargetService);
+                    return;
+                }
+
+                _menuTargetService = menuTargetService;
+                _dotnetRef = dotnetRef;
+                dotnetRef = null;
+            }
+            finally
+            {
+                dotnetRef?.Dispose();
+                await DisposeJsObjectReferenceAsync(module);
+            }
         }
     }
 
@@ -127,16 +159,40 @@
 
     public async ValueTask DisposeAsync()
     {
+        _isDisposed = true;
+
+        var menuTargetService = _menuTargetService;
+        _menuTargetService = null;
+        var dotnetRef = _dotnetRef;
+        _dotnetRef = null;
+
         try
         {
-            _dotnetRef?.Dispose();
-            if (_menuTargetService != null)
-                await _menuTargetService.InvokeVoidAsync("dispose");
+            if (menuTargetService != null)
+                await SafeDisposeMenuTargetServiceAsync(menuTargetService);
         }
         catch (Exception)
         {
             // Ignore
         }
+        finally
+        {
+            dotnetRef?.Dispose();
+        }
+    }
+
+    private static async Task SafeDisposeMenuTargetServiceAsync(IJSObjectReference menuTargetService)
+    {
+        try
+        {
+            await menuTargetService.InvokeVoidAsync("dispose");
+        }
+        catch (JSDisconnectedException)
+        {
+            // Ignore disconnects during server-side component teardown.
+        }
+
+        await DisposeJsObjectReferenceAsync(menuTargetService);
     }
 
 }

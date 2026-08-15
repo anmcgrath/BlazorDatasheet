@@ -1,5 +1,6 @@
 ﻿@using BlazorDatasheet.DataStructures.Geometry
 @using Microsoft.JSInterop
+@using static BlazorDatasheet.Util.JsInteropHelper
 @inject IJSRuntime Js
 @implements IAsyncDisposable
 
@@ -19,12 +20,12 @@
     [Parameter, EditorRequired] public required AutoScrollState State { get; set; }
 
     private ElementReference _contentEl;
-    private IJSObjectReference? _module;
     private IJSObjectReference? _autoScroller;
     private DotNetObjectReference<AutoScroller>? _dotnetHelper;
     private PeriodicTimer? _pt;
     private double _velX;
     private double _velY;
+    private bool _isDisposed;
 
     protected override void OnParametersSet()
     {
@@ -40,47 +41,107 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (!firstRender || _isDisposed)
+            return;
+
+        var module = await Js.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/Render/AutoScroll/AutoScroller.razor.js");
+
+        if (_isDisposed)
         {
-            _dotnetHelper = DotNetObjectReference.Create(this);
-            _module = await Js.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/Render/AutoScroll/AutoScroller.razor.js");
-            _autoScroller = await _module.InvokeAsync<IJSObjectReference>("createAutoScroller");
-            await _autoScroller.InvokeVoidAsync("subscribe", _contentEl, _dotnetHelper);
+            await DisposeJsObjectReferenceAsync(module);
+            return;
+        }
 
-            _pt = new PeriodicTimer(TimeSpan.FromMilliseconds(Options.PollIntervalInMs));
-            while (await _pt.WaitForNextTickAsync())
+        var dotnetHelper = DotNetObjectReference.Create(this);
+
+        try
+        {
+            var autoScroller = await module.InvokeAsync<IJSObjectReference>("createAutoScroller");
+
+            if (_isDisposed)
             {
-                if (_pt.Period.Milliseconds != Options.PollIntervalInMs)
-                    _pt.Period = TimeSpan.FromMilliseconds(Options.PollIntervalInMs);
+                await SafeDisposeAutoScrollerAsync(autoScroller);
+                return;
+            }
 
-                if (_enabled && State.IsActive)
-                {
-                    await _autoScroller.InvokeVoidAsync("scrollBy", _velX, _velY);
-                }
+            await autoScroller.InvokeVoidAsync("subscribe", _contentEl, dotnetHelper);
+
+            if (_isDisposed)
+            {
+                await SafeDisposeAutoScrollerAsync(autoScroller);
+                return;
+            }
+
+            _autoScroller = autoScroller;
+            _dotnetHelper = dotnetHelper;
+            dotnetHelper = null;
+        }
+        finally
+        {
+            dotnetHelper?.Dispose();
+            await DisposeJsObjectReferenceAsync(module);
+        }
+
+        await PollAsync();
+    }
+
+    private async Task PollAsync()
+    {
+        _pt = new PeriodicTimer(TimeSpan.FromMilliseconds(Options.PollIntervalInMs));
+        while (await _pt.WaitForNextTickAsync())
+        {
+            if (_isDisposed || _autoScroller == null)
+                return;
+
+            if (_pt.Period.Milliseconds != Options.PollIntervalInMs)
+                _pt.Period = TimeSpan.FromMilliseconds(Options.PollIntervalInMs);
+
+            if (_enabled && State.IsActive)
+            {
+                await _autoScroller.InvokeVoidAsync("scrollBy", _velX, _velY);
             }
         }
     }
 
     public async ValueTask DisposeAsync()
     {
+        _isDisposed = true;
+
+        _pt?.Dispose();
+        _pt = null;
+
+        var autoScroller = _autoScroller;
+        _autoScroller = null;
+        var dotnetHelper = _dotnetHelper;
+        _dotnetHelper = null;
+
         try
         {
-            if (_autoScroller != null)
-            {
-                await _autoScroller.InvokeVoidAsync("dispose");
-                await _autoScroller.DisposeAsync();
-            }
-
-            if (_module != null)
-                await _module.DisposeAsync();
-
-            _dotnetHelper?.Dispose();
-            _pt?.Dispose();
+            if (autoScroller != null)
+                await SafeDisposeAutoScrollerAsync(autoScroller);
         }
         catch (Exception)
         {
             // ignored
         }
+        finally
+        {
+            dotnetHelper?.Dispose();
+        }
+    }
+
+    private static async Task SafeDisposeAutoScrollerAsync(IJSObjectReference autoScroller)
+    {
+        try
+        {
+            await autoScroller.InvokeVoidAsync("dispose");
+        }
+        catch (JSDisconnectedException)
+        {
+            // Ignore disconnects during server-side component teardown.
+        }
+
+        await DisposeJsObjectReferenceAsync(autoScroller);
     }
 
     [JSInvokable(nameof(HandleMouseOutsideOfScrollableAncestor))]

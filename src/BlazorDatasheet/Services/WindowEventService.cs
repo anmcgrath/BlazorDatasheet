@@ -13,7 +13,7 @@ public class WindowEventService : IWindowEventService
     private readonly IJSRuntime? _js;
     private IJSObjectReference? _windowEventObj;
     private bool _isDisposed;
-    private bool _isInitializing;
+    private Task? _initTask;
 
     private DotNetObjectReference<WindowEventService>? _dotNetHelper;
 
@@ -67,43 +67,45 @@ public class WindowEventService : IWindowEventService
         await _windowEventObj.InvokeVoidAsync("cancelPreventDefault", eventType);
     }
 
-    private async Task CreateDotnetHelperIfNotExists()
+    // Cached so that callers arriving while initialisation is in flight wait for it to
+    // finish rather than skipping registration with a null _windowEventObj.
+    private Task CreateDotnetHelperIfNotExists() => _initTask ??= InitCoreAsync();
+
+    private async Task InitCoreAsync()
     {
-        if (_windowEventObj == null && _js != null && !_isDisposed && !_isInitializing)
+        if (_windowEventObj != null || _js == null || _isDisposed)
+            return;
+
+        DotNetObjectReference<WindowEventService>? dotNetHelper = null;
+        IJSObjectReference? module = null;
+
+        try
         {
-            _isInitializing = true;
-            DotNetObjectReference<WindowEventService>? dotNetHelper = null;
-            IJSObjectReference? module = null;
+            module =
+                await _js.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/js/window-events.js");
 
-            try
+            if (_isDisposed)
+                return;
+
+            dotNetHelper = DotNetObjectReference.Create(this);
+            var windowEventObj = await module.InvokeAsync<IJSObjectReference>("createWindowEventsService", dotNetHelper);
+
+            if (_isDisposed)
             {
-                module =
-                    await _js.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/js/window-events.js");
-
-                if (_isDisposed)
-                    return;
-
-                dotNetHelper = DotNetObjectReference.Create(this);
-                var windowEventObj = await module.InvokeAsync<IJSObjectReference>("createWindowEventsService", dotNetHelper);
-
-                if (_isDisposed)
-                {
-                    await DisposeJsObjectReferenceAsync(windowEventObj);
-                    return;
-                }
-
-                _dotNetHelper = dotNetHelper;
-                _windowEventObj = windowEventObj;
-                dotNetHelper = null;
+                await DisposeJsObjectReferenceAsync(windowEventObj);
+                return;
             }
-            finally
-            {
-                _isInitializing = false;
-                dotNetHelper?.Dispose();
 
-                if (module != null)
-                    await DisposeJsObjectReferenceAsync(module);
-            }
+            _dotNetHelper = dotNetHelper;
+            _windowEventObj = windowEventObj;
+            dotNetHelper = null;
+        }
+        finally
+        {
+            dotNetHelper?.Dispose();
+
+            if (module != null)
+                await DisposeJsObjectReferenceAsync(module);
         }
     }
 
@@ -162,6 +164,7 @@ public class WindowEventService : IWindowEventService
     public async ValueTask DisposeAsync()
     {
         _isDisposed = true;
+        _initTask = null;
         var windowEventObj = _windowEventObj;
         _windowEventObj = null;
         var dotNetHelper = _dotNetHelper;

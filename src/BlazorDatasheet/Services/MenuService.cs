@@ -1,6 +1,7 @@
 using BlazorDatasheet.Menu;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
+using static BlazorDatasheet.Util.JsInteropHelper;
 
 namespace BlazorDatasheet.Services;
 
@@ -9,7 +10,8 @@ public class MenuService : IMenuService, IAsyncDisposable
     private readonly IJSRuntime _jsRuntime;
     private IJSObjectReference? _menuJs;
     private DotNetObjectReference<MenuService>? _dotNetObjectReference;
-    private bool _isInitialized;
+    private Task? _initTask;
+    private bool _isDisposed;
     private Dictionary<string, IMenu> _menus = new();
 
     public EventHandler<MenuShownEventArgs>? MenuShown { get; set; }
@@ -21,7 +23,10 @@ public class MenuService : IMenuService, IAsyncDisposable
 
     public async Task CloseSubMenus(string menuId, string[]? exceptions)
     {
-        await _menuJs!.InvokeVoidAsync("closeSubMenus", menuId, exceptions ?? []);
+        if (_menuJs == null)
+            return;
+
+        await _menuJs.InvokeVoidAsync("closeSubMenus", menuId, exceptions ?? []);
     }
 
     private string Id = Guid.NewGuid().ToString();
@@ -31,27 +36,56 @@ public class MenuService : IMenuService, IAsyncDisposable
         _jsRuntime = jsRuntime;
     }
 
-    private async Task Init()
+    // Cached so that callers arriving while initialisation is in flight wait for it
+    // rather than continuing with a null _menuJs.
+    private Task Init() => _initTask ??= InitCoreAsync();
+
+    private async Task InitCoreAsync()
     {
-        if (_isInitialized)
+        if (_isDisposed)
             return;
 
         var module =
             await _jsRuntime.InvokeAsync<IJSObjectReference>("import",
                 "./_content/BlazorDatasheet/js/menu.js");
 
-        _dotNetObjectReference = DotNetObjectReference.Create(this);
+        if (_isDisposed)
+        {
+            await DisposeJsObjectReferenceAsync(module);
+            return;
+        }
 
-        _menuJs = await module.InvokeAsync<IJSObjectReference>(
-            "getMenuService", _dotNetObjectReference);
+        var dotNetObjectReference = DotNetObjectReference.Create(this);
 
-        _isInitialized = true;
+        try
+        {
+            var menuJs = await module.InvokeAsync<IJSObjectReference>(
+                "getMenuService", dotNetObjectReference);
+
+            if (_isDisposed)
+            {
+                await DisposeJsObjectReferenceAsync(menuJs);
+                return;
+            }
+
+            _menuJs = menuJs;
+            _dotNetObjectReference = dotNetObjectReference;
+            dotNetObjectReference = null;
+        }
+        finally
+        {
+            dotNetObjectReference?.Dispose();
+            await DisposeJsObjectReferenceAsync(module);
+        }
     }
 
     public async Task RegisterMenu(string id, IMenu menu, string? parentId = null)
     {
         await Init();
-        await _menuJs!.InvokeVoidAsync("registerMenu", id, parentId);
+        if (_menuJs == null)
+            return;
+
+        await _menuJs.InvokeVoidAsync("registerMenu", id, parentId);
         if (!_menus.TryAdd(id, menu))
         {
             _menus[id] = menu;
@@ -78,6 +112,9 @@ public class MenuService : IMenuService, IAsyncDisposable
             return false;
 
         await Init();
+        if (_menuJs == null)
+            return false;
+
         var beforeArgs = new BeforeMenuShownEventArgs(menuId, context);
         BeforeMenuShown?.Invoke(this, beforeArgs);
         if (beforeArgs.Cancel)
@@ -86,7 +123,7 @@ public class MenuService : IMenuService, IAsyncDisposable
         MenuShown?.Invoke(this, new MenuShownEventArgs(menuId, context));
         _openMenus.Add(menuId);
 
-        await _menuJs!.InvokeVoidAsync("showMenu", menuId, options);
+        await _menuJs.InvokeVoidAsync("showMenu", menuId, options);
         if (_menus.TryGetValue(menuId, out var menu))
             await menu.OnMenuOpen.InvokeAsync(new MenuShownEventArgs(menuId, context));
         return true;
@@ -97,7 +134,10 @@ public class MenuService : IMenuService, IAsyncDisposable
         await Init();
         _openMenus.Remove(menuId);
 
-        await _menuJs!.InvokeVoidAsync("closeMenu", menuId, closeParent);
+        if (_menuJs == null)
+            return false;
+
+        await _menuJs.InvokeVoidAsync("closeMenu", menuId, closeParent);
         return true;
     }
 
@@ -121,14 +161,26 @@ public class MenuService : IMenuService, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        _isDisposed = true;
+        _initTask = null;
+
+        var menuJs = _menuJs;
+        _menuJs = null;
+        var dotNetObjectReference = _dotNetObjectReference;
+        _dotNetObjectReference = null;
+
         try
         {
-            if (_menuJs != null) await _menuJs.DisposeAsync();
-            _dotNetObjectReference?.Dispose();
+            if (menuJs != null)
+                await DisposeJsObjectReferenceAsync(menuJs);
         }
-        catch (Exception e)
+        catch (Exception)
         {
             // ignore
+        }
+        finally
+        {
+            dotNetObjectReference?.Dispose();
         }
     }
 

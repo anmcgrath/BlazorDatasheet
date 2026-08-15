@@ -1,13 +1,15 @@
 ﻿using BlazorDatasheet.Events;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
+using static BlazorDatasheet.Util.JsInteropHelper;
 
 namespace BlazorDatasheet.Services;
 
 public class SheetPointerInputService : IAsyncDisposable
 {
     private readonly ElementReference _sheetElement;
-    private IJSObjectReference _inputJs = null!;
+    private IJSObjectReference? _inputJs;
+    private bool _isDisposed;
     private IJSRuntime Js { get; }
 
     public EventHandler<SheetPointerEventArgs>? PointerDown;
@@ -16,7 +18,7 @@ public class SheetPointerInputService : IAsyncDisposable
     public EventHandler<SheetPointerEventArgs>? PointerEnter;
     public EventHandler<SheetPointerEventArgs>? PointerDoubleClick;
 
-    private DotNetObjectReference<SheetPointerInputService> _dotNetObjectReference = null!;
+    private DotNetObjectReference<SheetPointerInputService>? _dotNetObjectReference;
 
     public SheetPointerInputService(IJSRuntime js, ElementReference sheetElement)
     {
@@ -26,24 +28,56 @@ public class SheetPointerInputService : IAsyncDisposable
 
     public async Task Init()
     {
-        _dotNetObjectReference = DotNetObjectReference.Create(this);
+        if (_isDisposed)
+            return;
+
         var module =
             await Js.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/js/sheet-pointer-input.js");
 
-        _inputJs = await module.InvokeAsync<IJSObjectReference>(
-            "getInputService",
-            _sheetElement,
-            _dotNetObjectReference);
+        if (_isDisposed)
+        {
+            await DisposeJsObjectReferenceAsync(module);
+            return;
+        }
 
-        await _inputJs.InvokeVoidAsync(
-            "registerPointerEvents",
-            nameof(HandlePointerUp),
-            nameof(HandlePointerDown),
-            nameof(HandlePointerMove),
-            nameof(HandlePointerCellEnter),
-            nameof(HandlePointerDoubleClick));
+        DotNetObjectReference<SheetPointerInputService>? dotNetObjectReference = DotNetObjectReference.Create(this);
 
-        await module.DisposeAsync();
+        try
+        {
+            var inputJs = await module.InvokeAsync<IJSObjectReference>(
+                "getInputService",
+                _sheetElement,
+                dotNetObjectReference);
+
+            if (_isDisposed)
+            {
+                await SafeDisposeInputJsAsync(inputJs);
+                return;
+            }
+
+            await inputJs.InvokeVoidAsync(
+                "registerPointerEvents",
+                nameof(HandlePointerUp),
+                nameof(HandlePointerDown),
+                nameof(HandlePointerMove),
+                nameof(HandlePointerCellEnter),
+                nameof(HandlePointerDoubleClick));
+
+            if (_isDisposed)
+            {
+                await SafeDisposeInputJsAsync(inputJs);
+                return;
+            }
+
+            _inputJs = inputJs;
+            _dotNetObjectReference = dotNetObjectReference;
+            dotNetObjectReference = null;
+        }
+        finally
+        {
+            dotNetObjectReference?.Dispose();
+            await DisposeJsObjectReferenceAsync(module);
+        }
     }
 
     [JSInvokable(nameof(HandlePointerMove))]
@@ -78,15 +112,39 @@ public class SheetPointerInputService : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        _isDisposed = true;
+
+        var inputJs = _inputJs;
+        _inputJs = null;
+        var dotNetObjectReference = _dotNetObjectReference;
+        _dotNetObjectReference = null;
+
         try
         {
-            await _inputJs.InvokeVoidAsync("dispose");
-            await _inputJs.DisposeAsync();
-            _dotNetObjectReference.Dispose();
+            if (inputJs != null)
+                await SafeDisposeInputJsAsync(inputJs);
         }
-        catch (Exception e)
+        catch (Exception)
         {
             // ignored
         }
+        finally
+        {
+            dotNetObjectReference?.Dispose();
+        }
+    }
+
+    private static async Task SafeDisposeInputJsAsync(IJSObjectReference inputJs)
+    {
+        try
+        {
+            await inputJs.InvokeVoidAsync("dispose");
+        }
+        catch (JSDisconnectedException)
+        {
+            // Ignore disconnects during server-side component teardown.
+        }
+
+        await DisposeJsObjectReferenceAsync(inputJs);
     }
 }
