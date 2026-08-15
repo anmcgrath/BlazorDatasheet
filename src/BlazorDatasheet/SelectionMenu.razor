@@ -142,6 +142,7 @@
                     if (filter is ValueFilter valueFilter)
                     {
                         <ValueFilterEditor
+                            @key="filter"
                             Sheet="sheet"
                             ColumnIndex="@colRegion.Left"
                             Filter="@valueFilter"/>
@@ -149,6 +150,7 @@
                     else if (filter is PatternFilter patternFilter)
                     {
                         <PatternFilterEditor
+                            @key="filter"
                             Sheet="sheet"
                             ColumnIndex="@colRegion.Left"
                             Filter="@patternFilter"/>
@@ -182,6 +184,7 @@
 
     private SheetSubMenu? _filterSubMenu;
     private bool HasOpenedFilterMenu { get; set; }
+    private int _filterColumnIndex = -1;
 
     private List<IFilter> ColumnFilters { get; set; } = new();
 
@@ -193,20 +196,30 @@
 
     private void OnSubmenuShown(object? sender, MenuShownEventArgs args)
     {
-        if (args.MenuId == _filterSubMenu?.SubMenuId && !HasOpenedFilterMenu)
+        if (args.MenuId != _filterSubMenu?.SubMenuId)
+            return;
+
+        var sheet = args.Context as Sheet;
+        if (sheet == null) return;
+
+        var columnIndex = sheet.Selection.ActiveRegion is ColumnRegion { Width: 1 } activeColumn &&
+                          sheet.Selection.Regions.Count == 1
+            ? activeColumn.Left
+            : -1;
+
+        if (!HasOpenedFilterMenu || _filterColumnIndex != columnIndex)
         {
             HasOpenedFilterMenu = true;
             if (!MenuOptions.FilterColumnEnabled) return;
 
-            var sheet = args.Context as Sheet;
-            if (sheet == null) return;
+            _filterColumnIndex = columnIndex;
 
-            if (sheet.Selection.ActiveRegion is ColumnRegion cr && sheet.Selection.Regions.Count == 1 && cr.Width == 1)
+            if (columnIndex >= 0)
             {
                 ColumnFilters = sheet
                     .Columns
                     .Filters
-                    .Get(cr.Left)
+                    .Get(columnIndex)
                     .Filters
                     .Select(x => x.Clone())
                     .ToList();
@@ -225,6 +238,7 @@
         // Reset column filters
         ColumnFilters = new();
         HasOpenedFilterMenu = false;
+        _filterColumnIndex = -1;
     }
 
     private void CancelFilterButtonClick()

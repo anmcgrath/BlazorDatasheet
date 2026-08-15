@@ -55,13 +55,22 @@
 
     private List<CellValue> DistinctColumnData { get; set; } = new();
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    private Sheet? _loadedSheet;
+    private int _loadedColumnIndex = -1;
+    private IFilter? _loadedFilter;
+
+    protected override async Task OnParametersSetAsync()
     {
-        if (firstRender)
-        {
-            DistinctColumnData = await Sheet.GetDistinctColumnDataAsync(ColumnIndex);
-            StateHasChanged();
-        }
+        if (ReferenceEquals(_loadedSheet, Sheet) &&
+            _loadedColumnIndex == ColumnIndex &&
+            ReferenceEquals(_loadedFilter, Filter))
+            return;
+
+        _loadedSheet = Sheet;
+        _loadedColumnIndex = ColumnIndex;
+        _loadedFilter = Filter;
+
+        DistinctColumnData = await Sheet.GetDistinctColumnDataAsync(ColumnIndex);
     }
 
     private void ToggleSetAll()
