@@ -1,6 +1,8 @@
 class Highligher {
     #inputEl;
     #highlightResultEl;
+    #caretToEndPending = false;
+    #onFocusMoveCaret;
 
     constructor(options) {
         if (!options.inputEl)
@@ -34,6 +36,7 @@ class Highligher {
         this.resizeObserver.observe(this.#inputEl)
 
         this.setInputText = function (text) {
+            // Replacing textContent destroys the current selection, so the caret must always be restored.
             this.#inputEl.textContent = text
             this.moveCursorToEnd(this.#inputEl)
         }
@@ -52,25 +55,59 @@ class Highligher {
         }
 
         this.moveCursorToEnd = function (el) {
-            if (document.activeElement !== el)
+            if (document.activeElement !== el) {
+                // Focus hasn't landed yet - some webviews (e.g. WebView2 under MAUI) apply focus()
+                // on a later turn of the message loop. Defer instead of silently giving up, otherwise
+                // the caret is left at offset 0 and typed text ends up in front of the existing text.
+                this.deferCursorToEnd(el)
                 return
-            if (el.childNodes.length === 0)
-                return
+            }
 
             const range = document.createRange();
             const selection = document.getSelection();
 
-            range.selectNodeContents(el.childNodes[0])
-            range.setStart(el.childNodes[0], 0);
-            range.setEnd(el.childNodes[0], el.textContent.length);
+            // selectNodeContents works whether or not the element has any child nodes yet.
+            range.selectNodeContents(el)
             range.collapse(false);
             selection.removeAllRanges();
             selection.addRange(range);
         };
 
+        this.deferCursorToEnd = function (el) {
+            if (this.#caretToEndPending)
+                return
+
+            this.#caretToEndPending = true
+            this.#onFocusMoveCaret = () => {
+                el.removeEventListener('focus', this.#onFocusMoveCaret)
+                this.#onFocusMoveCaret = undefined
+                this.#caretToEndPending = false
+                this.moveCursorToEnd(el)
+            }
+            el.addEventListener('focus', this.#onFocusMoveCaret)
+        }
+
+        this.cancelDeferredCursorToEnd = function () {
+            if (!this.#onFocusMoveCaret)
+                return
+
+            this.#inputEl.removeEventListener('focus', this.#onFocusMoveCaret)
+            this.#onFocusMoveCaret = undefined
+            this.#caretToEndPending = false
+        }
 
         this.focusAndMoveCursorToEnd = function () {
             options.inputEl.focus()
+
+            if (document.activeElement !== options.inputEl) {
+                // Retry once on the next frame - a webview may not have been able to take focus yet.
+                requestAnimationFrame(() => {
+                    options.inputEl.focus()
+                    this.moveCursorToEnd(options.inputEl)
+                })
+                return
+            }
+
             this.moveCursorToEnd(options.inputEl)
         }
 
@@ -96,6 +133,8 @@ class Highligher {
     }
 
     onMouseDown() {
+        // The user is placing the caret themselves - don't yank it to the end when focus lands.
+        this.cancelDeferredCursorToEnd()
         this.options.preventDefaultArrowKeys = false
     }
 
@@ -111,6 +150,10 @@ class Highligher {
         if (this.#inputEl) {
             this.#inputEl.removeEventListener('keydown', this.onKeyDown)
             this.#inputEl.removeEventListener('mousedown', this.onMouseDown)
+            if (this.#onFocusMoveCaret) {
+                this.#inputEl.removeEventListener('focus', this.#onFocusMoveCaret)
+                this.#onFocusMoveCaret = undefined
+            }
         }
         this.resizeObserver.disconnect()
         document.removeEventListener('selectionchange', this.updateCaretPosition)
