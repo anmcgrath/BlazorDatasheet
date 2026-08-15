@@ -25,6 +25,7 @@
                 ViewRegion="_centreRegion"
                 OverscanColumns="OverscanColumns"
                 OverscanRows="OverscanRows"
+                RenderAutofitLayer="RenderAutofitLayer"
                 EditorLayerChanged="EditorLayerChanged"
                 AutofitLayerChanged="AutofitLayerChanged"/>
         }
@@ -59,6 +60,12 @@
     [Parameter, EditorRequired] public Action<AutofitLayer?> AutofitLayerChanged { get; set; } = _ => { };
     [Parameter] public int OverscanColumns { get; set; } = 2;
     [Parameter] public int OverscanRows { get; set; } = 6;
+
+    /// <summary>
+    /// Whether the centre pane of this row hosts the autofit layer. Only one pane row in the
+    /// datasheet should set this, since the layer is shared across the whole sheet.
+    /// </summary>
+    [Parameter] public bool RenderAutofitLayer { get; set; }
 
     private DatasheetPane? _leftPane;
     private DatasheetPane? _centerPane;

@@ -148,6 +148,18 @@
     }
 
     [Test]
+    public void Datasheet_Renders_Exactly_One_Autofit_Layer()
+    {
+        var sheet = new Sheet(20, 20);
+        sheet.FreezeRowCols(1, 1, 1, 1);
+
+        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+
+        // the layer is shared across the sheet, so only the main pane row's centre pane hosts it
+        cut.FindComponents<AutofitLayer>().Count.Should().Be(1);
+    }
+
+    [Test]
     public void Datasheet_With_No_Frozen_Sections_Renders_Main_Pane_Row_Only()
     {
         var sheet = new Sheet(5, 5);
