@@ -17,7 +17,7 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Restore dependencies
-        run: dotnet restore src/BlazorDatasheet.sln
+        run: dotnet restore test/BlazorDatasheet.Test/BlazorDatasheet.Test.csproj
 
       - name: Run tests
         run: dotnet test test/BlazorDatasheet.Test --configuration Release --no-restore --verbosity normal
@@ -41,7 +41,7 @@ jobs:
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
 
       - name: Restore dependencies
-        run: dotnet restore src/BlazorDatasheet.sln
+        run: dotnet restore src/BlazorDatasheet/BlazorDatasheet.csproj
 
       - name: Pack BlazorDatasheet.DataStructures
         run: dotnet pack src/BlazorDatasheet.DataStructures/BlazorDatasheet.DataStructures.csproj --configuration Release --no-restore --output ./nupkg -p:Version=${{ steps.version.outputs.VERSION }}
