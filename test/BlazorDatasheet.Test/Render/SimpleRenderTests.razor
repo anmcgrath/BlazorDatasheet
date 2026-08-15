@@ -5,6 +5,7 @@
 @using BlazorDatasheet.Render.AutoScroll
 @using BlazorDatasheet.Render.DefaultComponents
 @using BlazorDatasheet.Render.Headings
+@using BlazorDatasheet.Edit
 @using BlazorDatasheet.Menu
 @using BlazorDatasheet.Render.Layers
 @using FluentAssertions
@@ -448,6 +449,24 @@
 
         CountEventHandlers<HeadingRenderer>(oldSheet.Selection, "SelectionChanged").Should().Be(0);
         CountEventHandlers<HeadingRenderer>(newSheet.Selection, "SelectionChanged").Should().BeGreaterThan(0);
+    }
+
+    [Test]
+    public void Editor_Layer_Disposal_Removes_Editor_Subscriptions()
+    {
+        var sheet = new Sheet(3, 3);
+        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+
+        CountEventHandlers<EditorLayer>(sheet.Editor, "EditBegin").Should().BeGreaterThan(0);
+        CountEventHandlers<EditorLayer>(sheet.Editor, "EditFinished").Should().BeGreaterThan(0);
+        CountEventHandlers<EditorLayer>(sheet.Editor, "EditValueChanged").Should().BeGreaterThan(0);
+
+        foreach (var editorLayer in cut.FindComponents<EditorLayer>())
+            editorLayer.Instance.Dispose();
+
+        CountEventHandlers<EditorLayer>(sheet.Editor, "EditBegin").Should().Be(0);
+        CountEventHandlers<EditorLayer>(sheet.Editor, "EditFinished").Should().Be(0);
+        CountEventHandlers<EditorLayer>(sheet.Editor, "EditValueChanged").Should().Be(0);
     }
 
     [Test]

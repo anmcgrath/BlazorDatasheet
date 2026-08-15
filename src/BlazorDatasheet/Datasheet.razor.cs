@@ -292,7 +292,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             _cellLayoutProvider = new CellLayoutProvider(_sheet);
             _selectionManager = new SelectionInputManager(_sheet.Selection);
             AddEvents(_sheet);
-            _editorLayers.Clear();
+            ClearEditorLayers();
             requireRender = true;
         }
 
@@ -996,6 +996,18 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         }
     }
 
+    /// <summary>
+    /// Drops all registered editor layers, detaching their events so they don't keep this
+    /// datasheet alive.
+    /// </summary>
+    private void ClearEditorLayers()
+    {
+        foreach (var editorLayer in _editorLayers)
+            editorLayer.EditorInitialised -= HandleEditorInitialised;
+
+        _editorLayers.Clear();
+    }
+
     private void HandleEditorInitialised(object? sender, EventArgs e)
     {
         if (_pendingEditorKeys.Length == 0)
@@ -1066,6 +1078,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     {
         _isDisposing = true;
         RemoveEvents(_sheet);
+        ClearEditorLayers();
 
         if (_dotnetHelper is not null)
         {

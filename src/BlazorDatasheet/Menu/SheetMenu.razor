@@ -61,14 +61,16 @@
 
     protected override void OnInitialized()
     {
-        MenuService.MenuShown += (sender, args) =>
-        {
-            if (args.MenuId != this.MenuId)
-                return;
+        MenuService.MenuShown += HandleMenuShown;
+    }
 
-            this.CurrentContext = args.Context;
-            this.StateHasChanged();
-        };
+    private void HandleMenuShown(object? sender, MenuShownEventArgs args)
+    {
+        if (args.MenuId != this.MenuId)
+            return;
+
+        this.CurrentContext = args.Context;
+        this.StateHasChanged();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -81,6 +83,8 @@
 
     public async ValueTask DisposeAsync()
     {
+        // IMenuService is scoped, so a missed unsubscribe leaks for the life of the circuit
+        MenuService.MenuShown -= HandleMenuShown;
         await MenuService.UnregisterMenu(MenuId);
     }
 

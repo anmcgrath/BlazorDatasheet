@@ -270,6 +270,7 @@
     {
         EditorLayerChanged?.Invoke(_editorLayer, false);
         RemoveSheetEvents();
+        _editorLayer?.Dispose();
         if (_mainView != null) await _mainView.DisposeAsync();
         if (_autofitLayer != null) await ((IAsyncDisposable)_autofitLayer).DisposeAsync();
     }

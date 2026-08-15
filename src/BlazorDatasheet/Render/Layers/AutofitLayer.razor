@@ -213,6 +213,9 @@
 
     async ValueTask IAsyncDisposable.DisposeAsync()
     {
+        Sheet.Editor.EditAccepted -= EditorOnEditFinished;
+        Sheet.Commands.CommandRun -= CommandsOnCommandRun;
+
         if (_module is not null)
         {
             try
