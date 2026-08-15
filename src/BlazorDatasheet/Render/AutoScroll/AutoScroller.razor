@@ -82,24 +82,39 @@
             await DisposeJsObjectReferenceAsync(module);
         }
 
-        await PollAsync();
+        // not awaited - this loop runs for the lifetime of the component, and awaiting it here
+        // would leave the render lifecycle task pending forever.
+        _ = PollAsync();
     }
 
     private async Task PollAsync()
     {
-        _pt = new PeriodicTimer(TimeSpan.FromMilliseconds(Options.PollIntervalInMs));
-        while (await _pt.WaitForNextTickAsync())
+        var pt = new PeriodicTimer(TimeSpan.FromMilliseconds(Options.PollIntervalInMs));
+        _pt = pt;
+
+        try
         {
-            if (_isDisposed || _autoScroller == null)
-                return;
-
-            if (_pt.Period.Milliseconds != Options.PollIntervalInMs)
-                _pt.Period = TimeSpan.FromMilliseconds(Options.PollIntervalInMs);
-
-            if (_enabled && State.IsActive)
+            while (await pt.WaitForNextTickAsync())
             {
-                await _autoScroller.InvokeVoidAsync("scrollBy", _velX, _velY);
+                if (_isDisposed || _autoScroller == null)
+                    return;
+
+                if (Math.Abs(pt.Period.TotalMilliseconds - Options.PollIntervalInMs) > double.Epsilon)
+                    pt.Period = TimeSpan.FromMilliseconds(Options.PollIntervalInMs);
+
+                if (_enabled && State.IsActive)
+                {
+                    await _autoScroller.InvokeVoidAsync("scrollBy", _velX, _velY);
+                }
             }
+        }
+        catch (ObjectDisposedException)
+        {
+            // the timer was disposed while we were waiting on it
+        }
+        catch (JSDisconnectedException)
+        {
+            // circuit torn down mid-scroll
         }
     }
 

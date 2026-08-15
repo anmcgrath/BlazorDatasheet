@@ -9,6 +9,7 @@
 @using BlazorDatasheet.Render.Layers.Preview
 @using BlazorDatasheet.Services
 @using Microsoft.JSInterop
+@using static BlazorDatasheet.Util.JsInteropHelper
 @inherits Layer
 @implements IAsyncDisposable
 @inject IJSRuntime Js;
@@ -80,8 +81,20 @@
     {
         if (firstRender)
         {
-            _module = await Js.InvokeAsync<IJSObjectReference>("import",
+            if (_isDisposed)
+                return;
+
+            var module = await Js.InvokeAsync<IJSObjectReference>("import",
                 "./_content/BlazorDatasheet/Render/Layers/AutofillLayer.razor.js");
+
+            // disposal can complete while the import is in flight, which would leak the module
+            if (_isDisposed)
+            {
+                await DisposeJsObjectReferenceAsync(module);
+                return;
+            }
+
+            _module = module;
 
             await _windowEventService.RegisterMouseEvent("mousemove", HandleWindowMouseMove, 50);
             await _windowEventService.RegisterMouseEvent("mouseup", HandleWindowMouseUp);
@@ -300,8 +313,11 @@
         return sb.ToString();
     }
 
+    private bool _isDisposed;
+
     public async ValueTask DisposeAsync()
     {
+        _isDisposed = true;
         RemovePreviewItem();
         Sheet.Selection.SelectionChanged -= OnSelectionChanged;
 
