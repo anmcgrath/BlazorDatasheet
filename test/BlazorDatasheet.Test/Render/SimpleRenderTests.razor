@@ -452,6 +452,28 @@
     }
 
     [Test]
+    public async Task Pane_That_Starts_Empty_Registers_Its_Editor_Layer_When_Cells_Appear()
+    {
+        var sheet = new Sheet(3, 3);
+        sheet.Rows.Hide(0, 3);
+
+        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+        cut.FindComponents<EditorLayer>().Should().BeEmpty();
+
+        await cut.InvokeAsync(() => sheet.Rows.Unhide(0, 3));
+        cut.FindComponents<EditorLayer>().Should().NotBeEmpty();
+
+        await cut.InvokeAsync(() =>
+        {
+            cut.Instance.ForceReRender();
+            sheet.Editor.BeginEdit(1, 1);
+        });
+
+        // the layer must be registered, otherwise keyboard input can never reach the editor
+        cut.Instance.GetActiveEditorLayer().Should().NotBeNull();
+    }
+
+    [Test]
     public void Editor_Layer_Disposal_Removes_Editor_Subscriptions()
     {
         var sheet = new Sheet(3, 3);
