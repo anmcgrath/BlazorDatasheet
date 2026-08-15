@@ -33,8 +33,7 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
 
         if (Sheet != _sheet)
         {
-            if (Sheet is not null)
-                UnSubscribeEvents(Sheet);
+            UnSubscribeEvents(_sheet);
 
             _sheet = Sheet ?? new(0, 0);
             SubscribeEvents(_sheet);

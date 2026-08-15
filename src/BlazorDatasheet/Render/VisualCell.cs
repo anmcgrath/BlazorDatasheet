@@ -77,8 +77,12 @@ public class VisualCell
         Row = row;
         Col = col;
 
-        Width = sheet.Columns.GetVisualWidthBetween(Col, Col + VisibleColSpan);
-        Height = sheet.Rows.GetVisualHeightBetween(Row, Row + VisibleRowSpan);
+        Width = Merge == null
+            ? sheet.Columns.GetVisualWidthBetween(Col, Col + 1)
+            : sheet.Columns.GetVisualWidthBetween(Merge.Left, Merge.Right + 1);
+        Height = Merge == null
+            ? sheet.Rows.GetVisualHeightBetween(Row, Row + 1)
+            : sheet.Rows.GetVisualHeightBetween(Merge.Top, Merge.Bottom + 1);
 
         IsVisible = cell.IsVisible;
 

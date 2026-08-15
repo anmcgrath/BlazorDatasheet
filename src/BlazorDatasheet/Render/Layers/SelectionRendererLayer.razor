@@ -2,6 +2,7 @@
 @using BlazorDatasheet.Core.Events
 @using BlazorDatasheet.DataStructures.Geometry
 @inherits Layer
+@implements IDisposable
 
 <div class="bds-selection-layer">
     @foreach (var region in Sheet.Selection.Regions)

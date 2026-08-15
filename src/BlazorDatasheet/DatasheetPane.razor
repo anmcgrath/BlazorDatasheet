@@ -99,11 +99,14 @@
     private Dictionary<CellPosition, VisualCell> _visualCellCache = new();
     private IRegion? _currentViewPortRegion;
     private IRegion? _lastViewRegion;
+    private PaneContext? _lastPaneContext;
 
 
     protected override void OnParametersSet()
     {
         var sheet = PaneContext.Sheet;
+        var paneContextChanged = _lastPaneContext != null && !ReferenceEquals(_lastPaneContext, PaneContext);
+        _lastPaneContext = PaneContext;
 
         if (_sheet == null || _sheet != sheet)
         {
@@ -118,6 +121,9 @@
 
             _forceRender = true;
         }
+
+        if (paneContextChanged)
+            InvalidateVisibleCells();
 
         if (_lastViewRegion == null || !_lastViewRegion.Equals(ViewRegion))
         {
@@ -234,8 +240,24 @@
 
     private void HandleSizeModified(object? sender, SizeModifiedEventArgs e)
     {
-        _forceRender = true;
+        InvalidateVisibleCells();
         StateHasChanged();
+    }
+
+    private void InvalidateVisibleCells()
+    {
+        _visualCellCache.Clear();
+        _forceRender = true;
+
+        if (_sheet == null || _currentViewPortRegion == null)
+            return;
+
+        foreach (var row in _sheet.Rows.GetVisibleIndices(
+                     _currentViewPortRegion.Top,
+                     _currentViewPortRegion.Bottom))
+        {
+            _dirtyRowIndices.Add(row);
+        }
     }
 
     public async Task RefreshView()

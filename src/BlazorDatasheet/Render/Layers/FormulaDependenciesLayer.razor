@@ -3,6 +3,7 @@
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Formula.Core.Dependencies
 @inherits Layer
+@implements IDisposable
 
 @{
     if (ViewRegion != null)
@@ -70,6 +71,11 @@
     {
         oldSheet.Cells.FormulaChanged -= CellsOnFormulaChanged;
         newSheet.Cells.FormulaChanged += CellsOnFormulaChanged;
+    }
+
+    public void Dispose()
+    {
+        Sheet.Cells.FormulaChanged -= CellsOnFormulaChanged;
     }
 
     private Rect GetRect(IRegion region)
