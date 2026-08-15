@@ -140,9 +140,14 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (BeginningEdit && _sheet.Editor.IsEditing)
+        if (BeginningEdit)
         {
+            // always consume the flag, even if the edit stopped before we got here, otherwise the
+            // next unrelated render re-runs the begin-edit body.
             BeginningEdit = false;
+
+            if (!_sheet.Editor.IsEditing)
+                return;
 
             if (ActiveEditorContainer?.Instance == null)
                 return;
@@ -240,9 +245,17 @@
             _activeCellEditor = null;
 
             PaneContext.AutoScrollState.SetEditorSelectionActive(false);
-            IsEditing = false;
-            StateHasChanged();
         }
+
+        if (!IsEditing && !BeginningEdit)
+            return;
+
+        // the edit can finish before the editor component was ever created, so the editing state
+        // has to be cleared even when there is no active editor - otherwise this layer stays
+        // "editing" forever and GetActiveEditorLayer keeps picking it.
+        IsEditing = false;
+        BeginningEdit = false;
+        StateHasChanged();
     }
 
     private void AttachEditorAutoScroll(BaseEditor editor)
