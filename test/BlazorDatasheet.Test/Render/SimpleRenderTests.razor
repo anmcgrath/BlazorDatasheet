@@ -4,6 +4,8 @@
 @using BlazorDatasheet.Render
 @using BlazorDatasheet.Render.AutoScroll
 @using BlazorDatasheet.Render.DefaultComponents
+@using BlazorDatasheet.Render.Headings
+@using BlazorDatasheet.Render.Layers
 @using FluentAssertions
 @using NUnit.Framework
 @using System.Reflection
@@ -217,6 +219,166 @@
     }
 
     [Test]
+    public void Datasheet_Runtime_Layer_Options_ReRender_Existing_Panes()
+    {
+        var sheet = new Sheet(4, 4);
+        sheet.Selection.Set(new Region(0, 0));
+        var cut = RenderComponent<Datasheet>(parameters =>
+        {
+            parameters.Add(p => p.Sheet, sheet);
+            parameters.Add(p => p.UseAutoFill, false);
+            parameters.Add(p => p.ShowFormulaDependents, false);
+        });
+
+        cut.FindAll("#auto-filler").Should().BeEmpty();
+        cut.FindAll("#svg_layer").Should().BeEmpty();
+
+        cut.SetParametersAndRender(parameters =>
+        {
+            parameters.Add(p => p.UseAutoFill, true);
+            parameters.Add(p => p.ShowFormulaDependents, true);
+        });
+
+        cut.FindAll("#auto-filler").Should().NotBeEmpty();
+        cut.FindAll("#svg_layer").Should().NotBeEmpty();
+    }
+
+    [Test]
+    public async Task Datasheet_Runtime_ReadOnly_And_Precision_Changes_ReRender_Existing_Cells()
+    {
+        var sheet = new Sheet(1, 2);
+        sheet.Cells.SetValue(0, 0, true);
+        sheet.Cells[0, 0]!.Type = "boolean";
+        sheet.Cells.SetValue(0, 1, 1.234567);
+        var cut = RenderComponent<Datasheet>(parameters =>
+        {
+            parameters.Add(p => p.Sheet, sheet);
+            parameters.Add(p => p.IsReadOnly, false);
+            parameters.Add(p => p.NumberPrecisionDisplay, 2);
+        });
+
+        await cut.InvokeAsync(() =>
+        {
+            cut.Instance.ForceReRender();
+            sheet.Cells.SetValue(0, 1, 1.234567);
+        });
+
+        cut.Find("input[type='checkbox']").HasAttribute("disabled").Should().BeFalse();
+        cut.Find("div.bds-sheet-cell[data-col='1'] .bds-cell-container").TextContent.Should().Be("1.23");
+
+        cut.SetParametersAndRender(parameters =>
+        {
+            parameters.Add(p => p.IsReadOnly, true);
+            parameters.Add(p => p.NumberPrecisionDisplay, 4);
+        });
+
+        cut.Find("input[type='checkbox']").HasAttribute("disabled").Should().BeTrue();
+        cut.Find("div.bds-sheet-cell[data-col='1'] .bds-cell-container").TextContent.Should().Be("1.2346");
+    }
+
+    [Test]
+    public async Task Datasheet_Runtime_Custom_Renderer_Definition_ReRenders_Existing_Cell()
+    {
+        var sheet = new Sheet(1, 1);
+        sheet.Cells.SetValue(0, 0, true);
+        sheet.Cells[0, 0]!.Type = "custom";
+        var cut = RenderComponent<Datasheet>(parameters =>
+        {
+            parameters.Add(p => p.Sheet, sheet);
+            parameters.Add(p => p.CustomCellTypeDefinitions, new Dictionary<string, CellTypeDefinition>
+            {
+                { "custom", CellTypeDefinition.Create<TrackingAutoScrollEditor, TextRenderer>() }
+            });
+        });
+
+        await cut.InvokeAsync(() =>
+        {
+            cut.Instance.ForceReRender();
+            sheet.Cells.SetValue(0, 0, true);
+        });
+
+        cut.FindAll("input[type='checkbox']").Should().BeEmpty();
+
+        cut.SetParametersAndRender(parameters => parameters.Add(
+            p => p.CustomCellTypeDefinitions,
+            new Dictionary<string, CellTypeDefinition>
+            {
+                { "custom", CellTypeDefinition.Create<TrackingAutoScrollEditor, BoolRenderer>() }
+            }));
+
+        cut.FindAll("input[type='checkbox']").Should().ContainSingle();
+    }
+
+    [Test]
+    public void Datasheet_Sheet_Replacement_Moves_Heading_Subscriptions_To_New_Sheet()
+    {
+        var oldSheet = new Sheet(2, 2);
+        var newSheet = new Sheet(2, 2);
+        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, oldSheet));
+
+        CountEventHandlers<HeadingRenderer>(oldSheet.Selection, "SelectionChanged").Should().BeGreaterThan(0);
+
+        cut.SetParametersAndRender(parameters => parameters.Add(p => p.Sheet, newSheet));
+
+        CountEventHandlers<HeadingRenderer>(oldSheet.Selection, "SelectionChanged").Should().Be(0);
+        CountEventHandlers<HeadingRenderer>(newSheet.Selection, "SelectionChanged").Should().BeGreaterThan(0);
+    }
+
+    [Test]
+    public void Datasheet_Disposal_Removes_Render_Layer_Subscriptions()
+    {
+        var sheet = new Sheet(2, 2);
+        var cut = RenderComponent<Datasheet>(parameters =>
+        {
+            parameters.Add(p => p.Sheet, sheet);
+            parameters.Add(p => p.ShowFormulaDependents, true);
+        });
+
+        CountEventHandlers<SelectionRendererLayer>(sheet.Selection, "SelectionChanged").Should().BeGreaterThan(0);
+        CountEventHandlers<VirtualMergesLayer>(sheet.Cells, "CellsChanged").Should().BeGreaterThan(0);
+        CountEventHandlers<FormulaDependenciesLayer>(sheet.Cells, "FormulaChanged").Should().BeGreaterThan(0);
+
+        var selectionLayer = cut.FindComponent<SelectionRendererLayer>().Instance;
+        var virtualMergesLayer = cut.FindComponent<VirtualMergesLayer>().Instance;
+        var formulaDependenciesLayer = cut.FindComponent<FormulaDependenciesLayer>().Instance;
+
+        selectionLayer.Should().BeAssignableTo<IDisposable>();
+        virtualMergesLayer.Should().BeAssignableTo<IDisposable>();
+        formulaDependenciesLayer.Should().BeAssignableTo<IDisposable>();
+
+        ((IDisposable)selectionLayer).Dispose();
+        ((IDisposable)virtualMergesLayer).Dispose();
+        ((IDisposable)formulaDependenciesLayer).Dispose();
+
+        CountEventHandlers<SelectionRendererLayer>(sheet.Selection, "SelectionChanged").Should().Be(0);
+        CountEventHandlers<VirtualMergesLayer>(sheet.Cells, "CellsChanged").Should().Be(0);
+        CountEventHandlers<FormulaDependenciesLayer>(sheet.Cells, "FormulaChanged").Should().Be(0);
+    }
+
+    [Test]
+    public async Task Merged_Cell_Dimensions_Update_After_Resize_And_Visibility_Changes()
+    {
+        var sheet = new Sheet(2, 3);
+        sheet.Cells.Merge(new Region(0, 1, 0, 2));
+        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+        var mergedContent = () => cut.Find(".merged-cell > div");
+
+        mergedContent().GetAttribute("style").Should().Contain($"width: {sheet.Columns.GetVisualWidthBetween(0, 3)}px");
+
+        await cut.InvokeAsync(() => sheet.Columns.SetSize(2, 175));
+        cut.WaitForAssertion(() => mergedContent().GetAttribute("style").Should()
+            .Contain($"width: {sheet.Columns.GetVisualWidthBetween(0, 3)}px"));
+
+        await cut.InvokeAsync(() => sheet.Columns.Hide(1, 1));
+        cut.WaitForAssertion(() => mergedContent().GetAttribute("style").Should()
+            .Contain($"width: {sheet.Columns.GetVisualWidthBetween(0, 3)}px"));
+
+        await cut.InvokeAsync(() => sheet.Columns.Unhide(1, 1));
+        cut.WaitForAssertion(() => mergedContent().GetAttribute("style").Should()
+            .Contain($"width: {sheet.Columns.GetVisualWidthBetween(0, 3)}px"));
+    }
+
+    [Test]
     public async Task Datasheet_Tracks_Sheet_Selection_AutoScroll_State()
     {
         var sheet = new Sheet(4, 4);
@@ -296,5 +458,17 @@
         var field = typeof(Datasheet).GetField("_autoScrollState", BindingFlags.Instance | BindingFlags.NonPublic);
         field.Should().NotBeNull();
         return field!.GetValue(datasheet).Should().BeOfType<AutoScrollState>().Subject;
+    }
+
+    private static int CountEventHandlers<TTarget>(object source, string eventName)
+    {
+        for (var type = source.GetType(); type != null; type = type.BaseType)
+        {
+            var field = type.GetField(eventName, BindingFlags.Instance | BindingFlags.NonPublic);
+            if (field?.GetValue(source) is Delegate eventDelegate)
+                return eventDelegate.GetInvocationList().Count(x => x.Target is TTarget);
+        }
+
+        return 0;
     }
 }

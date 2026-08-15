@@ -5,6 +5,7 @@
 @using BlazorDatasheet.Render.DefaultComponents
 @using BlazorDatasheet.Util
 @inherits Layer
+@implements IDisposable
 
 @if (Sheet.Cells.AnyMerges() && Sheet.Rows.CountVisible(0, Sheet.NumRows) > 0)
 {
