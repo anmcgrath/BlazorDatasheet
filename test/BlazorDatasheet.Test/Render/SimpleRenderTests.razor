@@ -269,6 +269,28 @@
         autoScrollState.IsActive.Should().BeFalse();
     }
 
+    [Test]
+    public async Task Insert_Row_At_End_Renders_New_Row_Cells()
+    {
+        var sheet = new Sheet(3, 3);
+
+        var cut = RenderComponent<Datasheet>(parameters =>
+        {
+            parameters.Add(p => p.Sheet, sheet);
+            parameters.Add(p => p.ShowColHeadings, false);
+            parameters.Add(p => p.ShowRowHeadings, false);
+        });
+
+        await cut.InvokeAsync(() =>
+        {
+            cut.Instance.ForceReRender();
+            sheet.Rows.InsertAt(sheet.NumRows);
+            sheet.Cells.SetValue(3, 0, "New");
+        });
+
+        cut.FindAll("div.bds-sheet-cell[data-row='3']").Should().NotBeEmpty();
+    }
+
     private static AutoScrollState GetAutoScrollState(Datasheet datasheet)
     {
         var field = typeof(Datasheet).GetField("_autoScrollState", BindingFlags.Instance | BindingFlags.NonPublic);
