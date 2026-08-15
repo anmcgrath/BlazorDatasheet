@@ -98,6 +98,7 @@
     private bool _forceRender;
     private Dictionary<CellPosition, VisualCell> _visualCellCache = new();
     private IRegion? _currentViewPortRegion;
+    private IRegion? _lastViewRegion;
 
 
     protected override void OnParametersSet()
@@ -118,7 +119,12 @@
             _forceRender = true;
         }
 
-        _cellLayoutProvider.ViewRegion = ViewRegion;
+        if (_lastViewRegion == null || !_lastViewRegion.Equals(ViewRegion))
+        {
+            _lastViewRegion = ViewRegion;
+            _cellLayoutProvider.ViewRegion = ViewRegion;
+            _forceRender = true;
+        }
     }
 
     protected override void OnAfterRender(bool firstRender)
