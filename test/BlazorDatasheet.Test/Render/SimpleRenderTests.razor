@@ -201,6 +201,26 @@
     }
 
     [Test]
+    public void Constrained_ViewRegion_Limits_Frozen_Pane_Rows_To_The_Same_Columns()
+    {
+        var sheet = new Sheet(20, 20);
+        sheet.FreezeRowCols(2, 2, 0, 0);
+
+        var cut = RenderComponent<Datasheet>(parameters =>
+        {
+            parameters.Add(p => p.Sheet, sheet);
+            parameters.Add(p => p.ViewRegion, new Region(0, 19, 5, 9));
+        });
+
+        // every pane row must cover the constrained columns only, not the whole sheet width
+        foreach (var paneRow in cut.FindComponents<DatasheetPaneRow>())
+        {
+            paneRow.Instance.ViewRegion.Left.Should().Be(5);
+            paneRow.Instance.ViewRegion.Right.Should().Be(9);
+        }
+    }
+
+    [Test]
     public void Datasheet_Renders_Exactly_One_Autofit_Layer()
     {
         var sheet = new Sheet(20, 20);

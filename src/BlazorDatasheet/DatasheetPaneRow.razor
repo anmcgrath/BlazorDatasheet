@@ -89,8 +89,10 @@
             _freezeState = freezeState;
             _frozenLeftRegion = _viewRegion.GetIntersection(PaneContext.Sheet.GetFrozenLeftRegion());
             _frozenRightRegion = _viewRegion.GetIntersection(PaneContext.Sheet.GetFrozenRightRegion());
-            _centreRegion = new Region(_viewRegion.Top, _viewRegion.Bottom, freezeState.Left,
-                _viewRegion.Right - freezeState.Right);
+            // the freeze counts are absolute column indices, so clamp them into this row's view
+            var centreLeft = Math.Clamp(freezeState.Left, _viewRegion.Left, _viewRegion.Right);
+            var centreRight = Math.Clamp(_viewRegion.Right - freezeState.Right, centreLeft, _viewRegion.Right);
+            _centreRegion = new Region(_viewRegion.Top, _viewRegion.Bottom, centreLeft, centreRight);
         }
 
         base.OnParametersSet();

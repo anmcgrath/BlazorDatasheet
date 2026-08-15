@@ -5,6 +5,7 @@
 @using BlazorDatasheet.Render.AutoScroll
 @using BlazorDatasheet.Render.DefaultComponents
 @using BlazorDatasheet.Render.Headings
+@using BlazorDatasheet.Virtualise
 @using ColumnHeadingRenderer = BlazorDatasheet.Render.Headings.ColumnHeadingRenderer
 @inherits SheetComponentBase
 
@@ -100,7 +101,7 @@
                                     <div class="bds-frozen-top"
                                          style="z-index: @(PaneRowZIndex + 1); top: @(TopMainContentOffset)px;">
                                         <DatasheetPaneRow
-                                            ViewRegion="@(_sheet.GetFrozenTopRegion())"
+                                            ViewRegion="@(DatasheetViewRegionCalculator.GetFrozenTopRegion(_viewRegion, _sheet.NumRows, _sheet.FreezeState.Top))"
                                             @ref="_topPaneRow"
                                             OverscanColumns="OverscanColumns"
                                             OverscanRows="OverscanRows"
@@ -111,7 +112,7 @@
 
                                 <DatasheetPaneRow
                                     @ref="_mainPaneRow"
-                                    ViewRegion="@(new Region(_viewRegion.Top + _sheet.FreezeState.Top, _viewRegion.Bottom - _sheet.FreezeState.Bottom, _viewRegion.Left, _viewRegion.Right))"
+                                    ViewRegion="@(DatasheetViewRegionCalculator.GetMainViewRegion(_viewRegion, _sheet.NumRows, _sheet.NumCols, _sheet.FreezeState.Top, _sheet.FreezeState.Bottom, _sheet.FreezeState.Left, _sheet.FreezeState.Right))"
                                     OverscanColumns="OverscanColumns"
                                     OverscanRows="OverscanRows"
                                     RenderAutofitLayer="true"
@@ -122,7 +123,7 @@
                                 {
                                     <div class="bds-frozen-bottom" style="z-index: @(PaneRowZIndex + 1); bottom: 0;">
                                         <DatasheetPaneRow
-                                            ViewRegion="_sheet.GetFrozenBottomRegion()"
+                                            ViewRegion="@(DatasheetViewRegionCalculator.GetFrozenBottomRegion(_viewRegion, _sheet.NumRows, _sheet.FreezeState.Bottom))"
                                             @ref="_bottomPaneRow"
                                             OverscanColumns="OverscanColumns"
                                             OverscanRows="OverscanRows"
