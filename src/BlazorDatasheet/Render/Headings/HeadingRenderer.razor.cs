@@ -53,11 +53,12 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
             refreshView = true;
         }
 
+        // any parameter change (ChildContent, ShowColumnMenu, ...) has to reach the markup, and
+        // ShouldRender gates everything on _dirty.
+        _dirty = true;
+
         if (refreshView)
-        {
-            _dirty = true;
             await RefreshView();
-        }
     }
 
     private void UnSubscribeEvents(Sheet sheet)
@@ -70,6 +71,9 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
         sheet.Rows.Removed -= HandleRowColRemoved;
         sheet.Columns.Removed -= HandleRowColRemoved;
         sheet.Columns.SizeModified -= HandleSizeModified;
+        sheet.Rows.HeadingsModified -= HandleHeadingsModified;
+        sheet.Columns.HeadingsModified -= HandleHeadingsModified;
+        sheet.FrozenRowCols -= HandleFrozenRowCols;
     }
 
     private void SubscribeEvents(Sheet sheet)
@@ -82,6 +86,25 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
         sheet.Rows.Removed += HandleRowColRemoved;
         sheet.Columns.Removed += HandleRowColRemoved;
         sheet.Columns.SizeModified += HandleSizeModified;
+        sheet.Rows.HeadingsModified += HandleHeadingsModified;
+        sheet.Columns.HeadingsModified += HandleHeadingsModified;
+        sheet.FrozenRowCols += HandleFrozenRowCols;
+    }
+
+    private void HandleHeadingsModified(object? sender, HeadingsModifiedEventArgs e)
+    {
+        if (e.Axis != Axis)
+            return;
+
+        _dirty = true;
+        StateHasChanged();
+    }
+
+    private void HandleFrozenRowCols(object? sender, SheetFrozenRowColsEventArgs e)
+    {
+        // the frozen heading panes are gated on the freeze state, so they must re-render with it
+        _dirty = true;
+        StateHasChanged();
     }
 
     private bool _dirty;
@@ -128,10 +151,11 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
         StateHasChanged();
     }
 
-    private void HandleSizeModified(object? sender, SizeModifiedEventArgs e)
+    private async void HandleSizeModified(object? sender, SizeModifiedEventArgs e)
     {
         _dirty = true;
-        RefreshView();
+        StateHasChanged();
+        await RefreshView();
     }
 
     public async Task RefreshView()

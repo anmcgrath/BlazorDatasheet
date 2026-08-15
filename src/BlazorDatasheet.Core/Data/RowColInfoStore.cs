@@ -77,6 +77,11 @@ public abstract class RowColInfoStore
     public virtual event EventHandler<SizeModifiedEventArgs>? SizeModified;
 
     /// <summary>
+    /// Fired when a row/column heading is changed.
+    /// </summary>
+    public virtual event EventHandler<HeadingsModifiedEventArgs>? HeadingsModified;
+
+    /// <summary>
     /// Sets the sizes of rows/cols between (and including) the indices specified, to the value given.
     /// </summary>
     /// <param name="start"></param>
@@ -117,6 +122,7 @@ public abstract class RowColInfoStore
     {
         var restoreData = HeadingStore.Set(start, end, heading);
         Sheet.MarkDirty(GetSpannedRegion(start, end));
+        HeadingsModified?.Invoke(this, new HeadingsModifiedEventArgs(start, end, _axis));
         return new RowColInfoRestoreData()
         {
             HeadingsRestoreData = restoreData
@@ -410,6 +416,12 @@ public abstract class RowColInfoStore
                      .AddedIntervals))
         {
             EmitSizeModified(change.Start, change.End);
+        }
+
+        foreach (var change in data.HeadingsRestoreData.RemovedIntervals.Concat(data.HeadingsRestoreData
+                     .AddedIntervals))
+        {
+            HeadingsModified?.Invoke(this, new HeadingsModifiedEventArgs(change.Start, change.End, _axis));
         }
     }
 

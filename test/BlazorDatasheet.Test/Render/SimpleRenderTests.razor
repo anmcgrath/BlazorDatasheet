@@ -148,6 +148,44 @@
     }
 
     [Test]
+    public async Task Setting_Column_Headings_At_Runtime_Updates_Rendered_Heading()
+    {
+        var sheet = new Sheet(3, 3);
+        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+
+        // headings are virtualised - a size change refreshes the heading viewport so items exist
+        await cut.InvokeAsync(() => sheet.Columns.SetSize(0, 90));
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("A"));
+        cut.Markup.Should().NotContain("Renamed");
+
+        await cut.InvokeAsync(() => sheet.Columns.SetHeadings(0, 0, "Renamed"));
+
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Renamed"));
+    }
+
+    [Test]
+    public async Task Changing_Column_Header_Template_At_Runtime_ReRenders_Headings()
+    {
+        var sheet = new Sheet(3, 3);
+        var cut = RenderComponent<Datasheet>(parameters =>
+        {
+            parameters.Add(p => p.Sheet, sheet);
+            parameters.Add(p => p.ColumnHeaderTemplate, (RenderFragment<HeadingContext>)(ctx => @<div>before</div>));
+        });
+
+        // headings are virtualised - a size change refreshes the heading viewport so items exist
+        await cut.InvokeAsync(() => sheet.Columns.SetSize(0, 90));
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("before"));
+
+        cut.SetParametersAndRender(parameters => parameters.Add(
+            p => p.ColumnHeaderTemplate,
+            (RenderFragment<HeadingContext>)(ctx => @<div>after</div>)));
+
+        cut.Markup.Should().Contain("after");
+        cut.Markup.Should().NotContain("before");
+    }
+
+    [Test]
     public async Task Freezing_Columns_At_Runtime_Renders_Frozen_Side_Panes()
     {
         var sheet = new Sheet(20, 20);
