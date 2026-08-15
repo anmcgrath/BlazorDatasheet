@@ -148,6 +148,21 @@
     }
 
     [Test]
+    public async Task Freezing_Columns_At_Runtime_Renders_Frozen_Side_Panes()
+    {
+        var sheet = new Sheet(20, 20);
+        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+
+        cut.FindAll("div.bds-frozen-left").Should().BeEmpty();
+
+        await cut.InvokeAsync(() => sheet.FreezeLeftColumns(2));
+        cut.FindAll("div.bds-frozen-left").Should().NotBeEmpty();
+
+        await cut.InvokeAsync(() => sheet.Commands.Undo());
+        cut.FindAll("div.bds-frozen-left").Should().BeEmpty();
+    }
+
+    [Test]
     public void Datasheet_Renders_Exactly_One_Autofit_Layer()
     {
         var sheet = new Sheet(20, 20);

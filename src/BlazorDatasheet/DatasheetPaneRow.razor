@@ -1,4 +1,5 @@
-﻿@using BlazorDatasheet.DataStructures.Geometry
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Extensions
 @using BlazorDatasheet.Render
 @using BlazorDatasheet.Render.Layers
@@ -74,16 +75,22 @@
     private IRegion? _frozenLeftRegion;
     private IRegion? _frozenRightRegion;
     private IRegion? _centreRegion;
+    private FreezeState? _freezeState;
 
     protected override void OnParametersSet()
     {
-        if (_viewRegion == null || !_viewRegion.Equals(ViewRegion))
+        var freezeState = PaneContext.Sheet.FreezeState;
+
+        // the derived regions depend on the freeze state as well as the view region - freezing
+        // columns leaves this row's ViewRegion unchanged, so it must be compared separately.
+        if (_viewRegion == null || !_viewRegion.Equals(ViewRegion) || _freezeState != freezeState)
         {
             _viewRegion = ViewRegion;
+            _freezeState = freezeState;
             _frozenLeftRegion = _viewRegion.GetIntersection(PaneContext.Sheet.GetFrozenLeftRegion());
             _frozenRightRegion = _viewRegion.GetIntersection(PaneContext.Sheet.GetFrozenRightRegion());
-            _centreRegion = new Region(_viewRegion.Top, _viewRegion.Bottom, PaneContext.Sheet.FreezeState.Left,
-                _viewRegion.Right - PaneContext.Sheet.FreezeState.Right);
+            _centreRegion = new Region(_viewRegion.Top, _viewRegion.Bottom, freezeState.Left,
+                _viewRegion.Right - freezeState.Right);
         }
 
         base.OnParametersSet();
