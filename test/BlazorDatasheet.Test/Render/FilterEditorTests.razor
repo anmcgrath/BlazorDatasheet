@@ -1,0 +1,46 @@
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Data.Filter
+@using BlazorDatasheet.Menu.Filters
+@using FluentAssertions
+@using NUnit.Framework
+@inherits BaseTestComponent
+
+@code
+{
+    [Test]
+    public void Value_Filter_Editor_Reloads_Column_Data_When_Column_Changes()
+    {
+        var sheet = new Sheet(3, 2);
+        sheet.Cells.SetValues(0, 0, new object[][]
+        {
+            ["a0", "b0"],
+            ["a1", "b1"],
+            ["a2", "b2"],
+        });
+
+        var cut = RenderComponent<ValueFilterEditor>(parameters =>
+        {
+            parameters.Add(p => p.Sheet, sheet);
+            parameters.Add(p => p.ColumnIndex, 0);
+            parameters.Add(p => p.Filter, new ValueFilter());
+        });
+
+        GetValueLabels(cut).Should().BeEquivalentTo("a0", "a1", "a2");
+
+        cut.SetParametersAndRender(parameters =>
+        {
+            parameters.Add(p => p.ColumnIndex, 1);
+            parameters.Add(p => p.Filter, new ValueFilter());
+        });
+
+        GetValueLabels(cut).Should().BeEquivalentTo("b0", "b1", "b2");
+    }
+
+    private static IEnumerable<string> GetValueLabels(IRenderedComponent<ValueFilterEditor> cut)
+    {
+        return cut.FindAll("label")
+            .Where(x => x.GetAttribute("for") != "select-all" && x.GetAttribute("for") != "include-blanks")
+            .Select(x => x.TextContent)
+            .ToList();
+    }
+}
