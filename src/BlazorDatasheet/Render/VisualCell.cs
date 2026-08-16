@@ -28,6 +28,16 @@ public class VisualCell
     public double Height { get; set; }
     public double Width { get; set; }
 
+    /// <summary>
+    /// The horizontal alignment the cell is actually rendered with, after applying defaults.
+    /// </summary>
+    public TextAlign HorizontalAlign { get; private set; } = TextAlign.Start;
+
+    /// <summary>
+    /// The vertical alignment the cell is actually rendered with, after applying defaults.
+    /// </summary>
+    public TextAlign VerticalAlign { get; private set; } = TextAlign.Start;
+
 
     /// <summary>
     /// Create a visual cell, which has formatting properties calculated for the cell.
@@ -85,6 +95,8 @@ public class VisualCell
             : sheet.Rows.GetVisualHeightBetween(Merge.Top, Merge.Bottom + 1);
 
         IsVisible = cell.IsVisible;
+        HorizontalAlign = ResolveHorizontalAlign(format, cellValue.ValueType);
+        VerticalAlign = ResolveVerticalAlign(format);
 
         FormatStyleString =
             GetCellFormatStyleString(Row, Col, format, cell.IsValid, cellValue.ValueType, sheet, Width, Height);
@@ -96,6 +108,44 @@ public class VisualCell
     private VisualCell()
     {
     }
+
+    /// <summary>
+    /// Resolves the horizontal alignment a cell is rendered with. Numbers sit at the end of the
+    /// cell unless the format says otherwise.
+    /// </summary>
+    internal static TextAlign ResolveHorizontalAlign(IReadonlyCellFormat? format, CellValueType type)
+    {
+        if (format?.HorizontalTextAlign != null)
+            return format.HorizontalTextAlign.Value;
+
+        return type == CellValueType.Number ? TextAlign.End : TextAlign.Start;
+    }
+
+    /// <summary>
+    /// Resolves the vertical alignment a cell is rendered with.
+    /// </summary>
+    internal static TextAlign ResolveVerticalAlign(IReadonlyCellFormat? format)
+        => format?.VerticalTextAlign ?? TextAlign.Start;
+
+    /// <summary>
+    /// The physical CSS keyword for horizontal text alignment.
+    /// </summary>
+    internal static string ToCssTextAlign(TextAlign align) => align switch
+    {
+        TextAlign.Center => "center",
+        TextAlign.End => "right",
+        _ => "left"
+    };
+
+    /// <summary>
+    /// The CSS keyword for flex alignment.
+    /// </summary>
+    internal static string ToCssFlexAlign(TextAlign align) => align switch
+    {
+        TextAlign.Center => "center",
+        TextAlign.End => "end",
+        _ => "start"
+    };
 
     private static string GetCellFormatStyleString(int row, int col, CellFormat? format, bool isCellValid,
         CellValueType type, Sheet sheet, double cellWidth, double cellHeight)
@@ -120,40 +170,16 @@ public class VisualCell
         if (format.BorderRight != null)
             sb.AddStyle("border-right", $"{format.BorderRight.Width}px solid {format.BorderRight.Color};");
 
-        // if number and no align is set, move to right
-        if (type == CellValueType.Number && format.HorizontalTextAlign == null)
+        // numbers move to the right when no align is set, otherwise the defaults already apply
+        if (format.HorizontalTextAlign != null || type == CellValueType.Number)
         {
-            sb.AddStyle("justify-content", "end");
-            sb.AddStyle("text-align", "end");
-        }
-        else if (format.HorizontalTextAlign != null)
-        {
-            if (format.HorizontalTextAlign == TextAlign.Start)
-            {
-                sb.AddStyle("justify-content", "start");
-                sb.AddStyle("text-align", "start");
-            }
-            else if (format.HorizontalTextAlign == TextAlign.End)
-            {
-                sb.AddStyle("justify-content", "end");
-                sb.AddStyle("text-align", "end");
-            }
-            else if (format.HorizontalTextAlign == TextAlign.Center)
-            {
-                sb.AddStyle("justify-content", "center");
-                sb.AddStyle("text-align", "center");
-            }
+            var horizontalAlign = ResolveHorizontalAlign(format, type);
+            sb.AddStyle("justify-content", ToCssFlexAlign(horizontalAlign));
+            sb.AddStyle("text-align", ToCssTextAlign(horizontalAlign));
         }
 
         if (format.VerticalTextAlign != null)
-        {
-            if (format.VerticalTextAlign == TextAlign.Start)
-                sb.AddStyle("align-items", "start");
-            else if (format.VerticalTextAlign == TextAlign.End)
-                sb.AddStyle("align-items", "end");
-            else if (format.VerticalTextAlign == TextAlign.Center)
-                sb.AddStyle("align-items", "center");
-        }
+            sb.AddStyle("align-items", ToCssFlexAlign(ResolveVerticalAlign(format)));
 
         if (format.TextWrap == TextWrapping.Wrap)
         {

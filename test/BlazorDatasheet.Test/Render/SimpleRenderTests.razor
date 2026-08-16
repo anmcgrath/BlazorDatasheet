@@ -2,6 +2,8 @@
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Render
+@using BlazorDatasheet.Core.Formats
+@using TextAlign = BlazorDatasheet.Core.Formats.TextAlign
 @using BlazorDatasheet.Render.AutoScroll
 @using BlazorDatasheet.Render.DefaultComponents
 @using BlazorDatasheet.Render.Headings
@@ -115,15 +117,62 @@
 
         var editor = editors.First();
 
+        // the editor is inset by half the selection border, which straddles the cell edge
         editor.GetStyle()
             .GetTop()
             .Should()
-            .Be(sheet.Rows.GetVisualTop(1) + 1 + "px");
+            .Be($"calc({sheet.Rows.GetVisualTop(1)}px + var(--selection-border-thickness) / 2)");
 
         editor.GetStyle()
             .GetLeft()
             .Should()
-            .Be(sheet.Columns.GetVisualLeft(2) + 1 + "px");
+            .Be($"calc({sheet.Columns.GetVisualLeft(2)}px + var(--selection-border-thickness) / 2)");
+    }
+
+    [TestCase(TextAlign.Start, "left", "start")]
+    [TestCase(TextAlign.Center, "center", "center")]
+    [TestCase(TextAlign.End, "right", "end")]
+    public async Task Editor_Mirrors_Cell_Text_Alignment(TextAlign align, string expectedTextAlign,
+        string expectedFlexAlign)
+    {
+        var sheet = new Sheet(3, 3);
+        sheet.Range(1, 1)!.Format = new CellFormat
+        {
+            HorizontalTextAlign = align,
+            VerticalTextAlign = align
+        };
+
+        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+
+        await cut.InvokeAsync(() =>
+        {
+            cut.Instance.ForceReRender();
+            sheet.Editor.BeginEdit(1, 1);
+        });
+
+        var editorStyle = cut.Find("div.bds-text-editor > div").GetAttribute("style")!;
+
+        editorStyle.Should().Contain($"text-align: {expectedTextAlign}");
+        editorStyle.Should().Contain($"--editor-vertical-align: {expectedFlexAlign}");
+    }
+
+    [Test]
+    public async Task Editor_Aligns_Unformatted_Number_Cell_To_The_End()
+    {
+        var sheet = new Sheet(3, 3);
+        sheet.Cells.SetValue(1, 1, 12.34);
+
+        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+
+        await cut.InvokeAsync(() =>
+        {
+            cut.Instance.ForceReRender();
+            sheet.Editor.BeginEdit(1, 1);
+        });
+
+        // numbers render right-aligned without any format, so the editor must too
+        cut.Find("div.bds-text-editor > div").GetAttribute("style")!
+            .Should().Contain("text-align: right");
     }
 
     [Test]
