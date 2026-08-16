@@ -196,6 +196,33 @@
     box-sizing: border-box;
 }
 
+.bds-cell-align-start {
+    justify-content: start;
+    text-align: left;
+}
+
+.bds-cell-align-center {
+    justify-content: center;
+    text-align: center;
+}
+
+.bds-cell-align-end {
+    justify-content: end;
+    text-align: right;
+}
+
+.bds-cell-valign-start {
+    align-items: start;
+}
+
+.bds-cell-valign-center {
+    align-items: center;
+}
+
+.bds-cell-valign-end {
+    align-items: end;
+}
+
 .merged-cell {
     background: var(--sheet-bg-color);
     border: var(--sheet-border-style);

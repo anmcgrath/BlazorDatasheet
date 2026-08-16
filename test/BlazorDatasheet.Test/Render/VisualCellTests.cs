@@ -23,6 +23,38 @@ public class VisualCellTests
     }
 
     [Test]
+    public void Plain_Number_Uses_Shared_Alignment_Class_Without_Inline_Style_Or_Format()
+    {
+        var sheet = new Sheet(1, 1);
+        sheet.Cells.SetValue(0, 0, 123);
+
+        var cell = new VisualCell(0, 0, sheet, 12);
+
+        cell.ClassString.Should().Be("bds-sheet-cell bds-cell-align-end");
+        cell.FormatStyleString.Should().BeEmpty();
+        cell.Format.Should().BeNull();
+    }
+
+    [Test]
+    public void Explicit_Alignment_Uses_Shared_Classes_And_Other_Formatting_Remains_Inline()
+    {
+        var sheet = new Sheet(1, 1);
+        sheet.SetFormat(new Region(0, 0), new CellFormat
+        {
+            HorizontalTextAlign = TextAlign.Center,
+            VerticalTextAlign = TextAlign.End,
+            BackgroundColor = "red"
+        });
+
+        var cell = new VisualCell(0, 0, sheet, 12);
+
+        cell.ClassString.Should().Be("bds-sheet-cell bds-cell-align-center bds-cell-valign-end");
+        cell.FormatStyleString.Should().Contain("background-color: red");
+        cell.FormatStyleString.Should().NotContain("text-align");
+        cell.FormatStyleString.Should().NotContain("align-items");
+    }
+
+    [Test]
     public void Merged_Cell_Dimensions_Include_Visible_Cells_After_Hidden_Internal_Row_And_Column()
     {
         var sheet = new Sheet(3, 3);

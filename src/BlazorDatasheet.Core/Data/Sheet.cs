@@ -534,6 +534,17 @@ public class Sheet
     /// <returns></returns>
     public CellFormat GetFormat(int row, int col)
     {
+        return GetFormatForRendering(row, col) ?? new CellFormat();
+    }
+
+    /// <summary>
+    /// Resolves the effective format without allocating an empty format for an unformatted cell.
+    /// Rendering calls this for every cell entering the viewport, and the common case has no
+    /// format at all. Public callers still receive the mutable, non-null copy promised by
+    /// <see cref="GetFormat(int,int)"/>.
+    /// </summary>
+    internal CellFormat? GetFormatForRendering(int row, int col)
+    {
         // this runs for every cell that scrolls into view, so it avoids copying a format
         // unless the copy actually contributes to the result.
         var cellFormat = Cells.GetFormat(row, col);
@@ -546,7 +557,7 @@ public class Sheet
 
         // by far the most common case - nothing is formatted at this position.
         if (!hasCell && !hasRow && !hasCol)
-            return new CellFormat();
+            return null;
 
         // when only one of the three contributes there is nothing to merge, so a single copy will do.
         if (!hasRow && !hasCol)

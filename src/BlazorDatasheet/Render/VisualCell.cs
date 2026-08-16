@@ -16,6 +16,7 @@ public class VisualCell
     public int Col { get; private set; }
     public IRegion? Merge { get; private set; }
     public string CellType { get; private set; } = "default";
+    public string ClassString { get; private set; } = "bds-sheet-cell";
     public string FormatStyleString { get; private set; } = string.Empty;
     public string? Icon { get; private set; }
     public CellFormat? Format { get; private set; }
@@ -72,8 +73,7 @@ public class VisualCell
 
         // the sheet is queried directly rather than through a SheetCell facade - the facade would be
         // an extra allocation per cell and each of its properties round-trips back to the sheet anyway.
-        // GetFormat already returns a fresh format, so there is nothing to clone here.
-        var format = sheet.GetFormat(row, col);
+        var format = sheet.GetFormatForRendering(row, col);
 
         var cellValue = sheet.Cells.GetCellValue(row, col);
         Value = cellValue.Data;
@@ -81,28 +81,32 @@ public class VisualCell
         if (cellValue.ValueType == CellValueType.Number)
         {
             var roundedNumber = Math.Round(cellValue.GetValue<double>(), numberOfSignificantDigits);
-            if (format.NumberFormat != null)
+            if (format?.NumberFormat != null)
                 FormattedString = roundedNumber.ToString(format.NumberFormat);
             else
                 FormattedString = roundedNumber.ToString(CultureInfo.InvariantCulture);
         }
-        else if (cellValue.ValueType == CellValueType.Date && format.NumberFormat != null)
+        else if (cellValue.ValueType == CellValueType.Date && format?.NumberFormat != null)
             FormattedString = (cellValue.GetValue<DateTime>()).ToString(format.NumberFormat);
         else
             FormattedString = Value?.ToString() ?? string.Empty;
 
         var cf = sheet.ConditionalFormats.GetFormatResult(row, col);
         if (cf != null)
+        {
+            format ??= new CellFormat();
             format.Merge(cf);
+        }
 
         UpdateSize(sheet, rowMetrics, colMetrics);
 
         HorizontalAlign = ResolveHorizontalAlign(format, cellValue.ValueType);
         VerticalAlign = ResolveVerticalAlign(format);
+        ClassString = GetCellClassString(format, cellValue.ValueType);
 
         FormatStyleString =
-            GetCellFormatStyleString(format, sheet.Cells.IsValid(row, col), cellValue.ValueType);
-        Icon = format.Icon;
+            GetCellFormatStyleString(format, sheet.Cells.IsValid(row, col));
+        Icon = format?.Icon;
         CellType = sheet.Cells.GetCellType(row, col);
         Format = format;
     }
@@ -187,22 +191,55 @@ public class VisualCell
         _ => "start"
     };
 
-    private static string GetCellFormatStyleString(CellFormat? format, bool isCellValid, CellValueType type)
+    /// <summary>
+    /// Returns shared class strings for alignment instead of creating identical inline style
+    /// strings for each cell. Numeric cells hit the end-aligned fast path by default.
+    /// </summary>
+    private static string GetCellClassString(IReadonlyCellFormat? format, CellValueType type)
     {
-        if (format == null)
-            return string.Empty;
+        var horizontal = format?.HorizontalTextAlign != null || type == CellValueType.Number
+            ? ResolveHorizontalAlign(format, type)
+            : (TextAlign?)null;
+        var vertical = format?.VerticalTextAlign;
 
-        // an unformatted, valid, non-numeric cell contributes no inline style at all - which is
-        // most cells on most sheets.
-        if (format.IsDefaultFormat() && isCellValid && type != CellValueType.Number)
+        return (horizontal, vertical) switch
+        {
+            (null, null) => "bds-sheet-cell",
+            (TextAlign.Start, null) => "bds-sheet-cell bds-cell-align-start",
+            (TextAlign.Center, null) => "bds-sheet-cell bds-cell-align-center",
+            (TextAlign.End, null) => "bds-sheet-cell bds-cell-align-end",
+            (null, TextAlign.Start) => "bds-sheet-cell bds-cell-valign-start",
+            (null, TextAlign.Center) => "bds-sheet-cell bds-cell-valign-center",
+            (null, TextAlign.End) => "bds-sheet-cell bds-cell-valign-end",
+            (TextAlign.Start, TextAlign.Start) => "bds-sheet-cell bds-cell-align-start bds-cell-valign-start",
+            (TextAlign.Start, TextAlign.Center) => "bds-sheet-cell bds-cell-align-start bds-cell-valign-center",
+            (TextAlign.Start, TextAlign.End) => "bds-sheet-cell bds-cell-align-start bds-cell-valign-end",
+            (TextAlign.Center, TextAlign.Start) => "bds-sheet-cell bds-cell-align-center bds-cell-valign-start",
+            (TextAlign.Center, TextAlign.Center) => "bds-sheet-cell bds-cell-align-center bds-cell-valign-center",
+            (TextAlign.Center, TextAlign.End) => "bds-sheet-cell bds-cell-align-center bds-cell-valign-end",
+            (TextAlign.End, TextAlign.Start) => "bds-sheet-cell bds-cell-align-end bds-cell-valign-start",
+            (TextAlign.End, TextAlign.Center) => "bds-sheet-cell bds-cell-align-end bds-cell-valign-center",
+            (TextAlign.End, TextAlign.End) => "bds-sheet-cell bds-cell-align-end bds-cell-valign-end",
+            _ => "bds-sheet-cell"
+        };
+    }
+
+    private static string GetCellFormatStyleString(CellFormat? format, bool isCellValid)
+    {
+        // an unformatted, valid cell contributes no inline style at all - which is most cells on
+        // most sheets. Default numeric alignment is supplied by ClassString.
+        if (isCellValid && (format == null || format.IsDefaultFormat()))
             return string.Empty;
 
         var sb = new StyleBuilder();
 
         if (!isCellValid)
             sb.AddStyle("color", "var(--invalid-cell-foreground-color)");
-        else
+        else if (format != null)
             sb.AddStyle("color", format.ForegroundColor!, format.ForegroundColor != null);
+
+        if (format == null)
+            return sb.ToString();
 
         sb.AddStyle("background-color", format.BackgroundColor!, format.BackgroundColor != null);
         sb.AddStyle("font-weight", format.FontWeight!, format.FontWeight != null);
@@ -213,17 +250,6 @@ public class VisualCell
             sb.AddStyle("border-bottom", $"{format.BorderBottom.Width}px solid {format.BorderBottom.Color};");
         if (format.BorderRight != null)
             sb.AddStyle("border-right", $"{format.BorderRight.Width}px solid {format.BorderRight.Color};");
-
-        // numbers move to the right when no align is set, otherwise the defaults already apply
-        if (format.HorizontalTextAlign != null || type == CellValueType.Number)
-        {
-            var horizontalAlign = ResolveHorizontalAlign(format, type);
-            sb.AddStyle("justify-content", ToCssFlexAlign(horizontalAlign));
-            sb.AddStyle("text-align", ToCssTextAlign(horizontalAlign));
-        }
-
-        if (format.VerticalTextAlign != null)
-            sb.AddStyle("align-items", ToCssFlexAlign(ResolveVerticalAlign(format)));
 
         if (format.TextWrap == TextWrapping.Wrap)
         {

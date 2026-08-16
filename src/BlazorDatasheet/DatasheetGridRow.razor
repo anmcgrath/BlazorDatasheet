@@ -1,9 +1,6 @@
 ﻿@using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Render
-@{
-    var colOffset = 1;
-}
 @foreach (var col in _visibleColIndices)
 {
     if (!Cache.TryGetValue(new CellPosition(Row, col), out var visualCell))
@@ -13,19 +10,17 @@
     {
         if (!visualCell.IsMergeStart)
         {
-            colOffset++;
+            // Keep the CSS-grid track occupied so cells after a merge retain their column, but do
+            // not render the full cell subtree here; VirtualMergesLayer owns the visible merge.
+            <div aria-hidden="true" class="bds-merged-cell-placeholder"></div>
             continue;
         }
     }
 
-    <div @key="col"
-         style="grid-row: 1; grid-column:@colOffset;">
-        @if (CellRenderFragment != null)
-        {
-            @CellRenderFragment(visualCell)
-        }
-    </div>
-    colOffset++;
+    @if (CellRenderFragment != null)
+    {
+        @CellRenderFragment(visualCell)
+    }
 }
 
 @code {
