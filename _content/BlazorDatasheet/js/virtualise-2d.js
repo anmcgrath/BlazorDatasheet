@@ -88,8 +88,10 @@ class Virtualiser2d {
         let getRect = this.calculateViewRect.bind(this)
 
         let viewRect = getRect(wholeEl)
+        // the component may already be disposed - swallow the resulting rejection
         if (dotNetHelper)
-            dotNetHelper.invokeMethodAsync(dotnetScrollHandlerName, viewRect);
+            dotNetHelper.invokeMethodAsync(dotnetScrollHandlerName, viewRect).catch(() => {
+            });
 
         let observer = new IntersectionObserver((entries, observer) => {
             let shouldNotify = false
@@ -110,7 +112,8 @@ class Virtualiser2d {
 
             let viewRect = getRect(wholeEl)
             if (dotNetHelper)
-                dotNetHelper.invokeMethodAsync(dotnetScrollHandlerName, viewRect);
+                dotNetHelper.invokeMethodAsync(dotnetScrollHandlerName, viewRect).catch(() => {
+                });
         }, {root: parent, threshold: 0})
 
         observer.observe(fillerTop)
