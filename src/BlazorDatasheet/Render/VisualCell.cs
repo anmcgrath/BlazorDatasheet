@@ -47,22 +47,33 @@ public class VisualCell
     /// <param name="sheet">The sheet that the cell is inside.</param>
     /// <param name="numberOfSignificantDigits">The number of digits to round the displayed number to.</param>
     internal VisualCell(int row, int col, Sheet sheet, int numberOfSignificantDigits)
+        : this(row, col, sheet, numberOfSignificantDigits,
+            AxisMetrics.ForRow(sheet, row), AxisMetrics.ForColumn(sheet, col))
     {
+    }
+
+    /// <summary>
+    /// Creates a visual cell using row and column metrics that have already been resolved.
+    /// </summary>
+    /// <remarks>
+    /// A whole viewport is built one row at a time, and the row height, column width and
+    /// visibility of each are the same for every cell along that row or column. Resolving them
+    /// once per row/column instead of once per cell removes several cumulative-size binary
+    /// searches per cell.
+    /// </remarks>
+    internal VisualCell(int row, int col, Sheet sheet, int numberOfSignificantDigits,
+        in AxisMetrics rowMetrics, in AxisMetrics colMetrics)
+    {
+        Row = row;
+        Col = col;
         Merge = sheet.Cells.GetMerge(row, col)?.GetIntersection(sheet.Region);
 
-        if (Merge != null)
-        {
-            VisibleMergeColStart = sheet.Columns.GetNextVisible(Merge.Left - 1);
-            VisibleMergeRowStart = sheet.Rows.GetNextVisible(Merge.Top - 1);
+        UpdateMergeSpans(sheet);
 
-            IsMergeStart = row == VisibleMergeRowStart && col == VisibleMergeColStart;
-
-            VisibleRowSpan = sheet.Rows.CountVisible(VisibleMergeRowStart, Merge.Bottom);
-            VisibleColSpan = sheet.Columns.CountVisible(VisibleMergeColStart, Merge.Right);
-        }
-
-        var cell = sheet.Cells.GetCell(row, col);
-        var format = cell.Format.Clone();
+        // the sheet is queried directly rather than through a SheetCell facade - the facade would be
+        // an extra allocation per cell and each of its properties round-trips back to the sheet anyway.
+        // GetFormat already returns a fresh format, so there is nothing to clone here.
+        var format = sheet.GetFormat(row, col);
 
         var cellValue = sheet.Cells.GetCellValue(row, col);
         Value = cellValue.Data;
@@ -84,29 +95,58 @@ public class VisualCell
         if (cf != null)
             format.Merge(cf);
 
-        Row = row;
-        Col = col;
+        UpdateSize(sheet, rowMetrics, colMetrics);
 
-        Width = Merge == null
-            ? sheet.Columns.GetVisualWidthBetween(Col, Col + 1)
-            : sheet.Columns.GetVisualWidthBetween(Merge.Left, Merge.Right + 1);
-        Height = Merge == null
-            ? sheet.Rows.GetVisualHeightBetween(Row, Row + 1)
-            : sheet.Rows.GetVisualHeightBetween(Merge.Top, Merge.Bottom + 1);
-
-        IsVisible = cell.IsVisible;
         HorizontalAlign = ResolveHorizontalAlign(format, cellValue.ValueType);
         VerticalAlign = ResolveVerticalAlign(format);
 
         FormatStyleString =
-            GetCellFormatStyleString(Row, Col, format, cell.IsValid, cellValue.ValueType, sheet, Width, Height);
+            GetCellFormatStyleString(format, sheet.Cells.IsValid(row, col), cellValue.ValueType);
         Icon = format.Icon;
-        CellType = cell.Type;
+        CellType = sheet.Cells.GetCellType(row, col);
         Format = format;
     }
 
     private VisualCell()
     {
+    }
+
+    /// <summary>
+    /// Refreshes the size, visibility and merge spans of the cell after its row or column was
+    /// resized or hidden. Nothing else about a cell changes in that case - the value, format,
+    /// merge region and cell type are all unaffected - so the cell is patched in place rather
+    /// than rebuilt.
+    /// </summary>
+    internal void RefreshAxisMetrics(Sheet sheet, in AxisMetrics rowMetrics, in AxisMetrics colMetrics)
+    {
+        UpdateMergeSpans(sheet);
+        UpdateSize(sheet, rowMetrics, colMetrics);
+    }
+
+    private void UpdateMergeSpans(Sheet sheet)
+    {
+        if (Merge == null)
+            return;
+
+        VisibleMergeColStart = sheet.Columns.GetNextVisible(Merge.Left - 1);
+        VisibleMergeRowStart = sheet.Rows.GetNextVisible(Merge.Top - 1);
+
+        IsMergeStart = Row == VisibleMergeRowStart && Col == VisibleMergeColStart;
+
+        VisibleRowSpan = sheet.Rows.CountVisible(VisibleMergeRowStart, Merge.Bottom);
+        VisibleColSpan = sheet.Columns.CountVisible(VisibleMergeColStart, Merge.Right);
+    }
+
+    private void UpdateSize(Sheet sheet, in AxisMetrics rowMetrics, in AxisMetrics colMetrics)
+    {
+        Width = Merge == null
+            ? colMetrics.Size
+            : sheet.Columns.GetVisualWidthBetween(Merge.Left, Merge.Right + 1);
+        Height = Merge == null
+            ? rowMetrics.Size
+            : sheet.Rows.GetVisualHeightBetween(Merge.Top, Merge.Bottom + 1);
+
+        IsVisible = rowMetrics.IsVisible && colMetrics.IsVisible;
     }
 
     /// <summary>
@@ -147,10 +187,14 @@ public class VisualCell
         _ => "start"
     };
 
-    private static string GetCellFormatStyleString(int row, int col, CellFormat? format, bool isCellValid,
-        CellValueType type, Sheet sheet, double cellWidth, double cellHeight)
+    private static string GetCellFormatStyleString(CellFormat? format, bool isCellValid, CellValueType type)
     {
         if (format == null)
+            return string.Empty;
+
+        // an unformatted, valid, non-numeric cell contributes no inline style at all - which is
+        // most cells on most sheets.
+        if (format.IsDefaultFormat() && isCellValid && type != CellValueType.Number)
             return string.Empty;
 
         var sb = new StyleBuilder();

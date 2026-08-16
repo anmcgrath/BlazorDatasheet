@@ -27,6 +27,12 @@ public class RegionDataStore<T> : ISparseSource, IRowSource, IStore<T, RegionRes
         Tree = new RTree<DataRegion<T>>();
     }
 
+    /// <summary>
+    /// Whether the store holds no data at all. Most sheets never use merges, cell types or
+    /// conditional formats, so checking this before probing avoids the cost entirely.
+    /// </summary>
+    public bool IsEmpty => Tree.Count == 0;
+
     public bool Contains(int row, int col)
     {
         return GetDataRegions(row, col).Any();
@@ -43,6 +49,9 @@ public class RegionDataStore<T> : ISparseSource, IRowSource, IStore<T, RegionRes
 
     public IEnumerable<DataRegion<T>> GetDataRegions(int row, int col)
     {
+        if (IsEmpty)
+            return Array.Empty<DataRegion<T>>();
+
         var env = new Envelope(col, row, col, row);
         return Tree.Search(env);
     }
@@ -62,6 +71,9 @@ public class RegionDataStore<T> : ISparseSource, IRowSource, IStore<T, RegionRes
     /// <returns></returns>
     public IEnumerable<DataRegion<T>> GetDataRegions(IRegion region)
     {
+        if (IsEmpty)
+            return Array.Empty<DataRegion<T>>();
+
         var env = region.ToEnvelope();
         return Tree.Search(env);
     }
