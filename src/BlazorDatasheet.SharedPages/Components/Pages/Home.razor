@@ -5,6 +5,7 @@
 @using BlazorDatasheet.Core.Formats.DefaultConditionalFormats
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Formula.Core
+@using BlazorDatasheet.Render
 @using BlazorDatasheet.SharedPages.Components.Toolbar
 
 <PageTitle>Home</PageTitle>
@@ -27,6 +28,7 @@
 
     <div style="width: 600px; height: 400px; overflow-y: scroll;">
         <Datasheet
+            AutoFit="true"
             UseAutoScroll="_useAutoScroll"
             StickyHeaders="_stickyHeaders"
             ShowColHeadings="_showColHeadings"
@@ -35,6 +37,9 @@
             @ref="_datasheet"/>
     </div>
 </div>
+
+<button @onclick="()=>_datasheet.AutoFitRegion(new AllRegion(), Axis.Col, AutofitMethod.ExpandOrContract)">Autofit
+</button>
 
 <h4>Options</h4>
 <div style="display: flex; flex-direction: column;">
