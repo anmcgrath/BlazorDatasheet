@@ -92,6 +92,8 @@
     private Virtualise2D? _mainView;
     private EditorLayer? _editorLayer;
     private AutofitLayer? _autofitLayer;
+    private EditorLayer? _registeredEditorLayer;
+    private AutofitLayer? _registeredAutofitLayer;
 
 
     private readonly HashSet<int> _dirtyRowIndices = new();
@@ -135,9 +137,22 @@
 
     protected override void OnAfterRender(bool firstRender)
     {
-        if (firstRender)
+        // the layers live inside the "has visible cells" branch, so a pane that starts empty only
+        // gets its refs once cells appear - register on the transition, not just on first render.
+        if (!ReferenceEquals(_registeredEditorLayer, _editorLayer))
         {
-            EditorLayerChanged?.Invoke(_editorLayer, true);
+            if (_registeredEditorLayer != null)
+                EditorLayerChanged?.Invoke(_registeredEditorLayer, false);
+
+            _registeredEditorLayer = _editorLayer;
+
+            if (_editorLayer != null)
+                EditorLayerChanged?.Invoke(_editorLayer, true);
+        }
+
+        if (_autofitLayer != null && !ReferenceEquals(_registeredAutofitLayer, _autofitLayer))
+        {
+            _registeredAutofitLayer = _autofitLayer;
             AutofitLayerChanged?.Invoke(_autofitLayer);
         }
 
@@ -268,8 +283,10 @@
 
     public async ValueTask DisposeAsync()
     {
-        EditorLayerChanged?.Invoke(_editorLayer, false);
+        EditorLayerChanged?.Invoke(_registeredEditorLayer ?? _editorLayer, false);
+        _registeredEditorLayer = null;
         RemoveSheetEvents();
+        _editorLayer?.Dispose();
         if (_mainView != null) await _mainView.DisposeAsync();
         if (_autofitLayer != null) await ((IAsyncDisposable)_autofitLayer).DisposeAsync();
     }

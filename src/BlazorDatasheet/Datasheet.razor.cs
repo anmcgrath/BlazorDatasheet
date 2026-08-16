@@ -292,7 +292,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             _cellLayoutProvider = new CellLayoutProvider(_sheet);
             _selectionManager = new SelectionInputManager(_sheet.Selection);
             AddEvents(_sheet);
-            _editorLayers.Clear();
+            ClearEditorLayers();
             requireRender = true;
         }
 
@@ -324,10 +324,13 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             requireRender = true;
         }
 
-        MenuOptions.CustomMenuFragment = MenuItems;
-        if (!MenuOptions.CompareTo(_menuOptions))
+        // work on a copy - storing the caller's instance would make the comparison below compare
+        // an object with itself, so later menu option changes would never be seen.
+        var menuOptions = MenuOptions.Clone();
+        menuOptions.CustomMenuFragment = MenuItems;
+        if (!menuOptions.CompareTo(_menuOptions))
         {
-            _menuOptions = MenuOptions;
+            _menuOptions = menuOptions;
             requireRender = true;
         }
 
@@ -993,6 +996,18 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         }
     }
 
+    /// <summary>
+    /// Drops all registered editor layers, detaching their events so they don't keep this
+    /// datasheet alive.
+    /// </summary>
+    private void ClearEditorLayers()
+    {
+        foreach (var editorLayer in _editorLayers)
+            editorLayer.EditorInitialised -= HandleEditorInitialised;
+
+        _editorLayers.Clear();
+    }
+
     private void HandleEditorInitialised(object? sender, EventArgs e)
     {
         if (_pendingEditorKeys.Length == 0)
@@ -1063,6 +1078,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     {
         _isDisposing = true;
         RemoveEvents(_sheet);
+        ClearEditorLayers();
 
         if (_dotnetHelper is not null)
         {

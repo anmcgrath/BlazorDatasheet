@@ -4,9 +4,9 @@
 
 @code {
 
-    [CascadingParameter] protected double LayerWidth { get; set; }
+    [CascadingParameter(Name = "LayerWidth")] protected double LayerWidth { get; set; }
 
-    [CascadingParameter] protected double LayerHeight { get; set; }
+    [CascadingParameter(Name = "LayerHeight")] protected double LayerHeight { get; set; }
 
     [CascadingParameter] protected IRegion ViewRegion { get; set; } = new EmptyRegion();
 

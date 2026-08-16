@@ -8,6 +8,7 @@
 @using BlazorDatasheet.Menu.Filters
 @inject IMenuService MenuService;
 @inherits SheetComponentBase
+@implements IDisposable
 
 <SheetMenu Disabled="@Disabled" MenuId="@ContextMenus.Selection" OnMenuClose="OnSelectionMenuClose">
 
@@ -192,6 +193,12 @@
     {
         if (firstRender)
             MenuService.MenuShown += OnSubmenuShown;
+    }
+
+    public void Dispose()
+    {
+        // IMenuService is scoped, so a missed unsubscribe leaks for the life of the circuit
+        MenuService.MenuShown -= OnSubmenuShown;
     }
 
     private void OnSubmenuShown(object? sender, MenuShownEventArgs args)

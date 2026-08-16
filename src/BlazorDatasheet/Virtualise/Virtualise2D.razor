@@ -235,6 +235,10 @@
 
     private async Task HandleScrollCore(Rect viewRect, bool forceRefresh)
     {
+        // observer callbacks queued in JS can still arrive after teardown
+        if (_isDisposed)
+            return;
+
         var totalSize = GetTotalViewSize();
         var totalRect = new Rect(0, 0, totalSize.Width, totalSize.Height);
         // just in-case the total size shrinks and the view rect is now outside of the total view (e.g new sheet or filters applied).
@@ -304,6 +308,9 @@
 
         _contentColTemplate = csb.ToString();
         _contentRowTemplate = rsb.ToString();
+
+        if (_isDisposed)
+            return;
 
         await OnViewportChanged.InvokeAsync(new VirtualViewportChangedEventArgs(_currentViewport, newRegions, removedRegions));
         await InvokeAsync(StateHasChanged);

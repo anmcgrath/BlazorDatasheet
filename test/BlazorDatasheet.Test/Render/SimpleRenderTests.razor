@@ -5,6 +5,8 @@
 @using BlazorDatasheet.Render.AutoScroll
 @using BlazorDatasheet.Render.DefaultComponents
 @using BlazorDatasheet.Render.Headings
+@using BlazorDatasheet.Edit
+@using BlazorDatasheet.Menu
 @using BlazorDatasheet.Render.Layers
 @using FluentAssertions
 @using NUnit.Framework
@@ -122,6 +124,131 @@
             .GetLeft()
             .Should()
             .Be(sheet.Columns.GetVisualLeft(2) + 1 + "px");
+    }
+
+    [Test]
+    public async Task Editor_Overlay_Max_Size_Uses_Both_Layer_Axes()
+    {
+        var sheet = new Sheet(3, 3);
+
+        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+
+        await cut.InvokeAsync(() =>
+        {
+            cut.Instance.ForceReRender();
+            sheet.Editor.BeginEdit(1, 1);
+        });
+
+        var expectedWidth = sheet.Columns.GetVisualWidthBetween(0, sheet.NumCols);
+        var expectedHeight = sheet.Rows.GetVisualHeightBetween(0, sheet.NumRows);
+        // guard the test itself - the axes must differ for this to detect a mix-up
+        expectedWidth.Should().NotBe(expectedHeight);
+
+        var editor = cut.Find("div.bds-editor-overlay");
+        editor.GetStyle().GetMaxWidth().Should().Be(expectedWidth + "px");
+        editor.GetStyle().GetMaxHeight().Should().Be(expectedHeight + "px");
+    }
+
+    [Test]
+    public async Task Setting_Column_Headings_At_Runtime_Updates_Rendered_Heading()
+    {
+        var sheet = new Sheet(3, 3);
+        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+
+        // headings are virtualised - a size change refreshes the heading viewport so items exist
+        await cut.InvokeAsync(() => sheet.Columns.SetSize(0, 90));
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("A"));
+        cut.Markup.Should().NotContain("Renamed");
+
+        await cut.InvokeAsync(() => sheet.Columns.SetHeadings(0, 0, "Renamed"));
+
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Renamed"));
+    }
+
+    [Test]
+    public async Task Changing_Column_Header_Template_At_Runtime_ReRenders_Headings()
+    {
+        var sheet = new Sheet(3, 3);
+        var cut = RenderComponent<Datasheet>(parameters =>
+        {
+            parameters.Add(p => p.Sheet, sheet);
+            parameters.Add(p => p.ColumnHeaderTemplate, (RenderFragment<HeadingContext>)(ctx => @<div>before</div>));
+        });
+
+        // headings are virtualised - a size change refreshes the heading viewport so items exist
+        await cut.InvokeAsync(() => sheet.Columns.SetSize(0, 90));
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("before"));
+
+        cut.SetParametersAndRender(parameters => parameters.Add(
+            p => p.ColumnHeaderTemplate,
+            (RenderFragment<HeadingContext>)(ctx => @<div>after</div>)));
+
+        cut.Markup.Should().Contain("after");
+        cut.Markup.Should().NotContain("before");
+    }
+
+    [Test]
+    public async Task Freezing_Columns_At_Runtime_Renders_Frozen_Side_Panes()
+    {
+        var sheet = new Sheet(20, 20);
+        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+
+        cut.FindAll("div.bds-frozen-left").Should().BeEmpty();
+
+        await cut.InvokeAsync(() => sheet.FreezeLeftColumns(2));
+        cut.FindAll("div.bds-frozen-left").Should().NotBeEmpty();
+
+        await cut.InvokeAsync(() => sheet.Commands.Undo());
+        cut.FindAll("div.bds-frozen-left").Should().BeEmpty();
+    }
+
+    [Test]
+    public void Datasheet_Does_Not_Mutate_The_Callers_MenuOptions()
+    {
+        var sheet = new Sheet(4, 4);
+        var menuOptions = new SheetMenuOptions();
+
+        RenderComponent<Datasheet>(parameters =>
+        {
+            parameters.Add(p => p.Sheet, sheet);
+            parameters.Add(p => p.MenuOptions, menuOptions);
+            parameters.Add(p => p.MenuItems, (RenderFragment<Sheet>)(s => @<div>custom</div>));
+        });
+
+        // MenuItems belongs to the datasheet's own copy - the caller's instance is left alone
+        menuOptions.CustomMenuFragment.Should().BeNull();
+    }
+
+    [Test]
+    public void Constrained_ViewRegion_Limits_Frozen_Pane_Rows_To_The_Same_Columns()
+    {
+        var sheet = new Sheet(20, 20);
+        sheet.FreezeRowCols(2, 2, 0, 0);
+
+        var cut = RenderComponent<Datasheet>(parameters =>
+        {
+            parameters.Add(p => p.Sheet, sheet);
+            parameters.Add(p => p.ViewRegion, new Region(0, 19, 5, 9));
+        });
+
+        // every pane row must cover the constrained columns only, not the whole sheet width
+        foreach (var paneRow in cut.FindComponents<DatasheetPaneRow>())
+        {
+            paneRow.Instance.ViewRegion.Left.Should().Be(5);
+            paneRow.Instance.ViewRegion.Right.Should().Be(9);
+        }
+    }
+
+    [Test]
+    public void Datasheet_Renders_Exactly_One_Autofit_Layer()
+    {
+        var sheet = new Sheet(20, 20);
+        sheet.FreezeRowCols(1, 1, 1, 1);
+
+        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+
+        // the layer is shared across the sheet, so only the main pane row's centre pane hosts it
+        cut.FindComponents<AutofitLayer>().Count.Should().Be(1);
     }
 
     [Test]
@@ -322,6 +449,46 @@
 
         CountEventHandlers<HeadingRenderer>(oldSheet.Selection, "SelectionChanged").Should().Be(0);
         CountEventHandlers<HeadingRenderer>(newSheet.Selection, "SelectionChanged").Should().BeGreaterThan(0);
+    }
+
+    [Test]
+    public async Task Pane_That_Starts_Empty_Registers_Its_Editor_Layer_When_Cells_Appear()
+    {
+        var sheet = new Sheet(3, 3);
+        sheet.Rows.Hide(0, 3);
+
+        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+        cut.FindComponents<EditorLayer>().Should().BeEmpty();
+
+        await cut.InvokeAsync(() => sheet.Rows.Unhide(0, 3));
+        cut.FindComponents<EditorLayer>().Should().NotBeEmpty();
+
+        await cut.InvokeAsync(() =>
+        {
+            cut.Instance.ForceReRender();
+            sheet.Editor.BeginEdit(1, 1);
+        });
+
+        // the layer must be registered, otherwise keyboard input can never reach the editor
+        cut.Instance.GetActiveEditorLayer().Should().NotBeNull();
+    }
+
+    [Test]
+    public void Editor_Layer_Disposal_Removes_Editor_Subscriptions()
+    {
+        var sheet = new Sheet(3, 3);
+        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+
+        CountEventHandlers<EditorLayer>(sheet.Editor, "EditBegin").Should().BeGreaterThan(0);
+        CountEventHandlers<EditorLayer>(sheet.Editor, "EditFinished").Should().BeGreaterThan(0);
+        CountEventHandlers<EditorLayer>(sheet.Editor, "EditValueChanged").Should().BeGreaterThan(0);
+
+        foreach (var editorLayer in cut.FindComponents<EditorLayer>())
+            editorLayer.Instance.Dispose();
+
+        CountEventHandlers<EditorLayer>(sheet.Editor, "EditBegin").Should().Be(0);
+        CountEventHandlers<EditorLayer>(sheet.Editor, "EditFinished").Should().Be(0);
+        CountEventHandlers<EditorLayer>(sheet.Editor, "EditValueChanged").Should().Be(0);
     }
 
     [Test]

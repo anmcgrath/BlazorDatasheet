@@ -1,4 +1,5 @@
-﻿@using BlazorDatasheet.DataStructures.Geometry
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Extensions
 @using BlazorDatasheet.Render
 @using BlazorDatasheet.Render.Layers
@@ -25,6 +26,7 @@
                 ViewRegion="_centreRegion"
                 OverscanColumns="OverscanColumns"
                 OverscanRows="OverscanRows"
+                RenderAutofitLayer="RenderAutofitLayer"
                 EditorLayerChanged="EditorLayerChanged"
                 AutofitLayerChanged="AutofitLayerChanged"/>
         }
@@ -60,6 +62,12 @@
     [Parameter] public int OverscanColumns { get; set; } = 2;
     [Parameter] public int OverscanRows { get; set; } = 6;
 
+    /// <summary>
+    /// Whether the centre pane of this row hosts the autofit layer. Only one pane row in the
+    /// datasheet should set this, since the layer is shared across the whole sheet.
+    /// </summary>
+    [Parameter] public bool RenderAutofitLayer { get; set; }
+
     private DatasheetPane? _leftPane;
     private DatasheetPane? _centerPane;
     private DatasheetPane? _rightPane;
@@ -67,16 +75,24 @@
     private IRegion? _frozenLeftRegion;
     private IRegion? _frozenRightRegion;
     private IRegion? _centreRegion;
+    private FreezeState? _freezeState;
 
     protected override void OnParametersSet()
     {
-        if (_viewRegion == null || !_viewRegion.Equals(ViewRegion))
+        var freezeState = PaneContext.Sheet.FreezeState;
+
+        // the derived regions depend on the freeze state as well as the view region - freezing
+        // columns leaves this row's ViewRegion unchanged, so it must be compared separately.
+        if (_viewRegion == null || !_viewRegion.Equals(ViewRegion) || _freezeState != freezeState)
         {
             _viewRegion = ViewRegion;
+            _freezeState = freezeState;
             _frozenLeftRegion = _viewRegion.GetIntersection(PaneContext.Sheet.GetFrozenLeftRegion());
             _frozenRightRegion = _viewRegion.GetIntersection(PaneContext.Sheet.GetFrozenRightRegion());
-            _centreRegion = new Region(_viewRegion.Top, _viewRegion.Bottom, PaneContext.Sheet.FreezeState.Left,
-                _viewRegion.Right - PaneContext.Sheet.FreezeState.Right);
+            // the freeze counts are absolute column indices, so clamp them into this row's view
+            var centreLeft = Math.Clamp(freezeState.Left, _viewRegion.Left, _viewRegion.Right);
+            var centreRight = Math.Clamp(_viewRegion.Right - freezeState.Right, centreLeft, _viewRegion.Right);
+            _centreRegion = new Region(_viewRegion.Top, _viewRegion.Bottom, centreLeft, centreRight);
         }
 
         base.OnParametersSet();
