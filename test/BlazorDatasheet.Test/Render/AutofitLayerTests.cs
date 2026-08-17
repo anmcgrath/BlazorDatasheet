@@ -153,6 +153,178 @@ public class AutofitLayerTests : Bunit.TestContext
     }
 
     [Test]
+    public async Task Autofit_Both_Axes_Fits_Columns_Before_Rows_In_A_Single_Undo()
+    {
+        var sheet = CreateSingleColumnSheet(2);
+        var module = JSInterop.SetupModule(AutofitModulePath);
+        var invocationOrder = new List<string>();
+        double? columnWidthDuringRowPass = null;
+
+        module.Setup<AutofitDimensionChange[]>("measureAutofitChanges", invocation =>
+            {
+                if (invocation.Arguments[1] as string != "col")
+                    return false;
+                invocationOrder.Add("col");
+                return true;
+            })
+            .SetResult([
+                new AutofitDimensionChange { Index = 0, ExpandTo = 160 }
+            ]);
+
+        module.Setup<AutofitDimensionChange[]>("measureAutofitChanges", invocation =>
+            {
+                if (invocation.Arguments[1] as string != "row")
+                    return false;
+                invocationOrder.Add("row");
+                columnWidthDuringRowPass = sheet.Columns.GetPhysicalWidth(0);
+                return true;
+            })
+            .SetResult([
+                new AutofitDimensionChange { Index = 1, ExpandTo = 42 }
+            ]);
+
+        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(component => component.Sheet, sheet));
+        var layer = cut.FindComponent<AutofitLayer>();
+
+        await cut.InvokeAsync(() =>
+            layer.Instance.AutoFit(sheet.Region, AutofitMethod.ExpandOnly));
+
+        cut.WaitForAssertion(() =>
+        {
+            sheet.Columns.GetPhysicalWidth(0).Should().Be(160);
+            sheet.Rows.GetPhysicalHeight(1).Should().Be(42);
+            cut.FindAll("div.bds-autoFit").Should().BeEmpty();
+        });
+
+        invocationOrder.Should().Equal("col", "row");
+        // Rows are measured against the column widths the same auto-fit just applied.
+        columnWidthDuringRowPass.Should().Be(160);
+        sheet.Commands.GetUndoCommands().Should().ContainSingle();
+
+        (await cut.InvokeAsync(sheet.Commands.Undo)).Should().BeTrue();
+        sheet.Rows.GetPhysicalHeight(1).Should().Be(24);
+        sheet.Columns.GetPhysicalWidth(0).Should().Be(105);
+
+        (await cut.InvokeAsync(sheet.Commands.Redo)).Should().BeTrue();
+        sheet.Columns.GetPhysicalWidth(0).Should().Be(160);
+        sheet.Rows.GetPhysicalHeight(1).Should().Be(42);
+    }
+
+    [Test]
+    public async Task Autofit_Both_Axes_Is_Not_Undoable_Until_Both_Passes_Complete()
+    {
+        var sheet = CreateSingleColumnSheet(2);
+        var module = JSInterop.SetupModule(AutofitModulePath);
+
+        module.Setup<AutofitDimensionChange[]>("measureAutofitChanges", invocation =>
+                invocation.Arguments[1] as string == "col")
+            .SetResult([
+                new AutofitDimensionChange { Index = 0, ExpandTo = 160 }
+            ]);
+
+        var rowMeasurement = module.Setup<AutofitDimensionChange[]>("measureAutofitChanges", invocation =>
+            invocation.Arguments[1] as string == "row");
+
+        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(component => component.Sheet, sheet));
+        var layer = cut.FindComponent<AutofitLayer>();
+
+        var autofit = cut.InvokeAsync(() =>
+            layer.Instance.AutoFit(sheet.Region, AutofitMethod.ExpandOnly));
+
+        cut.WaitForAssertion(() =>
+        {
+            rowMeasurement.Invocations.Should().ContainSingle();
+            sheet.Columns.GetPhysicalWidth(0).Should().Be(160);
+        });
+
+        sheet.Commands.GetUndoCommands().Should().BeEmpty();
+        (await cut.InvokeAsync(sheet.Commands.Undo)).Should().BeFalse();
+
+        rowMeasurement.SetResult([
+            new AutofitDimensionChange { Index = 1, ExpandTo = 42 }
+        ]);
+        await autofit;
+
+        cut.WaitForAssertion(() =>
+        {
+            sheet.Columns.GetPhysicalWidth(0).Should().Be(160);
+            sheet.Rows.GetPhysicalHeight(1).Should().Be(42);
+            sheet.Commands.GetUndoCommands().Should().ContainSingle();
+        });
+
+        (await cut.InvokeAsync(sheet.Commands.Undo)).Should().BeTrue();
+        sheet.Columns.GetPhysicalWidth(0).Should().Be(105);
+        sheet.Rows.GetPhysicalHeight(1).Should().Be(24);
+    }
+
+    [Test]
+    public async Task Autofit_Both_Axes_Restores_Provisional_Columns_When_Aborted()
+    {
+        var sheet = CreateSingleColumnSheet(2);
+        var module = JSInterop.SetupModule(AutofitModulePath);
+
+        module.Setup<AutofitDimensionChange[]>("measureAutofitChanges", invocation =>
+                invocation.Arguments[1] as string == "col")
+            .SetResult([
+                new AutofitDimensionChange { Index = 0, ExpandTo = 160 }
+            ]);
+
+        var rowMeasurement = module.Setup<AutofitDimensionChange[]>("measureAutofitChanges", invocation =>
+            invocation.Arguments[1] as string == "row");
+
+        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(component => component.Sheet, sheet));
+        var layer = cut.FindComponent<AutofitLayer>();
+
+        _ = cut.InvokeAsync(() => layer.Instance.AutoFit(sheet.Region, AutofitMethod.ExpandOnly));
+
+        cut.WaitForAssertion(() =>
+        {
+            rowMeasurement.Invocations.Should().ContainSingle();
+            sheet.Columns.GetPhysicalWidth(0).Should().Be(160);
+        });
+
+        DisposeComponents();
+
+        sheet.Columns.GetPhysicalWidth(0).Should().Be(105);
+        sheet.Commands.GetUndoCommands().Should().BeEmpty();
+    }
+
+    [Test]
+    public async Task Autofit_Both_Axes_Undoes_Rows_When_No_Column_Changed()
+    {
+        var sheet = CreateSingleColumnSheet(2);
+        var module = JSInterop.SetupModule(AutofitModulePath);
+
+        module.Setup<AutofitDimensionChange[]>("measureAutofitChanges", invocation =>
+                invocation.Arguments[1] as string == "col")
+            .SetResult([]);
+
+        module.Setup<AutofitDimensionChange[]>("measureAutofitChanges", invocation =>
+                invocation.Arguments[1] as string == "row")
+            .SetResult([
+                new AutofitDimensionChange { Index = 1, ExpandTo = 42 }
+            ]);
+
+        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(component => component.Sheet, sheet));
+        var layer = cut.FindComponent<AutofitLayer>();
+
+        await cut.InvokeAsync(() =>
+            layer.Instance.AutoFit(sheet.Region, AutofitMethod.ExpandOrContract));
+
+        cut.WaitForAssertion(() =>
+        {
+            sheet.Rows.GetPhysicalHeight(1).Should().Be(42);
+            cut.FindAll("div.bds-autoFit").Should().BeEmpty();
+        });
+
+        sheet.Columns.GetPhysicalWidth(0).Should().Be(105);
+        sheet.Commands.GetUndoCommands().Should().ContainSingle();
+
+        (await cut.InvokeAsync(sheet.Commands.Undo)).Should().BeTrue();
+        sheet.Rows.GetPhysicalHeight(1).Should().Be(24);
+    }
+
+    [Test]
     public async Task Interaction_Autofit_Is_Attached_To_The_Triggering_Format_Command()
     {
         var sheet = CreateSingleColumnSheet(1);

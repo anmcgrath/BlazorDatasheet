@@ -101,17 +101,43 @@
         AutoFit(new Region(cell.Row, cell.Col), wrapped ? Axis.Row : Axis.Col, AutofitMethod.ExpandOnly);
     }
 
+    /// <summary>
+    /// Auto-fits the given axis over <paramref name="region"/>.
+    /// </summary>
     internal void AutoFit(IRegion region, Axis axis, AutofitMethod method,
         IUndoableCommand? triggeringCommand = null)
     {
-        if (_disposed || axis == Axis.None)
+        if (axis == Axis.None)
+            return;
+
+        QueueRequests(region, [axis], method, triggeringCommand);
+    }
+
+    /// <summary>
+    /// Auto-fits both the column and row axes over <paramref name="region"/>. Columns are fitted
+    /// first so that row heights are measured against the final column widths, and both resizes
+    /// are undone by a single undo.
+    /// </summary>
+    internal void AutoFit(IRegion region, AutofitMethod method,
+        IUndoableCommand? triggeringCommand = null)
+        => QueueRequests(region, [Axis.Col, Axis.Row], method, triggeringCommand);
+
+    private void QueueRequests(IRegion region, ReadOnlySpan<Axis> axes, AutofitMethod method,
+        IUndoableCommand? triggeringCommand)
+    {
+        if (_disposed)
             return;
 
         var boundRegion = region.GetIntersection(Sheet.Region);
         if (boundRegion == null)
             return;
 
-        _pendingRequests.Enqueue(new AutofitRequest(boundRegion.Clone(), axis, method, triggeringCommand));
+        // All requests queued together resize as one unit, so that a multi-axis auto-fit is a
+        // single undo step.
+        var chain = new AutofitChain(Sheet, triggeringCommand, axes.Length);
+        foreach (var axis in axes)
+            _pendingRequests.Enqueue(new AutofitRequest(boundRegion.Clone(), axis, method, chain));
+
         StartNextOperation();
     }
 
@@ -303,15 +329,61 @@
             }
         }
 
-        if (commands.Count > 0)
+        var chain = operation.Request.Chain;
+        if (chain.IsMultiAxis)
+        {
+            CompleteMultiAxisRequest(chain, commands);
+        }
+        else if (commands.Count > 0)
         {
             var commandGroup = new CommandGroup(commands);
-            operation.Request.TriggeringCommand?.AttachAfter(commandGroup);
-            Sheet.Commands.ExecuteCommand(commandGroup, false,
-                operation.Request.TriggeringCommand == null);
+
+            if (chain.TriggeringCommand == null)
+            {
+                Sheet.Commands.ExecuteCommand(commandGroup);
+            }
+            else if (Sheet.Commands.ExecuteCommand(commandGroup, false, false))
+            {
+                chain.TriggeringCommand.AttachAfter(commandGroup);
+            }
         }
 
         StartNextOperation();
+    }
+
+    private void CompleteMultiAxisRequest(AutofitChain chain, List<ICommand> commands)
+    {
+        if (!chain.IsFinalRequest)
+        {
+            if (commands.Count > 0)
+            {
+                // Apply the column sizes only long enough for the row pass to measure against them.
+                // The completed operation is recorded once both axes have been measured.
+                var provisionalGroup = new CommandGroup(commands);
+                if (Sheet.Commands.ExecuteCommand(provisionalGroup, false, false))
+                    chain.AddProvisionalCommands(provisionalGroup, commands);
+            }
+
+            chain.CompleteRequest();
+            return;
+        }
+
+        chain.AddCommands(commands);
+        chain.CompleteRequest();
+        chain.RollbackProvisionalCommands();
+
+        if (chain.Commands.Count == 0)
+            return;
+
+        var commandGroup = new CommandGroup(chain.Commands);
+        if (chain.TriggeringCommand == null)
+        {
+            Sheet.Commands.ExecuteCommand(commandGroup);
+        }
+        else if (Sheet.Commands.ExecuteCommand(commandGroup, false, false))
+        {
+            chain.TriggeringCommand.AttachAfter(commandGroup);
+        }
     }
 
     private string GetStyle(VisualCell cell)
@@ -353,6 +425,13 @@
 
     private void AbortOperations()
     {
+        var chains = _pendingRequests.Select(request => request.Chain).ToHashSet();
+        if (_activeOperation != null)
+            chains.Add(_activeOperation.Request.Chain);
+
+        foreach (var chain in chains)
+            chain.RollbackProvisionalCommands();
+
         _pendingRequests.Clear();
         _activeOperation = null;
 
@@ -394,7 +473,44 @@
         IRegion Region,
         Axis Axis,
         AutofitMethod Method,
-        IUndoableCommand? TriggeringCommand);
+        AutofitChain Chain);
+
+    /// <summary>
+    /// Shared by every request queued from one auto-fit call. Multi-axis calls apply their first
+    /// axis provisionally, then execute all resize commands as one durable command when measurement
+    /// is complete.
+    /// </summary>
+    private sealed class AutofitChain(
+        Sheet sheet,
+        IUndoableCommand? triggeringCommand,
+        int requestCount)
+    {
+        private readonly Sheet _sheet = sheet;
+        private readonly bool _isMultiAxis = requestCount > 1;
+        private CommandGroup? _provisionalCommandGroup;
+        private int _remainingRequests = requestCount;
+
+        public IUndoableCommand? TriggeringCommand { get; } = triggeringCommand;
+        public List<ICommand> Commands { get; } = new();
+        public bool IsMultiAxis => _isMultiAxis;
+        public bool IsFinalRequest => _remainingRequests == 1;
+
+        public void AddProvisionalCommands(CommandGroup commandGroup, IEnumerable<ICommand> commands)
+        {
+            _provisionalCommandGroup = commandGroup;
+            Commands.AddRange(commands);
+        }
+
+        public void AddCommands(IEnumerable<ICommand> commands) => Commands.AddRange(commands);
+
+        public void CompleteRequest() => _remainingRequests--;
+
+        public void RollbackProvisionalCommands()
+        {
+            _provisionalCommandGroup?.Undo(_sheet);
+            _provisionalCommandGroup = null;
+        }
+    }
 
     private sealed class AutofitOperation
     {
