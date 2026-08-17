@@ -4,6 +4,7 @@ using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Commands.RowCols;
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Validation;
 using BlazorDatasheet.DataStructures.Geometry;
 using FluentAssertions;
 using NUnit.Framework;
@@ -235,5 +236,188 @@ public class SortRangeCommandTests
         sheet.Cells.GetMetaData(0, 0, "tag").Should().Be("first");
         sheet.Cells.GetMetaData(1, 0, "tag").Should().BeNull();
         sheet.Cells.GetMetaData(2, 0, "tag").Should().BeNull();
+    }
+
+    [Test]
+    public void Sort_Command_Moves_Validators_And_Restores_On_Undo()
+    {
+        var sheet = new Sheet(5, 5);
+        sheet.Cells[0, 0].Value = 2;
+        sheet.Cells[1, 0].Value = 1;
+        var validator = new NumberValidator(true);
+        sheet.Validators.Add(new Region(0, 0, 0, 0), validator);
+
+        var cmd = new SortRangeCommand(new ColumnRegion(0), new ColumnSortOptions(0, true));
+        cmd.Execute(sheet);
+
+        // the validator should have followed the value from row 0 to row 1
+        sheet.Validators.Get(1, 0).Should().Contain(validator, "validator follows its cell");
+        sheet.Validators.Get(0, 0).Should().BeEmpty("no stale validator left behind");
+
+        cmd.Undo(sheet);
+
+        sheet.Validators.Get(0, 0).Should().Contain(validator, "validator restored on undo");
+        sheet.Validators.Get(1, 0).Should().BeEmpty("no stale validator after undo");
+    }
+
+    [Test]
+    public void Sort_Command_Revalidates_After_Moving_Validators()
+    {
+        var sheet = new Sheet(4, 2);
+        sheet.Cells[0, 0].Value = 1;
+        sheet.Cells[2, 0].Value = 2;
+        sheet.Cells[2, 1].Value = "not a number";
+        var validator = new NumberValidator(true);
+        sheet.Validators.Add(new Region(2, 2, 1, 1), validator);
+
+        var cmd = new SortRangeCommand(new Region(0, 3, 0, 1), new ColumnSortOptions(0, true));
+        cmd.Execute(sheet);
+
+        sheet.Cells[1, 1].IsValid.Should().BeFalse("the validator followed the invalid value");
+
+        cmd.Undo(sheet);
+
+        sheet.Cells[2, 1].IsValid.Should().BeFalse(
+            "undo revalidated the original row outside the compacted sorted region");
+    }
+
+    [Test]
+    public void Sort_Command_Does_Not_Duplicate_Validators_After_Redo_And_Undo()
+    {
+        var sheet = new Sheet(3, 1);
+        sheet.Cells[0, 0].Value = 2;
+        sheet.Cells[1, 0].Value = 1;
+        var validator = new NumberValidator(true);
+        sheet.Validators.Add(new Region(0, 0, 0, 0), validator);
+        sheet.Commands.ExecuteCommand(
+            new SortRangeCommand(new ColumnRegion(0), new ColumnSortOptions(0, true)));
+
+        sheet.Commands.Undo().Should().BeTrue();
+        sheet.Commands.Redo().Should().BeTrue();
+        sheet.Commands.Undo().Should().BeTrue();
+
+        sheet.Validators.Get(0, 0).Should().ContainSingle().Which.Should().BeSameAs(validator);
+        sheet.Validators.Get(1, 0).Should().BeEmpty();
+    }
+
+    [Test]
+    public void Sort_Command_Keeps_Validator_On_Empty_Cell_In_Sorted_Region()
+    {
+        var sheet = new Sheet(5, 5);
+        sheet.Cells[0, 0].Value = 2;
+        sheet.Cells[1, 0].Value = 1;
+        // row 2 col 0 is EMPTY but carries a validator
+        var validator = new NumberValidator(true);
+        sheet.Validators.Add(new Region(2, 2, 0, 0), validator);
+
+        var cmd = new SortRangeCommand(new ColumnRegion(0), new ColumnSortOptions(0, true));
+        cmd.Execute(sheet);
+        cmd.Undo(sheet);
+
+        sheet.Validators.Get(2, 0).Should().Contain(validator, "validator on empty cell survives sort+undo");
+    }
+
+    [Test]
+    public void Sort_Command_Keeps_Validator_On_Valueless_Column_In_Sorted_Region()
+    {
+        var sheet = new Sheet(5, 5);
+        sheet.Cells[0, 0].Value = 2;
+        sheet.Cells[1, 0].Value = 1;
+        // col 1 has no values at all, but row 0 col 1 carries a validator
+        var validator = new NumberValidator(true);
+        sheet.Validators.Add(new Region(0, 0, 1, 1), validator);
+
+        var cmd = new SortRangeCommand(new Region(0, 4, 0, 1), new ColumnSortOptions(0, true));
+        cmd.Execute(sheet);
+        cmd.Undo(sheet);
+
+        sheet.Validators.Get(0, 1).Should().Contain(validator, "validator in valueless column survives sort+undo");
+    }
+
+    [Test]
+    public void Sort_Command_Moves_State_On_Valueless_Column_With_Its_Row()
+    {
+        var sheet = new Sheet(5, 5);
+        sheet.Cells[0, 0].Value = 2;
+        sheet.Cells[1, 0].Value = 1;
+
+        // col 1 holds no values at all, only state, on the row that is about to move
+        var validator = new NumberValidator(true);
+        sheet.Validators.Add(new Region(0, 0, 1, 1), validator);
+        sheet.Cells.SetType(new Region(0, 0, 1, 1), "bool");
+        sheet.Cells.SetCellMetaData(0, 1, "tag", "first");
+
+        var cmd = new SortRangeCommand(new Region(0, 4, 0, 1), new ColumnSortOptions(0, true));
+        cmd.Execute(sheet);
+
+        // row 0 sorted down to row 1, so its col-1 state must travel with it
+        sheet.Validators.Get(1, 1).Should().Contain(validator);
+        sheet.Cells.GetCellType(1, 1).Should().Be("bool");
+        sheet.Cells.GetMetaData(1, 1, "tag").Should().Be("first");
+
+        // and must not be left behind
+        sheet.Validators.Get(0, 1).Should().BeEmpty();
+        sheet.Cells.GetCellType(0, 1).Should().Be("default");
+        sheet.Cells.GetMetaData(0, 1, "tag").Should().BeNull();
+
+        cmd.Undo(sheet);
+
+        sheet.Validators.Get(0, 1).Should().Contain(validator);
+        sheet.Cells.GetCellType(0, 1).Should().Be("bool");
+        sheet.Cells.GetMetaData(0, 1, "tag").Should().Be("first");
+        sheet.Validators.Get(1, 1).Should().BeEmpty();
+        sheet.Cells.GetCellType(1, 1).Should().Be("default");
+        sheet.Cells.GetMetaData(1, 1, "tag").Should().BeNull();
+    }
+
+    [Test]
+    public void Sort_Command_Sorts_Valueless_Row_Carrying_State_To_Bottom()
+    {
+        var sheet = new Sheet(3, 1);
+        // row 0 has no value at all, only a validator - Excel treats it as blank, sorting it last
+        var validator = new NumberValidator(true);
+        sheet.Validators.Add(new Region(0, 0, 0, 0), validator);
+        sheet.Cells[1, 0].Value = 2;
+        sheet.Cells[2, 0].Value = 1;
+
+        var cmd = new SortRangeCommand(new ColumnRegion(0), new ColumnSortOptions(0, true));
+        cmd.Execute(sheet);
+
+        sheet.Cells[0, 0].Value.Should().Be(1);
+        sheet.Cells[1, 0].Value.Should().Be(2);
+        sheet.Cells[2, 0].Value.Should().BeNull();
+
+        // the blank row travelled to the bottom and took its validator with it
+        sheet.Validators.Get(2, 0).Should().Contain(validator);
+        sheet.Validators.Get(0, 0).Should().BeEmpty();
+
+        cmd.Undo(sheet);
+
+        sheet.Validators.Get(0, 0).Should().Contain(validator);
+        sheet.Validators.Get(2, 0).Should().BeEmpty();
+        sheet.Cells[1, 0].Value.Should().Be(2);
+        sheet.Cells[2, 0].Value.Should().Be(1);
+    }
+
+    [Test, Timeout(15000)]
+    public void Sort_With_Validator_Over_Whole_Column_Completes()
+    {
+        const int rowCount = 100_000;
+        var sheet = new Sheet(rowCount, 2);
+        sheet.Cells[0, 0].Value = 2;
+        sheet.Cells[1, 0].Value = 1;
+        // an unbounded region - spans every row, so row walks must be clipped to the sheet
+        var validator = new NumberValidator(true);
+        sheet.Validators.Add(new ColumnRegion(1), validator);
+
+        var cmd = new SortRangeCommand(new ColumnRegion(0, 1), new ColumnSortOptions(0, true));
+
+        Action act = () => cmd.Execute(sheet);
+        act.Should().NotThrow();
+
+        sheet.Cells[0, 0].Value.Should().Be(1);
+        sheet.Cells[1, 0].Value.Should().Be(2);
+        sheet.Validators.Get(0, 1).Should().Contain(validator);
+        sheet.Validators.Get(rowCount - 1, 1).Should().Contain(validator);
     }
 }

@@ -13,8 +13,9 @@ public class SortRangeCommand : BaseCommand, IUndoableCommand
     public IRegion? SortedRegion;
     private readonly List<ColumnSortOptions> _sortOptions;
     public int[] OldIndices = Array.Empty<int>();
-    private readonly RegionRestoreData<string> _typeRestoreData = new();
-    private readonly RegionRestoreData<CellMetadata> _metaDataRestoreData = new();
+    private RegionRestoreData<string> _typeRestoreData = new();
+    private RegionRestoreData<CellMetadata> _metaDataRestoreData = new();
+    private RegionRestoreData<int> _validatorRestoreData = new();
 
     /// <summary>
     /// Sorts the specified region on values using the specified sort options.
@@ -46,9 +47,16 @@ public class SortRangeCommand : BaseCommand, IUndoableCommand
     {
         var store = sheet.Cells.GetCellDataStore();
 
+
+        var sortRegion = _region.GetIntersection(sheet.Region);
+        if (sortRegion == null)
+            return true;
+
         var rowCollection = store.GetNonEmptyRowData(_region);
-        var rowIndices = new Span<int>(rowCollection.RowIndicies);
-        var rowData = new Span<RowData<CellValue>>(rowCollection.Rows);
+
+        var participating = GetParticipatingRows(sheet, sortRegion, rowCollection);
+        var rowIndices = new Span<int>(participating.RowIndicies);
+        var rowData = new Span<RowData<CellValue>>(participating.Rows);
 
         if (rowIndices.Length == 0)
             return true;
@@ -64,16 +72,16 @@ public class SortRangeCommand : BaseCommand, IUndoableCommand
         sheet.BatchUpdates();
 
         var formulaData = sheet.Cells.GetFormulaStore().GetSubStore(_region, false);
-        var typeData =
-            (ConsolidatedDataStore<string>)sheet.Cells.GetTypeStore().GetSubStore(_region, false);
+        var typeData = sheet.Cells.GetTypeStore().GetSubStore(_region, false);
         var metaDataCollection = sheet.Cells.GetMetaDataStore().GetSubStore(_region, false);
         var validData = sheet.Validators.Store.GetSubStore(_region, false);
 
         var affectedRegions = GetAffectedRegions(rowData, SortedRegion);
         sheet.Cells.ClearCellsImpl(affectedRegions);
-        _typeRestoreData.Merge(ClearRegions(sheet.Cells.GetTypeStore(), affectedRegions));
-        _metaDataRestoreData.Merge(ClearRegions(sheet.Cells.GetMetaDataStore(), affectedRegions));
-        ClearRegions(sheet.Validators.Store, affectedRegions);
+        // A command instance is executed again on redo, so each execution needs a fresh undo snapshot.
+        _typeRestoreData = ClearRegions(sheet.Cells.GetTypeStore(), affectedRegions);
+        _metaDataRestoreData = ClearRegions(sheet.Cells.GetMetaDataStore(), affectedRegions);
+        _validatorRestoreData = ClearRegions(sheet.Validators.Store, affectedRegions);
 
         for (int i = 0; i < rowData.Length; i++)
         {
@@ -85,21 +93,6 @@ public class SortRangeCommand : BaseCommand, IUndoableCommand
                 var col = rowData[i].ColumnIndices[j];
                 var val = rowData[i].Values[j];
                 var formula = formulaData.Get(oldRowNo, col);
-                var type = typeData.Get(oldRowNo, col);
-                var metaData = metaDataCollection.GetData(oldRowNo, col);
-                var validators = validData.GetData(oldRowNo, col);
-
-                sheet.Cells.SetCellTypeImpl(new Region(newRowNo, col), type);
-                foreach (var item in metaData)
-                {
-                    foreach (var kp in item.GetItems())
-                    {
-                        sheet.Cells.SetMetaDataImpl(newRowNo, col, kp.Key, kp.Value);
-                    }
-                }
-
-                foreach (var validator in validators)
-                    sheet.Validators.AddImpl(validator, new Region(newRowNo, col));
 
                 if (formula == null)
                     sheet.Cells.SetValueImpl(newRowNo, col, val);
@@ -109,7 +102,12 @@ public class SortRangeCommand : BaseCommand, IUndoableCommand
                     sheet.Cells.SetFormulaImpl(newRowNo, col, formula);
                 }
             }
+
+            MoveRowState(sheet, sortRegion, oldRowNo, newRowNo, typeData, metaDataCollection, validData);
         }
+
+        // Revalidate once all validators are in their final positions so the cached validity follows the sorted cells.
+        sheet.Cells.ValidateRegion(SortedRegion);
 
         sheet.EndBatchUpdates();
 
@@ -156,9 +154,6 @@ public class SortRangeCommand : BaseCommand, IUndoableCommand
 
         var rowCollection = sheet.Cells.GetCellDataStore().GetRowData(SortedRegion);
         var formulaCollection = sheet.Cells.GetFormulaStore().GetSubStore(SortedRegion, false);
-        var typeCollection = (ConsolidatedDataStore<string>)sheet.Cells.GetTypeStore().GetSubStore(SortedRegion, false);
-        var metaDataCollection = sheet.Cells.GetMetaDataStore().GetSubStore(SortedRegion, false);
-        var validatorCollection = sheet.Validators.Store.GetSubStore(SortedRegion, false);
         var rowData = rowCollection.Rows;
         var rowIndices = rowCollection.RowIndicies;
 
@@ -176,9 +171,6 @@ public class SortRangeCommand : BaseCommand, IUndoableCommand
             {
                 var col = rowData[i].ColumnIndices[j];
                 var formula = formulaCollection.Get(rowIndices[i], col);
-                var type = typeCollection.Get(rowIndices[i], col);
-                var metaData = metaDataCollection.GetData(rowIndices[i], col);
-                var validators = validatorCollection.GetData(rowIndices[i], col);
 
                 if (formula == null)
                 {
@@ -190,18 +182,6 @@ public class SortRangeCommand : BaseCommand, IUndoableCommand
                     formula.ShiftReferences((newRowNo - rowIndices[i]), 0, sheet.Name);
                     sheet.Cells.SetFormulaImpl(newRowNo, col, formula);
                 }
-
-                sheet.Cells.SetCellTypeImpl(new Region(newRowNo, col), type);
-                foreach (var item in metaData)
-                {
-                    foreach (var kp in item.GetItems())
-                        sheet.Cells.SetMetaDataImpl(newRowNo, col, kp.Key, kp.Value);
-                }
-
-                foreach (var index in validators)
-                {
-                    sheet.Validators.AddImpl(index, new Region(newRowNo, col));
-                }
             }
         }
 
@@ -212,6 +192,14 @@ public class SortRangeCommand : BaseCommand, IUndoableCommand
 
         sheet.Cells.Restore(restoreData);
         sheet.Cells.GetMetaDataStore().Restore(_metaDataRestoreData);
+        sheet.Validators.Store.Restore(_validatorRestoreData);
+        sheet.Cells.ValidateRegion(SortedRegion);
+        foreach (var row in OldIndices.Distinct())
+        {
+            if (row < SortedRegion.Top || row > SortedRegion.Bottom)
+                sheet.Cells.ValidateRegion(new Region(row, row, SortedRegion.Left, SortedRegion.Right));
+        }
+
         sheet.EndBatchUpdates();
 
         return true;
@@ -235,6 +223,96 @@ public class SortRangeCommand : BaseCommand, IUndoableCommand
         }
 
         return affectedRegions;
+    }
+
+    private (int[] RowIndicies, RowData<CellValue>[] Rows) GetParticipatingRows(
+        Sheet sheet,
+        IRegion sortRegion,
+        RowDataCollection<CellValue> valueRows)
+    {
+        var stateRows = new HashSet<int>();
+        CollectRowsWithData(sheet.Cells.GetTypeStore(), sortRegion, stateRows);
+        CollectRowsWithData(sheet.Cells.GetMetaDataStore(), sortRegion, stateRows);
+        CollectRowsWithData(sheet.Validators.Store, sortRegion, stateRows);
+
+        // rows that already hold a value are covered by valueRows
+        foreach (var row in valueRows.RowIndicies)
+            stateRows.Remove(row);
+
+        if (stateRows.Count == 0)
+            return (valueRows.RowIndicies, valueRows.Rows);
+
+        var extraRows = stateRows.ToList();
+        extraRows.Sort();
+
+        var indices = new List<int>(valueRows.RowIndicies);
+        var rows = new List<RowData<CellValue>>(valueRows.Rows);
+
+        foreach (var row in extraRows)
+        {
+            indices.Add(row);
+            rows.Add(new RowData<CellValue>(row, Array.Empty<int>(), Array.Empty<CellValue>()));
+        }
+
+        return (indices.ToArray(), rows.ToArray());
+    }
+
+    private static void CollectRowsWithData<T>(RegionDataStore<T> store, IRegion sortRegion, HashSet<int> rows)
+        where T : IEquatable<T>
+    {
+        foreach (var dataRegion in store.GetDataRegions(sortRegion))
+        {
+            var intersection = dataRegion.Region.GetIntersection(sortRegion);
+            if (intersection == null)
+                continue;
+
+            if (intersection.Top == sortRegion.Top && intersection.Bottom == sortRegion.Bottom)
+                continue;
+
+            for (int row = intersection.Top; row <= intersection.Bottom; row++)
+                rows.Add(row);
+        }
+    }
+
+    private static void MoveRowState(
+        Sheet sheet,
+        IRegion sortRegion,
+        int fromRow,
+        int toRow,
+        RegionDataStore<string> typeData,
+        RegionDataStore<CellMetadata> metaData,
+        RegionDataStore<int> validatorData)
+    {
+        var fromSlice = new Region(fromRow, fromRow, sortRegion.Left, sortRegion.Right);
+
+        foreach (var (region, type) in GetRowSpans(typeData, fromSlice))
+            sheet.Cells.SetCellTypeImpl(new Region(toRow, toRow, region.Left, region.Right), type);
+
+        foreach (var (region, validatorIndex) in GetRowSpans(validatorData, fromSlice))
+            sheet.Validators.AddImpl(validatorIndex, new Region(toRow, toRow, region.Left, region.Right));
+
+        foreach (var (region, cellMetaData) in GetRowSpans(metaData, fromSlice))
+        {
+            foreach (var kp in cellMetaData.GetItems())
+            {
+                for (int col = region.Left; col <= region.Right; col++)
+                    sheet.Cells.SetMetaDataImpl(toRow, col, kp.Key, kp.Value);
+            }
+        }
+    }
+
+    /// <summary>
+    /// The column spans of <paramref name="store"/> that overlap a single-row slice, clipped to it.
+    /// </summary>
+    private static IEnumerable<(IRegion Region, T Data)> GetRowSpans<T>(RegionDataStore<T> store, IRegion rowSlice)
+        where T : IEquatable<T>
+    {
+        foreach (var dataRegion in store.GetDataRegions(rowSlice))
+        {
+            var intersection = dataRegion.Region.GetIntersection(rowSlice);
+            if (intersection != null)
+                yield return (intersection, dataRegion.Data);
+        }
     }
 
     private static RegionRestoreData<T> ClearRegions<T>(RegionDataStore<T> store, IEnumerable<IRegion> regions)
