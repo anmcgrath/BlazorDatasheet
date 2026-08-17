@@ -8,6 +8,7 @@ using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 [assembly: InternalsVisibleTo("BlazorDatasheet.Test")]
+[assembly: InternalsVisibleTo("BlazorDatasheet")]
 
 namespace BlazorDatasheet.Core.Data.Cells;
 

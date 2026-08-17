@@ -34,38 +34,46 @@ public partial class RTree<T>
 	#endregion
 
 	#region Search
-	private List<T> DoSearch(in Envelope boundingBox)
+	/// <summary>
+	/// Searches without allocating unless the search actually finds something. Single-cell probes
+	/// run for every cell that scrolls into view and usually miss, so the results list and the
+	/// traversal queue are both deferred until they are needed.
+	/// </summary>
+	private IReadOnlyList<T> DoSearch(in Envelope boundingBox)
 	{
-		if (!Root.Envelope.Intersects(boundingBox))
-			return [];
+		if (Count == 0 || !Root.Envelope.Intersects(boundingBox))
+			return Array.Empty<T>();
 
-		var intersections = new List<T>();
-		var queue = new Queue<Node>();
-		queue.Enqueue(Root);
+		List<T>? intersections = null;
+		Queue<Node>? queue = null;
+		var node = Root;
 
-		while (queue.Count != 0)
+		while (true)
 		{
-			var item = queue.Dequeue();
-
-			if (item.IsLeaf)
+			if (node.IsLeaf)
 			{
-				foreach (var i in item.Items)
+				foreach (var i in node.Items)
 				{
 					if (i.Envelope.Intersects(boundingBox))
-						intersections.Add((T)i);
+						(intersections ??= new List<T>()).Add((T)i);
 				}
 			}
 			else
 			{
-				foreach (var i in item.Items)
+				foreach (var i in node.Items)
 				{
 					if (i.Envelope.Intersects(boundingBox))
-						queue.Enqueue((Node)i);
+						(queue ??= new Queue<Node>()).Enqueue((Node)i);
 				}
 			}
+
+			if (queue == null || queue.Count == 0)
+				break;
+
+			node = queue.Dequeue();
 		}
 
-		return intersections;
+		return intersections ?? (IReadOnlyList<T>)Array.Empty<T>();
 	}
 	#endregion
 

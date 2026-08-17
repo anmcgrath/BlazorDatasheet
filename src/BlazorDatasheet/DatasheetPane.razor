@@ -99,6 +99,10 @@
     private readonly HashSet<int> _dirtyRowIndices = new();
     private bool _forceRender;
     private Dictionary<CellPosition, VisualCell> _visualCellCache = new();
+
+    // reused across resize events so that dragging a border doesn't allocate on every pointer move.
+    private readonly Dictionary<int, AxisMetrics> _rowMetrics = new();
+    private readonly Dictionary<int, AxisMetrics> _colMetrics = new();
     private IRegion? _currentViewPortRegion;
     private IRegion? _lastViewRegion;
     private PaneContext? _lastPaneContext;
@@ -211,13 +215,23 @@
             if (visibleCols.Count == 0)
                 continue;
 
+            // width and visibility are the same for every cell in a column, so resolve them once
+            // for the region rather than once per cell.
+            var colMetrics = new AxisMetrics[visibleCols.Count];
+            for (var i = 0; i < visibleCols.Count; i++)
+                colMetrics[i] = AxisMetrics.ForColumn(_sheet, visibleCols[i]);
+
             foreach (var row in _sheet.Rows.GetVisibleIndices(boundedRegion.Top, boundedRegion.Bottom))
             {
                 _dirtyRowIndices.Add(row);
-                foreach (var col in visibleCols)
+                var rowMetrics = AxisMetrics.ForRow(_sheet, row);
+
+                for (var i = 0; i < visibleCols.Count; i++)
                 {
+                    var col = visibleCols[i];
                     var position = new CellPosition(row, col);
-                    var visualCell = new VisualCell(row, col, _sheet, PaneContext.NumberPrecisionDisplay);
+                    var visualCell = new VisualCell(row, col, _sheet, PaneContext.NumberPrecisionDisplay,
+                        rowMetrics, colMetrics[i]);
 
                     if (!_visualCellCache.TryAdd(position, visualCell))
                         _visualCellCache[position] = visualCell;
@@ -255,8 +269,71 @@
 
     private void HandleSizeModified(object? sender, SizeModifiedEventArgs e)
     {
-        InvalidateVisibleCells();
+        if (_sheet == null)
+        {
+            InvalidateVisibleCells();
+            StateHasChanged();
+            return;
+        }
+
+        // Resizing (or hiding) a row or column only changes cell sizes and visibility - values,
+        // formats and merges are untouched. Dragging a border fires this on every pointer move, so
+        // the cached cells are patched in place rather than thrown away and rebuilt.
+        PatchCachedCellSizes(e);
+
+        _forceRender = true;
         StateHasChanged();
+    }
+
+    private void PatchCachedCellSizes(SizeModifiedEventArgs e)
+    {
+        if (_visualCellCache.Count == 0)
+            return;
+
+        _rowMetrics.Clear();
+        _colMetrics.Clear();
+
+        foreach (var visualCell in _visualCellCache.Values)
+        {
+            if (!IsAffectedBySizeChange(visualCell, e))
+                continue;
+
+            visualCell.RefreshAxisMetrics(_sheet!, GetRowMetrics(visualCell.Row), GetColMetrics(visualCell.Col));
+        }
+    }
+
+    /// <summary>
+    /// A resize only changes the size of the rows/columns it covers, so cells outside it keep the
+    /// size they already have. Merged cells count when the merge overlaps the resized range.
+    /// </summary>
+    private static bool IsAffectedBySizeChange(VisualCell cell, SizeModifiedEventArgs e)
+    {
+        if (e.Axis == Axis.Col)
+        {
+            return cell.Merge == null
+                ? cell.Col >= e.IndexStart && cell.Col <= e.IndexEnd
+                : cell.Merge.Left <= e.IndexEnd && cell.Merge.Right >= e.IndexStart;
+        }
+
+        return cell.Merge == null
+            ? cell.Row >= e.IndexStart && cell.Row <= e.IndexEnd
+            : cell.Merge.Top <= e.IndexEnd && cell.Merge.Bottom >= e.IndexStart;
+    }
+
+    private AxisMetrics GetRowMetrics(int row)
+    {
+        if (!_rowMetrics.TryGetValue(row, out var metrics))
+            _rowMetrics[row] = metrics = AxisMetrics.ForRow(_sheet!, row);
+
+        return metrics;
+    }
+
+    private AxisMetrics GetColMetrics(int col)
+    {
+        if (!_colMetrics.TryGetValue(col, out var metrics))
+            _colMetrics[col] = metrics = AxisMetrics.ForColumn(_sheet!, col);
+
+        return metrics;
     }
 
     private void InvalidateVisibleCells()

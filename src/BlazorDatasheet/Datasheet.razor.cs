@@ -31,6 +31,7 @@ using Microsoft.JSInterop;
 using static BlazorDatasheet.Util.JsInteropHelper;
 
 [assembly: InternalsVisibleTo("BlazorDatasheet.Test")]
+[assembly: InternalsVisibleTo("BlazorDatasheet.Benchmarks")]
 
 namespace BlazorDatasheet;
 

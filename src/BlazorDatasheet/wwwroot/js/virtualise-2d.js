@@ -13,6 +13,25 @@ class Virtualiser2d {
     }
 
     /**
+     * Finds the scrollable ancestor of a sheet root, caching the result.
+     * Resolving it walks the ancestor chain calling getComputedStyle on each parent, and it is
+     * needed on every scroll notification even though it effectively never changes.
+     * @param {HTMLElement | null} wholeEl Datasheet root element.
+     * @returns {HTMLElement | null} The nearest scrollable ancestor, or null when none exists.
+     */
+    getScrollableAncestor(wholeEl) {
+        if (!wholeEl)
+            return null
+
+        if (this.scrollAncestorMap.has(wholeEl))
+            return this.scrollAncestorMap.get(wholeEl)
+
+        let ancestor = this.findScrollableAncestor(wholeEl)
+        this.scrollAncestorMap.set(wholeEl, ancestor)
+        return ancestor
+    }
+
+    /**
      * Disconnects and removes all virtualisation observers attached to the element.
      * @param {HTMLElement} el Datasheet root element.
      * @returns {void}
@@ -23,18 +42,22 @@ class Virtualiser2d {
         let top = this.topHandlerMutMap.get(el)
         let bottom = this.bottomHandlerMutMap.get(el)
         let interaction = this.interactionMap.get(el)
+        let notifier = this.notifierMap.get(el)
 
         left?.disconnect()
         right?.disconnect()
         top?.disconnect()
         bottom?.disconnect()
         interaction?.disconnect()
+        notifier?.cancel()
 
         this.leftHandlerMutMap.delete(el)
         this.rightHandlerMutMap.delete(el)
         this.topHandlerMutMap.delete(el)
         this.bottomHandlerMutMap.delete(el)
         this.interactionMap.delete(el)
+        this.notifierMap.delete(el)
+        this.scrollAncestorMap.delete(el)
     }
 
     leftHandlerMutMap = new WeakMap()
@@ -42,6 +65,8 @@ class Virtualiser2d {
     topHandlerMutMap = new WeakMap()
     bottomHandlerMutMap = new WeakMap()
     interactionMap = new WeakMap()
+    scrollAncestorMap = new WeakMap()
+    notifierMap = new WeakMap()
 
     /**
      * Calculates the visible viewport rectangle relative to the sheet root.
@@ -49,7 +74,7 @@ class Virtualiser2d {
      * @returns {{x:number, y:number, width:number, height:number} | null} Visible rect in sheet coordinates.
      */
     calculateViewRect(wholeEl) {
-        return calculateViewRectShared(wholeEl, this.findScrollableAncestor.bind(this))
+        return calculateViewRectShared(wholeEl, this.getScrollableAncestor.bind(this))
     }
 
     /**
@@ -60,7 +85,7 @@ class Virtualiser2d {
      * @returns {void}
      */
     scrollParentBy(x, y, el) {
-        let parent = this.findScrollableAncestor(el) || document.documentElement
+        let parent = this.getScrollableAncestor(el) || document.documentElement
         parent.scrollBy({left: x, top: y, behavior: "auto"})
     }
 
@@ -76,8 +101,7 @@ class Virtualiser2d {
      * @returns {void}
      */
     addVirtualisationHandlers(dotNetHelper, wholeEl, dotnetScrollHandlerName, fillerLeft, fillerTop, fillerRight, fillerBottom) {
-        // return initial scroll event to render the sheet
-        let parent = this.findScrollableAncestor(wholeEl)
+        let parent = this.getScrollableAncestor(wholeEl)
         if (parent) {
             parent.style.willChange = 'transform' // improves scrolling performance in chrome/edge
         }
@@ -85,13 +109,11 @@ class Virtualiser2d {
         // fixes scroll jankiness with chrome and firefox.
         (parent ?? document.documentElement).style.overflowAnchor = 'none'
 
-        let getRect = this.calculateViewRect.bind(this)
+        let notifier = this.createNotifier(dotNetHelper, wholeEl, dotnetScrollHandlerName)
+        this.notifierMap.set(wholeEl, notifier)
 
-        let viewRect = getRect(wholeEl)
-        // the component may already be disposed - swallow the resulting rejection
-        if (dotNetHelper)
-            dotNetHelper.invokeMethodAsync(dotnetScrollHandlerName, viewRect).catch(() => {
-            });
+        // return initial scroll event to render the sheet
+        notifier.notify()
 
         let observer = new IntersectionObserver((entries, observer) => {
             let shouldNotify = false
@@ -110,10 +132,7 @@ class Virtualiser2d {
             if (!shouldNotify)
                 return
 
-            let viewRect = getRect(wholeEl)
-            if (dotNetHelper)
-                dotNetHelper.invokeMethodAsync(dotnetScrollHandlerName, viewRect).catch(() => {
-                });
+            notifier.notify()
         }, {root: parent, threshold: 0})
 
         observer.observe(fillerTop)
@@ -128,6 +147,83 @@ class Virtualiser2d {
         this.leftHandlerMutMap.set(wholeEl, this.createMutationObserver(fillerLeft, observer))
         this.rightHandlerMutMap.set(wholeEl, this.createMutationObserver(fillerRight, observer))
 
+    }
+
+    /**
+     * Creates the function used to tell .NET about a new viewport.
+     *
+     * Notifications are coalesced two ways. Several observer callbacks in the same frame collapse
+     * into a single animation-frame callback, and while a call to .NET is in flight no further
+     * calls are made. Either way the *last* notification always results in a call carrying a
+     * freshly measured rect, so the final viewport is never left unrendered.
+     *
+     * @param {any} dotNetHelper Blazor JS interop helper.
+     * @param {HTMLElement} wholeEl Datasheet root element.
+     * @param {string} dotnetScrollHandlerName .NET method name used for viewport callbacks.
+     * @returns {{notify: () => void, cancel: () => void}} Notifier for this sheet.
+     */
+    createNotifier(dotNetHelper, wholeEl, dotnetScrollHandlerName) {
+        let getRect = this.calculateViewRect.bind(this)
+        let frameHandle = 0
+        let inFlight = false
+        let pending = false
+        let cancelled = false
+
+        let send = () => {
+            frameHandle = 0
+
+            if (cancelled || !dotNetHelper)
+                return
+
+            // a call is already on its way to .NET - let it send the newest rect when it lands.
+            if (inFlight) {
+                pending = true
+                return
+            }
+
+            let viewRect = getRect(wholeEl)
+            if (viewRect == null)
+                return
+
+            let done = () => {
+                inFlight = false
+                if (pending && !cancelled) {
+                    pending = false
+                    schedule()
+                }
+            }
+
+            inFlight = true
+            try {
+                // the component may already be disposed - swallow the resulting rejection
+                dotNetHelper.invokeMethodAsync(dotnetScrollHandlerName, viewRect)
+                    .catch(() => {
+                    })
+                    .finally(done)
+            } catch {
+                // never leave the notifier stuck believing a call is still in flight
+                done()
+            }
+        }
+
+        let schedule = () => {
+            if (cancelled || frameHandle !== 0)
+                return
+
+            frameHandle = requestAnimationFrame(send)
+        }
+
+        return {
+            notify: schedule,
+            cancel: () => {
+                cancelled = true
+                pending = false
+                if (frameHandle !== 0) {
+                    cancelAnimationFrame(frameHandle)
+                    frameHandle = 0
+                }
+            }
+        }
     }
 
     /**

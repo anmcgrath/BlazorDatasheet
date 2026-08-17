@@ -224,36 +224,31 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReado
     private void MergeBorders(CellFormat format)
     {
         if (format.BorderBottom != null)
-        {
-            if (this.BorderBottom == null)
-                this.BorderBottom = format.BorderBottom.Clone();
-            else
-                this.BorderBottom?.Merge(format.BorderBottom);
-        }
+            BorderBottom = MergeBorder(BorderBottom, format.BorderBottom);
 
         if (format.BorderLeft != null)
-        {
-            if (this.BorderLeft == null)
-                this.BorderLeft = format.BorderLeft.Clone();
-            else
-                this.BorderLeft?.Merge(format.BorderLeft);
-        }
+            BorderLeft = MergeBorder(BorderLeft, format.BorderLeft);
 
         if (format.BorderRight != null)
-        {
-            if (this.BorderRight == null)
-                this.BorderRight = format.BorderRight.Clone();
-            else
-                this.BorderRight?.Merge(format.BorderRight);
-        }
+            BorderRight = MergeBorder(BorderRight, format.BorderRight);
 
         if (format.BorderTop != null)
-        {
-            if (this.BorderTop == null)
-                this.BorderTop = format.BorderTop.Clone();
-            else
-                this.BorderTop?.Merge(format.BorderTop);
-        }
+            BorderTop = MergeBorder(BorderTop, format.BorderTop);
+    }
+
+    /// <summary>
+    /// Merges <paramref name="incoming"/> over <paramref name="existing"/>, always producing a new
+    /// border. <see cref="Clone"/> copies border references rather than the borders themselves, so
+    /// merging in place would mutate the border of whichever format this one was cloned from.
+    /// </summary>
+    private static Border MergeBorder(Border? existing, Border incoming)
+    {
+        if (existing == null)
+            return incoming.Clone();
+
+        var merged = existing.Clone();
+        merged.Merge(incoming);
+        return merged;
     }
 
     public bool HasBorder() => BorderTop != null &&

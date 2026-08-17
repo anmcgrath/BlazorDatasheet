@@ -534,15 +534,46 @@ public class Sheet
     /// <returns></returns>
     public CellFormat GetFormat(int row, int col)
     {
-        var defaultFormat = new CellFormat();
-        var cellFormat = (Cells.GetFormat(row, col) ?? new CellFormat()).Clone();
-        var rowFormat = Rows.Formats.Get(row)?.Clone() ?? defaultFormat;
-        var colFormat = Columns.Formats.Get(col)?.Clone() ?? defaultFormat;
-
-        rowFormat.Merge(colFormat);
-        rowFormat.Merge(cellFormat);
-        return rowFormat;
+        return GetFormatForRendering(row, col) ?? new CellFormat();
     }
+
+    /// <summary>
+    /// Resolves the effective format without allocating an empty format for an unformatted cell.
+    /// Rendering calls this for every cell entering the viewport, and the common case has no
+    /// format at all. Public callers still receive the mutable, non-null copy promised by
+    /// <see cref="GetFormat(int,int)"/>.
+    /// </summary>
+    internal CellFormat? GetFormatForRendering(int row, int col)
+    {
+        // this runs for every cell that scrolls into view, so it avoids copying a format
+        // unless the copy actually contributes to the result.
+        var cellFormat = Cells.GetFormat(row, col);
+        var rowFormat = Rows.Formats.Get(row);
+        var colFormat = Columns.Formats.Get(col);
+
+        var hasCell = HasStyles(cellFormat);
+        var hasRow = HasStyles(rowFormat);
+        var hasCol = HasStyles(colFormat);
+
+        // by far the most common case - nothing is formatted at this position.
+        if (!hasCell && !hasRow && !hasCol)
+            return null;
+
+        // when only one of the three contributes there is nothing to merge, so a single copy will do.
+        if (!hasRow && !hasCol)
+            return cellFormat!.Clone();
+        if (!hasCell && !hasCol)
+            return rowFormat!.Clone();
+        if (!hasCell && !hasRow)
+            return colFormat!.Clone();
+
+        var format = hasRow ? rowFormat!.Clone() : new CellFormat();
+        format.Merge(colFormat);
+        format.Merge(cellFormat);
+        return format;
+    }
+
+    private static bool HasStyles(CellFormat? format) => format != null && !format.IsDefaultFormat();
 
     /// <summary>
     /// Sets the format for a particular range

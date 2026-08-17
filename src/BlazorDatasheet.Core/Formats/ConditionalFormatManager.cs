@@ -125,6 +125,11 @@ public class ConditionalFormatManager
     /// <returns></returns>
     public CellFormat? GetFormatResult(int row, int col)
     {
+        // called for every cell that scrolls into view, and most sheets have no conditional
+        // formats at all - skip the region check and the store probe entirely in that case.
+        if (_appliedFormats.IsEmpty)
+            return null;
+
         if (!_sheet.Region.Contains(row, col))
             return null;
 

@@ -224,7 +224,7 @@
         builder.OpenElement(20, "div");
         builder.AddAttribute(30, "data-row", dataRow);
         builder.AddAttribute(40, "data-col", dataCol);
-        builder.AddAttribute(50, "class", "bds-sheet-cell");
+        builder.AddAttribute(50, "class", cell.ClassString);
         var cellStyle = cell.FormatStyleString;
         if (!string.IsNullOrEmpty(cellStyle))
             builder.AddAttribute(60, "style", cell.FormatStyleString);
