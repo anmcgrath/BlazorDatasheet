@@ -10,13 +10,13 @@
 <div spellcheck="false" style="position: relative; @Style">
 
     <span class="bds-highlight-result"
-          style="min-width:@(CellWidth - 2)px;min-height: @(CellHeight - 2)px;"
+          style="min-width: calc(@(CellWidth)px - var(--selection-border-thickness) - var(--sheet-border-width)); min-height: calc(@(CellHeight)px - var(--selection-border-thickness) - var(--sheet-border-width));"
           @ref="_highlightResultEl">
     </span>
 
     <span contenteditable="true"
           class="bds-highlight-input"
-          style="min-width:@(CellWidth - 2)px;min-height: @(CellHeight - 2)px;"
+          style="min-width: calc(@(CellWidth)px - var(--selection-border-thickness) - var(--sheet-border-width)); min-height: calc(@(CellHeight)px - var(--selection-border-thickness) - var(--sheet-border-width));"
           @ref="_highlightInputEl">
     </span>
 
@@ -127,26 +127,42 @@
     /// </summary>
     private async Task SetInputTextAsync(string text)
     {
-        if (_highlightJs != null && !_isDisposing)
-        {
-            await _highlightJs.InvokeVoidAsync("setInputText", text);
-            await _highlightJs.InvokeVoidAsync("setHighlightHtml", GetHighlightedHtmlValue(_value));
-        }
+        await InvokeHighlighterAsync("setInputText", text);
+        await InvokeHighlighterAsync("setHighlightHtml", GetHighlightedHtmlValue(_value));
     }
 
     private async Task SetHighlightTextAsync()
     {
-        if (_highlightJs != null && !_isDisposing)
-        {
-            await _highlightJs.InvokeVoidAsync("setHighlightHtml", GetHighlightedHtmlValue(_value));
-        }
+        await InvokeHighlighterAsync("setHighlightHtml", GetHighlightedHtmlValue(_value));
     }
 
     internal async Task FocusAndMoveCursorToEndAsync()
     {
-        if (_highlightJs != null && !_isDisposing)
+        await InvokeHighlighterAsync("focusAndMoveCursorToEnd");
+    }
+
+    /// <summary>
+    /// Invokes a function on the highlighter module, ignoring the call if the component is being
+    /// (or has been) disposed. The reference is captured locally because disposal may run while
+    /// we are awaiting an earlier interop call.
+    /// </summary>
+    private async Task InvokeHighlighterAsync(string identifier, params object?[] args)
+    {
+        var highlightJs = _highlightJs;
+        if (highlightJs == null || _isDisposing)
+            return;
+
+        try
         {
-            await _highlightJs.InvokeVoidAsync("focusAndMoveCursorToEnd");
+            await highlightJs.InvokeVoidAsync(identifier, args);
+        }
+        catch (JSDisconnectedException)
+        {
+            // Ignore disconnects during server-side component teardown.
+        }
+        catch (ObjectDisposedException)
+        {
+            // The highlighter was disposed while this call was in flight.
         }
     }
 

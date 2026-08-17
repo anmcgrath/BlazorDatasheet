@@ -282,15 +282,12 @@
 
         sb.AddStyleNotNull("background", format?.BackgroundColor);
         sb.AddStyle("background", "var(--sheet-bg-color)", format?.BackgroundColor == null);
-        if (visualCell.Format?.HorizontalTextAlign != null)
-        {
-            if (visualCell.Format.HorizontalTextAlign == TextAlign.Center)
-                sb.AddStyle("text-align", "center");
-            else if (visualCell.Format.HorizontalTextAlign == TextAlign.End)
-                sb.AddStyle("text-align", "right");
-            else if (visualCell.Format.HorizontalTextAlign == TextAlign.Start)
-                sb.AddStyle("text-align", "left");
-        }
+
+        // Mirror the alignment the cell renders with, so the text doesn't move when editing starts.
+        // Vertical alignment goes through a custom property because each editor applies it
+        // differently (align-content on the highlighted spans, align-items on the date input).
+        sb.AddStyle("text-align", VisualCell.ToCssTextAlign(visualCell.HorizontalAlign));
+        sb.AddStyle("--editor-vertical-align", VisualCell.ToCssFlexAlign(visualCell.VerticalAlign));
 
         if (visualCell.Format?.TextWrap == TextWrapping.Wrap)
             sb.AddStyle("text-wrap", "wrap");
@@ -324,11 +321,15 @@
         var w = _sheet.Columns.GetVisualWidthBetween(_sheet.Editor.EditCell!.Col, _sheet.Editor.EditCell!.Col + colSpan);
         var h = _sheet.Rows.GetVisualHeightBetween(_sheet.Editor.EditCell!.Row, _sheet.Editor.EditCell!.Row + rowSpan);
 
-        sb.AddStyle("left", $"{left + 1}px;");
-        sb.AddStyle("top", $"{top + 1}px;");
+        // The selection border straddles the cell edge, so inset the editor by half of it
+        // to sit flush inside the border rather than under it.
+        sb.AddStyle("left", $"calc({left}px + var(--selection-border-thickness) / 2)");
+        sb.AddStyle("top", $"calc({top}px + var(--selection-border-thickness) / 2)");
 
-        sb.AddStyle("width", w + "px");
-        sb.AddStyle("height", h + "px");
+        // the cell's own grid line sits inside w/h, so trim it too - otherwise end-aligned text
+        // lands a border-width past the cell's text.
+        sb.AddStyle("width", $"calc({w}px - var(--selection-border-thickness) - var(--sheet-border-width))");
+        sb.AddStyle("height", $"calc({h}px - var(--selection-border-thickness) - var(--sheet-border-width))");
 
         sb.AddStyle("max-width", LayerWidth + "px");
         sb.AddStyle("max-height", LayerHeight + "px");

@@ -22,7 +22,7 @@ public class DatasheetViewRegionCalculatorTests
     }
 
     [Test]
-    public void Main_ViewRegion_Excludes_Frozen_Edges()
+    public void Main_ViewRegion_Excludes_Frozen_Rows_But_Keeps_All_Columns()
     {
         var viewRegion = new Region(2, 12, 3, 15);
         var main = DatasheetViewRegionCalculator.GetMainViewRegion(
@@ -30,13 +30,11 @@ public class DatasheetViewRegionCalculatorTests
             numRows: 20,
             numCols: 30,
             frozenTopCount: 4,
-            frozenBottomCount: 3,
-            frozenLeftCount: 5,
-            frozenRightCount: 2);
+            frozenBottomCount: 3);
 
         main.Top.Should().Be(4);
         main.Bottom.Should().Be(12);
-        main.Left.Should().Be(5);
+        main.Left.Should().Be(3);
         main.Right.Should().Be(15);
     }
 
@@ -77,9 +75,7 @@ public class DatasheetViewRegionCalculatorTests
             numRows: 50,
             numCols: 50,
             frozenTopCount: 40,
-            frozenBottomCount: 40,
-            frozenLeftCount: 30,
-            frozenRightCount: 30);
+            frozenBottomCount: 40);
 
         main.Top.Should().BeGreaterOrEqualTo(viewRegion.Top);
         main.Bottom.Should().BeLessOrEqualTo(viewRegion.Bottom);

@@ -5,13 +5,14 @@
 @using BlazorDatasheet.Formula.Core
 @inherits BaseEditor
 
-<input
-    type="date"
-    class="date-input"
-    @bind="CurrentDateTime"
-    @bind:event="oninput"
-    style="@Style; width: @(CellWidth - 2)px; height: @(CellHeight - 2)px;"
-    @ref="InputRef"/>
+<div class="bds-date-editor" style="@Style">
+    <input
+        type="date"
+        class="date-input"
+        @bind="CurrentDateTime"
+        @bind:event="oninput"
+        @ref="InputRef"/>
+</div>
 
 @code {
 

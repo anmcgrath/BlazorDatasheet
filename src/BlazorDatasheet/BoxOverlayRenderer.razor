@@ -95,11 +95,10 @@
     private string GetSizeStyleString()
     {
         var sb = new StyleBuilder();
-
-        sb.AddStyle($"left", $"calc({X}px - {BorderThickness} / 2)");
-        sb.AddStyle($"top", $"calc({Y}px - {BorderThickness} / 2)");
-        sb.AddStyle($"width", $"calc({Width}px + {BorderThickness})");
-        sb.AddStyle($"height", $"calc({Height}px + {BorderThickness})");
+        sb.AddStyle($"left", $"max(0px, calc({X}px - {BorderThickness} / 2))");
+        sb.AddStyle($"top", $"max(0px, calc({Y}px - {BorderThickness} / 2))");
+        sb.AddStyle($"width", $"min(calc({Width}px + {BorderThickness}), calc({X}px + {Width}px + {BorderThickness} / 2))");
+        sb.AddStyle($"height", $"min(calc({Height}px + {BorderThickness}), calc({Y}px + {Height}px + {BorderThickness} / 2))");
         sb.AddStyle("z-index", ZIndex.ToString());
 
         if (ShowBorderBottom)

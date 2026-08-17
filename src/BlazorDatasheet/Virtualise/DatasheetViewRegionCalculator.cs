@@ -15,29 +15,23 @@ internal static class DatasheetViewRegionCalculator
 
         return viewRegion.GetIntersection(sheetRegion) as Region ?? sheetRegion;
     }
-
+    
     public static Region GetMainViewRegion(Region constrainedViewRegion, int numRows, int numCols,
-        int frozenTopCount, int frozenBottomCount, int frozenLeftCount, int frozenRightCount)
+        int frozenTopCount, int frozenBottomCount)
     {
         if (numRows <= 0 || numCols <= 0)
             return new Region(0, 0, 0, 0);
 
         var topFreeze = Math.Clamp(frozenTopCount, 0, numRows);
         var bottomFreeze = Math.Clamp(frozenBottomCount, 0, numRows);
-        var leftFreeze = Math.Clamp(frozenLeftCount, 0, numCols);
-        var rightFreeze = Math.Clamp(frozenRightCount, 0, numCols);
 
         var mainTop = Math.Max(topFreeze, constrainedViewRegion.Top);
         var mainBottom = Math.Min(numRows - bottomFreeze - 1, constrainedViewRegion.Bottom);
-        var mainLeft = Math.Max(leftFreeze, constrainedViewRegion.Left);
-        var mainRight = Math.Min(numCols - rightFreeze - 1, constrainedViewRegion.Right);
 
         mainTop = Math.Clamp(mainTop, constrainedViewRegion.Top, constrainedViewRegion.Bottom);
         mainBottom = Math.Clamp(mainBottom, mainTop, constrainedViewRegion.Bottom);
-        mainLeft = Math.Clamp(mainLeft, constrainedViewRegion.Left, constrainedViewRegion.Right);
-        mainRight = Math.Clamp(mainRight, mainLeft, constrainedViewRegion.Right);
 
-        return new Region(mainTop, mainBottom, mainLeft, mainRight);
+        return new Region(mainTop, mainBottom, constrainedViewRegion.Left, constrainedViewRegion.Right);
     }
 
     public static Region GetFrozenTopRegion(Region viewRegion, int numRows, int frozenTopCount)
