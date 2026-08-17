@@ -916,9 +916,22 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         return 0;
     }
 
+    /// <summary>
+    /// Resizes the given axis over <paramref name="region"/> to fit the cell contents.
+    /// </summary>
     public void AutoFitRegion(IRegion region, Axis autoFitAxis, AutofitMethod method)
     {
         _autofitLayer?.AutoFit(region, autoFitAxis, method);
+    }
+
+    /// <summary>
+    /// Resizes both column widths and row heights over <paramref name="region"/> to fit the cell
+    /// contents. Columns are fitted first, so that row heights account for the final column widths.
+    /// Both resizes are reverted by a single undo.
+    /// </summary>
+    public void AutoFitRegion(IRegion region, AutofitMethod method)
+    {
+        _autofitLayer?.AutoFit(region, method);
     }
 
     /// <summary>

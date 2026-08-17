@@ -1,0 +1,42 @@
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Formats
+@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Render
+@using BlazorDatasheet.SharedPages.Extensions
+
+<div style="width: 600px; height: 400px; overflow: scroll;">
+    <Datasheet Sheet="_sheet" @ref="_datasheet"/>
+</div>
+
+<button @onclick="AutofitRegion">Autofit</button>
+
+<InputCheckbox @bind-Value="_contract" Id="contract"></InputCheckbox>
+<label for="contract">Contract if required</label>
+
+@code {
+
+    private Datasheet? _datasheet;
+    private readonly Sheet _sheet = new(100, 100);
+
+    private bool _contract;
+
+    private AutofitMethod _autofitMethod;
+
+    protected override void OnInitialized()
+    {
+        _sheet.Commands.PauseHistory();
+        _sheet.FillRandomNumbers(0, 500);
+        _sheet.SetFormat(new AllRegion(), new CellFormat() { NumberFormat = "N5" });
+        _sheet.Commands.ResumeHistory();
+    }
+
+    private void AutofitRegion()
+    {
+        var region = _sheet.Selection.ActiveRegion;
+        if (region != null)
+        {
+            _datasheet!.AutoFitRegion(region, Axis.Col, _contract ? AutofitMethod.ExpandOrContract : AutofitMethod.ExpandOnly);
+        }
+    }
+
+}

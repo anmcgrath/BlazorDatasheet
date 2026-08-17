@@ -1,0 +1,24 @@
+@page "/AutofitExamples"
+@using BlazorDatasheet.SharedPages.Components.Examples.Autofit
+<h3>Autofit</h3>
+
+<div class="block">
+    Autofit will expand row and/or column sizes to fit the cell contents. Autofit can be performed automatically on text
+    entry, or on demand programmatically.
+</div>
+
+<div class="block">
+    Below the column widths will expand when the text entered is larger than the cell size.
+</div>
+
+<CodeExample ComponentType="typeof(AutofitOnTextEntry)"/>
+
+<div class="block">Below the autofit is performed on demand. Anything in the region will be used for the autofit. When contract is set, the cells may reduce in size to fit,
+    otherwise the autofit will only expand to fit the largest value.
+</div>
+
+<CodeExample ComponentType="typeof(AutoFitRegion)"/>
+
+@code {
+
+}

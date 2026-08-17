@@ -1,5 +1,4 @@
-﻿@using System.Diagnostics
-@using System.Windows.Input
+﻿@using System.Globalization
 @using BlazorDatasheet.Core.Commands
 @using BlazorDatasheet.Core.Commands.Formatting
 @using BlazorDatasheet.Core.Commands.RowCols
@@ -19,7 +18,13 @@
 <div @ref="_autoFitEl">
     @foreach (var cell in _currentCells)
     {
-        <div class="bds-autoFit" data-row="@cell.Row" data-col="@cell.Col">
+        <div @key="cell"
+             class="bds-autoFit"
+             data-row="@cell.Row"
+             data-col="@cell.Col"
+             data-axis-index="@GetAxisIndex(cell)"
+             data-axis-size="@FormatNumber(GetAxisSize(cell))"
+             data-cell-size="@FormatNumber(GetCellSize(cell))">
             <div style="@GetStyle(cell)">
                 @CellRenderFragment(cell)
             </div>
@@ -29,6 +34,9 @@
 
 
 @code {
+
+    internal const int BatchSize = 200;
+    private const double SizeComparisonTolerance = 1e-6;
 
     [Parameter, EditorRequired] public required RenderFragment<VisualCell> CellRenderFragment { get; set; }
 
@@ -40,24 +48,16 @@
 
     [Parameter, EditorRequired] public required int NumberOfSignificantDigits { get; set; }
 
+    private readonly Queue<AutofitRequest> _pendingRequests = new();
+    private readonly CancellationTokenSource _disposeCancellationTokenSource = new();
+
     private ElementReference _autoFitEl = default!;
-
-    private Axis _currentAutoFitAxis = Axis.None;
-    private AutofitMethod _currentAutoFitMethod = AutofitMethod.ExpandOnly;
-
-    /// <summary>
-    /// Current styles to apply to each cell. The key is the row/column number, depending on the axis of the auto-fit.
-    /// </summary>
-    private Dictionary<int, string> _dimensionStyles = new();
-
     private List<VisualCell> _currentCells = new();
-
+    private AutofitOperation? _activeOperation;
     private IJSObjectReference? _module;
-
-    private bool _isAutofitting = false;
-
-    // Command that triggered the auto-fit, so that we can attach the set size command to it and undo it when this is undone.
-    private IUndoableCommand? _currentCommand;
+    private bool _isMeasuring;
+    private bool _renderCleanupPending;
+    private bool _disposed;
 
     protected override void OnSheetChange(Sheet newSheet, Sheet oldSheet)
     {
@@ -65,6 +65,8 @@
         newSheet.Editor.EditAccepted += EditorOnEditFinished;
         oldSheet.Commands.CommandRun -= CommandsOnCommandRun;
         newSheet.Commands.CommandRun += CommandsOnCommandRun;
+
+        AbortOperations();
     }
 
     private void CommandsOnCommandRun(object? sender, CommandRunEventArgs e)
@@ -72,23 +74,21 @@
         if (!AutoFitOnInteraction)
             return;
 
-        if (e.Command is SetFormatCommand cmd)
-        {
-            if (cmd.Region.IsSingleCell())
-            {
-                _currentCommand = cmd;
-                AutoFit(cmd.Region, Axis.Row, AutofitMethod.ExpandOnly);
-            }
-        }
+        if (e.Command is SetFormatCommand cmd && cmd.Region.IsSingleCell())
+            _ = QueueInteractionAutofitAsync(cmd);
     }
 
-    private string GetStyle(VisualCell cell)
+    private async Task QueueInteractionAutofitAsync(SetFormatCommand command)
     {
-        if (_currentAutoFitAxis == Axis.None)
-            return string.Empty;
+        // Let CommandManager finish executing the triggering command before attaching the
+        // asynchronously measured resize command to it.
+        await Task.Yield();
 
-        var index = _currentAutoFitAxis == Axis.Col ? cell.Col : cell.Row;
-        return _dimensionStyles.GetValueOrDefault(index, string.Empty);
+        if (_disposed)
+            return;
+
+        await InvokeAsync(() =>
+            AutoFit(command.Region, Axis.Row, AutofitMethod.ExpandOnly, command));
     }
 
     private void EditorOnEditFinished(object? sender, EditAcceptedEventArgs e)
@@ -101,118 +101,357 @@
         AutoFit(new Region(cell.Row, cell.Col), wrapped ? Axis.Row : Axis.Col, AutofitMethod.ExpandOnly);
     }
 
-    internal void AutoFit(IRegion region, Axis axis, AutofitMethod method)
+    /// <summary>
+    /// Auto-fits the given axis over <paramref name="region"/>.
+    /// </summary>
+    internal void AutoFit(IRegion region, Axis axis, AutofitMethod method,
+        IUndoableCommand? triggeringCommand = null)
     {
         if (axis == Axis.None)
+            return;
+
+        QueueRequests(region, [axis], method, triggeringCommand);
+    }
+
+    /// <summary>
+    /// Auto-fits both the column and row axes over <paramref name="region"/>. Columns are fitted
+    /// first so that row heights are measured against the final column widths, and both resizes
+    /// are undone by a single undo.
+    /// </summary>
+    internal void AutoFit(IRegion region, AutofitMethod method,
+        IUndoableCommand? triggeringCommand = null)
+        => QueueRequests(region, [Axis.Col, Axis.Row], method, triggeringCommand);
+
+    private void QueueRequests(IRegion region, ReadOnlySpan<Axis> axes, AutofitMethod method,
+        IUndoableCommand? triggeringCommand)
+    {
+        if (_disposed)
             return;
 
         var boundRegion = region.GetIntersection(Sheet.Region);
         if (boundRegion == null)
             return;
 
-        _currentAutoFitAxis = axis;
-        _currentAutoFitMethod = method;
-        _dimensionStyles.Clear();
+        // All requests queued together resize as one unit, so that a multi-axis auto-fit is a
+        // single undo step.
+        var chain = new AutofitChain(Sheet, triggeringCommand, axes.Length);
+        foreach (var axis in axes)
+            _pendingRequests.Enqueue(new AutofitRequest(boundRegion.Clone(), axis, method, chain));
 
-        _currentCells = Sheet.Range(boundRegion).GetNonEmptyCells()
-            .Select(x => new VisualCell(x.Row, x.Col, Sheet, NumberOfSignificantDigits))
-            .ToList();
-
-        for (int i = boundRegion.GetLeadingEdgeOffset(axis); i <= boundRegion.GetTrailingEdgeOffset(axis); i++)
-        {
-            var sb = new StyleBuilder();
-            if (axis == Axis.Row)
-                sb.AddStyle("max-width", Sheet.Columns.GetPhysicalWidth(i) + "px");
-            else if (axis == Axis.Col)
-                sb.AddStyle("max-height", Sheet.Rows.GetPhysicalHeight(i) + "px");
-            _dimensionStyles.Add(i, sb.ToString());
-        }
-
-        StateHasChanged();
+        StartNextOperation();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && _module == null)
-        {
-            _module = await Js.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/Render/Layers/AutofitLayer.razor.js");
+        if (_disposed)
             return;
+
+        if (_module == null)
+        {
+            try
+            {
+                _module = await Js.InvokeAsync<IJSObjectReference>("import",
+                    _disposeCancellationTokenSource.Token,
+                    "./_content/BlazorDatasheet/Render/Layers/AutofitLayer.razor.js");
+            }
+            catch (OperationCanceledException) when (_disposed)
+            {
+                return;
+            }
         }
 
-        if (_module == null || _currentCells.Count == 0 || _currentAutoFitAxis == Axis.None)
+        if (_renderCleanupPending && _currentCells.Count == 0)
+            _renderCleanupPending = false;
+
+        var operation = _activeOperation;
+        if (operation == null || _currentCells.Count == 0 || _isMeasuring)
             return;
 
-        if (_isAutofitting)
-            return;
-        _isAutofitting = true;
+        _isMeasuring = true;
+        var shouldRender = false;
 
         try
         {
-            // measureMaxChildrenDimensions returns an array of cell positions and their sizes
-            var measurements = await _module.InvokeAsync<AutofitMeasurement[]>("measureMaxChildrenDimensions", _autoFitEl);
-            var groupedMeasurements = measurements.GroupBy(x => _currentAutoFitAxis == Axis.Col ? x.Col : x.Row);
+            var axis = operation.Request.Axis == Axis.Col ? "col" : "row";
+            var changes = await _module.InvokeAsync<AutofitDimensionChange[]>(
+                "measureAutofitChanges",
+                _disposeCancellationTokenSource.Token,
+                _autoFitEl,
+                axis);
 
-            // batch the set size commands from the autofits
-            var commands = new List<ICommand>();
-
-            foreach (var group in groupedMeasurements)
+            await InvokeAsync(() =>
             {
-                var axisSize = _currentAutoFitAxis == Axis.Col ? Sheet.Columns.GetPhysicalWidth(group.Key) : Sheet.Rows.GetPhysicalHeight(group.Key);
+                if (_disposed || !ReferenceEquals(operation, _activeOperation))
+                    return;
 
-                double deltaExpand = 0;
-                double deltaContract = double.MaxValue;
+                MergeChanges(operation, changes);
 
-                foreach (var measurement in group)
+                if (operation.HasMoreCells && LoadNextBatch(operation))
                 {
-                    var cell = new VisualCell(measurement.Row, measurement.Col, Sheet, NumberOfSignificantDigits);
-                    var cellSize = _currentAutoFitAxis == Axis.Col ? cell.Width : cell.Height;
-                    var measSize = measurement.Size.Get(_currentAutoFitAxis);
-                    if (measSize > cellSize)
-                        deltaExpand = Math.Max(deltaExpand, measSize - cellSize);
-                    else if (measSize < axisSize)
-                        deltaContract = Math.Min(deltaContract, axisSize - measSize);
+                    shouldRender = true;
                 }
-
-
-                if (deltaExpand > 0 && (_currentAutoFitMethod == AutofitMethod.ExpandOnly || _currentAutoFitMethod == AutofitMethod.ExpandOrContract))
+                else
                 {
-                    // Expand the size of the column/row
-                    var setSizeCommand = new SetSizeCommand(group.Key, group.Key, axisSize + deltaExpand, _currentAutoFitAxis);
-                    commands.Add(setSizeCommand);
+                    CompleteOperation(operation);
+                    shouldRender = true;
                 }
-                else if (deltaContract > 0 && deltaContract < double.MaxValue && _currentAutoFitMethod == AutofitMethod.ExpandOrContract)
-                {
-                    // Shrink the size of the column/row
-                    var setSizeCommand = new SetSizeCommand(group.Key, group.Key, axisSize - deltaContract, _currentAutoFitAxis);
-                    commands.Add(setSizeCommand);
-                }
-            }
-
-            _currentAutoFitAxis = Axis.None;
-            _dimensionStyles.Clear();
-            _currentCells.Clear();
-
-            if (commands.Count > 0)
-            {
-                var cmdGroup = new CommandGroup(commands);
-                // Execute the resize group here.
-                _currentCommand?.AttachAfter(cmdGroup);
-                Sheet.Commands.ExecuteCommand(cmdGroup, false, _currentCommand == null);
-            }
+            });
+        }
+        catch (OperationCanceledException) when (_disposed)
+        {
+        }
+        catch
+        {
+            AbortOperations();
+            shouldRender = true;
+            throw;
         }
         finally
         {
-            _isAutofitting = false;
+            _isMeasuring = false;
+
+            if (shouldRender && !_disposed)
+                await InvokeAsync(StateHasChanged);
         }
     }
 
-    protected override bool ShouldRender()
+    private void StartNextOperation()
     {
-        return (_currentAutoFitAxis != Axis.None && _currentCells.Count > 0) || _module == null;
+        if (_disposed || _activeOperation != null)
+            return;
+
+        while (_pendingRequests.TryDequeue(out var request))
+        {
+            var operation = new AutofitOperation(request);
+            _activeOperation = operation;
+
+            if (LoadNextBatch(operation))
+            {
+                _ = InvokeAsync(StateHasChanged);
+                return;
+            }
+
+            _activeOperation = null;
+        }
     }
+
+    private bool LoadNextBatch(AutofitOperation operation)
+    {
+        var positions = GetNextPositions(operation);
+        _currentCells = positions
+            .Select(position => new VisualCell(position.row, position.col, Sheet, NumberOfSignificantDigits))
+            .ToList();
+        return _currentCells.Count > 0;
+    }
+
+    private List<CellPosition> GetNextPositions(AutofitOperation operation)
+    {
+        var region = operation.Request.Region;
+        var remainingPositions = Sheet.Range(new Region(
+                operation.NextRow,
+                operation.NextRow,
+                operation.NextCol,
+                region.Right))
+            .GetNonEmptyPositions();
+
+        if (operation.NextRow < region.Bottom)
+        {
+            remainingPositions = remainingPositions.Concat(Sheet.Range(new Region(
+                    operation.NextRow + 1,
+                    region.Bottom,
+                    region.Left,
+                    region.Right))
+                .GetNonEmptyPositions());
+        }
+
+        var positionsWithLookahead = remainingPositions.Take(BatchSize + 1).ToList();
+        operation.HasMoreCells = positionsWithLookahead.Count > BatchSize;
+
+        if (operation.HasMoreCells)
+        {
+            var nextPosition = positionsWithLookahead[BatchSize];
+            operation.NextRow = nextPosition.row;
+            operation.NextCol = nextPosition.col;
+            positionsWithLookahead.RemoveAt(BatchSize);
+        }
+
+        return positionsWithLookahead;
+    }
+
+    private static void MergeChanges(AutofitOperation operation,
+        IEnumerable<AutofitDimensionChange> changes)
+    {
+        foreach (var change in changes)
+        {
+            if (!operation.Changes.TryGetValue(change.Index, out var aggregate))
+            {
+                operation.Changes.Add(change.Index, change);
+                continue;
+            }
+
+            aggregate.ExpandTo = Max(aggregate.ExpandTo, change.ExpandTo);
+            aggregate.ContractTo = Max(aggregate.ContractTo, change.ContractTo);
+        }
+    }
+
+    private void CompleteOperation(AutofitOperation operation)
+    {
+        if (!ReferenceEquals(operation, _activeOperation))
+            return;
+
+        _activeOperation = null;
+        _currentCells.Clear();
+        _renderCleanupPending = true;
+
+        var commands = new List<ICommand>();
+        foreach (var change in operation.Changes.Values.OrderBy(change => change.Index))
+        {
+            double? targetSize = null;
+            if (change.ExpandTo.HasValue &&
+                operation.Request.Method is AutofitMethod.ExpandOnly or AutofitMethod.ExpandOrContract)
+            {
+                targetSize = change.ExpandTo;
+            }
+            else if (change.ContractTo.HasValue && operation.Request.Method == AutofitMethod.ExpandOrContract)
+            {
+                targetSize = change.ContractTo;
+            }
+
+            var currentSize = operation.Request.Axis == Axis.Col
+                ? Sheet.Columns.GetPhysicalWidth(change.Index)
+                : Sheet.Rows.GetPhysicalHeight(change.Index);
+
+            if (targetSize.HasValue &&
+                Math.Abs(targetSize.Value - currentSize) > SizeComparisonTolerance)
+            {
+                commands.Add(new SetSizeCommand(change.Index, change.Index, targetSize.Value,
+                    operation.Request.Axis));
+            }
+        }
+
+        var chain = operation.Request.Chain;
+        if (chain.IsMultiAxis)
+        {
+            CompleteMultiAxisRequest(chain, commands);
+        }
+        else if (commands.Count > 0)
+        {
+            var commandGroup = new CommandGroup(commands);
+
+            if (chain.TriggeringCommand == null)
+            {
+                Sheet.Commands.ExecuteCommand(commandGroup);
+            }
+            else if (Sheet.Commands.ExecuteCommand(commandGroup, false, false))
+            {
+                chain.TriggeringCommand.AttachAfter(commandGroup);
+            }
+        }
+
+        StartNextOperation();
+    }
+
+    private void CompleteMultiAxisRequest(AutofitChain chain, List<ICommand> commands)
+    {
+        if (!chain.IsFinalRequest)
+        {
+            if (commands.Count > 0)
+            {
+                // Apply the column sizes only long enough for the row pass to measure against them.
+                // The completed operation is recorded once both axes have been measured.
+                var provisionalGroup = new CommandGroup(commands);
+                if (Sheet.Commands.ExecuteCommand(provisionalGroup, false, false))
+                    chain.AddProvisionalCommands(provisionalGroup, commands);
+            }
+
+            chain.CompleteRequest();
+            return;
+        }
+
+        chain.AddCommands(commands);
+        chain.CompleteRequest();
+        chain.RollbackProvisionalCommands();
+
+        if (chain.Commands.Count == 0)
+            return;
+
+        var commandGroup = new CommandGroup(chain.Commands);
+        if (chain.TriggeringCommand == null)
+        {
+            Sheet.Commands.ExecuteCommand(commandGroup);
+        }
+        else if (Sheet.Commands.ExecuteCommand(commandGroup, false, false))
+        {
+            chain.TriggeringCommand.AttachAfter(commandGroup);
+        }
+    }
+
+    private string GetStyle(VisualCell cell)
+    {
+        var operation = _activeOperation;
+        if (operation == null)
+            return string.Empty;
+
+        var style = new StyleBuilder();
+        if (operation.Request.Axis == Axis.Row)
+            style.AddStyle("max-width", FormatNumber(cell.Width) + "px");
+        else
+            style.AddStyle("max-height", FormatNumber(cell.Height) + "px");
+        return style.ToString();
+    }
+
+    private int GetAxisIndex(VisualCell cell)
+        => _activeOperation?.Request.Axis == Axis.Col ? cell.Col : cell.Row;
+
+    private double GetAxisSize(VisualCell cell)
+        => _activeOperation?.Request.Axis == Axis.Col
+            ? Sheet.Columns.GetPhysicalWidth(cell.Col)
+            : Sheet.Rows.GetPhysicalHeight(cell.Row);
+
+    private double GetCellSize(VisualCell cell)
+        => _activeOperation?.Request.Axis == Axis.Col ? cell.Width : cell.Height;
+
+    private static string FormatNumber(double value)
+        => value.ToString(CultureInfo.InvariantCulture);
+
+    private static double? Max(double? first, double? second)
+    {
+        if (!first.HasValue)
+            return second;
+        if (!second.HasValue)
+            return first;
+        return Math.Max(first.Value, second.Value);
+    }
+
+    private void AbortOperations()
+    {
+        var chains = _pendingRequests.Select(request => request.Chain).ToHashSet();
+        if (_activeOperation != null)
+            chains.Add(_activeOperation.Request.Chain);
+
+        foreach (var chain in chains)
+            chain.RollbackProvisionalCommands();
+
+        _pendingRequests.Clear();
+        _activeOperation = null;
+
+        if (_currentCells.Count > 0)
+            _renderCleanupPending = true;
+        _currentCells.Clear();
+    }
+
+    protected override bool ShouldRender()
+        => _module == null || _currentCells.Count > 0 || _renderCleanupPending;
 
     async ValueTask IAsyncDisposable.DisposeAsync()
     {
+        if (_disposed)
+            return;
+
+        _disposed = true;
+        _disposeCancellationTokenSource.Cancel();
+        AbortOperations();
+
         Sheet.Editor.EditAccepted -= EditorOnEditFinished;
         Sheet.Commands.CommandRun -= CommandsOnCommandRun;
 
@@ -226,7 +465,66 @@
             {
             }
         }
+
+        _disposeCancellationTokenSource.Dispose();
     }
 
+    private sealed record AutofitRequest(
+        IRegion Region,
+        Axis Axis,
+        AutofitMethod Method,
+        AutofitChain Chain);
 
+    /// <summary>
+    /// Shared by every request queued from one auto-fit call. Multi-axis calls apply their first
+    /// axis provisionally, then execute all resize commands as one durable command when measurement
+    /// is complete.
+    /// </summary>
+    private sealed class AutofitChain(
+        Sheet sheet,
+        IUndoableCommand? triggeringCommand,
+        int requestCount)
+    {
+        private readonly Sheet _sheet = sheet;
+        private readonly bool _isMultiAxis = requestCount > 1;
+        private CommandGroup? _provisionalCommandGroup;
+        private int _remainingRequests = requestCount;
+
+        public IUndoableCommand? TriggeringCommand { get; } = triggeringCommand;
+        public List<ICommand> Commands { get; } = new();
+        public bool IsMultiAxis => _isMultiAxis;
+        public bool IsFinalRequest => _remainingRequests == 1;
+
+        public void AddProvisionalCommands(CommandGroup commandGroup, IEnumerable<ICommand> commands)
+        {
+            _provisionalCommandGroup = commandGroup;
+            Commands.AddRange(commands);
+        }
+
+        public void AddCommands(IEnumerable<ICommand> commands) => Commands.AddRange(commands);
+
+        public void CompleteRequest() => _remainingRequests--;
+
+        public void RollbackProvisionalCommands()
+        {
+            _provisionalCommandGroup?.Undo(_sheet);
+            _provisionalCommandGroup = null;
+        }
+    }
+
+    private sealed class AutofitOperation
+    {
+        public AutofitOperation(AutofitRequest request)
+        {
+            Request = request;
+            NextRow = request.Region.Top;
+            NextCol = request.Region.Left;
+        }
+
+        public AutofitRequest Request { get; }
+        public Dictionary<int, AutofitDimensionChange> Changes { get; } = new();
+        public int NextRow { get; set; }
+        public int NextCol { get; set; }
+        public bool HasMoreCells { get; set; }
+    }
 }
