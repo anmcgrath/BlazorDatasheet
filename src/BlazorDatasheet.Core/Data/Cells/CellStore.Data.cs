@@ -80,6 +80,26 @@ public partial class CellStore
     }
 
     /// <summary>
+    /// Writes a value produced by the formula engine.
+    /// </summary>
+    /// <remarks>
+    /// A calculated value is not independently undoable - undo restores the formula and the engine
+    /// recomputes from it
+    /// </remarks>
+    internal void SetCalculatedValueImpl(int row, int col, CellValue value)
+    {
+        var validationResult = Sheet.Validators.Validate(value, row, col);
+        _validStore.SetWithoutRestoreData(row, col, validationResult.IsValid);
+
+        if (value.IsEmpty)
+            _dataStore.ClearWithoutRestoreData(row, col);
+        else
+            _dataStore.SetWithoutRestoreData(row, col, value);
+
+        EmitCellChanged(row, col);
+    }
+
+    /// <summary>
     /// Sets a cell value to the value specified and raises the appropriate events. <paramref name="value"/> is implicitly converted to a cell value.
     /// </summary>
     /// <param name="row"></param>
