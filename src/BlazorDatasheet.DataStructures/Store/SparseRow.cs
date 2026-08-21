@@ -51,8 +51,11 @@ internal class SparseRow<T>
 
     public void Set(int itemIndex, T value)
     {
+        var countBefore = _data.Count;
         _data[itemIndex] = value;
-        InvalidateCache();
+        
+        if (_data.Count != countBefore)
+            InvalidateCache();
     }
 
     public bool IsEmpty() => _data.Count == 0;

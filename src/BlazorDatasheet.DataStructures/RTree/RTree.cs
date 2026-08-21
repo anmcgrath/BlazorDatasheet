@@ -204,7 +204,7 @@ public partial class RTree<T> : ISpatialDatabase<T>, ISpatialIndex<T> where T : 
 	/// <returns><see langword="bool" /> indicating whether the item was deleted.</returns>
 	public void Delete(T item) =>
 		DoDelete(Root, item);
-
+	
 	private bool DoDelete(Node node, T item)
 	{
 		if (!node.Envelope.Contains(item.Envelope))
@@ -212,25 +212,34 @@ public partial class RTree<T> : ISpatialDatabase<T>, ISpatialIndex<T> where T : 
 
 		if (node.IsLeaf)
 		{
-			var cnt = node.Items.RemoveAll(i => _comparer.Equals((T)i, item));
-			if (cnt == 0)
+			var items = node.Items;
+			var removed = 0;
+			for (var i = items.Count - 1; i >= 0; i--)
+			{
+				if (!_comparer.Equals((T)items[i], item))
+					continue;
+
+				items.RemoveAt(i);
+				removed++;
+			}
+
+			if (removed == 0)
 				return false;
 
-			Count -= cnt;
+			Count -= removed;
 			node.ResetEnvelope();
 			return true;
-
 		}
 
-		var flag = false;
 		foreach (var n in node.Items)
 		{
-			flag |= DoDelete((Node)n, item);
+			if (!DoDelete((Node)n, item))
+				continue;
+
+			node.ResetEnvelope();
+			return true;
 		}
 
-		if (flag)
-			node.ResetEnvelope();
-
-		return flag;
+		return false;
 	}
 }
