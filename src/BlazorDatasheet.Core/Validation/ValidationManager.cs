@@ -147,22 +147,31 @@ public class ValidationManager
     /// <param name="row"></param>
     /// <param name="col"></param>
     /// <returns></returns>
+    private static readonly List<string> NoFailMessages = new();
+
+    /// <summary>
+    /// Whether any validator is applied anywhere on the sheet.
+    /// </summary>
+    internal bool IsEmpty => _validators.Count == 0 || Store.IsEmpty;
+
     public ValidationResult Validate(CellValue value, int row, int col)
     {
-        var validators = Get(row, col);
+        if (IsEmpty)
+            return new ValidationResult(NoFailMessages, false, true);
+
         bool isStrict = false;
         bool isValid = true;
-        var failMessages = new List<string>();
-        foreach (var validator in validators)
+        List<string>? failMessages = null;
+        foreach (var validator in Get(row, col))
         {
             if (validator.IsValid(value))
                 continue;
-            failMessages.Add(validator.Message);
+            (failMessages ??= new List<string>()).Add(validator.Message);
             isValid = false;
             isStrict |= validator.IsStrict;
         }
 
-        return new ValidationResult(failMessages, isStrict, isValid);
+        return new ValidationResult(failMessages ?? NoFailMessages, isStrict, isValid);
     }
 
     /// <summary>
