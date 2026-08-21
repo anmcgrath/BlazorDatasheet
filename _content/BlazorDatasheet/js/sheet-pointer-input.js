@@ -24,6 +24,16 @@ class PointerInputService {
         this.sheetElement = sheetElement;
         this.currentRow = -1
         this.currentCol = -1
+        this.pointerMoveEnabled = false
+    }
+
+    /**
+     * Turns the pointer-move callback into .NET on or off.
+     * @param {boolean} enabled Whether anything is listening for pointer move.
+     * @returns {void}
+     */
+    setPointerMoveEnabled(enabled) {
+        this.pointerMoveEnabled = !!enabled
     }
 
     registerPointerEvents(pointerUpCallbackName, pointerDownCallbackName, pointerMoveCallbackName, pointerEnterCallbackName, pointerDoubleClickCallbackName) {
@@ -66,7 +76,8 @@ class PointerInputService {
         this.currentRow = args.row
         this.currentCol = args.col
 
-        this.dotnetHelper.invokeMethodAsync(this.pointerMoveCallbackName, args);
+        if (this.pointerMoveEnabled)
+            this.dotnetHelper.invokeMethodAsync(this.pointerMoveCallbackName, args);
     }
 
     onDoubleClick(e) {
