@@ -19,6 +19,17 @@ public interface IMatrixDataStore<T> : IStore<T, MatrixRestoreData<T>>, ISparseS
     /// <param name="col"></param>
     public MatrixRestoreData<T> Clear(int row, int col);
 
+    /// <summary>
+    /// Sets the value at the row/column without recording restore data.
+    /// </summary>
+    public void SetWithoutRestoreData(int row, int col, T value);
+
+    /// <summary>
+    /// Removes the value at the row/column without recording restore data.
+    /// See <see cref="SetWithoutRestoreData"/>.
+    /// </summary>
+    public void ClearWithoutRestoreData(int row, int col);
+
     public MatrixRestoreData<T> Clear(IEnumerable<CellPosition> positions);
 
     /// <summary>

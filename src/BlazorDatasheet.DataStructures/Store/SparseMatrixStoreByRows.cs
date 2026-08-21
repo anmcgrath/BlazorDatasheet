@@ -162,7 +162,18 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
 
     public MatrixRestoreData<T> Set(int row, int col, T value)
     {
-        var restoreData = new MatrixRestoreData<T>();
+        var currValue = SetCore(row, col, value);
+        return new MatrixRestoreData<T>
+        {
+            DataRemoved = new() { (row, col, currValue) }
+        };
+    }
+
+    public void SetWithoutRestoreData(int row, int col, T value) => SetCore(row, col, value);
+
+    /// <returns>The value that was at the position before the write.</returns>
+    private T SetCore(int row, int col, T value)
+    {
         if (!_rows.TryGetValue(row, out var rowData))
         {
             rowData = new SparseRow<T>(_defaultIfEmpty!);
@@ -172,16 +183,30 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
 
         var currValue = rowData.Get(col);
         rowData.Set(col, value);
-        restoreData.DataRemoved = new() { (row, col, currValue) };
-        return restoreData;
+        return currValue;
     }
 
     public MatrixRestoreData<T> Clear(int row, int col)
     {
-        if (!_rows.TryGetValue(row, out var rowData))
+        var cleared = ClearCore(row, col);
+
+        if (cleared == null)
             return new MatrixRestoreData<T>();
 
-        var restoreData = rowData.Clear(col);
+        return new MatrixRestoreData<T>()
+        {
+            DataRemoved = new() { (row, col, cleared.Value.value) }
+        };
+    }
+
+    public void ClearWithoutRestoreData(int row, int col) => ClearCore(row, col);
+
+    private (int removedItemNo, T? value)? ClearCore(int row, int col)
+    {
+        if (!_rows.TryGetValue(row, out var rowData))
+            return null;
+
+        var cleared = rowData.Clear(col);
 
         if (rowData.IsEmpty())
         {
@@ -189,13 +214,7 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
             InvalidateRowCache();
         }
 
-        if (restoreData == null)
-            return new MatrixRestoreData<T>();
-
-        return new MatrixRestoreData<T>()
-        {
-            DataRemoved = new() { (row, col, restoreData.Value.value) }
-        };
+        return cleared;
     }
 
     public MatrixRestoreData<T> Clear(IEnumerable<CellPosition> positions)

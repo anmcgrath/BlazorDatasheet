@@ -1,3 +1,4 @@
+using BlazorDatasheet.DataStructures.Graph;
 using System.Collections.Generic;
 using System.Linq;
 using BlazorDatasheet.Core.Commands.Data;
@@ -222,7 +223,7 @@ public class SheetFormulaIntegrationTests
             .Select(x => x.Key)
             .First()
             .Should()
-            .Be("'Sheet1'!C4"); // (3,2)
+            .Be(VertexKey.ForCell(3, 2, "Sheet1")); // C4
 
         sheet.Commands.Undo();
         sheet.Cells[2, 2].Formula.Should().Be("=B2");
@@ -231,7 +232,7 @@ public class SheetFormulaIntegrationTests
             .Select(x => x.Key)
             .First()
             .Should()
-            .Be("'Sheet1'!C3"); // (3,2)
+            .Be(VertexKey.ForCell(2, 2, "Sheet1")); // C3
     }
 
     [Test]

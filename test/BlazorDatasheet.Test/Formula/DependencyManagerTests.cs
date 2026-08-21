@@ -1,4 +1,5 @@
-﻿using System;
+﻿using BlazorDatasheet.DataStructures.Graph;
+using System;
 using System.Linq;
 using BlazorDatasheet.Core.FormulaEngine;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -175,7 +176,7 @@ public class DependencyManagerTests
             .SelectMany(x => x)
             .Select(x => x.Key)
             .Should()
-            .Equal("'Renamed'!A1");
+            .Equal(VertexKey.ForCell(0, 0, "Renamed"));
     }
 
     [Test]

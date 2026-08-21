@@ -67,7 +67,6 @@ public class AutoFillCommand : BaseCommand, IUndoableCommand
                         var rowColOffsetFromEnd = offset + cells.Length * repeatNo;
                         var cellPosition =
                             GetCellPositionFromOffset(lastCellPosition, fillDirection, rowColOffsetFromEnd + 1);
-                        GetCellPositionFromOffset(lastCellPosition, fillDirection, rowColOffsetFromEnd + 1);
 
                         _expandCommands.AddCommand(
                             pattern.GetCommand(offset - pattern.Offsets.First(), repeatNo, cells[offset],

@@ -14,9 +14,54 @@ public class SheetPointerInputService : IAsyncDisposable
 
     public EventHandler<SheetPointerEventArgs>? PointerDown;
     public EventHandler<SheetPointerEventArgs>? PointerUp;
-    public EventHandler<SheetPointerEventArgs>? PointerMove;
     public EventHandler<SheetPointerEventArgs>? PointerEnter;
     public EventHandler<SheetPointerEventArgs>? PointerDoubleClick;
+
+    private EventHandler<SheetPointerEventArgs>? _pointerMove;
+    
+    public event EventHandler<SheetPointerEventArgs>? PointerMove
+    {
+        add
+        {
+            var hadNone = _pointerMove == null;
+            _pointerMove += value;
+            if (hadNone && _pointerMove != null)
+                SetPointerMoveEnabled(true);
+        }
+        remove
+        {
+            _pointerMove -= value;
+            if (_pointerMove == null)
+                SetPointerMoveEnabled(false);
+        }
+    }
+
+    /// <summary>
+    /// Whether JS should report pointer moves. Held so the state survives being set before the JS
+    /// module has finished loading, and re-applied once it has.
+    /// </summary>
+    private bool _pointerMoveEnabled;
+
+    private void SetPointerMoveEnabled(bool enabled)
+    {
+        _pointerMoveEnabled = enabled;
+        if (_inputJs == null || _isDisposed)
+            return;
+
+        _ = PushPointerMoveEnabledAsync(_inputJs, enabled);
+    }
+
+    private static async Task PushPointerMoveEnabledAsync(IJSObjectReference inputJs, bool enabled)
+    {
+        try
+        {
+            await inputJs.InvokeVoidAsync("setPointerMoveEnabled", enabled);
+        }
+        catch (Exception)
+        {
+            // the circuit or the module may already be gone - nothing useful to do about it here.
+        }
+    }
 
     private DotNetObjectReference<SheetPointerInputService>? _dotNetObjectReference;
 
@@ -72,6 +117,10 @@ public class SheetPointerInputService : IAsyncDisposable
             _inputJs = inputJs;
             _dotNetObjectReference = dotNetObjectReference;
             dotNetObjectReference = null;
+
+            // a handler may have subscribed before the module finished loading
+            if (_pointerMoveEnabled)
+                SetPointerMoveEnabled(true);
         }
         finally
         {
@@ -83,7 +132,7 @@ public class SheetPointerInputService : IAsyncDisposable
     [JSInvokable(nameof(HandlePointerMove))]
     public void HandlePointerMove(SheetPointerEventArgs args)
     {
-        PointerMove?.Invoke(this, args);
+        _pointerMove?.Invoke(this, args);
     }
 
     [JSInvokable(nameof(HandlePointerDown))]

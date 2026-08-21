@@ -187,10 +187,12 @@
 
     private void SheetOnSheetDirty(object? sender, DirtySheetEventArgs e)
     {
-        var dirtyRegions = e.DirtyRows
-            .GetAllIntervalData()
-            .Select(x => new RowRegion(x.interval.Start, x.interval.End))
-            .ToList();
+        if (e.IsEmpty)
+            return;
+        
+        var dirtyRegions = new List<IRegion>();
+        foreach (var (interval, _) in e.DirtyRows.GetAllIntervalData())
+            dirtyRegions.Add(new Region(interval.Start, interval.End, e.DirtyColStart, e.DirtyColEnd));
 
         if (dirtyRegions.Count > 0)
             MakeRegionsDirty(dirtyRegions);

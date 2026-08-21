@@ -65,6 +65,19 @@ public class Sheet
     public Region Region => new Region(0, NumRows - 1, 0, NumCols - 1);
 
     /// <summary>
+    /// Whether the position lies within the sheet.
+    /// </summary>
+    /// <remarks>
+    internal bool ContainsPosition(int row, int col) =>
+        row >= 0 && col >= 0 && row < NumRows && col < NumCols;
+
+    /// <summary>
+    /// Whether any part of the region lies within the sheet. See <see cref="ContainsPosition"/>.
+    /// </summary>
+    internal bool IntersectsSheet(IRegion region) =>
+        region.Top < NumRows && region.Bottom >= 0 && region.Left < NumCols && region.Right >= 0;
+
+    /// <summary>
     /// Provides functions for managing the sheet's conditional formatting
     /// </summary>
     public ConditionalFormatManager ConditionalFormats { get; }
@@ -179,6 +192,13 @@ public class Sheet
     /// If the sheet is batching dirty rows, they are stored here.
     /// </summary>
     private readonly Range1DStore<bool> _dirtyRows = new(false);
+
+    /// <summary>
+    /// The columns spanned by everything marked dirty since the last emit.
+    /// </summary>
+    private int _dirtyColStart = int.MaxValue;
+
+    private int _dirtyColEnd = int.MinValue;
 
     private Sheet(int numRows, int numCols, double defaultWidth, double defaultHeight,
         FormulaOptions? formulaOptions, CellValue[][]? values)
@@ -369,9 +389,19 @@ public class Sheet
     /// <param name="col"></param>
     internal void MarkDirty(int row, int col)
     {
-        if (!Region.Contains(row, col))
+        if (row < 0 || col < 0 || row >= NumRows || col >= NumCols)
             return;
+
         _dirtyRows.Set(row, row, true);
+        MarkDirtyColumns(col, col);
+    }
+    
+    private void MarkDirtyColumns(int colStart, int colEnd)
+    {
+        if (colStart < _dirtyColStart)
+            _dirtyColStart = colStart;
+        if (colEnd > _dirtyColEnd)
+            _dirtyColEnd = colEnd;
     }
 
     /// <summary>
@@ -380,10 +410,11 @@ public class Sheet
     /// <param name="region"></param>
     internal void MarkDirty(IRegion region)
     {
-        if (!region.Intersects(Region))
+        if (!IntersectsSheet(region))
             return;
 
         _dirtyRows.Set(region.Top, region.Bottom, true);
+        MarkDirtyColumns(region.Left, region.Right);
         if (!_isBatchingChanges)
             EmitSheetDirty();
     }
@@ -396,10 +427,11 @@ public class Sheet
     {
         foreach (var region in regions)
         {
-            if (!region.Intersects(this.Region))
+            if (!IntersectsSheet(region))
                 continue;
 
             _dirtyRows.Set(region.Top, region.Bottom, true);
+            MarkDirtyColumns(region.Left, region.Right);
         }
 
         if (!_isBatchingChanges)
@@ -410,9 +442,18 @@ public class Sheet
     {
         SheetDirty?.Invoke(this, new()
         {
-            DirtyRows = _dirtyRows
+            DirtyRows = _dirtyRows,
+            DirtyColStart = _dirtyColStart,
+            DirtyColEnd = _dirtyColEnd
         });
+        ClearDirty();
+    }
+
+    private void ClearDirty()
+    {
         _dirtyRows.Clear();
+        _dirtyColStart = int.MaxValue;
+        _dirtyColEnd = int.MinValue;
     }
 
     private int _batchRequestNo;
@@ -429,7 +470,7 @@ public class Sheet
         if (_isBatchingChanges)
             return;
 
-        _dirtyRows.Clear();
+        ClearDirty();
         Cells.BatchChanges();
         _isBatchingChanges = true;
     }

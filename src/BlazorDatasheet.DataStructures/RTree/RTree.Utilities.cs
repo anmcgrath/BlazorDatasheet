@@ -262,6 +262,18 @@ public partial class RTree<T>
 	}
 	#endregion
 
+	/// <summary>
+	/// The envelope covering every item in the list.
+	/// </summary>
+	private static Envelope GetEnclosingEnvelope(List<ISpatialData> items)
+	{
+		var envelope = Envelope.EmptyBounds;
+		foreach (var data in items)
+			envelope = envelope.Extend(data.Envelope);
+
+		return envelope;
+	}
+
 	private static Envelope GetEnclosingEnvelope(IEnumerable<ISpatialData> items)
 	{
 		var envelope = Envelope.EmptyBounds;

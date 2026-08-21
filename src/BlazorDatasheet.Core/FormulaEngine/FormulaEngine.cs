@@ -179,6 +179,11 @@ public class FormulaEngine
         if (IsCalculating)
             return;
 
+        // asking first means a write to a sheet with no formulas on it does no work at all -
+        // otherwise every unbatched cell change pays for a sort over an empty dirty set.
+        if (!DependencyManager.HasAnythingToCalculate(calculateAll ? null : _requiresCalculation))
+            return;
+
         var order = DependencyManager.GetCalculationOrder(calculateAll ? null : _requiresCalculation);
         if (order.Count == 0)
             return;
@@ -198,19 +203,26 @@ public class FormulaEngine
         }
     }
 
+    /// <summary>
+    /// The sheets batched for the calculation in flight. A snapshot, because a handler reached from
+    /// the calculation may add or remove a sheet, and every sheet batched must be unbatched.
+    /// Reused rather than reallocated - IsCalculating means only one calculation is ever in flight.
+    /// </summary>
+    private readonly List<Sheet> _batchedSheets = new();
+
     private List<Sheet> BeginCalculation()
     {
-        var batchedSheets = new List<Sheet>(_sheets.Count);
+        _batchedSheets.Clear();
         foreach (var sheet in _sheets)
         {
             sheet.BatchUpdates();
-            batchedSheets.Add(sheet);
+            _batchedSheets.Add(sheet);
         }
 
-        return batchedSheets;
+        return _batchedSheets;
     }
 
-    private void EndCalculation(IEnumerable<Sheet> batchedSheets)
+    private void EndCalculation(List<Sheet> batchedSheets)
     {
         foreach (var sheet in batchedSheets)
             sheet.EndBatchUpdates();
@@ -264,7 +276,7 @@ public class FormulaEngine
         if (vertex.VertexType == VertexType.Cell)
             _environment.SetCellValue(vertex.Row, vertex.Col, vertex.SheetName, value);
         else if (vertex.VertexType == VertexType.Named)
-            _environment.SetVariable(vertex.Key, value);
+            _environment.SetVariable(vertex.Key.Name, value);
     }
 
     /// <summary>

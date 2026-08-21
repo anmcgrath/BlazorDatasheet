@@ -24,23 +24,55 @@ public class DependencyManager
 
     private readonly HashSet<FormulaVertex> _volatileVertices = new();
 
+    /// <summary>
+    /// Reused across recalculations - a fresh sorter allocates its whole working set each time.
+    /// </summary>
+    private readonly SccSort<FormulaVertex> _sccSort;
+
     internal int FormulaCount => _dependencyGraph.Count;
 
+    public DependencyManager()
+    {
+        _sccSort = new SccSort<FormulaVertex>(_dependencyGraph);
+    }
+
+    /// <summary>
+    /// The store of regions referenced by formulas on <paramref name="sheetName"/>, registering the
+    /// sheet if it is not yet known.
+    /// </summary>
+    /// <remarks>
+    /// Callers write to the store they get back. Handing out a fresh, unregistered instance for an
+    /// unknown sheet - as this used to - allocated on every call and silently dropped the tracking
+    /// data, so a formula referencing a sheet that did not exist yet never recalculated once it did.
+    /// </remarks>
     private RegionDataStore<FormulaVertex> GetReferencedVertexStore(string sheetName)
     {
-        return _referencedVertexStores.GetValueOrDefault(sheetName) ?? new RegionDataStore<FormulaVertex>();
+        if (!_referencedVertexStores.TryGetValue(sheetName, out var store))
+        {
+            store = new RegionDataStore<FormulaVertex>();
+            _referencedVertexStores[sheetName] = store;
+        }
+
+        return store;
     }
 
     private RegionDataStore<FormulaVertex> GetFormulaLocationStore(string sheetName)
     {
-        return _formulaLocations.GetValueOrDefault(sheetName) ??
-               new RegionDataStore<FormulaVertex>(expandWhenInsertAfter: false);
+        if (!_formulaLocations.TryGetValue(sheetName, out var store))
+        {
+            store = new RegionDataStore<FormulaVertex>(expandWhenInsertAfter: false);
+            _formulaLocations[sheetName] = store;
+        }
+
+        return store;
     }
 
     public void AddSheet(string sheetName)
     {
-        _referencedVertexStores.Add(sheetName, new RegionDataStore<FormulaVertex>());
-        _formulaLocations.Add(sheetName, new RegionDataStore<FormulaVertex>(expandWhenInsertAfter: false));
+        // registering through the accessors keeps anything already tracked against this name - a
+        // formula may have referenced the sheet before it was created.
+        GetReferencedVertexStore(sheetName);
+        GetFormulaLocationStore(sheetName);
     }
 
     public void RemoveSheet(string sheetName)
@@ -83,8 +115,8 @@ public class DependencyManager
         }
 
         var existingRefStore = GetReferencedVertexStore(oldName);
-        _referencedVertexStores.Add(newName, existingRefStore);
         _referencedVertexStores.Remove(oldName);
+        _referencedVertexStores[newName] = existingRefStore;
         
         var renamedLocationStore = new RegionDataStore<FormulaVertex>(expandWhenInsertAfter: false);
         foreach (var vertex in _dependencyGraph.GetAll())
@@ -96,8 +128,8 @@ public class DependencyManager
             }
         }
 
-        _formulaLocations.Add(newName, renamedLocationStore);
         _formulaLocations.Remove(oldName);
+        _formulaLocations[newName] = renamedLocationStore;
     }
 
     public DependencyManagerRestoreData SetFormula(int row, int col, string sheetName, CellFormula? formula)
@@ -220,7 +252,7 @@ public class DependencyManager
         }
 
         return _dependencyGraph.GetAll()
-            .Where(x => x.Formula?.References.Any(r => r is NamedReference n && n.Name == vertex.Key) == true);
+            .Where(x => x.Formula?.References.Any(r => r is NamedReference n && n.Name == vertex.Key.Name) == true);
     }
 
     public DependencyManagerRestoreData InsertRowAt(int row, int count, string sheetName) =>
@@ -357,11 +389,37 @@ public class DependencyManager
     /// <returns></returns>
     public IList<IList<FormulaVertex>> GetCalculationOrder(IEnumerable<FormulaVertex>? dirtyFormula = null)
     {
-        var sort = new SccSort<FormulaVertex>(_dependencyGraph);
         if (dirtyFormula == null)
-            return sort.Sort();
+            return _sccSort.Sort();
 
-        return sort.Sort(dirtyFormula.Concat(_volatileVertices));
+        return _sccSort.Sort(ConcatVolatiles(dirtyFormula));
+    }
+
+    /// <summary>
+    /// Whether <see cref="GetCalculationOrder"/> would find anything to do for the given dirty set.
+    /// </summary>
+    /// <remarks>
+    /// Callers ask before sorting so that a write to a sheet with no formulas on it costs nothing.
+    /// </remarks>
+    public bool HasAnythingToCalculate(IReadOnlyCollection<FormulaVertex>? dirtyFormula)
+    {
+        if (dirtyFormula == null)
+            return _dependencyGraph.Count > 0;
+
+        return dirtyFormula.Count > 0 || _volatileVertices.Count > 0;
+    }
+
+    /// <summary>
+    /// Yields the dirty vertices followed by the volatile ones, without the enumerator chain that
+    /// LINQ Concat builds - this runs on every recalculation.
+    /// </summary>
+    private IEnumerable<FormulaVertex> ConcatVolatiles(IEnumerable<FormulaVertex> dirtyFormula)
+    {
+        foreach (var vertex in dirtyFormula)
+            yield return vertex;
+
+        foreach (var vertex in _volatileVertices)
+            yield return vertex;
     }
 
     public IEnumerable<DependencyInfo> GetDependencies()
@@ -595,8 +653,8 @@ public class DependencyManagerRestoreData
     public Dictionary<string, RegionRestoreData<FormulaVertex>> FormulaLocationRestoreDataBySheet { get; } = new();
     public List<FormulaVertex> VerticesRemoved { get; set; } = new();
     public List<FormulaVertex> VerticesAdded { get; set; } = new();
-    public readonly List<(string, string)> EdgesRemoved = new();
-    public readonly List<(string, string)> EdgesAdded = new();
+    public readonly List<(VertexKey, VertexKey)> EdgesRemoved = new();
+    public readonly List<(VertexKey, VertexKey)> EdgesAdded = new();
     public readonly List<AppliedShift> Shifts = new();
     internal readonly List<ReferenceRestoreData> ModifiedFormulaReferences = new();
 

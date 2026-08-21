@@ -3,7 +3,7 @@
 public class TopologicalSort<T> where T:Vertex
 {
     private Stack<T> _order;
-    private HashSet<string> _marked;
+    private HashSet<VertexKey> _marked;
 
     public IEnumerable<T> Sort(DependencyGraph<T> g)
     {

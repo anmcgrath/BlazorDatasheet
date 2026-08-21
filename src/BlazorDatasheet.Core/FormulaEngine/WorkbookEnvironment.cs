@@ -77,7 +77,7 @@ public class WorkbookEnvironment : IEnvironment
     public void SetCellValue(int row, int col, string sheetName, CellValue value)
     {
         var sheet = _workbook.GetSheet(sheetName);
-        sheet?.Cells.SetValueImpl(row, col, value);
+        sheet?.Cells.SetCalculatedValueImpl(row, col, value);
         sheet?.MarkDirty(row, col);
     }
 

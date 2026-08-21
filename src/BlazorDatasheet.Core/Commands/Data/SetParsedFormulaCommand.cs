@@ -18,11 +18,14 @@ internal class SetParsedFormulaCommand : BaseCommand, IUndoableCommand
         _formula = formula;
     }
 
-    public override bool CanExecute(Sheet sheet) => sheet.Region.Contains(_row, _col);
+    public override bool CanExecute(Sheet sheet) => sheet.ContainsPosition(_row, _col);
 
     public override bool Execute(Sheet sheet)
     {
+        // see SetCellValueCommand - unbatched, each call triggers its own recalculation pass.
+        sheet.BatchUpdates();
         _restoreData = sheet.Cells.SetFormulaImpl(_row, _col, _formula);
+        sheet.EndBatchUpdates();
         return true;
     }
 
