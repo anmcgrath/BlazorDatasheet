@@ -27,15 +27,16 @@ public class SetCellValueCommand : BaseCommand, IUndoableCommand
 
     public override bool CanExecute(Sheet sheet)
     {
-        return sheet.Region.Contains(Row, Col);
+        return sheet.ContainsPosition(Row, Col);
     }
 
     public override bool Execute(Sheet sheet)
     {
         sheet.ScreenUpdating = false;
+        sheet.BatchUpdates();
         _restoreData = sheet.Cells.SetValueImpl(Row, Col, Value);
-
-        sheet.MarkDirty(new RowRegion(Row));
+        sheet.MarkDirty(Row, Col);
+        sheet.EndBatchUpdates();
         sheet.ScreenUpdating = true;
         return true;
     }
