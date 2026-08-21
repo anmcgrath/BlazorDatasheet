@@ -1,4 +1,4 @@
-﻿﻿namespace BlazorDatasheet.DataStructures.Graph;
+﻿namespace BlazorDatasheet.DataStructures.Graph;
 
 /// <summary>
 /// Implements Tarjan's strongly connected components algorithm
@@ -7,13 +7,29 @@
 /// <typeparam name="T"></typeparam>
 public class SccSort<T> where T : Vertex
 {
+    private static readonly Dictionary<VertexKey, T> NoDependents = new();
+
     private readonly DependencyGraph<T> _graph;
-    private Dictionary<string, int> _indices = null!;
-    private Dictionary<string, int> _low = null!;
-    private List<IList<T>> _results = null!;
-    private Stack<T> _stack = null!;
-    private HashSet<T> _onStack = null!;
+
+    /// <summary>Depth index assigned to each visited vertex; also serves as the "visited" set.</summary>
+    private readonly Dictionary<VertexKey, int> _indices = new();
+
+    private readonly HashSet<VertexKey> _onStack = new();
+    private readonly Stack<T> _stack = new();
+    private List<IList<T>> _results = new();
+
+    private Frame[] _frames = new Frame[16];
+    private int _depth;
     private int _index;
+
+    private struct Frame
+    {
+        public T Vertex;
+        public VertexKey Key;
+        public int Index;
+        public int Low;
+        public Dictionary<VertexKey, T>.ValueCollection.Enumerator Dependents;
+    }
 
     public SccSort(DependencyGraph<T> graph)
     {
@@ -27,11 +43,11 @@ public class SccSort<T> where T : Vertex
     /// <returns></returns>
     public IList<IList<T>> Sort(IEnumerable<T>? availableVertices = null)
     {
-        _indices = new();
-        _low = new();
-        _results = new();
-        _stack = new();
-        _onStack = new();
+        _indices.Clear();
+        _onStack.Clear();
+        _stack.Clear();
+        _results.Clear();
+        _depth = 0;
         _index = 0;
 
         var vertices = availableVertices ?? _graph.GetAll();
@@ -45,43 +61,89 @@ public class SccSort<T> where T : Vertex
         // Result of this algo is reverse topological sort of a DAG
         _results.Reverse();
 
-        return _results;
+        var results = _results;
+
+        // hand the caller its own list - the next Sort() clears ours.
+        _results = new List<IList<T>>();
+        return results;
     }
 
-    private void StrongConnect(T v)
+    private void StrongConnect(T root)
     {
-        // set depth index for v to smallest unused index
-        _indices[v.Key] = _index;
-        _low[v.Key] = _index;
-        _index++;
-        _stack.Push(v);
-        _onStack.Add(v);
+        Push(root);
 
-        foreach (var w in _graph.GetDependentsOf(v))
+        while (_depth > 0)
         {
-            if (!_indices.TryGetValue(w.Key, out var index))
+            ref var frame = ref _frames[_depth - 1];
+
+            if (frame.Dependents.MoveNext())
             {
-                // have not yet visited w
-                StrongConnect(w);
-                _low[v.Key] = Math.Min(_low[v.Key], _low[w.Key]);
+                var w = frame.Dependents.Current;
+                if (!_indices.TryGetValue(w.Key, out var wIndex))
+                {
+                    // have not yet visited w - descend into it
+                    Push(w);
+                }
+                else if (_onStack.Contains(w.Key))
+                {
+                    frame.Low = Math.Min(frame.Low, wIndex);
+                }
+
+                continue;
             }
-            else if (_onStack.Contains(w))
-                _low[v.Key] = Math.Min(_low[v.Key], index);
-        }
 
-        if (_low[v.Key] == _indices[v.Key])
-        {
-            // start a new strongly connected component
-            var g = new List<T>();
-            T w;
-            do
+            // every dependent of this vertex has been visited
+            var vertex = frame.Vertex;
+            var key = frame.Key;
+            var low = frame.Low;
+            var index = frame.Index;
+            _depth--;
+
+            if (_depth > 0)
             {
-                w = _stack.Pop();
-                _onStack.Remove(w);
-                g.Add(w);
-            } while (v.Key != w.Key);
+                // the parent's lowlink absorbs ours, as it would on return from the recursive call
+                ref var parent = ref _frames[_depth - 1];
+                parent.Low = Math.Min(parent.Low, low);
+            }
 
-            _results.Add(g);
+            if (low == index)
+            {
+                // start a new strongly connected component
+                var group = _stack.Peek().Key.Equals(key)
+                    ? new List<T>(1) // by far the common case - a vertex that is not in a cycle
+                    : new List<T>();
+
+                T w;
+                do
+                {
+                    w = _stack.Pop();
+                    _onStack.Remove(w.Key);
+                    group.Add(w);
+                } while (!key.Equals(w.Key));
+
+                _results.Add(group);
+            }
         }
+    }
+
+    private void Push(T v)
+    {
+        if (_depth == _frames.Length)
+            Array.Resize(ref _frames, _frames.Length * 2);
+
+        var key = v.Key;
+        _indices[key] = _index;
+        _stack.Push(v);
+        _onStack.Add(key);
+
+        ref var frame = ref _frames[_depth];
+        frame.Vertex = v;
+        frame.Key = key;
+        frame.Index = _index;
+        frame.Low = _index;
+        frame.Dependents = (_graph.GetDependentsMap(key) ?? NoDependents).Values.GetEnumerator();
+
+        _index++;
+        _depth++;
     }
 }
