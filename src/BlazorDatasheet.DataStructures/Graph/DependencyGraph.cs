@@ -7,17 +7,17 @@ public class DependencyGraph<T> where T : Vertex
     /// <summary>
     /// Adjacency list for dependency edges (v -> w means w depends on v).
     /// </summary>
-    private readonly Dictionary<string, Dictionary<string, T>> _adj;
+    private readonly Dictionary<VertexKey, Dictionary<VertexKey, T>> _adj;
 
     /// <summary>
     /// Precedents list - reverse of adjacency list
     /// </summary>
-    private readonly Dictionary<string, Dictionary<string, T>> _prec;
+    private readonly Dictionary<VertexKey, Dictionary<VertexKey, T>> _prec;
 
     /// <summary>
     /// Maps between Vertex key and Vertex
     /// </summary>
-    private readonly Dictionary<string, T> _symbolTable;
+    private readonly Dictionary<VertexKey, T> _symbolTable;
 
     private int _numVertices;
     private int _numEdges;
@@ -38,7 +38,7 @@ public class DependencyGraph<T> where T : Vertex
     {
         _adj = new();
         _prec = new();
-        _symbolTable = new Dictionary<string, T>();
+        _symbolTable = new Dictionary<VertexKey, T>();
     }
 
     /// <summary>
@@ -51,8 +51,8 @@ public class DependencyGraph<T> where T : Vertex
         if (!_symbolTable.ContainsKey(v.Key))
         {
             _symbolTable.Add(v.Key, v);
-            _adj.Add(v.Key, new Dictionary<string, T>());
-            _prec.Add(v.Key, new Dictionary<string, T>());
+            _adj.Add(v.Key, new Dictionary<VertexKey, T>());
+            _prec.Add(v.Key, new Dictionary<VertexKey, T>());
             _numVertices++;
         }
 
@@ -64,13 +64,20 @@ public class DependencyGraph<T> where T : Vertex
     /// <summary>
     /// Returns vertices that directly depend on the given vertex key.
     /// </summary>
-    public IEnumerable<T> GetDependentsOf(string key)
+    public IEnumerable<T> GetDependentsOf(VertexKey key)
     {
-        var isPresent = _symbolTable.ContainsKey(key);
-        if (!isPresent)
-            return Enumerable.Empty<T>();
-        return _adj[key].Values;
+        // _adj always holds exactly the keys in _symbolTable, so one probe answers both questions.
+        return _adj.TryGetValue(key, out var dependents) ? dependents.Values : Enumerable.Empty<T>();
     }
+
+    /// <summary>
+    /// The dependents of a vertex key, or null when the vertex is not in the graph.
+    /// </summary>
+    /// <remarks>
+    /// Handing back the dictionary lets the SCC sort walk it with the struct enumerator; going
+    /// through IEnumerable would box one per vertex visited on every recalculation.
+    /// </remarks>
+    internal Dictionary<VertexKey, T>? GetDependentsMap(VertexKey key) => _adj.GetValueOrDefault(key);
 
     /// <summary>
     /// Returns vertices that directly depend on the given vertex.
@@ -85,23 +92,20 @@ public class DependencyGraph<T> where T : Vertex
     /// <summary>
     /// Returns vertices that the given vertex key depends on.
     /// </summary>
-    public IEnumerable<T> GetPrecedentsOf(string key)
+    public IEnumerable<T> GetPrecedentsOf(VertexKey key)
     {
-        var isPresent = _symbolTable.ContainsKey(key);
-        if (!isPresent)
-            return Enumerable.Empty<T>();
-        return _prec[key].Values;
+        return _prec.TryGetValue(key, out var precedents) ? precedents.Values : Enumerable.Empty<T>();
     }
 
     /// <summary>
-    /// Legacy alias. Prefer <see cref="GetDependentsOf(string)"/>.
+    /// Legacy alias. Prefer <see cref="GetDependentsOf(VertexKey)"/>.
     /// </summary>
-    public IEnumerable<T> Adj(string key)
+    public IEnumerable<T> Adj(VertexKey key)
     {
         return GetDependentsOf(key);
     }
 
-    public T? GetVertex(string key)
+    public T? GetVertex(VertexKey key)
     {
         return _symbolTable.GetValueOrDefault(key);
     }
@@ -117,9 +121,9 @@ public class DependencyGraph<T> where T : Vertex
     public IEnumerable<T> Prec(T v) => Prec(v.Key);
 
     /// <summary>
-    /// Legacy alias. Prefer <see cref="GetPrecedentsOf(string)"/>.
+    /// Legacy alias. Prefer <see cref="GetPrecedentsOf(VertexKey)"/>.
     /// </summary>
-    public IEnumerable<T> Prec(string key)
+    public IEnumerable<T> Prec(VertexKey key)
     {
         return GetPrecedentsOf(key);
     }
@@ -134,7 +138,7 @@ public class DependencyGraph<T> where T : Vertex
     /// <exception cref="NotImplementedException"></exception>
     public void RemoveVertex(T v, bool clearNoEdges = true) => RemoveVertex(v.Key, clearNoEdges);
 
-    public void RemoveVertex(string vKey, bool clearNoEdges = true)
+    public void RemoveVertex(VertexKey vKey, bool clearNoEdges = true)
     {
         if (!_symbolTable.ContainsKey(vKey))
             return;
@@ -173,7 +177,7 @@ public class DependencyGraph<T> where T : Vertex
     /// <param name="clearIfNoDependents">If set to true, clears any vertices if they are left with no dependents.</param>
     public void RemoveEdge(T v, T w, bool clearIfNoDependents = true) => RemoveEdge(v.Key, w.Key, clearIfNoDependents);
 
-    public void RemoveEdge(string vKey, string wKey, bool clearIfNoDependents = true)
+    public void RemoveEdge(VertexKey vKey, VertexKey wKey, bool clearIfNoDependents = true)
     {
         if (_symbolTable.ContainsKey(vKey))
         {
@@ -194,7 +198,7 @@ public class DependencyGraph<T> where T : Vertex
         }
     }
 
-    private void RemoveIfNoDependents(string vKey)
+    private void RemoveIfNoDependents(VertexKey vKey)
     {
         if (!IsDependedOn(vKey) && !IsDependentOnAny(vKey))
         {
@@ -227,7 +231,7 @@ public class DependencyGraph<T> where T : Vertex
     /// </summary>
     /// <param name="vKey"></param>
     /// <param name="wKey"></param>
-    public void AddEdge(string vKey, string wKey)
+    public void AddEdge(VertexKey vKey, VertexKey wKey)
     {
         if (!_symbolTable.TryGetValue(vKey, out var v))
             return;
@@ -273,14 +277,14 @@ public class DependencyGraph<T> where T : Vertex
     /// </summary>
     /// <param name="vKey"></param>
     /// <returns></returns>
-    public bool IsDependedOn(string vKey)
+    public bool IsDependedOn(VertexKey vKey)
     {
-        return GetDependentsOf(vKey).Any();
+        return _adj.TryGetValue(vKey, out var dependents) && dependents.Count != 0;
     }
 
-    public bool IsDependentOnAny(string vKey)
+    public bool IsDependentOnAny(VertexKey vKey)
     {
-        return GetPrecedentsOf(vKey).Any();
+        return _prec.TryGetValue(vKey, out var precedents) && precedents.Count != 0;
     }
 
     /// <summary>
@@ -316,7 +320,7 @@ public class DependencyGraph<T> where T : Vertex
     /// </summary>
     /// <param name="key"></param>
     /// <returns></returns>
-    public bool HasVertex(string key)
+    public bool HasVertex(VertexKey key)
     {
         return _symbolTable.ContainsKey(key);
     }
@@ -353,6 +357,9 @@ public class DependencyGraph<T> where T : Vertex
         Debug.Assert(_adj.Count == _symbolTable.Count && _prec.Count == _symbolTable.Count,
             "Adjacency/precedent maps must match symbol table size.");
 
+        if (!DependencyGraphDiagnostics.VerifyFullInvariantsOnMutation)
+            return;
+
         var edgeCount = 0;
         foreach (var (fromKey, dependents) in _adj)
         {
@@ -383,4 +390,21 @@ public class DependencyGraph<T> where T : Vertex
 
 public class DependencyGraph : DependencyGraph<Vertex>
 {
+}
+
+internal static class DependencyGraphDiagnostics
+{
+    /// <summary>
+    /// Whether every graph mutation should re-walk the whole graph checking its invariants.
+    /// </summary>
+    /// <remarks>
+    /// The walk is O(V + E) and ran on every vertex and edge change, which made building a sheet of
+    /// any size quadratic under a debug build - a 50k-formula sheet never finished. The cheap count
+    /// checks still run on every debug mutation; turn this on from a test that is exercising the
+    /// structure of the graph itself.
+    ///
+    /// It lives here rather than on DependencyGraph&lt;T&gt; because a static field on a generic type
+    /// gets one copy per type argument, so setting it would only ever affect one instantiation.
+    /// </remarks>
+    internal static bool VerifyFullInvariantsOnMutation;
 }

@@ -24,7 +24,7 @@ public class FormulaExecutionContext
             if (vertex.Position != null)
                 _currentSccCells.Add(new CellPosition(vertex.Row, vertex.Col));
             else
-                _currentSccNames.Add(vertex.Key);
+                _currentSccNames.Add(vertex.Key.Name);
         }
     }
 

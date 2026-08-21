@@ -21,27 +21,28 @@ public class FormulaVertex : Vertex, IEquatable<FormulaVertex>
         SheetName = sheetName;
         Position = new CellPosition(row, col);
         Formula = formula;
-        UpdateKey();
+        // set before UpdateKey - it keys off the vertex type
         VertexType = VertexType.Cell;
+        UpdateKey();
     }
 
-    private string _key = string.Empty;
-    public override string Key => _key;
+    private VertexKey _key;
+    public override VertexKey Key => _key;
 
     public sealed override void UpdateKey()
     {
         if (VertexType == VertexType.Cell)
             _key = GetKey(Row, Col, SheetName);
     }
-    
-    internal static string GetKey(int row, int col, string sheetName)
+
+    internal static VertexKey GetKey(int row, int col, string sheetName)
     {
-        return $"'{sheetName}'!{RangeText.ToCellText(row, col)}";
+        return VertexKey.ForCell(row, col, sheetName);
     }
 
-    internal static string GetKey(string name)
+    internal static VertexKey GetKey(string name)
     {
-        return name;
+        return VertexKey.ForName(name);
     }
 
     public CellPosition? Position { get; internal set; }
@@ -55,7 +56,7 @@ public class FormulaVertex : Vertex, IEquatable<FormulaVertex>
     {
         if (ReferenceEquals(null, other)) return false;
         if (ReferenceEquals(this, other)) return true;
-        return _key == other._key;
+        return _key.Equals(other._key);
     }
 
     public override bool Equals(object? obj)

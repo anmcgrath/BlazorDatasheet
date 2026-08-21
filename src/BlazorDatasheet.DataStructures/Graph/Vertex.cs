@@ -2,12 +2,16 @@
 
 public abstract class Vertex : IEquatable<Vertex>
 {
-    public abstract string Key { get; }
+    public abstract VertexKey Key { get; }
 
     public bool Equals(Vertex? other)
     {
-        return other?.Key == Key;
+        return other is not null && other.Key.Equals(Key);
     }
+
+    public override bool Equals(object? obj) => obj is Vertex vertex && Equals(vertex);
+
+    public override int GetHashCode() => Key.GetHashCode();
 
     public abstract void UpdateKey();
 }
@@ -33,6 +37,6 @@ public abstract class Vertex<TData> : Vertex, IEquatable<Vertex<TData>>
 
     public override int GetHashCode()
     {
-        return EqualityComparer<TData>.Default.GetHashCode(Data);
+        return EqualityComparer<TData>.Default.GetHashCode(Data!);
     }
 }

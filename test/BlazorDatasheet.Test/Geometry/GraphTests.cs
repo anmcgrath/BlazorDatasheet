@@ -9,6 +9,13 @@ namespace BlazorDatasheet.Test.Geometry;
 
 public class GraphTests
 {
+    /// </summary>
+    [SetUp]
+    public void EnableFullInvariantChecks() => DependencyGraphDiagnostics.VerifyFullInvariantsOnMutation = true;
+
+    [TearDown]
+    public void DisableFullInvariantChecks() => DependencyGraphDiagnostics.VerifyFullInvariantsOnMutation = false;
+
     [Test]
     public void Topological_Sort_Sorts_Correct_Order()
     {
@@ -26,7 +33,7 @@ public class GraphTests
 
         var order = dg
             .TopologicalSort()
-            .Select(x => x.Key);
+            .Select(x => x.Key.Name);
 
         var orderStr = string.Join("", order);
         Assert.AreEqual("4132", orderStr);
@@ -116,8 +123,8 @@ public class GraphTests
         dg.HasVertex("A2").Should().BeTrue();
         dg.HasVertex("B").Should().BeTrue();
         dg.HasVertex("C").Should().BeTrue();
-        dg.GetDependentsOf("A2").Select(x => x.Key).Should().BeEquivalentTo(["B"]);
-        dg.GetPrecedentsOf("A2").Select(x => x.Key).Should().BeEquivalentTo(["C"]);
+        dg.GetDependentsOf("A2").Select(x => x.Key.Name).Should().BeEquivalentTo(["B"]);
+        dg.GetPrecedentsOf("A2").Select(x => x.Key.Name).Should().BeEquivalentTo(["C"]);
     }
 
     [Test]
@@ -165,14 +172,14 @@ public class GraphTests
 
 public class TestVertex : Vertex, IEquatable<TestVertex>
 {
-    public override string Key { get; }
+    public override VertexKey Key { get; }
     public override void UpdateKey()
     {
     }
 
     public TestVertex(string key)
     {
-        Key = key;
+        Key = VertexKey.ForName(key);
     }
 
     public bool Equals(TestVertex? other)
@@ -198,13 +205,13 @@ public class TestVertex : Vertex, IEquatable<TestVertex>
 
 public class MutableTestVertex : Vertex, IEquatable<MutableTestVertex>
 {
-    private string _key;
+    private VertexKey _key;
     private string? _nextKey;
-    public override string Key => _key;
+    public override VertexKey Key => _key;
 
     public MutableTestVertex(string key)
     {
-        _key = key;
+        _key = VertexKey.ForName(key);
     }
 
     public void SetNextKey(string nextKey)
@@ -216,7 +223,7 @@ public class MutableTestVertex : Vertex, IEquatable<MutableTestVertex>
     {
         if (_nextKey != null)
         {
-            _key = _nextKey;
+            _key = VertexKey.ForName(_nextKey);
             _nextKey = null;
         }
     }
