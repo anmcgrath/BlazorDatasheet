@@ -40,7 +40,7 @@ public partial class CellStore
 
     internal void EndBatchChanges()
     {
-        if (_cellsChanged.Any() || _regionsChanged.Any() && _isBatchingChanges)
+        if (_cellsChanged.Count > 0 || _regionsChanged.Count > 0 && _isBatchingChanges)
         {
             var args = new CellDataChangedEventArgs(_regionsChanged, _cellsChanged);
             CellsChanged?.Invoke(this, args);
@@ -49,9 +49,18 @@ public partial class CellStore
         _isBatchingChanges = false;
     }
 
+    /// <summary>
+    /// Raises (or records) a change for a single cell.
+    /// </summary>
     private void EmitCellChanged(int row, int col)
     {
-        this.EmitCellsChanged(new[] { new CellPosition(row, col) });
+        if (_isBatchingChanges)
+        {
+            _cellsChanged.Add(new CellPosition(row, col));
+            return;
+        }
+
+        EmitCellsChanged(new[] { new CellPosition(row, col) });
     }
 
     private void EmitCellsChanged(IEnumerable<CellPosition> positions)
@@ -69,6 +78,12 @@ public partial class CellStore
 
     private void EmitCellsChanged(IRegion region)
     {
+        if (_isBatchingChanges)
+        {
+            _regionsChanged.Add(region);
+            return;
+        }
+
         EmitCellsChanged([region]);
     }
 
