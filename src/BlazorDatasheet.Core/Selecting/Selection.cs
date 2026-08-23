@@ -152,10 +152,13 @@ public class Selection
     {
         if (SelectingRegion == null)
             return;
-        SetActiveCellPosition(_selectingStartPosition.row, _selectingStartPosition.col);
-        this.Add(SelectingRegion);
+
+        var selectedRegion = SelectingRegion;
         SelectingRegion = null;
         EmitSelectingChanged();
+
+        SetActiveCellPosition(_selectingStartPosition.row, _selectingStartPosition.col);
+        Add(selectedRegion);
     }
 
     private void EmitSelectingChanged()
