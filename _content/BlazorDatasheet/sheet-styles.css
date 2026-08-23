@@ -32,7 +32,14 @@
     --num-highlight-color: #18688f;
     --string-highlight-color: #256b3e;
     --sheet-menu-bg-color: #fff;
-    --sheet-menu-hover-color: #e6f0ff;
+    --sheet-menu-hover-color: #f1f4f8;
+    --sheet-menu-border-color: #d4dae3;
+    --sheet-menu-divider-color: #e7eaf0;
+    --sheet-menu-muted-color: #69737f;
+    --sheet-menu-section-bg-color: #fbfcfe;
+    --sheet-menu-field-bg-color: #ffffff;
+    --sheet-menu-accent-color: #2c5fa8;
+    --sheet-menu-shadow-color: rgba(16, 24, 40, 0.10);
     --sheet-button-bg-color: #f8fafc;
     --sheet-button-bg-hover-color: #eef2f7;
     --sheet-button-border: 1px solid #c5d0df;
@@ -63,8 +70,15 @@
     --cell-highlight-bg-color: #456b4d;
     --num-highlight-color: #d4d6ec;
     --string-highlight-color: #79a16a;
-    --sheet-menu-bg-color: #333;
-    --sheet-menu-hover-color: #202e3e;
+    --sheet-menu-bg-color: #2b2e33;
+    --sheet-menu-hover-color: #383d45;
+    --sheet-menu-border-color: #43494f;
+    --sheet-menu-divider-color: #3a3f46;
+    --sheet-menu-muted-color: #8b939e;
+    --sheet-menu-section-bg-color: #303439;
+    --sheet-menu-field-bg-color: #24272b;
+    --sheet-menu-accent-color: #79a7e6;
+    --sheet-menu-shadow-color: rgba(0, 0, 0, 0.6);
     --sheet-button-bg-color: #292929;
     --sheet-button-bg-hover-color: #202e3e;
     --sheet-button-border: 1px solid #3f4d5f;
@@ -180,6 +194,17 @@
 
 .bds-sheet-button:hover {
     background: var(--sheet-button-bg-hover-color);
+}
+
+.bds-sheet-button-primary {
+    background: var(--sheet-menu-accent-color);
+    border-color: var(--sheet-menu-accent-color);
+    color: #ffffff;
+}
+
+.bds-sheet-button-primary:hover {
+    background: var(--sheet-menu-accent-color);
+    opacity: 0.9;
 }
 
 .bds-sheet-cell {
