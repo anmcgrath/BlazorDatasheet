@@ -6,6 +6,7 @@
 @using BlazorDatasheet.Menu
 @using BlazorDatasheet.Services
 @using BlazorDatasheet.Menu.Filters
+@using BlazorDatasheet.Formula.Core
 @inject IMenuService MenuService;
 @inherits SheetComponentBase
 @implements IDisposable
@@ -136,34 +137,36 @@
              colRegion.Width == 1)
         {
             <SheetSubMenu Label="Filter" @ref="_filterSubMenu" DisabledOnReadOnly="false">
-                <div style="font-weight: bold; text-align: center;">Filters</div>
-                @foreach (var filter in ColumnFilters)
-                {
-                    <SheetMenuDivider/>
-                    if (filter is ValueFilter valueFilter)
+                <div class="bds-sheet-menu-panel bds-filter-panel">
+                    <div class="bds-filter-panel-head">
+                        <span class="bds-filter-panel-title">Filters</span>
+                        <span class="bds-filter-panel-subtitle">@ColumnLabel(sheet, colRegion.Left)</span>
+                    </div>
+                    @foreach (var filter in ColumnFilters)
                     {
-                        <ValueFilterEditor
-                            @key="filter"
-                            Sheet="sheet"
-                            ColumnIndex="@colRegion.Left"
-                            Filter="@valueFilter"/>
+                        if (filter is ValueFilter valueFilter)
+                        {
+                            <ValueFilterEditor
+                                @key="filter"
+                                Sheet="sheet"
+                                ColumnIndex="@colRegion.Left"
+                                Filter="@valueFilter"/>
+                        }
+                        else if (filter is PatternFilter patternFilter)
+                        {
+                            <PatternFilterEditor
+                                @key="filter"
+                                Sheet="sheet"
+                                ColumnIndex="@colRegion.Left"
+                                Filter="@patternFilter"/>
+                        }
                     }
-                    else if (filter is PatternFilter patternFilter)
-                    {
-                        <PatternFilterEditor
-                            @key="filter"
-                            Sheet="sheet"
-                            ColumnIndex="@colRegion.Left"
-                            Filter="@patternFilter"/>
-                    }
-                }
-                <div style="display: flex; flex-direction: row; justify-content: space-between;">
-                    <button @onclick="CancelFilterButtonClick" class="bds-sheet-button"
-                            style="width: 80px; margin: 4px 8px;">Cancel
-                    </button>
-                    <button @onclick="() => AcceptFilterButtonClick(sheet, colRegion.Left)" class="bds-sheet-button"
-                            style="width: 80px; margin: 4px 8px;">Apply
-                    </button>
+                    <div class="bds-filter-panel-foot">
+                        <button @onclick="CancelFilterButtonClick" class="bds-sheet-button">Cancel</button>
+                        <button @onclick="() => AcceptFilterButtonClick(sheet, colRegion.Left)"
+                                class="bds-sheet-button bds-sheet-button-primary">Apply
+                        </button>
+                    </div>
                 </div>
             </SheetSubMenu>
         }
@@ -176,6 +179,68 @@
     }
 
 </SheetMenu>
+
+<style>
+    .bds-filter-panel {
+        display: flex;
+        flex-direction: column;
+        width: 268px;
+    }
+
+    .bds-filter-panel-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 9px 11px 8px;
+        border-bottom: var(--sheet-border-width) solid var(--sheet-menu-divider-color);
+    }
+
+    .bds-filter-panel-title {
+        font-weight: 600;
+    }
+
+    .bds-filter-panel-subtitle {
+        color: var(--sheet-menu-muted-color);
+        font-size: 0.9em;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .bds-filter-section {
+        padding: 10px 11px 11px;
+        border-bottom: var(--sheet-border-width) solid var(--sheet-menu-divider-color);
+    }
+
+    .bds-filter-section-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+
+    .bds-filter-section-label {
+        font-size: 0.85em;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--sheet-menu-muted-color);
+    }
+
+    .bds-filter-panel-foot {
+        display: flex;
+        justify-content: flex-end;
+        gap: 6px;
+        padding: 9px 11px;
+        background: var(--sheet-menu-section-bg-color);
+    }
+
+    .bds-filter-panel-foot .bds-sheet-button {
+        min-width: 68px;
+        padding: 4px 11px;
+    }
+</style>
 
 @code {
 
@@ -238,6 +303,15 @@
                 }
             }
         }
+    }
+
+    private static string ColumnLabel(Sheet sheet, int columnIndex)
+    {
+        var letters = RangeText.ColIndexToLetters(columnIndex);
+        var heading = sheet.Columns.GetHeading(columnIndex);
+        return string.IsNullOrWhiteSpace(heading) || heading == letters
+            ? $"Column {letters}"
+            : $"Column {letters} · {heading}";
     }
 
     private void OnSelectionMenuClose()

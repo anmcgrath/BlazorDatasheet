@@ -1,53 +1,105 @@
-@using BlazorDatasheet.Core.Data
+﻿@using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Data.Filter
 @using BlazorDatasheet.Formula.Core
 @inherits BaseFilterEditor
 
 
-<div style="padding: 8px;">
-    <div>Values:</div>
-    <div style="display: block;">
+<div class="bds-filter-section">
+    <div class="bds-filter-section-head">
+        <span class="bds-filter-section-label">By value</span>
+    </div>
+
+    <label class="bds-filter-check bds-filter-check-all">
         <input type="checkbox"
                @onchange="ToggleSetAll"
-               checked="@ValueFilter.IncludeAll"
-               id="select-all"/>
-        <label for="select-all">[Select all]</label>
-    </div>
+               checked="@ValueFilter.IncludeAll"/>
+        <span class="bds-filter-check-text">Select all</span>
+    </label>
 
-    <div style="margin: 4px 8px; display: block; max-height: 100px; overflow-y: scroll;">
-        <div>
-            @{
-                var indx = 0;
-            }
+    <div class="bds-filter-value-list">
+        @{
+            var indx = 0;
+        }
 
-            @foreach (var val in DistinctColumnData)
+        @foreach (var val in DistinctColumnData)
+        {
+            @if (!val.IsEmpty)
             {
-                @if (!val.IsEmpty)
-                {
-                    <div style="display: block;">
-                        <input type="checkbox"
-                               @onchange="e => SetValue(val, e.Value)"
-                               checked="@ValueFilter.Includes(val)"
-                               id="@indx"/>
-                        <label for="@indx">@val.ToString()</label>
-                    </div>
-                }
-                else
-                {
-                    <div style="display: block;">
-                        <input type="checkbox"
-                               @onchange="ToggleIncludeBlanks"
-                               checked="@ValueFilter.IncludeBlanks"
-                               id="include-blanks"/>
-                        <label for="include-blanks">[Include blank]</label>
-                    </div>
-                }
-
-                indx++;
+                <label class="bds-filter-check" @key="indx">
+                    <input type="checkbox"
+                           @onchange="e => SetValue(val, e.Value)"
+                           checked="@ValueFilter.Includes(val)"/>
+                    <span class="bds-filter-check-text">@val.ToString()</span>
+                </label>
             }
-        </div>
+            else
+            {
+                <label class="bds-filter-check" @key="indx">
+                    <input type="checkbox"
+                           @onchange="ToggleIncludeBlanks"
+                           checked="@ValueFilter.IncludeBlanks"/>
+                    <span class="bds-filter-check-text bds-filter-check-blank">(Blanks)</span>
+                </label>
+            }
+
+            indx++;
+        }
     </div>
 </div>
+
+<style>
+    .bds-filter-check {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        height: 24px;
+        padding: 0 2px;
+        border-radius: 4px;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .bds-filter-check input[type="checkbox"] {
+        flex: 0 0 auto;
+        width: 13px;
+        height: 13px;
+        margin: 0;
+        accent-color: var(--sheet-menu-accent-color);
+        cursor: pointer;
+    }
+
+    .bds-filter-check-text {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .bds-filter-check-blank {
+        color: var(--sheet-menu-muted-color);
+        font-style: italic;
+    }
+
+    .bds-filter-check-all {
+        padding-bottom: 7px;
+        height: auto;
+        border-bottom: var(--sheet-border-width) solid var(--sheet-menu-divider-color);
+        border-radius: 0;
+        margin-bottom: 5px;
+    }
+
+    .bds-filter-value-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        max-height: 132px;
+        overflow-y: auto;
+    }
+
+    .bds-filter-value-list .bds-filter-check:hover {
+        background: var(--sheet-menu-hover-color);
+    }
+</style>
 
 @code {
 

@@ -6,18 +6,45 @@
                  Placement="@MenuPlacement.Right"
                  Trigger="@MenuTrigger.OnHover" Margin="0">
     <SheetMenuItem SubmenuId="@SubMenuId" DisabledOnReadOnly="DisabledOnReadOnly">
-        <div style="display: flex; justify-content: space-between; width: 100%; height: 100%; pointer-events: none;">
-            <div>@Label</div>
-            <div style="color: black; width: 0.7em; height: 0.7rem;">
+        <div class="bds-sheet-submenu-label">
+            <span class="bds-sheet-submenu-text">@Label</span>
+            <span class="bds-sheet-submenu-chevron">
                 <!-- from heroicons.com -->
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
                      stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
                 </svg>
-            </div>
+            </span>
         </div>
     </SheetMenuItem>
 </SheetMenuTarget>
+
+<style>
+    .bds-sheet-submenu-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+    }
+
+    .bds-sheet-submenu-text {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .bds-sheet-submenu-chevron {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        width: 9px;
+        height: 9px;
+        color: var(--sheet-menu-muted-color);
+    }
+</style>
 
 <SheetMenu MenuId="@SubMenuId" Disabled="@(Disabled && DisabledOnReadOnly)" ParentMenuId="@MenuId">
     @ChildContent

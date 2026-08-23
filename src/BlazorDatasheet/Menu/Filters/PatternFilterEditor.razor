@@ -1,10 +1,12 @@
 ﻿@using BlazorDatasheet.Core.Data.Filter
 @inherits BaseFilterEditor
 
-<div style="padding: 8px; display: block;">
-    <div>Text filter</div>
-    <div>
-        <select @bind="PatternFilter.Type">
+<div class="bds-filter-section">
+    <div class="bds-filter-section-head">
+        <span class="bds-filter-section-label">By pattern</span>
+    </div>
+    <div class="bds-filter-pattern-fields">
+        <select class="bds-filter-field" @bind="PatternFilter.Type">
             <option value="@PatternFilterType.None">None</option>
             <option value='-' disabled>――――</option>
             <option value="@PatternFilterType.Contains">Contains</option>
@@ -16,9 +18,43 @@
             <option value="@PatternFilterType.NotEndsWith">Does not end with</option>
         </select>
 
-        <input type="text" style="width: 80px;" @bind="PatternFilter.Value"/>
+        <input class="bds-filter-field" type="text" placeholder="Value" @bind="PatternFilter.Value"/>
     </div>
 </div>
+
+<style>
+    .bds-filter-pattern-fields {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .bds-filter-field {
+        height: 26px;
+        box-sizing: border-box;
+        padding: 0 6px;
+        border: var(--sheet-border-width) solid var(--sheet-menu-border-color);
+        border-radius: 5px;
+        background: var(--sheet-menu-field-bg-color);
+        color: var(--sheet-foreground-color);
+        font-family: inherit;
+        font-size: inherit;
+        font-weight: inherit;
+        outline: none;
+    }
+
+    select.bds-filter-field {
+        cursor: pointer;
+    }
+
+    .bds-filter-field:focus {
+        border-color: var(--sheet-menu-accent-color);
+    }
+
+    .bds-filter-field::placeholder {
+        color: var(--sheet-menu-muted-color);
+    }
+</style>
 
 @code {
 
