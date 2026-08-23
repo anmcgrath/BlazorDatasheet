@@ -10,8 +10,18 @@
 
 <style>
     .bds-sheet-menu-item {
-        padding: 2px 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        height: 26px;
+        padding: 0 8px;
+        border-radius: 5px;
+        box-sizing: border-box;
         cursor: pointer;
+        user-select: none;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .bds-sheet-menu-item-disabled {
