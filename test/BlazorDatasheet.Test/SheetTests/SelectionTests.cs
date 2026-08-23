@@ -118,6 +118,26 @@ public class SelectionManagerTests
     }
 
     [Test]
+    public void End_Selecting_Fires_Selection_Changed_After_Selecting_Has_Ended()
+    {
+        var selection = new Selection(_sheet);
+        var wasSelectingWhenSelectionChanged = true;
+        IRegion? selectingRegionWhenSelectionChanged = new Region(0, 0);
+
+        selection.SelectionChanged += (_, _) =>
+        {
+            wasSelectingWhenSelectionChanged = selection.IsSelecting;
+            selectingRegionWhenSelectionChanged = selection.SelectingRegion;
+        };
+
+        selection.BeginSelectingCell(1, 1);
+        selection.EndSelecting();
+
+        wasSelectingWhenSelectionChanged.Should().BeFalse();
+        selectingRegionWhenSelectionChanged.Should().BeNull();
+    }
+
+    [Test]
     public void Moves_Input_Position_When_Selecting_Region_Is_One_Cell()
     {
         _sheet.Selection.Set(0, 0);
