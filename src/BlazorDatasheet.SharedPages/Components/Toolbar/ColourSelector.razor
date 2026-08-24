@@ -2,7 +2,7 @@
 @using BlazorDatasheet.Core.Formats
 
 <div class="bds-color-selector" @onkeydown="OnKeyDown">
-    <button class="bds-button bds-toolbar-button bds-color-button"
+    <button class="bds-toolbar-button bds-color-button @ButtonClass @(_menuOpen ? "bds-menu-open" : "")"
             type="button"
             title="@Title"
             aria-label="@Title"
@@ -14,7 +14,10 @@
         {
             @ChildContent
         }
-        <span class="bds-color-swatch" style="background: @SwatchColor"></span>
+        @if (ShowSwatch)
+        {
+            <span class="bds-color-swatch @(HasColor ? "" : "bds-color-swatch-empty")" style="background: @SwatchColor"></span>
+        }
     </button>
 
     @if (_menuOpen)
@@ -23,23 +26,33 @@
         <div class="bds-color-menu @(Placement == MenuPlacement.End ? "bds-color-menu-end" : "")"
              role="menu"
              @onpointerdown:stopPropagation>
-            @foreach (var color in Colors)
-            {
-                <button class="bds-color-choice"
-                        type="button"
-                        title="@color.Name"
-                        aria-label="@($"{Title}: {color.Name}")"
-                        style="background: @color.Value"
-                        @onpointerdown="@(() => SetColor(color.Value))">
-                </button>
-            }
+            <div class="bds-color-menu-header">
+                <span class="bds-color-menu-title">@Title</span>
+                <span class="bds-color-menu-value">@(HasColor ? CurrentColor : "None")</span>
+            </div>
+
+            <div class="bds-color-grid">
+                @foreach (var color in Colors)
+                {
+                    <button class="bds-color-choice @(IsLight(color.Value) ? "bds-color-choice-light" : "") @(IsCurrent(color.Value) ? "bds-color-choice-current" : "")"
+                            type="button"
+                            title="@color.Name"
+                            aria-label="@($"{Title}: {color.Name}")"
+                            style="background: @color.Value"
+                            @onpointerdown="@(() => SetColor(color.Value))">
+                    </button>
+                }
+            </div>
 
             @if (AllowClear)
             {
-                <button class="bds-color-clear"
-                        type="button"
-                        @onpointerdown="ClearColor">
-                    Clear
+                <button class="bds-color-clear" type="button" @onpointerdown="ClearColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 6 6 18"/>
+                        <path d="m6 6 12 12"/>
+                    </svg>
+                    <span>Clear</span>
                 </button>
             }
         </div>
@@ -55,6 +68,8 @@
     [Parameter] public bool AllowClear { get; set; } = true;
     [Parameter] public bool ApplyToSelection { get; set; } = true;
     [Parameter] public MenuPlacement Placement { get; set; } = MenuPlacement.Start;
+    [Parameter] public bool ShowSwatch { get; set; } = true;
+    [Parameter] public string? ButtonClass { get; set; }
     [Parameter] public EventCallback<string?> ColorSelected { get; set; }
     [Parameter] public EventCallback OnInteracted { get; set; }
 
@@ -79,7 +94,15 @@
 
     private bool _menuOpen;
     private bool IsDisabled => ApplyToSelection && Sheet.Selection.IsEmpty();
-    private string SwatchColor => string.IsNullOrWhiteSpace(CurrentColor) ? "transparent" : CurrentColor;
+    private bool HasColor => !string.IsNullOrWhiteSpace(CurrentColor);
+    private string SwatchColor => HasColor ? CurrentColor! : "transparent";
+
+    private bool IsCurrent(string value) =>
+        HasColor && string.Equals(value, CurrentColor, StringComparison.OrdinalIgnoreCase);
+
+    // Near-white swatches need an outline of their own to stay visible on the menu.
+    private static bool IsLight(string value) =>
+        string.Equals(value, "#ffffff", StringComparison.OrdinalIgnoreCase);
 
     private void ToggleMenuOpen()
     {

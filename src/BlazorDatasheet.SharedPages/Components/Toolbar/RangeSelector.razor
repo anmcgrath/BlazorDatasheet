@@ -2,7 +2,8 @@
 @using BlazorDatasheet.Core.Events
 @using BlazorDatasheet.Formula.Core
 
-<input type="text" class="bds-formula-input" style="width: 80px;" @bind-value:get="SelectedRangeValue"
+<input type="text" class="bds-namebox" title="Name box" aria-label="Selected range"
+       @bind-value:get="SelectedRangeValue"
        @bind-value:set="OnInput"/>
 
 @code {
