@@ -41,9 +41,9 @@
             Width="Sheet.Columns.GetVisualWidthBetween(boundedRegion.Left, boundedRegion.Right + 1)"
             Height="Sheet.Rows.GetVisualHeightBetween(boundedRegion.Top, boundedRegion.Bottom + 1)"
             ShowBorderLeft="boundedRegion.Left == region.Left"
-            ShowBorderRight="boundedRegion.Right == region.Right"
+            ShowBorderRight="boundedRegion.Right == Math.Min(region.Right, Sheet.NumCols-1)"
             ShowBorderTop="boundedRegion.Top == region.Top"
-            ShowBorderBottom="boundedRegion.Bottom == region.Bottom"/>
+            ShowBorderBottom="boundedRegion.Bottom == Math.Min(region.Bottom, Sheet.NumRows-1)"/>
     }
 
     @if (Sheet.Selection.IsSelecting)
