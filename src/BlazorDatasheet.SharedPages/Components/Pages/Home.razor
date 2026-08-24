@@ -6,7 +6,7 @@
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Formula.Core
 @using BlazorDatasheet.Render
-@using BlazorDatasheet.SharedPages.Components.Toolbar
+@using BlazorDatasheet.SharedPages.Components.Shell
 
 <PageTitle>Home</PageTitle>
 
@@ -16,26 +16,22 @@
     BlazorDatasheet is a (simple) component for editing tabular data.
 </div>
 
-<div class="block">
-    @if (_datasheet != null)
-    {
-        <div style="width: 600px;">
-            <DatasheetToolbar
-                Sheet="_sheet"
-                Datasheet="_datasheet"/>
-        </div>
-    }
-
-    <div style="width: 600px; height: 400px; overflow-y: scroll;">
+<div class="block" style="max-width: 928px;">
+    <DatasheetPanel
+        Sheet="_sheet"
+        Datasheet="_datasheet"
+        BodyStyle="height: 400px;"
+        @bind-Theme="_theme">
         <Datasheet
             AutoFit="true"
+            Theme="@SheetTheme"
             UseAutoScroll="_useAutoScroll"
             StickyHeaders="_stickyHeaders"
             ShowColHeadings="_showColHeadings"
             ShowRowHeadings="_showRowHeadings"
             Sheet="_sheet"
             @ref="_datasheet"/>
-    </div>
+    </DatasheetPanel>
 </div>
 
 <h4>Options</h4>
@@ -98,6 +94,10 @@
 
     private Sheet _sheet = null!;
     private Datasheet? _datasheet;
+
+    private string _theme = "light";
+
+    private string SheetTheme => _theme == "dark" ? "dark" : "default";
 
     private bool _useAutoScroll;
     private bool _stickyHeaders = true;

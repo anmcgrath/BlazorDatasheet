@@ -9,30 +9,25 @@
 
 @implements IDisposable
 
-<div class="bds-toolbar" role="toolbar" aria-label="Datasheet toolbar">
+<div class="bds-toolbar" data-bds-theme="@Theme" role="toolbar" aria-label="Datasheet toolbar">
     <div class="bds-toolbar-row bds-toolbar-input-row">
-        <div class="bds-toolbar-group bds-toolbar-range">
-            <RangeSelector Datasheet="Datasheet" Sheet="Sheet" />
-        </div>
-
-        <div class="bds-toolbar-group bds-toolbar-formula">
-            <FormulaTextBox Sheet="Sheet" Datasheet="Datasheet" />
-        </div>
+        <RangeSelector Datasheet="Datasheet" Sheet="Sheet"/>
+        <FormulaTextBox Sheet="Sheet" Datasheet="Datasheet"/>
     </div>
 
     <div class="bds-toolbar-row bds-toolbar-command-row">
         <div class="bds-toolbar-group">
-            <button class="bds-button bds-toolbar-button" type="button" title="Undo" disabled="@(!CanUndo)" @onclick="Undo">
+            <button class="bds-toolbar-button" type="button" title="Undo" disabled="@(!CanUndo)" @onclick="Undo">
                 @UndoIcon
             </button>
-            <button class="bds-button bds-toolbar-button" type="button" title="Redo" disabled="@(!CanRedo)" @onclick="Redo">
+            <button class="bds-toolbar-button" type="button" title="Redo" disabled="@(!CanRedo)" @onclick="Redo">
                 @RedoIcon
             </button>
         </div>
 
         <div class="bds-toolbar-divider" aria-hidden="true"></div>
 
-        <div class="bds-toolbar-group">
+        <div class="bds-toolbar-group bds-toolbar-group-fields">
             <select class="bds-toolbar-select bds-format-select"
                     title="Number format"
                     value="@SelectedNumberFormat"
@@ -47,14 +42,14 @@
                     <option value="__custom__">Custom…</option>
                 }
             </select>
-            <input class="bds-formula-input bds-number-format-input"
+            <input class="bds-toolbar-field bds-number-format-input"
                    type="text"
                    title="Custom number format"
                    placeholder="Custom format"
                    value="@CurrentNumberFormat"
                    disabled="@IsSelectionEmpty"
-                   @onchange="OnCustomNumberFormatChanged" />
-            <button class="bds-button bds-toolbar-button"
+                   @onchange="OnCustomNumberFormatChanged"/>
+            <button class="bds-toolbar-button"
                     type="button"
                     title="Clear formatting"
                     disabled="@IsSelectionEmpty"
@@ -62,6 +57,8 @@
                 @ClearFormatIcon
             </button>
         </div>
+
+        <div class="bds-toolbar-divider" aria-hidden="true"></div>
 
         <div class="bds-toolbar-group">
             <ToggleButton Sheet="Sheet"
@@ -87,23 +84,9 @@
                           OnToggle="SetUnderline">
                 @UnderlineIcon
             </ToggleButton>
-
-            <ToggleButton Sheet="Sheet"
-                          Title="Read only"
-                          IsSelected="IsReadOnly"
-                          OnInteracted="RefocusDatasheetAsync"
-                          OnToggle="SetReadOnly">
-                @LockIcon
-            </ToggleButton>
-
-            <ToggleButton Sheet="Sheet"
-                          Title="Wrap text"
-                          IsSelected="IsWrapped"
-                          OnInteracted="RefocusDatasheetAsync"
-                          OnToggle="SetWrap">
-                @WrapIcon
-            </ToggleButton>
         </div>
+
+        <div class="bds-toolbar-divider" aria-hidden="true"></div>
 
         <div class="bds-toolbar-group">
             <ColourSelector
@@ -124,10 +107,12 @@
             </ColourSelector>
         </div>
 
-        <div class="bds-toolbar-group">
+        <div class="bds-toolbar-divider" aria-hidden="true"></div>
+
+        <div class="bds-toolbar-segmented">
             @foreach (var alignment in HorizontalAlignments)
             {
-                <button class="bds-button bds-toolbar-button @GetHorizontalAlignClass(alignment.Value)"
+                <button class="bds-toolbar-button @GetHorizontalAlignClass(alignment.Value)"
                         type="button"
                         title="@alignment.Label"
                         disabled="@IsSelectionEmpty"
@@ -138,65 +123,106 @@
             }
         </div>
 
-        <div class="bds-toolbar-group">
-            @foreach (var alignment in VerticalAlignments)
-            {
-                <button class="bds-button bds-toolbar-button @GetVerticalAlignClass(alignment.Value)"
-                        type="button"
-                        title="@alignment.Label"
-                        disabled="@IsSelectionEmpty"
-                        aria-pressed="@(ActiveFormat.VerticalTextAlign == alignment.Value)"
-                        @onclick="@(() => ApplyFormatAndRefocusAsync(new CellFormat { VerticalTextAlign = alignment.Value }))">
-                    @alignment.Icon
-                </button>
-            }
-        </div>
+        <div class="bds-toolbar-spacer"></div>
 
-        <div class="bds-toolbar-group">
-            <select class="bds-toolbar-select bds-border-select"
-                    title="Borders"
-                    value=""
-                    disabled="@IsSelectionEmpty"
-                    @onchange="OnBorderPresetChanged">
-                <option value="">Borders</option>
-                @foreach (var option in BorderPresets)
-                {
-                    <option value="@option.Value">@option.Label</option>
-                }
-            </select>
-
-            <ColourSelector
-                Title="Border color"
-                CurrentColor="@_borderColor"
-                AllowClear="false"
-                ApplyToSelection="false"
-                Placement="ColourSelector.MenuPlacement.End"
-                ColorSelected="SetBorderColor"
-                FormatSelector="@(_ => new CellFormat())"
-                Sheet="Sheet">
-                <span class="bds-border-color-preview" style="border-color: @_borderColor"></span>
-            </ColourSelector>
-        </div>
-
-        <div class="bds-toolbar-group">
-            <button class="bds-button bds-toolbar-button" type="button" title="Merge cells" disabled="@(!CanMerge)" @onclick="MergeCells">
-                @MergeIcon
-            </button>
-            <button class="bds-button bds-toolbar-button" type="button" title="Unmerge cells" disabled="@(!CanUnmerge)" @onclick="UnmergeCells">
-                @UnmergeIcon
-            </button>
-        </div>
+        <button class="bds-toolbar-button bds-overflow-toggle @(_overflowOpen ? "bds-toggled" : "")"
+                type="button"
+                title="More tools"
+                aria-label="More tools"
+                aria-expanded="@_overflowOpen"
+                @onclick="ToggleOverflow">
+            @OverflowIcon
+        </button>
     </div>
+
+    @if (_overflowOpen)
+    {
+        <div class="bds-toolbar-row bds-toolbar-overflow-row">
+            <span class="bds-toolbar-label">Vertical</span>
+            <div class="bds-toolbar-segmented">
+                @foreach (var alignment in VerticalAlignments)
+                {
+                    <button class="bds-toolbar-button @GetVerticalAlignClass(alignment.Value)"
+                            type="button"
+                            title="@alignment.Label"
+                            disabled="@IsSelectionEmpty"
+                            aria-pressed="@(ActiveFormat.VerticalTextAlign == alignment.Value)"
+                            @onclick="@(() => ApplyFormatAndRefocusAsync(new CellFormat { VerticalTextAlign = alignment.Value }))">
+                        @alignment.Icon
+                    </button>
+                }
+            </div>
+
+            <div class="bds-toolbar-divider" aria-hidden="true"></div>
+
+            <div class="bds-toolbar-group bds-toolbar-group-fields">
+                <select class="bds-toolbar-select bds-border-select"
+                        title="Borders"
+                        value=""
+                        disabled="@IsSelectionEmpty"
+                        @onchange="OnBorderPresetChanged">
+                    <option value="">Borders</option>
+                    @foreach (var option in BorderPresets)
+                    {
+                        <option value="@option.Value">@option.Label</option>
+                    }
+                </select>
+
+                <ColourSelector
+                    Title="Border color"
+                    CurrentColor="@_borderColor"
+                    AllowClear="false"
+                    ApplyToSelection="false"
+                    ShowSwatch="false"
+                    ButtonClass="bds-border-color-button"
+                    Placement="ColourSelector.MenuPlacement.End"
+                    ColorSelected="SetBorderColor"
+                    FormatSelector="@(_ => new CellFormat())"
+                    Sheet="Sheet">
+                    <span class="bds-border-color-preview" style="color: @_borderColor"></span>
+                </ColourSelector>
+            </div>
+
+            <div class="bds-toolbar-divider" aria-hidden="true"></div>
+
+            <div class="bds-toolbar-group">
+                <ToggleButton Sheet="Sheet"
+                              Title="Read only"
+                              IsSelected="IsReadOnly"
+                              OnInteracted="RefocusDatasheetAsync"
+                              OnToggle="SetReadOnly">
+                    @LockIcon
+                </ToggleButton>
+
+                <ToggleButton Sheet="Sheet"
+                              Title="Wrap text"
+                              IsSelected="IsWrapped"
+                              OnInteracted="RefocusDatasheetAsync"
+                              OnToggle="SetWrap">
+                    @WrapIcon
+                </ToggleButton>
+
+                <button class="bds-toolbar-button" type="button" title="Merge cells" disabled="@(!CanMerge)" @onclick="MergeCells">
+                    @MergeIcon
+                </button>
+                <button class="bds-toolbar-button" type="button" title="Unmerge cells" disabled="@(!CanUnmerge)" @onclick="UnmergeCells">
+                    @UnmergeIcon
+                </button>
+            </div>
+        </div>
+    }
 </div>
 
 @code {
     [Parameter] public required Sheet Sheet { get; set; }
     [Parameter] public required Datasheet Datasheet { get; set; }
+    [Parameter] public string Theme { get; set; } = "light";
 
     private const string DefaultBorderColor = "#64748b";
 
     private Sheet? _sheet;
     private string _borderColor = DefaultBorderColor;
+    private bool _overflowOpen;
 
     private CellFormat ActiveFormat
     {
@@ -363,6 +389,8 @@
             _borderColor = color;
         await RefocusDatasheetAsync();
     }
+
+    private void ToggleOverflow() => _overflowOpen = !_overflowOpen;
 
     private async Task Undo()
     {
@@ -551,18 +579,28 @@
     private sealed record BorderOption(string Label, string Value);
     private sealed record AlignmentOption(string Label, TextAlign Value, RenderFragment Icon);
 
-    private RenderFragment SvgIcon(string path) => @<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                                                        viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    private RenderFragment SvgIcon(string path) => SvgIcon(path, 15, 15);
+
+    private RenderFragment SvgIcon(string path, int width, int height) => @<svg xmlns="http://www.w3.org/2000/svg"
+                                                                                width="@width" height="@height"
+                                                                                viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         @((MarkupString)path)
+    </svg>;
+
+    private RenderFragment OverflowIcon => @<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15"
+                                                 viewBox="0 0 24 24" fill="currentColor" stroke="none">
+        <circle cx="5" cy="12" r="1.7"/>
+        <circle cx="12" cy="12" r="1.7"/>
+        <circle cx="19" cy="12" r="1.7"/>
     </svg>;
 
     private RenderFragment BoldIcon => SvgIcon("<path d=\"M7 5h6a3.5 3.5 0 0 1 0 7h-6z\"/><path d=\"M13 12h1a3.5 3.5 0 0 1 0 7h-7v-7\"/>");
     private RenderFragment ItalicIcon => SvgIcon("<line x1=\"19\" y1=\"4\" x2=\"10\" y2=\"4\"/><line x1=\"14\" y1=\"20\" x2=\"5\" y2=\"20\"/><line x1=\"15\" y1=\"4\" x2=\"9\" y2=\"20\"/>");
     private RenderFragment UnderlineIcon => SvgIcon("<path d=\"M6 4v7a6 6 0 0 0 12 0V4\"/><line x1=\"4\" y1=\"20\" x2=\"20\" y2=\"20\"/>");
     private RenderFragment ClearFormatIcon => SvgIcon("<path d=\"M4 7h16\"/><path d=\"m7 7 3 13h4l2-6\"/><path d=\"m14 14 6 6\"/><path d=\"m20 14-6 6\"/>");
-    private RenderFragment FillColorIcon => SvgIcon("<path d=\"M19 11.5 12.5 5 5 12.5a4.95 4.95 0 0 0 7 7l7-7z\"/><path d=\"M12 5 9.5 2.5\"/><path d=\"M17 18h4\"/>");
-    private RenderFragment TextColorIcon => SvgIcon("<path d=\"M4 20h16\"/><path d=\"M8 16 12 4l4 12\"/><path d=\"M9.5 12h5\"/>");
+    private RenderFragment FillColorIcon => SvgIcon("<path d=\"M19 11.5 12.5 5 5 12.5a4.95 4.95 0 0 0 7 7l7-7z\"/><path d=\"M12 5 9.5 2.5\"/>", 14, 13);
+    private RenderFragment TextColorIcon => SvgIcon("<path d=\"M8 16 12 4l4 12\"/><path d=\"M9.5 12h5\"/>", 14, 13);
     private RenderFragment UndoIcon => SvgIcon("<path d=\"M9 14 4 9l5-5\"/><path d=\"M4 9h10a6 6 0 1 1 0 12h-1\"/>");
     private RenderFragment RedoIcon => SvgIcon("<path d=\"m15 14 5-5-5-5\"/><path d=\"M20 9H10a6 6 0 1 0 0 12h1\"/>");
     private RenderFragment LockIcon => SvgIcon("<rect x=\"5\" y=\"11\" width=\"14\" height=\"10\" rx=\"2\"/><path d=\"M8 11V7a4 4 0 0 1 8 0v4\"/>");

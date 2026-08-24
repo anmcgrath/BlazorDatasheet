@@ -1,0 +1,146 @@
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events
+@using BlazorDatasheet.Core.Events.Commands
+@using BlazorDatasheet.Formula.Core
+@using BlazorDatasheet.SharedPages.Components.Toolbar
+
+@implements IDisposable
+
+<div class="bds-panel" data-bds-theme="@Theme">
+    @if (Datasheet != null)
+    {
+        <DatasheetToolbar Sheet="Sheet" Datasheet="Datasheet" Theme="@Theme"/>
+    }
+
+    <div class="bds-panel-body" style="@BodyStyle">
+        @ChildContent
+    </div>
+
+    <div class="bds-panel-status">
+        <div class="bds-panel-status-group">
+            <span>@Sheet.Name</span>
+            <span>@SelectionDescription</span>
+        </div>
+        <div class="bds-panel-status-group bds-panel-status-stats">
+            @{
+                var stats = Summarise();
+            }
+            @if (stats.Count > 0)
+            {
+                <span>Sum @stats.Sum.ToString("N2")</span>
+                <span>Avg @stats.Average.ToString("N2")</span>
+            }
+            <button class="bds-theme-toggle" type="button" @onclick="ToggleTheme">@(IsDark ? "Light" : "Dark")</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public required Sheet Sheet { get; set; }
+
+    /// <summary>
+    /// The datasheet the toolbar acts on. Null until the sheet has rendered once,
+    /// in which case the toolbar is left out.
+    /// </summary>
+    [Parameter]
+    public Datasheet? Datasheet { get; set; }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    [Parameter] public string? BodyStyle { get; set; }
+
+    [Parameter] public string Theme { get; set; } = "light";
+    [Parameter] public EventCallback<string> ThemeChanged { get; set; }
+
+    private Sheet? _sheet;
+
+    private bool IsDark => Theme == "dark";
+
+    private string SelectionDescription
+    {
+        get
+        {
+            if (Sheet.Selection.IsEmpty())
+                return "No selection";
+
+            var regions = Sheet.Selection.Regions;
+            if (regions.Count > 1)
+                return $"{regions.Count} regions selected";
+
+            var region = regions[0];
+            return region.Area == 1
+                ? "1 cell selected"
+                : $"{region.Height} × {region.Width} selected";
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (Sheet == _sheet)
+            return;
+
+        DetachEvents();
+        _sheet = Sheet;
+        _sheet.Selection.SelectionChanged += OnSelectionChanged;
+        _sheet.Commands.CommandRun += OnCommandRun;
+        _sheet.Commands.CommandUndone += OnCommandUndone;
+    }
+
+    private void OnSelectionChanged(object? sender, SelectionChangedEventArgs e) => StateHasChanged();
+    private void OnCommandRun(object? sender, CommandRunEventArgs e) => StateHasChanged();
+    private void OnCommandUndone(object? sender, UndoCommandRunEventArgs e) => StateHasChanged();
+
+    private async Task ToggleTheme()
+    {
+        Theme = IsDark ? "light" : "dark";
+        await ThemeChanged.InvokeAsync(Theme);
+    }
+
+    /// <summary>
+    /// Sums the numeric cells in the selection. Overlapping regions are counted once
+    /// per region, which matches how the selection reads them back.
+    /// </summary>
+    private SelectionSummary Summarise()
+    {
+        if (Sheet.Selection.IsEmpty())
+            return new SelectionSummary(0, 0);
+
+        var count = 0;
+        var sum = 0d;
+
+        foreach (var range in Sheet.Selection.Ranges)
+        {
+            foreach (var cell in range.GetNonEmptyCells())
+            {
+                if (cell.CellValue.ValueType != CellValueType.Number)
+                    continue;
+
+                count++;
+                sum += cell.CellValue.NumberValue;
+            }
+        }
+
+        return new SelectionSummary(count, sum);
+    }
+
+    private void DetachEvents()
+    {
+        if (_sheet == null)
+            return;
+
+        _sheet.Selection.SelectionChanged -= OnSelectionChanged;
+        _sheet.Commands.CommandRun -= OnCommandRun;
+        _sheet.Commands.CommandUndone -= OnCommandUndone;
+    }
+
+    public void Dispose()
+    {
+        DetachEvents();
+    }
+
+    private readonly record struct SelectionSummary(int Count, double Sum)
+    {
+        public double Average => Count == 0 ? 0 : Sum / Count;
+    }
+
+}
