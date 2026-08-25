@@ -25,7 +25,7 @@
             parameters.Add(p => p.Filter, new ValueFilter());
         });
 
-        GetValueLabels(cut).Should().BeEquivalentTo("a0", "a1", "a2");
+        GetValueLabels(cut).Select(x => x.Trim()).Should().BeEquivalentTo("Select all", "a0", "a1", "a2");
 
         cut.SetParametersAndRender(parameters =>
         {
@@ -33,7 +33,7 @@
             parameters.Add(p => p.Filter, new ValueFilter());
         });
 
-        GetValueLabels(cut).Should().BeEquivalentTo("b0", "b1", "b2");
+        GetValueLabels(cut).Select(x => x.Trim()).Should().BeEquivalentTo("Select all", "b0", "b1", "b2");
     }
 
     private static IEnumerable<string> GetValueLabels(IRenderedComponent<ValueFilterEditor> cut)
