@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Events.Formula;
 using BlazorDatasheet.Formula.Core;
 using FluentAssertions;
 using NUnit.Framework;
@@ -13,11 +16,121 @@ public class FormulaEngineTests
         var environment = new TestEnvironment();
         environment.RegisterFunction(ThrowingFunction.Descriptor);
         var formulaEngine = new BlazorDatasheet.Core.FormulaEngine.FormulaEngine(environment);
+        CalculationCompletedEventArgs? completedArgs = null;
+        formulaEngine.CalculationCompleted += (_, args) => completedArgs = args;
 
         Action action = () => formulaEngine.SetVariable("x", "=THROWFN()");
 
         action.Should().Throw<InvalidOperationException>();
         formulaEngine.IsCalculating.Should().BeFalse();
+        completedArgs.Should().NotBeNull();
+        completedArgs!.Succeeded.Should().BeFalse();
+        completedArgs.Exception.Should().BeOfType<InvalidOperationException>();
+    }
+
+    [Test]
+    public void CalculateSheet_EmitsLifecycleEventsForNonEmptyPass()
+    {
+        var formulaEngine = new BlazorDatasheet.Core.FormulaEngine.FormulaEngine(new TestEnvironment());
+        CalculationStartedEventArgs? startedArgs = null;
+        CalculationCompletedEventArgs? completedArgs = null;
+        var calculatingWhenStarted = false;
+        var calculatingWhenCompleted = true;
+
+        formulaEngine.CalculationStarted += (_, args) =>
+        {
+            startedArgs = args;
+            calculatingWhenStarted = formulaEngine.IsCalculating;
+        };
+        formulaEngine.CalculationCompleted += (_, args) =>
+        {
+            completedArgs = args;
+            calculatingWhenCompleted = formulaEngine.IsCalculating;
+        };
+
+        formulaEngine.SetVariable("x", "=10");
+
+        startedArgs.Should().NotBeNull();
+        startedArgs!.CalculateAll.Should().BeFalse();
+        startedArgs.FormulaCount.Should().Be(1);
+        calculatingWhenStarted.Should().BeTrue();
+        completedArgs.Should().NotBeNull();
+        completedArgs!.CalculateAll.Should().BeFalse();
+        completedArgs.FormulaCount.Should().Be(1);
+        completedArgs.Succeeded.Should().BeTrue();
+        completedArgs.Exception.Should().BeNull();
+        calculatingWhenCompleted.Should().BeFalse();
+    }
+
+    [Test]
+    public void CalculateSheet_DoesNotEmitLifecycleEventsWhenThereIsNoWork()
+    {
+        var formulaEngine = new BlazorDatasheet.Core.FormulaEngine.FormulaEngine(new TestEnvironment());
+        var startedCount = 0;
+        var completedCount = 0;
+        formulaEngine.CalculationStarted += (_, _) => startedCount++;
+        formulaEngine.CalculationCompleted += (_, _) => completedCount++;
+
+        formulaEngine.CalculateSheet(false);
+
+        startedCount.Should().Be(0);
+        completedCount.Should().Be(0);
+    }
+
+    [Test]
+    public void SetAndClearVariable_EmitVariableChangedWithOldAndNewState()
+    {
+        var formulaEngine = new BlazorDatasheet.Core.FormulaEngine.FormulaEngine(new TestEnvironment());
+        var changes = new List<VariableChangedEventArgs>();
+        formulaEngine.VariableChanged += (_, args) => changes.Add(args);
+
+        formulaEngine.SetVariable("x", new CellValue(10));
+        formulaEngine.SetVariable("x", new CellValue(20));
+        formulaEngine.ClearVariable("x");
+
+        changes.Should().HaveCount(3);
+        changes[0].ChangeKind.Should().Be(VariableChangeKind.Added);
+        changes[0].OldValue.Should().BeNull();
+        changes[0].NewValue.Should().Be(new CellValue(10));
+        changes[1].ChangeKind.Should().Be(VariableChangeKind.Updated);
+        changes[1].OldValue.Should().Be(new CellValue(10));
+        changes[1].NewValue.Should().Be(new CellValue(20));
+        changes[2].ChangeKind.Should().Be(VariableChangeKind.Removed);
+        changes[2].OldValue.Should().Be(new CellValue(20));
+        changes[2].NewValue.Should().BeNull();
+    }
+
+    [Test]
+    public void FormulaVariableRecalculation_EmitsAfterDependentCellsAreUpdated()
+    {
+        var workbook = new Workbook();
+        var sheet = workbook.AddSheet(10, 10);
+        var formulaEngine = workbook.GetFormulaEngine();
+        sheet.Cells.SetValue(0, 0, 1);
+        formulaEngine.SetVariable("x", "=Sheet1!A1");
+        sheet.Cells.SetFormula(0, 1, "=x");
+
+        VariableChangedEventArgs? changedArgs = null;
+        CellValue dependentValueWhenEmitted = default;
+        var calculatingWhenEmitted = true;
+        formulaEngine.VariableChanged += (_, args) =>
+        {
+            if (args.Name != "x")
+                return;
+
+            changedArgs = args;
+            dependentValueWhenEmitted = sheet.Cells.GetCellValue(0, 1);
+            calculatingWhenEmitted = formulaEngine.IsCalculating;
+        };
+
+        sheet.Cells.SetValue(0, 0, 2);
+
+        changedArgs.Should().NotBeNull();
+        changedArgs!.ChangeKind.Should().Be(VariableChangeKind.Recalculated);
+        changedArgs.OldValue.Should().Be(new CellValue(1));
+        changedArgs.NewValue.Should().Be(new CellValue(2));
+        dependentValueWhenEmitted.Should().Be(new CellValue(2));
+        calculatingWhenEmitted.Should().BeFalse();
     }
 }
 
