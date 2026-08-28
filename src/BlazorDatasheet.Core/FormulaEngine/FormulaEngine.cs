@@ -289,6 +289,12 @@ public class FormulaEngine
         return formula.StartsWith('=');
     }
 
+    /// <summary>
+    /// Set a variable, if the value is a formula form "=A1" etc. the variable will be set to a formula
+    /// </summary>
+    /// <param name="varName"></param>
+    /// <param name="value"></param>
+    /// <exception cref="Exception"></exception>
     public void SetVariable(string varName, object value)
     {
         if (value is string s && IsFormula(s))
@@ -318,7 +324,25 @@ public class FormulaEngine
         CalculateSheet(false);
     }
 
-    public IEnumerable<Variable> GetVariables()
+    /// <summary>
+    /// Returns the variable 
+    /// </summary>
+    /// <param name="varName"></param>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    public bool TryGetVariable(string varName, out CellValue value)
+    {
+        if (_environment.VariableExists(varName))
+        {
+            value = _environment.GetVariable(varName);
+            return true;
+        }
+
+        value = default;
+        return false;
+    }
+
+    internal IEnumerable<Variable> GetVariables()
     {
         foreach (var varName in _environment.GetVariableNames())
         {

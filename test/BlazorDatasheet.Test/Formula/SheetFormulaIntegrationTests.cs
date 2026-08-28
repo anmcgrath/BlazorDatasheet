@@ -552,4 +552,13 @@ public class SheetFormulaIntegrationTests
         _sheet.Cells.SetFormula(0, 1, "=A1+1");
         _sheet.Cells.GetCellValue(0, 1).GetValue<int>().Should().Be(6);
     }
+
+    [Test]
+    public void Get_Variable_Returns_Cell_Value()
+    {
+        _sheet.FormulaEngine.SetVariable("var1", CellValue.Number(10));
+        var hasVar = _sheet.FormulaEngine.TryGetVariable("var1", out var value);
+        hasVar.Should().BeTrue();
+        value.Should().Be(CellValue.Number(10));
+    }
 }
