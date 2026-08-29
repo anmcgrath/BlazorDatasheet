@@ -170,6 +170,27 @@ public class FormulaEngineTests
             var hasValue = sheet.FormulaEngine.TryGetVariable("y", out var value);
         });
     }
+
+    [Test]
+    public void Try_Get_Formula_Variable_Returns_Formula()
+    {
+        var wb = new Workbook();
+        var sheet = wb.AddSheet(10, 10);
+        sheet.FormulaEngine.SetVariable("x", "=4*4");
+        var hasFormula = sheet.FormulaEngine.TryGetVariableFormula("x", out var formula);
+        hasFormula.Should().BeTrue();
+        formula.Should().BeEquivalentTo("=4*4");
+    }
+
+    [Test]
+    public void Try_Get_Formula_Variable_With_No_Formula_Returns_False()
+    {
+        var wb = new Workbook();
+        var sheet = wb.AddSheet(10, 10);
+        sheet.FormulaEngine.SetVariable("x", "2");
+        var hasFormula = sheet.FormulaEngine.TryGetVariableFormula("x", out var formula);
+        hasFormula.Should().BeFalse();
+    }
 }
 
 internal static class ThrowingFunction

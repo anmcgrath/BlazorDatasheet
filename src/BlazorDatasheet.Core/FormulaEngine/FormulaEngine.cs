@@ -407,6 +407,25 @@ public class FormulaEngine
         return false;
     }
 
+    /// <summary>
+    /// Gives the formula assigned to a variable <paramref name="varName"/>.
+    /// </summary>
+    /// <param name="varName"></param>
+    /// <param name="formula"></param>
+    /// <returns></returns>
+    public bool TryGetVariableFormula(string varName, out string formula)
+    {
+        var vertex = DependencyManager.GetVertex(varName);
+        if (vertex?.Formula != null)
+        {
+            formula = vertex.Formula.ToFormulaString();
+            return true;
+        }
+
+        formula = string.Empty;
+        return false;
+    }
+
     internal IEnumerable<Variable> GetVariables()
     {
         foreach (var varName in _environment.GetVariableNames())
