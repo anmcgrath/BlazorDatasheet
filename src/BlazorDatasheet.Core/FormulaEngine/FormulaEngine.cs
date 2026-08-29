@@ -12,6 +12,7 @@ using BlazorDatasheet.Formula.Core.Dependencies;
 using BlazorDatasheet.Formula.Core.Interpreter;
 using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
+using BlazorDatasheet.Formula.Core.Interpreter.References;
 using CellFormula = BlazorDatasheet.Formula.Core.Interpreter.CellFormula;
 
 namespace BlazorDatasheet.Core.FormulaEngine;
@@ -242,7 +243,8 @@ public class FormulaEngine
                 stopwatch.Stop();
                 EmitPendingVariableChanges();
                 CalculationCompleted?.Invoke(this,
-                    new CalculationCompletedEventArgs(calculateAll, evaluatedFormulaCount, stopwatch.Elapsed, exception));
+                    new CalculationCompletedEventArgs(calculateAll, evaluatedFormulaCount, stopwatch.Elapsed,
+                        exception));
             }
         }
     }
@@ -353,8 +355,13 @@ public class FormulaEngine
         if (value is string s && IsFormula(s))
         {
             var formula = ParseFormula(s, "");
-            if (formula.References.Any(x => !x.ExplicitSheetName))
-                throw new Exception("Formula references in variables must have explicit sheet names");
+            if (formula.References.Any(x =>
+                    x.Kind != ReferenceKind.Named &&
+                    !x.ExplicitSheetName))
+            {
+                throw new Exception(
+                    "Formula references in variables must have explicit sheet names");
+            }
 
             QueueVariableChange(varName, true);
             DependencyManager.SetFormula(varName, formula);

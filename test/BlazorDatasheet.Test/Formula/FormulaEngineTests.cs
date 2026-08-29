@@ -132,6 +132,44 @@ public class FormulaEngineTests
         dependentValueWhenEmitted.Should().Be(new CellValue(2));
         calculatingWhenEmitted.Should().BeFalse();
     }
+
+    [Test]
+    public void Formula_Variable_Can_Reference_Other_Formula_Variables()
+    {
+        var workbook = new Workbook();
+        var sheet = workbook.AddSheet(10, 10);
+        sheet.FormulaEngine.SetVariable("x", CellValue.Number(10));
+        sheet.FormulaEngine.SetVariable("y", "=x");
+        var hasValue = sheet.FormulaEngine.TryGetVariable("y", out var value);
+        hasValue.Should().BeTrue();
+        value.Should().Be(CellValue.Number(10));
+    }
+
+    [Test]
+    public void Formula_Variable_Can_Reference_Other_Formula_Variables_Does_Not_Throw_With_MixedCell_Ref()
+    {
+        var workbook = new Workbook();
+        var sheet = workbook.AddSheet(10, 10);
+        sheet.FormulaEngine.SetVariable("x", CellValue.Number(10));
+        Assert.DoesNotThrow(() =>
+        {
+            sheet.FormulaEngine.SetVariable("y", "=x+Sheet1!A1");
+            var hasValue = sheet.FormulaEngine.TryGetVariable("y", out var value);
+        });
+    }
+
+    [Test]
+    public void Formula_Variable_Throws_When_Referencing_Cell_Without_Sheet_Specification()
+    {
+        var workbook = new Workbook();
+        var sheet = workbook.AddSheet(10, 10);
+        sheet.FormulaEngine.SetVariable("x", CellValue.Number(10));
+        Assert.Throws<Exception>(() =>
+        {
+            sheet.FormulaEngine.SetVariable("y", "=x+A1");
+            var hasValue = sheet.FormulaEngine.TryGetVariable("y", out var value);
+        });
+    }
 }
 
 internal static class ThrowingFunction
