@@ -428,6 +428,35 @@ public class FormulaEngine
     }
 
     /// <summary>
+    /// Returns the references of the formula stored in the variable <paramref name="varName"/>
+    /// </summary>
+    /// <param name="varName"></param>
+    /// <returns></returns>
+    public IEnumerable<Reference> GetVariableReferences(string varName)
+    {
+        var vertex = DependencyManager.GetVertex(varName);
+        if (vertex?.Formula == null)
+            return Enumerable.Empty<Reference>();
+
+        return vertex.Formula.References;
+    }
+
+    /// <summary>
+    /// Returns the references of the formula at <paramref name="row"/>, <paramref name="col"/> in sheet <paramref name="sheetName"/>
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <param name="sheetName"></param>
+    /// <returns></returns>
+    public IEnumerable<Reference> GetReferences(int row, int col, string sheetName)
+    {
+        var vertex = DependencyManager.GetVertex(row, col, sheetName);
+        if (vertex?.Formula == null)
+            return Enumerable.Empty<Reference>();
+        return vertex.Formula.References;
+    }
+
+    /// <summary>
     /// Gives the formula assigned to a variable <paramref name="varName"/>.
     /// </summary>
     /// <param name="varName"></param>
