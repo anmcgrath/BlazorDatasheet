@@ -531,6 +531,21 @@ public class SerializationTests
     }
 
     [Test]
+    public void Unregistered_Custom_Types_Should_Fail_Deserialization_Clearly()
+    {
+        var sheet = new Sheet(1, 1);
+        sheet.ConditionalFormats.Apply(sheet.Region, new CustomCf("=TRUE", Color.Red));
+        var serializer = new SheetJsonSerializer();
+        serializer.Resolvers.ConditionalFormat.Add(nameof(CustomCf), typeof(CustomCf));
+        var json = serializer.Serialize(sheet.Workbook);
+
+        var deserialize = () => new SheetJsonDeserializer().Deserialize(json);
+
+        deserialize.Should().Throw<JsonException>()
+            .WithMessage("*CustomCf*conditional format resolver*");
+    }
+
+    [Test]
     public void Formula_With_Error_Should_Be_deserialised_Correctly()
     {
         var workbook = new Workbook();

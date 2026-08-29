@@ -21,7 +21,7 @@ internal class ConditionalFormatJsonConverter : JsonConverter<ConditionalFormatM
         JsonSerializerOptions options)
     {
         if (reader.TokenType != JsonTokenType.StartObject)
-            return null;
+            throw new JsonException("A conditional format must be a JSON object.");
 
         var format = new ConditionalFormatModel();
         var ruleType = string.Empty;
@@ -56,19 +56,18 @@ internal class ConditionalFormatJsonConverter : JsonConverter<ConditionalFormatM
         }
 
         if (string.IsNullOrEmpty(ruleType))
-            return null;
+            throw new JsonException("A serialized conditional format must contain a Type property.");
 
         if (parsedRule == null)
-            return null;
+            throw new JsonException("A serialized conditional format must contain an Options property.");
 
-        ConditionalFormatAbstractBase? rule = null;
         var ruleTypeDefn = GetConditionalFormatType(ruleType);
+        if (ruleTypeDefn == null)
+            throw new JsonException(
+                $"Conditional format type {ruleType} is not registered in the conditional format resolver.");
 
-        if (ruleTypeDefn != null)
-            rule = parsedRule.Value.Deserialize(ruleTypeDefn, options) as ConditionalFormatAbstractBase;
-
-        if (rule == null)
-            return null;
+        var rule = parsedRule.Value.Deserialize(ruleTypeDefn, options) as ConditionalFormatAbstractBase ??
+                   throw new JsonException($"Could not deserialize conditional format type {ruleType}.");
 
         format.Rule = rule;
 

@@ -17,7 +17,7 @@ internal class IFilterJsonConverter : JsonConverter<IFilter>
     public override IFilter? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         if (reader.TokenType != JsonTokenType.StartObject)
-            return null;
+            throw new JsonException("A filter must be a JSON object.");
 
         var filterTypeString = string.Empty;
         JsonElement? parsedOptions = null;
@@ -48,20 +48,17 @@ internal class IFilterJsonConverter : JsonConverter<IFilter>
         }
 
         if (string.IsNullOrEmpty(filterTypeString))
-            return null;
+            throw new JsonException("A serialized filter must contain a Type property.");
 
         if (parsedOptions == null)
-            return null;
+            throw new JsonException("A serialized filter must contain an Options property.");
 
         var typeDefn = GetDefaultFilterType(filterTypeString);
+        if (typeDefn == null)
+            throw new JsonException($"Filter type {filterTypeString} is not registered in the filter resolver.");
 
-        if (typeDefn != null)
-        {
-            var filter = parsedOptions.Value.Deserialize(typeDefn, options) as IFilter;
-            return filter;
-        }
-
-        return null;
+        return parsedOptions.Value.Deserialize(typeDefn, options) as IFilter ??
+               throw new JsonException($"Could not deserialize filter type {filterTypeString}.");
     }
 
     private Type? GetDefaultFilterType(string filterTypeString)
