@@ -53,7 +53,11 @@ public class Workbook
         return AddSheet(sheetName, numRows, numColumns, defaultWidth, defaultHeight);
     }
 
-    private string GenerateNewSheetName()
+    /// <summary>
+    /// Creates a new, un-used sheet name of the form SheetN 
+    /// </summary>
+    /// <returns></returns>
+    public string GenerateNewSheetName()
     {
         int index = 1;
         var name = $"Sheet{index}";
