@@ -250,6 +250,30 @@ public class SerializationTests
     }
 
     [Test]
+    public void Metadata_Json_Values_Should_Deserialize_Recursively()
+    {
+        var sheet = new Sheet(1, 1);
+        sheet.Cells[0, 0]!.SetMetaData("integer", 5);
+        sheet.Cells[0, 0]!.SetMetaData("nested", new Dictionary<string, object>
+        {
+            ["items"] = new object?[] { 1, "two", true, null }
+        });
+
+        var json = new SheetJsonSerializer().Serialize(sheet.Workbook);
+        var deserialized = new SheetJsonDeserializer().Deserialize(json).Sheets.First();
+
+        deserialized.Cells[0, 0]!.GetMetaData("integer").Should().BeOfType<int>().Which.Should().Be(5);
+        var nested = deserialized.Cells[0, 0]!.GetMetaData("nested")
+            .Should().BeOfType<Dictionary<string, object>>().Subject;
+        var items = nested["items"].Should().BeOfType<List<object>>().Subject;
+        items.Should().HaveCount(4);
+        items[0].Should().Be(1);
+        items[1].Should().Be("two");
+        items[2].Should().Be(true);
+        items[3].Should().BeNull();
+    }
+
+    [Test]
     public void Variables_Referencing_Variables_Should_Be_Deserialised_Correctly()
     {
         var sheet = new Sheet(10, 10);
