@@ -14,7 +14,7 @@ internal class CellJsonConverter : JsonConverter<CellModel>
             return null;
 
         var cell = new CellModel();
-        CellValueType valueType = CellValueType.Empty;
+        CellValueType? valueType = null;
         JsonElement? element = null;
 
         while (reader.Read())
@@ -72,7 +72,7 @@ internal class CellJsonConverter : JsonConverter<CellModel>
             }
         }
 
-        cell.CellValue = CellValueHelper.GetCellValue(valueType, element);
+        cell.CellValue = CellValueHelper.GetCellValue(valueType, element, options);
         return cell;
     }
 
@@ -90,7 +90,8 @@ internal class CellJsonConverter : JsonConverter<CellModel>
             JsonSerializer.Serialize(writer, value.MetaData, options);
         }
 
-        CellValueHelper.WriteCellValue(writer, value.CellValue);
+        if (string.IsNullOrEmpty(value.Formula))
+            CellValueHelper.WriteCellValue(writer, value.CellValue, options);
         writer.WriteEndObject();
     }
 }
