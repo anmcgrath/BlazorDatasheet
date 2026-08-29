@@ -1,4 +1,5 @@
-﻿using BlazorDatasheet.DataStructures.Geometry;
+﻿using System.Diagnostics.CodeAnalysis;
+using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core.Dependencies;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 
@@ -10,21 +11,21 @@ public class FormulaExecutionContext
     private readonly HashSet<CellFormula> _executing = new();
     private IList<FormulaVertex>? _currentSccGroup;
     private HashSet<CellPosition>? _currentSccCells;
-    private HashSet<string>? _currentSccNames;
+    private Dictionary<string, CellFormula>? _currentSccNamedFormulas;
 
     public void SetCurrentGroup(IList<FormulaVertex> group)
     {
         _currentSccGroup = group;
         _currentSccCells ??= new HashSet<CellPosition>();
         _currentSccCells.Clear();
-        _currentSccNames ??= new HashSet<string>(StringComparer.Ordinal);
-        _currentSccNames.Clear();
+        _currentSccNamedFormulas ??= new Dictionary<string, CellFormula>(StringComparer.Ordinal);
+        _currentSccNamedFormulas.Clear();
         foreach (var vertex in group)
         {
             if (vertex.Position != null)
                 _currentSccCells.Add(new CellPosition(vertex.Row, vertex.Col));
-            else
-                _currentSccNames.Add(vertex.Key.Name);
+            else if (vertex.Formula != null)
+                _currentSccNamedFormulas[vertex.Key.Name] = vertex.Formula;
         }
     }
 
@@ -34,7 +35,7 @@ public class FormulaExecutionContext
             return false;
 
         if (reference is NamedReference namedRef)
-            return _currentSccNames?.Contains(namedRef.Name) == true;
+            return _currentSccNamedFormulas?.ContainsKey(namedRef.Name) == true;
 
         var region = reference.Region;
         foreach (var cell in _currentSccCells!)
@@ -43,6 +44,19 @@ public class FormulaExecutionContext
                 return true;
         }
 
+        return false;
+    }
+
+    internal bool TryGetNamedFormula(string name, [NotNullWhen(true)] out CellFormula? formula)
+    {
+        if (_currentSccNamedFormulas != null &&
+            _currentSccNamedFormulas.TryGetValue(name, out var namedFormula))
+        {
+            formula = namedFormula;
+            return true;
+        }
+
+        formula = null;
         return false;
     }
 
@@ -84,6 +98,6 @@ public class FormulaExecutionContext
         _executedValues.Clear();
         _currentSccGroup = null;
         _currentSccCells?.Clear();
-        _currentSccNames?.Clear();
+        _currentSccNamedFormulas?.Clear();
     }
 }

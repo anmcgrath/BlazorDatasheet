@@ -159,6 +159,62 @@ public class FormulaEngineTests
     }
 
     [Test]
+    public void Self_Referencing_Formula_Variable_Returns_Circular_Error()
+    {
+        var workbook = new Workbook();
+        var formulaEngine = workbook.GetFormulaEngine();
+
+        formulaEngine.SetVariable("x", "=x");
+
+        formulaEngine.TryGetVariable("x", out var value).Should().BeTrue();
+        value.GetValue<FormulaError>().ErrorType.Should().Be(ErrorType.Circular);
+    }
+
+    [Test]
+    public void Mutually_Referencing_Formula_Variables_Return_Circular_Error()
+    {
+        var workbook = new Workbook();
+        var formulaEngine = workbook.GetFormulaEngine();
+        formulaEngine.SetVariable("x", "=y");
+
+        formulaEngine.SetVariable("y", "=x");
+
+        formulaEngine.TryGetVariable("x", out var x).Should().BeTrue();
+        formulaEngine.TryGetVariable("y", out var y).Should().BeTrue();
+        x.GetValue<FormulaError>().ErrorType.Should().Be(ErrorType.Circular);
+        y.GetValue<FormulaError>().ErrorType.Should().Be(ErrorType.Circular);
+    }
+
+    [Test]
+    public void Mixed_Cell_And_Formula_Variable_Cycle_Returns_Circular_Error()
+    {
+        var workbook = new Workbook();
+        var sheet = workbook.AddSheet(10, 10);
+        var formulaEngine = workbook.GetFormulaEngine();
+        sheet.Cells.SetFormula(0, 0, "=x");
+
+        formulaEngine.SetVariable("x", "=Sheet1!A1");
+
+        formulaEngine.TryGetVariable("x", out var variable).Should().BeTrue();
+        variable.GetValue<FormulaError>().ErrorType.Should().Be(ErrorType.Circular);
+        sheet.Cells.GetCellValue(0, 0).GetValue<FormulaError>().ErrorType.Should().Be(ErrorType.Circular);
+    }
+
+    [Test]
+    public void Non_Circular_Formula_Variable_Chain_Calculates_Correctly()
+    {
+        var workbook = new Workbook();
+        var formulaEngine = workbook.GetFormulaEngine();
+        formulaEngine.SetVariable("x", "=10");
+        formulaEngine.SetVariable("y", "=x");
+
+        formulaEngine.SetVariable("z", "=y+1");
+
+        formulaEngine.TryGetVariable("z", out var value).Should().BeTrue();
+        value.Should().Be(CellValue.Number(11));
+    }
+
+    [Test]
     public void Formula_Variable_Throws_When_Referencing_Cell_Without_Sheet_Specification()
     {
         var workbook = new Workbook();

@@ -74,6 +74,23 @@ public class DependencyManagerTests
     }
 
     [Test]
+    public void Mutually_Dependent_Named_Formulas_Are_In_The_Same_Strongly_Connected_Group()
+    {
+        _dm.SetFormula("x", GetFormula("=y"));
+        _dm.SetFormula("y", GetFormula("=x"));
+
+        var calculationOrder = _dm.GetCalculationOrder();
+
+        calculationOrder.Should().ContainSingle();
+        calculationOrder[0]
+            .Select(vertex => vertex.Key)
+            .Should().BeEquivalentTo([
+                VertexKey.ForName("x"),
+                VertexKey.ForName("y")
+            ]);
+    }
+
+    [Test]
     public void Full_Calculation_Order_Includes_All_Formulas_When_Volatiles_Exist()
     {
         _dm.SetFormula(0, 0, "Sheet1", GetFormula("=VOLATILEFN()", VolatileFunction.Descriptor));

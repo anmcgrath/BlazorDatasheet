@@ -92,7 +92,7 @@ public class Evaluator
             case NodeKind.ArrayConstant:
                 return EvaluateArrayConstantExpression((ArrayConstantExpression)expression);
             case NodeKind.Name:
-                return EvaluateNamedExpression((VariableExpression)expression);
+                return EvaluateNamedExpression((VariableExpression)expression, ctx);
             case NodeKind.Error:
                 return CellValue.Error(((ErrorExpression)expression).ErrorType);
         }
@@ -101,11 +101,24 @@ public class Evaluator
             $"Cannot evaluate expression {expression.ToExpressionText()}"));
     }
 
-    private CellValue EvaluateNamedExpression(VariableExpression expression)
+    private CellValue EvaluateNamedExpression(VariableExpression expression, EvalContext ctx)
     {
-        if (!_environment.TryGetVariable(expression.NameToken.Value, out var value))
+        var name = expression.NameToken.Value;
+        if (!ctx.ExecutionContext.TryGetNamedFormula(name, out var formula))
+        {
+            if (_environment.TryGetVariable(name, out var value))
+                return value;
+
             return CellValue.Error(ErrorType.Ref);
-        return value;
+        }
+
+        if (ctx.ExecutionContext.TryGetExecutedValue(formula, out var result))
+            return result;
+
+        return DoEvaluate(formula, new EvalContext(
+            ctx.Options,
+            ctx.ExecutionContext,
+            null));
     }
 
     private CellValue EvaluateArrayConstantExpression(ArrayConstantExpression expression)
