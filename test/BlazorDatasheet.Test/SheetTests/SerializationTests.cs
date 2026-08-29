@@ -232,6 +232,24 @@ public class SerializationTests
     }
 
     [Test]
+    public void Cell_Format_Null_Overrides_And_Unset_Properties_Should_Round_Trip()
+    {
+        var sheet = new Sheet(1, 1);
+        sheet.Rows.Formats.Add(0, 0,
+            new CellFormat { BackgroundColor = "red", TextWrap = TextWrapping.Wrap });
+        sheet.SetFormat(new Region(0, 0),
+            new CellFormat { BackgroundColor = null, ForegroundColor = "white" });
+
+        var json = new SheetJsonSerializer().Serialize(sheet.Workbook);
+        var deserialized = new SheetJsonDeserializer().Deserialize(json).Sheets.First();
+        var format = deserialized.Cells[0, 0]!.Format;
+
+        format.BackgroundColor.Should().BeNull();
+        format.ForegroundColor.Should().Be("white");
+        format.TextWrap.Should().Be(TextWrapping.Wrap);
+    }
+
+    [Test]
     public void Variables_Referencing_Variables_Should_Be_Deserialised_Correctly()
     {
         var sheet = new Sheet(10, 10);

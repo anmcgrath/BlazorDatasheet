@@ -22,6 +22,7 @@ public class SheetJsonSerializer
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
             Converters =
             {
+                new CellFormatJsonConverter(),
                 new CellJsonConverter(),
                 new ConditionalFormatJsonConverter(Resolvers.ConditionalFormat),
                 new ColorJsonConverter(),

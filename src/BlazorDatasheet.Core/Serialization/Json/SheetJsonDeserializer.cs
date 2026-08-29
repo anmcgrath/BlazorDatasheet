@@ -17,6 +17,7 @@ public class SheetJsonDeserializer
     {
         Converters = new List<JsonConverter>()
         {
+            new CellFormatJsonConverter(),
             new CellJsonConverter(),
             new ConditionalFormatJsonConverter(Resolvers.ConditionalFormat),
             new ColorJsonConverter(),
