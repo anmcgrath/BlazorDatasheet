@@ -227,6 +227,55 @@ public class SerializationTests
         d.Columns.GetPhysicalWidth(0).Should().Be(6);
         d.Columns.GetPhysicalWidth(1).Should().Be(8);
     }
+
+    [Test]
+    public void Variables_Referencing_Variables_Should_Be_Deserialised_Correctly()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.FormulaEngine.SetVariable("x", "=y");
+        sheet.FormulaEngine.SetVariable("y", CellValue.Number(2));
+        var json = new SheetJsonSerializer().Serialize(sheet.Workbook);
+        var d = new SheetJsonDeserializer().Deserialize(json).Sheets.First();
+        d.FormulaEngine.TryGetVariable("x", out var x);
+        d.FormulaEngine.TryGetVariable("y", out var y);
+        x.Should().BeEquivalentTo(CellValue.Number(2));
+        y.Should().BeEquivalentTo(CellValue.Number(2));
+    }
+
+    [Test]
+    public void Cells_Referencing_Variables_Should_Be_Deserialised_Correctly()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.FormulaEngine.SetVariable("x", CellValue.Number(2));
+        sheet.Cells["A1"]!.Formula = "=x";
+        var json = new SheetJsonSerializer().Serialize(sheet.Workbook);
+        var d = new SheetJsonDeserializer().Deserialize(json).Sheets.First();
+        d.Cells["A1"]!.Formula.Should().Be("=x");
+        d.Cells["A1"]!.CellValue.Should().Be(CellValue.Number(2));
+
+        d.FormulaEngine.SetVariable("x", CellValue.Number(3));
+        d.Cells["A1"]!.CellValue.Should().Be(CellValue.Number(3));
+    }
+
+    [Test]
+    public void Cross_Sheet_Formulas_Should_Be_Deserialised_With_Dependencies()
+    {
+        var workbook = new Workbook();
+        var inputs = workbook.AddSheet("Inputs", 10, 10);
+        var calculations = workbook.AddSheet("Calculations", 10, 10);
+        inputs.Cells["A1"]!.Value = 2;
+        calculations.Cells["A1"]!.Formula = "=Inputs!A1*2";
+
+        var json = new SheetJsonSerializer().Serialize(workbook);
+        var deserialised = new SheetJsonDeserializer().Deserialize(json);
+        var deserialisedInputs = deserialised.GetSheet("Inputs")!;
+        var deserialisedCalculations = deserialised.GetSheet("Calculations")!;
+
+        deserialisedCalculations.Cells["A1"]!.CellValue.Should().Be(CellValue.Number(4));
+
+        deserialisedInputs.Cells["A1"]!.Value = 3;
+        deserialisedCalculations.Cells["A1"]!.CellValue.Should().Be(CellValue.Number(6));
+    }
 }
 
 public class CustomCf : ConditionalFormatAbstractBase

@@ -24,11 +24,17 @@ internal class WorkbookMapper
     public static Workbook FromModel(WorkbookModel workbookModel)
     {
         var workbook = new Workbook();
+        var sheets = new List<(SheetModel Model, Sheet Sheet)>();
+
         foreach (var sheetModel in workbookModel.Sheets)
         {
-            workbook.AddSheet(sheetModel.Name, SheetMapper.FromModel(sheetModel, workbookModel.Formats));
+            var sheet = workbook.AddSheet(sheetModel.Name, sheetModel.NumRows, sheetModel.NumCols,
+                sheetModel.DefaultWidth, sheetModel.DefaultHeight);
+            sheets.Add((sheetModel, sheet));
         }
 
+        foreach (var (sheetModel, sheet) in sheets)
+            SheetMapper.PopulateFromModel(sheetModel, workbookModel.Formats, sheet);
 
         foreach (var variable in workbookModel.Variables)
         {
@@ -37,6 +43,8 @@ internal class WorkbookMapper
             else if (!variable.Value.IsEmpty)
                 workbook.GetFormulaEngine().SetVariable(variable.Name, variable.Value);
         }
+
+        workbook.GetFormulaEngine().CalculateSheet(true);
 
         return workbook;
     }

@@ -107,11 +107,8 @@ internal class SheetMapper
         return sheetModel;
     }
 
-    public static Sheet FromModel(SheetModel sheetModel, List<CellFormat> formats)
+    public static void PopulateFromModel(SheetModel sheetModel, List<CellFormat> formats, Sheet sheet)
     {
-        var sheet = new Sheet(sheetModel.NumRows, sheetModel.NumCols, sheetModel.DefaultWidth,
-            sheetModel.DefaultHeight);
-
         sheet.Commands.PauseHistory();
         sheet.ScreenUpdating = false;
         sheet.BatchUpdates();
@@ -199,8 +196,6 @@ internal class SheetMapper
         sheet.EndBatchUpdates();
         sheet.ScreenUpdating = true;
         sheet.Commands.ResumeHistory();
-
-        return sheet;
     }
 
     private static void BulkLoadCellValues(SheetModel sheetModel, Sheet sheet)
