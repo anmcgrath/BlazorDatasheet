@@ -1,5 +1,6 @@
 ﻿using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Serialization.Models;
+using BlazorDatasheet.Formula.Core.Interpreter;
 
 namespace BlazorDatasheet.Core.Serialization.Json.Mappers;
 
@@ -21,9 +22,9 @@ internal class WorkbookMapper
         return workbookModel;
     }
 
-    public static Workbook FromModel(WorkbookModel workbookModel)
+    public static Workbook FromModel(WorkbookModel workbookModel, FormulaOptions? formulaOptions)
     {
-        var workbook = new Workbook();
+        var workbook = new Workbook(formulaOptions);
         var sheets = new List<(SheetModel Model, Sheet Sheet)>();
 
         foreach (var sheetModel in workbookModel.Sheets)

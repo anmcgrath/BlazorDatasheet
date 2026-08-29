@@ -4,6 +4,7 @@ using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Serialization.Json.Converters;
 using BlazorDatasheet.Core.Serialization.Json.Mappers;
 using BlazorDatasheet.Core.Serialization.Models;
+using BlazorDatasheet.Formula.Core.Interpreter;
 
 namespace BlazorDatasheet.Core.Serialization.Json;
 
@@ -26,7 +27,7 @@ public class SheetJsonDeserializer
         };
     }
 
-    public Workbook Deserialize(string json)
+    public Workbook Deserialize(string json, FormulaOptions? formulaOptions = null)
     {
         var options = new JsonSerializerOptions();
         foreach (var converter in Converters)
@@ -34,8 +35,8 @@ public class SheetJsonDeserializer
 
         var workbookModel = JsonSerializer.Deserialize<WorkbookModel>(json, options);
         if (workbookModel is null)
-            return new Workbook();
+            return new Workbook(formulaOptions);
 
-        return WorkbookMapper.FromModel(workbookModel);
+        return WorkbookMapper.FromModel(workbookModel, formulaOptions);
     }
 }

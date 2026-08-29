@@ -10,6 +10,7 @@ using BlazorDatasheet.Core.Formats.DefaultConditionalFormats;
 using BlazorDatasheet.Core.Validation;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core;
+using BlazorDatasheet.Formula.Core.Interpreter;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 using BlazorDatasheet.Core.Serialization.Json;
 using FluentAssertions;
@@ -257,6 +258,32 @@ public class SerializationTests
 
         d.FormulaEngine.SetVariable("x", CellValue.Number(3));
         d.Cells["A1"]!.CellValue.Should().Be(CellValue.Number(3));
+    }
+
+    [Test]
+    public void Custom_Functions_Should_Be_Registered_Before_Formulas_Are_Deserialised()
+    {
+        var formulaOptions = new FormulaOptions
+        {
+            ConfigureFunctions = builder => builder.Add(new FunctionDescriptor(
+                "DOUBLE",
+                [new ParameterDefinition("value", ParameterType.Number)],
+                (args, _) => CellValue.Number(args[0].GetValue<double>() * 2)))
+        };
+        var workbook = new Workbook(formulaOptions);
+        var sheet = workbook.AddSheet(10, 10);
+        sheet.Cells["A1"]!.Value = 2;
+        sheet.Cells["B1"]!.Formula = "=DOUBLE(A1)";
+
+        var json = new SheetJsonSerializer().Serialize(workbook);
+        var deserialised = new SheetJsonDeserializer().Deserialize(json, formulaOptions);
+        var deserialisedSheet = deserialised.Sheets.First();
+
+        deserialisedSheet.Cells["B1"]!.Formula.Should().Be("=DOUBLE(A1)");
+        deserialisedSheet.Cells["B1"]!.CellValue.Should().Be(CellValue.Number(4));
+
+        deserialisedSheet.Cells["A1"]!.Value = 3;
+        deserialisedSheet.Cells["B1"]!.CellValue.Should().Be(CellValue.Number(6));
     }
 
     [Test]
