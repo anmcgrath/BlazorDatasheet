@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Text.Json;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Filter;
 using BlazorDatasheet.Core.Formats;
@@ -9,6 +10,8 @@ using BlazorDatasheet.Core.Formats.DefaultConditionalFormats;
 using BlazorDatasheet.Core.Validation;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core;
+using BlazorDatasheet.Formula.Core.Interpreter;
+using BlazorDatasheet.Formula.Core.Interpreter.References;
 using BlazorDatasheet.Core.Serialization.Json;
 using FluentAssertions;
 using NUnit.Framework;
@@ -104,6 +107,22 @@ public class SerializationTests
             .Equal(cf.ColorStops!.Select(x => x.ToArgb()));
         deserializedCf.LutSize.Should().Be(40);
         deserializedSheet.ConditionalFormats.GetFormatResult(1, 0)!.BackgroundColor.Should().Be(originalBackground);
+    }
+
+    [Test]
+    public void Colors_With_Alpha_Should_Round_Trip()
+    {
+        var sheet = new Sheet(1, 1);
+        var color = Color.FromArgb(64, 10, 20, 30);
+        sheet.ConditionalFormats.Apply(sheet.Region, new NumberScaleConditionalFormat(color, color));
+
+        var json = new SheetJsonSerializer().Serialize(sheet.Workbook);
+        var deserialized = new SheetJsonDeserializer().Deserialize(json).Sheets.First();
+        var conditionalFormat = deserialized.ConditionalFormats.GetAllFormats().Single().Data
+            .Should().BeOfType<NumberScaleConditionalFormat>().Subject;
+
+        conditionalFormat.ColorStart.ToArgb().Should().Be(color.ToArgb());
+        conditionalFormat.ColorEnd.ToArgb().Should().Be(color.ToArgb());
     }
 
     [Test]
@@ -226,6 +245,323 @@ public class SerializationTests
         d.Rows.GetPhysicalHeight(1).Should().Be(7);
         d.Columns.GetPhysicalWidth(0).Should().Be(6);
         d.Columns.GetPhysicalWidth(1).Should().Be(8);
+    }
+
+    [Test]
+    public void Fractional_Default_Row_And_Column_Sizes_Should_Round_Trip()
+    {
+        var sheet = new Sheet(2, 2, 105.75, 24.5);
+
+        var json = new SheetJsonSerializer().Serialize(sheet.Workbook);
+        var deserialized = new SheetJsonDeserializer().Deserialize(json).Sheets.First();
+
+        deserialized.Columns.DefaultSize.Should().Be(105.75);
+        deserialized.Rows.DefaultSize.Should().Be(24.5);
+    }
+
+    [Test]
+    public void Cell_Format_Null_Overrides_And_Unset_Properties_Should_Round_Trip()
+    {
+        var sheet = new Sheet(1, 1);
+        sheet.Rows.Formats.Add(0, 0,
+            new CellFormat { BackgroundColor = "red", TextWrap = TextWrapping.Wrap });
+        sheet.SetFormat(new Region(0, 0),
+            new CellFormat { BackgroundColor = null, ForegroundColor = "white" });
+
+        var json = new SheetJsonSerializer().Serialize(sheet.Workbook);
+        var deserialized = new SheetJsonDeserializer().Deserialize(json).Sheets.First();
+        var format = deserialized.Cells[0, 0]!.Format;
+
+        format.BackgroundColor.Should().BeNull();
+        format.ForegroundColor.Should().Be("white");
+        format.TextWrap.Should().Be(TextWrapping.Wrap);
+    }
+
+    [Test]
+    public void Metadata_Json_Values_Should_Deserialize_Recursively()
+    {
+        var sheet = new Sheet(1, 1);
+        sheet.Cells[0, 0]!.SetMetaData("integer", 5);
+        sheet.Cells[0, 0]!.SetMetaData("nested", new Dictionary<string, object>
+        {
+            ["items"] = new object?[] { 1, "two", true, null }
+        });
+
+        var json = new SheetJsonSerializer().Serialize(sheet.Workbook);
+        var deserialized = new SheetJsonDeserializer().Deserialize(json).Sheets.First();
+
+        deserialized.Cells[0, 0]!.GetMetaData("integer").Should().BeOfType<int>().Which.Should().Be(5);
+        var nested = deserialized.Cells[0, 0]!.GetMetaData("nested")
+            .Should().BeOfType<Dictionary<string, object>>().Subject;
+        var items = nested["items"].Should().BeOfType<List<object>>().Subject;
+        items.Should().HaveCount(4);
+        items[0].Should().Be(1);
+        items[1].Should().Be("two");
+        items[2].Should().Be(true);
+        items[3].Should().BeNull();
+    }
+
+    [Test]
+    public void Variables_Referencing_Variables_Should_Be_Deserialised_Correctly()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.FormulaEngine.SetVariable("x", "=y");
+        sheet.FormulaEngine.SetVariable("y", CellValue.Number(2));
+        var json = new SheetJsonSerializer().Serialize(sheet.Workbook);
+        var d = new SheetJsonDeserializer().Deserialize(json).Sheets.First();
+        d.FormulaEngine.TryGetVariable("x", out var x);
+        d.FormulaEngine.TryGetVariable("y", out var y);
+        x.Should().BeEquivalentTo(CellValue.Number(2));
+        y.Should().BeEquivalentTo(CellValue.Number(2));
+    }
+
+    [Test]
+    public void Cells_Referencing_Variables_Should_Be_Deserialised_Correctly()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.FormulaEngine.SetVariable("x", CellValue.Number(2));
+        sheet.Cells["A1"]!.Formula = "=x";
+        var json = new SheetJsonSerializer().Serialize(sheet.Workbook);
+        var d = new SheetJsonDeserializer().Deserialize(json).Sheets.First();
+        d.Cells["A1"]!.Formula.Should().Be("=x");
+        d.Cells["A1"]!.CellValue.Should().Be(CellValue.Number(2));
+
+        d.FormulaEngine.SetVariable("x", CellValue.Number(3));
+        d.Cells["A1"]!.CellValue.Should().Be(CellValue.Number(3));
+    }
+
+    [Test]
+    public void Custom_Functions_Should_Be_Registered_Before_Formulas_Are_Deserialised()
+    {
+        var formulaOptions = new FormulaOptions
+        {
+            ConfigureFunctions = builder => builder.Add(new FunctionDescriptor(
+                "DOUBLE",
+                [new ParameterDefinition("value", ParameterType.Number)],
+                (args, _) => CellValue.Number(args[0].GetValue<double>() * 2)))
+        };
+        var workbook = new Workbook(formulaOptions);
+        var sheet = workbook.AddSheet(10, 10);
+        sheet.Cells["A1"]!.Value = 2;
+        sheet.Cells["B1"]!.Formula = "=DOUBLE(A1)";
+
+        var json = new SheetJsonSerializer().Serialize(workbook);
+        var deserialised = new SheetJsonDeserializer().Deserialize(json, formulaOptions);
+        var deserialisedSheet = deserialised.Sheets.First();
+
+        deserialisedSheet.Cells["B1"]!.Formula.Should().Be("=DOUBLE(A1)");
+        deserialisedSheet.Cells["B1"]!.CellValue.Should().Be(CellValue.Number(4));
+
+        deserialisedSheet.Cells["A1"]!.Value = 3;
+        deserialisedSheet.Cells["B1"]!.CellValue.Should().Be(CellValue.Number(6));
+    }
+
+    [Test]
+    public void Cross_Sheet_Formulas_Should_Be_Deserialised_With_Dependencies()
+    {
+        var workbook = new Workbook();
+        var inputs = workbook.AddSheet("Inputs", 10, 10);
+        var calculations = workbook.AddSheet("Calculations", 10, 10);
+        inputs.Cells["A1"]!.Value = 2;
+        calculations.Cells["A1"]!.Formula = "=Inputs!A1*2";
+
+        var json = new SheetJsonSerializer().Serialize(workbook);
+        var deserialised = new SheetJsonDeserializer().Deserialize(json);
+        var deserialisedInputs = deserialised.GetSheet("Inputs")!;
+        var deserialisedCalculations = deserialised.GetSheet("Calculations")!;
+
+        deserialisedCalculations.Cells["A1"]!.CellValue.Should().Be(CellValue.Number(4));
+
+        deserialisedInputs.Cells["A1"]!.Value = 3;
+        deserialisedCalculations.Cells["A1"]!.CellValue.Should().Be(CellValue.Number(6));
+    }
+
+    [Test]
+    public void Non_Finite_Doubles_Should_Be_Deserialised_Correctly()
+    {
+        var workbook = new Workbook();
+        var sheet = workbook.AddSheet(10, 10);
+        sheet.Cells["A1"]!.Value = CellValue.Number(double.PositiveInfinity);
+        var json = new SheetJsonSerializer().Serialize(workbook);
+        var deserialised = new SheetJsonDeserializer().Deserialize(json);
+        deserialised.Sheets.First().Cells["A1"]!.CellValue.Should()
+            .Be(CellValue.Number(double.PositiveInfinity));
+    }
+
+    [Test]
+    public void Non_Finite_Doubles_Should_Round_Trip_In_Cells_Variables_And_Collections()
+    {
+        var workbook = new Workbook();
+        var sheet = workbook.AddSheet(10, 10);
+        sheet.Cells.SetValue(0, 0, CellValue.Number(double.NaN));
+        sheet.Cells.SetValue(0, 1, CellValue.Number(double.NegativeInfinity));
+        sheet.Cells.SetValue(0, 2, CellValue.Array([
+            [CellValue.Number(double.PositiveInfinity), CellValue.Number(double.NaN)]
+        ]));
+        sheet.FormulaEngine.SetVariable("nonFiniteSequence", CellValue.Sequence([
+            CellValue.Number(double.NegativeInfinity), CellValue.Number(double.NaN)
+        ]));
+
+        var json = new SheetJsonSerializer().Serialize(workbook);
+        var deserialised = new SheetJsonDeserializer().Deserialize(json);
+        var deserialisedSheet = deserialised.Sheets.First();
+
+        double.IsNaN(deserialisedSheet.Cells["A1"]!.CellValue.NumberValue).Should().BeTrue();
+        deserialisedSheet.Cells["B1"]!.CellValue.NumberValue.Should().Be(double.NegativeInfinity);
+
+        var array = (CellValue[][])deserialisedSheet.Cells["C1"]!.CellValue.Data!;
+        array[0][0].NumberValue.Should().Be(double.PositiveInfinity);
+        double.IsNaN(array[0][1].NumberValue).Should().BeTrue();
+
+        deserialised.GetFormulaEngine().TryGetVariable("nonFiniteSequence", out var sequence).Should().BeTrue();
+        var sequenceValues = (CellValue[])sequence.Data!;
+        sequenceValues[0].NumberValue.Should().Be(double.NegativeInfinity);
+        double.IsNaN(sequenceValues[1].NumberValue).Should().BeTrue();
+    }
+
+    [Test]
+    public void Errors_Arrays_And_Sequences_Should_Round_Trip()
+    {
+        var workbook = new Workbook();
+        var sheet = workbook.AddSheet(10, 10);
+        sheet.Cells.SetValue(0, 0, CellValue.Error(ErrorType.Na, "No result"));
+        sheet.Cells.SetValue(0, 1, CellValue.Array([
+            [CellValue.Number(1), CellValue.Text("two")],
+            [CellValue.Logical(true), CellValue.Error(ErrorType.Ref, "Missing range")]
+        ]));
+        sheet.FormulaEngine.SetVariable("sequence", CellValue.Sequence([
+            CellValue.Date(new DateTime(2026, 8, 29)), CellValue.Error(ErrorType.Value, "Bad value")
+        ]));
+
+        var json = new SheetJsonSerializer().Serialize(workbook);
+        var deserialised = new SheetJsonDeserializer().Deserialize(json);
+        var deserialisedSheet = deserialised.Sheets.First();
+
+        AssertError(deserialisedSheet.Cells["A1"]!.CellValue, ErrorType.Na, "No result");
+
+        var array = (CellValue[][])deserialisedSheet.Cells["B1"]!.CellValue.Data!;
+        array[0][0].Should().Be(CellValue.Number(1));
+        array[0][1].Should().Be(CellValue.Text("two"));
+        array[1][0].Should().Be(CellValue.Logical(true));
+        AssertError(array[1][1], ErrorType.Ref, "Missing range");
+
+        deserialised.GetFormulaEngine().TryGetVariable("sequence", out var sequence).Should().BeTrue();
+        var sequenceValues = (CellValue[])sequence.Data!;
+        sequenceValues[0].Should().Be(CellValue.Date(new DateTime(2026, 8, 29)));
+        AssertError(sequenceValues[1], ErrorType.Value, "Bad value");
+    }
+
+    [Test]
+    public void Formula_Cached_Values_Should_Not_Be_Serialized_And_Should_Be_Recalculated()
+    {
+        var workbook = new Workbook();
+        var sheet = workbook.AddSheet(10, 10);
+        sheet.Cells["A1"]!.Value = 1;
+        sheet.Cells["A2"]!.Value = 2;
+        sheet.Cells["B1"]!.Formula = "=A1:A2";
+        sheet.Cells["C1"]!.Formula = "=1/0";
+
+        sheet.Cells["B1"]!.CellValue.ValueType.Should().Be(CellValueType.Array);
+        sheet.Cells["C1"]!.CellValue.ValueType.Should().Be(CellValueType.Error);
+
+        var json = new SheetJsonSerializer().Serialize(workbook);
+        using var document = JsonDocument.Parse(json);
+        var formulaCells = document.RootElement.GetProperty("Sheets")[0].GetProperty("Rows")[0]
+            .GetProperty("Cells").EnumerateArray()
+            .Where(cell => cell.TryGetProperty("Formula", out _))
+            .ToArray();
+
+        formulaCells.Should().HaveCount(2);
+        formulaCells.All(cell =>
+            !cell.TryGetProperty("Type", out _) && !cell.TryGetProperty("Data", out _)).Should().BeTrue();
+
+        var deserialised = new SheetJsonDeserializer().Deserialize(json);
+        var deserialisedSheet = deserialised.Sheets.First();
+        deserialisedSheet.Cells["B1"]!.CellValue.ValueType.Should().Be(CellValueType.Array);
+        deserialisedSheet.Cells["C1"]!.CellValue.ValueType.Should().Be(CellValueType.Error);
+
+        deserialisedSheet.Cells["A1"]!.Value = 3;
+        var recalculated = (CellValue[][])deserialisedSheet.Cells["B1"]!.CellValue.Data!;
+        recalculated[0][0].Should().Be(CellValue.Number(3));
+    }
+
+    [Test]
+    public void Reference_And_Unknown_Cell_Values_Should_Fail_Serialization_Clearly()
+    {
+        var unknownWorkbook = new Workbook();
+        var unknownSheet = unknownWorkbook.AddSheet(10, 10);
+        unknownSheet.Cells.SetValue(0, 0, new CellValue(new object()));
+
+        var serializeUnknown = () => new SheetJsonSerializer().Serialize(unknownWorkbook);
+        serializeUnknown.Should().Throw<NotSupportedException>().WithMessage("*Unknown*");
+
+        var referenceWorkbook = new Workbook();
+        var referenceSheet = referenceWorkbook.AddSheet(10, 10);
+        referenceSheet.FormulaEngine.SetVariable("reference",
+            CellValue.Reference(new CellReference(0, 0, false, false)));
+
+        var serializeReference = () => new SheetJsonSerializer().Serialize(referenceWorkbook);
+        serializeReference.Should().Throw<NotSupportedException>().WithMessage("*Reference*");
+    }
+
+    [Test]
+    public void Incomplete_Or_Unsupported_Cell_Value_Envelopes_Should_Fail_Deserialization_Clearly()
+    {
+        const string incompleteJson =
+            """{"Sheets":[{"Name":"Sheet1","Rows":[{"Row":0,"Cells":[{"Col":0,"Type":6}]}],"NumRows":1,"NumCols":1}]}""";
+        const string unsupportedJson =
+            """{"Sheets":[{"Name":"Sheet1","Rows":[{"Row":0,"Cells":[{"Col":0,"Type":5,"Data":"A1"}]}],"NumRows":1,"NumCols":1}]}""";
+
+        var deserializeIncomplete = () => new SheetJsonDeserializer().Deserialize(incompleteJson);
+        deserializeIncomplete.Should().Throw<JsonException>().WithMessage("*both Type and Data*");
+
+        var deserializeUnsupported = () => new SheetJsonDeserializer().Deserialize(unsupportedJson);
+        deserializeUnsupported.Should().Throw<JsonException>().WithMessage("*Reference*");
+    }
+
+    [Test]
+    public void Unknown_Structured_Properties_Should_Be_Ignored_By_Custom_Converters()
+    {
+        const string json =
+            """{"Sheets":[{"Name":"Sheet1","Rows":[{"Row":0,"Cells":[{"Col":0,"Extra":{"Nested":123},"Type":6,"Data":4}]}],"NumRows":1,"NumCols":1}]}""";
+
+        var deserialized = new SheetJsonDeserializer().Deserialize(json).Sheets.First();
+
+        deserialized.Cells[0, 0]!.CellValue.Should().Be(CellValue.Number(4));
+    }
+
+    [Test]
+    public void Unregistered_Custom_Types_Should_Fail_Deserialization_Clearly()
+    {
+        var sheet = new Sheet(1, 1);
+        sheet.ConditionalFormats.Apply(sheet.Region, new CustomCf("=TRUE", Color.Red));
+        var serializer = new SheetJsonSerializer();
+        serializer.Resolvers.ConditionalFormat.Add(nameof(CustomCf), typeof(CustomCf));
+        var json = serializer.Serialize(sheet.Workbook);
+
+        var deserialize = () => new SheetJsonDeserializer().Deserialize(json);
+
+        deserialize.Should().Throw<JsonException>()
+            .WithMessage("*CustomCf*conditional format resolver*");
+    }
+
+    [Test]
+    public void Formula_With_Error_Should_Be_deserialised_Correctly()
+    {
+        var workbook = new Workbook();
+        var sheet = workbook.AddSheet(10, 10);
+        sheet.Cells["A1"]!.Formula = "=1/0";
+        var json = new SheetJsonSerializer().Serialize(workbook);
+        var deserialised = new SheetJsonDeserializer().Deserialize(json);
+        deserialised.Sheets.First().Cells["A1"]!.Formula.Should().Be("=1/0");
+    }
+
+    private static void AssertError(CellValue value, ErrorType errorType, string message)
+    {
+        value.ValueType.Should().Be(CellValueType.Error);
+        var error = (FormulaError)value.Data!;
+        error.ErrorType.Should().Be(errorType);
+        error.Message.Should().Be(message);
     }
 }
 

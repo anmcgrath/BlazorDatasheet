@@ -1,5 +1,6 @@
 ﻿using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Serialization.Models;
+using BlazorDatasheet.Formula.Core.Interpreter;
 
 namespace BlazorDatasheet.Core.Serialization.Json.Mappers;
 
@@ -21,14 +22,21 @@ internal class WorkbookMapper
         return workbookModel;
     }
 
-    public static Workbook FromModel(WorkbookModel workbookModel)
+    public static Workbook FromModel(WorkbookModel workbookModel, FormulaOptions? formulaOptions)
     {
-        var workbook = new Workbook();
+        var workbook = new Workbook(formulaOptions);
+        var sheets = new List<(SheetModel Model, Sheet Sheet)>();
+
         foreach (var sheetModel in workbookModel.Sheets)
         {
-            workbook.AddSheet(sheetModel.Name, SheetMapper.FromModel(sheetModel, workbookModel.Formats));
+            var sheet = new Sheet(sheetModel.NumRows, sheetModel.NumCols, sheetModel.DefaultWidth,
+                sheetModel.DefaultHeight, workbook);
+            workbook.AddSheet(sheetModel.Name, sheet);
+            sheets.Add((sheetModel, sheet));
         }
 
+        foreach (var (sheetModel, sheet) in sheets)
+            SheetMapper.PopulateFromModel(sheetModel, workbookModel.Formats, sheet);
 
         foreach (var variable in workbookModel.Variables)
         {
@@ -37,6 +45,8 @@ internal class WorkbookMapper
             else if (!variable.Value.IsEmpty)
                 workbook.GetFormulaEngine().SetVariable(variable.Name, variable.Value);
         }
+
+        workbook.GetFormulaEngine().CalculateSheet(true);
 
         return workbook;
     }

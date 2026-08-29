@@ -42,6 +42,9 @@ internal class VariableJsonConverter : JsonConverter<Variable>
                 case JsonConstants.VariableName:
                     variableName = reader.GetString();
                     break;
+                default:
+                    reader.Skip();
+                    break;
             }
         }
 

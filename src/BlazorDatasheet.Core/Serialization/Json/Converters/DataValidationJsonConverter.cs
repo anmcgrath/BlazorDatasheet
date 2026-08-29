@@ -21,7 +21,7 @@ internal class DataValidationJsonConverter : JsonConverter<DataRegionModel<IData
         JsonSerializerOptions options)
     {
         if (reader.TokenType != JsonTokenType.StartObject)
-            return null;
+            throw new JsonException("A data validator must be a JSON object.");
 
         var validatorTypeName = string.Empty;
         JsonElement? parsedOptions = null;
@@ -49,28 +49,30 @@ internal class DataValidationJsonConverter : JsonConverter<DataRegionModel<IData
                 case JsonConstants.Options:
                     parsedOptions = JsonElement.ParseValue(ref reader);
                     break;
+                default:
+                    reader.Skip();
+                    break;
             }
         }
 
         if (string.IsNullOrEmpty(validatorTypeName))
-            return null;
+            throw new JsonException("A serialized data validator must contain a Type property.");
 
         if (parsedOptions == null)
-            return null;
+            throw new JsonException("A serialized data validator must contain an Options property.");
 
-        var validatorTypeDefn =
-            GetDefaultValidatorType(validatorTypeName);
+        if (string.IsNullOrEmpty(regionString))
+            throw new JsonException("A serialized data validator must contain a Sqref property.");
 
-        if (validatorTypeDefn != null)
-        {
-            IDataValidator? validator = parsedOptions.Value.Deserialize(validatorTypeDefn, options) as IDataValidator;
-            if (validator == null || string.IsNullOrEmpty(regionString))
-                return null;
+        var validatorTypeDefn = GetDefaultValidatorType(validatorTypeName);
+        if (validatorTypeDefn == null)
+            throw new JsonException(
+                $"Data validator type {validatorTypeName} is not registered in the data validation resolver.");
 
-            return new DataRegionModel<IDataValidator>(regionString, validator);
-        }
+        var validator = parsedOptions.Value.Deserialize(validatorTypeDefn, options) as IDataValidator ??
+                        throw new JsonException($"Could not deserialize data validator type {validatorTypeName}.");
 
-        return null;
+        return new DataRegionModel<IDataValidator>(regionString, validator);
     }
 
     private Type? GetDefaultValidatorType(string typeName)

@@ -14,7 +14,7 @@ internal class CellJsonConverter : JsonConverter<CellModel>
             return null;
 
         var cell = new CellModel();
-        CellValueType valueType = CellValueType.Empty;
+        CellValueType? valueType = null;
         JsonElement? element = null;
 
         while (reader.Read())
@@ -45,35 +45,42 @@ internal class CellJsonConverter : JsonConverter<CellModel>
                 case JsonConstants.MetaData:
                     if (JsonElement.TryParseValue(ref reader, out var el))
                     {
-                        cell.MetaData = el.Value.Deserialize<Dictionary<string, object>>(options)!;
-                        foreach (var kp in cell.MetaData)
-                        {
-                            var val = (JsonElement)kp.Value;
-                            if (val.ValueKind == JsonValueKind.String)
-                            {
-                                cell.MetaData[kp.Key] = val.GetString();
-                            }
-                            else if (val.ValueKind == JsonValueKind.Number)
-                            {
-                                cell.MetaData[kp.Key] = val.GetDouble();
-                            }
-                            else if (val.ValueKind == JsonValueKind.True || val.ValueKind == JsonValueKind.False)
-                            {
-                                cell.MetaData[kp.Key] = val.GetBoolean();
-                            }
-                            else
-                            {
-                                throw new Exception($"Unsupported meta data type for {kp.Key} type {val.ValueKind}");
-                            }
-                        }
+                        if (el.Value.ValueKind != JsonValueKind.Object)
+                            throw new JsonException("Cell metadata must be a JSON object.");
+
+                        cell.MetaData = el.Value.EnumerateObject()
+                            .ToDictionary(property => property.Name,
+                                property => ReadMetadataValue(property.Value));
                     }
 
+                    break;
+                default:
+                    reader.Skip();
                     break;
             }
         }
 
-        cell.CellValue = CellValueHelper.GetCellValue(valueType, element);
+        cell.CellValue = CellValueHelper.GetCellValue(valueType, element, options);
         return cell;
+    }
+
+    private static object ReadMetadataValue(JsonElement element)
+    {
+        return element.ValueKind switch
+        {
+            JsonValueKind.String => element.GetString()!,
+            JsonValueKind.Number when element.TryGetInt32(out var value) => value,
+            JsonValueKind.Number when element.TryGetInt64(out var value) => value,
+            JsonValueKind.Number when element.TryGetUInt64(out var value) => value,
+            JsonValueKind.Number => element.GetDouble(),
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.Null => null!,
+            JsonValueKind.Array => element.EnumerateArray().Select(ReadMetadataValue).ToList(),
+            JsonValueKind.Object => element.EnumerateObject().ToDictionary(property => property.Name,
+                property => ReadMetadataValue(property.Value)),
+            _ => throw new JsonException($"Unsupported metadata JSON kind {element.ValueKind}.")
+        };
     }
 
     public override void Write(Utf8JsonWriter writer, CellModel value, JsonSerializerOptions options)
@@ -90,7 +97,8 @@ internal class CellJsonConverter : JsonConverter<CellModel>
             JsonSerializer.Serialize(writer, value.MetaData, options);
         }
 
-        CellValueHelper.WriteCellValue(writer, value.CellValue);
+        if (string.IsNullOrEmpty(value.Formula))
+            CellValueHelper.WriteCellValue(writer, value.CellValue, options);
         writer.WriteEndObject();
     }
 }

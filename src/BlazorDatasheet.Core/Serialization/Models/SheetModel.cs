@@ -16,6 +16,6 @@ internal class SheetModel
     public int NumRows { get; set; }
     public int NumCols { get; set; }
     public List<ConditionalFormatModel> ConditionalFormats { get; set; } = new();
-    public int DefaultWidth { get; set; }
-    public int DefaultHeight { get; set; }
+    public double DefaultWidth { get; set; }
+    public double DefaultHeight { get; set; }
 }

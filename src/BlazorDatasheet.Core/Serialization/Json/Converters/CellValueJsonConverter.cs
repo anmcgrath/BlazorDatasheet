@@ -27,18 +27,17 @@ internal class CellValueJsonConverter : JsonConverter<CellValue>
                 cellValueType = (CellValueType)reader.GetInt32()!;
             else if (propertyName == JsonConstants.CellValueData)
                 cellValueElement = JsonElement.ParseValue(ref reader);
+            else
+                reader.Skip();
         }
 
-        if (cellValueType == null || cellValueElement == null)
-            return CellValue.Empty;
-
-        return CellValueHelper.GetCellValue(cellValueType.Value, cellValueElement);
+        return CellValueHelper.GetCellValue(cellValueType, cellValueElement, options);
     }
 
     public override void Write(Utf8JsonWriter writer, CellValue value, JsonSerializerOptions options)
     {
         writer.WriteStartObject();
-        CellValueHelper.WriteCellValue(writer, value);
+        CellValueHelper.WriteCellValue(writer, value, options);
         writer.WriteEndObject();
     }
 }

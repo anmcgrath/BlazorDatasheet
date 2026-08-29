@@ -282,6 +282,8 @@ public partial class CellStore
         var type = GetCellType(row, col);
         if (value == null)
             newValue = CellValue.Empty;
+        else if (value is CellValue cellValue)
+            newValue = cellValue;
         else
         {
             newValue = type switch
