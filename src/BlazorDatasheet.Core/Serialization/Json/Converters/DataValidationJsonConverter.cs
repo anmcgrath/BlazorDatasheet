@@ -49,6 +49,9 @@ internal class DataValidationJsonConverter : JsonConverter<DataRegionModel<IData
                 case JsonConstants.Options:
                     parsedOptions = JsonElement.ParseValue(ref reader);
                     break;
+                default:
+                    reader.Skip();
+                    break;
             }
         }
 

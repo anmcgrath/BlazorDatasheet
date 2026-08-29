@@ -27,6 +27,8 @@ internal class CellValueJsonConverter : JsonConverter<CellValue>
                 cellValueType = (CellValueType)reader.GetInt32()!;
             else if (propertyName == JsonConstants.CellValueData)
                 cellValueElement = JsonElement.ParseValue(ref reader);
+            else
+                reader.Skip();
         }
 
         return CellValueHelper.GetCellValue(cellValueType, cellValueElement, options);

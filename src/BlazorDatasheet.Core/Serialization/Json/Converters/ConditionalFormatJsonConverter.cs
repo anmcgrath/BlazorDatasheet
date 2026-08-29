@@ -49,6 +49,9 @@ internal class ConditionalFormatJsonConverter : JsonConverter<ConditionalFormatM
                 case JsonConstants.Options:
                     parsedRule = JsonElement.ParseValue(ref reader);
                     break;
+                default:
+                    reader.Skip();
+                    break;
             }
         }
 

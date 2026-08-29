@@ -492,6 +492,17 @@ public class SerializationTests
     }
 
     [Test]
+    public void Unknown_Structured_Properties_Should_Be_Ignored_By_Custom_Converters()
+    {
+        const string json =
+            """{"Sheets":[{"Name":"Sheet1","Rows":[{"Row":0,"Cells":[{"Col":0,"Extra":{"Nested":123},"Type":6,"Data":4}]}],"NumRows":1,"NumCols":1}]}""";
+
+        var deserialized = new SheetJsonDeserializer().Deserialize(json).Sheets.First();
+
+        deserialized.Cells[0, 0]!.CellValue.Should().Be(CellValue.Number(4));
+    }
+
+    [Test]
     public void Formula_With_Error_Should_Be_deserialised_Correctly()
     {
         var workbook = new Workbook();

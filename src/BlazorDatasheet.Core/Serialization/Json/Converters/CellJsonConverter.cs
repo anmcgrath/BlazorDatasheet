@@ -54,6 +54,9 @@ internal class CellJsonConverter : JsonConverter<CellModel>
                     }
 
                     break;
+                default:
+                    reader.Skip();
+                    break;
             }
         }
 
