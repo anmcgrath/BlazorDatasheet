@@ -110,6 +110,22 @@ public class SerializationTests
     }
 
     [Test]
+    public void Colors_With_Alpha_Should_Round_Trip()
+    {
+        var sheet = new Sheet(1, 1);
+        var color = Color.FromArgb(64, 10, 20, 30);
+        sheet.ConditionalFormats.Apply(sheet.Region, new NumberScaleConditionalFormat(color, color));
+
+        var json = new SheetJsonSerializer().Serialize(sheet.Workbook);
+        var deserialized = new SheetJsonDeserializer().Deserialize(json).Sheets.First();
+        var conditionalFormat = deserialized.ConditionalFormats.GetAllFormats().Single().Data
+            .Should().BeOfType<NumberScaleConditionalFormat>().Subject;
+
+        conditionalFormat.ColorStart.ToArgb().Should().Be(color.ToArgb());
+        conditionalFormat.ColorEnd.ToArgb().Should().Be(color.ToArgb());
+    }
+
+    [Test]
     public void Validators_Should_Be_Serialized()
     {
         var sheet = new Sheet(10, 10);
