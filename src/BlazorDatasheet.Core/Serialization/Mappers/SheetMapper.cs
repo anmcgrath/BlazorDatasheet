@@ -18,8 +18,8 @@ internal class SheetMapper
         sheetModel.NumRows = sheet.NumRows;
         sheetModel.NumCols = sheet.NumCols;
         sheetModel.Name = sheet.Name;
-        sheetModel.DefaultHeight = (int)sheet.Rows.DefaultSize;
-        sheetModel.DefaultWidth = (int)sheet.Columns.DefaultSize;
+        sheetModel.DefaultHeight = sheet.Rows.DefaultSize;
+        sheetModel.DefaultWidth = sheet.Columns.DefaultSize;
         sheetModel.FreezeState = new FreezeStateModel()
         {
             Top = sheet.FreezeState.Top,

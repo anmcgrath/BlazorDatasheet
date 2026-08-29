@@ -29,8 +29,9 @@ internal class WorkbookMapper
 
         foreach (var sheetModel in workbookModel.Sheets)
         {
-            var sheet = workbook.AddSheet(sheetModel.Name, sheetModel.NumRows, sheetModel.NumCols,
-                sheetModel.DefaultWidth, sheetModel.DefaultHeight);
+            var sheet = new Sheet(sheetModel.NumRows, sheetModel.NumCols, sheetModel.DefaultWidth,
+                sheetModel.DefaultHeight, workbook);
+            workbook.AddSheet(sheetModel.Name, sheet);
             sheets.Add((sheetModel, sheet));
         }
 

@@ -232,6 +232,18 @@ public class SerializationTests
     }
 
     [Test]
+    public void Fractional_Default_Row_And_Column_Sizes_Should_Round_Trip()
+    {
+        var sheet = new Sheet(2, 2, 105.75, 24.5);
+
+        var json = new SheetJsonSerializer().Serialize(sheet.Workbook);
+        var deserialized = new SheetJsonDeserializer().Deserialize(json).Sheets.First();
+
+        deserialized.Columns.DefaultSize.Should().Be(105.75);
+        deserialized.Rows.DefaultSize.Should().Be(24.5);
+    }
+
+    [Test]
     public void Cell_Format_Null_Overrides_And_Unset_Properties_Should_Round_Trip()
     {
         var sheet = new Sheet(1, 1);
