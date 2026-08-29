@@ -166,7 +166,27 @@ public class FormulaEngine
         return _parser.FromString(formulaString, new ParsingContext(callingSheetName, useExplicitSheetName));
     }
 
-    internal CellValue Evaluate(CellFormula? formula, bool resolveReferences = true)
+    /// <summary>
+    /// Evaluates the <paramref name="formula"/> and returns the evaluated value.
+    /// </summary>
+    /// <param name="formula">The formula string</param>
+    /// <param name="callingSheetName">The sheet the formula is called within, controls how references that don't include sheet name are resolved.</param>
+    /// <param name="useExplicitSheetName">If true, when serialsied to text, the sheet name is included</param>
+    /// <param name="resolveReferences">When true, cell references are resolved to the values, otherwise we return CellValue.Reference. Default is true.</param>
+    /// <returns></returns>
+    public CellValue EvaluateFormula(string formula, string callingSheetName, bool useExplicitSheetName = false,
+        bool resolveReferences = true)
+    {
+        return EvaluateFormula(ParseFormula(formula, callingSheetName, useExplicitSheetName), resolveReferences);
+    }
+
+    /// <summary>
+    /// Evaluates the <paramref name="formula"/> and returns the evaluated value
+    /// </summary>
+    /// <param name="formula"></param>
+    /// <param name="resolveReferences">When true, cell references are resolved to the values, otherwise we return CellValue.Reference. Default is true.</param>
+    /// <returns></returns>
+    public CellValue EvaluateFormula(CellFormula? formula, bool resolveReferences = true)
     {
         if (formula == null)
             return CellValue.Empty;

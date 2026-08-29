@@ -579,7 +579,7 @@ public class CustomCf : ConditionalFormatAbstractBase
     public override CellFormat? CalculateFormat(int row, int col, Sheet sheet)
     {
         var cform = sheet.FormulaEngine.ParseFormula(Formula, sheet.Name);
-        var value = sheet.FormulaEngine.Evaluate(cform);
+        var value = sheet.FormulaEngine.EvaluateFormula(cform);
         if (value.ValueType == CellValueType.Logical && value.GetValue<bool>())
         {
             return new CellFormat()

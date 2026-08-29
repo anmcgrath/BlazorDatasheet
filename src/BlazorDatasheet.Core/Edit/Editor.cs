@@ -204,7 +204,7 @@ public class Editor
             }
         }
 
-        var formulaResult = isFormula ? Sheet.FormulaEngine.Evaluate(parsedFormula) : CellValue.Empty;
+        var formulaResult = isFormula ? Sheet.FormulaEngine.EvaluateFormula(parsedFormula) : CellValue.Empty;
         
         var editValue =
             isFormula ? formulaResult :

@@ -92,7 +92,7 @@ public class CellReferenceTests
         workbook.AddSheet(100, 100);
         var formulaEngine = workbook.GetFormulaEngine();
         var refCellValue =
-            formulaEngine.Evaluate(formulaEngine.ParseFormula($"={refStr}", workbook.Sheets.First().Name),
+            formulaEngine.EvaluateFormula(formulaEngine.ParseFormula($"={refStr}", workbook.Sheets.First().Name),
                 resolveReferences: false);
         var isReferenceType = refCellValue.ValueType == CellValueType.Reference;
         isReferenceType.Should().Be(isValid);
