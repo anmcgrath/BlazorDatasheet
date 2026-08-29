@@ -166,7 +166,27 @@ public class FormulaEngine
         return _parser.FromString(formulaString, new ParsingContext(callingSheetName, useExplicitSheetName));
     }
 
-    internal CellValue Evaluate(CellFormula? formula, bool resolveReferences = true)
+    /// <summary>
+    /// Evaluates the <paramref name="formula"/> and returns the evaluated value.
+    /// </summary>
+    /// <param name="formula">The formula string</param>
+    /// <param name="callingSheetName">The sheet the formula is called within, controls how references that don't include sheet name are resolved.</param>
+    /// <param name="useExplicitSheetName">If true, when serialsied to text, the sheet name is included</param>
+    /// <param name="resolveReferences">When true, cell references are resolved to the values, otherwise we return CellValue.Reference. Default is true.</param>
+    /// <returns></returns>
+    public CellValue EvaluateFormula(string formula, string callingSheetName, bool useExplicitSheetName = false,
+        bool resolveReferences = true)
+    {
+        return EvaluateFormula(ParseFormula(formula, callingSheetName, useExplicitSheetName), resolveReferences);
+    }
+
+    /// <summary>
+    /// Evaluates the <paramref name="formula"/> and returns the evaluated value
+    /// </summary>
+    /// <param name="formula"></param>
+    /// <param name="resolveReferences">When true, cell references are resolved to the values, otherwise we return CellValue.Reference. Default is true.</param>
+    /// <returns></returns>
+    public CellValue EvaluateFormula(CellFormula? formula, bool resolveReferences = true)
     {
         if (formula == null)
             return CellValue.Empty;
@@ -405,6 +425,35 @@ public class FormulaEngine
 
         value = default;
         return false;
+    }
+
+    /// <summary>
+    /// Returns detached copies of the references in the formula stored in the variable <paramref name="varName"/>
+    /// </summary>
+    /// <param name="varName"></param>
+    /// <returns></returns>
+    public IEnumerable<Reference> GetVariableReferences(string varName)
+    {
+        var vertex = DependencyManager.GetVertex(varName);
+        if (vertex?.Formula == null)
+            return Enumerable.Empty<Reference>();
+
+        return vertex.Formula.References.Select(reference => reference.Copy());
+    }
+
+    /// <summary>
+    /// Returns detached copies of the references in the formula at <paramref name="row"/>, <paramref name="col"/> in sheet <paramref name="sheetName"/>
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <param name="sheetName"></param>
+    /// <returns></returns>
+    public IEnumerable<Reference> GetReferences(int row, int col, string sheetName)
+    {
+        var vertex = DependencyManager.GetVertex(row, col, sheetName);
+        if (vertex?.Formula == null)
+            return Enumerable.Empty<Reference>();
+        return vertex.Formula.References.Select(reference => reference.Copy());
     }
 
     /// <summary>

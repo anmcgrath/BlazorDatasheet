@@ -42,7 +42,7 @@ public class NamedRangeManager
         var rangeStrFormula = $"={rangeString}";
         var formula = _sheet.FormulaEngine.ParseFormula(rangeStrFormula, _sheet.Name, true);
 
-        var evaluatedValue = _sheet.FormulaEngine.Evaluate(formula, resolveReferences: false);
+        var evaluatedValue = _sheet.FormulaEngine.EvaluateFormula(formula, resolveReferences: false);
         if (evaluatedValue.ValueType == CellValueType.Reference && evaluatedValue.GetValue<Reference>()?.Region != null)
         {
             _sheet.FormulaEngine.SetVariable(name, formula.ToFormulaString());

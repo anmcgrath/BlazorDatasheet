@@ -5,6 +5,16 @@ namespace BlazorDatasheet.Formula.Core.Interpreter.References;
 public abstract class Reference
 {
     /// <summary>
+    /// Returns a detached copy of this reference.
+    /// </summary>
+    public Reference Copy()
+    {
+        var copy = (Reference)MemberwiseClone();
+        copy.Region = Region.Clone();
+        return copy;
+    }
+
+    /// <summary>
     /// The reference kind, e.g Cell, Range, Named
     /// </summary>
     public abstract ReferenceKind Kind { get; }
@@ -24,7 +34,7 @@ public abstract class Reference
     /// </summary>
     /// <param name="offsetRow"></param>
     /// <param name="offsetCol"></param>
-    public abstract void Shift(int offsetRow, int offsetCol);
+    internal abstract void Shift(int offsetRow, int offsetCol);
     /// <summary>
     /// Whether the reference is valid. If it is not, then the formula should evaluate to #REF.
     /// </summary>

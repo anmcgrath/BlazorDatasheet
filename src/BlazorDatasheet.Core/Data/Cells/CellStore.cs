@@ -281,7 +281,7 @@ public partial class CellStore
 
             var rangeStrFormula = $"={cellAddress}";
             var evaluatedValue =
-                Sheet.FormulaEngine.Evaluate(Sheet.FormulaEngine.ParseFormula(rangeStrFormula, Sheet.Name),
+                Sheet.FormulaEngine.EvaluateFormula(Sheet.FormulaEngine.ParseFormula(rangeStrFormula, Sheet.Name),
                     resolveReferences: false);
             if (evaluatedValue.ValueType == CellValueType.Reference)
             {
