@@ -428,7 +428,7 @@ public class FormulaEngine
     }
 
     /// <summary>
-    /// Returns the references of the formula stored in the variable <paramref name="varName"/>
+    /// Returns detached copies of the references in the formula stored in the variable <paramref name="varName"/>
     /// </summary>
     /// <param name="varName"></param>
     /// <returns></returns>
@@ -438,11 +438,11 @@ public class FormulaEngine
         if (vertex?.Formula == null)
             return Enumerable.Empty<Reference>();
 
-        return vertex.Formula.References;
+        return vertex.Formula.References.Select(reference => reference.Copy());
     }
 
     /// <summary>
-    /// Returns the references of the formula at <paramref name="row"/>, <paramref name="col"/> in sheet <paramref name="sheetName"/>
+    /// Returns detached copies of the references in the formula at <paramref name="row"/>, <paramref name="col"/> in sheet <paramref name="sheetName"/>
     /// </summary>
     /// <param name="row"></param>
     /// <param name="col"></param>
@@ -453,7 +453,7 @@ public class FormulaEngine
         var vertex = DependencyManager.GetVertex(row, col, sheetName);
         if (vertex?.Formula == null)
             return Enumerable.Empty<Reference>();
-        return vertex.Formula.References;
+        return vertex.Formula.References.Select(reference => reference.Copy());
     }
 
     /// <summary>

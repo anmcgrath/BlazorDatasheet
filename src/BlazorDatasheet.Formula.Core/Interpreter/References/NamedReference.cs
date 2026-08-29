@@ -21,7 +21,7 @@ public class NamedReference : Reference
                ((NamedReference)reference).Name == Name;
     }
 
-    public override void Shift(int offsetRow, int offsetCol)
+    internal override void Shift(int offsetRow, int offsetCol)
     {
     }
 

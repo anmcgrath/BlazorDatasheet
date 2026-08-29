@@ -97,7 +97,7 @@ public class RangeReference : Reference
         return false;
     }
 
-    public override void Shift(int offsetRow, int offsetCol)
+    internal override void Shift(int offsetRow, int offsetCol)
     {
         var dRowStart = IsStartRowFixed ? 0 : offsetRow;
         var dRowEnd = IsEndRowFixed ? 0 : offsetRow;

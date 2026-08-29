@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Events.Formula;
 using BlazorDatasheet.Formula.Core;
@@ -10,6 +11,40 @@ namespace BlazorDatasheet.Test.Formula;
 
 public class FormulaEngineTests
 {
+    [Test]
+    public void GetReferences_ReturnsDetachedReferences()
+    {
+        var workbook = new Workbook();
+        var sheet = workbook.AddSheet(10, 10);
+        sheet.Cells.SetValue(0, 1, 1);
+        sheet.Cells.SetValue(0, 2, 2);
+        sheet.Cells.SetFormula(0, 0, "=B1");
+
+        var reference = sheet.FormulaEngine.GetReferences(0, 0, sheet.Name).Single();
+        reference.Shift(0, 1);
+
+        sheet.Cells.GetFormulaString(0, 0).Should().Be("=B1");
+        sheet.Cells.SetValue(0, 2, 3);
+        sheet.Cells.GetValue(0, 0).Should().Be(1);
+        sheet.Cells.SetValue(0, 1, 4);
+        sheet.Cells.GetValue(0, 0).Should().Be(4);
+    }
+
+    [Test]
+    public void GetVariableReferences_ReturnsDetachedReferences()
+    {
+        var workbook = new Workbook();
+        var sheet = workbook.AddSheet(10, 10);
+        var formulaEngine = workbook.GetFormulaEngine();
+        formulaEngine.SetVariable("x", "=Sheet1!A1");
+
+        var reference = formulaEngine.GetVariableReferences("x").Single();
+        reference.Shift(0, 1);
+
+        formulaEngine.TryGetVariableFormula("x", out var formula).Should().BeTrue();
+        formula.Should().Be("=Sheet1!A1");
+    }
+
     [Test]
     public void CalculateSheet_WhenEvaluationThrows_ResetsIsCalculating()
     {

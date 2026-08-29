@@ -41,7 +41,7 @@ public class CellReference : Reference
         return false;
     }
 
-    public override void Shift(int offsetRow, int offsetCol)
+    internal override void Shift(int offsetRow, int offsetCol)
     {
         var dRow = IsRowFixed ? 0 : offsetRow;
         var dCol = IsColFixed ? 0 : offsetCol;
