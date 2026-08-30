@@ -62,7 +62,7 @@
     --head-selection-bg-color: rgb(53, 57, 60);
     --row-header-foreground-color: #a4a4a4;
     --col-header-foreground-color: #a4a4a4;
-    --icon-color: #000000;
+    --icon-color: var(--sheet-foreground-color);
     --shadow-overlay-color: #000000;
     --invalid-cell-foreground-color: #d71b1b;
     --selection-bg-color: rgba(83, 101, 121, 0.18);

@@ -29,6 +29,32 @@ var format2 = sheet.Cells[1, 0].Format; // foreground = "blue"
  It is generally more efficient to set the format on a range of cells, rather than setting the format on each cell.
 </div>
 
+<h3>Icons</h3>
+
+<div class="block">
+ A cell format can show an icon to the left of the cell's contents. <code>CellFormat.Icon</code> holds a
+ <em>name</em> rather than any markup - the datasheet looks that name up in its <code>Icons</code> parameter, a
+ dictionary of render fragments. Nothing is rendered for a name that isn't registered there.
+</div>
+
+<CodeBlock Language="csharp">// register the icons the sheet can draw
+&lt;Datasheet Sheet="_sheet" Icons="_icons"/&gt;
+
+private Dictionary&lt;string, RenderFragment&gt; _icons = new() { ["tick"] = TickIcon };
+
+// then refer to one by name from a cell format
+sheet.Range("A1:A4")!.Format = new CellFormat() { Icon = "tick", IconColor = "#16a34a" };
+</CodeBlock>
+
+<div class="block">
+ <code>IconColor</code> is any CSS colour and is applied to the icon only. When it isn't set, the icon uses the
+ <code>--icon-color</code> CSS variable from the current theme. Because an icon is an ordinary format property, it
+ can also be returned from a conditional format, which is how the second column below picks its icon from the
+ cell's value.
+</div>
+
+<CodeExample ComponentType="typeof(CellIconExample)"/>
+
 @code {
 
 }

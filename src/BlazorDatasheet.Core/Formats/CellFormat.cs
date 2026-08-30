@@ -71,7 +71,8 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReado
     }
 
     /// <summary>
-    /// The name of displayed inside the cell
+    /// The name of the icon displayed inside the cell. The name is a key into the datasheet's
+    /// <c>Icons</c> render fragment registry - if it isn't registered there, nothing is rendered.
     /// </summary>
     public string? Icon
     {

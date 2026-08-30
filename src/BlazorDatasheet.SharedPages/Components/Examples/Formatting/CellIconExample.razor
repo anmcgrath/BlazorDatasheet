@@ -1,0 +1,68 @@
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Formats
+@using BlazorDatasheet.Formula.Core
+
+<Datasheet Sheet="_sheet" Icons="_icons"/>
+
+@code {
+
+    private Sheet _sheet = null!;
+
+    // The keys of this dictionary are the names used by CellFormat.Icon.
+    private Dictionary<string, RenderFragment> _icons = null!;
+
+    protected override void OnInitialized()
+    {
+        _icons = new Dictionary<string, RenderFragment>
+        {
+            ["flag"] = FlagIcon,
+            ["tick"] = TickIcon,
+            ["warning"] = WarningIcon
+        };
+
+        _sheet = new Sheet(4, 2);
+
+        _sheet.Cells.SetValues(0, 0, new object[][]
+        {
+            ["Widgets", 12],
+            ["Gadgets", -4],
+            ["Doohickeys", 7],
+            ["Thingamajigs", -1]
+        });
+
+        // A static icon, set directly on the cell format.
+        _sheet.Range("A1:A4")!.Format = new CellFormat { Icon = "flag", IconColor = "#7c3aed" };
+
+        // An icon chosen per-cell by a conditional format.
+        _sheet.ConditionalFormats.Apply(_sheet.Range("B1:B4")!, new SignIconConditionalFormat());
+    }
+
+    /// <summary>
+    /// Shows a tick next to positive numbers and a warning next to negative ones.
+    /// </summary>
+    public class SignIconConditionalFormat : ConditionalFormatAbstractBase
+    {
+        public override CellFormat? CalculateFormat(int row, int col, Sheet sheet)
+        {
+            var value = sheet.Cells.GetCellValue(row, col);
+            if (value.ValueType != CellValueType.Number)
+                return null;
+
+            return value.GetValue<double>() >= 0
+                ? new CellFormat { Icon = "tick", IconColor = "#16a34a" }
+                : new CellFormat { Icon = "warning", IconColor = "#dc2626" };
+        }
+    }
+
+    private RenderFragment SvgIcon(string path) => @<svg xmlns="http://www.w3.org/2000/svg"
+                                                        width="13" height="13"
+                                                        viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        @((MarkupString)path)
+    </svg>;
+
+    private RenderFragment FlagIcon => SvgIcon("<path d=\"M5 21V4h11l-1.5 4L16 12H5\"/>");
+    private RenderFragment TickIcon => SvgIcon("<path d=\"m5 13 4 4 10-10\"/>");
+    private RenderFragment WarningIcon => SvgIcon("<path d=\"M12 4 2.5 20h19z\"/><path d=\"M12 10v4\"/><path d=\"M12 17.5v.5\"/>");
+
+}

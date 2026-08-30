@@ -181,11 +181,15 @@
 
     private RenderFragment<VisualCell>? CellRenderFragment { get; set; }
 
-    private RenderFragment GetIconRenderFragment(string? cellIcon)
+    /// <summary>
+    /// Looks up the render fragment registered for an icon name in <see cref="Icons"/>. Returns null
+    /// when the name isn't registered, so that no icon element is emitted for it at all.
+    /// </summary>
+    private RenderFragment? GetIconRenderFragment(string? cellIcon)
     {
         if (cellIcon != null && Icons.TryGetValue(cellIcon, out var rf))
             return rf;
-        return _ => { };
+        return null;
     }
 
     private Type GetCellRendererType(string type)
@@ -229,11 +233,12 @@
         if (!string.IsNullOrEmpty(cellStyle))
             builder.AddAttribute(60, "style", cell.FormatStyleString);
 
-        if (cell.Icon != null)
+        var iconFragment = GetIconRenderFragment(cell.Icon);
+        if (iconFragment != null)
         {
             builder.OpenElement(70, "div");
             builder.AddAttribute(80, "style", $"margin-right:2px; flex-shrink: 1; float:left; color: {cell.Format?.IconColor ?? "var(--icon-color)"};");
-            builder.AddContent(90, GetIconRenderFragment(cell.Icon));
+            builder.AddContent(90, iconFragment);
             builder.CloseElement();
         }
 
