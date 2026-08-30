@@ -25,6 +25,20 @@ public partial class CellStore
     }
 
     /// <summary>
+    /// Sets the same metadata value on every cell in a region as one undoable operation.
+    /// Other metadata keys are preserved. A null value clears the named key.
+    /// </summary>
+    /// <param name="region">The region, which must be entirely within the sheet.</param>
+    /// <param name="name">The metadata key to set.</param>
+    /// <param name="value">The value shared by every cell, or null to clear the key.</param>
+    /// <returns>Whether the command succeeded. An out-of-sheet region is rejected without changes.</returns>
+    public bool SetCellMetaData(IRegion region, string name, object? value)
+    {
+        var cmd = new SetRegionMetaDataCommand(region, name, value);
+        return Sheet.Commands.ExecuteCommand(cmd);
+    }
+
+    /// <summary>
     /// Clears all metadata for the cell at position row, col.
     /// </summary>
     /// <param name="row"></param>
@@ -70,6 +84,8 @@ public partial class CellStore
             MetaDataChanged?.Invoke(this,
                 new CellMetaDataChangeEventArgs(row, col, item.Key, item.Value, null));
         }
+
+        Sheet.MarkDirty(new Region(row, col));
     }
 
     internal void ClearMetaDataImpl(int row, int col, string name)
@@ -82,6 +98,7 @@ public partial class CellStore
         _metaDataStore.Clear(new Region(row, col));
         if (metaData?.IsEmpty == false)
             _metaDataStore.Add(new Region(row, col), metaData);
+        Sheet.MarkDirty(new Region(row, col));
     }
 
     /// <summary>

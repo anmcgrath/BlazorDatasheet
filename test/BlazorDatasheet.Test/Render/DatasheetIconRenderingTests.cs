@@ -17,6 +17,39 @@ namespace BlazorDatasheet.Test.Render;
 
 public class DatasheetIconRenderingTests
 {
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task Metadata_Changes_Refresh_Conditional_Icons_Without_A_Manual_Render(bool bulk)
+    {
+        using var context = CreateContext();
+        var sheet = new Sheet(1, 2);
+        sheet.ConditionalFormats.Apply(sheet.Region, new ConditionalFormat(
+            (position, currentSheet) => Equals(currentSheet.Cells.GetMetaData(position.row, position.col, "status"), "ready"),
+            _ => new CellFormat { Icon = "tick" }));
+        var sheetComponent = RenderSheet(context, sheet);
+        sheetComponent.FindAll("[data-test-icon]").Should().BeEmpty();
+
+        await sheetComponent.InvokeAsync(() =>
+        {
+            if (bulk)
+                sheet.Cells.SetCellMetaData(sheet.Region, "status", "ready");
+            else
+                sheet.Cells.SetCellMetaData(0, 0, "status", "ready");
+        });
+
+        var expectedIcons = bulk ? 2 : 1;
+        sheetComponent.FindAll("[data-test-icon]").Should().HaveCount(expectedIcons);
+        await sheetComponent.InvokeAsync(() => sheet.Commands.Undo());
+        sheetComponent.FindAll("[data-test-icon]").Should().BeEmpty();
+        await sheetComponent.InvokeAsync(() => sheet.Commands.Redo());
+        sheetComponent.FindAll("[data-test-icon]").Should().HaveCount(expectedIcons);
+
+        await sheetComponent.InvokeAsync(() => sheet.Cells.ClearCellMetaData(0, 0));
+        sheetComponent.FindAll("[data-test-icon]").Should().HaveCount(expectedIcons - 1);
+        await sheetComponent.InvokeAsync(() => sheet.Commands.Undo());
+        sheetComponent.FindAll("[data-test-icon]").Should().HaveCount(expectedIcons);
+    }
+
     [Test]
     public void Registered_Icon_Is_Rendered_In_The_Cell_With_Its_Icon_Color()
     {
