@@ -1,9 +1,11 @@
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Interfaces;
+using BlazorDatasheet.Core.Serialization;
 using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.Formats;
 
+[SerializationIgnore]
 public sealed class ConditionalFormat : ConditionalFormatAbstractBase
 {
     /// <summary>
