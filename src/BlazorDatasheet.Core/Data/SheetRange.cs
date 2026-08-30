@@ -92,26 +92,29 @@ public class SheetRange
         Sheet.Selection.Set(this.Region);
     }
 
+    /// <summary>
+    /// Sets the same metadata value throughout the range as one undoable operation.
+    /// A null value clears the named key. Only cells within the sheet are affected.
+    /// </summary>
     public void SetMetaData(string name, object? value)
     {
-        Sheet.BatchUpdates();
-        foreach (var cellPosition in this.Positions)
-        {
-            Sheet.Cells.SetMetaDataImpl(cellPosition.row, cellPosition.col, name, value);
-        }
-
-        Sheet.EndBatchUpdates();
+        var region = Region.GetIntersection(Sheet.Region);
+        if (region != null)
+            Sheet.Cells.SetCellMetaData(region, name, value);
     }
 
     public void ClearMetaData()
     {
         Sheet.BatchUpdates();
-        foreach (var cellPosition in this.Positions)
+        try
         {
-            Sheet.Cells.ClearMetaDataImpl(cellPosition.row, cellPosition.col);
+            foreach (var cellPosition in this.Positions)
+                Sheet.Cells.ClearMetaDataImpl(cellPosition.row, cellPosition.col);
         }
-
-        Sheet.EndBatchUpdates();
+        finally
+        {
+            Sheet.EndBatchUpdates();
+        }
     }
 
     public void ClearMetaData(string name)
