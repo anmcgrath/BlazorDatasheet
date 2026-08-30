@@ -6,13 +6,13 @@ namespace BlazorDatasheet.Core.Serialization.Json.Mappers;
 
 internal class WorkbookMapper
 {
-    public static WorkbookModel FromWorkbook(Workbook workbook)
+    public static WorkbookModel FromWorkbook(Workbook workbook, Action<string>? onWarning = null)
     {
         var workbookModel = new WorkbookModel();
 
         foreach (var sheet in workbook.Sheets)
         {
-            workbookModel.Sheets.Add(SheetMapper.FromSheet(sheet, workbookModel.Formats));
+            workbookModel.Sheets.Add(SheetMapper.FromSheet(sheet, workbookModel.Formats, onWarning));
         }
 
 

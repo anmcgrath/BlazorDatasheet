@@ -546,6 +546,63 @@ public class SerializationTests
     }
 
     [Test]
+    public void Unregistered_Conditional_Format_Is_Serialized_With_A_Warning()
+    {
+        var sheet = new Sheet(1, 1);
+        sheet.ConditionalFormats.Apply(sheet.Region, new CustomCf("=TRUE", Color.Red));
+        var serializer = new SheetJsonSerializer();
+
+        var json = serializer.Serialize(sheet.Workbook);
+
+        json.Should().Contain(nameof(CustomCf));
+        serializer.Warnings.Should().ContainSingle()
+            .Which.Should().Contain(nameof(CustomCf));
+
+        // and it round-trips once the type is registered
+        var deserializer = new SheetJsonDeserializer();
+        deserializer.Resolvers.ConditionalFormat.Add(nameof(CustomCf), typeof(CustomCf));
+        deserializer.Deserialize(json).Sheets.First()
+            .ConditionalFormats.GetAllFormats().Single().Data.Should().BeOfType<CustomCf>();
+    }
+
+    [Test]
+    public void Ignored_Conditional_Format_Is_Skipped_With_A_Warning()
+    {
+        var sheet = new Sheet(1, 1);
+        // The lambda-based ConditionalFormat holds delegates and so can never round-trip.
+        sheet.ConditionalFormats.Apply(sheet.Region,
+            new ConditionalFormat((pos, s) => true, cell => new CellFormat { BackgroundColor = "red" }));
+        sheet.ConditionalFormats.Apply(sheet.Region, new NumberScaleConditionalFormat(Color.Aqua, Color.Red));
+        var serializer = new SheetJsonSerializer();
+
+        var json = serializer.Serialize(sheet.Workbook);
+
+        json.Should().NotContain($"\"Type\":\"{nameof(ConditionalFormat)}\"");
+        serializer.Warnings.Should().ContainSingle()
+            .Which.Should().Contain(nameof(ConditionalFormat));
+
+        // the non-ignored conditional format still round-trips
+        new SheetJsonDeserializer().Deserialize(json).Sheets.First()
+            .ConditionalFormats.GetAllFormats().Single().Data
+            .Should().BeOfType<NumberScaleConditionalFormat>();
+    }
+
+    [Test]
+    public void Ignored_Conditional_Format_Warns_Once_Per_Type()
+    {
+        var sheet = new Sheet(3, 3);
+        sheet.ConditionalFormats.Apply(new ColumnRegion(0),
+            new ConditionalFormat((pos, s) => true, cell => new CellFormat()));
+        sheet.ConditionalFormats.Apply(new ColumnRegion(1),
+            new ConditionalFormat((pos, s) => true, cell => new CellFormat()));
+        var serializer = new SheetJsonSerializer();
+
+        serializer.Serialize(sheet.Workbook);
+
+        serializer.Warnings.Should().ContainSingle();
+    }
+
+    [Test]
     public void Formula_With_Error_Should_Be_deserialised_Correctly()
     {
         var workbook = new Workbook();

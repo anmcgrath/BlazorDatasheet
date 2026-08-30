@@ -11,11 +11,20 @@ namespace BlazorDatasheet.Core.Serialization.Json;
 
 public class SheetJsonSerializer
 {
+    private readonly List<string> _warnings = new();
+
     public SheetSerializationTypeResolverCollection Resolvers { get; } = new();
+
+    /// <summary>
+    /// Non-fatal issues encountered during the most recent call to <see cref="Serialize(Workbook, Stream, bool)"/>.
+    /// Cleared at the start of each serialization.
+    /// </summary>
+    public IReadOnlyList<string> Warnings => _warnings;
 
     public void Serialize(Workbook workbook, Stream stream, bool writeIndented = false)
     {
-        var workbookModel = WorkbookMapper.FromWorkbook(workbook);
+        _warnings.Clear();
+        var workbookModel = WorkbookMapper.FromWorkbook(workbook, _warnings.Add);
         JsonSerializer.Serialize(stream, workbookModel, new JsonSerializerOptions
         {
             WriteIndented = writeIndented,
@@ -24,7 +33,7 @@ public class SheetJsonSerializer
             {
                 new CellFormatJsonConverter(),
                 new CellJsonConverter(),
-                new ConditionalFormatJsonConverter(Resolvers.ConditionalFormat),
+                new ConditionalFormatJsonConverter(Resolvers.ConditionalFormat, _warnings.Add),
                 new ColorJsonConverter(),
                 new DataValidationJsonConverter(Resolvers.DataValidation),
                 new IFilterJsonConverter(Resolvers.Filter),

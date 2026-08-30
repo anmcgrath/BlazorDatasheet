@@ -11,10 +11,12 @@ namespace BlazorDatasheet.Core.Serialization.Json.Converters;
 internal class ConditionalFormatJsonConverter : JsonConverter<ConditionalFormatModel>
 {
     private readonly Dictionary<string, Type> _resolver;
+    private readonly Action<string>? _onWarning;
 
-    public ConditionalFormatJsonConverter(Dictionary<string, Type> resolver)
+    public ConditionalFormatJsonConverter(Dictionary<string, Type> resolver, Action<string>? onWarning = null)
     {
         _resolver = resolver;
+        _onWarning = onWarning;
     }
 
     public override ConditionalFormatModel? Read(ref Utf8JsonReader reader, Type typeToConvert,
@@ -93,8 +95,14 @@ internal class ConditionalFormatJsonConverter : JsonConverter<ConditionalFormatM
     {
         var ruleType = GetConditionalFormatType(value.RuleType);
         if (ruleType == null)
-            throw new Exception(
-                $"Could not write conditional format with rule type {value.RuleType}. Ensure it is included in the CF resolver.");
+        {
+            // Still write the conditional format, using the runtime type of the rule, so that no data is lost.
+            // It won't be able to be read back unless the type is registered in the resolver, so warn the user.
+            ruleType = value.Rule.GetType();
+            _onWarning?.Invoke(
+                $"The conditional format with rule type {value.RuleType} is not included in the conditional format resolver. " +
+                "It has been written using its runtime type but will not be able to be deserialized until it is registered in the resolver.");
+        }
 
         writer.WriteStartObject();
         writer.WriteString(JsonConstants.RangeReference, value.RegionString);
