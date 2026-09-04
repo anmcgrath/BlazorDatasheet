@@ -1,0 +1,96 @@
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events.Formula
+@using BlazorDatasheet.Formula.Core
+@implements IDisposable
+
+<div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start">
+    <div style="width: 320px; height: 220px; overflow: auto">
+        <Datasheet Sheet="_sheet"/>
+    </div>
+
+    <div>
+        <table style="border-collapse: collapse; font-size: 0.9em">
+            <thead>
+            <tr>
+                <th style="text-align: left; padding: 2px 8px">Name</th>
+                <th style="text-align: left; padding: 2px 8px">Kind</th>
+                <th style="text-align: left; padding: 2px 8px">Type</th>
+                <th style="text-align: left; padding: 2px 8px">Formula</th>
+                <th style="text-align: left; padding: 2px 8px">Value</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var variable in _sheet.FormulaEngine.GetVariableInfos())
+            {
+                <tr>
+                    <td style="padding: 2px 8px">@variable.Name</td>
+                    <td style="padding: 2px 8px">@variable.Kind</td>
+                    <td style="padding: 2px 8px">@(variable.IsRange ? "Range" : variable.ValueType.ToString())</td>
+                    <td style="padding: 2px 8px"><code>@variable.Formula</code></td>
+                    <td style="padding: 2px 8px">@FormatValue(variable)</td>
+                    <td style="padding: 2px 8px">
+                        <button @onclick="() => _sheet.FormulaEngine.ClearVariable(variable.Name)">Delete</button>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+
+        <div style="margin-top: 8px; display: flex; gap: 4px">
+            <input type="text" placeholder="Name" @bind="_newName" style="width: 80px"/>
+            <input type="text" placeholder="Value or =formula" @bind="_newValue" style="width: 160px"/>
+            <button @onclick="SetVariable">Set</button>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    private Sheet _sheet = null!;
+    private string _newName = string.Empty;
+    private string _newValue = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        var workbook = new Workbook();
+        _sheet = workbook.AddSheet(8, 4);
+        _sheet.Cells.SetValues(0, 0, new object[][] { [1], [2], [3] });
+        _sheet.Cells.SetFormula(0, 2, "=SUM(prices) * rate");
+
+        _sheet.FormulaEngine.SetVariable("rate", 1.5);
+        _sheet.FormulaEngine.SetVariable("total", "=SUM(Sheet1!A1:A3)");
+        _sheet.NamedRanges.Set("prices", "A1:A3");
+
+        _sheet.FormulaEngine.VariableChanged += OnVariableChanged;
+    }
+
+    private void OnVariableChanged(object? sender, VariableChangedEventArgs e) => StateHasChanged();
+
+    private void SetVariable()
+    {
+        if (string.IsNullOrWhiteSpace(_newName))
+            return;
+
+        var trimmed = _newValue.Trim();
+        if (BlazorDatasheet.Core.FormulaEngine.FormulaEngine.IsFormula(trimmed))
+            _sheet.FormulaEngine.SetVariable(_newName, trimmed);
+        else if (double.TryParse(trimmed, out var number))
+            _sheet.FormulaEngine.SetVariable(_newName, number);
+        else
+            _sheet.FormulaEngine.SetVariable(_newName, trimmed);
+    }
+
+    private static string FormatValue(VariableInfo variable)
+    {
+        if (variable.IsRange)
+            return $"{variable.SheetName}!{RangeText.RegionToText(variable.Region!)}";
+        return variable.Value.ToString() ?? string.Empty;
+    }
+
+    public void Dispose()
+    {
+        _sheet.FormulaEngine.VariableChanged -= OnVariableChanged;
+    }
+
+}

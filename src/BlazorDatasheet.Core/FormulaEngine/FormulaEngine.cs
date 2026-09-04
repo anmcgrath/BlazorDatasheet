@@ -485,6 +485,112 @@ public class FormulaEngine
         }
     }
 
+    /// <summary>
+    /// Returns the names of all variables defined in the engine, including formula variables
+    /// and named ranges.
+    /// </summary>
+    public IReadOnlyList<string> GetVariableNames()
+    {
+        var names = new List<string>(_environment.GetVariableNames());
+        var seen = new HashSet<string>(names);
+        foreach (var vertex in DependencyManager.GetAllVertices())
+        {
+            if (vertex.VertexType == VertexType.Named && seen.Add(vertex.Key.Name))
+                names.Add(vertex.Key.Name);
+        }
+
+        return names;
+    }
+
+    /// <summary>
+    /// Whether a variable with the name <paramref name="varName"/> is defined.
+    /// </summary>
+    public bool VariableExists(string varName)
+    {
+        return _environment.VariableExists(varName) || DependencyManager.GetVertex(varName) != null;
+    }
+
+    /// <summary>
+    /// Returns a detached snapshot describing the variable <paramref name="varName"/>, or null if the
+    /// variable is not defined.
+    /// </summary>
+    public VariableInfo? GetVariableInfo(string varName)
+    {
+        var vertex = DependencyManager.GetVertex(varName);
+        var hasValue = _environment.TryGetVariable(varName, out var value);
+        if (!hasValue && vertex == null)
+            return null;
+
+        if (!hasValue)
+            value = CellValue.Empty;
+        else
+            value = DetachCellValue(value);
+
+        var formula = vertex?.Formula;
+        var references = formula == null
+            ? Array.Empty<Reference>()
+            : formula.References.Select(r => r.Copy()).ToArray();
+
+        // The stored value of a formula variable is the resolved value (e.g. an array for a range), so
+        // to discover whether the variable *is* a range we evaluate the formula without resolving references.
+        IRegion? region = null;
+        string? sheetName = null;
+        if (formula != null)
+        {
+            var unresolved = EvaluateFormula(formula, resolveReferences: false);
+            if (unresolved.ValueType == CellValueType.Reference &&
+                unresolved.GetValue<Reference>() is { Region: not null } reference)
+            {
+                region = reference.Region.Clone();
+                sheetName = reference.SheetName;
+            }
+            else if (formula.IsReferenceFormula() && references is [var storedReference])
+            {
+                // A named range remains a named range after its reference is invalidated. Keeping the
+                // last region and sheet allows it to remain discoverable and clearable as "=#REF!".
+                region = storedReference.Region.Clone();
+                sheetName = storedReference.SheetName;
+            }
+        }
+
+        return new VariableInfo(
+            varName,
+            formula == null ? VariableKind.Value : VariableKind.Formula,
+            formula?.ToFormulaString(),
+            value,
+            references,
+            region,
+            sheetName);
+    }
+
+    private static CellValue DetachCellValue(CellValue value)
+    {
+        return value.ValueType switch
+        {
+            CellValueType.Array => CellValue.Array(value.GetValue<CellValue[][]>()!
+                .Select(row => row.Select(DetachCellValue).ToArray()).ToArray()),
+            CellValueType.Sequence => CellValue.Sequence(value.GetValue<CellValue[]>()!
+                .Select(DetachCellValue).ToArray()),
+            CellValueType.Reference => CellValue.Reference(value.GetValue<Reference>()!.Copy()),
+            _ => value
+        };
+    }
+
+    /// <summary>
+    /// Returns detached snapshots of all variables defined in the engine.
+    /// </summary>
+    public IReadOnlyList<VariableInfo> GetVariableInfos()
+    {
+        var infos = new List<VariableInfo>();
+        foreach (var name in GetVariableNames())
+        {
+            if (GetVariableInfo(name) is { } info)
+                infos.Add(info);
+        }
+
+        return infos;
+    }
+
     public void ClearVariable(string varName)
     {
         QueueVariableChange(varName, true);

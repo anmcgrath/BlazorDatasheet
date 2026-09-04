@@ -24,6 +24,18 @@ public class CellFormula
         return !ExpressionTree.Errors.Any();
     }
 
+    /// <summary>
+    /// Returns whether the formula consists solely of a cell or range reference, optionally wrapped
+    /// in parentheses. Invalidated references still count as reference formulas.
+    /// </summary>
+    public bool IsReferenceFormula()
+    {
+        Expression expression = ExpressionTree.Root;
+        while (expression is ParenthesizedExpression parenthesized)
+            expression = parenthesized.Expression;
+        return expression is ReferenceExpression;
+    }
+
     public string ToFormulaString(bool includeEquals = true)
     {
         return includeEquals ? $"={ExpressionTree.Root.ToExpressionText()}" : ExpressionTree.Root.ToExpressionText();
