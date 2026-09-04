@@ -269,6 +269,28 @@
     background: var(--col-header-bg-color);
 }
 
+.bds-col-group-pane {
+    background: var(--col-header-bg-color);
+    color: var(--col-header-foreground-color);
+}
+
+.bds-col-group-head-left {
+    border-left: var(--sheet-border-style);
+}
+
+.bds-col-group-head {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    border-right: var(--sheet-border-style);
+    border-bottom: var(--sheet-border-style);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    cursor: default;
+}
+
 .bds-col-head, .bds-row-head {
     font-weight: 600;
     letter-spacing: 0.01em;

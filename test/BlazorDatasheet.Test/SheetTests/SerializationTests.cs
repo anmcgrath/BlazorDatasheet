@@ -21,6 +21,21 @@ namespace BlazorDatasheet.Test.SheetTests;
 public class SerializationTests
 {
     [Test]
+    public void Column_Groups_Round_Trip_Through_Serialization()
+    {
+        var wb = new Workbook();
+        var sheet = wb.AddSheet("SheetName", 5, 10);
+        sheet.Columns.SetGroup(0, 2, "Q1");
+        sheet.Columns.SetGroup(3, 5, "Q2");
+
+        var json = new SheetJsonSerializer().Serialize(wb);
+        var deserialized = new SheetJsonDeserializer().Deserialize(json);
+
+        var groups = deserialized.Sheets.First().Columns.GetGroups();
+        groups.Select(g => (g.Start, g.End, g.Label)).Should().Equal((0, 2, "Q1"), (3, 5, "Q2"));
+    }
+
+    [Test]
     public void Sheet_Serialization_Should_Serialize()
     {
         Assert.DoesNotThrow(() =>

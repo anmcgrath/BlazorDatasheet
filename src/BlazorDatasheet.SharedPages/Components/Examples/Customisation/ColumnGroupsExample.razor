@@ -1,0 +1,31 @@
+@using BlazorDatasheet.Core.Data
+
+<div style="max-width: 700px; height:400px; overflow: scroll;">
+    <Datasheet Sheet="_sheet">
+        <ColumnGroupTemplate>
+            <div style="width: 100%; text-align: center; font-style: italic;">@context.Label</div>
+        </ColumnGroupTemplate>
+    </Datasheet>
+</div>
+
+@code {
+
+    private readonly Sheet _sheet = new Sheet(300, 200);
+
+    protected override void OnInitialized()
+    {
+        _sheet.Columns.SetHeadings(0, 0, "Jan");
+        _sheet.Columns.SetHeadings(1, 1, "Feb");
+        _sheet.Columns.SetHeadings(2, 2, "Mar");
+        _sheet.Columns.SetHeadings(3, 3, "Apr");
+        _sheet.Columns.SetHeadings(4, 4, "May");
+        _sheet.Columns.SetHeadings(5, 5, "Jun");
+
+        _sheet.Columns.SetGroup(0, 2, "Q1");
+        _sheet.Columns.SetGroup(3, 5, "Q2");
+
+        _sheet.FreezeLeftColumns(1);
+        _sheet.Commands.ClearHistory();
+    }
+
+}

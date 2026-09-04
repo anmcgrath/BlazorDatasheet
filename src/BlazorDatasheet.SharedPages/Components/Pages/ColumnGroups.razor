@@ -1,0 +1,17 @@
+@page "/ColumnGroups"
+@using BlazorDatasheet.SharedPages.Components.Examples.Customisation
+<h3>Column groups</h3>
+
+<div class="block">
+    Column groups add a second heading band above the column headings, where a labelled cell spans a contiguous run of
+    columns. Groups are defined on the sheet with <code>sheet.Columns.SetGroup(start, end, label)</code> and removed
+    with <code>sheet.Columns.ClearGroups(start, end)</code>. Both are undoable, and groups grow, shrink and shift as
+    columns are inserted or removed.
+</div>
+
+<div class="block">
+    Clicking a group selects its columns. The band height is set by <code>sheet.Columns.GroupHeadingHeight</code>, and
+    the content of each group can be customised with the <code>ColumnGroupTemplate</code> render fragment.
+</div>
+
+<CodeExample ComponentType="typeof(ColumnGroupsExample)"/>

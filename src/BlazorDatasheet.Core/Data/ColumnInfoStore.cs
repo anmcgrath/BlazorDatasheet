@@ -1,4 +1,4 @@
-using BlazorDatasheet.Core.Data.Collections;
+﻿using BlazorDatasheet.Core.Data.Collections;
 using BlazorDatasheet.Core.Data.Filter;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Intervals;
@@ -25,6 +25,27 @@ public class ColumnInfoStore : RowColInfoStore
             EmitSizeModified(-1, -1);
         }
     }
+
+    private double _groupHeadingHeight = 24;
+
+    /// <summary>
+    /// The height (in px) of the column group heading band, shown above the column headings when
+    /// any column groups exist.
+    /// </summary>
+    public double GroupHeadingHeight
+    {
+        get => _groupHeadingHeight;
+        set
+        {
+            _groupHeadingHeight = value;
+            EmitSizeModified(-1, -1);
+        }
+    }
+
+    /// <summary>
+    /// The total height (in px) of the column heading area, including the group band if any groups exist.
+    /// </summary>
+    public double TotalHeadingHeight => HeadingHeight + (HasGroups ? GroupHeadingHeight : 0);
 
     public ColumnInfoStore(double defaultHeight, Sheet sheet) : base(defaultHeight, sheet, Axis.Col)
     {

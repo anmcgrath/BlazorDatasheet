@@ -85,6 +85,10 @@ internal class SheetMapper
 			sheetModel.Columns.Add(columnModel);
 		}
 
+		sheetModel.ColumnGroups = sheet.Columns.GetGroups()
+			.Select(g => new HeadingGroupModel { Start = g.Start, End = g.End, Label = g.Label })
+			.ToList();
+
 		sheetModel.Merges = sheet.Cells.GetMerges(sheet.Region)
 			.Select(x => new DataRegionModel<bool>(RangeText.RegionToText(x), true))
 			.ToList();
@@ -185,6 +189,9 @@ internal class SheetMapper
 
 		foreach (var validator in sheetModel.Validators)
 			sheet.Validators.Add(sheet.Range(validator.RegionString)!.Region, validator.Value);
+
+		foreach (var groupModel in sheetModel.ColumnGroups)
+			sheet.Columns.GroupStore.Set(groupModel.Start, groupModel.End, new HeadingGroup(groupModel.Label));
 
 		foreach (var colModel in sheetModel.Columns)
 		{
