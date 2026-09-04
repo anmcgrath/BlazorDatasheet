@@ -14,6 +14,11 @@ public class Workbook
     private readonly FormulaEngine.FormulaEngine _formulaEngine;
     internal WorkbookEnvironment Environment { get; }
 
+    /// <summary>
+    /// Named ranges defined in the workbook. Named ranges are workbook-wide.
+    /// </summary>
+    public NamedRangeManager NamedRanges { get; }
+
     public event EventHandler<WorkbookSheetAddedEventArgs>? SheetAdded;
     public event EventHandler<WorkbookSheetRemovedEventArgs>? SheetRemoved;
     public event EventHandler<WorkbookSheetRenamedEventArgs>? SheetRenamed;
@@ -35,6 +40,7 @@ public class Workbook
         var registry = BuildDefaultRegistry(options);
         Environment = new WorkbookEnvironment(this, registry);
         _formulaEngine = new FormulaEngine.FormulaEngine(Environment, options);
+        NamedRanges = new NamedRangeManager(this);
     }
 
     public static FunctionRegistry BuildDefaultRegistry(FormulaOptions? options)

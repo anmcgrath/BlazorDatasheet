@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Commands.Formatting;
@@ -186,6 +186,10 @@ public class Sheet
     /// </summary>
     private bool _isBatchingChanges;
 
+    /// <summary>
+    /// Sheet-scoped view over the workbook's named ranges. Named ranges are workbook-wide;
+    /// see <see cref="Workbook.NamedRanges"/>.
+    /// </summary>
     public NamedRangeManager NamedRanges { get; }
 
     /// <summary>

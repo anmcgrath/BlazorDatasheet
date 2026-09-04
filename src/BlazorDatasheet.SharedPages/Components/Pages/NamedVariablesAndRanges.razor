@@ -20,8 +20,9 @@
 <h4>Named ranges</h4>
 
 <div class="block">
-    Named ranges can be set and cleared through the sheet's NamedRanges property. The ranges are shifted appropriately
-    when rows or columns are inserted/deleted.
+    Named ranges are workbook-wide and can be set and cleared through the workbook's <code>NamedRanges</code> property,
+    or through a sheet's <code>NamedRanges</code> property which resolves un-qualified ranges against that sheet.
+    The ranges are shifted appropriately when rows or columns are inserted/deleted.
 </div>
 
 <div class="block">
@@ -29,6 +30,18 @@
 </div>
 
 <CodeExample ComponentType="typeof(NamedRangeExample)"/>
+
+<h4>Inspecting variables</h4>
+
+<div class="block">
+    All variables can be enumerated through <code>FormulaEngine.GetVariableInfos()</code>. Each
+    <code>VariableInfo</code> is a detached snapshot describing whether the variable is a literal value or a formula,
+    its current value, the formula string, its references and, for named ranges, the region and sheet it resolves to.
+    Subscribe to <code>FormulaEngine.VariableChanged</code> to be notified when variables are added, updated, removed
+    or recalculated. This is enough to build a variable or named range manager UI, as in the example below.
+</div>
+
+<CodeExample ComponentType="typeof(VariableManagerExample)"/>
 
 
 @code {
