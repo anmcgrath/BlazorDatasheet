@@ -687,4 +687,161 @@
 
         return 0;
     }
+
+    [Test]
+    public void Datasheet_Without_Column_Groups_Does_Not_Render_Group_Band()
+    {
+        var sheet = new Sheet(3, 4);
+        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+
+        cut.FindAll("div.bds-col-group-row").Should().BeEmpty();
+        cut.FindAll("div.bds-col-group-head").Should().BeEmpty();
+    }
+
+    [Test]
+    public async Task Column_Group_Renders_Label_Spanning_Its_Columns()
+    {
+        var sheet = new Sheet(3, 4);
+        sheet.Columns.SetSize(0, 90);
+        sheet.Columns.SetGroup(0, 1, "Q1");
+        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+
+        var group = cut.Find("div.bds-col-group-head");
+        group.TextContent.Trim().Should().Be("Q1");
+        group.GetStyle().GetWidth().Should().Be((90 + sheet.Columns.DefaultSize) + "px");
+        group.GetStyle().GetLeft().Should().BeOneOf("0", "0px");
+
+        // the corner heading cell grows to match the taller gutter
+        var corner = cut.Find("div.bds-row-head.bds-col-head");
+        corner.GetStyle().GetHeight().Should().Be(sheet.Columns.TotalHeadingHeight + "px");
+
+        // adding a group at runtime re-renders the band
+        await cut.InvokeAsync(() => sheet.Columns.SetGroup(2, 3, "Q2"));
+        cut.WaitForAssertion(() => cut.FindAll("div.bds-col-group-head").Should().HaveCount(2));
+        var second = cut.FindAll("div.bds-col-group-head")[1];
+        second.GetStyle().GetLeft().Should().Be((90 + sheet.Columns.DefaultSize) + "px");
+    }
+
+    [Test]
+    public async Task Group_Band_Skips_Groups_Whose_Columns_Are_All_Hidden()
+    {
+        var sheet = new Sheet(3, 4);
+        sheet.Columns.SetGroup(0, 1, "Hidden");
+        sheet.Columns.SetGroup(2, 3, "Shown");
+        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+
+        await cut.InvokeAsync(() => sheet.Columns.Hide(0, 2));
+
+        cut.WaitForAssertion(() =>
+        {
+            var groups = cut.FindAll("div.bds-col-group-head");
+            groups.Should().HaveCount(1);
+            groups[0].TextContent.Trim().Should().Be("Shown");
+        });
+    }
+
+    [Test]
+    public async Task Clicking_Column_Group_Selects_Its_Columns_And_Highlights_Group()
+    {
+        var sheet = new Sheet(3, 4);
+        sheet.Columns.SetGroup(1, 2, "G");
+        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+
+        await cut.Find("div.bds-col-group-head").MouseDownAsync(new MouseEventArgs());
+
+        sheet.Selection.ActiveRegion.Should().BeOfType<ColumnRegion>();
+        sheet.Selection.ActiveRegion!.Left.Should().Be(1);
+        sheet.Selection.ActiveRegion.Right.Should().Be(2);
+        cut.WaitForAssertion(() =>
+            cut.Find("div.bds-col-group-head").ClassList.Should().Contain("bds-selected-header-full"));
+
+        await cut.InvokeAsync(() => sheet.Selection.Set(0, 1));
+        cut.WaitForAssertion(() =>
+        {
+            var cls = cut.Find("div.bds-col-group-head").ClassList;
+            cls.Should().Contain("bds-selected-header");
+            cls.Should().NotContain("bds-selected-header-full");
+        });
+    }
+
+    [Test]
+    public async Task Clicking_Column_Group_Accepts_Active_Edit_Before_Selecting_Columns()
+    {
+        var sheet = new Sheet(3, 4);
+        sheet.Columns.SetGroup(1, 2, "G");
+        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+
+        await cut.InvokeAsync(() => sheet.Editor.BeginEdit(0, 0));
+        sheet.Editor.IsEditing.Should().BeTrue();
+
+        await cut.Find("div.bds-col-group-head").MouseDownAsync(new MouseEventArgs());
+
+        sheet.Editor.IsEditing.Should().BeFalse();
+        sheet.Selection.ActiveRegion.Should().BeOfType<ColumnRegion>();
+        sheet.Selection.ActiveRegion!.Left.Should().Be(1);
+        sheet.Selection.ActiveRegion.Right.Should().Be(2);
+    }
+
+    [Test]
+    public void Custom_Column_Group_Template_Is_Used()
+    {
+        var sheet = new Sheet(3, 4);
+        sheet.Columns.SetGroup(0, 3, "G");
+        var cut = RenderComponent<Datasheet>(parameters =>
+        {
+            parameters.Add(p => p.Sheet, sheet);
+            parameters.Add(p => p.ColumnGroupTemplate,
+                (RenderFragment<ColumnGroupContext>)(ctx => @<span>@ctx.Label:@ctx.Start-@ctx.End</span>));
+        });
+
+        cut.Find("div.bds-col-group-head").TextContent.Trim().Should().Be("G:0-3");
+    }
+
+    [Test]
+    public void Frozen_Pane_Without_Group_Still_Renders_Header_Coloured_Group_Band()
+    {
+        var sheet = new Sheet(3, 5);
+        sheet.FreezeLeftColumns(1);
+        sheet.Columns.SetGroup(2, 3, "G");
+        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+
+        var frozenPanes = cut.FindAll("div.bds-col-group-row div.bds-frozen-left div.bds-col-group-pane");
+        frozenPanes.Should().HaveCount(1);
+        frozenPanes[0].QuerySelectorAll("div.bds-col-group-head").Should().BeEmpty();
+    }
+
+    [Test]
+    public async Task Isolated_Group_Gets_Left_Border_But_Adjacent_Group_Does_Not()
+    {
+        var sheet = new Sheet(3, 6);
+        sheet.Columns.SetGroup(0, 1, "A");
+        sheet.Columns.SetGroup(3, 4, "B");
+        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+
+        var groups = cut.FindAll("div.bds-col-group-head");
+        groups.Should().HaveCount(2);
+        groups[0].ClassList.Should().NotContain("bds-col-group-head-left");
+        groups[1].ClassList.Should().Contain("bds-col-group-head-left");
+
+        // filling the gap makes B adjacent to a group, so it drops its own left border
+        await cut.InvokeAsync(() => sheet.Columns.SetGroup(2, 2, "C"));
+        cut.WaitForAssertion(() =>
+        {
+            var b = cut.Find("div.bds-col-group-head[data-group-start='3']");
+            b.ClassList.Should().NotContain("bds-col-group-head-left");
+        });
+    }
+
+    [Test]
+    public void Group_Clipped_By_Frozen_Boundary_Has_No_Left_Border_In_Main_Pane()
+    {
+        var sheet = new Sheet(3, 5);
+        sheet.FreezeLeftColumns(1);
+        sheet.Columns.SetGroup(0, 2, "G");
+        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+
+        var groups = cut.FindAll("div.bds-col-group-head");
+        groups.Should().HaveCount(2);
+        groups.Should().OnlyContain(g => !g.ClassList.Contains("bds-col-group-head-left"));
+    }
 }

@@ -15,6 +15,11 @@ public abstract class RowColInfoStore
 
     internal readonly Range1DStore<string> HeadingStore = new(null);
 
+    /// <summary>
+    /// Stores labelled groups that span contiguous rows/columns.
+    /// </summary>
+    internal readonly Range1DStore<HeadingGroup> GroupStore = new(null);
+
     // stores and manages the *cumulative* sizes, for visual purposes.
     protected readonly CumulativeRange1DStore CumulativeSizeStore;
 
@@ -82,6 +87,16 @@ public abstract class RowColInfoStore
     public virtual event EventHandler<HeadingsModifiedEventArgs>? HeadingsModified;
 
     /// <summary>
+    /// Fired when a row/column heading group is changed.
+    /// </summary>
+    public virtual event EventHandler<HeadingGroupsModifiedEventArgs>? GroupsModified;
+
+    /// <summary>
+    /// Whether any heading groups are defined.
+    /// </summary>
+    public bool HasGroups => GroupStore.Any();
+
+    /// <summary>
     /// Sets the sizes of rows/cols between (and including) the indices specified, to the value given.
     /// </summary>
     /// <param name="start"></param>
@@ -130,6 +145,52 @@ public abstract class RowColInfoStore
     }
 
     /// <summary>
+    /// Sets a group with the label given over the rows/columns between (and including) the indices specified.
+    /// Any existing groups overlapping the range are cleared first, since groups never overlap.
+    /// </summary>
+    internal RowColInfoRestoreData SetGroupImpl(int start, int end, string label)
+    {
+        var hadGroups = HasGroups;
+        var restoreData = GroupStore.Clear(start, end);
+        restoreData.Merge(GroupStore.Set(start, end, new HeadingGroup(label)));
+        EmitGroupsModified(start, end, hadGroups);
+        return new RowColInfoRestoreData()
+        {
+            GroupsRestoreData = restoreData
+        };
+    }
+
+    /// <summary>
+    /// Clears any groups overlapping the rows/columns between (and including) the indices specified.
+    /// </summary>
+    internal RowColInfoRestoreData ClearGroupsImpl(int start, int end)
+    {
+        var hadGroups = HasGroups;
+        // clear whole groups, not just the part of them inside the range
+        foreach (var group in GetGroups(start, end))
+        {
+            start = Math.Min(start, group.Start);
+            end = Math.Max(end, group.End);
+        }
+
+        var restoreData = GroupStore.Clear(start, end);
+        EmitGroupsModified(start, end, hadGroups);
+        return new RowColInfoRestoreData()
+        {
+            GroupsRestoreData = restoreData
+        };
+    }
+
+    private void EmitGroupsModified(int start, int end, bool hadGroups)
+    {
+        Sheet.MarkDirty(GetSpannedRegion(start, end));
+        GroupsModified?.Invoke(this, new HeadingGroupsModifiedEventArgs(start, end, _axis));
+        // the group band appearing/disappearing changes the heading gutter size
+        if (hadGroups != HasGroups)
+            EmitSizeModified(-1, -1);
+    }
+
+    /// <summary>
     /// Removes the rows/columns between (and including) the indexes given.
     /// Handles shifting the indices to the up/left and returns any modified data.
     /// </summary>
@@ -138,11 +199,13 @@ public abstract class RowColInfoStore
     /// <returns></returns>
     internal RowColInfoRestoreData RemoveImpl(int start, int end)
     {
+        var groupsBefore = GetGroups();
         var restoreData = new RowColInfoRestoreData()
         {
             CumulativeSizesRestoreData = CumulativeSizeStore.Delete(start, end),
             SizesRestoreData = SizeStore.Delete(start, end),
             HeadingsRestoreData = HeadingStore.Delete(start, end),
+            GroupsRestoreData = GroupStore.Delete(start, end),
             VisibilityRestoreData = Visible.Delete(start, end),
             RowColFormatRestoreData = new RowColFormatRestoreData()
             {
@@ -151,6 +214,7 @@ public abstract class RowColInfoStore
         };
 
         restoreData.RowColFormatRestoreData.Format1DRestoreData.Merge(Formats.ShiftLeft(start, (end - start) + 1));
+        EmitGroupsModifiedIfChanged(groupsBefore);
         Sheet.MarkDirty(GetSpannedRegion(start, Sheet.GetSize(_axis)));
         EmitRemoved(start, (end - start) + 1);
         return restoreData;
@@ -377,11 +441,13 @@ public abstract class RowColInfoStore
     /// <param name="count"></param>
     internal RowColInfoRestoreData InsertImpl(int start, int count)
     {
+        var groupsBefore = GetGroups();
         var restoreData = new RowColInfoRestoreData()
         {
             CumulativeSizesRestoreData = CumulativeSizeStore.InsertAt(start, count),
             SizesRestoreData = SizeStore.InsertAt(start, count),
             HeadingsRestoreData = HeadingStore.InsertAt(start, count),
+            GroupsRestoreData = GroupStore.InsertAt(start, count),
             VisibilityRestoreData = Visible.InsertAt(start, count),
             RowColFormatRestoreData = new RowColFormatRestoreData()
             {
@@ -389,6 +455,7 @@ public abstract class RowColInfoStore
             }
         };
 
+        EmitGroupsModifiedIfChanged(groupsBefore);
         EmitInserted(start, count);
         Sheet.MarkDirty(GetSpannedRegion(start, Sheet.GetSize(_axis)));
         return restoreData;
@@ -406,9 +473,11 @@ public abstract class RowColInfoStore
 
     internal void Restore(RowColInfoRestoreData data)
     {
+        var groupsBefore = GetGroups();
         CumulativeSizeStore.Restore(data.CumulativeSizesRestoreData);
         SizeStore.Restore(data.SizesRestoreData);
         HeadingStore.Restore(data.HeadingsRestoreData);
+        GroupStore.Restore(data.GroupsRestoreData);
         Visible.Restore(data.VisibilityRestoreData);
         Formats.Restore(data.RowColFormatRestoreData.Format1DRestoreData);
 
@@ -423,6 +492,20 @@ public abstract class RowColInfoStore
         {
             HeadingsModified?.Invoke(this, new HeadingsModifiedEventArgs(change.Start, change.End, _axis));
         }
+
+        EmitGroupsModifiedIfChanged(groupsBefore);
+    }
+
+    private void EmitGroupsModifiedIfChanged(IReadOnlyList<HeadingGroupInfo> groupsBefore)
+    {
+        var groupsAfter = GetGroups();
+        if (groupsBefore.SequenceEqual(groupsAfter))
+            return;
+
+        var affectedGroups = groupsBefore.Concat(groupsAfter).ToList();
+        var start = affectedGroups.Min(x => x.Start);
+        var end = affectedGroups.Max(x => x.End);
+        EmitGroupsModified(start, end, groupsBefore.Count > 0);
     }
 
     internal void EmitInserted(int start, int count)
@@ -498,6 +581,68 @@ public abstract class RowColInfoStore
     }
 
     /// <summary>
+    /// Sets a labelled group spanning (and including) <paramref name="indexStart"/> to <paramref name="indexEnd"/>.
+    /// Existing groups overlapping the range are replaced.
+    /// </summary>
+    public void SetGroup(int indexStart, int indexEnd, string label)
+    {
+        Sheet.Commands.ExecuteCommand(new SetHeadingGroupCommand(indexStart, indexEnd, label, _axis));
+    }
+
+    /// <summary>
+    /// Clears any groups overlapping (and including) <paramref name="indexStart"/> to <paramref name="indexEnd"/>.
+    /// </summary>
+    public void ClearGroups(int indexStart, int indexEnd)
+    {
+        Sheet.Commands.ExecuteCommand(new ClearHeadingGroupsCommand(indexStart, indexEnd, _axis));
+    }
+
+    /// <summary>
+    /// Returns the group that spans <paramref name="index"/>, or null if there is none.
+    /// </summary>
+    public HeadingGroupInfo? GetGroup(int index)
+    {
+        return GetGroups(index, index).FirstOrDefault();
+    }
+
+    /// <summary>
+    /// Returns all groups, ordered by their start index.
+    /// </summary>
+    public List<HeadingGroupInfo> GetGroups()
+    {
+        // removing rows/cols inside a group can leave the store holding adjacent fragments that
+        // reference the same group, so adjacent fragments are joined back into one group here.
+        var groups = new List<HeadingGroupInfo>();
+        foreach (var (interval, group) in GroupStore.GetAllIntervalData())
+        {
+            if (group == null)
+                continue;
+
+            if (groups.Count > 0 &&
+                ReferenceEquals(groups[^1].Group, group) &&
+                groups[^1].End + 1 == interval.Start)
+            {
+                groups[^1] = groups[^1] with { End = interval.End };
+                continue;
+            }
+
+            groups.Add(new HeadingGroupInfo(interval.Start, interval.End, group));
+        }
+
+        return groups;
+    }
+
+    /// <summary>
+    /// Returns all groups overlapping (and including) <paramref name="indexStart"/> to <paramref name="indexEnd"/>.
+    /// </summary>
+    public List<HeadingGroupInfo> GetGroups(int indexStart, int indexEnd)
+    {
+        return GetGroups()
+            .Where(g => g.End >= indexStart && g.Start <= indexEnd)
+            .ToList();
+    }
+
+    /// <summary>
     /// Inserts a row/column at an index specified.
     /// </summary>
     /// <param name="index">The index that the new row/column will be at. The new row/column will have the index specified.</param>
@@ -536,6 +681,7 @@ internal class RowColInfoRestoreData
 
     public MergeableIntervalStoreRestoreData<OverwritingValue<double>> SizesRestoreData { get; init; } = new();
     public MergeableIntervalStoreRestoreData<OverwritingValue<string>> HeadingsRestoreData { get; init; } = new();
+    public MergeableIntervalStoreRestoreData<OverwritingValue<HeadingGroup>> GroupsRestoreData { get; init; } = new();
     public MergeableIntervalStoreRestoreData<OverwritingValue<bool>> VisibilityRestoreData { get; init; } = new();
     public RowColFormatRestoreData RowColFormatRestoreData { get; init; } = new();
 
@@ -544,6 +690,7 @@ internal class RowColInfoRestoreData
         CumulativeSizesRestoreData.Merge(other.CumulativeSizesRestoreData);
         SizesRestoreData.Merge(other.SizesRestoreData);
         HeadingsRestoreData.Merge(other.HeadingsRestoreData);
+        GroupsRestoreData.Merge(other.GroupsRestoreData);
         VisibilityRestoreData.Merge(other.VisibilityRestoreData);
         RowColFormatRestoreData.Merge(other.RowColFormatRestoreData);
     }

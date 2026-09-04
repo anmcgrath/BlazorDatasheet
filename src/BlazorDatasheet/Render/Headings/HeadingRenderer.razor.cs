@@ -73,6 +73,8 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
         sheet.Columns.SizeModified -= HandleSizeModified;
         sheet.Rows.HeadingsModified -= HandleHeadingsModified;
         sheet.Columns.HeadingsModified -= HandleHeadingsModified;
+        sheet.Rows.GroupsModified -= HandleGroupsModified;
+        sheet.Columns.GroupsModified -= HandleGroupsModified;
         sheet.FrozenRowCols -= HandleFrozenRowCols;
     }
 
@@ -88,10 +90,21 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
         sheet.Columns.SizeModified += HandleSizeModified;
         sheet.Rows.HeadingsModified += HandleHeadingsModified;
         sheet.Columns.HeadingsModified += HandleHeadingsModified;
+        sheet.Rows.GroupsModified += HandleGroupsModified;
+        sheet.Columns.GroupsModified += HandleGroupsModified;
         sheet.FrozenRowCols += HandleFrozenRowCols;
     }
 
     private void HandleHeadingsModified(object? sender, HeadingsModifiedEventArgs e)
+    {
+        if (e.Axis != Axis)
+            return;
+
+        _dirty = true;
+        StateHasChanged();
+    }
+
+    private void HandleGroupsModified(object? sender, HeadingGroupsModifiedEventArgs e)
     {
         if (e.Axis != Axis)
             return;

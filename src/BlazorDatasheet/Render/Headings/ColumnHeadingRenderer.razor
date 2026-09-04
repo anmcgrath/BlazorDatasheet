@@ -1,4 +1,5 @@
-﻿@using BlazorDatasheet.DataStructures.Geometry
+﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Formula.Core
 @using BlazorDatasheet.Menu
 @using BlazorDatasheet.Render.Layers.Preview
@@ -8,6 +9,35 @@
 @inherits HeadingRenderer
 @implements IAsyncDisposable
 @inject IJSRuntime Js;
+
+<div style="display: flex; flex-direction: column;">
+
+@if (_sheet.Columns.HasGroups)
+{
+    <div class="bds-col-group-row" style="display: flex; flex-direction: row;">
+
+        @if (_sheet.FreezeState.Left > 0 && HasVisibleCols(LeftHeadingRegion))
+        {
+            <div style="position: sticky; left:var(--gutter-left-width); z-index: 4;" class="bds-frozen-left">
+                @ColGroupPane(LeftHeadingRegion)
+            </div>
+        }
+
+        @if (HasVisibleCols(MainHeadingRegion))
+        {
+            <div class="bds-sheet-col-head-container" style="z-index: 2;">
+                @ColGroupPane(MainHeadingRegion)
+            </div>
+        }
+
+        @if (_sheet.FreezeState.Right > 0 && HasVisibleCols(RightHeadingRegion))
+        {
+            <div style="position: sticky; right: 0; z-index: 4;" class="bds-frozen-right">
+                @ColGroupPane(RightHeadingRegion)
+            </div>
+        }
+    </div>
+}
 
 <div style="display: flex; flex-direction: row">
 
@@ -56,8 +86,118 @@
         </div>
     }
 </div>
+</div>
 
 @code {
+
+    private RenderFragment ColGroupPane(Region region) =>
+        @<div class="bds-col-group-pane" style="position: relative; height: @(_sheet.Columns.GroupHeadingHeight)px; width: @(_sheet.Columns.GetVisualWidth(region))px; overflow: hidden;">
+            @foreach (var group in _sheet.Columns.GetGroups(region.Left, region.Right))
+            {
+                var start = Math.Max(group.Start, region.Left);
+                var end = Math.Min(group.End, region.Right);
+                if (_sheet.Columns.CountVisible(start, end) == 0)
+                    continue;
+
+                var left = _sheet.Columns.GetVisualLeft(start) - _sheet.Columns.GetVisualLeft(region.Left);
+                var width = _sheet.Columns.GetVisualWidthBetween(start, end + 1);
+                var leftBorder = NeedsLeftBorder(group, start);
+                // a left border sits inside the group's box, one border-width right of the column line
+                // drawn by the previous column's right border, so shift the box left to line them up.
+                var position = leftBorder
+                    ? $"left: calc({left}px - var(--sheet-border-width)); width: calc({width}px + var(--sheet-border-width));"
+                    : $"left: {left}px; width: {width}px;";
+                <div @key="group.Start"
+                     class="bds-col-group-head bds-col-head bds-unselectable @(leftBorder ? "bds-col-group-head-left" : "") @GetGroupSelectedClass(group.Start, group.End)"
+                     data-group-start="@group.Start"
+                     data-group-end="@group.End"
+                     @onmousedown="GetGroupMouseDownHandler(group)"
+                     style="position: absolute; top: 0; @position height: 100%;">
+                    @GroupTemplate(new ColumnGroupContext(group.Start, group.End, group.Label))
+                </div>
+            }
+        </div>;
+
+    /// <summary>
+    /// A group draws its own left border only when it starts inside this pane (not clipped by a frozen
+    /// boundary) and the previous visible column is not in a group (whose right border is the shared line).
+    /// The first visible column's edge is drawn by the corner cell.
+    /// </summary>
+    private bool NeedsLeftBorder(HeadingGroupInfo group, int paneStart)
+    {
+        if (paneStart != group.Start)
+            return false;
+        var prev = _sheet.Columns.GetNextVisible(group.Start, -1);
+        if (prev < 0)
+            return false;
+        return _sheet.Columns.GetGroup(prev) == null;
+    }
+
+    /// <summary>
+    /// Renders the content of a column group heading.
+    /// </summary>
+    [Parameter]
+    public RenderFragment<ColumnGroupContext> GroupTemplate { get; set; } =
+        context => @<div style="width: 100%; text-align: center;">@context.Label</div>;
+
+    [Parameter]
+    public EventCallback<HeadingGroupInfo> GroupMouseDown { get; set; }
+
+    private readonly Dictionary<(int start, int end), Action<MouseEventArgs>> _groupHandlerCache = new();
+
+    private Action<MouseEventArgs> GetGroupMouseDownHandler(HeadingGroupInfo group)
+    {
+        (int start, int end) key = (group.Start, group.End);
+        if (!_groupHandlerCache.TryGetValue(key, out var handler))
+        {
+            handler = _ => GroupMouseDown.InvokeAsync(group);
+            _groupHandlerCache[key] = handler;
+        }
+
+        return handler;
+    }
+
+    /// <summary>
+    /// Full-selected when every column in the group is covered by a column-region selection,
+    /// partially selected when any selection touches the group.
+    /// </summary>
+    private string GetGroupSelectedClass(int start, int end)
+    {
+        var regions = _sheet.Selection.Regions.ToList();
+        if (_sheet.Selection.SelectingRegion != null)
+            regions.Add(_sheet.Selection.SelectingRegion);
+
+        if (regions.Count == 0)
+            return string.Empty;
+
+        var anySelected = false;
+        var allFull = true;
+        for (int col = start; col <= end; col++)
+        {
+            var spanned = false;
+            var fullySpanned = false;
+            foreach (var region in regions)
+            {
+                if (!region.SpansCol(col))
+                    continue;
+                spanned = true;
+                if (region is ColumnRegion)
+                {
+                    fullySpanned = true;
+                    break;
+                }
+            }
+
+            anySelected |= spanned;
+            allFull &= fullySpanned;
+        }
+
+        if (allFull)
+            return "bds-selected-header-full";
+        if (anySelected)
+            return "bds-selected-header";
+        return string.Empty;
+    }
 
     private RenderFragment ColHeadingItem(int col) =>
         @<div @key="col"

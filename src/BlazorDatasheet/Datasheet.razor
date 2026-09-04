@@ -41,7 +41,7 @@
                                          background: var(--col-header-bg-color);
                                          z-index: @CornerHeadingZIndex;
                                          @(StickyHeaders ? "position: sticky; top: 0; left:0;" : "")
-                                         height: @(_sheet.Columns.HeadingHeight)px;">
+                                         height: @(GetGutterSize(Axis.Col))px;">
                                     </div>
                                 }
 
@@ -50,6 +50,8 @@
                                     ViewRegion="_viewRegion"
                                     Sheet="_sheet"
                                     ShowColumnMenu="_menuOptions.HeaderMenuEnabled"
+                                    GroupTemplate="ColumnGroupTemplate"
+                                    GroupMouseDown="HandleColumnGroupMouseDown"
                                     PreviewService="_previewService">
                                     @ColumnHeaderTemplate(context)
                                 </ColumnHeadingRenderer>
@@ -157,6 +159,14 @@
     [Parameter]
     public RenderFragment<HeadingContext> ColumnHeaderTemplate { get; set; } =
         context => @<div>@context.Heading</div>;
+
+    /// <summary>
+    /// Set this to render a custom column group heading. Column groups are defined with
+    /// <c>Sheet.Columns.SetGroup</c>.
+    /// </summary>
+    [Parameter]
+    public RenderFragment<ColumnGroupContext> ColumnGroupTemplate { get; set; } =
+        context => @<div style="width: 100%; text-align: center;">@context.Label</div>;
 
     /// <summary>
     /// Set this to render a custom row heading

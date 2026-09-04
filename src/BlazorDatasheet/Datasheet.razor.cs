@@ -622,6 +622,14 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             mouseButton: args.MouseButton);
     }
 
+    private void HandleColumnGroupMouseDown(HeadingGroupInfo group)
+    {
+        if (_sheet.Editor.IsEditing && !_sheet.Editor.AcceptEdit())
+            return;
+
+        _sheet.Selection.Set(new ColumnRegion(group.Start, group.End));
+    }
+
     private async Task<bool> HandleWindowKeyDown(KeyboardEventArgs e)
     {
         if (!IsDataSheetActive)
@@ -831,7 +839,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             return;
 
         var gutterRow = _showRowHeadings ? _sheet.Rows.HeadingWidth : 0;
-        var gutterCol = _showColHeadings ? _sheet.Columns.HeadingHeight : 0;
+        var gutterCol = _showColHeadings ? _sheet.Columns.TotalHeadingHeight : 0;
 
         var constrainedViewRect = new Rect(
             currentViewRect.X + frozenLeftW,
@@ -912,7 +920,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         if (axis == Axis.Row && ShowRowHeadings)
             return _sheet.Rows.HeadingWidth;
         if (axis == Axis.Col && ShowColHeadings)
-            return _sheet.Columns.HeadingHeight;
+            return _sheet.Columns.TotalHeadingHeight;
         return 0;
     }
 
