@@ -32,7 +32,7 @@ internal class SparseSourceEnumerator<T> : IEnumerator<T>
                 break;
             }
 
-            nextIndex = Math.Min(sourceNextIndex, sourceNextIndex);
+            nextIndex = Math.Min(nextIndex, sourceNextIndex);
         }
 
         if (nextIndex == int.MaxValue)

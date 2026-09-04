@@ -21,6 +21,23 @@ namespace BlazorDatasheet.Test.SheetTests;
 public class SerializationTests
 {
     [Test]
+    public void Formula_Round_Trips_When_A_Later_Cell_In_The_Row_Holds_MetaData()
+    {
+        var wb = new Workbook();
+        var sheet = wb.AddSheet("SheetName", 5, 5);
+        sheet.Cells.SetValue(1, 0, "label");
+        sheet.Cells.SetFormula(1, 2, "=1");
+        sheet.Cells.SetCellMetaData(1, 3, "marker", "observation");
+
+        var json = new SheetJsonSerializer().Serialize(wb);
+        var deserialized = new SheetJsonDeserializer().Deserialize(json);
+
+        var restored = deserialized.Sheets.First();
+        restored.Cells.GetFormulaString(1, 2).Should().Be("=1");
+        restored.Cells.GetMetaData(1, 3, "marker").Should().Be("observation");
+    }
+
+    [Test]
     public void Column_Groups_Round_Trip_Through_Serialization()
     {
         var wb = new Workbook();
