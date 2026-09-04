@@ -420,6 +420,50 @@
     }
 
     [Test]
+    public async Task Datasheet_Runtime_ShowFormula_Change_ReRenders_Existing_Cells()
+    {
+        var sheet = new Sheet(1, 1);
+        var cut = RenderComponent<Datasheet>(parameters =>
+        {
+            parameters.Add(p => p.Sheet, sheet);
+            parameters.Add(p => p.ShowFormula, false);
+        });
+
+        await cut.InvokeAsync(() =>
+        {
+            cut.Instance.ForceReRender();
+            sheet.Cells.SetFormula(0, 0, "=1+1");
+        });
+
+        cut.Find("div.bds-sheet-cell .bds-cell-container").TextContent.Should().Be("2");
+
+        cut.SetParametersAndRender(parameters => parameters.Add(p => p.ShowFormula, true));
+
+        cut.Find("div.bds-sheet-cell .bds-cell-container").TextContent.Should().Be("=1+1");
+    }
+
+    [Test]
+    public async Task Datasheet_ShowFormula_Overrides_Typed_Cell_Renderer()
+    {
+        var sheet = new Sheet(1, 1);
+        var cut = RenderComponent<Datasheet>(parameters =>
+        {
+            parameters.Add(p => p.Sheet, sheet);
+            parameters.Add(p => p.ShowFormula, true);
+        });
+
+        await cut.InvokeAsync(() =>
+        {
+            cut.Instance.ForceReRender();
+            sheet.Cells.SetFormula(0, 0, "=TRUE");
+            sheet.Cells[0, 0]!.Type = "boolean";
+        });
+
+        cut.Find("div.bds-sheet-cell .bds-cell-container").TextContent.Should().Be("=True");
+        cut.FindAll("input[type='checkbox']").Should().BeEmpty();
+    }
+
+    [Test]
     public async Task Datasheet_Runtime_ReadOnly_And_Precision_Changes_ReRender_Existing_Cells()
     {
         var sheet = new Sheet(1, 2);

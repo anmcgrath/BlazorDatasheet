@@ -74,6 +74,14 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     public bool ShowFormulaDependents { get; set; }
 
     /// <summary>
+    /// If true, shows the formula string inside the cell.
+    /// </summary>
+    [Parameter]
+    public bool ShowFormula { get; set; }
+
+    private bool _showFormula;
+
+    /// <summary>
     /// Fired when the Datasheet becomes active or inactive (able to receive keyboard inputs).
     /// </summary>
     [Parameter]
@@ -322,6 +330,12 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         if (UseAutoFill != _useAutoFill)
         {
             _useAutoFill = UseAutoFill;
+            requireRender = true;
+        }
+
+        if (ShowFormula != _showFormula)
+        {
+            _showFormula = ShowFormula;
             requireRender = true;
         }
 
@@ -1060,6 +1074,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             ReferenceEquals(_paneContext.AutoScrollState, _autoScrollState) &&
             ReferenceEquals(_paneContext.PointerInputService, _sheetPointerInputService) &&
             _paneContext.NumberPrecisionDisplay == _numberPrecisionDisplay &&
+            _paneContext.ShowFormula == _showFormula &&
             _paneContext.ShowFormulaDependents == _showFormulaDependents &&
             _paneContext.UseAutoFill == _useAutoFill &&
             _paneContext.IsReadOnly == IsReadOnly &&
@@ -1076,6 +1091,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             _sheetPointerInputService,
             _previewService,
             _numberPrecisionDisplay,
+            _showFormula,
             _showFormulaDependents,
             _useAutoFill,
             IsReadOnly,

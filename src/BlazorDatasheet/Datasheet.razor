@@ -255,34 +255,41 @@
         builder.OpenElement(100, "div");
         builder.AddAttribute(110, "class", "bds-cell-container");
 
-        switch (cell.CellType)
+        if (ShowFormula && _sheet.Cells.HasFormula(cell.Row, cell.Col))
         {
-            case "default":
-            case "text":
-            case "datetime":
-                builder.AddContent(120, cell.FormattedString);
-                break;
-            case "boolean":
-                builder.OpenComponent(120, typeof(BoolRenderer));
-                builder.AddComponentParameter(140, nameof(BaseRenderer.Cell), cell);
-                builder.AddComponentParameter(160, nameof(BaseRenderer.Sheet), _sheet);
-                builder.AddComponentParameter(180, nameof(BaseRenderer.IsReadonly), IsReadOnly);
-                builder.CloseComponent();
-                break;
-            case "select":
-                builder.OpenComponent(120, typeof(SelectRenderer));
-                builder.AddComponentParameter(140, nameof(BaseRenderer.Cell), cell);
-                builder.AddComponentParameter(160, nameof(BaseRenderer.Sheet), _sheet);
-                builder.AddComponentParameter(180, nameof(BaseRenderer.IsReadonly), IsReadOnly);
-                builder.CloseComponent();
-                break;
-            default:
-                builder.OpenComponent(120, GetCellRendererType(cell.CellType));
-                builder.AddComponentParameter(140, nameof(BaseRenderer.Cell), cell);
-                builder.AddComponentParameter(160, nameof(BaseRenderer.Sheet), _sheet);
-                builder.AddComponentParameter(180, nameof(BaseRenderer.IsReadonly), IsReadOnly);
-                builder.CloseComponent();
-                break;
+            builder.AddContent(120, _sheet.Cells.GetFormulaString(cell.Row, cell.Col));
+        }
+        else
+        {
+            switch (cell.CellType)
+            {
+                case "default":
+                case "text":
+                case "datetime":
+                    builder.AddContent(120, cell.FormattedString);
+                    break;
+                case "boolean":
+                    builder.OpenComponent(120, typeof(BoolRenderer));
+                    builder.AddComponentParameter(140, nameof(BaseRenderer.Cell), cell);
+                    builder.AddComponentParameter(160, nameof(BaseRenderer.Sheet), _sheet);
+                    builder.AddComponentParameter(180, nameof(BaseRenderer.IsReadonly), IsReadOnly);
+                    builder.CloseComponent();
+                    break;
+                case "select":
+                    builder.OpenComponent(120, typeof(SelectRenderer));
+                    builder.AddComponentParameter(140, nameof(BaseRenderer.Cell), cell);
+                    builder.AddComponentParameter(160, nameof(BaseRenderer.Sheet), _sheet);
+                    builder.AddComponentParameter(180, nameof(BaseRenderer.IsReadonly), IsReadOnly);
+                    builder.CloseComponent();
+                    break;
+                default:
+                    builder.OpenComponent(120, GetCellRendererType(cell.CellType));
+                    builder.AddComponentParameter(140, nameof(BaseRenderer.Cell), cell);
+                    builder.AddComponentParameter(160, nameof(BaseRenderer.Sheet), _sheet);
+                    builder.AddComponentParameter(180, nameof(BaseRenderer.IsReadonly), IsReadOnly);
+                    builder.CloseComponent();
+                    break;
+            }
         }
 
         builder.CloseElement();

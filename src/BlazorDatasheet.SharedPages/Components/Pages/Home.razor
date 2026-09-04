@@ -29,6 +29,7 @@
             StickyHeaders="_stickyHeaders"
             ShowColHeadings="_showColHeadings"
             ShowRowHeadings="_showRowHeadings"
+            ShowFormula="_showFormula"
             Sheet="_sheet"
             @ref="_datasheet"/>
     </DatasheetPanel>
@@ -51,6 +52,10 @@
     <div>
         <input type="checkbox" id="showRowHeadingsOn" @bind="_showRowHeadings"/>
         <label for="showRowHeadingsOn">Row headings</label>
+    </div>
+    <div>
+        <input type="checkbox" id="showFormula" @bind="_showFormula"/>
+        <label for="showFormula">Show Formula</label>
     </div>
 </div>
 
@@ -103,6 +108,7 @@
     private bool _stickyHeaders = true;
     private bool _showColHeadings = true;
     private bool _showRowHeadings = true;
+    private bool _showFormula = false;
 
     protected override void OnInitialized()
     {
