@@ -57,11 +57,11 @@ public class RemoveRowColsCommand : BaseCommand, IUndoableCommand
         if (_count <= 0)
             return false;
 
+        using var updates = sheet.SuspendUpdates();
         _nRemoved = Math.Min(sheet.GetSize(_axis) - _index, _count);
         sheet.Remove(_axis, _nRemoved);
 
         _cellStoreRestoreData = sheet.Cells.RemoveRowColAt(_index, _nRemoved, _axis);
-        _rowColInfoRestore = sheet.GetRowColStore(_axis).RemoveImpl(_index, _index + _nRemoved - 1);
         _validatorRestoreData = sheet.Validators.Store.RemoveRowColAt(_index, _nRemoved, _axis);
         _cfRestoreData = sheet.ConditionalFormats.RemoveRowColAt(_index, _nRemoved, _axis);
         _metaDataRestoreData = sheet.Cells.GetMetaDataStore().RemoveRowColAt(_index, _nRemoved, _axis);
@@ -69,20 +69,23 @@ public class RemoveRowColsCommand : BaseCommand, IUndoableCommand
         if (_axis == Axis.Col)
             _filterRestoreData = sheet.Columns.Filters.Store.Delete(_index, _index + _nRemoved - 1);
 
+        _rowColInfoRestore = sheet.GetRowColStore(_axis).RemoveImpl(_index, _index + _nRemoved - 1);
         return true;
     }
 
     public bool Undo(Sheet sheet)
     {
+        using var updates = sheet.SuspendUpdates();
         sheet.Add(_axis, _nRemoved);
         sheet.Validators.Store.Restore(_validatorRestoreData);
         sheet.Cells.Restore(_cellStoreRestoreData);
         sheet.GetRowColStore(_axis).Restore(_rowColInfoRestore);
         sheet.ConditionalFormats.Restore(_cfRestoreData);
         sheet.Cells.GetMetaDataStore().Restore(_metaDataRestoreData);
-        sheet.GetRowColStore(_axis).EmitInserted(_index, _nRemoved);
         if (_axis == Axis.Col)
             sheet.Columns.Filters.Store.Restore(_filterRestoreData);
+
+        sheet.GetRowColStore(_axis).EmitInserted(_index, _nRemoved);
 
         IRegion dirtyRegion = _axis == Axis.Col
             ? new ColumnRegion(_index, sheet.NumCols)

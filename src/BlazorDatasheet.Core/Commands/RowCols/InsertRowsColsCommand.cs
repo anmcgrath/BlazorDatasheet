@@ -42,12 +42,11 @@ internal class InsertRowsColsCommand : BaseCommand, IUndoableCommand
 
     public override bool Execute(Sheet sheet)
     {
-        sheet.ScreenUpdating = false;
+        using var updates = sheet.SuspendUpdates();
         sheet.Add(_axis, _count);
         _validatorRestoreData = sheet.Validators.Store.InsertRowColAt(_index, _count, _axis);
         _cellStoreRestoreData = sheet.Cells.InsertRowColAt(_index, _count, _axis);
         _cfRestoreData = sheet.ConditionalFormats.InsertRowColAt(_index, _count, _axis);
-        _rowColInfoRestoreData = sheet.GetRowColStore(_axis).InsertImpl(_index, _count);
         _metaDataStore = sheet.Cells.GetMetaDataStore().InsertRowColAt(_index, _count, _axis);
 
         if (_axis == Axis.Col)
@@ -55,28 +54,28 @@ internal class InsertRowsColsCommand : BaseCommand, IUndoableCommand
             _filterRestoreData = sheet.Columns.Filters.Store.InsertAt(_index, _count);
         }
 
-        sheet.ScreenUpdating = true;
+        _rowColInfoRestoreData = sheet.GetRowColStore(_axis).InsertImpl(_index, _count);
         return true;
     }
 
     public bool Undo(Sheet sheet)
     {
-        sheet.ScreenUpdating = false;
+        using var updates = sheet.SuspendUpdates();
         sheet.Remove(_axis, _count);
         sheet.Validators.Store.Restore(_validatorRestoreData);
         sheet.Cells.GetMetaDataStore().Restore(_metaDataStore);
         sheet.Cells.Restore(_cellStoreRestoreData);
         sheet.ConditionalFormats.Restore(_cfRestoreData);
         sheet.GetRowColStore(_axis).Restore(_rowColInfoRestoreData);
-        sheet.GetRowColStore(_axis).EmitRemoved(_index, _count);
         if (_axis == Axis.Col)
             sheet.Columns.Filters.Store.Restore(_filterRestoreData);
+
+        sheet.GetRowColStore(_axis).EmitRemoved(_index, _count);
 
         IRegion dirtyRegion = _axis == Axis.Col
             ? new ColumnRegion(_index, sheet.NumCols)
             : new RowRegion(_index, sheet.NumRows);
         sheet.MarkDirty(dirtyRegion);
-        sheet.ScreenUpdating = true;
         return true;
     }
 }

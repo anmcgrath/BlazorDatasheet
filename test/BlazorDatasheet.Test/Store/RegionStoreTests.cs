@@ -8,6 +8,43 @@ namespace BlazorDatasheet.Test.Store;
 
 public class RegionStoreTests
 {
+    [TestCase(Axis.Row, 0, true)]
+    [TestCase(Axis.Row, 2, true)]
+    [TestCase(Axis.Col, 0, true)]
+    [TestCase(Axis.Col, 2, true)]
+    [TestCase(Axis.Row, 0, false)]
+    [TestCase(Axis.Row, 2, false)]
+    [TestCase(Axis.Col, 0, false)]
+    [TestCase(Axis.Col, 2, false)]
+    public void AllRegion_Preserves_Coverage_Through_Store_Transforms(Axis axis, int index, bool expandAfter)
+    {
+        var store = new RegionDataStore<string>(expandWhenInsertAfter: expandAfter);
+        store.Add(new AllRegion().Clone(), "all");
+        store.Add(new Region(3, 4, 3, 4), "bounded");
+        void AssertAll()
+        {
+            var region = store.GetAllDataRegions().Single(x => x.Data == "all").Region;
+            region.Should().BeOfType<AllRegion>();
+            region.Top.Should().Be(0);
+            region.Left.Should().Be(0);
+            region.Bottom.Should().Be(int.MaxValue);
+            region.Right.Should().Be(int.MaxValue);
+            store.GetData(0, 0).Should().Contain("all");
+            store.GetData(int.MaxValue - 1, int.MaxValue - 1).Should().Contain("all");
+        }
+        var insert = store.InsertRowColAt(index, 2, axis);
+        AssertAll();
+        store.GetAllDataRegions().Single(x => x.Data == "bounded").Region.GetLeadingEdgeOffset(axis)
+            .Should().Be(5);
+        store.Restore(insert);
+        AssertAll();
+        var remove = store.RemoveRowColAt(index, 2, axis);
+        AssertAll();
+        store.Restore(remove);
+        AssertAll();
+        store.GetAllDataRegions().Single(x => x.Data == "bounded").Region.Should().BeEquivalentTo(new Region(3, 4, 3, 4));
+    }
+
     [Test]
     public void Add_And_Retrieve_Region_Data_Correct()
     {

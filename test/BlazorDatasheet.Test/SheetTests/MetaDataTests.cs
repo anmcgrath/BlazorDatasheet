@@ -43,6 +43,36 @@ public class MetaDataTests
         }
     }
 
+    [TestCase(Axis.Row, false)]
+    [TestCase(Axis.Col, false)]
+    [TestCase(Axis.Row, true)]
+    [TestCase(Axis.Col, true)]
+    public void Structural_Notifications_Observe_Updated_Metadata_And_Values(Axis axis, bool remove)
+    {
+        var sheet = new Sheet(4, 4);
+        sheet.Cells.SetValue(1, 1, "marker");
+        sheet.Cells.SetCellMetaData(1, 1, "status", "ready");
+        var store = sheet.GetRowColStore(axis);
+        var snapshots = new List<(int Row, int Col)>();
+        void Observe()
+        {
+            var positions = sheet.Range(sheet.Region).Positions
+                .Where(p => Equals(sheet.Cells.GetMetaData(p.row, p.col, "status"), "ready")).ToList();
+            var position = positions.Should().ContainSingle().Subject;
+            sheet.Cells[position.row, position.col].Value.Should().Be("marker");
+            snapshots.Add((position.row, position.col));
+        }
+        store.Inserted += (_, _) => Observe();
+        store.Removed += (_, _) => Observe();
+        var moved = remove ? 0 : 2;
+        var expected = axis == Axis.Row ? (moved, 1) : (1, moved);
+        if (remove) store.RemoveAt(0);
+        else store.InsertAt(0);
+        sheet.Commands.Undo();
+        sheet.Commands.Redo();
+        snapshots.Should().Equal(expected, (1, 1), expected);
+    }
+
     [Test]
     public void Region_MetaData_Events_Report_Each_Cells_Old_And_New_Value_On_Execute_Undo_And_Redo()
     {

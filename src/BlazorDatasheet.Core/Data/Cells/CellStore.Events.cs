@@ -40,13 +40,18 @@ public partial class CellStore
 
     internal void EndBatchChanges()
     {
-        if (_cellsChanged.Count > 0 || _regionsChanged.Count > 0 && _isBatchingChanges)
+        try
         {
-            var args = new CellDataChangedEventArgs(_regionsChanged, _cellsChanged);
-            CellsChanged?.Invoke(this, args);
+            if (_isBatchingChanges && (_cellsChanged.Count > 0 || _regionsChanged.Count > 0))
+            {
+                var args = new CellDataChangedEventArgs(_regionsChanged, _cellsChanged);
+                CellsChanged?.Invoke(this, args);
+            }
         }
-
-        _isBatchingChanges = false;
+        finally
+        {
+            _isBatchingChanges = false;
+        }
     }
 
     /// <summary>
