@@ -141,6 +141,8 @@ public class Sheet
             {
                 _screenUpdating = value;
                 ScreenUpdatingChanged?.Invoke(this, new SheetScreenUpdatingEventArgs(value));
+                if (value)
+                    EmitSheetDirty();
             }
         }
     }
@@ -444,6 +446,9 @@ public class Sheet
 
     private void EmitSheetDirty()
     {
+        if (!ScreenUpdating || _isBatchingChanges || !_dirtyRows.Any())
+            return;
+
         SheetDirty?.Invoke(this, new()
         {
             DirtyRows = _dirtyRows,
@@ -465,7 +470,7 @@ public class Sheet
     /// <summary>
     /// Batches dirty cell and region additions, as well as cell value changes to emit events once rather
     /// than every time a cell is dirty or a value is changed.
-    /// <returns>Returns false if the sheet was already batching, true otherwise.</returns>
+    /// Nested calls must each be paired with a call to EndBatchUpdates.
     /// </summary>
     public void BatchUpdates()
     {
@@ -474,7 +479,6 @@ public class Sheet
         if (_isBatchingChanges)
             return;
 
-        ClearDirty();
         Cells.BatchChanges();
         _isBatchingChanges = true;
     }
@@ -503,19 +507,66 @@ public class Sheet
     /// </summary>
     public void EndBatchUpdates()
     {
-        _batchRequestNo--;
-
-        if (_batchRequestNo > 0)
+        if (_batchRequestNo == 0)
             return;
 
-        Cells.EndBatchChanges();
+        if (_batchRequestNo > 1)
+        {
+            _batchRequestNo--;
+            return;
+        }
 
-        // Checks for batching changes here, because the cells changed event
-        // may start batching more dirty changes again from subscribers of that event.
-        if (_dirtyRows.Any() && _isBatchingChanges)
+        // Keep the outer batch active while cell-change subscribers perform nested work.
+        try
+        {
+            Cells.EndBatchChanges();
+        }
+        finally
+        {
+            _batchRequestNo--;
+            _isBatchingChanges = _batchRequestNo > 0;
             EmitSheetDirty();
+        }
+    }
 
-        _isBatchingChanges = false;
+    /// <summary>
+    /// Defers rendering for a command, preserving any enclosing batch and screen-update state.
+    /// </summary>
+    internal IDisposable SuspendUpdates() => new UpdateScope(this);
+
+    private sealed class UpdateScope : IDisposable
+    {
+        private readonly Sheet _sheet;
+        private readonly bool _screenUpdating;
+
+        internal UpdateScope(Sheet sheet)
+        {
+            _sheet = sheet;
+            _screenUpdating = sheet.ScreenUpdating;
+            // Notify before starting the batch so a throwing subscriber cannot leave it open.
+            try
+            {
+                sheet.ScreenUpdating = false;
+                sheet.BatchUpdates();
+            }
+            catch
+            {
+                sheet.ScreenUpdating = _screenUpdating;
+                throw;
+            }
+        }
+
+        public void Dispose()
+        {
+            try
+            {
+                _sheet.EndBatchUpdates();
+            }
+            finally
+            {
+                _sheet.ScreenUpdating = _screenUpdating;
+            }
+        }
     }
 
     /// <summary>

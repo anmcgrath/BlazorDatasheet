@@ -37,8 +37,7 @@ public class CommandGroup : BaseCommand, IUndoableCommand
     {
         _successfulCommands.Clear();
 
-        sheet.ScreenUpdating = false;
-        sheet.BatchUpdates();
+        using var updates = sheet.SuspendUpdates();
         foreach (var command in _commands)
         {
             var run = sheet.Commands.ExecuteCommand(command, isRedo: false, useUndo: false);
@@ -52,29 +51,22 @@ public class CommandGroup : BaseCommand, IUndoableCommand
                 _successfulCommands.Add(command);
         }
 
-        sheet.EndBatchUpdates();
-        sheet.ScreenUpdating = true;
-
         return true;
     }
 
     public bool Undo(Sheet sheet)
     {
-        sheet.ScreenUpdating = false;
+        using var updates = sheet.SuspendUpdates();
         var undo = true;
         var undoCommands =
             _successfulCommands
                 .Where(cmd => cmd is IUndoableCommand).Cast<IUndoableCommand>().ToList();
 
         undoCommands.Reverse();
-        sheet.BatchUpdates();
         foreach (var command in undoCommands)
         {
             undo &= command.Undo(sheet);
         }
-
-        sheet.EndBatchUpdates();
-        sheet.ScreenUpdating = true;
 
         return undo;
     }

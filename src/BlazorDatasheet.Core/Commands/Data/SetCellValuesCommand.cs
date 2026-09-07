@@ -57,11 +57,8 @@ public class SetCellValuesCommand : BaseCommand, IUndoableCommand
 
     public override bool Execute(Sheet sheet)
     {
-        sheet.ScreenUpdating = false;
-        sheet.BatchUpdates();
+        using var updates = sheet.SuspendUpdates();
         ExecuteSetCellValueData(sheet);
-        sheet.EndBatchUpdates();
-        sheet.ScreenUpdating = true;
 
         return true;
     }
@@ -100,11 +97,8 @@ public class SetCellValuesCommand : BaseCommand, IUndoableCommand
 
     public bool Undo(Sheet sheet)
     {
-        sheet.ScreenUpdating = false;
-        sheet.BatchUpdates();
+        using var updates = sheet.SuspendUpdates();
         sheet.Cells.Restore(_restoreData);
-        sheet.EndBatchUpdates();
-        sheet.ScreenUpdating = true;
         return true;
     }
 }

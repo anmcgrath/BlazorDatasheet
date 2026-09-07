@@ -32,20 +32,16 @@ public class SetCellValueCommand : BaseCommand, IUndoableCommand
 
     public override bool Execute(Sheet sheet)
     {
-        sheet.ScreenUpdating = false;
-        sheet.BatchUpdates();
+        using var updates = sheet.SuspendUpdates();
         _restoreData = sheet.Cells.SetValueImpl(Row, Col, Value);
         sheet.MarkDirty(Row, Col);
-        sheet.EndBatchUpdates();
-        sheet.ScreenUpdating = true;
         return true;
     }
 
     public bool Undo(Sheet sheet)
     {
-        sheet.ScreenUpdating = false;
+        using var updates = sheet.SuspendUpdates();
         sheet.Cells.Restore(_restoreData);
-        sheet.ScreenUpdating = true;
         return true;
     }
 }

@@ -51,6 +51,139 @@ public class DatasheetIconRenderingTests
     }
 
     [Test]
+    public async Task Suspended_Metadata_Changes_Render_Together_When_Updating_Resumes()
+    {
+        using var context = CreateContext();
+        var sheet = new Sheet(3, 3);
+        ApplyMetadataFormat(sheet);
+        var component = RenderSheet(context, sheet);
+        await component.InvokeAsync(() =>
+        {
+            sheet.ScreenUpdating = false;
+            sheet.Cells.SetCellMetaData(0, 0, "status", "ready");
+            sheet.Commands.BeginCommandGroup();
+            sheet.Cells.SetCellMetaData(1, 1, "status", "ready");
+            sheet.Commands.EndCommandGroup();
+        });
+        sheet.Cells.GetMetaData(0, 0, "status").Should().Be("ready");
+        sheet.Cells.GetMetaData(1, 1, "status").Should().Be("ready");
+        component.FindAll("[data-test-icon]").Should().BeEmpty();
+        await component.InvokeAsync(() => sheet.ScreenUpdating = true);
+        AssertMetadataAppearance(component, sheet, 0, 0, true);
+        AssertMetadataAppearance(component, sheet, 1, 1, true);
+    }
+
+    [Test]
+    public async Task Grouped_Metadata_Edit_Undo_Redo_Refreshes_Rendered_Cells()
+    {
+        using var context = CreateContext();
+        var sheet = new Sheet(3, 3);
+        ApplyMetadataFormat(sheet);
+        var component = RenderSheet(context, sheet);
+        await component.InvokeAsync(() =>
+        {
+            sheet.Commands.BeginCommandGroup();
+            sheet.Cells.SetCellMetaData(1, 1, "status", "ready");
+            sheet.Commands.EndCommandGroup();
+        });
+        AssertMetadataAppearance(component, sheet, 1, 1, true);
+        await component.InvokeAsync(() => sheet.Commands.Undo());
+        AssertMetadataAppearance(component, sheet, 1, 1, false);
+        await component.InvokeAsync(() => sheet.Commands.Redo());
+        AssertMetadataAppearance(component, sheet, 1, 1, true);
+    }
+
+    [TestCase(Axis.Row, false)]
+    [TestCase(Axis.Col, false)]
+    [TestCase(Axis.Row, true)]
+    [TestCase(Axis.Col, true)]
+    public async Task Structural_Edit_Undo_Redo_Refreshes_Metadata_Appearance(Axis axis, bool remove)
+    {
+        using var context = CreateContext();
+        var sheet = new Sheet(4, 4);
+        ApplyMetadataFormat(sheet);
+        sheet.Cells.SetCellMetaData(1, 1, "status", "ready");
+        sheet.Cells.SetValue(1, 1, "marker");
+        var component = RenderSheet(context, sheet);
+        var row = axis == Axis.Row ? (remove ? 0 : 2) : 1;
+        var col = axis == Axis.Col ? (remove ? 0 : 2) : 1;
+        await component.InvokeAsync(() =>
+        {
+            if (remove) sheet.GetRowColStore(axis).RemoveAt(0);
+            else sheet.GetRowColStore(axis).InsertAt(0);
+        });
+        AssertMetadataAppearance(component, sheet, row, col, true);
+        AssertMetadataAppearance(component, sheet, 1, 1, false);
+        sheet.Cells[row, col].Value.Should().Be("marker");
+        await component.InvokeAsync(() => sheet.Commands.Undo());
+        AssertMetadataAppearance(component, sheet, 1, 1, true);
+        AssertMetadataAppearance(component, sheet, row, col, false);
+        sheet.Cells[1, 1].Value.Should().Be("marker");
+        await component.InvokeAsync(() => sheet.Commands.Redo());
+        AssertMetadataAppearance(component, sheet, row, col, true);
+        AssertMetadataAppearance(component, sheet, 1, 1, false);
+    }
+
+    [TestCase(Axis.Row, 0)]
+    [TestCase(Axis.Row, 2)]
+    [TestCase(Axis.Col, 0)]
+    [TestCase(Axis.Col, 2)]
+    public async Task AllRegion_Covers_Every_Cell_After_Structural_Edit_And_History(Axis axis, int index)
+    {
+        using var context = CreateContext();
+        var sheet = new Sheet(4, 4);
+        sheet.ConditionalFormats.Apply(new AllRegion(), new ConditionalFormat((_, _) => true,
+            _ => new CellFormat { Icon = "tick" }));
+        var component = RenderSheet(context, sheet);
+        void AssertCoverage()
+        {
+            for (var r = 0; r < sheet.NumRows; r++)
+            for (var c = 0; c < sheet.NumCols; c++)
+                (sheet.ConditionalFormats.GetFormatResult(r, c)?.Icon).Should().Be("tick");
+            for (var row = 0; row < sheet.NumRows; row++)
+            for (var col = 0; col < sheet.NumCols; col++)
+            {
+                (sheet.ConditionalFormats.GetFormatResult(row, col)?.Icon).Should().Be("tick");
+                component.FindAll($"[data-row='{row}'][data-col='{col}'] [data-test-icon]")
+                    .Should().ContainSingle($"cell ({row}, {col}) must show its conditional icon");
+            }
+            var region = sheet.ConditionalFormats.GetAllFormats().Should().ContainSingle().Subject.Region;
+            region.Should().BeOfType<AllRegion>();
+            region.Top.Should().Be(0);
+            region.Left.Should().Be(0);
+            region.Bottom.Should().Be(int.MaxValue);
+            region.Right.Should().Be(int.MaxValue);
+        }
+        AssertCoverage();
+        await component.InvokeAsync(() => sheet.GetRowColStore(axis).InsertAt(index));
+        AssertCoverage();
+        await component.InvokeAsync(() => sheet.Commands.Undo());
+        AssertCoverage();
+        await component.InvokeAsync(() => sheet.Commands.Redo());
+        AssertCoverage();
+        await component.InvokeAsync(() => sheet.GetRowColStore(axis).RemoveAt(index));
+        AssertCoverage();
+        await component.InvokeAsync(() => sheet.Commands.Undo());
+        AssertCoverage();
+        await component.InvokeAsync(() => sheet.Commands.Redo());
+        AssertCoverage();
+    }
+
+    private static void ApplyMetadataFormat(Sheet sheet) =>
+        sheet.ConditionalFormats.Apply(new Region(0, 20, 0, 20), new ConditionalFormat(
+            (position, currentSheet) => Equals(currentSheet.Cells.GetMetaData(position.row, position.col, "status"), "ready"),
+            _ => new CellFormat { Icon = "tick", IconColor = "green" }));
+
+    private static void AssertMetadataAppearance(IRenderedComponent<Datasheet> component, Sheet sheet,
+        int row, int col, bool ready)
+    {
+        sheet.Cells.GetMetaData(row, col, "status").Should().Be(ready ? "ready" : null);
+        var icons = component.FindAll($"[data-row='{row}'][data-col='{col}'] [data-test-icon]");
+        icons.Should().HaveCount(ready ? 1 : 0);
+        if (ready) icons[0].ParentElement!.GetAttribute("style").Should().Contain("color: green");
+    }
+
+    [Test]
     public void Registered_Icon_Is_Rendered_In_The_Cell_With_Its_Icon_Color()
     {
         using var context = CreateContext();
@@ -117,6 +250,9 @@ public class DatasheetIconRenderingTests
     {
         var context = new BunitTestContext();
         context.JSInterop.Mode = JSRuntimeMode.Loose;
+        var virtualiser = context.JSInterop.SetupModule(x => x.Identifier == "getVirtualiser");
+        virtualiser.Setup<Rect>(x => x.Identifier == "calculateViewRect")
+            .SetResult(new Rect(0, 0, 500, 500));
         context.Services.AddBlazorDatasheet();
         return context;
     }
