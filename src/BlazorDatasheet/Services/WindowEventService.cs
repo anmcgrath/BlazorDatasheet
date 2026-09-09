@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Components.Web;
+﻿using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using ClipboardEventArgs = BlazorDatasheet.Core.Events.ClipboardEventArgs;
 using static BlazorDatasheet.Util.JsInteropHelper;
@@ -79,22 +79,6 @@ public class WindowEventService : IWindowEventService
         _clipboardEventListeners ??= new();
         _clipboardEventListeners[eventType] = handler;
         await AddWindowEvent(eventType, nameof(HandleWindowClipboardEvent));
-    }
-
-    public async Task PreventDefault(string eventType)
-    {
-        await CreateDotnetHelperIfNotExists();
-        if (_isDisposed || _windowEventObj == null)
-            return;
-        await _windowEventObj.InvokeVoidAsync("preventDefault", eventType);
-    }
-
-    public async Task CancelPreventDefault(string eventType)
-    {
-        await CreateDotnetHelperIfNotExists();
-        if (_isDisposed || _windowEventObj == null)
-            return;
-        await _windowEventObj.InvokeVoidAsync("cancelPreventDefault", eventType);
     }
 
     // Cached so that callers arriving while initialisation is in flight wait for it to

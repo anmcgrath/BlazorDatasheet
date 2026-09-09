@@ -9,7 +9,6 @@
         this.policyRevision = -1;
         this.focusVersion = 0;
         this.preventDefaultMap = {}
-        this.preventExclusionsMap = {}
     }
 
     listen(target, name, fn, capture = false) {
@@ -151,17 +150,6 @@
             return !control || !!control.closest('.bds-editor-overlay');
         }
         return this.active && (e.target === document.body || e.target === document.documentElement);
-    }
-
-    preventDefault(eventName, exclusions) {
-        this.preventDefaultMap[eventName] = true;
-        this.preventExclusionsMap[eventName] = exclusions;
-
-    }
-
-    cancelPreventDefault(eventType) {
-        this.preventDefaultMap[eventType] = false;
-        this.preventExclusionsMap[eventType] = []
     }
 
     /**
