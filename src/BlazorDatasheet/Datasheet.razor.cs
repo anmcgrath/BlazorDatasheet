@@ -83,6 +83,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     /// <summary>
     /// Fired when the Datasheet becomes active or inactive (able to receive keyboard inputs).
+    /// Fires before the matching <see cref="OnFocusIn"/> or <see cref="OnFocusOut"/>. A change that is
+    /// superseded before its callback runs is dropped in favour of the newer one.
     /// </summary>
     [Parameter]
     public EventCallback<SheetActiveEventArgs> OnSheetActiveChanged { get; set; }
@@ -186,13 +188,15 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     /// <summary>
     /// Raised when browser focus enters this sheet or its descendants, including window restoration.
-    /// Separately rendered menus are outside this focus boundary.
+    /// Using a menu keeps focus in the sheet. Transitions superseded before their callback runs are
+    /// dropped, so two consecutive focus-in events can occur without a focus-out between them.
     /// </summary>
     [Parameter] public EventCallback<FocusEventArgs> OnFocusIn { get; set; }
 
     /// <summary>
     /// Raised when browser focus leaves this sheet and its descendants, including window focus loss.
-    /// Moving between descendants does not raise this event. Pending edits remain open.
+    /// Moving between descendants does not raise this event. What happens to a pending edit is set by
+    /// <see cref="OnEditFocusLoss"/>. Superseded transitions are dropped, as for <see cref="OnFocusIn"/>.
     /// </summary>
     [Parameter] public EventCallback<FocusEventArgs> OnFocusOut { get; set; }
 

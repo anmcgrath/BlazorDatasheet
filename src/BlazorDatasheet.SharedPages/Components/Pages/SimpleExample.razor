@@ -57,6 +57,7 @@
     set <code>OnEditFocusLoss</code> to <code>Accept</code> or <code>Cancel</code> to finish the edit when focus moves
     to another element on the page. Switching window or tab always keeps the edit open.
     <code>OnSheetActiveChanged</code> reports keyboard activation before the corresponding focus callback.
+    Callbacks report the latest state: a transition superseded before its callback runs is dropped.
     <code>FocusAsync()</code> focuses the sheet without scrolling; <code>SetActiveAsync()</code> changes activation
     without moving browser focus. Neither intercepts input aimed at an external control.
 </div>
