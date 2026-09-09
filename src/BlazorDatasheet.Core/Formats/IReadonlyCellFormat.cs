@@ -2,6 +2,27 @@
 
 public interface IReadonlyCellFormat
 {
+    /// <summary>Optional BackgroundPattern styling.</summary>
+    public CellBackgroundPattern? BackgroundPattern => null;
+
+    /// <summary>Optional CornerFlagTopLeft styling.</summary>
+    public CellCornerFlag? CornerFlagTopLeft => null;
+
+    /// <summary>Optional CornerFlagTopRight styling.</summary>
+    public CellCornerFlag? CornerFlagTopRight => null;
+
+    /// <summary>Optional CornerFlagBottomLeft styling.</summary>
+    public CellCornerFlag? CornerFlagBottomLeft => null;
+
+    /// <summary>Optional CornerFlagBottomRight styling.</summary>
+    public CellCornerFlag? CornerFlagBottomRight => null;
+
+    /// <summary>Optional CssClass styling.</summary>
+    public string? CssClass => null;
+
+    /// <summary>Application CSS custom properties. The --bds- prefix is reserved.</summary>
+    public IReadOnlyDictionary<string, string>? CssVariables => null;
+
     /// <summary>
     /// CSS font-weight
     /// </summary>

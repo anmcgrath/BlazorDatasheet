@@ -293,8 +293,27 @@
         }
 
         builder.CloseElement();
+        builder.AddContent(190, RenderCornerFlag(cell.Format?.CornerFlagTopLeft, "top-left"));
+        builder.AddContent(200, RenderCornerFlag(cell.Format?.CornerFlagTopRight, "top-right"));
+        builder.AddContent(210, RenderCornerFlag(cell.Format?.CornerFlagBottomLeft, "bottom-left"));
+        builder.AddContent(220, RenderCornerFlag(cell.Format?.CornerFlagBottomRight, "bottom-right"));
         builder.CloseElement();
     };
+
+    private static RenderFragment? RenderCornerFlag(BlazorDatasheet.Core.Formats.CellCornerFlag? flag, string corner)
+    {
+        if (flag == null)
+            return null;
+        return builder =>
+        {
+            var size = double.IsFinite(flag.Size) && flag.Size > 0 ? flag.Size : 8;
+            builder.OpenElement(0, "span");
+            builder.AddAttribute(1, "class", "bds-cell-corner-flag bds-cell-corner-" + corner);
+            builder.AddAttribute(2, "aria-hidden", "true");
+            builder.AddAttribute(3, "style", $"--bds-flag-color:{flag.Color};--bds-flag-size:{size.ToString(System.Globalization.CultureInfo.InvariantCulture)}px;");
+            builder.CloseElement();
+        };
+    }
 
     private void CreateCellRenderFragment() => CellRenderFragment = CreateComponent();
 

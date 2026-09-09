@@ -16,6 +16,76 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReado
         _styles = styles;
     }
 
+    /// <summary>Cell BackgroundPattern decoration. Set null to clear an earlier value.</summary>
+    public CellBackgroundPattern? BackgroundPattern
+    {
+        get => GetStyleOrDefault<CellBackgroundPattern>(nameof(BackgroundPattern));
+        set => AddStyle(nameof(BackgroundPattern), value);
+    }
+
+    /// <summary>Cell CornerFlagTopLeft decoration. Set null to clear an earlier value.</summary>
+    public CellCornerFlag? CornerFlagTopLeft
+    {
+        get => GetStyleOrDefault<CellCornerFlag>(nameof(CornerFlagTopLeft));
+        set => AddStyle(nameof(CornerFlagTopLeft), value);
+    }
+
+    /// <summary>Cell CornerFlagTopRight decoration. Set null to clear an earlier value.</summary>
+    public CellCornerFlag? CornerFlagTopRight
+    {
+        get => GetStyleOrDefault<CellCornerFlag>(nameof(CornerFlagTopRight));
+        set => AddStyle(nameof(CornerFlagTopRight), value);
+    }
+
+    /// <summary>Cell CornerFlagBottomLeft decoration. Set null to clear an earlier value.</summary>
+    public CellCornerFlag? CornerFlagBottomLeft
+    {
+        get => GetStyleOrDefault<CellCornerFlag>(nameof(CornerFlagBottomLeft));
+        set => AddStyle(nameof(CornerFlagBottomLeft), value);
+    }
+
+    /// <summary>Cell CornerFlagBottomRight decoration. Set null to clear an earlier value.</summary>
+    public CellCornerFlag? CornerFlagBottomRight
+    {
+        get => GetStyleOrDefault<CellCornerFlag>(nameof(CornerFlagBottomRight));
+        set => AddStyle(nameof(CornerFlagBottomRight), value);
+    }
+
+    /// <summary>Additional CSS classes on the cell wrapper. Set null to clear an earlier value.</summary>
+    public string? CssClass
+    {
+        get => GetStyleOrDefault<string>(nameof(CssClass));
+        set => AddStyle(nameof(CssClass), value);
+    }
+
+    /// <summary>
+    /// CSS custom properties on the cell wrapper. Assignment copies the dictionary; merging replaces it as a whole.
+    /// Names must start with -- and must not use the reserved --bds- prefix.
+    /// </summary>
+    public IReadOnlyDictionary<string, string>? CssVariables
+    {
+        get => GetStyleOrDefault<IReadOnlyDictionary<string, string>>(nameof(CssVariables));
+        set
+        {
+            if (value == null)
+            {
+                AddStyle<IReadOnlyDictionary<string, string>>(nameof(CssVariables), null);
+                return;
+            }
+
+            var copy = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var pair in value)
+            {
+                if (!pair.Key.StartsWith("--", StringComparison.Ordinal) || pair.Key.Length <= 2 ||
+                    pair.Key.StartsWith("--bds-", StringComparison.Ordinal) ||
+                    pair.Key.Skip(2).Any(c => !char.IsLetterOrDigit(c) && c != '-' && c != '_'))
+                    throw new ArgumentException("CSS variable names must start with -- and cannot use --bds-.", nameof(value));
+                copy.Add(pair.Key, pair.Value);
+            }
+            AddStyle(nameof(CssVariables), new System.Collections.ObjectModel.ReadOnlyDictionary<string, string>(copy));
+        }
+    }
+
     /// <summary>
     /// CSS font-weight
     /// </summary>
@@ -263,41 +333,25 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReado
         if (other == null)
             return false;
 
-        if (_styles == null && other._styles == null)
+        if ((_styles?.Count ?? 0) != (other._styles?.Count ?? 0))
+            return false;
+        if (_styles == null)
             return true;
 
-        if (other._styles?.Count != _styles?.Count)
-            return false;
-
-        _styles ??= new Dictionary<string, object?>();
-
-        foreach (var kp in _styles)
+        foreach (var pair in _styles)
         {
-            var otherStyle = other.GetStyleOrDefault(kp.Key);
-            var thisStyle = GetStyleOrDefault(kp.Key);
-
-            if (otherStyle == null)
+            if (other._styles == null || !other._styles.TryGetValue(pair.Key, out var value))
                 return false;
-
-            if (!otherStyle.Equals(thisStyle))
+            if (pair.Value is IReadOnlyDictionary<string, string> variables &&
+                value is IReadOnlyDictionary<string, string> otherVariables)
+            {
+                if (variables.Count != otherVariables.Count ||
+                    variables.Any(x => !otherVariables.TryGetValue(x.Key, out var v) || v != x.Value))
+                    return false;
+            }
+            else if (!object.Equals(pair.Value, value))
                 return false;
         }
-
-        if (other._styles == null)
-            return false;
-
-        foreach (var kp in other._styles)
-        {
-            var otherStyle = other.GetStyleOrDefault(kp.Key);
-            var thisStyle = GetStyleOrDefault(kp.Key);
-
-            if (thisStyle == null)
-                return false;
-
-            if (!thisStyle.Equals(otherStyle))
-                return false;
-        }
-
         return true;
     }
 }

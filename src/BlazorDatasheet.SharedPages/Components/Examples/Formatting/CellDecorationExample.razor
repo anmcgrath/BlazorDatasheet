@@ -1,0 +1,88 @@
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Formats
+@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Render
+
+<style>
+    .decoration-example .example-gradient {
+        background-image: linear-gradient(90deg, var(--example-accent), transparent);
+    }
+    .decoration-example .example-highlight {
+        box-shadow: inset 0 0 0 2px var(--example-accent);
+    }
+</style>
+<div class="block">
+    <label><input type="checkbox" @bind="_dark"/> Dark theme</label>
+    <button @onclick="() => _datasheet?.AutoFitRegion(_sheet.Region, AutofitMethod.ExpandOrContract)">Autofit decorated cells</button>
+</div>
+<div class="decoration-example" style="max-width: 750px; height: 330px; overflow: auto;">
+    <Datasheet Sheet="_sheet" Icons="_icons" Theme="@(_dark ? "dark" : "default")" @ref="_datasheet"/>
+</div>
+
+@code {
+    private bool _dark;
+    private Datasheet? _datasheet;
+    private readonly Sheet _sheet = new(12, 5);
+    private readonly Dictionary<string, RenderFragment> _icons = new()
+    {
+        ["star"] = builder => builder.AddContent(0, "★")
+    };
+
+    protected override void OnInitialized()
+    {
+        _sheet.Freeze(Edge.Top, 1);
+        _sheet.Freeze(Edge.Left, 1);
+        _sheet.Cells.SetValues(0, 0, new object[][]
+        {
+            ["Pattern", "Preview", "Corners", "Custom CSS", "Conditional"],
+            ["Horizontal", "Editable", "Four flags", "Gradient", -3],
+            ["Vertical", "With icon", "Top left", "Inset highlight", 4],
+            ["Diagonal", "Wrapped text across multiple lines", "Top right", "", -1],
+            ["Crosshatch", "Editable", "Bottom left", "", 2],
+            ["Dots", "Editable", "Bottom right", "", -2],
+            ["Merged", "Merged decoration"]
+        });
+        _sheet.Range("A1:E1")!.Format = new CellFormat { FontWeight = "bold" };
+        var kinds = Enum.GetValues<CellBackgroundPatternKind>();
+        for (var i = 0; i < kinds.Length; i++)
+            _sheet.Cells[i + 1, 1].Format = new CellFormat
+            {
+                BackgroundColor = "var(--sheet-bg-color)",
+                BackgroundPattern = new(kinds[i], "#38bdf844")
+            };
+        _sheet.Range("B3")!.Format = new CellFormat { Icon = "star", IconColor = "#eab308" };
+        _sheet.Range("B4")!.Format = new CellFormat { TextWrap = TextWrapping.Wrap };
+        _sheet.Range("C2")!.Format = new CellFormat
+        {
+            CornerFlagTopLeft = new("#ef4444"), CornerFlagTopRight = new("#3b82f6"),
+            CornerFlagBottomLeft = new("#22c55e"), CornerFlagBottomRight = new("#eab308")
+        };
+        _sheet.Range("C3")!.Format = new CellFormat { CornerFlagTopLeft = new("#ef4444", 12) };
+        _sheet.Range("C4")!.Format = new CellFormat { CornerFlagTopRight = new("#3b82f6", 12) };
+        _sheet.Range("C5")!.Format = new CellFormat { CornerFlagBottomLeft = new("#22c55e", 12) };
+        _sheet.Range("C6")!.Format = new CellFormat { CornerFlagBottomRight = new("#eab308", 12) };
+        _sheet.Range("D2")!.Format = new CellFormat
+        {
+            CssClass = "example-gradient",
+            CssVariables = new Dictionary<string, string> { ["--example-accent"] = "#38bdf466" }
+        };
+        _sheet.Range("D3")!.Format = new CellFormat
+        {
+            CssClass = "example-highlight",
+            CssVariables = new Dictionary<string, string> { ["--example-accent"] = "#a855f7" }
+        };
+        _sheet.ConditionalFormats.Apply(_sheet.Range("E2:E6")!, new ConditionalFormat(
+            (position, sheet) => sheet.Cells.GetCellValue(position.row, position.col).GetValue<double>() < 0,
+            _ => new CellFormat
+            {
+                BackgroundPattern = new(CellBackgroundPatternKind.Diagonal, "#ef444433"),
+                CornerFlagTopRight = new("#ef4444")
+            }));
+        _sheet.Range("B7:C7")!.Merge();
+        _sheet.Range("B7")!.Format = new CellFormat
+        {
+            BackgroundPattern = new(CellBackgroundPatternKind.Dots, "#a855f744"),
+            CornerFlagTopRight = new("#a855f7")
+        };
+    }
+}
