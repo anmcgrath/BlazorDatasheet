@@ -70,9 +70,9 @@
                 this.reconcileFocus();
             });
         }, true);
-        this.listen(window, 'blur', () => this.setFocused(false));
-        this.listen(window, 'focus', () => this.reconcileFocus());
-        this.listen(document, 'visibilitychange', () => this.reconcileFocus());
+        this.listen(window, 'blur', () => this.setFocused(false, false, true));
+        this.listen(window, 'focus', () => this.reconcileFocus(true));
+        this.listen(document, 'visibilitychange', () => this.reconcileFocus(true));
         this.reconcileFocus();
     }
 
@@ -88,12 +88,15 @@
         return !!target && this.container.contains(target) && target.closest?.('.bds-sheet') === this.container;
     }
 
-    reconcileFocus() {
+    reconcileFocus(fromWindow = false) {
         if (!this.disposed)
-            this.setFocused(document.visibilityState !== 'hidden' && document.hasFocus() && this.contains(document.activeElement));
+            this.setFocused(document.visibilityState !== 'hidden' && document.hasFocus() && this.contains(document.activeElement),
+                false, fromWindow);
     }
 
-    setFocused(focused, activate = false) {
+    // fromWindow marks a change caused by the window or tab losing or regaining focus, as opposed
+    // to focus moving between elements on the page. .NET treats the two differently while editing.
+    setFocused(focused, activate = false, fromWindow = false) {
         if (this.disposed || (focused === this.focused && !(activate && focused && !this.active))) return;
         this.focused = focused;
         this.active = focused;
@@ -108,7 +111,7 @@
         }
         // Browser ownership changes immediately, before any server round trip.
         this.preventDefaultMap.keydown = focused;
-        this.dispatchFocus();
+        this.dispatchFocus(fromWindow);
     }
 
     // Deactivation without a focus change, e.g. a pointerdown outside the sheet on something that
@@ -120,8 +123,9 @@
         this.dispatchFocus();
     }
 
-    dispatchFocus() {
-        this.dispatch(this.focusHandler, { focused: this.focused, active: this.active, version: ++this.focusVersion });
+    dispatchFocus(fromWindow = false) {
+        this.dispatch(this.focusHandler,
+            { focused: this.focused, active: this.active, fromWindow, version: ++this.focusVersion });
     }
 
     setInputState(active, editing, revision, focusVersion) {

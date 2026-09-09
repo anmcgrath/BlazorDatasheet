@@ -197,6 +197,12 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     [Parameter] public EventCallback<FocusEventArgs> OnFocusOut { get; set; }
 
     /// <summary>
+    /// What happens to an open edit when focus moves from the sheet to another element on the page.
+    /// Defaults to keeping the edit open. Focus leaving the window or tab always keeps it open.
+    /// </summary>
+    [Parameter] public EditFocusLossAction OnEditFocusLoss { get; set; } = EditFocusLossAction.KeepEditing;
+
+    /// <summary>
     /// Whether the row and column headers are sticky
     /// </summary>
     [Parameter]
@@ -989,6 +995,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         var focused = focus.Focused;
         var focusChanged = _hasFocus != focused;
         _hasFocus = focused;
+        if (focusChanged && !focused && !focus.FromWindow)
+            FinishEditOnFocusLoss();
         await SetActiveAsync(focus.Active);
         if (_isDisposing || !focusChanged || focus.Version != _browserFocusVersion) return;
         await (focused ? OnFocusIn : OnFocusOut).InvokeAsync(new FocusEventArgs
@@ -997,6 +1005,21 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         });
     }
 
+
+    private void FinishEditOnFocusLoss()
+    {
+        if (!_sheet.Editor.IsEditing)
+            return;
+        switch (OnEditFocusLoss)
+        {
+            case EditFocusLossAction.Accept:
+                _sheet.Editor.AcceptEdit();
+                break;
+            case EditFocusLossAction.Cancel:
+                _sheet.Editor.CancelEdit();
+                break;
+        }
+    }
 
     /// <summary>
     /// Sets the document focus to the sheet container and sets the sheet as active.

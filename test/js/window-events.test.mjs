@@ -157,6 +157,16 @@ test('clicking a menu item keeps the sheet focused and active', async () => {
     assert.equal(inputDown.prevented, undefined);
 });
 
+test('window focus changes are distinguished from focus moving between elements', () => {
+    const { service, container, calls } = setup();
+    service.listeners.get('blur:false').fn({});
+    assert.deepEqual([calls.at(-1)[1].focused, calls.at(-1)[1].fromWindow], [false, true]);
+    service.listeners.get('focus:false').fn({});
+    assert.deepEqual([calls.at(-1)[1].focused, calls.at(-1)[1].fromWindow], [true, true]);
+    service.listeners.get('focusout:true').fn({ target: container, relatedTarget: { closest: () => null } });
+    assert.deepEqual([calls.at(-1)[1].focused, calls.at(-1)[1].fromWindow], [false, false]);
+});
+
 test('focus restoration never steals focus from an external control', () => {
     const { service, container } = setup();
     let focused = 0;

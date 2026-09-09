@@ -8,5 +8,11 @@ public class SheetFocusEventArgs
     /// <summary>Whether the sheet should handle keyboard input. Usually follows <see cref="Focused"/>.</summary>
     public bool Active { get; set; }
 
+    /// <summary>
+    /// True when the change came from the window or tab losing or regaining focus, rather than
+    /// focus moving between elements on the page.
+    /// </summary>
+    public bool FromWindow { get; set; }
+
     public long Version { get; set; }
 }

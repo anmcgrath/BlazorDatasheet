@@ -9,6 +9,7 @@ using BlazorDatasheet.Core.Edit;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Extensions;
 using BlazorDatasheet.Services;
+using BlazorDatasheet.Edit;
 using BlazorDatasheet.Edit.DefaultComponents;
 using Bunit;
 using FluentAssertions;
@@ -91,6 +92,41 @@ public class DatasheetFocusTests
         var state = context.JSInterop.Invocations.Where(x => x.Identifier == "setInputState").Last();
         state.Arguments[0].Should().Be(false);
         state.Arguments[1].Should().Be(false);
+    }
+
+    [TestCase(EditFocusLossAction.Accept, "typed")]
+    [TestCase(EditFocusLossAction.Cancel, "old")]
+    [TestCase(EditFocusLossAction.KeepEditing, "old")]
+    public async Task Focus_Loss_To_Another_Element_Finishes_The_Edit_As_Configured(EditFocusLossAction action,
+        string cellValueAfter)
+    {
+        using var context = CreateContext();
+        var sheet = new Sheet(2, 2);
+        sheet.Cells.SetValue(0, 0, "old");
+        var component = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, sheet)
+            .Add(x => x.OnEditFocusLoss, action));
+        await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = true, Active = true, Version = 1 }));
+        await component.InvokeAsync(() =>
+        {
+            sheet.Editor.BeginEdit(0, 0, true, EditEntryMode.Key, "t");
+            sheet.Editor.EditValue = "typed";
+        });
+        await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = false, Active = false, Version = 2 }));
+        sheet.Editor.IsEditing.Should().Be(action == EditFocusLossAction.KeepEditing);
+        sheet.Cells.GetValue(0, 0).Should().Be(cellValueAfter);
+    }
+
+    [Test]
+    public async Task Focus_Leaving_The_Window_Keeps_The_Edit_Open_Even_When_Accepting_On_Focus_Loss()
+    {
+        using var context = CreateContext();
+        var sheet = new Sheet(2, 2);
+        var component = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, sheet)
+            .Add(x => x.OnEditFocusLoss, EditFocusLossAction.Accept));
+        await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = true, Active = true, Version = 1 }));
+        await component.InvokeAsync(() => sheet.Editor.BeginEdit(0, 0, true, EditEntryMode.Key, "a"));
+        await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = false, Active = false, FromWindow = true, Version = 2 }));
+        sheet.Editor.IsEditing.Should().BeTrue();
     }
 
     [Test]

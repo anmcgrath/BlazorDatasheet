@@ -53,7 +53,9 @@
     The sheet has multiple events that can be used to track changes to the sheet. This example shows important events.
     <code>OnFocusIn</code> and <code>OnFocusOut</code> report focus entering or leaving the entire datasheet,
     including browser window focus changes. Moving between cells and editors does not raise these events;
-    separately rendered menus are outside the focus boundary. Losing focus keeps pending edits open.
+    using a menu does not move focus away. By default losing focus keeps a pending edit open;
+    set <code>OnEditFocusLoss</code> to <code>Accept</code> or <code>Cancel</code> to finish the edit when focus moves
+    to another element on the page. Switching window or tab always keeps the edit open.
     <code>OnSheetActiveChanged</code> reports keyboard activation before the corresponding focus callback.
     <code>FocusAsync()</code> focuses the sheet without scrolling; <code>SetActiveAsync()</code> changes activation
     without moving browser focus. Neither intercepts input aimed at an external control.
