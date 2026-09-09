@@ -126,9 +126,9 @@
     box-shadow: var(--sheet-shadow);
 }
 
-/* The selection carries focus state: with browser focus elsewhere it dims, so that it doesn't
-   claim keyboard input that won't arrive. */
-.bds-sheet-unfocused {
+/* The selection follows browser focus, as in excel: while focus is elsewhere it dims. The
+   attribute is set from window-events.js the moment focus changes. */
+.bds-sheet:not([data-focused]) {
     --selection-bg-color: var(--selection-bg-color-unfocused);
     --selection-border-color: var(--selection-border-color-unfocused);
     --head-selection-bg-color: var(--head-selection-bg-color-unfocused);

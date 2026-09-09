@@ -84,7 +84,15 @@
         if (this.disposed || (focused === this.focused && !(activate && focused && !this.active))) return;
         this.focused = focused;
         this.active = focused;
-        if (!focused && this.container) delete this.container.dataset.pointerFocus;
+        if (this.container) {
+            // Focus state is painted from here so the selection dims the instant focus leaves,
+            // without waiting on a render round trip.
+            if (focused) this.container.dataset.focused = '';
+            else {
+                delete this.container.dataset.focused;
+                delete this.container.dataset.pointerFocus;
+            }
+        }
         // Browser ownership changes immediately, before any server round trip.
         this.preventDefaultMap.keydown = focused;
         this.dispatch(this.focusHandler, { focused, version: ++this.focusVersion });

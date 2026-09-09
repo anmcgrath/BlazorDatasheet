@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using BlazorDatasheet.Events;
 using Microsoft.AspNetCore.Components;
@@ -45,18 +45,6 @@ public class DatasheetFocusTests
         await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = false, Version = 2 }));
         await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = true, Version = 1 }));
         events.Should().Equal("active:True", "in", "active:False", "out");
-    }
-
-    [Test]
-    public async Task Selection_Dims_While_Browser_Focus_Is_Elsewhere()
-    {
-        using var context = CreateContext();
-        var component = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, new Sheet(2, 2)));
-        component.Find(".bds-sheet").ClassList.Should().Contain("bds-sheet-unfocused");
-        await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = true, Version = 1 }));
-        component.Find(".bds-sheet").ClassList.Should().NotContain("bds-sheet-unfocused");
-        await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = false, Version = 2 }));
-        component.Find(".bds-sheet").ClassList.Should().Contain("bds-sheet-unfocused");
     }
 
     [Test]

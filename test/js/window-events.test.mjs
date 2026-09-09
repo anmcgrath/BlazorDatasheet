@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+﻿import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 const source = await readFile(new URL('../../src/BlazorDatasheet/wwwroot/js/window-events.js', import.meta.url), 'utf8');
@@ -115,6 +115,15 @@ test('pointer focus is flagged so the focus ring stays a keyboard-only affordanc
     assert.equal('pointerFocus' in container.dataset, true);
     service.setFocused(false);
     assert.equal('pointerFocus' in container.dataset, false);
+});
+
+test('the container is marked focused synchronously so the selection dims without a round trip', () => {
+    const { service, container } = setup();
+    assert.equal('focused' in container.dataset, true);
+    service.setFocused(false);
+    assert.equal('focused' in container.dataset, false);
+    service.setFocused(true);
+    assert.equal('focused' in container.dataset, true);
 });
 
 test('focus restoration never steals focus from an external control', () => {
