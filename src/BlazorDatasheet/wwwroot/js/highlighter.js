@@ -1,4 +1,4 @@
-class Highligher {
+﻿class Highligher {
     #inputEl;
     #highlightResultEl;
     #caretToEndPending = false;
@@ -101,8 +101,11 @@ class Highligher {
 
         this.focusAndMoveCursorToEnd = function (onlyIfWithinSheet = false) {
             const sheet = options.inputEl.closest('.bds-sheet');
+            // A sheet activated from code without browser focus leaves the active element on body,
+            // and the editor may still take focus from there. An external control keeps it.
             const canFocus = () => !this.#disposed && (!onlyIfWithinSheet || !sheet ||
-                (document.hasFocus() && sheet.contains(document.activeElement)));
+                (document.hasFocus() && (sheet.contains(document.activeElement) ||
+                    document.activeElement === document.body)));
             if (!canFocus()) return;
             options.inputEl.focus()
 

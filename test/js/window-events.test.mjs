@@ -214,6 +214,9 @@ test('text editor takes initial focus only after text is applied and never steal
     document.activeElement = outside;
     highlighter.focusAndMoveCursorToEnd(true);
     assert.equal(document.activeElement, outside);
+    document.activeElement = document.body;
+    highlighter.focusAndMoveCursorToEnd(true);
+    assert.equal(document.activeElement, input);
     let rejectPending;
     highlighter.options.dotnetHelper.invokeMethodAsync = () => new Promise((_, reject) => { rejectPending = reject; });
     const pending = highlighter.invoke('HandleInput', 'late');
