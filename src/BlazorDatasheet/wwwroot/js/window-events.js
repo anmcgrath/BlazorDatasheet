@@ -114,12 +114,17 @@
     }
 
     // Deactivation without a focus change, e.g. a pointerdown outside the sheet on something that
-    // keeps browser focus where it is. .NET needs to hear about it or the two sides diverge.
+    // keeps browser focus where it is. .NET needs to hear about it or the two sides diverge. The
+    // report waits a tick: if the click does move focus away, the focus-out carries it instead, so
+    // .NET sees one transition with activation reported before focus, as documented.
     setActive(active) {
         if (this.disposed || active === this.active) return;
         this.active = active;
         this.preventDefaultMap.keydown = active;
-        this.dispatchFocus();
+        const version = this.focusVersion;
+        setTimeout(() => {
+            if (!this.disposed && this.focusVersion === version && this.active === active) this.dispatchFocus();
+        }, 0);
     }
 
     dispatchFocus(fromWindow = false) {

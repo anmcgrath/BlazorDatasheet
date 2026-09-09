@@ -130,6 +130,8 @@ test('a pointerdown outside that keeps browser focus still reports deactivation'
     const { service, container, calls } = setup();
     const toolbarButton = { closest: () => null };
     service.listeners.get('pointerdown:true').fn({ target: toolbarButton });
+    assert.equal(calls.length, 1);
+    await new Promise(resolve => setTimeout(resolve, 0));
     const last = calls.at(-1)[1];
     assert.deepEqual({ focused: last.focused, active: last.active }, { focused: true, active: false });
     assert.equal('focused' in container.dataset, true);
@@ -140,6 +142,15 @@ test('a pointerdown outside that keeps browser focus still reports deactivation'
     container.focus = () => {};
     service.listeners.get('pointerdown:true').fn({ target: container });
     assert.equal(calls.at(-1)[1].active, true);
+});
+
+test('a pointerdown outside that moves focus away reports one transition, not two', async () => {
+    const { service, container, calls } = setup();
+    const external = { tagName: 'INPUT', closest: () => null };
+    service.listeners.get('pointerdown:true').fn({ target: external });
+    service.listeners.get('focusout:true').fn({ target: container, relatedTarget: external });
+    await new Promise(resolve => setTimeout(resolve, 0));
+    assert.deepEqual(calls.slice(1).map(c => [c[1].focused, c[1].active]), [[false, false]]);
 });
 
 test('clicking a menu item keeps the sheet focused and active', async () => {
