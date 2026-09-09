@@ -9,20 +9,21 @@
 </div>
 
 <CodeBlock Language="csharp">sheet.Range("A1:A2").Format = new CellFormat() { BackgroundColor = "red" };
-sheet.Commands.ExecuteCommand(new SetFormatCommand(new RowRegion(10, 12), new CellFormat() { ForegroundColor = "blue" }));
-sheet.SetFormat(sheet.Range(new ColumnRegion(5)), new CellFormat() { FontWeight = "bold" });
-sheet.Cells[0, 0].Format = new CellFormat() { TextAlign = "center" };
+ sheet.Commands.ExecuteCommand(new SetFormatCommand(new RowRegion(10, 12), new CellFormat() { ForegroundColor = "blue"
+ }));
+ sheet.SetFormat(sheet.Range(new ColumnRegion(5)), new CellFormat() { FontWeight = "bold" });
+ sheet.Cells[0, 0].Format = new CellFormat() { TextAlign = "center" };
 </CodeBlock>
 
 <div class="block">
- When a cell format is set, it will be merged into any existing cell formats in the region that it is applied to. Any
- non-null format paremeters will be merged:
+ When a cell format is set, it will be merged into any existing cell formats in the region that it is applied to. Only
+ explicitly assigned properties are merged; assigning null clears an earlier value:
 </div>
 
 <CodeBlock Language="csharp">sheet.Range("A1").Format = new CellFormat() { BackgroundColor = "red" };
-sheet.Range("A1:A2").Format = new CellFormat() { ForegroundColor = "blue" };
-var format = sheet.Cells[0, 0].Format; // backroundColor = "red", foreground = "blue"
-var format2 = sheet.Cells[1, 0].Format; // foreground = "blue"
+ sheet.Range("A1:A2").Format = new CellFormat() { ForegroundColor = "blue" };
+ var format = sheet.Cells[0, 0].Format; // backroundColor = "red", foreground = "blue"
+ var format2 = sheet.Cells[1, 0].Format; // foreground = "blue"
 </CodeBlock>
 
 <div class="block">
@@ -38,12 +39,12 @@ var format2 = sheet.Cells[1, 0].Format; // foreground = "blue"
 </div>
 
 <CodeBlock Language="csharp">// register the icons the sheet can draw
-&lt;Datasheet Sheet="_sheet" Icons="_icons"/&gt;
+ &lt;Datasheet Sheet="_sheet" Icons="_icons"/&gt;
 
-private Dictionary&lt;string, RenderFragment&gt; _icons = new() { ["tick"] = TickIcon };
+ private Dictionary&lt;string, RenderFragment&gt; _icons = new() { ["tick"] = TickIcon };
 
-// then refer to one by name from a cell format
-sheet.Range("A1:A4")!.Format = new CellFormat() { Icon = "tick", IconColor = "#16a34a" };
+ // then refer to one by name from a cell format
+ sheet.Range("A1:A4")!.Format = new CellFormat() { Icon = "tick", IconColor = "#16a34a" };
 </CodeBlock>
 
 <div class="block">
@@ -54,6 +55,25 @@ sheet.Range("A1:A4")!.Format = new CellFormat() { Icon = "tick", IconColor = "#1
 </div>
 
 <CodeExample ComponentType="typeof(CellIconExample)"/>
+
+<h3>Patterns, corner flags, and custom CSS</h3>
+<div class="block">
+ Each corner accepts an independent CellCornerFlag with a color and size, defaulting to currentColor and 8px.
+ Patterns are drawn over BackgroundColor. Available kinds are Horizontal, Vertical, Diagonal, Crosshatch, and Dots.
+</div>
+
+<CodeExample ComponentType="typeof(CellDecorationExample)"/>
+<div class="block">
+ CssClass adds classes to the cell wrapper. CssVariables copies a dictionary of CSS custom properties on assignment.
+</div>
+<CodeBlock Language="csharp">sheet.Range("A1")!.Format = new CellFormat
+ {
+ BackgroundPattern = null,
+ CornerFlagTopRight = null,
+ CssClass = null,
+ CssVariables = null
+ };
+</CodeBlock>
 
 @code {
 

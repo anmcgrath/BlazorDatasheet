@@ -103,6 +103,11 @@ public class VisualCell
         HorizontalAlign = ResolveHorizontalAlign(format, cellValue.ValueType);
         VerticalAlign = ResolveVerticalAlign(format);
         ClassString = GetCellClassString(format, cellValue.ValueType);
+        if (!string.IsNullOrWhiteSpace(format?.CssClass))
+            ClassString += " " + format.CssClass;
+        if (format?.CornerFlagTopLeft != null || format?.CornerFlagTopRight != null ||
+            format?.CornerFlagBottomLeft != null || format?.CornerFlagBottomRight != null)
+            ClassString += " bds-cell-has-flags";
 
         FormatStyleString =
             GetCellFormatStyleString(format, sheet.Cells.IsValid(row, col));
@@ -224,6 +229,28 @@ public class VisualCell
         };
     }
 
+    private static void AddPatternStyles(StyleBuilder sb, CellBackgroundPattern pattern)
+    {
+        var spacing = double.IsFinite(pattern.Spacing) && pattern.Spacing > 0 ? pattern.Spacing : 8;
+        var stroke = double.IsFinite(pattern.StrokeSize) && pattern.StrokeSize > 0
+            ? Math.Min(pattern.StrokeSize, spacing) : Math.Min(1, spacing);
+        var gap = spacing.ToString(CultureInfo.InvariantCulture) + "px";
+        var width = stroke.ToString(CultureInfo.InvariantCulture) + "px";
+        string Lines(int angle) => $"repeating-linear-gradient({angle}deg, {pattern.Color} 0, {pattern.Color} {width}, transparent {width}, transparent {gap})";
+        var image = pattern.Kind switch
+        {
+            CellBackgroundPatternKind.Horizontal => Lines(0),
+            CellBackgroundPatternKind.Vertical => Lines(90),
+            CellBackgroundPatternKind.Diagonal => Lines(45),
+            CellBackgroundPatternKind.Crosshatch => Lines(45) + ", " + Lines(135),
+            CellBackgroundPatternKind.Dots => $"radial-gradient(circle, {pattern.Color} {width}, transparent {width})",
+            _ => null
+        };
+        sb.AddStyleNotNull("background-image", image);
+        if (pattern.Kind == CellBackgroundPatternKind.Dots)
+            sb.AddStyle("background-size", $"{gap} {gap}");
+    }
+
     private static string GetCellFormatStyleString(CellFormat? format, bool isCellValid)
     {
         // an unformatted, valid cell contributes no inline style at all - which is most cells on
@@ -242,6 +269,11 @@ public class VisualCell
             return sb.ToString();
 
         sb.AddStyle("background-color", format.BackgroundColor!, format.BackgroundColor != null);
+        if (format.BackgroundPattern is { } pattern)
+            AddPatternStyles(sb, pattern);
+        if (format.CssVariables is { } variables)
+            foreach (var variable in variables)
+                sb.AddStyle(variable.Key, variable.Value);
         sb.AddStyle("font-weight", format.FontWeight!, format.FontWeight != null);
         sb.AddStyle("font-style", format.FontStyle!, format.FontStyle != null);
         sb.AddStyle("text-decoration", format.TextDecoration!, format.TextDecoration != null);

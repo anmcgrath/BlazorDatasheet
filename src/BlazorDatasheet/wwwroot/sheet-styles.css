@@ -538,3 +538,18 @@
     grid-template-areas: 'fT fT fT' 'fL C fR' 'fB fB fB';
     display: grid;
 }
+
+.bds-cell-has-flags { position: relative; }
+.bds-cell-corner-flag {
+    position: absolute;
+    width: var(--bds-flag-size, 8px);
+    height: var(--bds-flag-size, 8px);
+    max-width: 100%;
+    max-height: 100%;
+    background-color: var(--bds-flag-color, currentColor);
+    pointer-events: none;
+}
+.bds-cell-corner-top-left { top: 0; left: 0; clip-path: polygon(0 0, 100% 0, 0 100%); }
+.bds-cell-corner-top-right { top: 0; right: 0; clip-path: polygon(0 0, 100% 0, 100% 100%); }
+.bds-cell-corner-bottom-left { bottom: 0; left: 0; clip-path: polygon(0 0, 0 100%, 100% 100%); }
+.bds-cell-corner-bottom-right { bottom: 0; right: 0; clip-path: polygon(100% 0, 0 100%, 100% 100%); }
