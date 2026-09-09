@@ -44,6 +44,9 @@
             const inside = this.contains(e.target);
             const control = e.target.closest?.('input, textarea, select, button, a[href], [contenteditable], [tabindex]');
             if (inside && (!control || control === container)) {
+                // Chrome treats this scripted focus as keyboard focus, so mark it as pointer
+                // driven and let the css drop the focus ring for it.
+                container.dataset.pointerFocus = '';
                 container.focus({ preventScroll: true });
             }
             if (!inside) this.active = false;
@@ -81,6 +84,7 @@
         if (this.disposed || (focused === this.focused && !(activate && focused && !this.active))) return;
         this.focused = focused;
         this.active = focused;
+        if (!focused && this.container) delete this.container.dataset.pointerFocus;
         // Browser ownership changes immediately, before any server round trip.
         this.preventDefaultMap.keydown = focused;
         this.dispatch(this.focusHandler, { focused, version: ++this.focusVersion });

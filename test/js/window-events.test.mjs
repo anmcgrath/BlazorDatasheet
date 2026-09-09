@@ -13,7 +13,7 @@ function setup() {
     globalThis.window = new Surface();
     globalThis.document = new Surface();
     Object.assign(document, { visibilityState: 'visible', hasFocus: () => true, body: {}, documentElement: {} });
-    const container = { contains: t => t === container || t?.sheet === container, closest: () => container };
+    const container = { dataset: {}, contains: t => t === container || t?.sheet === container, closest: () => container };
     document.activeElement = container;
     const calls = [];
     const service = createWindowEventsService({ invokeMethodAsync: async (...args) => calls.push(args) });
@@ -106,6 +106,15 @@ test('clicking a manually deactivated focused sheet reactivates it', () => {
     service.setFocused(true, true);
     assert.equal(service.active, true);
     assert.equal(calls.at(-1)[1].version, 2);
+});
+
+test('pointer focus is flagged so the focus ring stays a keyboard-only affordance', () => {
+    const { service, container } = setup();
+    container.focus = () => {};
+    service.listeners.get('pointerdown:true').fn({ target: container });
+    assert.equal('pointerFocus' in container.dataset, true);
+    service.setFocused(false);
+    assert.equal('pointerFocus' in container.dataset, false);
 });
 
 test('focus restoration never steals focus from an external control', () => {

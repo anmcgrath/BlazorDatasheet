@@ -48,6 +48,18 @@ public class DatasheetFocusTests
     }
 
     [Test]
+    public async Task Selection_Dims_While_Browser_Focus_Is_Elsewhere()
+    {
+        using var context = CreateContext();
+        var component = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, new Sheet(2, 2)));
+        component.Find(".bds-sheet").ClassList.Should().Contain("bds-sheet-unfocused");
+        await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = true, Version = 1 }));
+        component.Find(".bds-sheet").ClassList.Should().NotContain("bds-sheet-unfocused");
+        await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = false, Version = 2 }));
+        component.Find(".bds-sheet").ClassList.Should().Contain("bds-sheet-unfocused");
+    }
+
+    [Test]
     public async Task Manual_Activation_Does_Not_Claim_Browser_Focus()
     {
         using var context = CreateContext();

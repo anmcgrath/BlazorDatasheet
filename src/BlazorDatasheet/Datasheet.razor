@@ -225,6 +225,9 @@
             if (!ShowRowHeadings)
                 classes.Add("bds-sheet-left-border");
 
+            if (!_hasFocus)
+                classes.Add("bds-sheet-unfocused");
+
             return string.Join(" ", classes);
         }
     }

@@ -989,6 +989,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         var focused = focus.Focused;
         var focusChanged = _hasFocus != focused;
         _hasFocus = focused;
+        if (focusChanged)
+            StateHasChanged(); // the selection is drawn dimmed while focus is elsewhere
         await SetActiveAsync(focused);
         if (_isDisposing || !focusChanged || focus.Version != _browserFocusVersion) return;
         await (focused ? OnFocusIn : OnFocusOut).InvokeAsync(new FocusEventArgs
