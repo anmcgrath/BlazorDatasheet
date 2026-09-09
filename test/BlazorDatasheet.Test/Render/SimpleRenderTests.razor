@@ -1,5 +1,7 @@
 ﻿@using AngleSharp.Css.Dom
 @using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events.Selection
+@using BlazorDatasheet.KeyboardInput
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Render
 @using BlazorDatasheet.Core.Formats
@@ -17,6 +19,58 @@
 
 @code
 {
+    [TestCase("Tab", KeyboardModifiers.None, SelectionInputKind.TabEnterNavigation)]
+    [TestCase("Enter", KeyboardModifiers.None, SelectionInputKind.TabEnterNavigation)]
+    [TestCase("Tab", KeyboardModifiers.Shift, SelectionInputKind.TabEnterNavigation)]
+    [TestCase("Enter", KeyboardModifiers.Shift, SelectionInputKind.TabEnterNavigation)]
+    [TestCase("ArrowRight", KeyboardModifiers.None, SelectionInputKind.ArrowNavigation)]
+    [TestCase("ArrowRight", KeyboardModifiers.Shift, SelectionInputKind.ShiftExtension)]
+    public async Task Selection_Keyboard_Shortcuts_Use_Input_Hook(string key, KeyboardModifiers modifiers,
+        SelectionInputKind kind)
+    {
+        var sheet = new Sheet(5, 5);
+        sheet.Selection.Set(2, 2);
+        var calls = 0;
+        sheet.BeforeSelectionInput += (_, e) =>
+        {
+            calls++;
+            e.InputKind.Should().Be(kind);
+            e.Cancel = true;
+        };
+        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+
+        await cut.InvokeAsync(() => cut.Instance.HandleShortcuts(key, modifiers));
+
+        calls.Should().Be(1);
+        sheet.Selection.ActiveRegion.Should().BeEquivalentTo(new Region(2, 2));
+        sheet.Selection.ActiveCellPosition.Should().Be(new CellPosition(2, 2));
+    }
+
+    [TestCase(true)]
+    [TestCase(false)]
+    public async Task Column_Group_Selection_Can_Be_Canceled_Or_Adjusted(bool cancel)
+    {
+        var sheet = new Sheet(3, 4);
+        sheet.Columns.SetGroup(1, 2, "G");
+        sheet.Selection.Set(0, 0);
+        var calls = 0;
+        sheet.BeforeSelectionInput += (_, e) =>
+        {
+            calls++;
+            e.InputKind.Should().Be(SelectionInputKind.HeaderSelection);
+            e.IsDragPreview.Should().BeFalse();
+            e.Cancel = cancel;
+            e.ProposedRegions = new IRegion[] { new ColumnRegion(2) };
+            e.ProposedActiveCellPosition = new CellPosition(0, 2);
+        };
+        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+
+        await cut.Find("div.bds-col-group-head").MouseDownAsync(new MouseEventArgs());
+
+        calls.Should().Be(1);
+        sheet.Selection.ActiveRegion.Should().BeEquivalentTo(cancel ? (IRegion)new Region(0, 0) : new ColumnRegion(2));
+    }
+
     [Test]
     public async Task Datasheet_With_One_Cell_Defined_Renders_Correctly()
     {

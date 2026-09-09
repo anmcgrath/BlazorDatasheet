@@ -8,6 +8,7 @@ using BlazorDatasheet.Core.Edit;
 using BlazorDatasheet.Core.Events.Data;
 using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.Core.Events.Sort;
+using BlazorDatasheet.Core.Events.Selection;
 using BlazorDatasheet.Core.Events.Visual;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.FormulaEngine;
@@ -152,6 +153,19 @@ public class Sheet
     internal IDialogService? Dialog { get; private set; }
 
     #region EVENTS
+
+    /// <summary>
+    /// Fired synchronously before normal mouse or keyboard selection input is applied.
+    /// Consumers may cancel or adjust the detached proposal. Direct Selection API calls,
+    /// formula reference picking, and selection changes caused by data operations bypass this event.
+    /// Handlers should modify the event arguments rather than call selection methods recursively.
+    /// </summary>
+    public event EventHandler<BeforeSelectionInputEventArgs>? BeforeSelectionInput;
+
+    internal bool HasSelectionInputHandlers => BeforeSelectionInput != null;
+
+    internal void EmitBeforeSelectionInput(BeforeSelectionInputEventArgs args) =>
+        BeforeSelectionInput?.Invoke(this, args);
 
     /// <summary>
     /// Fired when a portion of the sheet is marked as dirty.

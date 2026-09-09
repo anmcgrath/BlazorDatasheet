@@ -101,6 +101,44 @@ This conversion can be controlled, for example when setting the cell type to "te
 
 The conversion can additionally be modified by using the ```Sheet.Cells.BeforeCellValueConversion``` event. By changing the ```NewValue``` property of the argument, the value that is stored is modified.
 
+### Controlling selection input
+
+Subscribe to `Sheet.BeforeSelectionInput` to cancel or adjust mouse and keyboard selection before it
+changes the selection or drag preview. For example, prevent selection from including a restricted area:
+
+```csharp
+using System.Linq;
+using BlazorDatasheet.DataStructures.Geometry;
+
+var restricted = new Region(2, 4, 3, 5); // Zero-based rows 2–4 and columns 3–5.
+sheet.BeforeSelectionInput += (_, e) =>
+{
+    e.Cancel = e.ProposedRegions.Any(region => region.Intersects(restricted));
+};
+```
+
+Alternatively, clamp every proposed region to an allowed rectangle:
+
+```csharp
+var allowed = new Region(0, 9, 0, 4); 
+sheet.BeforeSelectionInput += (_, e) =>
+{
+    if (e.ProposedRegions.Count == 0)
+        return;
+
+    var regions = e.ProposedRegions.Select(region => region.GetIntersection(allowed)).ToArray();
+    if (regions.Any(region => region == null))
+    {
+        e.Cancel = true;
+        return;
+    }
+
+    e.ProposedRegions = regions.Select(region => region!).ToArray();
+    e.ProposedActiveCellPosition = e.ProposedRegions[e.ProposedActiveRegionIndex]
+        .GetConstrained(e.ProposedActiveCellPosition);
+};
+```
+
 ### Formula
 
 Formula can be applied to cells. When the cells or ranges that the formula cells reference change, the cell value is re-calculated.

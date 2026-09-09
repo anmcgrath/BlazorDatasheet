@@ -5,7 +5,7 @@ using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.Selecting;
 
-public class Selection
+public partial class Selection
 {
     private readonly Sheet _sheet;
 
@@ -91,6 +91,7 @@ public class Selection
         if (_sheet.Area == 0)
             return;
 
+        _inputPreviewSnapshot = null;
         this.SelectingRegion = new Region(row, col);
         this._selectingStartPosition = new CellPosition(row, col);
         this._selectingMode = SelectionMode.Cell;
@@ -102,6 +103,7 @@ public class Selection
     {
         if (_sheet.Area == 0)
             return;
+        _inputPreviewSnapshot = null;
         this.SelectingRegion = new ColumnRegion(col, col);
         this._selectingStartPosition = new CellPosition(0, col);
         this._selectingMode = SelectionMode.Column;
@@ -113,6 +115,7 @@ public class Selection
     {
         if (_sheet.Area == 0)
             return;
+        _inputPreviewSnapshot = null;
         this.SelectingRegion = new RowRegion(row, row);
         this._selectingStartPosition = new CellPosition(row, 0);
         this._selectingMode = SelectionMode.Row;
@@ -124,6 +127,8 @@ public class Selection
     {
         if (SelectingRegion == null)
             return;
+
+        _inputPreviewSnapshot = null;
 
         switch (_selectingMode)
         {
@@ -144,6 +149,7 @@ public class Selection
 
     public void CancelSelecting()
     {
+        _inputPreviewSnapshot = null;
         SelectingRegion = null;
         EmitSelectingChanged();
     }
@@ -152,6 +158,16 @@ public class Selection
     {
         if (SelectingRegion == null)
             return;
+
+        if (_inputPreviewSnapshot != null)
+        {
+            var snapshot = _inputPreviewSnapshot;
+            _inputPreviewSnapshot = null;
+            SelectingRegion = null;
+            EmitSelectingChanged();
+            ApplyInputSnapshot(snapshot);
+            return;
+        }
 
         var selectedRegion = SelectingRegion;
         SelectingRegion = null;
@@ -175,6 +191,7 @@ public class Selection
     /// </summary>
     public void ClearSelections()
     {
+        _inputPreviewSnapshot = null;
         var oldRegions = CloneRegions();
         SetActiveRegionIndex(-1);
         _regions.Clear();
@@ -215,6 +232,7 @@ public class Selection
     /// <param name="newRegion"></param>
     private void SwapActiveRegion(IRegion newRegion)
     {
+        _inputPreviewSnapshot = null;
         if (newRegion == ActiveRegion)
             return;
 
@@ -357,6 +375,7 @@ public class Selection
 
     public void Set(List<IRegion> regions)
     {
+        _inputPreviewSnapshot = null;
         _regions.Clear();
         _activeRegionIndex = -1;
 
@@ -733,6 +752,9 @@ public class Selection
 
     internal void SetActiveCellPosition(int row, int col)
     {
+        _inputPreviewSnapshot = null;
+        if (_isInputProposal)
+            _inputSetsActiveCellPosition = true;
         var oldPosition = ActiveCellPosition;
         var newPosition = new CellPosition(row, col);
         var beforeEventArgs = new BeforeActiveCellPositionChangedEventArgs(oldPosition, newPosition);
@@ -781,6 +803,7 @@ public class Selection
 
     internal void Restore(SelectionSnapshot selectionSnapshot)
     {
+        _inputPreviewSnapshot = null;
         var oldRegions = CloneRegions();
         _regions.Clear();
         _regions.AddRange(selectionSnapshot.Regions);

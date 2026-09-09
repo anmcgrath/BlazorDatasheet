@@ -641,7 +641,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         if (_sheet.Editor.IsEditing && !_sheet.Editor.AcceptEdit())
             return;
 
-        _sheet.Selection.Set(new ColumnRegion(group.Start, group.End));
+        _selectionManager.HandleHeaderSelection(new ColumnRegion(group.Start, group.End));
     }
 
     private async Task<bool> HandleWindowKeyDown(KeyboardEventArgs e)
@@ -822,7 +822,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         if (!acceptEdit)
             return false;
 
-        _sheet.Selection.MoveActivePosition(axis, amount);
+        _selectionManager.HandleTabEnterNavigation(axis, amount);
         if (IsDataSheetActive)
             await ScrollToActiveCellPosition();
         return acceptEdit;

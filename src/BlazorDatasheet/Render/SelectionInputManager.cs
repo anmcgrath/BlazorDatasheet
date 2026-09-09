@@ -1,4 +1,5 @@
 ﻿using BlazorDatasheet.Core.Selecting;
+using BlazorDatasheet.Core.Events.Selection;
 using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Render;
@@ -15,59 +16,87 @@ internal class SelectionInputManager
 
     public void HandleArrowKeyDown(bool shift, Offset offset)
     {
-        if (shift)
-            _selection.GrowActiveSelection(offset);
-        else
-            CollapseAndMoveSelection(offset);
+        if (_selection.ActiveRegion == null || (!shift && _selection.IsSelecting))
+            return;
+        _selection.HandleInput(shift ? SelectionInputKind.ShiftExtension : SelectionInputKind.ArrowNavigation,
+            selection =>
+            {
+                if (shift)
+                    selection.GrowActiveSelection(offset);
+                else
+                    CollapseAndMoveSelection(selection, offset);
+            });
     }
 
-    private void CollapseAndMoveSelection(Offset offset)
+    private static void CollapseAndMoveSelection(Selection selection, Offset offset)
     {
-        if (_selection.ActiveRegion == null)
+        if (selection.ActiveRegion == null)
             return;
 
-        if (_selection.IsSelecting)
+        if (selection.IsSelecting)
             return;
 
-        var posn = _selection.ActiveCellPosition;
+        var posn = selection.ActiveCellPosition;
 
-        if (!_selection.ActiveRegion.IsSingleCell())
-            _selection.Set(posn.row, posn.col);
+        if (!selection.ActiveRegion.IsSingleCell())
+            selection.Set(posn.row, posn.col);
 
-        _selection.MoveActivePositionByRow(offset.Rows);
-        _selection.MoveActivePositionByCol(offset.Columns);
+        selection.MoveActivePositionByRow(offset.Rows);
+        selection.MoveActivePositionByCol(offset.Columns);
     }
+
+    public void HandleTabEnterNavigation(Axis axis, int amount)
+    {
+        if (_selection.ActiveRegion == null || amount == 0)
+            return;
+        _selection.HandleInput(SelectionInputKind.TabEnterNavigation,
+            selection => selection.MoveActivePosition(axis, amount));
+    }
+
+    public void HandleHeaderSelection(IRegion region) =>
+        _selection.HandleInput(SelectionInputKind.HeaderSelection, selection => selection.Set(region));
 
     public void HandlePointerDown(int row, int col, bool shift, bool ctrl, bool meta, int mouseButton)
     {
-        if (shift && _selection.ActiveRegion != null)
+        var kind = shift && _selection.ActiveRegion != null ? SelectionInputKind.ShiftExtension :
+            row == -1 || col == -1 ? SelectionInputKind.HeaderSelection : SelectionInputKind.PointerStart;
+        _selection.HandleInput(kind,
+            selection => HandlePointerDown(selection, row, col, shift, ctrl, meta, mouseButton));
+    }
+
+    private static void HandlePointerDown(Selection selection, int row, int col, bool shift, bool ctrl,
+        bool meta, int mouseButton)
+    {
+        if (shift && selection.ActiveRegion != null)
         {
-            _selection.ExtendTo(row, col);
+            selection.ExtendTo(row, col);
         }
         else
         {
             if (!meta && !ctrl)
             {
-                _selection.ClearSelections();
+                selection.ClearSelections();
             }
 
             if (row == -1 && col == -1)
                 return;
             else if (row == -1)
-                _selection.BeginSelectingCol(col);
+                selection.BeginSelectingCol(col);
             else if (col == -1)
-                _selection.BeginSelectingRow(row);
+                selection.BeginSelectingRow(row);
             else
-                _selection.BeginSelectingCell(row, col);
+                selection.BeginSelectingCell(row, col);
 
             if (mouseButton == 2) // RMC
-                _selection.EndSelecting();
+                selection.EndSelecting();
         }
     }
 
     public void HandlePointerOver(int row, int col)
     {
-        _selection.UpdateSelectingEndPosition(row, col);
+        if (!_selection.IsSelecting)
+            return;
+        _selection.HandleInput(SelectionInputKind.Drag, selection => selection.UpdateSelectingEndPosition(row, col));
     }
 
     public void HandleWindowMouseUp()
