@@ -989,7 +989,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         var focused = focus.Focused;
         var focusChanged = _hasFocus != focused;
         _hasFocus = focused;
-        await SetActiveAsync(focused);
+        await SetActiveAsync(focus.Active);
         if (_isDisposing || !focusChanged || focus.Version != _browserFocusVersion) return;
         await (focused ? OnFocusIn : OnFocusOut).InvokeAsync(new FocusEventArgs
         {

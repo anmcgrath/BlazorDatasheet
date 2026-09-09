@@ -126,6 +126,22 @@ test('the container is marked focused synchronously so the selection dims withou
     assert.equal('focused' in container.dataset, true);
 });
 
+test('a pointerdown outside that keeps browser focus still reports deactivation', async () => {
+    const { service, container, calls } = setup();
+    const toolbarButton = { closest: () => null };
+    service.listeners.get('pointerdown:true').fn({ target: toolbarButton });
+    const last = calls.at(-1)[1];
+    assert.deepEqual({ focused: last.focused, active: last.active }, { focused: true, active: false });
+    assert.equal('focused' in container.dataset, true);
+    const e = key(container);
+    await service.handleWindowEvent(e);
+    assert.equal(e.prevented, undefined);
+    assert.equal(calls.at(-1)[0], 'focus');
+    container.focus = () => {};
+    service.listeners.get('pointerdown:true').fn({ target: container });
+    assert.equal(calls.at(-1)[1].active, true);
+});
+
 test('focus restoration never steals focus from an external control', () => {
     const { service, container } = setup();
     let focused = 0;

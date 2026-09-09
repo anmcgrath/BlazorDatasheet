@@ -49,7 +49,7 @@
                 container.dataset.pointerFocus = '';
                 container.focus({ preventScroll: true });
             }
-            if (!inside) this.active = false;
+            if (!inside) this.setActive(false);
             this.reconcileFocus();
             if (inside && this.focused) this.setFocused(true, true);
         }, true);
@@ -95,7 +95,20 @@
         }
         // Browser ownership changes immediately, before any server round trip.
         this.preventDefaultMap.keydown = focused;
-        this.dispatch(this.focusHandler, { focused, version: ++this.focusVersion });
+        this.dispatchFocus();
+    }
+
+    // Deactivation without a focus change, e.g. a pointerdown outside the sheet on something that
+    // keeps browser focus where it is. .NET needs to hear about it or the two sides diverge.
+    setActive(active) {
+        if (this.disposed || active === this.active) return;
+        this.active = active;
+        this.preventDefaultMap.keydown = active;
+        this.dispatchFocus();
+    }
+
+    dispatchFocus() {
+        this.dispatch(this.focusHandler, { focused: this.focused, active: this.active, version: ++this.focusVersion });
     }
 
     setInputState(active, editing, revision, focusVersion) {

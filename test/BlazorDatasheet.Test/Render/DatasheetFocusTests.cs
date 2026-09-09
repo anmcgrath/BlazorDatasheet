@@ -40,11 +40,26 @@ public class DatasheetFocusTests
             .Add(x => x.OnFocusIn, _ => events.Add("in"))
             .Add(x => x.OnFocusOut, _ => events.Add("out")));
         component.Find(".bds-sheet").GetAttribute("tabindex").Should().Be("0");
-        await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = true, Version = 1 }));
-        await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = true, Version = 1 }));
-        await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = false, Version = 2 }));
-        await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = true, Version = 1 }));
+        await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = true, Active = true, Version = 1 }));
+        await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = true, Active = true, Version = 1 }));
+        await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = false, Active = false, Version = 2 }));
+        await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = true, Active = true, Version = 1 }));
         events.Should().Equal("active:True", "in", "active:False", "out");
+    }
+
+    [Test]
+    public async Task Deactivation_Without_Focus_Change_Is_Reported_Without_Focus_Out()
+    {
+        using var context = CreateContext();
+        var events = new List<string>();
+        var component = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, new Sheet(2, 2))
+            .Add(x => x.OnSheetActiveChanged, e => events.Add("active:" + e.IsActive))
+            .Add(x => x.OnFocusOut, _ => events.Add("out")));
+        await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = true, Active = true, Version = 1 }));
+        await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = true, Active = false, Version = 2 }));
+        events.Should().Equal("active:True", "active:False");
+        var state = context.JSInterop.Invocations.Where(x => x.Identifier == "setInputState").Last();
+        state.Arguments[0].Should().Be(false);
     }
 
     [Test]
@@ -68,9 +83,9 @@ public class DatasheetFocusTests
         using var context = CreateContext();
         var sheet = new Sheet(2, 2);
         var component = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, sheet));
-        await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = true, Version = 1 }));
+        await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = true, Active = true, Version = 1 }));
         await component.InvokeAsync(() => sheet.Editor.BeginEdit(0, 0, true, EditEntryMode.Key, "a"));
-        await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = false, Version = 2 }));
+        await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = false, Active = false, Version = 2 }));
         sheet.Editor.IsEditing.Should().BeTrue();
         await component.InvokeAsync(() => sheet.Editor.CancelEdit());
         var state = context.JSInterop.Invocations.Where(x => x.Identifier == "setInputState").Last();
@@ -92,9 +107,9 @@ public class DatasheetFocusTests
             }))
             .Add(x => x.OnFocusIn, _ => events.Add("in"))
             .Add(x => x.OnFocusOut, _ => events.Add("out")));
-        var first = component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = true, Version = 1 }));
+        var first = component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = true, Active = true, Version = 1 }));
         await entered.Task;
-        await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = false, Version = 2 }));
+        await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = false, Active = false, Version = 2 }));
         release.SetResult();
         await first;
         events.Should().Equal("out");
@@ -108,7 +123,7 @@ public class DatasheetFocusTests
         var component = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, new Sheet(2, 2))
             .Add(x => x.OnFocusIn, _ => count++));
         await component.InvokeAsync(() => component.Instance.DisposeAsync().AsTask());
-        await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = true, Version = 1 }));
+        await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = true, Active = true, Version = 1 }));
         count.Should().Be(0);
     }
     [Test]
