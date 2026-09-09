@@ -2,23 +2,113 @@
     constructor(dotnetHelper) {
         this.dotnetHelper = dotnetHelper;
         this.handlerMap = {}
+        this.listeners = new Map();
+        this.disposed = false;
+        this.focused = false;
+        this.active = false;
+        this.policyRevision = -1;
+        this.focusVersion = 0;
         this.preventDefaultMap = {}
         this.preventExclusionsMap = {}
     }
 
+    listen(target, name, fn, capture = false) {
+        const key = name + ':' + capture;
+        const previous = this.listeners.get(key);
+        if (previous) previous.target.removeEventListener(name, previous.fn, capture);
+        target.addEventListener(name, fn, capture);
+        this.listeners.set(key, { target, fn, name, capture });
+    }
+
     registerEvent(eventName, handlerName, throttleInMs = 0) {
-        try {
-            if (this.handlerMap[eventName])
-                window.removeEventListener(eventName, this.handleWindowEvent)
+        if (this.disposed) return;
+        this.handlerMap[eventName] = handlerName;
+        const handler = this.handleWindowEvent.bind(this);
+        this.listen(window, eventName, throttleInMs ? this.throttle(handler, throttleInMs) : handler);
+    }
 
-            this.handlerMap[eventName] = handlerName;
-            let fn = throttleInMs === 0 ?
-                this.handleWindowEvent.bind(this) : this.throttle(this.handleWindowEvent.bind(this), throttleInMs)
-            window.addEventListener(eventName, fn)
-        } catch (ex) {
-            return false
+    dispatch(handler, value) {
+        if (this.disposed) return;
+        // Invoke in browser event order, but do not wait for earlier callbacks: waiting delays
+        // buffered keys past native editor input and can overwrite newer characters.
+        return this.dotnetHelper.invokeMethodAsync(handler, value).catch(error => {
+            if (!this.disposed) console.error('Datasheet event failed', error);
+        });
+    }
+
+    configureFocus(container, handler) {
+        if (this.disposed) return;
+        this.container = container;
+        this.focusHandler = handler;
+        this.listen(window, 'pointerdown', e => {
+            const inside = this.contains(e.target);
+            const control = e.target.closest?.('input, textarea, select, button, a[href], [contenteditable], [tabindex]');
+            if (inside && (!control || control === container)) {
+                container.focus({ preventScroll: true });
+            }
+            if (!inside) this.active = false;
+            this.reconcileFocus();
+            if (inside && this.focused) this.setFocused(true, true);
+        }, true);
+        this.listen(window, 'focusin', e => {
+            this.reconcileFocus();
+        }, true);
+        this.listen(window, 'focusout', e => {
+            if (e.relatedTarget) this.setFocused(this.contains(e.relatedTarget));
+            else queueMicrotask(() => {
+                // Removing an editor can move focus to body without an external focus destination.
+                if (this.focused && e.target.closest?.('.bds-editor-overlay') && !e.target.isConnected)
+                    this.restoreFocus();
+                this.reconcileFocus();
+            });
+        }, true);
+        this.listen(window, 'blur', () => this.setFocused(false));
+        this.listen(window, 'focus', () => this.reconcileFocus());
+        this.listen(document, 'visibilitychange', () => this.reconcileFocus());
+        this.reconcileFocus();
+    }
+
+    contains(target) {
+        return !!target && this.container.contains(target) && target.closest?.('.bds-sheet') === this.container;
+    }
+
+    reconcileFocus() {
+        if (!this.disposed)
+            this.setFocused(document.visibilityState !== 'hidden' && document.hasFocus() && this.contains(document.activeElement));
+    }
+
+    setFocused(focused, activate = false) {
+        if (this.disposed || (focused === this.focused && !(activate && focused && !this.active))) return;
+        this.focused = focused;
+        this.active = focused;
+        // Browser ownership changes immediately, before any server round trip.
+        this.preventDefaultMap.keydown = focused;
+        this.dispatch(this.focusHandler, { focused, version: ++this.focusVersion });
+    }
+
+    setInputState(active, editing, revision, focusVersion) {
+        if (this.disposed || revision < this.policyRevision || focusVersion !== this.focusVersion) return;
+        this.policyRevision = revision;
+        this.active = active;
+        this.preventDefaultMap.keydown = active && !editing;
+    }
+
+    restoreFocus() {
+        if (!this.disposed && this.focused && document.hasFocus() &&
+            (this.contains(document.activeElement) || document.activeElement === document.body))
+            this.container.focus({ preventScroll: true });
+    }
+
+    ownsInput(e) {
+        if (!this.container) return true;
+        if (document.visibilityState === 'hidden' || !document.hasFocus()) return false;
+        if (this.contains(e.target)) {
+            if (!this.active) return false;
+            // Embedded controls own their input; cell editors still use sheet shortcuts.
+            const control = e.target.closest?.('input, textarea, select, button, a[href], [contenteditable]');
+            return !control || !!control.closest('.bds-editor-overlay');
         }
-
+        return this.active && (e.target === document.body || e.target === document.documentElement);
     }
 
     preventDefault(eventName, exclusions) {
@@ -37,10 +127,16 @@
      * @param e {KeyboardEvent}
      */
     async handleWindowEvent(e) {
-        if (e.isComposing)
+        if (this.disposed || e.isComposing)
             return
 
+        if (['keydown', 'copy', 'paste'].includes(e.type) && !this.ownsInput(e)) return;
+
         if (this.handlerMap[e.type]) {
+            if (this.container && e.type === 'keydown' && e.key === 'Tab' &&
+                e.target.closest?.('.bds-editor-overlay'))
+                e.preventDefault();
+
             // Never suppress the browser default while the event is going into an editable element -
             // that's the cell editor receiving input. The preventDefault flag is toggled from .NET, so
             // it always lags the real edit state by an interop round trip; suppressing on the stale flag
@@ -58,7 +154,7 @@
 
             // Nothing can be prevented past this point - the event has finished dispatching by the time
             // the interop call resolves - so the handler's return value is only used by .NET.
-            await this.dotnetHelper.invokeMethodAsync(this.handlerMap[e.type], this.serialize(e));
+            this.dispatch(this.handlerMap[e.type], this.serialize(e));
         }
     }
 
@@ -79,10 +175,12 @@
     }
 
     async dispose() {
-        for (let eventName in this.handlerMap) {
-            window.removeEventListener(eventName, this.handleWindowEvent)
-        }
-        this.handlerMap = {}
+        this.disposed = true;
+        for (const { target, name, fn, capture } of this.listeners.values())
+            target.removeEventListener(name, fn, capture);
+        this.listeners.clear();
+        this.handlerMap = {};
+        this.preventDefaultMap = {};
     }
 
     serialize(e) {

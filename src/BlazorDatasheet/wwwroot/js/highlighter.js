@@ -3,6 +3,10 @@ class Highligher {
     #highlightResultEl;
     #caretToEndPending = false;
     #onFocusMoveCaret;
+    #disposed = false;
+    #onKeyDown;
+    #onMouseDown;
+    #onInput;
 
     constructor(options) {
         if (!options.inputEl)
@@ -16,20 +20,17 @@ class Highligher {
         this.#highlightResultEl = options.highlightResultEl
         this.#highlightResultEl.innerHTML = options.initialHtml
 
-        this.#inputEl.addEventListener('keydown', this.onKeyDown.bind(this))
-        this.#inputEl.addEventListener('mousedown', this.onMouseDown.bind(this))
-
-        this.#inputEl.addEventListener('input', e => {
-            if (!options.dotnetHelper)
-                return
-
-            options.dotnetHelper.invokeMethodAsync("HandleInput", e.target.textContent)
-        })
+        this.#onKeyDown = this.onKeyDown.bind(this)
+        this.#onMouseDown = this.onMouseDown.bind(this)
+        this.#onInput = e => this.invoke("HandleInput", e.target.textContent)
+        this.#inputEl.addEventListener('keydown', this.#onKeyDown)
+        this.#inputEl.addEventListener('mousedown', this.#onMouseDown)
+        this.#inputEl.addEventListener('input', this.#onInput)
 
         this.resizeObserver = new ResizeObserver((entries) => {
             for (const entry of entries) {
                 if (entry.target === this.#inputEl) {
-                    options.dotnetHelper.invokeMethodAsync("HandleInputSizeChanged", entry.target.getBoundingClientRect())
+                    this.invoke("HandleInputSizeChanged", entry.target.getBoundingClientRect())
                 }
             }
         })
@@ -43,6 +44,8 @@ class Highligher {
 
         this.updateCaretPosition = function () {
             let sel = window.getSelection()
+            if (!sel?.focusNode)
+                return
             let isSelectionInside = sel.focusNode.parentElement === options.inputEl ||
                 sel.focusNode === options.inputEl
             let len = sel.toString().length
@@ -51,7 +54,7 @@ class Highligher {
             if (isSelectionInside && len === 0)
                 caretPosition = sel.focusOffset
 
-            options.dotnetHelper.invokeMethodAsync("HandleCaretPositionUpdate", caretPosition)
+            self.invoke("HandleCaretPositionUpdate", caretPosition)
         }
 
         this.moveCursorToEnd = function (el) {
@@ -96,12 +99,17 @@ class Highligher {
             this.#caretToEndPending = false
         }
 
-        this.focusAndMoveCursorToEnd = function () {
+        this.focusAndMoveCursorToEnd = function (onlyIfWithinSheet = false) {
+            const sheet = options.inputEl.closest('.bds-sheet');
+            const canFocus = () => !this.#disposed && (!onlyIfWithinSheet || !sheet ||
+                (document.hasFocus() && sheet.contains(document.activeElement)));
+            if (!canFocus()) return;
             options.inputEl.focus()
 
             if (document.activeElement !== options.inputEl) {
                 // Retry once on the next frame - a webview may not have been able to take focus yet.
                 requestAnimationFrame(() => {
+                    if (!canFocus()) return;
                     options.inputEl.focus()
                     this.moveCursorToEnd(options.inputEl)
                 })
@@ -111,9 +119,16 @@ class Highligher {
             this.moveCursorToEnd(options.inputEl)
         }
 
-        setTimeout(this.focusAndMoveCursorToEnd.bind(this), 0);
+        // HighlightedInput requests focus after its latest initial value has reached the DOM.
 
         document.addEventListener('selectionchange', this.updateCaretPosition)
+    }
+
+    invoke(method, value) {
+        if (this.#disposed || !this.options.dotnetHelper) return;
+        return this.options.dotnetHelper.invokeMethodAsync(method, value).catch(error => {
+            if (!this.#disposed) console.error('Datasheet editor event failed', error);
+        });
     }
 
     onResize(e) {
@@ -147,9 +162,12 @@ class Highligher {
     }
 
     dispose() {
+        if (this.#disposed) return;
+        this.#disposed = true;
         if (this.#inputEl) {
-            this.#inputEl.removeEventListener('keydown', this.onKeyDown)
-            this.#inputEl.removeEventListener('mousedown', this.onMouseDown)
+            this.#inputEl.removeEventListener('keydown', this.#onKeyDown)
+            this.#inputEl.removeEventListener('mousedown', this.#onMouseDown)
+            this.#inputEl.removeEventListener('input', this.#onInput)
             if (this.#onFocusMoveCaret) {
                 this.#inputEl.removeEventListener('focus', this.#onFocusMoveCaret)
                 this.#onFocusMoveCaret = undefined

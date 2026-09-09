@@ -36,6 +36,11 @@
     [Parameter] public double CellWidth { get; set; }
     [Parameter] public double CellHeight { get; set; }
     [Parameter] public bool SoftEdit { get; set; }
+
+    /// <summary>Delays initial focus until the owning editor has supplied its starting value.</summary>
+    [Parameter] public bool ReadyToFocus { get; set; } = true;
+    private bool _initialFocusRequested;
+    private bool _highlighterReady;
     [Parameter] public string? Style { get; set; }
 
     private ElementReference _highlightInputEl;
@@ -55,6 +60,7 @@
             await SetInputTextAsync(_value);
             await SetHighlightTextAsync();
         }
+        await RequestInitialFocusAsync();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -108,6 +114,19 @@
         // so it will never be re-applied. Flush it here.
         if (_value != initialText)
             await SetInputTextAsync(_value);
+
+        // Do not accept native input while the initial key/buffer is still being applied.
+        // Otherwise the first input event can replace that value with text typed into an empty editor.
+        _highlighterReady = true;
+        await RequestInitialFocusAsync();
+    }
+
+    private async Task RequestInitialFocusAsync()
+    {
+        if (!ReadyToFocus || !_highlighterReady || _isDisposing || _initialFocusRequested)
+            return;
+        _initialFocusRequested = true;
+        await InvokeHighlighterAsync("focusAndMoveCursorToEnd", true);
     }
 
     /// <summary>
@@ -117,6 +136,7 @@
     [JSInvokable]
     public async Task HandleInput(string input)
     {
+        if (_isDisposing) return;
         _value = input;
         await ValueChanged.InvokeAsync(input);
         await SetHighlightTextAsync();
@@ -169,12 +189,14 @@
     [JSInvokable]
     public async Task HandleCaretPositionUpdate(int position)
     {
+        if (_isDisposing) return;
         await CaretPositionChanged.InvokeAsync(position);
     }
 
     [JSInvokable]
     public async Task HandleInputSizeChanged(Size size)
     {
+        if (_isDisposing) return;
         await InputSizeChanged.InvokeAsync(size);
     }
 

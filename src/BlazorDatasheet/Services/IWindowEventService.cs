@@ -5,6 +5,10 @@ namespace BlazorDatasheet.Services;
 
 internal interface IWindowEventService : IAsyncDisposable
 {
+    Task ConfigureFocus(Microsoft.AspNetCore.Components.ElementReference container, Func<SheetFocusEventArgs, Task> handler);
+    Task SetInputState(bool active, bool editing, long revision, long focusVersion);
+    Task RestoreFocus();
+
     /// <summary>
     /// Registers a window mouse event.
     /// </summary>
