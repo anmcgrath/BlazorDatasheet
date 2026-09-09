@@ -75,8 +75,12 @@
         this.reconcileFocus();
     }
 
+    // Finds the interactive element a pointer or key event is aimed at. The sheet's own chrome
+    // (data-bds-chrome, e.g. the heading dropdown button) is not a control: clicking it should
+    // leave focus on the sheet so keys keep working afterwards.
     controlOf(target) {
-        return target?.closest?.('input, textarea, select, button, a[href], [contenteditable], [tabindex]');
+        const control = target?.closest?.('input, textarea, select, button, a[href], [contenteditable], [tabindex]');
+        return control?.hasAttribute?.('data-bds-chrome') ? null : control;
     }
 
     inMenu(target) {
@@ -152,7 +156,7 @@
             if (!this.active) return false;
             // Embedded controls own their input; cell editors still use sheet shortcuts.
             const control = e.target.closest?.('input, textarea, select, button, a[href], [contenteditable]');
-            return !control || !!control.closest('.bds-editor-overlay');
+            return !control || control.hasAttribute?.('data-bds-chrome') || !!control.closest('.bds-editor-overlay');
         }
         return this.active && (e.target === document.body || e.target === document.documentElement);
     }

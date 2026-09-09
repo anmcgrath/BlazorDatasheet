@@ -153,6 +153,19 @@ test('a pointerdown outside that moves focus away reports one transition, not tw
     assert.deepEqual(calls.slice(1).map(c => [c[1].focused, c[1].active]), [[false, false]]);
 });
 
+test('the sheet\'s own chrome buttons hand focus to the sheet rather than keeping it', async () => {
+    const { service, container, calls } = setup();
+    let focusedContainer = false;
+    container.focus = () => { focusedContainer = true; };
+    const dropper = { sheet: container, tagName: 'BUTTON', hasAttribute: name => name === 'data-bds-chrome',
+        closest: selector => selector === '.bds-sheet' ? container : selector.includes('button') ? dropper : null };
+    service.listeners.get('pointerdown:true').fn({ target: dropper });
+    assert.equal(focusedContainer, true);
+    const e = key(dropper);
+    await service.handleWindowEvent(e);
+    assert.equal(calls.at(-1)[0], 'key');
+});
+
 test('clicking a menu item keeps the sheet focused and active', async () => {
     const { service, container, calls } = setup();
     const item = { closest: selector => selector === '.bds-sheet-popover' ? {} : null };
