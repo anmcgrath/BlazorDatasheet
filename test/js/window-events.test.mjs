@@ -142,6 +142,21 @@ test('a pointerdown outside that keeps browser focus still reports deactivation'
     assert.equal(calls.at(-1)[1].active, true);
 });
 
+test('clicking a menu item keeps the sheet focused and active', async () => {
+    const { service, container, calls } = setup();
+    const item = { closest: selector => selector === '.bds-sheet-popover' ? {} : null };
+    service.listeners.get('pointerdown:true').fn({ target: item });
+    const mousedown = { target: item, preventDefault() { this.prevented = true; } };
+    service.listeners.get('mousedown:true').fn(mousedown);
+    assert.equal(mousedown.prevented, true);
+    assert.deepEqual(calls.map(c => c[0]), ['focus']);
+    assert.equal(service.active, true);
+    const input = { tagName: 'INPUT', closest: selector => selector === '.bds-sheet-popover' ? {} : selector.includes('input') ? input : null };
+    const inputDown = { target: input, preventDefault() { this.prevented = true; } };
+    service.listeners.get('mousedown:true').fn(inputDown);
+    assert.equal(inputDown.prevented, undefined);
+});
+
 test('focus restoration never steals focus from an external control', () => {
     const { service, container } = setup();
     let focused = 0;

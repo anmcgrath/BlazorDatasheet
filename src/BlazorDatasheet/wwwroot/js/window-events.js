@@ -42,16 +42,21 @@
         this.focusHandler = handler;
         this.listen(window, 'pointerdown', e => {
             const inside = this.contains(e.target);
-            const control = e.target.closest?.('input, textarea, select, button, a[href], [contenteditable], [tabindex]');
+            const control = this.controlOf(e.target);
             if (inside && (!control || control === container)) {
                 // Chrome treats this scripted focus as keyboard focus, so mark it as pointer
                 // driven and let the css drop the focus ring for it.
                 container.dataset.pointerFocus = '';
                 container.focus({ preventScroll: true });
             }
-            if (!inside) this.setActive(false);
+            if (!inside && !this.inMenu(e.target)) this.setActive(false);
             this.reconcileFocus();
             if (inside && this.focused) this.setFocused(true, true);
+        }, true);
+        this.listen(window, 'mousedown', e => {
+            // Menus render outside the sheet, so clicking an item would hand focus to body and
+            // deactivate the sheet. Items act on mouseup, so keeping focus where it is costs nothing.
+            if (this.focused && this.inMenu(e.target) && !this.controlOf(e.target)) e.preventDefault();
         }, true);
         this.listen(window, 'focusin', e => {
             this.reconcileFocus();
@@ -69,6 +74,14 @@
         this.listen(window, 'focus', () => this.reconcileFocus());
         this.listen(document, 'visibilitychange', () => this.reconcileFocus());
         this.reconcileFocus();
+    }
+
+    controlOf(target) {
+        return target?.closest?.('input, textarea, select, button, a[href], [contenteditable], [tabindex]');
+    }
+
+    inMenu(target) {
+        return !!target?.closest?.('.bds-sheet-popover');
     }
 
     contains(target) {
