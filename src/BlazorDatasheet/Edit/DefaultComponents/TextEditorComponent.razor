@@ -25,6 +25,7 @@
         InputSizeChanged="HighlightInputSizeChanged"
         CaretPositionChanged="OnCaretPositionChanged"
         SoftEdit="_isSoftEdit"
+        ReadyToFocus="_hasBegunEdit"
         @bind-Value:set="OnInput"
         @bind-Value:get="CurrentValue"/>
 </div>
@@ -62,6 +63,7 @@
     private FormulaOptions _formulaOptions = null!;
     private HighlightedInput _highlightedInput = default!;
     private bool _isSoftEdit;
+    private bool _hasBegunEdit;
     private int _currentCaretPosition;
     private double _highlightInputHeight;
     private string _currentSnapshot = string.Empty;
@@ -187,6 +189,7 @@
 
     public override void BeginEdit(EditEntryMode entryMode, string? editValue, string key)
     {
+        _hasBegunEdit = true;
         if (entryMode == EditEntryMode.Key && !String.IsNullOrEmpty(key) && key.Length == 1)
         {
             CurrentValue = key;
@@ -197,6 +200,7 @@
         }
 
         HandleInputChanged();
+        StateHasChanged();
     }
 
     private void OnCaretPositionChanged(int position)

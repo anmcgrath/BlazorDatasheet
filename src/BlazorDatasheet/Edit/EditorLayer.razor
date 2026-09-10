@@ -16,7 +16,7 @@
     <div id="editor" class="bds-editor-overlay"
          @onclick="HandleEditorOverlayClick"
          style="@GetEditorSizeStyling()">
-        <DynamicComponent
+        <DynamicComponent @key="_editVersion"
             Type="@ActiveEditorType"
             Parameters="@GetDynamicEditorParameters()"
             @ref="ActiveEditorContainer"/>
@@ -37,6 +37,7 @@
 
     /// The current cell editor component
     private BaseEditor? _activeCellEditor;
+    private long _editVersion;
 
     private bool BeginningEdit { get; set; }
 
@@ -105,6 +106,8 @@
         if (Disabled)
             return;
 
+        ActiveEditorContainer = null;
+        _editVersion++;
         ActiveEditorType = GetEditorType(e.Type);
         BeginningEdit = true;
         IsEditing = true;
@@ -142,18 +145,19 @@
     {
         if (BeginningEdit)
         {
-            // always consume the flag, even if the edit stopped before we got here, otherwise the
-            // next unrelated render re-runs the begin-edit body.
-            BeginningEdit = false;
-
             if (!_sheet.Editor.IsEditing)
+            {
+                BeginningEdit = false;
+                return;
+            }
+
+            // A focus callback can trigger a parent render while the editor is being created.
+            // Keep initialization pending until the dynamic component reference is available.
+            if (ActiveEditorContainer?.Instance is not BaseEditor editor)
                 return;
 
-            if (ActiveEditorContainer?.Instance == null)
-                return;
-            _activeCellEditor = (BaseEditor)(ActiveEditorContainer.Instance);
-            if (_activeCellEditor == null)
-                return;
+            BeginningEdit = false;
+            _activeCellEditor = editor;
 
             _activeCellEditor.ResetAutoScrollActive();
             AttachEditorAutoScroll(_activeCellEditor);
@@ -255,6 +259,7 @@
         // "editing" forever and GetActiveEditorLayer keeps picking it.
         IsEditing = false;
         BeginningEdit = false;
+        ActiveEditorContainer = null;
         StateHasChanged();
     }
 

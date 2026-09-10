@@ -22,7 +22,7 @@
                          Placement="@MenuPlacement.BottomRight">
 
             <div
-                @onmouseover="SetMouseOver" @onmouseout="SetMouseOut" class="@SheetClass"
+                tabindex="0" class="@SheetClass"
                 style="width:@(TotalViewWidth)px; height:@(TotalViewHeight)px;"
                 @ref="_sheetContainer">
                 <div class="bds-sheet-layout" style="display: flex; flex-direction: column; align-items:flex-start;">
@@ -316,9 +316,5 @@
     }
 
     private void CreateCellRenderFragment() => CellRenderFragment = CreateComponent();
-
-    private void SetMouseOut() => IsMouseInsideSheet = false;
-
-    private void SetMouseOver() => IsMouseInsideSheet = true;
 
 }

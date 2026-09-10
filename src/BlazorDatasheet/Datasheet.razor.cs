@@ -83,6 +83,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     /// <summary>
     /// Fired when the Datasheet becomes active or inactive (able to receive keyboard inputs).
+    /// Fires before the matching <see cref="OnFocusIn"/> or <see cref="OnFocusOut"/>. A change that is
+    /// superseded before its callback runs is dropped in favour of the newer one.
     /// </summary>
     [Parameter]
     public EventCallback<SheetActiveEventArgs> OnSheetActiveChanged { get; set; }
@@ -175,14 +177,34 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     public ShortcutManager ShortcutManager { get; } = new();
 
     /// <summary>
-    /// Whether the user is focused on the datasheet.
+    /// Whether the datasheet is active for keyboard input. Browser focus is tracked separately.
     /// </summary>
     private bool IsDataSheetActive { get; set; }
 
+    private bool _hasFocus;
+    private long _inputRevision;
+    private long _activationRevision;
+    private long _browserFocusVersion;
+
     /// <summary>
-    /// Whether the mouse is located inside/over the sheet.
+    /// Raised when browser focus enters this sheet or its descendants, including window restoration.
+    /// Using a menu keeps focus in the sheet. Transitions superseded before their callback runs are
+    /// dropped, so two consecutive focus-in events can occur without a focus-out between them.
     /// </summary>
-    private bool IsMouseInsideSheet { get; set; }
+    [Parameter] public EventCallback<FocusEventArgs> OnFocusIn { get; set; }
+
+    /// <summary>
+    /// Raised when browser focus leaves this sheet and its descendants, including window focus loss.
+    /// Moving between descendants does not raise this event. What happens to a pending edit is set by
+    /// <see cref="OnEditFocusLoss"/>. Superseded transitions are dropped, as for <see cref="OnFocusIn"/>.
+    /// </summary>
+    [Parameter] public EventCallback<FocusEventArgs> OnFocusOut { get; set; }
+
+    /// <summary>
+    /// What happens to an open edit when focus moves from the sheet to another element on the page.
+    /// Defaults to keeping the edit open. Focus leaving the window or tab always keeps it open.
+    /// </summary>
+    [Parameter] public EditFocusLossAction OnEditFocusLoss { get; set; } = EditFocusLossAction.KeepEditing;
 
     /// <summary>
     /// Whether the row and column headers are sticky
@@ -223,7 +245,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     private SheetPointerInputService? _sheetPointerInputService;
 
     /// <summary>
-    /// The whole sheet container, useful for checking whether mouse is inside the sheet
+    /// The sheet container used to track focus and pointer ownership.
     /// </summary>
     private ElementReference _sheetContainer = default!;
 
@@ -473,7 +495,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     private async Task AddWindowEventsAsync()
     {
-        await _windowEventService.RegisterMouseEvent("mousedown", HandleWindowMouseDown);
+        await _windowEventService.ConfigureFocus(_sheetContainer, HandleFocusChanged);
         await _windowEventService.RegisterKeyEvent("keydown", HandleWindowKeyDown);
         await _windowEventService.RegisterClipboardEvent("paste", HandleWindowPaste);
         await _windowEventService.RegisterClipboardEvent("copy", HandleWindowCopy);
@@ -543,12 +565,13 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     private async void EditorOnEditFinished(object? sender, EditFinishedEventArgs e)
     {
         _pendingEditorKeys = string.Empty;
-        await _windowEventService.PreventDefault("keydown");
+        await UpdateInputStateAsync(editing: false);
+        await _windowEventService.RestoreFocus();
     }
 
     private async void EditorOnEditBegin(object? sender, EditBeginEventArgs e)
     {
-        await _windowEventService.CancelPreventDefault("keydown");
+        await UpdateInputStateAsync();
     }
 
 
@@ -662,9 +685,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
         // A printable key can arrive after the edit has begun but before the editor input has been
         // focused in the browser - that's at least one interop round trip later, which is easily longer
-        // than the gap between two keystrokes on a high latency connection. The sheet container isn't
-        // focusable, so if the browser isn't going to insert the character itself it has nowhere to go
-        // and would be silently dropped.
+        // than the gap between two keystrokes on a high latency connection. If the browser isn't going to
+        // insert the character itself it has nowhere to go and would be silently dropped.
         if (e.Key.Length == 1 && _sheet.Editor.IsEditing && IsDataSheetActive &&
             !e.MetaKey &&
             e is SheetKeyboardEventArgs { IsEditableTarget: false } sheetEvent &&
@@ -709,12 +731,6 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             return true;
         }
 
-        return false;
-    }
-
-    private async Task<bool> HandleWindowMouseDown(MouseEventArgs e)
-    {
-        await SetActiveAsync(IsMouseInsideSheet);
         return false;
     }
 
@@ -962,28 +978,60 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     /// <param name="active"></param>
     public async Task SetActiveAsync(bool active = true)
     {
-        if (active == IsDataSheetActive)
+        if (_isDisposing || active == IsDataSheetActive)
             return;
 
-        if (!_sheet.Editor.IsEditing)
-        {
-            if (active)
-                await _windowEventService.PreventDefault("keydown");
-            else
-                await _windowEventService.CancelPreventDefault("keydown");
-        }
-
         IsDataSheetActive = active;
-        await OnSheetActiveChanged.InvokeAsync(new SheetActiveEventArgs(this, active));
+        var revision = ++_activationRevision;
+        await UpdateInputStateAsync();
+        if (!_isDisposing && revision == _activationRevision)
+            await OnSheetActiveChanged.InvokeAsync(new SheetActiveEventArgs(this, active));
     }
 
+    private Task UpdateInputStateAsync(bool? editing = null) => _isDisposing ? Task.CompletedTask :
+        _windowEventService.SetInputState(IsDataSheetActive, editing ?? _sheet.Editor.IsEditing,
+            ++_inputRevision, _browserFocusVersion);
+
+    internal async Task HandleFocusChanged(SheetFocusEventArgs focus)
+    {
+        if (_isDisposing || focus.Version <= _browserFocusVersion) return;
+        _browserFocusVersion = focus.Version;
+        var focused = focus.Focused;
+        var focusChanged = _hasFocus != focused;
+        _hasFocus = focused;
+        if (focusChanged && !focused && !focus.FromWindow)
+            FinishEditOnFocusLoss();
+        await SetActiveAsync(focus.Active);
+        if (_isDisposing || !focusChanged || focus.Version != _browserFocusVersion) return;
+        await (focused ? OnFocusIn : OnFocusOut).InvokeAsync(new FocusEventArgs
+        {
+            Type = focused ? "focusin" : "focusout"
+        });
+    }
+
+
+    private void FinishEditOnFocusLoss()
+    {
+        if (!_sheet.Editor.IsEditing)
+            return;
+        switch (OnEditFocusLoss)
+        {
+            case EditFocusLossAction.Accept:
+                _sheet.Editor.AcceptEdit();
+                break;
+            case EditFocusLossAction.Cancel:
+                _sheet.Editor.CancelEdit();
+                break;
+        }
+    }
 
     /// <summary>
     /// Sets the document focus to the sheet container and sets the sheet as active.
     /// </summary>
     public async Task FocusAsync()
     {
-        await _sheetContainer.FocusAsync();
+        if (_isDisposing) return;
+        await _sheetContainer.FocusAsync(preventScroll: true);
         await SetActiveAsync();
     }
 

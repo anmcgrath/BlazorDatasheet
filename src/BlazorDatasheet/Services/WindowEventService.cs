@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Components.Web;
+﻿using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using ClipboardEventArgs = BlazorDatasheet.Core.Events.ClipboardEventArgs;
 using static BlazorDatasheet.Util.JsInteropHelper;
@@ -26,45 +26,59 @@ public class WindowEventService : IWindowEventService
         _js = js;
     }
 
+    private Func<SheetFocusEventArgs, Task>? _focusHandler;
+
+    public async Task ConfigureFocus(Microsoft.AspNetCore.Components.ElementReference container, Func<SheetFocusEventArgs, Task> handler)
+    {
+        await CreateDotnetHelperIfNotExists();
+        if (_isDisposed || _windowEventObj == null) return;
+        _focusHandler = handler;
+        await _windowEventObj.InvokeVoidAsync("configureFocus", container, nameof(HandleFocusChanged));
+    }
+
+    [JSInvokable]
+    public Task HandleFocusChanged(SheetFocusEventArgs focus) =>
+        !_isDisposed && _focusHandler != null ? _focusHandler(focus) : Task.CompletedTask;
+
+    public async Task SetInputState(bool active, bool editing, long revision, long focusVersion)
+    {
+        await CreateDotnetHelperIfNotExists();
+        if (!_isDisposed && _windowEventObj != null)
+            await _windowEventObj.InvokeVoidAsync("setInputState", active, editing, revision, focusVersion);
+    }
+
+    public async Task RestoreFocus()
+    {
+        if (!_isDisposed && _windowEventObj != null)
+            await _windowEventObj.InvokeVoidAsync("restoreFocus");
+    }
+
     public async Task RegisterMouseEvent(string eventType, Func<MouseEventArgs, Task<bool>> handler,
         int throttleInMs = 0)
     {
         await CreateDotnetHelperIfNotExists();
+        if (_isDisposed) return;
         _mouseEventListeners ??= new();
-        _mouseEventListeners.TryAdd(eventType, handler);
+        _mouseEventListeners[eventType] = handler;
         await AddWindowEvent(eventType, nameof(HandleWindowMouseEvent), throttleInMs);
     }
 
     public async Task RegisterKeyEvent(string eventType, Func<KeyboardEventArgs, Task<bool>> handler)
     {
         await CreateDotnetHelperIfNotExists();
+        if (_isDisposed) return;
         _keyEventListeners ??= new();
-        _keyEventListeners.TryAdd(eventType, handler);
+        _keyEventListeners[eventType] = handler;
         await AddWindowEvent(eventType, nameof(HandleWindowKeyEvent));
     }
 
     public async Task RegisterClipboardEvent(string eventType, Func<ClipboardEventArgs, Task<bool>> handler)
     {
         await CreateDotnetHelperIfNotExists();
+        if (_isDisposed) return;
         _clipboardEventListeners ??= new();
-        _clipboardEventListeners.TryAdd(eventType, handler);
+        _clipboardEventListeners[eventType] = handler;
         await AddWindowEvent(eventType, nameof(HandleWindowClipboardEvent));
-    }
-
-    public async Task PreventDefault(string eventType)
-    {
-        await CreateDotnetHelperIfNotExists();
-        if (_windowEventObj == null)
-            return;
-        await _windowEventObj.InvokeVoidAsync("preventDefault", eventType);
-    }
-
-    public async Task CancelPreventDefault(string eventType)
-    {
-        await CreateDotnetHelperIfNotExists();
-        if (_windowEventObj == null)
-            return;
-        await _windowEventObj.InvokeVoidAsync("cancelPreventDefault", eventType);
     }
 
     // Cached so that callers arriving while initialisation is in flight wait for it to
@@ -112,7 +126,7 @@ public class WindowEventService : IWindowEventService
 
     private async ValueTask AddWindowEvent(string evType, string jsInvokableName, int throttleInMs = 0)
     {
-        if (_windowEventObj == null)
+        if (_isDisposed || _windowEventObj == null)
             return;
 
         await _windowEventObj.InvokeVoidAsync("registerEvent", evType, jsInvokableName, throttleInMs);
@@ -121,7 +135,7 @@ public class WindowEventService : IWindowEventService
     [JSInvokable]
     public async Task<bool> HandleWindowMouseEvent(MouseEventArgs e)
     {
-        if (_mouseEventListeners == null)
+        if (_isDisposed || _mouseEventListeners == null)
             return false;
 
         var hasListener = _mouseEventListeners.TryGetValue(e.Type, out var listener);
@@ -135,7 +149,7 @@ public class WindowEventService : IWindowEventService
     [JSInvokable]
     public async Task<bool> HandleWindowKeyEvent(SheetKeyboardEventArgs e)
     {
-        if (_keyEventListeners == null)
+        if (_isDisposed || _keyEventListeners == null)
             return false;
 
         var hasListener = _keyEventListeners.TryGetValue(e.Type, out var listener);
@@ -149,7 +163,7 @@ public class WindowEventService : IWindowEventService
     [JSInvokable]
     public async Task<bool> HandleWindowClipboardEvent(ClipboardEventArgs e)
     {
-        if (_clipboardEventListeners == null)
+        if (_isDisposed || _clipboardEventListeners == null)
             return false;
 
         var hasListener = _clipboardEventListeners.TryGetValue(e.Type, out var listener);

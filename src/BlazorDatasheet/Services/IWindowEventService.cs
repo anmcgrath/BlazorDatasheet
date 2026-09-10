@@ -1,10 +1,14 @@
-using Microsoft.AspNetCore.Components.Web;
+﻿using Microsoft.AspNetCore.Components.Web;
 using ClipboardEventArgs = BlazorDatasheet.Core.Events.ClipboardEventArgs;
 
 namespace BlazorDatasheet.Services;
 
 internal interface IWindowEventService : IAsyncDisposable
 {
+    Task ConfigureFocus(Microsoft.AspNetCore.Components.ElementReference container, Func<SheetFocusEventArgs, Task> handler);
+    Task SetInputState(bool active, bool editing, long revision, long focusVersion);
+    Task RestoreFocus();
+
     /// <summary>
     /// Registers a window mouse event.
     /// </summary>
@@ -29,18 +33,4 @@ internal interface IWindowEventService : IAsyncDisposable
     /// <param name="handler"></param>
     /// <returns></returns>
     Task RegisterClipboardEvent(string eventType, Func<ClipboardEventArgs, Task<bool>> handler);
-
-    /// <summary>
-    /// Causes the window events to prevent the default behaviour for type <paramref name="eventType"/>
-    /// </summary>
-    /// <param name="eventType">The type of events to prevent default behaviour for.</param>
-    /// <returns></returns>
-    Task PreventDefault(string eventType);
-
-    /// <summary>
-    /// Stops the effect of <seealso cref="PreventDefault"/>
-    /// </summary>
-    /// <param name="eventType"></param>
-    /// <returns></returns>
-    Task CancelPreventDefault(string eventType);
 }

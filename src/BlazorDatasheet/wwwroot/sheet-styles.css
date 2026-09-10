@@ -4,6 +4,7 @@
     --sheet-font-family: "Segoe UI Variable", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, "Helvetica Neue", Arial, sans-serif;
     --selection-border-thickness: 2px;
     --sheet-border-width: 1px;
+    --sheet-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
     --sheet-cell-padding-vertical: 3px;
     --sheet-cell-padding-horizontal: 6px;
     /* The selection border straddles the cell edge, so it eats half its thickness into the
@@ -28,6 +29,10 @@
     --invalid-cell-foreground-color: #dc2626;
     --selection-bg-color: rgba(37, 99, 235, 0.14);
     --selection-border-color: #2563eb;
+    --selection-bg-color-unfocused: rgba(100, 116, 139, 0.10);
+    --selection-border-color-unfocused: #94a3b8;
+    --head-selection-bg-color-unfocused: #e8edf5;
+    --sheet-focus-ring-color: rgba(37, 99, 235, 0.40);
     --cell-highlight-bg-color: #a9e5b6;
     --num-highlight-color: #18688f;
     --string-highlight-color: #256b3e;
@@ -67,6 +72,10 @@
     --invalid-cell-foreground-color: #d71b1b;
     --selection-bg-color: rgba(83, 101, 121, 0.18);
     --selection-border-color: #1c6f9a;
+    --selection-bg-color-unfocused: rgba(83, 101, 121, 0.09);
+    --selection-border-color-unfocused: #4d5761;
+    --head-selection-bg-color-unfocused: rgb(45, 48, 51);
+    --sheet-focus-ring-color: rgba(56, 141, 189, 0.55);
     --cell-highlight-bg-color: #456b4d;
     --num-highlight-color: #d4d6ec;
     --string-highlight-color: #79a16a;
@@ -98,8 +107,31 @@
     contain: style;
     line-height: 1.35;
     border-radius: 8px;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+    box-shadow: var(--sheet-shadow);
     position: relative;
+}
+
+/* The UA outline is replaced with a themed ring that follows the sheet's corner radius. It
+   only shows for keyboard focus - a pointer user just clicked the cell they're looking at. */
+.bds-sheet:focus {
+    outline: none;
+}
+
+.bds-sheet:focus-visible {
+    box-shadow: var(--sheet-shadow), 0 0 0 2px var(--sheet-focus-ring-color);
+}
+
+/* Focus moved by our own pointerdown handler still matches :focus-visible in chrome. */
+.bds-sheet[data-pointer-focus]:focus-visible {
+    box-shadow: var(--sheet-shadow);
+}
+
+/* The selection follows browser focus, as in excel: while focus is elsewhere it dims. The
+   attribute is set from window-events.js the moment focus changes. */
+.bds-sheet:not([data-focused]) {
+    --selection-bg-color: var(--selection-bg-color-unfocused);
+    --selection-border-color: var(--selection-border-color-unfocused);
+    --head-selection-bg-color: var(--head-selection-bg-color-unfocused);
 }
 
 .bds-sheet-top-border::before,
@@ -539,7 +571,10 @@
     display: grid;
 }
 
-.bds-cell-has-flags { position: relative; }
+.bds-cell-has-flags {
+    position: relative;
+}
+
 .bds-cell-corner-flag {
     position: absolute;
     width: var(--bds-flag-size, 8px);
@@ -549,7 +584,27 @@
     background-color: var(--bds-flag-color, currentColor);
     pointer-events: none;
 }
-.bds-cell-corner-top-left { top: 0; left: 0; clip-path: polygon(0 0, 100% 0, 0 100%); }
-.bds-cell-corner-top-right { top: 0; right: 0; clip-path: polygon(0 0, 100% 0, 100% 100%); }
-.bds-cell-corner-bottom-left { bottom: 0; left: 0; clip-path: polygon(0 0, 0 100%, 100% 100%); }
-.bds-cell-corner-bottom-right { bottom: 0; right: 0; clip-path: polygon(100% 0, 0 100%, 100% 100%); }
+
+.bds-cell-corner-top-left {
+    top: 0;
+    left: 0;
+    clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+
+.bds-cell-corner-top-right {
+    top: 0;
+    right: 0;
+    clip-path: polygon(0 0, 100% 0, 100% 100%);
+}
+
+.bds-cell-corner-bottom-left {
+    bottom: 0;
+    left: 0;
+    clip-path: polygon(0 0, 0 100%, 100% 100%);
+}
+
+.bds-cell-corner-bottom-right {
+    bottom: 0;
+    right: 0;
+    clip-path: polygon(100% 0, 0 100%, 100% 100%);
+}

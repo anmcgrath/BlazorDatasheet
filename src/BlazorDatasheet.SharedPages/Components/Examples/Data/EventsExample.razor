@@ -1,11 +1,22 @@
 ﻿@using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Formula.Core
 
-<Datasheet Sheet="_sheet"/>
+<button @onclick="FocusSheet">Focus sheet</button>
+<Datasheet Sheet="_sheet" @ref="_datasheet"
+           OnSheetActiveChanged="@(e => Log($"Sheet active: {e.IsActive}"))"
+           OnFocusIn="@(_ => Log("Focus entered sheet"))"
+           OnFocusOut="@(_ => Log("Focus left sheet"))"/>
 
 <textarea style="width: 500px; height: 500px;" @bind="_log"></textarea>
 
 @code {
+
+    private Datasheet? _datasheet;
+
+    private async Task FocusSheet()
+    {
+        if (_datasheet != null) await _datasheet.FocusAsync();
+    }
 
     private string _log = string.Empty;
     private Sheet _sheet = null!;
