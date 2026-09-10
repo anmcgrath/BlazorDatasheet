@@ -19,7 +19,7 @@ internal class InsertRowsColsCommand : BaseCommand, IUndoableCommand
     private readonly Axis _axis;
 
     private RegionRestoreData<int> _validatorRestoreData = null!;
-    private RegionRestoreData<ConditionalFormatAbstractBase> _cfRestoreData = null!;
+    private ConditionalFormatRestoreData _cfRestoreData = null!;
     private CellStoreRestoreData _cellStoreRestoreData = null!;
     private RowColInfoRestoreData _rowColInfoRestoreData = null!;
     private RegionRestoreData<CellMetadata> _metaDataStore = null!;

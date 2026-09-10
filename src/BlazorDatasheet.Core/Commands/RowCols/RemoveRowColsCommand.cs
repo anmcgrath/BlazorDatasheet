@@ -16,7 +16,7 @@ public class RemoveRowColsCommand : BaseCommand, IUndoableCommand
     private readonly int _count;
 
     private RegionRestoreData<int> _validatorRestoreData = null!;
-    private RegionRestoreData<ConditionalFormatAbstractBase> _cfRestoreData = null!;
+    private ConditionalFormatRestoreData _cfRestoreData = null!;
     private RegionRestoreData<CellMetadata> _metaDataRestoreData = null!;
     private RowColInfoRestoreData _rowColInfoRestore = null!;
     private CellStoreRestoreData _cellStoreRestoreData = null!;

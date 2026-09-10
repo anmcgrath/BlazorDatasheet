@@ -86,6 +86,8 @@ internal class ConditionalFormatJsonConverter : JsonConverter<ConditionalFormatM
         {
             case nameof(NumberScaleConditionalFormat):
                 return typeof(NumberScaleConditionalFormat);
+            case nameof(FormulaConditionalFormat):
+                return typeof(FormulaConditionalFormat);
         }
 
         return null;

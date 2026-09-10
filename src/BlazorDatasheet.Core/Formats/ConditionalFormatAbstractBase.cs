@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.DataStructures.Geometry;
 
@@ -19,6 +20,7 @@ public abstract class ConditionalFormatAbstractBase : IEquatable<ConditionalForm
     /// <summary>
     /// Whether the conditional format is True and should be run/applied.
     /// </summary>
+    [JsonIgnore]
     public Func<CellPosition, Sheet, bool>? Predicate { get; protected set; }
 
     /// <summary>

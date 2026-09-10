@@ -202,6 +202,30 @@ public class FormulaEngine
     }
 
     /// <summary>
+    /// Evaluates <paramref name="formula"/> as if it had been written at <paramref name="anchor"/> but is
+    /// being applied at (<paramref name="row"/>, <paramref name="col"/>). Relative references are shifted by
+    /// the difference; fixed ($) parts are left alone.
+    /// </summary>
+    public CellValue EvaluateFormulaAt(CellFormula? formula, CellPosition anchor, int row, int col,
+        string sheetName)
+    {
+        if (formula == null)
+            return CellValue.Empty;
+
+        try
+        {
+            var options = new FormulaEvaluationOptions(false,
+                new ReferenceOffset(row - anchor.row, col - anchor.col, sheetName));
+            return _evaluator.Evaluate(formula, new FormulaExecutionContext(), options,
+                new FormulaCallerInfo(row, col, sheetName));
+        }
+        catch (Exception e)
+        {
+            return CellValue.Error(ErrorType.Na, $"Error running formula: {e.Message}");
+        }
+    }
+
+    /// <summary>
     /// Removes any vertices that the formula in this cell is dependent on
     /// </summary>
     /// <param name="row"></param>

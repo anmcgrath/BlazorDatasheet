@@ -692,6 +692,39 @@ public class SerializationTests
         error.ErrorType.Should().Be(errorType);
         error.Message.Should().Be(message);
     }
+
+    [Test]
+    public void Formula_Conditional_Format_Round_Trips()
+    {
+        var sheet = new Sheet(5, 5);
+        sheet.ConditionalFormats.Apply(new Region(0, 2, 0, 1),
+            new FormulaConditionalFormat("=$C1>50", new CellFormat() { BackgroundColor = "#00ff00" }));
+
+        var json = new SheetJsonSerializer().Serialize(sheet.Workbook);
+        var wb = new SheetJsonDeserializer().Deserialize(json);
+
+        var cf = wb.Sheets.First().ConditionalFormats.GetAllFormats().Single();
+        RangeText.RegionToText(cf.Region).Should().Be("A1:B3");
+        var rule = cf.Data.Should().BeOfType<FormulaConditionalFormat>().Subject;
+        rule.Formula.Should().Be("=$C1>50");
+        rule.Format.BackgroundColor.Should().Be("#00ff00");
+    }
+
+    [Test]
+    public void Formula_Conditional_Format_Saves_The_Rewritten_Formula_After_An_Insert()
+    {
+        var sheet = new Sheet(5, 5);
+        var cf = new FormulaConditionalFormat("=A1>0", new CellFormat() { BackgroundColor = "#00ff00" });
+        sheet.ConditionalFormats.Apply(new Region(1, 2, 0, 0), cf);
+        sheet.Rows.InsertAt(0);
+
+        var json = new SheetJsonSerializer().Serialize(sheet.Workbook);
+        var wb = new SheetJsonDeserializer().Deserialize(json);
+
+        var restored = wb.Sheets.First().ConditionalFormats.GetAllFormats().Single();
+        RangeText.RegionToText(restored.Region).Should().Be("A3:A4");
+        ((FormulaConditionalFormat)restored.Data).Formula.Should().Be("=A2>0");
+    }
 }
 
 public class CustomCf : ConditionalFormatAbstractBase
