@@ -30,4 +30,8 @@ public class NamedReference : Reference
     internal override void SetRegion(IRegion region)
     {
     }
+
+    internal override void Move(int offsetRow, int offsetCol)
+    {
+    }
 }

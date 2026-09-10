@@ -1,4 +1,4 @@
-using BlazorDatasheet.DataStructures.Graph;
+﻿using BlazorDatasheet.DataStructures.Graph;
 using System.Collections.Generic;
 using System.Linq;
 using BlazorDatasheet.Core.Commands.Data;
@@ -269,6 +269,50 @@ public class SheetFormulaIntegrationTests
         sheet.Cells[2, 1].Formula.Should().Be("=A2");
         sheet.Commands.Undo();
         sheet.Cells[2, 2].Formula.Should().Be("=B2");
+    }
+
+    [Test]
+    public void Insert_Row_Before_Absolute_Reference_Moves_Reference()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Cells.SetValue(4, 3, 7);
+        sheet.Cells.SetFormula(2, 2, "=$D$5+D$5+$D5");
+        sheet.Rows.InsertAt(3, 2);
+        sheet.Cells[2, 2].Formula.Should().Be("=$D$7+D$7+$D7");
+        sheet.Cells.GetValue(2, 2).Should().Be(21);
+        sheet.Commands.Undo();
+        sheet.Cells[2, 2].Formula.Should().Be("=$D$5+D$5+$D5");
+    }
+
+    [Test]
+    public void Insert_Row_Shifts_Repeated_Reference_Once()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Cells.SetFormula(2, 2, "=D5+D5+D5");
+        sheet.Rows.InsertAt(3, 2);
+        sheet.Cells[2, 2].Formula.Should().Be("=D7+D7+D7");
+        sheet.Rows.RemoveAt(3, 2);
+        sheet.Cells[2, 2].Formula.Should().Be("=D5+D5+D5");
+    }
+
+    [Test]
+    public void Insert_Col_Before_Absolute_Range_Moves_Range()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Cells.SetFormula(0, 0, "=SUM($C$1:$D$2)");
+        sheet.Columns.InsertAt(1);
+        sheet.Cells[0, 0].Formula.Should().Be("=SUM($D$1:$E$2)");
+    }
+
+    [Test]
+    public void Remove_Row_Before_Absolute_Reference_Moves_Reference()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Cells.SetFormula(2, 2, "=$D$5");
+        sheet.Rows.RemoveAt(0);
+        sheet.Cells[1, 2].Formula.Should().Be("=$D$4");
+        sheet.Commands.Undo();
+        sheet.Cells[2, 2].Formula.Should().Be("=$D$5");
     }
 
     [Test]

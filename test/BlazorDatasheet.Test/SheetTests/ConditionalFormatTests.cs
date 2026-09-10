@@ -281,6 +281,19 @@ public class ConditionalFormatTests
     }
 
     [Test]
+    public void Formula_Cf_Absolute_Reference_Moves_On_Insert()
+    {
+        sheet.Cells.SetValue(0, 1, 5);
+        var cf = GreenIf("=$B$1>0");
+        cm.Apply(new Region(2, 3, 0, 0), cf);
+
+        sheet.Rows.InsertAt(0);
+
+        cf.Formula.Should().Be("=$B$2>0");
+        Bg(3, 0).Should().Be(GreenBg);
+    }
+
+    [Test]
     public void Formula_Cf_Rebases_When_The_Anchor_Row_Is_Removed()
     {
         sheet.Cells.SetValue(1, 1, 5);
