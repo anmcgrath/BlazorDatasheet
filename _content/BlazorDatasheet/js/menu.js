@@ -1,4 +1,4 @@
-class MenuService {
+﻿class MenuService {
 
     constructor(dotnetHelper) {
         this.menus = [];
@@ -78,6 +78,10 @@ class MenuService {
         if (this.isActive(menuEl))
             return
 
+        // Whatever had focus when the menu was requested gets it back when the menu closes,
+        // unless the user has already moved focus somewhere else in the meantime.
+        const opener = document.activeElement
+
         // run with set timeout to allow the updated menu to be structured based on context
         setTimeout(() => {
             menuEl.showPopover()
@@ -90,6 +94,7 @@ class MenuService {
                     self.activeMenuEls.push(event.target)
                 } else {
                     self.activeMenuEls.splice(self.activeMenuEls.indexOf(event.target), 1)
+                    self.restoreFocus(event.target, opener)
                     await self.dotnetHelper.invokeMethodAsync("OnMenuClose", event.target.id)
                     event.target.removeEventListener('toggle', onToggle)
                 }
@@ -107,6 +112,13 @@ class MenuService {
                 this.positionMenu(menuEl, targetRect, options.margin, options.placement)
             }
         }, 1)
+    }
+
+    restoreFocus(menuEl, opener) {
+        const active = document.activeElement
+        const focusIsOrphaned = !active || active === document.body || menuEl.contains(active)
+        if (focusIsOrphaned && opener?.isConnected && opener !== document.body && opener !== menuEl)
+            opener.focus({preventScroll: true})
     }
 
     positionMenu(menuEl, targetRect, margin, placement, flipCount = 0) {
