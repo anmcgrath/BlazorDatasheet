@@ -1,4 +1,4 @@
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
@@ -58,7 +58,7 @@ public class CellFormula
         }
     }
 
-    internal void InsertRowColIntoReferences(int index, int count, Axis axis, string sheetName)
+    public void InsertRowColIntoReferences(int index, int count, Axis axis, string sheetName)
     {
         foreach (var reference in References)
         {
@@ -68,17 +68,17 @@ public class CellFormula
             if (reference is CellReference cellReference)
             {
                 if (axis == Axis.Row && cellReference.RowIndex >= index)
-                    reference.Shift(count, 0);
+                    reference.Move(count, 0);
                 else if (axis == Axis.Col && cellReference.ColIndex >= index)
-                    reference.Shift(0, count);
+                    reference.Move(0, count);
             }
 
             if (reference is RangeReference)
             {
                 if (axis == Axis.Row && reference.Region.Top >= index)
-                    reference.Shift(count, 0);
+                    reference.Move(count, 0);
                 else if (axis == Axis.Col && reference.Region.Left >= index)
-                    reference.Shift(0, count);
+                    reference.Move(0, count);
 
                 if (axis == Axis.Row && reference.Region.SpansRow(index))
                     reference.Region.Expand(Edge.Bottom, count);
@@ -89,7 +89,7 @@ public class CellFormula
         }
     }
 
-    internal void RemoveRowColFromReferences(int index, int count, Axis axis, string sheetName)
+    public void RemoveRowColFromReferences(int index, int count, Axis axis, string sheetName)
     {
         foreach (var reference in References)
         {
@@ -98,13 +98,13 @@ public class CellFormula
 
             if (axis == Axis.Row && reference.Region.Top > index)
             {
-                reference.Shift(-count, 0);
+                reference.Move(-count, 0);
                 continue;
             }
 
             if (axis == Axis.Col && reference.Region.Left > index)
             {
-                reference.Shift(0, -count);
+                reference.Move(0, -count);
                 continue;
             }
 

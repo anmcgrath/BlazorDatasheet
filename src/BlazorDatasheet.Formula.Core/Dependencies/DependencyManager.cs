@@ -272,7 +272,7 @@ public class DependencyManager
         // needs to be done before we shift vertices
 
 
-        var formulaDependents = GetDirectDependents(affectedRegion, sheetName);
+        var formulaDependents = GetDirectDependents(affectedRegion, sheetName).Distinct();
 
         foreach (var dependent in formulaDependents)
         {
@@ -341,7 +341,7 @@ public class DependencyManager
         // needs to be done before we shift vertices
         var affectedRegion = GetAffectedRegion(axis, index);
 
-        var dependentFormulas = GetDirectDependents(affectedRegion, sheetName);
+        var dependentFormulas = GetDirectDependents(affectedRegion, sheetName).Distinct();
 
         foreach (var dependent in dependentFormulas)
         {

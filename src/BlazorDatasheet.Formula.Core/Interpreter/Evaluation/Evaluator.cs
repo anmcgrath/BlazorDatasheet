@@ -149,14 +149,27 @@ public class Evaluator
         if (expression.Reference.IsInvalid)
             return CellValue.Error(ErrorType.Ref);
 
-        if (expression.Reference.Kind == ReferenceKind.Cell)
-            return EvaluateCellReference((CellReference)expression.Reference, ctx);
+        var reference = expression.Reference;
 
-        if (expression.Reference.Kind == ReferenceKind.Range)
-            return EvaluateRangeReference((RangeReference)expression.Reference);
+        if (ctx.Options.ReferenceOffset is { } offset &&
+            (reference.Kind == ReferenceKind.Cell || reference.Kind == ReferenceKind.Range) &&
+            reference.SheetName == offset.SheetName &&
+            (offset.RowOffset != 0 || offset.ColOffset != 0))
+        {
+            reference = reference.Copy();
+            reference.Shift(offset.RowOffset, offset.ColOffset);
+            if (reference.Region.Top < 0 || reference.Region.Left < 0)
+                return CellValue.Error(ErrorType.Ref);
+        }
+
+        if (reference.Kind == ReferenceKind.Cell)
+            return EvaluateCellReference((CellReference)reference, ctx);
+
+        if (reference.Kind == ReferenceKind.Range)
+            return EvaluateRangeReference((RangeReference)reference);
 
         // we currently don't handle array values...
-        return CellValue.Reference(expression.Reference);
+        return CellValue.Reference(reference);
     }
 
     private CellValue EvaluateCellReference(CellReference cellReference, EvalContext ctx)

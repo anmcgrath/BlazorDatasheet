@@ -36,6 +36,11 @@ public abstract class Reference
     /// <param name="offsetCol"></param>
     internal abstract void Shift(int offsetRow, int offsetCol);
     /// <summary>
+    /// Moves this reference by the given offset regardless of fixed ($) flags. Used when the
+    /// referenced cells themselves move, e.g. on row/column insert or remove.
+    /// </summary>
+    internal virtual void Move(int offsetRow, int offsetCol) => Region.Shift(offsetRow, offsetCol);
+    /// <summary>
     /// Whether the reference is valid. If it is not, then the formula should evaluate to #REF.
     /// </summary>
     public abstract bool IsInvalid { get; protected set; }

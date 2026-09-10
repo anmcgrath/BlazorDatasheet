@@ -1,0 +1,36 @@
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Formats
+@using BlazorDatasheet.Core.Formats.DefaultConditionalFormats
+@using BlazorDatasheet.DataStructures.Geometry
+
+<Datasheet Sheet="_sheet"/>
+
+@code {
+
+    private Sheet _sheet = null!;
+
+    protected override void OnInitialized()
+    {
+        _sheet = new Sheet(20, 20);
+        _sheet.Cells.SetValues(0, 2, new object[][]
+        {
+            new object[] { 10 },
+            new object[] { 80 },
+            new object[] { 45 },
+            new object[] { 92 },
+            new object[] { 60 },
+            new object[] { 5 },
+        });
+
+        // the formula is written relative to A1 (the top left of the range) and re-based for
+        // every other cell, so $C1 follows the row while staying on column C.
+        _sheet.ConditionalFormats.Apply(
+            new Region(0, 5, 0, 1),
+            new FormulaConditionalFormat("=$C1>50", new CellFormat { BackgroundColor = "#c8e6c9" }));
+
+        _sheet.ConditionalFormats.Apply(
+            new Region(0, 5, 3, 3),
+            new FormulaConditionalFormat("=POW(-1,ROW()+COLUMN())=1", new CellFormat { BackgroundColor = "#e0e0e0" }));
+    }
+
+}

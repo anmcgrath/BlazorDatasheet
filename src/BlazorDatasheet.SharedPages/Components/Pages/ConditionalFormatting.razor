@@ -18,6 +18,12 @@
 
 <CodeExample ComponentType="typeof(CustomConditionalFormattingExample)"/>
 
+<div class="block">
+    The <code>FormulaConditionalFormat</code> applies a format when a formula evaluates to true, in the same way as Excel's "use a formula to determine which cells to format". The formula is written relative to the top left of the applied range and is re-based for every other cell in the range, honouring <code>$</code> fixed flags.
+</div>
+
+<CodeExample ComponentType="typeof(FormulaConditionalFormattingExample)"/>
+
 
 @code {
     
