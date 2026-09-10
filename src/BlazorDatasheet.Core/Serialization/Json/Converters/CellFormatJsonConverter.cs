@@ -27,7 +27,24 @@ internal class CellFormatJsonConverter : JsonConverter<CellFormat>
             Property<Border?>(nameof(CellFormat.BorderTop), (format, value) => format.BorderTop = value),
             Property<Border?>(nameof(CellFormat.BorderBottom), (format, value) => format.BorderBottom = value),
             Property<TextWrapping>(nameof(CellFormat.TextWrap), (format, value) => format.TextWrap = value,
-                nameof(TextWrapping))
+                nameof(TextWrapping)),
+            Property<CellBackgroundPattern?>(nameof(CellFormat.BackgroundPattern),
+                (format, value) => format.BackgroundPattern = value),
+            Property<CellCornerFlag?>(nameof(CellFormat.CornerFlagTopLeft),
+                (format, value) => format.CornerFlagTopLeft = value),
+            Property<CellCornerFlag?>(nameof(CellFormat.CornerFlagTopRight),
+                (format, value) => format.CornerFlagTopRight = value),
+            Property<CellCornerFlag?>(nameof(CellFormat.CornerFlagBottomLeft),
+                (format, value) => format.CornerFlagBottomLeft = value),
+            Property<CellCornerFlag?>(nameof(CellFormat.CornerFlagBottomRight),
+                (format, value) => format.CornerFlagBottomRight = value),
+            Property<string?>(nameof(CellFormat.CssClass), (format, value) => format.CssClass = value),
+            // Read as a concrete dictionary so the property setter can validate and copy it, but write
+            // as the interface, because the setter stores a ReadOnlyDictionary that is not assignable
+            // to Dictionary<string, string>.
+            Property<Dictionary<string, string>?>(nameof(CellFormat.CssVariables),
+                (format, value) => format.CssVariables = value,
+                writeType: typeof(IReadOnlyDictionary<string, string>))
         }.ToDictionary(x => x.JsonName);
 
     private static readonly IReadOnlyDictionary<string, FormatProperty> PropertiesByStyleName =
@@ -75,7 +92,7 @@ internal class CellFormatJsonConverter : JsonConverter<CellFormat>
                     continue;
 
                 writer.WritePropertyName(property.JsonName);
-                JsonSerializer.Serialize(writer, style.Value, property.Type, options);
+                JsonSerializer.Serialize(writer, style.Value, property.WriteType, options);
             }
         }
 
@@ -83,12 +100,12 @@ internal class CellFormatJsonConverter : JsonConverter<CellFormat>
     }
 
     private static FormatProperty Property<T>(string jsonName, Action<CellFormat, T> setValue,
-        string? styleName = null)
+        string? styleName = null, Type? writeType = null)
     {
-        return new FormatProperty(jsonName, styleName ?? jsonName, typeof(T),
+        return new FormatProperty(jsonName, styleName ?? jsonName, typeof(T), writeType ?? typeof(T),
             (format, value) => setValue(format, value is null ? default! : (T)value));
     }
 
-    private sealed record FormatProperty(string JsonName, string StyleName, Type Type,
+    private sealed record FormatProperty(string JsonName, string StyleName, Type Type, Type WriteType,
         Action<CellFormat, object?> SetValue);
 }

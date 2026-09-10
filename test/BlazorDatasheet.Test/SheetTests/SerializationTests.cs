@@ -310,6 +310,46 @@ public class SerializationTests
     }
 
     [Test]
+    public void Cell_Format_Decorations_Should_Round_Trip()
+    {
+        var sheet = new Sheet(1, 1);
+        var format = new CellFormat
+        {
+            BackgroundPattern = new CellBackgroundPattern(CellBackgroundPatternKind.Crosshatch, "#ff0000", 12, 2),
+            CornerFlagTopRight = new CellCornerFlag("#00ff00", 6),
+            CssClass = "my-cell",
+            CssVariables = new Dictionary<string, string> { ["--my-var"] = "1px", ["--other"] = "blue" }
+        };
+        sheet.SetFormat(new Region(0, 0), format);
+
+        var json = new SheetJsonSerializer().Serialize(sheet.Workbook);
+        var deserialized = new SheetJsonDeserializer().Deserialize(json).Sheets.First();
+        var loaded = deserialized.Cells[0, 0]!.Format;
+
+        loaded.BackgroundPattern.Should().Be(new CellBackgroundPattern(CellBackgroundPatternKind.Crosshatch,
+            "#ff0000", 12, 2));
+        loaded.CornerFlagTopRight.Should().Be(new CellCornerFlag("#00ff00", 6));
+        loaded.CssClass.Should().Be("my-cell");
+        loaded.CssVariables.Should().Equal(new Dictionary<string, string>
+            { ["--my-var"] = "1px", ["--other"] = "blue" });
+        ((CellFormat)loaded).Equals(format).Should().BeTrue();
+    }
+
+    [Test]
+    public void Cell_Format_Without_Decorations_Should_Not_Write_Decoration_Keys()
+    {
+        var sheet = new Sheet(1, 1);
+        sheet.SetFormat(new Region(0, 0), new CellFormat { BackgroundColor = "red" });
+
+        var json = new SheetJsonSerializer().Serialize(sheet.Workbook);
+
+        json.Should().NotContain(nameof(CellFormat.BackgroundPattern));
+        json.Should().NotContain("CornerFlag");
+        json.Should().NotContain(nameof(CellFormat.CssClass));
+        json.Should().NotContain(nameof(CellFormat.CssVariables));
+    }
+
+    [Test]
     public void Metadata_Json_Values_Should_Deserialize_Recursively()
     {
         var sheet = new Sheet(1, 1);
