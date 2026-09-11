@@ -11,6 +11,7 @@ public class SetMetaDataCommand : BaseCommand, IUndoableCommand
     private object? _oldValue;
 
     protected override bool CanExecuteCore(Sheet sheet) => (sheet.Region.Contains(_row, _col));
+    public override bool CanExecuteProtected(Sheet sheet) => true;
 
     public SetMetaDataCommand(int row, int col, string name, object? value)
     {

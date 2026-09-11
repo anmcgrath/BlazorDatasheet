@@ -105,14 +105,12 @@ public class SheetRange
     }
 
     /// <summary>
-    /// Clears all metadata in the range. This is a direct, non-undoable update and is denied
-    /// while the sheet is protected.
+    /// Clears all metadata in the range. This is a direct, non-undoable update. Metadata is not
+    /// protected: it is a programmatic annotation channel with no user-input path, and the
+    /// metadata commands are allowed while the sheet is protected for the same reason.
     /// </summary>
     public void ClearMetaData()
     {
-        if (!Sheet.Protection.Can(SheetOperation.Configure))
-            return;
-
         Sheet.BatchUpdates();
         try
         {

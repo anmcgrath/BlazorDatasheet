@@ -355,8 +355,6 @@ public class SheetProtectionTests
         var validator = new BlazorDatasheet.Core.Validation.NumberValidator(false);
         sheet.Range(0, 0).AddValidator(validator);
         sheet.Protection.Protect(new() { AllowFormatCells = true, AllowFormatRows = true, AllowFormatColumns = true });
-        sheet.Range(0, 0).ClearMetaData();
-        sheet.Cells.GetMetaData(0, 0, "key").Should().Be("value");
         sheet.Validators.Clear(validator, new Region(0, 0));
         sheet.Validators.Get(0, 0).Should().Contain(validator);
         sheet.Range(1, 0).AddValidator(validator);
@@ -369,6 +367,34 @@ public class SheetProtectionTests
         sheet.Commands.GetUndoCommands().Should().BeEmpty();
         sheet.FreezeTopRows(1);
         sheet.FreezeState.Top.Should().Be(1);
+    }
+
+    /// <summary>
+    /// Metadata is annotation rather than content: a host writes it onto locked cells precisely
+    /// because they are locked, so it is never denied by protection.
+    /// </summary>
+    [Test]
+    public void MetaData_Can_Be_Written_To_Locked_Cells_While_Protected()
+    {
+        var sheet = new Sheet(5, 5);
+        sheet.Protection.Protect();
+        sheet.Protection.IsLocked(0, 0).Should().BeTrue();
+
+        sheet.Cells.SetCellMetaData(0, 0, "status", "pass").Should().BeTrue();
+        sheet.Cells.GetMetaData(0, 0, "status").Should().Be("pass");
+
+        sheet.Cells.SetCellMetaData(new Region(1, 2, 0, 1), "status", "fail").Should().BeTrue();
+        sheet.Cells.GetMetaData(2, 1, "status").Should().Be("fail");
+
+        sheet.Commands.Undo().Should().BeTrue();
+        sheet.Cells.GetMetaData(2, 1, "status").Should().BeNull();
+
+        sheet.Cells.ClearCellMetaData(0, 0).Should().BeTrue();
+        sheet.Cells.GetMetaData(0, 0, "status").Should().BeNull();
+
+        sheet.Range(0, 0).SetMetaData("status", "pass");
+        sheet.Range(new Region(0, 0)).ClearMetaData();
+        sheet.Cells.GetMetaData(0, 0, "status").Should().BeNull();
     }
 
     [Test]

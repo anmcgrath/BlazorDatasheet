@@ -5,28 +5,29 @@ namespace BlazorDatasheet.Core.Commands.Data;
 
 public class ClearMetaDataCommand : BaseCommand, IUndoableCommand
 {
-    private readonly int _row;
-    private readonly int _col;
-    private CellMetadata? _oldMetaData;
+	private readonly int _row;
+	private readonly int _col;
+	private CellMetadata? _oldMetaData;
 
-    public ClearMetaDataCommand(int row, int col)
-    {
-        _row = row;
-        _col = col;
-    }
+	public ClearMetaDataCommand(int row, int col)
+	{
+		_row = row;
+		_col = col;
+	}
 
-    protected override bool CanExecuteCore(Sheet sheet) => (sheet.Region.Contains(_row, _col));
+	protected override bool CanExecuteCore(Sheet sheet) => (sheet.Region.Contains(_row, _col));
+	public override bool CanExecuteProtected(Sheet sheet) => true;
 
-    protected override bool ExecuteCore(Sheet sheet)
-    {
-        _oldMetaData = sheet.Cells.GetCellMetaData(_row, _col)?.Clone();
-        sheet.Cells.ClearMetaDataImpl(_row, _col);
-        return true;
-    }
+	protected override bool ExecuteCore(Sheet sheet)
+	{
+		_oldMetaData = sheet.Cells.GetCellMetaData(_row, _col)?.Clone();
+		sheet.Cells.ClearMetaDataImpl(_row, _col);
+		return true;
+	}
 
-    public bool Undo(Sheet sheet)
-    {
-        sheet.Cells.SetMetaDataImpl(_row, _col, _oldMetaData?.Clone());
-        return true;
-    }
+	public bool Undo(Sheet sheet)
+	{
+		sheet.Cells.SetMetaDataImpl(_row, _col, _oldMetaData?.Clone());
+		return true;
+	}
 }
