@@ -23,6 +23,7 @@ public class SetRegionMetaDataCommand : BaseCommand, IUndoableCommand
     }
 
     protected override bool CanExecuteCore(Sheet sheet) => (sheet.Region.Contains(_region));
+    public override bool CanExecuteProtected(Sheet sheet) => true;
 
     protected override bool ExecuteCore(Sheet sheet)
     {
