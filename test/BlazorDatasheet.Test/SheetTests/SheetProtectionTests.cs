@@ -305,11 +305,12 @@ public class SheetProtectionTests
     {
         var sheet = UnlockedSheet();
         sheet.Cells.SetValue(0, 0, 3);
-        sheet.Protection.Protect(new() { AllowFilter = true });
+        sheet.Protection.Protect(new() { AllowFilter = true, AllowSelectLockedCells = false });
         var json = new BlazorDatasheet.Core.Serialization.Json.SheetJsonSerializer().Serialize(sheet.Workbook);
         var restored = new BlazorDatasheet.Core.Serialization.Json.SheetJsonDeserializer().Deserialize(json).Sheets.First();
         restored.Protection.IsProtected.Should().BeTrue();
         restored.Protection.Options.AllowFilter.Should().BeTrue();
+        restored.Protection.Options.AllowSelectLockedCells.Should().BeFalse();
         restored.Protection.CanEdit(0, 0).Should().BeTrue();
         restored.Cells[0, 0].Value.Should().Be(3);
     }

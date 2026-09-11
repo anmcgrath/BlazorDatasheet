@@ -12,6 +12,12 @@ public sealed record SheetProtectionOptions
     public bool AllowDeleteColumns { get; init; }
     public bool AllowSort { get; init; }
     public bool AllowFilter { get; init; }
+
+    /// <summary>
+    /// Whether locked cells can be selected with the mouse or keyboard. Unlike every other option,
+    /// this is allowed by default, matching spreadsheet convention.
+    /// </summary>
+    public bool AllowSelectLockedCells { get; init; } = true;
 }
 
 /// <summary>An operation governed by sheet protection.</summary>
@@ -27,6 +33,7 @@ public enum SheetOperation
     DeleteColumns,
     Sort,
     Filter,
+    SelectLockedCells,
     Configure,
     Freeze
 }

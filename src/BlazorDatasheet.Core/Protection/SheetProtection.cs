@@ -41,6 +41,7 @@ public sealed class SheetProtection
         _sheet.Commands.ClearHistory();
         if (_sheet.Editor.EditCell is { } cell && !CanEdit(cell.Row, cell.Col))
             _sheet.Editor.CancelEdit();
+        ConstrainSelectionToUnlocked();
         Changed?.Invoke(this, EventArgs.Empty);
         _sheet.MarkDirty(_sheet.Region);
     }
@@ -75,11 +76,78 @@ public sealed class SheetProtection
 
     public bool CanEdit(int row, int col) => CanEdit(new Region(row, col));
 
-    public bool CanEdit(IRegion region)
+    public bool CanEdit(IRegion region) => !IsEnforced || IsFullyUnlocked(region);
+
+    /// <summary>Whether locked cells are currently excluded from user selection.</summary>
+    internal bool RestrictsSelection => IsEnforced && !Options.AllowSelectLockedCells;
+
+    /// <summary>Whether the region may be selected by user input. Programmatic selection is unrestricted.</summary>
+    public bool CanSelect(IRegion region) => !RestrictsSelection || IsFullyUnlocked(region);
+
+    private bool IsFullyUnlocked(IRegion region) =>
+        !ContainsLocked(region) && _sheet.Cells.GetMerges(region).All(x => !ContainsLocked(x));
+
+    /// <summary>
+    /// The first unlocked cell in row-major order, or null when every cell is locked. Only regions
+    /// that some format marks unlocked are visited, so the whole sheet is never scanned.
+    /// </summary>
+    internal CellPosition? FindFirstUnlockedCell()
     {
-        if (!IsEnforced)
-            return true;
-        return !ContainsLocked(region) && _sheet.Cells.GetMerges(region).All(x => !ContainsLocked(x));
+        if (_sheet.Area == 0)
+            return null;
+
+        var candidates = _sheet.Cells.GetFormatData(_sheet.Region)
+            .Where(x => x.Data.IsLocked == false)
+            .Select(x => (IRegion)x.Region)
+            .Concat(_sheet.Columns.Formats.GetIntervals(0, _sheet.NumCols - 1)
+                .Where(x => x.Data.IsLocked == false)
+                .Select(x => (IRegion)new ColumnRegion(x.Start, x.End)))
+            .Concat(_sheet.Rows.Formats.GetIntervals(0, _sheet.NumRows - 1)
+                .Where(x => x.Data.IsLocked == false)
+                .Select(x => (IRegion)new RowRegion(x.Start, x.End)));
+
+        CellPosition? first = null;
+        foreach (var candidate in candidates)
+        {
+            // A candidate starting higher up the sheet may have its early rows overridden back to
+            // locked, so every candidate is scanned and the minimum position taken.
+            var found = FindFirstUnlockedCellIn(candidate.GetIntersection(_sheet.Region));
+            if (found == null)
+                continue;
+            if (first == null || found.Value.row < first.Value.row ||
+                (found.Value.row == first.Value.row && found.Value.col < first.Value.col))
+                first = found;
+        }
+
+        return first;
+    }
+
+    private CellPosition? FindFirstUnlockedCellIn(IRegion? region)
+    {
+        if (region == null)
+            return null;
+        for (var row = region.Top; row <= region.Bottom; row++)
+        for (var col = region.Left; col <= region.Right; col++)
+        {
+            if (!IsLocked(row, col) && CanSelect(new Region(row, col)))
+                return new CellPosition(row, col);
+        }
+
+        return null;
+    }
+
+    private void ConstrainSelectionToUnlocked()
+    {
+        if (!RestrictsSelection)
+            return;
+        if (_sheet.Selection.IsSelecting)
+            _sheet.Selection.CancelSelecting();
+        if (_sheet.Selection.Regions.All(CanSelect))
+            return;
+        if (FindFirstUnlockedCell() is { } position)
+            _sheet.Selection.Set(position.row, position.col);
+        else
+            _sheet.Selection.ClearSelections();
     }
 
     /// <summary>Queries protection only; bounds, validation and legacy read-only checks remain separate.</summary>
@@ -99,6 +167,7 @@ public sealed class SheetProtection
             SheetOperation.DeleteColumns => Options.AllowDeleteColumns && region != null && CanEdit(region),
             SheetOperation.Sort => Options.AllowSort && region != null && CanEdit(region),
             SheetOperation.Filter => Options.AllowFilter,
+            SheetOperation.SelectLockedCells => Options.AllowSelectLockedCells,
             SheetOperation.Freeze => true,
             _ => false
         };
