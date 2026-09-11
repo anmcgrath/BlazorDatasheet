@@ -1,4 +1,5 @@
-﻿using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Protection;
+using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Formula.Core.Interpreter;
 
@@ -18,9 +19,11 @@ internal class SetParsedFormulaCommand : BaseCommand, IUndoableCommand
         _formula = formula;
     }
 
-    public override bool CanExecute(Sheet sheet) => sheet.ContainsPosition(_row, _col);
+    public override bool CanExecuteProtected(Sheet sheet) => sheet.Protection.CanEdit(_row, _col);
 
-    public override bool Execute(Sheet sheet)
+    protected override bool CanExecuteCore(Sheet sheet) => (sheet.ContainsPosition(_row, _col));
+
+    protected override bool ExecuteCore(Sheet sheet)
     {
         // see SetCellValueCommand - unbatched, each call triggers its own recalculation pass.
         sheet.BatchUpdates();

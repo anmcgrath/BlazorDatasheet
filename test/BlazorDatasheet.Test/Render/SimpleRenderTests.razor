@@ -1,4 +1,4 @@
-﻿@using AngleSharp.Css.Dom
+@using AngleSharp.Css.Dom
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Events.Selection
 @using BlazorDatasheet.KeyboardInput
@@ -69,6 +69,51 @@
 
         calls.Should().Be(1);
         sheet.Selection.ActiveRegion.Should().BeEquivalentTo(cancel ? (IRegion)new Region(0, 0) : new ColumnRegion(2));
+    }
+
+    [Test]
+    public async Task Protection_Changes_Refresh_Boolean_And_Autofill_Controls()
+    {
+        var sheet = new Sheet(4, 4);
+        sheet.Cells.SetValue(0, 0, true);
+        sheet.Cells[0, 0].Type = "boolean";
+        sheet.Selection.Set(new Region(0, 0));
+        var cut = RenderComponent<Datasheet>(parameters => parameters
+            .Add(p => p.Sheet, sheet).Add(p => p.UseAutoFill, true));
+        await cut.InvokeAsync(() =>
+        {
+            cut.Instance.ForceReRender();
+            sheet.Cells.SetValue(0, 0, true);
+        });
+        cut.Find("input[type=checkbox]").HasAttribute("disabled").Should().BeFalse();
+        cut.FindAll("#auto-filler").Should().NotBeEmpty();
+        await cut.InvokeAsync(() => sheet.Protection.Protect());
+        cut.WaitForAssertion(() =>
+        {
+            cut.Find("input[type=checkbox]").HasAttribute("disabled").Should().BeTrue();
+            cut.FindAll("#auto-filler").Should().BeEmpty();
+        });
+        await cut.InvokeAsync(() => sheet.Protection.Unprotect());
+        cut.WaitForAssertion(() =>
+        {
+            cut.Find("input[type=checkbox]").HasAttribute("disabled").Should().BeFalse();
+            cut.FindAll("#auto-filler").Should().NotBeEmpty();
+        });
+    }
+
+    [Test]
+    public async Task Protection_Cancels_An_Open_Locked_Editor_And_Blocks_Delete()
+    {
+        var sheet = new Sheet(4, 4);
+        sheet.Cells.SetValue(0, 0, "original");
+        sheet.Selection.Set(new Region(0, 0));
+        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+        await cut.InvokeAsync(() => sheet.Editor.BeginEdit(0, 0));
+        sheet.Editor.IsEditing.Should().BeTrue();
+        await cut.InvokeAsync(() => sheet.Protection.Protect());
+        sheet.Editor.IsEditing.Should().BeFalse();
+        await cut.InvokeAsync(() => cut.Instance.HandleShortcuts("Delete", KeyboardModifiers.None));
+        sheet.Cells[0, 0].Value.Should().Be("original");
     }
 
     [Test]

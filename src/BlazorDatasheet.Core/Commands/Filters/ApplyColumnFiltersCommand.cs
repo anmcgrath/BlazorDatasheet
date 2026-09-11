@@ -1,3 +1,4 @@
+using BlazorDatasheet.Core.Protection;
 using BlazorDatasheet.Core.Commands.RowCols;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Filter;
@@ -7,27 +8,27 @@ namespace BlazorDatasheet.Core.Commands.Filters;
 
 public class ApplyColumnFiltersCommand : BaseCommand, IUndoableCommand
 {
-    private IUndoableCommand _commandRun = null!;
-    public override bool CanExecute(Sheet sheet) => true;
+    private RowColInfoRestoreData _unhideRestore = null!;
+    private RowColInfoRestoreData _hideRestore = null!;
+    private List<BlazorDatasheet.DataStructures.Intervals.Interval> _previousFilteredRows = new();
+    public override bool CanExecuteProtected(Sheet sheet) => sheet.Protection.Can(SheetOperation.Filter);
 
-    public override bool Execute(Sheet sheet)
+    protected override bool ExecuteCore(Sheet sheet)
     {
-        // 1. Un-hide all rows filtered by the current column filters
-        var unHideExistingCommand = new UnhideCommand(sheet.Columns.Filters.FilteredRows, Axis.Row);
         var columnFilters = sheet.Columns.Filters.GetAll();
-        var handler = new FilterHandler();
-        var hiddenRows = handler.GetHiddenRows(sheet, columnFilters);
-        var hideCommand = new HideCommand(hiddenRows, Axis.Row);
-
-        _commandRun = new CommandGroup(unHideExistingCommand, hideCommand);
-        _commandRun.Execute(sheet);
-
+        var hiddenRows = new FilterHandler().GetHiddenRows(sheet, columnFilters);
+        _previousFilteredRows = sheet.Columns.Filters.FilteredRows;
+        _unhideRestore = sheet.Rows.UnhideImpl(_previousFilteredRows);
+        _hideRestore = sheet.Rows.HideImpl(hiddenRows);
         sheet.Columns.Filters.FilteredRows = hiddenRows;
         return true;
     }
 
     public bool Undo(Sheet sheet)
     {
-        return _commandRun.Undo(sheet);
+        sheet.Rows.Restore(_hideRestore);
+        sheet.Rows.Restore(_unhideRestore);
+        sheet.Columns.Filters.FilteredRows = _previousFilteredRows;
+        return true;
     }
 }

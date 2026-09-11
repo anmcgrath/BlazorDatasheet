@@ -116,7 +116,7 @@ public class Editor
             return;
 
         var cell = Sheet.Cells.GetCell(row, col);
-        if (cell.Format.IsReadOnly == true)
+        if (cell.Format.IsReadOnly == true || !Sheet.Protection.CanEdit(row, col))
             return;
 
         // check if the cell is visible OR if the cell is merged, and part of the cell is visible
@@ -136,7 +136,7 @@ public class Editor
         var beforeEditArgs = new BeforeCellEditEventArgs(cell, cell.GetValue<string>(), cell.Type);
         this.BeforeCellEdit?.Invoke(this, beforeEditArgs);
 
-        if (beforeEditArgs.CancelEdit)
+        if (beforeEditArgs.CancelEdit || !Sheet.Protection.CanEdit(row, col))
             return;
 
         var isSoftEdit = forceSoftEdit ||
@@ -185,6 +185,12 @@ public class Editor
         if (EditCell == null || !IsEditing)
             return false;
 
+        if (!Sheet.Protection.CanEdit(EditCell.Row, EditCell.Col))
+        {
+            CancelEdit();
+            return false;
+        }
+
         // Determine if it's a formula, and calculate.
         CellFormula? parsedFormula = null;
         var isFormula = FormulaEngine.FormulaEngine.IsFormula(this.EditValue);
@@ -222,6 +228,16 @@ public class Editor
         var beforeAcceptEdit = new BeforeAcceptEditEventArgs(EditCell, editValue, parsedFormula, formulaString);
         BeforeEditAccepted?.Invoke(this, beforeAcceptEdit);
 
+        if (EditCell == null || !IsEditing)
+            return false;
+
+        // the callback may have protected the sheet
+        if (!Sheet.Protection.CanEdit(EditCell.Row, EditCell.Col))
+        {
+            CancelEdit();
+            return false;
+        }
+
         if (beforeAcceptEdit.AcceptEdit)
         {
             // run the validators that are strict. cancel edit if any fail
@@ -236,10 +252,30 @@ public class Editor
                 return false;
             }
 
-            if (isFormula && parsedFormula != null)
-                Sheet.Cells.SetFormula(EditCell.Row, EditCell.Col, parsedFormula);
-            else
-                Sheet.Cells.SetValue(EditCell.Row, EditCell.Col, editValue);
+            var editRow = EditCell.Row;
+            var editCol = EditCell.Col;
+
+            var accepted = isFormula && parsedFormula != null
+                ? Sheet.Commands.ExecuteCommand(
+                    new BlazorDatasheet.Core.Commands.Data.SetParsedFormulaCommand(editRow, editCol, parsedFormula))
+                : Sheet.Cells.SetValue(editRow, editCol, editValue);
+
+            if (!accepted)
+            {
+                // The write was rejected (protection, a cancelled command, or a chained command that
+                // failed). Close the editor rather than leaving the user stuck in an edit they can
+                // only escape from.
+                if (IsEditing)
+                {
+                    EditFinished?.Invoke(this, new EditFinishedEventArgs(editRow, editCol));
+                    ClearEdit();
+                }
+
+                return false;
+            }
+
+            if (EditCell == null)
+                return false;
 
             EditAccepted?.Invoke(
                 this,

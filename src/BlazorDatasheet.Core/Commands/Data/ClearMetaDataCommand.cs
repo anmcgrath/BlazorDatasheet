@@ -15,9 +15,9 @@ public class ClearMetaDataCommand : BaseCommand, IUndoableCommand
         _col = col;
     }
 
-    public override bool CanExecute(Sheet sheet) => sheet.Region.Contains(_row, _col);
+    protected override bool CanExecuteCore(Sheet sheet) => (sheet.Region.Contains(_row, _col));
 
-    public override bool Execute(Sheet sheet)
+    protected override bool ExecuteCore(Sheet sheet)
     {
         _oldMetaData = sheet.Cells.GetCellMetaData(_row, _col)?.Clone();
         sheet.Cells.ClearMetaDataImpl(_row, _col);

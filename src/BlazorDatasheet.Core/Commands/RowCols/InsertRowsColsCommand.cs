@@ -1,4 +1,5 @@
-﻿using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Protection;
+using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Data.Filter;
 using BlazorDatasheet.Core.Formats;
@@ -38,9 +39,9 @@ internal class InsertRowsColsCommand : BaseCommand, IUndoableCommand
         _axis = axis;
     }
 
-    public override bool CanExecute(Sheet sheet) => true;
+    public override bool CanExecuteProtected(Sheet sheet) => sheet.Protection.Can(_axis == Axis.Row ? SheetOperation.InsertRows : SheetOperation.InsertColumns);
 
-    public override bool Execute(Sheet sheet)
+    protected override bool ExecuteCore(Sheet sheet)
     {
         using var updates = sheet.SuspendUpdates();
         sheet.Add(_axis, _count);

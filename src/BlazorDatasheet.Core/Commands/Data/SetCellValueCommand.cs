@@ -1,3 +1,4 @@
+using BlazorDatasheet.Core.Protection;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -25,12 +26,14 @@ public class SetCellValueCommand : BaseCommand, IUndoableCommand
         Value = value;
     }
 
-    public override bool CanExecute(Sheet sheet)
+    public override bool CanExecuteProtected(Sheet sheet) => sheet.Protection.CanEdit(Row, Col);
+
+    protected override bool CanExecuteCore(Sheet sheet)
     {
         return sheet.ContainsPosition(Row, Col);
     }
 
-    public override bool Execute(Sheet sheet)
+    protected override bool ExecuteCore(Sheet sheet)
     {
         using var updates = sheet.SuspendUpdates();
         _restoreData = sheet.Cells.SetValueImpl(Row, Col, Value);

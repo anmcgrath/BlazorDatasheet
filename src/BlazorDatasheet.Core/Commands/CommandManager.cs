@@ -1,4 +1,4 @@
-﻿using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Events.Commands;
 using BlazorDatasheet.Core.Selecting;
 using BlazorDatasheet.Core.Util;
@@ -11,6 +11,9 @@ public class CommandManager
     private readonly MaxStack<ICommand> _redos;
     private readonly Sheet _sheet;
     private CommandGroup? _currentCommandGroup;
+    private int _executionDepth;
+
+    internal bool IsExecuting => _executionDepth > 0;
 
     /// <summary>
     /// Invoked before a command is run. If cancel is true in <see cref="BeforeCommandRunEventArgs"/>, the command is not run.
@@ -58,6 +61,13 @@ public class CommandManager
     /// <returns></returns>
     public bool ExecuteCommand(ICommand command, bool isRedo = false, bool useUndo = true)
     {
+        _executionDepth++;
+        try { return ExecuteCommandCore(command, isRedo, useUndo); }
+        finally { _executionDepth--; }
+    }
+
+    private bool ExecuteCommandCore(ICommand command, bool isRedo, bool useUndo)
+    {
         if (_isCollectingCommands)
         {
             _currentCommandGroup!.AddCommand(command);
@@ -70,6 +80,12 @@ public class CommandManager
         if (beforeArgs.Cancel)
             return false;
 
+        if (!_sheet.Protection.CanExecute(command))
+        {
+            CommandNotExecuted?.Invoke(this, new CommandNotExecutedEventArgs(command));
+            return false;
+        }
+
         var chainedBeforeResult = ExecuteCommands(command.GetChainedBeforeCommands(), isRedo: false, useUndo: false);
 
         if (!chainedBeforeResult)
@@ -77,39 +93,57 @@ public class CommandManager
 
         if (!command.CanExecute(_sheet))
         {
+            RollbackCommands(command.GetChainedBeforeCommands());
             CommandNotExecuted?.Invoke(this, new CommandNotExecutedEventArgs(command));
             return false;
         }
 
+        var protectionRevision = _sheet.Protection.Revision;
         var result = command.Execute(_sheet);
 
         CommandRun?.Invoke(this, new CommandRunEventArgs(command, _sheet, result));
+        if (!result)
+        {
+            RollbackCommands(command.GetChainedBeforeCommands());
+            return false;
+        }
 
         var chainedAfterResult = ExecuteCommands(command.GetChainedAfterCommands(), isRedo: false, useUndo: false);
         if (!chainedAfterResult && command is IUndoableCommand undoableCommand)
         {
             undoableCommand.Undo(_sheet);
+            RollbackCommands(command.GetChainedBeforeCommands());
             return false;
         }
 
-        if (result)
+        var addedToHistory = false;
+        if (!HistoryPaused && useUndo && protectionRevision == _sheet.Protection.Revision &&
+            command is IUndoableCommand undoCommand)
         {
-            if (!HistoryPaused && useUndo && command is IUndoableCommand undoCommand)
+            _history.Push(new UndoCommandData()
             {
-                _history.Push(new UndoCommandData()
-                {
-                    Command = undoCommand,
-                    SelectionSnapshot = _sheet.Selection.GetSelectionSnapshot()
-                });
-            }
+                Command = undoCommand,
+                SelectionSnapshot = _sheet.Selection.GetSelectionSnapshot()
+            });
+            addedToHistory = true;
         }
 
         // Clear the redo stack because otherwise we will be redoing changes to the sheet with a changed
         // model from the original time the commands were run.
-        if (!isRedo)
+        // The children of a command being redone are run with isRedo false, but they are never added
+        // to the history - so anything that does get added to the history is a new change and must
+        // invalidate the redo stack, even if it was run from a handler in the middle of a redo.
+        if (!isRedo && (addedToHistory || _executionDepth == 1))
             _redos.Clear();
 
         return result;
+    }
+
+    private void RollbackCommands(IReadOnlyList<ICommand> commands)
+    {
+        foreach (var command in commands.Reverse())
+            if (command is IUndoableCommand undoable)
+                UndoCommand(undoable);
     }
 
     /// <summary>
@@ -225,8 +259,15 @@ public class CommandManager
         if (_redos.Peek() == null)
             return false;
 
-        var command = _redos.Pop()!;
-        return ExecuteCommand(command, isRedo: true);
+        var command = _redos.Peek()!;
+        var result = ExecuteCommand(command, isRedo: true);
+
+        // drop the entry whether or not it succeeded, otherwise a command that can no longer be
+        // run would block every redo behind it.
+        if (ReferenceEquals(_redos.Peek(), command))
+            _redos.Pop();
+
+        return result;
     }
 
     /// <summary>
@@ -235,6 +276,7 @@ public class CommandManager
     public void ClearHistory()
     {
         _history.Clear();
+        _redos.Clear();
     }
 
     /// <summary>

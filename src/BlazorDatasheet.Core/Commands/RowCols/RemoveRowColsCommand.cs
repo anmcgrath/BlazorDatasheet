@@ -1,3 +1,4 @@
+using BlazorDatasheet.Core.Protection;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Data.Filter;
@@ -38,7 +39,13 @@ public class RemoveRowColsCommand : BaseCommand, IUndoableCommand
         _count = count;
     }
 
-    public override bool CanExecute(Sheet sheet)
+    public override bool CanExecuteProtected(Sheet sheet) => sheet.Protection.Can(
+        _axis == Axis.Row ? SheetOperation.DeleteRows : SheetOperation.DeleteColumns,
+        _axis == Axis.Row
+            ? new RowRegion(_index, _index + _count - 1)
+            : new ColumnRegion(_index, _index + _count - 1));
+
+    protected override bool CanExecuteCore(Sheet sheet)
     {
         if (_index >= sheet.GetSize(_axis))
             return false;
@@ -49,7 +56,7 @@ public class RemoveRowColsCommand : BaseCommand, IUndoableCommand
         return true;
     }
 
-    public override bool Execute(Sheet sheet)
+    protected override bool ExecuteCore(Sheet sheet)
     {
         if (_index >= sheet.GetSize(_axis))
             return false;

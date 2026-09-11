@@ -1,4 +1,5 @@
-﻿using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Protection;
+using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core;
@@ -53,9 +54,12 @@ public class SetCellValuesCommand : BaseCommand, IUndoableCommand
             .ToArray();
     }
 
-    public override bool CanExecute(Sheet sheet) => true;
+    public override bool CanExecuteProtected(Sheet sheet) =>
+        _cellValues.Select((values, offset) => values.Length == 0 ||
+            sheet.Protection.CanEdit(new Region(_row + offset, _row + offset, _col, _col + values.Length - 1)))
+        .All(x => x);
 
-    public override bool Execute(Sheet sheet)
+    protected override bool ExecuteCore(Sheet sheet)
     {
         using var updates = sheet.SuspendUpdates();
         ExecuteSetCellValueData(sheet);

@@ -1,7 +1,8 @@
-﻿using BlazorDatasheet.Core.Commands.Formatting;
+using BlazorDatasheet.Core.Commands.Formatting;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Events.Validation;
 using BlazorDatasheet.Core.Interfaces;
+using BlazorDatasheet.Core.Protection;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core;
@@ -103,11 +104,18 @@ public class ValidationManager
 
 
     /// <summary>
-    /// Clears the data validator from the region
+    /// Clears the data validator from the region. This is a direct, non-undoable update and is
+    /// denied while the sheet is protected.
     /// </summary>
-    /// <param name="validator"></param>
-    /// <param name="region"></param>
     public void Clear(IDataValidator validator, IRegion region)
+    {
+        if (!_sheet.Protection.Can(SheetOperation.Configure))
+            return;
+
+        ClearImpl(validator, region);
+    }
+
+    internal void ClearImpl(IDataValidator validator, IRegion region)
     {
         var index = GetValidatorIndex(validator);
         if (index == null)

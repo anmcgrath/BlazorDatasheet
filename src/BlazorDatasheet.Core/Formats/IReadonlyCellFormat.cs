@@ -68,6 +68,9 @@ public interface IReadonlyCellFormat
     /// Whether the cell's value can be modified by the user.
     /// </summary>
     public bool? IsReadOnly { get; }
+
+    /// <summary>Whether the cell is locked when sheet protection is enabled.</summary>
+    public bool? IsLocked => null;
     
     /// <summary>
     /// The text wrapping style.

@@ -1,3 +1,4 @@
+using BlazorDatasheet.Core.Protection;
 using BlazorDatasheet.Core.Data;
 
 namespace BlazorDatasheet.Core.Commands.RowCols;
@@ -18,17 +19,14 @@ public class FreezeRowColsCommand : BaseCommand, IUndoableCommand
         _freezeRight = freezeRight;
     }
 
-    public override bool Execute(Sheet sheet)
+    protected override bool ExecuteCore(Sheet sheet)
     {
         _oldFreezeState = sheet.FreezeState;
         sheet.FreezeRowColsImpl(_freezeTop, _freezeBottom, _freezeLeft, _freezeRight);
         return true;
     }
 
-    public override bool CanExecute(Sheet sheet)
-    {
-        return true;
-    }
+    public override bool CanExecuteProtected(Sheet sheet) => true;
 
     public bool Undo(Sheet sheet)
     {

@@ -160,8 +160,16 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReado
     }
 
     /// <summary>
-    /// Whether the cell's value can be modified by the user.
+    /// Whether the cell is locked when sheet protection is enabled. Null inherits the
+    /// column or row setting, with locked as the default. Ignored by conditional formatting.
     /// </summary>
+    public bool? IsLocked
+    {
+        get => GetStyleOrDefault<bool?>(nameof(IsLocked));
+        set => AddStyle(nameof(IsLocked), value);
+    }
+
+    /// <summary>Whether editing is always disabled by existing read-only controls.</summary>
     public bool? IsReadOnly
     {
         get => GetStyleOrDefault<bool?>(nameof(IsReadOnly));
@@ -227,6 +235,10 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReado
         get => GetStyleOrDefault<TextWrapping>(nameof(TextWrapping));
         set => AddStyle(nameof(TextWrapping), value);
     }
+
+    internal void RemoveLock() => _styles?.Remove(nameof(IsLocked));
+
+    internal bool SpecifiesLock => _styles?.ContainsKey(nameof(IsLocked)) == true;
 
     private void AddStyle<T>(string key, T? value)
     {

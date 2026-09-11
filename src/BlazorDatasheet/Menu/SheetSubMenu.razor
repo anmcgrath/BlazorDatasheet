@@ -1,11 +1,11 @@
 @inherits SheetComponentBase
 
-<SheetMenuTarget DisableMenuTarget="@(Disabled && DisabledOnReadOnly)" 
+<SheetMenuTarget DisableMenuTarget="@(!IsEnabled || (Disabled && DisabledOnReadOnly))"
                  MenuId="@SubMenuId" 
                  MenuData="@CurrentContext"
                  Placement="@MenuPlacement.Right"
                  Trigger="@MenuTrigger.OnHover" Margin="0">
-    <SheetMenuItem SubmenuId="@SubMenuId" DisabledOnReadOnly="DisabledOnReadOnly">
+    <SheetMenuItem IsEnabled="IsEnabled" SubmenuId="@SubMenuId" DisabledOnReadOnly="DisabledOnReadOnly">
         <div class="bds-sheet-submenu-label">
             <span class="bds-sheet-submenu-text">@Label</span>
             <span class="bds-sheet-submenu-chevron">
@@ -46,7 +46,7 @@
     }
 </style>
 
-<SheetMenu MenuId="@SubMenuId" Disabled="@(Disabled && DisabledOnReadOnly)" ParentMenuId="@MenuId">
+<SheetMenu MenuId="@SubMenuId" Disabled="@(!IsEnabled || (Disabled && DisabledOnReadOnly))" ParentMenuId="@MenuId">
     @ChildContent
 </SheetMenu>
 
@@ -64,9 +64,10 @@
 
     [CascadingParameter] public bool Disabled { get; set; }
 
-    /// <summary>
-    /// Whether the menu item can be disabled. Default is true.
-    /// </summary>
+    /// <summary>Whether the operation is available, independently of read-only state.</summary>
+    [Parameter] public bool IsEnabled { get; set; } = true;
+
+    /// <summary>Whether read-only state disables this item. Default is true.</summary>
     [Parameter]
     public bool DisabledOnReadOnly { get; set; } = true;
 

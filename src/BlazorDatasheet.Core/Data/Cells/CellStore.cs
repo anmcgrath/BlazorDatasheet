@@ -184,7 +184,10 @@ public partial class CellStore
         var fixedFromRegion = fromRegion.GetIntersection(Sheet.Region) as Region;
         foreach (var position in fixedFromRegion!)
         {
-            emptyPalette.Add(new Region(position.row, position.col), Sheet.GetFormat(position.row, position.col));
+            var format = Sheet.GetFormat(position.row, position.col);
+            if (Sheet.Protection.IsEnforced)
+                format.RemoveLock();
+            emptyPalette.Add(new Region(position.row, position.col), format);
         }
 
         emptyPalette.Copy(fromRegion, toRegion.TopLeft);

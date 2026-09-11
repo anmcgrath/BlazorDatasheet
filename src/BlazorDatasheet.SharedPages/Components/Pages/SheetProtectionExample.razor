@@ -1,0 +1,51 @@
+@page "/SheetProtection"
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Formats
+@using BlazorDatasheet.Core.Protection
+@using BlazorDatasheet.DataStructures.Geometry
+
+<h3>Sheet protection</h3>
+<p>Edit the blue input cells. The total is a locked formula that recalculates when inputs change.
+    Protection also prevents formatting and structural changes.</p>
+<button class="button" @onclick="ToggleProtection">@(_sheet.Protection.IsProtected ? "Unprotect sheet" : "Protect sheet")</button>
+<button class="button" @onclick="ResetInputs">Reset inputs using trusted code</button>
+<p>Status: @(_sheet.Protection.IsProtected ? "Protected" : "Unprotected")</p>
+<Datasheet Sheet="_sheet"/>
+
+<pre><code>sheet.SetFormat(new Region(1, 2, 1, 1), new CellFormat { IsLocked = false });
+sheet.Protection.Protect();
+sheet.Protection.RunUnprotected(() =&gt; sheet.Cells.SetValue(1, 1, 2));</code></pre>
+<p>Cells are locked by default; locking takes effect only while protected. Use
+    <code>SheetProtectionOptions</code> to allow formatting, inserting or deleting rows and columns,
+    sorting, or filtering. Changing protection or completing a trusted update clears undo and redo history.
+    The trusted callback is synchronous; application code controls access to it.</p>
+
+@code {
+    private readonly Sheet _sheet = new(6, 3);
+
+    protected override void OnInitialized()
+    {
+        _sheet.Cells.SetValue(0, 0, "Order");
+        _sheet.Cells.SetValue(1, 0, "Quantity");
+        _sheet.Cells.SetValue(2, 0, "Unit price");
+        _sheet.Cells.SetValue(3, 0, "Total");
+        ResetInputs();
+        _sheet.Cells.SetFormula(3, 1, "=B2*B3");
+        _sheet.SetFormat(new Region(1, 2, 1, 1), new CellFormat { IsLocked = false, BackgroundColor = "#dbeafe" });
+        _sheet.Protection.Protect();
+    }
+
+    private void ToggleProtection()
+    {
+        if (_sheet.Protection.IsProtected)
+            _sheet.Protection.Unprotect();
+        else
+            _sheet.Protection.Protect();
+    }
+
+    private void ResetInputs() => _sheet.Protection.RunUnprotected(() =>
+    {
+        _sheet.Cells.SetValue(1, 1, 2);
+        _sheet.Cells.SetValue(2, 1, 15);
+    });
+}

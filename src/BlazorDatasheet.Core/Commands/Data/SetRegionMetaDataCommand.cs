@@ -22,9 +22,9 @@ public class SetRegionMetaDataCommand : BaseCommand, IUndoableCommand
         _value = value;
     }
 
-    public override bool CanExecute(Sheet sheet) => sheet.Region.Contains(_region);
+    protected override bool CanExecuteCore(Sheet sheet) => (sheet.Region.Contains(_region));
 
-    public override bool Execute(Sheet sheet)
+    protected override bool ExecuteCore(Sheet sheet)
     {
         // Capture the whole region before emitting any metadata events while applying the write.
         _oldValues = new SheetRange(sheet, _region).Positions

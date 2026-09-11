@@ -15,6 +15,7 @@ internal class SheetMapper
 	{
 		var sheetModel = new SheetModel();
 
+		sheetModel.Protection = sheet.Protection.IsProtected ? sheet.Protection.Options : null;
 		sheetModel.NumRows = sheet.NumRows;
 		sheetModel.NumCols = sheet.NumCols;
 		sheetModel.Name = sheet.Name;
@@ -216,6 +217,8 @@ internal class SheetMapper
 		sheet.EndBatchUpdates();
 		sheet.ScreenUpdating = true;
 		sheet.Commands.ResumeHistory();
+		if (sheetModel.Protection != null)
+			sheet.Protection.Protect(sheetModel.Protection);
 	}
 
 	private static void BulkLoadCellValues(SheetModel sheetModel, Sheet sheet)

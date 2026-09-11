@@ -20,9 +20,7 @@ public class SetTypeCommand : BaseCommand, IUndoableCommand
         _type = type;
     }
 
-    public override bool CanExecute(Sheet sheet) => true;
-
-    public override bool Execute(Sheet sheet)
+    protected override bool ExecuteCore(Sheet sheet)
     {
         _restoreData = sheet.Cells.SetCellTypeImpl(_region, _type);
         return true;

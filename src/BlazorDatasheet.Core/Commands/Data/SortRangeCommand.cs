@@ -1,3 +1,4 @@
+using BlazorDatasheet.Core.Protection;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Metadata;
@@ -41,9 +42,9 @@ public class SortRangeCommand : BaseCommand, IUndoableCommand
         _sortOptions = new List<ColumnSortOptions> { sortOption };
     }
 
-    public override bool CanExecute(Sheet sheet) => true;
+    public override bool CanExecuteProtected(Sheet sheet) => sheet.Protection.Can(SheetOperation.Sort, _region);
 
-    public override bool Execute(Sheet sheet)
+    protected override bool ExecuteCore(Sheet sheet)
     {
         var store = sheet.Cells.GetCellDataStore();
 

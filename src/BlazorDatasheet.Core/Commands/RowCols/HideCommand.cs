@@ -1,3 +1,4 @@
+using BlazorDatasheet.Core.Protection;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Intervals;
@@ -24,9 +25,9 @@ public class HideCommand : BaseCommand, IUndoableCommand
         _axis = axis;
     }
 
-    public override bool CanExecute(Sheet sheet) => true;
+    public override bool CanExecuteProtected(Sheet sheet) => sheet.Protection.Can(_axis == Axis.Row ? SheetOperation.FormatRows : SheetOperation.FormatColumns);
 
-    public override bool Execute(Sheet sheet)
+    protected override bool ExecuteCore(Sheet sheet)
     {
         _restoreData = sheet.GetRowColStore(_axis).HideImpl(_intervals);
         return true;

@@ -1,3 +1,4 @@
+using BlazorDatasheet.Core.Protection;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Formats;
@@ -31,9 +32,9 @@ public class SetFormatCommand : BaseCommand, IUndoableCommand
         Region = region.Clone();
     }
 
-    public override bool CanExecute(Sheet sheet) => true;
+    public override bool CanExecuteProtected(Sheet sheet) => !_cellFormat.SpecifiesLock && sheet.Protection.CanFormat(Region);
 
-    public override bool Execute(Sheet sheet)
+    protected override bool ExecuteCore(Sheet sheet)
     {
         sheet.BatchUpdates();
         _borderCommands = new();

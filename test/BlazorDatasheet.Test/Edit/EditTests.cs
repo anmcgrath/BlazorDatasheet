@@ -113,4 +113,21 @@ public class EditTests
         sheet.Editor.AcceptEdit();
         sheet.Cells.GetCell(1, 1).CellValue.ValueType.Should().Be(CellValueType.Empty);
     }
+
+    [Test]
+    public void Accept_Edit_Closes_Edit_When_The_Value_Command_Is_Rejected()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Commands.BeforeCommandRun += (_, args) => args.Cancel = true;
+        var editFinishedCount = 0;
+        sheet.Editor.EditFinished += (_, _) => editFinishedCount++;
+
+        sheet.Editor.BeginEdit(1, 1);
+        sheet.Editor.EditValue = "new value";
+        sheet.Editor.AcceptEdit().Should().BeFalse();
+
+        sheet.Editor.IsEditing.Should().BeFalse();
+        editFinishedCount.Should().Be(1);
+        sheet.Cells[1, 1].Value.Should().BeNull();
+    }
 }

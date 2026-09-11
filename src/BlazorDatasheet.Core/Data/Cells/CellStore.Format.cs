@@ -32,10 +32,15 @@ public partial class CellStore
 
     internal CellStoreRestoreData CutFormatImpl(IRegion region)
     {
-        return new CellStoreRestoreData()
-        {
-            FormatRestoreData = _formatStore.Clear(region)
-        };
+        var locks = Sheet.Protection.IsEnforced
+            ? _formatStore.GetDataRegions(region)
+                .Where(x => x.Data.IsLocked != null)
+                .Select(x => (Region: x.Region.GetIntersection(region)!, Locked: x.Data.IsLocked)).ToList()
+            : new();
+        var restore = new CellStoreRestoreData { FormatRestoreData = _formatStore.Clear(region) };
+        foreach (var item in locks)
+            restore.Merge(MergeFormatImpl(item.Region, new CellFormat { IsLocked = item.Locked }));
+        return restore;
     }
 
     /// <summary>
