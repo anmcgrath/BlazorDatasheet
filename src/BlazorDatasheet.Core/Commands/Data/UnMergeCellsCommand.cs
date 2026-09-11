@@ -1,4 +1,4 @@
-﻿using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.Commands.Data;
@@ -19,7 +19,7 @@ public class UnMergeCellsCommand : BaseCommand, IUndoableCommand
         _region = region.Clone();
     }
 
-    public override bool CanExecute(Sheet sheet)
+    protected override bool CanExecuteCore(Sheet sheet)
     {
         var existingMerges = sheet.Cells.GetMerges(_region).ToList();
         if (existingMerges.All(x => _region.Contains(x)))
@@ -27,7 +27,7 @@ public class UnMergeCellsCommand : BaseCommand, IUndoableCommand
         return false;
     }
 
-    public override bool Execute(Sheet sheet)
+    protected override bool ExecuteCore(Sheet sheet)
     {
         sheet.BatchUpdates();
         _unMergesPerformed.Clear();

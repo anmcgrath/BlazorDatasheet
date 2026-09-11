@@ -10,7 +10,7 @@ public class SetMetaDataCommand : BaseCommand, IUndoableCommand
     private readonly object? _value;
     private object? _oldValue;
 
-    public override bool CanExecute(Sheet sheet) => sheet.Region.Contains(_row, _col);
+    protected override bool CanExecuteCore(Sheet sheet) => (sheet.Region.Contains(_row, _col));
 
     public SetMetaDataCommand(int row, int col, string name, object? value)
     {
@@ -20,7 +20,7 @@ public class SetMetaDataCommand : BaseCommand, IUndoableCommand
         _value = value;
     }
 
-    public override bool Execute(Sheet sheet)
+    protected override bool ExecuteCore(Sheet sheet)
     {
         _oldValue = sheet.Cells.GetMetaData(_row, _col, _name);
         sheet.Cells.SetMetaDataImpl(_row, _col, _name, _value);

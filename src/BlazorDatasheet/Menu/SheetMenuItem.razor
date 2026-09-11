@@ -2,7 +2,7 @@
 @inject IMenuService MenuService
 @inherits SheetComponentBase
 
-<div class="bds-sheet-menu-item @(Disabled && DisabledOnReadOnly ? "bds-sheet-menu-item-disabled" : "")"
+<div class="bds-sheet-menu-item @(!IsEnabled || (Disabled && DisabledOnReadOnly) ? "bds-sheet-menu-item-disabled" : "")"
      @onmouseup="HandleMouseUp"
      @onmouseover="HandleMouseOver">
     @ChildContent
@@ -51,15 +51,16 @@
 
     [CascadingParameter] public bool Disabled { get; set; }
     
-    /// <summary>
-    /// Whether the menu item can be disabled. Default is true.
-    /// </summary>
+    /// <summary>Whether the operation is available, independently of read-only state.</summary>
+    [Parameter] public bool IsEnabled { get; set; } = true;
+
+    /// <summary>Whether read-only state disables this item. Default is true.</summary>
     [Parameter]
     public bool DisabledOnReadOnly { get; set; } = true;
 
     private async Task HandleMouseUp(MouseEventArgs args)
     {
-        if (Disabled)
+        if (!IsEnabled || (Disabled && DisabledOnReadOnly))
             return;
 
         if (OnClick.HasDelegate)

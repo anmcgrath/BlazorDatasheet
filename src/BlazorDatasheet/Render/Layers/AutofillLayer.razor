@@ -19,7 +19,7 @@
 <div @ref="_originElement"
      style="position:absolute;top:0;left:0;width:0;height:0;pointer-events:none;"></div>
 
-@if (!Sheet.Editor.IsEditing && Sheet.Selection.ActiveRegion != null && ViewRegion?.Contains(Sheet.Selection.ActiveRegion.BottomRight) == true)
+@if (!Sheet.Editor.IsEditing && Sheet.Selection.ActiveRegion != null && Sheet.Protection.CanEdit(Sheet.Selection.ActiveRegion) && ViewRegion?.Contains(Sheet.Selection.ActiveRegion.BottomRight) == true)
 {
     <!-- render dragger (bottom right corner) -->
     <div id="auto-filler"
@@ -48,9 +48,18 @@
 
     protected override void OnSheetChange(Sheet newSheet, Sheet oldSheet)
     {
+        oldSheet.Protection.Changed -= ProtectionChanged;
+        newSheet.Protection.Changed += ProtectionChanged;
         oldSheet.Selection.SelectionChanged -= OnSelectionChanged;
         newSheet.Selection.SelectionChanged += OnSelectionChanged;
         _cellLayoutProvider = new CellLayoutProvider(newSheet);
+    }
+
+    private void ProtectionChanged(object? sender, EventArgs args)
+    {
+        RemovePreviewItem();
+        _dragPreviewRegion = null;
+        _ = InvokeAsync(StateHasChanged);
     }
 
     private void OnSelectionChanged(object? sender, SelectionChangedEventArgs args)
@@ -258,6 +267,7 @@
     public async ValueTask DisposeAsync()
     {
         _isDisposed = true;
+        Sheet.Protection.Changed -= ProtectionChanged;
         RemovePreviewItem();
         Sheet.Selection.SelectionChanged -= OnSelectionChanged;
 

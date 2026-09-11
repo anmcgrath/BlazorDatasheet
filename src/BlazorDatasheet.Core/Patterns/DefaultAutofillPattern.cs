@@ -20,7 +20,13 @@ public class DefaultAutofillPattern : IAutoFillPattern
     public ICommand GetCommand(int offset, int repeatNo, IReadOnlyCell cellData, CellPosition newDataPosition)
     {
         var beforeAutoFillEventArgs = _sheet.EmitBeforeAutoFill();
-        var options = new CopyOptions() { CopyFormat = beforeAutoFillEventArgs.CopyFormat };
+        var target = new Region(newDataPosition.row, newDataPosition.col);
+        // if formatting isn't permitted (e.g. the sheet is protected), degrade to a values-only fill
+        // rather than having the whole autofill rejected.
+        var options = new CopyOptions()
+        {
+            CopyFormat = beforeAutoFillEventArgs.CopyFormat && _sheet.Protection.CanFormat(target)
+        };
         if (cellData.HasFormula())
             options.CopyValues = false;
 

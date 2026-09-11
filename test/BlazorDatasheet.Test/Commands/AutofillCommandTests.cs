@@ -1,3 +1,4 @@
+using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Events.Data;
@@ -174,5 +175,19 @@ public class AutofillCommandTests
         sheet.Cells["B2"]!.Format = new CellFormat() { IsReadOnly = true };
         sheet.Commands.ExecuteCommand(new AutoFillCommand(new Region(0, 5, 1, 1), new Region(0, 1)));
         sheet.Cells["B2"]!.Value.Should().Be("Not Empty");
+    }
+
+    [Test]
+    public void Autofill_In_A_Group_Fills_From_Values_Written_Earlier_In_The_Group()
+    {
+        var sheet = new Sheet(10, 10);
+        var group = new CommandGroup(
+            new SetCellValueCommand(0, 0, new CellValue(1)),
+            new SetCellValueCommand(1, 0, new CellValue(2)),
+            new AutoFillCommand(new Region(0, 1, 0, 0), new Region(0, 3, 0, 0)));
+
+        sheet.Commands.ExecuteCommand(group).Should().BeTrue();
+        sheet.Cells[2, 0].Value.Should().Be(3);
+        sheet.Cells[3, 0].Value.Should().Be(4);
     }
 }

@@ -1,3 +1,4 @@
+using BlazorDatasheet.Core.Protection;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Core.Patterns;
@@ -9,42 +10,57 @@ public class AutoFillCommand : BaseCommand, IUndoableCommand
 {
     private IRegion _fromRegion;
     private IRegion _toRegion;
-    private CommandGroup _expandCommands = new();
+
+    /// <summary>
+    /// The commands that were run by the last successful execution, kept so that we can undo them.
+    /// </summary>
+    private CommandGroup? _expandCommands;
 
     public AutoFillCommand(IRegion fromRegion, IRegion toRegion)
     {
         _fromRegion = fromRegion;
         _toRegion = toRegion;
+    }
 
+    /// <summary>
+    /// Builds the commands that perform the fill, based on the current contents of the sheet.
+    /// Side effect free - called both when checking protection and when executing.
+    /// </summary>
+    private CommandGroup BuildFillCommands(Sheet sheet)
+    {
+        var commands = new CommandGroup();
         var clearRegions = _fromRegion.Contains(_toRegion)
             ? _fromRegion.Break(_toRegion)
             : _toRegion.Break(_fromRegion);
-
-        this.AttachBefore(new ClearCellsCommand(clearRegions));
+        commands.AddCommand(new ClearCellsCommand(clearRegions));
+        if (!_fromRegion.Contains(_toRegion))
+            ExpandContent(sheet, commands);
+        return commands;
     }
 
-    public override bool Execute(Sheet sheet)
+    protected override bool ExecuteCore(Sheet sheet)
     {
-        // Shrink/cut the content if the new region is smaller than the selection
-        if (_fromRegion.Contains(_toRegion))
-            ShrinkContent(sheet);
-        else
-            ExpandContent(sheet);
+        // built here (rather than up-front) so that the fill always samples the current cell contents,
+        // e.g. when this command is part of a group that has already modified the source cells.
+        var commands = BuildFillCommands(sheet);
+        if (!sheet.Commands.ExecuteCommand(commands, useUndo: false))
+            return false;
 
+        _expandCommands = commands;
         sheet.Selection.Set(_toRegion);
         return true;
     }
 
-    public override bool CanExecute(Sheet sheet) => true;
+    public override bool CanExecuteProtected(Sheet sheet) =>
+        sheet.Protection.CanExecute(BuildFillCommands(sheet));
 
-    private void ExpandContent(Sheet sheet)
+    private void ExpandContent(Sheet sheet, CommandGroup expandCommands)
     {
         var fillDirection = GetFillDirection();
         // will always be only one region
         var fillRegion = _toRegion.Break(_fromRegion).First()!;
         var fillSize = GetOrthogonalSize(fillDirection, fillRegion);
 
-        _expandCommands = new CommandGroup();
         for (int i = 0; i < fillSize; i++)
         {
             // figure out what patterns to apply
@@ -68,7 +84,7 @@ public class AutoFillCommand : BaseCommand, IUndoableCommand
                         var cellPosition =
                             GetCellPositionFromOffset(lastCellPosition, fillDirection, rowColOffsetFromEnd + 1);
 
-                        _expandCommands.AddCommand(
+                        expandCommands.AddCommand(
                             pattern.GetCommand(offset - pattern.Offsets.First(), repeatNo, cells[offset],
                                 cellPosition));
                         repeatNo++;
@@ -78,9 +94,6 @@ public class AutoFillCommand : BaseCommand, IUndoableCommand
                 }
             }
         }
-
-
-        _expandCommands.Execute(sheet);
     }
 
     private CellPosition GetCellPositionFromOffset(CellPosition cellPosition, Direction direction, int offset)
@@ -193,14 +206,9 @@ public class AutoFillCommand : BaseCommand, IUndoableCommand
         return Direction.None;
     }
 
-    private void ShrinkContent(Sheet sheet)
-    {
-    }
-
     public bool Undo(Sheet sheet)
     {
         _expandCommands?.Undo(sheet);
-
         return true;
     }
 }

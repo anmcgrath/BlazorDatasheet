@@ -1,3 +1,4 @@
+using BlazorDatasheet.Core.Protection;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Filter;
 
@@ -28,9 +29,11 @@ public class ClearFiltersCommand : BaseCommand, IUndoableCommand
         _clearAllFilters = true;
     }
 
-    public override bool CanExecute(Sheet sheet) => sheet.Region.SpansCol(_columnIndex);
+    public override bool CanExecuteProtected(Sheet sheet) => sheet.Protection.Can(SheetOperation.Filter);
 
-    public override bool Execute(Sheet sheet)
+    protected override bool CanExecuteCore(Sheet sheet) => (sheet.Region.SpansCol(_columnIndex));
+
+    protected override bool ExecuteCore(Sheet sheet)
     {
         if (_clearAllFilters)
             _previousFilters = sheet.Columns.Filters.GetAll().ToList();

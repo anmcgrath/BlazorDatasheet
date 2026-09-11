@@ -1,4 +1,5 @@
 using BlazorDatasheet.Core.Formats;
+using BlazorDatasheet.Core.Protection;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.DataStructures.Geometry;
 
@@ -103,8 +104,15 @@ public class SheetRange
             Sheet.Cells.SetCellMetaData(region, name, value);
     }
 
+    /// <summary>
+    /// Clears all metadata in the range. This is a direct, non-undoable update and is denied
+    /// while the sheet is protected.
+    /// </summary>
     public void ClearMetaData()
     {
+        if (!Sheet.Protection.Can(SheetOperation.Configure))
+            return;
+
         Sheet.BatchUpdates();
         try
         {
@@ -135,8 +143,16 @@ public class SheetRange
         set => Sheet.SetFormat(Region, value);
     }
 
+    /// <summary>
+    /// Adds a validator to the range. This is a direct, non-undoable update (so that validators
+    /// set up when a sheet is built are not removed by the user's first undo) and is denied while
+    /// the sheet is protected.
+    /// </summary>
     public void AddValidator(IDataValidator validator)
     {
+        if (!Sheet.Protection.Can(SheetOperation.Configure))
+            return;
+
         Sheet.BatchUpdates();
         Sheet.Validators.AddImpl(validator, Region);
         Sheet.EndBatchUpdates();

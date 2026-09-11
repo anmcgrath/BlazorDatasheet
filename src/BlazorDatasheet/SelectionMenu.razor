@@ -1,3 +1,4 @@
+@using BlazorDatasheet.Core.Protection
 @using BlazorDatasheet.Core.Commands.Data
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Data.Filter
@@ -22,19 +23,19 @@
         <MenuSection SectionId="0">
             @if (MenuOptions.ClearEnabled)
             {
-                <SheetMenuItem OnClick="() => sheet.Cells.ClearCells(sheet.Selection.Regions)">Clear</SheetMenuItem>
+                <SheetMenuItem IsEnabled="@(new ClearCellsCommand(sheet.Selection.Regions).CanExecute(sheet))" OnClick="() => sheet.Cells.ClearCells(sheet.Selection.Regions)">Clear</SheetMenuItem>
             }
             @if (MenuOptions.MergeEnabled && !sheet.Selection.ActiveRegion.IsSingleCell())
             {
-                <SheetMenuItem OnClick="() => sheet.Cells.Merge(sheet.Selection.Regions)">Merge</SheetMenuItem>
+                <SheetMenuItem IsEnabled="@sheet.Protection.Can(SheetOperation.Configure)" OnClick="() => sheet.Cells.Merge(sheet.Selection.Regions)">Merge</SheetMenuItem>
             }
             @if (MenuOptions.MergeEnabled && sheet.Cells.AnyMerges(sheet.Selection.ActiveRegion))
             {
-                <SheetMenuItem OnClick="() => sheet.Cells.UnMerge(sheet.Selection.Regions)">Un-merge</SheetMenuItem>
+                <SheetMenuItem IsEnabled="@sheet.Protection.Can(SheetOperation.Configure)" OnClick="() => sheet.Cells.UnMerge(sheet.Selection.Regions)">Un-merge</SheetMenuItem>
             }
             @if (MenuOptions.AlignmentEnabled)
             {
-                <SheetSubMenu Label="Horiz. Alignment ">
+                <SheetSubMenu IsEnabled="@sheet.Selection.Regions.All(sheet.Protection.CanFormat)" Label="Horiz. Alignment ">
                     <SheetMenuItem
                         OnClick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { HorizontalTextAlign = TextAlign.Start }))">
                         Left
@@ -48,7 +49,7 @@
                         Right
                     </SheetMenuItem>
                 </SheetSubMenu>
-                <SheetSubMenu Label="Vert. Alignment">
+                <SheetSubMenu IsEnabled="@sheet.Selection.Regions.All(sheet.Protection.CanFormat)" Label="Vert. Alignment">
                     <SheetMenuItem
                         OnClick="@(() => sheet.SetFormat(sheet.Selection.Regions, new CellFormat() { VerticalTextAlign = TextAlign.Start }))">
                         Top
@@ -76,20 +77,20 @@
 
             @if (MenuOptions.InsertColsEnabled)
             {
-                <SheetMenuItem OnClick="() => sheet.Columns.InsertAt(c.Left, c.Width)">Insert column(s) left
+                <SheetMenuItem IsEnabled="@sheet.Protection.Can(SheetOperation.InsertColumns)" OnClick="() => sheet.Columns.InsertAt(c.Left, c.Width)">Insert column(s) left
                 </SheetMenuItem>
             }
 
             @if (MenuOptions.DeleteColsEnabled)
             {
-                <SheetMenuItem OnClick="() => sheet.Columns.RemoveAt(c.Left, c.Width)">Delete column(s)</SheetMenuItem>
+                <SheetMenuItem IsEnabled="@sheet.Protection.Can(SheetOperation.DeleteColumns, c)" OnClick="() => sheet.Columns.RemoveAt(c.Left, c.Width)">Delete column(s)</SheetMenuItem>
             }
 
             @if (MenuOptions.HideColsEnabled)
             {
                 <SheetMenuDivider/>
-                <SheetMenuItem OnClick="() => sheet.Columns.Hide(c.Left, c.Width)">Hide column(s)</SheetMenuItem>
-                <SheetMenuItem OnClick="() => sheet.Columns.Unhide(c.Left, c.Width)">Un-hide column(s)</SheetMenuItem>
+                <SheetMenuItem IsEnabled="@sheet.Protection.Can(SheetOperation.FormatColumns)" OnClick="() => sheet.Columns.Hide(c.Left, c.Width)">Hide column(s)</SheetMenuItem>
+                <SheetMenuItem IsEnabled="@sheet.Protection.Can(SheetOperation.FormatColumns)" OnClick="() => sheet.Columns.Unhide(c.Left, c.Width)">Un-hide column(s)</SheetMenuItem>
             }
         }
 
@@ -102,26 +103,26 @@
 
             @if (MenuOptions.InsertRowsEnabled)
             {
-                <SheetMenuItem OnClick="() => sheet.Rows.InsertAt(r.Top, r.Height)">Insert row(s) above</SheetMenuItem>
+                <SheetMenuItem IsEnabled="@sheet.Protection.Can(SheetOperation.InsertRows)" OnClick="() => sheet.Rows.InsertAt(r.Top, r.Height)">Insert row(s) above</SheetMenuItem>
             }
 
             @if (MenuOptions.DeleteRowsEnabled)
             {
-                <SheetMenuItem OnClick="() => sheet.Rows.RemoveAt(r.Top, r.Height)">Delete row(s)</SheetMenuItem>
+                <SheetMenuItem IsEnabled="@sheet.Protection.Can(SheetOperation.DeleteRows, r)" OnClick="() => sheet.Rows.RemoveAt(r.Top, r.Height)">Delete row(s)</SheetMenuItem>
             }
 
             @if (MenuOptions.HideRowsEnabled)
             {
                 <SheetMenuDivider/>
-                <SheetMenuItem OnClick="() => sheet.Rows.Hide(r.Top, r.Height)">Hide row(s)</SheetMenuItem>
-                <SheetMenuItem OnClick="() => sheet.Rows.Unhide(r.Top, r.Height)">Un-hide row(s)</SheetMenuItem>
+                <SheetMenuItem IsEnabled="@sheet.Protection.Can(SheetOperation.FormatRows)" OnClick="() => sheet.Rows.Hide(r.Top, r.Height)">Hide row(s)</SheetMenuItem>
+                <SheetMenuItem IsEnabled="@sheet.Protection.Can(SheetOperation.FormatRows)" OnClick="() => sheet.Rows.Unhide(r.Top, r.Height)">Un-hide row(s)</SheetMenuItem>
             }
         }
 
         @if (MenuOptions.SortRangeEnabled && sheet.Selection.ActiveRegion!.Height > 1)
         {
             <SheetMenuDivider/>
-            <SheetSubMenu Label="Sort">
+            <SheetSubMenu IsEnabled="@sheet.Protection.Can(SheetOperation.Sort, sheet.Selection.ActiveRegion)" Label="Sort">
                 <SheetMenuItem OnClick="() => sheet.SortRange(sheet.Selection.ActiveRegion)">Sort Ascending
                 </SheetMenuItem>
                 <SheetMenuItem
@@ -136,7 +137,7 @@
              sheet.Selection.ActiveRegion is ColumnRegion colRegion &&
              colRegion.Width == 1)
         {
-            <SheetSubMenu Label="Filter" @ref="_filterSubMenu" DisabledOnReadOnly="false">
+            <SheetSubMenu IsEnabled="@sheet.Protection.Can(SheetOperation.Filter)" Label="Filter" @ref="_filterSubMenu" DisabledOnReadOnly="false">
                 <div class="bds-sheet-menu-panel bds-filter-panel">
                     <div class="bds-filter-panel-head">
                         <span class="bds-filter-panel-title">Filters</span>

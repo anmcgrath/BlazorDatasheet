@@ -1,0 +1,55 @@
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Formats
+@using BlazorDatasheet.Core.Protection
+@using BlazorDatasheet.DataStructures.Geometry
+<button class="button"
+        @onclick="ToggleProtection">@(_sheet.Protection.IsProtected ? "Unprotect sheet" : "Protect sheet")</button>
+<button class="button" @onclick="ResetInputs">Reset inputs using trusted code</button>
+<p>Status: @(_sheet.Protection.IsProtected ? "Protected" : "Unprotected")</p>
+<label>
+    <input type="checkbox" checked="@_allowSelectLocked" @onchange="OnAllowSelectLockedChanged"/>
+    Allow selecting locked cells
+</label>
+<Datasheet Sheet="_sheet"/>
+
+
+@code {
+    private readonly Sheet _sheet = new(6, 3);
+    private bool _allowSelectLocked = true;
+
+    private SheetProtectionOptions Options => new() { AllowSelectLockedCells = _allowSelectLocked };
+
+    protected override void OnInitialized()
+    {
+        _sheet.Cells.SetValue(0, 0, "Order");
+        _sheet.Cells.SetValue(1, 0, "Quantity");
+        _sheet.Cells.SetValue(2, 0, "Unit price");
+        _sheet.Cells.SetValue(3, 0, "Total");
+        ResetInputs();
+        _sheet.Cells.SetFormula(3, 1, "=B2*B3");
+        _sheet.SetFormat(new Region(1, 2, 1, 1), new CellFormat { IsLocked = false, BackgroundColor = "#dbeafe" });
+        _sheet.Protection.Protect(Options);
+    }
+
+    private void ToggleProtection()
+    {
+        if (_sheet.Protection.IsProtected)
+            _sheet.Protection.Unprotect();
+        else
+            _sheet.Protection.Protect(Options);
+    }
+
+    private void OnAllowSelectLockedChanged(ChangeEventArgs args)
+    {
+        _allowSelectLocked = args.Value is true;
+        if (_sheet.Protection.IsProtected)
+            _sheet.Protection.Protect(Options);
+    }
+
+    private void ResetInputs() => _sheet.Protection.RunUnprotected(() =>
+    {
+        _sheet.Cells.SetValue(1, 1, 2);
+        _sheet.Cells.SetValue(2, 1, 15);
+    });
+
+}

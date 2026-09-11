@@ -1,0 +1,19 @@
+@page "/SheetProtection"
+
+<h3>Sheet protection</h3>
+
+
+<p>Edit the blue input cells. The total is a locked formula that recalculates when inputs change.
+    Protection also prevents formatting and structural changes.</p>
+
+<CodeExample ComponentType="typeof(BlazorDatasheet.SharedPages.Components.Examples.Protection.SheetProtectionExample)"/>
+
+<div class="block"><code>AllowSelectLockedCells</code> is allowed by default: turn it off and
+    locked cells can no longer be clicked or dragged over, while the arrow, tab and enter keys skip
+    straight past them to the next unlocked cell.
+</div>
+<div class="block">
+    Cells are locked by default; locking takes effect only while protected. Use
+    <code>SheetProtectionOptions</code> to allow formatting, inserting or deleting rows and columns,
+    sorting, or filtering. Changing protection or completing a trusted update clears undo and redo history.
+</div>

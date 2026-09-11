@@ -75,6 +75,7 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
         sheet.Columns.HeadingsModified -= HandleHeadingsModified;
         sheet.Rows.GroupsModified -= HandleGroupsModified;
         sheet.Columns.GroupsModified -= HandleGroupsModified;
+        sheet.Protection.Changed -= HandleProtectionChanged;
         sheet.FrozenRowCols -= HandleFrozenRowCols;
     }
 
@@ -92,6 +93,7 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
         sheet.Columns.HeadingsModified += HandleHeadingsModified;
         sheet.Rows.GroupsModified += HandleGroupsModified;
         sheet.Columns.GroupsModified += HandleGroupsModified;
+        sheet.Protection.Changed += HandleProtectionChanged;
         sheet.FrozenRowCols += HandleFrozenRowCols;
     }
 
@@ -111,6 +113,12 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
 
         _dirty = true;
         StateHasChanged();
+    }
+
+    private void HandleProtectionChanged(object? sender, EventArgs e)
+    {
+        _dirty = true;
+        _ = InvokeAsync(StateHasChanged);
     }
 
     private void HandleFrozenRowCols(object? sender, SheetFrozenRowColsEventArgs e)

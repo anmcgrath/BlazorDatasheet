@@ -1,3 +1,4 @@
+using BlazorDatasheet.Core.Protection;
 using BlazorDatasheet.Core.Data;
 
 namespace BlazorDatasheet.Core.Commands;
@@ -28,12 +29,14 @@ public class CommandGroup : BaseCommand, IUndoableCommand
         _commands.Add(command);
     }
 
-    public override bool CanExecute(Sheet sheet)
+    public override bool CanExecuteProtected(Sheet sheet) => _commands.All(sheet.Protection.CanExecute);
+
+    protected override bool CanExecuteCore(Sheet sheet)
     {
         return _commands.All(x => x.CanExecute(sheet));
     }
 
-    public override bool Execute(Sheet sheet)
+    protected override bool ExecuteCore(Sheet sheet)
     {
         _successfulCommands.Clear();
 

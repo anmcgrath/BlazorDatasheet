@@ -1,3 +1,4 @@
+using BlazorDatasheet.Core.Protection;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -14,9 +15,9 @@ public class ClearFormatCommand : BaseCommand, IUndoableCommand
         Region = region.Clone();
     }
 
-    public override bool CanExecute(Sheet sheet) => true;
+    public override bool CanExecuteProtected(Sheet sheet) => sheet.Protection.CanFormat(Region);
 
-    public override bool Execute(Sheet sheet)
+    protected override bool ExecuteCore(Sheet sheet)
     {
         sheet.BatchUpdates();
         var region = sheet.Region.GetIntersection(Region);

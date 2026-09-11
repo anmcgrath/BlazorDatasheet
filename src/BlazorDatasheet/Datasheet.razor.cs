@@ -433,6 +433,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     private void RemoveEvents(Sheet sheet)
     {
+        sheet.Protection.Changed -= ProtectionChanged;
         sheet.Editor.EditBegin -= EditorOnEditBegin;
         sheet.Editor.EditFinished -= EditorOnEditFinished;
         sheet.ScreenUpdatingChanged -= ScreenUpdatingChanged;
@@ -450,6 +451,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     private void AddEvents(Sheet sheet)
     {
+        sheet.Protection.Changed += ProtectionChanged;
         sheet.Editor.EditBegin += EditorOnEditBegin;
         sheet.Editor.EditFinished += EditorOnEditFinished;
         sheet.ScreenUpdatingChanged += ScreenUpdatingChanged;
@@ -465,6 +467,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         sheet.SetDialogService(new SimpleDialogService(Js));
         _autoScrollState.SetSheetSelectionActive(sheet.Selection.IsSelecting);
     }
+
+    private void ProtectionChanged(object? sender, EventArgs args) => _ = InvokeAsync(StateHasChanged);
 
     private void SelectingChanged(object? sender, IRegion? selectingRegion)
     {
@@ -620,7 +624,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
         ShortcutManager.Register(["Delete", "Backspace"], KeyboardModifiers.Any,
             _ => _sheet.Commands.ExecuteCommand(new ClearCellsCommand(_sheet.Selection.Regions)),
-            _ => _sheet.Selection.Regions.Any() && !_sheet.Editor.IsEditing && !IsReadOnly);
+            _ => _sheet.Selection.Regions.Any() && !_sheet.Editor.IsEditing && !IsReadOnly &&
+                 new ClearCellsCommand(_sheet.Selection.Regions).CanExecute(_sheet));
     }
 
     private void HandleCellMouseDown(object? sender, SheetPointerEventArgs args)

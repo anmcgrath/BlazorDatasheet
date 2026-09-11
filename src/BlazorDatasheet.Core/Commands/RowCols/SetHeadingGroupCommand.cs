@@ -19,9 +19,9 @@ public class SetHeadingGroupCommand : BaseCommand, IUndoableCommand
         _axis = axis;
     }
 
-    public override bool CanExecute(Sheet sheet) => _indexStart <= _indexEnd;
+    protected override bool CanExecuteCore(Sheet sheet) => (_indexStart <= _indexEnd);
 
-    public override bool Execute(Sheet sheet)
+    protected override bool ExecuteCore(Sheet sheet)
     {
         _restoreData = sheet.GetRowColStore(_axis).SetGroupImpl(_indexStart, _indexEnd, _label);
         return true;

@@ -113,15 +113,15 @@ public class DirtyRegionTests
 
     private sealed class ThrowingUndoCommand : BaseCommand, IUndoableCommand
     {
-        public override bool CanExecute(Sheet sheet) => true;
-        public override bool Execute(Sheet sheet) => true;
+        protected override bool CanExecuteCore(Sheet sheet) => true;
+        protected override bool ExecuteCore(Sheet sheet) => true;
         public bool Undo(Sheet sheet) => throw new InvalidOperationException();
     }
 
     private sealed class FailingCommand(bool throws) : BaseCommand
     {
-        public override bool CanExecute(Sheet sheet) => true;
-        public override bool Execute(Sheet sheet) => throws ? throw new InvalidOperationException() : false;
+        protected override bool CanExecuteCore(Sheet sheet) => true;
+        protected override bool ExecuteCore(Sheet sheet) => throws ? throw new InvalidOperationException() : false;
     }
 
     [Test]

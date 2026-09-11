@@ -16,7 +16,8 @@ public partial class Selection
     internal void HandleInput(SelectionInputKind kind, Action<Selection> operation)
     {
         if (!ReferenceEquals(this, _sheet.Selection) ||
-            (!_sheet.HasSelectionInputHandlers && _inputPreviewSnapshot == null))
+            (!_sheet.HasSelectionInputHandlers && _inputPreviewSnapshot == null &&
+             !_sheet.Protection.RestrictsSelection))
         {
             operation(this);
             return;
@@ -33,6 +34,9 @@ public partial class Selection
         };
         proposal._regions.AddRange(CloneRegions());
         operation(proposal);
+
+        if (!SkipLockedCellsDuringNavigation(kind, operation, proposal))
+            return;
 
         var isPreview = proposal.IsSelecting;
         // Commit only on the detached instance to obtain the complete proposed selection.
@@ -75,6 +79,40 @@ public partial class Selection
             ApplyInputSnapshot(snapshot, proposal._inputSetsActiveCellPosition ||
                 snapshot.ActiveCellPosition != ActiveCellPosition);
         }
+    }
+
+    /// <summary>
+    /// Repeats a navigation while it lands on a cell that protection excludes from selection, so
+    /// that runs of locked cells are skipped over rather than blocking the keyboard. Returns false
+    /// when there is nowhere left to move and the input should be cancelled.
+    /// </summary>
+    private bool SkipLockedCellsDuringNavigation(SelectionInputKind kind, Action<Selection> operation,
+        Selection proposal)
+    {
+        if (!_sheet.Protection.RestrictsSelection ||
+            kind is not (SelectionInputKind.ArrowNavigation or SelectionInputKind.TabEnterNavigation))
+            return true;
+
+        var visited = new HashSet<(CellPosition Position, int RegionIndex)>();
+        while (!CanSelectActiveCell(proposal))
+        {
+            // Repeating the same operation is safe: after the first move the active region is a
+            // single cell or merge, so navigation only moves the position. At a sheet edge the
+            // position stops changing, which the visited set detects.
+            if (!visited.Add((proposal.ActiveCellPosition, proposal._activeRegionIndex)) ||
+                visited.Count > _sheet.Area)
+                return false;
+            operation(proposal);
+        }
+
+        return true;
+    }
+
+    private bool CanSelectActiveCell(Selection proposal)
+    {
+        var position = proposal.ActiveCellPosition;
+        var region = ExpandRegionOverMerges(new Region(position.row, position.col));
+        return region != null && _sheet.Protection.CanSelect(region);
     }
 
     private bool ConstrainInputProposal()
@@ -124,7 +162,24 @@ public partial class Selection
                 return false;
         }
 
+        if (_sheet.Protection.RestrictsSelection && !IsAllowedByProtection(args))
+            return false;
+
         return args.ProposedRegions[args.ProposedActiveRegionIndex].Contains(args.ProposedActiveCellPosition);
+    }
+
+    private bool IsAllowedByProtection(BeforeSelectionInputEventArgs args)
+    {
+        // Navigation only ever moves the active cell; other regions may legitimately contain locked
+        // cells when they were set programmatically, and tab cycling simply skips over them.
+        if (args.InputKind is SelectionInputKind.ArrowNavigation or SelectionInputKind.TabEnterNavigation)
+        {
+            var position = args.ProposedActiveCellPosition;
+            var active = ExpandRegionOverMerges(new Region(position.row, position.col));
+            return active != null && _sheet.Protection.CanSelect(active);
+        }
+
+        return args.ProposedRegions.All(x => _sheet.Protection.CanSelect(x));
     }
 
     private void ApplyInputPreview(SelectionSnapshot snapshot, SelectionMode mode, CellPosition start)

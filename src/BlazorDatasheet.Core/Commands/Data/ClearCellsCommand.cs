@@ -1,4 +1,5 @@
-﻿using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Protection;
+using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.DataStructures.Geometry;
 
@@ -22,13 +23,15 @@ public class ClearCellsCommand : BaseCommand, IUndoableCommand
         _regions = new List<IRegion> { region.Clone() };
     }
 
-    public override bool Execute(Sheet sheet)
+    protected override bool ExecuteCore(Sheet sheet)
     {
         _restoreData = sheet.Cells.ClearCellsImpl(_regions);
         return true;
     }
 
-    public override bool CanExecute(Sheet sheet)
+    public override bool CanExecuteProtected(Sheet sheet) => _regions.All(sheet.Protection.CanEdit);
+
+    protected override bool CanExecuteCore(Sheet sheet)
     {
         foreach (var region in _regions)
         {

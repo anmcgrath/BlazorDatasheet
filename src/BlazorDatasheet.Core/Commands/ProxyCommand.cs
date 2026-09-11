@@ -1,4 +1,5 @@
-﻿using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Protection;
+using BlazorDatasheet.Core.Data;
 
 namespace BlazorDatasheet.Core.Commands;
 
@@ -11,12 +12,14 @@ public class ProxyCommand : BaseCommand, IUndoableCommand
         _command = command;
     }
 
-    public override bool Execute(Sheet sheet)
+    protected override bool ExecuteCore(Sheet sheet)
     {
         return _command.Execute(sheet);
     }
 
-    public override bool CanExecute(Sheet sheet)
+    public override bool CanExecuteProtected(Sheet sheet) => sheet.Protection.CanExecute(_command);
+
+    protected override bool CanExecuteCore(Sheet sheet)
     {
         return _command.CanExecute(sheet);
     }

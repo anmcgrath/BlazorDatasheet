@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Commands.Formatting;
@@ -54,6 +54,9 @@ public class Sheet
     /// Managers commands & undo/redo. Default is true.
     /// </summary>
     public CommandManager Commands { get; }
+
+    /// <summary>Controls editing and operations on a protected sheet.</summary>
+    public BlazorDatasheet.Core.Protection.SheetProtection Protection { get; }
 
     /// <summary>
     /// Manages sheet formula
@@ -229,6 +232,7 @@ public class Sheet
 
         Cells = values == null ? new CellStore(this) : new CellStore(this, values);
         Commands = new CommandManager(this);
+        Protection = new BlazorDatasheet.Core.Protection.SheetProtection(this);
         Editor = new Editor(this);
         Validators = new ValidationManager(this);
         Rows = new RowInfoStore(defaultHeight, this);
@@ -607,13 +611,13 @@ public class Sheet
         // It is possible that each line is of different cell lengths, so we return the max for all lines
         var maxEndCol = -1;
 
-        object[][] rowData = new object[lines.Length][];
+        object[][] rowData = new object[Math.Max(0, endRow - inputPosition.row + 1)][];
 
         int lineNo = 0;
         for (int row = inputPosition.row; row <= endRow; row++)
         {
             string[] lineSplit = lines[lineNo].Split('\t');
-            rowData[lineNo] = lineSplit;
+            rowData[lineNo] = lineSplit.Take(NumCols - inputPosition.col).ToArray();
 
             var endCol = Math.Min(inputPosition.col + lineSplit.Length - 1, NumCols - 1);
             maxEndCol = Math.Max(endCol, maxEndCol);
@@ -625,7 +629,8 @@ public class Sheet
         if (Cells.ContainsReadOnly(inputRegion))
             return null;
 
-        Cells.SetValues(inputPosition.row, inputPosition.col, rowData);
+        if (!Cells.SetValues(inputPosition.row, inputPosition.col, rowData))
+            return null;
 
         return inputRegion;
     }

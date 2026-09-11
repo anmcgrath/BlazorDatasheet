@@ -1,7 +1,9 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Events.Commands;
 using BlazorDatasheet.DataStructures.Geometry;
 using FluentAssertions;
 using NUnit.Framework;
@@ -217,6 +219,44 @@ public class CommandManagerTests
     }
 
     [Test]
+    public void New_Command_Run_From_A_Handler_During_Redo_Clears_The_Redo_Stack()
+    {
+        _sheet.Cells.SetValue(0, 0, 1);
+        _sheet.Cells.SetValue(1, 0, 2);
+        _sheet.Commands.Undo();
+        _sheet.Commands.Undo();
+        _sheet.Commands.GetRedoCommands().Should().HaveCount(2);
+
+        EventHandler<CommandRunEventArgs>? handler = null;
+        handler = (_, _) =>
+        {
+            _sheet.Commands.CommandRun -= handler;
+            _sheet.Cells.SetValue(4, 4, "a new change");
+        };
+        _sheet.Commands.CommandRun += handler;
+
+        _sheet.Commands.Redo();
+        // the change made from the handler invalidates anything left on the redo stack
+        _sheet.Commands.GetRedoCommands().Should().BeEmpty();
+    }
+
+    [Test]
+    public void Redo_That_Cannot_Run_Is_Removed_From_The_Redo_Stack()
+    {
+        _sheet.Cells.SetValue(0, 0, 1);
+        _sheet.Commands.Undo();
+        _sheet.Commands.GetRedoCommands().Should().HaveCount(1);
+
+        void Cancel(object? sender, BeforeCommandRunEventArgs args) => args.Cancel = true;
+        _sheet.Commands.BeforeCommandRun += Cancel;
+        _sheet.Commands.Redo().Should().BeFalse();
+        _sheet.Commands.BeforeCommandRun -= Cancel;
+
+        _sheet.Commands.GetRedoCommands().Should().BeEmpty();
+        _sheet.Commands.Redo().Should().BeFalse();
+    }
+
+    [Test]
     public void Command_Not_Executed_Fires_Event()
     {
         var notExecutedCount = 0;
@@ -239,13 +279,13 @@ public class FakeCommand : BaseCommand, IUndoableCommand
         _canExecute = canExecute;
     }
 
-    public override bool Execute(Sheet sheet)
+    protected override bool ExecuteCore(Sheet sheet)
     {
         _cmdExecutions.Add(Id);
         return true;
     }
 
-    public override bool CanExecute(Sheet sheet) => _canExecute;
+    protected override bool CanExecuteCore(Sheet sheet) => _canExecute;
 
     public bool Undo(Sheet sheet)
     {

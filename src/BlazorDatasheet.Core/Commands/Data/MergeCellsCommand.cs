@@ -21,7 +21,7 @@ public class MergeCellsCommand : BaseCommand, IUndoableCommand
         _region = region.Clone();
     }
 
-    public override bool CanExecute(Sheet sheet)
+    protected override bool CanExecuteCore(Sheet sheet)
     {
         var existingMerges = sheet.Cells.GetMerges(_region).ToList();
         if (!existingMerges.All(x => _region.Contains(x)))
@@ -29,7 +29,7 @@ public class MergeCellsCommand : BaseCommand, IUndoableCommand
         return true;
     }
 
-    public override bool Execute(Sheet sheet)
+    protected override bool ExecuteCore(Sheet sheet)
     {
         sheet.BatchUpdates();
         _overridenMergedRegions.Clear();

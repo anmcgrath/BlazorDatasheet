@@ -1,3 +1,4 @@
+using BlazorDatasheet.Core.Protection;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Filter;
 
@@ -20,8 +21,10 @@ public class SetColumnFilterCommand : BaseCommand, IUndoableCommand
     {
     }
 
-    public override bool CanExecute(Sheet sheet) => sheet.Region.SpansCol(_columnIndex);
-    public override bool Execute(Sheet sheet)
+    public override bool CanExecuteProtected(Sheet sheet) => sheet.Protection.Can(SheetOperation.Filter);
+
+    protected override bool CanExecuteCore(Sheet sheet) => (sheet.Region.SpansCol(_columnIndex));
+    protected override bool ExecuteCore(Sheet sheet)
     {
         _previousFilters = sheet.Columns.Filters.Get(_columnIndex).Filters.ToList();
         sheet.Columns.Filters.SetImpl(_columnIndex, _filters);

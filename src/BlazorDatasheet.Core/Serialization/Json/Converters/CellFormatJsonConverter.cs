@@ -17,6 +17,7 @@ internal class CellFormatJsonConverter : JsonConverter<CellFormat>
             Property<string?>(nameof(CellFormat.NumberFormat), (format, value) => format.NumberFormat = value),
             Property<string?>(nameof(CellFormat.Icon), (format, value) => format.Icon = value),
             Property<string?>(nameof(CellFormat.IconColor), (format, value) => format.IconColor = value),
+            Property<bool?>(nameof(CellFormat.IsLocked), (format, value) => format.IsLocked = value),
             Property<bool?>(nameof(CellFormat.IsReadOnly), (format, value) => format.IsReadOnly = value),
             Property<TextAlign?>(nameof(CellFormat.HorizontalTextAlign),
                 (format, value) => format.HorizontalTextAlign = value),

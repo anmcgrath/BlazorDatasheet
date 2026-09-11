@@ -1,4 +1,4 @@
-﻿using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.DataStructures.Geometry;
 
@@ -15,9 +15,7 @@ public class SetValidatorCommand : BaseCommand, IUndoableCommand
         _validator = validator;
     }
 
-    public override bool CanExecute(Sheet sheet) => true;
-
-    public override bool Execute(Sheet sheet)
+    protected override bool ExecuteCore(Sheet sheet)
     {
         sheet.Validators.AddImpl(_validator, _region);
         sheet.Cells.ValidateRegion(_region);
@@ -26,7 +24,7 @@ public class SetValidatorCommand : BaseCommand, IUndoableCommand
 
     public bool Undo(Sheet sheet)
     {
-        sheet.Validators.Clear(_validator, _region);
+        sheet.Validators.ClearImpl(_validator, _region);
         sheet.Cells.ValidateRegion(_region);
         return true;
     }
