@@ -1,6 +1,9 @@
 ﻿using BlazorDatasheet.Core.Events.Data;
+using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.FormulaEngine;
 using BlazorDatasheet.Core.Interfaces;
+using BlazorDatasheet.Core.Serialization.Json.Mappers;
+using BlazorDatasheet.Core.Serialization.Models;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter;
 using BlazorDatashet.Formula.Functions;
@@ -100,6 +103,61 @@ public class Workbook
         AddSheet(sheet);
     }
 
+
+    /// <summary>
+    /// Adds a copy of a sheet - its cells, formulas, formats, conditional formats, validation,
+    /// metadata, merges and sizing - under a new name.
+    /// </summary>
+    /// <param name="sheetName">The sheet to copy.</param>
+    /// <param name="newSheetName">The copy's name, or null for the next un-used SheetN.</param>
+    /// <returns>The new sheet.</returns>
+    public Sheet DuplicateSheet(string sheetName, string? newSheetName = null)
+    {
+        var source = GetSheet(sheetName);
+        if (source is null)
+            throw new Exception($"Sheet {sheetName} does not exist");
+
+        var name = string.IsNullOrWhiteSpace(newSheetName) ? GenerateNewSheetName() : newSheetName!.Trim();
+        if (GetSheet(name) is not null)
+            throw new Exception($"Sheet {name} already exists");
+
+        // The serialization model is the one complete description of a sheet, so the copy is
+        // mapped out and back rather than assembled store by store - anything that survives a
+        // save survives a duplicate.
+        var formats = new List<CellFormat>();
+        var model = SheetMapper.FromSheet(source, formats);
+        model.Name = name;
+
+        // The mapper hands back the source's own mutable objects. Formats and conditional
+        // format rules carry per-sheet state - a rule caches the sheet it parsed against - so
+        // the copy gets its own, while a rule shared across several regions stays one rule.
+        var rules = new Dictionary<object, ConditionalFormatAbstractBase>(ReferenceEqualityComparer.Instance);
+        model.ConditionalFormats = model.ConditionalFormats
+            .Select(cf => new ConditionalFormatModel
+            {
+                RegionString = cf.RegionString,
+                RuleType = cf.RuleType,
+                Rule = Cloned(cf.Rule)
+            }).ToList();
+
+        ConditionalFormatAbstractBase Cloned(ConditionalFormatAbstractBase rule)
+        {
+            if (!rules.TryGetValue(rule, out var clone))
+            {
+                clone = rule.Clone();
+                rules[rule] = clone;
+            }
+
+            return clone;
+        }
+
+        var copy = new Sheet(model.NumRows, model.NumCols, model.DefaultWidth, model.DefaultHeight, this);
+        AddSheet(name, copy);
+        SheetMapper.PopulateFromModel(model, formats.Select(f => f.Clone()).ToList(), copy);
+        _formulaEngine.CalculateSheet(true);
+
+        return copy;
+    }
 
     public void RemoveSheet(string sheetName)
     {
