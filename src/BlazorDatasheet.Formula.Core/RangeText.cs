@@ -257,6 +257,20 @@ public static class RangeText
         return $"{ColIndexToLetters(col)}{row + 1}";
     }
 
+    /// <summary>
+    /// The text that goes before a reference to a cell or range in the sheet, e.g. Sheet1! or 'My sheet'!
+    /// The name is quoted unless it can be read as it is.
+    /// </summary>
+    public static string SheetPrefix(string sheetName)
+    {
+        var needsQuotes = sheetName.Length == 0 ||
+                          !char.IsLetter(sheetName[0]) ||
+                          !sheetName.All(IsValidNameChar) ||
+                          bool.TryParse(sheetName, out _);
+
+        return needsQuotes ? $"'{sheetName.Replace("'", "''")}'!" : $"{sheetName}!";
+    }
+
     private static string FixedString(bool isFixed) => isFixed ? "$" : string.Empty;
 
     public static string RegionToText(IRegion region,

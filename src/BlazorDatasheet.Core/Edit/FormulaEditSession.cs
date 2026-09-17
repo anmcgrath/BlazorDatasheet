@@ -377,7 +377,7 @@ public class FormulaEditSession
         if (sheetName == null)
             return string.Empty;
 
-        return sheetName.Any(char.IsWhiteSpace) ? $"'{sheetName}'!" : $"{sheetName}!";
+        return RangeText.SheetPrefix(sheetName);
     }
 
     private void OnEditValueChanged()
