@@ -479,6 +479,39 @@
     height: 100%;
 }
 
+/* An editor for the active cell that lives outside of the sheet. It grows with its text. */
+.bds-formula-bar {
+    position: relative;
+    box-sizing: border-box;
+    min-height: 1.75rem;
+    cursor: text;
+    font-family: var(--sheet-font-family);
+    font-size: var(--sheet-font-size);
+    font-weight: var(--sheet-font-weight);
+    color: var(--sheet-foreground-color);
+    background: var(--sheet-bg-color);
+}
+
+.bds-formula-bar .bds-text-editor, .bds-formula-bar .bds-text-editor > div {
+    min-height: inherit;
+}
+
+/* The input is in the flow so that the bar takes its height, and the highlighted text lies over it. */
+.bds-formula-bar .bds-highlight-input {
+    position: relative;
+    min-height: inherit;
+}
+
+.bds-formula-bar .bds-highlight-input, .bds-formula-bar .bds-highlight-result {
+    width: 100%;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.bds-formula-bar .bds-highlight-result {
+    height: 100%;
+}
+
 .bds-popover {
     position: fixed;
     position-area: block-end span-inline-end;

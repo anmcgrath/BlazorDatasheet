@@ -28,6 +28,7 @@
         SelectionChanged="OnSelectionChanged"
         ValueCaret="@(IsInputOwner ? _sheet?.Editor.FormulaEdit.PendingCaret : null)"
         SoftEdit="SoftEdit"
+        PreventAcceptKeys="PreventAcceptKeys"
         ReadyToFocus="ReadyToFocus"
         @bind-Value:set="OnInput"
         @bind-Value:get="Value"/>
@@ -79,6 +80,13 @@
     /// </summary>
     [Parameter]
     public bool SoftEdit { get; set; }
+
+    /// <summary>
+    /// Stops enter and tab from acting on the input. Set by editors outside the sheet, which pass those keys
+    /// to the datasheet with <see cref="Datasheet.HandleExternalEditorKeyAsync"/>
+    /// </summary>
+    [Parameter]
+    public bool PreventAcceptKeys { get; set; }
 
     /// <summary>
     /// Whether the input should take focus. Focus is only taken once, and never from a control outside the sheet.

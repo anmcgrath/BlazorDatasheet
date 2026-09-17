@@ -170,9 +170,9 @@
         document.addEventListener('selectionchange', this.updateCaretPosition)
     }
 
-    invoke(method, value) {
+    invoke(method, ...args) {
         if (this.#disposed || !this.options.dotnetHelper) return;
-        return this.options.dotnetHelper.invokeMethodAsync(method, value).catch(error => {
+        return this.options.dotnetHelper.invokeMethodAsync(method, ...args).catch(error => {
             if (!this.#disposed) console.error('Datasheet editor event failed', error);
         });
     }
@@ -182,6 +182,11 @@
     }
 
     onKeyDown(e) {
+        // An editor outside the sheet hands these keys to the sheet, which finishes the edit. They must
+        // never reach the input: enter would add a line and tab would move focus before the sheet takes it.
+        if (this.options.preventAcceptKeys && !e.isComposing && (e.key === "Enter" || e.key === "Tab"))
+            e.preventDefault()
+
         if (!this.options.preventDefaultArrowKeys)
             return
 

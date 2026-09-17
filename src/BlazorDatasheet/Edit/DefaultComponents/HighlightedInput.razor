@@ -53,6 +53,12 @@
     [Parameter] public double CellHeight { get; set; }
     [Parameter] public bool SoftEdit { get; set; }
 
+    /// <summary>
+    /// Stops enter and tab from acting on the input. For inputs outside the sheet, where those keys are
+    /// passed to the sheet to finish the edit rather than reaching it through the sheet's own key handling.
+    /// </summary>
+    [Parameter] public bool PreventAcceptKeys { get; set; }
+
     /// <summary>Delays initial focus until the owning editor has supplied its starting value.</summary>
     [Parameter] public bool ReadyToFocus { get; set; } = true;
     private bool _initialFocusRequested;
@@ -104,7 +110,8 @@
                 DotnetHelper = dotnetRef,
                 InputEl = _highlightInputEl,
                 HighlightResultEl = _highlightResultEl,
-                PreventDefaultArrowKeys = SoftEdit
+                PreventDefaultArrowKeys = SoftEdit,
+                PreventAcceptKeys = PreventAcceptKeys
             };
 
             var highlightJs = await module.InvokeAsync<IJSObjectReference>("createHighlighter", options);

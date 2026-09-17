@@ -6,13 +6,15 @@
 @using BlazorDatasheet.Core.Formats
 @using BlazorDatasheet.Core.Interfaces
 @using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Edit
 
 @implements IDisposable
 
 <div class="bds-toolbar" data-bds-theme="@Theme" role="toolbar" aria-label="Datasheet toolbar">
     <div class="bds-toolbar-row bds-toolbar-input-row">
         <RangeSelector Datasheet="Datasheet" Sheet="Sheet"/>
-        <FormulaTextBox Sheet="Sheet" Datasheet="Datasheet"/>
+        <span class="bds-fx-badge" aria-hidden="true">fx</span>
+        <FormulaBar Sheet="Sheet" Theme="@(Theme == "dark" ? "dark" : "default")" Class="bds-formula-input"/>
     </div>
 
     <div class="bds-toolbar-row bds-toolbar-command-row">
