@@ -1,4 +1,5 @@
-﻿using BlazorDatasheet.Core.Events.Data;
+﻿using BlazorDatasheet.Core.Edit;
+using BlazorDatasheet.Core.Events.Data;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.FormulaEngine;
 using BlazorDatasheet.Core.Interfaces;
@@ -25,6 +26,21 @@ public class Workbook
     public event EventHandler<WorkbookSheetAddedEventArgs>? SheetAdded;
     public event EventHandler<WorkbookSheetRemovedEventArgs>? SheetRemoved;
     public event EventHandler<WorkbookSheetRenamedEventArgs>? SheetRenamed;
+
+    /// <summary>
+    /// The formula that is being edited in one of the sheets, if any. Its references can be to any sheet
+    /// in the workbook, and can be picked from any of them.
+    /// </summary>
+    public FormulaEditSession? ActiveFormulaEdit =>
+        _sheets.Select(x => x.Editor.FormulaEdit).FirstOrDefault(x => x.IsFormula);
+
+    /// <summary>
+    /// Fired when the references in the formula being edited change, including when the edit begins or ends.
+    /// </summary>
+    public event EventHandler? FormulaEditReferencesChanged;
+
+    internal void NotifyFormulaEditReferencesChanged() =>
+        FormulaEditReferencesChanged?.Invoke(this, EventArgs.Empty);
 
 
     internal Workbook(Sheet sheet, FormulaOptions? options = null) : this(options)

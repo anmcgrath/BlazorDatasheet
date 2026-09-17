@@ -457,7 +457,11 @@ public class FormulaEditSession
         }
 
         if (hadReferences || _references.Count > 0)
+        {
             ReferencesChanged?.Invoke(this, EventArgs.Empty);
+            // the references may be to other sheets, which the views of those sheets show
+            Sheet.Workbook.NotifyFormulaEditReferencesChanged();
+        }
     }
 
     private FormulaReferenceSpan ResolveNamedReference(FormulaReferenceSpan span)

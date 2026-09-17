@@ -183,6 +183,26 @@ public class FormulaEditSessionTests
     }
 
     [Test]
+    public void Workbook_Knows_The_Formula_Being_Edited_And_When_Its_References_Change()
+    {
+        var workbook = new Workbook();
+        _sheet = workbook.AddSheet(20, 20);
+        workbook.AddSheet(20, 20);
+        var changes = 0;
+        workbook.FormulaEditReferencesChanged += (_, _) => changes++;
+
+        workbook.ActiveFormulaEdit.Should().BeNull();
+        BeginEdit("=Sheet2!A1");
+        workbook.ActiveFormulaEdit.Should().BeSameAs(Session);
+        changes.Should().BeGreaterThan(0);
+
+        changes = 0;
+        _sheet.Editor.CancelEdit();
+        workbook.ActiveFormulaEdit.Should().BeNull();
+        changes.Should().BeGreaterThan(0);
+    }
+
+    [Test]
     public void Sheet_In_Another_Workbook_Cannot_Be_Picked_From()
     {
         BeginEdit("=");
