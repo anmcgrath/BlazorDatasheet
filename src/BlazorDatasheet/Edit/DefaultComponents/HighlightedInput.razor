@@ -34,6 +34,11 @@
 
     [Parameter, EditorRequired] public required FormulaOptions FormulaOptions { get; set; }
 
+    /// <summary>
+    /// Identifies the names that are references, so that they are highlighted as such.
+    /// </summary>
+    [Parameter] public Func<string, bool>? IsNamedReference { get; set; }
+
     [Parameter] public double CellWidth { get; set; }
     [Parameter] public double CellHeight { get; set; }
     [Parameter] public bool SoftEdit { get; set; }
@@ -211,7 +216,7 @@
 
         var lexer = new Lexer();
         var tokens = lexer.Lex(text, FormulaOptions);
-        var references = FormulaReferenceScanner.Scan(text, FormulaOptions);
+        var references = FormulaReferenceScanner.Scan(text, FormulaOptions, IsNamedReference);
         var referenceIndex = 0;
 
         var sb = new StringBuilder();

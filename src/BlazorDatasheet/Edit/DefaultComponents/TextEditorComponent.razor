@@ -18,6 +18,7 @@
         CellWidth="CellWidth"
         CellHeight="CellHeight"
         FormulaOptions="_formulaOptions"
+        IsNamedReference="IsNamedReference"
         InputSizeChanged="HighlightInputSizeChanged"
         CaretPositionChanged="OnCaretPositionChanged"
         SoftEdit="_isSoftEdit"
@@ -90,6 +91,8 @@
         if (owner == null || ReferenceEquals(owner, this))
             await InvokeAsync(FocusAsync);
     }
+
+    private bool IsNamedReference(string name) => _sheet.FormulaEngine.VariableExists(name);
 
     private void OnInput(string value)
     {

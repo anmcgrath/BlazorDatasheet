@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Edit;
@@ -120,6 +121,45 @@ public class DatasheetFormulaPickingTests
         editor.MouseDownCount.Should().Be(1);
         sheet.Editor.IsEditing.Should().BeTrue();
         sheet.Editor.EditValue.Should().Be("=");
+    }
+
+    private static List<string> GetHighlightColors(IRenderedComponent<Datasheet> component) =>
+        component.FindComponent<BlazorDatasheet.Render.Layers.HighlightLayer>()
+            .FindComponents<BoxOverlayRenderer>()
+            .Select(x => x.Instance.BorderColor)
+            .ToList();
+
+    [Test]
+    public async Task Sheet_Highlights_Use_The_Same_Colors_As_The_Formula_Text()
+    {
+        using var context = CreateContext();
+        var sheet = new Sheet(10, 10);
+        sheet.NamedRanges.Set("myName", "B2:B3");
+        var component = await BeginFormulaEdit(context, sheet, "=");
+
+        await component.InvokeAsync(() => sheet.Editor.EditValue = "=myName+A1+LOG10(C3)");
+
+        sheet.Editor.FormulaEdit.References.Select(x => x.ColorIndex).Should().Equal(1, 2, 3);
+        GetHighlightColors(component).Should().Equal(
+            "var(--highlight-color-1)", "var(--highlight-color-2)", "var(--highlight-color-3)");
+
+        context.JSInterop.Invocations.Last(x => x.Identifier == "setHighlightHtml").Arguments[0]!.ToString()
+            .Should().Contain("color:var(--highlight-color-1)\">myName<")
+            .And.Contain("color:var(--highlight-color-3)\">C3<");
+    }
+
+    [Test]
+    public async Task References_To_Other_Sheets_Are_Not_Highlighted_But_Keep_Their_Color()
+    {
+        using var context = CreateContext();
+        var sheet = new Sheet(10, 10);
+        var component = await BeginFormulaEdit(context, sheet, "=");
+
+        await component.InvokeAsync(() => sheet.Editor.EditValue = "=Other!A1+B2");
+        GetHighlightColors(component).Should().Equal("var(--highlight-color-2)");
+
+        await component.InvokeAsync(() => sheet.Editor.CancelEdit());
+        GetHighlightColors(component).Should().BeEmpty();
     }
 
     private class GreedyEditor : BaseEditor

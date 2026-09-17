@@ -1,104 +1,64 @@
 ﻿@using BlazorDatasheet.Core.Data
-@using BlazorDatasheet.Core.Events.Edit
 @using BlazorDatasheet.DataStructures.Geometry
-@using BlazorDatasheet.DataStructures.Store
-@using BlazorDatasheet.Formula.Core.Interpreter.Parsing
+@using BlazorDatasheet.Formula.Core
 @inherits Layer
 @implements IDisposable
 
 <div class="highlight-layer">
-    @foreach (var cr in _colorRegions)
+    @foreach (var reference in _references)
     {
-        var r = cr.Region.GetIntersection(ViewRegion);
+        // references to other sheets have nothing to show here
+        if (reference.Region == null || (reference.SheetName != null && reference.SheetName != Sheet.Name))
+            continue;
+
+        var region = reference.Region;
+        var r = region.GetIntersection(ViewRegion);
         if (r == null)
             continue;
         var x = GetLayerColumnX(r.Left);
         var y = GetLayerRowY(r.Top);
         var w = Sheet.Columns.GetVisualWidthBetween(r.Left, r.Right + 1);
         var h = Sheet.Rows.GetVisualHeightBetween(r.Top, r.Bottom + 1);
+        @* keyed by the reference's position in the formula, which is how the edit session identifies it *@
         <BoxOverlayRenderer
+            @key="reference.Index"
             Width="w"
             Height="h"
             X="x"
             Y="y"
             ZIndex="12"
             BorderStyle="solid"
-            BorderColor="@cr.Data"
+            BorderColor="@($"var(--highlight-color-{reference.ColorIndex})")"
             BorderThickness="var(--selection-border-thickness)"
-            ShowBorderLeft="r.Left == cr.Region.Left"
-            ShowBorderRight="r.Right == cr.Region.Right"
-            ShowBorderTop="r.Top == cr.Region.Top"
-            ShowBorderBottom="r.Bottom == cr.Region.Bottom"/>
+            ShowBorderLeft="r.Left == region.Left"
+            ShowBorderRight="r.Right == region.Right"
+            ShowBorderTop="r.Top == region.Top"
+            ShowBorderBottom="r.Bottom == region.Bottom"/>
     }
 </div>
 
 
 @code {
 
-    private List<DataRegion<string>> _colorRegions = new();
-    private string? _lastParsedFormula;
+    // The same references, with the same colours, that the editor highlights in the formula text.
+    private IReadOnlyList<FormulaReferenceSpan> _references = Array.Empty<FormulaReferenceSpan>();
 
     protected override void OnSheetChange(Sheet newSheet, Sheet oldSheet)
     {
-        oldSheet.Editor.EditValueChanged -= EditorOnEditValueChanged;
-        oldSheet.Editor.EditFinished -= EditorOnEditFinished;
-        newSheet.Editor.EditValueChanged += EditorOnEditValueChanged;
-        newSheet.Editor.EditFinished += EditorOnEditFinished;
+        oldSheet.Editor.FormulaEdit.ReferencesChanged -= OnReferencesChanged;
+        newSheet.Editor.FormulaEdit.ReferencesChanged += OnReferencesChanged;
+        _references = newSheet.Editor.FormulaEdit.References;
     }
 
-    private void EditorOnEditFinished(object? sender, EditFinishedEventArgs e)
+    private void OnReferencesChanged(object? sender, EventArgs e)
     {
-        _colorRegions.Clear();
-        _lastParsedFormula = null;
-        StateHasChanged();
-    }
-
-    private void HighlightRanges()
-    {
-        if (Sheet.Editor.EditValue.StartsWith("="))
-        {
-            var formula = Sheet.FormulaEngine.ParseFormula(Sheet.Editor.EditValue, Sheet.Name, false);
-            if (!formula.References.Any())
-            {
-                _colorRegions = new List<DataRegion<string>>();
-                return;
-            }
-
-            _colorRegions = new();
-            foreach (var reference in formula.References)
-            {
-                var colorIndex = (_colorRegions.Count % 5) + 1;
-                var isValid = reference.Region.GetIntersection(ViewRegion) != null && reference.SheetName == Sheet.Name;
-                _colorRegions.Add(new DataRegion<string>($"var(--highlight-color-{colorIndex})", isValid ? reference.Region : new EmptyRegion()));
-            }
-        }
-    }
-
-    private void EditorOnEditValueChanged(object? sender, string? e)
-    {
-        if (string.IsNullOrEmpty(e) || !e.StartsWith("="))
-        {
-            if (_colorRegions.Count > 0)
-            {
-                _colorRegions.Clear();
-                _lastParsedFormula = null;
-                StateHasChanged();
-            }
-            return;
-        }
-
-        if (e == _lastParsedFormula)
-            return;
-
-        _lastParsedFormula = e;
-        HighlightRanges();
+        _references = Sheet.Editor.FormulaEdit.References;
         StateHasChanged();
     }
 
     public void Dispose()
     {
-        Sheet.Editor.EditValueChanged -= EditorOnEditValueChanged;
-        Sheet.Editor.EditFinished -= EditorOnEditFinished;
+        Sheet.Editor.FormulaEdit.ReferencesChanged -= OnReferencesChanged;
     }
 
 }
