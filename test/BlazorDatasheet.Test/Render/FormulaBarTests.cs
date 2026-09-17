@@ -135,6 +135,32 @@ public class FormulaBarTests
     }
 
     [Test]
+    public async Task Bar_Stays_With_An_Edit_When_Another_Sheet_Of_The_Workbook_Is_Shown()
+    {
+        using var context = CreateContext();
+        var workbook = new Workbook();
+        var sheet = workbook.AddSheet(5, 5);
+        var other = workbook.AddSheet(5, 5);
+        other.Cells[0, 0].Value = "other";
+        other.Selection.Set(0, 0);
+        var datasheet = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, sheet));
+        var bar = context.RenderComponent<FormulaBar>(p => p.Add(x => x.Sheet, sheet));
+
+        await datasheet.InvokeAsync(() =>
+        {
+            sheet.Selection.Set(0, 0);
+            sheet.Editor.BeginEdit(0, 0);
+            sheet.Editor.EditValue = "=SUM(";
+        });
+
+        bar.SetParametersAndRender(p => p.Add(x => x.Sheet, other));
+        ShownValue(bar).Should().Be("=SUM(");
+
+        await datasheet.InvokeAsync(() => sheet.Editor.CancelEdit());
+        ShownValue(bar).Should().Be("other");
+    }
+
+    [Test]
     public async Task Disposing_The_Bar_Releases_The_Sheet_And_The_Datasheet()
     {
         using var context = CreateContext();

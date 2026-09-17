@@ -66,8 +66,21 @@
 
     protected override void OnParametersSet()
     {
-        if (ReferenceEquals(_sheet, Sheet))
+        // A formula takes references from the other sheets of its workbook. Showing one of them, which is
+        // likely to be why the sheet changed, mustn't take the bar away from the formula.
+        if (_sheet?.Editor.IsEditing == true && Sheet != null && ReferenceEquals(Sheet.Workbook, _sheet.Workbook))
             return;
+
+        FollowSheet();
+    }
+
+    /// <summary>
+    /// Moves to <see cref="Sheet"/>. Returns whether that is a change.
+    /// </summary>
+    private bool FollowSheet()
+    {
+        if (ReferenceEquals(_sheet, Sheet))
+            return false;
 
         if (_sheet != null)
             RemoveEvents(_sheet);
@@ -78,6 +91,8 @@
             AddEvents(_sheet);
 
         _value = GetDisplayValue();
+        _ = InvokeAsync(RegisterWithDatasheetsAsync);
+        return true;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -141,7 +156,14 @@
     private void OnActiveCellPositionChanged(object? sender, ActiveCellPositionChangedEventArgs e) => Refresh();
     private void OnSelectionChanged(object? sender, SelectionChangedEventArgs e) => Refresh();
     private void OnEditValueChanged(object? sender, string? e) => Refresh();
-    private void OnEditFinished(object? sender, EditFinishedEventArgs e) => Refresh();
+    private void OnEditFinished(object? sender, EditFinishedEventArgs e)
+    {
+        // the sheet may have changed during the edit
+        if (FollowSheet())
+            _ = InvokeAsync(StateHasChanged);
+        else
+            Refresh();
+    }
     private void OnCellsChanged(object? sender, CellDataChangedEventArgs e) => Refresh();
 
     private void OnDatasheetsChanged() => _ = InvokeAsync(RegisterWithDatasheetsAsync);
