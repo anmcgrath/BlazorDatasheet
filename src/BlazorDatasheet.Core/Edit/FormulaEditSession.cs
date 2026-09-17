@@ -179,16 +179,40 @@ public class FormulaEditSession
             x.Kind != FormulaReferenceSpanKind.Named && x.TextStart <= caret && caret <= x.TextEnd);
     }
 
-    private bool CanPick => IsPickingEnabled && IsFormula;
+    /// <summary>
+    /// Whether references can currently be picked from a sheet, given somewhere in the text to put them.
+    /// </summary>
+    public bool CanPick => IsPickingEnabled && IsFormula;
+
+    /// <summary>
+    /// The sheet that references are being picked from, which is any sheet in the workbook.
+    /// </summary>
+    public Sheet PickSheet => _pickSheet ?? Sheet;
+
+    private Sheet? _pickSheet;
 
     /// <summary>
     /// Handles a pointer down on the cell at <paramref name="row"/>, <paramref name="col"/>.
     /// Returns whether it was used to pick a reference.
     /// </summary>
-    public bool HandlePointerDown(int row, int col, bool shift, bool ctrl, bool meta)
+    public bool HandlePointerDown(int row, int col, bool shift, bool ctrl, bool meta) =>
+        HandlePointerDown(Sheet, row, col, shift, ctrl, meta);
+
+    /// <summary>
+    /// Handles a pointer down on a cell of <paramref name="sheet"/>, which is either the sheet being edited or
+    /// another in its workbook. Returns whether it was used to pick a reference.
+    /// </summary>
+    public bool HandlePointerDown(Sheet sheet, int row, int col, bool shift, bool ctrl, bool meta)
     {
-        if (!CanPick || !TryBeginPick(allowReplaceAtCaret: true))
+        if (!CanPick || !ReferenceEquals(sheet.Workbook, Sheet.Workbook))
             return false;
+
+        if (!TryBeginPick(allowReplaceAtCaret: true))
+            return false;
+
+        // a reference is to one sheet, so the regions picked from another are left behind
+        if (!ReferenceEquals(sheet, PickSheet))
+            SetPickSheet(sheet);
 
         _pickInput!.HandlePointerDown(row, col, shift, ctrl, meta, 1);
         ApplyPick();
@@ -199,9 +223,15 @@ public class FormulaEditSession
     /// Handles the pointer moving over the cell at <paramref name="row"/>, <paramref name="col"/>.
     /// Returns whether it was used to pick a reference.
     /// </summary>
-    public bool HandlePointerOver(int row, int col)
+    public bool HandlePointerOver(int row, int col) => HandlePointerOver(Sheet, row, col);
+
+    /// <summary>
+    /// Handles the pointer moving over a cell of <paramref name="sheet"/>. Returns whether it was used to pick
+    /// a reference, which it isn't when the drag began on a different sheet.
+    /// </summary>
+    public bool HandlePointerOver(Sheet sheet, int row, int col)
     {
-        if (!IsPicking || !IsDragging)
+        if (!IsPicking || !IsDragging || !ReferenceEquals(sheet, PickSheet))
             return false;
 
         _pickInput!.HandlePointerOver(row, col);
@@ -234,6 +264,10 @@ public class FormulaEditSession
 
         if (!TryBeginPick(allowReplaceAtCaret: false))
             return false;
+
+        // the arrow keys move from the cell being edited, so they pick from its sheet
+        if (!ReferenceEquals(PickSheet, Sheet))
+            SetPickSheet(Sheet);
 
         if (_pickInput!.Selection.IsEmpty())
             _pickInput.Selection.Set(_editor.EditCell.Row, _editor.EditCell.Col);
@@ -292,20 +326,21 @@ public class FormulaEditSession
     {
         var selection = _pickInput!.Selection;
         var separator = Sheet.FormulaEngine.Options.SeparatorSettings.FuncParameterSeparator;
+        var prefix = ReferenceEquals(PickSheet, Sheet) ? string.Empty : RangeText.SheetPrefix(PickSheet.Name);
 
         var sb = new StringBuilder();
         foreach (var region in selection.Regions)
         {
             if (sb.Length > 0)
                 sb.Append(separator);
-            sb.Append(RangeText.RegionToText(region));
+            sb.Append(prefix).Append(RangeText.RegionToText(region));
         }
 
         if (selection.SelectingRegion != null)
         {
             if (sb.Length > 0)
                 sb.Append(separator);
-            sb.Append(RangeText.RegionToText(selection.SelectingRegion));
+            sb.Append(prefix).Append(RangeText.RegionToText(selection.SelectingRegion));
         }
 
         var pickStart = _pickStart;
@@ -438,7 +473,10 @@ public class FormulaEditSession
             : span with { Region = reference.Region, SheetName = reference.SheetName };
     }
 
-    private void Reset(bool isEditing)
+    /// <summary>
+    /// Starts picking from <paramref name="sheet"/> with nothing picked, or stops picking if it is null.
+    /// </summary>
+    private void SetPickSheet(Sheet? sheet)
     {
         if (_pickInput != null)
         {
@@ -453,13 +491,19 @@ public class FormulaEditSession
         }
 
         _pickInput = null;
-        if (isEditing)
+        _pickSheet = sheet;
+        if (sheet != null)
         {
             // Picking uses its own selection, which isn't subject to the sheet's selection rules.
-            _pickInput = new SelectionInputManager(new Selection(Sheet));
+            _pickInput = new SelectionInputManager(new Selection(sheet));
             _pickInput.Selection.ActiveRegionChanged += OnPickActiveRegionChanged;
             _pickInput.Selection.SelectingChanged += OnPickSelectingChanged;
         }
+    }
+
+    private void Reset(bool isEditing)
+    {
+        SetPickSheet(isEditing ? Sheet : null);
 
         _pickStart = -1;
         _pickLength = 0;

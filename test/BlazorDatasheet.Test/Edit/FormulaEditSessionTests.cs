@@ -157,6 +157,40 @@ public class FormulaEditSessionTests
     }
 
     [Test]
+    public void Picking_From_Another_Sheet_Writes_Its_Name()
+    {
+        var workbook = new Workbook();
+        _sheet = workbook.AddSheet(20, 20);
+        var other = workbook.AddSheet("My sheet", 20, 20);
+        BeginEdit("=SUM(");
+
+        Session.HandlePointerDown(other, 1, 1, false, false, false).Should().BeTrue();
+        Session.PickSheet.Should().BeSameAs(other);
+        Session.HandlePointerOver(_sheet, 5, 5).Should().BeFalse("the drag began on the other sheet");
+        Session.HandlePointerOver(other, 2, 2).Should().BeTrue();
+        Session.HandlePointerUp().Should().BeTrue();
+        _sheet.Editor.EditValue.Should().Be("=SUM('My sheet'!B2:C3");
+
+        Session.HandlePointerDown(other, 4, 4, false, true, false).Should().BeTrue();
+        Session.HandlePointerUp();
+        _sheet.Editor.EditValue.Should().Be("=SUM('My sheet'!B2:C3,'My sheet'!E5");
+        Session.References.Select(x => x.SheetName).Should().Equal("My sheet", "My sheet");
+
+        // picking from the sheet being edited replaces what was picked from the other
+        Click(0, 1);
+        Session.PickSheet.Should().BeSameAs(_sheet);
+        _sheet.Editor.EditValue.Should().Be("=SUM(B1");
+    }
+
+    [Test]
+    public void Sheet_In_Another_Workbook_Cannot_Be_Picked_From()
+    {
+        BeginEdit("=");
+        Session.HandlePointerDown(new Sheet(5, 5), 1, 1, false, false, false).Should().BeFalse();
+        _sheet.Editor.EditValue.Should().Be("=");
+    }
+
+    [Test]
     public void Text_Selection_Reported_During_A_Drag_Is_Ignored()
     {
         BeginEdit("=SUM(");
