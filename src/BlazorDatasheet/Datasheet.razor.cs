@@ -83,6 +83,13 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     private bool _showFormula;
 
     /// <summary>
+    /// Whether the selection stays visible while the user is working in another sheet of the same workbook.
+    /// By default only the sheet that was last used shows its selection. The selection itself is kept either way.
+    /// </summary>
+    [Parameter]
+    public bool ShowSelectionWhenNotCurrentSheet { get; set; }
+
+    /// <summary>
     /// Fired when the Datasheet becomes active or inactive (able to receive keyboard inputs).
     /// Fires before the matching <see cref="OnFocusIn"/> or <see cref="OnFocusOut"/>. A change that is
     /// superseded before its callback runs is dropped in favour of the newer one.
@@ -274,6 +281,11 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     private CellLayoutProvider _cellLayoutProvider = null!;
     private PaneContext? _paneContext;
+
+    /// <summary>
+    /// Whether the sheet is one that was given, rather than the placeholder used when there is none.
+    /// </summary>
+    private bool _hasSheet;
     private readonly PreviewService _previewService = new();
     private readonly AutoScrollState _autoScrollState = new();
 
@@ -319,11 +331,17 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
         if (Sheet != _sheet)
         {
+            var wasCurrent = IsDataSheetActive ||
+                             (_hasSheet && DatasheetRegistry.For(_sheet.Workbook).WasLastActivated(_sheet));
             RemoveEvents(_sheet);
+            _hasSheet = Sheet != null;
             _sheet = Sheet ?? new(0, 0);
             _cellLayoutProvider = new CellLayoutProvider(_sheet);
             _selectionManager = new SelectionInputManager(_sheet.Selection);
             AddEvents(_sheet);
+            // the user is still working in this datasheet, e.g. after choosing a sheet from a list of tabs
+            if (wasCurrent)
+                DatasheetRegistry.For(_sheet.Workbook).NoteActivated(_sheet);
             ClearEditorLayers();
             requireRender = true;
         }
@@ -452,7 +470,9 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         sheet.Rows.SizeModified -= HandleSizeModified;
         sheet.Columns.SizeModified -= HandleSizeModified;
         _autoScrollState.SetSheetSelectionActive(false);
-        DatasheetRegistry.For(sheet).Remove(this);
+        // a sheet that is no longer shown can't be the current one
+        if (DatasheetRegistry.For(sheet).Remove(this))
+            DatasheetRegistry.For(sheet.Workbook).Refresh();
     }
 
     private void AddEvents(Sheet sheet)
@@ -463,6 +483,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         sheet.Editor.FormulaEdit.PickRegionChanged += FormulaEditOnPickRegionChanged;
         sheet.Editor.FormulaEdit.DraggingChanged += FormulaEditOnDraggingChanged;
         DatasheetRegistry.For(sheet).Add(this);
+        DatasheetRegistry.For(sheet.Workbook).Refresh();
         sheet.ScreenUpdatingChanged += ScreenUpdatingChanged;
         sheet.FrozenRowCols += SheetOnFrozenRowCols;
         sheet.Selection.ActiveRegionChanged += ActiveRegionChanged;
@@ -1150,7 +1171,10 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
         IsDataSheetActive = active;
         if (active)
+        {
             DatasheetRegistry.For(_sheet).NoteActivated(this);
+            DatasheetRegistry.For(_sheet.Workbook).NoteActivated(_sheet);
+        }
         var revision = ++_activationRevision;
         await UpdateInputStateAsync();
         if (!_isDisposing && revision == _activationRevision)
@@ -1304,7 +1328,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             _paneContext.ShowFormulaDependents == _showFormulaDependents &&
             _paneContext.UseAutoFill == _useAutoFill &&
             _paneContext.IsReadOnly == IsReadOnly &&
-            _paneContext.AutoFit == AutoFit)
+            _paneContext.AutoFit == AutoFit &&
+            _paneContext.ShowSelectionWhenNotCurrentSheet == ShowSelectionWhenNotCurrentSheet)
         {
             return false;
         }
@@ -1321,7 +1346,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             _showFormulaDependents,
             _useAutoFill,
             IsReadOnly,
-            AutoFit);
+            AutoFit,
+            ShowSelectionWhenNotCurrentSheet);
         return true;
     }
 

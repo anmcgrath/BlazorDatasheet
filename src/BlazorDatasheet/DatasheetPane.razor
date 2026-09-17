@@ -39,7 +39,7 @@
         <EditorLayer Disabled="@PaneContext.IsReadOnly" @ref="_editorLayer"
                      CustomCellTypes="@PaneContext.CustomCellTypeDefinitions"/>
 
-        <SelectionRendererLayer/>
+        <SelectionRendererLayer ShowWhenNotCurrentSheet="PaneContext.ShowSelectionWhenNotCurrentSheet"/>
         <PreviewLayer/>
         @if (PaneContext.ShowFormulaDependents)
         {

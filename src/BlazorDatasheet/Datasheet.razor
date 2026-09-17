@@ -50,6 +50,7 @@
                                     OverscanColumns="OverscanColumns"
                                     ViewRegion="_viewRegion"
                                     Sheet="_sheet"
+                                    ShowSelectionWhenNotCurrentSheet="ShowSelectionWhenNotCurrentSheet"
                                     ShowColumnMenu="_menuOptions.HeaderMenuEnabled"
                                     GroupTemplate="ColumnGroupTemplate"
                                     GroupMouseDown="HandleColumnGroupMouseDown"
@@ -85,7 +86,8 @@
                                 <RowHeadingRenderer
                                     OverscanRows="OverscanRows"
                                     ViewRegion="_viewRegion"
-                                    Sheet="_sheet">
+                                    Sheet="_sheet"
+                                    ShowSelectionWhenNotCurrentSheet="ShowSelectionWhenNotCurrentSheet">
                                     @RowHeaderTemplate(context)
                                 </RowHeadingRenderer>
                             </div>

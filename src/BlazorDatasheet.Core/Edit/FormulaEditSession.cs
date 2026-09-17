@@ -445,9 +445,13 @@ public class FormulaEditSession
         ScanReferences();
     }
 
+    private bool _wasFormula;
+
     private void ScanReferences()
     {
         var hadReferences = _references.Count > 0;
+        var wasFormula = _wasFormula;
+        _wasFormula = IsFormula;
 
         if (!IsFormula)
             _references = Array.Empty<FormulaReferenceSpan>();
@@ -460,7 +464,8 @@ public class FormulaEditSession
                 .ToList();
         }
 
-        if (hadReferences || _references.Count > 0)
+        // the edit becoming a formula, or no longer being one, is a change to the workbook's formula edit
+        if (hadReferences || _references.Count > 0 || wasFormula != _wasFormula)
         {
             ReferencesChanged?.Invoke(this, EventArgs.Empty);
             // the references may be to other sheets, which the views of those sheets show
