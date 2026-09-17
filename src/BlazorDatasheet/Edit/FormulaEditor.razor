@@ -25,6 +25,8 @@
         IsNamedReference="IsNamedReference"
         InputSizeChanged="HighlightInputSizeChanged"
         CaretPositionChanged="OnCaretPositionChanged"
+        SelectionChanged="OnSelectionChanged"
+        ValueCaret="@(IsInputOwner ? _sheet?.Editor.FormulaEdit.PendingCaret : null)"
         SoftEdit="SoftEdit"
         ReadyToFocus="ReadyToFocus"
         @bind-Value:set="OnInput"
@@ -172,6 +174,16 @@
             _functionSuggestions = _sheet.FormulaEngine.GetDefinitionsStartingWith(idToken.Value).ToList();
     }
 
+    private void OnSelectionChanged((int Start, int End) selection)
+    {
+        // Only the input that holds the text selection reports one, and that is the one being typed in.
+        if (selection.Start < 0 || _sheet?.Editor.IsEditing != true)
+            return;
+
+        _sheet.Editor.FormulaEdit.SetInputOwner(this);
+        _sheet.Editor.FormulaEdit.SetTextSelection(selection.Start, selection.End);
+    }
+
     private void OnCaretPositionChanged(int position)
     {
         _currentCaretPosition = position;
@@ -181,9 +193,11 @@
     }
 
     /// <summary>
-    /// Focuses the input and moves the caret to the end of the text.
+    /// Focuses the input. The caret goes after the text that the edit session last changed, such as
+    /// a reference that was picked from the sheet, and otherwise to the end of the text.
     /// </summary>
-    public async Task FocusAsync() => await _highlightedInput.FocusAndMoveCursorToEndAsync();
+    public async Task FocusAsync() =>
+        await _highlightedInput.FocusAndMoveCursorToAsync(_sheet?.Editor.FormulaEdit.PendingCaret);
 
     private void HighlightInputSizeChanged(Size size)
     {

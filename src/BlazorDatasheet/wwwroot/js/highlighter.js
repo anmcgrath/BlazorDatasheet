@@ -2,6 +2,8 @@
     #inputEl;
     #highlightResultEl;
     #caretToEndPending = false;
+    // where the caret goes when the input next takes focus. null is the end of the text.
+    #pendingCaret = null;
     #onFocusMoveCaret;
     #disposed = false;
     #onKeyDown;
@@ -36,32 +38,50 @@
         })
         this.resizeObserver.observe(this.#inputEl)
 
-        this.setInputText = function (text) {
+        this.setInputText = function (text, caret = null) {
             // Replacing textContent destroys the current selection, so the caret must always be restored.
             this.#inputEl.textContent = text
-            this.moveCursorToEnd(this.#inputEl)
+            this.moveCursorTo(this.#inputEl, caret)
         }
 
+        // The number of characters between the start of the input and a position in the DOM.
+        this.textOffsetOf = function (node, offset) {
+            const range = document.createRange()
+            range.selectNodeContents(options.inputEl)
+            range.setEnd(node, offset)
+            return range.toString().length
+        }
+
+        // Reports the text selection, or -1 when the selection is somewhere else. The selection is
+        // what decides where a reference picked from the sheet goes.
         this.updateCaretPosition = function () {
             let sel = window.getSelection()
             if (!sel?.focusNode)
                 return
-            let isSelectionInside = sel.focusNode.parentElement === options.inputEl ||
-                sel.focusNode === options.inputEl
-            let len = sel.toString().length
-            let caretPosition = -1
 
-            if (isSelectionInside && len === 0)
-                caretPosition = sel.focusOffset
+            let start = -1
+            let end = -1
+            if (options.inputEl.contains(sel.anchorNode) && options.inputEl.contains(sel.focusNode)) {
+                const anchor = self.textOffsetOf(sel.anchorNode, sel.anchorOffset)
+                const focus = self.textOffsetOf(sel.focusNode, sel.focusOffset)
+                start = Math.min(anchor, focus)
+                end = Math.max(anchor, focus)
+            }
 
-            self.invoke("HandleCaretPositionUpdate", caretPosition)
+            self.invoke("HandleSelectionUpdate", start, end)
         }
 
         this.moveCursorToEnd = function (el) {
+            this.moveCursorTo(el, null)
+        }
+
+        // Moves the caret to a text position, or to the end of the text if the position is null.
+        this.moveCursorTo = function (el, caret) {
             if (document.activeElement !== el) {
                 // Focus hasn't landed yet - some webviews (e.g. WebView2 under MAUI) apply focus()
                 // on a later turn of the message loop. Defer instead of silently giving up, otherwise
                 // the caret is left at offset 0 and typed text ends up in front of the existing text.
+                this.#pendingCaret = caret
                 this.deferCursorToEnd(el)
                 return
             }
@@ -72,6 +92,21 @@
             // selectNodeContents works whether or not the element has any child nodes yet.
             range.selectNodeContents(el)
             range.collapse(false);
+
+            if (caret != null && caret >= 0) {
+                let remaining = caret
+                const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
+                let node
+                while ((node = walker.nextNode())) {
+                    if (remaining <= node.length) {
+                        range.setStart(node, remaining)
+                        range.collapse(true)
+                        break
+                    }
+                    remaining -= node.length
+                }
+            }
+
             selection.removeAllRanges();
             selection.addRange(range);
         };
@@ -85,7 +120,7 @@
                 el.removeEventListener('focus', this.#onFocusMoveCaret)
                 this.#onFocusMoveCaret = undefined
                 this.#caretToEndPending = false
-                this.moveCursorToEnd(el)
+                this.moveCursorTo(el, this.#pendingCaret)
             }
             el.addEventListener('focus', this.#onFocusMoveCaret)
         }
@@ -97,6 +132,14 @@
             this.#inputEl.removeEventListener('focus', this.#onFocusMoveCaret)
             this.#onFocusMoveCaret = undefined
             this.#caretToEndPending = false
+        }
+
+        // Takes focus back after the sheet had it, leaving the caret where the text was last changed.
+        this.focusAndMoveCursorTo = function (caret) {
+            if (this.#disposed) return;
+            this.cancelDeferredCursorToEnd()
+            options.inputEl.focus()
+            this.moveCursorTo(options.inputEl, caret)
         }
 
         this.focusAndMoveCursorToEnd = function (onlyIfWithinSheet = false) {

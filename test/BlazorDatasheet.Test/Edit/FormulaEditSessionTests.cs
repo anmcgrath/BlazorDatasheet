@@ -119,8 +119,9 @@ public class FormulaEditSessionTests
         Click(1, 1);
         _sheet.Editor.EditValue.Should().Be("=SUM(B2)+1");
         Session.PendingCaret.Should().Be(7);
-        Session.TakePendingCaret().Should().Be(7);
-        Session.PendingCaret.Should().BeNull();
+
+        _sheet.Editor.EditValue = "=SUM(B2)+12";
+        Session.PendingCaret.Should().BeNull("the text was changed by typing");
     }
 
     [Test]

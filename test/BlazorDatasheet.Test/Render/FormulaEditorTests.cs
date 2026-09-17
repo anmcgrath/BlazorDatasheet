@@ -80,6 +80,48 @@ public class FormulaEditorTests
     }
 
     [Test]
+    public async Task Text_Selection_Is_Reported_To_The_Edit_Session_And_Claims_Input()
+    {
+        using var context = CreateContext();
+        var sheet = new Sheet(5, 5);
+        var editor = context.RenderComponent<FormulaEditor>(p => p.Add(x => x.Sheet, sheet));
+        var input = editor.FindComponent<HighlightedInput>();
+
+        sheet.Editor.BeginEdit(0, 0);
+        sheet.Editor.EditValue = "=SUM()+1";
+
+        await editor.InvokeAsync(() => input.Instance.HandleSelectionUpdate(5, 5));
+        sheet.Editor.FormulaEdit.SelectionStart.Should().Be(5);
+        sheet.Editor.FormulaEdit.InputOwner.Should().BeSameAs(editor.Instance);
+
+        // the selection moves to the sheet while a reference is picked
+        await editor.InvokeAsync(() => input.Instance.HandleSelectionUpdate(-1, -1));
+        sheet.Editor.FormulaEdit.SelectionStart.Should().Be(5);
+    }
+
+    [Test]
+    public async Task Picked_Reference_Is_Shown_With_The_Caret_After_It()
+    {
+        using var context = CreateContext();
+        var sheet = new Sheet(5, 5);
+        sheet.Editor.BeginEdit(0, 0);
+        sheet.Editor.EditValue = "=SUM()+1";
+        sheet.Editor.FormulaEdit.IsPickingEnabled = true;
+
+        var editor = context.RenderComponent<FormulaEditor>(p => p
+            .Add(x => x.Sheet, sheet)
+            .Add(x => x.Value, sheet.Editor.EditValue));
+        var input = editor.FindComponent<HighlightedInput>();
+        await editor.InvokeAsync(() => input.Instance.HandleSelectionUpdate(5, 5));
+
+        await editor.InvokeAsync(() => sheet.Editor.FormulaEdit.HandlePointerDown(1, 1, false, false, false));
+        editor.SetParametersAndRender(p => p.Add(x => x.Value, sheet.Editor.EditValue));
+
+        context.JSInterop.Invocations.Last(x => x.Identifier == "setInputText").Arguments
+            .Should().Equal(new object[] { "=SUM(B2)+1", 7 });
+    }
+
+    [Test]
     public async Task Focus_Returns_To_The_Editor_That_Owns_Input_After_A_Reference_Is_Picked()
     {
         using var context = CreateContext();
@@ -92,7 +134,7 @@ public class FormulaEditorTests
             .Add(x => x.Sheet, sheet)
             .Add(x => x.ReadyToFocus, false));
 
-        int FocusCount() => context.JSInterop.Invocations.Count(x => x.Identifier == "focusAndMoveCursorToEnd");
+        int FocusCount() => context.JSInterop.Invocations.Count(x => x.Identifier == "focusAndMoveCursorTo");
 
         void Pick()
         {
@@ -106,6 +148,8 @@ public class FormulaEditorTests
 
         await inCell.InvokeAsync(Pick);
         FocusCount().Should().Be(1, "the in-cell editor takes focus when no editor has claimed input");
+        context.JSInterop.Invocations.Last(x => x.Identifier == "focusAndMoveCursorTo").Arguments
+            .Should().Equal(new object[] { 3 }, "the caret goes after the picked reference");
 
         sheet.Editor.FormulaEdit.SetInputOwner(external.Instance);
         await inCell.InvokeAsync(Pick);

@@ -100,18 +100,9 @@ public class FormulaEditSession
 
     /// <summary>
     /// The caret position that the editor owning input should apply, after the session has changed the edit text.
+    /// Null once the text has been changed by anything else.
     /// </summary>
     public int? PendingCaret { get; private set; }
-
-    /// <summary>
-    /// Returns <see cref="PendingCaret"/> and clears it.
-    /// </summary>
-    public int? TakePendingCaret()
-    {
-        var caret = PendingCaret;
-        PendingCaret = null;
-        return caret;
-    }
 
     /// <summary>
     /// The editor that the user is typing into. Focus returns to it after picking with the pointer.
