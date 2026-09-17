@@ -9,6 +9,7 @@ using BlazorDatasheet.Core.Events.Selection;
 using BlazorDatasheet.Core.Events.Visual;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Core.Layout;
+using BlazorDatasheet.Core.Selecting;
 using BlazorDatasheet.Core.Util;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Edit;

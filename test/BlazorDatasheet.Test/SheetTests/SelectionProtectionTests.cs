@@ -4,7 +4,7 @@ using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Protection;
 using BlazorDatasheet.DataStructures.Geometry;
-using BlazorDatasheet.Render;
+using BlazorDatasheet.Core.Selecting;
 using FluentAssertions;
 using NUnit.Framework;
 
