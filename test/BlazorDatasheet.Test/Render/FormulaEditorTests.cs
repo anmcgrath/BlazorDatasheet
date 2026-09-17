@@ -1,0 +1,114 @@
+using System.Linq;
+using System.Threading.Tasks;
+using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Edit;
+using BlazorDatasheet.Edit.DefaultComponents;
+using Bunit;
+using FluentAssertions;
+using NUnit.Framework;
+using TestContext = Bunit.TestContext;
+
+namespace BlazorDatasheet.Test.Render;
+
+/// <summary>
+/// The formula editor is rendered on its own here, as it is when it's used outside of a datasheet.
+/// </summary>
+public class FormulaEditorTests
+{
+    private static TestContext CreateContext()
+    {
+        var context = new TestContext();
+        context.JSInterop.Mode = JSRuntimeMode.Loose;
+        context.JSInterop.SetupModule(x => x.Identifier == "createHighlighter");
+        return context;
+    }
+
+    private static Task Type(IRenderedComponent<FormulaEditor> editor, string text, int caret)
+    {
+        var input = editor.FindComponent<HighlightedInput>();
+        return editor.InvokeAsync(async () =>
+        {
+            await input.Instance.HandleInput(text);
+            await input.Instance.HandleCaretPositionUpdate(caret);
+        });
+    }
+
+    [Test]
+    public async Task Typing_Reports_The_Value_And_Suggests_Functions()
+    {
+        using var context = CreateContext();
+        var value = "";
+        var editor = context.RenderComponent<FormulaEditor>(p => p
+            .Add(x => x.Sheet, new Sheet(5, 5))
+            .Add(x => x.ValueChanged, v => value = v));
+
+        await Type(editor, "=SU", 3);
+
+        value.Should().Be("=SU");
+        var suggestions = editor.FindAll(".bds-func-suggestions-item").Select(x => x.TextContent).ToList();
+        suggestions.Should().Contain("SUM");
+        suggestions.Should().OnlyContain(x => x.StartsWith("SU"));
+
+        await Type(editor, "hello", 5);
+        editor.FindAll(".bds-func-suggestions-item").Should().BeEmpty();
+    }
+
+    [Test]
+    public async Task Caret_Inside_A_Function_Shows_Its_Hint()
+    {
+        using var context = CreateContext();
+        var editor = context.RenderComponent<FormulaEditor>(p => p.Add(x => x.Sheet, new Sheet(5, 5)));
+
+        await Type(editor, "=SUM(1,", 7);
+
+        editor.FindComponents<FormulaHintBox>().Should().ContainSingle()
+            .Which.Instance.FunctionName.Should().Be("SUM");
+    }
+
+    [Test]
+    public async Task Named_Ranges_Of_The_Sheet_Are_Highlighted_As_References()
+    {
+        using var context = CreateContext();
+        var sheet = new Sheet(5, 5);
+        sheet.NamedRanges.Set("myName", "B2:B3");
+        var editor = context.RenderComponent<FormulaEditor>(p => p.Add(x => x.Sheet, sheet));
+
+        await Type(editor, "=myName", 7);
+
+        context.JSInterop.Invocations.Last(x => x.Identifier == "setHighlightHtml").Arguments[0]!.ToString()
+            .Should().Contain("color:var(--highlight-color-1)\">myName<");
+    }
+
+    [Test]
+    public async Task Focus_Returns_To_The_Editor_That_Owns_Input_After_A_Reference_Is_Picked()
+    {
+        using var context = CreateContext();
+        var sheet = new Sheet(5, 5);
+        var inCell = context.RenderComponent<FormulaEditor>(p => p
+            .Add(x => x.Sheet, sheet)
+            .Add(x => x.ReadyToFocus, false)
+            .Add(x => x.IsDefaultInputOwner, true));
+        var external = context.RenderComponent<FormulaEditor>(p => p
+            .Add(x => x.Sheet, sheet)
+            .Add(x => x.ReadyToFocus, false));
+
+        int FocusCount() => context.JSInterop.Invocations.Count(x => x.Identifier == "focusAndMoveCursorToEnd");
+
+        void Pick()
+        {
+            sheet.Editor.FormulaEdit.HandlePointerDown(1, 1, false, false, false);
+            sheet.Editor.FormulaEdit.HandlePointerUp();
+        }
+
+        sheet.Editor.BeginEdit(0, 0);
+        sheet.Editor.EditValue = "=";
+        sheet.Editor.FormulaEdit.IsPickingEnabled = true;
+
+        await inCell.InvokeAsync(Pick);
+        FocusCount().Should().Be(1, "the in-cell editor takes focus when no editor has claimed input");
+
+        sheet.Editor.FormulaEdit.SetInputOwner(external.Instance);
+        await inCell.InvokeAsync(Pick);
+        FocusCount().Should().Be(2, "only the editor that claimed input takes focus");
+    }
+}

@@ -3,124 +3,41 @@
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Edit
 @using BlazorDatasheet.Core.FormulaEngine
-@using BlazorDatasheet.DataStructures.Geometry
-@using BlazorDatasheet.Formula.Core
-@using BlazorDatasheet.Formula.Core.Interpreter
-@using BlazorDatasheet.Formula.Core.Interpreter.Lexing
-@using BlazorDatasheet.Render
-@using BlazorDatasheet.Render.Popover
-@implements IDisposable
 
-<div class="bds-text-editor" id="@_anchorId">
-    <HighlightedInput
-        Style="@Style"
-        @ref="_highlightedInput"
-        CellWidth="CellWidth"
-        CellHeight="CellHeight"
-        FormulaOptions="_formulaOptions"
-        IsNamedReference="IsNamedReference"
-        InputSizeChanged="HighlightInputSizeChanged"
-        CaretPositionChanged="OnCaretPositionChanged"
-        SoftEdit="_isSoftEdit"
-        ReadyToFocus="_hasBegunEdit"
-        @bind-Value:set="OnInput"
-        @bind-Value:get="CurrentValue"/>
-</div>
-
-<!-- shows hints when caret position is inside a formula -->
-<BdsPopover
-    AnchorId="@_anchorId"
-    IsOpen="@(_formulaHint != null && _sheet.FormulaEngine.GetFunction(_formulaHint.FunctionName) != null)"
-    CssClass="bds-func-suggestions">
-    @if (_formulaHint != null && _sheet.FormulaEngine.GetFunction(_formulaHint.FunctionName) is { } hintFunction)
-    {
-        <FormulaHintBox
-            ArgIndex="@_formulaHint.ParameterIndex"
-            FunctionName="@_formulaHint.FunctionName"
-            Function="@hintFunction"/>
-    }
-</BdsPopover>
-
-<!-- shows functions that are available based on the typed function name -->
-<BdsPopover AnchorId="@_anchorId"
-            IsOpen="@(_functionSuggestions != null && _functionSuggestions.Any())"
-            CssClass="bds-func-suggestions">
-    @if (_functionSuggestions != null)
-    {
-        @foreach (var formula in _functionSuggestions)
-        {
-            <div class="bds-func-suggestions-item">@formula.Name</div>
-        }
-    }
-</BdsPopover>
+<FormulaEditor
+    @ref="_formulaEditor"
+    Sheet="_sheet"
+    Style="@Style"
+    CellWidth="CellWidth"
+    CellHeight="CellHeight"
+    SoftEdit="_isSoftEdit"
+    ReadyToFocus="_hasBegunEdit"
+    IsDefaultInputOwner="true"
+    Value="@CurrentValue"
+    ValueChanged="OnInput"/>
 
 @code {
 
-    private Sheet _sheet = null!;
-    private FormulaOptions _formulaOptions = null!;
-    private HighlightedInput _highlightedInput = default!;
+    private Sheet? _sheet;
+    private FormulaEditor _formulaEditor = default!;
     private bool _isSoftEdit;
     private bool _hasBegunEdit;
-    private int _currentCaretPosition;
-    private double _highlightInputHeight;
     public bool IsFormulaValue => FormulaEngine.IsFormula(CurrentValue);
-    private List<FunctionDefinition>? _functionSuggestions;
-    private FormulaHintBoxResult? _formulaHint;
-    private readonly string _anchorId = $"bds-select-anchor-{Guid.NewGuid():N}";
 
     public override void BeforeEdit(IReadOnlyCell cell, Sheet sheet)
     {
-        if (_sheet != null)
-            _sheet.Editor.FormulaEdit.FocusRequested -= OnFormulaEditFocusRequested;
-
         _sheet = sheet;
         _isSoftEdit = _sheet.Editor.IsSoftEdit;
         ResetAutoScrollActive();
 
         // References are picked from the sheet by the edit session, which writes them into the edit value.
         _sheet.Editor.FormulaEdit.IsPickingEnabled = true;
-        _sheet.Editor.FormulaEdit.FocusRequested += OnFormulaEditFocusRequested;
-
-        _formulaOptions = sheet.FormulaEngine.Options;
         StateHasChanged();
     }
 
-    private async void OnFormulaEditFocusRequested(object? sender, EventArgs e)
-    {
-        var owner = _sheet.Editor.FormulaEdit.InputOwner;
-        if (owner == null || ReferenceEquals(owner, this))
-            await InvokeAsync(FocusAsync);
-    }
-
-    private bool IsNamedReference(string name) => _sheet.FormulaEngine.VariableExists(name);
-
     private void OnInput(string value)
     {
-        var newValue = value ?? string.Empty;
-        CurrentValue = newValue;
-        SuggestFunctions();
-    }
-
-    private void SuggestFunctions()
-    {
-        var len = Math.Min(_currentCaretPosition + 1, CurrentValue.Length);
-        if (len <= 0)
-            len = CurrentValue.Length;
-
-        if (!FormulaEngine.IsFormula(CurrentValue))
-            return;
-
-        var subStr = CurrentValue.AsSpan().Slice(0, len);
-        var tokens = new Lexer().Lex(subStr, _formulaOptions);
-        if (tokens.Count > 1 && tokens[^2].Tag == Tag.IdentifierToken)
-        {
-            var idToken = (IdentifierToken)tokens[^2];
-            _functionSuggestions = _sheet.FormulaEngine.GetDefinitionsStartingWith(idToken.Value).ToList();
-        }
-        else
-        {
-            _functionSuggestions = null;
-        }
+        CurrentValue = value ?? string.Empty;
     }
 
     public override void BeginEdit(EditEntryMode entryMode, string? editValue, string key)
@@ -138,28 +55,6 @@
         StateHasChanged();
     }
 
-    private void OnCaretPositionChanged(int position)
-    {
-        _currentCaretPosition = position;
-        _formulaHint = new FormulaHintBoxCalculator(_formulaOptions).Calculate(CurrentValue, position);
-        StateHasChanged();
-    }
-
-    public async Task FocusAsync() => await _highlightedInput.FocusAndMoveCursorToEndAsync();
-
-    private void HighlightInputSizeChanged(Size size)
-    {
-        if (Math.Abs(size.Height - _highlightInputHeight) > 0.01)
-        {
-            _highlightInputHeight = size.Height;
-            StateHasChanged();
-        }
-    }
-
-    public void Dispose()
-    {
-        if (_sheet != null)
-            _sheet.Editor.FormulaEdit.FocusRequested -= OnFormulaEditFocusRequested;
-    }
+    public async Task FocusAsync() => await _formulaEditor.FocusAsync();
 
 }

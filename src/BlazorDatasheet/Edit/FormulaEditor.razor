@@ -1,0 +1,203 @@
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.FormulaEngine
+@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Edit.DefaultComponents
+@using BlazorDatasheet.Formula.Core
+@using BlazorDatasheet.Formula.Core.Interpreter
+@using BlazorDatasheet.Formula.Core.Interpreter.Lexing
+@using BlazorDatasheet.Render.Popover
+@inherits SheetComponentBase
+@implements IDisposable
+
+@*
+    A text input for cell values and formulas, with formula highlighting, function suggestions and
+    function hints. It is a view over the sheet's edit state, so it works inside the sheet as a cell
+    editor and outside of it, and any number can show the same edit.
+*@
+
+<div class="bds-text-editor" id="@_anchorId">
+    <HighlightedInput
+        Style="@Style"
+        @ref="_highlightedInput"
+        CellWidth="CellWidth"
+        CellHeight="CellHeight"
+        FormulaOptions="FormulaOptions"
+        IsNamedReference="IsNamedReference"
+        InputSizeChanged="HighlightInputSizeChanged"
+        CaretPositionChanged="OnCaretPositionChanged"
+        SoftEdit="SoftEdit"
+        ReadyToFocus="ReadyToFocus"
+        @bind-Value:set="OnInput"
+        @bind-Value:get="Value"/>
+</div>
+
+<!-- shows hints when caret position is inside a formula -->
+<BdsPopover
+    AnchorId="@_anchorId"
+    IsOpen="@(HintFunction != null)"
+    CssClass="bds-func-suggestions">
+    @if (_formulaHint != null && HintFunction is { } hintFunction)
+    {
+        <FormulaHintBox
+            ArgIndex="@_formulaHint.ParameterIndex"
+            FunctionName="@_formulaHint.FunctionName"
+            Function="@hintFunction"/>
+    }
+</BdsPopover>
+
+<!-- shows functions that are available based on the typed function name -->
+<BdsPopover AnchorId="@_anchorId"
+            IsOpen="@(_functionSuggestions != null && _functionSuggestions.Any())"
+            CssClass="bds-func-suggestions">
+    @if (_functionSuggestions != null)
+    {
+        @foreach (var formula in _functionSuggestions)
+        {
+            <div class="bds-func-suggestions-item">@formula.Name</div>
+        }
+    }
+</BdsPopover>
+
+@code {
+
+    /// <summary>
+    /// The sheet that is being edited. Function suggestions, hints and named references come from it.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public Sheet? Sheet { get; set; }
+
+    private Sheet? _sheet;
+
+    [Parameter] public string Value { get; set; } = string.Empty;
+
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+
+    /// <summary>
+    /// During a soft edit the arrow keys and enter are left to the sheet, rather than moving the caret.
+    /// </summary>
+    [Parameter]
+    public bool SoftEdit { get; set; }
+
+    /// <summary>
+    /// Whether the input should take focus. Focus is only taken once, and never from a control outside the sheet.
+    /// </summary>
+    [Parameter]
+    public bool ReadyToFocus { get; set; } = true;
+
+    /// <summary>
+    /// Whether focus comes back to this editor, after a reference is picked from the sheet, when no editor has
+    /// claimed input with <see cref="BlazorDatasheet.Core.Edit.FormulaEditSession.SetInputOwner"/>.
+    /// </summary>
+    [Parameter]
+    public bool IsDefaultInputOwner { get; set; }
+
+    [Parameter] public string? Style { get; set; }
+
+    [Parameter] public double CellWidth { get; set; }
+
+    [Parameter] public double CellHeight { get; set; }
+
+    private static readonly FormulaOptions DefaultFormulaOptions = new();
+    private FormulaOptions FormulaOptions => _sheet?.FormulaEngine.Options ?? DefaultFormulaOptions;
+
+    private HighlightedInput _highlightedInput = default!;
+    private int _currentCaretPosition;
+    private double _highlightInputHeight;
+    private List<FunctionDefinition>? _functionSuggestions;
+    private FormulaHintBoxResult? _formulaHint;
+    private readonly string _anchorId = $"bds-select-anchor-{Guid.NewGuid():N}";
+
+    private FunctionDescriptor? HintFunction =>
+        _formulaHint == null ? null : _sheet?.FormulaEngine.GetFunction(_formulaHint.FunctionName);
+
+    protected override void OnParametersSet()
+    {
+        if (ReferenceEquals(_sheet, Sheet))
+            return;
+
+        if (_sheet != null)
+            _sheet.Editor.FormulaEdit.FocusRequested -= OnFocusRequested;
+
+        _sheet = Sheet;
+
+        if (_sheet != null)
+            _sheet.Editor.FormulaEdit.FocusRequested += OnFocusRequested;
+    }
+
+    /// <summary>
+    /// Whether this is the editor that the user is typing in.
+    /// </summary>
+    private bool IsInputOwner
+    {
+        get
+        {
+            var owner = _sheet?.Editor.FormulaEdit.InputOwner;
+            return owner == null ? IsDefaultInputOwner : ReferenceEquals(owner, this);
+        }
+    }
+
+    private async void OnFocusRequested(object? sender, EventArgs e)
+    {
+        if (IsInputOwner)
+            await InvokeAsync(FocusAsync);
+    }
+
+    private bool IsNamedReference(string name) => _sheet?.FormulaEngine.VariableExists(name) == true;
+
+    private async Task OnInput(string value)
+    {
+        Value = value ?? string.Empty;
+        // the caret is reported after the input, so until then assume that it moved on by a character
+        SuggestFunctions(_currentCaretPosition < 0 ? Value.Length : _currentCaretPosition + 1);
+        await ValueChanged.InvokeAsync(Value);
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Suggests the functions that start with the name that ends at <paramref name="caret"/>
+    /// </summary>
+    private void SuggestFunctions(int caret)
+    {
+        _functionSuggestions = null;
+
+        if (_sheet == null || !FormulaEngine.IsFormula(Value))
+            return;
+
+        var len = Math.Min(caret, Value.Length);
+        if (len <= 0)
+            return;
+
+        var tokens = new Lexer().Lex(Value.AsSpan().Slice(0, len), FormulaOptions);
+        if (tokens.Count > 1 && tokens[^2] is IdentifierToken idToken)
+            _functionSuggestions = _sheet.FormulaEngine.GetDefinitionsStartingWith(idToken.Value).ToList();
+    }
+
+    private void OnCaretPositionChanged(int position)
+    {
+        _currentCaretPosition = position;
+        SuggestFunctions(position);
+        _formulaHint = new FormulaHintBoxCalculator(FormulaOptions).Calculate(Value, position);
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Focuses the input and moves the caret to the end of the text.
+    /// </summary>
+    public async Task FocusAsync() => await _highlightedInput.FocusAndMoveCursorToEndAsync();
+
+    private void HighlightInputSizeChanged(Size size)
+    {
+        if (Math.Abs(size.Height - _highlightInputHeight) > 0.01)
+        {
+            _highlightInputHeight = size.Height;
+            StateHasChanged();
+        }
+    }
+
+    public void Dispose()
+    {
+        if (_sheet != null)
+            _sheet.Editor.FormulaEdit.FocusRequested -= OnFocusRequested;
+    }
+
+}
