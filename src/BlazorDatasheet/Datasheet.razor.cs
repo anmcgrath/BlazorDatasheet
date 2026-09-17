@@ -451,6 +451,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         sheet.Rows.SizeModified -= HandleSizeModified;
         sheet.Columns.SizeModified -= HandleSizeModified;
         _autoScrollState.SetSheetSelectionActive(false);
+        DatasheetRegistry.For(sheet).Remove(this);
     }
 
     private void AddEvents(Sheet sheet)
@@ -460,6 +461,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         sheet.Editor.EditFinished += EditorOnEditFinished;
         sheet.Editor.FormulaEdit.PickRegionChanged += FormulaEditOnPickRegionChanged;
         sheet.Editor.FormulaEdit.DraggingChanged += FormulaEditOnDraggingChanged;
+        DatasheetRegistry.For(sheet).Add(this);
         sheet.ScreenUpdatingChanged += ScreenUpdatingChanged;
         sheet.FrozenRowCols += SheetOnFrozenRowCols;
         sheet.Selection.ActiveRegionChanged += ActiveRegionChanged;
@@ -857,6 +859,62 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         await BeginEdit(args.Row, args.Col, EditEntryMode.Mouse);
     }
 
+    /// <summary>
+    /// Begins editing the cell at <paramref name="row"/>, <paramref name="col"/>, as if the user had started
+    /// the edit from the sheet. Returns whether the cell is now being edited.
+    /// </summary>
+    public async Task<bool> BeginEditAsync(int row, int col)
+    {
+        if (_sheet.Editor.IsEditing)
+            return _sheet.Editor.EditCell?.Row == row && _sheet.Editor.EditCell?.Col == col;
+
+        if (!_sheet.Region.Contains(row, col))
+            return false;
+
+        await BeginEdit(row, col, EditEntryMode.None);
+        return _sheet.Editor.IsEditing;
+    }
+
+    /// <summary>
+    /// Begins editing the cell that receives input for the current selection. Returns whether it is now being edited.
+    /// </summary>
+    public async Task<bool> BeginEditActiveCellAsync()
+    {
+        if (_sheet.Selection.ActiveRegion == null)
+            return false;
+
+        var position = _sheet.Selection.GetInputPosition();
+        return await BeginEditAsync(position.row, position.col);
+    }
+
+    /// <summary>
+    /// Handles a key that was pressed in an editor outside of the sheet, with the sheet's keyboard shortcuts.
+    /// This is what makes enter, tab and escape finish an edit from outside the sheet as they do inside it.
+    /// Returns whether the key was handled.
+    /// </summary>
+    public async Task<bool> HandleExternalEditorKeyAsync(KeyboardEventArgs e)
+    {
+        if (_isDisposing || MenuService.IsMenuOpen())
+            return false;
+
+        var modifiers = e.GetModifiers();
+        return await HandleShortcuts(e.Key, modifiers) || await HandleShortcuts(e.Code, modifiers);
+    }
+
+    /// <summary>
+    /// Makes an element outside of the sheet, which edits this sheet, part of the sheet for the purposes of
+    /// focus. Focus moving to it doesn't deactivate the sheet or count as focus loss for an open edit
+    /// (see <see cref="OnEditFocusLoss"/>), and focus returns to the sheet when the edit finishes.
+    /// </summary>
+    public Task RegisterExternalEditorAsync(ElementReference element) =>
+        _isDisposing ? Task.CompletedTask : _windowEventService.AddExternalEditor(element);
+
+    /// <summary>
+    /// Reverses <see cref="RegisterExternalEditorAsync"/>
+    /// </summary>
+    public Task UnregisterExternalEditorAsync(ElementReference element) =>
+        _isDisposing ? Task.CompletedTask : _windowEventService.RemoveExternalEditor(element);
+
     private async Task BeginEdit(int row, int col, EditEntryMode mode, string entryChar = "")
     {
         if (this.IsReadOnly)
@@ -1037,6 +1095,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             return;
 
         IsDataSheetActive = active;
+        if (active)
+            DatasheetRegistry.For(_sheet).NoteActivated(this);
         var revision = ++_activationRevision;
         await UpdateInputStateAsync();
         if (!_isDisposing && revision == _activationRevision)
