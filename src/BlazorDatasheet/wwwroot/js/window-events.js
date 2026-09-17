@@ -87,8 +87,11 @@
             this.reconcileFocus();
         }, true);
         this.listen(window, 'focusout', e => {
+            // the active element isn't the destination yet, so keep it for the report
+            this.focusDestination = e.relatedTarget;
             if (e.relatedTarget) this.setFocused(this.inScope(e.relatedTarget));
-            else queueMicrotask(() => {
+            this.focusDestination = null;
+            if (!e.relatedTarget) queueMicrotask(() => {
                 // Removing an editor can move focus to body without an external focus destination.
                 if (this.focused && e.target.closest?.('.bds-editor-overlay') && !e.target.isConnected)
                     this.restoreFocus();
@@ -157,9 +160,20 @@
         }, 0);
     }
 
+    // Whether the target is in another view of the workbook that this sheet belongs to, e.g. the datasheet
+    // of another of its sheets. A formula takes references from there, so going there doesn't end an edit.
+    isRelated(target) {
+        const id = this.container?.dataset?.bdsWorkbook;
+        return !!id && !this.contains(target) &&
+            target?.closest?.('[data-bds-workbook]')?.dataset.bdsWorkbook === id;
+    }
+
     dispatchFocus(fromWindow = false) {
-        this.dispatch(this.focusHandler,
-            { focused: this.focused, active: this.active, fromWindow, version: ++this.focusVersion });
+        const destination = this.focusDestination ?? document.activeElement;
+        this.dispatch(this.focusHandler, {
+            focused: this.focused, active: this.active, fromWindow,
+            toRelated: !this.focused && this.isRelated(destination), version: ++this.focusVersion
+        });
     }
 
     setInputState(active, editing, revision, focusVersion) {

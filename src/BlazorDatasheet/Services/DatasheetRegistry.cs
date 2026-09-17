@@ -13,6 +13,14 @@ internal static class DatasheetRegistry
     private static readonly ConditionalWeakTable<Sheet, SheetViews> Views = new();
 
     public static SheetViews For(Sheet sheet) => Views.GetValue(sheet, _ => new SheetViews());
+
+    private static readonly ConditionalWeakTable<Workbook, string> WorkbookIds = new();
+
+    /// <summary>
+    /// Identifies the workbook in the page, so that the views of its sheets can be told from the rest of the page.
+    /// </summary>
+    public static string WorkbookId(Workbook workbook) =>
+        WorkbookIds.GetValue(workbook, _ => Guid.NewGuid().ToString("N"));
 }
 
 /// <summary>

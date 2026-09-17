@@ -217,6 +217,44 @@ public class DatasheetFormulaPickingTests
         other.Selection.ActiveCellPosition.Should().Be(new CellPosition(1, 1));
     }
 
+    [Test]
+    public async Task Focus_Moving_To_Another_View_Of_The_Workbook_Does_Not_Finish_A_Formula_Edit()
+    {
+        using var context = CreateContext();
+        var workbook = new Workbook();
+        var sheet = workbook.AddSheet(10, 10);
+        var other = workbook.AddSheet(10, 10);
+        var component = await BeginFormulaEdit(context, sheet, "=");
+        component.SetParametersAndRender(p => p.Add(x => x.OnEditFocusLoss, EditFocusLossAction.Accept));
+        var otherComponent = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, other)
+            .Add(x => x.OnEditFocusLoss, EditFocusLossAction.Cancel));
+
+        await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = true, Active = true, Version = 1 }));
+        await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { ToRelated = true, Version = 2 }));
+        sheet.Editor.IsEditing.Should().BeTrue();
+
+        // focus then leaves the workbook from the other datasheet, which finishes the edit that it was lent for
+        await otherComponent.InvokeAsync(() => otherComponent.Instance.HandleFocusChanged(new() { Focused = true, Active = true, Version = 1 }));
+        await otherComponent.InvokeAsync(() => otherComponent.Instance.HandleFocusChanged(new() { Version = 2 }));
+        sheet.Editor.IsEditing.Should().BeFalse();
+    }
+
+    [Test]
+    public async Task Focus_Moving_To_Another_View_Of_The_Workbook_Finishes_An_Edit_That_Is_Not_A_Formula()
+    {
+        using var context = CreateContext();
+        var workbook = new Workbook();
+        var sheet = workbook.AddSheet(10, 10);
+        workbook.AddSheet(10, 10);
+        var component = await BeginFormulaEdit(context, sheet, "a");
+        component.SetParametersAndRender(p => p.Add(x => x.OnEditFocusLoss, EditFocusLossAction.Accept));
+
+        await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = true, Active = true, Version = 1 }));
+        await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { ToRelated = true, Version = 2 }));
+        sheet.Editor.IsEditing.Should().BeFalse();
+        sheet.Cells[0, 0].Value.Should().Be("a");
+    }
+
     private class GreedyEditor : BaseEditor
     {
         public int MouseDownCount { get; private set; }

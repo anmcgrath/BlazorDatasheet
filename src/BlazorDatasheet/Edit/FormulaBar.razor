@@ -15,6 +15,7 @@
 <div class="vars bds-formula-bar @Class"
      theme="@Theme"
      style="@Style"
+     data-bds-workbook="@(_sheet == null ? null : DatasheetRegistry.WorkbookId(_sheet.Workbook))"
      @ref="_root"
      @onfocusin="HandleFocusIn"
      @onkeydown="HandleKeyDown">

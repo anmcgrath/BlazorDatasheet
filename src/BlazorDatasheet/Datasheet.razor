@@ -23,6 +23,7 @@
 
             <div
                 tabindex="0" class="@SheetClass"
+                data-bds-workbook="@BlazorDatasheet.Services.DatasheetRegistry.WorkbookId(_sheet.Workbook)"
                 style="width:@(TotalViewWidth)px; height:@(TotalViewHeight)px;"
                 @ref="_sheetContainer">
                 <div class="bds-sheet-layout" style="display: flex; flex-direction: column; align-items:flex-start;">

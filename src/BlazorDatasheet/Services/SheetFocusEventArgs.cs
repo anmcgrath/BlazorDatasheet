@@ -14,5 +14,10 @@ public class SheetFocusEventArgs
     /// </summary>
     public bool FromWindow { get; set; }
 
+    /// <summary>
+    /// True when focus left for another view of the same workbook, such as the datasheet of another sheet.
+    /// </summary>
+    public bool ToRelated { get; set; }
+
     public long Version { get; set; }
 }

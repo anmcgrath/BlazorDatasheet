@@ -1169,7 +1169,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         var focusChanged = _hasFocus != focused;
         _hasFocus = focused;
         if (focusChanged && !focused && !focus.FromWindow)
-            FinishEditOnFocusLoss();
+            FinishEditOnFocusLoss(focus.ToRelated);
         await SetActiveAsync(focus.Active);
         if (_isDisposing || !focusChanged || focus.Version != _browserFocusVersion) return;
         await (focused ? OnFocusIn : OnFocusOut).InvokeAsync(new FocusEventArgs
@@ -1179,17 +1179,26 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     }
 
 
-    private void FinishEditOnFocusLoss()
+    private void FinishEditOnFocusLoss(bool toRelated)
     {
-        if (!_sheet.Editor.IsEditing)
+        var formulaEdit = _sheet.Workbook.ActiveFormulaEdit;
+
+        // Focus that stays in the views of the workbook may be there to pick a reference for the formula.
+        if (toRelated && formulaEdit is { CanPick: true })
             return;
+
+        // The formula may be in another sheet, whose datasheet let focus come here for that reason.
+        var editor = _sheet.Editor.IsEditing ? _sheet.Editor : formulaEdit?.Sheet.Editor;
+        if (editor?.IsEditing != true)
+            return;
+
         switch (OnEditFocusLoss)
         {
             case EditFocusLossAction.Accept:
-                _sheet.Editor.AcceptEdit();
+                editor.AcceptEdit();
                 break;
             case EditFocusLossAction.Cancel:
-                _sheet.Editor.CancelEdit();
+                editor.CancelEdit();
                 break;
         }
     }
