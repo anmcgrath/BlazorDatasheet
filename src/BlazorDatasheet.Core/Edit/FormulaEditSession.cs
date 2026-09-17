@@ -16,7 +16,11 @@ namespace BlazorDatasheet.Core.Edit;
 public class FormulaEditSession
 {
     private readonly Editor _editor;
-    private Sheet Sheet => _editor.Sheet;
+
+    /// <summary>
+    /// The sheet that is being edited.
+    /// </summary>
+    public Sheet Sheet => _editor.Sheet;
 
     private IReadOnlyList<FormulaReferenceSpan> _references = Array.Empty<FormulaReferenceSpan>();
     private SelectionInputManager? _pickInput;

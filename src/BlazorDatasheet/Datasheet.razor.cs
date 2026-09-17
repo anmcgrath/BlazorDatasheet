@@ -439,6 +439,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         sheet.Editor.EditFinished -= EditorOnEditFinished;
         sheet.Editor.FormulaEdit.PickRegionChanged -= FormulaEditOnPickRegionChanged;
         sheet.Editor.FormulaEdit.DraggingChanged -= FormulaEditOnDraggingChanged;
+        ReleaseForeignPick();
         _autoScrollState.SetEditorSelectionActive(false);
         sheet.ScreenUpdatingChanged -= ScreenUpdatingChanged;
         sheet.FrozenRowCols -= SheetOnFrozenRowCols;
@@ -652,6 +653,19 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
                     args.MetaKey))
                 return;
         }
+        else if (_sheet.Workbook.ActiveFormulaEdit is { CanPick: true } formulaEdit)
+        {
+            // a formula in another sheet of the workbook can take its references from this one
+            if (formulaEdit.HandlePointerDown(_sheet, args.Row, args.Col, args.ShiftKey, args.CtrlKey, args.MetaKey))
+            {
+                BeginForeignPick(formulaEdit);
+                return;
+            }
+
+            // otherwise the click finishes that edit, as it would in the sheet being edited
+            if (!formulaEdit.Sheet.Editor.AcceptEdit())
+                return;
+        }
 
         // if rmc and inside a selection, don't do anything
         if (args.MouseButton == 2 && _sheet.Selection.Contains(args.Row, args.Col))
@@ -766,14 +780,49 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             if (_sheet.Editor.FormulaEdit.HandlePointerUp())
                 return true;
         }
+        else if (_foreignPick?.HandlePointerUp() == true)
+            return true;
 
         _selectionManager.HandleWindowMouseUp();
         return false;
     }
 
+    /// <summary>
+    /// The formula edit of another sheet in the workbook, while a reference for it is dragged out of this sheet.
+    /// </summary>
+    private FormulaEditSession? _foreignPick;
+
+    private void BeginForeignPick(FormulaEditSession formulaEdit)
+    {
+        ReleaseForeignPick();
+        if (!formulaEdit.IsDragging)
+            return;
+
+        _foreignPick = formulaEdit;
+        formulaEdit.PickRegionChanged += FormulaEditOnPickRegionChanged;
+        formulaEdit.DraggingChanged += FormulaEditOnDraggingChanged;
+        _autoScrollState.SetEditorSelectionActive(true);
+    }
+
+    private void ReleaseForeignPick()
+    {
+        if (_foreignPick == null)
+            return;
+
+        _foreignPick.PickRegionChanged -= FormulaEditOnPickRegionChanged;
+        _foreignPick.DraggingChanged -= FormulaEditOnDraggingChanged;
+        _foreignPick = null;
+        _autoScrollState.SetEditorSelectionActive(false);
+    }
+
     private void FormulaEditOnDraggingChanged(object? sender, bool isDragging)
     {
-        _autoScrollState.SetEditorSelectionActive(isDragging);
+        // a reference for this sheet's formula may be dragged out of another sheet, which scrolls instead
+        var isHere = sender is FormulaEditSession formulaEdit && ReferenceEquals(formulaEdit.PickSheet, _sheet);
+        _autoScrollState.SetEditorSelectionActive(isDragging && isHere);
+
+        if (!isDragging && ReferenceEquals(sender, _foreignPick))
+            ReleaseForeignPick();
     }
 
     /// <summary>
@@ -785,6 +834,9 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         var newRegion = e.NewRegion;
 
         if (newRegion == null)
+            return;
+
+        if (sender is FormulaEditSession formulaEdit && !ReferenceEquals(formulaEdit.PickSheet, _sheet))
             return;
 
         if (oldRegion == null || newRegion.IsSingleCell())
@@ -940,6 +992,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             if (_sheet.Editor.FormulaEdit.HandlePointerOver(args.Row, args.Col))
                 return;
         }
+        else if (_foreignPick?.HandlePointerOver(_sheet, args.Row, args.Col) == true)
+            return;
 
         _selectionManager.HandlePointerOver(args.Row, args.Col);
     }
