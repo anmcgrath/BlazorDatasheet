@@ -61,7 +61,10 @@
 
             let start = -1
             let end = -1
-            if (options.inputEl.contains(sel.anchorNode) && options.inputEl.contains(sel.focusNode)) {
+            // A blurred input can still hold the document's selection, e.g. in Firefox after a click on
+            // the sheet. Changing its text then moves that selection, which isn't the user moving the caret.
+            if (document.activeElement === options.inputEl &&
+                options.inputEl.contains(sel.anchorNode) && options.inputEl.contains(sel.focusNode)) {
                 const anchor = self.textOffsetOf(sel.anchorNode, sel.anchorOffset)
                 const focus = self.textOffsetOf(sel.focusNode, sel.focusOffset)
                 start = Math.min(anchor, focus)

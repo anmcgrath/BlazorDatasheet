@@ -125,6 +125,11 @@ public class FormulaEditSession
         if (start < 0 || end < 0)
             return;
 
+        // The pointer is on the sheet, so this isn't the user moving the caret. It is the editor's text
+        // changing under a selection that it still holds.
+        if (IsDragging)
+            return;
+
         _selectionReported = true;
         _selectionStart = Math.Min(start, end);
         _selectionEnd = Math.Max(start, end);

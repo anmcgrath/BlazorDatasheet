@@ -157,6 +157,21 @@ public class FormulaEditSessionTests
     }
 
     [Test]
+    public void Text_Selection_Reported_During_A_Drag_Is_Ignored()
+    {
+        BeginEdit("=SUM(");
+        Session.HandlePointerDown(1, 1, false, false, false).Should().BeTrue();
+
+        // what a blurred input reports when its text is replaced while it still holds the selection
+        Session.SetTextSelection(0, 0);
+
+        Session.HandlePointerOver(2, 2).Should().BeTrue();
+        Session.HandlePointerUp().Should().BeTrue();
+        _sheet.Editor.EditValue.Should().Be("=SUM(B2:C3");
+        Session.SelectionStart.Should().Be(10);
+    }
+
+    [Test]
     public void Lost_Text_Selection_Is_Ignored()
     {
         BeginEdit("=SUM()+1");
