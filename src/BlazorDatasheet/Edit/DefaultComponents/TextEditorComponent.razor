@@ -55,6 +55,9 @@
         StateHasChanged();
     }
 
+    public override bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey) =>
+        _formulaEditor.HandleKey(key, ctrlKey, shiftKey, altKey, metaKey);
+
     public async Task FocusAsync() => await _formulaEditor.FocusAsync();
 
 }

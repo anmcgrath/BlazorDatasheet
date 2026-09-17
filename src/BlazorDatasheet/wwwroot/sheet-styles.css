@@ -597,6 +597,16 @@
 
 .bds-func-suggestions-item {
     padding: 2px 4px;
+    cursor: pointer;
+    outline: none;
+}
+
+.bds-func-suggestions-item:hover {
+    background: var(--sheet-menu-hover-color);
+}
+
+.bds-func-suggestions-item.active {
+    background: var(--selection-bg-color);
 }
 
 .bds-virtual-grid-container {

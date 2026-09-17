@@ -187,6 +187,11 @@
         if (this.options.preventAcceptKeys && !e.isComposing && (e.key === "Enter" || e.key === "Tab"))
             e.preventDefault()
 
+        // While a list of suggestions is open these keys work the list, which is handled in .NET.
+        if (this.options.captureListKeys && !e.isComposing &&
+            (e.key === "Enter" || e.key === "Tab" || e.key === "ArrowUp" || e.key === "ArrowDown"))
+            e.preventDefault()
+
         if (!this.options.preventDefaultArrowKeys)
             return
 
@@ -202,6 +207,10 @@
         // The user is placing the caret themselves - don't yank it to the end when focus lands.
         this.cancelDeferredCursorToEnd()
         this.options.preventDefaultArrowKeys = false
+    }
+
+    setCaptureListKeys(capture) {
+        this.options.captureListKeys = capture
     }
 
     cancelPreventDefault() {

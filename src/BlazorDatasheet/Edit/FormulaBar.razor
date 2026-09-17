@@ -214,6 +214,10 @@
 
     private async Task HandleKeyDown(KeyboardEventArgs e)
     {
+        // the list of suggestions comes before the sheet, as it does for an editor in the sheet
+        if (_formulaEditor.HandleKey(e.Key, e.CtrlKey, e.ShiftKey, e.AltKey, e.MetaKey))
+            return;
+
         if (e.Key != "Enter" && e.Key != "Tab" && e.Key != "Escape")
             return;
 

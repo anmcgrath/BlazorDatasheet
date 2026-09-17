@@ -26,9 +26,10 @@
         InputSizeChanged="HighlightInputSizeChanged"
         CaretPositionChanged="OnCaretPositionChanged"
         SelectionChanged="OnSelectionChanged"
-        ValueCaret="@(IsInputOwner ? _sheet?.Editor.FormulaEdit.PendingCaret : null)"
+        ValueCaret="@ValueCaret"
         SoftEdit="SoftEdit"
         PreventAcceptKeys="PreventAcceptKeys"
+        CaptureListKeys="HasSuggestions"
         ReadyToFocus="ReadyToFocus"
         @bind-Value:set="OnInput"
         @bind-Value:get="Value"/>
@@ -50,13 +51,22 @@
 
 <!-- shows functions that are available based on the typed function name -->
 <BdsPopover AnchorId="@_anchorId"
-            IsOpen="@(_functionSuggestions != null && _functionSuggestions.Any())"
+            IsOpen="@HasSuggestions"
             CssClass="bds-func-suggestions">
     @if (_functionSuggestions != null)
     {
-        @foreach (var formula in _functionSuggestions)
+        @* a window onto the list, which keeps the selected suggestion in view *@
+        @for (var i = _suggestionFirstShown; i < Math.Min(_functionSuggestions.Count, _suggestionFirstShown + MaxSuggestionsShown); i++)
         {
-            <div class="bds-func-suggestions-item">@formula.Name</div>
+            var suggestion = _functionSuggestions[i];
+            @* the tabindex stops the sheet from taking focus on a click, and the mouse down is prevented so that the input keeps it *@
+            <div class="bds-func-suggestions-item @(i == _suggestionIndex ? "active" : "")"
+                 tabindex="-1"
+                 @onmousedown:preventDefault="true"
+                 @onmousedown="() => { }"
+                 @onclick="() => AcceptSuggestion(suggestion)">
+                @suggestion.Name
+            </div>
         }
     }
 </BdsPopover>
@@ -114,6 +124,25 @@
     private int _currentCaretPosition;
     private double _highlightInputHeight;
     private List<FunctionDefinition>? _functionSuggestions;
+    private int _suggestionIndex;
+    private int _suggestionFirstShown;
+    private const int MaxSuggestionsShown = 8;
+
+    /// <summary>
+    /// The start of the name that the suggestions are for.
+    /// </summary>
+    private int _suggestionNameStart;
+
+    private int _suggestionNameEnd;
+
+    /// <summary>
+    /// The caret to apply when the value was changed in here, rather than by the edit session.
+    /// </summary>
+    private int? _localCaret;
+
+    private bool HasSuggestions => _functionSuggestions is { Count: > 0 };
+
+    private int? ValueCaret => _localCaret ?? (IsInputOwner ? _sheet?.Editor.FormulaEdit.PendingCaret : null);
     private FormulaHintBoxResult? _formulaHint;
     private readonly string _anchorId = $"bds-select-anchor-{Guid.NewGuid():N}";
 
@@ -156,6 +185,7 @@
 
     private async Task OnInput(string value)
     {
+        _localCaret = null;
         Value = value ?? string.Empty;
         // the caret is reported after the input, so until then assume that it moved on by a character
         SuggestFunctions(_currentCaretPosition < 0 ? Value.Length : _currentCaretPosition + 1);
@@ -168,6 +198,8 @@
     /// </summary>
     private void SuggestFunctions(int caret)
     {
+        // the selection is kept when the caret is reported for the text that the suggestions were made for
+        var selected = _functionSuggestions?.ElementAtOrDefault(_suggestionIndex)?.Name;
         _functionSuggestions = null;
 
         if (_sheet == null || !FormulaEngine.IsFormula(Value))
@@ -179,7 +211,83 @@
 
         var tokens = new Lexer().Lex(Value.AsSpan().Slice(0, len), FormulaOptions);
         if (tokens.Count > 1 && tokens[^2] is IdentifierToken idToken)
+        {
             _functionSuggestions = _sheet.FormulaEngine.GetDefinitionsStartingWith(idToken.Value).ToList();
+            SelectSuggestion(Math.Max(0, _functionSuggestions.FindIndex(x => x.Name == selected)));
+            _suggestionNameStart = idToken.PositionStart;
+            _suggestionNameEnd = len;
+        }
+    }
+
+    /// <summary>
+    /// Handles a key before the sheet does. While suggestions are showing, the up and down arrows move through
+    /// them, enter and tab take the selected one and escape closes them. Returns whether the key was handled.
+    /// </summary>
+    public bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
+    {
+        if (!HasSuggestions || ctrlKey || altKey || metaKey)
+            return false;
+
+        switch (key)
+        {
+            case "ArrowDown":
+                SelectSuggestion(_suggestionIndex + 1);
+                break;
+            case "ArrowUp":
+                SelectSuggestion(_suggestionIndex - 1);
+                break;
+            case "Enter":
+            case "Tab":
+                _ = AcceptSuggestion(_functionSuggestions![_suggestionIndex]);
+                return true;
+            case "Escape":
+                _functionSuggestions = null;
+                break;
+            default:
+                return false;
+        }
+
+        StateHasChanged();
+        return true;
+    }
+
+    private void SelectSuggestion(int index)
+    {
+        _suggestionIndex = Math.Clamp(index, 0, Math.Max(0, (_functionSuggestions?.Count ?? 1) - 1));
+
+        if (_suggestionIndex < _suggestionFirstShown)
+            _suggestionFirstShown = _suggestionIndex;
+        else if (_suggestionIndex >= _suggestionFirstShown + MaxSuggestionsShown)
+            _suggestionFirstShown = _suggestionIndex - MaxSuggestionsShown + 1;
+    }
+
+    /// <summary>
+    /// Replaces the name being typed with the function, ready for its first argument.
+    /// </summary>
+    private async Task AcceptSuggestion(FunctionDefinition suggestion)
+    {
+        var start = Math.Clamp(_suggestionNameStart, 0, Value.Length);
+        var end = Math.Clamp(_suggestionNameEnd, start, Value.Length);
+        var hasBracket = end < Value.Length && Value[end] == '(';
+        var text = suggestion.Name + "(";
+        if (hasBracket)
+            end++;
+
+        _functionSuggestions = null;
+
+        if (_sheet?.Editor.IsEditing == true && _sheet.Editor.EditValue == Value)
+        {
+            // the owner of the edit value passes it back down, with the caret from the edit session
+            _sheet.Editor.FormulaEdit.SetInputOwner(this);
+            _sheet.Editor.FormulaEdit.ReplaceText(start, end - start, text);
+            StateHasChanged();
+            return;
+        }
+
+        Value = string.Concat(Value.AsSpan(0, start), text, Value.AsSpan(end));
+        _localCaret = start + text.Length;
+        await ValueChanged.InvokeAsync(Value);
+        StateHasChanged();
     }
 
     private void OnSelectionChanged((int Start, int End) selection)

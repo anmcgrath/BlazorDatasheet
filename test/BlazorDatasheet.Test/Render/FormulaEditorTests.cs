@@ -54,6 +54,66 @@ public class FormulaEditorTests
     }
 
     [Test]
+    public async Task Keys_Work_The_Suggestions_Before_Anything_Else()
+    {
+        using var context = CreateContext();
+        var value = "";
+        var editor = context.RenderComponent<FormulaEditor>(p => p
+            .Add(x => x.Sheet, new Sheet(5, 5))
+            .Add(x => x.ValueChanged, v => value = v));
+
+        editor.Instance.HandleKey("Enter", false, false, false, false).Should().BeFalse("nothing is suggested");
+
+        await Type(editor, "=1+S", 4);
+        var names = editor.FindAll(".bds-func-suggestions-item").Select(x => x.TextContent.Trim()).ToList();
+        names.Count.Should().BeGreaterThan(1);
+        context.JSInterop.Invocations.Last(x => x.Identifier == "setCaptureListKeys").Arguments.Should().Equal(true);
+
+        await editor.InvokeAsync(() => editor.Instance.HandleKey("ArrowDown", false, false, false, false).Should().BeTrue());
+        editor.Find(".bds-func-suggestions-item.active").TextContent.Trim().Should().Be(names[1]);
+        await editor.InvokeAsync(() => editor.Instance.HandleKey("ArrowUp", false, false, false, false).Should().BeTrue());
+        await editor.InvokeAsync(() => editor.Instance.HandleKey("ArrowDown", false, false, false, false));
+
+        await editor.InvokeAsync(() => editor.Instance.HandleKey("Tab", false, false, false, false).Should().BeTrue());
+        value.Should().Be($"=1+{names[1]}(");
+        editor.FindAll(".bds-func-suggestions-item").Should().BeEmpty();
+        context.JSInterop.Invocations.Last(x => x.Identifier == "setInputText").Arguments
+            .Should().Equal(new object[] { value, value.Length });
+        context.JSInterop.Invocations.Last(x => x.Identifier == "setCaptureListKeys").Arguments.Should().Equal(false);
+    }
+
+    [Test]
+    public async Task Escape_Closes_The_Suggestions_And_Is_Then_Left_To_The_Sheet()
+    {
+        using var context = CreateContext();
+        var editor = context.RenderComponent<FormulaEditor>(p => p.Add(x => x.Sheet, new Sheet(5, 5)));
+        await Type(editor, "=SU", 3);
+
+        await editor.InvokeAsync(() => editor.Instance.HandleKey("Escape", false, false, false, false).Should().BeTrue());
+        editor.FindAll(".bds-func-suggestions-item").Should().BeEmpty();
+        editor.Instance.HandleKey("Escape", false, false, false, false).Should().BeFalse();
+    }
+
+    [Test]
+    public async Task Clicked_Suggestion_Is_Written_Into_The_Edit_With_The_Caret_After_It()
+    {
+        using var context = CreateContext();
+        var sheet = new Sheet(5, 5);
+        sheet.Editor.BeginEdit(0, 0);
+        var editor = context.RenderComponent<FormulaEditor>(p => p
+            .Add(x => x.Sheet, sheet)
+            .Add(x => x.ValueChanged, v => sheet.Editor.EditValue = v));
+
+        await Type(editor, "=SUM()+1", 8);
+        await Type(editor, "=SU()+1", 3);
+        var sum = editor.FindAll(".bds-func-suggestions-item").First(x => x.TextContent.Trim() == "SUM");
+        await editor.InvokeAsync(() => sum.Click());
+
+        sheet.Editor.EditValue.Should().Be("=SUM()+1", "the bracket that was already there is reused");
+        sheet.Editor.FormulaEdit.PendingCaret.Should().Be(5);
+    }
+
+    [Test]
     public async Task Caret_Inside_A_Function_Shows_Its_Hint()
     {
         using var context = CreateContext();

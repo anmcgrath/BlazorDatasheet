@@ -59,6 +59,14 @@
     /// </summary>
     [Parameter] public bool PreventAcceptKeys { get; set; }
 
+    /// <summary>
+    /// Stops enter, tab and the up and down arrows from acting on the input, while they are being
+    /// used to work a list of suggestions.
+    /// </summary>
+    [Parameter] public bool CaptureListKeys { get; set; }
+
+    private bool _captureListKeys;
+
     /// <summary>Delays initial focus until the owning editor has supplied its starting value.</summary>
     [Parameter] public bool ReadyToFocus { get; set; } = true;
     private bool _initialFocusRequested;
@@ -82,6 +90,12 @@
             await SetInputTextAsync(_value, ValueCaret);
             await SetHighlightTextAsync();
         }
+        if (CaptureListKeys != _captureListKeys)
+        {
+            _captureListKeys = CaptureListKeys;
+            await InvokeHighlighterAsync("setCaptureListKeys", _captureListKeys);
+        }
+
         await RequestInitialFocusAsync();
     }
 
