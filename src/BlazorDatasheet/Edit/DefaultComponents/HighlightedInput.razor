@@ -1,6 +1,7 @@
 ﻿@using Microsoft.JSInterop
 @using System.Text
 @using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Formula.Core
 @using BlazorDatasheet.Formula.Core.Interpreter
 @using BlazorDatasheet.Formula.Core.Interpreter.Lexing
 @using static BlazorDatasheet.Util.JsInteropHelper
@@ -210,7 +211,8 @@
 
         var lexer = new Lexer();
         var tokens = lexer.Lex(text, FormulaOptions);
-        var tokenColors = FormulaReferenceColorizer.GetReferenceColorIndices(tokens);
+        var references = FormulaReferenceScanner.Scan(text, FormulaOptions);
+        var referenceIndex = 0;
 
         var sb = new StringBuilder();
         var span = text.AsSpan();
@@ -222,9 +224,14 @@
             var section = span.Slice(start, len);
             sb.Append($"<span ");
             sb.Append($"class=\"{GetClass(tokens[i].Tag)}\" ");
-            if (tokenColors.TryGetValue(i, out var colorIndex))
+
+            // both tokens and references are in text order
+            while (referenceIndex < references.Count && references[referenceIndex].TextEnd <= start)
+                referenceIndex++;
+
+            if (referenceIndex < references.Count && references[referenceIndex].TextStart <= start)
             {
-                sb.Append($"style=\"color:var(--highlight-color-{colorIndex})\"");
+                sb.Append($"style=\"color:var(--highlight-color-{references[referenceIndex].ColorIndex})\"");
             }
 
             sb.Append(">");
