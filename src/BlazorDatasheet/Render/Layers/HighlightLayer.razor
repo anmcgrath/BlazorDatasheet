@@ -8,7 +8,7 @@
     @foreach (var reference in _references)
     {
         // references to other sheets have nothing to show here
-        if (reference.Region == null || (reference.SheetName != null && reference.SheetName != Sheet.Name))
+        if (reference.Region == null || !IsInThisSheet(reference))
             continue;
 
         var region = reference.Region;
@@ -43,22 +43,44 @@
     // The same references, with the same colours, that the editor highlights in the formula text.
     private IReadOnlyList<FormulaReferenceSpan> _references = Array.Empty<FormulaReferenceSpan>();
 
+    /// <summary>
+    /// The sheet that the references without a sheet name are to, which is the one being edited.
+    /// </summary>
+    private Sheet? _editSheet;
+
+    private Workbook? _workbook;
+
     protected override void OnSheetChange(Sheet newSheet, Sheet oldSheet)
     {
-        oldSheet.Editor.FormulaEdit.ReferencesChanged -= OnReferencesChanged;
-        newSheet.Editor.FormulaEdit.ReferencesChanged += OnReferencesChanged;
-        _references = newSheet.Editor.FormulaEdit.References;
+        // the formula may be in any sheet of the workbook, with references to this one
+        if (_workbook != null)
+            _workbook.FormulaEditReferencesChanged -= OnReferencesChanged;
+
+        _workbook = newSheet.Workbook;
+        _workbook.FormulaEditReferencesChanged += OnReferencesChanged;
+        ReadReferences();
     }
+
+    private void ReadReferences()
+    {
+        var formulaEdit = _workbook?.ActiveFormulaEdit;
+        _editSheet = formulaEdit?.Sheet;
+        _references = formulaEdit?.References ?? Array.Empty<FormulaReferenceSpan>();
+    }
+
+    private bool IsInThisSheet(FormulaReferenceSpan reference) =>
+        reference.SheetName == null ? ReferenceEquals(_editSheet, Sheet) : reference.SheetName == Sheet.Name;
 
     private void OnReferencesChanged(object? sender, EventArgs e)
     {
-        _references = Sheet.Editor.FormulaEdit.References;
-        StateHasChanged();
+        ReadReferences();
+        _ = InvokeAsync(StateHasChanged);
     }
 
     public void Dispose()
     {
-        Sheet.Editor.FormulaEdit.ReferencesChanged -= OnReferencesChanged;
+        if (_workbook != null)
+            _workbook.FormulaEditReferencesChanged -= OnReferencesChanged;
     }
 
 }

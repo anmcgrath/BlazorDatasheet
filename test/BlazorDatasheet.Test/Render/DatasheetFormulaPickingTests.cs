@@ -162,6 +162,61 @@ public class DatasheetFormulaPickingTests
         GetHighlightColors(component).Should().BeEmpty();
     }
 
+    [Test]
+    public async Task Dragging_Over_Another_Sheet_In_The_Workbook_Writes_A_Reference_To_It()
+    {
+        using var context = CreateContext();
+        var workbook = new Workbook();
+        var sheet = workbook.AddSheet(10, 10);
+        var other = workbook.AddSheet(10, 10);
+        var component = await BeginFormulaEdit(context, sheet, "=");
+        var otherComponent = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, other));
+        await otherComponent.InvokeAsync(() => other.Selection.Set(5, 5));
+
+        await otherComponent.InvokeAsync(async () =>
+        {
+            otherComponent.Instance.HandleCellMouseDown(null, Pointer(1, 1));
+            otherComponent.Instance.HandleCellMouseOver(null, Pointer(2, 2));
+            // the mouse up is on the window, which every datasheet hears
+            await component.Instance.HandleWindowMouseUp(new MouseEventArgs());
+            await otherComponent.Instance.HandleWindowMouseUp(new MouseEventArgs());
+        });
+
+        sheet.Editor.IsEditing.Should().BeTrue();
+        sheet.Editor.EditValue.Should().Be("=Sheet2!B2:C3");
+        sheet.Editor.FormulaEdit.IsDragging.Should().BeFalse();
+        other.Selection.ActiveCellPosition.Should().Be(new CellPosition(5, 5));
+
+        GetHighlightColors(component).Should().BeEmpty();
+        GetHighlightColors(otherComponent).Should().Equal("var(--highlight-color-1)");
+
+        await component.InvokeAsync(() => sheet.Editor.EditValue = "=Sheet2!B2:C3+A1");
+        GetHighlightColors(component).Should().Equal("var(--highlight-color-2)");
+        GetHighlightColors(otherComponent).Should().Equal("var(--highlight-color-1)");
+    }
+
+    [Test]
+    public async Task Clicking_Another_Sheet_Accepts_The_Edit_When_A_Reference_Cannot_Be_Picked()
+    {
+        using var context = CreateContext();
+        var workbook = new Workbook();
+        var sheet = workbook.AddSheet(10, 10);
+        var other = workbook.AddSheet(10, 10);
+        var component = await BeginFormulaEdit(context, sheet, "=");
+        var otherComponent = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, other));
+        await component.InvokeAsync(() => sheet.Editor.EditValue = "=5");
+
+        await otherComponent.InvokeAsync(async () =>
+        {
+            otherComponent.Instance.HandleCellMouseDown(null, Pointer(1, 1));
+            await otherComponent.Instance.HandleWindowMouseUp(new MouseEventArgs());
+        });
+
+        sheet.Editor.IsEditing.Should().BeFalse();
+        sheet.Cells[0, 0].Value.Should().Be(5);
+        other.Selection.ActiveCellPosition.Should().Be(new CellPosition(1, 1));
+    }
+
     private class GreedyEditor : BaseEditor
     {
         public int MouseDownCount { get; private set; }
