@@ -1,12 +1,8 @@
 @inherits BaseEditor
-@using System.Text
 @using BlazorDatasheet.Core.Interfaces
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Edit
 @using BlazorDatasheet.Core.FormulaEngine
-@using BlazorDatasheet.Core.Events.Selection
-@using BlazorDatasheet.Core.Selecting
-@using BlazorDatasheet.Core.Util
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Formula.Core
 @using BlazorDatasheet.Formula.Core.Interpreter
@@ -66,103 +62,40 @@
     private bool _hasBegunEdit;
     private int _currentCaretPosition;
     private double _highlightInputHeight;
-    private string _currentSnapshot = string.Empty;
-    internal SelectionInputManager? SelectionInputManager;
     public bool IsFormulaValue => FormulaEngine.IsFormula(CurrentValue);
-    private bool _canAcceptRanges = true;
     private List<FunctionDefinition>? _functionSuggestions;
     private FormulaHintBoxResult? _formulaHint;
     private readonly string _anchorId = $"bds-select-anchor-{Guid.NewGuid():N}";
 
     public override void BeforeEdit(IReadOnlyCell cell, Sheet sheet)
     {
+        if (_sheet != null)
+            _sheet.Editor.FormulaEdit.FocusRequested -= OnFormulaEditFocusRequested;
+
         _sheet = sheet;
         _isSoftEdit = _sheet.Editor.IsSoftEdit;
         ResetAutoScrollActive();
 
-        if (SelectionInputManager != null)
-        {
-            SelectionInputManager.Selection.ActiveRegionChanged -= OnFormulaSelectionActiveRegionChanged;
-            SelectionInputManager.Selection.SelectingChanged -= OnFormulaSelectionSelectingChanged;
-        }
-
-        SelectionInputManager = new SelectionInputManager(new Selection(_sheet));
-        SelectionInputManager.Selection.ActiveRegionChanged += OnFormulaSelectionActiveRegionChanged;
-        SelectionInputManager.Selection.SelectingChanged += OnFormulaSelectionSelectingChanged;
+        // References are picked from the sheet by the edit session, which writes them into the edit value.
+        _sheet.Editor.FormulaEdit.IsPickingEnabled = true;
+        _sheet.Editor.FormulaEdit.FocusRequested += OnFormulaEditFocusRequested;
 
         _formulaOptions = sheet.FormulaEngine.Options;
         StateHasChanged();
     }
 
-    private async void OnFormulaSelectionActiveRegionChanged(object? sender, ActiveRegionChangedEvent e)
+    private async void OnFormulaEditFocusRequested(object? sender, EventArgs e)
     {
-        var oldRegion = e.OldRegion;
-        var newRegion = e.NewRegion;
-
-        if (newRegion == null)
-            return;
-
-        if (newRegion.IsSingleCell())
-            await ScrollService!.ScrollToContainRegion(newRegion);
-
-        if (oldRegion == null)
-        {
-            await ScrollService!.ScrollToContainRegion(newRegion);
-            return;
-        }
-
-        var newRegions = newRegion.Area > oldRegion.Area
-            ? newRegion.Break(oldRegion)
-            : oldRegion.Break(newRegion);
-
-        if (newRegions.Count == 1)
-            await ScrollService!.ScrollToContainRegion(newRegions[0]);
-    }
-
-    private void OnFormulaSelectionSelectingChanged(object? sender, IRegion? selectingRegion)
-    {
-        SetAutoScrollActive(selectingRegion != null);
+        var owner = _sheet.Editor.FormulaEdit.InputOwner;
+        if (owner == null || ReferenceEquals(owner, this))
+            await InvokeAsync(FocusAsync);
     }
 
     private void OnInput(string value)
     {
         var newValue = value ?? string.Empty;
         CurrentValue = newValue;
-
-        HandleInputChanged();
         SuggestFunctions();
-    }
-
-    private void HandleInputChanged()
-    {
-        _currentSnapshot = CurrentValue;
-
-        // if edit is soft edit then we must be at the end of the input
-        var lexer = new Lexer();
-        var tokens = lexer.Lex(CurrentValue, _formulaOptions);
-
-        if (tokens.Count <= 1)
-        {
-            _canAcceptRanges = false;
-            return;
-        }
-
-        var token = tokens[^2]; // EoF is last
-
-        if (token.Tag.GetBinaryOperatorPrecedence() > 0 ||
-            token.Tag == Tag.CommaToken ||
-            token.Tag == Tag.EqualsToken ||
-            token.Tag == Tag.ColonToken ||
-            token.Tag == Tag.LeftParenthToken)
-        {
-            _canAcceptRanges = true;
-        }
-        else
-        {
-            _canAcceptRanges = false;
-        }
-
-        SelectionInputManager?.Clear();
     }
 
     private void SuggestFunctions()
@@ -199,7 +132,6 @@
             CurrentValue = editValue ?? string.Empty;
         }
 
-        HandleInputChanged();
         StateHasChanged();
     }
 
@@ -210,59 +142,7 @@
         StateHasChanged();
     }
 
-    private void SetEditValueToSelectionPreview()
-    {
-        var selection = SelectionInputManager?.Selection;
-        if (selection == null)
-            return;
-
-        var sb = new StringBuilder();
-        for (var i = 0; i < selection.Regions.Count; i++)
-        {
-            var region = selection.Regions[i];
-            sb.Append(RangeText.RegionToText(region));
-            if (i != selection.Regions.Count - 1)
-                sb.Append(",");
-        }
-
-        if (selection.IsSelecting)
-        {
-            if (selection.Regions.Count > 0)
-                sb.Append(",");
-            sb.Append(RangeText.RegionToText(selection.SelectingRegion!));
-        }
-
-        CurrentValue = _currentSnapshot + sb;
-    }
-
     public async Task FocusAsync() => await _highlightedInput.FocusAndMoveCursorToEndAsync();
-
-    public override bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
-    {
-        if (!_sheet.Editor.IsSoftEdit)
-            return false;
-
-        if (!FormulaEngine.IsFormula(CurrentValue))
-            return false;
-
-        if (KeyUtil.IsArrowKey(key))
-        {
-            if (_canAcceptRanges)
-            {
-                if (SelectionInputManager?.Selection.IsEmpty() == true)
-                {
-                    SelectionInputManager.Selection.Set(_sheet.Editor.EditCell!.Row, _sheet.Editor.EditCell!.Col);
-                }
-
-                var offset = KeyUtil.GetMovementFromArrowKey(key);
-                SelectionInputManager?.HandleArrowKeyDown(shiftKey, offset);
-                SetEditValueToSelectionPreview();
-                return true;
-            }
-        }
-
-        return false;
-    }
 
     private void HighlightInputSizeChanged(Size size)
     {
@@ -273,50 +153,10 @@
         }
     }
 
-    public override bool HandleMouseDown(int row, int col, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
-    {
-        if (_canAcceptRanges && IsFormulaValue)
-        {
-            SelectionInputManager?.HandlePointerDown(row, col, shiftKey, ctrlKey, metaKey, 1);
-            SetEditValueToSelectionPreview();
-            return true;
-        }
-
-        return false;
-    }
-
-    public override bool HandleMouseOver(int row, int col, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
-    {
-        if (_canAcceptRanges && IsFormulaValue)
-        {
-            SelectionInputManager?.HandlePointerOver(row, col);
-            SetEditValueToSelectionPreview();
-            return true;
-        }
-
-        return false;
-    }
-
-    public override async Task<bool> HandleWindowMouseUpAsync()
-    {
-        SelectionInputManager?.HandleWindowMouseUp();
-
-        if (_canAcceptRanges && IsFormulaValue)
-        {
-            SetEditValueToSelectionPreview();
-            await _highlightedInput.FocusAndMoveCursorToEndAsync();
-        }
-
-        return true;
-    }
-
     public void Dispose()
     {
-        if (SelectionInputManager == null)
-            return;
-
-        SelectionInputManager.Selection.ActiveRegionChanged -= OnFormulaSelectionActiveRegionChanged;
-        SelectionInputManager.Selection.SelectingChanged -= OnFormulaSelectionSelectingChanged;
+        if (_sheet != null)
+            _sheet.Editor.FormulaEdit.FocusRequested -= OnFormulaEditFocusRequested;
     }
 
 }

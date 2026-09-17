@@ -437,6 +437,9 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         sheet.Protection.Changed -= ProtectionChanged;
         sheet.Editor.EditBegin -= EditorOnEditBegin;
         sheet.Editor.EditFinished -= EditorOnEditFinished;
+        sheet.Editor.FormulaEdit.PickRegionChanged -= FormulaEditOnPickRegionChanged;
+        sheet.Editor.FormulaEdit.DraggingChanged -= FormulaEditOnDraggingChanged;
+        _autoScrollState.SetEditorSelectionActive(false);
         sheet.ScreenUpdatingChanged -= ScreenUpdatingChanged;
         sheet.FrozenRowCols -= SheetOnFrozenRowCols;
         sheet.Selection.ActiveRegionChanged -= ActiveRegionChanged;
@@ -455,6 +458,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         sheet.Protection.Changed += ProtectionChanged;
         sheet.Editor.EditBegin += EditorOnEditBegin;
         sheet.Editor.EditFinished += EditorOnEditFinished;
+        sheet.Editor.FormulaEdit.PickRegionChanged += FormulaEditOnPickRegionChanged;
+        sheet.Editor.FormulaEdit.DraggingChanged += FormulaEditOnDraggingChanged;
         sheet.ScreenUpdatingChanged += ScreenUpdatingChanged;
         sheet.FrozenRowCols += SheetOnFrozenRowCols;
         sheet.Selection.ActiveRegionChanged += ActiveRegionChanged;
@@ -629,7 +634,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
                  new ClearCellsCommand(_sheet.Selection.Regions).CanExecute(_sheet));
     }
 
-    private void HandleCellMouseDown(object? sender, SheetPointerEventArgs args)
+    internal void HandleCellMouseDown(object? sender, SheetPointerEventArgs args)
     {
         if (_sheet.Editor.IsEditing)
         {
@@ -640,6 +645,10 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             {
                 return;
             }
+
+            if (_sheet.Editor.FormulaEdit.HandlePointerDown(args.Row, args.Col, args.ShiftKey, args.CtrlKey,
+                    args.MetaKey))
+                return;
         }
 
         // if rmc and inside a selection, don't do anything
@@ -673,7 +682,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         _selectionManager.HandleHeaderSelection(new ColumnRegion(group.Start, group.End));
     }
 
-    private async Task<bool> HandleWindowKeyDown(KeyboardEventArgs e)
+    internal async Task<bool> HandleWindowKeyDown(KeyboardEventArgs e)
     {
         if (!IsDataSheetActive)
             return false;
@@ -683,6 +692,10 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
         var editorHandled = GetActiveEditorLayer()?.HandleKeyDown(e.Key, e.CtrlKey, e.ShiftKey, e.AltKey, e.MetaKey);
         if (editorHandled == true)
+            return true;
+
+        if (_sheet.Editor.IsEditing && KeyUtil.IsArrowKey(e.Key) && !e.CtrlKey && !e.AltKey && !e.MetaKey &&
+            _sheet.Editor.FormulaEdit.HandleArrowKey(KeyUtil.GetMovementFromArrowKey(e.Key), e.ShiftKey))
             return true;
 
         var modifiers = e.GetModifiers();
@@ -740,17 +753,50 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         return false;
     }
 
-    private async Task<bool> HandleWindowMouseUp(MouseEventArgs arg)
+    internal async Task<bool> HandleWindowMouseUp(MouseEventArgs arg)
     {
         if (_sheet.Editor.IsEditing)
         {
             var activeEditor = GetActiveEditorLayer();
             if (activeEditor != null && await activeEditor.HandleWindowMouseUpAsync())
                 return true;
+
+            if (_sheet.Editor.FormulaEdit.HandlePointerUp())
+                return true;
         }
 
         _selectionManager.HandleWindowMouseUp();
         return false;
+    }
+
+    private void FormulaEditOnDraggingChanged(object? sender, bool isDragging)
+    {
+        _autoScrollState.SetEditorSelectionActive(isDragging);
+    }
+
+    /// <summary>
+    /// Keeps the part of a reference that was just picked in view.
+    /// </summary>
+    private async void FormulaEditOnPickRegionChanged(object? sender, ActiveRegionChangedEvent e)
+    {
+        var oldRegion = e.OldRegion;
+        var newRegion = e.NewRegion;
+
+        if (newRegion == null)
+            return;
+
+        if (oldRegion == null || newRegion.IsSingleCell())
+        {
+            await ScrollToContainRegion(newRegion);
+            return;
+        }
+
+        var newRegions = newRegion.Area > oldRegion.Area
+            ? newRegion.Break(oldRegion)
+            : oldRegion.Break(newRegion);
+
+        if (newRegions.Count == 1)
+            await ScrollToContainRegion(newRegions[0]);
     }
 
     private async Task<bool> HandleArrowKeysDown(bool shift, Offset offset)
@@ -821,7 +867,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         _sheet.Editor.BeginEdit(row, col, mode == EditEntryMode.Key, mode, entryChar);
     }
 
-    private void HandleCellMouseOver(object? sender, SheetPointerEventArgs args)
+    internal void HandleCellMouseOver(object? sender, SheetPointerEventArgs args)
     {
         if (_sheet.Editor.IsEditing)
         {
@@ -832,6 +878,9 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
                         args.MetaKey))
                     return;
             }
+
+            if (_sheet.Editor.FormulaEdit.HandlePointerOver(args.Row, args.Col))
+                return;
         }
 
         _selectionManager.HandlePointerOver(args.Row, args.Col);
