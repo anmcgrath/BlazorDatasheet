@@ -14,8 +14,11 @@
           style="min-width: calc(@(CellWidth)px - var(--selection-border-thickness) - var(--sheet-border-width)); min-height: calc(@(CellHeight)px - var(--selection-border-thickness) - var(--sheet-border-width));"
           @ref="_highlightResultEl">
     </span>
-
+    
     <span contenteditable="true"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
           class="bds-highlight-input"
           style="min-width: calc(@(CellWidth)px - var(--selection-border-thickness) - var(--sheet-border-width)); min-height: calc(@(CellHeight)px - var(--selection-border-thickness) - var(--sheet-border-width));"
           @ref="_highlightInputEl">

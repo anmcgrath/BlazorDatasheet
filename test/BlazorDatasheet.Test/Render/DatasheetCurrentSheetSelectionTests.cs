@@ -70,6 +70,20 @@ public class DatasheetCurrentSheetSelectionTests
     }
 
     [Test]
+    public async Task The_Autofill_Handle_Is_Hidden_With_The_Selection()
+    {
+        using var context = CreateContext();
+        var workbook = new Workbook();
+        var first = Render(context, workbook.AddSheet(10, 10));
+        var second = Render(context, workbook.AddSheet(10, 10));
+
+        await second.InvokeAsync(() => second.Instance.SetActiveAsync());
+
+        first.FindAll(".auto-fill").Should().BeEmpty();
+        second.FindAll(".auto-fill").Should().NotBeEmpty();
+    }
+
+    [Test]
     public async Task Selection_Stays_When_Focus_Leaves_The_Workbook()
     {
         using var context = CreateContext();
