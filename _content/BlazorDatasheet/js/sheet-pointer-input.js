@@ -140,6 +140,15 @@ class PointerInputService {
 
 }
 
-export function getInputService(sheetElement, dotnetHelper) {
-    return new PointerInputService(sheetElement, dotnetHelper);
+/**
+ * @param sheetElement
+ * @param dotnetHelper
+ * @param {string[]} [callbackNames] When given, the pointer events are registered in this same
+ * call, so creating the service costs one interop round trip rather than two.
+ */
+export function getInputService(sheetElement, dotnetHelper, callbackNames) {
+    const service = new PointerInputService(sheetElement, dotnetHelper);
+    if (callbackNames)
+        service.registerPointerEvents(...callbackNames);
+    return service;
 }
