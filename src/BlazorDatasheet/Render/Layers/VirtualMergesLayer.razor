@@ -56,13 +56,23 @@
     protected override void OnSheetChange(Sheet newSheet, Sheet oldSheet)
     {
         oldSheet.Cells.CellsChanged -= CellsOnCellsChanged;
+        oldSheet.Cells.RegionMerged -= MergesChanged;
+        oldSheet.Cells.RegionUnMerged -= MergesChanged;
         newSheet.Cells.CellsChanged += CellsOnCellsChanged;
+        newSheet.Cells.RegionMerged += MergesChanged;
+        newSheet.Cells.RegionUnMerged += MergesChanged;
     }
 
     private void CellsOnCellsChanged(object? sender, CellDataChangedEventArgs e)
     {
+        // nothing here renders unless a merge overlaps the view, and this fires for every data change
+        if (!Sheet.Cells.AnyMerges(ViewRegion))
+            return;
+
         StateHasChanged();
     }
+
+    private void MergesChanged(object? sender, IRegion region) => StateHasChanged();
 
     private string GetAbsoluteMergedCellContainerStyle(int row, int col, int rowSpan, int colSpan)
     {
@@ -92,6 +102,8 @@
     public void Dispose()
     {
         Sheet.Cells.CellsChanged -= CellsOnCellsChanged;
+        Sheet.Cells.RegionMerged -= MergesChanged;
+        Sheet.Cells.RegionUnMerged -= MergesChanged;
     }
 
     private string GetRelativeCellStyle(int row, int col, int mergeHeight, int mergeWidth)
