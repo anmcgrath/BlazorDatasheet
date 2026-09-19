@@ -30,7 +30,7 @@
 
     [Parameter] public bool Disabled { get; set; }
 
-    private Sheet _sheet = new(0, 0);
+    private Sheet _sheet = EmptySheet.Instance;
 
     /// The type of the active editor, which is an ICellEditor
     private Type? ActiveEditorType { get; set; } = typeof(TextEditorComponent);

@@ -4,6 +4,7 @@ using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.Core.Layout;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Render.Layout;
+using BlazorDatasheet.Util;
 using BlazorDatasheet.Services;
 using BlazorDatasheet.Virtualise;
 using Microsoft.AspNetCore.Components;
@@ -33,7 +34,7 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
     protected Virtualise2D? MainView;
 
     protected Region _viewRegion = new(-1, -1);
-    protected Sheet _sheet = new(0, 0);
+    protected Sheet _sheet = EmptySheet.Instance;
     protected Axis Axis { get; }
     protected IGridLayoutProvider LayoutProvider { get; private set; } = new EmptyLayoutProvider();
 

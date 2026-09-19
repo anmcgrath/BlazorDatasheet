@@ -103,6 +103,65 @@ public class WindowEventService : IWindowEventService
         await AddWindowEvent(eventType, nameof(HandleWindowClipboardEvent));
     }
 
+    public async Task RegisterEvents(params WindowEventRegistration[] registrations)
+    {
+        await CreateDotnetHelperIfNotExists();
+        if (_isDisposed || registrations.Length == 0) return;
+
+        // [eventType, jsInvokableName, throttleInMs] per event - the shape registerEvents reads.
+        var descriptors = new object[registrations.Length][];
+        for (var i = 0; i < registrations.Length; i++)
+        {
+            var registration = registrations[i];
+            string jsInvokableName;
+
+            if (registration.MouseHandler != null)
+            {
+                _mouseEventListeners ??= new();
+                _mouseEventListeners[registration.EventType] = registration.MouseHandler;
+                jsInvokableName = nameof(HandleWindowMouseEvent);
+            }
+            else if (registration.KeyHandler != null)
+            {
+                _keyEventListeners ??= new();
+                _keyEventListeners[registration.EventType] = registration.KeyHandler;
+                jsInvokableName = nameof(HandleWindowKeyEvent);
+            }
+            else
+            {
+                _clipboardEventListeners ??= new();
+                _clipboardEventListeners[registration.EventType] = registration.ClipboardHandler!;
+                jsInvokableName = nameof(HandleWindowClipboardEvent);
+            }
+
+            descriptors[i] = [registration.EventType, jsInvokableName, registration.ThrottleInMs];
+        }
+
+        if (_windowEventObj == null)
+            return;
+
+        await _windowEventObj.InvokeVoidAsync("registerEvents", (object)descriptors);
+    }
+
+    public async Task UnregisterEvent(string eventType)
+    {
+        _mouseEventListeners?.Remove(eventType);
+        _keyEventListeners?.Remove(eventType);
+        _clipboardEventListeners?.Remove(eventType);
+
+        if (_isDisposed || _windowEventObj == null)
+            return;
+
+        try
+        {
+            await _windowEventObj.InvokeVoidAsync("unregisterEvent", eventType);
+        }
+        catch (JSDisconnectedException)
+        {
+            // Ignore disconnects during server-side component teardown.
+        }
+    }
+
     // Cached so that callers arriving while initialisation is in flight wait for it to
     // finish rather than skipping registration with a null _windowEventObj.
     private Task CreateDotnetHelperIfNotExists() => _initTask ??= InitCoreAsync();

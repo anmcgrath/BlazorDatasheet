@@ -411,33 +411,30 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     {
         if (firstRender && !_isDisposing)
         {
-            _scrollContainerModule =
-                await Js.InvokeAsync<IJSObjectReference>("import",
-                    "./_content/BlazorDatasheet/js/scroll-container.js");
-
-            if (_isDisposing)
-            {
-                await DisposeJsObjectReferenceAsync(_scrollContainerModule);
-                _scrollContainerModule = null;
-                return;
-            }
-
             _dotnetHelper = DotNetObjectReference.Create(this);
 
             _sheetPointerInputService = new SheetPointerInputService(Js, _sheetContainer);
-            await _sheetPointerInputService.Init();
-
-            if (_isDisposing)
-                return;
-
             _sheetPointerInputService.PointerDown += HandleCellMouseDown;
             _sheetPointerInputService.PointerEnter += HandleCellMouseOver;
             _sheetPointerInputService.PointerDoubleClick += HandleCellDoubleClick;
+            
+            var scrollContainerImport = Js
+                .InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/js/scroll-container.js")
+                .AsTask();
+            var pointerInputInit = _sheetPointerInputService.Init();
+            var windowEvents = AddWindowEventsAsync();
 
-            await AddWindowEventsAsync();
+            await Task.WhenAll(scrollContainerImport, pointerInputInit, windowEvents);
+
+            var scrollContainerModule = await scrollContainerImport;
 
             if (_isDisposing)
+            {
+                await DisposeJsObjectReferenceAsync(scrollContainerModule);
                 return;
+            }
+
+            _scrollContainerModule = scrollContainerModule;
 
             if (UpdatePaneContextIfNeeded())
             {
@@ -529,11 +526,14 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     private async Task AddWindowEventsAsync()
     {
+        // Focus is configured first: the window handlers ask the browser side whether the sheet owns
+        // the input, and that answer depends on the container being known.
         await _windowEventService.ConfigureFocus(_sheetContainer, HandleFocusChanged);
-        await _windowEventService.RegisterKeyEvent("keydown", HandleWindowKeyDown);
-        await _windowEventService.RegisterClipboardEvent("paste", HandleWindowPaste);
-        await _windowEventService.RegisterClipboardEvent("copy", HandleWindowCopy);
-        await _windowEventService.RegisterMouseEvent("mouseup", HandleWindowMouseUp);
+        await _windowEventService.RegisterEvents(
+            WindowEventRegistration.Key("keydown", HandleWindowKeyDown),
+            WindowEventRegistration.Clipboard("paste", HandleWindowPaste),
+            WindowEventRegistration.Clipboard("copy", HandleWindowCopy),
+            WindowEventRegistration.Mouse("mouseup", HandleWindowMouseUp));
     }
 
     private bool RecalculateViewRegion()

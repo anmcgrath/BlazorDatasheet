@@ -41,4 +41,17 @@ internal interface IWindowEventService : IAsyncDisposable
     /// <param name="handler"></param>
     /// <returns></returns>
     Task RegisterClipboardEvent(string eventType, Func<ClipboardEventArgs, Task<bool>> handler);
+
+    /// <summary>
+    /// Registers several window events in a single interop call, so that a component's mount costs
+    /// one round trip rather than one per event.
+    /// </summary>
+    Task RegisterEvents(params WindowEventRegistration[] registrations);
+
+    /// <summary>
+    /// Takes the window listener for <paramref name="eventType"/> back off. Handlers that are only
+    /// of interest while a gesture is in progress register on the gesture and unregister here, so
+    /// that an idle component makes no interop calls at all.
+    /// </summary>
+    Task UnregisterEvent(string eventType);
 }
