@@ -276,6 +276,10 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     private bool _renderRequested;
 
+    private bool _renderDirty = true;
+
+    private Dictionary<string, object?>? _lastParameterValues;
+
     private bool _showFormulaDependents;
 
 
@@ -401,7 +405,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             ForceReRender();
         else if (requireRender)
         {
-            StateHasChanged();
+            RequestRender();
         }
 
         await base.OnParametersSetAsync();
@@ -441,7 +445,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
             if (UpdatePaneContextIfNeeded())
             {
-                StateHasChanged();
+                RequestRender();
             }
         }
 
@@ -469,6 +473,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         sheet.Columns.Removed -= HandleRowColRemoved;
         sheet.Rows.SizeModified -= HandleSizeModified;
         sheet.Columns.SizeModified -= HandleSizeModified;
+        sheet.Columns.GroupsModified -= HandleGroupsModified;
         _autoScrollState.SetSheetSelectionActive(false);
         // a sheet that is no longer shown can't be the current one
         if (DatasheetRegistry.For(sheet).Remove(this))
@@ -494,11 +499,12 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         sheet.Columns.Removed += HandleRowColRemoved;
         sheet.Rows.SizeModified += HandleSizeModified;
         sheet.Columns.SizeModified += HandleSizeModified;
+        sheet.Columns.GroupsModified += HandleGroupsModified;
         sheet.SetDialogService(new SimpleDialogService(Js));
         _autoScrollState.SetSheetSelectionActive(sheet.Selection.IsSelecting);
     }
 
-    private void ProtectionChanged(object? sender, EventArgs args) => _ = InvokeAsync(StateHasChanged);
+    private void ProtectionChanged(object? sender, EventArgs args) => _ = InvokeAsync(RequestRender);
 
     private void SelectingChanged(object? sender, IRegion? selectingRegion)
     {
@@ -567,11 +573,16 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     }
 
     /// <summary>
+    /// The column group band changes the height of the column gutter, so the sheet needs to re-render.
+    /// </summary>
+    private void HandleGroupsModified(object? sender, HeadingGroupsModifiedEventArgs e) => RequestRender();
+
+    /// <summary>
     /// Re-render all cells, regardless of whether they are dirty and refreshes the viewport
     /// </summary>
     public void ForceReRender()
     {
-        StateHasChanged();
+        RequestRender();
         RefreshView();
     }
 
@@ -593,7 +604,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     private void ScreenUpdatingChanged(object? sender, SheetScreenUpdatingEventArgs e)
     {
         if (e.IsScreenUpdating && _renderRequested)
-            this.StateHasChanged();
+            RequestRender();
     }
 
     private async void EditorOnEditFinished(object? sender, EditFinishedEventArgs e)
@@ -1351,12 +1362,67 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         return true;
     }
 
+    public override Task SetParametersAsync(ParameterView parameters)
+    {
+        if (HasParameterChanged(parameters))
+            _renderDirty = true;
+
+        return base.SetParametersAsync(parameters);
+    }
+
+    /// <summary>
+    /// Whether any parameter differs from the one supplied last time. Delegates, render fragments and
+    /// the dictionaries the caller owns compare by reference, so a caller that passes an inline
+    /// template (a new delegate each of its renders) still renders every time - only callers that hand
+    /// over stable values get the saving.
+    /// </summary>
+    private bool HasParameterChanged(ParameterView parameters)
+    {
+        var values = new Dictionary<string, object?>();
+        foreach (var parameter in parameters)
+            values[parameter.Name] = parameter.Value;
+
+        var last = _lastParameterValues;
+        _lastParameterValues = values;
+
+        if (last == null || last.Count != values.Count)
+            return true;
+
+        foreach (var (name, value) in values)
+        {
+            if (!last.TryGetValue(name, out var lastValue))
+                return true;
+            if (!Equals(lastValue, value))
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Marks the datasheet as needing a render and requests one. Everything that changes what the
+    /// markup shows without a parameter change goes through here, because ShouldRender gates on the
+    /// dirty flag.
+    /// </summary>
+    private void RequestRender()
+    {
+        _renderDirty = true;
+        StateHasChanged();
+    }
+
     protected override bool ShouldRender()
     {
+        if (!_renderDirty)
+            return false;
+
         _renderRequested = true;
 
-        var shouldRender = _sheet.ScreenUpdating;
-        return shouldRender;
+        // a render suppressed while screen updating is off stays dirty, so ScreenUpdatingChanged replays it
+        if (!_sheet.ScreenUpdating)
+            return false;
+
+        _renderDirty = false;
+        return true;
     }
 
     internal EditorLayer? GetActiveEditorLayer()
