@@ -855,8 +855,8 @@ public class Sheet
     {
         if (region == null)
             return false;
-        return Rows.CountVisible(region.Top, region.Bottom) > 0
-               && Columns.CountVisible(region.Left, region.Right) > 0;
+        return Rows.AnyVisible(region.Top, region.Bottom)
+               && Columns.AnyVisible(region.Left, region.Right);
     }
 
     /// <summary>
@@ -866,7 +866,7 @@ public class Sheet
     {
         if (region == null)
             return false;
-        return Rows.CountVisible(region.Top, region.Bottom) > 0;
+        return Rows.AnyVisible(region.Top, region.Bottom);
     }
 
     /// <summary>
@@ -876,7 +876,7 @@ public class Sheet
     {
         if (region == null)
             return false;
-        return Columns.CountVisible(region.Left, region.Right) > 0;
+        return Columns.AnyVisible(region.Left, region.Right);
     }
 
     /// <summary>

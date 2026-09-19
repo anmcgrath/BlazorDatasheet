@@ -96,7 +96,7 @@
             {
                 var start = Math.Max(group.Start, region.Left);
                 var end = Math.Min(group.End, region.Right);
-                if (_sheet.Columns.CountVisible(start, end) == 0)
+                if (!_sheet.Columns.AnyVisible(start, end))
                     continue;
 
                 var left = _sheet.Columns.GetVisualLeft(start) - _sheet.Columns.GetVisualLeft(region.Left);

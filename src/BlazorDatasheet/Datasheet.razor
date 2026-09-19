@@ -62,8 +62,8 @@
                     }
 
                     @{
-                        var hasVisibleRows = _sheet.Rows.CountVisible(_viewRegion.Top, _viewRegion.Bottom) > 0;
-                        var hasVisibleCols = _sheet.Columns.CountVisible(_viewRegion.Left, _viewRegion.Right) > 0;
+                        var hasVisibleRows = _sheet.Rows.AnyVisible(_viewRegion.Top, _viewRegion.Bottom);
+                        var hasVisibleCols = _sheet.Columns.AnyVisible(_viewRegion.Left, _viewRegion.Right);
                     }
                     @if (!hasVisibleCols && !hasVisibleRows)
                     {
