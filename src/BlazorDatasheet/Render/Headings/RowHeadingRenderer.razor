@@ -1,4 +1,4 @@
-@using BlazorDatasheet.DataStructures.Geometry
+﻿@using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Extensions
 @using BlazorDatasheet.Virtualise
 @inherits HeadingRenderer
@@ -64,12 +64,55 @@
     [Parameter]
     public int OverscanRows { get; set; } = 6;
 
-    private IRegion? TopHeadingRegion => _viewRegion.GetIntersection(_sheet.GetFrozenTopRegion());
+    // each of these is read a few times per render, so they are computed once and kept until the
+    // view region, freeze state or row count changes.
+    private bool _headingRegionsValid;
+    private IRegion? _topHeadingRegion;
+    private IRegion _mainHeadingRegion = new Region(0, 0);
+    private IRegion? _bottomHeadingRegion;
 
-    private IRegion MainHeadingRegion => new Region(_sheet.FreezeState.Top, _viewRegion.Bottom - _sheet.FreezeState.Bottom, 0,
-        0);
+    private IRegion? TopHeadingRegion
+    {
+        get
+        {
+            EnsureHeadingRegions();
+            return _topHeadingRegion;
+        }
+    }
 
-    private IRegion? BottomHeadingRegion => _viewRegion.GetIntersection(_sheet.GetFrozenBottomRegion());
+    private IRegion MainHeadingRegion
+    {
+        get
+        {
+            EnsureHeadingRegions();
+            return _mainHeadingRegion;
+        }
+    }
+
+    private IRegion? BottomHeadingRegion
+    {
+        get
+        {
+            EnsureHeadingRegions();
+            return _bottomHeadingRegion;
+        }
+    }
+
+    private void EnsureHeadingRegions()
+    {
+        if (_headingRegionsValid)
+            return;
+
+        _topHeadingRegion = _viewRegion.GetIntersection(_sheet.GetFrozenTopRegion());
+        _mainHeadingRegion = new Region(_sheet.FreezeState.Top, _viewRegion.Bottom - _sheet.FreezeState.Bottom, 0, 0);
+        _bottomHeadingRegion = _viewRegion.GetIntersection(_sheet.GetFrozenBottomRegion());
+        _headingRegionsValid = true;
+    }
+
+    protected override void InvalidateHeadingRegions()
+    {
+        _headingRegionsValid = false;
+    }
 
     private bool HasVisibleRows(IRegion? region) => _sheet.HasVisibleRows(region);
 

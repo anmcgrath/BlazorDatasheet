@@ -58,6 +58,7 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
                 ? new ColHeadingLayoutProvider(_sheet)
                 : new RowHeadingLayoutProvider(_sheet);
             LayoutProvider.ViewRegion = _viewRegion;
+            InvalidateHeadingRegions();
 
             refreshView = true;
         }
@@ -66,6 +67,7 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
         {
             _viewRegion = ViewRegion ?? _sheet.Region;
             LayoutProvider.ViewRegion = _viewRegion;
+            InvalidateHeadingRegions();
             refreshView = true;
         }
 
@@ -153,8 +155,17 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
     private void HandleFrozenRowCols(object? sender, SheetFrozenRowColsEventArgs e)
     {
         // the frozen heading panes are gated on the freeze state, so they must re-render with it
+        InvalidateHeadingRegions();
         _dirty = true;
         StateHasChanged();
+    }
+
+    /// <summary>
+    /// Clears any cached heading regions. They depend on the view region, the freeze state and the
+    /// number of rows/columns, so they are invalidated whenever one of those changes.
+    /// </summary>
+    protected virtual void InvalidateHeadingRegions()
+    {
     }
 
     private bool _dirty;
@@ -190,6 +201,7 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
     private void HandleRowColInserted(object? sender, RowColInsertedEventArgs? e)
     {
         _viewRegion = ViewRegion ?? _sheet.Region;
+        InvalidateHeadingRegions();
         _dirty = true;
         StateHasChanged();
     }
@@ -197,6 +209,7 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
     private void HandleRowColRemoved(object? sender, RowColRemovedEventArgs? e)
     {
         _viewRegion = ViewRegion ?? _sheet.Region;
+        InvalidateHeadingRegions();
         _dirty = true;
         StateHasChanged();
     }
