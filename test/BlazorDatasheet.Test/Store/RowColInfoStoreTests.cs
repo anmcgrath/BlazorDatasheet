@@ -1,4 +1,5 @@
-﻿using BlazorDatasheet.Core.Data;
+﻿using System;
+using BlazorDatasheet.Core.Data;
 using FluentAssertions;
 using NUnit.Framework;
 
@@ -78,5 +79,76 @@ public class RowColInfoStoreTests
 
         sheet.Rows.GetPhysicalHeight(2).Should().Be(sheet.Rows.DefaultSize);
         sheet.Rows.GetPhysicalHeight(4).Should().Be(sheet.Rows.DefaultSize);
+    }
+
+    [Test]
+    public void Any_Visible_Is_True_When_Nothing_Is_Hidden()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Rows.AnyVisible(0, 9).Should().BeTrue();
+        sheet.Columns.AnyVisible(0, 9).Should().BeTrue();
+    }
+
+    [Test]
+    public void Any_Visible_Is_False_When_All_Hidden()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Rows.Hide(0, 10);
+        sheet.Rows.AnyVisible(0, 9).Should().BeFalse();
+        sheet.Rows.AnyVisible(3, 5).Should().BeFalse();
+    }
+
+    [Test]
+    public void Any_Visible_Handles_Hidden_Prefix_Suffix_And_Middle()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Rows.Hide(0, 3);
+        sheet.Rows.AnyVisible(0, 2).Should().BeFalse();
+        sheet.Rows.AnyVisible(0, 3).Should().BeTrue();
+
+        var suffix = new Sheet(10, 10);
+        suffix.Rows.Hide(7, 3);
+        suffix.Rows.AnyVisible(7, 9).Should().BeFalse();
+        suffix.Rows.AnyVisible(6, 9).Should().BeTrue();
+
+        var middle = new Sheet(10, 10);
+        middle.Rows.Hide(4, 2);
+        middle.Rows.AnyVisible(4, 5).Should().BeFalse();
+        middle.Rows.AnyVisible(4, 6).Should().BeTrue();
+        middle.Rows.AnyVisible(3, 5).Should().BeTrue();
+    }
+
+    [Test]
+    public void Any_Visible_Handles_Out_Of_Range_Arguments()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Rows.AnyVisible(5, 4).Should().BeFalse();
+        sheet.Rows.AnyVisible(-5, 2).Should().BeTrue();
+        sheet.Rows.AnyVisible(8, 100).Should().BeTrue();
+        sheet.Rows.AnyVisible(20, 30).Should().BeFalse();
+
+        var empty = new Sheet(0, 0);
+        empty.Rows.AnyVisible(0, 5).Should().BeFalse();
+    }
+
+    [Test]
+    public void Any_Visible_Matches_Count_Visible_For_Random_Hidden_Ranges()
+    {
+        var random = new Random(42);
+        var sheet = new Sheet(200, 10);
+        for (int i = 0; i < 10; i++)
+        {
+            var start = random.Next(0, 200);
+            var count = random.Next(1, 20);
+            sheet.Rows.Hide(start, count);
+        }
+
+        for (int i = 0; i < 500; i++)
+        {
+            var start = random.Next(-10, 210);
+            var end = start + random.Next(-5, 30);
+            sheet.Rows.AnyVisible(start, end)
+                .Should().Be(sheet.Rows.CountVisible(start, end) > 0, $"for ({start}, {end})");
+        }
     }
 }

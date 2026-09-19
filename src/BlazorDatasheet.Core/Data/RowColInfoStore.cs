@@ -329,6 +329,24 @@ public abstract class RowColInfoStore
         return totalCount - invisibleCount;
     }
 
+    /// <summary>
+    /// Returns whether any row/column between start and end is visible. Equivalent to
+    /// <see cref="CountVisible"/> &gt; 0, but stops at the first visible index.
+    /// </summary>
+    public bool AnyVisible(int start, int end)
+    {
+        var sheetSize = Sheet.GetSize(_axis);
+        if (sheetSize == 0)
+            return false;
+
+        start = Math.Max(start, 0);
+        end = Math.Min(end, sheetSize - 1);
+        if (start > end)
+            return false;
+
+        return !Visible.CoversAll(start, end);
+    }
+
     public void Hide(int start, int count)
     {
         if (count == 0)

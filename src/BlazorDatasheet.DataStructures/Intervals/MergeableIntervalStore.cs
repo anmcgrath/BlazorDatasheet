@@ -262,6 +262,33 @@ public class MergeableIntervalStore<T> : ISparseSource where T : IMergeable<T>, 
     }
 
     /// <summary>
+    /// Returns whether every position between <paramref name="start"/> and <paramref name="end"/>
+    /// inclusive is inside an interval. Stops at the first gap, and doesn't materialise the intervals.
+    /// </summary>
+    public bool Covers(int start, int end)
+    {
+        if (start > end)
+            return true;
+        if (_intervals.Count == 0)
+            return false;
+
+        var i0 = _intervals.Keys.BinarySearchClosest(start);
+        if (i0 >= 1 && _intervals.Values[i0 - 1].End >= start)
+            i0--;
+
+        var next = start;
+        for (var i = Math.Max(i0, 0); i < _intervals.Count && next <= end; i++)
+        {
+            var interval = _intervals.Values[i];
+            if (interval.Start > next)
+                return false;
+            next = Math.Max(next, interval.End + 1);
+        }
+
+        return next > end;
+    }
+
+    /// <summary>
     /// Returns the next interval after the given position. If the position is inside the index it is not returned.
     /// </summary>
     /// <param name="position"></param>

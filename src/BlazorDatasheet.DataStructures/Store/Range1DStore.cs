@@ -72,6 +72,11 @@ public class Range1DStore<T> : ISparseSource
     }
 
     /// <summary>
+    /// Returns whether every position between start and end inclusive has a value stored.
+    /// </summary>
+    public bool CoversAll(int start, int end) => Intervals.Covers(start, end);
+
+    /// <summary>
     /// Inserts empty values into the store and shifts to the right
     /// </summary>
     /// <param name="start"></param>

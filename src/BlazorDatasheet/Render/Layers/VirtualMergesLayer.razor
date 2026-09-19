@@ -7,7 +7,7 @@
 @inherits Layer
 @implements IDisposable
 
-@if (Sheet.Cells.AnyMerges() && Sheet.Rows.CountVisible(0, Sheet.NumRows) > 0)
+@if (Sheet.Cells.AnyMerges() && Sheet.Rows.AnyVisible(0, Sheet.NumRows))
 {
     var merges = Sheet.Cells.GetMerges(ViewRegion)
         .Select(x => x.GetIntersection(Sheet.Region));
