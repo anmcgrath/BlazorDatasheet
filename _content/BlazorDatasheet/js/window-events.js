@@ -9,6 +9,32 @@
         this.policyRevision = -1;
         this.focusVersion = 0;
         this.preventDefaultMap = {}
+        // Editors outside the sheet, e.g. a formula bar, that edit this sheet. Focus moving to one of
+        // them is not focus leaving the sheet: the sheet stays active and an open edit carries on.
+        this.externalEditors = new Set();
+    }
+
+    addExternalEditor(el) {
+        if (this.disposed || !el) return;
+        this.externalEditors.add(el);
+        if (this.container) this.reconcileFocus();
+    }
+
+    removeExternalEditor(el) {
+        if (!this.externalEditors.delete(el) || this.disposed) return;
+        if (this.container) this.reconcileFocus();
+    }
+
+    inExternalEditor(target) {
+        if (!target) return false;
+        for (const el of this.externalEditors)
+            if (el.contains(target)) return true;
+        return false;
+    }
+
+    // Whether the target is part of the sheet for the purposes of focus.
+    inScope(target) {
+        return this.contains(target) || this.inExternalEditor(target);
     }
 
     listen(target, name, fn, capture = false) {
@@ -48,7 +74,7 @@
                 container.dataset.pointerFocus = '';
                 container.focus({ preventScroll: true });
             }
-            if (!inside && !this.inMenu(e.target)) this.setActive(false);
+            if (!inside && !this.inMenu(e.target) && !this.inExternalEditor(e.target)) this.setActive(false);
             this.reconcileFocus();
             if (inside && this.focused) this.setFocused(true, true);
         }, true);
@@ -61,8 +87,11 @@
             this.reconcileFocus();
         }, true);
         this.listen(window, 'focusout', e => {
-            if (e.relatedTarget) this.setFocused(this.contains(e.relatedTarget));
-            else queueMicrotask(() => {
+            // the active element isn't the destination yet, so keep it for the report
+            this.focusDestination = e.relatedTarget;
+            if (e.relatedTarget) this.setFocused(this.inScope(e.relatedTarget));
+            this.focusDestination = null;
+            if (!e.relatedTarget) queueMicrotask(() => {
                 // Removing an editor can move focus to body without an external focus destination.
                 if (this.focused && e.target.closest?.('.bds-editor-overlay') && !e.target.isConnected)
                     this.restoreFocus();
@@ -88,12 +117,12 @@
     }
 
     contains(target) {
-        return !!target && this.container.contains(target) && target.closest?.('.bds-sheet') === this.container;
+        return !!target && !!this.container && this.container.contains(target) && target.closest?.('.bds-sheet') === this.container;
     }
 
     reconcileFocus(fromWindow = false) {
         if (!this.disposed)
-            this.setFocused(document.visibilityState !== 'hidden' && document.hasFocus() && this.contains(document.activeElement),
+            this.setFocused(document.visibilityState !== 'hidden' && document.hasFocus() && this.inScope(document.activeElement),
                 false, fromWindow);
     }
 
@@ -131,9 +160,20 @@
         }, 0);
     }
 
+    // Whether the target is in another view of the workbook that this sheet belongs to, e.g. the datasheet
+    // of another of its sheets. A formula takes references from there, so going there doesn't end an edit.
+    isRelated(target) {
+        const id = this.container?.dataset?.bdsWorkbook;
+        return !!id && !this.contains(target) &&
+            target?.closest?.('[data-bds-workbook]')?.dataset.bdsWorkbook === id;
+    }
+
     dispatchFocus(fromWindow = false) {
-        this.dispatch(this.focusHandler,
-            { focused: this.focused, active: this.active, fromWindow, version: ++this.focusVersion });
+        const destination = this.focusDestination ?? document.activeElement;
+        this.dispatch(this.focusHandler, {
+            focused: this.focused, active: this.active, fromWindow,
+            toRelated: !this.focused && this.isRelated(destination), version: ++this.focusVersion
+        });
     }
 
     setInputState(active, editing, revision, focusVersion) {
@@ -145,7 +185,7 @@
 
     restoreFocus() {
         if (!this.disposed && this.focused && document.hasFocus() &&
-            (this.contains(document.activeElement) || document.activeElement === document.body))
+            (this.inScope(document.activeElement) || document.activeElement === document.body))
             this.container.focus({ preventScroll: true });
     }
 
@@ -218,6 +258,7 @@
         for (const { target, name, fn, capture } of this.listeners.values())
             target.removeEventListener(name, fn, capture);
         this.listeners.clear();
+        this.externalEditors.clear();
         this.handlerMap = {};
         this.preventDefaultMap = {};
     }
