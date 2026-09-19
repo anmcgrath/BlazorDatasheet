@@ -1,8 +1,14 @@
 ﻿@using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Events
 @using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Services
 @inherits Layer
 @implements IDisposable
+
+@if (!ShowWhenNotCurrentSheet && !DatasheetRegistry.For(Sheet.Workbook).ShowsSelection(Sheet))
+{
+    return;
+}
 
 <div class="bds-selection-layer">
     @foreach (var region in Sheet.Selection.Regions)
@@ -69,13 +75,28 @@
 
 @code {
 
+    /// <summary>
+    /// Whether the selection is shown while the user is working in another sheet of the workbook.
+    /// </summary>
+    [Parameter]
+    public bool ShowWhenNotCurrentSheet { get; set; }
+
+    private WorkbookViews? _workbookViews;
+
     protected override void OnSheetChange(Sheet newSheet, Sheet oldSheet)
     {
         oldSheet.Selection.SelectionChanged -= OnSelectionChanged;
         oldSheet.Selection.SelectingChanged -= OnSelectingChanged;
         newSheet.Selection.SelectionChanged += OnSelectionChanged;
         newSheet.Selection.SelectingChanged += OnSelectingChanged;
+
+        if (_workbookViews != null)
+            _workbookViews.Changed -= OnCurrentSheetChanged;
+        _workbookViews = DatasheetRegistry.For(newSheet.Workbook);
+        _workbookViews.Changed += OnCurrentSheetChanged;
     }
+
+    private void OnCurrentSheetChanged() => _ = InvokeAsync(StateHasChanged);
 
     private void OnSelectionChanged(object? sender, SelectionChangedEventArgs args)
     {
@@ -91,6 +112,8 @@
     {
         Sheet.Selection.SelectionChanged -= OnSelectionChanged;
         Sheet.Selection.SelectingChanged -= OnSelectingChanged;
+        if (_workbookViews != null)
+            _workbookViews.Changed -= OnCurrentSheetChanged;
     }
 
 }

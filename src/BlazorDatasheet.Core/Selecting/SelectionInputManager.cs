@@ -1,8 +1,7 @@
-﻿using BlazorDatasheet.Core.Selecting;
 using BlazorDatasheet.Core.Events.Selection;
 using BlazorDatasheet.DataStructures.Geometry;
 
-namespace BlazorDatasheet.Render;
+namespace BlazorDatasheet.Core.Selecting;
 
 internal class SelectionInputManager
 {

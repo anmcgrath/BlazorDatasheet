@@ -96,9 +96,15 @@ public class Editor
     /// </summary>
     public IReadOnlyCell? EditCell { get; set; }
 
+    /// <summary>
+    /// The state of the formula being edited, including the picking of references from the sheet.
+    /// </summary>
+    public FormulaEditSession FormulaEdit { get; }
+
     public Editor(Sheet sheet)
     {
         Sheet = sheet;
+        FormulaEdit = new FormulaEditSession(this);
     }
 
     /// <summary>

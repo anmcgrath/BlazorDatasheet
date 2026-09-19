@@ -9,6 +9,7 @@ using BlazorDatasheet.Core.Events.Selection;
 using BlazorDatasheet.Core.Events.Visual;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Core.Layout;
+using BlazorDatasheet.Core.Selecting;
 using BlazorDatasheet.Core.Util;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Edit;
@@ -80,6 +81,13 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     public bool ShowFormula { get; set; }
 
     private bool _showFormula;
+
+    /// <summary>
+    /// Whether the selection stays visible while the user is working in another sheet of the same workbook.
+    /// By default only the sheet that was last used shows its selection. The selection itself is kept either way.
+    /// </summary>
+    [Parameter]
+    public bool ShowSelectionWhenNotCurrentSheet { get; set; }
 
     /// <summary>
     /// Fired when the Datasheet becomes active or inactive (able to receive keyboard inputs).
@@ -273,6 +281,11 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     private CellLayoutProvider _cellLayoutProvider = null!;
     private PaneContext? _paneContext;
+
+    /// <summary>
+    /// Whether the sheet is one that was given, rather than the placeholder used when there is none.
+    /// </summary>
+    private bool _hasSheet;
     private readonly PreviewService _previewService = new();
     private readonly AutoScrollState _autoScrollState = new();
 
@@ -318,11 +331,17 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
         if (Sheet != _sheet)
         {
+            var wasCurrent = IsDataSheetActive ||
+                             (_hasSheet && DatasheetRegistry.For(_sheet.Workbook).WasLastActivated(_sheet));
             RemoveEvents(_sheet);
+            _hasSheet = Sheet != null;
             _sheet = Sheet ?? new(0, 0);
             _cellLayoutProvider = new CellLayoutProvider(_sheet);
             _selectionManager = new SelectionInputManager(_sheet.Selection);
             AddEvents(_sheet);
+            // the user is still working in this datasheet, e.g. after choosing a sheet from a list of tabs
+            if (wasCurrent)
+                DatasheetRegistry.For(_sheet.Workbook).NoteActivated(_sheet);
             ClearEditorLayers();
             requireRender = true;
         }
@@ -436,6 +455,10 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         sheet.Protection.Changed -= ProtectionChanged;
         sheet.Editor.EditBegin -= EditorOnEditBegin;
         sheet.Editor.EditFinished -= EditorOnEditFinished;
+        sheet.Editor.FormulaEdit.PickRegionChanged -= FormulaEditOnPickRegionChanged;
+        sheet.Editor.FormulaEdit.DraggingChanged -= FormulaEditOnDraggingChanged;
+        ReleaseForeignPick();
+        _autoScrollState.SetEditorSelectionActive(false);
         sheet.ScreenUpdatingChanged -= ScreenUpdatingChanged;
         sheet.FrozenRowCols -= SheetOnFrozenRowCols;
         sheet.Selection.ActiveRegionChanged -= ActiveRegionChanged;
@@ -447,6 +470,9 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         sheet.Rows.SizeModified -= HandleSizeModified;
         sheet.Columns.SizeModified -= HandleSizeModified;
         _autoScrollState.SetSheetSelectionActive(false);
+        // a sheet that is no longer shown can't be the current one
+        if (DatasheetRegistry.For(sheet).Remove(this))
+            DatasheetRegistry.For(sheet.Workbook).Refresh();
     }
 
     private void AddEvents(Sheet sheet)
@@ -454,6 +480,10 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         sheet.Protection.Changed += ProtectionChanged;
         sheet.Editor.EditBegin += EditorOnEditBegin;
         sheet.Editor.EditFinished += EditorOnEditFinished;
+        sheet.Editor.FormulaEdit.PickRegionChanged += FormulaEditOnPickRegionChanged;
+        sheet.Editor.FormulaEdit.DraggingChanged += FormulaEditOnDraggingChanged;
+        DatasheetRegistry.For(sheet).Add(this);
+        DatasheetRegistry.For(sheet.Workbook).Refresh();
         sheet.ScreenUpdatingChanged += ScreenUpdatingChanged;
         sheet.FrozenRowCols += SheetOnFrozenRowCols;
         sheet.Selection.ActiveRegionChanged += ActiveRegionChanged;
@@ -628,7 +658,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
                  new ClearCellsCommand(_sheet.Selection.Regions).CanExecute(_sheet));
     }
 
-    private void HandleCellMouseDown(object? sender, SheetPointerEventArgs args)
+    internal void HandleCellMouseDown(object? sender, SheetPointerEventArgs args)
     {
         if (_sheet.Editor.IsEditing)
         {
@@ -639,6 +669,23 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             {
                 return;
             }
+
+            if (_sheet.Editor.FormulaEdit.HandlePointerDown(args.Row, args.Col, args.ShiftKey, args.CtrlKey,
+                    args.MetaKey))
+                return;
+        }
+        else if (_sheet.Workbook.ActiveFormulaEdit is { CanPick: true } formulaEdit)
+        {
+            // a formula in another sheet of the workbook can take its references from this one
+            if (formulaEdit.HandlePointerDown(_sheet, args.Row, args.Col, args.ShiftKey, args.CtrlKey, args.MetaKey))
+            {
+                BeginForeignPick(formulaEdit);
+                return;
+            }
+
+            // otherwise the click finishes that edit, as it would in the sheet being edited
+            if (!formulaEdit.Sheet.Editor.AcceptEdit())
+                return;
         }
 
         // if rmc and inside a selection, don't do anything
@@ -672,7 +719,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         _selectionManager.HandleHeaderSelection(new ColumnRegion(group.Start, group.End));
     }
 
-    private async Task<bool> HandleWindowKeyDown(KeyboardEventArgs e)
+    internal async Task<bool> HandleWindowKeyDown(KeyboardEventArgs e)
     {
         if (!IsDataSheetActive)
             return false;
@@ -682,6 +729,10 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
         var editorHandled = GetActiveEditorLayer()?.HandleKeyDown(e.Key, e.CtrlKey, e.ShiftKey, e.AltKey, e.MetaKey);
         if (editorHandled == true)
+            return true;
+
+        if (_sheet.Editor.IsEditing && KeyUtil.IsArrowKey(e.Key) && !e.CtrlKey && !e.AltKey && !e.MetaKey &&
+            _sheet.Editor.FormulaEdit.HandleArrowKey(KeyUtil.GetMovementFromArrowKey(e.Key), e.ShiftKey))
             return true;
 
         var modifiers = e.GetModifiers();
@@ -739,17 +790,88 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         return false;
     }
 
-    private async Task<bool> HandleWindowMouseUp(MouseEventArgs arg)
+    internal async Task<bool> HandleWindowMouseUp(MouseEventArgs arg)
     {
         if (_sheet.Editor.IsEditing)
         {
             var activeEditor = GetActiveEditorLayer();
             if (activeEditor != null && await activeEditor.HandleWindowMouseUpAsync())
                 return true;
+
+            if (_sheet.Editor.FormulaEdit.HandlePointerUp())
+                return true;
         }
+        else if (_foreignPick?.HandlePointerUp() == true)
+            return true;
 
         _selectionManager.HandleWindowMouseUp();
         return false;
+    }
+
+    /// <summary>
+    /// The formula edit of another sheet in the workbook, while a reference for it is dragged out of this sheet.
+    /// </summary>
+    private FormulaEditSession? _foreignPick;
+
+    private void BeginForeignPick(FormulaEditSession formulaEdit)
+    {
+        ReleaseForeignPick();
+        if (!formulaEdit.IsDragging)
+            return;
+
+        _foreignPick = formulaEdit;
+        formulaEdit.PickRegionChanged += FormulaEditOnPickRegionChanged;
+        formulaEdit.DraggingChanged += FormulaEditOnDraggingChanged;
+        _autoScrollState.SetEditorSelectionActive(true);
+    }
+
+    private void ReleaseForeignPick()
+    {
+        if (_foreignPick == null)
+            return;
+
+        _foreignPick.PickRegionChanged -= FormulaEditOnPickRegionChanged;
+        _foreignPick.DraggingChanged -= FormulaEditOnDraggingChanged;
+        _foreignPick = null;
+        _autoScrollState.SetEditorSelectionActive(false);
+    }
+
+    private void FormulaEditOnDraggingChanged(object? sender, bool isDragging)
+    {
+        // a reference for this sheet's formula may be dragged out of another sheet, which scrolls instead
+        var isHere = sender is FormulaEditSession formulaEdit && ReferenceEquals(formulaEdit.PickSheet, _sheet);
+        _autoScrollState.SetEditorSelectionActive(isDragging && isHere);
+
+        if (!isDragging && ReferenceEquals(sender, _foreignPick))
+            ReleaseForeignPick();
+    }
+
+    /// <summary>
+    /// Keeps the part of a reference that was just picked in view.
+    /// </summary>
+    private async void FormulaEditOnPickRegionChanged(object? sender, ActiveRegionChangedEvent e)
+    {
+        var oldRegion = e.OldRegion;
+        var newRegion = e.NewRegion;
+
+        if (newRegion == null)
+            return;
+
+        if (sender is FormulaEditSession formulaEdit && !ReferenceEquals(formulaEdit.PickSheet, _sheet))
+            return;
+
+        if (oldRegion == null || newRegion.IsSingleCell())
+        {
+            await ScrollToContainRegion(newRegion);
+            return;
+        }
+
+        var newRegions = newRegion.Area > oldRegion.Area
+            ? newRegion.Break(oldRegion)
+            : oldRegion.Break(newRegion);
+
+        if (newRegions.Count == 1)
+            await ScrollToContainRegion(newRegions[0]);
     }
 
     private async Task<bool> HandleArrowKeysDown(bool shift, Offset offset)
@@ -810,6 +932,62 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         await BeginEdit(args.Row, args.Col, EditEntryMode.Mouse);
     }
 
+    /// <summary>
+    /// Begins editing the cell at <paramref name="row"/>, <paramref name="col"/>, as if the user had started
+    /// the edit from the sheet. Returns whether the cell is now being edited.
+    /// </summary>
+    public async Task<bool> BeginEditAsync(int row, int col)
+    {
+        if (_sheet.Editor.IsEditing)
+            return _sheet.Editor.EditCell?.Row == row && _sheet.Editor.EditCell?.Col == col;
+
+        if (!_sheet.Region.Contains(row, col))
+            return false;
+
+        await BeginEdit(row, col, EditEntryMode.None);
+        return _sheet.Editor.IsEditing;
+    }
+
+    /// <summary>
+    /// Begins editing the cell that receives input for the current selection. Returns whether it is now being edited.
+    /// </summary>
+    public async Task<bool> BeginEditActiveCellAsync()
+    {
+        if (_sheet.Selection.ActiveRegion == null)
+            return false;
+
+        var position = _sheet.Selection.GetInputPosition();
+        return await BeginEditAsync(position.row, position.col);
+    }
+
+    /// <summary>
+    /// Handles a key that was pressed in an editor outside of the sheet, with the sheet's keyboard shortcuts.
+    /// This is what makes enter, tab and escape finish an edit from outside the sheet as they do inside it.
+    /// Returns whether the key was handled.
+    /// </summary>
+    public async Task<bool> HandleExternalEditorKeyAsync(KeyboardEventArgs e)
+    {
+        if (_isDisposing || MenuService.IsMenuOpen())
+            return false;
+
+        var modifiers = e.GetModifiers();
+        return await HandleShortcuts(e.Key, modifiers) || await HandleShortcuts(e.Code, modifiers);
+    }
+
+    /// <summary>
+    /// Makes an element outside of the sheet, which edits this sheet, part of the sheet for the purposes of
+    /// focus. Focus moving to it doesn't deactivate the sheet or count as focus loss for an open edit
+    /// (see <see cref="OnEditFocusLoss"/>), and focus returns to the sheet when the edit finishes.
+    /// </summary>
+    public Task RegisterExternalEditorAsync(ElementReference element) =>
+        _isDisposing ? Task.CompletedTask : _windowEventService.AddExternalEditor(element);
+
+    /// <summary>
+    /// Reverses <see cref="RegisterExternalEditorAsync"/>
+    /// </summary>
+    public Task UnregisterExternalEditorAsync(ElementReference element) =>
+        _isDisposing ? Task.CompletedTask : _windowEventService.RemoveExternalEditor(element);
+
     private async Task BeginEdit(int row, int col, EditEntryMode mode, string entryChar = "")
     {
         if (this.IsReadOnly)
@@ -820,7 +998,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         _sheet.Editor.BeginEdit(row, col, mode == EditEntryMode.Key, mode, entryChar);
     }
 
-    private void HandleCellMouseOver(object? sender, SheetPointerEventArgs args)
+    internal void HandleCellMouseOver(object? sender, SheetPointerEventArgs args)
     {
         if (_sheet.Editor.IsEditing)
         {
@@ -831,7 +1009,12 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
                         args.MetaKey))
                     return;
             }
+
+            if (_sheet.Editor.FormulaEdit.HandlePointerOver(args.Row, args.Col))
+                return;
         }
+        else if (_foreignPick?.HandlePointerOver(_sheet, args.Row, args.Col) == true)
+            return;
 
         _selectionManager.HandlePointerOver(args.Row, args.Col);
     }
@@ -987,6 +1170,11 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             return;
 
         IsDataSheetActive = active;
+        if (active)
+        {
+            DatasheetRegistry.For(_sheet).NoteActivated(this);
+            DatasheetRegistry.For(_sheet.Workbook).NoteActivated(_sheet);
+        }
         var revision = ++_activationRevision;
         await UpdateInputStateAsync();
         if (!_isDisposing && revision == _activationRevision)
@@ -1005,7 +1193,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         var focusChanged = _hasFocus != focused;
         _hasFocus = focused;
         if (focusChanged && !focused && !focus.FromWindow)
-            FinishEditOnFocusLoss();
+            FinishEditOnFocusLoss(focus.ToRelated);
         await SetActiveAsync(focus.Active);
         if (_isDisposing || !focusChanged || focus.Version != _browserFocusVersion) return;
         await (focused ? OnFocusIn : OnFocusOut).InvokeAsync(new FocusEventArgs
@@ -1015,17 +1203,26 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     }
 
 
-    private void FinishEditOnFocusLoss()
+    private void FinishEditOnFocusLoss(bool toRelated)
     {
-        if (!_sheet.Editor.IsEditing)
+        var formulaEdit = _sheet.Workbook.ActiveFormulaEdit;
+
+        // Focus that stays in the views of the workbook may be there to pick a reference for the formula.
+        if (toRelated && formulaEdit is { CanPick: true })
             return;
+
+        // The formula may be in another sheet, whose datasheet let focus come here for that reason.
+        var editor = _sheet.Editor.IsEditing ? _sheet.Editor : formulaEdit?.Sheet.Editor;
+        if (editor?.IsEditing != true)
+            return;
+
         switch (OnEditFocusLoss)
         {
             case EditFocusLossAction.Accept:
-                _sheet.Editor.AcceptEdit();
+                editor.AcceptEdit();
                 break;
             case EditFocusLossAction.Cancel:
-                _sheet.Editor.CancelEdit();
+                editor.CancelEdit();
                 break;
         }
     }
@@ -1131,7 +1328,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             _paneContext.ShowFormulaDependents == _showFormulaDependents &&
             _paneContext.UseAutoFill == _useAutoFill &&
             _paneContext.IsReadOnly == IsReadOnly &&
-            _paneContext.AutoFit == AutoFit)
+            _paneContext.AutoFit == AutoFit &&
+            _paneContext.ShowSelectionWhenNotCurrentSheet == ShowSelectionWhenNotCurrentSheet)
         {
             return false;
         }
@@ -1148,7 +1346,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             _showFormulaDependents,
             _useAutoFill,
             IsReadOnly,
-            AutoFit);
+            AutoFit,
+            ShowSelectionWhenNotCurrentSheet);
         return true;
     }
 

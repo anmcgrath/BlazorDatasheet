@@ -53,6 +53,28 @@ public class WindowEventService : IWindowEventService
             await _windowEventObj.InvokeVoidAsync("restoreFocus");
     }
 
+    public async Task AddExternalEditor(Microsoft.AspNetCore.Components.ElementReference element)
+    {
+        await CreateDotnetHelperIfNotExists();
+        if (!_isDisposed && _windowEventObj != null)
+            await _windowEventObj.InvokeVoidAsync("addExternalEditor", element);
+    }
+
+    public async Task RemoveExternalEditor(Microsoft.AspNetCore.Components.ElementReference element)
+    {
+        if (_isDisposed || _windowEventObj == null)
+            return;
+
+        try
+        {
+            await _windowEventObj.InvokeVoidAsync("removeExternalEditor", element);
+        }
+        catch (JSDisconnectedException)
+        {
+            // Ignore disconnects during server-side component teardown.
+        }
+    }
+
     public async Task RegisterMouseEvent(string eventType, Func<MouseEventArgs, Task<bool>> handler,
         int throttleInMs = 0)
     {

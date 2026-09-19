@@ -539,7 +539,22 @@ code {
     padding: 0 9px;
 }
 
+/* the formula bar grows with its text, and takes its colours from the toolbar */
+.bds-formula-input.bds-formula-bar {
+    background: var(--field);
+    color: var(--ink);
+    font-size: 12px;
+    height: auto;
+    min-height: 26px;
+    padding: 0 3px;
+}
+
+.bds-formula-input.bds-formula-bar .bds-highlight-result {
+    background: transparent;
+}
+
 .bds-namebox:focus-visible,
+.bds-formula-input:focus-within,
 .bds-formula-input:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: -1px;

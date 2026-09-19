@@ -23,6 +23,7 @@
 
             <div
                 tabindex="0" class="@SheetClass"
+                data-bds-workbook="@BlazorDatasheet.Services.DatasheetRegistry.WorkbookId(_sheet.Workbook)"
                 style="width:@(TotalViewWidth)px; height:@(TotalViewHeight)px;"
                 @ref="_sheetContainer">
                 <div class="bds-sheet-layout" style="display: flex; flex-direction: column; align-items:flex-start;">
@@ -49,6 +50,7 @@
                                     OverscanColumns="OverscanColumns"
                                     ViewRegion="_viewRegion"
                                     Sheet="_sheet"
+                                    ShowSelectionWhenNotCurrentSheet="ShowSelectionWhenNotCurrentSheet"
                                     ShowColumnMenu="_menuOptions.HeaderMenuEnabled"
                                     GroupTemplate="ColumnGroupTemplate"
                                     GroupMouseDown="HandleColumnGroupMouseDown"
@@ -84,7 +86,8 @@
                                 <RowHeadingRenderer
                                     OverscanRows="OverscanRows"
                                     ViewRegion="_viewRegion"
-                                    Sheet="_sheet">
+                                    Sheet="_sheet"
+                                    ShowSelectionWhenNotCurrentSheet="ShowSelectionWhenNotCurrentSheet">
                                     @RowHeaderTemplate(context)
                                 </RowHeadingRenderer>
                             </div>

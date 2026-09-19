@@ -4,6 +4,7 @@ using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.Core.Layout;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Render.Layout;
+using BlazorDatasheet.Services;
 using BlazorDatasheet.Virtualise;
 using Microsoft.AspNetCore.Components;
 
@@ -14,6 +15,20 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
     [Parameter, EditorRequired] public Sheet? Sheet { get; set; }
     [Parameter] public Region? ViewRegion { get; set; }
     [Parameter, EditorRequired] public RenderFragment<HeadingContext> ChildContent { get; set; } = null!;
+
+    /// <summary>
+    /// Whether the selection is shown while the user is working in another sheet of the workbook.
+    /// </summary>
+    [Parameter]
+    public bool ShowSelectionWhenNotCurrentSheet { get; set; }
+
+    /// <summary>
+    /// Whether the headings show which rows or columns are selected.
+    /// </summary>
+    protected bool ShowsSelection =>
+        ShowSelectionWhenNotCurrentSheet || DatasheetRegistry.For(_sheet.Workbook).ShowsSelection(_sheet);
+
+    private WorkbookViews? _workbookViews;
 
     protected Virtualise2D? MainView;
 
@@ -77,6 +92,10 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
         sheet.Columns.GroupsModified -= HandleGroupsModified;
         sheet.Protection.Changed -= HandleProtectionChanged;
         sheet.FrozenRowCols -= HandleFrozenRowCols;
+
+        if (_workbookViews != null)
+            _workbookViews.Changed -= CurrentSheetChanged;
+        _workbookViews = null;
     }
 
     private void SubscribeEvents(Sheet sheet)
@@ -95,7 +114,16 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
         sheet.Columns.GroupsModified += HandleGroupsModified;
         sheet.Protection.Changed += HandleProtectionChanged;
         sheet.FrozenRowCols += HandleFrozenRowCols;
+
+        _workbookViews = DatasheetRegistry.For(sheet.Workbook);
+        _workbookViews.Changed += CurrentSheetChanged;
     }
+
+    private void CurrentSheetChanged() => _ = InvokeAsync(() =>
+    {
+        _dirty = true;
+        StateHasChanged();
+    });
 
     private void HandleHeadingsModified(object? sender, HeadingsModifiedEventArgs e)
     {
@@ -198,6 +226,9 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
 
     protected string GetSelectedClass(int index)
     {
+        if (!ShowsSelection)
+            return string.Empty;
+
         bool isAxisRegion = false;
         bool isSelected = false;
 

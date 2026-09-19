@@ -1,20 +1,38 @@
-﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Edit
+@using BlazorDatasheet.Events
+
+<p>
+    The formula bar edits the sheet that was last used. While editing a formula, in a cell or in the formula bar,
+    click or drag over the cells of either sheet to add a reference to them.
+</p>
+<FormulaBar Sheet="@_activeSheet" Style="border: 1px solid #ccc; margin-bottom: 8px; min-height: 24px;"/>
 <p>Sheet 1</p>
-<Datasheet Sheet="@_workbook.GetSheet("Sheet1")"/>
+<Datasheet Sheet="@_sheet1" OnSheetActiveChanged="@(e => OnSheetActiveChanged(e, _sheet1))"/>
 <p>Sheet 2</p>
-<Datasheet Sheet="@_workbook.GetSheet("Sheet2")"/>
+<Datasheet Sheet="@_sheet2" OnSheetActiveChanged="@(e => OnSheetActiveChanged(e, _sheet2))"/>
 
 
 @code {
 
     private readonly Workbook _workbook = new();
+    private Sheet _sheet1 = null!;
+    private Sheet _sheet2 = null!;
+    private Sheet _activeSheet = null!;
 
     protected override void OnInitialized()
     {
-        var sheet1 = _workbook.AddSheet(8, 3);
-        var sheet2 = _workbook.AddSheet(8, 3);
-        sheet1.Cells["A1"]!.Formula = "=Sheet2!A1";
-        sheet2.Cells["A1"]!.Value = "Hello from sheet 2";
+        _sheet1 = _workbook.AddSheet(8, 3);
+        _sheet2 = _workbook.AddSheet(8, 3);
+        _sheet1.Cells["A1"]!.Formula = "=Sheet2!A1";
+        _sheet2.Cells["A1"]!.Value = "Hello from sheet 2";
+        _activeSheet = _sheet1;
+    }
+
+    private void OnSheetActiveChanged(SheetActiveEventArgs e, Sheet sheet)
+    {
+        if (e.IsActive)
+            _activeSheet = sheet;
     }
 
 }

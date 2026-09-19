@@ -1,6 +1,7 @@
 ﻿@using Microsoft.JSInterop
 @using System.Text
 @using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Formula.Core
 @using BlazorDatasheet.Formula.Core.Interpreter
 @using BlazorDatasheet.Formula.Core.Interpreter.Lexing
 @using static BlazorDatasheet.Util.JsInteropHelper
@@ -13,8 +14,11 @@
           style="min-width: calc(@(CellWidth)px - var(--selection-border-thickness) - var(--sheet-border-width)); min-height: calc(@(CellHeight)px - var(--selection-border-thickness) - var(--sheet-border-width));"
           @ref="_highlightResultEl">
     </span>
-
+    
     <span contenteditable="true"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
           class="bds-highlight-input"
           style="min-width: calc(@(CellWidth)px - var(--selection-border-thickness) - var(--sheet-border-width)); min-height: calc(@(CellHeight)px - var(--selection-border-thickness) - var(--sheet-border-width));"
           @ref="_highlightInputEl">
@@ -29,13 +33,42 @@
     [Parameter] public EventCallback<string> ValueChanged { get; set; }
 
     [Parameter] public EventCallback<int> CaretPositionChanged { get; set; }
+
+    /// <summary>
+    /// Reports the start and end of the text selection. Both are -1 when the selection is somewhere else.
+    /// </summary>
+    [Parameter] public EventCallback<(int Start, int End)> SelectionChanged { get; set; }
+
+    /// <summary>
+    /// Where the caret goes when <see cref="Value"/> is changed from outside. When null, it goes to the end.
+    /// </summary>
+    [Parameter] public int? ValueCaret { get; set; }
     [Parameter] public EventCallback<Size> InputSizeChanged { get; set; }
 
     [Parameter, EditorRequired] public required FormulaOptions FormulaOptions { get; set; }
 
+    /// <summary>
+    /// Identifies the names that are references, so that they are highlighted as such.
+    /// </summary>
+    [Parameter] public Func<string, bool>? IsNamedReference { get; set; }
+
     [Parameter] public double CellWidth { get; set; }
     [Parameter] public double CellHeight { get; set; }
     [Parameter] public bool SoftEdit { get; set; }
+
+    /// <summary>
+    /// Stops enter and tab from acting on the input. For inputs outside the sheet, where those keys are
+    /// passed to the sheet to finish the edit rather than reaching it through the sheet's own key handling.
+    /// </summary>
+    [Parameter] public bool PreventAcceptKeys { get; set; }
+
+    /// <summary>
+    /// Stops enter, tab and the up and down arrows from acting on the input, while they are being
+    /// used to work a list of suggestions.
+    /// </summary>
+    [Parameter] public bool CaptureListKeys { get; set; }
+
+    private bool _captureListKeys;
 
     /// <summary>Delays initial focus until the owning editor has supplied its starting value.</summary>
     [Parameter] public bool ReadyToFocus { get; set; } = true;
@@ -57,9 +90,15 @@
         {
             // Allow for external editors
             _value = Value;
-            await SetInputTextAsync(_value);
+            await SetInputTextAsync(_value, ValueCaret);
             await SetHighlightTextAsync();
         }
+        if (CaptureListKeys != _captureListKeys)
+        {
+            _captureListKeys = CaptureListKeys;
+            await InvokeHighlighterAsync("setCaptureListKeys", _captureListKeys);
+        }
+
         await RequestInitialFocusAsync();
     }
 
@@ -88,7 +127,8 @@
                 DotnetHelper = dotnetRef,
                 InputEl = _highlightInputEl,
                 HighlightResultEl = _highlightResultEl,
-                PreventDefaultArrowKeys = SoftEdit
+                PreventDefaultArrowKeys = SoftEdit,
+                PreventAcceptKeys = PreventAcceptKeys
             };
 
             var highlightJs = await module.InvokeAsync<IJSObjectReference>("createHighlighter", options);
@@ -113,7 +153,7 @@
         // _highlightJs was null so the DOM update was dropped, and _value has already been latched
         // so it will never be re-applied. Flush it here.
         if (_value != initialText)
-            await SetInputTextAsync(_value);
+            await SetInputTextAsync(_value, ValueCaret);
 
         // Do not accept native input while the initial key/buffer is still being applied.
         // Otherwise the first input event can replace that value with text typed into an empty editor.
@@ -145,9 +185,9 @@
     /// <summary>
     /// Sets input text from Blazor -> the editable content. Used for external editors.
     /// </summary>
-    private async Task SetInputTextAsync(string text)
+    private async Task SetInputTextAsync(string text, int? caret = null)
     {
-        await InvokeHighlighterAsync("setInputText", text);
+        await InvokeHighlighterAsync("setInputText", text, caret);
         await InvokeHighlighterAsync("setHighlightHtml", GetHighlightedHtmlValue(_value));
     }
 
@@ -159,6 +199,14 @@
     internal async Task FocusAndMoveCursorToEndAsync()
     {
         await InvokeHighlighterAsync("focusAndMoveCursorToEnd");
+    }
+
+    /// <summary>
+    /// Focuses the input, with the caret at <paramref name="caret"/> or at the end of the text if it's null.
+    /// </summary>
+    internal async Task FocusAndMoveCursorToAsync(int? caret)
+    {
+        await InvokeHighlighterAsync("focusAndMoveCursorTo", caret);
     }
 
     /// <summary>
@@ -194,6 +242,14 @@
     }
 
     [JSInvokable]
+    public async Task HandleSelectionUpdate(int start, int end)
+    {
+        if (_isDisposing) return;
+        await SelectionChanged.InvokeAsync((start, end));
+        await CaretPositionChanged.InvokeAsync(start == end ? start : -1);
+    }
+
+    [JSInvokable]
     public async Task HandleInputSizeChanged(Size size)
     {
         if (_isDisposing) return;
@@ -210,7 +266,8 @@
 
         var lexer = new Lexer();
         var tokens = lexer.Lex(text, FormulaOptions);
-        var tokenColors = FormulaReferenceColorizer.GetReferenceColorIndices(tokens);
+        var references = FormulaReferenceScanner.Scan(text, FormulaOptions, IsNamedReference);
+        var referenceIndex = 0;
 
         var sb = new StringBuilder();
         var span = text.AsSpan();
@@ -222,9 +279,14 @@
             var section = span.Slice(start, len);
             sb.Append($"<span ");
             sb.Append($"class=\"{GetClass(tokens[i].Tag)}\" ");
-            if (tokenColors.TryGetValue(i, out var colorIndex))
+
+            // both tokens and references are in text order
+            while (referenceIndex < references.Count && references[referenceIndex].TextEnd <= start)
+                referenceIndex++;
+
+            if (referenceIndex < references.Count && references[referenceIndex].TextStart <= start)
             {
-                sb.Append($"style=\"color:var(--highlight-color-{colorIndex})\"");
+                sb.Append($"style=\"color:var(--highlight-color-{references[referenceIndex].ColorIndex})\"");
             }
 
             sb.Append(">");

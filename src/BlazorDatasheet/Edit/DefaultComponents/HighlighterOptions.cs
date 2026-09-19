@@ -15,4 +15,10 @@ internal class HighlighterOptions
     /// Used to enable control of ranges during soft edits.
     /// </summary>
     public required bool PreventDefaultArrowKeys { get; init; }
+
+    /// <summary>
+    /// Whether enter and tab are stopped from acting on the input. Used by inputs outside the sheet,
+    /// which pass those keys on to the sheet.
+    /// </summary>
+    public bool PreventAcceptKeys { get; init; }
 }

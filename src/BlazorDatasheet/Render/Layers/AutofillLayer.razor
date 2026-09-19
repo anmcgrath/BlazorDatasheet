@@ -6,6 +6,7 @@
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Render
 @using BlazorDatasheet.Render.Layers.Preview
+@using BlazorDatasheet.Services
 @using Microsoft.JSInterop
 @using static BlazorDatasheet.Util.JsInteropHelper
 @inherits Layer
@@ -19,7 +20,7 @@
 <div @ref="_originElement"
      style="position:absolute;top:0;left:0;width:0;height:0;pointer-events:none;"></div>
 
-@if (!Sheet.Editor.IsEditing && Sheet.Selection.ActiveRegion != null && Sheet.Protection.CanEdit(Sheet.Selection.ActiveRegion) && ViewRegion?.Contains(Sheet.Selection.ActiveRegion.BottomRight) == true)
+@if (!Sheet.Editor.IsEditing && Sheet.Selection.ActiveRegion != null && ShowsSelection && Sheet.Protection.CanEdit(Sheet.Selection.ActiveRegion) && ViewRegion?.Contains(Sheet.Selection.ActiveRegion.BottomRight) == true)
 {
     <!-- render dragger (bottom right corner) -->
     <div id="auto-filler"
@@ -46,14 +47,25 @@
     private DotNetObjectReference<AutofillLayer>? _dotNetRef;
     private ElementReference _originElement;
 
+    private WorkbookViews? _workbookViews;
+
+    private bool ShowsSelection => PaneContext.ShowSelectionWhenNotCurrentSheet ||
+                                   DatasheetRegistry.For(Sheet.Workbook).ShowsSelection(Sheet);
+
     protected override void OnSheetChange(Sheet newSheet, Sheet oldSheet)
     {
+        if (_workbookViews != null)
+            _workbookViews.Changed -= OnCurrentSheetChanged;
+        _workbookViews = DatasheetRegistry.For(newSheet.Workbook);
+        _workbookViews.Changed += OnCurrentSheetChanged;
         oldSheet.Protection.Changed -= ProtectionChanged;
         newSheet.Protection.Changed += ProtectionChanged;
         oldSheet.Selection.SelectionChanged -= OnSelectionChanged;
         newSheet.Selection.SelectionChanged += OnSelectionChanged;
         _cellLayoutProvider = new CellLayoutProvider(newSheet);
     }
+
+    private void OnCurrentSheetChanged() => _ = InvokeAsync(StateHasChanged);
 
     private void ProtectionChanged(object? sender, EventArgs args)
     {
@@ -270,6 +282,8 @@
         Sheet.Protection.Changed -= ProtectionChanged;
         RemovePreviewItem();
         Sheet.Selection.SelectionChanged -= OnSelectionChanged;
+        if (_workbookViews != null)
+            _workbookViews.Changed -= OnCurrentSheetChanged;
 
         await SetDraggingAsync(false);
 

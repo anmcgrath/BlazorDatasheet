@@ -1,0 +1,281 @@
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events
+@using BlazorDatasheet.Core.Events.Data
+@using BlazorDatasheet.Core.Events.Edit
+@using BlazorDatasheet.Core.Events.Selection
+@using BlazorDatasheet.Services
+@inherits SheetComponentBase
+@implements IAsyncDisposable
+
+@*
+    Shows and edits the active cell of a sheet from outside of the datasheet. It needs only the sheet:
+    the datasheet showing that sheet is found when it's needed. Any number of formula bars can be used.
+*@
+
+<div class="vars bds-formula-bar @Class"
+     theme="@Theme"
+     style="@Style"
+     data-bds-workbook="@(_sheet == null ? null : DatasheetRegistry.WorkbookId(_sheet.Workbook))"
+     @ref="_root"
+     @onfocusin="HandleFocusIn"
+     @onkeydown="HandleKeyDown">
+    <FormulaEditor
+        @ref="_formulaEditor"
+        Sheet="_sheet"
+        Value="@_value"
+        ValueChanged="HandleInput"
+        ReadyToFocus="false"
+        PreventAcceptKeys="true"/>
+</div>
+
+@code {
+
+    /// <summary>
+    /// The sheet to show and edit the active cell of.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public Sheet? Sheet { get; set; }
+
+    private Sheet? _sheet;
+
+    /// <summary>
+    /// The datasheet theme, which should be the same as <see cref="Datasheet.Theme"/>
+    /// </summary>
+    [Parameter]
+    public string Theme { get; set; } = "default";
+
+    [Parameter] public string? Class { get; set; }
+
+    [Parameter] public string? Style { get; set; }
+
+    private ElementReference _root;
+    private FormulaEditor _formulaEditor = default!;
+    private string _value = string.Empty;
+    private bool _hasRendered;
+    private bool _isDisposed;
+
+    /// <summary>
+    /// The datasheets that the root element has been registered with.
+    /// </summary>
+    private readonly List<Datasheet> _registeredWith = new();
+
+    /// <summary>
+    /// The datasheet that is showing the sheet. If there are many, it's the one that was last active.
+    /// </summary>
+    private Datasheet? Datasheet => _sheet == null ? null : DatasheetRegistry.For(_sheet).Active;
+
+    protected override void OnParametersSet()
+    {
+        // A formula takes references from the other sheets of its workbook. Showing one of them, which is
+        // likely to be why the sheet changed, mustn't take the bar away from the formula.
+        if (_sheet?.Editor.IsEditing == true && Sheet != null && ReferenceEquals(Sheet.Workbook, _sheet.Workbook))
+            return;
+
+        FollowSheet();
+    }
+
+    /// <summary>
+    /// Moves to <see cref="Sheet"/>. Returns whether that is a change.
+    /// </summary>
+    private bool FollowSheet()
+    {
+        if (ReferenceEquals(_sheet, Sheet))
+            return false;
+
+        if (_sheet != null)
+            RemoveEvents(_sheet);
+
+        _sheet = Sheet;
+
+        if (_sheet != null)
+            AddEvents(_sheet);
+
+        _value = GetDisplayValue();
+        _ = InvokeAsync(RegisterWithDatasheetsAsync);
+        return true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        _hasRendered = true;
+        await RegisterWithDatasheetsAsync();
+    }
+
+    private void AddEvents(Sheet sheet)
+    {
+        sheet.Selection.ActiveCellPositionChanged += OnActiveCellPositionChanged;
+        sheet.Selection.SelectionChanged += OnSelectionChanged;
+        sheet.Editor.EditValueChanged += OnEditValueChanged;
+        sheet.Editor.EditFinished += OnEditFinished;
+        sheet.Cells.CellsChanged += OnCellsChanged;
+        DatasheetRegistry.For(sheet).Changed += OnDatasheetsChanged;
+    }
+
+    private void RemoveEvents(Sheet sheet)
+    {
+        sheet.Selection.ActiveCellPositionChanged -= OnActiveCellPositionChanged;
+        sheet.Selection.SelectionChanged -= OnSelectionChanged;
+        sheet.Editor.EditValueChanged -= OnEditValueChanged;
+        sheet.Editor.EditFinished -= OnEditFinished;
+        sheet.Cells.CellsChanged -= OnCellsChanged;
+        DatasheetRegistry.For(sheet).Changed -= OnDatasheetsChanged;
+    }
+
+    /// <summary>
+    /// The edit value during an edit, otherwise the formula or value of the cell that would be edited.
+    /// </summary>
+    private string GetDisplayValue()
+    {
+        if (_sheet == null)
+            return string.Empty;
+
+        if (_sheet.Editor.IsEditing)
+            return _sheet.Editor.EditValue;
+
+        if (_sheet.Selection.ActiveRegion == null)
+            return string.Empty;
+
+        var position = _sheet.Selection.GetInputPosition();
+        var cell = _sheet.Cells.GetCell(position.row, position.col);
+        return cell.Formula ?? cell.Value?.ToString() ?? string.Empty;
+    }
+
+    private void Refresh()
+    {
+        var value = GetDisplayValue();
+        if (value == _value)
+            return;
+
+        _value = value;
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void OnActiveCellPositionChanged(object? sender, ActiveCellPositionChangedEventArgs e) => Refresh();
+    private void OnSelectionChanged(object? sender, SelectionChangedEventArgs e) => Refresh();
+    private void OnEditValueChanged(object? sender, string? e) => Refresh();
+    private void OnEditFinished(object? sender, EditFinishedEventArgs e)
+    {
+        // the sheet may have changed during the edit
+        if (FollowSheet())
+            _ = InvokeAsync(StateHasChanged);
+        else
+            Refresh();
+    }
+    private void OnCellsChanged(object? sender, CellDataChangedEventArgs e) => Refresh();
+
+    private void OnDatasheetsChanged() => _ = InvokeAsync(RegisterWithDatasheetsAsync);
+
+    /// <summary>
+    /// Makes this element part of each datasheet that shows the sheet, as far as focus goes, so that
+    /// using the formula bar doesn't count as leaving the sheet.
+    /// </summary>
+    private async Task RegisterWithDatasheetsAsync()
+    {
+        if (!_hasRendered || _isDisposed)
+            return;
+
+        var datasheets = _sheet == null
+            ? (IReadOnlyList<Datasheet>)Array.Empty<Datasheet>()
+            : DatasheetRegistry.For(_sheet).Datasheets;
+
+        foreach (var datasheet in _registeredWith.Except(datasheets).ToList())
+        {
+            _registeredWith.Remove(datasheet);
+            await datasheet.UnregisterExternalEditorAsync(_root);
+        }
+
+        foreach (var datasheet in datasheets.Except(_registeredWith).ToList())
+        {
+            _registeredWith.Add(datasheet);
+            await datasheet.RegisterExternalEditorAsync(_root);
+        }
+    }
+
+    private async Task HandleFocusIn()
+    {
+        if (_sheet == null)
+            return;
+
+        if (!await EnsureEditingAsync())
+            return;
+
+        // The arrow keys belong to the caret in here, rather than to the sheet.
+        _sheet.Editor.SetSoftEdit(false);
+        _sheet.Editor.FormulaEdit.SetInputOwner(_formulaEditor);
+    }
+
+    private async Task<bool> EnsureEditingAsync()
+    {
+        if (_sheet == null)
+            return false;
+
+        if (_sheet.Editor.IsEditing)
+            return true;
+
+        var datasheet = Datasheet;
+        return datasheet != null && await datasheet.BeginEditActiveCellAsync();
+    }
+
+    private async Task HandleInput(string value)
+    {
+        if (_sheet == null)
+            return;
+
+        if (await EnsureEditingAsync())
+        {
+            _sheet.Editor.EditValue = value;
+            return;
+        }
+
+        // The cell can't be edited, so put back what it holds.
+        _value = GetDisplayValue();
+        StateHasChanged();
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        // the list of suggestions comes before the sheet, as it does for an editor in the sheet
+        if (_formulaEditor.HandleKey(e.Key, e.CtrlKey, e.ShiftKey, e.AltKey, e.MetaKey))
+            return;
+
+        if (e.Key != "Enter" && e.Key != "Tab" && e.Key != "Escape")
+            return;
+
+        var datasheet = Datasheet;
+        if (datasheet == null || _sheet == null)
+            return;
+
+        var wasEditing = _sheet.Editor.IsEditing;
+        await datasheet.HandleExternalEditorKeyAsync(e);
+
+        // Finishing an edit puts focus back on the sheet. Do the same when there was nothing to finish.
+        if (!wasEditing)
+            await datasheet.FocusAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _isDisposed = true;
+
+        if (_sheet != null)
+            RemoveEvents(_sheet);
+
+        foreach (var datasheet in _registeredWith.ToList())
+        {
+            try
+            {
+                await datasheet.UnregisterExternalEditorAsync(_root);
+            }
+            catch (Exception)
+            {
+                // the datasheet may already be gone
+            }
+        }
+
+        _registeredWith.Clear();
+    }
+
+}

@@ -19,4 +19,5 @@ internal sealed record PaneContext(
     bool ShowFormulaDependents,
     bool UseAutoFill,
     bool IsReadOnly,
-    bool AutoFit);
+    bool AutoFit,
+    bool ShowSelectionWhenNotCurrentSheet);

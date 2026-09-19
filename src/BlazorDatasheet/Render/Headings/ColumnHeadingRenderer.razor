@@ -163,6 +163,9 @@
     /// </summary>
     private string GetGroupSelectedClass(int start, int end)
     {
+        if (!ShowsSelection)
+            return string.Empty;
+
         var regions = _sheet.Selection.Regions.ToList();
         if (_sheet.Selection.SelectingRegion != null)
             regions.Add(_sheet.Selection.SelectingRegion);

@@ -67,10 +67,7 @@ public abstract class Reference
     
     protected string GetSheetPrefix()
     {
-        var hasWhitespace = SheetName.Any(char.IsWhiteSpace);
-        if (ExplicitSheetName)
-            return $"{(hasWhitespace ? "'" : "")}{SheetName}{(hasWhitespace ? "'" : "")}!";
-        return "";
+        return ExplicitSheetName ? RangeText.SheetPrefix(SheetName) : "";
     }
 
 }

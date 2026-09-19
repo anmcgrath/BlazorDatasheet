@@ -10,6 +10,14 @@ internal interface IWindowEventService : IAsyncDisposable
     Task RestoreFocus();
 
     /// <summary>
+    /// Makes an element outside the sheet part of the sheet for the purposes of focus, so that
+    /// focus moving to it doesn't deactivate the sheet or count as focus loss for an open edit.
+    /// </summary>
+    Task AddExternalEditor(Microsoft.AspNetCore.Components.ElementReference element);
+
+    Task RemoveExternalEditor(Microsoft.AspNetCore.Components.ElementReference element);
+
+    /// <summary>
     /// Registers a window mouse event.
     /// </summary>
     /// <param name="eventType"></param>
