@@ -38,11 +38,17 @@
     }
 
     listen(target, name, fn, capture = false) {
+        this.unlisten(name, capture);
+        target.addEventListener(name, fn, capture);
+        this.listeners.set(name + ':' + capture, { target, fn, name, capture });
+    }
+
+    unlisten(name, capture = false) {
         const key = name + ':' + capture;
         const previous = this.listeners.get(key);
-        if (previous) previous.target.removeEventListener(name, previous.fn, capture);
-        target.addEventListener(name, fn, capture);
-        this.listeners.set(key, { target, fn, name, capture });
+        if (!previous) return;
+        previous.target.removeEventListener(name, previous.fn, capture);
+        this.listeners.delete(key);
     }
 
     registerEvent(eventName, handlerName, throttleInMs = 0) {
@@ -50,6 +56,21 @@
         this.handlerMap[eventName] = handlerName;
         const handler = this.handleWindowEvent.bind(this);
         this.listen(window, eventName, throttleInMs ? this.throttle(handler, throttleInMs) : handler);
+    }
+
+    // Registers several events in one interop call, so a component's mount costs one round trip
+    // rather than one per event. Each entry is [eventName, handlerName, throttleInMs].
+    registerEvents(events) {
+        if (this.disposed || !events) return;
+        for (const [eventName, handlerName, throttleInMs] of events)
+            this.registerEvent(eventName, handlerName, throttleInMs ?? 0);
+    }
+
+    // Takes the window listener back off. Used by handlers that are only of interest while a
+    // gesture is in progress - a column resize drag - so that an idle grid costs nothing.
+    unregisterEvent(eventName) {
+        delete this.handlerMap[eventName];
+        this.unlisten(eventName, false);
     }
 
     dispatch(handler, value) {

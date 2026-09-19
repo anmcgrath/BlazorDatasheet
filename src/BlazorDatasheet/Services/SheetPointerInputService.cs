@@ -89,24 +89,20 @@ public class SheetPointerInputService : IAsyncDisposable
 
         try
         {
+            // The callback names go with the creation call - registering them separately would cost
+            // a second round trip for nothing.
             var inputJs = await module.InvokeAsync<IJSObjectReference>(
                 "getInputService",
                 _sheetElement,
-                dotNetObjectReference);
-
-            if (_isDisposed)
-            {
-                await SafeDisposeInputJsAsync(inputJs);
-                return;
-            }
-
-            await inputJs.InvokeVoidAsync(
-                "registerPointerEvents",
-                nameof(HandlePointerUp),
-                nameof(HandlePointerDown),
-                nameof(HandlePointerMove),
-                nameof(HandlePointerCellEnter),
-                nameof(HandlePointerDoubleClick));
+                dotNetObjectReference,
+                new[]
+                {
+                    nameof(HandlePointerUp),
+                    nameof(HandlePointerDown),
+                    nameof(HandlePointerMove),
+                    nameof(HandlePointerCellEnter),
+                    nameof(HandlePointerDoubleClick)
+                });
 
             if (_isDisposed)
             {

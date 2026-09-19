@@ -238,9 +238,28 @@ public class FormulaEngine
 
     public IEnumerable<DependencyInfo> GetDependencies() => DependencyManager.GetDependencies();
 
+    /// <summary>
+    /// How many times calculation has been paused without being resumed. While paused, dirty
+    /// formulas are still collected but nothing is evaluated - used by loading, which would
+    /// otherwise calculate once per sheet as each sheet's batched cell changes are flushed.
+    /// </summary>
+    private int _pauseCount;
+
+    /// <summary>
+    /// Stops <see cref="CalculateSheet"/> doing any work until <see cref="ResumeCalculation"/> is
+    /// called. The caller is responsible for calculating once it resumes.
+    /// </summary>
+    internal void PauseCalculation() => _pauseCount++;
+
+    internal void ResumeCalculation()
+    {
+        if (_pauseCount > 0)
+            _pauseCount--;
+    }
+
     public void CalculateSheet(bool calculateAll)
     {
-        if (IsCalculating)
+        if (IsCalculating || _pauseCount > 0)
             return;
 
         // asking first means a write to a sheet with no formulas on it does no work at all -

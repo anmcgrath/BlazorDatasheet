@@ -253,13 +253,13 @@
     [Parameter]
     public int OverscanColumns { get; set; } = 2;
 
-    private readonly Dictionary<int, Action<MouseEventArgs>> _resizerHandlerCache = new();
+    private readonly Dictionary<int, Func<MouseEventArgs, Task>> _resizerHandlerCache = new();
 
-    private Action<MouseEventArgs> GetResizerMouseDownHandler(int col)
+    private Func<MouseEventArgs, Task> GetResizerMouseDownHandler(int col)
     {
         if (!_resizerHandlerCache.TryGetValue(col, out var handler))
         {
-            handler = _ => HandleMouseDownOnResizer(col);
+            handler = e => HandleMouseDownOnResizer(col, e);
             _resizerHandlerCache[col] = handler;
         }
         return handler;
@@ -288,15 +288,6 @@
         base.OnInitialized();
     }
 
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await _windowEventService.RegisterMouseEvent("mouseup", WindowEventServiceOnOnMouseUp, 15);
-            await _windowEventService.RegisterMouseEvent("mousemove", WindowHandleMouseMove, 15);
-        }
-    }
 
     public Task<bool> WindowHandleMouseMove(MouseEventArgs arg)
     {
@@ -342,20 +333,35 @@
         }
     }
 
-    private void HandleMouseDownOnResizer(int col)
+    // The window mouse handlers exist only for the length of a resize drag: registered here and
+    // taken off again on mouse up. Left registered they would call into .NET on every throttled
+    // mouse move anywhere on the page, for every grid on it, with no drag in progress.
+    private async Task HandleMouseDownOnResizer(int col, MouseEventArgs e)
     {
         if (!_sheet.Protection.Can(BlazorDatasheet.Core.Protection.SheetOperation.FormatColumns))
             return;
-        MouseXStart = MouseX;
+        MouseX = e.PageX;
+        MouseXStart = e.PageX;
         ActiveResizerIndex = col;
         CurrentColResizeAmount = 0;
         IsDragging = true;
+
+        await _windowEventService.RegisterEvents(
+            WindowEventRegistration.Mouse("mouseup", WindowEventServiceOnOnMouseUp, 15),
+            WindowEventRegistration.Mouse("mousemove", WindowHandleMouseMove, 15));
+    }
+
+    private async Task StopListeningForDrag()
+    {
+        await _windowEventService.UnregisterEvent("mousemove");
+        await _windowEventService.UnregisterEvent("mouseup");
     }
 
     private async Task<bool> WindowEventServiceOnOnMouseUp(MouseEventArgs arg)
     {
         if (IsDragging)
         {
+            await StopListeningForDrag();
             RemoveResizePreviewItem();
             IsDragging = false;
             var resizeWidth = Math.Max(_minResizeWidth, _sheet.Columns.GetVisualWidth(ActiveResizerIndex) + CurrentColResizeAmount);
