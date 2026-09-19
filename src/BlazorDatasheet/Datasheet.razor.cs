@@ -276,6 +276,9 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     private bool _renderRequested;
 
+    private bool _refreshing;
+    private bool _refreshQueued;
+
     private bool _renderDirty = true;
 
     private Dictionary<string, object?>? _lastParameterValues;
@@ -591,14 +594,52 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         ForceReRender();
     }
 
+    /// <summary>
+    /// Refreshes the viewport of every pane row. Calls that arrive while a refresh is in flight are
+    /// collapsed into a single trailing refresh, so a batch of resizes or insertions costs one round
+    /// of interop rather than one each.
+    /// </summary>
     public async void RefreshView()
     {
-        if (_topPaneRow != null)
-            await _topPaneRow.RefreshViews();
-        if (_mainPaneRow != null)
-            await _mainPaneRow.RefreshViews();
-        if (_bottomPaneRow != null)
-            await _bottomPaneRow.RefreshViews();
+        if (_refreshing)
+        {
+            _refreshQueued = true;
+            return;
+        }
+
+        _refreshing = true;
+
+        try
+        {
+            do
+            {
+                _refreshQueued = false;
+
+                if (_topPaneRow != null)
+                    await _topPaneRow.RefreshViews();
+                if (_mainPaneRow != null)
+                    await _mainPaneRow.RefreshViews();
+                if (_bottomPaneRow != null)
+                    await _bottomPaneRow.RefreshViews();
+            } while (_refreshQueued && !_isDisposing);
+        }
+        catch (ObjectDisposedException)
+        {
+            // the datasheet was torn down while we were waiting
+        }
+        catch (JSDisconnectedException)
+        {
+            // circuit torn down mid-refresh
+        }
+        catch (TaskCanceledException)
+        {
+            // the refresh was cancelled during teardown
+        }
+        finally
+        {
+            _refreshing = false;
+            _refreshQueued = false;
+        }
     }
 
     private void ScreenUpdatingChanged(object? sender, SheetScreenUpdatingEventArgs e)
