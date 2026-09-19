@@ -1,0 +1,77 @@
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Edit.DefaultComponents
+@using BlazorDatasheet.Render
+@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Virtualise
+@using FluentAssertions
+@using NUnit.Framework
+@inherits BaseTestComponent
+
+@code {
+
+    private CountingRenderer GetRenderer(IRenderedComponent<Datasheet> cut, int col)
+    {
+        return cut.FindComponents<CountingRenderer>()
+            .Select(x => x.Instance)
+            .First(x => x.Cell.Col == col);
+    }
+
+    private IRenderedComponent<Datasheet> RenderSheet(Sheet sheet)
+    {
+        sheet.Cells["A1"]!.Type = "counted";
+        sheet.Cells["B1"]!.Type = "counted";
+
+        var cut = RenderComponent<Datasheet>(parameters =>
+        {
+            parameters.Add(p => p.CustomCellTypeDefinitions, new Dictionary<string, CellTypeDefinition>()
+            {
+                { "counted", new CellTypeDefinition(typeof(TextEditorComponent), typeof(CountingRenderer)) }
+            });
+            parameters.Add(p => p.Sheet, sheet);
+        });
+
+        ShowViewport(cut);
+        return cut;
+    }
+
+    private static void ShowViewport(IRenderedFragment component)
+    {
+        foreach (var virtualiser in component.FindComponents<Virtualise2D>())
+        {
+            Task? scroll = null;
+            virtualiser.InvokeAsync(() => { scroll = virtualiser.Instance.HandleScroll(new Rect(0, 0, 500, 500)); })
+                .Wait();
+            scroll?.Wait();
+        }
+    }
+
+    [Test]
+    public async Task Changing_One_Cell_Does_Not_Update_The_Renderer_Of_Another()
+    {
+        var sheet = new Sheet(10, 10);
+        var cut = RenderSheet(sheet);
+
+        var other = GetRenderer(cut, 1);
+        var updates = other.UpdateCount;
+
+        await cut.InvokeAsync(() => sheet.Cells.SetValue(0, 0, "changed"));
+
+        GetRenderer(cut, 1).UpdateCount.Should().Be(updates);
+        GetRenderer(cut, 0).Cell.Value?.ToString().Should().Be("changed");
+    }
+
+    [Test]
+    public async Task Changing_A_Cell_Updates_Its_Own_Renderer()
+    {
+        var sheet = new Sheet(10, 10);
+        var cut = RenderSheet(sheet);
+
+        var updates = GetRenderer(cut, 1).UpdateCount;
+
+        await cut.InvokeAsync(() => sheet.Cells.SetValue(0, 1, "changed"));
+
+        GetRenderer(cut, 1).UpdateCount.Should().BeGreaterThan(updates);
+        cut.Markup.Should().Contain("changed");
+    }
+
+}

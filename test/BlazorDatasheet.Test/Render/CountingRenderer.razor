@@ -1,0 +1,22 @@
+@using BlazorDatasheet.Render
+@inherits BaseRenderer
+
+<div class="counting-renderer">@(_valueText)</div>
+
+@code {
+
+    /// <summary>
+    /// How many times this renderer has had its parameters set.
+    /// </summary>
+    public int UpdateCount { get; private set; }
+
+    private string _valueText = string.Empty;
+
+    protected override void OnParametersSet()
+    {
+        UpdateCount++;
+        _valueText = Cell.Value?.ToString() ?? string.Empty;
+        base.OnParametersSet();
+    }
+
+}
