@@ -273,14 +273,29 @@
     private int _minResizeWidth = 15;
     private IWindowEventService _windowEventService = null!;
 
-    private Region LeftHeadingRegion => DatasheetViewRegionCalculator.GetFrozenLeftRegion(_viewRegion, _sheet.NumCols, _sheet.FreezeState.Left);
+    // each of these is read a few times per render, so they are computed once and kept until the
+    // view region, freeze state or column count changes.
+    private Region? _leftHeadingRegion;
+    private Region? _mainHeadingRegion;
+    private Region? _rightHeadingRegion;
 
-    private Region MainHeadingRegion => new(0, 0, MainLeft, MainRight);
+    private Region LeftHeadingRegion => _leftHeadingRegion ??=
+        DatasheetViewRegionCalculator.GetFrozenLeftRegion(_viewRegion, _sheet.NumCols, _sheet.FreezeState.Left);
 
-    private Region RightHeadingRegion => DatasheetViewRegionCalculator.GetFrozenRightRegion(_viewRegion, _sheet.NumCols, _sheet.FreezeState.Right);
+    private Region MainHeadingRegion => _mainHeadingRegion ??= new Region(0, 0, MainLeft, MainRight);
+
+    private Region RightHeadingRegion => _rightHeadingRegion ??=
+        DatasheetViewRegionCalculator.GetFrozenRightRegion(_viewRegion, _sheet.NumCols, _sheet.FreezeState.Right);
 
     private int MainLeft => Math.Clamp(Math.Max(_sheet.FreezeState.Left, _viewRegion.Left), _viewRegion.Left, _viewRegion.Right);
     private int MainRight => Math.Clamp(Math.Min(_sheet.NumCols - _sheet.FreezeState.Right - 1, _viewRegion.Right), MainLeft, _viewRegion.Right);
+
+    protected override void InvalidateHeadingRegions()
+    {
+        _leftHeadingRegion = null;
+        _mainHeadingRegion = null;
+        _rightHeadingRegion = null;
+    }
 
     protected override void OnInitialized()
     {

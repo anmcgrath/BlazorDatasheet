@@ -1,7 +1,9 @@
-using BlazorDatasheet.Core.Data;
+﻿using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Extensions;
 using BlazorDatasheet.Render;
+using BlazorDatasheet.Virtualise;
+using System.Threading.Tasks;
 using Bunit;
 using FluentAssertions;
 using NUnit.Framework;
@@ -106,5 +108,46 @@ public class DatasheetRenderGatingTests
         var renderCount = cut.RenderCount;
         cut.InvokeAsync(() => sheet.Rows.Hide(2, 3));
         cut.RenderCount.Should().BeGreaterThan(renderCount);
+    }
+
+    [Test]
+    public void Heading_Regions_Are_Recalculated_When_Rows_Are_Inserted()
+    {
+        using var context = CreateContext();
+        var sheet = new Sheet(5, 5);
+        var cut = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, sheet));
+        ShowViewport(cut);
+
+        var headings = cut.FindAll("div.bds-row-head[data-row]").Count;
+
+        cut.InvokeAsync(() => sheet.Rows.InsertAt(0, 2));
+        ShowViewport(cut);
+
+        cut.FindAll("div.bds-row-head[data-row]").Count.Should().Be(headings + 2);
+    }
+
+    [Test]
+    public void Heading_Regions_Are_Recalculated_When_The_Freeze_State_Changes()
+    {
+        using var context = CreateContext();
+        var sheet = new Sheet(20, 20);
+        var cut = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, sheet));
+        ShowViewport(cut);
+
+        cut.InvokeAsync(() => sheet.FreezeLeftColumns(2));
+        ShowViewport(cut);
+
+        cut.FindAll("div.bds-frozen-left").Should().NotBeEmpty();
+    }
+
+    private static void ShowViewport(IRenderedFragment component)
+    {
+        foreach (var virtualiser in component.FindComponents<Virtualise2D>())
+        {
+            Task? scroll = null;
+            virtualiser.InvokeAsync(() => { scroll = virtualiser.Instance.HandleScroll(new Rect(0, 0, 500, 500)); })
+                .Wait();
+            scroll?.Wait();
+        }
     }
 }
