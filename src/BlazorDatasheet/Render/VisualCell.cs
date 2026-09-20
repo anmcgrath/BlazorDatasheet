@@ -103,6 +103,8 @@ public class VisualCell
         HorizontalAlign = ResolveHorizontalAlign(format, cellValue.ValueType);
         VerticalAlign = ResolveVerticalAlign(format);
         ClassString = GetCellClassString(format, cellValue.ValueType);
+        if (cellValue.ValueType == CellValueType.Number)
+            ClassString += " bds-cell-number";
         if (!string.IsNullOrWhiteSpace(format?.CssClass))
             ClassString += " " + format.CssClass;
         if (format?.CornerFlagTopLeft != null || format?.CornerFlagTopRight != null ||

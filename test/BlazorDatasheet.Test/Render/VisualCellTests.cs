@@ -30,9 +30,24 @@ public class VisualCellTests
 
         var cell = new VisualCell(0, 0, sheet, 12);
 
-        cell.ClassString.Should().Be("bds-sheet-cell bds-cell-align-end");
+        cell.ClassString.Should().Be("bds-sheet-cell bds-cell-align-end bds-cell-number");
         cell.FormatStyleString.Should().BeEmpty();
         cell.Format.Should().BeNull();
+    }
+
+    [Test]
+    public void Explicitly_End_Aligned_Text_Is_Not_Marked_As_Number()
+    {
+        var sheet = new Sheet(1, 1);
+        sheet.Cells.SetValue(0, 0, "right-aligned text");
+        sheet.SetFormat(new Region(0, 0), new CellFormat
+        {
+            HorizontalTextAlign = TextAlign.End
+        });
+
+        var cell = new VisualCell(0, 0, sheet, 12);
+
+        cell.ClassString.Should().Be("bds-sheet-cell bds-cell-align-end");
     }
 
     [Test]
