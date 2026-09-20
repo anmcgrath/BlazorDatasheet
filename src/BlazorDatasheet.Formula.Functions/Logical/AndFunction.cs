@@ -11,7 +11,8 @@ public static class AndFunction
             type: ParameterType.LogicalSequence,
             requirement: ParameterRequirement.Required,
             isRepeating: true,
-            shape: ParameterShape.ScalarOrArray)
+            shape: ParameterShape.ScalarOrArray,
+            description: "A value or range to test.")
     ];
 
     public static FunctionDescriptor Descriptor { get; } = new(
@@ -19,7 +20,8 @@ public static class AndFunction
         parameterDefinitions: Parameters,
         invoker: Evaluate,
         acceptsErrors: false,
-        isVolatile: false);
+        isVolatile: false,
+        description: "Returns true if all of the arguments are true.");
 
     private static CellValue Evaluate(ReadOnlySpan<CellValue> args, FunctionCallMetaData metaData)
     {

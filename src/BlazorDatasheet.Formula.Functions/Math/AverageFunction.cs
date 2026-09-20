@@ -11,7 +11,8 @@ public static class AverageFunction
             ParameterType.NumberSequence,
             ParameterRequirement.Required,
             isRepeating: true,
-            shape: ParameterShape.ScalarOrArray)
+            shape: ParameterShape.ScalarOrArray,
+            description: "A number or range to include in the average.")
     ];
 
     public static FunctionDescriptor Descriptor { get; } = new(
@@ -19,7 +20,8 @@ public static class AverageFunction
         parameterDefinitions: Parameters,
         invoker: Evaluate,
         acceptsErrors: false,
-        isVolatile: false);
+        isVolatile: false,
+        description: "Returns the average of a series of numbers.");
 
     private static CellValue Evaluate(ReadOnlySpan<CellValue> args, FunctionCallMetaData metaData)
     {

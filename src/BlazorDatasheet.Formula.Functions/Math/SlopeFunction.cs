@@ -7,8 +7,10 @@ public static class SlopeFunction
 {
     private static readonly ParameterDefinition[] Parameters =
     [
-        new("known_ys", ParameterType.Array, ParameterRequirement.Required, shape: ParameterShape.Array),
-        new("known_xs", ParameterType.Array, ParameterRequirement.Required, shape: ParameterShape.Array)
+        new("known_ys", ParameterType.Array, ParameterRequirement.Required, shape: ParameterShape.Array,
+            description: "The range of dependent (y) values."),
+        new("known_xs", ParameterType.Array, ParameterRequirement.Required, shape: ParameterShape.Array,
+            description: "The range of independent (x) values.")
     ];
 
     public static FunctionDescriptor Descriptor { get; } = new(
@@ -16,7 +18,8 @@ public static class SlopeFunction
         parameterDefinitions: Parameters,
         invoker: Evaluate,
         acceptsErrors: false,
-        isVolatile: false);
+        isVolatile: false,
+        description: "Returns the slope of the line of best fit through the data.");
 
     private static CellValue Evaluate(ReadOnlySpan<CellValue> args, FunctionCallMetaData metaData)
     {

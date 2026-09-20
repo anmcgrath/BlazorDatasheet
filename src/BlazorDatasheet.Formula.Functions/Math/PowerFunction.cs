@@ -6,8 +6,10 @@ public static class PowerFunction
 {
     private static readonly ParameterDefinition[] Parameters =
     [
-        new("number", ParameterType.Number, ParameterRequirement.Required),
-        new("exponent", ParameterType.Number, ParameterRequirement.Required)
+        new("number", ParameterType.Number, ParameterRequirement.Required,
+            description: "The number to raise."),
+        new("exponent", ParameterType.Number, ParameterRequirement.Required,
+            description: "The power to raise the number to.")
     ];
 
     public static FunctionDescriptor Descriptor { get; } = new(
@@ -15,7 +17,8 @@ public static class PowerFunction
         parameterDefinitions: Parameters,
         invoker: Evaluate,
         acceptsErrors: false,
-        isVolatile: false);
+        isVolatile: false,
+        description: "Returns a number raised to a power.");
 
     private static CellValue Evaluate(ReadOnlySpan<CellValue> args, FunctionCallMetaData metaData)
     {

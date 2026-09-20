@@ -12,7 +12,8 @@ public static class RandFunction
         parameterDefinitions: Parameters,
         invoker: Evaluate,
         acceptsErrors: false,
-        isVolatile: true);
+        isVolatile: true,
+        description: "Returns a random number that is at least 0 and less than 1.");
 
     private static CellValue Evaluate(ReadOnlySpan<CellValue> args, FunctionCallMetaData metaData)
     {
