@@ -1,13 +1,15 @@
-﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Formula.Core
 
-<div class="bds-func-suggestions-item">
+@{
+    var definitions = Function.ParameterDefinitions;
+    var currentParam = GetCurrentParameter();
+}
+
+<div class="bds-func-hint-signature">
     <span style="font-weight: @(ArgIndex == -1 ? "bold" : "normal")">@FunctionName.ToUpper()</span>
     <span>(</span>
 
-    @{
-        var definitions = Function.ParameterDefinitions;
-    }
     @for (var i = 0; i < definitions.Length; i++)
     {
         var paramDefinition = definitions[i];
@@ -26,6 +28,25 @@
     <span>)</span>
 </div>
 
+@if (!string.IsNullOrWhiteSpace(Function.Description))
+{
+    <div class="bds-func-hint-description">@Function.Description</div>
+}
+
+@if (currentParam != null && !string.IsNullOrWhiteSpace(currentParam.Description))
+{
+    <div class="bds-func-hint-param">
+        <div class="bds-func-hint-param-name">
+            @currentParam.Name
+            @if (currentParam.Requirement == ParameterRequirement.Optional)
+            {
+                <span class="bds-func-hint-param-optional">(optional)</span>
+            }
+        </div>
+        <div class="bds-func-hint-param-description">@currentParam.Description</div>
+    </div>
+}
+
 @code{
 
     [Parameter] public required string FunctionName { get; set; }
@@ -33,5 +54,20 @@
     [Parameter] public required FunctionDescriptor Function { get; set; }
 
     [Parameter] public required int ArgIndex { get; set; }
+
+    /// <summary>
+    /// The parameter that the caret is in. Arguments past the end belong to the last parameter when it repeats.
+    /// </summary>
+    private ParameterDefinition? GetCurrentParameter()
+    {
+        var definitions = Function.ParameterDefinitions;
+        if (ArgIndex < 0 || definitions.Length == 0)
+            return null;
+
+        if (ArgIndex < definitions.Length)
+            return definitions[ArgIndex];
+
+        return definitions[^1].IsRepeating ? definitions[^1] : null;
+    }
 
 }

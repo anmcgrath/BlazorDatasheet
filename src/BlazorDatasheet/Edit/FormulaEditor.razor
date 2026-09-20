@@ -65,7 +65,12 @@
                  @onmousedown:preventDefault="true"
                  @onmousedown="() => { }"
                  @onclick="() => AcceptSuggestion(suggestion)">
-                @suggestion.Name
+                <span class="bds-func-suggestions-name">@suggestion.Name</span>
+                @* only the selected suggestion is described, which keeps the list short *@
+                @if (i == _suggestionIndex && !string.IsNullOrWhiteSpace(suggestion.Function.Description))
+                {
+                    <div class="bds-func-suggestions-description">@suggestion.Function.Description</div>
+                }
             </div>
         }
     }

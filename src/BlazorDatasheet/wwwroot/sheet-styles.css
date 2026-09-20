@@ -660,6 +660,7 @@
 
 .bds-func-suggestions {
     min-width: 100px;
+    max-width: 320px;
     margin-top: 4px;
     background: var(--sheet-bg-color);
     box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
@@ -677,6 +678,33 @@
 
 .bds-func-suggestions-item.active {
     background: var(--selection-bg-color);
+}
+
+.bds-func-hint-signature,
+.bds-func-hint-description,
+.bds-func-hint-param {
+    padding: 2px 4px;
+}
+
+.bds-func-hint-param {
+    border-top: var(--sheet-border-style);
+}
+
+.bds-func-hint-param-name {
+    font-weight: bold;
+}
+
+.bds-func-hint-param-optional {
+    font-weight: normal;
+}
+
+.bds-func-suggestions-description,
+.bds-func-hint-description,
+.bds-func-hint-param-description,
+.bds-func-hint-param-optional {
+    font-size: 0.85em;
+    white-space: normal;
+    opacity: 0.7;
 }
 
 .bds-virtual-grid-container {
