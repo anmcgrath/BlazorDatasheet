@@ -27,7 +27,7 @@ export function measureAutofitChanges(el, axis) {
             continue
         }
 
-        const measuredSize = measureWidth ? child.offsetWidth : child.offsetHeight
+        const measuredSize = measureWidth ? measureFullWidth(child) : child.offsetHeight
         let change = changes.get(index)
 
         if (!change) {
@@ -55,4 +55,20 @@ export function measureAutofitChanges(el, axis) {
 
     return Array.from(changes.values()).filter(change =>
         change.expandTo !== undefined || change.contractTo !== undefined)
+}
+
+/**
+ * offsetWidth rounds to the nearest pixel, which can leave the column a fraction of a pixel too
+ * narrow. A number that doesn't quite fit loses a digit or is replaced with hashes, so the width
+ * is always rounded up.
+ *
+ * getBoundingClientRect gives the subpixel border-box width, which is what offsetWidth rounds.
+ * getComputedStyle would resolve the content box instead, and reading it costs a style
+ * recalculation per element on top of the layout this already forces.
+ *
+ * @param {HTMLElement} el
+ */
+function measureFullWidth(el) {
+    const width = el.getBoundingClientRect().width
+    return Number.isFinite(width) && width > 0 ? Math.ceil(width) : el.offsetWidth
 }

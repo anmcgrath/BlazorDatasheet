@@ -31,6 +31,7 @@ public class VisualCellTests
         var cell = new VisualCell(0, 0, sheet, 12);
 
         cell.ClassString.Should().Be("bds-sheet-cell bds-cell-align-end bds-cell-number");
+        cell.IsNumber.Should().BeTrue();
         cell.FormatStyleString.Should().BeEmpty();
         cell.Format.Should().BeNull();
     }
@@ -48,6 +49,7 @@ public class VisualCellTests
         var cell = new VisualCell(0, 0, sheet, 12);
 
         cell.ClassString.Should().Be("bds-sheet-cell bds-cell-align-end");
+        cell.IsNumber.Should().BeFalse();
     }
 
     [Test]
@@ -115,5 +117,88 @@ public class VisualCellTests
         cell.VisibleColSpan.Should().Be(2);
         cell.Height.Should().Be(70);
         cell.Width.Should().Be(130);
+    }
+
+    [TestCase(123.456, new[] { "123.46", "123.5", "123" })]
+    [TestCase(-123.456, new[] { "-123.46", "-123.5", "-123" })]
+    [TestCase(77.3336, new[] { "77.334", "77.33", "77.3", "77" })]
+    [TestCase(123.01, new[] { "123" })]
+    [TestCase(999.9, new[] { "1000" })]
+    [TestCase(99.9, new[] { "100" })]
+    [TestCase(1.2345e20, new[] { "1.235E+20", "1.23E+20", "1.2E+20", "1E+20" })]
+    public void General_Number_Has_Complete_Distinct_Roundings(double number, string[] expected)
+    {
+        var sheet = new Sheet(1, 1);
+        sheet.Cells.SetValue(0, 0, number);
+
+        var cell = new VisualCell(0, 0, sheet, 13);
+
+        cell.NumberFallbacks.Should().Equal(expected);
+    }
+
+    [TestCase(0, new[] { "0.666667", "0.66667", "0.6667", "0.667", "0.67", "0.7", "1" })]
+    [TestCase(5, new[] { "0.666667", "0.66667" })]
+    [TestCase(7, new string[0])]
+    public void General_Number_Tries_Every_Precision_Down_To_The_Minimum(int minDecimals, string[] expected)
+    {
+        var sheet = new Sheet(1, 1);
+        sheet.Cells.SetValue(0, 0, 0.6666667);
+
+        var cell = new VisualCell(0, 0, sheet, 13,
+            new NumberOverflowOptions(NumberOverflowMode.RoundToFit, minDecimals));
+
+        cell.NumberFallbacks.Should().Equal(expected);
+    }
+
+    [TestCase(123456)]
+    [TestCase(1e20)]
+    [TestCase(double.PositiveInfinity)]
+    [TestCase(double.NaN)]
+    public void Numbers_Without_A_Roundable_Fraction_Have_No_Fallbacks(double number)
+    {
+        var sheet = new Sheet(1, 1);
+        sheet.Cells.SetValue(0, 0, number);
+
+        new VisualCell(0, 0, sheet, 13).NumberFallbacks.Should().BeEmpty();
+    }
+
+    [TestCase(NumberOverflowMode.Hashes)]
+    [TestCase(NumberOverflowMode.Clip)]
+    public void Number_Has_No_Fallbacks_Unless_Rounding_To_Fit(NumberOverflowMode mode)
+    {
+        var sheet = new Sheet(1, 1);
+        sheet.Cells.SetValue(0, 0, 123.456);
+
+        var cell = new VisualCell(0, 0, sheet, 13, new NumberOverflowOptions(mode, 0));
+
+        cell.FormattedString.Should().Be("123.456");
+        cell.NumberFallbacks.Should().BeEmpty();
+    }
+
+    [TestCase("0.00")]
+    [TestCase("0.00E+00")]
+    [TestCase("0 \"v1.5\"")]
+    public void Explicit_Number_Formats_Have_No_Rounded_Fallbacks(string numberFormat)
+    {
+        var sheet = new Sheet(1, 1);
+        sheet.Cells.SetValue(0, 0, 123.456);
+        sheet.SetFormat(new Region(0, 0), new CellFormat { NumberFormat = numberFormat });
+
+        new VisualCell(0, 0, sheet, 13).NumberFallbacks.Should().BeEmpty();
+    }
+
+    [Test]
+    public void Resizing_Preserves_All_Roundings_For_The_Browser_To_Choose()
+    {
+        var sheet = new Sheet(1, 1);
+        sheet.Cells.SetValue(0, 0, 123.456);
+        sheet.Columns.SetSize(0, 500);
+        var cell = new VisualCell(0, 0, sheet, 13);
+
+        sheet.Columns.SetSize(0, 20);
+        cell.RefreshAxisMetrics(sheet, AxisMetrics.ForRow(sheet, 0), AxisMetrics.ForColumn(sheet, 0));
+
+        cell.Width.Should().Be(20);
+        cell.NumberFallbacks.Should().Equal("123.46", "123.5", "123");
     }
 }

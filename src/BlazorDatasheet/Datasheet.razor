@@ -258,10 +258,23 @@
             builder.CloseElement();
         }
 
-        builder.OpenElement(100, "div");
-        builder.AddAttribute(110, "class", "bds-cell-container");
+        var showFormula = ShowFormula && _sheet.Cells.HasFormula(cell.Row, cell.Col);
 
-        if (ShowFormula && _sheet.Cells.HasFormula(cell.Row, cell.Col))
+        // Unless numbers are clipped, explicitly formatted numbers stay whole and become hashes when
+        // they do not fit. General numbers may be rounded to fewer decimal places first, as in Excel.
+        var isNumberText = cell.IsNumber && !showFormula &&
+                           NumberOverflow != NumberOverflowMode.Clip &&
+                           cell.CellType is "default" or "text" or "datetime";
+        var numberFallbacks = isNumberText ? cell.NumberFallbacks : [];
+
+        builder.OpenElement(100, "div");
+        builder.AddAttribute(110, "class", !isNumberText
+            ? "bds-cell-container"
+            : numberFallbacks.Length == 0
+                ? "bds-cell-container bds-cell-number-text bds-cell-number-hashes"
+                : "bds-cell-container bds-cell-number-text");
+
+        if (showFormula)
         {
             builder.AddContent(120, _sheet.Cells.GetFormulaString(cell.Row, cell.Col));
         }
@@ -272,7 +285,32 @@
                 case "default":
                 case "text":
                 case "datetime":
-                    builder.AddContent(120, cell.FormattedString);
+                    if (!isNumberText)
+                    {
+                        builder.AddContent(120, cell.FormattedString);
+                        break;
+                    }
+
+                    // each fallback holds the next shorter one, so that it is only consulted once
+                    // everything longer than it has failed to fit. The last one holds the hashes.
+                    for (var i = 0; i < numberFallbacks.Length; i++)
+                    {
+                        var fallback = numberFallbacks[i];
+                        var isLast = i == numberFallbacks.Length - 1;
+                        builder.OpenElement(121, "span");
+                        builder.AddAttribute(122, "class", "bds-cell-number-fallback"
+                                                           + (isLast ? " bds-cell-number-hashes" : null));
+                        builder.AddAttribute(123, "data-value", fallback);
+                    }
+
+                    for (var i = 0; i < numberFallbacks.Length; i++)
+                        builder.CloseElement();
+
+                    builder.OpenElement(125, "span");
+                    builder.AddAttribute(126, "class", "bds-cell-number-value");
+                    builder.AddContent(128, cell.FormattedString);
+                    builder.CloseElement();
+
                     break;
                 case "boolean":
                     builder.OpenComponent(120, typeof(BoolRenderer));

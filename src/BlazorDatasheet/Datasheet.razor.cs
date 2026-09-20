@@ -161,6 +161,20 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     private int _numberPrecisionDisplay = 13;
 
     /// <summary>
+    /// What a number without an explicit number format does when it does not fit inside its cell.
+    /// Default is <see cref="NumberOverflowMode.RoundToFit"/>.
+    /// </summary>
+    [Parameter]
+    public NumberOverflowMode NumberOverflow { get; set; } = NumberOverflowMode.RoundToFit;
+
+    /// <summary>
+    /// The fewest decimal places that <see cref="NumberOverflowMode.RoundToFit"/> may round a number to
+    /// before it is replaced with hashes. Default is 0.
+    /// </summary>
+    [Parameter]
+    public int NumberOverflowMinDecimals { get; set; }
+
+    /// <summary>
     /// Any user-defined items to render in the context menu
     /// </summary>
     [Parameter]
@@ -1369,6 +1383,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         if (CellRenderFragment == null)
             return false;
 
+        var numberOverflow = new NumberOverflowOptions(NumberOverflow, NumberOverflowMinDecimals);
+
         if (_paneContext != null &&
             ReferenceEquals(_paneContext.Sheet, _sheet) &&
             ReferenceEquals(_paneContext.CellRenderFragment, CellRenderFragment) &&
@@ -1376,6 +1392,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             ReferenceEquals(_paneContext.AutoScrollState, _autoScrollState) &&
             ReferenceEquals(_paneContext.PointerInputService, _sheetPointerInputService) &&
             _paneContext.NumberPrecisionDisplay == _numberPrecisionDisplay &&
+            _paneContext.NumberOverflow == numberOverflow &&
             _paneContext.ShowFormula == _showFormula &&
             _paneContext.ShowFormulaDependents == _showFormulaDependents &&
             _paneContext.UseAutoFill == _useAutoFill &&
@@ -1394,6 +1411,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             _sheetPointerInputService,
             _previewService,
             _numberPrecisionDisplay,
+            numberOverflow,
             _showFormula,
             _showFormulaDependents,
             _useAutoFill,

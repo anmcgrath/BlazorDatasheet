@@ -24,7 +24,7 @@
         var col = merge.Left;
 
         if (!Cache.TryGetValue(new CellPosition(row, col), out var visualCell))
-            visualCell = new VisualCell(row, col, Sheet, NumberPrecisionDisplay);
+            visualCell = new VisualCell(row, col, Sheet, NumberPrecisionDisplay, NumberOverflow);
 
         if (visualCell.VisibleColSpan <= 1 && visualCell.VisibleRowSpan <= 1)
         {
@@ -50,6 +50,7 @@
     [Parameter, EditorRequired] public Dictionary<CellPosition, VisualCell> Cache { get; set; } = null!;
 
     [Parameter, EditorRequired] public required int NumberPrecisionDisplay { get; set; }
+    [Parameter] public NumberOverflowOptions NumberOverflow { get; set; }
 
     [Parameter, EditorRequired] public required RenderFragment<VisualCell> CellRenderFragment { get; set; }
 

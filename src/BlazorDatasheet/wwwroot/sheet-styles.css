@@ -268,8 +268,7 @@
     text-align: right;
 }
 
-/* Numeric values stay end-aligned while they fit. When they overflow, safe alignment exposes
-   the leading digits and the ellipsis prevents the last visible digit from being sliced. */
+/* Numeric values stay end-aligned while they fit. */
 .bds-cell-number.bds-cell-align-end {
     justify-content: safe end;
 }
@@ -278,6 +277,65 @@
     min-width: 0;
     overflow: hidden;
     text-overflow: '';
+}
+
+.bds-cell-number-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: '';
+    white-space: nowrap;
+}
+
+@supports (height: 1lh) {
+    .bds-cell-number-text,
+    .bds-cell-number-fallback {
+        display: flex;
+        height: 1lh;
+        min-width: 0;
+        flex-wrap: wrap;
+        align-items: start;
+        overflow: hidden;
+        text-overflow: clip;
+    }
+
+    /* While a number fits, its much larger flex-grow leaves the fallback before it no width. If
+       the number's full width is too large, it wraps intact to the hidden second line and
+       the fallback occupies the visible first line. A fallback makes the same choice between its
+       own rounding and the next shorter fallback nested inside it, ending with the hashes. */
+    .bds-cell-number-fallback {
+        flex: 1 0 0;
+    }
+
+    .bds-cell-number-value,
+    .bds-cell-number-fallback::after {
+        flex: 99999 0 0;
+        min-width: max-content;
+    }
+
+    /* The alternative text keeps the generated roundings and hashes out of the accessibility
+       tree; assistive technology still reads the complete value span. */
+    .bds-cell-number-fallback::after {
+        content: attr(data-value);
+        content: attr(data-value) / "";
+    }
+
+    .bds-cell-number-hashes::before {
+        content: "################################";
+        content: "################################" / "";
+        flex: 1 0 0;
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    /* autofit measures the full width of the number */
+    .bds-autoFit .bds-cell-number-fallback,
+    .bds-autoFit .bds-cell-number-hashes::before {
+        display: none;
+    }
+
+    .bds-autoFit .bds-cell-number-value {
+        min-width: max-content;
+    }
 }
 
 .bds-cell-valign-start {
