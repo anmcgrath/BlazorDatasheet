@@ -282,6 +282,8 @@ public class MergeableIntervalStore<T> : ISparseSource where T : IMergeable<T>, 
             var interval = _intervals.Values[i];
             if (interval.Start > next)
                 return false;
+            if (interval.End >= end)
+                return true;
             next = Math.Max(next, interval.End + 1);
         }
 

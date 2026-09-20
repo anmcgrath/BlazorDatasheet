@@ -25,8 +25,39 @@ public sealed class FunctionDescriptor
         FunctionInvoker invoker,
         bool acceptsErrors = false,
         bool isVolatile = false,
-        ReturnShape returnShape = ReturnShape.Scalar,
-        string? description = null)
+        ReturnShape returnShape = ReturnShape.Scalar)
+        : this(name, parameterDefinitions, invoker, acceptsErrors, isVolatile, returnShape, null)
+    {
+    }
+
+    public FunctionDescriptor(
+        string name,
+        ParameterDefinition[] parameterDefinitions,
+        FunctionInvoker invoker,
+        string? description)
+        : this(name, parameterDefinitions, invoker, false, false, ReturnShape.Scalar, description)
+    {
+    }
+
+    public FunctionDescriptor(
+        string name,
+        ParameterDefinition[] parameterDefinitions,
+        FunctionInvoker invoker,
+        bool acceptsErrors,
+        bool isVolatile,
+        string? description)
+        : this(name, parameterDefinitions, invoker, acceptsErrors, isVolatile, ReturnShape.Scalar, description)
+    {
+    }
+
+    public FunctionDescriptor(
+        string name,
+        ParameterDefinition[] parameterDefinitions,
+        FunctionInvoker invoker,
+        bool acceptsErrors,
+        bool isVolatile,
+        ReturnShape returnShape,
+        string? description)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Function name cannot be null or empty", nameof(name));

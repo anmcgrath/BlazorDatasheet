@@ -1,0 +1,21 @@
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Render.Headings
+
+<Datasheet Sheet="_sheet" ColumnHeaderTemplate="_columnHeaderTemplate" />
+
+@code {
+    private readonly Sheet _sheet = new(5, 5);
+    private RenderFragment<HeadingContext> _columnHeaderTemplate = null!;
+    private string _heading = "before";
+
+    protected override void OnInitialized()
+    {
+        _columnHeaderTemplate = _ => builder => builder.AddContent(0, _heading);
+    }
+
+    public void ChangeHeading()
+    {
+        _heading = "after";
+        StateHasChanged();
+    }
+}

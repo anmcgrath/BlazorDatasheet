@@ -47,6 +47,19 @@ public class DatasheetRenderGatingTests
     }
 
     [Test]
+    public void Stable_Render_Fragment_Re_Renders_When_Its_Captured_State_Changes()
+    {
+        using var context = CreateContext();
+        var host = context.RenderComponent<StableTemplateHost>();
+        ShowViewport(host);
+        host.Markup.Should().Contain("before");
+
+        host.InvokeAsync(host.Instance.ChangeHeading);
+
+        host.Markup.Should().Contain("after");
+    }
+
+    [Test]
     public void Changing_Theme_Re_Renders_Datasheet()
     {
         using var context = CreateContext();
