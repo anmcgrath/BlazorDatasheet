@@ -14,13 +14,19 @@ public sealed class FunctionDescriptor
     public bool IsVolatile { get; }
     public ReturnShape ReturnShape { get; }
 
+    /// <summary>
+    /// Describes the function to the user, in the function suggestions and the formula hint box.
+    /// </summary>
+    public string? Description { get; }
+
     public FunctionDescriptor(
         string name,
         ParameterDefinition[] parameterDefinitions,
         FunctionInvoker invoker,
         bool acceptsErrors = false,
         bool isVolatile = false,
-        ReturnShape returnShape = ReturnShape.Scalar)
+        ReturnShape returnShape = ReturnShape.Scalar,
+        string? description = null)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Function name cannot be null or empty", nameof(name));
@@ -31,6 +37,7 @@ public sealed class FunctionDescriptor
         AcceptsErrors = acceptsErrors;
         IsVolatile = isVolatile;
         ReturnShape = returnShape;
+        Description = description;
 
         var validator = new FunctionParameterValidator();
         validator.ValidateOrThrow(ParameterDefinitions);
