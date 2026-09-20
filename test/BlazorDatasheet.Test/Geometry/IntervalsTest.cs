@@ -12,6 +12,16 @@ namespace BlazorDatasheet.Test.Geometry;
 public class IntervalsTest
 {
     [Test]
+    public void Covers_Handles_An_Interval_Ending_At_Max_Value()
+    {
+        var store = new MergeableIntervalStore<SimpleMergeableData<int>>();
+        store.Add(0, int.MaxValue, new SimpleMergeableData<int>(1));
+
+        store.Covers(5, 10).Should().BeTrue();
+        store.Covers(int.MaxValue, int.MaxValue).Should().BeTrue();
+    }
+
+    [Test]
     [TestCase(1, 5, 3, true)]
     [TestCase(1, 5, 5, true)]
     [TestCase(1, 5, 1, true)]

@@ -1430,10 +1430,9 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     }
 
     /// <summary>
-    /// Whether any parameter differs from the one supplied last time. Delegates, render fragments and
-    /// the dictionaries the caller owns compare by reference, so a caller that passes an inline
-    /// template (a new delegate each of its renders) still renders every time - only callers that hand
-    /// over stable values get the saving.
+    /// Whether any parameter differs from the one supplied last time. Render fragments are always
+    /// treated as changed because their output can depend on captured state even when the delegate is
+    /// stable. Other reference types, including dictionaries the caller owns, compare by reference.
     /// </summary>
     private bool HasParameterChanged(ParameterView parameters)
     {
@@ -1451,11 +1450,23 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         {
             if (!last.TryGetValue(name, out var lastValue))
                 return true;
+            
+            if (IsRenderFragment(value))
+                return true;
             if (!Equals(lastValue, value))
                 return true;
         }
 
         return false;
+    }
+
+    private static bool IsRenderFragment(object? value)
+    {
+        if (value is RenderFragment)
+            return true;
+
+        var type = value?.GetType();
+        return type is { IsGenericType: true } && type.GetGenericTypeDefinition() == typeof(RenderFragment<>);
     }
 
     /// <summary>
