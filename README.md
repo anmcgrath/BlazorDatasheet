@@ -147,6 +147,24 @@ Formula can be applied to cells. When the cells or ranges that the formula cells
 sheet.Cells[0, 0].Formula = "=10+A2"
 ```
 
+#### Custom functions
+
+Functions are added with `FormulaOptions.ConfigureFunctions`. The descriptions are optional, and are shown in the function suggestions and the hint box of the formula editor.
+
+```csharp
+var sheet = new Sheet(10, 10, formulaOptions: new FormulaOptions
+{
+    ConfigureFunctions = builder => builder.Add(new FunctionDescriptor(
+        name: "DOUBLE",
+        parameterDefinitions:
+        [
+            new ParameterDefinition("number", ParameterType.Number, description: "The number to double.")
+        ],
+        invoker: (args, _) => CellValue.Number(args[0].GetValue<double>() * 2),
+        description: "Returns a number multiplied by two."))
+});
+```
+
 ### Formatting
 
 Cell formats can be set in the following ways:
