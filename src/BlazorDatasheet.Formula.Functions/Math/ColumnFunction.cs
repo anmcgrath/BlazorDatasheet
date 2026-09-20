@@ -7,7 +7,9 @@ public static class ColumnFunction
 {
     private static readonly ParameterDefinition[] Parameters =
     [
-        new("Reference", ParameterType.Any, ParameterRequirement.Optional)
+        new("Reference", ParameterType.Any, ParameterRequirement.Optional,
+            description: "The cell or range to return the column number of. The cell containing the formula is used " +
+                         "when it is left out.")
     ];
 
     public static FunctionDescriptor Descriptor { get; } = new(
@@ -15,7 +17,8 @@ public static class ColumnFunction
         parameterDefinitions: Parameters,
         invoker: Evaluate,
         acceptsErrors: false,
-        isVolatile: false);
+        isVolatile: false,
+        description: "Returns the column number of a reference.");
 
     private static CellValue Evaluate(ReadOnlySpan<CellValue> args, FunctionCallMetaData metaData)
     {

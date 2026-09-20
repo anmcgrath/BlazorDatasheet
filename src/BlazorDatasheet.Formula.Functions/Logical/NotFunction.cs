@@ -6,7 +6,8 @@ public static class NotFunction
 {
     private static readonly ParameterDefinition[] Parameters =
     [
-        new("value", ParameterType.Logical, ParameterRequirement.Required)
+        new("value", ParameterType.Logical, ParameterRequirement.Required,
+            description: "The logical value to reverse.")
     ];
 
     public static FunctionDescriptor Descriptor { get; } = new(
@@ -14,7 +15,8 @@ public static class NotFunction
         parameterDefinitions: Parameters,
         invoker: Evaluate,
         acceptsErrors: false,
-        isVolatile: false);
+        isVolatile: false,
+        description: "Returns the opposite of a logical value.");
 
     private static CellValue Evaluate(ReadOnlySpan<CellValue> args, FunctionCallMetaData metaData)
     {

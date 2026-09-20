@@ -8,10 +8,15 @@ public static class VLookupFunction
 {
     private static readonly ParameterDefinition[] Parameters =
     [
-        new("Lookup", ParameterType.Any, ParameterRequirement.Required, shape: ParameterShape.ScalarOrArray),
-        new("DataSource", ParameterType.Array, ParameterRequirement.Required, shape: ParameterShape.Array),
-        new("Column", ParameterType.Integer, ParameterRequirement.Required),
-        new("RangeLookup", ParameterType.Logical, ParameterRequirement.Optional)
+        new("Lookup", ParameterType.Any, ParameterRequirement.Required, shape: ParameterShape.ScalarOrArray,
+            description: "The value to search for."),
+        new("DataSource", ParameterType.Array, ParameterRequirement.Required, shape: ParameterShape.Array,
+            description: "The range to search. The first column is searched for the lookup value."),
+        new("Column", ParameterType.Integer, ParameterRequirement.Required,
+            description: "The number of the column in the range to return the value from, starting at 1."),
+        new("RangeLookup", ParameterType.Logical, ParameterRequirement.Optional,
+            description: "Whether to find an approximate match, which needs the first column to be sorted, rather " +
+                         "than an exact match. Approximate by default.")
     ];
 
     public static FunctionDescriptor Descriptor { get; } = new(
@@ -19,7 +24,9 @@ public static class VLookupFunction
         parameterDefinitions: Parameters,
         invoker: Evaluate,
         acceptsErrors: false,
-        isVolatile: false);
+        isVolatile: false,
+        description: "Searches the first column of a range for a value and returns the value in the same row of " +
+                     "another column.");
 
     private static CellValue Evaluate(ReadOnlySpan<CellValue> args, FunctionCallMetaData metaData)
     {

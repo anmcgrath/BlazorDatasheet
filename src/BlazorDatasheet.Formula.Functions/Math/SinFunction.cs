@@ -6,7 +6,8 @@ public static class SinFunction
 {
     private static readonly ParameterDefinition[] Parameters =
     [
-        new("x", ParameterType.Number, ParameterRequirement.Required)
+        new("x", ParameterType.Number, ParameterRequirement.Required,
+            description: "The angle, in radians.")
     ];
 
     public static FunctionDescriptor Descriptor { get; } = new(
@@ -14,7 +15,8 @@ public static class SinFunction
         parameterDefinitions: Parameters,
         invoker: Evaluate,
         acceptsErrors: false,
-        isVolatile: false);
+        isVolatile: false,
+        description: "Returns the sine of an angle.");
 
     private static CellValue Evaluate(ReadOnlySpan<CellValue> args, FunctionCallMetaData metaData)
     {
