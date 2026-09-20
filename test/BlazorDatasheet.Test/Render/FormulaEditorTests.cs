@@ -3,6 +3,8 @@ using System.Threading.Tasks;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Edit;
 using BlazorDatasheet.Edit.DefaultComponents;
+using BlazorDatasheet.Formula.Core;
+using BlazorDatasheet.Formula.Core.Interpreter;
 using Bunit;
 using FluentAssertions;
 using NUnit.Framework;
@@ -45,7 +47,7 @@ public class FormulaEditorTests
         await Type(editor, "=SU", 3);
 
         value.Should().Be("=SU");
-        var suggestions = editor.FindAll(".bds-func-suggestions-item").Select(x => x.TextContent).ToList();
+        var suggestions = editor.FindAll(".bds-func-suggestions-name").Select(x => x.TextContent).ToList();
         suggestions.Should().Contain("SUM");
         suggestions.Should().OnlyContain(x => x.StartsWith("SU"));
 
@@ -65,12 +67,12 @@ public class FormulaEditorTests
         editor.Instance.HandleKey("Enter", false, false, false, false).Should().BeFalse("nothing is suggested");
 
         await Type(editor, "=1+S", 4);
-        var names = editor.FindAll(".bds-func-suggestions-item").Select(x => x.TextContent.Trim()).ToList();
+        var names = editor.FindAll(".bds-func-suggestions-name").Select(x => x.TextContent.Trim()).ToList();
         names.Count.Should().BeGreaterThan(1);
         context.JSInterop.Invocations.Last(x => x.Identifier == "setCaptureListKeys").Arguments.Should().Equal(true);
 
         await editor.InvokeAsync(() => editor.Instance.HandleKey("ArrowDown", false, false, false, false).Should().BeTrue());
-        editor.Find(".bds-func-suggestions-item.active").TextContent.Trim().Should().Be(names[1]);
+        editor.Find(".bds-func-suggestions-item.active .bds-func-suggestions-name").TextContent.Trim().Should().Be(names[1]);
         await editor.InvokeAsync(() => editor.Instance.HandleKey("ArrowUp", false, false, false, false).Should().BeTrue());
         await editor.InvokeAsync(() => editor.Instance.HandleKey("ArrowDown", false, false, false, false));
 
@@ -106,7 +108,8 @@ public class FormulaEditorTests
 
         await Type(editor, "=SUM()+1", 8);
         await Type(editor, "=SU()+1", 3);
-        var sum = editor.FindAll(".bds-func-suggestions-item").First(x => x.TextContent.Trim() == "SUM");
+        var sum = editor.FindAll(".bds-func-suggestions-item")
+            .First(x => x.QuerySelector(".bds-func-suggestions-name")!.TextContent.Trim() == "SUM");
         await editor.InvokeAsync(() => sum.Click());
 
         sheet.Editor.EditValue.Should().Be("=SUM()+1", "the bracket that was already there is reused");
@@ -123,6 +126,71 @@ public class FormulaEditorTests
 
         editor.FindComponents<FormulaHintBox>().Should().ContainSingle()
             .Which.Instance.FunctionName.Should().Be("SUM");
+    }
+
+    private static Sheet CreateSheetWithDescribedFunctions()
+    {
+        return new Sheet(5, 5, formulaOptions: new FormulaOptions
+        {
+            ConfigureFunctions = builder => builder
+                .Add(new FunctionDescriptor(
+                    "ZZDESCRIBED",
+                    [
+                        new ParameterDefinition("first", ParameterType.Number, description: "The first number."),
+                        new ParameterDefinition("second", ParameterType.Number, ParameterRequirement.Optional),
+                        new ParameterDefinition("rest", ParameterType.Number, ParameterRequirement.Optional,
+                            isRepeating: true, description: "The other numbers.")
+                    ],
+                    (_, _) => CellValue.Number(1),
+                    description: "Describes itself."))
+                .Add(new FunctionDescriptor("ZZPLAIN", [], (_, _) => CellValue.Number(1)))
+        });
+    }
+
+    [Test]
+    public async Task Only_The_Selected_Suggestion_Is_Described()
+    {
+        using var context = CreateContext();
+        var editor = context.RenderComponent<FormulaEditor>(p => p.Add(x => x.Sheet, CreateSheetWithDescribedFunctions()));
+
+        await Type(editor, "=ZZ", 3);
+
+        editor.FindAll(".bds-func-suggestions-name").Select(x => x.TextContent).Should().Equal("ZZDESCRIBED", "ZZPLAIN");
+        editor.FindAll(".bds-func-suggestions-description").Should().ContainSingle()
+            .Which.TextContent.Should().Be("Describes itself.");
+
+        await editor.InvokeAsync(() => editor.Instance.HandleKey("ArrowDown", false, false, false, false));
+        editor.FindAll(".bds-func-suggestions-description").Should().BeEmpty("the selected function has no description");
+    }
+
+    [TestCase("=ZZDESCRIBED(", "first", "The first number.")]
+    [TestCase("=ZZDESCRIBED(1,2,3,4", "rest", "The other numbers.")]
+    public async Task Hint_Describes_The_Function_And_The_Parameter_At_The_Caret(string formula, string paramName,
+        string paramDescription)
+    {
+        using var context = CreateContext();
+        var editor = context.RenderComponent<FormulaEditor>(p => p.Add(x => x.Sheet, CreateSheetWithDescribedFunctions()));
+
+        await Type(editor, formula, formula.Length);
+
+        editor.Find(".bds-func-hint-description").TextContent.Should().Be("Describes itself.");
+        editor.Find(".bds-func-hint-param-name").TextContent.Trim().Should().StartWith(paramName);
+        editor.Find(".bds-func-hint-param-description").TextContent.Should().Be(paramDescription);
+    }
+
+    [Test]
+    public async Task Hint_Leaves_Out_Descriptions_That_Are_Not_Set()
+    {
+        using var context = CreateContext();
+        var editor = context.RenderComponent<FormulaEditor>(p => p.Add(x => x.Sheet, CreateSheetWithDescribedFunctions()));
+
+        await Type(editor, "=ZZDESCRIBED(1,", 15);
+        editor.FindAll(".bds-func-hint-description").Should().ContainSingle();
+        editor.FindAll(".bds-func-hint-param").Should().BeEmpty("the second parameter has no description");
+
+        await Type(editor, "=ZZPLAIN(", 9);
+        editor.FindAll(".bds-func-hint-signature").Should().ContainSingle();
+        editor.FindAll(".bds-func-hint-description").Should().BeEmpty();
     }
 
     [Test]
