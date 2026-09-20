@@ -48,6 +48,9 @@
 
     [Parameter, EditorRequired] public required int NumberOfSignificantDigits { get; set; }
 
+    // only the complete number is measured, so the rounded fallbacks are never needed
+    private static readonly NumberOverflowOptions FullNumberOnly = new(NumberOverflowMode.Hashes, 0);
+
     private readonly Queue<AutofitRequest> _pendingRequests = new();
     private readonly CancellationTokenSource _disposeCancellationTokenSource = new();
 
@@ -239,7 +242,7 @@
     {
         var positions = GetNextPositions(operation);
         _currentCells = positions
-            .Select(position => new VisualCell(position.row, position.col, Sheet, NumberOfSignificantDigits))
+            .Select(position => new VisualCell(position.row, position.col, Sheet, NumberOfSignificantDigits, FullNumberOnly))
             .ToList();
         return _currentCells.Count > 0;
     }

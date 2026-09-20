@@ -4,7 +4,7 @@
 @foreach (var col in _visibleColIndices)
 {
     if (!Cache.TryGetValue(new CellPosition(Row, col), out var visualCell))
-        visualCell = new VisualCell(Row, col, Sheet, NumberPrecisionDisplay);
+        visualCell = new VisualCell(Row, col, Sheet, NumberPrecisionDisplay, NumberOverflow);
 
     if (visualCell.Merge != null)
     {
@@ -39,6 +39,7 @@
     [Parameter] public required RenderFragment<VisualCell>? CellRenderFragment { get; set; }
 
     [Parameter] public required int NumberPrecisionDisplay { get; set; }
+    [Parameter] public NumberOverflowOptions NumberOverflow { get; set; }
 
     protected override bool ShouldRender() => IsDirty || _colIndicesChanged;
     private bool _colIndicesChanged;

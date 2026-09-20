@@ -12,6 +12,18 @@ public class VisualCell
 {
     public object? Value { get; private set; }
     public string FormattedString { get; private set; } = string.Empty;
+
+    /// <summary>
+    /// Whether the cell's value is a number.
+    /// </summary>
+    public bool IsNumber { get; private set; }
+
+    /// <summary>
+    /// Roundings of a General number in decreasing precision, to show when
+    /// <see cref="FormattedString"/> does not fit. Explicit number formats have none.
+    /// </summary>
+    public string[] NumberFallbacks { get; private set; } = [];
+
     public int Row { get; private set; }
     public int Col { get; private set; }
     public IRegion? Merge { get; private set; }
@@ -47,9 +59,11 @@ public class VisualCell
     /// <param name="col">The column of the cell</param>
     /// <param name="sheet">The sheet that the cell is inside.</param>
     /// <param name="numberOfSignificantDigits">The number of digits to round the displayed number to.</param>
-    internal VisualCell(int row, int col, Sheet sheet, int numberOfSignificantDigits)
+    /// <param name="numberOverflow">How a number that does not fit inside the cell is displayed.</param>
+    internal VisualCell(int row, int col, Sheet sheet, int numberOfSignificantDigits,
+        NumberOverflowOptions numberOverflow = default)
         : this(row, col, sheet, numberOfSignificantDigits,
-            AxisMetrics.ForRow(sheet, row), AxisMetrics.ForColumn(sheet, col))
+            AxisMetrics.ForRow(sheet, row), AxisMetrics.ForColumn(sheet, col), numberOverflow)
     {
     }
 
@@ -63,13 +77,15 @@ public class VisualCell
     /// searches per cell.
     /// </remarks>
     internal VisualCell(int row, int col, Sheet sheet, int numberOfSignificantDigits,
-        in AxisMetrics rowMetrics, in AxisMetrics colMetrics)
+        in AxisMetrics rowMetrics, in AxisMetrics colMetrics, NumberOverflowOptions numberOverflow = default)
     {
         Row = row;
         Col = col;
         Merge = sheet.Cells.GetMerge(row, col)?.GetIntersection(sheet.Region);
 
         UpdateMergeSpans(sheet);
+
+        UpdateSize(sheet, rowMetrics, colMetrics);
 
         // the sheet is queried directly rather than through a SheetCell facade - the facade would be
         // an extra allocation per cell and each of its properties round-trips back to the sheet anyway.
@@ -80,11 +96,13 @@ public class VisualCell
 
         if (cellValue.ValueType == CellValueType.Number)
         {
+            IsNumber = true;
             var roundedNumber = Math.Round(cellValue.GetValue<double>(), numberOfSignificantDigits);
-            if (format?.NumberFormat != null)
-                FormattedString = roundedNumber.ToString(format.NumberFormat);
-            else
-                FormattedString = roundedNumber.ToString(CultureInfo.InvariantCulture);
+            FormattedString = format?.NumberFormat != null
+                ? roundedNumber.ToString(format.NumberFormat)
+                : roundedNumber.ToString(CultureInfo.InvariantCulture);
+            if (format?.NumberFormat == null && numberOverflow.Mode == NumberOverflowMode.RoundToFit)
+                SetGeneralNumberFallbacks(roundedNumber, numberOverflow.MinDecimals);
         }
         else if (cellValue.ValueType == CellValueType.Date && format?.NumberFormat != null)
             FormattedString = (cellValue.GetValue<DateTime>()).ToString(format.NumberFormat);
@@ -97,8 +115,6 @@ public class VisualCell
             format ??= new CellFormat();
             format.Merge(cf);
         }
-
-        UpdateSize(sheet, rowMetrics, colMetrics);
 
         HorizontalAlign = ResolveHorizontalAlign(format, cellValue.ValueType);
         VerticalAlign = ResolveVerticalAlign(format);
@@ -120,6 +136,38 @@ public class VisualCell
 
     private VisualCell()
     {
+    }
+
+    private static readonly string[] DecimalPlaceFormats =
+        Enumerable.Range(0, 16).Select(d => d == 0 ? "0" : "0." + new string('#', d)).ToArray();
+
+    private static readonly string[] ScientificDecimalPlaceFormats =
+        DecimalPlaceFormats.Select(f => f + "E+00").ToArray();
+
+    /// <summary>
+    /// Generates complete rounded values, in decreasing precision. The browser chooses the
+    /// first that fits, so these candidates do not depend on column widths or estimated fonts.
+    /// </summary>
+    private void SetGeneralNumberFallbacks(double number, int minDecimals)
+    {
+        var fractionStart = FormattedString.IndexOf('.');
+        if (fractionStart < 0 || !double.IsFinite(number))
+            return;
+
+        // Scientific values keep their exponent in every candidate.
+        var exponentStart = FormattedString.IndexOf('E');
+        var formats = exponentStart >= 0 ? ScientificDecimalPlaceFormats : DecimalPlaceFormats;
+        var decimals = (exponentStart >= 0 ? exponentStart : FormattedString.Length) - fractionStart - 1;
+        var seen = new HashSet<string> { FormattedString };
+        var fallbacks = new List<string>();
+        for (var d = Math.Min(decimals - 1, formats.Length - 1); d >= Math.Max(0, minDecimals); d--)
+        {
+            var rounded = number.ToString(formats[d], CultureInfo.InvariantCulture);
+            if (seen.Add(rounded))
+                fallbacks.Add(rounded);
+        }
+
+        NumberFallbacks = fallbacks.ToArray();
     }
 
     /// <summary>

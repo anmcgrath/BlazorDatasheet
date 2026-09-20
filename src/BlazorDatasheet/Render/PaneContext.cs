@@ -15,6 +15,7 @@ internal sealed record PaneContext(
     SheetPointerInputService? PointerInputService,
     PreviewService PreviewService,
     int NumberPrecisionDisplay,
+    NumberOverflowOptions NumberOverflow,
     bool ShowFormula,
     bool ShowFormulaDependents,
     bool UseAutoFill,

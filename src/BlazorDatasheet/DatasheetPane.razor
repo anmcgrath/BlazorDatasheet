@@ -34,6 +34,7 @@
         <VirtualMergesLayer
             CellRenderFragment="PaneContext.CellRenderFragment"
             NumberPrecisionDisplay="PaneContext.NumberPrecisionDisplay"
+            NumberOverflow="PaneContext.NumberOverflow"
             Cache="_visualCellCache"/>
 
         <EditorLayer Disabled="@PaneContext.IsReadOnly" @ref="_editorLayer"
@@ -59,6 +60,7 @@
         <RowTemplate>
             <DatasheetGridRow
                 NumberPrecisionDisplay="PaneContext.NumberPrecisionDisplay"
+                NumberOverflow="PaneContext.NumberOverflow"
                 Row="vr.Row"
                 CellRenderFragment="PaneContext.CellRenderFragment"
                 VisibleColIndices="vr.VisibleColIndices"
@@ -233,7 +235,7 @@
                     var col = visibleCols[i];
                     var position = new CellPosition(row, col);
                     var visualCell = new VisualCell(row, col, _sheet, PaneContext.NumberPrecisionDisplay,
-                        rowMetrics, colMetrics[i]);
+                        rowMetrics, colMetrics[i], PaneContext.NumberOverflow);
 
                     if (!_visualCellCache.TryAdd(position, visualCell))
                         _visualCellCache[position] = visualCell;

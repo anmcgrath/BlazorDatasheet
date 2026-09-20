@@ -194,8 +194,137 @@
             sheet.Cells.SetValue(0, 0, 1.234567);
         });
 
-        var cell = cut.FindAll("div.bds-cell-container").Last().FirstChild;
-        cell!.MarkupMatches(@"1.23");
+        var cell = cut.FindAll("div.bds-cell-container").Last();
+        cell.TextContent.Should().Be("1.23");
+    }
+
+    private const int NarrowColumnWidth = 24;
+
+    [Test]
+    public async Task Datasheet_Nests_Rounded_Fallbacks_Before_The_General_Number()
+    {
+        var sheet = new Sheet(1, 1);
+        sheet.Cells.SetValue(0, 0, 2d / 3d);
+        sheet.Columns.SetSize(0, 110);
+
+        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+        await cut.InvokeAsync(cut.Instance.ForceReRender);
+
+        var container = cut.Find(".bds-cell-number-text");
+        container.TextContent.Should().Be("0.6666666666667");
+        container.ClassList.Should().NotContain("bds-cell-number-hashes");
+
+        // each fallback holds the next shorter one, and the number is a sibling of the outermost
+        var fallbacks = cut.FindAll(".bds-cell-number-fallback");
+        fallbacks.Count.Should().BeGreaterThan(1);
+
+        var outer = container.FirstElementChild!;
+        outer.ClassList.Should().Contain("bds-cell-number-fallback");
+        outer.NextElementSibling!.ClassList.Should().Contain("bds-cell-number-value");
+
+        var values = fallbacks.Select(x => x.GetAttribute("data-value")!).ToList();
+        values.Should().BeInDescendingOrder(x => x.Length, "each fallback is shorter than the last");
+        values.Should().OnlyContain(x => x.Length < "0.6666666666667".Length);
+
+        // only the innermost falls through to hashes
+        fallbacks.Take(fallbacks.Count - 1).Should()
+            .OnlyContain(x => !x.ClassList.Contains("bds-cell-number-hashes"));
+        fallbacks.Last().ClassList.Should().Contain("bds-cell-number-hashes");
+    }
+
+    [Test]
+    public async Task Datasheet_Renders_Complete_Roundings_Without_Clipping()
+    {
+        var sheet = new Sheet(1, 1);
+        sheet.Cells.SetValue(0, 0, 77.3336);
+        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+        await cut.InvokeAsync(cut.Instance.ForceReRender);
+
+        cut.FindAll(".bds-cell-number-fallback").Select(x => x.GetAttribute("data-value"))
+            .Should().Equal("77.334", "77.33", "77.3", "77");
+        cut.Find(".bds-cell-number-value").TextContent.Should().Be("77.3336");
+        cut.FindAll(".bds-cell-number-clip").Should().BeEmpty();
+    }
+
+    [Test]
+    public async Task Datasheet_Renders_No_Fallbacks_When_Numbers_Become_Hashes()
+    {
+        var sheet = new Sheet(1, 1);
+        sheet.Cells.SetValue(0, 0, 0.19);
+        sheet.Columns.SetSize(0, NarrowColumnWidth);
+
+        var cut = RenderComponent<Datasheet>(parameters => parameters
+            .Add(p => p.Sheet, sheet)
+            .Add(p => p.NumberOverflow, NumberOverflowMode.Hashes));
+        await cut.InvokeAsync(cut.Instance.ForceReRender);
+
+        cut.FindAll(".bds-cell-number-fallback").Should().BeEmpty();
+        cut.Find(".bds-cell-number-text").ClassList.Should().Contain("bds-cell-number-hashes");
+        cut.Find(".bds-cell-number-value").TextContent.Should().Be("0.19");
+    }
+
+    [Test]
+    public async Task Datasheet_Renders_Plain_Number_Text_When_Numbers_Are_Clipped()
+    {
+        var sheet = new Sheet(1, 1);
+        sheet.Cells.SetValue(0, 0, 0.19);
+
+        var cut = RenderComponent<Datasheet>(parameters => parameters
+            .Add(p => p.Sheet, sheet)
+            .Add(p => p.NumberOverflow, NumberOverflowMode.Clip));
+        await cut.InvokeAsync(cut.Instance.ForceReRender);
+
+        cut.FindAll(".bds-cell-number-text").Should().BeEmpty();
+        cut.FindAll("div.bds-cell-container").Last().TextContent.Should().Be("0.19");
+    }
+
+    [Test]
+    public async Task Changing_Number_Overflow_Re_Renders_The_Visible_Numbers()
+    {
+        var sheet = new Sheet(1, 1);
+        sheet.Cells.SetValue(0, 0, 2d / 3d);
+        sheet.Columns.SetSize(0, 100);
+
+        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+        await cut.InvokeAsync(cut.Instance.ForceReRender);
+        cut.FindAll(".bds-cell-number-fallback").Should().NotBeEmpty();
+
+        cut.SetParametersAndRender(parameters => parameters.Add(p => p.NumberOverflow, NumberOverflowMode.Hashes));
+
+        cut.WaitForAssertion(() => cut.FindAll(".bds-cell-number-fallback").Should().BeEmpty());
+        cut.Find(".bds-cell-number-text").ClassList.Should().Contain("bds-cell-number-hashes");
+    }
+
+    [Test]
+    public async Task Changing_Minimum_Decimals_Updates_The_Roundings()
+    {
+        var sheet = new Sheet(1, 1);
+        sheet.Cells.SetValue(0, 0, 123.456);
+        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+        await cut.InvokeAsync(cut.Instance.ForceReRender);
+
+        cut.SetParametersAndRender(parameters => parameters.Add(p => p.NumberOverflowMinDecimals, 2));
+
+        cut.WaitForAssertion(() => cut.FindAll(".bds-cell-number-fallback")
+            .Select(x => x.GetAttribute("data-value")).Should().Equal("123.46"));
+    }
+
+    [Test]
+    public async Task Datasheet_Renders_The_Complete_Number_Format_As_One_Value()
+    {
+        var sheet = new Sheet(1, 1);
+        sheet.Cells.SetValue(0, 0, 12);
+        sheet.SetFormat(new Region(0, 0), new CellFormat { NumberFormat = "0 \"v1.5\"" });
+        sheet.Columns.SetSize(0, NarrowColumnWidth);
+
+        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+        await cut.InvokeAsync(cut.Instance.ForceReRender);
+
+        var value = cut.Find(".bds-cell-number-value");
+        value.TextContent.Should().Be("12 v1.5");
+        value.ChildElementCount.Should().Be(0);
+        cut.FindAll(".bds-cell-number-fallback").Should().BeEmpty();
+        cut.Find(".bds-cell-number-text").TextContent.Should().Be("12 v1.5");
     }
 
     [Test]
