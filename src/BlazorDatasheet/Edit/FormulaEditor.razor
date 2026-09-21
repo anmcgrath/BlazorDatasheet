@@ -9,11 +9,6 @@
 @inherits SheetComponentBase
 @implements IDisposable
 
-@*
-    A text input for cell values and formulas, with formula highlighting, function suggestions and
-    function hints. It is a view over the sheet's edit state, so it works inside the sheet as a cell
-    editor and outside of it, and any number can show the same edit.
-*@
 
 <div class="bds-text-editor" id="@_anchorId">
     <HighlightedInput

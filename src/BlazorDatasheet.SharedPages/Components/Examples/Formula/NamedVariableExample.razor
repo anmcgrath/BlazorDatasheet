@@ -3,11 +3,13 @@
 @using BlazorDatasheet.Core.Formats
 @using BlazorDatasheet.Core.Formats.DefaultConditionalFormats
 @using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Edit
 
 <input type="range" min="0" max="10" step="0.05"
        @oninput="@(e => _sheet.FormulaEngine.SetVariable("x", e.Value))"/>
 
-<Datasheet Sheet="_sheet" ShowColHeadings="false" ShowRowHeadings="false"/>
+<FormulaBar Sheet="_sheet"></FormulaBar>
+<Datasheet Sheet="_sheet" ShowColHeadings="false" NumberPrecisionDisplay="3" ShowRowHeadings="false"/>
 
 @code{
 
@@ -18,8 +20,8 @@
         _sheet = new Sheet(10, 10);
         _sheet.BatchUpdates();
         _sheet.Commands.PauseHistory();
-        _sheet.Columns.SetSize(0, 10, 40);
-        _sheet.Rows.SetSize(0, 10, 40);
+        _sheet.Columns.SetSize(0, 10, 50);
+        _sheet.Rows.SetSize(0, 10, 30);
         _sheet.SetFormat(new AllRegion(), new CellFormat()
         {
             HorizontalTextAlign = TextAlign.Start
