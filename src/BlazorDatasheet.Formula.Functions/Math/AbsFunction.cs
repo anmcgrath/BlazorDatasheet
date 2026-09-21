@@ -1,0 +1,25 @@
+using BlazorDatasheet.Formula.Core;
+
+namespace BlazorDatashet.Formula.Functions.Math;
+
+public static class AbsFunction
+{
+    private static readonly ParameterDefinition[] Parameters =
+    [
+        new("number", ParameterType.Number, ParameterRequirement.Required,
+            description: "The number to take the absolute value of.")
+    ];
+
+    public static FunctionDescriptor Descriptor { get; } = new(
+        name: "ABS",
+        parameterDefinitions: Parameters,
+        invoker: Evaluate,
+        acceptsErrors: false,
+        isVolatile: false,
+        description: "Returns the absolute value of a number.");
+
+    private static CellValue Evaluate(ReadOnlySpan<CellValue> args, FunctionCallMetaData metaData)
+    {
+        return CellValue.Number(System.Math.Abs(args[0].GetValue<double>()));
+    }
+}

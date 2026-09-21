@@ -269,6 +269,15 @@ public ref struct Lexer
         if (parsedLeftAddress!.Kind == AddressKind.NamedAddress)
             return new IdentifierToken(idSlice.ToString(), start);
 
+        // Some function names look like cell references - LOG10 is the column LOG, row 10. If the next
+        // non-whitespace character is an open parenthesis it is a function call, not a reference.
+        var lookahead = 0;
+        while (char.IsWhiteSpace(Peek(lookahead)))
+            lookahead++;
+
+        if (Peek(lookahead) == '(')
+            return new IdentifierToken(idSlice.ToString(), start);
+
         if (canParseRef &&
             parsedLeftAddress.Kind == AddressKind.CellAddress ||
             parsedLeftAddress.Kind == AddressKind.ColAddress ||
