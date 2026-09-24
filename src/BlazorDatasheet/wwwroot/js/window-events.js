@@ -9,6 +9,9 @@
         this.policyRevision = -1;
         this.focusVersion = 0;
         this.preventDefaultMap = {}
+        // Whether a pointer went down inside the sheet since the last mouse up, so that a drag
+        // which started here still reports its end even after the sheet stopped being active.
+        this.pointerDownInside = false;
         // Editors outside the sheet, e.g. a formula bar, that edit this sheet. Focus moving to one of
         // them is not focus leaving the sheet: the sheet stays active and an open edit carries on.
         this.externalEditors = new Set();
@@ -88,6 +91,7 @@
         this.focusHandler = handler;
         this.listen(window, 'pointerdown', e => {
             const inside = this.contains(e.target);
+            if (inside) this.pointerDownInside = true;
             const control = this.controlOf(e.target);
             if (inside && (!control || control === container)) {
                 // Chrome treats this scripted focus as keyboard focus, so mark it as pointer
@@ -250,6 +254,17 @@
 
                 if (preventDefault)
                     e.preventDefault()
+            }
+
+            // A mouse up anywhere on the page would otherwise cost a round trip per click. Only a
+            // sheet that is active, or one a drag started in - a selection that ends with the button
+            // released outside the sheet - needs to hear about it. A service without a container
+            // tracks no focus (the heading resizer's, for instance, which listens only for the
+            // length of a drag), so every mouse up it registered for is one it wants.
+            if (e.type === 'mouseup' && this.container) {
+                const relevant = this.active || this.pointerDownInside;
+                this.pointerDownInside = false;
+                if (!relevant) return;
             }
 
             // Nothing can be prevented past this point - the event has finished dispatching by the time

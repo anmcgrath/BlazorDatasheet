@@ -252,3 +252,53 @@ test('text editor takes initial focus only after text is applied and never steal
     highlighter.focusAndMoveCursorToEnd(true);
     assert.equal(document.activeElement, container);
 });
+
+test('a mouse up outside an inactive sheet costs nothing', async () => {
+    const { service, calls } = setup();
+    service.registerEvent('mouseup', 'mouseup');
+    service.setFocused(false);
+    const outside = { closest: () => null };
+
+    await service.handleWindowEvent({ type: 'mouseup', target: outside });
+
+    assert.equal(calls.some(c => c[0] === 'mouseup'), false);
+});
+
+test('a drag that began in the sheet still reports the mouse up that ends it outside', async () => {
+    const { service, container, calls } = setup();
+    service.registerEvent('mouseup', 'mouseup');
+    container.focus = () => {};
+    // the pointer goes down on the sheet, then the sheet stops being active
+    service.listeners.get('pointerdown:true').fn({ target: container });
+    service.setFocused(false);
+    const outside = { closest: () => null };
+
+    await service.handleWindowEvent({ type: 'mouseup', target: outside });
+    assert.equal(calls.at(-1)[0], 'mouseup');
+
+    // the next click elsewhere is no longer part of a drag
+    await service.handleWindowEvent({ type: 'mouseup', target: outside });
+    assert.equal(calls.filter(c => c[0] === 'mouseup').length, 1);
+});
+
+test('a service that tracks no focus, such as the heading resizer, reports every mouse up', async () => {
+    setup();
+    const calls = [];
+    const service = createWindowEventsService({ invokeMethodAsync: async (...args) => calls.push(args) });
+    service.registerEvent('mouseup', 'mouseup');
+    assert.equal(service.active, false);
+
+    await service.handleWindowEvent({ type: 'mouseup', target: { closest: () => null } });
+
+    assert.equal(calls.at(-1)[0], 'mouseup');
+});
+
+test('an active sheet reports every mouse up, wherever it happens', async () => {
+    const { service, calls } = setup();
+    service.registerEvent('mouseup', 'mouseup');
+    assert.equal(service.active, true);
+
+    await service.handleWindowEvent({ type: 'mouseup', target: { closest: () => null } });
+
+    assert.equal(calls.at(-1)[0], 'mouseup');
+});

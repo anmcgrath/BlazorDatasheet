@@ -1,8 +1,13 @@
 ﻿using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Extensions;
+using BlazorDatasheet.Edit.DefaultComponents;
 using BlazorDatasheet.Render;
+using BlazorDatasheet.Render.DefaultComponents;
+using BlazorDatasheet.Render.Headings;
 using BlazorDatasheet.Virtualise;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Bunit;
 using FluentAssertions;
@@ -152,6 +157,117 @@ public class DatasheetRenderGatingTests
 
         cut.FindAll("div.bds-frozen-left").Should().NotBeEmpty();
     }
+
+    /// <summary>
+    /// A host that builds its cell type dictionary in markup hands over a new instance on every one
+    /// of its renders. That must not cost a rebuild of every visible cell.
+    /// </summary>
+    [Test]
+    public void Re_Supplying_Equal_Custom_Cell_Types_Does_Not_Re_Render_Grid_Rows()
+    {
+        using var context = CreateContext();
+        var sheet = new Sheet(10, 10);
+        var definition = CellTypeDefinition.Create<TextEditorComponent, TextRenderer>();
+        var cut = context.RenderComponent<Datasheet>(p => p
+            .Add(x => x.Sheet, sheet)
+            .Add(x => x.CustomCellTypeDefinitions, new Dictionary<string, CellTypeDefinition>
+                { { "custom", definition } }));
+        ShowViewport(cut);
+
+        var rowRenders = GridRowRenderCount(cut);
+
+        // a different dictionary instance holding the same definitions
+        cut.SetParametersAndRender(p => p
+            .Add(x => x.CustomCellTypeDefinitions, new Dictionary<string, CellTypeDefinition>
+                { { "custom", definition } }));
+
+        GridRowRenderCount(cut).Should().Be(rowRenders);
+    }
+
+    [Test]
+    public void Changing_A_Custom_Cell_Type_Does_Re_Render_Grid_Rows()
+    {
+        using var context = CreateContext();
+        var sheet = new Sheet(10, 10);
+        var cut = context.RenderComponent<Datasheet>(p => p
+            .Add(x => x.Sheet, sheet)
+            .Add(x => x.CustomCellTypeDefinitions, new Dictionary<string, CellTypeDefinition>
+                { { "custom", CellTypeDefinition.Create<TextEditorComponent, TextRenderer>() } }));
+        ShowViewport(cut);
+
+        var rowRenders = GridRowRenderCount(cut);
+
+        cut.SetParametersAndRender(p => p
+            .Add(x => x.CustomCellTypeDefinitions, new Dictionary<string, CellTypeDefinition>
+                { { "custom", CellTypeDefinition.Create<TextEditorComponent, BoolRenderer>() } }));
+
+        GridRowRenderCount(cut).Should().BeGreaterThan(rowRenders);
+    }
+
+    /// <summary>
+    /// A parameter that only the pane's layers read reaches them without the cells being rebuilt.
+    /// </summary>
+    [Test]
+    public void Changing_UseAutoFill_Re_Renders_The_Datasheet_But_Not_The_Grid_Rows()
+    {
+        using var context = CreateContext();
+        var sheet = new Sheet(10, 10);
+        var cut = context.RenderComponent<Datasheet>(p => p
+            .Add(x => x.Sheet, sheet)
+            .Add(x => x.UseAutoFill, true));
+        ShowViewport(cut);
+
+        var renderCount = cut.RenderCount;
+        var rowRenders = GridRowRenderCount(cut);
+
+        cut.SetParametersAndRender(p => p.Add(x => x.UseAutoFill, false));
+
+        cut.RenderCount.Should().BeGreaterThan(renderCount);
+        GridRowRenderCount(cut).Should().Be(rowRenders);
+    }
+
+    /// <summary>
+    /// The mouse up at the end of a plain click reports that nothing is being selected any more.
+    /// The headings already show that selection, so it costs them nothing.
+    /// </summary>
+    [Test]
+    public void Repeating_A_Selection_Does_Not_Re_Render_The_Row_Headings()
+    {
+        using var context = CreateContext();
+        var sheet = new Sheet(10, 10);
+        var cut = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, sheet));
+        ShowViewport(cut);
+
+        var headings = cut.FindComponent<RowHeadingRenderer>();
+        var renderCount = headings.RenderCount;
+
+        cut.InvokeAsync(() => sheet.Selection.Set(2, 2));
+        headings.RenderCount.Should().Be(renderCount + 1);
+
+        // the selecting-changed that follows the click, with the selection unchanged
+        cut.InvokeAsync(() => sheet.Selection.CancelSelecting());
+        headings.RenderCount.Should().Be(renderCount + 1);
+    }
+
+    [Test]
+    public void Selecting_A_Different_Region_Does_Re_Render_The_Row_Headings()
+    {
+        using var context = CreateContext();
+        var sheet = new Sheet(10, 10);
+        var cut = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, sheet));
+        ShowViewport(cut);
+
+        var headings = cut.FindComponent<RowHeadingRenderer>();
+        cut.InvokeAsync(() => sheet.Selection.Set(2, 2));
+        var renderCount = headings.RenderCount;
+
+        cut.InvokeAsync(() => sheet.Selection.Set(4, 2));
+
+        headings.RenderCount.Should().Be(renderCount + 1);
+    }
+
+    private static int GridRowRenderCount(IRenderedFragment component) =>
+        component.FindComponents<DatasheetGridRow>().Sum(x => x.RenderCount);
 
     private static void ShowViewport(IRenderedFragment component)
     {

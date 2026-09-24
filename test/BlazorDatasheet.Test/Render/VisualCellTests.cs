@@ -9,6 +9,9 @@ namespace BlazorDatasheet.Test.Render;
 
 public class VisualCellTests
 {
+    // narrow enough that a number cannot be assumed to fit, whatever the font
+    private const int NarrowColumnWidth = 24;
+
     [Test]
     public void Text_Wrap_Appears_With_Vertical_Format_Set()
     {
@@ -129,6 +132,7 @@ public class VisualCellTests
     public void General_Number_Has_Complete_Distinct_Roundings(double number, string[] expected)
     {
         var sheet = new Sheet(1, 1);
+        sheet.Columns.SetSize(0, NarrowColumnWidth);
         sheet.Cells.SetValue(0, 0, number);
 
         var cell = new VisualCell(0, 0, sheet, 13);
@@ -142,12 +146,23 @@ public class VisualCellTests
     public void General_Number_Tries_Every_Precision_Down_To_The_Minimum(int minDecimals, string[] expected)
     {
         var sheet = new Sheet(1, 1);
+        sheet.Columns.SetSize(0, NarrowColumnWidth);
         sheet.Cells.SetValue(0, 0, 0.6666667);
 
         var cell = new VisualCell(0, 0, sheet, 13,
             new NumberOverflowOptions(NumberOverflowMode.RoundToFit, minDecimals));
 
         cell.NumberFallbacks.Should().Equal(expected);
+    }
+
+    [Test]
+    public void A_Number_With_Room_To_Spare_Has_No_Fallbacks()
+    {
+        var sheet = new Sheet(1, 1);
+        sheet.Columns.SetSize(0, 500);
+        sheet.Cells.SetValue(0, 0, 123.456);
+
+        new VisualCell(0, 0, sheet, 13).NumberFallbacks.Should().BeEmpty();
     }
 
     [TestCase(123456)]
@@ -188,7 +203,7 @@ public class VisualCellTests
     }
 
     [Test]
-    public void Resizing_Preserves_All_Roundings_For_The_Browser_To_Choose()
+    public void Resizing_Works_Out_All_The_Roundings_For_The_New_Width()
     {
         var sheet = new Sheet(1, 1);
         sheet.Cells.SetValue(0, 0, 123.456);
