@@ -105,4 +105,35 @@ public class Range1DStoreTests
         store.Set(1, 6);
         store.GetNextNonEmptyIndex(0).Should().Be(1);
     }
+
+    [Test]
+    public void Get_Next_Non_Empty_Index_Walks_Every_Index_Of_A_Range()
+    {
+        var store = new Range1DStore<double>(-1);
+        store.Set(1, 3, 5);
+        store.Set(6, 7, 6);
+
+        store.GetNextNonEmptyIndex(-1).Should().Be(1);
+        store.GetNextNonEmptyIndex(1).Should().Be(2);
+        store.GetNextNonEmptyIndex(2).Should().Be(3);
+        store.GetNextNonEmptyIndex(3).Should().Be(6);
+        store.GetNextNonEmptyIndex(4).Should().Be(6);
+        store.GetNextNonEmptyIndex(6).Should().Be(7);
+        store.GetNextNonEmptyIndex(7).Should().Be(-1);
+    }
+
+    [Test]
+    public void Get_Next_Non_Empty_Index_Walks_Backward_Through_A_Range()
+    {
+        var store = new MergeableIntervalStore<OverwritingValue<double>>();
+        store.Add(1, 3, new OverwritingValue<double>(5));
+        store.Add(6, 7, new OverwritingValue<double>(6));
+
+        store.GetNextNonEmptyIndex(7, -1).Should().Be(6);
+        store.GetNextNonEmptyIndex(6, -1).Should().Be(3);
+        store.GetNextNonEmptyIndex(5, -1).Should().Be(3);
+        store.GetNextNonEmptyIndex(3, -1).Should().Be(2);
+        store.GetNextNonEmptyIndex(2, -1).Should().Be(1);
+        store.GetNextNonEmptyIndex(1, -1).Should().Be(-1);
+    }
 }
