@@ -535,6 +535,10 @@ public class MergeableIntervalStore<T> : ISparseSource where T : IMergeable<T>, 
 
             if (direction < 0)
                 i0--;
+            // Going forward, the insertion point is the first interval starting after position,
+            // so an interval that starts before position and runs past it is the one before.
+            else if (i0 > 0 && _intervals.Values[i0 - 1].Contains(position + 1))
+                return position + 1;
         }
 
         if (i0 > _intervals.Count - 1)

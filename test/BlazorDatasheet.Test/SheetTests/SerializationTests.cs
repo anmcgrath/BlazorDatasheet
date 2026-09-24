@@ -37,6 +37,38 @@ public class SerializationTests
         restored.Cells.GetMetaData(1, 3, "marker").Should().Be("observation");
     }
 
+    [TestCase(0, 2)]
+    [TestCase(1, 3)]
+    [TestCase(2, 5)]
+    public void Column_Format_Over_A_Range_Round_Trips_Every_Column(int start, int end)
+    {
+        var wb = new Workbook();
+        var sheet = wb.AddSheet("SheetName", 5, 10);
+        sheet.SetFormat(new ColumnRegion(start, end), new CellFormat { FontWeight = "bold" });
+
+        var json = new SheetJsonSerializer().Serialize(wb);
+        var restored = new SheetJsonDeserializer().Deserialize(json).Sheets.First();
+
+        Enumerable.Range(0, 10)
+            .Where(col => new SheetColumn(col, restored).Format?.FontWeight == "bold")
+            .Should().Equal(Enumerable.Range(start, end - start + 1));
+    }
+
+    [Test]
+    public void Row_Format_Over_A_Range_Round_Trips_Every_Row()
+    {
+        var wb = new Workbook();
+        var sheet = wb.AddSheet("SheetName", 10, 5);
+        sheet.SetFormat(new RowRegion(1, 3), new CellFormat { FontWeight = "bold" });
+
+        var json = new SheetJsonSerializer().Serialize(wb);
+        var restored = new SheetJsonDeserializer().Deserialize(json).Sheets.First();
+
+        Enumerable.Range(0, 10)
+            .Where(row => new SheetRow(row, restored).Format?.FontWeight == "bold")
+            .Should().Equal(1, 2, 3);
+    }
+
     [Test]
     public void Column_Groups_Round_Trip_Through_Serialization()
     {
