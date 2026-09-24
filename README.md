@@ -186,6 +186,24 @@ var format = sheet.Cells[0, 0].Format; // backroundColor = "red", foreground = "
 var format2 = sheet.Cells[1, 0].Format; // foreground = "blue"
 ```
 
+#### Numbers that do not fit their column
+
+A number that is too wide for its column is shown according to the datasheet's `NumberOverflow` parameter:
+
+```razor
+<Datasheet Sheet="sheet" NumberOverflow="NumberOverflowMode.RoundToFit" />
+```
+
+| Mode | Shown |
+|---|---|
+| `RoundToFit` (default) | a General number is rounded to fewer decimal places until it fits, and becomes `#######` when no rounding does. |
+| `Hashes` | the number is shown whole, or as `#######` when it does not fit. |
+| `Clip` | the number is clipped by the cell, as text is. |
+
+`RoundToFit` renders as nested elements to let the browser handle the hashing. This may cause a performance  hit for large numeric grids.0
+
+In this case, setting a number format, reducing the default rounding,  or `NumberOverflow="NumberOverflowMode.Clip"` can help improve performance.
+
 ### Cell types
 The cell type specifies which renderer and editor are used for the cell. Cell types also help with explicit conversions when cell values are set.
 
