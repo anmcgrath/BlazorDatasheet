@@ -18,7 +18,8 @@
     --sheet-foreground-color: #1f2937;
     --sheet-foreground-color-disabled: #9ca3af;
     --sheet-bg-color: #ffffff;
-    --sheet-border-style: var(--sheet-border-width) solid #d9e1ec;
+    --sheet-gridline-color: #d9e1ec;
+    --sheet-border-style: var(--sheet-border-width) solid var(--sheet-gridline-color);
     --row-header-bg-color: #f8fafd;
     --col-header-bg-color: #f4f7fc;
     --head-selection-bg-color: #dbeafe;
@@ -61,7 +62,8 @@
     --sheet-foreground-color: #a9a9a9;
     --sheet-foreground-color-disabled: #807f7f;
     --sheet-bg-color: #262626;
-    --sheet-border-style: var(--sheet-border-width) solid #3f3f3f;
+    --sheet-gridline-color: #3f3f3f;
+    --sheet-border-style: var(--sheet-border-width) solid var(--sheet-gridline-color);
     --row-header-bg-color: #2d2d2d;
     --col-header-bg-color: #2d2d2d;
     --head-selection-bg-color: rgb(53, 57, 60);
@@ -244,8 +246,6 @@
     -moz-user-select: none;
     -webkit-user-select: none;
     padding: var(--sheet-cell-padding-vertical) var(--sheet-cell-padding-horizontal);
-    border-right: var(--sheet-border-style);
-    border-bottom: var(--sheet-border-style);
     overflow: hidden;
     width: 100%;
     height: 100%;
@@ -256,6 +256,29 @@
        layout containment are deliberately left out: autofit measures cell content and rows are
        subgrids. */
     contain: paint;
+}
+
+.bds-pane-content {
+    position: relative;
+}
+
+.bds-gridline-layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+    fill: none;
+    stroke: var(--sheet-gridline-color);
+    stroke-width: var(--sheet-border-width);
+}
+
+/* Headings are outside the pane's gridline layer. */
+.bds-row-head,
+.bds-col-head {
+    border-right: var(--sheet-border-style);
+    border-bottom: var(--sheet-border-style);
 }
 
 .bds-cell-align-start {
