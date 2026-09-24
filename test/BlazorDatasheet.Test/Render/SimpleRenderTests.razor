@@ -237,6 +237,7 @@
     {
         var sheet = new Sheet(1, 1);
         sheet.Cells.SetValue(0, 0, 77.3336);
+        sheet.Columns.SetSize(0, NarrowColumnWidth);
         var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
         await cut.InvokeAsync(cut.Instance.ForceReRender);
 
@@ -300,6 +301,7 @@
     {
         var sheet = new Sheet(1, 1);
         sheet.Cells.SetValue(0, 0, 123.456);
+        sheet.Columns.SetSize(0, NarrowColumnWidth);
         var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
         await cut.InvokeAsync(cut.Instance.ForceReRender);
 

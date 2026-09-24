@@ -102,7 +102,11 @@ public class VisualCell
                 ? roundedNumber.ToString(format.NumberFormat)
                 : roundedNumber.ToString(CultureInfo.InvariantCulture);
             if (format?.NumberFormat == null && numberOverflow.Mode == NumberOverflowMode.RoundToFit)
+            {
+                _generalNumber = roundedNumber;
+                _generalNumberMinDecimals = numberOverflow.MinDecimals;
                 SetGeneralNumberFallbacks(roundedNumber, numberOverflow.MinDecimals);
+            }
         }
         else if (cellValue.ValueType == CellValueType.Date && format?.NumberFormat != null)
             FormattedString = (cellValue.GetValue<DateTime>()).ToString(format.NumberFormat);
@@ -144,14 +148,33 @@ public class VisualCell
     private static readonly string[] ScientificDecimalPlaceFormats =
         DecimalPlaceFormats.Select(f => f + "E+00").ToArray();
 
+    // Only used to decide whether a number has so much room that no rounding can ever be needed.
+    // The font size is a css variable the host may override, so it is assumed generous: the
+    // estimate must never claim a number fits when it might not.
+    private const double AssumedFontSizePx = 18; // --sheet-font-size defaults to 0.75rem = 12px
+    private const double AssumedCharWidthRatio = 0.7;
+    private const double CellHorizontalPaddingPx = 14; // 2 x --sheet-cell-padding-horizontal + borders
+
+    // Kept so that the chain can be regenerated when the column is resized, since a resize patches
+    // the cell in place rather than rebuilding it.
+    private double _generalNumber;
+    private int _generalNumberMinDecimals = -1;
+
     /// <summary>
-    /// Generates complete rounded values, in decreasing precision. The browser chooses the
-    /// first that fits, so these candidates do not depend on column widths or estimated fonts.
+    /// Generates complete rounded values, in decreasing precision. The browser chooses the first
+    /// that fits, so which of them is shown does not depend on a column width or an estimated font.
+    /// The width is only used to skip the chain entirely for a number that has room to spare
+    /// whatever the font, and the chain is worked out again if the column is resized.
     /// </summary>
     private void SetGeneralNumberFallbacks(double number, int minDecimals)
     {
         var fractionStart = FormattedString.IndexOf('.');
         if (fractionStart < 0 || !double.IsFinite(number))
+            return;
+
+        // A number with room to spare can never need a rounding, and the chain is pure cost for it.
+        if (Width > 0 &&
+            FormattedString.Length * AssumedCharWidthRatio * AssumedFontSizePx + CellHorizontalPaddingPx < Width)
             return;
 
         // Scientific values keep their exponent in every candidate.
@@ -178,8 +201,17 @@ public class VisualCell
     /// </summary>
     internal void RefreshAxisMetrics(Sheet sheet, in AxisMetrics rowMetrics, in AxisMetrics colMetrics)
     {
+        var previousWidth = Width;
         UpdateMergeSpans(sheet);
         UpdateSize(sheet, rowMetrics, colMetrics);
+
+        // The fallback chain is only built for a number that could overflow its column, so a column
+        // that has changed width needs it worked out again.
+        if (_generalNumberMinDecimals >= 0 && Width != previousWidth)
+        {
+            NumberFallbacks = [];
+            SetGeneralNumberFallbacks(_generalNumber, _generalNumberMinDecimals);
+        }
     }
 
     private void UpdateMergeSpans(Sheet sheet)

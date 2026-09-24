@@ -170,23 +170,63 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
 
     private bool _dirty;
 
-    private void SelectingChanged(object? sender, IRegion? e)
-    {
-        if (e != null)
-        {
-            var spans = Axis == Axis.Col
-                ? e.Right >= _viewRegion.Left && e.Left <= _viewRegion.Right
-                : e.Bottom >= _viewRegion.Top && e.Top <= _viewRegion.Bottom;
-            if (!spans)
-                return;
-        }
+    /// <summary>
+    /// Describes which headings in the view region are painted as selected. Recomputed after every
+    /// render, so it always describes what is on screen.
+    /// </summary>
+    private int _selectionSignature;
 
-        _dirty = true;
-        StateHasChanged();
+    /// <summary>
+    /// A compact description of the selected headings on this axis. Headings only show whether an
+    /// index is selected, and whether it is selected by a whole row/column region, so a selection
+    /// change that leaves both unchanged - the <c>SelectingChanged(null)</c> on the mouse up after a
+    /// plain click, for instance - does not need a render.
+    /// </summary>
+    private int ComputeSelectionSignature()
+    {
+        if (!ShowsSelection)
+            return 0;
+
+        var hash = new HashCode();
+        hash.Add(1); // distinguishes "nothing selected" from "selection not shown"
+
+        foreach (var region in _sheet.Selection.Regions)
+            AddToSelectionSignature(ref hash, region);
+
+        AddToSelectionSignature(ref hash, _sheet.Selection.SelectingRegion);
+
+        return hash.ToHashCode();
     }
 
-    private void SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    private void AddToSelectionSignature(ref HashCode hash, IRegion? region)
     {
+        if (region == null)
+            return;
+
+        var (viewStart, viewEnd) = Axis == Axis.Col
+            ? (_viewRegion.Left, _viewRegion.Right)
+            : (_viewRegion.Top, _viewRegion.Bottom);
+        var (start, end) = Axis == Axis.Col
+            ? (region.Left, region.Right)
+            : (region.Top, region.Bottom);
+
+        if (end < viewStart || start > viewEnd)
+            return;
+
+        hash.Add(Math.Max(start, viewStart));
+        hash.Add(Math.Min(end, viewEnd));
+        hash.Add(Axis == Axis.Col ? region is ColumnRegion : region is RowRegion);
+    }
+
+    private void SelectingChanged(object? sender, IRegion? e) => SelectionPainted();
+
+    private void SelectionChanged(object? sender, SelectionChangedEventArgs e) => SelectionPainted();
+
+    private void SelectionPainted()
+    {
+        if (ComputeSelectionSignature() == _selectionSignature)
+            return;
+
         _dirty = true;
         StateHasChanged();
     }
@@ -195,6 +235,7 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
     {
         if (!_dirty) return false;
         _dirty = false;
+        _selectionSignature = ComputeSelectionSignature();
         return true;
     }
 

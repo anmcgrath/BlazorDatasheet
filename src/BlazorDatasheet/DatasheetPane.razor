@@ -113,7 +113,8 @@
     protected override void OnParametersSet()
     {
         var sheet = PaneContext.Sheet;
-        var paneContextChanged = _lastPaneContext != null && !ReferenceEquals(_lastPaneContext, PaneContext);
+        var previousPaneContext = _lastPaneContext;
+        var paneContextChanged = previousPaneContext != null && !ReferenceEquals(previousPaneContext, PaneContext);
         _lastPaneContext = PaneContext;
 
         if (_sheet == null || _sheet != sheet)
@@ -131,7 +132,15 @@
         }
 
         if (paneContextChanged)
-            InvalidateVisibleCells();
+        {
+            // A host that rebuilds a parameter on every one of its own renders gives us a new
+            // context each time. Only rebuild the cells when the new context actually changes what
+            // a cell looks like; otherwise re-render the layers and leave the rows to their gate.
+            if (previousPaneContext!.AffectsCells(PaneContext))
+                InvalidateVisibleCells();
+            else
+                _forceRender = true;
+        }
 
         if (_lastViewRegion == null || !_lastViewRegion.Equals(ViewRegion))
         {

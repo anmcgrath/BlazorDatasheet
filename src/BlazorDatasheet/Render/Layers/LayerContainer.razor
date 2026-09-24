@@ -3,6 +3,9 @@
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Render.Layers.Preview
 @using BlazorDatasheet.Services
+@* The layer box is laid out on its own, so a selection or preview box changing inside it does not
+   make the browser lay out the grid around it. Paint containment is deliberately left off: the
+   autofill handle is drawn straddling the box edge and would be clipped on the last row/column. *@
 <div class="bds-sheet-layer-container" style="z-index: 1;">
     <div style="position: absolute;
         top: 0;
@@ -10,7 +13,8 @@
         max-width:@(LayerWidth)px;
     max-height:@(LayerHeight)px;
     width:@(LayerWidth)px;
-    height:@(LayerHeight)px;">
+    height:@(LayerHeight)px;
+    contain: layout;">
         <CascadingValue Value="ViewRegion">
             <CascadingValue Value="Sheet">
                 <CascadingValue Value="LayerHeight" Name="LayerHeight">

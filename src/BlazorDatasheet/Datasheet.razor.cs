@@ -1388,7 +1388,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         if (_paneContext != null &&
             ReferenceEquals(_paneContext.Sheet, _sheet) &&
             ReferenceEquals(_paneContext.CellRenderFragment, CellRenderFragment) &&
-            ReferenceEquals(_paneContext.CustomCellTypeDefinitions, CustomCellTypeDefinitions) &&
+            PaneContext.CustomCellTypesEqual(_paneContext.CustomCellTypeDefinitions, CustomCellTypeDefinitions) &&
             ReferenceEquals(_paneContext.AutoScrollState, _autoScrollState) &&
             ReferenceEquals(_paneContext.PointerInputService, _sheetPointerInputService) &&
             _paneContext.NumberPrecisionDisplay == _numberPrecisionDisplay &&
@@ -1406,7 +1406,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         _paneContext = new PaneContext(
             _sheet,
             CellRenderFragment,
-            CustomCellTypeDefinitions,
+            // a snapshot, so that a caller mutating their own dictionary in place is still seen
+            new Dictionary<string, CellTypeDefinition>(CustomCellTypeDefinitions),
             _autoScrollState,
             _sheetPointerInputService,
             _previewService,
