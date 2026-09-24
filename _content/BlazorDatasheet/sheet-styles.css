@@ -251,6 +251,11 @@
     height: 100%;
     display: flex;
     box-sizing: border-box;
+    /* Nothing is painted outside the cell box already, so this changes nothing visually, but it
+       lets the browser skip the cell subtree when the overlay layers above it repaint. Size and
+       layout containment are deliberately left out: autofit measures cell content and rows are
+       subgrids. */
+    contain: paint;
 }
 
 .bds-cell-align-start {
