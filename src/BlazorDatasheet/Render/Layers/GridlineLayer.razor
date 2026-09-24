@@ -1,0 +1,54 @@
+@using System.Globalization
+@using System.Text
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.DataStructures.Geometry
+
+@if (VisibleRegion?.GetIntersection(ViewRegion) is { } region)
+{
+    var columns = Sheet.Columns.GetVisibleIndices(region.Left, region.Right);
+    var rows = Sheet.Rows.GetVisibleIndices(region.Top, region.Bottom);
+    if (columns.Count > 0 && rows.Count > 0)
+    {
+        <svg class="bds-gridline-layer" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+            <path d="@GetPath(columns, rows)"/>
+        </svg>
+    }
+}
+
+@code {
+    [Parameter, EditorRequired] public Sheet Sheet { get; set; } = null!;
+    [Parameter, EditorRequired] public IRegion ViewRegion { get; set; } = null!;
+    [Parameter] public IRegion? VisibleRegion { get; set; }
+
+    private static string F(double value) => value.ToString(CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// One path holding the gridlines for the visible tracks. The svg covers the whole pane and each
+    /// line runs its full length (vertical lines the full pane height, horizontal lines the full pane
+    /// width) so gridlines are already in place while scrolling, before the next render. Lines sit on
+    /// the right/bottom edge of their track, offset by half the stroke width so a 1px stroke fills
+    /// exactly the last pixel inside the cell, where the old cell border sat.
+    /// </summary>
+    private string GetPath(List<int> columns, List<int> rows)
+    {
+        var path = new StringBuilder((columns.Count + rows.Count) * 24);
+        var paneWidth = F(Sheet.Columns.GetVisualWidthBetween(ViewRegion.Left, ViewRegion.Right + 1));
+        var paneHeight = F(Sheet.Rows.GetVisualHeightBetween(ViewRegion.Top, ViewRegion.Bottom + 1));
+
+        var x = Sheet.Columns.GetVisualWidthBetween(ViewRegion.Left, columns[0]);
+        foreach (var column in columns)
+        {
+            x += Sheet.Columns.GetVisualWidth(column);
+            path.Append("M ").Append(F(x - 0.5)).Append(" 0 V ").Append(paneHeight).Append(' ');
+        }
+
+        var y = Sheet.Rows.GetVisualHeightBetween(ViewRegion.Top, rows[0]);
+        foreach (var row in rows)
+        {
+            y += Sheet.Rows.GetVisualHeight(row);
+            path.Append("M 0 ").Append(F(y - 0.5)).Append(" H ").Append(paneWidth).Append(' ');
+        }
+
+        return path.ToString();
+    }
+}

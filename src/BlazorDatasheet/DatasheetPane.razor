@@ -48,27 +48,32 @@
         }
     </LayerContainer>
 
-    <Virtualise2D
-        OverscanColumns="OverscanColumns"
-        OverscanRows="OverscanRows"
-        OnViewportChanged="HandleVirtualViewportChanged"
-        LayoutProvider="_cellLayoutProvider"
-        ViewRegion="ViewRegion"
-        RowClass="bds-row"
-        @ref="_mainView"
-        Context="vr">
-        <RowTemplate>
-            <DatasheetGridRow
-                NumberPrecisionDisplay="PaneContext.NumberPrecisionDisplay"
-                NumberOverflow="PaneContext.NumberOverflow"
-                Row="vr.Row"
-                CellRenderFragment="PaneContext.CellRenderFragment"
-                VisibleColIndices="vr.VisibleColIndices"
-                Sheet="PaneContext.Sheet"
-                Cache="_visualCellCache"
-                IsDirty="IsRowDirty(vr.Row)"/>
-        </RowTemplate>
-    </Virtualise2D>
+    <div class="bds-pane-content">
+        <GridlineLayer Sheet="PaneContext.Sheet"
+                       ViewRegion="ViewRegion"
+                       VisibleRegion="_currentViewPortRegion"/>
+        <Virtualise2D
+            OverscanColumns="OverscanColumns"
+            OverscanRows="OverscanRows"
+            OnViewportChanged="HandleVirtualViewportChanged"
+            LayoutProvider="_cellLayoutProvider"
+            ViewRegion="ViewRegion"
+            RowClass="bds-row"
+            @ref="_mainView"
+            Context="vr">
+            <RowTemplate>
+                <DatasheetGridRow
+                    NumberPrecisionDisplay="PaneContext.NumberPrecisionDisplay"
+                    NumberOverflow="PaneContext.NumberOverflow"
+                    Row="vr.Row"
+                    CellRenderFragment="PaneContext.CellRenderFragment"
+                    VisibleColIndices="vr.VisibleColIndices"
+                    Sheet="PaneContext.Sheet"
+                    Cache="_visualCellCache"
+                    IsDirty="IsRowDirty(vr.Row)"/>
+            </RowTemplate>
+        </Virtualise2D>
+    </div>
 }
 
 @code {

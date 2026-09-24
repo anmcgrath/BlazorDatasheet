@@ -1,0 +1,52 @@
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Render.Layers
+@using FluentAssertions
+@using NUnit.Framework
+@inherits BaseTestComponent
+
+@code {
+    [Test]
+    public void Gridlines_Use_Visible_Track_Sizes_And_Skip_Hidden_Tracks()
+    {
+        var sheet = new Sheet(3, 4);
+        sheet.Columns.SetSize(0, 50);
+        sheet.Columns.SetSize(1, 60);
+        sheet.Columns.SetSize(2, 70);
+        sheet.Columns.SetSize(3, 80);
+        sheet.Rows.SetSize(0, 20);
+        sheet.Rows.SetSize(1, 30);
+        sheet.Rows.SetSize(2, 40);
+        sheet.Columns.Hide(1, 1);
+        sheet.Rows.Hide(1, 1);
+
+        var cut = RenderComponent<GridlineLayer>(parameters => parameters
+            .Add(p => p.Sheet, sheet)
+            .Add(p => p.ViewRegion, new Region(0, 2, 0, 3))
+            .Add(p => p.VisibleRegion, new Region(0, 2, 0, 3)));
+
+        // One path: vertical lines on each visible column's right edge, then horizontal lines on each
+        // visible row's bottom edge, all offset by half a pixel so the stroke sits inside the cell.
+        cut.Find("svg.bds-gridline-layer path").GetAttribute("d").Should().Be(
+            "M 49.5 0 V 60 M 119.5 0 V 60 M 199.5 0 V 60 " +
+            "M 0 19.5 H 200 M 0 59.5 H 200 ");
+    }
+
+    [Test]
+    public void Gridlines_Only_Cover_Visible_Tracks_But_Span_The_Whole_Pane()
+    {
+        var sheet = new Sheet(4, 4);
+        sheet.Columns.SetSize(0, 3, 10);
+        sheet.Rows.SetSize(0, 3, 5);
+
+        var cut = RenderComponent<GridlineLayer>(parameters => parameters
+            .Add(p => p.Sheet, sheet)
+            .Add(p => p.ViewRegion, new Region(0, 3, 0, 3))
+            .Add(p => p.VisibleRegion, new Region(2, 3, 1, 2)));
+
+        // Lines are positioned in pane coordinates for columns 1-2 and rows 2-3 only, but each line
+        // runs the full pane length (40px wide, 20px tall) so they are in place while scrolling.
+        cut.Find("svg.bds-gridline-layer path").GetAttribute("d").Should().Be(
+            "M 19.5 0 V 20 M 29.5 0 V 20 M 0 14.5 H 40 M 0 19.5 H 40 ");
+    }
+}
