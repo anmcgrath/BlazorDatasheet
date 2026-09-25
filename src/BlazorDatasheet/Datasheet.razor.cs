@@ -355,6 +355,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             var wasCurrent = IsDataSheetActive ||
                              (_hasSheet && DatasheetRegistry.For(_sheet.Workbook).WasLastActivated(_sheet));
             RemoveEvents(_sheet);
+            _selectionManager?.Dispose();
             _hasSheet = Sheet != null;
             _sheet = Sheet ?? new(0, 0);
             _cellLayoutProvider = new CellLayoutProvider(_sheet);
@@ -1505,6 +1506,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     {
         _isDisposing = true;
         RemoveEvents(_sheet);
+        _selectionManager?.Dispose();
         ClearEditorLayers();
 
         if (_dotnetHelper is not null)

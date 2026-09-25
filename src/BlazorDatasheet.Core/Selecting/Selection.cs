@@ -8,6 +8,7 @@ namespace BlazorDatasheet.Core.Selecting;
 public partial class Selection
 {
     private readonly Sheet _sheet;
+    internal Sheet Sheet => _sheet;
 
     /// <summary>
     /// The region that is active for accepting user input, usually the most recent region added
