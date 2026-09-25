@@ -421,6 +421,64 @@ public class SelectionInputTests
     }
 
     [Test]
+    public void Enter_After_Tabbing_Returns_To_Starting_Column_On_Next_Row()
+    {
+        _sheet.Selection.Set(2, 1);
+        _manager.HandleTabEnterNavigation(Axis.Col, 1);
+        _manager.HandleTabEnterNavigation(Axis.Col, 1);
+        _sheet.Selection.ActiveCellPosition.Should().Be(new CellPosition(2, 3));
+
+        _manager.HandleTabEnterNavigation(Axis.Row, 1);
+        _sheet.Selection.ActiveCellPosition.Should().Be(new CellPosition(3, 1));
+
+        _manager.HandleTabEnterNavigation(Axis.Row, 1);
+        _sheet.Selection.ActiveCellPosition.Should().Be(new CellPosition(4, 1));
+    }
+
+    [Test]
+    public void Shift_Enter_After_Reverse_Tabbing_Returns_To_Starting_Column()
+    {
+        _sheet.Selection.Set(4, 5);
+        _manager.HandleTabEnterNavigation(Axis.Col, -1);
+        _manager.HandleTabEnterNavigation(Axis.Col, -1);
+        _manager.HandleTabEnterNavigation(Axis.Row, -1);
+
+        _sheet.Selection.ActiveCellPosition.Should().Be(new CellPosition(3, 5));
+    }
+
+    [Test]
+    public void Arrow_And_Programmatic_Selection_Changes_End_Tab_Run()
+    {
+        _sheet.Selection.Set(2, 1);
+        _manager.HandleTabEnterNavigation(Axis.Col, 1);
+        _manager.HandleArrowKeyDown(false, new Offset(0, 1));
+        _manager.HandleTabEnterNavigation(Axis.Row, 1);
+        _sheet.Selection.ActiveCellPosition.Should().Be(new CellPosition(3, 3));
+
+        _manager.HandleTabEnterNavigation(Axis.Col, 1);
+        _sheet.Selection.Set(3, 6);
+        _manager.HandleTabEnterNavigation(Axis.Row, 1);
+        _sheet.Selection.ActiveCellPosition.Should().Be(new CellPosition(4, 6));
+    }
+
+    [Test]
+    public void Canceled_Tab_Does_Not_Start_Tab_Run()
+    {
+        _sheet.Selection.Set(2, 1);
+        _sheet.BeforeSelectionInput += (_, e) =>
+        {
+            if (e.InputKind == SelectionInputKind.TabEnterNavigation &&
+                e.ProposedActiveCellPosition == new CellPosition(2, 2))
+                e.Cancel = true;
+        };
+
+        _manager.HandleTabEnterNavigation(Axis.Col, 1);
+        _sheet.Selection.Set(2, 3);
+        _manager.HandleTabEnterNavigation(Axis.Row, 1);
+        _sheet.Selection.ActiveCellPosition.Should().Be(new CellPosition(3, 3));
+    }
+
+    [Test]
     public void Reverse_Drag_And_Shift_Contraction_Preserve_Anchor()
     {
         _sheet.BeforeSelectionInput += (_, _) => { };
