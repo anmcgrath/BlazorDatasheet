@@ -48,6 +48,19 @@
         sheet.Editor.IsEditing.Should().BeFalse();
     }
 
+    [TestCase(KeyboardModifiers.Ctrl)]
+    [TestCase(KeyboardModifiers.Meta)]
+    public async Task Modified_Arrow_Jumps_To_Data_Boundary(KeyboardModifiers modifier)
+    {
+        var sheet = new Sheet(3, 8);
+        sheet.Cells.SetValue(1, 4, "value");
+        sheet.Selection.Set(1, 1);
+        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+
+        (await cut.InvokeAsync(() => cut.Instance.HandleShortcuts("ArrowRight", modifier))).Should().BeTrue();
+        sheet.Selection.ActiveCellPosition.Should().Be(new CellPosition(1, 4));
+    }
+
     [TestCase("Tab", KeyboardModifiers.None, SelectionInputKind.TabEnterNavigation)]
     [TestCase("Enter", KeyboardModifiers.None, SelectionInputKind.TabEnterNavigation)]
     [TestCase("Tab", KeyboardModifiers.Shift, SelectionInputKind.TabEnterNavigation)]

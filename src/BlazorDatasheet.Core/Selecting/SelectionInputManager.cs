@@ -51,6 +51,78 @@ internal class SelectionInputManager : IDisposable
             });
     }
 
+    public void HandleDataBoundaryNavigation(Offset offset)
+    {
+        _tabOriginColumn = null;
+        if (_selection.ActiveRegion == null)
+            return;
+
+        var current = _selection.ActiveCellPosition;
+        var axis = offset.Rows != 0 ? Axis.Row : Axis.Col;
+        var direction = Math.Sign(offset.Rows != 0 ? offset.Rows : offset.Columns);
+        if (direction == 0)
+            return;
+
+        var sheet = _selection.Sheet;
+        var positions = sheet.GetRowColStore(axis);
+        var index = axis == Axis.Row ? current.row : current.col;
+        var next = positions.GetNextVisible(index, direction);
+        if (next == -1)
+            return;
+
+        bool HasData(int i)
+        {
+            var row = axis == Axis.Row ? i : current.row;
+            var col = axis == Axis.Col ? i : current.col;
+            var merge = sheet.Cells.GetMerge(row, col);
+            if (merge != null)
+            {
+                row = merge.Top;
+                col = merge.Left;
+            }
+            return !sheet.Cells.GetCellValue(row, col).IsEmpty || sheet.Cells.HasFormula(row, col);
+        }
+
+        var currentHasData = HasData(index);
+        var nextHasData = HasData(next);
+        var target = next;
+        if (currentHasData && nextHasData)
+        {
+            // Stop at the far end of the current contiguous run.
+            while (true)
+            {
+                var following = positions.GetNextVisible(target, direction);
+                if (following == -1 || !HasData(following))
+                    break;
+                target = following;
+            }
+        }
+        else
+        {
+            // Cross the gap to the next occupied cell, or stop at the sheet edge.
+            while (!nextHasData)
+            {
+                var following = positions.GetNextVisible(target, direction);
+                if (following == -1)
+                    break;
+                target = following;
+                nextHasData = HasData(target);
+            }
+        }
+
+        var targetRow = axis == Axis.Row ? target : current.row;
+        var targetCol = axis == Axis.Col ? target : current.col;
+        var targetMerge = sheet.Cells.GetMerge(targetRow, targetCol);
+        if (targetMerge != null)
+        {
+            targetRow = targetMerge.Top;
+            targetCol = targetMerge.Left;
+        }
+
+        _selection.HandleInput(SelectionInputKind.ArrowNavigation,
+            selection => selection.Set(targetRow, targetCol));
+    }
+
     private static void CollapseAndMoveSelection(Selection selection, Offset offset)
     {
         if (selection.ActiveRegion == null)

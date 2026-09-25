@@ -719,6 +719,11 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
                 c =>
                     HandleArrowKeysDown(true, KeyUtil.GetMovementFromArrowKey(c.Key)));
 
+        ShortcutManager
+            .Register(["ArrowUp", "ArrowRight", "ArrowDown", "ArrowLeft"],
+                [KeyboardModifiers.Ctrl, KeyboardModifiers.Meta],
+                c => HandleDataBoundaryArrowKeyDown(KeyUtil.GetMovementFromArrowKey(c.Key)));
+
         ShortcutManager.Register(["KeyY"], [KeyboardModifiers.Ctrl, KeyboardModifiers.Meta],
             _ => _sheet.Commands.Redo(),
             _ => !_sheet.Editor.IsEditing && !IsReadOnly);
@@ -962,6 +967,17 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         if (!shift && IsDataSheetActive)
             await ScrollToActiveCellPosition();
 
+        return true;
+    }
+
+    private async Task<bool> HandleDataBoundaryArrowKeyDown(Offset offset)
+    {
+        if (_sheet.Editor.IsEditing)
+            return false;
+
+        _selectionManager.HandleDataBoundaryNavigation(offset);
+        if (IsDataSheetActive)
+            await ScrollToActiveCellPosition();
         return true;
     }
 
