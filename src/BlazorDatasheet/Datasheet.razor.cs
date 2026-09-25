@@ -697,6 +697,13 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         ShortcutManager
             .Register(["Tab"], KeyboardModifiers.Shift, _ => AcceptEditAndMoveActiveSelection(Axis.Col, -1));
 
+        ShortcutManager.Register(["F2"], KeyboardModifiers.None, async _ =>
+        {
+            var position = _sheet.Selection.GetInputPosition();
+            await BeginEdit(position.row, position.col, EditEntryMode.KeyboardEdit);
+            return _sheet.Editor.IsEditing;
+        }, _ => !_sheet.Editor.IsEditing && !IsReadOnly && _sheet.Selection.ActiveRegion != null);
+
         ShortcutManager
             .Register(["KeyC"], [KeyboardModifiers.Ctrl, KeyboardModifiers.Meta],
                 async (_) => await CopySelectionToClipboard(),

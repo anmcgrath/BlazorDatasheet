@@ -14,4 +14,8 @@ public enum EditEntryMode
     /// The user has used the keyboard to enter.
     /// </summary>
     Key,
+    /// <summary>
+    /// The user pressed F2 to edit the existing value without replacing it.
+    /// </summary>
+    KeyboardEdit,
 }
