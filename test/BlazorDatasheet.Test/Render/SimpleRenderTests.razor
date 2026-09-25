@@ -10,6 +10,7 @@
 @using BlazorDatasheet.Render.DefaultComponents
 @using BlazorDatasheet.Render.Headings
 @using BlazorDatasheet.Edit
+@using BlazorDatasheet.Core.Edit
 @using BlazorDatasheet.Menu
 @using BlazorDatasheet.Render.Layers
 @using FluentAssertions
@@ -19,6 +20,34 @@
 
 @code
 {
+    [Test]
+    public async Task F2_Edits_Existing_Cell_Without_Replacing_Its_Value()
+    {
+        var sheet = new Sheet(3, 3);
+        sheet.Cells.SetValue(1, 1, "existing");
+        sheet.Selection.Set(1, 1);
+        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+
+        (await cut.InvokeAsync(() => cut.Instance.HandleShortcuts("F2", KeyboardModifiers.None))).Should().BeTrue();
+
+        sheet.Editor.IsEditing.Should().BeTrue();
+        sheet.Editor.CurrentEntryMode.Should().Be(EditEntryMode.KeyboardEdit);
+        sheet.Editor.EditValue.Should().Be("existing");
+        sheet.Editor.IsSoftEdit.Should().BeFalse();
+    }
+
+    [Test]
+    public async Task F2_Does_Not_Edit_A_Read_Only_Datasheet()
+    {
+        var sheet = new Sheet(3, 3);
+        sheet.Selection.Set(1, 1);
+        var cut = RenderComponent<Datasheet>(parameters => parameters
+            .Add(p => p.Sheet, sheet).Add(p => p.IsReadOnly, true));
+
+        (await cut.InvokeAsync(() => cut.Instance.HandleShortcuts("F2", KeyboardModifiers.None))).Should().BeFalse();
+        sheet.Editor.IsEditing.Should().BeFalse();
+    }
+
     [TestCase("Tab", KeyboardModifiers.None, SelectionInputKind.TabEnterNavigation)]
     [TestCase("Enter", KeyboardModifiers.None, SelectionInputKind.TabEnterNavigation)]
     [TestCase("Tab", KeyboardModifiers.Shift, SelectionInputKind.TabEnterNavigation)]
