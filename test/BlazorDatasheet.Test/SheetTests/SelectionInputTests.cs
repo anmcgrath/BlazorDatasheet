@@ -479,6 +479,54 @@ public class SelectionInputTests
     }
 
     [Test]
+    public void Ctrl_Arrow_Stops_At_Contiguous_Run_End_Then_Jumps_A_Gap()
+    {
+        for (var col = 1; col <= 3; col++)
+            _sheet.Cells.SetValue(2, col, col);
+        _sheet.Cells.SetValue(2, 6, 6);
+        _sheet.Selection.Set(2, 1);
+
+        _manager.HandleDataBoundaryNavigation(new Offset(0, 1));
+        _sheet.Selection.ActiveCellPosition.Should().Be(new CellPosition(2, 3));
+        _manager.HandleDataBoundaryNavigation(new Offset(0, 1));
+        _sheet.Selection.ActiveCellPosition.Should().Be(new CellPosition(2, 6));
+        _manager.HandleDataBoundaryNavigation(new Offset(0, 1));
+        _sheet.Selection.ActiveCellPosition.Should().Be(new CellPosition(2, 9));
+        _manager.HandleDataBoundaryNavigation(new Offset(0, -1));
+        _sheet.Selection.ActiveCellPosition.Should().Be(new CellPosition(2, 6));
+    }
+
+    [Test]
+    public void Ctrl_Arrow_Works_Vertically_And_Skips_Hidden_Rows()
+    {
+        _sheet.Cells.SetValue(1, 2, "first");
+        _sheet.Cells.SetValue(2, 2, "hidden");
+        _sheet.Cells.SetValue(3, 2, "third");
+        _sheet.Rows.Hide(2, 1);
+        _sheet.Selection.Set(1, 2);
+
+        _manager.HandleDataBoundaryNavigation(new Offset(1, 0));
+        _sheet.Selection.ActiveCellPosition.Should().Be(new CellPosition(3, 2));
+        _manager.HandleDataBoundaryNavigation(new Offset(-1, 0));
+        _sheet.Selection.ActiveCellPosition.Should().Be(new CellPosition(1, 2));
+    }
+
+    [Test]
+    public void Ctrl_Arrow_Selection_Can_Be_Canceled_By_Input_Hook()
+    {
+        _sheet.Cells.SetValue(1, 4, "value");
+        _sheet.Selection.Set(1, 1);
+        _sheet.BeforeSelectionInput += (_, e) =>
+        {
+            e.InputKind.Should().Be(SelectionInputKind.ArrowNavigation);
+            e.Cancel = true;
+        };
+
+        _manager.HandleDataBoundaryNavigation(new Offset(0, 1));
+        _sheet.Selection.ActiveCellPosition.Should().Be(new CellPosition(1, 1));
+    }
+
+    [Test]
     public void Reverse_Drag_And_Shift_Contraction_Preserve_Anchor()
     {
         _sheet.BeforeSelectionInput += (_, _) => { };
