@@ -1,4 +1,5 @@
 import { findScrollableAncestor } from "../../js/scroll-utils.js"
+import { watchRemoval } from "../../js/removal-watcher.js"
 
 const accelerationDistance = 120
 const maxFrameDuration = 32
@@ -14,6 +15,7 @@ export class AutoScroller {
         this.onPointerUp = this.onPointerUp.bind(this)
         this.step = this.step.bind(this)
         this.sheet?.addEventListener('pointerdown', this.onPointerDown, true)
+        this.unwatchRemoval = watchRemoval(el, () => this.dispose())
     }
 
     configure(active, trackTarget, maxSpeed, edgeThreshold) {
@@ -196,6 +198,8 @@ export class AutoScroller {
     }
 
     dispose() {
+        this.unwatchRemoval?.()
+        this.unwatchRemoval = null
         this.active = false
         this.stop()
         this.sheet?.removeEventListener('pointerdown', this.onPointerDown, true)
