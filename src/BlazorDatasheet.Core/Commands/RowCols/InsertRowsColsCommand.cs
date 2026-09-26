@@ -19,12 +19,8 @@ internal class InsertRowsColsCommand : BaseCommand, IUndoableCommand
     private readonly int _count;
     private readonly Axis _axis;
 
-    private RegionRestoreData<int> _validatorRestoreData = null!;
-    private ConditionalFormatRestoreData _cfRestoreData = null!;
-    private CellStoreRestoreData _cellStoreRestoreData = null!;
+    private readonly List<(IRowColShiftingStore Store, object? RestoreData)> _storeRestoreData = new();
     private RowColInfoRestoreData _rowColInfoRestoreData = null!;
-    private RegionRestoreData<CellMetadata> _metaDataStore = null!;
-    private MergeableIntervalStoreRestoreData<OverwritingValue<List<IFilter>?>> _filterRestoreData = null!;
 
     /// <summary>
     /// Command for inserting a row into the sheet.
@@ -45,15 +41,10 @@ internal class InsertRowsColsCommand : BaseCommand, IUndoableCommand
     {
         using var updates = sheet.SuspendUpdates();
         sheet.Add(_axis, _count);
-        _validatorRestoreData = sheet.Validators.Store.InsertRowColAt(_index, _count, _axis);
-        _cellStoreRestoreData = sheet.Cells.InsertRowColAt(_index, _count, _axis);
-        _cfRestoreData = sheet.ConditionalFormats.InsertRowColAt(_index, _count, _axis);
-        _metaDataStore = sheet.Cells.GetMetaDataStore().InsertRowColAt(_index, _count, _axis);
 
-        if (_axis == Axis.Col)
-        {
-            _filterRestoreData = sheet.Columns.Filters.Store.InsertAt(_index, _count);
-        }
+        _storeRestoreData.Clear();
+        foreach (var store in sheet.ShiftingStores)
+            _storeRestoreData.Add((store, store.InsertRowColAt(_index, _count, _axis)));
 
         _rowColInfoRestoreData = sheet.GetRowColStore(_axis).InsertImpl(_index, _count);
         return true;
@@ -63,13 +54,11 @@ internal class InsertRowsColsCommand : BaseCommand, IUndoableCommand
     {
         using var updates = sheet.SuspendUpdates();
         sheet.Remove(_axis, _count);
-        sheet.Validators.Store.Restore(_validatorRestoreData);
-        sheet.Cells.GetMetaDataStore().Restore(_metaDataStore);
-        sheet.Cells.Restore(_cellStoreRestoreData);
-        sheet.ConditionalFormats.Restore(_cfRestoreData);
+
+        foreach (var (store, restoreData) in _storeRestoreData)
+            store.Restore(restoreData);
+
         sheet.GetRowColStore(_axis).Restore(_rowColInfoRestoreData);
-        if (_axis == Axis.Col)
-            sheet.Columns.Filters.Store.Restore(_filterRestoreData);
 
         sheet.GetRowColStore(_axis).EmitRemoved(_index, _count);
 
