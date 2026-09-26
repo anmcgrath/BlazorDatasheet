@@ -96,21 +96,10 @@ public class CellFormula
             if (reference.SheetName != sheetName)
                 continue;
 
-            if (axis == Axis.Row && reference.Region.Top > index)
-            {
-                reference.Move(-count, 0);
-                continue;
-            }
-
-            if (axis == Axis.Col && reference.Region.Left > index)
-            {
-                reference.Move(0, -count);
-                continue;
-            }
-
+            var end = index + count - 1;
             IRegion removalRegion = axis == Axis.Col
-                ? new ColumnRegion(index, index + count - 1)
-                : new RowRegion(index, index + count - 1);
+                ? new ColumnRegion(index, end)
+                : new RowRegion(index, end);
 
             if (removalRegion.Contains(reference.Region))
             {
@@ -118,13 +107,35 @@ public class CellFormula
                 continue;
             }
 
-            if (reference is RangeReference)
-            {
-                if (axis == Axis.Row && reference.Region.SpansRow(index))
-                    reference.Region.Contract(Edge.Bottom, count);
+            var start = axis == Axis.Row ? reference.Region.Top : reference.Region.Left;
+            var stop = axis == Axis.Row ? reference.Region.Bottom : reference.Region.Right;
 
-                if (axis == Axis.Col && reference.Region.SpansCol(index))
-                    reference.Region.Contract(Edge.Right, count);
+            if (start > end)
+            {
+                if (axis == Axis.Row)
+                    reference.Move(-count, 0);
+                else
+                    reference.Move(0, -count);
+                continue;
+            }
+
+            if (stop < index || reference is not RangeReference)
+                continue;
+
+            // The range overlaps the removed band without being inside it: it loses the
+            // overlapping rows/cols, and a range that began inside the band now begins at it.
+            var overlap = Math.Min(stop, end) - Math.Max(start, index) + 1;
+            var moveBy = Math.Min(start, index) - start;
+
+            if (axis == Axis.Row)
+            {
+                reference.Region.Contract(Edge.Bottom, overlap);
+                reference.Move(moveBy, 0);
+            }
+            else
+            {
+                reference.Region.Contract(Edge.Right, overlap);
+                reference.Move(0, moveBy);
             }
         }
     }

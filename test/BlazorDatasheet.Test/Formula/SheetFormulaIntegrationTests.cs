@@ -382,6 +382,51 @@ public class SheetFormulaIntegrationTests
     }
 
     [Test]
+    public void Remove_Rows_Containing_Reference_Invalidates_Reference()
+    {
+        var sheet = new Sheet(20, 20);
+        sheet.NamedRanges.Set("r", "D4");
+        var before = sheet.NamedRanges.GetRangeString("r");
+        sheet.Rows.RemoveAt(2, 3);
+        sheet.NamedRanges.GetRangeString("r").Should().Be("#REF!");
+        sheet.Commands.Undo();
+        sheet.NamedRanges.GetRangeString("r").Should().Be(before);
+    }
+
+    [Test]
+    public void Remove_Rows_Overlapping_Top_Of_Range_Contracts_And_Moves_Range()
+    {
+        var sheet = new Sheet(20, 20);
+        sheet.Cells.SetFormula(0, 0, "=sum(D4:D11)");
+        sheet.Rows.RemoveAt(2, 3);
+        sheet.Cells[0, 0].Formula.Should().Be("=sum(D3:D8)");
+        sheet.Commands.Undo();
+        sheet.Cells[0, 0].Formula.Should().Be("=sum(D4:D11)");
+    }
+
+    [Test]
+    public void Remove_Rows_Overlapping_Bottom_Of_Range_Contracts_By_Overlap()
+    {
+        var sheet = new Sheet(20, 20);
+        sheet.Cells.SetFormula(0, 0, "=sum(D1:D4)");
+        sheet.Rows.RemoveAt(2, 3);
+        sheet.Cells[0, 0].Formula.Should().Be("=sum(D1:D2)");
+        sheet.Commands.Undo();
+        sheet.Cells[0, 0].Formula.Should().Be("=sum(D1:D4)");
+    }
+
+    [Test]
+    public void Remove_Cols_Overlapping_Left_Of_Range_Contracts_And_Moves_Range()
+    {
+        var sheet = new Sheet(20, 20);
+        sheet.Cells.SetFormula(0, 0, "=sum(D2:K2)");
+        sheet.Columns.RemoveAt(2, 3);
+        sheet.Cells[0, 0].Formula.Should().Be("=sum(C2:H2)");
+        sheet.Commands.Undo();
+        sheet.Cells[0, 0].Formula.Should().Be("=sum(D2:K2)");
+    }
+
+    [Test]
     public void Remove_Formula_And_Undo_Restores_Dependencies()
     {
         var sheet = new Sheet(20, 20);
