@@ -243,6 +243,7 @@ public class Sheet
         Selection = new Selection(this);
         ConditionalFormats = new ConditionalFormatManager(this, Cells);
         NamedRanges = new NamedRangeManager(this);
+        TrackedRanges = new TrackedRangeStore(this);
         RegisterDefaultShiftingStores();
     }
 
@@ -285,7 +286,14 @@ public class Sheet
             (index, count, axis) => axis == Axis.Col ? filters.InsertAt(index, count) : null,
             (index, count, axis) => axis == Axis.Col ? filters.Delete(index, index + count - 1) : null,
             filters.Restore));
+
+        RegisterShiftingStore(TrackedRanges);
     }
+
+    /// <summary>
+    /// The ranges tracked on this sheet. See <see cref="Workbook.TrackedRanges"/>.
+    /// </summary>
+    internal TrackedRangeStore TrackedRanges { get; }
 
     public Sheet(int numRows, int numCols, CellValue[][] values) : this(numRows, numCols, 105, 24, null, values)
     {
