@@ -14,7 +14,7 @@
         var sheet = new Sheet(10, 10);
         sheet.Cells["A1"]!.Type = "progress";
         
-        var cut = RenderComponent<Datasheet>(parameters =>
+        var cut = Render<Datasheet>(parameters =>
         {
             parameters.Add(p => p.CustomCellTypeDefinitions, new Dictionary<string, CellTypeDefinition>()
             {

@@ -97,7 +97,7 @@ public class CellDecorationTests
     [Test]
     public async Task Flags_And_Css_Render_And_Clear_With_Undo_Redo()
     {
-        using var context = new Bunit.TestContext();
+        await using var context = new Bunit.BunitContext();
         context.JSInterop.Mode = JSRuntimeMode.Loose;
         context.JSInterop.SetupModule(x => x.Identifier == "getVirtualiser")
             .Setup<Rect>(x => x.Identifier == "calculateViewRect").SetResult(new Rect(0, 0, 500, 500));
@@ -112,7 +112,7 @@ public class CellDecorationTests
             CornerFlagBottomLeft = new("green"), CornerFlagBottomRight = new("yellow"),
             CssClass = "custom", CssVariables = new Dictionary<string, string> { ["--accent"] = "purple" }
         };
-        var component = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, sheet));
+        var component = context.Render<Datasheet>(p => p.Add(x => x.Sheet, sheet));
         foreach (var virtualiser in component.FindComponents<Virtualise2D>())
             await virtualiser.InvokeAsync(() => virtualiser.Instance.HandleScroll(new Rect(0, 0, 500, 500)));
         var cell = component.Find(".bds-sheet-cell[data-row='0'][data-col='0']");

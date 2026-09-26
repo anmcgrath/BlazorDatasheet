@@ -11,7 +11,6 @@ using Bunit;
 using FluentAssertions;
 using Microsoft.AspNetCore.Components;
 using NUnit.Framework;
-using BunitTestContext = Bunit.TestContext;
 
 namespace BlazorDatasheet.Test.Render;
 
@@ -21,7 +20,7 @@ public class DatasheetIconRenderingTests
     [TestCase(true)]
     public async Task Metadata_Changes_Refresh_Conditional_Icons_Without_A_Manual_Render(bool bulk)
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(1, 2);
         sheet.ConditionalFormats.Apply(sheet.Region, new ConditionalFormat(
             (position, currentSheet) => Equals(currentSheet.Cells.GetMetaData(position.row, position.col, "status"), "ready"),
@@ -53,7 +52,7 @@ public class DatasheetIconRenderingTests
     [Test]
     public async Task Suspended_Metadata_Changes_Render_Together_When_Updating_Resumes()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(3, 3);
         ApplyMetadataFormat(sheet);
         var component = RenderSheet(context, sheet);
@@ -76,7 +75,7 @@ public class DatasheetIconRenderingTests
     [Test]
     public async Task Grouped_Metadata_Edit_Undo_Redo_Refreshes_Rendered_Cells()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(3, 3);
         ApplyMetadataFormat(sheet);
         var component = RenderSheet(context, sheet);
@@ -99,7 +98,7 @@ public class DatasheetIconRenderingTests
     [TestCase(Axis.Col, true)]
     public async Task Structural_Edit_Undo_Redo_Refreshes_Metadata_Appearance(Axis axis, bool remove)
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(4, 4);
         ApplyMetadataFormat(sheet);
         sheet.Cells.SetCellMetaData(1, 1, "status", "ready");
@@ -130,7 +129,7 @@ public class DatasheetIconRenderingTests
     [TestCase(Axis.Col, 2)]
     public async Task AllRegion_Covers_Every_Cell_After_Structural_Edit_And_History(Axis axis, int index)
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(4, 4);
         sheet.ConditionalFormats.Apply(new AllRegion(), new ConditionalFormat((_, _) => true,
             _ => new CellFormat { Icon = "tick" }));
@@ -184,9 +183,9 @@ public class DatasheetIconRenderingTests
     }
 
     [Test]
-    public void Registered_Icon_Is_Rendered_In_The_Cell_With_Its_Icon_Color()
+    public async Task Registered_Icon_Is_Rendered_In_The_Cell_With_Its_Icon_Color()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(1, 1);
         sheet.SetFormat(new Region(0, 0), new CellFormat { Icon = "tick", IconColor = "green" });
 
@@ -198,9 +197,9 @@ public class DatasheetIconRenderingTests
     }
 
     [Test]
-    public void Icon_Falls_Back_To_The_Theme_Color_When_No_Icon_Color_Is_Set()
+    public async Task Icon_Falls_Back_To_The_Theme_Color_When_No_Icon_Color_Is_Set()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(1, 1);
         sheet.SetFormat(new Region(0, 0), new CellFormat { Icon = "tick" });
 
@@ -211,9 +210,9 @@ public class DatasheetIconRenderingTests
     }
 
     [Test]
-    public void Unregistered_Icon_Name_Renders_No_Icon_Element_At_All()
+    public async Task Unregistered_Icon_Name_Renders_No_Icon_Element_At_All()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(1, 1);
         sheet.SetFormat(new Region(0, 0), new CellFormat { Icon = "not-registered" });
 
@@ -227,11 +226,11 @@ public class DatasheetIconRenderingTests
     }
 
     [Test]
-    public void Documentation_Example_Renders_Static_And_Conditional_Icons()
+    public async Task Documentation_Example_Renders_Static_And_Conditional_Icons()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
 
-        var example = context.RenderComponent<CellIconExample>();
+        var example = context.Render<CellIconExample>();
         ShowViewport(example);
 
         // column A carries a flag on every row, straight from the cell format
@@ -246,9 +245,9 @@ public class DatasheetIconRenderingTests
             .Should().Equal(true, false, true, false);
     }
 
-    private static BunitTestContext CreateContext()
+    private static BunitContext CreateContext()
     {
-        var context = new BunitTestContext();
+        var context = new BunitContext();
         context.JSInterop.Mode = JSRuntimeMode.Loose;
         var virtualiser = context.JSInterop.SetupModule(x => x.Identifier == "getVirtualiser");
         virtualiser.Setup<Rect>(x => x.Identifier == "calculateViewRect")
@@ -257,7 +256,7 @@ public class DatasheetIconRenderingTests
         return context;
     }
 
-    private static IRenderedComponent<Datasheet> RenderSheet(BunitTestContext context, Sheet sheet)
+    private static IRenderedComponent<Datasheet> RenderSheet(BunitContext context, Sheet sheet)
     {
         RenderFragment icon = builder =>
         {
@@ -266,7 +265,7 @@ public class DatasheetIconRenderingTests
             builder.CloseElement();
         };
 
-        var component = context.RenderComponent<Datasheet>(parameters => parameters
+        var component = context.Render<Datasheet>(parameters => parameters
             .Add(x => x.Sheet, sheet)
             .Add(x => x.Icons, new Dictionary<string, RenderFragment> { { "tick", icon } }));
 
@@ -274,7 +273,7 @@ public class DatasheetIconRenderingTests
         return component;
     }
     
-    private static void ShowViewport(IRenderedFragment component)
+    private static void ShowViewport(IRenderedComponent<IComponent> component)
     {
         foreach (var virtualiser in component.FindComponents<Virtualise2D>())
         {

@@ -21,7 +21,7 @@
         sheet.Cells["A1"]!.Type = "counted";
         sheet.Cells["B1"]!.Type = "counted";
 
-        var cut = RenderComponent<Datasheet>(parameters =>
+        var cut = Render<Datasheet>(parameters =>
         {
             parameters.Add(p => p.CustomCellTypeDefinitions, new Dictionary<string, CellTypeDefinition>()
             {
@@ -34,7 +34,7 @@
         return cut;
     }
 
-    private static void ShowViewport(IRenderedFragment component)
+    private static void ShowViewport(IRenderedComponent<IComponent> component)
     {
         foreach (var virtualiser in component.FindComponents<Virtualise2D>())
         {

@@ -8,7 +8,6 @@ using BlazorDatasheet.Formula.Core.Interpreter;
 using Bunit;
 using FluentAssertions;
 using NUnit.Framework;
-using TestContext = Bunit.TestContext;
 
 namespace BlazorDatasheet.Test.Render;
 
@@ -17,9 +16,9 @@ namespace BlazorDatasheet.Test.Render;
 /// </summary>
 public class FormulaEditorTests
 {
-    private static TestContext CreateContext()
+    private static BunitContext CreateContext()
     {
-        var context = new TestContext();
+        var context = new BunitContext();
         context.JSInterop.Mode = JSRuntimeMode.Loose;
         context.JSInterop.SetupModule(x => x.Identifier == "createHighlighter");
         return context;
@@ -38,9 +37,9 @@ public class FormulaEditorTests
     [Test]
     public async Task Typing_Reports_The_Value_And_Suggests_Functions()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var value = "";
-        var editor = context.RenderComponent<FormulaEditor>(p => p
+        var editor = context.Render<FormulaEditor>(p => p
             .Add(x => x.Sheet, new Sheet(5, 5))
             .Add(x => x.ValueChanged, v => value = v));
 
@@ -58,9 +57,9 @@ public class FormulaEditorTests
     [Test]
     public async Task Keys_Work_The_Suggestions_Before_Anything_Else()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var value = "";
-        var editor = context.RenderComponent<FormulaEditor>(p => p
+        var editor = context.Render<FormulaEditor>(p => p
             .Add(x => x.Sheet, new Sheet(5, 5))
             .Add(x => x.ValueChanged, v => value = v));
 
@@ -87,8 +86,8 @@ public class FormulaEditorTests
     [Test]
     public async Task Escape_Closes_The_Suggestions_And_Is_Then_Left_To_The_Sheet()
     {
-        using var context = CreateContext();
-        var editor = context.RenderComponent<FormulaEditor>(p => p.Add(x => x.Sheet, new Sheet(5, 5)));
+        await using var context = CreateContext();
+        var editor = context.Render<FormulaEditor>(p => p.Add(x => x.Sheet, new Sheet(5, 5)));
         await Type(editor, "=SU", 3);
 
         await editor.InvokeAsync(() => editor.Instance.HandleKey("Escape", false, false, false, false).Should().BeTrue());
@@ -99,10 +98,10 @@ public class FormulaEditorTests
     [Test]
     public async Task Clicked_Suggestion_Is_Written_Into_The_Edit_With_The_Caret_After_It()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(5, 5);
         sheet.Editor.BeginEdit(0, 0);
-        var editor = context.RenderComponent<FormulaEditor>(p => p
+        var editor = context.Render<FormulaEditor>(p => p
             .Add(x => x.Sheet, sheet)
             .Add(x => x.ValueChanged, v => sheet.Editor.EditValue = v));
 
@@ -119,8 +118,8 @@ public class FormulaEditorTests
     [Test]
     public async Task Caret_Inside_A_Function_Shows_Its_Hint()
     {
-        using var context = CreateContext();
-        var editor = context.RenderComponent<FormulaEditor>(p => p.Add(x => x.Sheet, new Sheet(5, 5)));
+        await using var context = CreateContext();
+        var editor = context.Render<FormulaEditor>(p => p.Add(x => x.Sheet, new Sheet(5, 5)));
 
         await Type(editor, "=SUM(1,", 7);
 
@@ -150,8 +149,8 @@ public class FormulaEditorTests
     [Test]
     public async Task Only_The_Selected_Suggestion_Is_Described()
     {
-        using var context = CreateContext();
-        var editor = context.RenderComponent<FormulaEditor>(p => p.Add(x => x.Sheet, CreateSheetWithDescribedFunctions()));
+        await using var context = CreateContext();
+        var editor = context.Render<FormulaEditor>(p => p.Add(x => x.Sheet, CreateSheetWithDescribedFunctions()));
 
         await Type(editor, "=ZZ", 3);
 
@@ -168,8 +167,8 @@ public class FormulaEditorTests
     public async Task Hint_Describes_The_Function_And_The_Parameter_At_The_Caret(string formula, string paramName,
         string paramDescription)
     {
-        using var context = CreateContext();
-        var editor = context.RenderComponent<FormulaEditor>(p => p.Add(x => x.Sheet, CreateSheetWithDescribedFunctions()));
+        await using var context = CreateContext();
+        var editor = context.Render<FormulaEditor>(p => p.Add(x => x.Sheet, CreateSheetWithDescribedFunctions()));
 
         await Type(editor, formula, formula.Length);
 
@@ -181,8 +180,8 @@ public class FormulaEditorTests
     [Test]
     public async Task Hint_Leaves_Out_Descriptions_That_Are_Not_Set()
     {
-        using var context = CreateContext();
-        var editor = context.RenderComponent<FormulaEditor>(p => p.Add(x => x.Sheet, CreateSheetWithDescribedFunctions()));
+        await using var context = CreateContext();
+        var editor = context.Render<FormulaEditor>(p => p.Add(x => x.Sheet, CreateSheetWithDescribedFunctions()));
 
         await Type(editor, "=ZZDESCRIBED(1,", 15);
         editor.FindAll(".bds-func-hint-description").Should().ContainSingle();
@@ -196,10 +195,10 @@ public class FormulaEditorTests
     [Test]
     public async Task Named_Ranges_Of_The_Sheet_Are_Highlighted_As_References()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(5, 5);
         sheet.NamedRanges.Set("myName", "B2:B3");
-        var editor = context.RenderComponent<FormulaEditor>(p => p.Add(x => x.Sheet, sheet));
+        var editor = context.Render<FormulaEditor>(p => p.Add(x => x.Sheet, sheet));
 
         await Type(editor, "=myName", 7);
 
@@ -210,9 +209,9 @@ public class FormulaEditorTests
     [Test]
     public async Task Text_Selection_Is_Reported_To_The_Edit_Session_And_Claims_Input()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(5, 5);
-        var editor = context.RenderComponent<FormulaEditor>(p => p.Add(x => x.Sheet, sheet));
+        var editor = context.Render<FormulaEditor>(p => p.Add(x => x.Sheet, sheet));
         var input = editor.FindComponent<HighlightedInput>();
 
         sheet.Editor.BeginEdit(0, 0);
@@ -230,20 +229,20 @@ public class FormulaEditorTests
     [Test]
     public async Task Picked_Reference_Is_Shown_With_The_Caret_After_It()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(5, 5);
         sheet.Editor.BeginEdit(0, 0);
         sheet.Editor.EditValue = "=SUM()+1";
         sheet.Editor.FormulaEdit.IsPickingEnabled = true;
 
-        var editor = context.RenderComponent<FormulaEditor>(p => p
+        var editor = context.Render<FormulaEditor>(p => p
             .Add(x => x.Sheet, sheet)
             .Add(x => x.Value, sheet.Editor.EditValue));
         var input = editor.FindComponent<HighlightedInput>();
         await editor.InvokeAsync(() => input.Instance.HandleSelectionUpdate(5, 5));
 
         await editor.InvokeAsync(() => sheet.Editor.FormulaEdit.HandlePointerDown(1, 1, false, false, false));
-        editor.SetParametersAndRender(p => p.Add(x => x.Value, sheet.Editor.EditValue));
+        editor.Render(p => p.Add(x => x.Value, sheet.Editor.EditValue));
 
         context.JSInterop.Invocations.Last(x => x.Identifier == "setInputText").Arguments
             .Should().Equal(new object[] { "=SUM(B2)+1", 7 });
@@ -252,13 +251,13 @@ public class FormulaEditorTests
     [Test]
     public async Task Focus_Returns_To_The_Editor_That_Owns_Input_After_A_Reference_Is_Picked()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(5, 5);
-        var inCell = context.RenderComponent<FormulaEditor>(p => p
+        var inCell = context.Render<FormulaEditor>(p => p
             .Add(x => x.Sheet, sheet)
             .Add(x => x.ReadyToFocus, false)
             .Add(x => x.IsDefaultInputOwner, true));
-        var external = context.RenderComponent<FormulaEditor>(p => p
+        var external = context.Render<FormulaEditor>(p => p
             .Add(x => x.Sheet, sheet)
             .Add(x => x.ReadyToFocus, false));
 
