@@ -1,5 +1,5 @@
 using BlazorDatasheet.DataStructures.Geometry;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Geometry;

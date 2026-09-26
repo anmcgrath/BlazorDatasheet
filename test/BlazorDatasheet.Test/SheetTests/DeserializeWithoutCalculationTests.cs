@@ -1,7 +1,7 @@
 using System.Linq;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Serialization.Json;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.SheetTests;

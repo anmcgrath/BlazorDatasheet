@@ -1,6 +1,6 @@
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Virtualise;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Layout;
@@ -77,9 +77,9 @@ public class DatasheetViewRegionCalculatorTests
             frozenTopCount: 40,
             frozenBottomCount: 40);
 
-        main.Top.Should().BeGreaterOrEqualTo(viewRegion.Top);
-        main.Bottom.Should().BeLessOrEqualTo(viewRegion.Bottom);
-        main.Left.Should().BeGreaterOrEqualTo(viewRegion.Left);
-        main.Right.Should().BeLessOrEqualTo(viewRegion.Right);
+        main.Top.Should().BeGreaterThanOrEqualTo(viewRegion.Top);
+        main.Bottom.Should().BeGreaterThanOrEqualTo(viewRegion.Bottom);
+        main.Left.Should().BeGreaterThanOrEqualTo(viewRegion.Left);
+        main.Right.Should().BeGreaterThanOrEqualTo(viewRegion.Right);
     }
 }

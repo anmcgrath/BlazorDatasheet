@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using BlazorDatasheet.DataStructures.Store;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Store;

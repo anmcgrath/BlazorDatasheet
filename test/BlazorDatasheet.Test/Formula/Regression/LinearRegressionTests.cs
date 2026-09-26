@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using BlazorDatasheet.Formula.Core.Regression;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Formula.Regression;

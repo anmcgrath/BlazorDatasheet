@@ -4,7 +4,7 @@ using Bunit;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Render;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.AspNetCore.Components;
 using NUnit.Framework;
 

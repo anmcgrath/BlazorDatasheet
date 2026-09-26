@@ -1,7 +1,7 @@
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Layout;
 using BlazorDatasheet.Render;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Layout;

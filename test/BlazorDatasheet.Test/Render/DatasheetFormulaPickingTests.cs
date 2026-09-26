@@ -12,7 +12,7 @@ using BlazorDatasheet.Extensions;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Render.DefaultComponents;
 using Bunit;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.AspNetCore.Components.Web;
 using NUnit.Framework;
 

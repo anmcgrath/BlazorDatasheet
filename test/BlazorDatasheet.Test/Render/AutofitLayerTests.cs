@@ -11,7 +11,7 @@ using BlazorDatasheet.Render;
 using BlazorDatasheet.Render.Layers;
 using BlazorDatasheet.Services;
 using Bunit;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 

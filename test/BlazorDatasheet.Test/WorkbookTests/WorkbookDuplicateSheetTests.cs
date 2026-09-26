@@ -4,7 +4,7 @@ using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Formats.DefaultConditionalFormats;
 using BlazorDatasheet.Core.Validation;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.WorkbookTests;

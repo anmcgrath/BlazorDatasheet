@@ -4,7 +4,7 @@ using System.Linq;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Events.Formula;
 using BlazorDatasheet.Formula.Core;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Formula;

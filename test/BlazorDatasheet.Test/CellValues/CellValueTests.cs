@@ -2,7 +2,7 @@
 using NUnit.Framework;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Extensions;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace BlazorDatasheet.Test.CellValues;
 

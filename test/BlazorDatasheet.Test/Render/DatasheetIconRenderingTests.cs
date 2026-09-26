@@ -8,7 +8,7 @@ using BlazorDatasheet.Extensions;
 using BlazorDatasheet.SharedPages.Components.Examples.Formatting;
 using BlazorDatasheet.Virtualise;
 using Bunit;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.AspNetCore.Components;
 using NUnit.Framework;
 

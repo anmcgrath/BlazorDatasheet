@@ -1,6 +1,6 @@
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 using Parser = BlazorDatasheet.Formula.Core.Interpreter.Parsing.Parser;
 
