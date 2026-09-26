@@ -26,7 +26,7 @@
         var sheet = new Sheet(3, 3);
         sheet.Cells.SetValue(1, 1, "existing");
         sheet.Selection.Set(1, 1);
-        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+        var cut = Render<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
 
         (await cut.InvokeAsync(() => cut.Instance.HandleShortcuts("F2", KeyboardModifiers.None))).Should().BeTrue();
 
@@ -41,7 +41,7 @@
     {
         var sheet = new Sheet(3, 3);
         sheet.Selection.Set(1, 1);
-        var cut = RenderComponent<Datasheet>(parameters => parameters
+        var cut = Render<Datasheet>(parameters => parameters
             .Add(p => p.Sheet, sheet).Add(p => p.IsReadOnly, true));
 
         (await cut.InvokeAsync(() => cut.Instance.HandleShortcuts("F2", KeyboardModifiers.None))).Should().BeFalse();
@@ -55,7 +55,7 @@
         var sheet = new Sheet(3, 8);
         sheet.Cells.SetValue(1, 4, "value");
         sheet.Selection.Set(1, 1);
-        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+        var cut = Render<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
 
         (await cut.InvokeAsync(() => cut.Instance.HandleShortcuts("ArrowRight", modifier))).Should().BeTrue();
         sheet.Selection.ActiveCellPosition.Should().Be(new CellPosition(1, 4));
@@ -79,7 +79,7 @@
             e.InputKind.Should().Be(kind);
             e.Cancel = true;
         };
-        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+        var cut = Render<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
 
         await cut.InvokeAsync(() => cut.Instance.HandleShortcuts(key, modifiers));
 
@@ -105,7 +105,7 @@
             e.ProposedRegions = new IRegion[] { new ColumnRegion(2) };
             e.ProposedActiveCellPosition = new CellPosition(0, 2);
         };
-        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+        var cut = Render<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
 
         await cut.Find("div.bds-col-group-head").MouseDownAsync(new MouseEventArgs());
 
@@ -120,7 +120,7 @@
         sheet.Cells.SetValue(0, 0, true);
         sheet.Cells[0, 0].Type = "boolean";
         sheet.Selection.Set(new Region(0, 0));
-        var cut = RenderComponent<Datasheet>(parameters => parameters
+        var cut = Render<Datasheet>(parameters => parameters
             .Add(p => p.Sheet, sheet).Add(p => p.UseAutoFill, true));
         await cut.InvokeAsync(() =>
         {
@@ -149,7 +149,7 @@
         var sheet = new Sheet(4, 4);
         sheet.Cells.SetValue(0, 0, "original");
         sheet.Selection.Set(new Region(0, 0));
-        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+        var cut = Render<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
         await cut.InvokeAsync(() => sheet.Editor.BeginEdit(0, 0));
         sheet.Editor.IsEditing.Should().BeTrue();
         await cut.InvokeAsync(() => sheet.Protection.Protect());
@@ -165,7 +165,7 @@
         var sheet = new Sheet(2, 2);
 
         //Act
-        var cut = RenderComponent<Datasheet>(parameters =>
+        var cut = Render<Datasheet>(parameters =>
         {
             parameters.Add(p => p.Sheet, sheet);
             parameters.Add(p => p.ShowColHeadings, false);
@@ -194,7 +194,7 @@
     {
         var sheet = new Sheet(2, 2);
 
-        var cut = RenderComponent<Datasheet>(parameters =>
+        var cut = Render<Datasheet>(parameters =>
         {
             parameters.Add(p => p.Sheet, sheet);
             parameters.Add(p => p.ShowColHeadings, false);
@@ -211,7 +211,7 @@
         var sheet = new Sheet(20, 20);
         sheet.FreezeRowCols(1, 1, 1, 1);
 
-        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+        var cut = Render<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
 
         cut.FindAll("div.bds-sheet-col-head-container").Count.Should().Be(2);
         cut.FindAll("div.bds-sheet-row-head-container").Count.Should().Be(4);
@@ -224,7 +224,7 @@
     {
         var sheet = new Sheet(1, 1);
 
-        var cut = RenderComponent<Datasheet>(parameters =>
+        var cut = Render<Datasheet>(parameters =>
         {
             parameters.Add(p => p.Sheet, sheet);
             parameters.Add(p => p.NumberPrecisionDisplay, 2);
@@ -249,7 +249,7 @@
         sheet.Cells.SetValue(0, 0, 2d / 3d);
         sheet.Columns.SetSize(0, 110);
 
-        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+        var cut = Render<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
         await cut.InvokeAsync(cut.Instance.ForceReRender);
 
         var container = cut.Find(".bds-cell-number-text");
@@ -280,7 +280,7 @@
         var sheet = new Sheet(1, 1);
         sheet.Cells.SetValue(0, 0, 77.3336);
         sheet.Columns.SetSize(0, NarrowColumnWidth);
-        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+        var cut = Render<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
         await cut.InvokeAsync(cut.Instance.ForceReRender);
 
         cut.FindAll(".bds-cell-number-fallback").Select(x => x.GetAttribute("data-value"))
@@ -296,7 +296,7 @@
         sheet.Cells.SetValue(0, 0, 0.19);
         sheet.Columns.SetSize(0, NarrowColumnWidth);
 
-        var cut = RenderComponent<Datasheet>(parameters => parameters
+        var cut = Render<Datasheet>(parameters => parameters
             .Add(p => p.Sheet, sheet)
             .Add(p => p.NumberOverflow, NumberOverflowMode.Hashes));
         await cut.InvokeAsync(cut.Instance.ForceReRender);
@@ -312,7 +312,7 @@
         var sheet = new Sheet(1, 1);
         sheet.Cells.SetValue(0, 0, 0.19);
 
-        var cut = RenderComponent<Datasheet>(parameters => parameters
+        var cut = Render<Datasheet>(parameters => parameters
             .Add(p => p.Sheet, sheet)
             .Add(p => p.NumberOverflow, NumberOverflowMode.Clip));
         await cut.InvokeAsync(cut.Instance.ForceReRender);
@@ -328,11 +328,11 @@
         sheet.Cells.SetValue(0, 0, 2d / 3d);
         sheet.Columns.SetSize(0, 100);
 
-        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+        var cut = Render<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
         await cut.InvokeAsync(cut.Instance.ForceReRender);
         cut.FindAll(".bds-cell-number-fallback").Should().NotBeEmpty();
 
-        cut.SetParametersAndRender(parameters => parameters.Add(p => p.NumberOverflow, NumberOverflowMode.Hashes));
+        cut.Render(parameters => parameters.Add(p => p.NumberOverflow, NumberOverflowMode.Hashes));
 
         cut.WaitForAssertion(() => cut.FindAll(".bds-cell-number-fallback").Should().BeEmpty());
         cut.Find(".bds-cell-number-text").ClassList.Should().Contain("bds-cell-number-hashes");
@@ -344,10 +344,10 @@
         var sheet = new Sheet(1, 1);
         sheet.Cells.SetValue(0, 0, 123.456);
         sheet.Columns.SetSize(0, NarrowColumnWidth);
-        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+        var cut = Render<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
         await cut.InvokeAsync(cut.Instance.ForceReRender);
 
-        cut.SetParametersAndRender(parameters => parameters.Add(p => p.NumberOverflowMinDecimals, 2));
+        cut.Render(parameters => parameters.Add(p => p.NumberOverflowMinDecimals, 2));
 
         cut.WaitForAssertion(() => cut.FindAll(".bds-cell-number-fallback")
             .Select(x => x.GetAttribute("data-value")).Should().Equal("123.46"));
@@ -361,7 +361,7 @@
         sheet.SetFormat(new Region(0, 0), new CellFormat { NumberFormat = "0 \"v1.5\"" });
         sheet.Columns.SetSize(0, NarrowColumnWidth);
 
-        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+        var cut = Render<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
         await cut.InvokeAsync(cut.Instance.ForceReRender);
 
         var value = cut.Find(".bds-cell-number-value");
@@ -376,7 +376,7 @@
     {
         var sheet = new Sheet(3, 3);
 
-        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+        var cut = Render<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
 
         await cut.InvokeAsync(() =>
         {
@@ -414,7 +414,7 @@
             VerticalTextAlign = align
         };
 
-        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+        var cut = Render<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
 
         await cut.InvokeAsync(() =>
         {
@@ -434,7 +434,7 @@
         var sheet = new Sheet(3, 3);
         sheet.Cells.SetValue(1, 1, 12.34);
 
-        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+        var cut = Render<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
 
         await cut.InvokeAsync(() =>
         {
@@ -452,7 +452,7 @@
     {
         var sheet = new Sheet(3, 3);
 
-        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+        var cut = Render<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
 
         await cut.InvokeAsync(() =>
         {
@@ -474,7 +474,7 @@
     public async Task Setting_Column_Headings_At_Runtime_Updates_Rendered_Heading()
     {
         var sheet = new Sheet(3, 3);
-        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+        var cut = Render<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
 
         // headings are virtualised - a size change refreshes the heading viewport so items exist
         await cut.InvokeAsync(() => sheet.Columns.SetSize(0, 90));
@@ -490,7 +490,7 @@
     public async Task Changing_Column_Header_Template_At_Runtime_ReRenders_Headings()
     {
         var sheet = new Sheet(3, 3);
-        var cut = RenderComponent<Datasheet>(parameters =>
+        var cut = Render<Datasheet>(parameters =>
         {
             parameters.Add(p => p.Sheet, sheet);
             parameters.Add(p => p.ColumnHeaderTemplate, (RenderFragment<HeadingContext>)(ctx => @<div>before</div>));
@@ -500,7 +500,7 @@
         await cut.InvokeAsync(() => sheet.Columns.SetSize(0, 90));
         cut.WaitForAssertion(() => cut.Markup.Should().Contain("before"));
 
-        cut.SetParametersAndRender(parameters => parameters.Add(
+        cut.Render(parameters => parameters.Add(
             p => p.ColumnHeaderTemplate,
             (RenderFragment<HeadingContext>)(ctx => @<div>after</div>)));
 
@@ -512,7 +512,7 @@
     public async Task Freezing_Columns_At_Runtime_Renders_Frozen_Side_Panes()
     {
         var sheet = new Sheet(20, 20);
-        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+        var cut = Render<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
 
         cut.FindAll("div.bds-frozen-left").Should().BeEmpty();
 
@@ -529,7 +529,7 @@
         var sheet = new Sheet(4, 4);
         var menuOptions = new SheetMenuOptions();
 
-        RenderComponent<Datasheet>(parameters =>
+        Render<Datasheet>(parameters =>
         {
             parameters.Add(p => p.Sheet, sheet);
             parameters.Add(p => p.MenuOptions, menuOptions);
@@ -546,7 +546,7 @@
         var sheet = new Sheet(20, 20);
         sheet.FreezeRowCols(2, 2, 0, 0);
 
-        var cut = RenderComponent<Datasheet>(parameters =>
+        var cut = Render<Datasheet>(parameters =>
         {
             parameters.Add(p => p.Sheet, sheet);
             parameters.Add(p => p.ViewRegion, new Region(0, 19, 5, 9));
@@ -566,7 +566,7 @@
         var sheet = new Sheet(20, 20);
         sheet.FreezeRowCols(1, 1, 1, 1);
 
-        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+        var cut = Render<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
 
         // the layer is shared across the sheet, so only the main pane row's centre pane hosts it
         cut.FindComponents<AutofitLayer>().Count.Should().Be(1);
@@ -576,7 +576,7 @@
     public void Datasheet_With_No_Frozen_Sections_Renders_Main_Pane_Row_Only()
     {
         var sheet = new Sheet(5, 5);
-        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+        var cut = Render<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
 
         cut.FindAll("div.bds-frozen-top").Count.Should().Be(0);
         cut.FindAll("div.bds-frozen-bottom").Count.Should().Be(0);
@@ -589,7 +589,7 @@
         var sheet = new Sheet(20, 20);
         sheet.FreezeRowCols(1, 1, 1, 1);
 
-        var cut = RenderComponent<Datasheet>(parameters =>
+        var cut = Render<Datasheet>(parameters =>
         {
             parameters.Add(p => p.Sheet, sheet);
             parameters.Add(p => p.ShowColHeadings, false);
@@ -607,7 +607,7 @@
         var sheet = new Sheet(20, 20);
         sheet.FreezeRowCols(1, 1, 1, 1);
 
-        var cut = RenderComponent<Datasheet>(parameters =>
+        var cut = Render<Datasheet>(parameters =>
         {
             parameters.Add(p => p.Sheet, sheet);
             parameters.Add(p => p.ShowColHeadings, false);
@@ -625,7 +625,7 @@
         var sheet = new Sheet(4, 4);
         sheet.Selection.Set(new Region(0, 0));
 
-        var editableCut = RenderComponent<Datasheet>(parameters =>
+        var editableCut = Render<Datasheet>(parameters =>
         {
             parameters.Add(p => p.Sheet, sheet);
             parameters.Add(p => p.ShowColHeadings, false);
@@ -635,7 +635,7 @@
         });
         editableCut.FindAll("#auto-filler").Count.Should().BeGreaterThan(0);
 
-        var readOnlyCut = RenderComponent<Datasheet>(parameters =>
+        var readOnlyCut = Render<Datasheet>(parameters =>
         {
             parameters.Add(p => p.Sheet, sheet);
             parameters.Add(p => p.ShowColHeadings, false);
@@ -651,14 +651,14 @@
     {
         var sheet = new Sheet(4, 4);
 
-        var hiddenCut = RenderComponent<Datasheet>(parameters =>
+        var hiddenCut = Render<Datasheet>(parameters =>
         {
             parameters.Add(p => p.Sheet, sheet);
             parameters.Add(p => p.ShowFormulaDependents, false);
         });
         hiddenCut.FindAll("#svg_layer").Count.Should().Be(0);
 
-        var visibleCut = RenderComponent<Datasheet>(parameters =>
+        var visibleCut = Render<Datasheet>(parameters =>
         {
             parameters.Add(p => p.Sheet, sheet);
             parameters.Add(p => p.ShowFormulaDependents, true);
@@ -671,7 +671,7 @@
     {
         var sheet = new Sheet(4, 4);
         sheet.Selection.Set(new Region(0, 0));
-        var cut = RenderComponent<Datasheet>(parameters =>
+        var cut = Render<Datasheet>(parameters =>
         {
             parameters.Add(p => p.Sheet, sheet);
             parameters.Add(p => p.UseAutoFill, false);
@@ -681,7 +681,7 @@
         cut.FindAll("#auto-filler").Should().BeEmpty();
         cut.FindAll("#svg_layer").Should().BeEmpty();
 
-        cut.SetParametersAndRender(parameters =>
+        cut.Render(parameters =>
         {
             parameters.Add(p => p.UseAutoFill, true);
             parameters.Add(p => p.ShowFormulaDependents, true);
@@ -695,7 +695,7 @@
     public async Task Datasheet_Runtime_ShowFormula_Change_ReRenders_Existing_Cells()
     {
         var sheet = new Sheet(1, 1);
-        var cut = RenderComponent<Datasheet>(parameters =>
+        var cut = Render<Datasheet>(parameters =>
         {
             parameters.Add(p => p.Sheet, sheet);
             parameters.Add(p => p.ShowFormula, false);
@@ -709,7 +709,7 @@
 
         cut.Find("div.bds-sheet-cell .bds-cell-container").TextContent.Should().Be("2");
 
-        cut.SetParametersAndRender(parameters => parameters.Add(p => p.ShowFormula, true));
+        cut.Render(parameters => parameters.Add(p => p.ShowFormula, true));
 
         cut.Find("div.bds-sheet-cell .bds-cell-container").TextContent.Should().Be("=1+1");
     }
@@ -718,7 +718,7 @@
     public async Task Datasheet_ShowFormula_Overrides_Typed_Cell_Renderer()
     {
         var sheet = new Sheet(1, 1);
-        var cut = RenderComponent<Datasheet>(parameters =>
+        var cut = Render<Datasheet>(parameters =>
         {
             parameters.Add(p => p.Sheet, sheet);
             parameters.Add(p => p.ShowFormula, true);
@@ -742,7 +742,7 @@
         sheet.Cells.SetValue(0, 0, true);
         sheet.Cells[0, 0]!.Type = "boolean";
         sheet.Cells.SetValue(0, 1, 1.234567);
-        var cut = RenderComponent<Datasheet>(parameters =>
+        var cut = Render<Datasheet>(parameters =>
         {
             parameters.Add(p => p.Sheet, sheet);
             parameters.Add(p => p.IsReadOnly, false);
@@ -758,7 +758,7 @@
         cut.Find("input[type='checkbox']").HasAttribute("disabled").Should().BeFalse();
         cut.Find("div.bds-sheet-cell[data-col='1'] .bds-cell-container").TextContent.Should().Be("1.23");
 
-        cut.SetParametersAndRender(parameters =>
+        cut.Render(parameters =>
         {
             parameters.Add(p => p.IsReadOnly, true);
             parameters.Add(p => p.NumberPrecisionDisplay, 4);
@@ -774,7 +774,7 @@
         var sheet = new Sheet(1, 1);
         sheet.Cells.SetValue(0, 0, true);
         sheet.Cells[0, 0]!.Type = "custom";
-        var cut = RenderComponent<Datasheet>(parameters =>
+        var cut = Render<Datasheet>(parameters =>
         {
             parameters.Add(p => p.Sheet, sheet);
             parameters.Add(p => p.CustomCellTypeDefinitions, new Dictionary<string, CellTypeDefinition>
@@ -791,7 +791,7 @@
 
         cut.FindAll("input[type='checkbox']").Should().BeEmpty();
 
-        cut.SetParametersAndRender(parameters => parameters.Add(
+        cut.Render(parameters => parameters.Add(
             p => p.CustomCellTypeDefinitions,
             new Dictionary<string, CellTypeDefinition>
             {
@@ -806,11 +806,11 @@
     {
         var oldSheet = new Sheet(2, 2);
         var newSheet = new Sheet(2, 2);
-        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, oldSheet));
+        var cut = Render<Datasheet>(parameters => parameters.Add(p => p.Sheet, oldSheet));
 
         CountEventHandlers<HeadingRenderer>(oldSheet.Selection, "SelectionChanged").Should().BeGreaterThan(0);
 
-        cut.SetParametersAndRender(parameters => parameters.Add(p => p.Sheet, newSheet));
+        cut.Render(parameters => parameters.Add(p => p.Sheet, newSheet));
 
         CountEventHandlers<HeadingRenderer>(oldSheet.Selection, "SelectionChanged").Should().Be(0);
         CountEventHandlers<HeadingRenderer>(newSheet.Selection, "SelectionChanged").Should().BeGreaterThan(0);
@@ -822,7 +822,7 @@
         var sheet = new Sheet(3, 3);
         sheet.Rows.Hide(0, 3);
 
-        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+        var cut = Render<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
         cut.FindComponents<EditorLayer>().Should().BeEmpty();
 
         await cut.InvokeAsync(() => sheet.Rows.Unhide(0, 3));
@@ -842,7 +842,7 @@
     public void Editor_Layer_Disposal_Removes_Editor_Subscriptions()
     {
         var sheet = new Sheet(3, 3);
-        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+        var cut = Render<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
 
         CountEventHandlers<EditorLayer>(sheet.Editor, "EditBegin").Should().BeGreaterThan(0);
         CountEventHandlers<EditorLayer>(sheet.Editor, "EditFinished").Should().BeGreaterThan(0);
@@ -860,7 +860,7 @@
     public void Datasheet_Disposal_Removes_Render_Layer_Subscriptions()
     {
         var sheet = new Sheet(2, 2);
-        var cut = RenderComponent<Datasheet>(parameters =>
+        var cut = Render<Datasheet>(parameters =>
         {
             parameters.Add(p => p.Sheet, sheet);
             parameters.Add(p => p.ShowFormulaDependents, true);
@@ -892,7 +892,7 @@
     {
         var sheet = new Sheet(2, 3);
         sheet.Cells.Merge(new Region(0, 1, 0, 2));
-        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+        var cut = Render<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
         var mergedContent = () => cut.Find(".merged-cell > div");
 
         mergedContent().GetAttribute("style").Should().Contain($"width: {sheet.Columns.GetVisualWidthBetween(0, 3)}px");
@@ -914,7 +914,7 @@
     public async Task Datasheet_Tracks_Sheet_Selection_AutoScroll_State()
     {
         var sheet = new Sheet(4, 4);
-        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+        var cut = Render<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
         var autoScrollState = GetAutoScrollState(cut.Instance);
 
         autoScrollState.IsSheetSelectionActive.Should().BeFalse();
@@ -939,7 +939,7 @@
         var sheet = new Sheet(4, 4);
         sheet.Cells[0, 0]!.Type = "tracking";
 
-        var cut = RenderComponent<Datasheet>(parameters =>
+        var cut = Render<Datasheet>(parameters =>
         {
             parameters.Add(p => p.Sheet, sheet);
             parameters.Add(p => p.CustomCellTypeDefinitions, new Dictionary<string, CellTypeDefinition>
@@ -968,7 +968,7 @@
     {
         var sheet = new Sheet(3, 3);
 
-        var cut = RenderComponent<Datasheet>(parameters =>
+        var cut = Render<Datasheet>(parameters =>
         {
             parameters.Add(p => p.Sheet, sheet);
             parameters.Add(p => p.ShowColHeadings, false);
@@ -1008,7 +1008,7 @@
     public void Datasheet_Without_Column_Groups_Does_Not_Render_Group_Band()
     {
         var sheet = new Sheet(3, 4);
-        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+        var cut = Render<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
 
         cut.FindAll("div.bds-col-group-row").Should().BeEmpty();
         cut.FindAll("div.bds-col-group-head").Should().BeEmpty();
@@ -1020,7 +1020,7 @@
         var sheet = new Sheet(3, 4);
         sheet.Columns.SetSize(0, 90);
         sheet.Columns.SetGroup(0, 1, "Q1");
-        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+        var cut = Render<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
 
         var group = cut.Find("div.bds-col-group-head");
         group.TextContent.Trim().Should().Be("Q1");
@@ -1044,7 +1044,7 @@
         var sheet = new Sheet(3, 4);
         sheet.Columns.SetGroup(0, 1, "Hidden");
         sheet.Columns.SetGroup(2, 3, "Shown");
-        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+        var cut = Render<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
 
         await cut.InvokeAsync(() => sheet.Columns.Hide(0, 2));
 
@@ -1061,7 +1061,7 @@
     {
         var sheet = new Sheet(3, 4);
         sheet.Columns.SetGroup(1, 2, "G");
-        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+        var cut = Render<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
 
         await cut.Find("div.bds-col-group-head").MouseDownAsync(new MouseEventArgs());
 
@@ -1085,7 +1085,7 @@
     {
         var sheet = new Sheet(3, 4);
         sheet.Columns.SetGroup(1, 2, "G");
-        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+        var cut = Render<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
 
         await cut.InvokeAsync(() => sheet.Editor.BeginEdit(0, 0));
         sheet.Editor.IsEditing.Should().BeTrue();
@@ -1103,7 +1103,7 @@
     {
         var sheet = new Sheet(3, 4);
         sheet.Columns.SetGroup(0, 3, "G");
-        var cut = RenderComponent<Datasheet>(parameters =>
+        var cut = Render<Datasheet>(parameters =>
         {
             parameters.Add(p => p.Sheet, sheet);
             parameters.Add(p => p.ColumnGroupTemplate,
@@ -1119,7 +1119,7 @@
         var sheet = new Sheet(3, 5);
         sheet.FreezeLeftColumns(1);
         sheet.Columns.SetGroup(2, 3, "G");
-        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+        var cut = Render<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
 
         var frozenPanes = cut.FindAll("div.bds-col-group-row div.bds-frozen-left div.bds-col-group-pane");
         frozenPanes.Should().HaveCount(1);
@@ -1132,7 +1132,7 @@
         var sheet = new Sheet(3, 6);
         sheet.Columns.SetGroup(0, 1, "A");
         sheet.Columns.SetGroup(3, 4, "B");
-        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+        var cut = Render<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
 
         var groups = cut.FindAll("div.bds-col-group-head");
         groups.Should().HaveCount(2);
@@ -1154,7 +1154,7 @@
         var sheet = new Sheet(3, 5);
         sheet.FreezeLeftColumns(1);
         sheet.Columns.SetGroup(0, 2, "G");
-        var cut = RenderComponent<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+        var cut = Render<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
 
         var groups = cut.FindAll("div.bds-col-group-head");
         groups.Should().HaveCount(2);

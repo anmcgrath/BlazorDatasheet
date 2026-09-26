@@ -1,22 +1,22 @@
+using System.Threading.Tasks;
 using System.Linq;
 using BlazorDatasheet.Edit.DefaultComponents;
 using BlazorDatasheet.Formula.Core.Interpreter;
 using Bunit;
 using FluentAssertions;
 using NUnit.Framework;
-using TestContext = Bunit.TestContext;
 
 namespace BlazorDatasheet.Test.Render;
 
 public class HighlightedInputFocusTests
 {
     [Test]
-    public void Initial_Focus_Is_Requested_After_Highlighter_Creation_With_Ownership_Check()
+    public async Task Initial_Focus_Is_Requested_After_Highlighter_Creation_With_Ownership_Check()
     {
-        using var context = new TestContext();
+        await using var context = new BunitContext();
         context.JSInterop.Mode = JSRuntimeMode.Loose;
         context.JSInterop.SetupModule(x => x.Identifier == "createHighlighter");
-        context.RenderComponent<HighlightedInput>(p => p
+        context.Render<HighlightedInput>(p => p
             .Add(x => x.Value, "InitialKey")
             .Add(x => x.FormulaOptions, new FormulaOptions()));
         var calls = context.JSInterop.Invocations.ToList();
@@ -27,17 +27,17 @@ public class HighlightedInputFocusTests
         calls[focused].Arguments.Should().Equal(true);
     }
     [Test]
-    public void Editor_Readiness_Applies_Initial_Key_Before_Requesting_Focus()
+    public async Task Editor_Readiness_Applies_Initial_Key_Before_Requesting_Focus()
     {
-        using var context = new TestContext();
+        await using var context = new BunitContext();
         context.JSInterop.Mode = JSRuntimeMode.Loose;
         context.JSInterop.SetupModule(x => x.Identifier == "createHighlighter");
-        var input = context.RenderComponent<HighlightedInput>(p => p
+        var input = context.Render<HighlightedInput>(p => p
             .Add(x => x.Value, "")
             .Add(x => x.ReadyToFocus, false)
             .Add(x => x.FormulaOptions, new FormulaOptions()));
         context.JSInterop.Invocations.Should().NotContain(x => x.Identifier == "focusAndMoveCursorToEnd");
-        input.SetParametersAndRender(p => p.Add(x => x.Value, "H").Add(x => x.ReadyToFocus, true));
+        input.Render(p => p.Add(x => x.Value, "H").Add(x => x.ReadyToFocus, true));
         var calls = context.JSInterop.Invocations.ToList();
         calls.FindIndex(x => x.Identifier == "setInputText").Should().BeLessThan(
             calls.FindIndex(x => x.Identifier == "focusAndMoveCursorToEnd"));

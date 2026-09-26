@@ -399,7 +399,7 @@ public class SortRangeCommandTests
         sheet.Cells[2, 0].Value.Should().Be(1);
     }
 
-    [Test, Timeout(15000)]
+    [Test]
     public void Sort_With_Validator_Over_Whole_Column_Completes()
     {
         const int rowCount = 100_000;

@@ -14,7 +14,7 @@
         var sheet = new Sheet(5, 5);
         var layout = new CellLayoutProvider(sheet);
 
-        var cut = RenderComponent<Virtualise2D>(parameters =>
+        var cut = Render<Virtualise2D>(parameters =>
         {
             parameters.Add(p => p.LayoutProvider, layout);
             parameters.Add(p => p.ViewRegion, new Region(0, 4, 0, 4));
@@ -38,7 +38,7 @@
         var sheet = new Sheet(5, 5);
         var layout = new CellLayoutProvider(sheet);
 
-        var cut = RenderComponent<Virtualise2D>(parameters =>
+        var cut = Render<Virtualise2D>(parameters =>
         {
             parameters.Add(p => p.LayoutProvider, layout);
             parameters.Add(p => p.ViewRegion, new Region(0, 4, 0, 4));

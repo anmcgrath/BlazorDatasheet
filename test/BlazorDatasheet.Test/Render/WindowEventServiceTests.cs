@@ -30,7 +30,7 @@ public class WindowEventServiceTests
     [Test]
     public async Task Registering_An_Event_Again_Replaces_The_Previous_Handler()
     {
-        using var context = new Bunit.TestContext();
+        await using var context = new Bunit.BunitContext();
         context.JSInterop.Mode = Bunit.JSRuntimeMode.Loose;
         await using var service = new WindowEventService(context.JSInterop.JSRuntime);
         var oldCalls = 0;

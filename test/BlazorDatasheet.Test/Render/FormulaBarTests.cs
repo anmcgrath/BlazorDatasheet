@@ -9,15 +9,14 @@ using Bunit;
 using FluentAssertions;
 using Microsoft.AspNetCore.Components.Web;
 using NUnit.Framework;
-using TestContext = Bunit.TestContext;
 
 namespace BlazorDatasheet.Test.Render;
 
 public class FormulaBarTests
 {
-    private static TestContext CreateContext()
+    private static BunitContext CreateContext()
     {
-        var context = new TestContext();
+        var context = new BunitContext();
         context.JSInterop.Mode = JSRuntimeMode.Loose;
         context.JSInterop.SetupModule(x => x.Identifier == "getVirtualiser")
             .Setup<Rect>(x => x.Identifier == "calculateViewRect").SetResult(new Rect(0, 0, 500, 500));
@@ -36,11 +35,11 @@ public class FormulaBarTests
     [Test]
     public async Task Shows_The_Formula_Or_Value_Of_The_Active_Cell()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(5, 5);
         sheet.Cells[0, 0].Value = 5;
         sheet.Cells[1, 0].Formula = "=A1*2";
-        var bar = context.RenderComponent<FormulaBar>(p => p.Add(x => x.Sheet, sheet));
+        var bar = context.Render<FormulaBar>(p => p.Add(x => x.Sheet, sheet));
 
         ShownValue(bar).Should().BeEmpty();
 
@@ -56,7 +55,7 @@ public class FormulaBarTests
         var other = new Sheet(2, 2);
         other.Cells[0, 0].Value = "other";
         other.Selection.Set(0, 0);
-        bar.SetParametersAndRender(p => p.Add(x => x.Sheet, other));
+        bar.Render(p => p.Add(x => x.Sheet, other));
         ShownValue(bar).Should().Be("other");
 
         await bar.InvokeAsync(() => sheet.Selection.Set(0, 0));
@@ -66,10 +65,10 @@ public class FormulaBarTests
     [Test]
     public async Task Editing_From_The_Bar_Edits_The_Active_Cell_And_Enter_Moves_On()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(5, 5);
-        var datasheet = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, sheet));
-        var bar = context.RenderComponent<FormulaBar>(p => p.Add(x => x.Sheet, sheet));
+        var datasheet = context.Render<Datasheet>(p => p.Add(x => x.Sheet, sheet));
+        var bar = context.Render<FormulaBar>(p => p.Add(x => x.Sheet, sheet));
 
         context.JSInterop.Invocations.Should().Contain(x => x.Identifier == "addExternalEditor",
             "the bar is part of the sheet as far as focus goes");
@@ -98,10 +97,10 @@ public class FormulaBarTests
     [Test]
     public async Task Typing_In_The_Cell_Is_Mirrored_In_The_Bar()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(5, 5);
-        var datasheet = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, sheet));
-        var bar = context.RenderComponent<FormulaBar>(p => p.Add(x => x.Sheet, sheet));
+        var datasheet = context.Render<Datasheet>(p => p.Add(x => x.Sheet, sheet));
+        var bar = context.Render<FormulaBar>(p => p.Add(x => x.Sheet, sheet));
 
         await datasheet.InvokeAsync(() =>
         {
@@ -119,11 +118,11 @@ public class FormulaBarTests
     [Test]
     public async Task Text_Typed_When_The_Cell_Cannot_Be_Edited_Is_Put_Back()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(5, 5);
         sheet.Cells[0, 0].Value = "fixed";
-        var datasheet = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, sheet).Add(x => x.IsReadOnly, true));
-        var bar = context.RenderComponent<FormulaBar>(p => p.Add(x => x.Sheet, sheet));
+        var datasheet = context.Render<Datasheet>(p => p.Add(x => x.Sheet, sheet).Add(x => x.IsReadOnly, true));
+        var bar = context.Render<FormulaBar>(p => p.Add(x => x.Sheet, sheet));
 
         await datasheet.InvokeAsync(() => sheet.Selection.Set(0, 0));
         await bar.InvokeAsync(() => bar.Find(".bds-formula-bar").FocusIn());
@@ -137,14 +136,14 @@ public class FormulaBarTests
     [Test]
     public async Task Bar_Stays_With_An_Edit_When_Another_Sheet_Of_The_Workbook_Is_Shown()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var workbook = new Workbook();
         var sheet = workbook.AddSheet(5, 5);
         var other = workbook.AddSheet(5, 5);
         other.Cells[0, 0].Value = "other";
         other.Selection.Set(0, 0);
-        var datasheet = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, sheet));
-        var bar = context.RenderComponent<FormulaBar>(p => p.Add(x => x.Sheet, sheet));
+        var datasheet = context.Render<Datasheet>(p => p.Add(x => x.Sheet, sheet));
+        var bar = context.Render<FormulaBar>(p => p.Add(x => x.Sheet, sheet));
 
         await datasheet.InvokeAsync(() =>
         {
@@ -153,7 +152,7 @@ public class FormulaBarTests
             sheet.Editor.EditValue = "=SUM(";
         });
 
-        bar.SetParametersAndRender(p => p.Add(x => x.Sheet, other));
+        bar.Render(p => p.Add(x => x.Sheet, other));
         ShownValue(bar).Should().Be("=SUM(");
 
         await datasheet.InvokeAsync(() => sheet.Editor.CancelEdit());
@@ -163,10 +162,10 @@ public class FormulaBarTests
     [Test]
     public async Task Disposing_The_Bar_Releases_The_Sheet_And_The_Datasheet()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(5, 5);
-        context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, sheet));
-        var bar = context.RenderComponent<FormulaBar>(p => p.Add(x => x.Sheet, sheet));
+        context.Render<Datasheet>(p => p.Add(x => x.Sheet, sheet));
+        var bar = context.Render<FormulaBar>(p => p.Add(x => x.Sheet, sheet));
 
         await bar.InvokeAsync(() => bar.Instance.DisposeAsync().AsTask());
 

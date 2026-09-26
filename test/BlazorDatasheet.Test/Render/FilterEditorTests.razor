@@ -18,7 +18,7 @@
             ["a2", "b2"],
         });
 
-        var cut = RenderComponent<ValueFilterEditor>(parameters =>
+        var cut = Render<ValueFilterEditor>(parameters =>
         {
             parameters.Add(p => p.Sheet, sheet);
             parameters.Add(p => p.ColumnIndex, 0);
@@ -27,7 +27,7 @@
 
         GetValueLabels(cut).Select(x => x.Trim()).Should().BeEquivalentTo("Select all", "a0", "a1", "a2");
 
-        cut.SetParametersAndRender(parameters =>
+        cut.Render(parameters =>
         {
             parameters.Add(p => p.ColumnIndex, 1);
             parameters.Add(p => p.Filter, new ValueFilter());

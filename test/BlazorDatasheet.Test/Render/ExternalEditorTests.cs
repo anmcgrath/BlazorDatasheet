@@ -8,7 +8,6 @@ using Bunit;
 using FluentAssertions;
 using Microsoft.AspNetCore.Components.Web;
 using NUnit.Framework;
-using TestContext = Bunit.TestContext;
 
 namespace BlazorDatasheet.Test.Render;
 
@@ -17,9 +16,9 @@ namespace BlazorDatasheet.Test.Render;
 /// </summary>
 public class ExternalEditorTests
 {
-    private static TestContext CreateContext()
+    private static BunitContext CreateContext()
     {
-        var context = new TestContext();
+        var context = new BunitContext();
         context.JSInterop.Mode = JSRuntimeMode.Loose;
         context.JSInterop.SetupModule(x => x.Identifier == "getVirtualiser")
             .Setup<Rect>(x => x.Identifier == "calculateViewRect").SetResult(new Rect(0, 0, 500, 500));
@@ -31,7 +30,7 @@ public class ExternalEditorTests
     [Test]
     public async Task Datasheets_Showing_A_Sheet_Are_Found_From_The_Sheet()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(3, 3);
         var other = new Sheet(3, 3);
         var changes = 0;
@@ -39,8 +38,8 @@ public class ExternalEditorTests
 
         DatasheetRegistry.For(sheet).Active.Should().BeNull();
 
-        var first = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, sheet));
-        var second = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, sheet));
+        var first = context.Render<Datasheet>(p => p.Add(x => x.Sheet, sheet));
+        var second = context.Render<Datasheet>(p => p.Add(x => x.Sheet, sheet));
         changes.Should().Be(2);
         DatasheetRegistry.For(sheet).Datasheets.Should().Equal(first.Instance, second.Instance);
         DatasheetRegistry.For(sheet).Active.Should().BeSameAs(second.Instance);
@@ -48,7 +47,7 @@ public class ExternalEditorTests
         await first.InvokeAsync(() => first.Instance.SetActiveAsync());
         DatasheetRegistry.For(sheet).Active.Should().BeSameAs(first.Instance);
 
-        first.SetParametersAndRender(p => p.Add(x => x.Sheet, other));
+        first.Render(p => p.Add(x => x.Sheet, other));
         DatasheetRegistry.For(sheet).Datasheets.Should().Equal(second.Instance);
         DatasheetRegistry.For(other).Active.Should().BeSameAs(first.Instance);
 
@@ -59,9 +58,9 @@ public class ExternalEditorTests
     [Test]
     public async Task Edit_Begun_And_Finished_From_Outside_Behaves_As_It_Does_In_The_Sheet()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(5, 5);
-        var component = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, sheet));
+        var component = context.Render<Datasheet>(p => p.Add(x => x.Sheet, sheet));
 
         await component.InvokeAsync(async () =>
         {
@@ -99,9 +98,9 @@ public class ExternalEditorTests
     [Test]
     public async Task Read_Only_Datasheet_Does_Not_Begin_An_Edit_From_Outside()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(5, 5);
-        var component = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, sheet).Add(x => x.IsReadOnly, true));
+        var component = context.Render<Datasheet>(p => p.Add(x => x.Sheet, sheet).Add(x => x.IsReadOnly, true));
 
         await component.InvokeAsync(async () =>
         {
@@ -115,8 +114,8 @@ public class ExternalEditorTests
     [Test]
     public async Task External_Editor_Elements_Are_Registered_With_The_Window_Events()
     {
-        using var context = CreateContext();
-        var component = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, new Sheet(2, 2)));
+        await using var context = CreateContext();
+        var component = context.Render<Datasheet>(p => p.Add(x => x.Sheet, new Sheet(2, 2)));
 
         await component.InvokeAsync(() => component.Instance.RegisterExternalEditorAsync(default));
         await component.InvokeAsync(() => component.Instance.UnregisterExternalEditorAsync(default));

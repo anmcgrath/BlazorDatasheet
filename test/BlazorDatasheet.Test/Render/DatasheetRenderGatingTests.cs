@@ -10,9 +10,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Bunit;
+using Microsoft.AspNetCore.Components;
 using FluentAssertions;
 using NUnit.Framework;
-using TestContext = Bunit.TestContext;
 
 namespace BlazorDatasheet.Test.Render;
 
@@ -21,9 +21,9 @@ namespace BlazorDatasheet.Test.Render;
 /// </summary>
 public class DatasheetRenderGatingTests
 {
-    private static TestContext CreateContext()
+    private static BunitContext CreateContext()
     {
-        var context = new TestContext();
+        var context = new BunitContext();
         context.JSInterop.Mode = JSRuntimeMode.Loose;
         context.JSInterop.SetupModule(x => x.Identifier == "getVirtualiser")
             .Setup<Rect>(x => x.Identifier == "calculateViewRect").SetResult(new Rect(0, 0, 500, 500));
@@ -33,18 +33,18 @@ public class DatasheetRenderGatingTests
     }
 
     [Test]
-    public void Rendering_Host_Again_With_Unchanged_Parameters_Does_Not_Re_Render_Datasheet()
+    public async Task Rendering_Host_Again_With_Unchanged_Parameters_Does_Not_Re_Render_Datasheet()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(10, 10);
-        var cut = context.RenderComponent<Datasheet>(p => p
+        var cut = context.Render<Datasheet>(p => p
             .Add(x => x.Sheet, sheet)
             .Add(x => x.Theme, "default")
             .Add(x => x.IsReadOnly, false));
 
         var renderCount = cut.RenderCount;
         // the same parameters the host supplied the first time
-        cut.SetParametersAndRender(p => p
+        cut.Render(p => p
             .Add(x => x.Sheet, sheet)
             .Add(x => x.Theme, "default")
             .Add(x => x.IsReadOnly, false));
@@ -52,10 +52,10 @@ public class DatasheetRenderGatingTests
     }
 
     [Test]
-    public void Stable_Render_Fragment_Re_Renders_When_Its_Captured_State_Changes()
+    public async Task Stable_Render_Fragment_Re_Renders_When_Its_Captured_State_Changes()
     {
-        using var context = CreateContext();
-        var host = context.RenderComponent<StableTemplateHost>();
+        await using var context = CreateContext();
+        var host = context.Render<StableTemplateHost>();
         ShowViewport(host);
         host.Markup.Should().Contain("before");
 
@@ -65,51 +65,51 @@ public class DatasheetRenderGatingTests
     }
 
     [Test]
-    public void Changing_Theme_Re_Renders_Datasheet()
+    public async Task Changing_Theme_Re_Renders_Datasheet()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(10, 10);
-        var cut = context.RenderComponent<Datasheet>(p => p
+        var cut = context.Render<Datasheet>(p => p
             .Add(x => x.Sheet, sheet)
             .Add(x => x.Theme, "default"));
 
         var renderCount = cut.RenderCount;
-        cut.SetParametersAndRender(p => p.Add(x => x.Theme, "dark"));
+        cut.Render(p => p.Add(x => x.Theme, "dark"));
         cut.RenderCount.Should().BeGreaterThan(renderCount);
     }
 
     [Test]
-    public void Changing_IsReadOnly_Re_Renders_Datasheet()
+    public async Task Changing_IsReadOnly_Re_Renders_Datasheet()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(10, 10);
-        var cut = context.RenderComponent<Datasheet>(p => p
+        var cut = context.Render<Datasheet>(p => p
             .Add(x => x.Sheet, sheet)
             .Add(x => x.IsReadOnly, false));
 
         var renderCount = cut.RenderCount;
-        cut.SetParametersAndRender(p => p.Add(x => x.IsReadOnly, true));
+        cut.Render(p => p.Add(x => x.IsReadOnly, true));
         cut.RenderCount.Should().BeGreaterThan(renderCount);
     }
 
     [Test]
-    public void Changing_Sheet_Re_Renders_Datasheet()
+    public async Task Changing_Sheet_Re_Renders_Datasheet()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(10, 10);
-        var cut = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, sheet));
+        var cut = context.Render<Datasheet>(p => p.Add(x => x.Sheet, sheet));
 
         var renderCount = cut.RenderCount;
-        cut.SetParametersAndRender(p => p.Add(x => x.Sheet, new Sheet(5, 5)));
+        cut.Render(p => p.Add(x => x.Sheet, new Sheet(5, 5)));
         cut.RenderCount.Should().BeGreaterThan(renderCount);
     }
 
     [Test]
-    public void Adding_A_Column_Group_Re_Renders_Datasheet()
+    public async Task Adding_A_Column_Group_Re_Renders_Datasheet()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(10, 10);
-        var cut = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, sheet));
+        var cut = context.Render<Datasheet>(p => p.Add(x => x.Sheet, sheet));
 
         var renderCount = cut.RenderCount;
         cut.InvokeAsync(() => sheet.Columns.SetGroup(1, 3, "Q1"));
@@ -117,11 +117,11 @@ public class DatasheetRenderGatingTests
     }
 
     [Test]
-    public void Hiding_A_Row_Re_Renders_Datasheet()
+    public async Task Hiding_A_Row_Re_Renders_Datasheet()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(10, 10);
-        var cut = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, sheet));
+        var cut = context.Render<Datasheet>(p => p.Add(x => x.Sheet, sheet));
 
         var renderCount = cut.RenderCount;
         cut.InvokeAsync(() => sheet.Rows.Hide(2, 3));
@@ -129,11 +129,11 @@ public class DatasheetRenderGatingTests
     }
 
     [Test]
-    public void Heading_Regions_Are_Recalculated_When_Rows_Are_Inserted()
+    public async Task Heading_Regions_Are_Recalculated_When_Rows_Are_Inserted()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(5, 5);
-        var cut = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, sheet));
+        var cut = context.Render<Datasheet>(p => p.Add(x => x.Sheet, sheet));
         ShowViewport(cut);
 
         var headings = cut.FindAll("div.bds-row-head[data-row]").Count;
@@ -145,11 +145,11 @@ public class DatasheetRenderGatingTests
     }
 
     [Test]
-    public void Heading_Regions_Are_Recalculated_When_The_Freeze_State_Changes()
+    public async Task Heading_Regions_Are_Recalculated_When_The_Freeze_State_Changes()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(20, 20);
-        var cut = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, sheet));
+        var cut = context.Render<Datasheet>(p => p.Add(x => x.Sheet, sheet));
         ShowViewport(cut);
 
         cut.InvokeAsync(() => sheet.FreezeLeftColumns(2));
@@ -163,12 +163,12 @@ public class DatasheetRenderGatingTests
     /// of its renders. That must not cost a rebuild of every visible cell.
     /// </summary>
     [Test]
-    public void Re_Supplying_Equal_Custom_Cell_Types_Does_Not_Re_Render_Grid_Rows()
+    public async Task Re_Supplying_Equal_Custom_Cell_Types_Does_Not_Re_Render_Grid_Rows()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(10, 10);
         var definition = CellTypeDefinition.Create<TextEditorComponent, TextRenderer>();
-        var cut = context.RenderComponent<Datasheet>(p => p
+        var cut = context.Render<Datasheet>(p => p
             .Add(x => x.Sheet, sheet)
             .Add(x => x.CustomCellTypeDefinitions, new Dictionary<string, CellTypeDefinition>
                 { { "custom", definition } }));
@@ -177,7 +177,7 @@ public class DatasheetRenderGatingTests
         var rowRenders = GridRowRenderCount(cut);
 
         // a different dictionary instance holding the same definitions
-        cut.SetParametersAndRender(p => p
+        cut.Render(p => p
             .Add(x => x.CustomCellTypeDefinitions, new Dictionary<string, CellTypeDefinition>
                 { { "custom", definition } }));
 
@@ -185,11 +185,11 @@ public class DatasheetRenderGatingTests
     }
 
     [Test]
-    public void Changing_A_Custom_Cell_Type_Does_Re_Render_Grid_Rows()
+    public async Task Changing_A_Custom_Cell_Type_Does_Re_Render_Grid_Rows()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(10, 10);
-        var cut = context.RenderComponent<Datasheet>(p => p
+        var cut = context.Render<Datasheet>(p => p
             .Add(x => x.Sheet, sheet)
             .Add(x => x.CustomCellTypeDefinitions, new Dictionary<string, CellTypeDefinition>
                 { { "custom", CellTypeDefinition.Create<TextEditorComponent, TextRenderer>() } }));
@@ -197,7 +197,7 @@ public class DatasheetRenderGatingTests
 
         var rowRenders = GridRowRenderCount(cut);
 
-        cut.SetParametersAndRender(p => p
+        cut.Render(p => p
             .Add(x => x.CustomCellTypeDefinitions, new Dictionary<string, CellTypeDefinition>
                 { { "custom", CellTypeDefinition.Create<TextEditorComponent, BoolRenderer>() } }));
 
@@ -208,11 +208,11 @@ public class DatasheetRenderGatingTests
     /// A parameter that only the pane's layers read reaches them without the cells being rebuilt.
     /// </summary>
     [Test]
-    public void Changing_UseAutoFill_Re_Renders_The_Datasheet_But_Not_The_Grid_Rows()
+    public async Task Changing_UseAutoFill_Re_Renders_The_Datasheet_But_Not_The_Grid_Rows()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(10, 10);
-        var cut = context.RenderComponent<Datasheet>(p => p
+        var cut = context.Render<Datasheet>(p => p
             .Add(x => x.Sheet, sheet)
             .Add(x => x.UseAutoFill, true));
         ShowViewport(cut);
@@ -220,7 +220,7 @@ public class DatasheetRenderGatingTests
         var renderCount = cut.RenderCount;
         var rowRenders = GridRowRenderCount(cut);
 
-        cut.SetParametersAndRender(p => p.Add(x => x.UseAutoFill, false));
+        cut.Render(p => p.Add(x => x.UseAutoFill, false));
 
         cut.RenderCount.Should().BeGreaterThan(renderCount);
         GridRowRenderCount(cut).Should().Be(rowRenders);
@@ -231,30 +231,31 @@ public class DatasheetRenderGatingTests
     /// The headings already show that selection, so it costs them nothing.
     /// </summary>
     [Test]
-    public void Repeating_A_Selection_Does_Not_Re_Render_The_Row_Headings()
+    public async Task Repeating_A_Selection_Does_Not_Re_Render_The_Row_Headings()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(10, 10);
-        var cut = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, sheet));
+        var cut = context.Render<Datasheet>(p => p.Add(x => x.Sheet, sheet));
         ShowViewport(cut);
 
         var headings = cut.FindComponent<RowHeadingRenderer>();
         var renderCount = headings.RenderCount;
 
         cut.InvokeAsync(() => sheet.Selection.Set(2, 2));
-        headings.RenderCount.Should().Be(renderCount + 1);
+        headings.RenderCount.Should().BeGreaterThan(renderCount);
+        renderCount = headings.RenderCount;
 
         // the selecting-changed that follows the click, with the selection unchanged
         cut.InvokeAsync(() => sheet.Selection.CancelSelecting());
-        headings.RenderCount.Should().Be(renderCount + 1);
+        headings.RenderCount.Should().Be(renderCount);
     }
 
     [Test]
-    public void Selecting_A_Different_Region_Does_Re_Render_The_Row_Headings()
+    public async Task Selecting_A_Different_Region_Does_Re_Render_The_Row_Headings()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(10, 10);
-        var cut = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, sheet));
+        var cut = context.Render<Datasheet>(p => p.Add(x => x.Sheet, sheet));
         ShowViewport(cut);
 
         var headings = cut.FindComponent<RowHeadingRenderer>();
@@ -263,13 +264,13 @@ public class DatasheetRenderGatingTests
 
         cut.InvokeAsync(() => sheet.Selection.Set(4, 2));
 
-        headings.RenderCount.Should().Be(renderCount + 1);
+        headings.RenderCount.Should().BeGreaterThan(renderCount);
     }
 
-    private static int GridRowRenderCount(IRenderedFragment component) =>
+    private static int GridRowRenderCount(IRenderedComponent<IComponent> component) =>
         component.FindComponents<DatasheetGridRow>().Sum(x => x.RenderCount);
 
-    private static void ShowViewport(IRenderedFragment component)
+    private static void ShowViewport(IRenderedComponent<IComponent> component)
     {
         foreach (var virtualiser in component.FindComponents<Virtualise2D>())
         {

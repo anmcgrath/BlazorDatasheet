@@ -19,7 +19,7 @@ namespace BlazorDatasheet.Test.Render;
 
 [TestFixture]
 [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
-public class AutofitLayerTests : Bunit.TestContext
+public class AutofitLayerTests : Bunit.BunitContext
 {
     private const string AutofitModulePath =
         "./_content/BlazorDatasheet/Render/Layers/AutofitLayer.razor.js";
@@ -70,7 +70,7 @@ public class AutofitLayerTests : Bunit.TestContext
             new AutofitDimensionChange { Index = 0, ExpandTo = 180 }
         ]);
 
-        cut = RenderComponent<Datasheet>(parameters => parameters.Add(component => component.Sheet, sheet));
+        cut = Render<Datasheet>(parameters => parameters.Add(component => component.Sheet, sheet));
         var layer = cut.FindComponent<AutofitLayer>();
 
         await cut.InvokeAsync(() =>
@@ -119,7 +119,7 @@ public class AutofitLayerTests : Bunit.TestContext
             new AutofitDimensionChange { Index = 1, ExpandTo = 42 }
         ]);
 
-        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(component => component.Sheet, sheet));
+        var cut = Render<Datasheet>(parameters => parameters.Add(component => component.Sheet, sheet));
         var layer = cut.FindComponent<AutofitLayer>();
 
         var firstAutofit = cut.InvokeAsync(() =>
@@ -183,7 +183,7 @@ public class AutofitLayerTests : Bunit.TestContext
                 new AutofitDimensionChange { Index = 1, ExpandTo = 42 }
             ]);
 
-        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(component => component.Sheet, sheet));
+        var cut = Render<Datasheet>(parameters => parameters.Add(component => component.Sheet, sheet));
         var layer = cut.FindComponent<AutofitLayer>();
 
         await cut.InvokeAsync(() =>
@@ -225,7 +225,7 @@ public class AutofitLayerTests : Bunit.TestContext
         var rowMeasurement = module.Setup<AutofitDimensionChange[]>("measureAutofitChanges", invocation =>
             invocation.Arguments[1] as string == "row");
 
-        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(component => component.Sheet, sheet));
+        var cut = Render<Datasheet>(parameters => parameters.Add(component => component.Sheet, sheet));
         var layer = cut.FindComponent<AutofitLayer>();
 
         var autofit = cut.InvokeAsync(() =>
@@ -272,7 +272,7 @@ public class AutofitLayerTests : Bunit.TestContext
         var rowMeasurement = module.Setup<AutofitDimensionChange[]>("measureAutofitChanges", invocation =>
             invocation.Arguments[1] as string == "row");
 
-        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(component => component.Sheet, sheet));
+        var cut = Render<Datasheet>(parameters => parameters.Add(component => component.Sheet, sheet));
         var layer = cut.FindComponent<AutofitLayer>();
 
         _ = cut.InvokeAsync(() => layer.Instance.AutoFit(sheet.Region, AutofitMethod.ExpandOnly));
@@ -283,7 +283,7 @@ public class AutofitLayerTests : Bunit.TestContext
             sheet.Columns.GetPhysicalWidth(0).Should().Be(160);
         });
 
-        DisposeComponents();
+        await DisposeComponentsAsync();
 
         sheet.Columns.GetPhysicalWidth(0).Should().Be(105);
         sheet.Commands.GetUndoCommands().Should().BeEmpty();
@@ -305,7 +305,7 @@ public class AutofitLayerTests : Bunit.TestContext
                 new AutofitDimensionChange { Index = 1, ExpandTo = 42 }
             ]);
 
-        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(component => component.Sheet, sheet));
+        var cut = Render<Datasheet>(parameters => parameters.Add(component => component.Sheet, sheet));
         var layer = cut.FindComponent<AutofitLayer>();
 
         await cut.InvokeAsync(() =>
@@ -335,7 +335,7 @@ public class AutofitLayerTests : Bunit.TestContext
                 new AutofitDimensionChange { Index = 0, ExpandTo = 40 }
             ]);
 
-        var cut = RenderComponent<Datasheet>(parameters =>
+        var cut = Render<Datasheet>(parameters =>
         {
             parameters.Add(component => component.Sheet, sheet);
             parameters.Add(component => component.AutoFit, true);
@@ -365,7 +365,7 @@ public class AutofitLayerTests : Bunit.TestContext
                 new AutofitDimensionChange { Index = 1, ContractTo = 65 }
             ]);
 
-        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(component => component.Sheet, sheet));
+        var cut = Render<Datasheet>(parameters => parameters.Add(component => component.Sheet, sheet));
         var layer = cut.FindComponent<AutofitLayer>();
 
         await cut.InvokeAsync(() =>
@@ -412,7 +412,7 @@ public class AutofitLayerTests : Bunit.TestContext
                 new AutofitDimensionChange { Index = 0, ContractTo = 105 }
             ]);
 
-        cut = RenderComponent<Datasheet>(parameters => parameters.Add(component => component.Sheet, sheet));
+        cut = Render<Datasheet>(parameters => parameters.Add(component => component.Sheet, sheet));
         var layer = cut.FindComponent<AutofitLayer>();
 
         await cut.InvokeAsync(() =>
@@ -447,7 +447,7 @@ public class AutofitLayerTests : Bunit.TestContext
         });
         measurement.SetResult([]);
 
-        cut = RenderComponent<Datasheet>(parameters => parameters.Add(component => component.Sheet, sheet));
+        cut = Render<Datasheet>(parameters => parameters.Add(component => component.Sheet, sheet));
         var layer = cut.FindComponent<AutofitLayer>();
 
         await cut.InvokeAsync(() =>
@@ -469,7 +469,7 @@ public class AutofitLayerTests : Bunit.TestContext
         var module = JSInterop.SetupModule(AutofitModulePath);
         var measurement = module.Setup<AutofitDimensionChange[]>("measureAutofitChanges");
         measurement.SetResult([]);
-        var cut = RenderComponent<Datasheet>(parameters => parameters.Add(component => component.Sheet, sheet));
+        var cut = Render<Datasheet>(parameters => parameters.Add(component => component.Sheet, sheet));
         var layer = cut.FindComponent<AutofitLayer>();
 
         await cut.InvokeAsync(() =>

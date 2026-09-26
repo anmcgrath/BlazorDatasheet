@@ -15,15 +15,14 @@ using Bunit;
 using FluentAssertions;
 using Microsoft.AspNetCore.Components.Web;
 using NUnit.Framework;
-using TestContext = Bunit.TestContext;
 
 namespace BlazorDatasheet.Test.Render;
 
 public class DatasheetFormulaPickingTests
 {
-    private static TestContext CreateContext()
+    private static BunitContext CreateContext()
     {
-        var context = new TestContext();
+        var context = new BunitContext();
         context.JSInterop.Mode = JSRuntimeMode.Loose;
         context.JSInterop.SetupModule(x => x.Identifier == "getVirtualiser")
             .Setup<Rect>(x => x.Identifier == "calculateViewRect").SetResult(new Rect(0, 0, 500, 500));
@@ -34,10 +33,10 @@ public class DatasheetFormulaPickingTests
 
     private static SheetPointerEventArgs Pointer(int row, int col) => new() { Row = row, Col = col, MouseButton = 0 };
 
-    private static async Task<IRenderedComponent<Datasheet>> BeginFormulaEdit(TestContext context, Sheet sheet,
+    private static async Task<IRenderedComponent<Datasheet>> BeginFormulaEdit(BunitContext context, Sheet sheet,
         string key, Dictionary<string, CellTypeDefinition>? cellTypes = null)
     {
-        var component = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, sheet)
+        var component = context.Render<Datasheet>(p => p.Add(x => x.Sheet, sheet)
             .Add(x => x.CustomCellTypeDefinitions, cellTypes ?? new()));
         await component.InvokeAsync(() =>
         {
@@ -51,7 +50,7 @@ public class DatasheetFormulaPickingTests
     [Test]
     public async Task Dragging_Over_Cells_Writes_A_Reference_Into_The_Formula_Being_Edited()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(10, 10);
         var component = await BeginFormulaEdit(context, sheet, "=");
 
@@ -71,7 +70,7 @@ public class DatasheetFormulaPickingTests
     [Test]
     public async Task Clicking_A_Cell_Accepts_The_Edit_When_A_Reference_Cannot_Be_Picked()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(10, 10);
         var component = await BeginFormulaEdit(context, sheet, "5");
 
@@ -89,7 +88,7 @@ public class DatasheetFormulaPickingTests
     [Test]
     public async Task Arrow_Keys_Pick_A_Reference_During_A_Soft_Edit()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(10, 10);
         var component = await BeginFormulaEdit(context, sheet, "=");
 
@@ -107,7 +106,7 @@ public class DatasheetFormulaPickingTests
     [Test]
     public async Task Custom_Editor_Is_Offered_Pointer_Input_Before_Reference_Picking()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(10, 10);
         sheet.Cells[0, 0].Type = "greedy";
         var component = await BeginFormulaEdit(context, sheet, "=", new()
@@ -132,7 +131,7 @@ public class DatasheetFormulaPickingTests
     [Test]
     public async Task Sheet_Highlights_Use_The_Same_Colors_As_The_Formula_Text()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(10, 10);
         sheet.NamedRanges.Set("myName", "B2:B3");
         var component = await BeginFormulaEdit(context, sheet, "=");
@@ -151,7 +150,7 @@ public class DatasheetFormulaPickingTests
     [Test]
     public async Task References_To_Other_Sheets_Are_Not_Highlighted_But_Keep_Their_Color()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var sheet = new Sheet(10, 10);
         var component = await BeginFormulaEdit(context, sheet, "=");
 
@@ -165,12 +164,12 @@ public class DatasheetFormulaPickingTests
     [Test]
     public async Task Dragging_Over_Another_Sheet_In_The_Workbook_Writes_A_Reference_To_It()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var workbook = new Workbook();
         var sheet = workbook.AddSheet(10, 10);
         var other = workbook.AddSheet(10, 10);
         var component = await BeginFormulaEdit(context, sheet, "=");
-        var otherComponent = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, other));
+        var otherComponent = context.Render<Datasheet>(p => p.Add(x => x.Sheet, other));
         await otherComponent.InvokeAsync(() => other.Selection.Set(5, 5));
 
         await otherComponent.InvokeAsync(async () =>
@@ -198,12 +197,12 @@ public class DatasheetFormulaPickingTests
     [Test]
     public async Task Clicking_Another_Sheet_Accepts_The_Edit_When_A_Reference_Cannot_Be_Picked()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var workbook = new Workbook();
         var sheet = workbook.AddSheet(10, 10);
         var other = workbook.AddSheet(10, 10);
         var component = await BeginFormulaEdit(context, sheet, "=");
-        var otherComponent = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, other));
+        var otherComponent = context.Render<Datasheet>(p => p.Add(x => x.Sheet, other));
         await component.InvokeAsync(() => sheet.Editor.EditValue = "=5");
 
         await otherComponent.InvokeAsync(async () =>
@@ -220,13 +219,13 @@ public class DatasheetFormulaPickingTests
     [Test]
     public async Task Focus_Moving_To_Another_View_Of_The_Workbook_Does_Not_Finish_A_Formula_Edit()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var workbook = new Workbook();
         var sheet = workbook.AddSheet(10, 10);
         var other = workbook.AddSheet(10, 10);
         var component = await BeginFormulaEdit(context, sheet, "=");
-        component.SetParametersAndRender(p => p.Add(x => x.OnEditFocusLoss, EditFocusLossAction.Accept));
-        var otherComponent = context.RenderComponent<Datasheet>(p => p.Add(x => x.Sheet, other)
+        component.Render(p => p.Add(x => x.OnEditFocusLoss, EditFocusLossAction.Accept));
+        var otherComponent = context.Render<Datasheet>(p => p.Add(x => x.Sheet, other)
             .Add(x => x.OnEditFocusLoss, EditFocusLossAction.Cancel));
 
         await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = true, Active = true, Version = 1 }));
@@ -242,12 +241,12 @@ public class DatasheetFormulaPickingTests
     [Test]
     public async Task Focus_Moving_To_Another_View_Of_The_Workbook_Finishes_An_Edit_That_Is_Not_A_Formula()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var workbook = new Workbook();
         var sheet = workbook.AddSheet(10, 10);
         workbook.AddSheet(10, 10);
         var component = await BeginFormulaEdit(context, sheet, "a");
-        component.SetParametersAndRender(p => p.Add(x => x.OnEditFocusLoss, EditFocusLossAction.Accept));
+        component.Render(p => p.Add(x => x.OnEditFocusLoss, EditFocusLossAction.Accept));
 
         await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { Focused = true, Active = true, Version = 1 }));
         await component.InvokeAsync(() => component.Instance.HandleFocusChanged(new() { ToRelated = true, Version = 2 }));
