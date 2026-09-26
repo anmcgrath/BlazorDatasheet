@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Serialization.Json;
@@ -161,17 +160,68 @@ public class TrackedRangeTests
     }
 
     [Test]
-    public void Removing_Sheet_Deletes_Its_Ranges()
+    public void Removing_Sheet_Detaches_Its_Ranges_Keeping_Their_Region()
     {
         var other = _workbook.AddSheet(5, 5);
         _workbook.TrackedRanges.Track("a", other.Name, new Region(3, 1));
 
         _workbook.RemoveSheet(other.Name);
 
-        var range = _workbook.TrackedRanges.Get("a")!;
-        range.IsDeleted.Should().BeTrue();
-        range.SheetName.Should().Be(other.Name);
-        range.Region.Should().BeEquivalentTo(new Region(3, 1));
+        _workbook.TrackedRanges.Get("a").Should().BeEquivalentTo(
+            new TrackedRange("a", other.Name, new Region(3, 1), false));
+    }
+
+    [Test]
+    public void Range_Tracked_On_Missing_Sheet_Attaches_When_The_Sheet_Is_Added()
+    {
+        _workbook.TrackedRanges.Track("a", "Output", new Region(3, 1));
+        _workbook.TrackedRanges.Get("a")!.SheetName.Should().Be("Output");
+
+        var output = _workbook.AddSheet("Output", 10, 10);
+        output.Rows.InsertAt(0);
+
+        RegionOf("a").Should().BeEquivalentTo(new Region(4, 1));
+    }
+
+    [Test]
+    public void Range_Tracked_On_Missing_Sheet_Attaches_When_A_Sheet_Is_Renamed_To_It()
+    {
+        _workbook.TrackedRanges.Track("a", "Output", new Region(3, 1));
+
+        _workbook.RenameSheet(_sheet.Name, "Output");
+        _sheet.Rows.InsertAt(0);
+
+        RegionOf("a").Should().BeEquivalentTo(new Region(4, 1));
+    }
+
+    [TestCase("Track")]
+    [TestCase("Get")]
+    [TestCase("GetAll")]
+    public void Mutating_Detached_Snapshot_Does_Not_Change_Tracked_Region(string source)
+    {
+        var tracked = _workbook.TrackedRanges.Track("a", "Output", new Region(3, 1));
+        var snapshot = source switch
+        {
+            "Track" => tracked,
+            "Get" => _workbook.TrackedRanges.Get("a")!,
+            _ => _workbook.TrackedRanges.GetAll().Single()
+        };
+
+        snapshot.Region.Shift(10, 0);
+
+        RegionOf("a").Should().BeEquivalentTo(new Region(3, 1));
+        _workbook.AddSheet("Output", 20, 20);
+        RegionOf("a").Should().BeEquivalentTo(new Region(3, 1));
+    }
+
+    [Test]
+    public void Detached_Range_Does_Not_Move_With_Other_Sheets()
+    {
+        _workbook.TrackedRanges.Track("a", "Output", new Region(3, 1));
+
+        _sheet.Rows.InsertAt(0);
+
+        RegionOf("a").Should().BeEquivalentTo(new Region(3, 1));
     }
 
     [Test]
@@ -225,20 +275,12 @@ public class TrackedRangeTests
     }
 
     [Test]
-    public void Tracking_On_Missing_Sheet_Throws()
-    {
-        var act = () => _workbook.TrackedRanges.Track("a", "Missing", new Region(0, 0));
-
-        act.Should().Throw<ArgumentException>();
-    }
-
-    [Test]
     public void Tracked_Ranges_Round_Trip_Through_Serialization_Including_Deleted_Ones()
     {
         var other = _workbook.AddSheet(5, 5);
         _workbook.TrackedRanges.Track("live", _sheet.Name, new Region(2, 5, 1, 3));
         _workbook.TrackedRanges.Track("deleted", _sheet.Name, new Region(10, 1));
-        _workbook.TrackedRanges.Track("orphan", other.Name, new Region(1, 1));
+        _workbook.TrackedRanges.Track("detached", other.Name, new Region(1, 1));
         _sheet.Rows.RemoveAt(10);
         _workbook.RemoveSheet(other.Name);
 
@@ -249,8 +291,8 @@ public class TrackedRangeTests
             new TrackedRange("live", _sheet.Name, new Region(2, 5, 1, 3), false));
         restored.TrackedRanges.Get("deleted").Should().BeEquivalentTo(
             new TrackedRange("deleted", _sheet.Name, new Region(10, 1), true));
-        restored.TrackedRanges.Get("orphan").Should().BeEquivalentTo(
-            new TrackedRange("orphan", other.Name, new Region(1, 1), true));
+        restored.TrackedRanges.Get("detached").Should().BeEquivalentTo(
+            new TrackedRange("detached", other.Name, new Region(1, 1), false));
 
         // A deleted range stays deleted: a later insert does not move it back into play.
         restored.GetSheet(_sheet.Name)!.Rows.InsertAt(0);
