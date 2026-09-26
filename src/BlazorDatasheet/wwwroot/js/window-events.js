@@ -1,4 +1,6 @@
-﻿class WindowEvents {
+﻿import { watchRemoval } from "./removal-watcher.js";
+
+class WindowEvents {
     constructor(dotnetHelper) {
         this.dotnetHelper = dotnetHelper;
         this.handlerMap = {}
@@ -89,6 +91,8 @@
         if (this.disposed) return;
         this.container = container;
         this.focusHandler = handler;
+        this.unwatchRemoval?.();
+        this.unwatchRemoval = watchRemoval(container, () => this.dispose());
         this.listen(window, 'pointerdown', e => {
             const inside = this.contains(e.target);
             if (inside) this.pointerDownInside = true;
@@ -291,12 +295,15 @@
 
     async dispose() {
         this.disposed = true;
+        this.unwatchRemoval?.();
+        this.unwatchRemoval = null;
         for (const { target, name, fn, capture } of this.listeners.values())
             target.removeEventListener(name, fn, capture);
         this.listeners.clear();
         this.externalEditors.clear();
         this.handlerMap = {};
         this.preventDefaultMap = {};
+        this.dotnetHelper = null;
     }
 
     serialize(e) {

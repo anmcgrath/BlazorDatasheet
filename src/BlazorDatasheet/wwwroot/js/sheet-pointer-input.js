@@ -1,4 +1,6 @@
-﻿/**
+﻿import { watchRemoval } from "./removal-watcher.js"
+
+/**
  * @property {number} sheetX
  * @property {number} sheetY
  */
@@ -25,6 +27,11 @@ class PointerInputService {
         this.currentRow = -1
         this.currentCol = -1
         this.pointerMoveEnabled = false
+        this.onPointerUpHandler = this.onPointerUp.bind(this)
+        this.onPointerDownHandler = this.onPointerDown.bind(this)
+        this.onDoubleClickHandler = this.onDoubleClick.bind(this)
+        this.onPointerMoveHandler = this.onPointerMove.bind(this)
+        this.registered = false
     }
 
     /**
@@ -37,16 +44,19 @@ class PointerInputService {
     }
 
     registerPointerEvents(pointerUpCallbackName, pointerDownCallbackName, pointerMoveCallbackName, pointerEnterCallbackName, pointerDoubleClickCallbackName) {
+        if (this.registered) return
         this.pointerUpCallbackName = pointerUpCallbackName;
         this.pointerDownCallbackName = pointerDownCallbackName;
         this.pointerMoveCallbackName = pointerMoveCallbackName;
         this.pointerEnterCallbackName = pointerEnterCallbackName;
         this.pointerDoubleClickCallbackName = pointerDoubleClickCallbackName;
 
-        this.sheetElement.addEventListener('pointerup', this.onPointerUp.bind(this));
-        this.sheetElement.addEventListener('pointerdown', this.onPointerDown.bind(this));
-        this.sheetElement.addEventListener('dblclick', this.onDoubleClick.bind(this));
-        this.sheetElement.addEventListener('pointermove', this.onPointerMove.bind(this));
+        this.sheetElement.addEventListener('pointerup', this.onPointerUpHandler);
+        this.sheetElement.addEventListener('pointerdown', this.onPointerDownHandler);
+        this.sheetElement.addEventListener('dblclick', this.onDoubleClickHandler);
+        this.sheetElement.addEventListener('pointermove', this.onPointerMoveHandler);
+        this.registered = true
+        this.unwatchRemoval = watchRemoval(this.sheetElement, () => this.dispose())
     }
 
     onPointerUp(e) {
@@ -96,10 +106,18 @@ class PointerInputService {
     }
 
     dispose() {
-        this.sheetElement.removeEventListener('pointerup', this.onPointerUp);
-        this.sheetElement.removeEventListener('pointerdown', this.onPointerDown);
-        window.removeEventListener('pointermove', this.onPointerMove);
-        this.sheetElement.removeEventListener('dblclick', this.onDoubleClick);
+        this.unwatchRemoval?.()
+        this.unwatchRemoval = null
+        if (!this.registered) {
+            this.dotnetHelper = null
+            return
+        }
+        this.registered = false
+        this.sheetElement.removeEventListener('pointerup', this.onPointerUpHandler);
+        this.sheetElement.removeEventListener('pointerdown', this.onPointerDownHandler);
+        this.sheetElement.removeEventListener('pointermove', this.onPointerMoveHandler);
+        this.sheetElement.removeEventListener('dblclick', this.onDoubleClickHandler);
+        this.dotnetHelper = null
     }
 
 

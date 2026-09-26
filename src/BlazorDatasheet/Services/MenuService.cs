@@ -64,7 +64,7 @@ public class MenuService : IMenuService, IAsyncDisposable
 
             if (_isDisposed)
             {
-                await DisposeJsObjectReferenceAsync(menuJs);
+                await SafeDisposeMenuJsAsync(menuJs);
                 return;
             }
 
@@ -172,7 +172,7 @@ public class MenuService : IMenuService, IAsyncDisposable
         try
         {
             if (menuJs != null)
-                await DisposeJsObjectReferenceAsync(menuJs);
+                await SafeDisposeMenuJsAsync(menuJs);
         }
         catch (Exception)
         {
@@ -181,6 +181,26 @@ public class MenuService : IMenuService, IAsyncDisposable
         finally
         {
             dotNetObjectReference?.Dispose();
+        }
+    }
+
+    private static async Task SafeDisposeMenuJsAsync(IJSObjectReference menuJs)
+    {
+        try
+        {
+            await menuJs.InvokeVoidAsync("dispose");
+        }
+        catch (JSDisconnectedException)
+        {
+            // The browser-side service is gone with the circuit.
+        }
+        catch (JSException)
+        {
+            // A cached menu.js from before dispose existed; the reference is still released below.
+        }
+        finally
+        {
+            await DisposeJsObjectReferenceAsync(menuJs);
         }
     }
 

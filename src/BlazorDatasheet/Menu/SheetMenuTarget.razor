@@ -48,19 +48,23 @@
     private ElementReference _menuTarget;
     private DotNetObjectReference<SheetMenuTarget>? _dotnetRef;
     private IJSObjectReference? _menuTargetService;
+    private Task<IJSObjectReference?>? _menuTargetServiceTask;
     private bool _isDisposed;
+    private bool _contextListenerAttached;
+
+    private bool ShouldListenForContextMenu =>
+        !_disableMenuTarget && !_isDisposed && Trigger == MenuTrigger.OnContextMenu;
 
 
     protected override async Task OnParametersSetAsync()
     {
-        if (DisableMenuTarget != _disableMenuTarget && DisableMenuTarget)
+        _disableMenuTarget = DisableMenuTarget;
+        // Only detach here: the target element is not bound until after the first render.
+        if (!ShouldListenForContextMenu && _contextListenerAttached)
         {
-            _disableMenuTarget = DisableMenuTarget;
-
-            if (_dotnetRef == null || _menuTargetService == null)
-                return;
-
-            await _menuTargetService.InvokeVoidAsync("removeContextListener");
+            _contextListenerAttached = false;
+            if (_menuTargetService != null)
+                await _menuTargetService.InvokeVoidAsync("removeContextListener");
         }
 
         await base.OnParametersSetAsync();
@@ -68,48 +72,55 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && !_disableMenuTarget && !_isDisposed && Trigger == MenuTrigger.OnContextMenu)
+        if (!ShouldListenForContextMenu || _contextListenerAttached)
+            return;
+
+        // Renders can overlap while the service is created; they share one creation rather than
+        // each attaching its own listener.
+        var menuTargetService = await (_menuTargetServiceTask ??= CreateMenuTargetServiceAsync());
+        if (menuTargetService == null || !ShouldListenForContextMenu || _contextListenerAttached)
+            return;
+
+        // Marked before the call so a render arriving during it does not attach again, and a
+        // disable arriving during it sends a remove that runs after this set.
+        _contextListenerAttached = true;
+        await menuTargetService.InvokeVoidAsync("setContextListener", _menuTarget, nameof(TargetOnContextMenu));
+    }
+
+    private async Task<IJSObjectReference?> CreateMenuTargetServiceAsync()
+    {
+        var module =
+            await _js.InvokeAsync<IJSObjectReference>("import",
+                "./_content/BlazorDatasheet/js/menu-target.js");
+
+        if (_isDisposed)
         {
-            var module =
-                await _js.InvokeAsync<IJSObjectReference>("import",
-                    "./_content/BlazorDatasheet/js/menu-target.js");
+            await DisposeJsObjectReferenceAsync(module);
+            return null;
+        }
+
+        var dotnetRef = DotNetObjectReference.Create(this);
+
+        try
+        {
+            var menuTargetService = await module.InvokeAsync<IJSObjectReference>(
+                "getMenuTargetService", dotnetRef);
 
             if (_isDisposed)
             {
-                await DisposeJsObjectReferenceAsync(module);
-                return;
+                await SafeDisposeMenuTargetServiceAsync(menuTargetService);
+                return null;
             }
 
-            var dotnetRef = DotNetObjectReference.Create(this);
-
-            try
-            {
-                var menuTargetService = await module.InvokeAsync<IJSObjectReference>(
-                    "getMenuTargetService", dotnetRef);
-
-                if (_isDisposed)
-                {
-                    await SafeDisposeMenuTargetServiceAsync(menuTargetService);
-                    return;
-                }
-
-                await menuTargetService.InvokeVoidAsync("setContextListener", _menuTarget, nameof(TargetOnContextMenu));
-
-                if (_isDisposed)
-                {
-                    await SafeDisposeMenuTargetServiceAsync(menuTargetService);
-                    return;
-                }
-
-                _menuTargetService = menuTargetService;
-                _dotnetRef = dotnetRef;
-                dotnetRef = null;
-            }
-            finally
-            {
-                dotnetRef?.Dispose();
-                await DisposeJsObjectReferenceAsync(module);
-            }
+            _menuTargetService = menuTargetService;
+            _dotnetRef = dotnetRef;
+            dotnetRef = null;
+            return menuTargetService;
+        }
+        finally
+        {
+            dotnetRef?.Dispose();
+            await DisposeJsObjectReferenceAsync(module);
         }
     }
 
@@ -160,6 +171,7 @@
     public async ValueTask DisposeAsync()
     {
         _isDisposed = true;
+        _contextListenerAttached = false;
 
         var menuTargetService = _menuTargetService;
         _menuTargetService = null;

@@ -1,4 +1,6 @@
-﻿class Highligher {
+﻿import { watchRemoval } from "./removal-watcher.js"
+
+class Highligher {
     #inputEl;
     #highlightResultEl;
     #caretToEndPending = false;
@@ -37,6 +39,7 @@
             }
         })
         this.resizeObserver.observe(this.#inputEl)
+        this.unwatchRemoval = watchRemoval(this.#inputEl, () => this.dispose())
 
         this.setInputText = function (text, caret = null) {
             // Replacing textContent destroys the current selection, so the caret must always be restored.
@@ -227,6 +230,8 @@
     dispose() {
         if (this.#disposed) return;
         this.#disposed = true;
+        this.unwatchRemoval?.()
+        this.unwatchRemoval = null
         if (this.#inputEl) {
             this.#inputEl.removeEventListener('keydown', this.#onKeyDown)
             this.#inputEl.removeEventListener('mousedown', this.#onMouseDown)
@@ -238,6 +243,7 @@
         }
         this.resizeObserver.disconnect()
         document.removeEventListener('selectionchange', this.updateCaretPosition)
+        this.options.dotnetHelper = null
     }
 
 }

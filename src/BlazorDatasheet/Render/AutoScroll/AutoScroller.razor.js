@@ -1,4 +1,5 @@
 ﻿import { findScrollableAncestor } from "../../js/scroll-utils.js"
+import { watchRemoval } from "../../js/removal-watcher.js"
 
 export class AutoScroller {
 
@@ -18,6 +19,7 @@ export class AutoScroller {
         this.ancestor = findScrollableAncestor(el) ?? document.documentElement
         this._throttledMouseMove = this.throttle(this.onMouseMove.bind(this), 20)
         window.addEventListener('mousemove', this._throttledMouseMove)
+        this.unwatchRemoval = watchRemoval(el, () => this.dispose())
     }
 
     /***
@@ -49,6 +51,8 @@ export class AutoScroller {
     }
 
     dispose() {
+        this.unwatchRemoval?.()
+        this.unwatchRemoval = null
         if (this._throttledMouseMove)
             window.removeEventListener('mousemove', this._throttledMouseMove)
         this.dotnetHelper = null

@@ -373,7 +373,7 @@
     {
         try
         {
-            await virtualiser.InvokeAsync<string>("disposeVirtualisationHandlers", _contentEl);
+            await virtualiser.InvokeVoidAsync("disposeVirtualisationHandlers", _contentEl);
         }
         catch (JSDisconnectedException)
         {

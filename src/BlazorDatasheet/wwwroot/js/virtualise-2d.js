@@ -1,5 +1,6 @@
 ﻿import { calculateViewRect as calculateViewRectShared } from "./scroll-container.js"
 import { findScrollableAncestor as findScrollableAncestorShared } from "./scroll-utils.js"
+import { watchRemoval } from "./removal-watcher.js"
 
 class Virtualiser2d {
 
@@ -50,6 +51,7 @@ class Virtualiser2d {
         bottom?.disconnect()
         interaction?.disconnect()
         notifier?.cancel()
+        this.unwatchRemovalMap.get(el)?.()
 
         this.leftHandlerMutMap.delete(el)
         this.rightHandlerMutMap.delete(el)
@@ -57,6 +59,7 @@ class Virtualiser2d {
         this.bottomHandlerMutMap.delete(el)
         this.interactionMap.delete(el)
         this.notifierMap.delete(el)
+        this.unwatchRemovalMap.delete(el)
         this.scrollAncestorMap.delete(el)
     }
 
@@ -67,6 +70,7 @@ class Virtualiser2d {
     interactionMap = new WeakMap()
     scrollAncestorMap = new WeakMap()
     notifierMap = new WeakMap()
+    unwatchRemovalMap = new WeakMap()
 
     /**
      * Calculates the visible viewport rectangle relative to the sheet root.
@@ -101,6 +105,9 @@ class Virtualiser2d {
      * @returns {void}
      */
     addVirtualisationHandlers(dotNetHelper, wholeEl, dotnetScrollHandlerName, fillerLeft, fillerTop, fillerRight, fillerBottom) {
+        // A second registration for the same element would otherwise orphan the first one's observers.
+        this.disposeVirtualisationHandlers(wholeEl)
+        this.unwatchRemovalMap.set(wholeEl, watchRemoval(wholeEl, () => this.disposeVirtualisationHandlers(wholeEl)))
         let parent = this.getScrollableAncestor(wholeEl)
         if (parent) {
             parent.style.willChange = 'transform' // improves scrolling performance in chrome/edge
