@@ -1,8 +1,7 @@
 ﻿import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
-const source = await readFile(new URL('../../src/BlazorDatasheet/wwwroot/js/window-events.js', import.meta.url), 'utf8');
-const { createWindowEventsService } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
+import { importModule } from './load-module.mjs';
+const { createWindowEventsService } = await importModule('window-events.js');
 
 class Surface extends EventTarget {
     constructor() { super(); this.listeners = new Set(); }
@@ -225,8 +224,7 @@ test('text editor takes initial focus only after text is applied and never steal
         closest: () => container,
         focus() { document.activeElement = input; input.dispatchEvent(new Event('focus')); }
     });
-    const highlighterSource = await readFile(new URL('../../src/BlazorDatasheet/wwwroot/js/highlighter.js', import.meta.url), 'utf8');
-    const { createHighlighter } = await import(`data:text/javascript;base64,${Buffer.from(highlighterSource).toString('base64')}`);
+    const { createHighlighter } = await importModule('highlighter.js');
     const highlighter = createHighlighter({ inputEl: input, highlightResultEl: {}, initialText: '', initialHtml: '',
         dotnetHelper: { invokeMethodAsync: async () => {} } });
     assert.equal(document.activeElement, container);

@@ -4,11 +4,15 @@
         this.menus = [];
         this.activeMenuEls = []
         this.dotnetHelper = dotnetHelper
-
-        window.addEventListener('mousedown', this.handleWindowMouseDown.bind(this))
+        this.disposed = false
+        this.pendingShows = new Set()
+        this.toggleHandlers = new Map()
+        this.windowMouseDownHandler = this.handleWindowMouseDown.bind(this)
+        window.addEventListener('mousedown', this.windowMouseDownHandler)
     }
 
     handleWindowMouseDown(event) {
+        if (this.disposed) return
         let insideMenu = event.target.closest('.bds-sheet-menu') != null
         if (insideMenu)
             return
@@ -17,18 +21,24 @@
     }
 
     registerMenu(id, parentId) {
+        if (this.disposed) return
         this.menus.push({id, parentId});
     }
 
     unregisterMenu(id) {
+        if (this.disposed) return
         if (this.menus.length > 0) {
             let index = this.menus.findIndex(x => x.id === id)
             if (index >= 0)
                 this.menus.splice(index, 1)
         }
+        for (const menuEl of this.toggleHandlers.keys())
+            if (menuEl.id === id) this.removeToggleHandler(menuEl)
+        this.activeMenuEls = this.activeMenuEls.filter(el => el.id !== id)
     }
 
     showMenu(menuId, options) {
+        if (this.disposed) return
         this.menus.forEach(menu => {
             if (menu.id === menuId) {
                 let el = document.getElementById(menuId);
@@ -41,6 +51,7 @@
     }
 
     closeMenu(menuId, closeParent) {
+        if (this.disposed) return
         let el = document.getElementById(menuId)
         if (el)
             el.hidePopover()
@@ -83,11 +94,14 @@
         const opener = document.activeElement
 
         // run with set timeout to allow the updated menu to be structured based on context
-        setTimeout(() => {
+        const timer = setTimeout(() => {
+            this.pendingShows.delete(timer)
+            if (this.disposed || !menuEl.isConnected) return
             menuEl.showPopover()
             let self = this
 
             let onToggle = async function (event) {
+                if (self.disposed) return
                 if (!self.menus.some(menu => menu.id === event.target.id)) // if menu doesn't exist
                     return
                 if (event.newState === 'open') {
@@ -96,10 +110,12 @@
                     self.activeMenuEls.splice(self.activeMenuEls.indexOf(event.target), 1)
                     self.restoreFocus(event.target, opener)
                     await self.dotnetHelper.invokeMethodAsync("OnMenuClose", event.target.id)
-                    event.target.removeEventListener('toggle', onToggle)
+                    self.removeToggleHandler(event.target)
                 }
             }
 
+            this.removeToggleHandler(menuEl)
+            this.toggleHandlers.set(menuEl, onToggle)
             menuEl.addEventListener('toggle', onToggle)
             if (options.trigger === 'oncontextmenu') {
                 let rect = new DOMRect(options.clientX, options.clientY, 1, 1)
@@ -112,6 +128,26 @@
                 this.positionMenu(menuEl, targetRect, options.margin, options.placement)
             }
         }, 1)
+        this.pendingShows.add(timer)
+    }
+
+    removeToggleHandler(menuEl) {
+        const handler = this.toggleHandlers.get(menuEl)
+        if (!handler) return
+        menuEl.removeEventListener('toggle', handler)
+        this.toggleHandlers.delete(menuEl)
+    }
+
+    dispose() {
+        if (this.disposed) return
+        this.disposed = true
+        window.removeEventListener('mousedown', this.windowMouseDownHandler)
+        for (const timer of this.pendingShows) clearTimeout(timer)
+        this.pendingShows.clear()
+        for (const menuEl of this.toggleHandlers.keys()) this.removeToggleHandler(menuEl)
+        this.activeMenuEls = []
+        this.menus = []
+        this.dotnetHelper = null
     }
 
     restoreFocus(menuEl, opener) {
@@ -191,10 +227,6 @@
 
 }
 
-let menuService = null
-
 export function getMenuService(dotnetHelper) {
-    if (menuService == null)
-        menuService = new MenuService(dotnetHelper)
-    return menuService
+    return new MenuService(dotnetHelper)
 }

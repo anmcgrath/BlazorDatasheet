@@ -1,3 +1,5 @@
+import { watchRemoval } from "../../js/removal-watcher.js"
+
 /**
  * Tracks an autofill drag and reports the pointer position, in layer coordinates, to .NET.
  *
@@ -41,6 +43,7 @@ class DragTracker {
         window.addEventListener('pointercancel', this._onPointerUp)
         // captured on the window so that whichever ancestor actually scrolls is picked up
         window.addEventListener('scroll', this._onScroll, {capture: true, passive: true})
+        this.unwatchRemoval = watchRemoval(originElement, () => this.stop())
     }
 
     emit() {
@@ -55,6 +58,8 @@ class DragTracker {
     }
 
     stop() {
+        this.unwatchRemoval?.()
+        this.unwatchRemoval = null
         if (this._onPointerMove) {
             window.removeEventListener('pointermove', this._onPointerMove)
             window.removeEventListener('pointerup', this._onPointerUp)
