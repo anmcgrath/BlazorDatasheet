@@ -162,7 +162,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     /// <summary>
     /// What a number without an explicit number format does when it does not fit inside its cell.
-    /// Default is <see cref="NumberOverflowMode.RoundToFit"/>.
+    /// Default is <see cref="NumberOverflowMode.Clip"/>.
     /// </summary>
     [Parameter]
     public NumberOverflowMode NumberOverflow { get; set; } = NumberOverflowMode.Clip;

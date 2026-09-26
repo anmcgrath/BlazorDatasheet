@@ -249,7 +249,9 @@
         sheet.Cells.SetValue(0, 0, 2d / 3d);
         sheet.Columns.SetSize(0, 110);
 
-        var cut = Render<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+        var cut = Render<Datasheet>(parameters => parameters
+            .Add(p => p.Sheet, sheet)
+            .Add(p => p.NumberOverflow, NumberOverflowMode.RoundToFit));
         await cut.InvokeAsync(cut.Instance.ForceReRender);
 
         var container = cut.Find(".bds-cell-number-text");
@@ -280,7 +282,9 @@
         var sheet = new Sheet(1, 1);
         sheet.Cells.SetValue(0, 0, 77.3336);
         sheet.Columns.SetSize(0, NarrowColumnWidth);
-        var cut = Render<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+        var cut = Render<Datasheet>(parameters => parameters
+            .Add(p => p.Sheet, sheet)
+            .Add(p => p.NumberOverflow, NumberOverflowMode.RoundToFit));
         await cut.InvokeAsync(cut.Instance.ForceReRender);
 
         cut.FindAll(".bds-cell-number-fallback").Select(x => x.GetAttribute("data-value"))
@@ -328,7 +332,9 @@
         sheet.Cells.SetValue(0, 0, 2d / 3d);
         sheet.Columns.SetSize(0, 100);
 
-        var cut = Render<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+        var cut = Render<Datasheet>(parameters => parameters
+            .Add(p => p.Sheet, sheet)
+            .Add(p => p.NumberOverflow, NumberOverflowMode.RoundToFit));
         await cut.InvokeAsync(cut.Instance.ForceReRender);
         cut.FindAll(".bds-cell-number-fallback").Should().NotBeEmpty();
 
@@ -344,7 +350,9 @@
         var sheet = new Sheet(1, 1);
         sheet.Cells.SetValue(0, 0, 123.456);
         sheet.Columns.SetSize(0, NarrowColumnWidth);
-        var cut = Render<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+        var cut = Render<Datasheet>(parameters => parameters
+            .Add(p => p.Sheet, sheet)
+            .Add(p => p.NumberOverflow, NumberOverflowMode.RoundToFit));
         await cut.InvokeAsync(cut.Instance.ForceReRender);
 
         cut.Render(parameters => parameters.Add(p => p.NumberOverflowMinDecimals, 2));
@@ -361,7 +369,9 @@
         sheet.SetFormat(new Region(0, 0), new CellFormat { NumberFormat = "0 \"v1.5\"" });
         sheet.Columns.SetSize(0, NarrowColumnWidth);
 
-        var cut = Render<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
+        var cut = Render<Datasheet>(parameters => parameters
+            .Add(p => p.Sheet, sheet)
+            .Add(p => p.NumberOverflow, NumberOverflowMode.RoundToFit));
         await cut.InvokeAsync(cut.Instance.ForceReRender);
 
         var value = cut.Find(".bds-cell-number-value");
