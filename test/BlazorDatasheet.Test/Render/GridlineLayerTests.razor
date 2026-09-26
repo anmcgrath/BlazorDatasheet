@@ -1,7 +1,7 @@
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Render.Layers
-@using FluentAssertions
+@using AwesomeAssertions
 @using NUnit.Framework
 @inherits BaseTestComponent
 
@@ -20,7 +20,7 @@
         sheet.Columns.Hide(1, 1);
         sheet.Rows.Hide(1, 1);
 
-        var cut = RenderComponent<GridlineLayer>(parameters => parameters
+        var cut = Render<GridlineLayer>(parameters => parameters
             .Add(p => p.Sheet, sheet)
             .Add(p => p.ViewRegion, new Region(0, 2, 0, 3))
             .Add(p => p.VisibleRegion, new Region(0, 2, 0, 3)));
@@ -39,7 +39,7 @@
         sheet.Columns.SetSize(0, 3, 10);
         sheet.Rows.SetSize(0, 3, 5);
 
-        var cut = RenderComponent<GridlineLayer>(parameters => parameters
+        var cut = Render<GridlineLayer>(parameters => parameters
             .Add(p => p.Sheet, sheet)
             .Add(p => p.ViewRegion, new Region(0, 3, 0, 3))
             .Add(p => p.VisibleRegion, new Region(2, 3, 1, 2)));

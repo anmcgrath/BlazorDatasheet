@@ -297,26 +297,10 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReado
         _styles ??= new Dictionary<string, object?>();
         foreach (var style in format._styles)
         {
-            if (!_styles.TryAdd(style.Key, style.Value))
-                _styles[style.Key] = style.Value;
+            _styles[style.Key] = style.Value is Border border
+                ? MergeBorder(GetStyleOrDefault<Border>(style.Key), border)
+                : style.Value;
         }
-
-        MergeBorders(format);
-    }
-
-    private void MergeBorders(CellFormat format)
-    {
-        if (format.BorderBottom != null)
-            BorderBottom = MergeBorder(BorderBottom, format.BorderBottom);
-
-        if (format.BorderLeft != null)
-            BorderLeft = MergeBorder(BorderLeft, format.BorderLeft);
-
-        if (format.BorderRight != null)
-            BorderRight = MergeBorder(BorderRight, format.BorderRight);
-
-        if (format.BorderTop != null)
-            BorderTop = MergeBorder(BorderTop, format.BorderTop);
     }
 
     /// <summary>
