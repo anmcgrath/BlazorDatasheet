@@ -4,6 +4,7 @@ using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Commands.Formatting;
 using BlazorDatasheet.Core.Commands.RowCols;
 using BlazorDatasheet.Core.Data.Cells;
+using BlazorDatasheet.Core.Data.Filter;
 using BlazorDatasheet.Core.Edit;
 using BlazorDatasheet.Core.Events.Data;
 using BlazorDatasheet.Core.Events.Layout;
@@ -13,9 +14,11 @@ using BlazorDatasheet.Core.Events.Visual;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.FormulaEngine;
 using BlazorDatasheet.Core.Interfaces;
+using BlazorDatasheet.Core.Metadata;
 using BlazorDatasheet.Core.Selecting;
 using BlazorDatasheet.Core.Validation;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.DataStructures.Intervals;
 using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter;
@@ -240,6 +243,48 @@ public class Sheet
         Selection = new Selection(this);
         ConditionalFormats = new ConditionalFormatManager(this, Cells);
         NamedRanges = new NamedRangeManager(this);
+        RegisterDefaultShiftingStores();
+    }
+
+    private readonly List<IRowColShiftingStore> _shiftingStores = new();
+
+    /// <summary>
+    /// The position-keyed stores that inserting and removing rows/columns shift, in the order they are shifted and
+    /// restored. Row/column info is not among them: it raises the inserted/removed events, so the commands shift it last.
+    /// </summary>
+    internal IReadOnlyList<IRowColShiftingStore> ShiftingStores => _shiftingStores;
+
+    internal void RegisterShiftingStore(IRowColShiftingStore store) => _shiftingStores.Add(store);
+
+    private void RegisterDefaultShiftingStores()
+    {
+        RegisterShiftingStore(new ShiftingStoreAdapter<RegionRestoreData<int>>(
+            Validators.Store.InsertRowColAt,
+            Validators.Store.RemoveRowColAt,
+            Validators.Store.Restore));
+
+        RegisterShiftingStore(new ShiftingStoreAdapter<CellStoreRestoreData>(
+            Cells.InsertRowColAt,
+            Cells.RemoveRowColAt,
+            Cells.Restore));
+
+        RegisterShiftingStore(new ShiftingStoreAdapter<ConditionalFormatRestoreData>(
+            ConditionalFormats.InsertRowColAt,
+            ConditionalFormats.RemoveRowColAt,
+            ConditionalFormats.Restore));
+
+        var metaData = Cells.GetMetaDataStore();
+        RegisterShiftingStore(new ShiftingStoreAdapter<RegionRestoreData<CellMetadata>>(
+            metaData.InsertRowColAt,
+            metaData.RemoveRowColAt,
+            metaData.Restore));
+
+        // Filters are per column, so only a column insert/removal moves them.
+        var filters = Columns.Filters.Store;
+        RegisterShiftingStore(new ShiftingStoreAdapter<MergeableIntervalStoreRestoreData<OverwritingValue<List<IFilter>?>>>(
+            (index, count, axis) => axis == Axis.Col ? filters.InsertAt(index, count) : null,
+            (index, count, axis) => axis == Axis.Col ? filters.Delete(index, index + count - 1) : null,
+            filters.Restore));
     }
 
     public Sheet(int numRows, int numCols, CellValue[][] values) : this(numRows, numCols, 105, 24, null, values)
