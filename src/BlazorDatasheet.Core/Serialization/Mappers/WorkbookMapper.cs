@@ -1,6 +1,9 @@
 ﻿using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Serialization.Models;
+using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter;
+using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Core.Serialization.Json.Mappers;
 
@@ -18,6 +21,18 @@ internal class WorkbookMapper
 
         foreach (var namedVariable in workbook.GetFormulaEngine().GetVariables())
             workbookModel.Variables.Add(namedVariable);
+
+        // Deleted ranges are kept: a reader that finds a key missing may treat it as never tracked.
+        foreach (var range in workbook.TrackedRanges.GetAll())
+        {
+            workbookModel.TrackedRanges.Add(new TrackedRangeModel
+            {
+                Key = range.Key,
+                Sheet = range.SheetName,
+                RegionString = RangeText.RegionToText(range.Region),
+                Deleted = range.IsDeleted
+            });
+        }
 
         return workbookModel;
     }
@@ -58,6 +73,12 @@ internal class WorkbookMapper
                 else if (!variable.Value.IsEmpty)
                     engine.SetVariable(variable.Name, variable.Value);
             }
+
+            foreach (var range in workbookModel.TrackedRanges)
+            {
+                if (ParseRegion(workbook, range.RegionString) is { } region)
+                    workbook.TrackedRanges.Track(range.Key, range.Sheet, region, range.Deleted);
+            }
         }
         finally
         {
@@ -69,5 +90,19 @@ internal class WorkbookMapper
             engine.CalculateSheet(true);
 
         return workbook;
+    }
+
+    private static IRegion? ParseRegion(Workbook workbook, string regionString)
+    {
+        if (string.IsNullOrEmpty(regionString))
+            return null;
+
+        var engine = workbook.GetFormulaEngine();
+        var value = engine.EvaluateFormula(engine.ParseFormula($"={regionString}", string.Empty, true),
+            resolveReferences: false);
+
+        return value.ValueType == CellValueType.Reference
+            ? value.GetValue<Reference>()?.Region
+            : null;
     }
 }

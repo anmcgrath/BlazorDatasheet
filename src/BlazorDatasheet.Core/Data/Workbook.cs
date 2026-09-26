@@ -23,6 +23,11 @@ public class Workbook
     /// </summary>
     public NamedRangeManager NamedRanges { get; }
 
+    /// <summary>
+    /// Ranges tracked under a key as rows and columns are inserted and removed.
+    /// </summary>
+    public TrackedRangeCollection TrackedRanges { get; }
+
     public event EventHandler<WorkbookSheetAddedEventArgs>? SheetAdded;
     public event EventHandler<WorkbookSheetRemovedEventArgs>? SheetRemoved;
     public event EventHandler<WorkbookSheetRenamedEventArgs>? SheetRenamed;
@@ -60,6 +65,7 @@ public class Workbook
         Environment = new WorkbookEnvironment(this, registry);
         _formulaEngine = new FormulaEngine.FormulaEngine(Environment, options);
         NamedRanges = new NamedRangeManager(this);
+        TrackedRanges = new TrackedRangeCollection(this);
     }
 
     public static FunctionRegistry BuildDefaultRegistry(FormulaOptions? options)
