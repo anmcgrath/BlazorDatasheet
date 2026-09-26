@@ -3,7 +3,7 @@ using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Edit;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Edit;

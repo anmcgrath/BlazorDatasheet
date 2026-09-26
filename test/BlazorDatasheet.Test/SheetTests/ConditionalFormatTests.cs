@@ -8,7 +8,7 @@ using BlazorDatasheet.Core.Formats.DefaultConditionalFormats;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Intervals;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.SheetTests;

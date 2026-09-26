@@ -1,6 +1,6 @@
 using NUnit.Framework;
 using BlazorDatasheet.Core.Data;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace BlazorDatasheet.Test.Commands;
 

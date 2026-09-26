@@ -1,5 +1,5 @@
 using BlazorDatasheet.Render.AutoScroll;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Render;

@@ -5,7 +5,7 @@ using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.Core.Validation;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Validation;

@@ -1,6 +1,6 @@
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Render.Layers.Preview;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Render;

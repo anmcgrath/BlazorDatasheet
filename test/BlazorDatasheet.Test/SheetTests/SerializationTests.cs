@@ -13,7 +13,7 @@ using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 using BlazorDatasheet.Core.Serialization.Json;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.SheetTests;

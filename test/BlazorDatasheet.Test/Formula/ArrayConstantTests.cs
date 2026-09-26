@@ -1,7 +1,7 @@
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Formula;

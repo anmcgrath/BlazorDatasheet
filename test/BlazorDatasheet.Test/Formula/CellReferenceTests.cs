@@ -7,7 +7,7 @@ using BlazorDatasheet.DataStructures.Util;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.Addresses;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Formula;

@@ -1,5 +1,5 @@
 ﻿using BlazorDatasheet.Core.Formats;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Format;

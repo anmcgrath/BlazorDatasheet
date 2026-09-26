@@ -5,7 +5,7 @@ using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 using BlazorDatasheet.Formula.Core.Interpreter.Lexing;
 using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
 using BlazorDatashet.Formula.Functions.Math;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Formula;

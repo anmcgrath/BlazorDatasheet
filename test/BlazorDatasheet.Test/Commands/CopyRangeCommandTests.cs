@@ -3,7 +3,7 @@ using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Commands;

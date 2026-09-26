@@ -6,7 +6,7 @@ using BlazorDatasheet.Extensions;
 using BlazorDatasheet.Render.Layers;
 using BlazorDatasheet.Virtualise;
 using Bunit;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Render;

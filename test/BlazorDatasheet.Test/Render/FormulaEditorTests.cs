@@ -6,7 +6,7 @@ using BlazorDatasheet.Edit.DefaultComponents;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter;
 using Bunit;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Render;

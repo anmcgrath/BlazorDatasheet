@@ -2,7 +2,7 @@ using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Layout;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Render.Layers;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Render;

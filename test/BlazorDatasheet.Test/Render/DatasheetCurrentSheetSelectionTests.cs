@@ -5,7 +5,7 @@ using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Extensions;
 using BlazorDatasheet.Render;
 using Bunit;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Render;

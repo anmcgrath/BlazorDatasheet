@@ -6,7 +6,7 @@ using BlazorDatasheet.Edit;
 using BlazorDatasheet.Edit.DefaultComponents;
 using BlazorDatasheet.Extensions;
 using Bunit;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.AspNetCore.Components.Web;
 using NUnit.Framework;
 

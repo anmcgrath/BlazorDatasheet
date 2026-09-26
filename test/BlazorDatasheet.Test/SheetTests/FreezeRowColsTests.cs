@@ -2,7 +2,7 @@ using System;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.DataStructures.Geometry;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.SheetTests;

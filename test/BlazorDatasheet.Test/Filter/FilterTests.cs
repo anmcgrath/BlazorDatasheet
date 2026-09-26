@@ -5,7 +5,7 @@ using BlazorDatasheet.Core.Data.Filter;
 using BlazorDatasheet.DataStructures.Intervals;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Test.Commands;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Filter;

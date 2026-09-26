@@ -8,7 +8,7 @@ using BlazorDatasheet.Core.Events.Data;
 using BlazorDatasheet.Core.Events.Visual;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Intervals;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.SheetTests;

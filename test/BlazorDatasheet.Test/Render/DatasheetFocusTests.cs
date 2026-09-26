@@ -12,7 +12,7 @@ using BlazorDatasheet.Services;
 using BlazorDatasheet.Edit;
 using BlazorDatasheet.Edit.DefaultComponents;
 using Bunit;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Render;

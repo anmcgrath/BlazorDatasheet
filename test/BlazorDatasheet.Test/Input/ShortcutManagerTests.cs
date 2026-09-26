@@ -1,6 +1,6 @@
 ﻿using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.KeyboardInput;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Input;

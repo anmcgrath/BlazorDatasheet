@@ -1,6 +1,6 @@
 ﻿using BlazorDatasheet.Edit;
 using BlazorDatasheet.Formula.Core.Interpreter;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Functions.HintboxTests;

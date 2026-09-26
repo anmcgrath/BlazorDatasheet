@@ -2,7 +2,7 @@
 using System.Linq;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Events.Data;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.WorkbookTests;

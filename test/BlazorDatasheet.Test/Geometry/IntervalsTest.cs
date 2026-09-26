@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Intervals;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 using NUnit.Framework.Internal.Execution;
 

@@ -2,7 +2,7 @@ using System.Linq;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
 using NUnit.Framework;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace BlazorDatasheet.Test.Store;
 

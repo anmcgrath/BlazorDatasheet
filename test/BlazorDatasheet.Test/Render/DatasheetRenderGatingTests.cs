@@ -11,7 +11,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Bunit;
 using Microsoft.AspNetCore.Components;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Render;

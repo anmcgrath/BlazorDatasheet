@@ -2,7 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using BlazorDatasheet.Services;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.JSInterop;
 using NUnit.Framework;
 
