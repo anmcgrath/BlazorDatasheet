@@ -165,7 +165,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     /// Default is <see cref="NumberOverflowMode.RoundToFit"/>.
     /// </summary>
     [Parameter]
-    public NumberOverflowMode NumberOverflow { get; set; } = NumberOverflowMode.RoundToFit;
+    public NumberOverflowMode NumberOverflow { get; set; } = NumberOverflowMode.Clip;
 
     /// <summary>
     /// The fewest decimal places that <see cref="NumberOverflowMode.RoundToFit"/> may round a number to
