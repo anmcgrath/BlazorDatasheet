@@ -21,12 +21,36 @@ public partial class CellStore
     /// <param name="format"></param>
     internal CellStoreRestoreData MergeFormatImpl(IRegion region, CellFormat format)
     {
-        Sheet.MarkDirty(region);
         var restoreData = new CellStoreRestoreData()
         {
             FormatRestoreData = _formatStore.Add(region, format)
         };
+        // outside a batch this renders the cells straight away, so the format has to be stored first.
+        Sheet.MarkDirty(region);
         FormatChanged?.Invoke(this, new FormatChangedEventArgs(region, format));
+        return restoreData;
+    }
+
+    /// <summary>
+    /// Merges the format into each of the regions, as one change to the region that spans them:
+    /// the cells are marked dirty and <see cref="FormatChanged"/> is raised once rather than per region.
+    /// </summary>
+    /// <param name="regions"></param>
+    /// <param name="format"></param>
+    /// <param name="spanningRegion">The region that contains all of <paramref name="regions"/></param>
+    /// <returns>The restore data of each merge, in the order they were made.</returns>
+    internal List<CellStoreRestoreData> MergeFormatImpl(IReadOnlyList<IRegion> regions, CellFormat format,
+        IRegion spanningRegion)
+    {
+        var restoreData = new List<CellStoreRestoreData>(regions.Count);
+        if (regions.Count == 0)
+            return restoreData;
+
+        foreach (var region in regions)
+            restoreData.Add(new CellStoreRestoreData() { FormatRestoreData = _formatStore.Add(region, format) });
+
+        Sheet.MarkDirty(spanningRegion);
+        FormatChanged?.Invoke(this, new FormatChangedEventArgs(spanningRegion, format));
         return restoreData;
     }
 

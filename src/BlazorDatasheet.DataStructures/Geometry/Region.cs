@@ -520,30 +520,80 @@ public class Region : IRegion
 
     public List<IRegion> Break(IEnumerable<IRegion> regions)
     {
-        var allBroken = new List<IRegion>() { this };
-        var newBroken = new List<IRegion>();
-        var toRemove = new List<IRegion>();
-
+        // Sweeps down the rows of this region rather than breaking piece by piece, which compares
+        // every piece with every region and is quadratic when many regions are broken out.
+        var holes = new List<IRegion>();
         foreach (var region in regions)
         {
-            toRemove.Clear();
-            newBroken.Clear();
-
-            foreach (var broken in allBroken)
-            {
-                if (broken.GetIntersection(region) == null)
-                    continue;
-
-                toRemove.Add(broken);
-                newBroken.AddRange(broken.Break(region));
-            }
-
-            foreach (var remove in toRemove)
-                allBroken.Remove(remove);
-            allBroken.AddRange(newBroken);
+            var hole = region.GetIntersection(this);
+            if (hole != null)
+                holes.Add(hole);
         }
 
-        return allBroken;
+        if (holes.Count == 0)
+            return new List<IRegion>() { this };
+
+        holes.Sort((x, y) => x.Top.CompareTo(y.Top));
+
+        // the rows at which the set of regions covering a row changes. long, because the row
+        // after the last one of a row or column region is past int.MaxValue
+        var rowStarts = new List<long>(holes.Count * 2 + 1) { Top };
+        foreach (var hole in holes)
+        {
+            rowStarts.Add(hole.Top);
+            if (hole.Bottom < Bottom)
+                rowStarts.Add((long)hole.Bottom + 1);
+        }
+
+        rowStarts.Sort();
+
+        var result = new List<IRegion>();
+        var active = new List<IRegion>();
+        var gaps = new List<(int left, int right)>();
+        var openGaps = new List<(int left, int right)>();
+        long openTop = Top;
+        var nextHole = 0;
+
+        for (var i = 0; i < rowStarts.Count; i++)
+        {
+            var rowStart = rowStarts[i];
+            if (i > 0 && rowStart == rowStarts[i - 1])
+                continue;
+
+            active.RemoveAll(x => x.Bottom < rowStart);
+            while (nextHole < holes.Count && holes[nextHole].Top <= rowStart)
+                active.Add(holes[nextHole++]);
+
+            active.Sort((x, y) => x.Left.CompareTo(y.Left));
+
+            gaps.Clear();
+            long gapStart = Left;
+            foreach (var hole in active)
+            {
+                if (hole.Left > gapStart)
+                    gaps.Add(((int)gapStart, hole.Left - 1));
+                gapStart = Math.Max(gapStart, (long)hole.Right + 1);
+            }
+
+            if (gapStart <= Right)
+                gaps.Add(((int)gapStart, Right));
+
+            // rows with the same gaps as the rows above them extend the pieces already open
+            if (gaps.SequenceEqual(openGaps))
+                continue;
+
+            foreach (var gap in openGaps)
+                result.Add(new Region((int)openTop, (int)(rowStart - 1), gap.left, gap.right));
+
+            openGaps.Clear();
+            openGaps.AddRange(gaps);
+            openTop = rowStart;
+        }
+
+        foreach (var gap in openGaps)
+            result.Add(new Region((int)openTop, Bottom, gap.left, gap.right));
+
+        return result;
     }
 
     [Obsolete]

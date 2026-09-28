@@ -208,17 +208,45 @@
         
         var dirtyRegions = new List<IRegion>();
         foreach (var (interval, _) in e.DirtyRows.GetAllIntervalData())
-            dirtyRegions.Add(new Region(interval.Start, interval.End, e.DirtyColStart, e.DirtyColEnd));
+            dirtyRegions.Add(IncludeCellsDrawingEdges(
+                new Region(interval.Start, interval.End, e.DirtyColStart, e.DirtyColEnd)));
 
         if (dirtyRegions.Count > 0)
             MakeRegionsDirty(dirtyRegions);
     }
 
 
+    /// <summary>
+    /// The top and left edges of a cell are drawn by the visible cells before it, so they are
+    /// rebuilt along with it.
+    /// </summary>
+    private IRegion IncludeCellsDrawingEdges(Region region)
+    {
+        if (_sheet == null)
+            return region;
+
+        var top = region.Top > 0 ? _sheet.Rows.GetNextVisible(region.Top, -1) : -1;
+        var left = region.Left > 0 ? _sheet.Columns.GetNextVisible(region.Left, -1) : -1;
+        var widened = new Region(top < 0 ? region.Top : top, region.Bottom, left < 0 ? region.Left : left,
+            region.Right);
+
+        if (!_sheet.Cells.AnyMerges())
+            return widened;
+
+        // a merge is drawn by its first cell
+        IRegion result = widened;
+        foreach (var merge in _sheet.Cells.GetMerges(widened))
+            result = result.GetBoundingRegion(merge);
+
+        return result;
+    }
+
     private void MakeRegionsDirty(IEnumerable<IRegion?> dirtyRegions)
     {
         if (_sheet == null)
             return;
+
+        var borders = new CellBorderResolver(_sheet);
 
         foreach (var region in dirtyRegions)
         {
@@ -249,7 +277,7 @@
                     var col = visibleCols[i];
                     var position = new CellPosition(row, col);
                     var visualCell = new VisualCell(row, col, _sheet, PaneContext.NumberPrecisionDisplay,
-                        rowMetrics, colMetrics[i], PaneContext.NumberOverflow);
+                        rowMetrics, colMetrics[i], PaneContext.NumberOverflow, borders);
 
                     if (!_visualCellCache.TryAdd(position, visualCell))
                         _visualCellCache[position] = visualCell;
@@ -311,13 +339,29 @@
         _rowMetrics.Clear();
         _colMetrics.Clear();
 
+        // hiding or showing a row or column changes which cells share an edge on either side of it
+        var store = e.Axis == Axis.Col ? (RowColInfoStore)_sheet!.Columns : _sheet!.Rows;
+        var before = e.IndexStart > 0 ? store.GetNextVisible(e.IndexStart, -1) : -1;
+        var after = e.IndexEnd >= 0 ? store.GetNextVisible(e.IndexEnd) : -1;
+        var borders = new CellBorderResolver(_sheet);
+
         foreach (var visualCell in _visualCellCache.Values)
         {
+            if (IsBeside(visualCell, e.Axis, before, after))
+                visualCell.RefreshBorders(_sheet, borders);
+
             if (!IsAffectedBySizeChange(visualCell, e))
                 continue;
 
             visualCell.RefreshAxisMetrics(_sheet!, GetRowMetrics(visualCell.Row), GetColMetrics(visualCell.Col));
         }
+    }
+
+    private static bool IsBeside(VisualCell cell, Axis axis, int before, int after)
+    {
+        var start = axis == Axis.Col ? cell.Merge?.Left ?? cell.Col : cell.Merge?.Top ?? cell.Row;
+        var end = axis == Axis.Col ? cell.Merge?.Right ?? cell.Col : cell.Merge?.Bottom ?? cell.Row;
+        return (before >= 0 && before >= start && before <= end) || (after >= 0 && after >= start && after <= end);
     }
 
     /// <summary>

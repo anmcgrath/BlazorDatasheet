@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using BlazorDatasheet.DataStructures.Geometry;
 using AwesomeAssertions;
@@ -502,5 +503,40 @@ public class RegionTests
         Assert.AreEqual(c.Top, 0);
         Assert.AreEqual(c.Bottom, 4);
         Assert.AreEqual(c.Left, 0);
+    }
+
+    [Test]
+    public void Break_Around_Many_Regions_Leaves_Every_Other_Cell_Once()
+    {
+        var region = new Region(0, 9, 0, 9);
+        var holes = new List<IRegion>
+        {
+            new Region(1, 3, 1, 3),
+            new Region(2, 5, 2, 6), // overlaps the first
+            new Region(7, 7, 0, 9),
+            new Region(8, 20, 9, 20), // runs outside of the region
+            new Region(30, 31, 0, 1) // entirely outside
+        };
+
+        var breaks = region.Break(holes);
+
+        for (var row = 0; row <= 9; row++)
+        {
+            for (var col = 0; col <= 9; col++)
+            {
+                var expected = holes.Any(x => x.Contains(row, col)) ? 0 : 1;
+                Assert.AreEqual(expected, breaks.Count(x => x.Contains(row, col)), $"at {row},{col}");
+            }
+        }
+    }
+
+    [Test]
+    public void Break_Column_Region_Around_Regions_Keeps_The_Unbounded_End()
+    {
+        var breaks = new ColumnRegion(2).Break(new List<IRegion> { new Region(0, 4, 2, 2), new Region(6, 8, 2, 2) });
+
+        Assert.AreEqual(2, breaks.Count);
+        Assert.AreEqual(new Region(5, 5, 2, 2), breaks[0]);
+        Assert.AreEqual(new Region(9, int.MaxValue, 2, 2), breaks[1]);
     }
 }

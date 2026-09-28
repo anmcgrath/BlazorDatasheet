@@ -503,31 +503,27 @@
 
     private void ApplyOutsideBorders(IRegion region, Border border)
     {
-        Sheet.SetFormat(region, new CellFormat
-        {
-            BorderTop = border.Clone(),
-            BorderLeft = border.Clone()
-        });
+        Sheet.SetFormat(new Region(region.Top, region.Top, region.Left, region.Right), new CellFormat { BorderTop = border.Clone() });
+        Sheet.SetFormat(new Region(region.Top, region.Bottom, region.Left, region.Left), new CellFormat { BorderLeft = border.Clone() });
         Sheet.SetFormat(new Region(region.Top, region.Bottom, region.Right, region.Right), new CellFormat { BorderRight = border.Clone() });
         Sheet.SetFormat(new Region(region.Bottom, region.Bottom, region.Left, region.Right), new CellFormat { BorderBottom = border.Clone() });
     }
 
     private void ApplyInsideBorders(IRegion region, Border border)
     {
-        for (var row = region.Top; row <= region.Bottom; row++)
-        {
-            for (var col = region.Left; col <= region.Right; col++)
-            {
-                var format = new CellFormat();
-                if (col < region.Right)
-                    format.BorderRight = border.Clone();
-                if (row < region.Bottom)
-                    format.BorderBottom = border.Clone();
+        // a row or column selection has no end, so it is bounded to the sheet before its last
+        // row and column are left out.
+        var bounded = region.GetIntersection(Sheet.Region);
+        if (bounded == null)
+            return;
 
-                if (format.BorderRight != null || format.BorderBottom != null)
-                    Sheet.SetFormat(new Region(row, col), format);
-            }
-        }
+        if (bounded.Right > bounded.Left)
+            Sheet.SetFormat(new Region(bounded.Top, bounded.Bottom, bounded.Left, bounded.Right - 1),
+                new CellFormat { BorderRight = border.Clone() });
+
+        if (bounded.Bottom > bounded.Top)
+            Sheet.SetFormat(new Region(bounded.Top, bounded.Bottom - 1, bounded.Left, bounded.Right),
+                new CellFormat { BorderBottom = border.Clone() });
     }
 
     private Border CreateBorder()
@@ -544,11 +540,6 @@
             BorderBottom = null,
             BorderLeft = null
         });
-
-        if (region.Left > 0)
-            Sheet.SetFormat(new Region(region.Top, region.Bottom, region.Left - 1, region.Left - 1), new CellFormat { BorderRight = null });
-        if (region.Top > 0)
-            Sheet.SetFormat(new Region(region.Top - 1, region.Top - 1, region.Left, region.Right), new CellFormat { BorderBottom = null });
     }
 
     private string GetHorizontalAlignClass(TextAlign alignment)

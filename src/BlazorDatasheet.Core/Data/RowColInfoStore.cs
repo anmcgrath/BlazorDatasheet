@@ -539,9 +539,6 @@ public abstract class RowColInfoStore
     internal RowColFormatRestoreData SetFormatImpl(CellFormat cellFormat, int start, int end)
     {
         var spanningRegion = GetSpannedRegion(start, end);
-        // Keep track of individual cell changes
-        var cellChanges = new List<CellStoreRestoreData>();
-
         // we will ALWAYS merge the row/column regardless of what the cells are doing.
         var newOi = new OrderedInterval<CellFormat>(start, end, cellFormat.Clone());
         var format1DRestoreData = Formats.Add(newOi);
@@ -551,26 +548,24 @@ public abstract class RowColInfoStore
         // if we set col format then a row format with some intersection, we would find that the col format is chosen when we
         // query the format at the intersection. It should be the cell format, so we set that.
         var altAxisStore = Sheet.GetRowColStore(_axis == Axis.Col ? Axis.Row : Axis.Col);
-        var colOverlaps = altAxisStore.Formats.GetAllIntervals()
-            .Select(x =>
-            {
-                if (_axis == Axis.Col)
-                    return new DataRegion<CellFormat>(x.Data, new Region(x.Start, x.End, start, end));
-                else
-                    return new DataRegion<CellFormat>(x.Data, new Region(start, end, x.Start, x.End));
-            });
+        var overlaps = new List<IRegion>();
+        foreach (var x in altAxisStore.Formats.GetAllIntervals())
+        {
+            overlaps.Add(_axis == Axis.Col
+                ? new Region(x.Start, x.End, start, end)
+                : new Region(start, end, x.Start, x.End));
+        }
 
-        var cellOverlaps = Sheet.Cells.GetFormatData(spanningRegion)
-            .Select(x => new DataRegion<CellFormat>(x.Data, x.Region.GetIntersection(spanningRegion)!));
+        // the cell formats are read before any is merged, so that the pieces the merges make
+        // are not merged again.
+        foreach (var x in Sheet.Cells.GetFormatData(spanningRegion))
+            overlaps.Add(x.Region.GetIntersection(spanningRegion)!);
 
         // The intersectings region should be be merged with any existing (or empty) cell formats
         // So that the new, most recently applied format info is taken when the format is queried.
         // There may be some cell formats inside the col/row intersections in which case the format will be merged twice.
         // That should be ok because they will already exist and won't be added
-        foreach (var overlap in colOverlaps.Concat(cellOverlaps))
-        {
-            cellChanges.Add(Sheet.Cells.MergeFormatImpl(overlap.Region, cellFormat));
-        }
+        var cellChanges = Sheet.Cells.MergeFormatImpl(overlaps, cellFormat, spanningRegion);
 
         Sheet.MarkDirty(spanningRegion);
 

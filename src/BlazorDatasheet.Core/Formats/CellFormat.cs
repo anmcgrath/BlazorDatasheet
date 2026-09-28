@@ -240,6 +240,17 @@ public class CellFormat : IMergeable<CellFormat>, IEquatable<CellFormat>, IReado
 
     internal bool SpecifiesLock => _styles?.ContainsKey(nameof(IsLocked)) == true;
 
+    /// <summary>
+    /// Whether the format mentions the style at all. A style set to null is specified - it clears
+    /// the style it is merged over - which reading the property cannot tell apart from unset.
+    /// </summary>
+    internal bool Specifies(string style) => _styles?.ContainsKey(style) == true;
+
+    /// <summary>
+    /// The border on the side named by the property name, e.g. nameof(BorderLeft).
+    /// </summary>
+    internal Border? GetBorder(string side) => GetStyleOrDefault<Border>(side);
+
     private void AddStyle<T>(string key, T? value)
     {
         _styles ??= new Dictionary<string, object?>();

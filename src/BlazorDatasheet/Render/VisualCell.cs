@@ -32,6 +32,12 @@ public class VisualCell
     public string FormatStyleString { get; private set; } = string.Empty;
     public string? Icon { get; private set; }
     public CellFormat? Format { get; private set; }
+
+    /// <summary>
+    /// The borders the cell draws, which include those of the edges it shares with the next cells.
+    /// </summary>
+    internal CellBorders Borders { get; private set; }
+
     public bool IsVisible { get; set; }
     public int VisibleRowSpan { get; set; } = 1;
     public int VisibleColSpan { get; set; } = 1;
@@ -77,7 +83,8 @@ public class VisualCell
     /// searches per cell.
     /// </remarks>
     internal VisualCell(int row, int col, Sheet sheet, int numberOfSignificantDigits,
-        in AxisMetrics rowMetrics, in AxisMetrics colMetrics, NumberOverflowOptions numberOverflow = default)
+        in AxisMetrics rowMetrics, in AxisMetrics colMetrics, NumberOverflowOptions numberOverflow = default,
+        CellBorderResolver? borders = null)
     {
         Row = row;
         Col = col;
@@ -113,7 +120,14 @@ public class VisualCell
         else
             FormattedString = Value?.ToString() ?? string.Empty;
 
-        var cf = sheet.ConditionalFormats.GetFormatResult(row, col);
+        // borders are resolved before the conditional format is merged in, because a conditional
+        // border ranks above the neighbouring cell's own border and a merged format cannot say
+        // which of the two a border came from.
+        borders ??= new CellBorderResolver(sheet);
+        var cf = borders.GetConditionalFormat(row, col);
+        Borders = borders.Resolve(row, col, Merge, format, cf);
+        _isValid = sheet.Cells.IsValid(row, col);
+
         if (cf != null)
         {
             format ??= new CellFormat();
@@ -132,7 +146,7 @@ public class VisualCell
             ClassString += " bds-cell-has-flags";
 
         FormatStyleString =
-            GetCellFormatStyleString(format, sheet.Cells.IsValid(row, col));
+            GetCellFormatStyleString(format, Borders, _isValid);
         Icon = format?.Icon;
         CellType = sheet.Cells.GetCellType(row, col);
         Format = format;
@@ -157,6 +171,7 @@ public class VisualCell
 
     // Kept so that the chain can be regenerated when the column is resized, since a resize patches
     // the cell in place rather than rebuilding it.
+    private bool _isValid = true;
     private double _generalNumber;
     private int _generalNumberMinDecimals = -1;
 
@@ -212,6 +227,21 @@ public class VisualCell
             NumberFallbacks = [];
             SetGeneralNumberFallbacks(_generalNumber, _generalNumberMinDecimals);
         }
+    }
+
+    /// <summary>
+    /// Resolves the borders again after the visibility of a row or column next to the cell changed,
+    /// which changes the cell it shares an edge with.
+    /// </summary>
+    internal void RefreshBorders(Sheet sheet, CellBorderResolver borders)
+    {
+        var resolved = borders.Resolve(Row, Col, Merge, sheet.GetFormatForRendering(Row, Col),
+            borders.GetConditionalFormat(Row, Col));
+        if (resolved == Borders)
+            return;
+
+        Borders = resolved;
+        FormatStyleString = GetCellFormatStyleString(Format, Borders, _isValid);
     }
 
     private void UpdateMergeSpans(Sheet sheet)
@@ -333,11 +363,17 @@ public class VisualCell
             sb.AddStyle("background-size", $"{gap} {gap}");
     }
 
-    private static string GetCellFormatStyleString(CellFormat? format, bool isCellValid)
+    private static void AddBorderStyle(StyleBuilder sb, string property, Border? border)
+    {
+        if (border != null)
+            sb.AddStyle(property, $"{border.Width ?? 1}px solid {border.Color}");
+    }
+
+    private static string GetCellFormatStyleString(CellFormat? format, in CellBorders borders, bool isCellValid)
     {
         // an unformatted, valid cell contributes no inline style at all - which is most cells on
         // most sheets. Default numeric alignment is supplied by ClassString.
-        if (isCellValid && (format == null || format.IsDefaultFormat()))
+        if (isCellValid && !borders.Any && (format == null || format.IsDefaultFormat()))
             return string.Empty;
 
         var sb = new StyleBuilder();
@@ -346,6 +382,12 @@ public class VisualCell
             sb.AddStyle("color", "var(--invalid-cell-foreground-color)");
         else if (format != null)
             sb.AddStyle("color", format.ForegroundColor!, format.ForegroundColor != null);
+
+        // the borders are not read from the format: an edge may be the next cell's to decide.
+        AddBorderStyle(sb, "border-left", borders.Left);
+        AddBorderStyle(sb, "border-top", borders.Top);
+        AddBorderStyle(sb, "border-right", borders.Right);
+        AddBorderStyle(sb, "border-bottom", borders.Bottom);
 
         if (format == null)
             return sb.ToString();
@@ -359,11 +401,6 @@ public class VisualCell
         sb.AddStyle("font-weight", format.FontWeight!, format.FontWeight != null);
         sb.AddStyle("font-style", format.FontStyle!, format.FontStyle != null);
         sb.AddStyle("text-decoration", format.TextDecoration!, format.TextDecoration != null);
-
-        if (format.BorderBottom != null)
-            sb.AddStyle("border-bottom", $"{format.BorderBottom.Width}px solid {format.BorderBottom.Color};");
-        if (format.BorderRight != null)
-            sb.AddStyle("border-right", $"{format.BorderRight.Width}px solid {format.BorderRight.Color};");
 
         if (format.TextWrap == TextWrapping.Wrap)
         {
