@@ -184,7 +184,7 @@ public class FormattingTests
     }
 
     [Test]
-    public void Set_Left_Border_Sets_Cell_To_Lefts_Right_Border()
+    public void Set_Borders_Stores_Them_On_The_Cell_Only()
     {
         _sheet.SetFormat(new Region(1, 2),
             new CellFormat()
@@ -195,15 +195,15 @@ public class FormattingTests
                 BorderTop = new Border() { Width = 1, Color = "black" }
             });
 
-        _sheet.GetFormat(1, 2)?.BorderLeft?.Width.Should().Be(1);
-        _sheet.GetFormat(1, 2)?.BorderRight?.Width.Should().Be(1);
-        _sheet.GetFormat(1, 2)?.BorderBottom?.Width.Should().Be(1);
-        _sheet.GetFormat(1, 2)?.BorderTop?.Width.Should().Be(1);
+        _sheet.GetFormat(1, 2).BorderLeft!.Width.Should().Be(1);
+        _sheet.GetFormat(1, 2).BorderRight!.Width.Should().Be(1);
+        _sheet.GetFormat(1, 2).BorderBottom!.Width.Should().Be(1);
+        _sheet.GetFormat(1, 2).BorderTop!.Width.Should().Be(1);
 
-        _sheet.GetFormat(1, 1)?.BorderRight?.Width.Should().Be(1);
-        _sheet.GetFormat(1, 1)?.BorderLeft?.Width.Should().Be(0);
-        _sheet.GetFormat(1, 1)?.BorderBottom?.Width.Should().Be(0);
-        _sheet.GetFormat(1, 1)?.BorderTop?.Width.Should().Be(0);
+        _sheet.GetFormat(1, 1).BorderRight.Should().BeNull();
+        _sheet.GetFormat(1, 1).BorderLeft.Should().BeNull();
+        _sheet.GetFormat(1, 1).BorderBottom.Should().BeNull();
+        _sheet.GetFormat(1, 1).BorderTop.Should().BeNull();
     }
 
     [Test]

@@ -262,6 +262,11 @@ public class ConditionalFormatManager
     }
 
     /// <summary>
+    /// Whether any conditional format is applied anywhere on the sheet.
+    /// </summary>
+    internal bool HasAppliedFormats => !_appliedFormats.IsEmpty;
+
+    /// <summary>
     /// Returns the format that results from applying all conditional formats to this cell
     /// </summary>
     /// <param name="row"></param>

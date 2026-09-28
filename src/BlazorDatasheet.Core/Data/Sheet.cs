@@ -744,6 +744,41 @@ public class Sheet
     private static bool HasStyles(CellFormat? format) => format != null && !format.IsDefaultFormat();
 
     /// <summary>
+    /// Resolves one border of the effective format, with the precedence of
+    /// <see cref="GetFormatForRendering"/> but without copying a format. A cell draws the edges it
+    /// shares with its neighbours, so rendering asks for a neighbour's border far more often than
+    /// for the rest of its format.
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <param name="side">The border's property name, e.g. nameof(CellFormat.BorderLeft)</param>
+    internal Border? GetBorderForRendering(int row, int col, string side)
+    {
+        Border? border = null;
+        MergeBorder(Rows.Formats.Get(row), side, ref border);
+        MergeBorder(Columns.Formats.Get(col), side, ref border);
+        MergeBorder(Cells.GetFormat(row, col), side, ref border);
+        return border;
+    }
+
+    private static void MergeBorder(CellFormat? format, string side, ref Border? border)
+    {
+        if (format == null || !format.Specifies(side))
+            return;
+
+        var incoming = format.GetBorder(side);
+        if (incoming == null || border == null)
+        {
+            border = incoming;
+            return;
+        }
+
+        // the borders belong to the stored formats, so they are merged into a copy.
+        border = border.Clone();
+        border.Merge(incoming);
+    }
+
+    /// <summary>
     /// Sets the format for a particular range
     /// </summary>
     /// <param name="region"></param>

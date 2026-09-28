@@ -22,7 +22,8 @@ public class SetFormatCommand : BaseCommand, IUndoableCommand
     /// </summary>
     /// <param name="region">The region to set the format for. Can be a cell, column or row range.</param>
     /// <param name="cellFormat">The new cell format.</param>
-    /// <param name="clearSurroundingBorders">Whether to copy top/left borders onto the neighboring bottom/right edges</param>
+    /// <param name="clearSurroundingBorders">Whether to clear the borders that neighbouring cells hold on the edges
+    /// this format sets or clears a border on, so that the border set last is the one drawn.</param>
     public SetFormatCommand(IRegion region, CellFormat cellFormat, bool clearSurroundingBorders = true)
     {
         _cellFormat = cellFormat;
@@ -40,24 +41,15 @@ public class SetFormatCommand : BaseCommand, IUndoableCommand
             _changes.Clear();
             ApplyFormat(sheet, Region, _cellFormat);
 
-            // The renderer owns shared edges on the cell above/left (bottom/right borders).
+            // An edge is shared by two cells and either may hold its border. Clearing the
+            // neighbour's side of every edge this format speaks for leaves the edge with one owner,
+            // so the border set last is the one drawn and clearing a border removes it.
             if (_clearSurroundingBorders)
             {
-                if (_cellFormat.BorderLeft is { } leftBorder && Region is not RowRegion)
-                {
-                    IRegion left = Region is ColumnRegion
-                        ? new ColumnRegion(Region.Left - 1)
-                        : new Region(Region.Top, Region.Bottom, Region.Left - 1, Region.Left - 1);
-                    ApplyNeighborFormat(sheet, left, new CellFormat { BorderRight = leftBorder });
-                }
-
-                if (_cellFormat.BorderTop is { } topBorder && Region is not ColumnRegion)
-                {
-                    IRegion above = Region is RowRegion
-                        ? new RowRegion(Region.Top - 1)
-                        : new Region(Region.Top - 1, Region.Top - 1, Region.Left, Region.Right);
-                    ApplyNeighborFormat(sheet, above, new CellFormat { BorderBottom = topBorder });
-                }
+                ClearOppositeSide(sheet, nameof(CellFormat.BorderLeft), nameof(CellFormat.BorderRight), 0, -1);
+                ClearOppositeSide(sheet, nameof(CellFormat.BorderRight), nameof(CellFormat.BorderLeft), 0, 1);
+                ClearOppositeSide(sheet, nameof(CellFormat.BorderTop), nameof(CellFormat.BorderBottom), -1, 0);
+                ClearOppositeSide(sheet, nameof(CellFormat.BorderBottom), nameof(CellFormat.BorderTop), 1, 0);
             }
 
             return true;
@@ -66,6 +58,90 @@ public class SetFormatCommand : BaseCommand, IUndoableCommand
         {
             sheet.EndBatchUpdates();
         }
+    }
+
+    private void ClearOppositeSide(Sheet sheet, string side, string opposite, int dRow, int dCol)
+    {
+        if (!_cellFormat.Specifies(side))
+            return;
+
+        // When the format sets the opposite side as well, the edges inside the region are given
+        // the same border from both sides and only the edge around the region has a neighbour to clear.
+        var outsideOnly = _cellFormat.Specifies(opposite);
+        var neighbours = GetNeighbours(sheet, dRow, dCol, outsideOnly);
+        // Most edges have no border on the neighbour's side, and clearing one that is not there
+        // would only break the stored formats into more pieces.
+        if (neighbours != null && HoldsBorder(sheet, neighbours, opposite))
+            ApplyNeighborFormat(sheet, neighbours,
+                new CellFormat(new Dictionary<string, object?> { { opposite, null } }));
+    }
+
+    /// <summary>
+    /// Whether any cell in the region is given a border on the side, by its own format or by the
+    /// format of its row or column.
+    /// </summary>
+    private static bool HoldsBorder(Sheet sheet, IRegion region, string side)
+    {
+        foreach (var interval in sheet.Columns.Formats.GetIntervals(region.Left, region.Right))
+            if (interval.Data.GetBorder(side) != null)
+                return true;
+
+        foreach (var interval in sheet.Rows.Formats.GetIntervals(region.Top, region.Bottom))
+            if (interval.Data.GetBorder(side) != null)
+                return true;
+
+        foreach (var data in sheet.Cells.GetFormatData(region))
+            if (data.Data.GetBorder(side) != null)
+                return true;
+
+        return false;
+    }
+
+    /// <summary>
+    /// The cells on the other side of the region's edges in the direction given: the region moved
+    /// by one row or column, or only the row or column just outside it.
+    /// </summary>
+    private IRegion? GetNeighbours(Sheet sheet, int dRow, int dCol, bool outsideOnly)
+    {
+        if (sheet.NumRows == 0 || sheet.NumCols == 0)
+            return null;
+
+        var top = Math.Max(Region.Top, 0);
+        var left = Math.Max(Region.Left, 0);
+        var bottom = Math.Min(Region.Bottom, sheet.NumRows - 1);
+        var right = Math.Min(Region.Right, sheet.NumCols - 1);
+        if (top > bottom || left > right)
+            return null;
+
+        if (outsideOnly)
+        {
+            if (dCol != 0)
+                left = right = dCol < 0 ? left - 1 : right + 1;
+            if (dRow != 0)
+                top = bottom = dRow < 0 ? top - 1 : bottom + 1;
+        }
+        else
+        {
+            left += dCol;
+            right += dCol;
+            top += dRow;
+            bottom += dRow;
+        }
+
+        top = Math.Max(top, 0);
+        left = Math.Max(left, 0);
+        bottom = Math.Min(bottom, sheet.NumRows - 1);
+        right = Math.Min(right, sheet.NumCols - 1);
+        if (top > bottom || left > right)
+            return null;
+
+        // a row or column stays one only while it is moved along its own axis; moved across it,
+        // the cells at the sheet's edge have no neighbour and keep their border.
+        if (Region is ColumnRegion && dCol != 0)
+            return new ColumnRegion(left, right);
+        if (Region is RowRegion && dRow != 0)
+            return new RowRegion(top, bottom);
+        return new Region(top, bottom, left, right);
     }
 
     private void ApplyNeighborFormat(Sheet sheet, IRegion region, CellFormat format)
