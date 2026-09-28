@@ -378,9 +378,13 @@
     align-items: end;
 }
 
+/* The background hides the gridlines inside the merge but leaves out the last pixel column/row, so
+   the gridline layer's right/bottom edge shows through there as it does for ordinary cells, and a
+   cell fill (which covers the whole merge) hides it as it does for ordinary cells. The left/top
+   edges are the neighbouring tracks' gridlines, which sit just outside the merge. */
 .merged-cell {
-    background: var(--sheet-bg-color);
-    border: var(--sheet-border-style);
+    background: linear-gradient(var(--sheet-bg-color), var(--sheet-bg-color)) top left /
+        calc(100% - var(--sheet-border-width)) calc(100% - var(--sheet-border-width)) no-repeat;
     pointer-events: all;
     overflow: clip;
 }
