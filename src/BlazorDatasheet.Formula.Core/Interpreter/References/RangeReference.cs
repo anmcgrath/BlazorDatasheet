@@ -14,7 +14,7 @@ public class RangeReference : Reference
 
     public RangeReference(ColAddress colStart, ColAddress colEnd)
     {
-        var start = colStart.ColIndex < colEnd.ColIndex ? colStart : colEnd;
+        var start = colStart.ColIndex <= colEnd.ColIndex ? colStart : colEnd;
         var end = start == colStart ? colEnd : colStart;
 
         Region = new ColumnRegion(start.ColIndex, end.ColIndex);
@@ -24,7 +24,7 @@ public class RangeReference : Reference
 
     public RangeReference(RowAddress rowStart, RowAddress rowEnd)
     {
-        var start = rowStart.RowIndex < rowEnd.RowIndex ? rowStart : rowEnd;
+        var start = rowStart.RowIndex <= rowEnd.RowIndex ? rowStart : rowEnd;
         var end = start == rowStart ? rowEnd : rowStart;
 
         Region = new RowRegion(start.RowIndex, end.RowIndex);

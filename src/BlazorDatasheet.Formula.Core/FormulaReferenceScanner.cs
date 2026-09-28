@@ -2,6 +2,7 @@ using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core.Interpreter;
 using BlazorDatasheet.Formula.Core.Interpreter.Addresses;
 using BlazorDatasheet.Formula.Core.Interpreter.Lexing;
+using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Formula.Core;
 
@@ -197,35 +198,16 @@ public static class FormulaReferenceScanner
 
         second ??= first;
 
-        switch (first)
+        // the range puts the start before the end, taking the fixed part of each address along with it
+        var range = first switch
         {
-            case ColAddress startCol:
-            {
-                var endCol = (ColAddress)second;
-                return new ReadReference(kind, sheetName,
-                    new ColumnRegion(Math.Min(startCol.ColIndex, endCol.ColIndex),
-                        Math.Max(startCol.ColIndex, endCol.ColIndex)),
-                    startCol.IsFixed, false, endCol.IsFixed, false);
-            }
-            case RowAddress startRow:
-            {
-                var endRow = (RowAddress)second;
-                return new ReadReference(kind, sheetName,
-                    new RowRegion(Math.Min(startRow.RowIndex, endRow.RowIndex),
-                        Math.Max(startRow.RowIndex, endRow.RowIndex)),
-                    false, startRow.IsFixed, false, endRow.IsFixed);
-            }
-            default:
-            {
-                var startCell = (CellAddress)first;
-                var endCell = (CellAddress)second;
-                return new ReadReference(kind, sheetName,
-                    new Region(startCell.RowAddress.RowIndex, endCell.RowAddress.RowIndex,
-                        startCell.ColAddress.ColIndex, endCell.ColAddress.ColIndex),
-                    startCell.ColAddress.IsFixed, startCell.RowAddress.IsFixed,
-                    endCell.ColAddress.IsFixed, endCell.RowAddress.IsFixed);
-            }
-        }
+            ColAddress startCol => new RangeReference(startCol, (ColAddress)second),
+            RowAddress startRow => new RangeReference(startRow, (RowAddress)second),
+            _ => new RangeReference((CellAddress)first, (CellAddress)second)
+        };
+
+        return new ReadReference(kind, sheetName, range.Region, range.IsStartColFixed, range.IsStartRowFixed,
+            range.IsEndColFixed, range.IsEndRowFixed);
     }
 
     private static bool TryConvertToAddress(Token token, bool allowImplicitRowOrCol, out Address address)

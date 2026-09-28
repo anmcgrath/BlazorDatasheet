@@ -70,7 +70,22 @@ public class FormulaEditSession
     /// Whether references can be picked from the sheet. Set by the editor that is showing the edit, because only
     /// it knows whether it shows formula text. Reset when an edit begins or finishes.
     /// </summary>
-    public bool IsPickingEnabled { get; set; }
+    public bool IsPickingEnabled
+    {
+        get => _isPickingEnabled;
+        set
+        {
+            if (_isPickingEnabled == value)
+                return;
+
+            _isPickingEnabled = value;
+            // whether the references can be dragged is part of how they are shown
+            if (_references.Count > 0)
+                NotifyReferencesChanged();
+        }
+    }
+
+    private bool _isPickingEnabled;
 
     /// <summary>
     /// The start of the text selection in the editor that owns input.
@@ -103,6 +118,47 @@ public class FormulaEditSession
     public event EventHandler<bool>? DraggingChanged;
 
     /// <summary>
+    /// A reference that is being moved or resized with the pointer. The drag owns the text of the reference, as
+    /// a pick does, and everything else comes from the reference as it was when the drag began. That is what
+    /// lets a range that is dragged down to a single cell get its end, and the fixed parts of it, back.
+    /// </summary>
+    private sealed class ReferenceDrag
+    {
+        public required Sheet Sheet { get; init; }
+        public required int Index { get; init; }
+        public required int ReferenceCount { get; init; }
+        public required ReferenceDragMode Mode { get; init; }
+        public required CellPosition Start { get; init; }
+        public required IRegion OriginalRegion { get; init; }
+        public required FormulaReferenceSpan Reference { get; init; }
+        public required int TextStart { get; init; }
+        public int TextLength { get; set; }
+        public required IRegion LastRegion { get; set; }
+    }
+
+    private ReferenceDrag? _referenceDrag;
+
+    /// <summary>
+    /// Whether a reference is being moved or resized with the pointer.
+    /// </summary>
+    public bool IsAdjustingReference => _referenceDrag != null;
+
+    /// <summary>
+    /// The index in <see cref="References"/> of the reference being moved or resized, or -1 if there isn't one.
+    /// </summary>
+    public int AdjustingReferenceIndex => _referenceDrag?.Index ?? -1;
+
+    /// <summary>
+    /// The sheet that the reference being moved or resized is to.
+    /// </summary>
+    public Sheet? AdjustSheet => _referenceDrag?.Sheet;
+
+    /// <summary>
+    /// Fired when <see cref="IsAdjustingReference"/> changes.
+    /// </summary>
+    public event EventHandler? ReferenceDragChanged;
+
+    /// <summary>
     /// The caret position that the editor owning input should apply, after the session has changed the edit text.
     /// Null once the text has been changed by anything else.
     /// </summary>
@@ -131,7 +187,7 @@ public class FormulaEditSession
 
         // The pointer is on the sheet, so this isn't the user moving the caret. It is the editor's text
         // changing under a selection that it still holds.
-        if (IsDragging)
+        if (IsDragging || IsAdjustingReference)
             return;
 
         _selectionReported = true;
@@ -208,6 +264,9 @@ public class FormulaEditSession
     /// </summary>
     public bool HandlePointerDown(Sheet sheet, int row, int col, bool shift, bool ctrl, bool meta)
     {
+        // a drag that never saw the pointer released ends here
+        CancelReferenceDrag();
+
         if (!CanPick || !ReferenceEquals(sheet.Workbook, Sheet.Workbook))
             return false;
 
@@ -235,6 +294,9 @@ public class FormulaEditSession
     /// </summary>
     public bool HandlePointerOver(Sheet sheet, int row, int col)
     {
+        if (_referenceDrag != null)
+            return UpdateReferenceDrag(sheet, row, col);
+
         if (!IsPicking || !IsDragging || !ReferenceEquals(sheet, PickSheet))
             return false;
 
@@ -248,6 +310,13 @@ public class FormulaEditSession
     /// </summary>
     public bool HandlePointerUp()
     {
+        if (_referenceDrag != null)
+        {
+            EndReferenceDrag();
+            FocusRequested?.Invoke(this, EventArgs.Empty);
+            return true;
+        }
+
         if (!IsPicking || !IsDragging)
             return false;
 
@@ -367,12 +436,107 @@ public class FormulaEditSession
         if (reference.Kind == FormulaReferenceSpanKind.Named)
             return false;
 
-        var text = GetSheetPrefix(reference.SheetName) +
-                   RangeText.RegionToText(region, reference.IsStartColFixed, reference.IsEndColFixed,
-                       reference.IsStartRowFixed, reference.IsEndRowFixed);
+        CancelReferenceDrag();
+        EndPick();
+        ApplyText(reference.TextStart, reference.TextLength, GetReferenceText(reference, region));
+        return true;
+    }
+
+    /// <summary>
+    /// The text of <paramref name="reference"/> if it were to <paramref name="region"/>, with the same sheet
+    /// name and fixed parts.
+    /// </summary>
+    private static string GetReferenceText(FormulaReferenceSpan reference, IRegion region) =>
+        GetSheetPrefix(reference.SheetName) +
+        RangeText.RegionToText(region, reference.IsStartColFixed, reference.IsEndColFixed,
+            reference.IsStartRowFixed, reference.IsEndRowFixed);
+
+    /// <summary>
+    /// Starts moving or resizing the reference at <paramref name="referenceIndex"/> in <see cref="References"/>
+    /// with the pointer, which is followed over <paramref name="sheet"/> by <see cref="HandlePointerOver(Sheet,int,int)"/>
+    /// until <see cref="HandlePointerUp"/>. Named references can't be dragged.
+    /// </summary>
+    /// <param name="sheet">The sheet that the reference is to, which is where it is dragged.</param>
+    /// <param name="referenceIndex"></param>
+    /// <param name="mode"></param>
+    /// <param name="start">For a move, the cell of the reference that the pointer is over.
+    /// For a resize, the corner of the reference opposite the one being dragged.</param>
+    public bool BeginReferenceDrag(Sheet sheet, int referenceIndex, ReferenceDragMode mode, CellPosition start)
+    {
+        CancelReferenceDrag();
+
+        if (!CanPick || referenceIndex < 0 || referenceIndex >= _references.Count)
+            return false;
+
+        var reference = _references[referenceIndex];
+        if (reference.Kind == FormulaReferenceSpanKind.Named || reference.Region == null)
+            return false;
+
+        if (!ReferenceEquals(sheet.Workbook, Sheet.Workbook))
+            return false;
+
+        var isReferencedSheet = reference.SheetName == null
+            ? ReferenceEquals(sheet, Sheet)
+            : sheet.Name == reference.SheetName;
+        if (!isReferencedSheet)
+            return false;
 
         EndPick();
-        ApplyText(reference.TextStart, reference.TextLength, text);
+        _referenceDrag = new ReferenceDrag
+        {
+            Sheet = sheet,
+            Index = referenceIndex,
+            ReferenceCount = _references.Count,
+            Mode = mode,
+            Start = start,
+            OriginalRegion = reference.Region,
+            Reference = reference,
+            TextStart = reference.TextStart,
+            TextLength = reference.TextLength,
+            LastRegion = reference.Region
+        };
+
+        ReferenceDragChanged?.Invoke(this, EventArgs.Empty);
+        return true;
+    }
+
+    /// <summary>
+    /// Stops moving or resizing a reference, leaving the text as it is.
+    /// </summary>
+    public void CancelReferenceDrag() => EndReferenceDrag();
+
+    private void EndReferenceDrag()
+    {
+        if (_referenceDrag == null)
+            return;
+
+        _referenceDrag = null;
+        ReferenceDragChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private bool UpdateReferenceDrag(Sheet sheet, int row, int col)
+    {
+        var drag = _referenceDrag!;
+        if (!ReferenceEquals(sheet, drag.Sheet))
+            return false;
+
+        var pointer = new CellPosition(row, col);
+        var region = drag.Mode == ReferenceDragMode.Move
+            ? ReferenceDragCalculator.Move(drag.OriginalRegion, drag.Start, pointer, sheet.Region)
+            : ReferenceDragCalculator.Resize(drag.OriginalRegion, drag.Start, pointer, sheet.Region);
+
+        if (region.Equals(drag.LastRegion))
+            return true;
+
+        var text = GetReferenceText(drag.Reference, region);
+        ApplyText(drag.TextStart, drag.TextLength, text);
+        drag.TextLength = text.Length;
+        drag.LastRegion = region;
+
+        // the text around the reference may read differently now, in which case it is no longer the same reference
+        if (_references.Count != drag.ReferenceCount || _references[drag.Index].TextStart != drag.TextStart)
+            CancelReferenceDrag();
+
         return true;
     }
 
@@ -425,7 +589,8 @@ public class FormulaEditSession
 
         if (!_isApplyingText)
         {
-            // the text was changed by typing, so the pick no longer owns any of it.
+            // the text was changed by typing, so neither a drag nor the pick owns any of it.
+            CancelReferenceDrag();
             _pickStart = -1;
             _pickLength = 0;
             if (_pickInput?.Selection.IsEmpty() == false || IsDragging)
@@ -466,11 +631,14 @@ public class FormulaEditSession
 
         // the edit becoming a formula, or no longer being one, is a change to the workbook's formula edit
         if (hadReferences || _references.Count > 0 || wasFormula != _wasFormula)
-        {
-            ReferencesChanged?.Invoke(this, EventArgs.Empty);
-            // the references may be to other sheets, which the views of those sheets show
-            Sheet.Workbook.NotifyFormulaEditReferencesChanged();
-        }
+            NotifyReferencesChanged();
+    }
+
+    private void NotifyReferencesChanged()
+    {
+        ReferencesChanged?.Invoke(this, EventArgs.Empty);
+        // the references may be to other sheets, which the views of those sheets show
+        Sheet.Workbook.NotifyFormulaEditReferencesChanged();
     }
 
     private FormulaReferenceSpan ResolveNamedReference(FormulaReferenceSpan span)
@@ -516,6 +684,7 @@ public class FormulaEditSession
 
     private void Reset(bool isEditing)
     {
+        CancelReferenceDrag();
         SetPickSheet(isEditing ? Sheet : null);
 
         _pickStart = -1;
@@ -525,7 +694,7 @@ public class FormulaEditSession
         _selectionReported = false;
         _lastText = _editor.EditValue;
         PendingCaret = null;
-        IsPickingEnabled = false;
+        _isPickingEnabled = false;
         InputOwner = null;
         ScanReferences();
     }

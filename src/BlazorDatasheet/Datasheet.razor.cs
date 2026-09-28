@@ -893,6 +893,12 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     internal async Task<bool> HandleWindowMouseUp(MouseEventArgs arg)
     {
+        // a reference that is being moved or resized here may belong to a formula in another sheet
+        if (_sheet.Workbook.ActiveFormulaEdit is { IsAdjustingReference: true } adjusting &&
+            ReferenceEquals(adjusting.AdjustSheet, _sheet) &&
+            adjusting.HandlePointerUp())
+            return true;
+
         if (_sheet.Editor.IsEditing)
         {
             var activeEditor = GetActiveEditorLayer();
@@ -1112,6 +1118,12 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     internal void HandleCellMouseOver(object? sender, SheetPointerEventArgs args)
     {
+        if (_sheet.Workbook.ActiveFormulaEdit is { IsAdjustingReference: true } adjusting)
+        {
+            adjusting.HandlePointerOver(_sheet, args.Row, args.Col);
+            return;
+        }
+
         if (_sheet.Editor.IsEditing)
         {
             var activeEditor = GetActiveEditorLayer();

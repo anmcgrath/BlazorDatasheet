@@ -356,4 +356,126 @@ public class FormulaEditSessionTests
         Session.IsPickingEnabled.Should().BeFalse();
         Session.InputOwner.Should().BeNull();
     }
+
+    [Test]
+    public void Moving_A_Reference_Rewrites_It_As_The_Pointer_Crosses_Cells()
+    {
+        BeginEdit("=SUM(B2:C3)+1");
+        Session.BeginReferenceDrag(_sheet, 0, ReferenceDragMode.Move, new CellPosition(1, 1)).Should().BeTrue();
+        Session.IsAdjustingReference.Should().BeTrue();
+        Session.AdjustingReferenceIndex.Should().Be(0);
+        _sheet.Editor.EditValue.Should().Be("=SUM(B2:C3)+1");
+
+        Session.HandlePointerOver(3, 2).Should().BeTrue();
+        _sheet.Editor.EditValue.Should().Be("=SUM(C4:D5)+1");
+        Session.PendingCaret.Should().Be("=SUM(C4:D5".Length);
+
+        Session.HandlePointerOver(10, 11).Should().BeTrue();
+        _sheet.Editor.EditValue.Should().Be("=SUM(L11:M12)+1");
+
+        var focusRequests = 0;
+        Session.FocusRequested += (_, _) => focusRequests++;
+        Session.HandlePointerUp().Should().BeTrue();
+        Session.IsAdjustingReference.Should().BeFalse();
+        focusRequests.Should().Be(1);
+
+        Session.HandlePointerOver(0, 0).Should().BeFalse();
+        _sheet.Editor.EditValue.Should().Be("=SUM(L11:M12)+1");
+    }
+
+    [Test]
+    public void Resizing_A_Reference_Down_To_A_Cell_And_Back_Keeps_Its_Fixed_Parts()
+    {
+        BeginEdit("=$A$1:B2");
+        // dragging the bottom right corner
+        Session.BeginReferenceDrag(_sheet, 0, ReferenceDragMode.Resize, new CellPosition(0, 0)).Should().BeTrue();
+
+        Session.HandlePointerOver(0, 0);
+        _sheet.Editor.EditValue.Should().Be("=$A$1");
+
+        Session.HandlePointerOver(2, 3);
+        _sheet.Editor.EditValue.Should().Be("=$A$1:D3");
+        Session.IsAdjustingReference.Should().BeTrue();
+    }
+
+    [Test]
+    public void Dragging_The_Middle_Reference_Leaves_The_Others_Alone()
+    {
+        BeginEdit("=A1+B2+C3");
+        var raised = 0;
+        Session.ReferenceDragChanged += (_, _) => raised++;
+
+        Session.BeginReferenceDrag(_sheet, 1, ReferenceDragMode.Resize, new CellPosition(1, 1)).Should().BeTrue();
+        Session.HandlePointerOver(11, 11);
+        _sheet.Editor.EditValue.Should().Be("=A1+B2:L12+C3");
+        Session.HandlePointerOver(1, 1);
+        _sheet.Editor.EditValue.Should().Be("=A1+B2+C3");
+        Session.References.Select(x => x.Index).Should().Equal(0, 1, 2);
+        Session.HandlePointerUp();
+
+        raised.Should().Be(2);
+    }
+
+    [Test]
+    public void Whole_Columns_Are_Dragged_As_Whole_Columns()
+    {
+        BeginEdit("=SUM($B:C)");
+        Session.BeginReferenceDrag(_sheet, 0, ReferenceDragMode.Move, new CellPosition(0, 1)).Should().BeTrue();
+        Session.HandlePointerOver(7, 3);
+        _sheet.Editor.EditValue.Should().Be("=SUM($D:E)");
+    }
+
+    [Test]
+    public void A_Reference_To_Another_Sheet_Is_Dragged_On_That_Sheet()
+    {
+        var workbook = new Workbook();
+        _sheet = workbook.AddSheet(20, 20);
+        var other = workbook.AddSheet(20, 20);
+        BeginEdit($"={other.Name}!A1:B2+C3");
+
+        Session.BeginReferenceDrag(_sheet, 0, ReferenceDragMode.Move, new CellPosition(0, 0)).Should().BeFalse();
+        Session.BeginReferenceDrag(other, 1, ReferenceDragMode.Move, new CellPosition(2, 2)).Should().BeFalse();
+        Session.BeginReferenceDrag(other, 0, ReferenceDragMode.Move, new CellPosition(0, 0)).Should().BeTrue();
+        Session.AdjustSheet.Should().BeSameAs(other);
+
+        // the pointer is only followed over the sheet that the reference is to
+        Session.HandlePointerOver(_sheet, 4, 4).Should().BeFalse();
+        Session.HandlePointerOver(other, 1, 1).Should().BeTrue();
+        _sheet.Editor.EditValue.Should().Be($"={other.Name}!B2:C3+C3");
+    }
+
+    [Test]
+    public void References_That_Cannot_Be_Dragged_Are_Refused()
+    {
+        _sheet.NamedRanges.Set("myName", "B2:B3");
+        BeginEdit("=myName+A1");
+
+        Session.BeginReferenceDrag(_sheet, 0, ReferenceDragMode.Move, new CellPosition(1, 1)).Should().BeFalse();
+        Session.BeginReferenceDrag(_sheet, 2, ReferenceDragMode.Move, new CellPosition(0, 0)).Should().BeFalse();
+        Session.BeginReferenceDrag(new Sheet(5, 5), 1, ReferenceDragMode.Move, new CellPosition(0, 0))
+            .Should().BeFalse();
+
+        Session.IsPickingEnabled = false;
+        Session.BeginReferenceDrag(_sheet, 1, ReferenceDragMode.Move, new CellPosition(0, 0)).Should().BeFalse();
+        Session.IsAdjustingReference.Should().BeFalse();
+    }
+
+    [Test]
+    public void Typing_Or_Finishing_The_Edit_Ends_A_Reference_Drag()
+    {
+        BeginEdit("=A1");
+        Session.BeginReferenceDrag(_sheet, 0, ReferenceDragMode.Move, new CellPosition(0, 0)).Should().BeTrue();
+
+        // the editor's selection follows the text that is written under it
+        Session.HandlePointerOver(1, 1);
+        Session.SetTextSelection(0, 0);
+        Session.SelectionStart.Should().Be("=B2".Length);
+
+        _sheet.Editor.EditValue = "=B2+";
+        Session.IsAdjustingReference.Should().BeFalse();
+
+        Session.BeginReferenceDrag(_sheet, 0, ReferenceDragMode.Move, new CellPosition(1, 1)).Should().BeTrue();
+        _sheet.Editor.CancelEdit();
+        Session.IsAdjustingReference.Should().BeFalse();
+    }
 }
