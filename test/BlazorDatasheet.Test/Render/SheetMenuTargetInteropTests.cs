@@ -5,11 +5,10 @@ using System.Threading.Tasks;
 using BlazorDatasheet.Menu;
 using BlazorDatasheet.Services;
 using Bunit;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.JSInterop;
 using NUnit.Framework;
-using TestContext = Bunit.TestContext;
 
 namespace BlazorDatasheet.Test.Render;
 
@@ -18,12 +17,12 @@ public class SheetMenuTargetInteropTests
     [Test]
     public void Renders_While_The_Service_Is_Created_Attach_One_Listener()
     {
-        using var context = new TestContext();
+        using var context = new BunitContext();
         var runtime = new PendingImportRuntime();
         context.Services.AddSingleton<IJSRuntime>(runtime);
         context.Services.AddSingleton<IMenuService>(new MenuService(runtime));
 
-        var cut = context.RenderComponent<SheetMenuTarget>(p => p
+        var cut = context.Render<SheetMenuTarget>(p => p
             .Add(x => x.MenuId, "menu")
             .Add(x => x.Trigger, MenuTrigger.OnContextMenu));
         cut.Render();
@@ -39,15 +38,15 @@ public class SheetMenuTargetInteropTests
     [Test]
     public void Disabling_While_The_Service_Is_Created_Attaches_Nothing()
     {
-        using var context = new TestContext();
+        using var context = new BunitContext();
         var runtime = new PendingImportRuntime();
         context.Services.AddSingleton<IJSRuntime>(runtime);
         context.Services.AddSingleton<IMenuService>(new MenuService(runtime));
 
-        var cut = context.RenderComponent<SheetMenuTarget>(p => p
+        var cut = context.Render<SheetMenuTarget>(p => p
             .Add(x => x.MenuId, "menu")
             .Add(x => x.Trigger, MenuTrigger.OnContextMenu));
-        cut.SetParametersAndRender(p => p.Add(x => x.DisableMenuTarget, true));
+        cut.Render(p => p.Add(x => x.DisableMenuTarget, true));
 
         runtime.CompleteImport();
 
@@ -58,19 +57,19 @@ public class SheetMenuTargetInteropTests
     [Test]
     public void Toggling_The_Target_Detaches_And_Reattaches_The_Listener()
     {
-        using var context = new TestContext();
+        using var context = new BunitContext();
         var runtime = new PendingImportRuntime();
         context.Services.AddSingleton<IJSRuntime>(runtime);
         context.Services.AddSingleton<IMenuService>(new MenuService(runtime));
 
-        var cut = context.RenderComponent<SheetMenuTarget>(p => p
+        var cut = context.Render<SheetMenuTarget>(p => p
             .Add(x => x.MenuId, "menu")
             .Add(x => x.Trigger, MenuTrigger.OnContextMenu));
         runtime.CompleteImport();
         cut.WaitForAssertion(() => runtime.Service.Calls.Should().Equal("setContextListener"));
 
-        cut.SetParametersAndRender(p => p.Add(x => x.DisableMenuTarget, true));
-        cut.SetParametersAndRender(p => p.Add(x => x.DisableMenuTarget, false));
+        cut.Render(p => p.Add(x => x.DisableMenuTarget, true));
+        cut.Render(p => p.Add(x => x.DisableMenuTarget, false));
 
         cut.WaitForAssertion(() => runtime.Service.Calls.Should()
             .Equal("setContextListener", "removeContextListener", "setContextListener"));
