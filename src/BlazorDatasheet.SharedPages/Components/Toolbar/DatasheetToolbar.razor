@@ -158,17 +158,9 @@
             <div class="bds-toolbar-divider" aria-hidden="true"></div>
 
             <div class="bds-toolbar-group bds-toolbar-group-fields">
-                <select class="bds-toolbar-select bds-border-select"
-                        title="Borders"
-                        value=""
-                        disabled="@IsSelectionEmpty"
-                        @onchange="OnBorderPresetChanged">
-                    <option value="">Borders</option>
-                    @foreach (var option in BorderPresets)
-                    {
-                        <option value="@option.Value">@option.Label</option>
-                    }
-                </select>
+                <BorderSelector Sheet="Sheet"
+                                @bind-Preset="_borderPreset"
+                                OnApply="ApplyBorderPresetAsync"/>
 
                 <ColourSelector
                     Title="Border color"
@@ -224,6 +216,7 @@
 
     private Sheet? _sheet;
     private string _borderColor = DefaultBorderColor;
+    private BorderSelector.BorderPreset _borderPreset = BorderSelector.BorderPreset.All;
     private bool _overflowOpen;
 
     private CellFormat ActiveFormat
@@ -270,18 +263,6 @@
         new("Number", "N2"),
         new("Percent", "P2"),
         new("Scientific", "E2")
-    ];
-
-    private IReadOnlyList<BorderOption> BorderPresets { get; } =
-    [
-        new("All borders", "all"),
-        new("Outside borders", "outside"),
-        new("Inside borders", "inside"),
-        new("Top border", "top"),
-        new("Right border", "right"),
-        new("Bottom border", "bottom"),
-        new("Left border", "left"),
-        new("No borders", "none")
     ];
 
     private IReadOnlyList<AlignmentOption> HorizontalAlignments => [
@@ -375,14 +356,10 @@
         await RefocusDatasheetAsync();
     }
 
-    private async Task OnBorderPresetChanged(ChangeEventArgs args)
+    private async Task ApplyBorderPresetAsync(BorderSelector.BorderPreset preset)
     {
-        var preset = args.Value?.ToString();
-        if (!string.IsNullOrWhiteSpace(preset))
-        {
-            ApplyBorderPreset(preset);
-            await RefocusDatasheetAsync();
-        }
+        ApplyBorderPreset(preset);
+        await RefocusDatasheetAsync();
     }
 
     private async Task SetBorderColor(string? color)
@@ -451,7 +428,7 @@
         Sheet.Commands.EndCommandGroup();
     }
 
-    private void ApplyBorderPreset(string preset)
+    private void ApplyBorderPreset(BorderSelector.BorderPreset preset)
     {
         if (Sheet.Selection.IsEmpty())
             return;
@@ -463,12 +440,12 @@
         Sheet.Commands.EndCommandGroup();
     }
 
-    private void ApplyBorderPreset(IRegion region, string preset)
+    private void ApplyBorderPreset(IRegion region, BorderSelector.BorderPreset preset)
     {
         var border = CreateBorder();
         switch (preset)
         {
-            case "all":
+            case BorderSelector.BorderPreset.All:
                 Sheet.SetFormat(region, new CellFormat
                 {
                     BorderTop = border.Clone(),
@@ -477,25 +454,25 @@
                     BorderLeft = border.Clone()
                 });
                 break;
-            case "outside":
+            case BorderSelector.BorderPreset.Outside:
                 ApplyOutsideBorders(region, border);
                 break;
-            case "inside":
+            case BorderSelector.BorderPreset.Inside:
                 ApplyInsideBorders(region, border);
                 break;
-            case "top":
+            case BorderSelector.BorderPreset.Top:
                 Sheet.SetFormat(new Region(region.Top, region.Top, region.Left, region.Right), new CellFormat { BorderTop = border.Clone() });
                 break;
-            case "right":
+            case BorderSelector.BorderPreset.Right:
                 Sheet.SetFormat(new Region(region.Top, region.Bottom, region.Right, region.Right), new CellFormat { BorderRight = border.Clone() });
                 break;
-            case "bottom":
+            case BorderSelector.BorderPreset.Bottom:
                 Sheet.SetFormat(new Region(region.Bottom, region.Bottom, region.Left, region.Right), new CellFormat { BorderBottom = border.Clone() });
                 break;
-            case "left":
+            case BorderSelector.BorderPreset.Left:
                 Sheet.SetFormat(new Region(region.Top, region.Bottom, region.Left, region.Left), new CellFormat { BorderLeft = border.Clone() });
                 break;
-            case "none":
+            case BorderSelector.BorderPreset.None:
                 ClearBorders(region);
                 break;
         }
@@ -569,7 +546,6 @@
     }
 
     private sealed record FormatOption(string Label, string Value);
-    private sealed record BorderOption(string Label, string Value);
     private sealed record AlignmentOption(string Label, TextAlign Value, RenderFragment Icon);
 
     private RenderFragment SvgIcon(string path) => SvgIcon(path, 15, 15);
