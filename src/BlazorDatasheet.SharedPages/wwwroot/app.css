@@ -715,10 +715,6 @@ code {
     width: 104px;
 }
 
-.bds-border-select {
-    width: 112px;
-}
-
 .bds-toolbar-overflow-row .bds-toolbar-select,
 .bds-toolbar-overflow-row .bds-toolbar-field {
     background-color: var(--bg);
@@ -751,6 +747,52 @@ code {
 
 .bds-color-swatch-empty {
     box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+/* --- border selector ------------------------------------------------------ */
+
+.bds-border-selector {
+    position: relative;
+}
+
+/* Split button: the main half applies the current preset, the caret opens the menu. */
+.bds-split-button {
+    background: var(--bg);
+    border: 1px solid var(--line-strong);
+    border-radius: 5px;
+    display: flex;
+    flex: 0 0 auto;
+    overflow: hidden;
+}
+
+.bds-split-button .bds-toolbar-button {
+    border: none;
+    border-radius: 0;
+    height: 25px;
+}
+
+.bds-split-button .bds-toolbar-button:focus-visible {
+    outline-offset: -2px;
+}
+
+.bds-split-caret {
+    border-left: 1px solid var(--line) !important;
+    width: 16px;
+}
+
+.bds-split-button.bds-menu-open .bds-split-caret {
+    background: var(--btn);
+    color: var(--ink);
+}
+
+.bds-border-menu {
+    width: auto;
+}
+
+.bds-border-grid {
+    display: grid;
+    gap: 4px;
+    grid-template-columns: repeat(4, 27px);
 }
 
 /* The border colour picker shows a hollow square rather than an underline. */

@@ -1,0 +1,194 @@
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events
+
+@implements IDisposable
+
+@*
+    A split button for borders. The main button applies the last preset used, so the same
+    borders can be applied to range after range. The caret opens the list of presets.
+*@
+<div class="bds-border-selector" @onkeydown="OnKeyDown">
+    <div class="bds-split-button @(_menuOpen ? "bds-menu-open" : "")">
+        <button class="bds-toolbar-button bds-split-main"
+                type="button"
+                title="@CurrentOption.Label"
+                aria-label="@CurrentOption.Label"
+                disabled="@IsDisabled"
+                @onclick="ApplyCurrentAsync">
+            @BorderIcon(CurrentOption.Preset)
+        </button>
+        <button class="bds-toolbar-button bds-split-caret"
+                type="button"
+                title="Border presets"
+                aria-label="Border presets"
+                aria-haspopup="true"
+                aria-expanded="@_menuOpen"
+                disabled="@IsDisabled"
+                @onclick="ToggleMenuOpen">
+            <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m6 9 6 6 6-6"/>
+            </svg>
+        </button>
+    </div>
+
+    @if (_menuOpen)
+    {
+        <div class="bds-color-menu-backdrop" @onpointerdown="CloseMenu"></div>
+        <div class="bds-color-menu bds-border-menu" role="menu" @onpointerdown:stopPropagation>
+            <div class="bds-color-menu-header">
+                <span class="bds-color-menu-title">Borders</span>
+            </div>
+            <div class="bds-border-grid">
+                @foreach (var option in Options)
+                {
+                    <button class="bds-toolbar-button bds-border-choice @(option.Preset == Preset ? "bds-toggled" : "")"
+                            type="button"
+                            role="menuitem"
+                            title="@option.Label"
+                            aria-label="@option.Label"
+                            @onpointerdown="@(() => SelectAsync(option.Preset))">
+                        @BorderIcon(option.Preset)
+                    </button>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public required Sheet Sheet { get; set; }
+
+    /// <summary>
+    /// The preset the main button applies. Choosing one from the menu applies it and makes it current.
+    /// </summary>
+    [Parameter]
+    public BorderPreset Preset { get; set; } = BorderPreset.All;
+
+    [Parameter] public EventCallback<BorderPreset> PresetChanged { get; set; }
+
+    /// <summary>
+    /// Applies a preset to the current selection.
+    /// </summary>
+    [Parameter]
+    public required EventCallback<BorderPreset> OnApply { get; set; }
+
+    private static readonly IReadOnlyList<BorderOption> Options =
+    [
+        new("All borders", BorderPreset.All),
+        new("Outside borders", BorderPreset.Outside),
+        new("Inside borders", BorderPreset.Inside),
+        new("No borders", BorderPreset.None),
+        new("Top border", BorderPreset.Top),
+        new("Right border", BorderPreset.Right),
+        new("Bottom border", BorderPreset.Bottom),
+        new("Left border", BorderPreset.Left)
+    ];
+
+    private Sheet? _sheet;
+    private bool _menuOpen;
+
+    private bool IsDisabled => Sheet.Selection.IsEmpty();
+    private BorderOption CurrentOption => Options.First(o => o.Preset == Preset);
+
+    protected override void OnParametersSet()
+    {
+        if (Sheet == _sheet)
+            return;
+
+        DetachEvents();
+        _sheet = Sheet;
+        _sheet.Selection.SelectionChanged += OnSelectionChanged;
+    }
+
+    private void OnSelectionChanged(object? sender, SelectionChangedEventArgs e) => StateHasChanged();
+
+    private async Task ApplyCurrentAsync()
+    {
+        if (IsDisabled)
+            return;
+
+        await OnApply.InvokeAsync(Preset);
+    }
+
+    private async Task SelectAsync(BorderPreset preset)
+    {
+        _menuOpen = false;
+        if (IsDisabled)
+            return;
+
+        if (preset != Preset)
+        {
+            Preset = preset;
+            await PresetChanged.InvokeAsync(preset);
+        }
+
+        await OnApply.InvokeAsync(preset);
+    }
+
+    private void ToggleMenuOpen()
+    {
+        if (IsDisabled)
+            return;
+
+        _menuOpen = !_menuOpen;
+    }
+
+    private void CloseMenu() => _menuOpen = false;
+
+    private void OnKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape")
+            _menuOpen = false;
+    }
+
+    private void DetachEvents()
+    {
+        if (_sheet == null)
+            return;
+
+        _sheet.Selection.SelectionChanged -= OnSelectionChanged;
+    }
+
+    public void Dispose() => DetachEvents();
+
+    // The icon is a 2x2 grid. Edges the preset sets are drawn solid, the rest faint.
+    private static RenderFragment BorderIcon(BorderPreset preset)
+    {
+        var top = preset is BorderPreset.All or BorderPreset.Outside or BorderPreset.Top;
+        var right = preset is BorderPreset.All or BorderPreset.Outside or BorderPreset.Right;
+        var bottom = preset is BorderPreset.All or BorderPreset.Outside or BorderPreset.Bottom;
+        var left = preset is BorderPreset.All or BorderPreset.Outside or BorderPreset.Left;
+        var inside = preset is BorderPreset.All or BorderPreset.Inside;
+
+        return @<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-linecap="square">
+            @Edge(4, 4, 20, 4, top)
+            @Edge(20, 4, 20, 20, right)
+            @Edge(4, 20, 20, 20, bottom)
+            @Edge(4, 4, 4, 20, left)
+            @Edge(12, 4, 12, 20, inside)
+            @Edge(4, 12, 20, 12, inside)
+        </svg>;
+    }
+
+    private static RenderFragment Edge(int x1, int y1, int x2, int y2, bool set) =>
+        @<line x1="@x1" y1="@y1" x2="@x2" y2="@y2"
+               stroke-width="@(set ? "2.5" : "1.25")"
+               stroke-opacity="@(set ? "1" : "0.35")"
+               stroke-dasharray="@(set ? "none" : "2 2")"/>;
+
+    private sealed record BorderOption(string Label, BorderPreset Preset);
+
+    public enum BorderPreset
+    {
+        All,
+        Outside,
+        Inside,
+        Top,
+        Right,
+        Bottom,
+        Left,
+        None
+    }
+}
