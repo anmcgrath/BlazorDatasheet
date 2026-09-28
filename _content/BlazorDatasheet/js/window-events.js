@@ -99,7 +99,8 @@
                 container.dataset.pointerFocus = '';
                 container.focus({ preventScroll: true });
             }
-            if (!inside && !this.inMenu(e.target) && !this.inExternalEditor(e.target)) this.setActive(false);
+            if (!inside && !this.inMenu(e.target) && !this.inExternalEditor(e.target) && !this.keepsFocus(e.target))
+                this.setActive(false);
             this.reconcileFocus();
             if (inside && this.focused) this.setFocused(true, true);
         }, true);
@@ -191,6 +192,13 @@
         const id = this.container?.dataset?.bdsWorkbook;
         return !!id && !this.contains(target) &&
             target?.closest?.('[data-bds-workbook]')?.dataset.bdsWorkbook === id;
+    }
+
+    // Whether the target is something in another view of the workbook that leaves focus where it is when it is
+    // pressed, e.g. the handles that drag a reference of the formula being edited here. Focus doesn't move, so
+    // nothing would make the sheet active again afterwards and the keys of the edit would be lost.
+    keepsFocus(target) {
+        return this.focused && this.isRelated(target) && !!target.closest?.('[data-bds-keeps-focus]');
     }
 
     dispatchFocus(fromWindow = false) {
