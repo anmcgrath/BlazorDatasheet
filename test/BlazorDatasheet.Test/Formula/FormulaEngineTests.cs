@@ -98,6 +98,98 @@ public class FormulaEngineTests
     }
 
     [Test]
+    public void SuspendCalculation_CalculatesOnceWhenTheOutermostScopeEnds()
+    {
+        var workbook = new Workbook();
+        var sheet = workbook.AddSheet(10, 10);
+        sheet.Cells.SetFormula(0, 0, "=B1+C1+x");
+        var engine = sheet.FormulaEngine;
+        engine.SetVariable("x", new CellValue(0));
+        var passes = 0;
+        engine.CalculationStarted += (_, _) => passes++;
+
+        using (engine.SuspendCalculation())
+        {
+            using (engine.SuspendCalculation())
+            {
+                sheet.Cells.SetValue(0, 1, 1);
+                engine.SetVariable("x", new CellValue(10));
+            }
+
+            sheet.Cells.SetValue(0, 2, 2);
+            passes.Should().Be(0);
+            sheet.Cells.GetValue(0, 0).Should().Be(0);
+        }
+
+        passes.Should().Be(1);
+        sheet.Cells.GetValue(0, 0).Should().Be(13);
+    }
+
+    [Test]
+    public void SuspendCalculation_DoesNotCalculateWhenNothingAskedForIt()
+    {
+        var workbook = new Workbook();
+        var sheet = workbook.AddSheet(10, 10);
+        sheet.Cells.SetFormula(0, 0, "=RAND()");
+        var engine = sheet.FormulaEngine;
+        var passes = 0;
+        engine.CalculationStarted += (_, _) => passes++;
+
+        using (engine.SuspendCalculation())
+        {
+        }
+
+        passes.Should().Be(0);
+    }
+
+    [Test]
+    public void SuspendCalculation_WithoutCalculatingLeavesTheChangesForTheNextPass()
+    {
+        var workbook = new Workbook();
+        var sheet = workbook.AddSheet(10, 10);
+        sheet.Cells.SetFormula(0, 0, "=B1*2");
+        var engine = sheet.FormulaEngine;
+        var passes = 0;
+        engine.CalculationStarted += (_, _) => passes++;
+
+        using (engine.SuspendCalculation(calculateWhenResumed: false))
+        {
+            sheet.Cells.SetValue(0, 1, 4);
+        }
+
+        passes.Should().Be(0);
+        engine.CalculateSheet(false);
+        sheet.Cells.GetValue(0, 0).Should().Be(8);
+    }
+
+    [Test]
+    public void SuspendCalculation_WithoutCalculatingPreservesAFullPassRequest()
+    {
+        var workbook = new Workbook();
+        var sheet = workbook.AddSheet(10, 10);
+        sheet.Cells.SetValue(0, 0, 1);
+        sheet.Cells.SetValue(1, 0, 2);
+        sheet.Cells.SetFormula(0, 1, "=SUM(A1:A2)");
+        var engine = sheet.FormulaEngine;
+        CalculationStartedEventArgs? startedArgs = null;
+        engine.CalculationStarted += (_, args) => startedArgs = args;
+
+        using (engine.SuspendCalculation(calculateWhenResumed: false))
+        {
+            sheet.Rows.RemoveAt(1);
+        }
+
+        startedArgs.Should().BeNull();
+        sheet.Cells.GetValue(0, 1).Should().Be(3);
+
+        engine.CalculateSheet(false);
+
+        startedArgs.Should().NotBeNull();
+        startedArgs!.CalculateAll.Should().BeTrue();
+        sheet.Cells.GetValue(0, 1).Should().Be(1);
+    }
+
+    [Test]
     public void CalculateSheet_DoesNotEmitLifecycleEventsWhenThereIsNoWork()
     {
         var formulaEngine = new BlazorDatasheet.Core.FormulaEngine.FormulaEngine(new TestEnvironment());

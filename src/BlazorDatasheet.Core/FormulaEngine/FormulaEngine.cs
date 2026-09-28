@@ -257,10 +257,62 @@ public class FormulaEngine
             _pauseCount--;
     }
 
+    /// <summary>
+    /// Whether a calculation was asked for while calculation was paused, and whether any of
+    /// those asked for the whole workbook, so that resuming can do the one pass they stood for.
+    /// </summary>
+    private bool _calculationDeferred;
+
+    private bool _deferredCalculateAll;
+
+    /// <summary>
+    /// Defers calculation until the returned scope is disposed. Without it, each cell write or
+    /// variable change recalculates the formulas that depend on it - and every volatile
+    /// formula - straight away. Scopes nest; when the outermost ends, one calculation does
+    /// whatever was asked for meanwhile, or none if nothing was.
+    /// </summary>
+    /// <param name="calculateWhenResumed">
+    /// False for work whose calculated values are never read, such as rewriting a workbook
+    /// that is serialized straight afterwards: what changed is still tracked, and calculated by
+    /// the next calculation that runs.
+    /// </param>
+    public IDisposable SuspendCalculation(bool calculateWhenResumed = true)
+    {
+        PauseCalculation();
+        return new CalculationSuspension(this, calculateWhenResumed);
+    }
+
+    private sealed class CalculationSuspension(FormulaEngine engine, bool calculateWhenResumed) : IDisposable
+    {
+        private bool _disposed;
+
+        public void Dispose()
+        {
+            if (_disposed)
+                return;
+
+            _disposed = true;
+            engine.ResumeCalculation();
+            if (calculateWhenResumed && engine._pauseCount == 0 && engine._calculationDeferred)
+                engine.CalculateSheet(engine._deferredCalculateAll);
+        }
+    }
+
     public void CalculateSheet(bool calculateAll)
     {
-        if (IsCalculating || _pauseCount > 0)
+        if (IsCalculating)
             return;
+
+        if (_pauseCount > 0)
+        {
+            _calculationDeferred = true;
+            _deferredCalculateAll |= calculateAll;
+            return;
+        }
+
+        calculateAll |= _deferredCalculateAll;
+        _calculationDeferred = false;
+        _deferredCalculateAll = false;
 
         // asking first means a write to a sheet with no formulas on it does no work at all -
         // otherwise every unbatched cell change pays for a sort over an empty dirty set.
@@ -520,9 +572,12 @@ public class FormulaEngine
 
     internal IEnumerable<Variable> GetVariables()
     {
-        foreach (var varName in _environment.GetVariableNames())
+        // Every defined variable, not only those holding a value: a formula variable has none
+        // until it has been calculated, and a workbook loaded without calculating would
+        // otherwise lose it on its next save.
+        foreach (var varName in GetVariableNames())
         {
-            var varValue = _environment.GetVariable(varName);
+            var varValue = _environment.VariableExists(varName) ? _environment.GetVariable(varName) : CellValue.Empty;
             var vertex = DependencyManager.GetVertex(varName);
             yield return new Variable(varName, vertex?.Formula?.ToFormulaString(), vertex?.SheetName, varValue);
         }
