@@ -1,4 +1,4 @@
-﻿using BlazorDatasheet.Core.Data.Filter;
+using BlazorDatasheet.Core.Data.Filter;
 using BlazorDatasheet.Core.Formats;
 
 namespace BlazorDatasheet.Core.Data;
@@ -9,6 +9,11 @@ public class SheetColumn
     public int Column { get; }
     public int ColIndex { get; }
     public string? Heading => Sheet.Columns.GetHeading(ColIndex);
+    public TextAlign? HeadingAlignment
+    {
+        get => Sheet.Columns.GetHeadingAlignment(ColIndex);
+        set => Sheet.Columns.SetHeadingAlignment(ColIndex, value);
+    }
     public double Width => Sheet.Columns.GetPhysicalWidth(ColIndex);
     public bool Visible => Sheet.Columns.IsVisible(ColIndex);
     public CellFormat? Format => Sheet.Columns.Formats.Get(ColIndex);

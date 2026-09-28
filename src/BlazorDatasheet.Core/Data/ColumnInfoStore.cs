@@ -1,5 +1,6 @@
-﻿using BlazorDatasheet.Core.Data.Collections;
+using BlazorDatasheet.Core.Data.Collections;
 using BlazorDatasheet.Core.Data.Filter;
+using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Intervals;
 using BlazorDatasheet.DataStructures.Store;
@@ -46,6 +47,22 @@ public class ColumnInfoStore : RowColInfoStore
     /// The total height (in px) of the column heading area, including the group band if any groups exist.
     /// </summary>
     public double TotalHeadingHeight => HeadingHeight + (HasGroups ? GroupHeadingHeight : 0);
+
+    private TextAlign? _headingTextAlign;
+
+    /// <summary>
+    /// The default horizontal text alignment for column headings in this sheet.
+    /// If null, falls back to the component-level default or start.
+    /// </summary>
+    public TextAlign? HeadingTextAlign
+    {
+        get => _headingTextAlign;
+        set
+        {
+            _headingTextAlign = value;
+            EmitHeadingsModified(0, Sheet.NumCols - 1);
+        }
+    }
 
     public ColumnInfoStore(double defaultHeight, Sheet sheet) : base(defaultHeight, sheet, Axis.Col)
     {
@@ -109,5 +126,10 @@ public class ColumnInfoStore : RowColInfoStore
     public double GetVisualLeft(int colIndex)
     {
         return CumulativeSizeStore.GetCumulative(colIndex);
+    }
+
+    public SheetColumn this[int colIndex]
+    {
+        get => new SheetColumn(colIndex, Sheet);
     }
 }

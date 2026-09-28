@@ -1,8 +1,9 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Filter;
 using BlazorDatasheet.Core.Edit;
+using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Events.Edit;
 using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.Core.Events.Selection;
@@ -118,6 +119,27 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     public bool ShowColHeadings { get; set; } = true;
 
     private bool _showColHeadings;
+
+    /// <summary>
+    /// Horizontal alignment for column heading text (e.g. TextAlign.Center, TextAlign.Start, TextAlign.End).
+    /// Defaults to TextAlign.Start.
+    /// </summary>
+    [Parameter]
+    public TextAlign ColumnHeadingTextAlign { get; set; } = TextAlign.Start;
+
+    /// <summary>
+    /// Alias for <see cref="ColumnHeadingTextAlign"/>.
+    /// </summary>
+    [Parameter]
+    public TextAlign? ColumnHeadingAlignment
+    {
+        get => ColumnHeadingTextAlign;
+        set
+        {
+            if (value.HasValue)
+                ColumnHeadingTextAlign = value.Value;
+        }
+    }
 
     /// <summary>
     /// When true, the autofill handle will be shown on the bottom right of the cell.

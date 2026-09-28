@@ -1,4 +1,4 @@
-﻿using BlazorDatasheet.Core.Commands.RowCols;
+using BlazorDatasheet.Core.Commands.RowCols;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.Core.Formats;
@@ -14,6 +14,7 @@ public abstract class RowColInfoStore
     public double DefaultSize { get; }
 
     internal readonly Range1DStore<string> HeadingStore = new(null);
+    internal readonly Range1DStore<TextAlign?> HeadingAlignmentStore = new(null);
 
     /// <summary>
     /// Stores labelled groups that span contiguous rows/columns.
@@ -126,6 +127,11 @@ public abstract class RowColInfoStore
         SizeModified?.Invoke(this, new SizeModifiedEventArgs(start, end, _axis));
     }
 
+    protected void EmitHeadingsModified(int start, int end)
+    {
+        HeadingsModified?.Invoke(this, new HeadingsModifiedEventArgs(start, end, _axis));
+    }
+
     /// <summary>
     /// Sets the headings of all rows between (and including) rows specified, to the value given.
     /// </summary>
@@ -141,6 +147,22 @@ public abstract class RowColInfoStore
         return new RowColInfoRestoreData()
         {
             HeadingsRestoreData = restoreData
+        };
+    }
+
+    /// <summary>
+    /// Sets the heading text alignment of all rows/columns between (and including) start and end to the value given.
+    /// </summary>
+    internal RowColInfoRestoreData SetHeadingAlignmentImpl(int start, int end, TextAlign? alignment)
+    {
+        var restoreData = alignment.HasValue
+            ? HeadingAlignmentStore.Set(start, end, alignment)
+            : HeadingAlignmentStore.Clear(start, end);
+        Sheet.MarkDirty(GetSpannedRegion(start, end));
+        HeadingsModified?.Invoke(this, new HeadingsModifiedEventArgs(start, end, _axis));
+        return new RowColInfoRestoreData()
+        {
+            HeadingAlignmentsRestoreData = restoreData
         };
     }
 
@@ -205,6 +227,7 @@ public abstract class RowColInfoStore
             CumulativeSizesRestoreData = CumulativeSizeStore.Delete(start, end),
             SizesRestoreData = SizeStore.Delete(start, end),
             HeadingsRestoreData = HeadingStore.Delete(start, end),
+            HeadingAlignmentsRestoreData = HeadingAlignmentStore.Delete(start, end),
             GroupsRestoreData = GroupStore.Delete(start, end),
             VisibilityRestoreData = Visible.Delete(start, end),
             RowColFormatRestoreData = new RowColFormatRestoreData()
@@ -465,6 +488,7 @@ public abstract class RowColInfoStore
             CumulativeSizesRestoreData = CumulativeSizeStore.InsertAt(start, count),
             SizesRestoreData = SizeStore.InsertAt(start, count),
             HeadingsRestoreData = HeadingStore.InsertAt(start, count),
+            HeadingAlignmentsRestoreData = HeadingAlignmentStore.InsertAt(start, count),
             GroupsRestoreData = GroupStore.InsertAt(start, count),
             VisibilityRestoreData = Visible.InsertAt(start, count),
             RowColFormatRestoreData = new RowColFormatRestoreData()
@@ -489,12 +513,23 @@ public abstract class RowColInfoStore
         return HeadingStore.Get(index);
     }
 
+    /// <summary>
+    /// Returns the heading text alignment at the index given
+    /// </summary>
+    /// <param name="index"></param>
+    /// <returns></returns>
+    public TextAlign? GetHeadingAlignment(int index)
+    {
+        return HeadingAlignmentStore.Get(index);
+    }
+
     internal void Restore(RowColInfoRestoreData data)
     {
         var groupsBefore = GetGroups();
         CumulativeSizeStore.Restore(data.CumulativeSizesRestoreData);
         SizeStore.Restore(data.SizesRestoreData);
         HeadingStore.Restore(data.HeadingsRestoreData);
+        HeadingAlignmentStore.Restore(data.HeadingAlignmentsRestoreData);
         GroupStore.Restore(data.GroupsRestoreData);
         Visible.Restore(data.VisibilityRestoreData);
         Formats.Restore(data.RowColFormatRestoreData.Format1DRestoreData);
@@ -506,6 +541,12 @@ public abstract class RowColInfoStore
         }
 
         foreach (var change in data.HeadingsRestoreData.RemovedIntervals.Concat(data.HeadingsRestoreData
+                     .AddedIntervals))
+        {
+            HeadingsModified?.Invoke(this, new HeadingsModifiedEventArgs(change.Start, change.End, _axis));
+        }
+
+        foreach (var change in data.HeadingAlignmentsRestoreData.RemovedIntervals.Concat(data.HeadingAlignmentsRestoreData
                      .AddedIntervals))
         {
             HeadingsModified?.Invoke(this, new HeadingsModifiedEventArgs(change.Start, change.End, _axis));
@@ -592,6 +633,24 @@ public abstract class RowColInfoStore
     {
         Sheet.Commands.ExecuteCommand(new SetHeadingsCommand(indexStart, indexEnd, heading, _axis));
     }
+
+    /// <summary>
+    /// Sets the heading text alignment from (and including) <paramref name="indexStart"/> to <paramref name="indexEnd"/> to <paramref name="alignment"/>
+    /// </summary>
+    /// <param name="indexStart"></param>
+    /// <param name="indexEnd"></param>
+    /// <param name="alignment"></param>
+    public void SetHeadingAlignment(int indexStart, int indexEnd, TextAlign? alignment)
+    {
+        Sheet.Commands.ExecuteCommand(new SetHeadingAlignmentCommand(indexStart, indexEnd, alignment, _axis));
+    }
+
+    /// <summary>
+    /// Sets the heading text alignment of row/column at <paramref name="index"/> to <paramref name="alignment"/>
+    /// </summary>
+    /// <param name="index"></param>
+    /// <param name="alignment"></param>
+    public void SetHeadingAlignment(int index, TextAlign? alignment) => SetHeadingAlignment(index, index, alignment);
 
     /// <summary>
     /// Sets a labelled group spanning (and including) <paramref name="indexStart"/> to <paramref name="indexEnd"/>.
@@ -694,6 +753,7 @@ internal class RowColInfoRestoreData
 
     public MergeableIntervalStoreRestoreData<OverwritingValue<double>> SizesRestoreData { get; init; } = new();
     public MergeableIntervalStoreRestoreData<OverwritingValue<string>> HeadingsRestoreData { get; init; } = new();
+    public MergeableIntervalStoreRestoreData<OverwritingValue<TextAlign?>> HeadingAlignmentsRestoreData { get; init; } = new();
     public MergeableIntervalStoreRestoreData<OverwritingValue<HeadingGroup>> GroupsRestoreData { get; init; } = new();
     public MergeableIntervalStoreRestoreData<OverwritingValue<bool>> VisibilityRestoreData { get; init; } = new();
     public RowColFormatRestoreData RowColFormatRestoreData { get; init; } = new();
@@ -703,6 +763,7 @@ internal class RowColInfoRestoreData
         CumulativeSizesRestoreData.Merge(other.CumulativeSizesRestoreData);
         SizesRestoreData.Merge(other.SizesRestoreData);
         HeadingsRestoreData.Merge(other.HeadingsRestoreData);
+        HeadingAlignmentsRestoreData.Merge(other.HeadingAlignmentsRestoreData);
         GroupsRestoreData.Merge(other.GroupsRestoreData);
         VisibilityRestoreData.Merge(other.VisibilityRestoreData);
         RowColFormatRestoreData.Merge(other.RowColFormatRestoreData);

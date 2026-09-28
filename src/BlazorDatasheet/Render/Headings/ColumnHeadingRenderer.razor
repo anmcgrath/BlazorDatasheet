@@ -1,4 +1,5 @@
-﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Formats
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Formula.Core
 @using BlazorDatasheet.Menu
@@ -210,18 +211,21 @@
                 data-col="@col"
                 data-row="-1"
                 style="display: flex; justify-content: space-between; width: 100%;">
-                <div>
-                    @ChildContent(new HeadingContext(col, _sheet.Columns.GetHeading(col) ?? RangeText.ColIndexToLetters(col)))
+                @{
+                    var alignment = GetHeadingAlignment(col);
+                }
+                <div class="bds-col-head-content @GetHeadingAlignClass(alignment)">
+                    @ChildContent(new HeadingContext(col, _sheet.Columns.GetHeading(col) ?? RangeText.ColIndexToLetters(col), alignment))
                 </div>
-                <div style="display: flex; flex-direction: row;">
-                    @if (ShowColumnMenu)
-                    {
+                @if (ShowColumnMenu)
+                {
+                    <div style="display: flex; flex-direction: row; flex-shrink: 0;">
                         <SheetMenuTarget MenuId="@ContextMenus.Selection"
                                          MenuData="Sheet">
                             <CaretButton/>
                         </SheetMenuTarget>
-                    }
-                </div>
+                    </div>
+                }
             </div>
 
             @if (_sheet.Protection.Can(BlazorDatasheet.Core.Protection.SheetOperation.FormatColumns))
@@ -240,6 +244,26 @@
             </div>
             }
         </div>;
+
+    /// <summary>
+    /// Default horizontal alignment for column headings.
+    /// </summary>
+    [Parameter]
+    public TextAlign HeadingTextAlign { get; set; } = TextAlign.Start;
+
+    private TextAlign GetHeadingAlignment(int col)
+    {
+        return _sheet.Columns.GetHeadingAlignment(col)
+            ?? _sheet.Columns.HeadingTextAlign
+            ?? HeadingTextAlign;
+    }
+
+    private static string GetHeadingAlignClass(TextAlign alignment) => alignment switch
+    {
+        TextAlign.Center => "bds-cell-align-center",
+        TextAlign.End => "bds-cell-align-end",
+        _ => "bds-cell-align-start"
+    };
 
     [Parameter] public bool ShowColumnMenu { get; set; }
 

@@ -1,4 +1,4 @@
-﻿@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Extensions
 @using BlazorDatasheet.Menu
 @using BlazorDatasheet.Render
@@ -54,7 +54,8 @@
                                     ShowColumnMenu="_menuOptions.HeaderMenuEnabled"
                                     GroupTemplate="ColumnGroupTemplate"
                                     GroupMouseDown="HandleColumnGroupMouseDown"
-                                    PreviewService="_previewService">
+                                    PreviewService="_previewService"
+                                    HeadingTextAlign="ColumnHeadingTextAlign">
                                     @ColumnHeaderTemplate(context)
                                 </ColumnHeadingRenderer>
                             </div>

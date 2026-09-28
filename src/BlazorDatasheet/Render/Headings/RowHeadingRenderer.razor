@@ -1,4 +1,5 @@
-﻿@using BlazorDatasheet.DataStructures.Geometry
+﻿@using BlazorDatasheet.Core.Formats
+@using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Extensions
 @using BlazorDatasheet.Virtualise
 @inherits HeadingRenderer
@@ -54,9 +55,18 @@
 @code {
 
     private RenderFragment RowHeadingItem(int row) =>
-        @<div class="bds-row-head bds-sheet-cell @GetSelectedClass(row)" data-row="@row" data-col="-1">
-            @ChildContent(new HeadingContext(row, _sheet.Rows.GetHeading(row)))
+        @<div class="bds-row-head bds-sheet-cell @GetSelectedClass(row) @GetHeadingAlignClass(row)" data-row="@row" data-col="-1">
+            @ChildContent(new HeadingContext(row, _sheet.Rows.GetHeading(row), GetHeadingAlignment(row)))
         </div>;
+
+    private TextAlign GetHeadingAlignment(int row) => _sheet.Rows.GetHeadingAlignment(row) ?? TextAlign.End;
+
+    private string GetHeadingAlignClass(int row) => GetHeadingAlignment(row) switch
+    {
+        TextAlign.Start => "bds-cell-align-start",
+        TextAlign.Center => "bds-cell-align-center",
+        _ => "bds-cell-align-end"
+    };
 
     /// <summary>
     /// The number of rows past the end of the viewport to render.

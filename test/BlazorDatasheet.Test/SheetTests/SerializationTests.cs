@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -309,6 +309,34 @@ public class SerializationTests
         d.Rows.GetPhysicalHeight(1).Should().Be(7);
         d.Columns.GetPhysicalWidth(0).Should().Be(6);
         d.Columns.GetPhysicalWidth(1).Should().Be(8);
+    }
+
+    [Test]
+    public void Column_Heading_Alignment_Should_Deserialize_Correctly()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Columns.HeadingTextAlign = TextAlign.Center;
+        sheet.Columns.SetHeadingAlignment(2, TextAlign.End);
+
+        var json = new SheetJsonSerializer().Serialize(sheet.Workbook);
+        var d = new SheetJsonDeserializer().Deserialize(json).Sheets.First();
+
+        d.Columns.HeadingTextAlign.Should().Be(TextAlign.Center);
+        d.Columns.GetHeadingAlignment(0).Should().BeNull();
+        d.Columns.GetHeadingAlignment(2).Should().Be(TextAlign.End);
+    }
+
+    [Test]
+    public void Row_Heading_Alignment_Should_Deserialize_Correctly()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Rows.SetHeadingAlignment(2, TextAlign.Center);
+
+        var json = new SheetJsonSerializer().Serialize(sheet.Workbook);
+        var deserialized = new SheetJsonDeserializer().Deserialize(json).Sheets.First();
+
+        deserialized.Rows.GetHeadingAlignment(0).Should().BeNull();
+        deserialized.Rows.GetHeadingAlignment(2).Should().Be(TextAlign.Center);
     }
 
     [Test]

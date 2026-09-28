@@ -519,6 +519,119 @@
     }
 
     [Test]
+    public async Task Default_Column_Heading_Alignment_Is_Start()
+    {
+        var sheet = new Sheet(3, 3);
+        var cut = Render<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+        await cut.InvokeAsync(() => sheet.Columns.SetSize(0, 90));
+
+        cut.WaitForAssertion(() => cut.FindAll(".bds-col-head-content.bds-cell-align-start").Should().NotBeEmpty());
+    }
+
+    [Test]
+    public async Task ColumnHeadingTextAlign_Center_Renders_Center_Alignment()
+    {
+        var sheet = new Sheet(3, 3);
+        var cut = Render<Datasheet>(parameters =>
+        {
+            parameters.Add(p => p.Sheet, sheet);
+            parameters.Add(p => p.ColumnHeadingTextAlign, TextAlign.Center);
+        });
+        await cut.InvokeAsync(() => sheet.Columns.SetSize(0, 90));
+
+        cut.WaitForAssertion(() => cut.FindAll(".bds-col-head-content.bds-cell-align-center").Should().NotBeEmpty());
+    }
+
+    [Test]
+    public async Task ColumnHeadingTextAlign_End_Renders_End_Alignment()
+    {
+        var sheet = new Sheet(3, 3);
+        var cut = Render<Datasheet>(parameters =>
+        {
+            parameters.Add(p => p.Sheet, sheet);
+            parameters.Add(p => p.ColumnHeadingTextAlign, TextAlign.End);
+        });
+        await cut.InvokeAsync(() => sheet.Columns.SetSize(0, 90));
+
+        cut.WaitForAssertion(() => cut.FindAll(".bds-col-head-content.bds-cell-align-end").Should().NotBeEmpty());
+    }
+
+    [Test]
+    public async Task Per_Column_Heading_Alignment_Overrides_Default()
+    {
+        var sheet = new Sheet(3, 3);
+        sheet.Columns.SetHeadingAlignment(1, TextAlign.Center);
+        sheet.Columns.SetHeadingAlignment(2, TextAlign.End);
+
+        var cut = Render<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+        await cut.InvokeAsync(() => sheet.Columns.SetSize(0, 90));
+
+        cut.WaitForAssertion(() =>
+        {
+            var heads = cut.FindAll(".bds-col-head-content");
+            heads.Count.Should().BeGreaterThanOrEqualTo(3);
+            heads[0].ClassList.Should().Contain("bds-cell-align-start");
+            heads[1].ClassList.Should().Contain("bds-cell-align-center");
+            heads[2].ClassList.Should().Contain("bds-cell-align-end");
+        });
+    }
+
+    [Test]
+    public async Task Sheet_Columns_HeadingTextAlign_Overrides_Default()
+    {
+        var sheet = new Sheet(3, 3);
+        sheet.Columns.HeadingTextAlign = TextAlign.Center;
+
+        var cut = Render<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+        await cut.InvokeAsync(() => sheet.Columns.SetSize(0, 90));
+
+        cut.WaitForAssertion(() => cut.FindAll(".bds-col-head-content.bds-cell-align-center").Should().NotBeEmpty());
+    }
+
+    [Test]
+    public async Task Column_Heading_Alignment_Passed_To_HeadingContext()
+    {
+        var sheet = new Sheet(3, 3);
+        sheet.Columns.SetHeadingAlignment(0, TextAlign.Center);
+
+        var cut = Render<Datasheet>(parameters =>
+        {
+            parameters.Add(p => p.Sheet, sheet);
+            parameters.Add(p => p.ColumnHeaderTemplate, (RenderFragment<HeadingContext>)(ctx =>
+                @<div class="test-custom-heading" data-align="@ctx.Alignment">@ctx.Heading</div>));
+        });
+        await cut.InvokeAsync(() => sheet.Columns.SetSize(0, 90));
+
+        cut.WaitForAssertion(() =>
+        {
+            var custom = cut.Find(".test-custom-heading");
+            custom.GetAttribute("data-align").Should().Be("Center");
+        });
+    }
+
+    [Test]
+    public async Task Row_Heading_Alignment_Updates_Render_And_HeadingContext()
+    {
+        var sheet = new Sheet(3, 3);
+        var cut = Render<Datasheet>(parameters =>
+        {
+            parameters.Add(p => p.Sheet, sheet);
+            parameters.Add(p => p.RowHeaderTemplate, (RenderFragment<HeadingContext>)(ctx =>
+                @<div class="test-row-heading" data-align="@ctx.Alignment">@ctx.Heading</div>));
+        });
+
+        await cut.InvokeAsync(() => sheet.Rows.SetSize(0, 30));
+        await cut.InvokeAsync(() => sheet.Rows.SetHeadingAlignment(0, TextAlign.Center));
+
+        cut.WaitForAssertion(() =>
+        {
+            var heading = cut.Find(".bds-row-head[data-row='0']");
+            heading.ClassList.Should().Contain("bds-cell-align-center");
+            heading.QuerySelector(".test-row-heading")!.GetAttribute("data-align").Should().Be("Center");
+        });
+    }
+
+    [Test]
     public async Task Freezing_Columns_At_Runtime_Renders_Frozen_Side_Panes()
     {
         var sheet = new Sheet(20, 20);
