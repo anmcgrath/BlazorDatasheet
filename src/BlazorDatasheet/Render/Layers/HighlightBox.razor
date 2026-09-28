@@ -27,7 +27,7 @@
              style="@GetStyle(X, Y - EdgeSize / 2, Width, EdgeSize)"
              @onmousedown:preventDefault="true"
              @onmousedown="() => { }"
-             @onpointerdown="e => BeginMove(Region.Top, null, e)"></div>
+             @onpointerdown="e => BeginMove(Region.Top, null, X, Y - EdgeSize / 2, e)"></div>
     }
 
     @if (ShowBottom)
@@ -36,7 +36,7 @@
              style="@GetStyle(X, Y + Height - EdgeSize / 2, Width, EdgeSize)"
              @onmousedown:preventDefault="true"
              @onmousedown="() => { }"
-             @onpointerdown="e => BeginMove(Region.Bottom, null, e)"></div>
+             @onpointerdown="e => BeginMove(Region.Bottom, null, X, Y + Height - EdgeSize / 2, e)"></div>
     }
 
     @if (ShowLeft)
@@ -45,7 +45,7 @@
              style="@GetStyle(X - EdgeSize / 2, Y, EdgeSize, Height)"
              @onmousedown:preventDefault="true"
              @onmousedown="() => { }"
-             @onpointerdown="e => BeginMove(null, Region.Left, e)"></div>
+             @onpointerdown="e => BeginMove(null, Region.Left, X - EdgeSize / 2, Y, e)"></div>
     }
 
     @if (ShowRight)
@@ -54,7 +54,7 @@
              style="@GetStyle(X + Width - EdgeSize / 2, Y, EdgeSize, Height)"
              @onmousedown:preventDefault="true"
              @onmousedown="() => { }"
-             @onpointerdown="e => BeginMove(null, Region.Right, e)"></div>
+             @onpointerdown="e => BeginMove(null, Region.Right, X + Width - EdgeSize / 2, Y, e)"></div>
     }
 
     @* The corners resize it, and come after the edges so that they are on top of them. *@
@@ -67,7 +67,7 @@
              style="@GetCornerStyle(corner)"
              @onmousedown:preventDefault="true"
              @onmousedown="() => { }"
-             @onpointerdown="() => BeginResize(corner)"></div>
+             @onpointerdown="e => BeginResize(corner, e)"></div>
     }
 }
 
@@ -120,18 +120,21 @@
     private bool IsShown((bool IsBottom, bool IsRight) corner) =>
         (corner.IsBottom ? ShowBottom : ShowTop) && (corner.IsRight ? ShowRight : ShowLeft);
 
-    private Task BeginMove(int? row, int? col, PointerEventArgs e)
+    private Task BeginMove(int? row, int? col, double edgeX, double edgeY, PointerEventArgs e)
     {
         if (e.Button != 0)
             return Task.CompletedTask;
 
         // an edge along the top or bottom knows its row, and one down the side knows its column
         return DragStarted.InvokeAsync(new HighlightBoxDrag(ReferenceDragMode.Move, row, col,
-            X + e.OffsetX, Y + e.OffsetY));
+            edgeX + e.OffsetX, edgeY + e.OffsetY));
     }
 
-    private Task BeginResize((bool IsBottom, bool IsRight) corner)
+    private Task BeginResize((bool IsBottom, bool IsRight) corner, PointerEventArgs e)
     {
+        if (e.Button != 0)
+            return Task.CompletedTask;
+
         // the opposite corner is the one that stays where it is
         var row = corner.IsBottom ? Region.Top : Region.Bottom;
         var col = corner.IsRight ? Region.Left : Region.Right;

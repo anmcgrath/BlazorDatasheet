@@ -19,6 +19,54 @@ namespace BlazorDatasheet.Test.Render;
 
 public class DatasheetReferenceDragTests
 {
+    [Test]
+    public async Task Moving_From_Right_Or_Bottom_Edge_Uses_Grabbed_Edge_Pointer_Position()
+    {
+        await using var context = CreateContext();
+        var region = new Region(1, 2, 1, 2);
+        var drags = new List<HighlightBoxDrag>();
+        var box = context.Render<HighlightBox>(p => p
+            .Add(x => x.Region, region)
+            .Add(x => x.VisibleRegion, region)
+            .Add(x => x.X, 100)
+            .Add(x => x.Y, 200)
+            .Add(x => x.Width, 80)
+            .Add(x => x.Height, 40)
+            .Add(x => x.CanDrag, true)
+            .Add(x => x.DragStarted, drag => drags.Add(drag)));
+
+        var edges = box.FindAll(".bds-reference-edge");
+        await edges[1].TriggerEventAsync("onpointerdown", new PointerEventArgs { OffsetX = 2, OffsetY = 3 });
+        await edges[3].TriggerEventAsync("onpointerdown", new PointerEventArgs { OffsetX = 2, OffsetY = 3 });
+
+        drags[0].LayerX.Should().Be(102);
+        drags[0].LayerY.Should().Be(240.5);
+        drags[1].LayerX.Should().Be(179.5);
+        drags[1].LayerY.Should().Be(203);
+    }
+
+    [Test]
+    public async Task Secondary_Button_Does_Not_Resize_A_Reference()
+    {
+        await using var context = CreateContext();
+        var region = new Region(1, 2, 1, 2);
+        var drags = new List<HighlightBoxDrag>();
+        var box = context.Render<HighlightBox>(p => p
+            .Add(x => x.Region, region)
+            .Add(x => x.VisibleRegion, region)
+            .Add(x => x.CanDrag, true)
+            .Add(x => x.DragStarted, drag => drags.Add(drag)));
+
+        var corner = box.FindAll(".bds-reference-corner")[0];
+        await corner.TriggerEventAsync("onpointerdown", new PointerEventArgs { Button = 2 });
+        drags.Should().BeEmpty();
+
+        await box.FindAll(".bds-reference-corner")[0]
+            .TriggerEventAsync("onpointerdown", new PointerEventArgs { Button = 0 });
+        drags.Should().ContainSingle();
+        drags[0].Mode.Should().Be(ReferenceDragMode.Resize);
+    }
+
     private static BunitContext CreateContext()
     {
         var context = new BunitContext();
