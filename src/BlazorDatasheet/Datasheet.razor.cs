@@ -1131,6 +1131,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         _selectionManager.HandlePointerOver(args.Row, args.Col);
     }
 
+    private void HandleAutoScrollTarget(SheetPointerEventArgs args) => HandleCellMouseOver(this, args);
+
     private async Task<bool> AcceptEditAndMoveActiveSelection(Axis axis, int amount)
     {
         var acceptEdit = !_sheet.Editor.IsEditing || _sheet.Editor.AcceptEdit();
