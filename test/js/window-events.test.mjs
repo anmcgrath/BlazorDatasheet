@@ -153,6 +153,26 @@ test('a pointerdown outside that moves focus away reports one transition, not tw
     assert.deepEqual(calls.slice(1).map(c => [c[1].focused, c[1].active]), [[false, false]]);
 });
 
+test('pressing a reference handle in another sheet of the workbook keeps the editing sheet active', async () => {
+    const { service, container, calls } = setup();
+    container.dataset.bdsWorkbook = 'wb';
+    const otherSheet = { dataset: { bdsWorkbook: 'wb' } };
+    const handle = { closest: selector => selector === '[data-bds-workbook]' ? otherSheet
+            : selector === '[data-bds-keeps-focus]' || selector.includes('[tabindex]') ? handle : null };
+    service.listeners.get('pointerdown:true').fn({ target: handle });
+    await new Promise(resolve => setTimeout(resolve, 0));
+    assert.equal(service.active, true);
+    assert.deepEqual(calls.map(c => c[0]), ['focus']);
+    const e = key(container);
+    await service.handleWindowEvent(e);
+    assert.equal(calls.at(-1)[0], 'key');
+
+    // anything else that is pressed there is the user going to that sheet
+    const cell = { closest: selector => selector === '[data-bds-workbook]' ? otherSheet : null };
+    service.listeners.get('pointerdown:true').fn({ target: cell });
+    assert.equal(service.active, false);
+});
+
 test('the sheet\'s own chrome buttons hand focus to the sheet rather than keeping it', async () => {
     const { service, container, calls } = setup();
     let focusedContainer = false;

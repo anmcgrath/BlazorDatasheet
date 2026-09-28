@@ -70,6 +70,28 @@ public class FormulaReferenceScannerTests
     }
 
     [Test]
+    public void Fixed_Flags_Follow_Their_Address_When_A_Range_Is_Written_Backwards()
+    {
+        var span = FormulaReferenceScanner.Scan("=B2:$A$1", new FormulaOptions()).Single();
+        span.Region!.Equals(new Region(0, 1, 0, 1)).Should().BeTrue();
+        span.IsStartColFixed.Should().BeTrue();
+        span.IsStartRowFixed.Should().BeTrue();
+        span.IsEndColFixed.Should().BeFalse();
+        span.IsEndRowFixed.Should().BeFalse();
+
+        // each axis is put in order on its own
+        span = FormulaReferenceScanner.Scan("=A2:$B$1", new FormulaOptions()).Single();
+        span.IsStartColFixed.Should().BeFalse();
+        span.IsStartRowFixed.Should().BeTrue();
+        span.IsEndColFixed.Should().BeTrue();
+        span.IsEndRowFixed.Should().BeFalse();
+
+        span = FormulaReferenceScanner.Scan("=SUM($A:A)", new FormulaOptions()).Single();
+        span.IsStartColFixed.Should().BeTrue();
+        span.IsEndColFixed.Should().BeFalse();
+    }
+
+    [Test]
     public void Row_And_Column_Ranges_Are_Read()
     {
         var spans = FormulaReferenceScanner.Scan("=SUM(A:C)+SUM(2:4)", new FormulaOptions());

@@ -1,4 +1,7 @@
 ﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Edit
+@using BlazorDatasheet.Core.Layout
+@using BlazorDatasheet.Util
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Formula.Core
 @inherits Layer
@@ -11,29 +14,29 @@
         if (reference.Region == null || !IsInThisSheet(reference))
             continue;
 
-        var region = reference.Region;
-        var r = region.GetIntersection(ViewRegion);
-        if (r == null)
+        // a reference to whole rows or columns ends where the sheet does
+        var region = reference.Region.GetIntersection(Sheet.Region);
+        var r = region?.GetIntersection(ViewRegion);
+        if (region == null || r == null)
             continue;
         var x = GetLayerColumnX(r.Left);
         var y = GetLayerRowY(r.Top);
         var w = Sheet.Columns.GetVisualWidthBetween(r.Left, r.Right + 1);
         var h = Sheet.Rows.GetVisualHeightBetween(r.Top, r.Bottom + 1);
+        var index = reference.Index;
         @* keyed by the reference's position in the formula, which is how the edit session identifies it *@
-        <BoxOverlayRenderer
+        <HighlightBox
             @key="reference.Index"
+            Region="region"
+            VisibleRegion="r"
             Width="w"
             Height="h"
             X="x"
             Y="y"
-            ZIndex="12"
-            BorderStyle="solid"
-            BorderColor="@($"var(--highlight-color-{reference.ColorIndex})")"
-            BorderThickness="var(--selection-border-thickness)"
-            ShowBorderLeft="r.Left == region.Left"
-            ShowBorderRight="r.Right == region.Right"
-            ShowBorderTop="r.Top == region.Top"
-            ShowBorderBottom="r.Bottom == region.Bottom"/>
+            Color="@($"var(--highlight-color-{reference.ColorIndex})")"
+            CanDrag="@(_canDrag && reference.Kind != FormulaReferenceSpanKind.Named)"
+            IsDragging="@(_formulaEdit?.IsAdjustingReference == true)"
+            DragStarted="drag => BeginDrag(index, reference.Region, drag)"/>
     }
 </div>
 
@@ -50,8 +53,20 @@
 
     private Workbook? _workbook;
 
+    [CascadingParameter] private PaneContext? PaneContext { get; set; }
+
+    /// <summary>
+    /// The formula edit that the references belong to, which may be in another sheet of the workbook.
+    /// </summary>
+    private FormulaEditSession? _formulaEdit;
+
+    private bool _canDrag;
+    private CellLayoutProvider _cellLayoutProvider = new(EmptySheet.Instance);
+
     protected override void OnSheetChange(Sheet newSheet, Sheet oldSheet)
     {
+        _cellLayoutProvider = new CellLayoutProvider(newSheet);
+
         // the formula may be in any sheet of the workbook, with references to this one
         if (_workbook != null)
             _workbook.FormulaEditReferencesChanged -= OnReferencesChanged;
@@ -64,8 +79,46 @@
     private void ReadReferences()
     {
         var formulaEdit = _workbook?.ActiveFormulaEdit;
+        if (!ReferenceEquals(formulaEdit, _formulaEdit))
+        {
+            if (_formulaEdit != null)
+                _formulaEdit.ReferenceDragChanged -= OnReferenceDragChanged;
+
+            _formulaEdit = formulaEdit;
+
+            if (_formulaEdit != null)
+                _formulaEdit.ReferenceDragChanged += OnReferenceDragChanged;
+        }
+
         _editSheet = formulaEdit?.Sheet;
         _references = formulaEdit?.References ?? Array.Empty<FormulaReferenceSpan>();
+        _canDrag = formulaEdit?.CanPick == true && PaneContext?.IsReadOnly != true;
+    }
+
+    private void BeginDrag(int referenceIndex, IRegion region, HighlightBoxDrag drag)
+    {
+        if (_formulaEdit == null)
+            return;
+
+        // Left and Top are the layer origin in sheet coordinates
+        var row = drag.Row ?? _cellLayoutProvider.ComputeRow(drag.LayerY + Top);
+        var col = drag.Col ?? _cellLayoutProvider.ComputeColumn(drag.LayerX + Left);
+
+        // the edges overhang the reference, and the cell that is dragged has to be one of its own
+        var start = new CellPosition(
+            Math.Clamp(row, region.Top, region.Bottom),
+            Math.Clamp(col, region.Left, region.Right));
+
+        if (_formulaEdit.BeginReferenceDrag(Sheet, referenceIndex, drag.Mode, start))
+            PaneContext?.AutoScrollState.SetEditorSelectionActive(true);
+    }
+
+    private void OnReferenceDragChanged(object? sender, EventArgs e)
+    {
+        if (_formulaEdit?.IsAdjustingReference != true)
+            PaneContext?.AutoScrollState.SetEditorSelectionActive(false);
+
+        _ = InvokeAsync(StateHasChanged);
     }
 
     private bool IsInThisSheet(FormulaReferenceSpan reference) =>
@@ -81,6 +134,8 @@
     {
         if (_workbook != null)
             _workbook.FormulaEditReferencesChanged -= OnReferencesChanged;
+        if (_formulaEdit != null)
+            _formulaEdit.ReferenceDragChanged -= OnReferenceDragChanged;
     }
 
 }

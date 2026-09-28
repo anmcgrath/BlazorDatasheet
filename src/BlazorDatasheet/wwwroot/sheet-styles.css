@@ -457,6 +457,24 @@
     background: var(--header-selected-bg-color);
 }
 
+/* the parts of a reference in the formula being edited that move and resize it */
+.bds-reference-edge, .bds-reference-corner {
+    position: absolute;
+    box-sizing: border-box;
+    z-index: 13;
+    touch-action: none;
+    outline: none;
+}
+
+.bds-reference-edge {
+    cursor: move;
+}
+
+.bds-reference-corner {
+    z-index: 14;
+    border: 1px solid var(--sheet-bg-color);
+}
+
 .bds-unselectable {
     -webkit-user-drag: none;
     user-select: none;
