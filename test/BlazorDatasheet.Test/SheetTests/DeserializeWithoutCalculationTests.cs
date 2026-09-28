@@ -77,4 +77,22 @@ public class DeserializeWithoutCalculationTests
 
         ValuesOf(second).Should().Equal(ValuesOf(first));
     }
+
+    [Test]
+    public void A_workbook_loaded_without_calculating_keeps_its_formula_variables_when_saved()
+    {
+        var workbook = new Workbook();
+        var sheet = workbook.AddSheet("First", 5, 5);
+        sheet.Cells.SetValue(0, 0, 3);
+        workbook.GetFormulaEngine().SetVariable("doubled", "=First!A1*2");
+        sheet.Cells.SetFormula(1, 0, "=doubled+1");
+        var json = new SheetJsonSerializer().Serialize(workbook);
+
+        var loaded = new SheetJsonDeserializer().Deserialize(json, calculate: false);
+        var saved = new SheetJsonSerializer().Serialize(loaded);
+
+        var reloaded = new SheetJsonDeserializer().Deserialize(saved);
+        reloaded.GetFormulaEngine().GetVariableInfo("doubled")!.Formula.Should().Be("=First!A1*2");
+        reloaded.GetSheet("First")!.Cells.GetValue(1, 0).Should().Be(7);
+    }
 }
