@@ -1,5 +1,6 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 using BlazorDatasheet.Core.Data.Filter;
+using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Serialization.Json.Constants;
 
 namespace BlazorDatasheet.Core.Serialization.Models;
@@ -7,6 +8,7 @@ namespace BlazorDatasheet.Core.Serialization.Models;
 internal class ColumnModel
 {
     public string? Heading { get; set; }
+    public TextAlign? HeadingAlignment { get; set; }
     public double? Width { get; set; }
     public int ColIndex { get; set; }
 

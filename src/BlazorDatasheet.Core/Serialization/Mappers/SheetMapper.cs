@@ -1,4 +1,4 @@
-﻿using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Metadata;
 using BlazorDatasheet.Core.Serialization.Extensions;
@@ -46,6 +46,7 @@ internal class SheetMapper
 				rowModel.FormatIndex = GetOrAddFormatIndex((CellFormat)row.Format, formats);
 
 			rowModel.Heading = row.Heading;
+			rowModel.HeadingAlignment = row.HeadingAlignment;
 			foreach (var cell in row.NonEmptyCells)
 			{
 				var cellModel = new CellModel
@@ -75,6 +76,9 @@ internal class SheetMapper
 			if (!string.IsNullOrEmpty(col.Heading))
 				columnModel.Heading = col.Heading;
 
+			if (col.HeadingAlignment != null)
+				columnModel.HeadingAlignment = col.HeadingAlignment;
+
 			if (!col.Visible)
 				columnModel.Hidden = !col.Visible;
 
@@ -85,6 +89,8 @@ internal class SheetMapper
 
 			sheetModel.Columns.Add(columnModel);
 		}
+
+		sheetModel.ColumnHeadingTextAlign = sheet.Columns.HeadingTextAlign;
 
 		sheetModel.ColumnGroups = sheet.Columns.GetGroups()
 			.Select(g => new HeadingGroupModel { Start = g.Start, End = g.End, Label = g.Label })
@@ -140,6 +146,8 @@ internal class SheetMapper
 		{
 			if (rowModel.Heading != null)
 				sheet.Rows.HeadingStore.Set(rowModel.RowIndex, rowModel.RowIndex, rowModel.Heading);
+			if (rowModel.HeadingAlignment != null)
+				sheet.Rows.HeadingAlignmentStore.Set(rowModel.RowIndex, rowModel.RowIndex, rowModel.HeadingAlignment);
 			if (rowModel.Height != null)
 				sheet.Rows.SetSize(rowModel.RowIndex, rowModel.Height.Value);
 
@@ -194,10 +202,15 @@ internal class SheetMapper
 		foreach (var groupModel in sheetModel.ColumnGroups)
 			sheet.Columns.GroupStore.Set(groupModel.Start, groupModel.End, new HeadingGroup(groupModel.Label));
 
+		if (sheetModel.ColumnHeadingTextAlign != null)
+			sheet.Columns.HeadingTextAlign = sheetModel.ColumnHeadingTextAlign;
+
 		foreach (var colModel in sheetModel.Columns)
 		{
 			if (colModel.Heading != null)
 				sheet.Columns.HeadingStore.Set(colModel.ColIndex, colModel.Heading);
+			if (colModel.HeadingAlignment != null)
+				sheet.Columns.HeadingAlignmentStore.Set(colModel.ColIndex, colModel.ColIndex, colModel.HeadingAlignment);
 			if (colModel.Width != null)
 				sheet.Columns.SetSize(colModel.ColIndex, colModel.Width.Value);
 			if (colModel.FormatIndex != null && colModel.FormatIndex < formats.Count &&

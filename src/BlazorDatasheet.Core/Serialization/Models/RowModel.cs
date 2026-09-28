@@ -1,5 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 using BlazorDatasheet.Core.Serialization.Json.Constants;
+using BlazorDatasheet.Core.Formats;
 
 namespace BlazorDatasheet.Core.Serialization.Models;
 
@@ -9,6 +10,7 @@ internal class RowModel
     public int RowIndex { get; set; }
 
     public string? Heading { get; set; }
+    public TextAlign? HeadingAlignment { get; set; }
     public double? Height { get; set; }
     public List<CellModel> Cells { get; set; } = new();
 

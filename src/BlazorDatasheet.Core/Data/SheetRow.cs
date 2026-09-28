@@ -11,6 +11,11 @@ public class SheetRow
     public int RowIndex { get; }
     public bool IsVisible => Sheet.Rows.IsVisible(RowIndex);
     public string? Heading => Sheet.Rows.GetHeading(RowIndex);
+    public TextAlign? HeadingAlignment
+    {
+        get => Sheet.Rows.GetHeadingAlignment(RowIndex);
+        set => Sheet.Rows.SetHeadingAlignment(RowIndex, value);
+    }
     public double Height => Sheet.Rows.GetPhysicalHeight(RowIndex);
     public NonEmptyCellCollection NonEmptyCells { get; }
     public IReadonlyCellFormat Format => Sheet.Rows.Formats.Get(RowIndex) ?? new CellFormat();
