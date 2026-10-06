@@ -84,6 +84,73 @@ public class FormulaEditorTests
     }
 
     [Test]
+    public async Task Variable_Is_Suggested_And_Written_Without_A_Bracket()
+    {
+        await using var context = CreateContext();
+        var sheet = new Sheet(5, 5);
+        sheet.FormulaEngine.SetVariable("sum_of_all1", 5);
+        var value = "";
+        var editor = context.Render<FormulaEditor>(p => p
+            .Add(x => x.Sheet, sheet)
+            .Add(x => x.ValueChanged, v => value = v));
+
+        await Type(editor, "=1+su", 5);
+
+        var names = editor.FindAll(".bds-func-suggestions-name").Select(x => x.TextContent.Trim()).ToList();
+        names.First().Should().Be("sum_of_all1", "names come before functions");
+        names.Should().Contain("SUM");
+
+        await editor.InvokeAsync(() => editor.Instance.HandleKey("Enter", false, false, false, false).Should().BeTrue());
+        value.Should().Be("=1+sum_of_all1");
+    }
+
+    [Test]
+    public async Task Provider_Decides_What_Is_Suggested()
+    {
+        await using var context = CreateContext();
+        var sheet = new Sheet(5, 5);
+        sheet.FormulaEngine.SetVariable("max_hidden", 5);
+        FormulaSuggestionProvider provider = request => request.Defaults
+            .Where(x => x.Name != "max_hidden")
+            .Prepend(new FormulaSuggestion("max_height", FormulaSuggestionKind.Name, "The height of the couch", "cm"));
+
+        var editor = context.Render<FormulaEditor>(p => p
+            .Add(x => x.Sheet, sheet)
+            .Add(x => x.SuggestionProvider, provider));
+
+        await Type(editor, "=ma", 3);
+
+        var names = editor.FindAll(".bds-func-suggestions-name").Select(x => x.TextContent.Trim()).ToList();
+        names.First().Should().Be("max_height");
+        names.Should().NotContain("max_hidden");
+        names.Should().Contain("MAX");
+        editor.Find(".bds-func-suggestions-item.active .bds-func-suggestions-description").TextContent
+            .Should().Be("The height of the couch");
+        editor.Find(".bds-func-suggestions-item.active .bds-func-suggestions-detail").TextContent.Should().Be("cm");
+    }
+
+    [Test]
+    public async Task Cascaded_Provider_Suggests_Without_A_Sheet()
+    {
+        await using var context = CreateContext();
+        FormulaSuggestionProvider provider = request =>
+            new[] { new FormulaSuggestion("reading", FormulaSuggestionKind.Name) }
+                .Where(x => x.Name.StartsWith(request.Prefix));
+        var value = "";
+
+        var editor = context.Render<FormulaEditor>(p => p
+            .Add(x => x.Sheet, null)
+            .Add(x => x.ValueChanged, v => value = v)
+            .AddCascadingValue(provider));
+
+        await Type(editor, "=re", 3);
+        editor.FindAll(".bds-func-suggestions-name").Select(x => x.TextContent.Trim()).Should().Equal("reading");
+
+        await editor.InvokeAsync(() => editor.Instance.HandleKey("Tab", false, false, false, false));
+        value.Should().Be("=reading");
+    }
+
+    [Test]
     public async Task Escape_Closes_The_Suggestions_And_Is_Then_Left_To_The_Sheet()
     {
         await using var context = CreateContext();

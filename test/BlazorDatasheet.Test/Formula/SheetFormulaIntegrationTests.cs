@@ -650,4 +650,17 @@ public class SheetFormulaIntegrationTests
         hasVar.Should().BeTrue();
         value.Should().Be(CellValue.Number(10));
     }
+
+    [Test]
+    public void Variable_Named_Like_A_Cell_Past_The_Last_Column_Is_Read_By_Formula()
+    {
+        _sheet.FormulaEngine.SetVariable("couchinmv1", CellValue.Number(5));
+        _sheet.Cells.SetFormula(0, 0, "=couchinmv1+1");
+        _sheet.Cells.GetValue(0, 0).Should().Be(6);
+
+        _sheet.FormulaEngine.SetVariable("couchinmv1", CellValue.Number(10));
+        _sheet.Cells.GetValue(0, 0).Should().Be(11);
+
+        _sheet.Cells.GetFormulaString(0, 0).Should().Be("=couchinmv1+1");
+    }
 }

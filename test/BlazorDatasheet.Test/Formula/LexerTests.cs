@@ -59,4 +59,44 @@ public class LexerTests
         tokens[1].Should().BeOfType<StringToken>();
         ((StringToken)tokens[1]).Value.Should().Be("a\"b");
     }
+
+    [Test]
+    [TestCase("abc1")]
+    [TestCase("xfd1")]
+    [TestCase("XFD1048576")]
+    [TestCase("$A$1")]
+    public void Text_Inside_The_Last_Row_And_Column_Is_An_Address(string text)
+    {
+        var tokens = new Lexer().Lex("=" + text, new FormulaOptions());
+        tokens[1].Should().BeOfType<AddressToken>();
+    }
+
+    [Test]
+    [TestCase("couchinmv1")]
+    [TestCase("abcd1")]
+    [TestCase("xfe1")]
+    [TestCase("A1048577")]
+    [TestCase("A0")]
+    [TestCase("zzzzzzzzzzzzzzzz1")]
+    public void Text_Past_The_Last_Row_Or_Column_Is_A_Name(string text)
+    {
+        var tokens = new Lexer().Lex("=" + text + "+1", new FormulaOptions());
+        tokens[1].Should().BeOfType<IdentifierToken>();
+        ((IdentifierToken)tokens[1]).Value.Should().Be(text);
+    }
+
+    [Test]
+    [TestCase(0, "A")]
+    [TestCase(25, "Z")]
+    [TestCase(26, "AA")]
+    [TestCase(16383, "XFD")]
+    [TestCase(18278, "AAAA")]
+    public void Column_Letters_Round_Trip(int colIndex, string letters)
+    {
+        RangeText.ColIndexToLetters(colIndex).Should().Be(letters);
+        if (colIndex < RangeText.MaxCols)
+            RangeText.ColStrToIndex(letters).Should().Be(colIndex);
+        else
+            RangeText.ColStrToIndex(letters).Should().BeGreaterThanOrEqualTo(RangeText.MaxCols);
+    }
 }
