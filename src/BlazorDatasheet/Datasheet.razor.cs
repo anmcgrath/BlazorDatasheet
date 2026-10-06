@@ -81,6 +81,15 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     [Parameter]
     public bool ShowFormula { get; set; }
 
+    /// <summary>
+    /// Decides what the cell editor suggests for the name that is being typed into a formula.
+    /// One that is cascaded to the datasheet is used when this isn't set.
+    /// </summary>
+    [Parameter]
+    public FormulaSuggestionProvider? FormulaSuggestionProvider { get; set; }
+
+    [CascadingParameter] private FormulaSuggestionProvider? CascadedFormulaSuggestionProvider { get; set; }
+
     private bool _showFormula;
 
     /// <summary>

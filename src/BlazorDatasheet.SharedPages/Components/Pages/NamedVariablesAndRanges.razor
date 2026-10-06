@@ -43,6 +43,22 @@
 
 <CodeExample ComponentType="typeof(VariableManagerExample)"/>
 
+<h4>Suggesting names in the formula editor</h4>
+
+<div class="block">
+    While a name is typed into a formula, the editor suggests the variables and named ranges that start with it,
+    followed by the functions. Text is only read as a cell when it is inside the last column (XFD) and the last
+    row (1048576), so a name such as <code>couchinmv1</code> is a variable.
+</div>
+
+<div class="block">
+    A <code>FormulaSuggestionProvider</code> decides what is suggested. It is given the typed prefix and the default
+    suggestions, and what it returns is shown as it is, so it can add names with a description, hide names and
+    reorder them. Set it with the <code>FormulaSuggestionProvider</code> parameter of the datasheet, the
+    <code>SuggestionProvider</code> parameter of a <code>FormulaBar</code> or <code>FormulaEditor</code>, or wrap
+    them all in one <code>CascadingValue</code> of that type.
+</div>
+
 
 @code {
 

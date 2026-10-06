@@ -9,6 +9,7 @@
 @using ColumnHeadingRenderer = BlazorDatasheet.Render.Headings.ColumnHeadingRenderer
 @inherits SheetComponentBase
 
+<CascadingValue Value="@(FormulaSuggestionProvider ?? CascadedFormulaSuggestionProvider)" IsFixed="false">
 <CascadingValue Value="@ScrollServiceForCascade" IsFixed="true">
     <div class="vars"
          theme="@_theme"
@@ -156,6 +157,7 @@
             DefaultFilterTypes="DefaultFilterTypes"/>
 
     </div>
+</CascadingValue>
 </CascadingValue>
 
 

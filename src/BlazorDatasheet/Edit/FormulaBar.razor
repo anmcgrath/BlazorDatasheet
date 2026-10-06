@@ -24,6 +24,7 @@
         Sheet="_sheet"
         Value="@_value"
         ValueChanged="HandleInput"
+        SuggestionProvider="SuggestionProvider"
         ReadyToFocus="false"
         PreventAcceptKeys="true"/>
 </div>
@@ -43,6 +44,12 @@
     /// </summary>
     [Parameter]
     public string Theme { get; set; } = "default";
+
+    /// <summary>
+    /// Decides what is suggested for the name that is being typed. See <see cref="FormulaEditor.SuggestionProvider"/>
+    /// </summary>
+    [Parameter]
+    public FormulaSuggestionProvider? SuggestionProvider { get; set; }
 
     [Parameter] public string? Class { get; set; }
 

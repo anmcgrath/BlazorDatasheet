@@ -168,8 +168,14 @@ public static class RangeText
         if (!int.TryParse(str.Slice(startRowStr, rowStrLen), out var rowIndex))
             return false;
         rowIndex--;
-        if (rowIndex > MaxRows)
+
+        // A row or column past the last one is not an address, so text like couchinmv1 is a name,
+        // which a name with a $ in it cannot be.
+        if (rowIndex < 0 || rowIndex >= MaxRows || (hasColRef && colIndex >= MaxCols))
         {
+            if (isFirstFixed || isSecondFixed)
+                return false;
+
             address = new NamedAddress(str.ToString());
             return true;
         }
@@ -218,17 +224,33 @@ public static class RangeText
     }
 
 
+    /// <summary>
+    /// The index of the column that is written as <paramref name="text"/>. Text that is not the letters of
+    /// a column, or that is past the last column, gives an index that is no less than <see cref="MaxCols"/>.
+    /// </summary>
     public static int ColStrToIndex(ReadOnlySpan<char> text)
     {
-        var col0 = 'A';
+        if (text.Length == 0)
+            return -1;
+
         var result = 0;
 
         for (int i = 0; i < text.Length; i++)
         {
-            result *= 26;
-            var c = char.ToUpper(text[i]);
-            var offset = c - col0 + 1;
-            result += offset;
+            var c = text[i];
+            int offset;
+            if (c is >= 'A' and <= 'Z')
+                offset = c - 'A' + 1;
+            else if (c is >= 'a' and <= 'z')
+                offset = c - 'a' + 1;
+            else
+                return int.MaxValue;
+
+            result = result * 26 + offset;
+
+            // stops before the index can overflow
+            if (result > MaxCols)
+                return int.MaxValue;
         }
 
         return result - 1;
@@ -236,20 +258,21 @@ public static class RangeText
 
     public static string ColIndexToLetters(int colIndex)
     {
-        var n = colIndex + 1;
-        int strLength = n <= 26 ? 1 : (n > 702 ? 3 : 2); // we only support columns up to 16384
-        char[] letters = new char[strLength];
-        int i = 0;
+        if (colIndex < 0)
+            return string.Empty;
+
+        var n = (long)colIndex + 1;
+        Span<char> letters = stackalloc char[8];
+        int i = letters.Length;
 
         while (n > 0)
         {
-            int m = (n - 1) % 26;
-            letters[letters.Length - 1 - i] = Convert.ToChar('A' + m);
-            n = (n - m) / 26;
-            i++;
+            var m = (int)((n - 1) % 26);
+            letters[--i] = (char)('A' + m);
+            n = (n - 1) / 26;
         }
 
-        return new string(letters);
+        return new string(letters.Slice(i));
     }
 
     public static string ToCellText(int row, int col)

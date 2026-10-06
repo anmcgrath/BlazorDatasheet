@@ -44,27 +44,31 @@
     }
 </BdsPopover>
 
-<!-- shows functions that are available based on the typed function name -->
+<!-- shows the names and functions that are available based on the name that is typed -->
 <BdsPopover AnchorId="@_anchorId"
             IsOpen="@HasSuggestions"
             CssClass="bds-func-suggestions">
-    @if (_functionSuggestions != null)
+    @if (_suggestions != null)
     {
         @* a window onto the list, which keeps the selected suggestion in view *@
-        @for (var i = _suggestionFirstShown; i < Math.Min(_functionSuggestions.Count, _suggestionFirstShown + MaxSuggestionsShown); i++)
+        @for (var i = _suggestionFirstShown; i < Math.Min(_suggestions.Count, _suggestionFirstShown + MaxSuggestionsShown); i++)
         {
-            var suggestion = _functionSuggestions[i];
+            var suggestion = _suggestions[i];
             @* the tabindex stops the sheet from taking focus on a click, and the mouse down is prevented so that the input keeps it *@
-            <div class="bds-func-suggestions-item @(i == _suggestionIndex ? "active" : "")"
+            <div class="bds-func-suggestions-item @(suggestion.Kind == FormulaSuggestionKind.Name ? "bds-func-suggestions-item-name" : "") @(i == _suggestionIndex ? "active" : "")"
                  tabindex="-1"
                  @onmousedown:preventDefault="true"
                  @onmousedown="() => { }"
                  @onclick="() => AcceptSuggestion(suggestion)">
                 <span class="bds-func-suggestions-name">@suggestion.Name</span>
-                @* only the selected suggestion is described, which keeps the list short *@
-                @if (i == _suggestionIndex && !string.IsNullOrWhiteSpace(suggestion.Function.Description))
+                @if (!string.IsNullOrWhiteSpace(suggestion.Detail))
                 {
-                    <div class="bds-func-suggestions-description">@suggestion.Function.Description</div>
+                    <span class="bds-func-suggestions-detail">@suggestion.Detail</span>
+                }
+                @* only the selected suggestion is described, which keeps the list short *@
+                @if (i == _suggestionIndex && !string.IsNullOrWhiteSpace(suggestion.Description))
+                {
+                    <div class="bds-func-suggestions-description">@suggestion.Description</div>
                 }
             </div>
         }
@@ -111,6 +115,15 @@
     [Parameter]
     public bool IsDefaultInputOwner { get; set; }
 
+    /// <summary>
+    /// Decides what is suggested for the name that is being typed. Without one, the variables and the
+    /// functions of the sheet are suggested. One that is cascaded is used when this isn't set.
+    /// </summary>
+    [Parameter]
+    public FormulaSuggestionProvider? SuggestionProvider { get; set; }
+
+    [CascadingParameter] private FormulaSuggestionProvider? CascadedSuggestionProvider { get; set; }
+
     [Parameter] public string? Style { get; set; }
 
     [Parameter] public double CellWidth { get; set; }
@@ -123,7 +136,7 @@
     private HighlightedInput _highlightedInput = default!;
     private int _currentCaretPosition;
     private double _highlightInputHeight;
-    private List<FunctionDefinition>? _functionSuggestions;
+    private List<FormulaSuggestion>? _suggestions;
     private int _suggestionIndex;
     private int _suggestionFirstShown;
     private const int MaxSuggestionsShown = 8;
@@ -140,7 +153,7 @@
     /// </summary>
     private int? _localCaret;
 
-    private bool HasSuggestions => _functionSuggestions is { Count: > 0 };
+    private bool HasSuggestions => _suggestions is { Count: > 0 };
 
     private int? ValueCaret => _localCaret ?? (IsInputOwner ? _sheet?.Editor.FormulaEdit.PendingCaret : null);
     private FormulaHintBoxResult? _formulaHint;
@@ -188,21 +201,22 @@
         _localCaret = null;
         Value = value ?? string.Empty;
         // the caret is reported after the input, so until then assume that it moved on by a character
-        SuggestFunctions(_currentCaretPosition < 0 ? Value.Length : _currentCaretPosition + 1);
+        Suggest(_currentCaretPosition < 0 ? Value.Length : _currentCaretPosition + 1);
         await ValueChanged.InvokeAsync(Value);
         StateHasChanged();
     }
 
     /// <summary>
-    /// Suggests the functions that start with the name that ends at <paramref name="caret"/>
+    /// Suggests the names and functions that start with the name that ends at <paramref name="caret"/>
     /// </summary>
-    private void SuggestFunctions(int caret)
+    private void Suggest(int caret)
     {
         // the selection is kept when the caret is reported for the text that the suggestions were made for
-        var selected = _functionSuggestions?.ElementAtOrDefault(_suggestionIndex)?.Name;
-        _functionSuggestions = null;
+        var selected = _suggestions?.ElementAtOrDefault(_suggestionIndex);
+        _suggestions = null;
 
-        if (_sheet == null || !FormulaEngine.IsFormula(Value))
+        var provider = SuggestionProvider ?? CascadedSuggestionProvider;
+        if ((_sheet == null && provider == null) || !FormulaEngine.IsFormula(Value))
             return;
 
         var len = Math.Min(caret, Value.Length);
@@ -212,11 +226,37 @@
         var tokens = new Lexer().Lex(Value.AsSpan().Slice(0, len), FormulaOptions);
         if (tokens.Count > 1 && tokens[^2] is IdentifierToken idToken)
         {
-            _functionSuggestions = _sheet.FormulaEngine.GetDefinitionsStartingWith(idToken.Value).ToList();
-            SelectSuggestion(Math.Max(0, _functionSuggestions.FindIndex(x => x.Name == selected)));
+            IReadOnlyList<FormulaSuggestion> defaults = DefaultSuggestions(idToken.Value);
+            _suggestions = provider == null
+                ? defaults.ToList()
+                : provider(new FormulaSuggestionRequest(idToken.Value, _sheet, defaults)).ToList();
+            SelectSuggestion(Math.Max(0,
+                _suggestions.FindIndex(x => x.Name == selected?.Name && x.Kind == selected.Kind)));
             _suggestionNameStart = idToken.PositionStart;
             _suggestionNameEnd = len;
         }
+    }
+
+    /// <summary>
+    /// The variables and then the functions of the sheet that start with <paramref name="prefix"/>
+    /// </summary>
+    private List<FormulaSuggestion> DefaultSuggestions(string prefix)
+    {
+        var suggestions = new List<FormulaSuggestion>();
+        if (_sheet == null)
+            return suggestions;
+
+        var engine = _sheet.FormulaEngine;
+        suggestions.AddRange(engine.GetVariableNames()
+            .Where(name => name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .Select(name => new FormulaSuggestion(name, FormulaSuggestionKind.Name,
+                Detail: engine.GetVariableInfo(name)?.Formula)));
+
+        suggestions.AddRange(engine.GetDefinitionsStartingWith(prefix)
+            .Select(x => new FormulaSuggestion(x.Name, FormulaSuggestionKind.Function, x.Function.Description)));
+
+        return suggestions;
     }
 
     /// <summary>
@@ -238,10 +278,10 @@
                 break;
             case "Enter":
             case "Tab":
-                _ = AcceptSuggestion(_functionSuggestions![_suggestionIndex]);
+                _ = AcceptSuggestion(_suggestions![_suggestionIndex]);
                 return true;
             case "Escape":
-                _functionSuggestions = null;
+                _suggestions = null;
                 break;
             default:
                 return false;
@@ -253,7 +293,7 @@
 
     private void SelectSuggestion(int index)
     {
-        _suggestionIndex = Math.Clamp(index, 0, Math.Max(0, (_functionSuggestions?.Count ?? 1) - 1));
+        _suggestionIndex = Math.Clamp(index, 0, Math.Max(0, (_suggestions?.Count ?? 1) - 1));
 
         if (_suggestionIndex < _suggestionFirstShown)
             _suggestionFirstShown = _suggestionIndex;
@@ -262,18 +302,21 @@
     }
 
     /// <summary>
-    /// Replaces the name being typed with the function, ready for its first argument.
+    /// Replaces the name being typed with the suggestion. A function is left ready for its first argument.
     /// </summary>
-    private async Task AcceptSuggestion(FunctionDefinition suggestion)
+    private async Task AcceptSuggestion(FormulaSuggestion suggestion)
     {
         var start = Math.Clamp(_suggestionNameStart, 0, Value.Length);
         var end = Math.Clamp(_suggestionNameEnd, start, Value.Length);
-        var hasBracket = end < Value.Length && Value[end] == '(';
-        var text = suggestion.Name + "(";
-        if (hasBracket)
-            end++;
+        var text = suggestion.Name;
+        if (suggestion.Kind == FormulaSuggestionKind.Function)
+        {
+            text += "(";
+            if (end < Value.Length && Value[end] == '(')
+                end++;
+        }
 
-        _functionSuggestions = null;
+        _suggestions = null;
 
         if (_sheet?.Editor.IsEditing == true && _sheet.Editor.EditValue == Value)
         {
@@ -303,7 +346,7 @@
     private void OnCaretPositionChanged(int position)
     {
         _currentCaretPosition = position;
-        SuggestFunctions(position);
+        Suggest(position);
         _formulaHint = new FormulaHintBoxCalculator(FormulaOptions).Calculate(Value, position);
         StateHasChanged();
     }
