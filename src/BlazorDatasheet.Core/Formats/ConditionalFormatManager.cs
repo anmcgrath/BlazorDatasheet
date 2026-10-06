@@ -13,6 +13,7 @@ public class ConditionalFormatManager
     private readonly Sheet _sheet;
 
     private readonly List<ConditionalFormatAbstractBase> _registered = new();
+    private int _nextOrder;
     private readonly ConsolidatedDataStore<ConditionalFormatAbstractBase> _appliedFormats = new();
 
     /// <summary>
@@ -52,7 +53,7 @@ public class ConditionalFormatManager
         if (isNewRegistration)
         {
             _registered.Add(conditionalFormat);
-            conditionalFormat.Order = _registered.Count - 1;
+            conditionalFormat.Order = _nextOrder++;
         }
 
         _appliedFormats.Add(range.Region, conditionalFormat);
@@ -65,6 +66,24 @@ public class ConditionalFormatManager
 
         _footprints.Clear();
         Prepare(new List<ConditionalFormatAbstractBase>() { conditionalFormat });
+    }
+
+    /// <summary>
+    /// Removes the conditional format from every region it is applied to, and repaints those regions.
+    /// Does nothing if the format is not applied.
+    /// </summary>
+    /// <param name="conditionalFormat"></param>
+    public void Remove(ConditionalFormatAbstractBase conditionalFormat)
+    {
+        if (!_registered.Remove(conditionalFormat))
+            return;
+
+        var regions = _appliedFormats.GetRegions(conditionalFormat).ToList();
+        foreach (var region in regions)
+            _appliedFormats.Clear(region, conditionalFormat);
+
+        _footprints.Clear();
+        _sheet.MarkDirty(regions);
     }
 
     private List<SheetRange> GetRangesAppliedToFormat(ConditionalFormatAbstractBase format)
