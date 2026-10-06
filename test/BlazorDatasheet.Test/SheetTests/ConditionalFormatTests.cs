@@ -371,4 +371,62 @@ public class ConditionalFormatTests
         dirtyRows.SelectMany(x => Enumerable.Range(x.Start, x.Size)).Should().Contain(new[] { 0, 1, 2 });
         colStart.Should().Be(0);
     }
+
+    private static ConditionalFormat Fill(string colour) =>
+        new((_, _) => true, _ => new CellFormat { BackgroundColor = colour });
+
+    [Test]
+    public void Remove_Drops_The_Format_And_Leaves_Others_Applied()
+    {
+        var blue = Fill("blue");
+        var red = Fill("red");
+        cm.Apply(sheet.Region, blue);
+        cm.Apply(new Region(0, 1, 0, 1), red);
+
+        cm.Remove(red);
+
+        cm.GetFormatResult(0, 0)!.BackgroundColor.Should().Be("blue");
+        cm.GetAllFormats().Select(x => x.Data).Should().NotContain(red);
+    }
+
+    [Test]
+    public void Remove_Marks_The_Removed_Regions_Dirty()
+    {
+        var red = Fill("red");
+        cm.Apply(new Region(1, 2, 0, 0), red);
+
+        var dirtyRows = new List<Interval>();
+        sheet.SheetDirty += (_, e) => dirtyRows.AddRange(e.DirtyRows.GetAllIntervals());
+
+        cm.Remove(red);
+
+        dirtyRows.SelectMany(x => Enumerable.Range(x.Start, x.Size)).Should().Contain(new[] { 1, 2 });
+        cm.GetFormatResult(1, 0).Should().BeNull();
+    }
+
+    [Test]
+    public void Remove_Of_A_Format_Not_Applied_Does_Nothing()
+    {
+        var blue = Fill("blue");
+        cm.Apply(sheet.Region, blue);
+
+        cm.Remove(Fill("red"));
+
+        cm.GetFormatResult(0, 0)!.BackgroundColor.Should().Be("blue");
+    }
+
+    [Test]
+    public void A_Format_Applied_After_A_Removal_Still_Takes_Precedence()
+    {
+        var blue = Fill("blue");
+        var red = Fill("red");
+        cm.Apply(sheet.Region, blue);
+        cm.Apply(sheet.Region, red);
+        cm.Remove(red);
+
+        var green = Fill("green");
+        cm.Apply(sheet.Region, green);
+
+        cm.GetFormatResult(0, 0)!.BackgroundColor.Should().Be("green");
+    }
 }
