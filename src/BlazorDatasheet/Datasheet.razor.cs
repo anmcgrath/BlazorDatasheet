@@ -291,6 +291,12 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     private SheetMenuOptions _menuOptions = new();
 
+    /// <summary>
+    /// The id of this sheet's selection menu. Each sheet owns its own, because the menu is found in
+    /// the document by id and several sheets may be on one page, some of them hidden.
+    /// </summary>
+    public string SelectionMenuId { get; } = $"{ContextMenus.Selection}-{Guid.NewGuid():N}";
+
     private DotNetObjectReference<Datasheet>? _dotnetHelper;
     private bool _isDisposing;
     private IJSObjectReference? _scrollContainerModule;

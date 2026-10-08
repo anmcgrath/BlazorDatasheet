@@ -12,7 +12,7 @@
 @inherits SheetComponentBase
 @implements IDisposable
 
-<SheetMenu Disabled="@Disabled" MenuId="@ContextMenus.Selection" OnMenuClose="OnSelectionMenuClose">
+<SheetMenu Disabled="@Disabled" MenuId="@MenuId" OnMenuClose="OnSelectionMenuClose">
 
     @{
         var sheet = context as Sheet;
@@ -245,6 +245,7 @@
 
 @code {
 
+    [Parameter] public string MenuId { get; set; } = ContextMenus.Selection;
     [Parameter] public SheetMenuOptions MenuOptions { get; set; } = new();
     [Parameter] public Type[] DefaultFilterTypes { get; set; } = default!;
     [Parameter] public bool Disabled { get; set; }
@@ -325,13 +326,13 @@
 
     private void CancelFilterButtonClick()
     {
-        MenuService.CloseMenu(ContextMenus.Selection);
+        MenuService.CloseMenu(MenuId);
     }
 
     private void AcceptFilterButtonClick(Sheet sheet, int columnIndex)
     {
         sheet.Columns.Filters.Set(columnIndex, ColumnFilters);
-        MenuService.CloseMenu(ContextMenus.Selection);
+        MenuService.CloseMenu(MenuId);
     }
 
 }

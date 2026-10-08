@@ -220,7 +220,7 @@
                 @if (ShowColumnMenu)
                 {
                     <div style="display: flex; flex-direction: row; flex-shrink: 0;">
-                        <SheetMenuTarget MenuId="@ContextMenus.Selection"
+                        <SheetMenuTarget MenuId="@MenuId"
                                          MenuData="Sheet">
                             <CaretButton/>
                         </SheetMenuTarget>
@@ -266,6 +266,8 @@
     };
 
     [Parameter] public bool ShowColumnMenu { get; set; }
+
+    [Parameter] public string MenuId { get; set; } = ContextMenus.Selection;
 
     [Parameter] public PreviewService? PreviewService { get; set; }
 
