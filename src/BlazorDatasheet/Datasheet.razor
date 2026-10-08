@@ -15,7 +15,7 @@
          theme="@_theme"
          style="--gutter-top-height: @GetGutterSize(Axis.Col)px; --gutter-left-width:@GetGutterSize(Axis.Row)px;">
 
-        <SheetMenuTarget MenuId="SelectionMenu"
+        <SheetMenuTarget MenuId="@SelectionMenuId"
                          MenuData="_sheet"
                          Margin="0"
                          DisableMenuTarget="!_menuOptions.ContextMenuEnabled"
@@ -53,6 +53,7 @@
                                     Sheet="_sheet"
                                     ShowSelectionWhenNotCurrentSheet="ShowSelectionWhenNotCurrentSheet"
                                     ShowColumnMenu="_menuOptions.HeaderMenuEnabled"
+                                    MenuId="@SelectionMenuId"
                                     GroupTemplate="ColumnGroupTemplate"
                                     GroupMouseDown="HandleColumnGroupMouseDown"
                                     PreviewService="_previewService"
@@ -152,6 +153,7 @@
         </SheetMenuTarget>
 
         <SelectionMenu
+            MenuId="@SelectionMenuId"
             MenuOptions="_menuOptions"
             Disabled="@IsReadOnly"
             DefaultFilterTypes="DefaultFilterTypes"/>
