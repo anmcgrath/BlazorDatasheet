@@ -66,56 +66,86 @@ public class ParameterConverter
 
     private CellValue ToLogicalSequence(CellValue value)
     {
-        CellValue[]? values = null;
-
         if (value.ValueType == CellValueType.Reference)
-            values = _environment.GetNonEmptyInRange((Reference)value.Data!).ToArray();
-        else if (value.ValueType == CellValueType.Array)
-            values = value.GetValue<CellValue[][]>()!.SelectMany(x => x).ToArray();
+            return CellValue.Sequence(ToLogicalSequence(_environment.GetNonEmptyInRange((Reference)value.Data!)));
+        if (value.ValueType == CellValueType.Array)
+            return CellValue.Sequence(ToLogicalSequence(Flatten((CellValue[][])value.Data!)));
 
-        if (values == null) return CellValue.Sequence(new[] { ToLogical(value) });
-
-        var results = new List<CellValue>();
-        foreach (var val in values)
-        {
-            if (val.IsEmpty)
-                continue;
-            if (val.ValueType == CellValueType.Logical || val.ValueType == CellValueType.Error)
-                results.Add(val);
-            else if (val.ValueType == CellValueType.Number)
-                results.Add(ToLogical(val));
-        }
-
-        return CellValue.Sequence(results.ToArray());
+        return CellValue.Sequence(new[] { ToLogical(value) });
     }
 
     private CellValue ToNumberSequence(CellValue value)
     {
-        CellValue[]? values = null;
-
         if (value.ValueType == CellValueType.Reference)
-            values = _environment.GetNonEmptyInRange((Reference)value.Data!).ToArray();
-        else if (value.ValueType == CellValueType.Array)
-            values = value.GetValue<CellValue[][]>()!.SelectMany(x => x).ToArray();
+            return CellValue.Sequence(ToNumberSequence(_environment.GetNonEmptyInRange((Reference)value.Data!)));
+        if (value.ValueType == CellValueType.Array)
+            return CellValue.Sequence(ToNumberSequence(Flatten((CellValue[][])value.Data!)));
 
-        if (values == null)
-            return CellValue.Sequence(new[]
+        return CellValue.Sequence(new[] { ToNumber(value) });
+    }
+
+    private static IEnumerable<CellValue> Flatten(CellValue[][] values)
+    {
+        foreach (var row in values)
+            foreach (var value in row)
+                yield return value;
+    }
+
+    /// <summary>
+    /// Keeps the numbers and errors of a range. A range read from the sheet is already a list, so
+    /// it is counted first and the result is sized exactly, rather than growing a list and copying it.
+    /// </summary>
+    private CellValue[] ToNumberSequence(IEnumerable<CellValue> values)
+    {
+        if (values is IReadOnlyList<CellValue> list)
+        {
+            var count = 0;
+            for (var i = 0; i < list.Count; i++)
             {
-                ToNumber(value)
-            });
+                var type = list[i].ValueType;
+                if (type == CellValueType.Number || type == CellValueType.Error)
+                    count++;
+            }
+
+            if (count == 0)
+                return Array.Empty<CellValue>();
+
+            var result = new CellValue[count];
+            var n = 0;
+            for (var i = 0; i < list.Count; i++)
+            {
+                var val = list[i];
+                if (val.ValueType == CellValueType.Number || val.ValueType == CellValueType.Error)
+                    result[n++] = val;
+            }
+
+            return result;
+        }
 
         var results = new List<CellValue>();
         foreach (var val in values)
         {
-            if (val.IsEmpty)
-                continue;
             if (val.ValueType == CellValueType.Error)
                 results.Add(val);
             else if (val.ValueType == CellValueType.Number)
                 results.Add(ToNumber(val));
         }
 
-        return CellValue.Sequence(results.ToArray());
+        return results.ToArray();
+    }
+
+    private CellValue[] ToLogicalSequence(IEnumerable<CellValue> values)
+    {
+        var results = new List<CellValue>();
+        foreach (var val in values)
+        {
+            if (val.ValueType == CellValueType.Logical || val.ValueType == CellValueType.Error)
+                results.Add(val);
+            else if (val.ValueType == CellValueType.Number)
+                results.Add(ToLogical(val));
+        }
+
+        return results.ToArray();
     }
 
     private CellValue ToArray(CellValue value)
