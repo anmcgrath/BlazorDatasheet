@@ -66,9 +66,15 @@ public class Range1DStore<T> : ISparseSource
 
     public List<(int start, int end, T? value)> GetOverlapping(int start, int end)
     {
-        return Intervals.GetIntervals(start, end)
-            .Select(x => (x.Start, x.End, x.Data.Value))
-            .ToList();
+        var intervals = Intervals.GetIntervals(start, end);
+        var overlapping = new List<(int start, int end, T? value)>(intervals.Count);
+        for (var i = 0; i < intervals.Count; i++)
+        {
+            var interval = intervals[i];
+            overlapping.Add((interval.Start, interval.End, interval.Data.Value));
+        }
+
+        return overlapping;
     }
 
     /// <summary>

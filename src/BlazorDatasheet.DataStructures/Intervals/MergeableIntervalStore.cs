@@ -241,22 +241,22 @@ public class MergeableIntervalStore<T> : ISparseSource where T : IMergeable<T>, 
 
     public IList<OrderedInterval<T>> GetIntervals(OrderedInterval interval)
     {
-        if (!_intervals.Any())
+        if (_intervals.Count == 0)
             return _intervals.Values;
 
-        var overlapping = new List<OrderedInterval<T>>();
-
+        // indexing the sorted list by position is O(1); indexing it by key is a binary search
+        var values = _intervals.Values;
         var i0 = _intervals.Keys.BinarySearchClosest(interval.Start);
-        if (i0 >= 1 && _intervals[_intervals.Keys[i0 - 1]].Overlaps(interval))
+        if (i0 >= 1 && values[i0 - 1].Overlaps(interval))
             i0--;
 
-        for (int i = i0; i < _intervals.Count; i++)
-        {
-            if (_intervals[_intervals.Keys[i]].Overlaps(interval))
-                overlapping.Add(_intervals[_intervals.Keys[i]]);
-            else
-                break;
-        }
+        var i1 = i0;
+        while (i1 < values.Count && values[i1].Overlaps(interval))
+            i1++;
+
+        var overlapping = new List<OrderedInterval<T>>(i1 - i0);
+        for (int i = i0; i < i1; i++)
+            overlapping.Add(values[i]);
 
         return overlapping;
     }
