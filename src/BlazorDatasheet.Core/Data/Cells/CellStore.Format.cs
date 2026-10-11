@@ -77,7 +77,7 @@ public partial class CellStore
     /// <returns></returns>
     public CellFormat? GetFormat(int row, int col)
     {
-        return _formatStore.GetData(row, col).FirstOrDefault();
+        return _formatStore.GetFirstData(row, col);
     }
 
 

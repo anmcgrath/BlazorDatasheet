@@ -120,6 +120,23 @@ public partial class RTree<T> : ISpatialDatabase<T>, ISpatialIndex<T> where T : 
 		DoSearch(boundingBox);
 
 	/// <summary>
+	/// Finds one element within the <paramref name="boundingBox"/> without allocating. Which
+	/// element is found is not defined when several intersect, so this suits stores whose regions
+	/// never overlap, and single-cell probes that only need to know whether anything is there.
+	/// </summary>
+	/// <returns>Whether an element was found.</returns>
+	public bool TryFindFirst(in Envelope boundingBox, [MaybeNullWhen(false)] out T item)
+	{
+		if (Count == 0 || !Root.Envelope.Intersects(boundingBox))
+		{
+			item = default;
+			return false;
+		}
+
+		return TryFindFirst(Root, boundingBox, out item);
+	}
+
+	/// <summary>
 	/// Adds an object to the <see cref="RTree{T}"/>
 	/// </summary>
 	/// <param name="item">
