@@ -192,13 +192,39 @@ public class FormulaEngine
             return CellValue.Empty;
         try
         {
-            return _evaluator.Evaluate(formula, new FormulaExecutionContext(),
-                new FormulaEvaluationOptions(!resolveReferences));
+            var context = RentScratchContext();
+            try
+            {
+                return _evaluator.Evaluate(formula, context, new FormulaEvaluationOptions(!resolveReferences));
+            }
+            finally
+            {
+                ReturnScratchContext(context);
+            }
         }
         catch (Exception e)
         {
             return CellValue.Error(ErrorType.Na, $"Error running formula: {e.Message}");
         }
+    }
+
+    /// <summary>
+    /// A context for one-off evaluations outside a calculation, such as a conditional format
+    /// evaluated per cell. It is reused when free, and a nested evaluation gets its own.
+    /// </summary>
+    private FormulaExecutionContext? _scratchContext = new();
+
+    private FormulaExecutionContext RentScratchContext()
+    {
+        var context = _scratchContext ?? new FormulaExecutionContext();
+        _scratchContext = null;
+        return context;
+    }
+
+    private void ReturnScratchContext(FormulaExecutionContext context)
+    {
+        context.Clear();
+        _scratchContext = context;
     }
 
     /// <summary>
@@ -216,8 +242,15 @@ public class FormulaEngine
         {
             var options = new FormulaEvaluationOptions(false,
                 new ReferenceOffset(row - anchor.row, col - anchor.col, sheetName));
-            return _evaluator.Evaluate(formula, new FormulaExecutionContext(), options,
-                new FormulaCallerInfo(row, col, sheetName));
+            var context = RentScratchContext();
+            try
+            {
+                return _evaluator.Evaluate(formula, context, options, new FormulaCallerInfo(row, col, sheetName));
+            }
+            finally
+            {
+                ReturnScratchContext(context);
+            }
         }
         catch (Exception e)
         {
