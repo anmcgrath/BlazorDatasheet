@@ -20,8 +20,9 @@ public class FormulaExecutionContext
         _currentSccCells.Clear();
         _currentSccNamedFormulas ??= new Dictionary<string, CellFormula>(StringComparer.Ordinal);
         _currentSccNamedFormulas.Clear();
-        foreach (var vertex in group)
+        for (var i = 0; i < group.Count; i++)
         {
+            var vertex = group[i];
             if (vertex.Position != null)
                 _currentSccCells.Add(new CellPosition(vertex.Row, vertex.Col));
             else if (vertex.Formula != null)

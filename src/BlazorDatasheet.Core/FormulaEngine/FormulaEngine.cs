@@ -323,7 +323,15 @@ public class FormulaEngine
         if (order.Count == 0)
             return;
 
-        var formulaCount = order.Sum(group => group.Count(vertex => vertex.Formula is not null));
+        var formulaCount = 0;
+        for (var g = 0; g < order.Count; g++)
+        {
+            var group = order[g];
+            for (var v = 0; v < group.Count; v++)
+                if (group[v].Formula is not null)
+                    formulaCount++;
+        }
+
         var evaluatedFormulaCount = 0;
         var stopwatch = Stopwatch.StartNew();
         Exception? exception = null;
@@ -332,10 +340,13 @@ public class FormulaEngine
         try
         {
             CalculationStarted?.Invoke(this, new CalculationStartedEventArgs(calculateAll, formulaCount));
-            var executionContext = new FormulaExecutionContext();
+            // one context for the engine's lifetime - only one calculation is ever in flight, and
+            // its dictionaries keep their capacity between calculations.
+            var executionContext = _calculationContext;
+            executionContext.Clear();
 
-            foreach (var scc in order)
-                EvaluateStronglyConnectedGroup(scc, executionContext, ref evaluatedFormulaCount);
+            for (var i = 0; i < order.Count; i++)
+                EvaluateStronglyConnectedGroup(order[i], executionContext, ref evaluatedFormulaCount);
         }
         catch (Exception e)
         {
@@ -363,6 +374,8 @@ public class FormulaEngine
             }
         }
     }
+
+    private readonly FormulaExecutionContext _calculationContext = new();
 
     /// <summary>
     /// The sheets batched for the calculation in flight. A snapshot, because a handler reached from
@@ -404,8 +417,9 @@ public class FormulaEngine
 
         executionContext.SetCurrentGroup(stronglyConnectedGroup);
 
-        foreach (var vertex in stronglyConnectedGroup)
+        for (var i = 0; i < stronglyConnectedGroup.Count; i++)
         {
+            var vertex = stronglyConnectedGroup[i];
             var formula = vertex.Formula;
             if (formula == null)
                 continue;
