@@ -102,6 +102,14 @@ internal class CellStoreRestoreData
         set => _dependencyGraph = value;
     }
 
+    /// <summary>
+    /// The number of per-cell entries kept, used to bound the size of the undo history.
+    /// </summary>
+    internal int RetainedCellCount =>
+        (_valueRestoreData?.DataRemoved.Count ?? 0) +
+        (_formulaRestoreData?.DataRemoved.Count ?? 0) +
+        (_validRestoreData?.DataRemoved.Count ?? 0);
+
     internal IEnumerable<CellPosition> GetAffectedPositions()
     {
         return ValidRestoreData.DataRemoved.Select(x => new CellPosition(x.row, x.col))

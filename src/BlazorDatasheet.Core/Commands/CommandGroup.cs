@@ -73,4 +73,16 @@ public class CommandGroup : BaseCommand, IUndoableCommand
 
         return undo;
     }
+
+    public int RetainedCellCount
+    {
+        get
+        {
+            var count = 0;
+            foreach (var command in _commands)
+                if (command is IUndoableCommand undoable)
+                    count += undoable.RetainedCellCount;
+            return count;
+        }
+    }
 }

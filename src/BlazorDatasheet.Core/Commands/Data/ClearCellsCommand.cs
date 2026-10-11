@@ -47,4 +47,6 @@ public class ClearCellsCommand : BaseCommand, IUndoableCommand
         sheet.Cells.Restore(_restoreData);
         return true;
     }
+
+    public int RetainedCellCount => _restoreData?.RetainedCellCount ?? 0;
 }

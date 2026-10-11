@@ -78,4 +78,15 @@ public class CopyRangeCommand : BaseCommand, IUndoableCommand
 
         return true;
     }
+
+    public int RetainedCellCount
+    {
+        get
+        {
+            var count = 0;
+            foreach (var restoreData in _restoreData)
+                count += restoreData.RetainedCellCount;
+            return count;
+        }
+    }
 }
