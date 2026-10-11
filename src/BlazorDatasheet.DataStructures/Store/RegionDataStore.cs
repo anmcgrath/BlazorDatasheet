@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.RTree;
 using BlazorDatasheet.DataStructures.Util;
@@ -35,7 +36,31 @@ public class RegionDataStore<T> : ISparseSource, IRowSource, IStore<T, RegionRes
 
     public bool Contains(int row, int col)
     {
-        return GetDataRegions(row, col).Any();
+        return TryGetFirst(row, col, out _);
+    }
+
+    /// <summary>
+    /// Finds one data region at the position without allocating. Rendering probes every cell that
+    /// scrolls into view, and most probes miss, so this is the path to use for single-cell reads.
+    /// When regions can overlap, which one is returned is not defined.
+    /// </summary>
+    public bool TryGetFirst(int row, int col, [MaybeNullWhen(false)] out DataRegion<T> dataRegion)
+    {
+        if (IsEmpty)
+        {
+            dataRegion = null;
+            return false;
+        }
+
+        return Tree.TryFindFirst(new Envelope(col, row, col, row), out dataRegion);
+    }
+
+    /// <summary>
+    /// The data of one region at the position, or default when there is none. See <see cref="TryGetFirst"/>.
+    /// </summary>
+    public T? GetFirstData(int row, int col)
+    {
+        return TryGetFirst(row, col, out var dataRegion) ? dataRegion.Data : default;
     }
 
     /// <summary>

@@ -123,10 +123,7 @@ namespace BlazorDatasheet.Core.Data.Cells
         public IRegion? GetMerge(int row, int col)
         {
             // There will only be one merge because we don't allow overlapping
-            foreach (var merge in _mergeStore.GetDataRegions(row, col))
-                return merge.Region;
-
-            return null;
+            return _mergeStore.TryGetFirst(row, col, out var merge) ? merge.Region : null;
         }
 
         /// <summary>

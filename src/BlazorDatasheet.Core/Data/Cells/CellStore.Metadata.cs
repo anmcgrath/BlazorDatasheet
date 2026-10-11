@@ -110,11 +110,10 @@ public partial class CellStore
     /// <returns></returns>
     public object? GetMetaData(int row, int col, string name)
     {
-        var container = GetCellMetaData(row, col) ?? new CellMetadata();
-        return container.GetItem(name);
+        return GetCellMetaData(row, col)?.GetItem(name);
     }
 
-    internal CellMetadata? GetCellMetaData(int row, int col) => _metaDataStore.GetData(row, col).FirstOrDefault();
+    internal CellMetadata? GetCellMetaData(int row, int col) => _metaDataStore.GetFirstData(row, col);
 
     internal MergeRegionDataStore<CellMetadata> GetMetaDataStore() => _metaDataStore;
 }

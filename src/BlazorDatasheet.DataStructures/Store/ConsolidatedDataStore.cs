@@ -133,6 +133,6 @@ public class ConsolidatedDataStore<T> : RegionDataStore<T> where T : IEquatable<
     {
         // Since this is a consolidated data store, we must have only 
         // one overlapping bit of data.
-        return this.GetData(row, col).FirstOrDefault();
+        return GetFirstData(row, col);
     }
 }

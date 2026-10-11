@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 // MIT License
 //
 // Copyright (c) 2017 viceroypenguin
@@ -74,6 +75,32 @@ public partial class RTree<T>
 		}
 
 		return intersections ?? (IReadOnlyList<T>)Array.Empty<T>();
+	}
+
+	private static bool TryFindFirst(Node node, in Envelope boundingBox, [MaybeNullWhen(false)] out T item)
+	{
+		if (node.IsLeaf)
+		{
+			foreach (var i in node.Items)
+			{
+				if (i.Envelope.Intersects(boundingBox))
+				{
+					item = (T)i;
+					return true;
+				}
+			}
+		}
+		else
+		{
+			foreach (var i in node.Items)
+			{
+				if (i.Envelope.Intersects(boundingBox) && TryFindFirst((Node)i, boundingBox, out item))
+					return true;
+			}
+		}
+
+		item = default;
+		return false;
 	}
 	#endregion
 
