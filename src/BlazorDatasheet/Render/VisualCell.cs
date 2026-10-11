@@ -10,7 +10,18 @@ namespace BlazorDatasheet.Render;
 
 public class VisualCell
 {
-    public object? Value { get; private set; }
+    private readonly CellValue _cellValue;
+
+    /// <summary>
+    /// The value of the cell. A number is boxed on each read, so read it once.
+    /// </summary>
+    public object? Value => _cellValue.Data;
+
+    /// <summary>
+    /// The value of the cell, as stored.
+    /// </summary>
+    public CellValue CellValue => _cellValue;
+
     public string FormattedString { get; private set; } = string.Empty;
 
     /// <summary>
@@ -31,6 +42,21 @@ public class VisualCell
     public string ClassString { get; private set; } = "bds-sheet-cell";
     public string FormatStyleString { get; private set; } = string.Empty;
     public string? Icon { get; private set; }
+
+    /// <summary>
+    /// The inline style of the icon's container, when there is an icon.
+    /// </summary>
+    internal string? IconStyle { get; private set; }
+
+    /// <summary>
+    /// The row written into the markup: the first visible row of a merge, otherwise the cell's.
+    /// </summary>
+    internal string DataRowText => IntText.Get(Merge != null ? VisibleMergeRowStart : Row);
+
+    /// <summary>
+    /// The column written into the markup: the first visible column of a merge, otherwise the cell's.
+    /// </summary>
+    internal string DataColText => IntText.Get(Merge != null ? VisibleMergeColStart : Col);
     /// <summary>
     /// The effective format of the cell. It may be the format stored in the sheet, so it must not be modified.
     /// </summary>
@@ -102,7 +128,7 @@ public class VisualCell
         var format = sheet.GetFormatForRendering(row, col);
 
         var cellValue = sheet.Cells.GetCellValue(row, col);
-        Value = cellValue.Data;
+        _cellValue = cellValue;
 
         if (cellValue.ValueType == CellValueType.Number)
         {
@@ -119,9 +145,9 @@ public class VisualCell
             }
         }
         else if (cellValue.ValueType == CellValueType.Date && format?.NumberFormat != null)
-            FormattedString = ((DateTime)Value!).ToString(format.NumberFormat);
+            FormattedString = ((DateTime)cellValue.Data!).ToString(format.NumberFormat);
         else
-            FormattedString = Value?.ToString() ?? string.Empty;
+            FormattedString = cellValue.Data?.ToString() ?? string.Empty;
 
         // borders are resolved before the conditional format is merged in, because a conditional
         // border ranks above the neighbouring cell's own border and a merged format cannot say
@@ -141,17 +167,24 @@ public class VisualCell
         HorizontalAlign = ResolveHorizontalAlign(format, cellValue.ValueType);
         VerticalAlign = ResolveVerticalAlign(format);
         ClassString = GetCellClassString(format, cellValue.ValueType);
-        if (cellValue.ValueType == CellValueType.Number)
-            ClassString += " bds-cell-number";
-        if (!string.IsNullOrWhiteSpace(format?.CssClass))
-            ClassString += " " + format.CssClass;
-        if (format?.CornerFlagTopLeft != null || format?.CornerFlagTopRight != null ||
-            format?.CornerFlagBottomLeft != null || format?.CornerFlagBottomRight != null)
-            ClassString += " bds-cell-has-flags";
+        if (format != null)
+        {
+            // only a formatted cell can need anything beyond the shared strings
+            var hasCssClass = !string.IsNullOrWhiteSpace(format.CssClass);
+            var hasFlags = format.CornerFlagTopLeft != null || format.CornerFlagTopRight != null ||
+                           format.CornerFlagBottomLeft != null || format.CornerFlagBottomRight != null;
+            if (hasCssClass || hasFlags)
+                ClassString = string.Concat(ClassString,
+                    hasCssClass ? " " + format.CssClass : string.Empty,
+                    hasFlags ? " bds-cell-has-flags" : string.Empty);
+        }
 
         FormatStyleString =
             GetCellFormatStyleString(format, Borders, _isValid);
         Icon = format?.Icon;
+        if (Icon != null)
+            IconStyle = "margin-right:2px; flex-shrink: 1; float:left; color: " +
+                        (format!.IconColor ?? "var(--icon-color)") + ";";
         CellType = sheet.Cells.GetCellType(row, col);
         Format = format;
     }
@@ -312,37 +345,56 @@ public class VisualCell
         _ => "start"
     };
 
+    // Every combination of horizontal alignment, vertical alignment and "is a number", built once,
+    // so that the class string of a cell with no css class or corner flags is shared.
+    private static readonly string[] ClassStrings = BuildClassStrings();
+
+    private static string[] BuildClassStrings()
+    {
+        string?[] horizontal = [null, "bds-cell-align-start", "bds-cell-align-center", "bds-cell-align-end"];
+        string?[] vertical = [null, "bds-cell-valign-start", "bds-cell-valign-center", "bds-cell-valign-end"];
+        var strings = new string[2 * 4 * 4];
+        for (var number = 0; number < 2; number++)
+        for (var h = 0; h < 4; h++)
+        for (var v = 0; v < 4; v++)
+        {
+            var sb = new System.Text.StringBuilder("bds-sheet-cell");
+            if (horizontal[h] != null)
+                sb.Append(' ').Append(horizontal[h]);
+            if (vertical[v] != null)
+                sb.Append(' ').Append(vertical[v]);
+            if (number == 1)
+                sb.Append(" bds-cell-number");
+            strings[ClassStringIndex(number == 1, h, v)] = sb.ToString();
+        }
+
+        return strings;
+    }
+
+    private static int ClassStringIndex(bool isNumber, int horizontal, int vertical) =>
+        ((isNumber ? 1 : 0) * 4 + horizontal) * 4 + vertical;
+
+    private static int AlignIndex(TextAlign? align) => align switch
+    {
+        TextAlign.Start => 1,
+        TextAlign.Center => 2,
+        TextAlign.End => 3,
+        _ => 0
+    };
+
     /// <summary>
     /// Returns shared class strings for alignment instead of creating identical inline style
     /// strings for each cell. Numeric cells hit the end-aligned fast path by default.
     /// </summary>
     private static string GetCellClassString(IReadonlyCellFormat? format, CellValueType type)
     {
-        var horizontal = format?.HorizontalTextAlign != null || type == CellValueType.Number
+        var isNumber = type == CellValueType.Number;
+        var horizontal = format?.HorizontalTextAlign != null || isNumber
             ? ResolveHorizontalAlign(format, type)
             : (TextAlign?)null;
         var vertical = format?.VerticalTextAlign;
 
-        return (horizontal, vertical) switch
-        {
-            (null, null) => "bds-sheet-cell",
-            (TextAlign.Start, null) => "bds-sheet-cell bds-cell-align-start",
-            (TextAlign.Center, null) => "bds-sheet-cell bds-cell-align-center",
-            (TextAlign.End, null) => "bds-sheet-cell bds-cell-align-end",
-            (null, TextAlign.Start) => "bds-sheet-cell bds-cell-valign-start",
-            (null, TextAlign.Center) => "bds-sheet-cell bds-cell-valign-center",
-            (null, TextAlign.End) => "bds-sheet-cell bds-cell-valign-end",
-            (TextAlign.Start, TextAlign.Start) => "bds-sheet-cell bds-cell-align-start bds-cell-valign-start",
-            (TextAlign.Start, TextAlign.Center) => "bds-sheet-cell bds-cell-align-start bds-cell-valign-center",
-            (TextAlign.Start, TextAlign.End) => "bds-sheet-cell bds-cell-align-start bds-cell-valign-end",
-            (TextAlign.Center, TextAlign.Start) => "bds-sheet-cell bds-cell-align-center bds-cell-valign-start",
-            (TextAlign.Center, TextAlign.Center) => "bds-sheet-cell bds-cell-align-center bds-cell-valign-center",
-            (TextAlign.Center, TextAlign.End) => "bds-sheet-cell bds-cell-align-center bds-cell-valign-end",
-            (TextAlign.End, TextAlign.Start) => "bds-sheet-cell bds-cell-align-end bds-cell-valign-start",
-            (TextAlign.End, TextAlign.Center) => "bds-sheet-cell bds-cell-align-end bds-cell-valign-center",
-            (TextAlign.End, TextAlign.End) => "bds-sheet-cell bds-cell-align-end bds-cell-valign-end",
-            _ => "bds-sheet-cell"
-        };
+        return ClassStrings[ClassStringIndex(isNumber, AlignIndex(horizontal), AlignIndex(vertical))];
     }
 
     private static void AddPatternStyles(StyleBuilder sb, CellBackgroundPattern pattern)

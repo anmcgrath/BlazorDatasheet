@@ -1,4 +1,4 @@
-@using BlazorDatasheet.DataStructures.Geometry
+﻿@using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Extensions
 @using BlazorDatasheet.Menu
 @using BlazorDatasheet.Render
@@ -242,12 +242,9 @@
 
     private RenderFragment<VisualCell> CreateComponent() => cell => builder =>
     {
-        var dataRow = cell.Merge != null ? cell.VisibleMergeRowStart : cell.Row;
-        var dataCol = cell.Merge != null ? cell.VisibleMergeColStart : cell.Col;
-
         builder.OpenElement(20, "div");
-        builder.AddAttribute(30, "data-row", dataRow);
-        builder.AddAttribute(40, "data-col", dataCol);
+        builder.AddAttribute(30, "data-row", cell.DataRowText);
+        builder.AddAttribute(40, "data-col", cell.DataColText);
         builder.AddAttribute(50, "class", cell.ClassString);
         var cellStyle = cell.FormatStyleString;
         if (!string.IsNullOrEmpty(cellStyle))
@@ -257,7 +254,7 @@
         if (iconFragment != null)
         {
             builder.OpenElement(70, "div");
-            builder.AddAttribute(80, "style", $"margin-right:2px; flex-shrink: 1; float:left; color: {cell.Format?.IconColor ?? "var(--icon-color)"};");
+            builder.AddAttribute(80, "style", cell.IconStyle);
             builder.AddContent(90, iconFragment);
             builder.CloseElement();
         }
