@@ -215,9 +215,9 @@ public class Sheet
     public NamedRangeManager NamedRanges { get; }
 
     /// <summary>
-    /// If the sheet is batching dirty rows, they are stored here.
+    /// The rows marked dirty since the last <see cref="SheetDirty"/> emit.
     /// </summary>
-    private readonly Range1DStore<bool> _dirtyRows = new(false);
+    private readonly DirtyRowSet _dirtyRows = new();
 
     /// <summary>
     /// The columns spanned by everything marked dirty since the last emit.
@@ -469,7 +469,7 @@ public class Sheet
         if (row < 0 || col < 0 || row >= NumRows || col >= NumCols)
             return;
 
-        _dirtyRows.Set(row, row, true);
+        _dirtyRows.Add(row, row);
         MarkDirtyColumns(col, col);
     }
     
@@ -490,7 +490,7 @@ public class Sheet
         if (!IntersectsSheet(region))
             return;
 
-        _dirtyRows.Set(region.Top, region.Bottom, true);
+        _dirtyRows.Add(region.Top, region.Bottom);
         MarkDirtyColumns(region.Left, region.Right);
         if (!_isBatchingChanges)
             EmitSheetDirty();
@@ -507,7 +507,7 @@ public class Sheet
             if (!IntersectsSheet(region))
                 continue;
 
-            _dirtyRows.Set(region.Top, region.Bottom, true);
+            _dirtyRows.Add(region.Top, region.Bottom);
             MarkDirtyColumns(region.Left, region.Right);
         }
 

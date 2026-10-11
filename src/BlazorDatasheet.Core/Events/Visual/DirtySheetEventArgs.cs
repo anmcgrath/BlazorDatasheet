@@ -1,4 +1,4 @@
-using BlazorDatasheet.DataStructures.Store;
+using BlazorDatasheet.Core.Data;
 
 namespace BlazorDatasheet.Core.Events.Visual;
 
@@ -7,7 +7,7 @@ public class DirtySheetEventArgs
     /// <summary>
     /// The row spans that need re-rendering.
     /// </summary>
-    public Range1DStore<bool> DirtyRows { get; init; } = default!;
+    public DirtyRowSet DirtyRows { get; init; } = default!;
 
     /// <summary>
     /// The first column spanned by anything marked dirty.
