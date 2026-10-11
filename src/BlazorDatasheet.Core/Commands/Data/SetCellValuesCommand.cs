@@ -105,4 +105,15 @@ public class SetCellValuesCommand : BaseCommand, IUndoableCommand
         sheet.Cells.Restore(_restoreData);
         return true;
     }
+
+    public int RetainedCellCount
+    {
+        get
+        {
+            var count = _restoreData.RetainedCellCount;
+            foreach (var row in _cellValues)
+                count += row.Length;
+            return count;
+        }
+    }
 }

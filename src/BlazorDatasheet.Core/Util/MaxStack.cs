@@ -6,6 +6,11 @@ public class MaxStack<T>
     private readonly List<T> _listImpl;
 
     /// <summary>
+    /// The maximum number of items the stack holds.
+    /// </summary>
+    public int Limit => _limit;
+
+    /// <summary>
     /// A stack with a maximum size. Once the limit has been reached, the item at the bottom of the stack is removed.
     /// Probably an inefficient way to create a fixed size stack
     /// </summary>
@@ -36,6 +41,19 @@ public class MaxStack<T>
     public T? Peek()
     {
         return _listImpl.LastOrDefault();
+    }
+
+    /// <summary>
+    /// Removes and returns the item at the bottom of the stack, i.e. the oldest one.
+    /// </summary>
+    public T? RemoveBottom()
+    {
+        if (_listImpl.Count == 0)
+            return default(T);
+
+        var bottom = _listImpl[0];
+        _listImpl.RemoveAt(0);
+        return bottom;
     }
 
     public IEnumerable<T> GetAllItems()

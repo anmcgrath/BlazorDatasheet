@@ -45,6 +45,16 @@ public class CommandManager
     /// </summary>
     public bool HistoryPaused { get; private set; }
 
+    /// <summary>
+    /// The number of cell values the undo history may retain across all its commands (see
+    /// <see cref="IUndoableCommand.RetainedCellCount"/>). When exceeded, the oldest commands are
+    /// dropped until the history fits, though the most recent command is always kept. This bounds
+    /// the memory held by undo after large pastes and clears.
+    /// </summary>
+    public int MaxHistoryCells { get; set; } = 2_000_000;
+
+    private int _historyCellCount;
+
     public CommandManager(Sheet sheet, int maxHistorySize = 50)
     {
         _sheet = sheet;
@@ -120,7 +130,7 @@ public class CommandManager
         if (!HistoryPaused && useUndo && protectionRevision == _sheet.Protection.Revision &&
             command is IUndoableCommand undoCommand)
         {
-            _history.Push(new UndoCommandData()
+            PushHistory(new UndoCommandData()
             {
                 Command = undoCommand,
                 SelectionSnapshot = _sheet.Selection.GetSelectionSnapshot()
@@ -137,6 +147,19 @@ public class CommandManager
             _redos.Clear();
 
         return result;
+    }
+
+    private void PushHistory(UndoCommandData data)
+    {
+        var size = data.Command.RetainedCellCount;
+        if (_history.Count() >= _history.Limit)
+            _historyCellCount -= _history.RemoveBottom()!.Command.RetainedCellCount;
+
+        _history.Push(data);
+        _historyCellCount += size;
+
+        while (_history.Count() > 1 && _historyCellCount > MaxHistoryCells)
+            _historyCellCount -= _history.RemoveBottom()!.Command.RetainedCellCount;
     }
 
     private void RollbackCommands(IReadOnlyList<ICommand> commands)
@@ -217,6 +240,7 @@ public class CommandManager
             return false;
 
         var commandData = _history.Pop()!;
+        _historyCellCount -= commandData.Command.RetainedCellCount;
         var undoResult = UndoCommand(commandData.Command);
 
         commandData.Command.ClearChainedCommands();
@@ -276,6 +300,7 @@ public class CommandManager
     public void ClearHistory()
     {
         _history.Clear();
+        _historyCellCount = 0;
         _redos.Clear();
     }
 

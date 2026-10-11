@@ -34,6 +34,29 @@ public class CommandManagerTests
     }
 
     [Test]
+    public void History_Drops_Oldest_Commands_When_Retained_Cells_Exceed_Budget()
+    {
+        var sheet = new Sheet(100, 10);
+        sheet.Commands.MaxHistoryCells = 150;
+
+        // each paste keeps the 100 new values plus one restore entry per cell
+        sheet.Cells.SetValues(0, 0, Enumerable.Range(0, 100).Select(r => new object[] { r }).ToArray());
+        sheet.Commands.GetUndoCommands().Should().HaveCount(1, "the latest command is always kept");
+
+        sheet.Cells.SetValues(0, 1, Enumerable.Range(0, 100).Select(r => new object[] { r }).ToArray());
+        sheet.Commands.GetUndoCommands().Should().HaveCount(1, "the first paste no longer fits in the budget");
+
+        sheet.Cells.SetValue(0, 2, 1);
+        sheet.Cells.SetValue(0, 3, 1);
+        sheet.Commands.GetUndoCommands().Should().HaveCount(2, "small commands are kept once the big one is dropped");
+
+        sheet.Commands.Undo();
+        sheet.Commands.Undo();
+        sheet.Cells.GetValue(0, 2).Should().BeNull();
+        sheet.Cells.GetValue(0, 1).Should().Be(0, "the dropped paste can no longer be undone");
+    }
+
+    [Test]
     public void When_Command_is_run_Redo_Stack_resets()
     {
         var cmdMgr = new CommandManager(_sheet);
