@@ -64,10 +64,8 @@ public partial class CellStore
         }
 
         // Validate but don't stop setting cell values if the value is invalid.
-        var validationResult = Sheet.Validators.Validate(value, row, col);
-
         // Save old validation result and current cell values.
-        restoreData.ValidRestoreData = _validStore.Set(row, col, validationResult.IsValid);
+        restoreData.ValidRestoreData = SetValidity(row, col, value);
 
         if (value.IsEmpty)
             restoreData.ValueRestoreData = _dataStore.Clear(row, col);
@@ -88,8 +86,7 @@ public partial class CellStore
     /// </remarks>
     internal void SetCalculatedValueImpl(int row, int col, CellValue value)
     {
-        var validationResult = Sheet.Validators.Validate(value, row, col);
-        _validStore.SetWithoutRestoreData(row, col, validationResult.IsValid);
+        SetValidityWithoutRestoreData(row, col, value);
 
         if (value.IsEmpty)
             _dataStore.ClearWithoutRestoreData(row, col);
@@ -145,26 +142,32 @@ public partial class CellStore
         }
 
         restoreData.ValidRestoreData = _validStore.Clear(region);
-        var oldValidPositions = restoreData.ValidRestoreData.DataRemoved
-            .Select(x => (x.row, x.col))
-            .ToHashSet();
 
-        var validValues = new bool?[values.Length][];
-        for (int rowOffset = 0; rowOffset < values.Length; rowOffset++)
+        // only invalid cells are stored, so nothing more is needed on a sheet without validators.
+        if (!Sheet.Validators.IsEmpty)
         {
-            validValues[rowOffset] = new bool?[values[rowOffset].Length];
-            for (int colOffset = 0; colOffset < values[rowOffset].Length; colOffset++)
-            {
-                var validationResult = Sheet.Validators.Validate(values[rowOffset][colOffset], row + rowOffset, col + colOffset);
-                validValues[rowOffset][colOffset] = validationResult.IsValid;
+            HashSet<(int row, int col)>? oldValidPositions = null;
 
-                var position = (row + rowOffset, col + colOffset);
-                if (!oldValidPositions.Contains(position))
-                    restoreData.ValidRestoreData.DataRemoved.Add((position.Item1, position.Item2, default(bool?)));
+            for (int rowOffset = 0; rowOffset < values.Length; rowOffset++)
+            {
+                var rowValues = values[rowOffset];
+                for (int colOffset = 0; colOffset < rowValues.Length; colOffset++)
+                {
+                    var r = row + rowOffset;
+                    var c = col + colOffset;
+                    if (Sheet.Validators.Validate(rowValues[colOffset], r, c).IsValid)
+                        continue;
+
+                    _validStore.SetWithoutRestoreData(r, c, false);
+
+                    oldValidPositions ??= restoreData.ValidRestoreData.DataRemoved
+                        .Select(x => (x.row, x.col))
+                        .ToHashSet();
+                    if (!oldValidPositions.Contains((r, c)))
+                        restoreData.ValidRestoreData.DataRemoved.Add((r, c, default(bool?)));
+                }
             }
         }
-
-        ((SparseMatrixStoreByRows<bool?>)_validStore).BulkLoadInto(validValues, row, col);
 
         EmitCellsChanged(region);
         Sheet.MarkDirty(region);
