@@ -31,6 +31,9 @@ public class VisualCell
     public string ClassString { get; private set; } = "bds-sheet-cell";
     public string FormatStyleString { get; private set; } = string.Empty;
     public string? Icon { get; private set; }
+    /// <summary>
+    /// The effective format of the cell. It may be the format stored in the sheet, so it must not be modified.
+    /// </summary>
     public CellFormat? Format { get; private set; }
 
     /// <summary>
@@ -104,7 +107,7 @@ public class VisualCell
         if (cellValue.ValueType == CellValueType.Number)
         {
             IsNumber = true;
-            var roundedNumber = Math.Round(cellValue.GetValue<double>(), numberOfSignificantDigits);
+            var roundedNumber = Math.Round(cellValue.NumberValue, numberOfSignificantDigits);
             FormattedString = format?.NumberFormat != null
                 ? roundedNumber.ToString(format.NumberFormat)
                 : roundedNumber.ToString(CultureInfo.InvariantCulture);
@@ -116,7 +119,7 @@ public class VisualCell
             }
         }
         else if (cellValue.ValueType == CellValueType.Date && format?.NumberFormat != null)
-            FormattedString = (cellValue.GetValue<DateTime>()).ToString(format.NumberFormat);
+            FormattedString = ((DateTime)Value!).ToString(format.NumberFormat);
         else
             FormattedString = Value?.ToString() ?? string.Empty;
 
@@ -130,7 +133,8 @@ public class VisualCell
 
         if (cf != null)
         {
-            format ??= new CellFormat();
+            // the sheet's format is shared with the store, so the conditional format is merged into a copy
+            format = format?.Clone() ?? new CellFormat();
             format.Merge(cf);
         }
 

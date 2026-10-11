@@ -298,7 +298,7 @@ public class ConditionalFormatManager
         if (_appliedFormats.IsEmpty)
             return null;
 
-        if (!_sheet.Region.Contains(row, col))
+        if (!_sheet.ContainsPosition(row, col))
             return null;
 
         var cfs = GetFormatsAppliedToPosition(row, col);
