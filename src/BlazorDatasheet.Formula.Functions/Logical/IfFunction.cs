@@ -28,7 +28,7 @@ public static class IfFunction
         if (args[0].IsError())
             return args[0];
 
-        var isTrue = args[0].GetValue<bool>();
+        var isTrue = args[0].LogicalValue;
         if (args.Length > 1 && isTrue)
             return args[1];
 

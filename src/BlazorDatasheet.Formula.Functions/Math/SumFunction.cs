@@ -34,7 +34,7 @@ public static class SumFunction
                 if (item.IsError())
                     return item;
 
-                sum += item.GetValue<double>();
+                sum += item.NumberValue;
             }
         }
 

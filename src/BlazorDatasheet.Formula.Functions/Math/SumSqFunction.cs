@@ -34,7 +34,7 @@ public static class SumSqFunction
                 if (item.IsError())
                     return item;
 
-                var value = item.GetValue<double>();
+                var value = item.NumberValue;
                 sum += value * value;
             }
         }

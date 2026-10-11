@@ -20,6 +20,6 @@ public static class NotFunction
 
     private static CellValue Evaluate(ReadOnlySpan<CellValue> args, FunctionCallMetaData metaData)
     {
-        return CellValue.Logical(!args[0].GetValue<bool>());
+        return CellValue.Logical(!args[0].LogicalValue);
     }
 }

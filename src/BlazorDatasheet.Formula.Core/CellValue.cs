@@ -186,6 +186,13 @@ public readonly struct CellValue : IComparable, IComparable<CellValue>, IEquatab
     /// <returns></returns>
     public T? GetValue<T>()
     {
+        // numbers and logicals are stored unboxed - hand them back the same way. The JIT removes
+        // the box/unbox pair for a value-type T, so these two paths allocate nothing.
+        if (typeof(T) == typeof(double) && ValueType == CellValueType.Number)
+            return (T)(object)_number;
+        if (typeof(T) == typeof(bool) && ValueType == CellValueType.Logical)
+            return (T)(object)(_number != 0);
+
         var val = GetValue(typeof(T));
         if (val == null)
             return default(T);
@@ -201,11 +208,13 @@ public readonly struct CellValue : IComparable, IComparable<CellValue>, IEquatab
     {
         try
         {
-            if (Data == null && ValueType == CellValueType.Text)
+            // Data boxes numbers and logicals, so it is read once
+            var data = Data;
+            if (data == null && ValueType == CellValueType.Text)
                 return string.Empty;
 
-            if (Data?.GetType() == type)
-                return Data;
+            if (data?.GetType() == type)
+                return data;
             else
             {
                 var conversionType = type;
@@ -215,12 +224,12 @@ public readonly struct CellValue : IComparable, IComparable<CellValue>, IEquatab
                 }
 
                 if (conversionType == typeof(string))
-                    return Data?.ToString();
+                    return data?.ToString();
 
-                if (Data is IConvertible && conversionType != null)
-                    return Convert.ChangeType(Data, conversionType);
+                if (data is IConvertible && conversionType != null)
+                    return Convert.ChangeType(data, conversionType);
 
-                return Data;
+                return data;
             }
         }
         catch (Exception)
@@ -369,38 +378,54 @@ public readonly struct CellValue : IComparable, IComparable<CellValue>, IEquatab
 
     public bool IsLessThan(CellValue value)
     {
-        if (this.Data == null || value.Data == null)
+        if (ValueType == CellValueType.Number && value.ValueType == CellValueType.Number)
+            return _number < value._number;
+
+        var thisData = this.Data;
+        var otherData = value.Data;
+        if (thisData == null || otherData == null)
             return false;
 
-        var compareResult = ((IComparable)this.Data).CompareTo(value.Data);
-        return compareResult < 0;
+        return ((IComparable)thisData).CompareTo(otherData) < 0;
     }
 
     public bool IsGreaterThan(CellValue value)
     {
-        if (this.Data == null || value.Data == null)
+        if (ValueType == CellValueType.Number && value.ValueType == CellValueType.Number)
+            return _number > value._number;
+
+        var thisData = this.Data;
+        var otherData = value.Data;
+        if (thisData == null || otherData == null)
             return false;
 
-        var compareResult = ((IComparable)this.Data).CompareTo(value.Data);
-        return compareResult > 0;
+        return ((IComparable)thisData).CompareTo(otherData) > 0;
     }
 
     public bool IsLessThanOrEqualTo(CellValue value)
     {
-        if (this.Data == null || value.Data == null)
+        if (ValueType == CellValueType.Number && value.ValueType == CellValueType.Number)
+            return _number <= value._number;
+
+        var thisData = this.Data;
+        var otherData = value.Data;
+        if (thisData == null || otherData == null)
             return false;
 
-        var compareResult = ((IComparable)this.Data).CompareTo(value.Data);
-        return compareResult <= 0;
+        return ((IComparable)thisData).CompareTo(otherData) <= 0;
     }
 
     public bool IsGreaterThanOrEqualTo(CellValue value)
     {
-        if (this.Data == null || value.Data == null)
+        if (ValueType == CellValueType.Number && value.ValueType == CellValueType.Number)
+            return _number >= value._number;
+
+        var thisData = this.Data;
+        var otherData = value.Data;
+        if (thisData == null || otherData == null)
             return false;
 
-        var compareResult = ((IComparable)this.Data).CompareTo(value.Data);
-        return compareResult >= 0;
+        return ((IComparable)thisData).CompareTo(otherData) >= 0;
     }
 
     /// <summary>

@@ -61,7 +61,7 @@ public class ParameterConverter
         if (asNumber.IsError())
             return asNumber;
 
-        return CellValue.Number(Convert.ToInt32(asNumber.Data!));
+        return CellValue.Number(Convert.ToInt32(asNumber.NumberValue));
     }
 
     private CellValue ToLogicalSequence(CellValue value)

@@ -36,7 +36,7 @@ public static class MinFunction
                 if (item.IsError())
                     return item;
 
-                var value = item.GetValue<double>();
+                var value = item.NumberValue;
                 if (!any || value < min)
                     min = value;
 
