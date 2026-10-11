@@ -29,13 +29,13 @@ public static class AverageFunction
         var count = 0d;
         foreach (var arg in args)
         {
-            var seq = arg.GetValue<CellValue[]>()!;
+            var seq = (CellValue[])arg.Data!;
             foreach (var item in seq)
             {
                 if (item.IsError())
                     return item;
 
-                sum += item.GetValue<double>();
+                sum += item.NumberValue;
                 count++;
             }
         }

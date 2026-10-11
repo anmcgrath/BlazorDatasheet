@@ -28,7 +28,7 @@ public static class AndFunction
         var isTrue = true;
         foreach (var arg in args)
         {
-            var seq = arg.GetValue<CellValue[]>()!;
+            var seq = (CellValue[])arg.Data!;
             if (seq.Length == 0)
                 return CellValue.Error(ErrorType.Value);
 
@@ -37,7 +37,7 @@ public static class AndFunction
                 if (cv.IsError())
                     return cv;
 
-                isTrue &= cv.GetValue<bool>();
+                isTrue &= cv.LogicalValue;
             }
         }
 

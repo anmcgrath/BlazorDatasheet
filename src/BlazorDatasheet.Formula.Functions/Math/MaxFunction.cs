@@ -36,7 +36,7 @@ public static class MaxFunction
                 if (item.IsError())
                     return item;
 
-                var value = item.GetValue<double>();
+                var value = item.NumberValue;
                 if (!any || value > max)
                     max = value;
 
