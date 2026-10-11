@@ -207,7 +207,7 @@
             return;
         
         var dirtyRegions = new List<IRegion>();
-        foreach (var (interval, _) in e.DirtyRows.GetAllIntervalData())
+        foreach (var interval in e.DirtyRows.Intervals)
             dirtyRegions.Add(IncludeCellsDrawingEdges(
                 new Region(interval.Start, interval.End, e.DirtyColStart, e.DirtyColEnd)));
 
