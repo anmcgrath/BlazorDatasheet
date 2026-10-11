@@ -3,8 +3,14 @@
 @using BlazorDatasheet.Render
 @foreach (var col in _visibleColIndices)
 {
-    if (!Cache.TryGetValue(new CellPosition(Row, col), out var visualCell))
+    var position = new CellPosition(Row, col);
+    if (!Cache.TryGetValue(position, out var visualCell))
+    {
+        // the pane fills the cache for the viewport before the rows render, so this is rare; keep
+        // the cell so that the next render of the row does not build it again.
         visualCell = new VisualCell(Row, col, Sheet, NumberPrecisionDisplay, NumberOverflow);
+        Cache[position] = visualCell;
+    }
 
     if (visualCell.Merge != null)
     {
