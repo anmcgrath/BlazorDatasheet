@@ -108,6 +108,18 @@ public interface IMatrixDataStore<T> : IStore<T, MatrixRestoreData<T>>, ISparseS
     public IEnumerable<(int row, int col, T data)> GetNonEmptyData(IRegion region);
 
     /// <summary>
+    /// Returns the non-empty values in the region, in row-major order, without their positions.
+    /// This is what a range argument to a formula function needs, so it is kept to a single copy.
+    /// </summary>
+    public List<T> GetNonEmptyValues(IRegion region)
+    {
+        var values = new List<T>();
+        foreach (var (_, _, data) in GetNonEmptyData(region))
+            values.Add(data);
+        return values;
+    }
+
+    /// <summary>
     /// Returns a 2d array (accessed row, col) of data taken from the region
     /// </summary>
     /// <param name="region"></param>

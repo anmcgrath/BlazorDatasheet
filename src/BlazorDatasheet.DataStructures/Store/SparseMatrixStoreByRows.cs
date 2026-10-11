@@ -5,7 +5,12 @@ namespace BlazorDatasheet.DataStructures.Store;
 public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
 {
     private Dictionary<int, SparseRow<T>> _rows = new();
-    private int[]? _sortedRowKeys;
+    /// <summary>
+    /// The row keys in ascending order, or null when it must be rebuilt. Single-cell writes keep it
+    /// up to date in place: a recalculation interleaves writes of results with range reads, and
+    /// re-sorting every row key on each read would make that quadratic.
+    /// </summary>
+    private List<int>? _sortedRowKeys;
     private readonly T? _defaultIfEmpty;
     private readonly EqualityComparer<T> _valueComparer = EqualityComparer<T>.Default;
 
@@ -79,18 +84,45 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
         _sortedRowKeys = null;
     }
 
-    private int[] EnsureSortedRowKeys()
+    private List<int> EnsureSortedRowKeys()
     {
         if (_sortedRowKeys == null)
         {
-            _sortedRowKeys = _rows.Keys.ToArray();
-            Array.Sort(_sortedRowKeys);
+            _sortedRowKeys = new List<int>(_rows.Keys);
+            _sortedRowKeys.Sort();
         }
 
         return _sortedRowKeys;
     }
 
     private void InvalidateRowCache() => _sortedRowKeys = null;
+
+    private void AddRowKey(int row)
+    {
+        if (_sortedRowKeys == null)
+            return;
+
+        var count = _sortedRowKeys.Count;
+        if (count == 0 || _sortedRowKeys[count - 1] < row)
+        {
+            _sortedRowKeys.Add(row);
+            return;
+        }
+
+        var index = _sortedRowKeys.BinarySearch(row);
+        if (index < 0)
+            _sortedRowKeys.Insert(~index, row);
+    }
+
+    private void RemoveRowKey(int row)
+    {
+        if (_sortedRowKeys == null)
+            return;
+
+        var index = _sortedRowKeys.BinarySearch(row);
+        if (index >= 0)
+            _sortedRowKeys.RemoveAt(index);
+    }
 
     private SparseRow<T>? BuildRowData(T[] rowValues, int colOffset)
     {
@@ -178,7 +210,7 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
         {
             rowData = new SparseRow<T>(_defaultIfEmpty!);
             _rows[row] = rowData;
-            InvalidateRowCache();
+            AddRowKey(row);
         }
 
         var currValue = rowData.Get(col);
@@ -211,7 +243,7 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
         if (rowData.IsEmpty())
         {
             _rows.Remove(row);
-            InvalidateRowCache();
+            RemoveRowKey(row);
         }
 
         return cleared;
@@ -232,11 +264,11 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
         var cleared = new List<(int row, int col, T)>();
         var keys = EnsureSortedRowKeys();
 
-        var startIdx = Array.BinarySearch(keys, region.Top);
+        var startIdx = keys.BinarySearch(region.Top);
         if (startIdx < 0) startIdx = ~startIdx;
 
         var rowsToRemove = new List<int>();
-        for (int i = startIdx; i < keys.Length; i++)
+        for (int i = startIdx; i < keys.Count; i++)
         {
             var rowKey = keys[i];
             if (rowKey > region.Bottom)
@@ -284,11 +316,11 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
         }
 
         var keys = EnsureSortedRowKeys();
-        var startIdx = Array.BinarySearch(keys, row);
+        var startIdx = keys.BinarySearch(row);
         if (startIdx < 0)
             startIdx = ~startIdx;
 
-        for (int i = keys.Length - 1; i >= startIdx; i--)
+        for (int i = keys.Count - 1; i >= startIdx; i--)
         {
             var key = keys[i];
             var rowData = _rows[key];
@@ -335,10 +367,10 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
     public int GetNextNonBlankRow(int row, int col)
     {
         var keys = EnsureSortedRowKeys();
-        var startIdx = Array.BinarySearch(keys, row + 1);
+        var startIdx = keys.BinarySearch(row + 1);
         if (startIdx < 0) startIdx = ~startIdx;
 
-        for (int i = startIdx; i < keys.Length; i++)
+        for (int i = startIdx; i < keys.Count; i++)
         {
             if (_rows[keys[i]].ContainsIndex(col))
                 return keys[i];
@@ -350,10 +382,10 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
     public int GetNextNonEmptyIndex(int index)
     {
         var keys = EnsureSortedRowKeys();
-        var startIdx = Array.BinarySearch(keys, index + 1);
+        var startIdx = keys.BinarySearch(index + 1);
         if (startIdx < 0) startIdx = ~startIdx;
 
-        if (startIdx >= keys.Length)
+        if (startIdx >= keys.Count)
             return -1;
 
         return keys[startIdx];
@@ -380,12 +412,12 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
         var keys = EnsureSortedRowKeys();
         long endIndex = (long)row + count - 1;
         var removedData = new List<(int row, int col, T data)>();
-        var startIdx = Array.BinarySearch(keys, row);
+        var startIdx = keys.BinarySearch(row);
         if (startIdx < 0)
             startIdx = ~startIdx;
 
         int i = startIdx;
-        while (i < keys.Length && keys[i] <= endIndex)
+        while (i < keys.Count && keys[i] <= endIndex)
         {
             var key = keys[i];
             var rowData = _rows[key];
@@ -395,7 +427,7 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
             i++;
         }
 
-        for (; i < keys.Length; i++)
+        for (; i < keys.Count; i++)
         {
             var key = keys[i];
             var rowData = _rows[key];
@@ -415,10 +447,10 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
     public IEnumerable<CellPosition> GetNonEmptyPositions(int r0, int r1, int c0, int c1)
     {
         var keys = EnsureSortedRowKeys();
-        var startIdx = Array.BinarySearch(keys, r0);
+        var startIdx = keys.BinarySearch(r0);
         if (startIdx < 0) startIdx = ~startIdx;
 
-        for (int i = startIdx; i < keys.Length; i++)
+        for (int i = startIdx; i < keys.Count; i++)
         {
             var rowKey = keys[i];
             if (rowKey > r1)
@@ -479,10 +511,10 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
     {
         var data = new List<(int row, int col, T data)>();
         var keys = EnsureSortedRowKeys();
-        var startIdx = Array.BinarySearch(keys, region.Top);
+        var startIdx = keys.BinarySearch(region.Top);
         if (startIdx < 0) startIdx = ~startIdx;
 
-        for (int i = startIdx; i < keys.Length; i++)
+        for (int i = startIdx; i < keys.Count; i++)
         {
             var rowKey = keys[i];
             if (rowKey > region.Bottom)
@@ -493,6 +525,25 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
         }
 
         return data;
+    }
+
+    public List<T> GetNonEmptyValues(IRegion region)
+    {
+        var values = new List<T>();
+        var keys = EnsureSortedRowKeys();
+        var startIdx = keys.BinarySearch(region.Top);
+        if (startIdx < 0) startIdx = ~startIdx;
+
+        for (int i = startIdx; i < keys.Count; i++)
+        {
+            var rowKey = keys[i];
+            if (rowKey > region.Bottom)
+                break;
+
+            _rows[rowKey].CollectNonEmptyValuesBetween(region.Left, region.Right, values);
+        }
+
+        return values;
     }
 
     public T[][] GetData(IRegion region)
@@ -520,10 +571,10 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
         int rowOffset = newStoreResetsOffsets ? r0 : 0;
 
         var keys = EnsureSortedRowKeys();
-        var startIdx = Array.BinarySearch(keys, r0);
+        var startIdx = keys.BinarySearch(r0);
         if (startIdx < 0) startIdx = ~startIdx;
 
-        for (int i = startIdx; i < keys.Length; i++)
+        for (int i = startIdx; i < keys.Count; i++)
         {
             var rowKey = keys[i];
             if (rowKey > r1)
@@ -543,13 +594,13 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
     public RowDataCollection<T> GetNonEmptyRowData(IRegion region)
     {
         var keys = EnsureSortedRowKeys();
-        var startIdx = Array.BinarySearch(keys, region.Top);
+        var startIdx = keys.BinarySearch(region.Top);
         if (startIdx < 0) startIdx = ~startIdx;
 
         var rowIndicesList = new List<int>();
         var rowDataList = new List<RowData<T>>();
 
-        for (int i = startIdx; i < keys.Length; i++)
+        for (int i = startIdx; i < keys.Count; i++)
         {
             var rowKey = keys[i];
             if (rowKey > region.Bottom)

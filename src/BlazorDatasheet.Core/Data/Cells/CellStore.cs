@@ -92,6 +92,14 @@ public partial class CellStore
     }
 
     /// <summary>
+    /// The non-empty values in the region in row-major order, without positions.
+    /// </summary>
+    internal List<CellValue> GetNonEmptyValues(IRegion region)
+    {
+        return _dataStore.GetNonEmptyValues(region);
+    }
+
+    /// <summary>
     /// Clears all cell values in the region
     /// </summary>
     /// <param name="regions"></param>

@@ -70,8 +70,7 @@ public class WorkbookEnvironment : IEnvironment
         if (sheet == null)
             return [CellValue.Error(ErrorType.Ref)];
 
-        return sheet.Cells.GetNonEmptyCellValues(reference.Region)
-            .Select(x => x.value).ToArray();
+        return sheet.Cells.GetNonEmptyValues(reference.Region);
     }
 
     public void SetCellValue(int row, int col, string sheetName, CellValue value)

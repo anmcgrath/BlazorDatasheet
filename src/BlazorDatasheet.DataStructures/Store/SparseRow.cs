@@ -140,6 +140,27 @@ internal class SparseRow<T>
     }
 
     /// <summary>
+    /// Appends the non-empty values between <paramref name="r0"/> and <paramref name="r1"/> to <paramref name="into"/>.
+    /// </summary>
+    public void CollectNonEmptyValuesBetween(int r0, int r1, List<T> into)
+    {
+        var keys = EnsureSortedKeys();
+        if (keys.Length == 0)
+            return;
+
+        var startIdx = Array.BinarySearch(keys, r0);
+        if (startIdx < 0) startIdx = ~startIdx;
+
+        for (int i = startIdx; i < keys.Length; i++)
+        {
+            var key = keys[i];
+            if (key > r1)
+                return;
+            into.Add(_data[key]);
+        }
+    }
+
+    /// <summary>
     /// Returns all non-empty data
     /// </summary>
     public List<(int itemIndex, T data)> GetNonEmptyData()
