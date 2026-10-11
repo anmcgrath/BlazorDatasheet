@@ -53,9 +53,8 @@ public class VirtualMergesLayerTests
 
         var renders = RenderCount(cut);
         await cut.InvokeAsync(() => sheet.Cells.SetValue(0, 0, "hello"));
-        // the pane still hands the layer its parameters again (twice per value change), but the layer doesn't ask
-        // for a render itself
-        RenderCount(cut).Should().Be(renders + 2);
+        // the layer container only renders its layers when something they take from it changes
+        RenderCount(cut).Should().Be(renders);
     }
 
     [Test]
