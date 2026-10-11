@@ -199,7 +199,8 @@
             }
         }
 
-        MakeRegionsDirty(args.NewRegions);
+        RebuildCells(args.NewRegions);
+        StateHasChanged();
     }
 
     private void SheetOnSheetDirty(object? sender, DirtySheetEventArgs e)
@@ -213,7 +214,10 @@
                 new Region(interval.Start, interval.End, e.DirtyColStart, e.DirtyColEnd)));
 
         if (dirtyRegions.Count > 0)
-            MakeRegionsDirty(dirtyRegions);
+        {
+            RebuildCells(dirtyRegions);
+            StateHasChanged();
+        }
     }
 
 
@@ -242,7 +246,10 @@
         return result;
     }
 
-    private void MakeRegionsDirty(IEnumerable<IRegion?> dirtyRegions)
+    /// <summary>
+    /// Rebuilds the cached cells of the visible parts of the regions and marks their rows dirty.
+    /// </summary>
+    private void RebuildCells(IEnumerable<IRegion?> dirtyRegions)
     {
         if (_sheet == null)
             return;
@@ -285,8 +292,6 @@
                 }
             }
         }
-
-        StateHasChanged();
     }
 
     private bool IsRowDirty(int rowIndex)
@@ -399,6 +404,10 @@
         return metrics;
     }
 
+    /// <summary>
+    /// Throws away every cached cell and rebuilds those in the viewport, so that the rows find them
+    /// in the cache on the next render instead of each building its own without the shared metrics.
+    /// </summary>
     private void InvalidateVisibleCells()
     {
         _visualCellCache.Clear();
@@ -407,12 +416,7 @@
         if (_sheet == null || _currentViewPortRegion == null)
             return;
 
-        foreach (var row in _sheet.Rows.GetVisibleIndices(
-                     _currentViewPortRegion.Top,
-                     _currentViewPortRegion.Bottom))
-        {
-            _dirtyRowIndices.Add(row);
-        }
+        RebuildCells([_currentViewPortRegion]);
     }
 
     public async Task RefreshView()
