@@ -87,8 +87,13 @@
     {
         oldSheet.Selection.SelectionChanged -= OnSelectionChanged;
         oldSheet.Selection.SelectingChanged -= OnSelectingChanged;
+        oldSheet.Cells.RegionMerged -= OnMergesChanged;
+        oldSheet.Cells.RegionUnMerged -= OnMergesChanged;
         newSheet.Selection.SelectionChanged += OnSelectionChanged;
         newSheet.Selection.SelectingChanged += OnSelectingChanged;
+        // the active cell is drawn around its merge
+        newSheet.Cells.RegionMerged += OnMergesChanged;
+        newSheet.Cells.RegionUnMerged += OnMergesChanged;
 
         if (_workbookViews != null)
             _workbookViews.Changed -= OnCurrentSheetChanged;
@@ -97,6 +102,7 @@
     }
 
     private void OnCurrentSheetChanged() => _ = InvokeAsync(StateHasChanged);
+    private void OnMergesChanged(object? sender, IRegion region) => StateHasChanged();
 
     private void OnSelectionChanged(object? sender, SelectionChangedEventArgs args)
     {
@@ -112,6 +118,8 @@
     {
         Sheet.Selection.SelectionChanged -= OnSelectionChanged;
         Sheet.Selection.SelectingChanged -= OnSelectingChanged;
+        Sheet.Cells.RegionMerged -= OnMergesChanged;
+        Sheet.Cells.RegionUnMerged -= OnMergesChanged;
         if (_workbookViews != null)
             _workbookViews.Changed -= OnCurrentSheetChanged;
     }

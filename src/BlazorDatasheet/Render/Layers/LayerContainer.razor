@@ -1,8 +1,10 @@
-﻿@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events.Layout
 @using BlazorDatasheet.Util
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Render.Layers.Preview
 @using BlazorDatasheet.Services
+@implements IDisposable
 @* The layer box is laid out on its own, so a selection or preview box changing inside it does not
    make the browser lay out the grid around it. Paint containment is deliberately left off: the
    autofill handle is drawn straddling the box edge and would be clipped on the last row/column. *@
@@ -43,8 +45,18 @@
     private Sheet _sheet = EmptySheet.Instance;
 
     [Parameter, EditorRequired] public SheetPointerInputService? PointerInputService { get; set; }
+    private SheetPointerInputService? _pointerInputService;
 
     [Parameter] public PreviewService? PreviewService { get; set; }
+    private PreviewService? _previewService;
+
+    /// <summary>
+    /// Identifies what the layers in <see cref="ChildContent"/> were built from. The layers are
+    /// only rendered again when this is a different instance, as the parent cannot otherwise say
+    /// whether anything the layers take as a parameter has changed.
+    /// </summary>
+    [Parameter] public object? ContentKey { get; set; }
+    private object? _contentKey;
 
     /// <summary>
     /// The width, in px, of the rendered layer region
@@ -56,22 +68,103 @@
     /// </summary>
     protected double LayerHeight { get; set; }
 
+    // Every layer subscribes to the events it draws from, so the container (and with it every
+    // layer) is only rendered when something it supplies to them has changed. Without the gate each
+    // render of the pane, e.g. for a single cell edit, re-rendered every layer in every pane.
+    private bool _shouldRender = true;
+
     protected override void OnParametersSet()
     {
         if (_sheet != Sheet)
+        {
+            UnsubscribeSheetEvents(_sheet);
             _sheet = Sheet;
+            SubscribeSheetEvents(_sheet);
+            _shouldRender = true;
+        }
 
         if (ViewRegion != _viewRegion)
-            _viewRegion = ViewRegion ?? new Region(0, 0);
+        {
+            var next = ViewRegion ?? new Region(0, 0);
+            if (!next.Equals(_viewRegion))
+                _shouldRender = true;
+            _viewRegion = next;
+        }
 
-        LayerWidth = _sheet.Columns.GetVisualWidthBetween(_viewRegion.Left, _viewRegion.Right + 1);
-        LayerHeight = _sheet.Rows.GetVisualHeightBetween(_viewRegion.Top, _viewRegion.Bottom + 1);
+        if (!ReferenceEquals(_pointerInputService, PointerInputService))
+        {
+            _pointerInputService = PointerInputService;
+            _shouldRender = true;
+        }
+
+        if (!ReferenceEquals(_previewService, PreviewService))
+        {
+            _previewService = PreviewService;
+            _shouldRender = true;
+        }
+
+        if (!ReferenceEquals(_contentKey, ContentKey))
+        {
+            _contentKey = ContentKey;
+            _shouldRender = true;
+        }
+
+        var width = _sheet.Columns.GetVisualWidthBetween(_viewRegion.Left, _viewRegion.Right + 1);
+        var height = _sheet.Rows.GetVisualHeightBetween(_viewRegion.Top, _viewRegion.Bottom + 1);
+        if (width != LayerWidth || height != LayerHeight)
+        {
+            LayerWidth = width;
+            LayerHeight = height;
+            _shouldRender = true;
+        }
 
         base.OnParametersSet();
     }
 
-    private void UpdateSizes()
+    protected override bool ShouldRender() => _shouldRender;
+
+    protected override void OnAfterRender(bool firstRender)
     {
+        _shouldRender = false;
+        base.OnAfterRender(firstRender);
+    }
+
+    private void SubscribeSheetEvents(Sheet sheet)
+    {
+        sheet.Rows.SizeModified += HandleSizeModified;
+        sheet.Columns.SizeModified += HandleSizeModified;
+        sheet.Rows.Inserted += HandleRowColInserted;
+        sheet.Columns.Inserted += HandleRowColInserted;
+        sheet.Rows.Removed += HandleRowColRemoved;
+        sheet.Columns.Removed += HandleRowColRemoved;
+    }
+
+    private void UnsubscribeSheetEvents(Sheet sheet)
+    {
+        sheet.Rows.SizeModified -= HandleSizeModified;
+        sheet.Columns.SizeModified -= HandleSizeModified;
+        sheet.Rows.Inserted -= HandleRowColInserted;
+        sheet.Columns.Inserted -= HandleRowColInserted;
+        sheet.Rows.Removed -= HandleRowColRemoved;
+        sheet.Columns.Removed -= HandleRowColRemoved;
+    }
+
+    // A size change moves everything the layers draw, even when the total size of the layer region
+    // is unchanged (one column widened while another is narrowed), and no layer listens for it
+    // itself. Inserting or removing rows/columns does the same.
+    private void HandleSizeModified(object? sender, SizeModifiedEventArgs e) => RenderLayers();
+    private void HandleRowColInserted(object? sender, RowColInsertedEventArgs e) => RenderLayers();
+    private void HandleRowColRemoved(object? sender, RowColRemovedEventArgs e) => RenderLayers();
+
+    private void RenderLayers()
+    {
+        _shouldRender = true;
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        UnsubscribeSheetEvents(_sheet);
     }
 
 }

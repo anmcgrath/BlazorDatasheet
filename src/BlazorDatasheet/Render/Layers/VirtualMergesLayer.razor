@@ -1,6 +1,6 @@
 ﻿@using System.Text
 @using BlazorDatasheet.Core.Data
-@using BlazorDatasheet.Core.Events.Data
+@using BlazorDatasheet.Core.Events.Visual
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Render.DefaultComponents
 @using BlazorDatasheet.Util
@@ -56,21 +56,32 @@
 
     protected override void OnSheetChange(Sheet newSheet, Sheet oldSheet)
     {
-        oldSheet.Cells.CellsChanged -= CellsOnCellsChanged;
+        oldSheet.SheetDirty -= SheetOnSheetDirty;
         oldSheet.Cells.RegionMerged -= MergesChanged;
         oldSheet.Cells.RegionUnMerged -= MergesChanged;
-        newSheet.Cells.CellsChanged += CellsOnCellsChanged;
+        newSheet.SheetDirty += SheetOnSheetDirty;
         newSheet.Cells.RegionMerged += MergesChanged;
         newSheet.Cells.RegionUnMerged += MergesChanged;
     }
 
-    private void CellsOnCellsChanged(object? sender, CellDataChangedEventArgs e)
+    // A merged cell is drawn from the same cache as the grid, which the pane rebuilds from this
+    // event before it reaches here, so the layer follows it for values and formats alike.
+    private void SheetOnSheetDirty(object? sender, DirtySheetEventArgs e)
     {
         // nothing here renders unless a merge overlaps the view, and this fires for every data change
-        if (!Sheet.Cells.AnyMerges(ViewRegion))
+        if (e.IsEmpty || !Sheet.Cells.AnyMerges(ViewRegion))
             return;
 
-        StateHasChanged();
+        foreach (var interval in e.DirtyRows.Intervals)
+        {
+            var dirty = new Region(interval.Start, interval.End, e.DirtyColStart, e.DirtyColEnd)
+                .GetIntersection(ViewRegion);
+            if (dirty != null && Sheet.Cells.AnyMerges(dirty))
+            {
+                StateHasChanged();
+                return;
+            }
+        }
     }
 
     private void MergesChanged(object? sender, IRegion region) => StateHasChanged();
@@ -102,7 +113,7 @@
 
     public void Dispose()
     {
-        Sheet.Cells.CellsChanged -= CellsOnCellsChanged;
+        Sheet.SheetDirty -= SheetOnSheetDirty;
         Sheet.Cells.RegionMerged -= MergesChanged;
         Sheet.Cells.RegionUnMerged -= MergesChanged;
     }

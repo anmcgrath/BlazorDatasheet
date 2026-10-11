@@ -990,12 +990,14 @@
         });
 
         CountEventHandlers<SelectionRendererLayer>(sheet.Selection, "SelectionChanged").Should().BeGreaterThan(0);
-        CountEventHandlers<VirtualMergesLayer>(sheet.Cells, "CellsChanged").Should().BeGreaterThan(0);
+        CountEventHandlers<VirtualMergesLayer>(sheet, "SheetDirty").Should().BeGreaterThan(0);
+        CountEventHandlers<LayerContainer>(sheet.Rows, "SizeModified").Should().BeGreaterThan(0);
         CountEventHandlers<FormulaDependenciesLayer>(sheet.Cells, "FormulaChanged").Should().BeGreaterThan(0);
 
         var selectionLayer = cut.FindComponent<SelectionRendererLayer>().Instance;
         var virtualMergesLayer = cut.FindComponent<VirtualMergesLayer>().Instance;
         var formulaDependenciesLayer = cut.FindComponent<FormulaDependenciesLayer>().Instance;
+        var layerContainer = cut.FindComponent<LayerContainer>().Instance;
 
         selectionLayer.Should().BeAssignableTo<IDisposable>();
         virtualMergesLayer.Should().BeAssignableTo<IDisposable>();
@@ -1004,9 +1006,11 @@
         ((IDisposable)selectionLayer).Dispose();
         ((IDisposable)virtualMergesLayer).Dispose();
         ((IDisposable)formulaDependenciesLayer).Dispose();
+        ((IDisposable)layerContainer).Dispose();
 
         CountEventHandlers<SelectionRendererLayer>(sheet.Selection, "SelectionChanged").Should().Be(0);
-        CountEventHandlers<VirtualMergesLayer>(sheet.Cells, "CellsChanged").Should().Be(0);
+        CountEventHandlers<VirtualMergesLayer>(sheet, "SheetDirty").Should().Be(0);
+        CountEventHandlers<LayerContainer>(sheet.Rows, "SizeModified").Should().Be(0);
         CountEventHandlers<FormulaDependenciesLayer>(sheet.Cells, "FormulaChanged").Should().Be(0);
     }
 

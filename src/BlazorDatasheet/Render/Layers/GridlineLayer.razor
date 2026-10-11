@@ -1,7 +1,9 @@
 @using System.Globalization
 @using System.Text
 @using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events.Layout
 @using BlazorDatasheet.DataStructures.Geometry
+@implements IDisposable
 
 @if (VisibleRegion?.GetIntersection(ViewRegion) is { } region)
 {
@@ -19,6 +21,72 @@
     [Parameter, EditorRequired] public Sheet Sheet { get; set; } = null!;
     [Parameter, EditorRequired] public IRegion ViewRegion { get; set; } = null!;
     [Parameter] public IRegion? VisibleRegion { get; set; }
+
+    private Sheet? _sheet;
+    private IRegion? _viewRegion;
+    private IRegion? _visibleRegion;
+
+    // The gridlines depend only on the two regions and the track sizes, so a pane render for
+    // anything else (a cell edit, a selection) does not rebuild the path.
+    private bool _shouldRender = true;
+
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(_sheet, Sheet))
+        {
+            if (_sheet != null)
+                Unsubscribe(_sheet);
+            _sheet = Sheet;
+            Subscribe(_sheet);
+            _shouldRender = true;
+        }
+
+        if (!Equals(_viewRegion, ViewRegion))
+        {
+            _viewRegion = ViewRegion;
+            _shouldRender = true;
+        }
+
+        if (!Equals(_visibleRegion, VisibleRegion))
+        {
+            _visibleRegion = VisibleRegion;
+            _shouldRender = true;
+        }
+
+        base.OnParametersSet();
+    }
+
+    protected override bool ShouldRender() => _shouldRender;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        _shouldRender = false;
+        base.OnAfterRender(firstRender);
+    }
+
+    private void Subscribe(Sheet sheet)
+    {
+        sheet.Rows.SizeModified += HandleSizeModified;
+        sheet.Columns.SizeModified += HandleSizeModified;
+    }
+
+    private void Unsubscribe(Sheet sheet)
+    {
+        sheet.Rows.SizeModified -= HandleSizeModified;
+        sheet.Columns.SizeModified -= HandleSizeModified;
+    }
+
+    private void HandleSizeModified(object? sender, SizeModifiedEventArgs e)
+    {
+        _shouldRender = true;
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        if (_sheet != null)
+            Unsubscribe(_sheet);
+    }
 
     private static string F(double value) => value.ToString(CultureInfo.InvariantCulture);
 
