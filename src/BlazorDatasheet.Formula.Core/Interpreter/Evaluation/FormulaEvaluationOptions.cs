@@ -6,7 +6,11 @@ namespace BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 /// </summary>
 public readonly record struct ReferenceOffset(int RowOffset, int ColOffset, string SheetName);
 
-public class FormulaEvaluationOptions
+/// <summary>
+/// Options for one evaluation. A struct, since conditional formats evaluate a formula once per
+/// cell with a different offset each time.
+/// </summary>
+public readonly struct FormulaEvaluationOptions
 {
     /// <summary>
     /// When true, the formula evaluator should not resolve dependencies. Instead,
