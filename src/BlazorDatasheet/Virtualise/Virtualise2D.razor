@@ -9,6 +9,7 @@
 
 @{
     var totalSize = GetTotalViewSize();
+    _renderedScrollVersion = _scrollVersion;
 }
 
 <div
@@ -133,6 +134,11 @@
     private List<int> _visibleRowIndices = new();
     private List<int> _visibleColIndices = new();
     private bool _isDisposed;
+
+    // The viewport-changed handler usually re-renders the parent, and this component with it, so
+    // the scroll only queues a render of its own when that has not happened.
+    private int _scrollVersion;
+    private int _renderedScrollVersion;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -299,21 +305,23 @@
         _visibleColIndices = LayoutProvider.GetVisibleColumnIndices(view.Left, view.Right);
         _visibleRowIndices = LayoutProvider.GetVisibleRowIndices(view.Top, view.Bottom);
 
-        var csb = new StringBuilder();
+        var csb = new StringBuilder(_visibleColIndices.Count * 6);
         foreach (var visibleCol in _visibleColIndices)
-            csb.Append($"{LayoutProvider.ComputeWidth(visibleCol, 1)}px ");
-        var rsb = new StringBuilder();
+            csb.Append(LayoutProvider.ComputeWidth(visibleCol, 1)).Append("px ");
+        var rsb = new StringBuilder(_visibleRowIndices.Count * 6);
         foreach (var visibleRow in _visibleRowIndices)
-            rsb.Append($"{LayoutProvider.ComputeHeight(visibleRow, 1)}px ");
+            rsb.Append(LayoutProvider.ComputeHeight(visibleRow, 1)).Append("px ");
 
         _contentColTemplate = csb.ToString();
         _contentRowTemplate = rsb.ToString();
+        _scrollVersion++;
 
         if (_isDisposed)
             return;
 
         await OnViewportChanged.InvokeAsync(new VirtualViewportChangedEventArgs(_currentViewport, newRegions, removedRegions));
-        await InvokeAsync(StateHasChanged);
+        if (_renderedScrollVersion != _scrollVersion)
+            await InvokeAsync(StateHasChanged);
     }
 
     internal async Task ScrollBy(double x, double y)
