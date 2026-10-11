@@ -406,27 +406,34 @@ public abstract class RowColInfoStore
 
         var hidden = Visible.GetOverlapping(start, end);
 
-        if (!hidden.Any())
-            return Enumerable.Range(start, end - start + 1).ToList();
-
-        var visibleRows = new List<int>();
-
-        int n = hidden.First().start - start;
-        if (n > 0)
-            visibleRows.AddRange(Enumerable.Range(start, n));
-
-        for (int i = 0; i < hidden.Count - 1; ++i)
+        if (hidden.Count == 0)
         {
-            n = hidden[i + 1].start - (hidden[i].end + 1);
-            if (n > 0)
-                visibleRows.AddRange(Enumerable.Range(hidden[i].end + 1, n));
+            var all = new List<int>(end - start + 1);
+            for (var i = start; i <= end; i++)
+                all.Add(i);
+            return all;
         }
 
-        n = end - hidden.Last().end;
-        if (n > 0)
-            visibleRows.AddRange(Enumerable.Range(hidden.Last().end + 1, n));
+        var visibleCount = end - start + 1;
+        foreach (var range in hidden)
+            visibleCount -= Math.Min(range.end, end) - Math.Max(range.start, start) + 1;
+
+        var visibleRows = new List<int>(Math.Max(visibleCount, 0));
+        if (visibleCount <= 0)
+            return visibleRows;
+
+        AddRange(visibleRows, start, hidden[0].start - 1);
+        for (int i = 0; i < hidden.Count - 1; ++i)
+            AddRange(visibleRows, hidden[i].end + 1, hidden[i + 1].start - 1);
+        AddRange(visibleRows, hidden[^1].end + 1, end);
 
         return visibleRows;
+    }
+
+    private static void AddRange(List<int> list, int start, int end)
+    {
+        for (var i = start; i <= end; i++)
+            list.Add(i);
     }
 
     /// <summary>

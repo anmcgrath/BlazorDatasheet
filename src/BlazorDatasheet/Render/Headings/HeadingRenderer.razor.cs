@@ -24,10 +24,13 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
     public bool ShowSelectionWhenNotCurrentSheet { get; set; }
 
     /// <summary>
-    /// Whether the headings show which rows or columns are selected.
+    /// Whether the headings show which rows or columns are selected. Worked out once per render,
+    /// as every heading asks and the answer involves the registry of datasheets.
     /// </summary>
-    protected bool ShowsSelection =>
-        ShowSelectionWhenNotCurrentSheet || DatasheetRegistry.For(_sheet.Workbook).ShowsSelection(_sheet);
+    protected bool ShowsSelection { get; private set; }
+
+    private void RefreshShowsSelection() =>
+        ShowsSelection = ShowSelectionWhenNotCurrentSheet || DatasheetRegistry.For(_sheet.Workbook).ShowsSelection(_sheet);
 
     private WorkbookViews? _workbookViews;
 
@@ -74,6 +77,8 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
         // any parameter change (ChildContent, ShowColumnMenu, ...) has to reach the markup, and
         // ShouldRender gates everything on _dirty.
         _dirty = true;
+        // the first render is not preceded by ShouldRender
+        RefreshShowsSelection();
 
         if (refreshView)
             await RefreshView();
@@ -235,6 +240,7 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
     {
         if (!_dirty) return false;
         _dirty = false;
+        RefreshShowsSelection();
         _selectionSignature = ComputeSelectionSignature();
         return true;
     }

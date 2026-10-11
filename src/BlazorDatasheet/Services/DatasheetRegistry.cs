@@ -67,7 +67,7 @@ internal sealed class WorkbookViews
             if (_lastActivated?.TryGetTarget(out var sheet) != true)
                 return null;
 
-            return DatasheetRegistry.For(sheet!).Datasheets.Count > 0 ? sheet : null;
+            return DatasheetRegistry.For(sheet!).HasAny ? sheet : null;
         }
     }
 
@@ -145,6 +145,23 @@ internal sealed class SheetViews
                     if (reference.TryGetTarget(out var datasheet))
                         datasheets.Add(datasheet);
                 return datasheets;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Whether any datasheet is showing the sheet. Unlike <see cref="Datasheets"/>, allocates nothing.
+    /// </summary>
+    public bool HasAny
+    {
+        get
+        {
+            lock (_lock)
+            {
+                foreach (var reference in _datasheets)
+                    if (reference.TryGetTarget(out _))
+                        return true;
+                return false;
             }
         }
     }
