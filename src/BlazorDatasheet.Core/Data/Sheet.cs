@@ -702,19 +702,18 @@ public class Sheet
     /// <returns></returns>
     public CellFormat GetFormat(int row, int col)
     {
-        return GetFormatForRendering(row, col) ?? new CellFormat();
+        return GetFormatForRendering(row, col)?.Clone() ?? new CellFormat();
     }
 
     /// <summary>
     /// Resolves the effective format without allocating an empty format for an unformatted cell.
     /// Rendering calls this for every cell entering the viewport, and the common case has no
-    /// format at all. Public callers still receive the mutable, non-null copy promised by
-    /// <see cref="GetFormat(int,int)"/>.
+    /// format at all. When only one of the cell, row or column formats contributes, that stored
+    /// format is returned as is, so the result must be treated as read-only. Public callers still
+    /// receive the mutable, non-null copy promised by <see cref="GetFormat(int,int)"/>.
     /// </summary>
     internal CellFormat? GetFormatForRendering(int row, int col)
     {
-        // this runs for every cell that scrolls into view, so it avoids copying a format
-        // unless the copy actually contributes to the result.
         var cellFormat = Cells.GetFormat(row, col);
         var rowFormat = Rows.Formats.Get(row);
         var colFormat = Columns.Formats.Get(col);
@@ -727,13 +726,13 @@ public class Sheet
         if (!hasCell && !hasRow && !hasCol)
             return null;
 
-        // when only one of the three contributes there is nothing to merge, so a single copy will do.
+        // when only one of the three contributes there is nothing to merge, so the stored format is shared.
         if (!hasRow && !hasCol)
-            return cellFormat!.Clone();
+            return cellFormat;
         if (!hasCell && !hasCol)
-            return rowFormat!.Clone();
+            return rowFormat;
         if (!hasCell && !hasRow)
-            return colFormat!.Clone();
+            return colFormat;
 
         var format = hasRow ? rowFormat!.Clone() : new CellFormat();
         format.Merge(colFormat);
