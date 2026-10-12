@@ -2,11 +2,12 @@
 
     constructor(dotnetHelper) {
         this.menus = [];
-        this.activeMenuEls = []
+        // Each open menu, with what had focus when it was requested.
+        this.openMenus = new Map()
         this.dotnetHelper = dotnetHelper
         this.disposed = false
-        this.pendingShows = new Set()
-        this.toggleHandlers = new Map()
+        // Each menu waiting to be shown, with its timer.
+        this.pendingShows = new Map()
         this.windowMouseDownHandler = this.handleWindowMouseDown.bind(this)
         window.addEventListener('mousedown', this.windowMouseDownHandler)
     }
@@ -17,7 +18,8 @@
         if (insideMenu)
             return
 
-        this.activeMenuEls.forEach(menuEl => this.closeMenu(menuEl.id))
+        for (const menuEl of [...this.openMenus.keys()])
+            this.closeMenu(menuEl.id)
     }
 
     registerMenu(id, parentId) {
@@ -32,9 +34,14 @@
             if (index >= 0)
                 this.menus.splice(index, 1)
         }
-        for (const menuEl of this.toggleHandlers.keys())
-            if (menuEl.id === id) this.removeToggleHandler(menuEl)
-        this.activeMenuEls = this.activeMenuEls.filter(el => el.id !== id)
+        // The browser closes a popover removed from the document, so the menu only has to be forgotten.
+        for (const [menuEl, timer] of [...this.pendingShows])
+            if (menuEl.id === id) {
+                clearTimeout(timer)
+                this.pendingShows.delete(menuEl)
+            }
+        for (const menuEl of [...this.openMenus.keys()])
+            if (menuEl.id === id) this.openMenus.delete(menuEl)
     }
 
     showMenu(menuId, options) {
@@ -42,10 +49,8 @@
         this.menus.forEach(menu => {
             if (menu.id === menuId) {
                 let el = document.getElementById(menuId);
-                if (el) {
-                    this.activeMenuEl = el
+                if (el)
                     this.showMenuEl(el, options);
-                }
             }
         });
     }
@@ -54,7 +59,7 @@
         if (this.disposed) return
         let el = document.getElementById(menuId)
         if (el)
-            el.hidePopover()
+            this.hideMenuEl(el)
 
         let children = this.getChildren(menuId)
         children.forEach(child => this.closeMenu(child.id))
@@ -81,12 +86,8 @@
         return this.menus.filter(menu => menu.parentId === menuId)
     }
 
-    isActive(menuEl) {
-        return this.activeMenuEls.some(el => el.id === menuEl.id)
-    }
-
     showMenuEl(menuEl, options) {
-        if (this.isActive(menuEl))
+        if (this.openMenus.has(menuEl) || this.pendingShows.has(menuEl))
             return
 
         // Whatever had focus when the menu was requested gets it back when the menu closes,
@@ -95,28 +96,11 @@
 
         // run with set timeout to allow the updated menu to be structured based on context
         const timer = setTimeout(() => {
-            this.pendingShows.delete(timer)
+            this.pendingShows.delete(menuEl)
             if (this.disposed || !menuEl.isConnected) return
-            menuEl.showPopover()
-            let self = this
-
-            let onToggle = async function (event) {
-                if (self.disposed) return
-                if (!self.menus.some(menu => menu.id === event.target.id)) // if menu doesn't exist
-                    return
-                if (event.newState === 'open') {
-                    self.activeMenuEls.push(event.target)
-                } else {
-                    self.activeMenuEls.splice(self.activeMenuEls.indexOf(event.target), 1)
-                    self.restoreFocus(event.target, opener)
-                    await self.dotnetHelper.invokeMethodAsync("OnMenuClose", event.target.id)
-                    self.removeToggleHandler(event.target)
-                }
-            }
-
-            this.removeToggleHandler(menuEl)
-            this.toggleHandlers.set(menuEl, onToggle)
-            menuEl.addEventListener('toggle', onToggle)
+            if (!menuEl.matches(':popover-open'))
+                menuEl.showPopover()
+            this.openMenus.set(menuEl, opener)
             if (options.trigger === 'oncontextmenu') {
                 let rect = new DOMRect(options.clientX, options.clientY, 1, 1)
                 this.positionMenu(menuEl, rect, options.margin, options.placement)
@@ -128,24 +112,40 @@
                 this.positionMenu(menuEl, targetRect, options.margin, options.placement)
             }
         }, 1)
-        this.pendingShows.add(timer)
+        this.pendingShows.set(menuEl, timer)
     }
 
-    removeToggleHandler(menuEl) {
-        const handler = this.toggleHandlers.get(menuEl)
-        if (!handler) return
-        menuEl.removeEventListener('toggle', handler)
-        this.toggleHandlers.delete(menuEl)
+    // The close is recorded here rather than on the popover's toggle event, which comes a task later:
+    // the mousedown of a right click closes the open menu, and its contextmenu must find it closed.
+    hideMenuEl(menuEl) {
+        const timer = this.pendingShows.get(menuEl)
+        const wasPending = timer !== undefined
+        if (wasPending) {
+            clearTimeout(timer)
+            this.pendingShows.delete(menuEl)
+        }
+
+        if (menuEl.matches(':popover-open'))
+            menuEl.hidePopover()
+
+        const wasOpen = this.openMenus.has(menuEl)
+        if (!wasOpen && !wasPending)
+            return
+
+        if (wasOpen) {
+            this.restoreFocus(menuEl, this.openMenus.get(menuEl))
+            this.openMenus.delete(menuEl)
+        }
+        this.dotnetHelper.invokeMethodAsync("OnMenuClose", menuEl.id)
     }
 
     dispose() {
         if (this.disposed) return
         this.disposed = true
         window.removeEventListener('mousedown', this.windowMouseDownHandler)
-        for (const timer of this.pendingShows) clearTimeout(timer)
+        for (const timer of this.pendingShows.values()) clearTimeout(timer)
         this.pendingShows.clear()
-        for (const menuEl of this.toggleHandlers.keys()) this.removeToggleHandler(menuEl)
-        this.activeMenuEls = []
+        this.openMenus.clear()
         this.menus = []
         this.dotnetHelper = null
     }

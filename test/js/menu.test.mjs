@@ -43,8 +43,8 @@ test('menu services are separate and release their window listener on disposal',
 
     let firstCalls = 0;
     let secondCalls = 0;
-    first.activeMenuEls = [{ id: 'first' }];
-    second.activeMenuEls = [{ id: 'second' }];
+    first.openMenus.set({ id: 'first' }, null);
+    second.openMenus.set({ id: 'second' }, null);
     first.closeMenu = () => { firstCalls++; };
     second.closeMenu = () => { secondCalls++; };
     const event = new Event('mousedown');
@@ -60,18 +60,55 @@ test('menu services are separate and release their window listener on disposal',
     second.dispose();
 });
 
-test('unregistering a menu releases its toggle callback after the element is removed', () => {
+function popover(id) {
+    const el = {
+        id, isConnected: true, open: false, style: {},
+        matches: () => el.open,
+        showPopover() { el.open = true; },
+        hidePopover() { el.open = false; },
+        contains: () => false,
+        getBoundingClientRect: () => ({ width: 10, height: 10 }),
+    };
+    return el;
+}
+
+const nextTask = () => new Promise(resolve => setTimeout(resolve, 5));
+
+test('a right click on another cell closes the open menu and opens it again in the same gesture', async () => {
+    globalThis.window = Object.assign(new EventTarget(), { innerWidth: 1000, innerHeight: 1000 });
+    globalThis.DOMRect = class { constructor(x, y, w, h) { Object.assign(this, { left: x, top: y, width: w, height: h, right: x + w, bottom: y + h }); } };
+    const menu = popover('menu');
+    globalThis.document = { body: {}, activeElement: null, getElementById: id => id === 'menu' ? menu : null };
+    const closed = [];
+    const service = getMenuService({ invokeMethodAsync: async (name, id) => { closed.push(id); } });
+    service.registerMenu('menu', null);
+    const options = { trigger: 'oncontextmenu', clientX: 1, clientY: 1, margin: 0, placement: 'bottom' };
+
+    service.showMenu('menu', options);
+    await nextTask();
+    assert.equal(menu.open, true);
+
+    const mousedown = new Event('mousedown');
+    Object.defineProperty(mousedown, 'target', { value: { closest: () => null } });
+    window.dispatchEvent(mousedown);
+    assert.deepEqual(closed, ['menu']);
+
+    service.showMenu('menu', options);
+    await nextTask();
+    assert.equal(menu.open, true);
+    service.dispose();
+});
+
+test('unregistering a menu forgets it, open or about to open', async () => {
     const { service } = setup();
-    const menu = new EventTarget();
-    menu.id = 'menu';
-    let calls = 0;
-    const handler = () => { calls++; };
+    const menu = popover('menu');
+    document.getElementById = () => menu;
     service.registerMenu(menu.id, null);
-    service.toggleHandlers.set(menu, handler);
-    menu.addEventListener('toggle', handler);
+    service.showMenu(menu.id, { trigger: 'onclick' });
 
     service.unregisterMenu(menu.id);
-    menu.dispatchEvent(new Event('toggle'));
-    assert.equal(calls, 0);
+    await nextTask();
+    assert.equal(menu.open, false);
+    assert.equal(service.openMenus.size, 0);
     service.dispose();
 });

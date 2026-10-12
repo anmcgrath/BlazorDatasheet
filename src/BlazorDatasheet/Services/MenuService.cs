@@ -94,6 +94,10 @@ public class MenuService : IMenuService, IAsyncDisposable
 
     public async Task UnregisterMenu(string id)
     {
+        // A popover removed from the document closes without a toggle event, so OnMenuClose never
+        // comes for a menu disposed while open.
+        _openMenus.Remove(id);
+        _menus.Remove(id);
         try
         {
             if (_menuJs != null)
