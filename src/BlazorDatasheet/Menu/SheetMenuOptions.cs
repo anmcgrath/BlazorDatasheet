@@ -28,10 +28,16 @@ public class SheetMenuOptions
     public bool CutEnabled { get; set; } = true;
 
     /// <summary>
-    /// Enables the menu "Paste", "Paste values" and "Paste formats" options. Pasting from the menu reads the
+    /// Enables the menu "Paste" option and the "Paste special" sub-menu. Pasting from the menu reads the
     /// system clipboard, which browsers may ask the user to allow.
     /// </summary>
     public bool PasteEnabled { get; set; } = true;
+
+    /// <summary>
+    /// Enables the menu "Paste special" sub-menu, which holds "Paste values" and "Paste formats".
+    /// Has no effect when <see cref="PasteEnabled"/> is false.
+    /// </summary>
+    public bool PasteSpecialEnabled { get; set; } = true;
 
     /// <summary>
     /// Enables the menu "Clear" option
@@ -107,6 +113,7 @@ public class SheetMenuOptions
             CopyEnabled = CopyEnabled,
             CutEnabled = CutEnabled,
             PasteEnabled = PasteEnabled,
+            PasteSpecialEnabled = PasteSpecialEnabled,
             MergeEnabled = MergeEnabled,
             HideRowsEnabled = HideRowsEnabled,
             HideColsEnabled = HideColsEnabled,
@@ -123,6 +130,7 @@ public class SheetMenuOptions
                other.CopyEnabled == CopyEnabled &&
                other.CutEnabled == CutEnabled &&
                other.PasteEnabled == PasteEnabled &&
+               other.PasteSpecialEnabled == PasteSpecialEnabled &&
                other.MergeEnabled == MergeEnabled &&
                other.DeleteRowsEnabled == DeleteRowsEnabled &&
                other.DeleteColsEnabled == DeleteColsEnabled &&
