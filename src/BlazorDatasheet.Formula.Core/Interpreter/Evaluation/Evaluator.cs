@@ -23,7 +23,7 @@ public class Evaluator
         var cellValueCoercer = new CellValueCoercer(_environment);
         _parameterConverter = new ParameterConverter(_environment, cellValueCoercer);
         _bOp = new BinaryOpEvaluator(cellValueCoercer, _environment);
-        _uOp = new UnaryOpEvaluator(cellValueCoercer);
+        _uOp = new UnaryOpEvaluator(cellValueCoercer, _environment);
     }
 
     public CellValue Evaluate(CellFormula cellFormula, FormulaExecutionContext? executionContext = null,
@@ -168,7 +168,6 @@ public class Evaluator
         if (reference.Kind == ReferenceKind.Range)
             return EvaluateRangeReference((RangeReference)reference);
 
-        // we currently don't handle array values...
         return CellValue.Reference(reference);
     }
 
@@ -219,45 +218,144 @@ public class Evaluator
             ctx.Caller?.RowIndex,
             ctx.Caller?.ColIndex,
             ctx.Caller?.SheetName);
-        CellValue[]? rentedArgs = nArgsProvided == 0 ? null : ArrayPool<CellValue>.Shared.Rent(nArgsProvided);
-        Span<CellValue> convertedArgs = nArgsProvided == 0
-            ? Span<CellValue>.Empty
-            : rentedArgs.AsSpan(0, nArgsProvided);
+
+        if (nArgsProvided == 0)
+            return func.Invoke(Span<CellValue>.Empty, callMetaData);
+
+        var rentedArgs = ArrayPool<CellValue>.Shared.Rent(nArgsProvided);
+        var rentedLifted = ArrayPool<bool>.Shared.Rent(nArgsProvided);
+        var args = rentedArgs.AsSpan(0, nArgsProvided);
+        var lifted = rentedLifted.AsSpan(0, nArgsProvided);
+        lifted.Clear();
 
         try
         {
-            int paramIndex = 0;
-            int argIndex = 0;
-
-            while (paramIndex < paramDefinitions.Length &&
-                   argIndex < nArgsProvided)
+            // A scalar parameter given an array or range lifts the function over each element.
+            var anyLifted = false;
+            for (var i = 0; i < nArgsProvided; i++)
             {
-                var paramDefinition = paramDefinitions[paramIndex];
-                var arg = EvaluateExpression(node.Args[argIndex], ctx);
-
-                convertedArgs[argIndex] = _parameterConverter.ConvertVal(arg, paramDefinition.Type);
-
-                if (convertedArgs[argIndex].IsError() && !acceptsErrors)
-                    return convertedArgs[argIndex];
-
-                if (IsConsumable(paramDefinition))
-                    paramIndex++;
-
-                argIndex++;
+                args[i] = EvaluateExpression(node.Args[i], ctx);
+                if (GetParameterDefinition(paramDefinitions, i).Type.IsScalar() &&
+                    ArrayBroadcaster.IsArrayLike(args[i]))
+                {
+                    args[i] = ArrayBroadcaster.Materialize(args[i], _environment);
+                    lifted[i] = true;
+                    anyLifted = true;
+                }
             }
 
-            return func.Invoke(convertedArgs[..nArgsProvided], callMetaData);
+            if (!anyLifted)
+            {
+                for (var i = 0; i < nArgsProvided; i++)
+                {
+                    args[i] = _parameterConverter.ConvertVal(args[i], GetParameterDefinition(paramDefinitions, i).Type);
+                    if (args[i].IsError() && !acceptsErrors)
+                        return args[i];
+                }
+
+                return func.Invoke(args, callMetaData);
+            }
+
+            return EvaluateLiftedFunctionCall(func, paramDefinitions, args, lifted, callMetaData);
         }
         finally
         {
-            if (rentedArgs != null)
-                ArrayPool<CellValue>.Shared.Return(rentedArgs, clearArray: true);
+            ArrayPool<CellValue>.Shared.Return(rentedArgs, clearArray: true);
+            ArrayPool<bool>.Shared.Return(rentedLifted);
         }
     }
 
-    private bool IsConsumable(ParameterDefinition param)
+    /// <summary>
+    /// Calls the function once per element of the broadcast shape of the lifted arguments, returning
+    /// the array of results. Arguments that are not lifted are converted once and passed whole.
+    /// </summary>
+    private CellValue EvaluateLiftedFunctionCall(FunctionDescriptor func, ParameterDefinition[] paramDefinitions,
+        Span<CellValue> args, Span<bool> lifted, FunctionCallMetaData callMetaData)
     {
-        return !param.IsRepeating;
+        var acceptsErrors = func.AcceptsErrors;
+        var nArgs = args.Length;
+
+        // an untyped argument given an array alongside a lifted one is lifted with it, so that
+        // IF(A1:A3>1, B1:B3, 0) picks a value per row rather than returning the whole array.
+        for (var i = 0; i < nArgs; i++)
+        {
+            if (!lifted[i] &&
+                GetParameterDefinition(paramDefinitions, i).Type == ParameterType.Any &&
+                ArrayBroadcaster.IsArrayLike(args[i]))
+            {
+                args[i] = ArrayBroadcaster.Materialize(args[i], _environment);
+                lifted[i] = true;
+            }
+        }
+
+        var rows = 0;
+        var cols = 0;
+        for (var i = 0; i < nArgs; i++)
+        {
+            if (!lifted[i])
+            {
+                args[i] = _parameterConverter.ConvertVal(args[i], GetParameterDefinition(paramDefinitions, i).Type);
+                if (args[i].IsError() && !acceptsErrors)
+                    return args[i];
+                continue;
+            }
+
+            var (r, c) = ArrayBroadcaster.Shape(args[i]);
+            rows = Math.Max(rows, r);
+            cols = Math.Max(cols, c);
+        }
+
+        var rentedElementArgs = ArrayPool<CellValue>.Shared.Rent(nArgs);
+        var elementArgs = rentedElementArgs.AsSpan(0, nArgs);
+        try
+        {
+            var result = new CellValue[rows][];
+            for (var r = 0; r < rows; r++)
+            {
+                var resultRow = new CellValue[cols];
+                for (var c = 0; c < cols; c++)
+                {
+                    CellValue? elementError = null;
+                    for (var i = 0; i < nArgs; i++)
+                    {
+                        if (!lifted[i])
+                        {
+                            elementArgs[i] = args[i];
+                            continue;
+                        }
+
+                        var type = GetParameterDefinition(paramDefinitions, i).Type;
+                        var element = ArrayBroadcaster.ElementAt(args[i], r, c);
+                        elementArgs[i] = type == ParameterType.Any
+                            ? element
+                            : _parameterConverter.ConvertVal(element, type);
+                        if (elementArgs[i].IsError() && !acceptsErrors)
+                        {
+                            elementError ??= elementArgs[i];
+                        }
+                    }
+
+                    resultRow[c] = elementError ?? func.Invoke(elementArgs, callMetaData);
+                }
+
+                result[r] = resultRow;
+            }
+
+            return CellValue.Array(result);
+        }
+        finally
+        {
+            ArrayPool<CellValue>.Shared.Return(rentedElementArgs, clearArray: true);
+        }
+    }
+
+    /// <summary>
+    /// The definition for the argument at <paramref name="argIndex"/>. Only the last parameter can
+    /// repeat, so arguments past the end of the definitions reuse it.
+    /// </summary>
+    private static ParameterDefinition GetParameterDefinition(ParameterDefinition[] paramDefinitions, int argIndex)
+    {
+        return paramDefinitions[Math.Min(argIndex, paramDefinitions.Length - 1)];
     }
 
     private CellValue EvaluateBinaryExpression(BinaryOperationExpression expression, EvalContext ctx)

@@ -5,14 +5,28 @@ namespace BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 public class UnaryOpEvaluator
 {
     private readonly CellValueCoercer _cellValueCoercer;
+    private readonly IEnvironment _environment;
 
-    public UnaryOpEvaluator(CellValueCoercer cellValueCoercer)
+    public UnaryOpEvaluator(CellValueCoercer cellValueCoercer, IEnvironment environment)
     {
         _cellValueCoercer = cellValueCoercer;
+        _environment = environment;
     }
 
     public CellValue Evaluate(Tag opTag, CellValue value)
     {
+        value = ArrayBroadcaster.Materialize(value, _environment);
+        if (value.IsArray())
+            return ArrayBroadcaster.Map(value, v => EvaluateScalar(opTag, v));
+
+        return EvaluateScalar(opTag, value);
+    }
+
+    private CellValue EvaluateScalar(Tag opTag, CellValue value)
+    {
+        if (value.IsError())
+            return value;
+
         switch (opTag)
         {
             case Tag.PlusToken:

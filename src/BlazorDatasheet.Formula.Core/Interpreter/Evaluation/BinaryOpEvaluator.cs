@@ -22,6 +22,24 @@ public class BinaryOpEvaluator
         if (right.IsError())
             return right;
 
+        if (op == Tag.ColonToken)
+            return EvaluateRangeOperator(left, right);
+
+        // every other operator is scalar: a range or array operand lifts it over each element
+        left = ArrayBroadcaster.Materialize(left, _environment);
+        right = ArrayBroadcaster.Materialize(right, _environment);
+        if (left.IsArray() || right.IsArray())
+            return ArrayBroadcaster.Map(left, right, (l, r) => EvaluateScalar(l, op, r));
+
+        return EvaluateScalar(left, op, right);
+    }
+
+    private CellValue EvaluateScalar(CellValue left, Tag op, CellValue right)
+    {
+        if (left.IsError())
+            return left;
+        if (right.IsError())
+            return right;
 
         switch (op)
         {
@@ -45,8 +63,6 @@ public class BinaryOpEvaluator
                 return EvaluateLessThan(left, right);
             case Tag.LessThanOrEqualToToken:
                 return EvaluateLessThanOrEqualTo(left, right);
-            case Tag.ColonToken:
-                return EvaluateRangeOperator(left, right);
             case Tag.AmpersandToken:
                 return EvaluateConcatOperator(left, right);
         }
