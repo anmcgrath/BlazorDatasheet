@@ -33,6 +33,8 @@
     --invalid-cell-foreground-color: #dc2626;
     --selection-bg-color: rgba(37, 99, 235, 0.14);
     --selection-border-color: #2563eb;
+    --spill-outline-color: #2563eb;
+    --spill-outline-thickness: 1px;
     --clipboard-border-color: #2563eb;
     --clipboard-gap-color: #ffffff;
     --selection-bg-color-unfocused: rgba(100, 116, 139, 0.10);
@@ -79,6 +81,7 @@
     --invalid-cell-foreground-color: #d71b1b;
     --selection-bg-color: rgba(83, 101, 121, 0.18);
     --selection-border-color: #1c6f9a;
+    --spill-outline-color: #1c6f9a;
     --clipboard-border-color: #4fa3d1;
     --clipboard-gap-color: #262626;
     --selection-bg-color-unfocused: rgba(83, 101, 121, 0.09);
@@ -800,6 +803,10 @@
 .bds-virtual-grid-container {
     grid-template-areas: 'fT fT fT' 'fL C fR' 'fB fB fB';
     display: grid;
+}
+
+/* a cell an array formula in another cell spilled into. A hook for styling; not styled by default. */
+.bds-spill-cell {
 }
 
 .bds-cell-has-flags {
