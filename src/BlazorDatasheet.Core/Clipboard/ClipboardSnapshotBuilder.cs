@@ -8,7 +8,8 @@ public static class ClipboardSnapshotBuilder
     /// Captures the cells of <paramref name="range"/> (clipped to its sheet) with their values, formulas,
     /// visible formats, types and merges.
     /// </summary>
-    public static ClipboardSnapshot FromRange(SheetRange range, Guid? sourceId = null)
+    /// <param name="includeFormats">Whether cell formats are gathered. Delimited text needs none.</param>
+    public static ClipboardSnapshot FromRange(SheetRange range, Guid? sourceId = null, bool includeFormats = true)
     {
         var sheet = range.Sheet;
         var region = range.Region.GetIntersection(sheet.Region);
@@ -25,7 +26,7 @@ public static class ClipboardSnapshotBuilder
             {
                 Value = sheet.Cells.GetCellValue(row, col),
                 Formula = sheet.Cells.GetFormulaString(row, col),
-                Format = ClipboardFormats.Portable(sheet.GetFormat(row, col)),
+                Format = includeFormats ? ClipboardFormats.Portable(sheet.GetFormat(row, col)) : null,
                 Type = type == "default" ? null : type
             };
             if (!cell.IsEmpty)
