@@ -179,6 +179,7 @@ public partial class CellStore
             return restoreData;
 
         var fromCells = from.Sheet.Cells;
+        toRegion = toRegion.GetIntersection(Sheet.Region) ?? toRegion;
         var dr = toRegion.Top - fromRegion.Top;
         var dc = toRegion.Left - fromRegion.Left;
 
@@ -193,9 +194,11 @@ public partial class CellStore
             restoreData.ValidRestoreData = _validStore.Clear([toRegion]);
             restoreData.Merge(ClearFormulaImpl([toRegion]));
             foreach (var v in values)
-                _dataStore.Set(v.row + dr, v.col + dc, v.data);
+                if (Sheet.Region.Contains(v.row + dr, v.col + dc))
+                    _dataStore.Set(v.row + dr, v.col + dc, v.data);
             foreach (var v in valid)
-                _validStore.Set(v.row + dr, v.col + dc, v.data);
+                if (Sheet.Region.Contains(v.row + dr, v.col + dc))
+                    _validStore.Set(v.row + dr, v.col + dc, v.data);
         }
 
         if (options.CopyFormula)
@@ -244,7 +247,9 @@ public partial class CellStore
         var restoreData = CutFormatImpl(toRegion);
         foreach (var data in emptyPalette.GetAllDataRegions())
         {
-            restoreData.Merge(MergeFormatImpl(data.Region, data.Data));
+            var region = data.Region.GetIntersection(Sheet.Region);
+            if (region != null)
+                restoreData.Merge(MergeFormatImpl(region, data.Data));
         }
 
         return restoreData;
@@ -262,7 +267,9 @@ public partial class CellStore
         foreach (var (type, region) in types)
         {
             region.Shift(dr, dc);
-            restoreData.TypeRestoreData.Merge(_typeStore.Add(region, type));
+            var clipped = region.GetIntersection(Sheet.Region);
+            if (clipped != null)
+                restoreData.TypeRestoreData.Merge(_typeStore.Add(clipped, type));
         }
 
         return restoreData;

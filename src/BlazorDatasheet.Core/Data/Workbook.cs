@@ -1,4 +1,5 @@
-﻿using BlazorDatasheet.Core.Edit;
+﻿using BlazorDatasheet.Core.Clipboard;
+using BlazorDatasheet.Core.Edit;
 using BlazorDatasheet.Core.Events.Data;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.FormulaEngine;
@@ -27,6 +28,11 @@ public class Workbook
     /// Ranges tracked under a key as rows and columns are inserted and removed.
     /// </summary>
     public TrackedRangeCollection TrackedRanges { get; }
+
+    /// <summary>
+    /// The workbook's clipboard: the cells last copied or cut from any of its sheets.
+    /// </summary>
+    public WorkbookClipboard Clipboard { get; }
 
     public event EventHandler<WorkbookSheetAddedEventArgs>? SheetAdded;
     public event EventHandler<WorkbookSheetRemovedEventArgs>? SheetRemoved;
@@ -66,6 +72,7 @@ public class Workbook
         _formulaEngine = new FormulaEngine.FormulaEngine(Environment, options);
         NamedRanges = new NamedRangeManager(this);
         TrackedRanges = new TrackedRangeCollection(this);
+        Clipboard = new WorkbookClipboard(this);
     }
 
     public static FunctionRegistry BuildDefaultRegistry(FormulaOptions? options)
