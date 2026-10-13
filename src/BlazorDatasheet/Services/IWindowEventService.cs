@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Components.Web;
 using ClipboardEventArgs = BlazorDatasheet.Core.Events.ClipboardEventArgs;
 
 namespace BlazorDatasheet.Services;
@@ -8,6 +8,12 @@ internal interface IWindowEventService : IAsyncDisposable
     Task ConfigureFocus(Microsoft.AspNetCore.Components.ElementReference container, Func<SheetFocusEventArgs, Task> handler);
     Task SetInputState(bool active, bool editing, long revision, long focusVersion);
     Task RestoreFocus();
+
+    /// <summary>
+    /// Tells the browser side whether the workbook clipboard holds cells of this sheet, so that it watches
+    /// the system clipboard for something else being copied while it does.
+    /// </summary>
+    Task SetCopyMode(bool active);
 
     /// <summary>
     /// Makes an element outside the sheet part of the sheet for the purposes of focus, so that

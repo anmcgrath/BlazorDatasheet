@@ -1,10 +1,11 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 using BlazorDatasheet.Core.Clipboard;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Filter;
 using BlazorDatasheet.Core.Edit;
 using BlazorDatasheet.Core.Formats;
+using BlazorDatasheet.Core.Events.Data;
 using BlazorDatasheet.Core.Events.Edit;
 using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.Core.Events.Selection;
@@ -512,6 +513,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         sheet.Protection.Changed -= ProtectionChanged;
         sheet.Editor.EditBegin -= EditorOnEditBegin;
         sheet.Editor.EditFinished -= EditorOnEditFinished;
+        sheet.Workbook.Clipboard.Changed -= WorkbookClipboardChanged;
         sheet.Editor.FormulaEdit.PickRegionChanged -= FormulaEditOnPickRegionChanged;
         sheet.Editor.FormulaEdit.DraggingChanged -= FormulaEditOnDraggingChanged;
         ReleaseForeignPick();
@@ -538,6 +540,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         sheet.Protection.Changed += ProtectionChanged;
         sheet.Editor.EditBegin += EditorOnEditBegin;
         sheet.Editor.EditFinished += EditorOnEditFinished;
+        sheet.Workbook.Clipboard.Changed += WorkbookClipboardChanged;
         sheet.Editor.FormulaEdit.PickRegionChanged += FormulaEditOnPickRegionChanged;
         sheet.Editor.FormulaEdit.DraggingChanged += FormulaEditOnDraggingChanged;
         DatasheetRegistry.For(sheet).Add(this);
@@ -596,6 +599,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             WindowEventRegistration.Clipboard("paste", HandleWindowPaste),
             WindowEventRegistration.Clipboard("copy", HandleWindowCopy),
             WindowEventRegistration.Clipboard("cut", HandleWindowCut),
+            WindowEventRegistration.Clipboard("clipboardchange", HandleClipboardChange),
             WindowEventRegistration.Mouse("mouseup", HandleWindowMouseUp));
     }
 
@@ -1046,6 +1050,43 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     private async Task<bool> HandleWindowPaste(ClipboardEventArgs arg)
     {
         return await PasteAsync(arg.Text, arg.Html, arg.ShiftKey ? PasteMode.Values : PasteMode.All);
+    }
+
+    private bool _watchingClipboard;
+
+    /// <summary>
+    /// The datasheet showing the copied cells has the browser watch the system clipboard, so that a copy made
+    /// somewhere else ends copy mode.
+    /// </summary>
+    private async void WorkbookClipboardChanged(object? sender, ClipboardChangedEventArgs e)
+    {
+        var watch = e.NewEntry != null && ReferenceEquals(e.NewEntry.Sheet, _sheet);
+        if (_isDisposing || watch == _watchingClipboard)
+            return;
+        _watchingClipboard = watch;
+        try
+        {
+            await _windowEventService.SetCopyMode(watch);
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+    }
+
+    /// <summary>
+    /// The system clipboard may no longer hold the workbook's entry: either something else on the page copied
+    /// (no content is known) or the browser read the clipboard after the window regained focus. Ends copy mode
+    /// when the content isn't the entry. Returns whether copy mode was ended.
+    /// </summary>
+    internal Task<bool> HandleClipboardChange(ClipboardEventArgs arg)
+    {
+        var clipboard = _sheet.Workbook.Clipboard;
+        if (!clipboard.IsActive)
+            return Task.FromResult(false);
+        if (!arg.Foreign && IsWorkbookClipboardContent(clipboard.Current, arg.Text, arg.Html))
+            return Task.FromResult(false);
+        clipboard.Clear();
+        return Task.FromResult(true);
     }
 
     private async Task<bool> HandleWindowCopy(ClipboardEventArgs arg)

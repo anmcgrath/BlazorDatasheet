@@ -1,4 +1,4 @@
-﻿import { watchRemoval } from "./removal-watcher.js";
+import { watchRemoval } from "./removal-watcher.js";
 
 class WindowEvents {
     constructor(dotnetHelper) {
@@ -59,6 +59,12 @@ class WindowEvents {
     registerEvent(eventName, handlerName, throttleInMs = 0) {
         if (this.disposed) return;
         this.handlerMap[eventName] = handlerName;
+        // Not a browser event of the window: reports that the system clipboard may no longer hold the
+        // sheet's copy, see watchClipboard.
+        if (eventName === 'clipboardchange') {
+            this.watchClipboard();
+            return;
+        }
         const handler = this.handleWindowEvent.bind(this);
         this.listen(window, eventName, throttleInMs ? this.throttle(handler, throttleInMs) : handler);
     }
@@ -129,9 +135,59 @@ class WindowEvents {
             });
         }, true);
         this.listen(window, 'blur', () => this.setFocused(false, false, true));
-        this.listen(window, 'focus', () => this.reconcileFocus(true));
-        this.listen(document, 'visibilitychange', () => this.reconcileFocus(true));
+        this.listen(window, 'focus', () => {
+            this.reconcileFocus(true);
+            this.checkClipboard();
+        });
+        this.listen(document, 'visibilitychange', () => {
+            this.reconcileFocus(true);
+            this.checkClipboard();
+        });
         this.reconcileFocus();
+    }
+
+    // Whether the workbook clipboard holds cells of this sheet, so that the system clipboard is worth watching
+    // for something else being copied, which ends copy mode. Set from .NET.
+    setCopyMode(active) {
+        if (this.disposed) return;
+        this.copyMode = active;
+        if (active) this.checkClipboard();
+    }
+
+    // Watches for the system clipboard being taken by something other than the workbook. A copy from elsewhere
+    // on the page is reported as it happens. A copy in another program can't be seen directly: where the browser
+    // offers the clipboardchange event (Chromium, behind a flag or origin trial so far) it is used, and otherwise
+    // the clipboard is read when the window regains focus, but only where the page already has permission to
+    // read it, so that the user is never prompted for a check they didn't ask for.
+    watchClipboard() {
+        this.listen(window, 'copy', e => this.reportForeignCopy(e), true);
+        this.listen(window, 'cut', e => this.reportForeignCopy(e), true);
+        if (navigator.clipboard && 'onclipboardchange' in navigator.clipboard)
+            this.listen(navigator.clipboard, 'clipboardchange', () => this.checkClipboard());
+    }
+
+    reportForeignCopy(e) {
+        if (this.disposed || !this.copyMode || !this.handlerMap.clipboardchange) return;
+        // the sheet, or another view of its workbook, is making the copy itself
+        if (this.ownsInput(e) || this.contains(e.target) || this.isRelated(e.target)) return;
+        this.dispatch(this.handlerMap.clipboardchange, {type: 'clipboardchange', foreign: true, text: '', html: ''});
+    }
+
+    async checkClipboard() {
+        if (this.disposed || !this.copyMode || !this.handlerMap.clipboardchange) return;
+        if (document.visibilityState === 'hidden' || !document.hasFocus()) return;
+        if (!navigator.permissions?.query || !window.bdsReadClipboard) return;
+        let granted = false;
+        try {
+            granted = (await navigator.permissions.query({name: 'clipboard-read'})).state === 'granted';
+        } catch {
+            return; // the browser doesn't know the permission: nothing can be read without a prompt
+        }
+        if (!granted) return;
+        const data = await window.bdsReadClipboard();
+        if (!data || this.disposed || !this.copyMode) return;
+        this.dispatch(this.handlerMap.clipboardchange,
+            {type: 'clipboardchange', foreign: false, text: data.text ?? '', html: data.html ?? ''});
     }
 
     // Finds the interactive element a pointer or key event is aimed at. The sheet's own chrome

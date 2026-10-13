@@ -21,4 +21,10 @@ public class ClipboardEventArgs
     /// Whether Shift was held with the key that caused a paste (paste values only).
     /// </summary>
     public bool ShiftKey { get; set; }
+
+    /// <summary>
+    /// For a clipboardchange event: the clipboard was written by something other than a view of the workbook,
+    /// e.g. a copy from elsewhere on the page. The content is not known.
+    /// </summary>
+    public bool Foreign { get; set; }
 }
