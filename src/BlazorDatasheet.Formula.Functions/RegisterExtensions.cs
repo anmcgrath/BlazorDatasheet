@@ -1,4 +1,5 @@
 using BlazorDatasheet.Formula.Core;
+using BlazorDatasheet.Formula.Functions.Arrays;
 using BlazorDatasheet.Formula.Functions.Logical;
 using BlazorDatashet.Formula.Functions.Lookup;
 using BlazorDatashet.Formula.Functions.Math;
@@ -44,5 +45,15 @@ public static class RegisterExtensions
     public static void RegisterLookupFunctions(this FunctionRegistryBuilder builder)
     {
         builder.Add(VLookupFunction.Descriptor);
+    }
+
+    public static void RegisterArrayFunctions(this FunctionRegistryBuilder builder)
+    {
+        builder.Add(FilterFunction.Descriptor);
+        builder.Add(SequenceFunction.Descriptor);
+        builder.Add(SortFunction.Descriptor);
+        builder.Add(SortByFunction.Descriptor);
+        builder.Add(TransposeFunction.Descriptor);
+        builder.Add(UniqueFunction.Descriptor);
     }
 }

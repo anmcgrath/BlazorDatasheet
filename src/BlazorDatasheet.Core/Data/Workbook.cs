@@ -81,6 +81,7 @@ public class Workbook
         builder.RegisterLogicalFunctions();
         builder.RegisterMathFunctions();
         builder.RegisterLookupFunctions();
+        builder.RegisterArrayFunctions();
         options?.ConfigureFunctions?.Invoke(builder);
         return builder.Build();
     }
