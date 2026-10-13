@@ -17,6 +17,9 @@ class WindowEvents {
         // Editors outside the sheet, e.g. a formula bar, that edit this sheet. Focus moving to one of
         // them is not focus leaving the sheet: the sheet stays active and an open edit carries on.
         this.externalEditors = new Set();
+        // Clipboard content too large to send with its event, held until .NET takes it, by id.
+        this.clipboardPayloads = new Map();
+        this.nextClipboardPayloadId = 1;
     }
 
     addExternalEditor(el) {
@@ -59,6 +62,12 @@ class WindowEvents {
     registerEvent(eventName, handlerName, throttleInMs = 0) {
         if (this.disposed) return;
         this.handlerMap[eventName] = handlerName;
+        // Not a browser event of the window: reports that the system clipboard may no longer hold the
+        // sheet's copy, see watchClipboard.
+        if (eventName === 'clipboardchange') {
+            this.watchClipboard();
+            return;
+        }
         const handler = this.handleWindowEvent.bind(this);
         this.listen(window, eventName, throttleInMs ? this.throttle(handler, throttleInMs) : handler);
     }
@@ -129,9 +138,60 @@ class WindowEvents {
             });
         }, true);
         this.listen(window, 'blur', () => this.setFocused(false, false, true));
-        this.listen(window, 'focus', () => this.reconcileFocus(true));
-        this.listen(document, 'visibilitychange', () => this.reconcileFocus(true));
+        this.listen(window, 'focus', () => {
+            this.reconcileFocus(true);
+            this.checkClipboard();
+        });
+        this.listen(document, 'visibilitychange', () => {
+            this.reconcileFocus(true);
+            this.checkClipboard();
+        });
         this.reconcileFocus();
+    }
+
+    // Whether the workbook clipboard holds cells of this sheet, so that the system clipboard is worth watching
+    // for something else being copied, which ends copy mode. Set from .NET.
+    setCopyMode(active) {
+        if (this.disposed) return;
+        this.copyMode = active;
+        if (active) this.checkClipboard();
+    }
+
+    // Watches for the system clipboard being taken by something other than the workbook. A copy from elsewhere
+    // on the page is reported as it happens. A copy in another program can't be seen directly: where the browser
+    // offers the clipboardchange event (Chromium, behind a flag or origin trial so far) it is used, and otherwise
+    // the clipboard is read when the window regains focus, but only where the page already has permission to
+    // read it, so that the user is never prompted for a check they didn't ask for.
+    watchClipboard() {
+        this.listen(window, 'copy', e => this.reportForeignCopy(e), true);
+        this.listen(window, 'cut', e => this.reportForeignCopy(e), true);
+        if (navigator.clipboard && 'onclipboardchange' in navigator.clipboard)
+            this.listen(navigator.clipboard, 'clipboardchange', () => this.checkClipboard());
+    }
+
+    reportForeignCopy(e) {
+        if (this.disposed || !this.copyMode || !this.handlerMap.clipboardchange) return;
+        // the sheet, or another view of its workbook, is making the copy itself
+        if (this.ownsInput(e) || this.contains(e.target) || this.isRelated(e.target)) return;
+        this.dispatch(this.handlerMap.clipboardchange, {type: 'clipboardchange', foreign: true, text: '', html: ''});
+    }
+
+    async checkClipboard() {
+        if (this.disposed || !this.copyMode || !this.handlerMap.clipboardchange) return;
+        if (document.visibilityState === 'hidden' || !document.hasFocus()) return;
+        if (!navigator.permissions?.query || !window.bdsReadClipboard) return;
+        let granted = false;
+        try {
+            granted = (await navigator.permissions.query({name: 'clipboard-read'})).state === 'granted';
+        } catch {
+            return; // the browser doesn't know the permission: nothing can be read without a prompt
+        }
+        if (!granted) return;
+        const data = await window.bdsReadClipboard();
+        if (!data || this.disposed || !this.copyMode) return;
+        const args = {type: 'clipboardchange', foreign: false, text: data.text ?? '', html: data.html ?? ''};
+        this.holdLargeClipboardContent(args);
+        this.dispatch(this.handlerMap.clipboardchange, args);
     }
 
     // Finds the interactive element a pointer or key event is aimed at. The sheet's own chrome
@@ -246,7 +306,12 @@ class WindowEvents {
         if (this.disposed || e.isComposing)
             return
 
-        if (['keydown', 'copy', 'paste'].includes(e.type) && !this.ownsInput(e)) return;
+        if (['keydown', 'copy', 'cut', 'paste'].includes(e.type) && !this.ownsInput(e)) return;
+
+        // The paste event carries no modifier state, so the Ctrl/Cmd+V keydown that precedes it
+        // remembers whether Shift was held (paste values only).
+        if (e.type === 'keydown' && e.code === 'KeyV' && (e.ctrlKey || e.metaKey))
+            this.lastPasteKey = {shift: e.shiftKey, at: Date.now()}
 
         if (this.handlerMap[e.type]) {
             if (this.container && e.type === 'keydown' && e.key === 'Tab' &&
@@ -281,8 +346,28 @@ class WindowEvents {
 
             // Nothing can be prevented past this point - the event has finished dispatching by the time
             // the interop call resolves - so the handler's return value is only used by .NET.
-            this.dispatch(this.handlerMap[e.type], this.serialize(e));
+            const args = this.serialize(e);
+            if (['copy', 'cut', 'paste'].includes(e.type)) this.holdLargeClipboardContent(args);
+            this.dispatch(this.handlerMap[e.type], args);
         }
+    }
+
+    // Blazor Server closes the circuit on a message from the browser over its size limit (32KB by
+    // default), which a copied column easily is. Large content is kept here instead and the event
+    // carries its id; .NET takes it as a stream, see takeClipboardPayload.
+    holdLargeClipboardContent(args) {
+        if ((args.text?.length ?? 0) + (args.html?.length ?? 0) <= 4096) return;
+        const id = this.nextClipboardPayloadId++;
+        this.clipboardPayloads.set(id, {text: args.text, html: args.html});
+        args.text = '';
+        args.html = '';
+        args.payloadId = id;
+    }
+
+    takeClipboardPayload(id) {
+        const data = this.clipboardPayloads.get(id);
+        this.clipboardPayloads.delete(id);
+        return data && window.bdsClipboardStream ? window.bdsClipboardStream(data) : null;
     }
 
     /**
@@ -309,6 +394,7 @@ class WindowEvents {
             target.removeEventListener(name, fn, capture);
         this.listeners.clear();
         this.externalEditors.clear();
+        this.clipboardPayloads.clear();
         this.handlerMap = {};
         this.preventDefaultMap = {};
         this.dotnetHelper = null;
@@ -322,7 +408,7 @@ class WindowEvents {
             return this.serializeKeyboardEvent(e)
         else if (e.type.includes('mouse'))
             return this.serializeMouseEvent(e)
-        else if (e.type.includes('paste') || e.type.includes('copy'))
+        else if (e.type.includes('paste') || e.type.includes('copy') || e.type.includes('cut'))
             return this.serializeClipboardEvent(e)
     }
 
@@ -369,23 +455,32 @@ class WindowEvents {
     }
 
     serializeClipboardEvent(e) {
-        if (e) {
-            if (e.clipboardData && e.clipboardData.getData) {
-                let pasteText = ""
-                try {
-                    pasteText = e.clipboardData.getData('text/plain')
-                } catch (ex) {
-                    pasteText = ""
-                }
-                return {
-                    text: pasteText,
-                    type: e.type
-                }
+        let text = ""
+        let html = ""
+        if (e && e.clipboardData && e.clipboardData.getData) {
+            try {
+                text = e.clipboardData.getData('text/plain') ?? ""
+            } catch (ex) {
+                text = ""
+            }
+            try {
+                html = e.clipboardData.getData('text/html') ?? ""
+            } catch (ex) {
+                html = ""
             }
         }
+
+        let shiftKey = false
+        if (e && e.type === 'paste' && this.lastPasteKey) {
+            shiftKey = this.lastPasteKey.shift && (Date.now() - this.lastPasteKey.at) < 1500
+            this.lastPasteKey = null
+        }
+
         return {
-            text: "",
-            type: e.type
+            text: text,
+            html: html,
+            type: e ? e.type : "",
+            shiftKey: shiftKey
         }
     }
 

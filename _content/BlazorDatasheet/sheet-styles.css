@@ -3,6 +3,9 @@
     --sheet-font-size: 0.75rem;
     --sheet-font-family: "Segoe UI Variable", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, "Helvetica Neue", Arial, sans-serif;
     --selection-border-thickness: 2px;
+    --clipboard-border-thickness: 2px;
+    --clipboard-dash-length: 5px;
+    --clipboard-ants-duration: 0.6s;
     --sheet-border-width: 1px;
     --sheet-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
     --sheet-cell-padding-vertical: 3px;
@@ -30,6 +33,8 @@
     --invalid-cell-foreground-color: #dc2626;
     --selection-bg-color: rgba(37, 99, 235, 0.14);
     --selection-border-color: #2563eb;
+    --clipboard-border-color: #2563eb;
+    --clipboard-gap-color: #ffffff;
     --selection-bg-color-unfocused: rgba(100, 116, 139, 0.10);
     --selection-border-color-unfocused: #94a3b8;
     --head-selection-bg-color-unfocused: #e8edf5;
@@ -74,6 +79,8 @@
     --invalid-cell-foreground-color: #d71b1b;
     --selection-bg-color: rgba(83, 101, 121, 0.18);
     --selection-border-color: #1c6f9a;
+    --clipboard-border-color: #4fa3d1;
+    --clipboard-gap-color: #262626;
     --selection-bg-color-unfocused: rgba(83, 101, 121, 0.09);
     --selection-border-color-unfocused: #4d5761;
     --head-selection-bg-color-unfocused: rgb(45, 48, 51);
@@ -831,4 +838,82 @@
     bottom: 0;
     right: 0;
     clip-path: polygon(100% 0, 0 100%, 100% 100%);
+}
+
+/* Marching ants around copied or cut cells */
+.bds-clipboard-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.bds-clipboard-box {
+    position: absolute;
+    box-sizing: border-box;
+    pointer-events: none;
+    --bds-ants-period: calc(var(--clipboard-dash-length) * 2);
+}
+
+.bds-ants {
+    position: absolute;
+    pointer-events: none;
+    background-repeat: repeat;
+}
+
+.bds-ants-top,
+.bds-ants-bottom {
+    left: calc(var(--clipboard-border-thickness) / -2);
+    right: calc(var(--clipboard-border-thickness) / -2);
+    height: var(--clipboard-border-thickness);
+    background-image: repeating-linear-gradient(90deg,
+        var(--clipboard-border-color) 0 var(--clipboard-dash-length),
+        var(--clipboard-gap-color) var(--clipboard-dash-length) var(--bds-ants-period));
+    background-size: var(--bds-ants-period) 100%;
+    animation: bds-ants-x var(--clipboard-ants-duration) linear infinite;
+}
+
+.bds-ants-top {
+    top: calc(var(--clipboard-border-thickness) / -2);
+}
+
+.bds-ants-bottom {
+    bottom: calc(var(--clipboard-border-thickness) / -2);
+    animation-direction: reverse;
+}
+
+.bds-ants-left,
+.bds-ants-right {
+    top: calc(var(--clipboard-border-thickness) / -2);
+    bottom: calc(var(--clipboard-border-thickness) / -2);
+    width: var(--clipboard-border-thickness);
+    background-image: repeating-linear-gradient(180deg,
+        var(--clipboard-border-color) 0 var(--clipboard-dash-length),
+        var(--clipboard-gap-color) var(--clipboard-dash-length) var(--bds-ants-period));
+    background-size: 100% var(--bds-ants-period);
+    animation: bds-ants-y var(--clipboard-ants-duration) linear infinite;
+}
+
+.bds-ants-left {
+    left: calc(var(--clipboard-border-thickness) / -2);
+    animation-direction: reverse;
+}
+
+.bds-ants-right {
+    right: calc(var(--clipboard-border-thickness) / -2);
+}
+
+@keyframes bds-ants-x {
+    from { background-position: 0 0; }
+    to { background-position: var(--bds-ants-period) 0; }
+}
+
+@keyframes bds-ants-y {
+    from { background-position: 0 0; }
+    to { background-position: 0 var(--bds-ants-period); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .bds-ants {
+        animation: none;
+    }
 }
