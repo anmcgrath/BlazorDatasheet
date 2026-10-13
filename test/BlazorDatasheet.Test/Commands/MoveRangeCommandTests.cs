@@ -232,4 +232,15 @@ public class MoveRangeCommandTests
         _sheet.Commands.ExecuteCommand(new MoveRangeCommand(_sheet.Range("A1")!, _sheet.Range(2, 2), options));
         options.FormulaReferences.Should().Be(ReferenceAdjustment.Relative);
     }
+
+    [Test]
+    public void Move_Refuses_A_Target_That_Cuts_Through_A_Merge_But_A_Merge_May_Move_Over_Itself()
+    {
+        _sheet.Cells.Merge(new Region(5, 5, 5, 7));
+        Move("A1:B1", 5, 6).Should().BeFalse();
+        _sheet.Cells.GetMerge(5, 5).Should().BeEquivalentTo(new Region(5, 5, 5, 7));
+
+        Move("F6:H6", 5, 6).Should().BeTrue();
+        _sheet.Cells.GetMerge(5, 6).Should().BeEquivalentTo(new Region(5, 5, 6, 8));
+    }
 }

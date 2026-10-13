@@ -75,7 +75,13 @@ public class MoveRangeCommand : BaseCommand, IUndoableCommand
         var toRegion = GetTargetRegion(target);
         if (source == null || toRegion == null || IsNoOp(target))
             return false;
-        return !_from.Sheet.Cells.ContainsReadOnly(source) && !target.Cells.ContainsReadOnly(toRegion);
+        if (_from.Sheet.Cells.ContainsReadOnly(source) || target.Cells.ContainsReadOnly(toRegion))
+            return false;
+
+        // The block can't land across the edge of a merged cell, as in Excel. A merge being moved may overlap
+        // its own destination, though: it is taken off the source before the block lands.
+        var sameSheet = ReferenceEquals(_from.Sheet, target);
+        return target.Cells.GetMerges(toRegion).All(m => toRegion.Contains(m) || (sameSheet && source.Contains(m)));
     }
 
     protected override bool ExecuteCore(Sheet target)
