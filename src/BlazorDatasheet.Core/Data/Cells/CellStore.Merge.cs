@@ -108,6 +108,8 @@ namespace BlazorDatasheet.Core.Data.Cells
             foreach (var merge in merges)
             {
                 merge.Shift(dr, dc);
+                if (!Sheet.Region.Contains(merge))
+                    continue;
                 restoreData.MergeRestoreData.Merge(_mergeStore.Add(merge, true));
                 RegionMerged?.Invoke(this, merge);
                 Sheet.MarkDirty(merge);

@@ -77,7 +77,7 @@ public partial class CellStore
 
         foreach (var formula in formulaToCopy)
         {
-            if (formula.data == null)
+            if (formula.data == null || !Sheet.Region.Contains(formula.row + dr, formula.col + dc))
                 continue;
 
             CellFormula clonedFormula;
