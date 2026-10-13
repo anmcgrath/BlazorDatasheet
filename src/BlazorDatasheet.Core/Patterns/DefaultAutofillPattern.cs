@@ -1,4 +1,4 @@
-using BlazorDatasheet.Core.Commands;
+﻿using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Interfaces;
@@ -25,7 +25,8 @@ public class DefaultAutofillPattern : IAutoFillPattern
         // rather than having the whole autofill rejected.
         var options = new CopyOptions()
         {
-            CopyFormat = beforeAutoFillEventArgs.CopyFormat && _sheet.Protection.CanFormat(target)
+            CopyFormat = beforeAutoFillEventArgs.CopyFormat && _sheet.Protection.CanFormat(target),
+            CopyMerges = false
         };
         if (cellData.HasFormula())
             options.CopyValues = false;

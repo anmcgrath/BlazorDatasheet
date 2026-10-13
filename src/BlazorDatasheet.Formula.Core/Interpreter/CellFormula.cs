@@ -93,6 +93,21 @@ public class CellFormula
         return moved;
     }
 
+    /// <summary>
+    /// Gives every reference to a sheet other than <paramref name="formulaSheetName"/> an explicit sheet
+    /// name, so the formula text stays unambiguous when the formula lives on that sheet.
+    /// </summary>
+    public void QualifyForeignReferences(string formulaSheetName)
+    {
+        foreach (var reference in References)
+        {
+            if (reference.Kind == ReferenceKind.Named || reference.ExplicitSheetName)
+                continue;
+            if (reference.SheetName != formulaSheetName)
+                reference.SetSheetName(reference.SheetName, true);
+        }
+    }
+
     public void InsertRowColIntoReferences(int index, int count, Axis axis, string sheetName)
     {
         foreach (var reference in References)

@@ -1,4 +1,4 @@
-using BlazorDatasheet.Core.Formats;
+﻿using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.FormulaEngine;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Intervals;
@@ -122,7 +122,9 @@ internal class CellStoreRestoreData
         return TypeRestoreData.RegionsAdded.Select(x => x.Region)
             .Concat(TypeRestoreData.RegionsRemoved.Select(x => x.Region))
             .Concat(FormatRestoreData.RegionsAdded.Select(x => x.Region))
-            .Concat(FormatRestoreData.RegionsRemoved.Select(x => x.Region));
+            .Concat(FormatRestoreData.RegionsRemoved.Select(x => x.Region))
+            .Concat(MergeRestoreData.RegionsAdded.Select(x => x.Region))
+            .Concat(MergeRestoreData.RegionsRemoved.Select(x => x.Region));
     }
 
     internal void Merge(CellStoreRestoreData item)

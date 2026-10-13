@@ -1,4 +1,4 @@
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Interfaces;
@@ -163,36 +163,73 @@ public partial class CellStore
 
     internal CellStoreRestoreData CopyImpl(IRegion fromRegion, IRegion toRegion, CopyOptions options)
     {
+        return CopyImpl(new SheetRange(Sheet, fromRegion), toRegion, options);
+    }
+
+    /// <summary>
+    /// Copies the cells in <paramref name="from"/>, which may be on another sheet of the workbook, into this
+    /// store so that the source's top-left lands on the top-left of <paramref name="toRegion"/>. The whole of
+    /// <paramref name="toRegion"/> is cleared first for whatever is being copied.
+    /// </summary>
+    internal CellStoreRestoreData CopyImpl(SheetRange from, IRegion toRegion, CopyOptions options)
+    {
         var restoreData = new CellStoreRestoreData();
+        var fromRegion = from.Region.GetIntersection(from.Sheet.Region);
+        if (fromRegion == null)
+            return restoreData;
+
+        var fromCells = from.Sheet.Cells;
+        var dr = toRegion.Top - fromRegion.Top;
+        var dc = toRegion.Left - fromRegion.Left;
+
+        Sheet.BatchUpdates();
+
         if (options.CopyValues)
         {
-            restoreData.ValueRestoreData = _dataStore.Copy(fromRegion, toRegion);
-            restoreData.ValidRestoreData = _validStore.Copy(fromRegion, toRegion);
-            restoreData.FormulaRestoreData = _formulaStore.Clear(toRegion);
+            // collect before clearing: the source may overlap the target
+            var values = fromCells._dataStore.GetNonEmptyData(fromRegion).ToList();
+            var valid = fromCells._validStore.GetNonEmptyData(fromRegion).ToList();
+            restoreData.ValueRestoreData = _dataStore.Clear([toRegion]);
+            restoreData.ValidRestoreData = _validStore.Clear([toRegion]);
+            restoreData.Merge(ClearFormulaImpl([toRegion]));
+            foreach (var v in values)
+                _dataStore.Set(v.row + dr, v.col + dc, v.data);
+            foreach (var v in valid)
+                _validStore.Set(v.row + dr, v.col + dc, v.data);
         }
 
         if (options.CopyFormula)
-            restoreData.Merge(CopyFormulaImpl(fromRegion, toRegion));
+            restoreData.Merge(CopyFormulaImpl(from.Sheet, fromRegion, toRegion, options.FormulaReferences));
 
         if (options.CopyFormat)
-            restoreData.Merge(CopyFormatImpl(fromRegion, toRegion));
+            restoreData.Merge(CopyFormatImpl(from.Sheet, fromRegion, toRegion));
+
+        if (options.CopyMerges)
+            restoreData.Merge(CopyMergesImpl(from.Sheet, fromRegion, toRegion));
+
+        if (options.CopyTypes)
+            restoreData.Merge(CopyTypesImpl(from.Sheet, fromRegion, toRegion));
 
         Sheet.MarkDirty(toRegion);
         EmitCellsChanged(toRegion);
+        Sheet.EndBatchUpdates();
         return restoreData;
     }
 
-    internal CellStoreRestoreData CopyFormatImpl(IRegion fromRegion, IRegion toRegion)
+    internal CellStoreRestoreData CopyFormatImpl(IRegion fromRegion, IRegion toRegion) =>
+        CopyFormatImpl(Sheet, fromRegion, toRegion);
+
+    private CellStoreRestoreData CopyFormatImpl(Sheet fromSheet, IRegion fromRegion, IRegion toRegion)
     {
         // Here we create a blank format store and then fill it with the 
-        // values that we sample from the sheet.
+        // values that we sample from the source sheet.
         // We then perform the copy inside this new format store and remove the original data.
         // This is then added to the sheet's format store.
         var emptyPalette = new MergeRegionDataStore<CellFormat>();
-        var fixedFromRegion = fromRegion.GetIntersection(Sheet.Region) as Region;
+        var fixedFromRegion = fromRegion.GetIntersection(fromSheet.Region) as Region;
         foreach (var position in fixedFromRegion!)
         {
-            var format = Sheet.GetFormat(position.row, position.col);
+            var format = fromSheet.GetFormat(position.row, position.col);
             if (Sheet.Protection.IsEnforced)
                 format.RemoveLock();
             emptyPalette.Add(new Region(position.row, position.col), format);
@@ -208,6 +245,24 @@ public partial class CellStore
         foreach (var data in emptyPalette.GetAllDataRegions())
         {
             restoreData.Merge(MergeFormatImpl(data.Region, data.Data));
+        }
+
+        return restoreData;
+    }
+
+    private CellStoreRestoreData CopyTypesImpl(Sheet fromSheet, IRegion fromRegion, IRegion toRegion)
+    {
+        var dr = toRegion.Top - fromRegion.Top;
+        var dc = toRegion.Left - fromRegion.Left;
+        var types = fromSheet.Cells._typeStore.GetDataRegions(fromRegion)
+            .Select(x => (x.Data, Region: fromRegion.GetIntersection(x.Region)!))
+            .ToList();
+
+        var restoreData = new CellStoreRestoreData { TypeRestoreData = _typeStore.Clear(toRegion) };
+        foreach (var (type, region) in types)
+        {
+            region.Shift(dr, dc);
+            restoreData.TypeRestoreData.Merge(_typeStore.Add(region, type));
         }
 
         return restoreData;

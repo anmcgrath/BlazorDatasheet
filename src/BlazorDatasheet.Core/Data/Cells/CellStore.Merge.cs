@@ -1,4 +1,4 @@
-using BlazorDatasheet.Core.Commands.Data;
+﻿using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
 
@@ -72,6 +72,48 @@ namespace BlazorDatasheet.Core.Data.Cells
             }
 
             Sheet.Commands.EndCommandGroup();
+        }
+
+        /// <summary>
+        /// Removes every merge that overlaps <paramref name="region"/>, returning the data to restore them.
+        /// </summary>
+        internal CellStoreRestoreData UnMergeImpl(IRegion region)
+        {
+            var restoreData = new CellStoreRestoreData();
+            foreach (var merge in _mergeStore.GetDataRegions(region).ToList())
+            {
+                restoreData.MergeRestoreData.Merge(_mergeStore.Delete(merge));
+                RegionUnMerged?.Invoke(this, merge.Region);
+                Sheet.MarkDirty(merge.Region);
+            }
+
+            return restoreData;
+        }
+
+        /// <summary>
+        /// Reproduces the merges that lie fully inside <paramref name="fromRegion"/> of <paramref name="fromSheet"/>
+        /// at the same offsets inside <paramref name="toRegion"/>, after removing the merges already there.
+        /// </summary>
+        private CellStoreRestoreData CopyMergesImpl(Sheet fromSheet, IRegion fromRegion, IRegion toRegion)
+        {
+            var dr = toRegion.Top - fromRegion.Top;
+            var dc = toRegion.Left - fromRegion.Left;
+            var merges = fromSheet.Cells._mergeStore.GetDataRegions(fromRegion)
+                .Select(x => x.Region)
+                .Where(fromRegion.Contains)
+                .Select(x => x.Clone())
+                .ToList();
+
+            var restoreData = UnMergeImpl(toRegion);
+            foreach (var merge in merges)
+            {
+                merge.Shift(dr, dc);
+                restoreData.MergeRestoreData.Merge(_mergeStore.Add(merge, true));
+                RegionMerged?.Invoke(this, merge);
+                Sheet.MarkDirty(merge);
+            }
+
+            return restoreData;
         }
 
         /// <summary>

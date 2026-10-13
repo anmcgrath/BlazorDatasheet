@@ -820,9 +820,13 @@ public class FormulaEngine
         return _environment;
     }
 
-    internal CellFormula CloneFormula(CellFormula formula)
+    /// <summary>
+    /// Returns a detached copy of <paramref name="formula"/>. References without an explicit sheet name are
+    /// bound to <paramref name="callingSheetName"/>, the sheet the copy will live on.
+    /// </summary>
+    internal CellFormula CloneFormula(CellFormula formula, string callingSheetName)
     {
-        return _parser.FromString(formula.ToFormulaString());
+        return _parser.FromString(formula.ToFormulaString(), new ParsingContext(callingSheetName, false));
     }
 
     /// <summary>
