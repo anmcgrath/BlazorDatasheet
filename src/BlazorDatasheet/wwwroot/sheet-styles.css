@@ -34,6 +34,7 @@
     --selection-bg-color: rgba(37, 99, 235, 0.14);
     --selection-border-color: #2563eb;
     --clipboard-border-color: #2563eb;
+    --clipboard-gap-color: #ffffff;
     --selection-bg-color-unfocused: rgba(100, 116, 139, 0.10);
     --selection-border-color-unfocused: #94a3b8;
     --head-selection-bg-color-unfocused: #e8edf5;
@@ -79,6 +80,7 @@
     --selection-bg-color: rgba(83, 101, 121, 0.18);
     --selection-border-color: #1c6f9a;
     --clipboard-border-color: #4fa3d1;
+    --clipboard-gap-color: #262626;
     --selection-bg-color-unfocused: rgba(83, 101, 121, 0.09);
     --selection-border-color-unfocused: #4d5761;
     --head-selection-bg-color-unfocused: rgb(45, 48, 51);
@@ -865,7 +867,7 @@
     height: var(--clipboard-border-thickness);
     background-image: repeating-linear-gradient(90deg,
         var(--clipboard-border-color) 0 var(--clipboard-dash-length),
-        transparent var(--clipboard-dash-length) var(--bds-ants-period));
+        var(--clipboard-gap-color) var(--clipboard-dash-length) var(--bds-ants-period));
     background-size: var(--bds-ants-period) 100%;
     animation: bds-ants-x var(--clipboard-ants-duration) linear infinite;
 }
@@ -886,7 +888,7 @@
     width: var(--clipboard-border-thickness);
     background-image: repeating-linear-gradient(180deg,
         var(--clipboard-border-color) 0 var(--clipboard-dash-length),
-        transparent var(--clipboard-dash-length) var(--bds-ants-period));
+        var(--clipboard-gap-color) var(--clipboard-dash-length) var(--bds-ants-period));
     background-size: 100% var(--bds-ants-period);
     animation: bds-ants-y var(--clipboard-ants-duration) linear infinite;
 }
