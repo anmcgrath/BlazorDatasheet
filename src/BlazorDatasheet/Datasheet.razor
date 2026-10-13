@@ -156,7 +156,10 @@
             MenuId="@SelectionMenuId"
             MenuOptions="_menuOptions"
             Disabled="@IsReadOnly"
-            DefaultFilterTypes="DefaultFilterTypes"/>
+            DefaultFilterTypes="DefaultFilterTypes"
+            OnCopy="CopySelectionToClipboard"
+            OnCut="CutSelectionToClipboard"
+            OnPaste="PasteFromClipboardAsync"/>
 
     </div>
 </CascadingValue>
