@@ -208,4 +208,18 @@ public class CopyRangeCommandTests
         s2.Cells.GetMerge(2, 1).Should().BeNull();
         s2.GetFormat(3, 1).BackgroundColor.Should().BeNull();
     }
+
+    [Test]
+    public void Copy_Refuses_A_Target_That_Cuts_Through_A_Merge()
+    {
+        _sheet.Cells.SetValue(0, 4, "x");
+        _sheet.Cells.Merge(new Region(0, 2, 0, 2));
+        var intoPart = new CopyRangeCommand(_sheet.Range("E1")!, _sheet.Range("B2")!, CopyOptions.DefaultCopyOptions);
+        intoPart.CanExecute(_sheet).Should().BeFalse();
+        _sheet.Commands.ExecuteCommand(intoPart).Should().BeFalse();
+        _sheet.Cells.GetMerge(0, 0).Should().BeEquivalentTo(new Region(0, 2, 0, 2));
+
+        var overWhole = new CopyRangeCommand(_sheet.Range("E1")!, _sheet.Range("A1:C3")!, CopyOptions.DefaultCopyOptions);
+        overWhole.CanExecute(_sheet).Should().BeTrue();
+    }
 }

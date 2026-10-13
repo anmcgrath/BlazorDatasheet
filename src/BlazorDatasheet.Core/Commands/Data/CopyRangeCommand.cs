@@ -50,6 +50,16 @@ public class CopyRangeCommand : BaseCommand, IUndoableCommand
         return true;
     }
 
+    /// <summary>
+    /// A block can't land across the edge of a merged cell, as in Excel: the target must hold every merge it
+    /// touches, or the paste would break the merge up.
+    /// </summary>
+    protected override bool CanExecuteCore(Sheet sheet) => _toRanges.All(x =>
+    {
+        var target = GetAffectedRegion(x.Region);
+        return sheet.Cells.GetMerges(target).All(target.Contains);
+    });
+
     public override bool CanExecuteProtected(Sheet sheet) => _toRanges.All(x =>
         ((!_copyOptions.CopyValues && !_copyOptions.CopyFormula) ||
          sheet.Protection.CanEdit(GetAffectedRegion(x.Region))) &&
