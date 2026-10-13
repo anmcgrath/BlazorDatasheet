@@ -1,3 +1,4 @@
+using BlazorDatasheet.Core.Clipboard;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -14,13 +15,33 @@ public class Clipboard : IClipboard
         _js = jsRuntime;
     }
 
-    public async Task Copy(IRegion? region, Sheet sheet)
+    public async Task Copy(IRegion region, Sheet sheet)
     {
-        if (region == null)
-            return;
+        var snapshot = ClipboardSnapshotBuilder.FromRange(sheet.Range(region));
+        await Write(new ClipboardWriteData(DelimitedTextWriter.Write(snapshot), ClipboardHtmlWriter.Write(snapshot)));
+    }
 
-        var text = sheet.GetRegionAsDelimitedText(region);
+    public async Task<bool> Write(ClipboardWriteData data)
+    {
+        try
+        {
+            return await _js.InvokeAsync<bool>("bdsWriteClipboard", data.Text, data.Html);
+        }
+        catch (JSException)
+        {
+            return false;
+        }
+    }
 
-        await _js.InvokeVoidAsync("writeTextToClipboard", text);
+    public async Task<ClipboardReadData?> Read()
+    {
+        try
+        {
+            return await _js.InvokeAsync<ClipboardReadData?>("bdsReadClipboard");
+        }
+        catch (JSException)
+        {
+            return null;
+        }
     }
 }
