@@ -77,8 +77,22 @@ public class WorkbookEnvironment : IEnvironment
     public void SetCellValue(int row, int col, string sheetName, CellValue value)
     {
         var sheet = _workbook.GetSheet(sheetName);
-        sheet?.Cells.SetCalculatedValueImpl(row, col, value);
-        sheet?.MarkDirty(row, col);
+        if (sheet == null)
+            return;
+
+        // a scalar result from a formula that spilled before takes the spill back
+        sheet.Cells.WipeSpillForAnchor(new CellPosition(row, col));
+        sheet.Cells.SetCalculatedValueImpl(row, col, value);
+        sheet.MarkDirty(row, col);
+    }
+
+    public SpillResult SetSpillResult(int row, int col, string sheetName, CellValue[][] values)
+    {
+        var sheet = _workbook.GetSheet(sheetName);
+        if (sheet == null)
+            return default;
+
+        return sheet.Cells.SetSpillResultImpl(new CellPosition(row, col), values);
     }
 
     public CellValue GetCellValue(int row, int col, string sheetName)

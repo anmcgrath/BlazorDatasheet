@@ -196,10 +196,100 @@ public partial class CellStore
         }
     }
 
+    internal void WipeSpillsIntersecting(int row, int col)
+    {
+        if (_spillStore.IsEmpty)
+            return;
+        WipeSpillsIntersecting(new Region(row, col));
+    }
+
     internal void WipeSpillsIntersecting(IEnumerable<IRegion> regions)
     {
         foreach (var region in regions)
             WipeSpillsIntersecting(region);
+    }
+
+    /// <summary>
+    /// Writes the array result of the formula at <paramref name="anchor"/>: a single value goes into the
+    /// anchor, anything bigger spills into the cells below and to the right when they are free, and
+    /// otherwise the anchor gets #SPILL!. Values are engine-owned and carry no undo data.
+    /// </summary>
+    internal SpillResult SetSpillResultImpl(CellPosition anchor, CellValue[][] values)
+    {
+        var rows = values.Length;
+        var cols = rows == 0 ? 0 : values[0].Length;
+        var entry = GetSpillEntry(anchor);
+        var prev = entry == null || entry.Data.IsBlocked ? null : entry.Region;
+
+        if (rows == 0 || cols == 0)
+        {
+            WipeSpillForAnchor(anchor);
+            SetCalculatedValueImpl(anchor.row, anchor.col, CellValue.Error(ErrorType.Calc));
+            return new SpillResult(prev, null, false);
+        }
+
+        if (rows == 1 && cols == 1)
+        {
+            WipeSpillForAnchor(anchor);
+            SetCalculatedValueImpl(anchor.row, anchor.col, values[0][0]);
+            return new SpillResult(prev, null, false);
+        }
+
+        var target = new Region(anchor.row, anchor.row + rows - 1, anchor.col, anchor.col + cols - 1);
+        if (!Sheet.Region.Contains(target) || IsSpillObstructed(target, anchor, prev))
+        {
+            if (prev != null)
+                ClearSpilledValues(prev, anchor);
+            SetSpillImpl(anchor, target.GetIntersection(Sheet.Region) ?? target, blocked: true);
+            SetCalculatedValueImpl(anchor.row, anchor.col, CellValue.Error(ErrorType.Spill));
+            return new SpillResult(prev, null, true);
+        }
+
+        if (prev != null)
+            ClearSpilledValues(prev, anchor, keep: target);
+
+        for (var i = 0; i < rows; i++)
+        {
+            var row = values[i];
+            for (var j = 0; j < cols; j++)
+                SetCalculatedValueImpl(anchor.row + i, anchor.col + j, j < row.Length ? row[j] : CellValue.Empty);
+        }
+
+        SetSpillImpl(anchor, target, blocked: false);
+        return new SpillResult(prev, target, false);
+    }
+
+    /// <summary>
+    /// Whether anything other than the anchor's own previous spill stands in the way of spilling into
+    /// <paramref name="target"/>: a value, a formula, a merge or another formula's spill.
+    /// </summary>
+    private bool IsSpillObstructed(IRegion target, CellPosition anchor, IRegion? prev)
+    {
+        foreach (var position in _dataStore.GetNonEmptyPositions(target))
+        {
+            if (position == anchor)
+                continue;
+            if (prev != null && prev.Contains(position.row, position.col))
+                continue;
+            return true;
+        }
+
+        foreach (var formula in _formulaStore.GetNonEmptyData(target))
+        {
+            if (formula.row != anchor.row || formula.col != anchor.col)
+                return true;
+        }
+
+        if (_mergeStore.Any(target))
+            return true;
+
+        foreach (var other in _spillStore.GetDataRegions(target))
+        {
+            if (!other.Data.IsBlocked && AnchorOf(other) != anchor)
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -208,6 +298,7 @@ public partial class CellStore
     /// </summary>
     internal void ClearSpilledValues(IRegion region, CellPosition anchor, IRegion? keep = null)
     {
+        List<CellPosition>? cleared = null;
         for (var row = region.Top; row <= region.Bottom; row++)
         {
             for (var col = region.Left; col <= region.Right; col++)
@@ -218,8 +309,17 @@ public partial class CellStore
                     continue;
                 if (_dataStore.Get(row, col)!.IsEmpty && _validStore.Get(row, col) == null)
                     continue;
-                SetCalculatedValueImpl(row, col, CellValue.Empty);
+                _dataStore.ClearWithoutRestoreData(row, col);
+                _validStore.ClearWithoutRestoreData(row, col);
+                cleared ??= new List<CellPosition>();
+                cleared.Add(new CellPosition(row, col));
             }
+        }
+
+        if (cleared != null)
+        {
+            EmitCellsChanged(cleared);
+            Sheet.MarkDirty(region);
         }
     }
 }

@@ -72,6 +72,17 @@ public class TestEnvironment : IEnvironment
         _cellValues.TryAdd(new CellPosition(row, col), value);
     }
 
+    public SpillResult SetSpillResult(int row, int col, string sheetName, CellValue[][] values)
+    {
+        var old = GetSpillRegion(row, col, sheetName);
+        var region = new Region(row, row + values.Length - 1, col, col + values[0].Length - 1);
+        for (var i = 0; i < values.Length; i++)
+        for (var j = 0; j < values[i].Length; j++)
+            _cellValues[new CellPosition(row + i, col + j)] = values[i][j];
+        SetSpillRegion(row, col, region);
+        return new SpillResult(old, region, false);
+    }
+
     public void ClearVariable(string varName)
     {
         _variables.Remove(varName);

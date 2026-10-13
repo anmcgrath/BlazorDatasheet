@@ -30,6 +30,12 @@ public interface IEnvironment : IFunctionProvider
     void SetVariable(string name, CellValue value);
     public IEnumerable<CellValue> GetNonEmptyInRange(Reference reference);
     void SetCellValue(int row, int col, string sheetName, CellValue value);
+
+    /// <summary>
+    /// Writes an array result of the formula at <paramref name="row"/>, <paramref name="col"/>, spilling it
+    /// into the cells below and to the right, or writing #SPILL! to the formula cell when they are not free.
+    /// </summary>
+    SpillResult SetSpillResult(int row, int col, string sheetName, CellValue[][] values);
     void ClearVariable(string varName);
     IEnumerable<string> GetVariableNames();
 }

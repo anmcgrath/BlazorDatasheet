@@ -125,6 +125,10 @@ public class Editor
         if (cell.Format.IsReadOnly == true || !Sheet.Protection.CanEdit(row, col))
             return;
 
+        // a cell an array formula spilled into belongs to that formula
+        if (Sheet.Cells.IsSpilledCell(row, col))
+            return;
+
         // check if the cell is visible OR if the cell is merged, and part of the cell is visible
         if (!cell.IsVisible)
         {

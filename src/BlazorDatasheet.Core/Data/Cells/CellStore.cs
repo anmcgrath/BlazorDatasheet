@@ -115,11 +115,14 @@ public partial class CellStore
     {
         var restoreData = new CellStoreRestoreData();
         var toClear = regionsToClear.ToList();
+
+        // batched from the start so that emptying spilled cells does not recalculate before the clear
+        Sheet.BatchUpdates();
+        WipeSpillsIntersecting(toClear);
         restoreData.ValueRestoreData = _dataStore.Clear(toClear);
         restoreData.ValidRestoreData = _validStore.Clear(toClear);
         restoreData.Merge(ClearFormulaImpl(toClear));
 
-        Sheet.BatchUpdates();
         EmitCellsChanged(toClear);
         Sheet.MarkDirty(toClear);
         Sheet.EndBatchUpdates();
@@ -198,9 +201,13 @@ public partial class CellStore
 
         if (options.CopyValues)
         {
-            // collect before clearing: the source may overlap the target
-            var values = fromCells._dataStore.GetNonEmptyData(fromRegion).ToList();
+            // collect before clearing: the source may overlap the target. Cells another formula spilled
+            // into are left to that formula when it is copied too; a values-only copy takes them as values.
+            var values = fromCells._dataStore.GetNonEmptyData(fromRegion)
+                .Where(v => !options.CopyFormula || !fromCells.IsSpilledCell(v.row, v.col))
+                .ToList();
             var valid = fromCells._validStore.GetNonEmptyData(fromRegion).ToList();
+            WipeSpillsIntersecting(toRegion);
             restoreData.ValueRestoreData = _dataStore.Clear([toRegion]);
             restoreData.ValidRestoreData = _validStore.Clear([toRegion]);
             restoreData.Merge(ClearFormulaImpl([toRegion]));
@@ -324,6 +331,13 @@ public partial class CellStore
         Sheet.FormulaEngine.DependencyManager.Restore(restoreData.DependencyManagerRestoreData);
 
         _formulaStore.Restore(restoreData.FormulaRestoreData);
+        // a formula that is gone after the restore takes its spill with it
+        foreach (var removed in restoreData.FormulaRestoreData.DataRemoved)
+        {
+            if (_formulaStore.Get(removed.row, removed.col) == null)
+                WipeSpillForAnchor(new CellPosition(removed.row, removed.col));
+        }
+
         _validStore.Restore(restoreData.ValidRestoreData);
         _typeStore.Restore(restoreData.TypeRestoreData);
         _dataStore.Restore(restoreData.ValueRestoreData);

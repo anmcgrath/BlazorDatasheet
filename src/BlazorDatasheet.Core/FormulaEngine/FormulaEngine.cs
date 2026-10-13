@@ -33,6 +33,21 @@ public class FormulaEngine
     private readonly Dictionary<string, PendingVariableChange> _pendingVariableChanges = new();
 
     /// <summary>
+    /// Formulas that read cells an array formula spilled into during the calculation in flight, and that
+    /// were evaluated before the spill (or not at all). The order of a pass is fixed before it starts and
+    /// cell changes made while calculating do not dirty anything, so these are run in a further pass.
+    /// </summary>
+    private readonly HashSet<FormulaVertex> _lateDirty = new();
+
+    private readonly HashSet<FormulaVertex> _inCurrentPass = new();
+    private readonly HashSet<FormulaVertex> _evaluatedInPass = new();
+
+    /// <summary>
+    /// How many extra passes a calculation may make for formulas that depend on spilled cells.
+    /// </summary>
+    private const int MaxSpillPasses = 100;
+
+    /// <summary>
     /// Fired immediately before a non-empty formula recalculation pass begins.
     /// </summary>
     public event EventHandler<CalculationStartedEventArgs>? CalculationStarted;
@@ -98,26 +113,44 @@ public class FormulaEngine
             var cellVertex = DependencyManager.GetVertex(cell.row, cell.col, sheet.Name);
             if (cellVertex != null)
             {
-                if (!_requiresCalculation.Add(cellVertex))
-                    continue;
-
-                foreach (var u in DependencyManager.GetDirectDependents(cellVertex))
-                    _requiresCalculation.Add(u);
+                if (_requiresCalculation.Add(cellVertex))
+                {
+                    foreach (var u in DependencyManager.GetDirectDependents(cellVertex))
+                        _requiresCalculation.Add(u);
+                }
             }
             else
             {
                 foreach (var u in DependencyManager.FindDependentFormula(new Region(cell.row, cell.col), sheet.Name))
                     _requiresCalculation.Add(u);
             }
+
+            QueueSpillAnchors(cellStore, new Region(cell.row, cell.col));
         }
 
         foreach (var region in e.Regions)
         {
             foreach (var u in DependencyManager.FindDependentFormula(region, sheet.Name))
                 _requiresCalculation.Add(u);
+
+            QueueSpillAnchors(cellStore, region);
         }
 
         this.CalculateSheet(false);
+    }
+
+    /// <summary>
+    /// A change inside a region an array formula spills into - or wanted to spill into - may obstruct
+    /// or unblock it, so the formula is recalculated.
+    /// </summary>
+    private void QueueSpillAnchors(CellStore cellStore, IRegion region)
+    {
+        foreach (var anchor in cellStore.GetSpillAnchorsIntersecting(region))
+        {
+            var vertex = DependencyManager.GetVertex(anchor.row, anchor.col, cellStore.Sheet.Name);
+            if (vertex != null)
+                _requiresCalculation.Add(vertex);
+        }
     }
 
     private void RowColsOnRemoved(object? sender, RowColRemovedEventArgs e)
@@ -352,6 +385,9 @@ public class FormulaEngine
         if (!DependencyManager.HasAnythingToCalculate(calculateAll ? null : _requiresCalculation))
             return;
 
+        if (!calculateAll)
+            QueueDependentsOfSpills();
+
         var order = DependencyManager.GetCalculationOrder(calculateAll ? null : _requiresCalculation);
         if (order.Count == 0)
             return;
@@ -377,8 +413,22 @@ public class FormulaEngine
             // its dictionaries keep their capacity between calculations.
             var executionContext = _calculationContext;
 
+            BeginPass(order);
             for (var i = 0; i < order.Count; i++)
                 EvaluateStronglyConnectedGroup(order[i], executionContext, ref evaluatedFormulaCount);
+
+            // formulas reading cells that were spilled into during the pass are run until none are left
+            var passes = 0;
+            while (_lateDirty.Count > 0 && passes++ < MaxSpillPasses)
+            {
+                var late = _lateDirty.ToList();
+                _lateDirty.Clear();
+                executionContext.Clear();
+                var lateOrder = DependencyManager.GetCalculationOrder(late, includeVolatiles: false);
+                BeginPass(lateOrder);
+                for (var i = 0; i < lateOrder.Count; i++)
+                    EvaluateStronglyConnectedGroup(lateOrder[i], executionContext, ref evaluatedFormulaCount);
+            }
         }
         catch (Exception e)
         {
@@ -387,6 +437,9 @@ public class FormulaEngine
         }
         finally
         {
+            _lateDirty.Clear();
+            _inCurrentPass.Clear();
+            _evaluatedInPass.Clear();
             // Release formulas and results while retaining the dictionaries' capacity. Clear before
             // completion callbacks, which may start another calculation using the same context.
             _calculationContext.Clear();
@@ -411,6 +464,64 @@ public class FormulaEngine
     }
 
     private readonly FormulaExecutionContext _calculationContext = new();
+
+    private void BeginPass(IList<IList<FormulaVertex>> order)
+    {
+        _inCurrentPass.Clear();
+        _evaluatedInPass.Clear();
+        for (var g = 0; g < order.Count; g++)
+        {
+            var group = order[g];
+            for (var v = 0; v < group.Count; v++)
+                _inCurrentPass.Add(group[v]);
+        }
+    }
+
+    /// <summary>
+    /// A dirty array formula that has spilled will rewrite its spill, so formulas reading those cells
+    /// are queued with it rather than found afterwards.
+    /// </summary>
+    private void QueueDependentsOfSpills()
+    {
+        if (_requiresCalculation.Count == 0)
+            return;
+
+        List<FormulaVertex>? found = null;
+        foreach (var vertex in _requiresCalculation)
+        {
+            if (vertex.VertexType != VertexType.Cell)
+                continue;
+
+            var region = _environment.GetSpillRegion(vertex.Row, vertex.Col, vertex.SheetName);
+            if (region == null)
+                continue;
+
+            found ??= new List<FormulaVertex>();
+            found.AddRange(DependencyManager.FindDependentFormula(region, vertex.SheetName));
+        }
+
+        if (found != null)
+            _requiresCalculation.UnionWith(found);
+    }
+
+    /// <summary>
+    /// Queues the formulas that read a region an array formula just spilled into, or stopped spilling
+    /// into, unless they are still to be evaluated in the pass in flight.
+    /// </summary>
+    private void RecordSpill(FormulaVertex vertex, IRegion? region)
+    {
+        if (region == null)
+            return;
+
+        foreach (var dependent in DependencyManager.FindDependentFormula(region, vertex.SheetName))
+        {
+            if (dependent.Equals(vertex))
+                continue;
+            if (_inCurrentPass.Contains(dependent) && !_evaluatedInPass.Contains(dependent))
+                continue;
+            _lateDirty.Add(dependent);
+        }
+    }
 
     /// <summary>
     /// The sheets batched for the calculation in flight. A snapshot, because a handler reached from
@@ -462,6 +573,7 @@ public class FormulaEngine
             var value = EvaluateFormulaInGroup(vertex, executionContext, ref isCircularGroup);
             executionContext.ClearExecuting();
             ApplyVertexValue(vertex, value);
+            _evaluatedInPass.Add(vertex);
             evaluatedFormulaCount++;
         }
     }
@@ -490,7 +602,21 @@ public class FormulaEngine
     private void ApplyVertexValue(FormulaVertex vertex, CellValue value)
     {
         if (vertex.VertexType == VertexType.Cell)
-            _environment.SetCellValue(vertex.Row, vertex.Col, vertex.SheetName, value);
+        {
+            if (value.IsArray())
+            {
+                var result = _environment.SetSpillResult(vertex.Row, vertex.Col, vertex.SheetName,
+                    (CellValue[][])value.Data!);
+                RecordSpill(vertex, result.OldRegion);
+                RecordSpill(vertex, result.NewRegion);
+            }
+            else
+            {
+                var oldRegion = _environment.GetSpillRegion(vertex.Row, vertex.Col, vertex.SheetName);
+                _environment.SetCellValue(vertex.Row, vertex.Col, vertex.SheetName, value);
+                RecordSpill(vertex, oldRegion);
+            }
+        }
         else if (vertex.VertexType == VertexType.Named)
         {
             QueueVariableChange(vertex.Key.Name, false);

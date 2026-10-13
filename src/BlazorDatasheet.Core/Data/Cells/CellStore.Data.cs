@@ -58,9 +58,13 @@ public partial class CellStore
         // If cell values are being set while the formula engine is not calculating,
         // then these values must override the formula and so the formula should be cleared
         // at those cell positions.
-        if (!Sheet.FormulaEngine.IsCalculating && HasFormula(row, col))
+        if (!Sheet.FormulaEngine.IsCalculating)
         {
-            restoreData.FormulaRestoreData = ClearFormulaImpl(row, col).FormulaRestoreData;
+            // a value landing in a spill blocks it: its cells are emptied before the write is recorded,
+            // so that undoing the write leaves them empty for the formula to spill into again
+            WipeSpillsIntersecting(row, col);
+            if (HasFormula(row, col))
+                restoreData.FormulaRestoreData = ClearFormulaImpl(row, col).FormulaRestoreData;
         }
 
         // Validate but don't stop setting cell values if the value is invalid.
@@ -117,7 +121,10 @@ public partial class CellStore
         var region = new Region(row, row + values.Length - 1, col, col + values[0].Length - 1);
 
         if (!Sheet.FormulaEngine.IsCalculating)
+        {
+            WipeSpillsIntersecting(region);
             restoreData.Merge(ClearFormulaImpl([region]));
+        }
 
         restoreData.ValueRestoreData = _dataStore.Clear(region);
         var oldValuePositions = restoreData.ValueRestoreData.DataRemoved

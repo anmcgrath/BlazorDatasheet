@@ -387,12 +387,13 @@ public class DependencyManager
     /// Returns the topological sort of the vertices. Each group of vertices is a strongly connected group.
     /// </summary>
     /// <returns></returns>
-    public IList<IList<FormulaVertex>> GetCalculationOrder(IEnumerable<FormulaVertex>? dirtyFormula = null)
+    public IList<IList<FormulaVertex>> GetCalculationOrder(IEnumerable<FormulaVertex>? dirtyFormula = null,
+        bool includeVolatiles = true)
     {
         if (dirtyFormula == null)
             return _sccSort.Sort();
 
-        return _sccSort.Sort(ConcatVolatiles(dirtyFormula));
+        return _sccSort.Sort(includeVolatiles ? ConcatVolatiles(dirtyFormula) : dirtyFormula);
     }
 
     /// <summary>

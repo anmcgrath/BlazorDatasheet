@@ -43,6 +43,9 @@ public partial class CellStore
         bool recordValueRestore = true)
     {
         var restoreData = new CellStoreRestoreData();
+        // the cell may sit inside another formula's spill, and may itself have spilled before
+        WipeSpillsIntersecting(row, col);
+        WipeSpillForAnchor(new CellPosition(row, col));
         var validRestore = _validStore.Clear(row, col);
         var valueRestore = _dataStore.Clear(row, col);
 
@@ -113,6 +116,7 @@ public partial class CellStore
 
     internal CellStoreRestoreData ClearFormulaImpl(int row, int col)
     {
+        WipeSpillForAnchor(new CellPosition(row, col));
         return new CellStoreRestoreData()
         {
             FormulaRestoreData = _formulaStore.Clear(row, col),
@@ -126,6 +130,7 @@ public partial class CellStore
         var clearedData = _formulaStore.Clear(regions);
         foreach (var clearedFormula in clearedData.DataRemoved)
         {
+            WipeSpillForAnchor(new CellPosition(clearedFormula.row, clearedFormula.col));
             restoreData.DependencyManagerRestoreData.Merge(
                 Sheet.FormulaEngine.RemoveFormula(clearedFormula.row, clearedFormula.col, Sheet.Name));
         }
