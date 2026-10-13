@@ -14,7 +14,8 @@ public class CopyRangeCommand : BaseCommand, IUndoableCommand
     private readonly List<CellStoreRestoreData> _restoreData = new();
 
     /// <summary>
-    /// Copies data from one range to another. The from range must only have a single region.
+    /// Copies data from one range to each of the target ranges. The from range must only have a single region.
+    /// The source may be on another sheet of the same workbook; the command is executed on the target sheet.
     /// </summary>
     /// <param name="fromRange"></param>
     /// <param name="toRanges"></param>
@@ -42,25 +43,35 @@ public class CopyRangeCommand : BaseCommand, IUndoableCommand
     protected override bool ExecuteCore(Sheet sheet)
     {
         _restoreData.Clear();
+        using var updates = sheet.SuspendUpdates();
         foreach (var range in _toRanges)
-            Copy(_fromRange.Region, range.Region, sheet);
+            _restoreData.Add(sheet.Cells.CopyImpl(_fromRange, GetAffectedRegion(range.Region), _copyOptions));
 
         return true;
     }
 
     public override bool CanExecuteProtected(Sheet sheet) => _toRanges.All(x =>
         ((!_copyOptions.CopyValues && !_copyOptions.CopyFormula) ||
-         sheet.Protection.CanEdit(GetAffectedRegion(sheet, x.Region))) &&
-        (!_copyOptions.CopyFormat || sheet.Protection.CanFormat(GetAffectedRegion(sheet, x.Region))));
+         sheet.Protection.CanEdit(GetAffectedRegion(x.Region))) &&
+        ((!_copyOptions.CopyFormat && !CopiesAnyMerges()) ||
+         sheet.Protection.CanFormat(GetAffectedRegion(x.Region))));
 
-    private void Copy(IRegion fromRegion, IRegion toRegion, Sheet sheet)
+    private bool CopiesAnyMerges()
     {
-        _restoreData.Add(sheet.Cells.CopyImpl(fromRegion, GetAffectedRegion(sheet, toRegion), _copyOptions));
+        if (!_copyOptions.CopyMerges)
+            return false;
+        var source = SourceRegion;
+        return source != null && _fromRange.Sheet.Cells.AnyMerges(source);
     }
 
-    private IRegion GetAffectedRegion(Sheet sheet, IRegion target)
+    private IRegion? SourceRegion => _fromRange.Region.GetIntersection(_fromRange.Sheet.Region);
+
+    /// <summary>
+    /// The region written at the target: at least the size of the source, from the target's top-left.
+    /// </summary>
+    private IRegion GetAffectedRegion(IRegion target)
     {
-        var source = _fromRange.Region.GetIntersection(sheet.Region);
+        var source = SourceRegion;
         if (source == null)
             return target;
         return new Region(target.Top, Math.Max(target.Bottom, target.Top + source.Height - 1),
@@ -69,10 +80,11 @@ public class CopyRangeCommand : BaseCommand, IUndoableCommand
 
     public bool Undo(Sheet sheet)
     {
+        using var updates = sheet.SuspendUpdates();
         for (var i = _restoreData.Count - 1; i >= 0; i--)
         {
             if (_copyOptions.CopyValues || _copyOptions.CopyFormula)
-                sheet.Cells.ClearCellsImpl(new[] { GetAffectedRegion(sheet, _toRanges[i].Region) });
+                sheet.Cells.ClearCellsImpl(new[] { GetAffectedRegion(_toRanges[i].Region) });
             sheet.Cells.Restore(_restoreData[i]);
         }
 

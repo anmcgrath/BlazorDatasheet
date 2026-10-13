@@ -1,4 +1,4 @@
-using BlazorDatasheet.Core.Commands.Data;
+﻿using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Events.Formula;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;
@@ -64,23 +64,38 @@ public partial class CellStore
         return new CellStoreRestoreData();
     }
 
-    private CellStoreRestoreData CopyFormulaImpl(IRegion fromRegion, IRegion toRegion)
+    private CellStoreRestoreData CopyFormulaImpl(Sheet fromSheet, IRegion fromRegion, IRegion toRegion,
+        ReferenceAdjustment adjustment)
     {
-        var offset = new CellPosition(
-            toRegion.TopLeft.row - fromRegion.TopLeft.row,
-            toRegion.TopLeft.col - fromRegion.TopLeft.col);
+        var dr = toRegion.Top - fromRegion.Top;
+        var dc = toRegion.Left - fromRegion.Left;
 
         var restoreData = new CellStoreRestoreData();
 
-        var formulaToCopy = _formulaStore.GetNonEmptyData(fromRegion);
+        // collect before writing: the source may overlap the target
+        var formulaToCopy = fromSheet.Cells._formulaStore.GetNonEmptyData(fromRegion).ToList();
 
         foreach (var formula in formulaToCopy)
         {
             if (formula.data == null)
                 continue;
-            var clonedFormula = Sheet.FormulaEngine.CloneFormula(formula.data);
-            clonedFormula.ShiftReferences(offset.row, offset.col, null);
-            restoreData.Merge(SetFormulaImpl(formula.row + offset.row, formula.col + offset.col, clonedFormula));
+
+            CellFormula clonedFormula;
+            if (adjustment == ReferenceAdjustment.Relative)
+            {
+                // implicit references re-bind to the sheet the formula lands on, as in Excel
+                clonedFormula = Sheet.FormulaEngine.CloneFormula(formula.data, Sheet.Name);
+                clonedFormula.ShiftReferences(dr, dc, null);
+            }
+            else
+            {
+                // the cells move: references into the moved block follow it, everything else stays put
+                clonedFormula = Sheet.FormulaEngine.CloneFormula(formula.data, fromSheet.Name);
+                clonedFormula.MoveReferencesWithin(fromRegion, fromSheet.Name, dr, dc, Sheet.Name, Sheet.Name);
+                clonedFormula.QualifyForeignReferences(Sheet.Name);
+            }
+
+            restoreData.Merge(SetFormulaImpl(formula.row + dr, formula.col + dc, clonedFormula));
         }
 
         return restoreData;
