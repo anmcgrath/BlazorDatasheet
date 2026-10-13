@@ -68,6 +68,7 @@ public class CopyRangeCommandTests
 
         copyCmd.Undo(_sheet);
         _sheet.Cells[3, 4].HasFormula().Should().Be(false);
+        _sheet.Cells.GetValue(3, 4).Should().BeNull();
     }
 
     [Test]

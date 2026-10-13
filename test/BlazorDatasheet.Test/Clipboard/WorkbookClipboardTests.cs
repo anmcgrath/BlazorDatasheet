@@ -130,6 +130,38 @@ public class WorkbookClipboardTests
     }
 
     [Test]
+    public void Undo_Paste_Of_Formula_Into_Empty_Cell_Clears_Value()
+    {
+        _sheet.Cells.SetValue(0, 0, 2);
+        _sheet.Cells.SetFormula(0, 1, "=$A$1*5");
+        _clipboard.Copy(_sheet.Range("B1"));
+        _clipboard.Paste(_sheet, new Region(4, 3));
+
+        _sheet.Cells.HasFormula(4, 3).Should().BeTrue();
+        _sheet.Cells.GetValue(4, 3).Should().Be(10.0);
+
+        _sheet.Commands.Undo();
+        _sheet.Cells.HasFormula(4, 3).Should().BeFalse();
+        _sheet.Cells.GetValue(4, 3).Should().BeNull();
+    }
+
+    [Test]
+    public void Undo_Paste_Of_Formula_Restores_Previous_Value()
+    {
+        _sheet.Cells.SetValue(0, 0, 2);
+        _sheet.Cells.SetFormula(0, 1, "=$A$1*5");
+        _sheet.Cells.SetValue(4, 3, "old");
+        _clipboard.Copy(_sheet.Range("B1"));
+        _clipboard.Paste(_sheet, new Region(4, 3));
+
+        _sheet.Cells.GetValue(4, 3).Should().Be(10.0);
+
+        _sheet.Commands.Undo();
+        _sheet.Cells.HasFormula(4, 3).Should().BeFalse();
+        _sheet.Cells.GetValue(4, 3).Should().Be("old");
+    }
+
+    [Test]
     public void Paste_Does_Not_Tile_Non_Multiple_Selection()
     {
         Fill2X2();
