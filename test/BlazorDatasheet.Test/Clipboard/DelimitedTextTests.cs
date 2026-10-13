@@ -43,6 +43,15 @@ public class DelimitedTextTests
     }
 
     [Test]
+    public void Parser_Treats_An_Unmatched_Opening_Quote_As_Text()
+    {
+        var rows = DelimitedTextParser.Parse("\"\tfoo\nbar\tbaz");
+        rows.Should().HaveCount(2);
+        rows[0].Should().Equal("\"", "foo");
+        rows[1].Should().Equal("bar", "baz");
+    }
+
+    [Test]
     public void Parser_Handles_Ragged_Rows_Blank_Rows_And_Literal_Quotes()
     {
         var rows = DelimitedTextParser.Parse("a\tb\tc\n\nx\n5\" pipe");
