@@ -1,0 +1,33 @@
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Formats
+@using BlazorDatasheet.Edit
+@using BlazorDatasheet.Menu
+
+<FormulaBar Sheet="_sheet"></FormulaBar>
+<Datasheet Sheet="_sheet" MenuOptions="@(new SheetMenuOptions() { HeaderMenuEnabled = false, ContextMenuEnabled = false })"/>
+
+@code{
+
+    private Sheet _sheet = new Sheet(8, 8);
+
+    protected override void OnInitialized()
+    {
+        _sheet.BatchUpdates();
+        _sheet.Commands.PauseHistory();
+
+        _sheet.Cells.SetValues(0, 0, [[4], [1], [3], [1], [5], [2]]);
+        _sheet.Cells["C1"]!.Formula = "=A1:A6*2";
+        _sheet.Cells["D1"]!.Formula = "=SORT(A1:A6,1,-1)";
+        _sheet.Cells["E1"]!.Formula = "=UNIQUE(A1:A6)";
+        _sheet.Cells["F1"]!.Formula = "=SUM(C1#)";
+        _sheet.Cells["G1"]!.Formula = "=SEQUENCE(3,2)";
+
+        _sheet.Cells["A8"]!.Value = "Edit a value in column A, or type into a spilled cell, to see the spills update.";
+        _sheet.Range("A8:H8")!.Merge();
+        _sheet.Range("A8:H8")!.Format = new CellFormat() { FontWeight = "bold" };
+
+        _sheet.Commands.ResumeHistory();
+        _sheet.EndBatchUpdates();
+    }
+
+}
