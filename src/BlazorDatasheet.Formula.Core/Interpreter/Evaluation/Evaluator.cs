@@ -1,4 +1,5 @@
 using System.Buffers;
+using BlazorDatasheet.Formula.Core.Interpreter.Addresses;
 using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 using SyntaxTree = BlazorDatasheet.Formula.Core.Interpreter.Parsing.SyntaxTree;
@@ -152,7 +153,7 @@ public class Evaluator
         var reference = expression.Reference;
 
         if (ctx.Options.ReferenceOffset is { } offset &&
-            (reference.Kind == ReferenceKind.Cell || reference.Kind == ReferenceKind.Range) &&
+            reference.Kind is ReferenceKind.Cell or ReferenceKind.Range or ReferenceKind.SpillRange &&
             reference.SheetName == offset.SheetName &&
             (offset.RowOffset != 0 || offset.ColOffset != 0))
         {
@@ -168,7 +169,26 @@ public class Evaluator
         if (reference.Kind == ReferenceKind.Range)
             return EvaluateRangeReference((RangeReference)reference);
 
+        if (reference.Kind == ReferenceKind.SpillRange)
+            return EvaluateSpillRangeReference((SpillRangeReference)reference);
+
         return CellValue.Reference(reference);
+    }
+
+    /// <summary>
+    /// A1# stands for whatever the formula at A1 currently spills into, so it is looked up at
+    /// evaluation time and handed on as an ordinary range reference.
+    /// </summary>
+    private CellValue EvaluateSpillRangeReference(SpillRangeReference reference)
+    {
+        var region = _environment.GetSpillRegion(reference.RowIndex, reference.ColIndex, reference.SheetName);
+        if (region == null)
+            return CellValue.Error(ErrorType.Ref);
+
+        var rangeRef = new RangeReference(new CellAddress(region.Top, region.Left),
+            new CellAddress(region.Bottom, region.Right));
+        rangeRef.SetSheetName(reference.SheetName, explicitSheetName: true);
+        return CellValue.Reference(rangeRef);
     }
 
     private CellValue EvaluateCellReference(CellReference cellReference, EvalContext ctx)

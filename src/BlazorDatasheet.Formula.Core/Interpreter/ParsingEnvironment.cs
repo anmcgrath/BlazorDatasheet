@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Formula.Core.Interpreter;
@@ -25,6 +26,7 @@ public sealed class ParsingEnvironment : IEnvironment
     public CellValue GetCellValue(int row, int col, string sheetName) => throw NotSupported();
     public CellFormula? GetFormula(int row, int col, string sheetName) => throw NotSupported();
     public CellValue[][] GetRangeValues(Reference reference) => throw NotSupported();
+    public IRegion? GetSpillRegion(int row, int col, string sheetName) => throw NotSupported();
     public bool VariableExists(string variableIdentifier) => throw NotSupported();
     public CellValue GetVariable(string variableIdentifier) => throw NotSupported();
     public bool TryGetVariable(string variableIdentifier, out CellValue value) => throw NotSupported();

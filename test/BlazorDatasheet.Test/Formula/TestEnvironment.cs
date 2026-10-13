@@ -16,6 +16,20 @@ public class TestEnvironment : IEnvironment
     private Dictionary<string, FunctionDescriptor> _functions = new(StringComparer.OrdinalIgnoreCase);
     private Dictionary<string, CellValue> _variables = new();
     private Dictionary<CellPosition, CellFormula> _formulas = new();
+    private Dictionary<CellPosition, IRegion> _spillRegions = new();
+
+    public void SetSpillRegion(int row, int col, IRegion? region)
+    {
+        if (region == null)
+            _spillRegions.Remove(new CellPosition(row, col));
+        else
+            _spillRegions[new CellPosition(row, col)] = region;
+    }
+
+    public IRegion? GetSpillRegion(int row, int col, string sheetName)
+    {
+        return _spillRegions.GetValueOrDefault(new CellPosition(row, col));
+    }
 
     public void SetCellValue(int row, int col, object val)
     {
