@@ -6,6 +6,7 @@ using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Events.Data;
 using BlazorDatasheet.Core.Events.Visual;
+using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Intervals;
 using AwesomeAssertions;
@@ -19,6 +20,23 @@ namespace BlazorDatasheet.Test.SheetTests;
 /// </summary>
 public class DirtyRegionTests
 {
+    [Test]
+    public void Batched_Whole_Column_Formats_Emit_One_Dirty_Row_Interval()
+    {
+        var sheet = new Sheet(10, 10);
+        var captured = Capture(sheet);
+        using (sheet.SuspendUpdates())
+        {
+            sheet.SetFormat(new ColumnRegion(1), new CellFormat { BackgroundColor = "red" });
+            sheet.SetFormat(new ColumnRegion(2), new CellFormat { BackgroundColor = "blue" });
+        }
+
+        var snapshot = captured.Should().ContainSingle().Subject;
+        snapshot.Rows.Should().ContainSingle().Which.Should().BeEquivalentTo(new Interval(0, int.MaxValue));
+        snapshot.ColStart.Should().Be(1);
+        snapshot.ColEnd.Should().Be(2);
+    }
+
     private record DirtySnapshot(List<Interval> Rows, int ColStart, int ColEnd)
     {
         public bool IsEmpty => ColEnd < ColStart;

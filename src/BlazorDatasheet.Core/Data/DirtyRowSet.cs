@@ -37,7 +37,7 @@ public sealed class DirtyRowSet
             return;
 
         // first interval whose end reaches start - 1, i.e. that overlaps or touches the new rows
-        var first = FindFirstReaching(start - 1);
+        var first = FindFirstReaching((long)start - 1);
         if (first == _intervals.Count)
         {
             _intervals.Add(new Interval(start, end));
@@ -45,7 +45,7 @@ public sealed class DirtyRowSet
         }
 
         var existing = _intervals[first];
-        if (existing.Start > end + 1)
+        if (existing.Start > (long)end + 1)
         {
             _intervals.Insert(first, new Interval(start, end));
             return;
@@ -55,7 +55,7 @@ public sealed class DirtyRowSet
         var mergedStart = Math.Min(start, existing.Start);
         var mergedEnd = Math.Max(end, existing.End);
         var last = first;
-        while (last + 1 < _intervals.Count && _intervals[last + 1].Start <= end + 1)
+        while (last + 1 < _intervals.Count && _intervals[last + 1].Start <= (long)end + 1)
         {
             last++;
             mergedEnd = Math.Max(mergedEnd, _intervals[last].End);
@@ -81,7 +81,7 @@ public sealed class DirtyRowSet
     /// Index of the first interval whose end is at or after <paramref name="position"/>, or
     /// the count when there is none.
     /// </summary>
-    private int FindFirstReaching(int position)
+    private int FindFirstReaching(long position)
     {
         var count = _intervals.Count;
         // rows are usually marked in order, so check the last interval before searching

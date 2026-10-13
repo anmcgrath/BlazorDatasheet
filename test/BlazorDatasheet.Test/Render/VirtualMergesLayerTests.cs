@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Extensions;
 using BlazorDatasheet.Render.Layers;
@@ -43,6 +44,41 @@ public class VirtualMergesLayerTests
 
     private static int RenderCount(IRenderedComponent<Datasheet> cut) =>
         cut.FindComponents<VirtualMergesLayer>().Sum(x => x.RenderCount);
+
+    [TestCase(false, false)]
+    [TestCase(true, false)]
+    [TestCase(false, true)]
+    [TestCase(true, true)]
+    public async Task Changing_A_Neighbours_Border_Redraws_The_Merge(bool below, bool hiddenGap)
+    {
+        await using var context = CreateContext();
+        var sheet = new Sheet(6, 6);
+        sheet.Cells.Merge(new Region(1, 2, 1, 2));
+        if (hiddenGap)
+        {
+            if (below)
+                sheet.Rows.Hide(3, 1);
+            else
+                sheet.Columns.Hide(3, 1);
+        }
+        var cut = RenderSheet(context, sheet);
+        var neighbour = hiddenGap ? 4 : 3;
+        var row = below ? neighbour : 1;
+        var col = below ? 1 : neighbour;
+        var border = new Border { Color = "red", Width = 2 };
+        var format = below ? new CellFormat { BorderTop = border } : new CellFormat { BorderLeft = border };
+        var expected = below ? "border-bottom: 2px solid red" : "border-right: 2px solid red";
+
+        await cut.InvokeAsync(() => sheet.Cells[row, col].Format = format);
+
+        cut.Find(".merged-cell .bds-sheet-cell").GetAttribute("style").Should().Contain(expected);
+
+        await cut.InvokeAsync(() => sheet.Cells[row, col].Format = below
+            ? new CellFormat { BorderTop = null }
+            : new CellFormat { BorderLeft = null });
+
+        cut.Find(".merged-cell .bds-sheet-cell").GetAttribute("style").Should().BeNullOrEmpty();
+    }
 
     [Test]
     public async Task Setting_A_Value_With_No_Merges_Does_Not_Render_The_Merges_Layer()
