@@ -10,6 +10,8 @@ public enum ErrorType
     Num = 6,
     Na = 7,
     Circular = 9,
+    Spill = 10,
+    Calc = 11,
     None = 0,
 }
 
@@ -27,6 +29,8 @@ public static class ErrorTypes
             ErrorType.Num => "#NUM!",
             ErrorType.Na => "#N/A",
             ErrorType.Circular => "#CIRCULAR",
+            ErrorType.Spill => "#SPILL!",
+            ErrorType.Calc => "#CALC!",
             _ => "Invalid"
         };
     }
@@ -43,6 +47,8 @@ public static class ErrorTypes
             "#NUM!" => ErrorType.Num,
             "#N/A" => ErrorType.Na,
             "#CIRCULAR" => ErrorType.Circular,
+            "#SPILL!" => ErrorType.Spill,
+            "#CALC!" => ErrorType.Calc,
             _ => ErrorType.None
         };
     }

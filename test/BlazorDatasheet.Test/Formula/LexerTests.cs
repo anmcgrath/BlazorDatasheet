@@ -99,4 +99,16 @@ public class LexerTests
         else
             RangeText.ColStrToIndex(letters).Should().BeGreaterThanOrEqualTo(RangeText.MaxCols);
     }
+
+    [Test]
+    [TestCase("=#SPILL!", ErrorType.Spill)]
+    [TestCase("=#CALC!", ErrorType.Calc)]
+    [TestCase("=#REF!", ErrorType.Ref)]
+    public void Error_Tokens_Are_Lexed(string formula, ErrorType expected)
+    {
+        var tokens = new Lexer().Lex(formula, new FormulaOptions());
+        tokens[1].Should().BeOfType<ErrorToken>();
+        ((ErrorToken)tokens[1]).ErrorType.Should().Be(expected);
+        expected.ToErrorString().Should().Be(formula.Substring(1));
+    }
 }
