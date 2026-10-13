@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Threading.Tasks;
 using BlazorDatasheet.Core.Clipboard;
 using BlazorDatasheet.Core.Data;
@@ -149,6 +149,38 @@ public class DatasheetClipboardTests
         _sheet.Workbook.Clipboard.IsActive.Should().BeTrue();
         await Shortcut("Escape", KeyboardModifiers.None);
         _sheet.Workbook.Clipboard.IsActive.Should().BeFalse();
+    }
+
+    [Test]
+    public async Task Copy_Elsewhere_On_The_Page_Ends_Copy_Mode()
+    {
+        await On(() => _sheet.Selection.Set(new Region(0, 1, 0, 0)));
+        await Shortcut("KeyC", KeyboardModifiers.Ctrl);
+        _context.JSInterop.Invocations.Should().Contain(x => x.Identifier == "setCopyMode" && (bool)x.Arguments[0]! == true);
+
+        await _component.InvokeAsync(() =>
+            _component.Instance.HandleClipboardChange(new() { Type = "clipboardchange", Foreign = true }));
+
+        _sheet.Workbook.Clipboard.IsActive.Should().BeFalse();
+        _component.FindAll(".bds-clipboard-box").Should().BeEmpty();
+        _context.JSInterop.Invocations.Last(x => x.Identifier == "setCopyMode").Arguments[0].Should().Be(false);
+    }
+
+    [Test]
+    public async Task Clipboard_Check_Ends_Copy_Mode_Only_When_The_Content_Is_Not_Ours()
+    {
+        await On(() => _sheet.Selection.Set(new Region(0, 1, 0, 0)));
+        await Shortcut("KeyC", KeyboardModifiers.Ctrl);
+        var (text, html) = LastWrite();
+
+        await _component.InvokeAsync(() =>
+            _component.Instance.HandleClipboardChange(new() { Type = "clipboardchange", Text = text, Html = html }));
+        _sheet.Workbook.Clipboard.IsActive.Should().BeTrue();
+
+        await _component.InvokeAsync(() =>
+            _component.Instance.HandleClipboardChange(new() { Type = "clipboardchange", Text = "from elsewhere" }));
+        _sheet.Workbook.Clipboard.IsActive.Should().BeFalse();
+        _component.FindAll(".bds-clipboard-box").Should().BeEmpty();
     }
 
     [Test]

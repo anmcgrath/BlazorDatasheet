@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using ClipboardEventArgs = BlazorDatasheet.Core.Events.ClipboardEventArgs;
 using static BlazorDatasheet.Util.JsInteropHelper;
@@ -51,6 +51,13 @@ public class WindowEventService : IWindowEventService
     {
         if (!_isDisposed && _windowEventObj != null)
             await _windowEventObj.InvokeVoidAsync("restoreFocus");
+    }
+
+    public async Task SetCopyMode(bool active)
+    {
+        await CreateDotnetHelperIfNotExists();
+        if (!_isDisposed && _windowEventObj != null)
+            await _windowEventObj.InvokeVoidAsync("setCopyMode", active);
     }
 
     public async Task AddExternalEditor(Microsoft.AspNetCore.Components.ElementReference element)
