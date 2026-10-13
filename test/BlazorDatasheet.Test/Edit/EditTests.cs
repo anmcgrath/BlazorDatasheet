@@ -1,4 +1,4 @@
-using BlazorDatasheet.Core.Data;
+﻿using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core;
@@ -16,6 +16,18 @@ public class EditTests
         sheet.Editor.BeginEdit(1, 2);
         Assert.AreEqual(1, sheet.Editor.EditCell.Row);
         Assert.AreEqual(2, sheet.Editor.EditCell.Col);
+    }
+
+    [Test]
+    public void Begin_Edit_On_A_Spilled_Cell_Does_Not_Start_Editing()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Cells.SetFormula(0, 0, "={1;2;3}");
+        sheet.Editor.BeginEdit(1, 0);
+        sheet.Editor.IsEditing.Should().BeFalse();
+        sheet.Editor.BeginEdit(0, 0);
+        sheet.Editor.IsEditing.Should().BeTrue();
+        sheet.Editor.EditValue.Should().Be("={1;2;3}");
     }
 
     [Test]

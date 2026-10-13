@@ -49,9 +49,15 @@ internal class SheetMapper
 			rowModel.HeadingAlignment = row.HeadingAlignment;
 			foreach (var cell in row.NonEmptyCells)
 			{
+				// a cell an array formula spilled into is refilled by that formula when the sheet is
+				// loaded, so its value is not saved - it would only block the spill
+				var isSpilled = cell.Formula == null && sheet.Cells.IsSpilledCell(cell.Row, cell.Col);
+				if (isSpilled && !cell.MetaData.Any())
+					continue;
+
 				var cellModel = new CellModel
 				{
-					CellValue = cell.CellValue,
+					CellValue = isSpilled ? CellValue.Empty : cell.CellValue,
 					Formula = cell.Formula,
 					ColIndex = cell.Col,
 					MetaData = cell.MetaData.ToDictionary(x => x.Key, x => x.Value)

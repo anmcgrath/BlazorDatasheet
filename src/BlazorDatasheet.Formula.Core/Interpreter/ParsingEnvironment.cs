@@ -33,6 +33,7 @@ public sealed class ParsingEnvironment : IEnvironment
     public void SetVariable(string name, CellValue value) => throw NotSupported();
     public IEnumerable<CellValue> GetNonEmptyInRange(Reference reference) => throw NotSupported();
     public void SetCellValue(int row, int col, string sheetName, CellValue value) => throw NotSupported();
+    public SpillResult SetSpillResult(int row, int col, string sheetName, CellValue[][] values) => throw NotSupported();
     public void ClearVariable(string varName) => throw NotSupported();
     public IEnumerable<string> GetVariableNames() => throw NotSupported();
 

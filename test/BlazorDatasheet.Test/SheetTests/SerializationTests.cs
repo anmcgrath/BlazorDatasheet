@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -584,6 +584,32 @@ public class SerializationTests
     }
 
     [Test]
+    public void Spilled_Values_Are_Not_Serialized_And_The_Spill_Is_Rebuilt_On_Load()
+    {
+        var workbook = new Workbook();
+        var sheet = workbook.AddSheet(10, 10);
+        sheet.Cells.SetValue(0, 0, 1);
+        sheet.Cells.SetValue(1, 0, 2);
+        sheet.Cells.SetValue(2, 0, 3);
+        sheet.Cells.SetFormula(0, 1, "=A1:A3*2");
+        sheet.Cells.GetValue(2, 1).Should().Be(6);
+
+        var json = new SheetJsonSerializer().Serialize(workbook);
+        using var document = JsonDocument.Parse(json);
+        var rows = document.RootElement.GetProperty("Sheets")[0].GetProperty("Rows").EnumerateArray().ToList();
+        // rows 2 and 3 hold only the source values in column A; the spilled values in column B are not saved
+        rows[1].GetProperty("Cells").EnumerateArray().Should().HaveCount(1);
+        rows[2].GetProperty("Cells").EnumerateArray().Should().HaveCount(1);
+
+        var loaded = new SheetJsonDeserializer().Deserialize(json).Sheets.First();
+        loaded.Cells.GetValue(0, 1).Should().Be(2);
+        loaded.Cells.GetValue(1, 1).Should().Be(4);
+        loaded.Cells.GetValue(2, 1).Should().Be(6);
+        loaded.Cells.IsSpilledCell(2, 1).Should().BeTrue();
+        loaded.Cells.GetSpillRegionForAnchor(0, 1).Should().BeEquivalentTo(new Region(0, 2, 1, 1));
+    }
+
+    [Test]
     public void Formula_Cached_Values_Should_Not_Be_Serialized_And_Should_Be_Recalculated()
     {
         var workbook = new Workbook();
@@ -593,7 +619,9 @@ public class SerializationTests
         sheet.Cells["B1"]!.Formula = "=A1:A2";
         sheet.Cells["C1"]!.Formula = "=1/0";
 
-        sheet.Cells["B1"]!.CellValue.ValueType.Should().Be(CellValueType.Array);
+        // the array formula spills down column B
+        sheet.Cells["B1"]!.Value.Should().Be(1);
+        sheet.Cells["B2"]!.Value.Should().Be(2);
         sheet.Cells["C1"]!.CellValue.ValueType.Should().Be(CellValueType.Error);
 
         var json = new SheetJsonSerializer().Serialize(workbook);
@@ -609,12 +637,12 @@ public class SerializationTests
 
         var deserialised = new SheetJsonDeserializer().Deserialize(json);
         var deserialisedSheet = deserialised.Sheets.First();
-        deserialisedSheet.Cells["B1"]!.CellValue.ValueType.Should().Be(CellValueType.Array);
+        deserialisedSheet.Cells["B1"]!.Value.Should().Be(1);
+        deserialisedSheet.Cells["B2"]!.Value.Should().Be(2);
         deserialisedSheet.Cells["C1"]!.CellValue.ValueType.Should().Be(CellValueType.Error);
 
         deserialisedSheet.Cells["A1"]!.Value = 3;
-        var recalculated = (CellValue[][])deserialisedSheet.Cells["B1"]!.CellValue.Data!;
-        recalculated[0][0].Should().Be(CellValue.Number(3));
+        deserialisedSheet.Cells["B1"]!.Value.Should().Be(3);
     }
 
     [Test]
