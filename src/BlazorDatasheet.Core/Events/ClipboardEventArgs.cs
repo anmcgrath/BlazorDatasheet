@@ -27,4 +27,10 @@ public class ClipboardEventArgs
     /// e.g. a copy from elsewhere on the page. The content is not known.
     /// </summary>
     public bool Foreign { get; set; }
+
+    /// <summary>
+    /// Set by the browser when the content was too large to send with the event; the window event service
+    /// fetches it before the event is handled.
+    /// </summary>
+    public int? PayloadId { get; set; }
 }

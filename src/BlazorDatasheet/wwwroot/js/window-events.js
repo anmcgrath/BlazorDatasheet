@@ -17,6 +17,9 @@ class WindowEvents {
         // Editors outside the sheet, e.g. a formula bar, that edit this sheet. Focus moving to one of
         // them is not focus leaving the sheet: the sheet stays active and an open edit carries on.
         this.externalEditors = new Set();
+        // Clipboard content too large to send with its event, held until .NET takes it, by id.
+        this.clipboardPayloads = new Map();
+        this.nextClipboardPayloadId = 1;
     }
 
     addExternalEditor(el) {
@@ -186,8 +189,9 @@ class WindowEvents {
         if (!granted) return;
         const data = await window.bdsReadClipboard();
         if (!data || this.disposed || !this.copyMode) return;
-        this.dispatch(this.handlerMap.clipboardchange,
-            {type: 'clipboardchange', foreign: false, text: data.text ?? '', html: data.html ?? ''});
+        const args = {type: 'clipboardchange', foreign: false, text: data.text ?? '', html: data.html ?? ''};
+        this.holdLargeClipboardContent(args);
+        this.dispatch(this.handlerMap.clipboardchange, args);
     }
 
     // Finds the interactive element a pointer or key event is aimed at. The sheet's own chrome
@@ -342,8 +346,28 @@ class WindowEvents {
 
             // Nothing can be prevented past this point - the event has finished dispatching by the time
             // the interop call resolves - so the handler's return value is only used by .NET.
-            this.dispatch(this.handlerMap[e.type], this.serialize(e));
+            const args = this.serialize(e);
+            if (['copy', 'cut', 'paste'].includes(e.type)) this.holdLargeClipboardContent(args);
+            this.dispatch(this.handlerMap[e.type], args);
         }
+    }
+
+    // Blazor Server closes the circuit on a message from the browser over its size limit (32KB by
+    // default), which a copied column easily is. Large content is kept here instead and the event
+    // carries its id; .NET takes it as a stream, see takeClipboardPayload.
+    holdLargeClipboardContent(args) {
+        if ((args.text?.length ?? 0) + (args.html?.length ?? 0) <= 4096) return;
+        const id = this.nextClipboardPayloadId++;
+        this.clipboardPayloads.set(id, {text: args.text, html: args.html});
+        args.text = '';
+        args.html = '';
+        args.payloadId = id;
+    }
+
+    takeClipboardPayload(id) {
+        const data = this.clipboardPayloads.get(id);
+        this.clipboardPayloads.delete(id);
+        return data && window.bdsClipboardStream ? window.bdsClipboardStream(data) : null;
     }
 
     /**
@@ -370,6 +394,7 @@ class WindowEvents {
             target.removeEventListener(name, fn, capture);
         this.listeners.clear();
         this.externalEditors.clear();
+        this.clipboardPayloads.clear();
         this.handlerMap = {};
         this.preventDefaultMap = {};
         this.dotnetHelper = null;

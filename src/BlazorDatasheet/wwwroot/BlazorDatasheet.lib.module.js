@@ -80,6 +80,24 @@ export function setupGlobals() {
         }
     }
 
+    /**
+     * Encodes clipboard content for .NET to read as an IJSStreamReference, which is sent in chunks: a single
+     * interop message that large would exceed the Blazor Server limit on messages from the browser and close
+     * the circuit. Return it from a function .NET invokes for an IJSStreamReference.
+     * @returns {Uint8Array} the content as UTF-8 JSON
+     */
+    window.bdsClipboardStream = function (data) {
+        return new TextEncoder().encode(JSON.stringify(data))
+    }
+
+    /**
+     * As bdsReadClipboard, returning the content as a stream (see bdsClipboardStream).
+     */
+    window.bdsReadClipboardStream = async function () {
+        const data = await window.bdsReadClipboard()
+        return data ? window.bdsClipboardStream(data) : null
+    }
+
     window.setFocusWithTimeout = function (el, timeout) {
         setTimeout(() => {
             el.focus()
