@@ -18,6 +18,22 @@ public class SheetMenuOptions
     public bool HeaderMenuEnabled { get; set; } = true;
 
     /// <summary>
+    /// Enables the menu "Copy" option
+    /// </summary>
+    public bool CopyEnabled { get; set; } = true;
+
+    /// <summary>
+    /// Enables the menu "Cut" option
+    /// </summary>
+    public bool CutEnabled { get; set; } = true;
+
+    /// <summary>
+    /// Enables the menu "Paste", "Paste values" and "Paste formats" options. Pasting from the menu reads the
+    /// system clipboard, which browsers may ask the user to allow.
+    /// </summary>
+    public bool PasteEnabled { get; set; } = true;
+
+    /// <summary>
     /// Enables the menu "Clear" option
     /// </summary>
     public bool ClearEnabled { get; set; } = true;
@@ -88,6 +104,9 @@ public class SheetMenuOptions
             DeleteRowsEnabled = DeleteRowsEnabled,
             AlignmentEnabled = AlignmentEnabled,
             ClearEnabled = ClearEnabled,
+            CopyEnabled = CopyEnabled,
+            CutEnabled = CutEnabled,
+            PasteEnabled = PasteEnabled,
             MergeEnabled = MergeEnabled,
             HideRowsEnabled = HideRowsEnabled,
             HideColsEnabled = HideColsEnabled,
@@ -101,6 +120,9 @@ public class SheetMenuOptions
         return other.InsertColsEnabled == InsertColsEnabled &&
                other.AlignmentEnabled == AlignmentEnabled &&
                other.ClearEnabled == ClearEnabled &&
+               other.CopyEnabled == CopyEnabled &&
+               other.CutEnabled == CutEnabled &&
+               other.PasteEnabled == PasteEnabled &&
                other.MergeEnabled == MergeEnabled &&
                other.DeleteRowsEnabled == DeleteRowsEnabled &&
                other.DeleteColsEnabled == DeleteColsEnabled &&

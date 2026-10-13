@@ -1,3 +1,4 @@
+﻿@using BlazorDatasheet.Core.Clipboard
 @using BlazorDatasheet.Core.Protection
 @using BlazorDatasheet.Core.Commands.Data
 @using BlazorDatasheet.Core.Data
@@ -21,6 +22,29 @@
     @if (sheet is not null && sheet.Selection.ActiveRegion != null)
     {
         <MenuSection SectionId="0">
+            @{
+                var active = sheet.Selection.ActiveRegion.GetIntersection(sheet.Region) ?? sheet.Selection.ActiveRegion;
+                var canEditActive = sheet.Protection.CanEdit(active) && !sheet.Cells.ContainsReadOnly(active);
+                var showClipboard = MenuOptions.CopyEnabled || MenuOptions.CutEnabled || MenuOptions.PasteEnabled;
+            }
+            @if (MenuOptions.CopyEnabled)
+            {
+                <SheetMenuItem DisabledOnReadOnly="false" OnClick="() => OnCopy.InvokeAsync()">Copy</SheetMenuItem>
+            }
+            @if (MenuOptions.CutEnabled)
+            {
+                <SheetMenuItem IsEnabled="@canEditActive" OnClick="() => OnCut.InvokeAsync()">Cut</SheetMenuItem>
+            }
+            @if (MenuOptions.PasteEnabled)
+            {
+                <SheetMenuItem IsEnabled="@canEditActive" OnClick="() => OnPaste.InvokeAsync(PasteMode.All)">Paste</SheetMenuItem>
+                <SheetMenuItem IsEnabled="@canEditActive" OnClick="() => OnPaste.InvokeAsync(PasteMode.Values)">Paste values</SheetMenuItem>
+                <SheetMenuItem IsEnabled="@sheet.Protection.CanFormat(active)" OnClick="() => OnPaste.InvokeAsync(PasteMode.Formats)">Paste formats</SheetMenuItem>
+            }
+            @if (showClipboard)
+            {
+                <SheetMenuDivider/>
+            }
             @if (MenuOptions.ClearEnabled)
             {
                 <SheetMenuItem IsEnabled="@(new ClearCellsCommand(sheet.Selection.Regions).CanExecute(sheet))" OnClick="() => sheet.Cells.ClearCells(sheet.Selection.Regions)">Clear</SheetMenuItem>
@@ -249,6 +273,21 @@
     [Parameter] public SheetMenuOptions MenuOptions { get; set; } = new();
     [Parameter] public Type[] DefaultFilterTypes { get; set; } = default!;
     [Parameter] public bool Disabled { get; set; }
+
+    /// <summary>
+    /// Raised by the "Copy" item.
+    /// </summary>
+    [Parameter] public EventCallback OnCopy { get; set; }
+
+    /// <summary>
+    /// Raised by the "Cut" item.
+    /// </summary>
+    [Parameter] public EventCallback OnCut { get; set; }
+
+    /// <summary>
+    /// Raised by the paste items with what to paste.
+    /// </summary>
+    [Parameter] public EventCallback<PasteMode> OnPaste { get; set; }
 
     private SheetSubMenu? _filterSubMenu;
     private bool HasOpenedFilterMenu { get; set; }
