@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
@@ -92,6 +93,12 @@ public class WorkbookEnvironment : IEnvironment
     {
         var sheet = _workbook.GetSheet(sheetName);
         return sheet?.Cells.GetFormula(row, col);
+    }
+
+    public IRegion? GetSpillRegion(int row, int col, string sheetName)
+    {
+        // spills are not stored yet
+        return null;
     }
 
     public CellValue[][] GetRangeValues(Reference reference)

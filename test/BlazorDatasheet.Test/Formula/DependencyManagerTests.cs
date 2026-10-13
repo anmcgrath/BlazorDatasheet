@@ -259,6 +259,22 @@ public class DependencyManagerTests
         _dm.HasDependents(4, 0, "Sheet1").Should().BeTrue();
         _dm.HasDependents(1, 0, "Sheet2").Should().BeTrue();
     }
+
+    [Test]
+    public void Spill_Range_Reference_Depends_On_The_Anchor_Formula()
+    {
+        _dm.SetFormula(0, 0, "Sheet1", GetFormula("={1;2;3}")); // A1
+        _dm.SetFormula(0, 1, "Sheet1", GetFormula("=A1#")); // B1
+        _dm.HasDependents(0, 0, "Sheet1").Should().BeTrue();
+        _dm.GetCalculationOrder()
+            .SelectMany(x => x)
+            .Select(x => new CellPosition(x.Row, x.Col))
+            .Should()
+            .ContainInOrder(new CellPosition(0, 0), new CellPosition(0, 1));
+
+        _dm.ClearFormula(0, 1, "Sheet1");
+        _dm.GetDirectDependents(new Region(0, 0), "Sheet1").Should().BeEmpty();
+    }
 }
 
 internal static class VolatileFunction

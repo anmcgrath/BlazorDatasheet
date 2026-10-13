@@ -16,7 +16,7 @@ public class CellReference : Reference
         Region = new Region(rowIndex, colIndex);
     }
 
-    public override ReferenceKind Kind { get; } = ReferenceKind.Cell;
+    public override ReferenceKind Kind => ReferenceKind.Cell;
 
     public override string ToAddressText()
     {

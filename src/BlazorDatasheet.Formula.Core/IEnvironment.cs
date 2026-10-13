@@ -1,4 +1,5 @@
-﻿using BlazorDatasheet.Formula.Core.Interpreter;
+﻿using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.Formula.Core.Interpreter;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Formula.Core;
@@ -17,6 +18,12 @@ public interface IEnvironment : IFunctionProvider
     CellFormula? GetFormula(int row, int col, string sheetName);
 
     public CellValue[][] GetRangeValues(Reference reference);
+
+    /// <summary>
+    /// The region that the array formula at <paramref name="row"/>, <paramref name="col"/> has spilled
+    /// into, including the formula cell itself, or null if the cell has not spilled.
+    /// </summary>
+    IRegion? GetSpillRegion(int row, int col, string sheetName);
     bool VariableExists(string variableIdentifier);
     CellValue GetVariable(string variableIdentifier);
     bool TryGetVariable(string variableIdentifier, out CellValue value);

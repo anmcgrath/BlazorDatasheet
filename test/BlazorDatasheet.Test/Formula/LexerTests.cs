@@ -111,4 +111,23 @@ public class LexerTests
         ((ErrorToken)tokens[1]).ErrorType.Should().Be(expected);
         expected.ToErrorString().Should().Be(formula.Substring(1));
     }
+
+    [Test]
+    [TestCase("=A1#", 1)]
+    [TestCase("=Sheet1!A1#", 2)]
+    [TestCase("=$A$1#+1", 1)]
+    public void Spill_Range_Reference_Is_Lexed_As_A_Spill_Address_Token(string formula, int tokenIndex)
+    {
+        var tokens = new Lexer().Lex(formula, new FormulaOptions());
+        tokens[tokenIndex].Should().BeOfType<AddressToken>();
+        ((AddressToken)tokens[tokenIndex]).IsSpillRange.Should().BeTrue();
+        tokens.Should().NotContain(t => t is BadToken);
+    }
+
+    [Test]
+    public void Plain_Address_Is_Not_A_Spill_Range()
+    {
+        var tokens = new Lexer().Lex("=A1", new FormulaOptions());
+        ((AddressToken)tokens[1]).IsSpillRange.Should().BeFalse();
+    }
 }

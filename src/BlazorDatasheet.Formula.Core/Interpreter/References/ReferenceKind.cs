@@ -4,5 +4,7 @@ public enum ReferenceKind
 {
     Cell,
     Range,
-    Named
+    Named,
+    /// <summary>A1# - the cells an array formula at A1 has spilled into.</summary>
+    SpillRange
 }

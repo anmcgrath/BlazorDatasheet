@@ -117,7 +117,8 @@ public class Parser
             case Tag.SheetLocatorToken:
                 return ParseSheetReferenceExpression();
             case Tag.AddressToken:
-                return ParseReferenceExpressionFromAddress(((AddressToken)NextToken()).Address);
+                var addressToken = (AddressToken)NextToken();
+                return ParseReferenceExpressionFromAddress(addressToken.Address, null, addressToken.IsSpillRange);
             case Tag.ErrorToken:
                 return new ErrorExpression(((ErrorToken)NextToken()).ErrorType);
         }
@@ -172,13 +173,15 @@ public class Parser
     {
         var sheetToken = (SheetLocatorToken)NextToken();
 
-        if (!TryConvertToAddress(NextToken(), out var address))
+        var addressToken = NextToken();
+        if (!TryConvertToAddress(addressToken, out var address))
         {
             Error("Expected address token after sheet locator");
             return new LiteralExpression(CellValue.Error(ErrorType.Ref));
         }
 
-        var parsedRef = ParseReferenceExpressionFromAddress(address!, sheetToken.Text);
+        var isSpillRange = addressToken is AddressToken { IsSpillRange: true };
+        var parsedRef = ParseReferenceExpressionFromAddress(address!, sheetToken.Text, isSpillRange);
         if (parsedRef is not ReferenceExpression)
         {
             Error($"Unexpected expression {parsedRef}");
@@ -189,8 +192,22 @@ public class Parser
         return parsedRef;
     }
 
-    private Expression ParseReferenceExpressionFromAddress(Address address, string? sheetName = null)
+    private Expression ParseReferenceExpressionFromAddress(Address address, string? sheetName = null,
+        bool isSpillRange = false)
     {
+        if (isSpillRange)
+        {
+            if (address.Kind != AddressKind.CellAddress || Peek(0).Tag == Tag.ColonToken)
+                return ErrorAndReturnLiteral("A spill range reference must be a single cell followed by #",
+                    ErrorType.Ref);
+
+            var cellAddress = (CellAddress)address;
+            var spillRef = new SpillRangeReference(cellAddress.RowAddress.RowIndex, cellAddress.ColAddress.ColIndex,
+                cellAddress.ColAddress.IsFixed, cellAddress.RowAddress.IsFixed);
+            _references.Add(spillRef);
+            return new ReferenceExpression(spillRef);
+        }
+
         if (Peek(0).Tag != Tag.ColonToken)
         {
             var firstRef = GetReferenceFromAddress(address);

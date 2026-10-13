@@ -278,6 +278,13 @@ public ref struct Lexer
         if (Peek(lookahead) == '(')
             return new IdentifierToken(idSlice.ToString(), start);
 
+        // A1# refers to the spill range of the array formula at A1
+        if (parsedLeftAddress.Kind == AddressKind.CellAddress && _current == '#')
+        {
+            Next();
+            return new AddressToken(parsedLeftAddress, start) { IsSpillRange = true };
+        }
+
         if (canParseRef &&
             parsedLeftAddress.Kind == AddressKind.CellAddress ||
             parsedLeftAddress.Kind == AddressKind.ColAddress ||
