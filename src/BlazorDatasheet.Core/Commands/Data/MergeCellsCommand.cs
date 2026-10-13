@@ -10,15 +10,19 @@ public class MergeCellsCommand : BaseCommand, IUndoableCommand
     private readonly List<IRegion> _mergesPerformed = new();
     private CellStoreRestoreData _restoreData = null!;
     private readonly IRegion _region;
+    private readonly bool _clearHiddenCells;
 
     /// <summary>
     /// Command that merges the cells in the range give.
     /// Note that the value in the top LHS will be kept, while other cell values will be cleared.
     /// </summary>
     /// <param name="region"></param>
-    public MergeCellsCommand(IRegion region)
+    /// <param name="clearHiddenCells">Whether the cells the merge hides are cleared. When false they keep
+    /// their values, as when only formats are pasted.</param>
+    public MergeCellsCommand(IRegion region, bool clearHiddenCells = true)
     {
         _region = region.Clone();
+        _clearHiddenCells = clearHiddenCells;
     }
 
     protected override bool CanExecuteCore(Sheet sheet)
@@ -47,7 +51,7 @@ public class MergeCellsCommand : BaseCommand, IUndoableCommand
             .Break(region.TopLeft)
             .ToList();
 
-        _restoreData = sheet.Cells.ClearCellsImpl(regionsToClear);
+        _restoreData = _clearHiddenCells ? sheet.Cells.ClearCellsImpl(regionsToClear) : new CellStoreRestoreData();
 
         // Store the merges that we will have to re-instate on undo
         // And remove any merges that are contained in the region

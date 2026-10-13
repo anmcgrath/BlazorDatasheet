@@ -138,4 +138,17 @@ public class PasteSnapshotCommandTests
 
         cb.PasteSnapshot(_sheet, new Region(5, 5), new ClipboardSnapshot(0, 0)).Should().BeNull();
     }
+
+    [Test]
+    public void Formats_Mode_Merges_Without_Clearing_The_Hidden_Cells()
+    {
+        _sheet.Cells.SetValue(0, 1, "hidden");
+        var snapshot = Snapshot();
+        snapshot.Merges.Add(new Region(0, 0, 0, 1));
+        _sheet.Commands.ExecuteCommand(new PasteSnapshotCommand(snapshot, new CellPosition(0, 0), PasteMode.Formats))
+            .Should().BeTrue();
+
+        _sheet.Cells.GetMerge(0, 0).Should().BeEquivalentTo(new Region(0, 0, 0, 1));
+        _sheet.Cells.GetValue(0, 1).Should().Be("hidden");
+    }
 }
