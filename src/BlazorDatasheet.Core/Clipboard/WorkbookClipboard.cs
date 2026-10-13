@@ -204,7 +204,9 @@ public sealed class WorkbookClipboard
         var source = entry.Source.Region;
         if (entry.Mode == ClipboardMode.Cut)
         {
-            // Excel only offers a plain paste after a cut
+            // Excel only offers a plain paste after a cut: values or formats alone can't be moved
+            if (mode != PasteMode.All)
+                return null;
             var block = PasteTargetCalculator.GetBlockAt(source, selected.TopLeft).GetIntersection(target.Region);
             if (block == null)
                 return null;

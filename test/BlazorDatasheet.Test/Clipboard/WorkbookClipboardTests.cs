@@ -198,6 +198,18 @@ public class WorkbookClipboardTests
     }
 
     [Test]
+    public void Only_A_Plain_Paste_Follows_A_Cut()
+    {
+        Fill2X2();
+        _clipboard.Cut(_sheet.Range("A1:B2"));
+        _clipboard.CanPaste(_sheet, new Region(4, 4), PasteMode.Formats).Should().BeFalse();
+        _clipboard.Paste(_sheet, new Region(4, 4), PasteMode.Values).Should().BeNull();
+        _sheet.Cells.GetValue(0, 0).Should().Be(1);
+        _sheet.Cells.GetValue(4, 4).Should().BeNull();
+        _clipboard.IsActive.Should().BeTrue();
+    }
+
+    [Test]
     public void Paste_Values_Only_Writes_Computed_Values_Without_Formulas_Or_Formats()
     {
         _sheet.Cells.SetValue(0, 0, 2);
