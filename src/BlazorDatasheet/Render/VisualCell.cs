@@ -179,6 +179,9 @@ public class VisualCell
                     hasFlags ? " bds-cell-has-flags" : string.Empty);
         }
 
+        if (sheet.Cells.IsSpilledCell(row, col))
+            ClassString += " bds-spill-cell";
+
         FormatStyleString =
             GetCellFormatStyleString(format, Borders, _isValid);
         Icon = format?.Icon;

@@ -1,5 +1,6 @@
 ﻿@using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Events
+@using BlazorDatasheet.Core.Events.Data
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Services
 @inherits Layer
@@ -52,6 +53,29 @@
             ShowBorderBottom="boundedRegion.Bottom == Math.Min(region.Bottom, Sheet.NumRows-1)"/>
     }
 
+    @if (Sheet.Selection.ActiveRegion != null)
+    {
+        <!-- the array formula's spill around the active cell, as Excel outlines it -->
+        var activeCell = Sheet.Selection.ActiveCellPosition;
+        var spill = Sheet.Cells.GetSpillRegion(activeCell.row, activeCell.col);
+        var boundedSpill = spill?.GetIntersection(ViewRegion);
+        if (spill != null && boundedSpill != null)
+        {
+            <BoxOverlayRenderer
+                BackgroundVisible="false"
+                BorderThickness="var(--spill-outline-thickness)"
+                BorderColor="var(--spill-outline-color)"
+                X="GetLayerColumnX(boundedSpill.Left)"
+                Y="GetLayerRowY(boundedSpill.Top)"
+                Width="Sheet.Columns.GetVisualWidthBetween(boundedSpill.Left, boundedSpill.Right + 1)"
+                Height="Sheet.Rows.GetVisualHeightBetween(boundedSpill.Top, boundedSpill.Bottom + 1)"
+                ShowBorderLeft="boundedSpill.Left == spill.Left"
+                ShowBorderRight="boundedSpill.Right == spill.Right"
+                ShowBorderTop="boundedSpill.Top == spill.Top"
+                ShowBorderBottom="boundedSpill.Bottom == spill.Bottom"/>
+        }
+    }
+
     @if (Sheet.Selection.IsSelecting)
     {
         var selection = Sheet.Selection.SelectingRegion!;
@@ -89,11 +113,13 @@
         oldSheet.Selection.SelectingChanged -= OnSelectingChanged;
         oldSheet.Cells.RegionMerged -= OnMergesChanged;
         oldSheet.Cells.RegionUnMerged -= OnMergesChanged;
+        oldSheet.Cells.SpillChanged -= OnSpillChanged;
         newSheet.Selection.SelectionChanged += OnSelectionChanged;
         newSheet.Selection.SelectingChanged += OnSelectingChanged;
         // the active cell is drawn around its merge
         newSheet.Cells.RegionMerged += OnMergesChanged;
         newSheet.Cells.RegionUnMerged += OnMergesChanged;
+        newSheet.Cells.SpillChanged += OnSpillChanged;
 
         if (_workbookViews != null)
             _workbookViews.Changed -= OnCurrentSheetChanged;
@@ -103,6 +129,7 @@
 
     private void OnCurrentSheetChanged() => _ = InvokeAsync(StateHasChanged);
     private void OnMergesChanged(object? sender, IRegion region) => StateHasChanged();
+    private void OnSpillChanged(object? sender, SpillChangedEventArgs e) => StateHasChanged();
 
     private void OnSelectionChanged(object? sender, SelectionChangedEventArgs args)
     {
@@ -120,6 +147,7 @@
         Sheet.Selection.SelectingChanged -= OnSelectingChanged;
         Sheet.Cells.RegionMerged -= OnMergesChanged;
         Sheet.Cells.RegionUnMerged -= OnMergesChanged;
+        Sheet.Cells.SpillChanged -= OnSpillChanged;
         if (_workbookViews != null)
             _workbookViews.Changed -= OnCurrentSheetChanged;
     }

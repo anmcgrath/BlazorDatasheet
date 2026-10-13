@@ -264,7 +264,16 @@
             builder.CloseElement();
         }
 
-        var showFormula = ShowFormula && _sheet.Cells.HasFormula(cell.Row, cell.Col);
+        // a cell an array formula spilled into shows that formula
+        string? formulaText = null;
+        if (ShowFormula)
+        {
+            formulaText = _sheet.Cells.GetFormulaString(cell.Row, cell.Col);
+            if (formulaText == null && _sheet.Cells.GetSpillAnchor(cell.Row, cell.Col) is { } anchor)
+                formulaText = _sheet.Cells.GetFormulaString(anchor.row, anchor.col);
+        }
+
+        var showFormula = formulaText != null;
 
         // Unless numbers are clipped, explicitly formatted numbers stay whole and become hashes when
         // they do not fit. General numbers may be rounded to fewer decimal places first, as in Excel.
@@ -282,7 +291,7 @@
 
         if (showFormula)
         {
-            builder.AddContent(120, _sheet.Cells.GetFormulaString(cell.Row, cell.Col));
+            builder.AddContent(120, formulaText);
         }
         else
         {

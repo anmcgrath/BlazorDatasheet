@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -60,6 +60,21 @@ public class FormulaBarTests
 
         await bar.InvokeAsync(() => sheet.Selection.Set(0, 0));
         ShownValue(bar).Should().Be("other", "the bar no longer listens to the first sheet");
+    }
+
+    [Test]
+    public async Task Shows_The_Anchor_Formula_For_A_Spilled_Cell()
+    {
+        await using var context = CreateContext();
+        var sheet = new Sheet(5, 5);
+        sheet.Cells[0, 0].Formula = "={1;2;3}";
+        var bar = context.Render<FormulaBar>(p => p.Add(x => x.Sheet, sheet));
+
+        await bar.InvokeAsync(() => sheet.Selection.Set(1, 0));
+        ShownValue(bar).Should().Be("={1;2;3}");
+
+        await bar.InvokeAsync(() => sheet.Cells.ClearCells(new Region(0, 0)));
+        ShownValue(bar).Should().BeEmpty();
     }
 
     [Test]

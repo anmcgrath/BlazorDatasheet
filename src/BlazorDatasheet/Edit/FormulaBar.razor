@@ -147,7 +147,14 @@
 
         var position = _sheet.Selection.GetInputPosition();
         var cell = _sheet.Cells.GetCell(position.row, position.col);
-        return cell.Formula ?? cell.Value?.ToString() ?? string.Empty;
+        if (cell.Formula != null)
+            return cell.Formula;
+
+        // a cell an array formula spilled into shows that formula
+        if (_sheet.Cells.GetSpillAnchor(position.row, position.col) is { } anchor)
+            return _sheet.Cells.GetFormulaString(anchor.row, anchor.col) ?? string.Empty;
+
+        return cell.Value?.ToString() ?? string.Empty;
     }
 
     private void Refresh()
