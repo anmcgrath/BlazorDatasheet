@@ -43,7 +43,7 @@ public static class DelimitedTextParser
                 continue;
             }
 
-            if (ch == '"' && field.Length == 0)
+            if (ch == '"' && field.Length == 0 && HasClosingQuote(text, i))
             {
                 inQuotes = true;
                 i++;
@@ -76,6 +76,26 @@ public static class DelimitedTextParser
         }
 
         return rows;
+    }
+
+    /// <summary>
+    /// Whether the quote opening a field at <paramref name="start"/> is closed later on. A lone quote with
+    /// no partner (a ditto mark, say) is ordinary text, as Excel reads it; treating it as opening a quoted
+    /// field would swallow the rest of the text into one cell.
+    /// </summary>
+    private static bool HasClosingQuote(string text, int start)
+    {
+        for (var i = start + 1; i < text.Length; i++)
+        {
+            if (text[i] != '"')
+                continue;
+            if (i + 1 < text.Length && text[i + 1] == '"')
+                i++;
+            else
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>
