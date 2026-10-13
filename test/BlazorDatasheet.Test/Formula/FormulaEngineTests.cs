@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Events.Formula;
 using BlazorDatasheet.Formula.Core;
+using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 using AwesomeAssertions;
 using NUnit.Framework;
 
@@ -11,6 +13,23 @@ namespace BlazorDatasheet.Test.Formula;
 
 public class FormulaEngineTests
 {
+    [Test]
+    public void Removed_Formula_Is_Not_Retained_By_The_Calculation_Context()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Commands.PauseHistory();
+        sheet.Cells.SetFormula(0, 0, "=1+1");
+        var formula = sheet.Cells.GetFormula(0, 0)!;
+        sheet.Cells.SetValue(0, 0, "replacement");
+
+        // Inspect the reusable cache directly so other stores and undo data cannot mask this leak.
+        var context = (FormulaExecutionContext)sheet.FormulaEngine.GetType()
+            .GetField("_calculationContext", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .GetValue(sheet.FormulaEngine)!;
+        sheet.Cells.GetFormula(0, 0).Should().BeNull();
+        context.TryGetExecutedValue(formula, out _).Should().BeFalse();
+    }
+
     [Test]
     public void GetReferences_ReturnsDetachedReferences()
     {

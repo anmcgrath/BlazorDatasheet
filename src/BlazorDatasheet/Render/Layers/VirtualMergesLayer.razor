@@ -74,7 +74,12 @@
 
         foreach (var interval in e.DirtyRows.Intervals)
         {
-            var dirty = new Region(interval.Start, interval.End, e.DirtyColStart, e.DirtyColEnd)
+            // The previous visible row/column draws the dirty cells' top/left borders. A merge
+            // there must redraw even when the original dirty region does not intersect it.
+            var top = interval.Start > 0 ? Sheet.Rows.GetNextVisible(interval.Start, -1) : -1;
+            var left = e.DirtyColStart > 0 ? Sheet.Columns.GetNextVisible(e.DirtyColStart, -1) : -1;
+            var dirty = new Region(top < 0 ? interval.Start : top, interval.End,
+                    left < 0 ? e.DirtyColStart : left, e.DirtyColEnd)
                 .GetIntersection(ViewRegion);
             if (dirty != null && Sheet.Cells.AnyMerges(dirty))
             {

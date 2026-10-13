@@ -376,7 +376,6 @@ public class FormulaEngine
             // one context for the engine's lifetime - only one calculation is ever in flight, and
             // its dictionaries keep their capacity between calculations.
             var executionContext = _calculationContext;
-            executionContext.Clear();
 
             for (var i = 0; i < order.Count; i++)
                 EvaluateStronglyConnectedGroup(order[i], executionContext, ref evaluatedFormulaCount);
@@ -388,6 +387,9 @@ public class FormulaEngine
         }
         finally
         {
+            // Release formulas and results while retaining the dictionaries' capacity. Clear before
+            // completion callbacks, which may start another calculation using the same context.
+            _calculationContext.Clear();
             try
             {
                 EndCalculation(batchedSheets);
