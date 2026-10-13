@@ -30,7 +30,8 @@ public class MoveRangeCommand : BaseCommand, IUndoableCommand
     {
         _from = from;
         _to = to;
-        _options = options ?? new CopyOptions();
+        // a copy, not the caller's instance: it may be reused for an ordinary copy
+        _options = options?.Clone() ?? new CopyOptions();
         _options.FormulaReferences = ReferenceAdjustment.MoveWithSource;
     }
 

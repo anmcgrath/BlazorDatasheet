@@ -41,6 +41,8 @@ public class CopyOptions
 
     public static CopyOptions DefaultCopyOptions => new CopyOptions();
 
+    public CopyOptions Clone() => (CopyOptions)MemberwiseClone();
+
     /// <summary>
     /// Options for pasting only the (calculated) values of the source.
     /// </summary>
