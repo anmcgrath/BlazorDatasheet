@@ -41,7 +41,9 @@
                 @if (MenuOptions.PasteSpecialEnabled)
                 {
                     var canFormatActive = sheet.Protection.CanFormat(active);
-                    <SheetSubMenu IsEnabled="@(canEditActive || canFormatActive)" Label="Paste special">
+                    // only a plain paste can follow a cut
+                    var pasteSpecial = sheet.Workbook.Clipboard.Current?.Mode != ClipboardMode.Cut;
+                    <SheetSubMenu IsEnabled="@(pasteSpecial && (canEditActive || canFormatActive))" Label="Paste special">
                         <SheetMenuItem IsEnabled="@canEditActive" OnClick="() => OnPaste.InvokeAsync(PasteMode.Values)">Paste values</SheetMenuItem>
                         <SheetMenuItem IsEnabled="@canFormatActive" OnClick="() => OnPaste.InvokeAsync(PasteMode.Formats)">Paste formats</SheetMenuItem>
                     </SheetSubMenu>
