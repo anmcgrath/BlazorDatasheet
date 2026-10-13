@@ -135,17 +135,27 @@ public partial class CellStore
             TypeRestoreData = _typeStore.InsertRowColAt(index, count, axis),
             ValidRestoreData = _validStore.InsertRowColAt(index, count, axis),
             MergeRestoreData = _mergeStore.InsertRowColAt(index, count, axis),
+            SpillRestoreData = _spillStore.InsertRowColAt(index, count, axis),
             FormulaRestoreData = _formulaStore.InsertRowColAt(index, count, axis),
             DependencyManagerRestoreData =
                 Sheet.FormulaEngine.DependencyManager.InsertRowColAt(index, count, axis, Sheet.Name)
         };
-
 
         return restoreData;
     }
 
     internal CellStoreRestoreData RemoveRowColAt(int index, int count, Axis axis)
     {
+        // a spill whose formula is removed goes with it; its values must go before the stores shift
+        IRegion removed = axis == Axis.Row
+            ? new RowRegion(index, index + count - 1)
+            : new ColumnRegion(index, index + count - 1);
+        foreach (var anchor in GetSpillAnchorsIntersecting(removed).ToList())
+        {
+            if (removed.Contains(anchor.row, anchor.col))
+                WipeSpillForAnchor(anchor);
+        }
+
         var restoreData = new CellStoreRestoreData
         {
             ValueRestoreData = _dataStore.RemoveRowColAt(index, count, axis),
@@ -153,6 +163,7 @@ public partial class CellStore
             TypeRestoreData = _typeStore.RemoveRowColAt(index, count, axis),
             FormatRestoreData = _formatStore.RemoveRowColAt(index, count, axis),
             MergeRestoreData = _mergeStore.RemoveRowColAt(index, count, axis),
+            SpillRestoreData = _spillStore.RemoveRowColAt(index, count, axis),
             FormulaRestoreData = _formulaStore.RemoveRowColAt(index, count, axis),
             DependencyManagerRestoreData =
                 Sheet.FormulaEngine.DependencyManager.RemoveRowColAt(index, count, axis, Sheet.Name)
@@ -318,6 +329,7 @@ public partial class CellStore
         _dataStore.Restore(restoreData.ValueRestoreData);
         _formatStore.Restore(restoreData.FormatRestoreData);
         _mergeStore.Restore(restoreData.MergeRestoreData);
+        _spillStore.Restore(restoreData.SpillRestoreData);
 
         foreach (var pt in restoreData.ValueRestoreData.DataRemoved)
         {
