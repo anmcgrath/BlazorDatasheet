@@ -224,4 +224,12 @@ public class MoveRangeCommandTests
         Move("A1", 5, 5).Should().BeFalse();
         _sheet.Cells.GetValue(0, 0).Should().Be(1);
     }
+
+    [Test]
+    public void Move_Does_Not_Change_The_Callers_Options()
+    {
+        var options = new CopyOptions();
+        _sheet.Commands.ExecuteCommand(new MoveRangeCommand(_sheet.Range("A1")!, _sheet.Range(2, 2), options));
+        options.FormulaReferences.Should().Be(ReferenceAdjustment.Relative);
+    }
 }
