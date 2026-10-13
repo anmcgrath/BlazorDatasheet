@@ -166,7 +166,8 @@ public class PasteSnapshotCommand : BaseCommand, IUndoableCommand
             // a merge that would cut through an existing one is dropped rather than failing the paste
             if (!sheet.Cells.GetMerges(shifted).All(shifted.Contains))
                 continue;
-            commands.Add(new MergeCellsCommand(shifted));
+            // a formats-only paste leaves the values of the cells the merge hides alone
+            commands.Add(new MergeCellsCommand(shifted, clearHiddenCells: _mode != PasteMode.Formats));
         }
     }
 }
