@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Components.Web;
+﻿using Microsoft.AspNetCore.Components.Web;
 using ClipboardEventArgs = BlazorDatasheet.Core.Events.ClipboardEventArgs;
 
 namespace BlazorDatasheet.Services;

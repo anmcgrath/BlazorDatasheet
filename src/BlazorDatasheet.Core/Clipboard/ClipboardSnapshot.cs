@@ -1,4 +1,4 @@
-﻿using BlazorDatasheet.Core.Formats;
+using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core;
 

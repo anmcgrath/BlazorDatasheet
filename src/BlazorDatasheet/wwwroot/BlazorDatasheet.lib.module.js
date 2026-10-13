@@ -1,4 +1,4 @@
-﻿let globalsConfigured = false
+let globalsConfigured = false
 
 /**
  * Configures global helpers required by BlazorDatasheet.

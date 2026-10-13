@@ -1,4 +1,4 @@
-import { watchRemoval } from "./removal-watcher.js";
+﻿import { watchRemoval } from "./removal-watcher.js";
 
 class WindowEvents {
     constructor(dotnetHelper) {

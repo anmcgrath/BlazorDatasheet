@@ -1,4 +1,4 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Interfaces;
