@@ -89,6 +89,19 @@ internal class CellStoreRestoreData
         set => _mergeRestoreData = value;
     }
 
+    private RegionRestoreData<SpillInfo>? _spillRestoreData;
+
+    internal RegionRestoreData<SpillInfo> SpillRestoreData
+    {
+        get
+        {
+            if (_spillRestoreData == null)
+                _spillRestoreData = new();
+            return _spillRestoreData;
+        }
+        set => _spillRestoreData = value;
+    }
+
     private DependencyManagerRestoreData? _dependencyGraph;
 
     internal DependencyManagerRestoreData DependencyManagerRestoreData
@@ -124,7 +137,9 @@ internal class CellStoreRestoreData
             .Concat(FormatRestoreData.RegionsAdded.Select(x => x.Region))
             .Concat(FormatRestoreData.RegionsRemoved.Select(x => x.Region))
             .Concat(MergeRestoreData.RegionsAdded.Select(x => x.Region))
-            .Concat(MergeRestoreData.RegionsRemoved.Select(x => x.Region));
+            .Concat(MergeRestoreData.RegionsRemoved.Select(x => x.Region))
+            .Concat(SpillRestoreData.RegionsAdded.Select(x => x.Region))
+            .Concat(SpillRestoreData.RegionsRemoved.Select(x => x.Region));
     }
 
     internal void Merge(CellStoreRestoreData item)
@@ -146,6 +161,9 @@ internal class CellStoreRestoreData
 
         if (item._mergeRestoreData != null)
             MergeRestoreData.Merge(item.MergeRestoreData);
+
+        if (item._spillRestoreData != null)
+            SpillRestoreData.Merge(item._spillRestoreData);
 
         if (item._dependencyGraph != null)
             DependencyManagerRestoreData.Merge(item._dependencyGraph);

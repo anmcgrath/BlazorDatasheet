@@ -97,8 +97,7 @@ public class WorkbookEnvironment : IEnvironment
 
     public IRegion? GetSpillRegion(int row, int col, string sheetName)
     {
-        // spills are not stored yet
-        return null;
+        return _workbook.GetSheet(sheetName)?.Cells.GetSpillRegionForAnchor(row, col);
     }
 
     public CellValue[][] GetRangeValues(Reference reference)
