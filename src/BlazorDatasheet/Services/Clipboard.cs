@@ -37,7 +37,7 @@ public class Clipboard : IClipboard
     {
         try
         {
-            return await _js.InvokeAsync<ClipboardReadData?>("bdsReadClipboard");
+            return await ClipboardStream.Read(await _js.InvokeAsync<IJSStreamReference?>("bdsReadClipboardStream"));
         }
         catch (JSException)
         {

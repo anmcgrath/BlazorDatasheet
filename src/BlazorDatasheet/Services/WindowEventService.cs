@@ -258,6 +258,15 @@ public class WindowEventService : IWindowEventService
         if (!hasListener)
             return false;
 
+        if (e.PayloadId != null && _windowEventObj != null)
+        {
+            var stream = await _windowEventObj.InvokeAsync<IJSStreamReference?>("takeClipboardPayload", e.PayloadId);
+            var data = await ClipboardStream.Read(stream);
+            e.Text = data?.Text ?? string.Empty;
+            e.Html = data?.Html;
+            e.PayloadId = null;
+        }
+
         var result = await listener!.Invoke(e);
         return result;
     }

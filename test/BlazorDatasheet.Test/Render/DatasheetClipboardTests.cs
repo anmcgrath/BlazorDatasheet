@@ -184,6 +184,23 @@ public class DatasheetClipboardTests
     }
 
     [Test]
+    public async Task Copy_And_Paste_Of_A_Whole_Column()
+    {
+        await On(() => _sheet.Selection.Set(new ColumnRegion(0, 0)));
+        (await _component.InvokeAsync(() => _component.Instance.CopySelectionToClipboard())).Should().BeTrue();
+        var (text, html) = LastWrite();
+
+        await On(() => _sheet.Selection.Set(new ColumnRegion(2, 2)));
+        (await _component.InvokeAsync(() => _component.Instance.PasteAsync(text, html))).Should().BeTrue();
+        _sheet.Cells.GetValue(0, 2).Should().Be(1);
+        _sheet.Cells.GetFormulaString(1, 2).Should().Be("=C1*2");
+
+        await On(() => _sheet.Selection.Set(new Region(0, 4)));
+        (await _component.InvokeAsync(() => _component.Instance.PasteAsync(text, html))).Should().BeTrue();
+        _sheet.Cells.GetFormulaString(1, 4).Should().Be("=E1*2");
+    }
+
+    [Test]
     public async Task Marching_Ants_Follow_Copy_Mode()
     {
         _component.FindAll(".bds-clipboard-box").Should().BeEmpty();
