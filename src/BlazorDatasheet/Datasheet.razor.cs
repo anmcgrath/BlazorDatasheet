@@ -1,4 +1,5 @@
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
+using BlazorDatasheet.Core.Clipboard;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Filter;
@@ -594,6 +595,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             WindowEventRegistration.Key("keydown", HandleWindowKeyDown),
             WindowEventRegistration.Clipboard("paste", HandleWindowPaste),
             WindowEventRegistration.Clipboard("copy", HandleWindowCopy),
+            WindowEventRegistration.Clipboard("cut", HandleWindowCut),
             WindowEventRegistration.Mouse("mouseup", HandleWindowMouseUp));
     }
 
@@ -709,6 +711,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     private async void EditorOnEditBegin(object? sender, EditBeginEventArgs e)
     {
+        // typing into a cell ends copy mode, as in Excel
+        _sheet.Workbook.Clipboard.Clear();
         await UpdateInputStateAsync();
     }
 
@@ -721,8 +725,18 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     private void RegisterDefaultShortcuts()
     {
-        ShortcutManager.Register(["Escape"], KeyboardModifiers.Any,
-            _ => _sheet.Editor.CancelEdit());
+        ShortcutManager.Register(["Escape"], KeyboardModifiers.Any, _ =>
+        {
+            if (_sheet.Editor.IsEditing)
+                return _sheet.Editor.CancelEdit();
+            if (_sheet.Workbook.Clipboard.IsActive)
+            {
+                _sheet.Workbook.Clipboard.Clear();
+                return true;
+            }
+
+            return false;
+        });
 
         ShortcutManager
             .Register(["Enter"], KeyboardModifiers.None, _ => AcceptEditAndMoveActiveSelection(Axis.Row, 1));
@@ -745,6 +759,11 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             .Register(["KeyC"], [KeyboardModifiers.Ctrl, KeyboardModifiers.Meta],
                 async (_) => await CopySelectionToClipboard(),
                 _ => !_sheet.Editor.IsEditing);
+
+        ShortcutManager
+            .Register(["KeyX"], [KeyboardModifiers.Ctrl, KeyboardModifiers.Meta],
+                async (_) => await CutSelectionToClipboard(),
+                _ => !_sheet.Editor.IsEditing && !IsReadOnly);
 
         ShortcutManager
             .Register(["ArrowUp", "ArrowRight", "ArrowDown", "ArrowLeft"], KeyboardModifiers.None,
@@ -1024,28 +1043,9 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         return true;
     }
 
-    private Task<bool> HandleWindowPaste(ClipboardEventArgs arg)
+    private async Task<bool> HandleWindowPaste(ClipboardEventArgs arg)
     {
-        if (!IsDataSheetActive)
-            return Task.FromResult(false);
-
-        if (!_sheet.Selection.Regions.Any())
-            return Task.FromResult(false);
-
-        if (_sheet.Editor.IsEditing)
-            return Task.FromResult(false);
-
-        if (IsReadOnly)
-            return Task.FromResult(false);
-
-        var posnToInput = _sheet.Selection.GetInputPosition();
-
-        var range = _sheet.InsertDelimitedText(arg.Text, posnToInput);
-        if (range == null)
-            return Task.FromResult(false);
-
-        _sheet.Selection.Set(range);
-        return Task.FromResult(true);
+        return await PasteAsync(arg.Text, arg.Html, arg.ShiftKey ? PasteMode.Values : PasteMode.All);
     }
 
     private async Task<bool> HandleWindowCopy(ClipboardEventArgs arg)
@@ -1056,6 +1056,95 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         return await CopySelectionToClipboard();
     }
 
+    private async Task<bool> HandleWindowCut(ClipboardEventArgs arg)
+    {
+        if (!IsDataSheetActive || _sheet.Editor.IsEditing || IsReadOnly)
+            return false;
+
+        return await CutSelectionToClipboard();
+    }
+
+    /// <summary>
+    /// Pastes clipboard content at the selection. When the content is the workbook's own clipboard entry (or
+    /// nothing else can be told apart from it) the live cells are pasted with formulas, formats and merges;
+    /// otherwise the HTML table or delimited text is pasted. Returns whether anything was pasted.
+    /// </summary>
+    /// <param name="text">The text/plain clipboard content.</param>
+    /// <param name="html">The text/html clipboard content, if any.</param>
+    /// <param name="mode">What to paste.</param>
+    internal async Task<bool> PasteAsync(string? text, string? html, PasteMode mode = PasteMode.All)
+    {
+        if (!IsDataSheetActive || !_sheet.Selection.Regions.Any() || _sheet.Editor.IsEditing || IsReadOnly)
+            return false;
+
+        var selection = _sheet.Selection.ActiveRegion ?? new Region(_sheet.Selection.GetInputPosition());
+        var clipboard = _sheet.Workbook.Clipboard;
+
+        IRegion? pasted;
+        if (IsWorkbookClipboardContent(clipboard.Current, text, html))
+        {
+            pasted = clipboard.Paste(_sheet, selection, mode);
+        }
+        else
+        {
+            // the system clipboard has moved on since the entry was made
+            clipboard.Clear();
+            var snapshot = ClipboardHtmlParser.ContainsTable(html) ? ClipboardHtmlParser.Parse(html) : null;
+            if (snapshot == null || snapshot.IsEmpty)
+                snapshot = DelimitedTextParser.ToSnapshot(text);
+            if (snapshot.IsEmpty)
+                return false;
+            pasted = clipboard.PasteSnapshot(_sheet, selection, snapshot, mode);
+        }
+
+        if (pasted == null)
+            return false;
+
+        _sheet.Selection.Set(pasted);
+        await Task.CompletedTask;
+        return true;
+    }
+
+    /// <summary>
+    /// Whether what is on the system clipboard is the workbook's own entry.
+    /// </summary>
+    private static bool IsWorkbookClipboardContent(ClipboardEntry? entry, string? text, string? html)
+    {
+        if (entry == null)
+            return false;
+
+        if (ClipboardHtmlParser.TryGetClipboardId(html, out var id))
+            return id == entry.Id;
+
+        // no marker: external HTML means something else was copied since
+        if (ClipboardHtmlParser.ContainsTable(html))
+            return false;
+
+        // only text: it is ours unless it differs from what the entry would produce
+        if (string.IsNullOrEmpty(text))
+            return true;
+        var ours = DelimitedTextWriter.Write(ClipboardSnapshotBuilder.FromRange(entry.Source, entry.Id));
+        return NormalizeLineEndings(ours) == NormalizeLineEndings(text.TrimEnd('\r', '\n'));
+    }
+
+    private static string NormalizeLineEndings(string text) => text.Replace("\r\n", "\n").Replace('\r', '\n');
+
+    /// <summary>
+    /// Reads the system clipboard and pastes it at the selection, e.g. from a menu. Browsers may ask the
+    /// user for permission or refuse; when they refuse and the workbook has its own entry, that is pasted.
+    /// </summary>
+    public async Task<bool> PasteFromClipboardAsync(PasteMode mode = PasteMode.All)
+    {
+        var data = await ClipboardService.Read();
+        if (data == null)
+        {
+            if (!_sheet.Workbook.Clipboard.IsActive)
+                return false;
+            return await PasteAsync(null, null, mode);
+        }
+
+        return await PasteAsync(data.Text, data.Html, mode);
+    }
 
     private async void HandleCellDoubleClick(object? sender, SheetPointerEventArgs args)
     {
@@ -1382,19 +1471,55 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     /// <summary>
     /// Copies current selection to clipboard
     /// </summary>
+    /// <summary>
+    /// Copies the active selection: the workbook clipboard takes the cells, and the system clipboard gets
+    /// them as text and HTML. Returns whether anything was copied.
+    /// </summary>
     public async Task<bool> CopySelectionToClipboard()
+    {
+        return await CopyOrCutSelection(ClipboardMode.Copy);
+    }
+
+    /// <summary>
+    /// Cuts the active selection. The cells are moved when the entry is pasted; see
+    /// <see cref="WorkbookClipboard"/>. Returns whether anything was cut.
+    /// </summary>
+    public async Task<bool> CutSelectionToClipboard()
+    {
+        if (IsReadOnly)
+            return false;
+        return await CopyOrCutSelection(ClipboardMode.Cut);
+    }
+
+    private async Task<bool> CopyOrCutSelection(ClipboardMode mode)
     {
         if (_sheet.Selection.IsSelecting)
             return false;
 
         // Can only handle single selections for now
-        var region = _sheet.Selection.ActiveRegion;
+        var region = _sheet.Selection.ActiveRegion?.GetIntersection(_sheet.Region);
         if (region == null)
             return false;
 
-        await ClipboardService.Copy(region, _sheet);
+        if (mode == ClipboardMode.Cut &&
+            (!_sheet.Protection.CanEdit(region) || _sheet.Cells.ContainsReadOnly(region)))
+            return false;
+
+        var clipboard = _sheet.Workbook.Clipboard;
+        var entry = mode == ClipboardMode.Cut
+            ? clipboard.Cut(_sheet.Range(region))
+            : clipboard.Copy(_sheet.Range(region));
+
+        var snapshot = ClipboardSnapshotBuilder.FromRange(entry.Source, entry.Id);
+        var html = region.Area <= MaxHtmlClipboardCells ? ClipboardHtmlWriter.Write(snapshot) : null;
+        await ClipboardService.Write(new ClipboardWriteData(DelimitedTextWriter.Write(snapshot), html));
         return true;
     }
+
+    /// <summary>
+    /// Copies larger than this go to the system clipboard as text only; the workbook clipboard is unaffected.
+    /// </summary>
+    public int MaxHtmlClipboardCells { get; set; } = 100_000;
 
     /// <summary>
     /// Turn on or off the display of formula dependents

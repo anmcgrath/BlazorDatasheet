@@ -246,7 +246,12 @@ class WindowEvents {
         if (this.disposed || e.isComposing)
             return
 
-        if (['keydown', 'copy', 'paste'].includes(e.type) && !this.ownsInput(e)) return;
+        if (['keydown', 'copy', 'cut', 'paste'].includes(e.type) && !this.ownsInput(e)) return;
+
+        // The paste event carries no modifier state, so the Ctrl/Cmd+V keydown that precedes it
+        // remembers whether Shift was held (paste values only).
+        if (e.type === 'keydown' && e.code === 'KeyV' && (e.ctrlKey || e.metaKey))
+            this.lastPasteKey = {shift: e.shiftKey, at: Date.now()}
 
         if (this.handlerMap[e.type]) {
             if (this.container && e.type === 'keydown' && e.key === 'Tab' &&
@@ -322,7 +327,7 @@ class WindowEvents {
             return this.serializeKeyboardEvent(e)
         else if (e.type.includes('mouse'))
             return this.serializeMouseEvent(e)
-        else if (e.type.includes('paste') || e.type.includes('copy'))
+        else if (e.type.includes('paste') || e.type.includes('copy') || e.type.includes('cut'))
             return this.serializeClipboardEvent(e)
     }
 
@@ -369,23 +374,32 @@ class WindowEvents {
     }
 
     serializeClipboardEvent(e) {
-        if (e) {
-            if (e.clipboardData && e.clipboardData.getData) {
-                let pasteText = ""
-                try {
-                    pasteText = e.clipboardData.getData('text/plain')
-                } catch (ex) {
-                    pasteText = ""
-                }
-                return {
-                    text: pasteText,
-                    type: e.type
-                }
+        let text = ""
+        let html = ""
+        if (e && e.clipboardData && e.clipboardData.getData) {
+            try {
+                text = e.clipboardData.getData('text/plain') ?? ""
+            } catch (ex) {
+                text = ""
+            }
+            try {
+                html = e.clipboardData.getData('text/html') ?? ""
+            } catch (ex) {
+                html = ""
             }
         }
+
+        let shiftKey = false
+        if (e && e.type === 'paste' && this.lastPasteKey) {
+            shiftKey = this.lastPasteKey.shift && (Date.now() - this.lastPasteKey.at) < 1500
+            this.lastPasteKey = null
+        }
+
         return {
-            text: "",
-            type: e.type
+            text: text,
+            html: html,
+            type: e ? e.type : "",
+            shiftKey: shiftKey
         }
     }
 
