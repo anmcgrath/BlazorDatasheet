@@ -1,0 +1,83 @@
+@page "/Clipboard"
+@using BlazorDatasheet.SharedPages.Components.Examples.Data
+
+<h3>Copy, cut and paste</h3>
+
+<div class="block">
+    The datasheet copies and pastes the way a spreadsheet does. Within a workbook a paste carries values, formulas,
+    formatting, merged cells and cell types; relative formula references shift with the paste and <code>$</code>
+    references stay put. A copied block tiles across a selection that is an exact multiple of its size.
+</div>
+
+<table class="table">
+    <thead>
+    <tr>
+        <th>Shortcut</th>
+        <th>Action</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td><kbd>Ctrl</kbd>+<kbd>C</kbd></td>
+        <td>Copy the selection. The cells get a moving dashed border while they are on the clipboard.</td>
+    </tr>
+    <tr>
+        <td><kbd>Ctrl</kbd>+<kbd>X</kbd></td>
+        <td>Cut the selection. Nothing changes until it is pasted.</td>
+    </tr>
+    <tr>
+        <td><kbd>Ctrl</kbd>+<kbd>V</kbd></td>
+        <td>Paste everything at the selection.</td>
+    </tr>
+    <tr>
+        <td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd></td>
+        <td>Paste values only: formulas are pasted as their results, and formatting is left alone.</td>
+    </tr>
+    <tr>
+        <td><kbd>Esc</kbd></td>
+        <td>End copy mode. Starting to type into a cell, or changing the copied cells, ends it too.</td>
+    </tr>
+    </tbody>
+</table>
+
+<div class="block">
+    The right-click menu offers Copy, Cut, Paste, Paste values and Paste formats. Pasting from the menu reads the
+    system clipboard, so the browser may ask the user to allow it; when it refuses, the workbook's own clipboard is
+    pasted instead. Use <code>SheetMenuOptions</code> to hide these items.
+</div>
+
+<h4>Cut moves cells</h4>
+
+<div class="block">
+    Pasting a cut block moves it, as in Excel. The source is cleared, formulas inside the block keep pointing at the
+    same cells, and formulas anywhere in the workbook that refer to cells inside the block are rewritten to the new
+    location. References that only partly overlap the block are left alone. The whole move is one undo step.
+</div>
+
+<h4>Other applications</h4>
+
+<div class="block">
+    A copy also goes to the system clipboard as tab-delimited text and as an HTML table with inline styles, so Excel,
+    Google Sheets and other BlazorDatasheet instances paste it with its formatting and merges. Pasting from those
+    applications brings in values, bold/italic/underline, colours, alignment, borders and merged cells. Plain text is
+    split on tabs and line breaks, with Excel-style quoting for cells that contain them.
+</div>
+
+<div class="block">
+    The HTML table is marked with the id of the workbook clipboard entry (<code>data-bds-clipboard-id</code>), which is
+    how a paste knows to use the live cells rather than the HTML. Formulas, typed values and cell types travel in
+    <code>data-bds-*</code> attributes so another BlazorDatasheet can paste them exactly. The clipboard API needs a
+    secure context (HTTPS or localhost); without one the in-app clipboard still works.
+</div>
+
+<h4>Programmatic access</h4>
+
+<div class="block">
+    <code>Workbook.Clipboard</code> holds the current entry and has <code>Copy</code>, <code>Cut</code>,
+    <code>Paste</code>, <code>PasteSnapshot</code>, <code>PasteText</code> and <code>Clear</code>. Its
+    <code>BeforePaste</code> event is cancellable and lets you change the paste mode; <code>Changed</code> and
+    <code>Pasted</code> report what happened. <code>Datasheet.PasteFromClipboardAsync</code> reads the system
+    clipboard through the browser.
+</div>
+
+<CodeExample ComponentType="typeof(ClipboardExample)"/>

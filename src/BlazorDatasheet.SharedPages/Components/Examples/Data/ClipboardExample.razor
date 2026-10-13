@@ -1,0 +1,81 @@
+@using BlazorDatasheet.Core.Clipboard
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events.Data
+@using BlazorDatasheet.Core.Formats
+@using BlazorDatasheet.DataStructures.Geometry
+@implements IDisposable
+
+<p>
+    Select cells and press <kbd>Ctrl</kbd>+<kbd>C</kbd> or <kbd>Ctrl</kbd>+<kbd>X</kbd>, then <kbd>Ctrl</kbd>+<kbd>V</kbd>
+    anywhere in either sheet. <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd> pastes values only, and <kbd>Esc</kbd> ends
+    copy mode. The right-click menu has the same options. Copying to or from Excel and Google Sheets keeps values,
+    formatting and merged cells.
+</p>
+<p>
+    Clipboard: <strong>@_status</strong>
+</p>
+<p>Sheet 1</p>
+<Datasheet Sheet="@_sheet1"/>
+<p>Sheet 2</p>
+<Datasheet Sheet="@_sheet2"/>
+
+@code {
+
+    private readonly Workbook _workbook = new();
+    private Sheet _sheet1 = null!;
+    private Sheet _sheet2 = null!;
+    private string _status = "empty";
+
+    protected override void OnInitialized()
+    {
+        _sheet1 = _workbook.AddSheet(8, 5);
+        _sheet2 = _workbook.AddSheet(8, 5);
+
+        _sheet1.Cells["A1"]!.Value = "Item";
+        _sheet1.Cells["B1"]!.Value = "Qty";
+        _sheet1.Cells["C1"]!.Value = "Price";
+        _sheet1.Cells["D1"]!.Value = "Total";
+        _sheet1.SetFormat(new Region(0, 0, 0, 3), new CellFormat { FontWeight = "bold", BackgroundColor = "#dbeafe" });
+
+        _sheet1.Cells["A2"]!.Value = "Apples";
+        _sheet1.Cells["B2"]!.Value = 3;
+        _sheet1.Cells["C2"]!.Value = 1.5;
+        _sheet1.Cells["D2"]!.Formula = "=B2*C2";
+        _sheet1.Cells["A3"]!.Value = "Pears";
+        _sheet1.Cells["B3"]!.Value = 2;
+        _sheet1.Cells["C3"]!.Value = 2.25;
+        _sheet1.Cells["D3"]!.Formula = "=B3*C3";
+        _sheet1.Cells["C4"]!.Value = "Sum";
+        _sheet1.Cells["D4"]!.Formula = "=SUM(D2:D3)";
+        _sheet1.SetFormat(new Region(1, 3, 3, 3), new CellFormat { NumberFormat = "0.00", HorizontalTextAlign = TextAlign.End });
+        _sheet1.SetFormat(new Region(3, 3, 2, 3), new CellFormat { FontStyle = "italic", BorderTop = new Border { Width = 1, Color = "#334155" } });
+
+        _sheet1.Cells.Merge(new Region(5, 6, 0, 1));
+        _sheet1.Cells["A6"]!.Value = "Merged";
+        _sheet1.SetFormat(new Region(5, 6, 0, 1), new CellFormat { BackgroundColor = "#fef3c7", HorizontalTextAlign = TextAlign.Center, VerticalTextAlign = TextAlign.Center });
+
+        _workbook.Clipboard.Changed += OnClipboardChanged;
+        _workbook.Clipboard.Pasted += OnPasted;
+    }
+
+    private void OnClipboardChanged(object? sender, ClipboardChangedEventArgs e)
+    {
+        _status = e.NewEntry == null
+            ? "empty"
+            : $"{e.NewEntry.Mode} of {e.NewEntry.Sheet.Name}!{e.NewEntry.Source.Region}";
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnPasted(object? sender, PastedEventArgs e)
+    {
+        _status = $"pasted {e.Mode} into {e.Sheet.Name}!{e.Region}" + (e.WasCut ? " (moved)" : "");
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        _workbook.Clipboard.Changed -= OnClipboardChanged;
+        _workbook.Clipboard.Pasted -= OnPasted;
+    }
+
+}

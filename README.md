@@ -1,4 +1,4 @@
-# BlazorDatasheet
+﻿# BlazorDatasheet
 
 [![NuGet Version](https://img.shields.io/nuget/v/BlazorDatasheet)](https://www.nuget.org/packages/BlazorDatasheet/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -16,7 +16,7 @@ A simple datasheet component for editing tabular data.
 - Data validation
 - Formula
 - Keyboard navigation
-- Copy and paste from tabulated data
+- Excel-like copy, cut and paste: formulas, formatting and merges within a workbook, rich HTML/text interop with Excel and Google Sheets
 - Virtualization - handles many cells at once in both rows & cols.
 
 Demo: https://anmcgrath.github.io/BlazorDatasheet/
