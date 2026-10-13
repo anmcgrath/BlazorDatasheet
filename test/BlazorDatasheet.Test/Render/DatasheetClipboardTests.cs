@@ -108,6 +108,20 @@ public class DatasheetClipboardTests
     }
 
     [Test]
+    public async Task Own_Entry_Is_Pasted_When_The_System_Clipboard_Could_Not_Be_Written()
+    {
+        _context.JSInterop.Setup<bool>("bdsWriteClipboard", _ => true).SetResult(false);
+        await On(() => _sheet.Selection.Set(new Region(0, 1, 0, 0)));
+        await Shortcut("KeyC", KeyboardModifiers.Ctrl);
+        _sheet.Workbook.Clipboard.Current!.Text.Should().BeNull();
+
+        await On(() => _sheet.Selection.Set(new Region(0, 2)));
+        await _component.InvokeAsync(() => _component.Instance.PasteAsync("stale text", null));
+        _sheet.Cells.GetFormulaString(1, 2).Should().Be("=C1*2");
+        _sheet.Workbook.Clipboard.IsActive.Should().BeTrue();
+    }
+
+    [Test]
     public async Task Paste_Of_External_Content_Clears_Copy_Mode_And_Pastes_Values_And_Formats()
     {
         await On(() => _sheet.Selection.Set(new Region(0, 1, 0, 0)));

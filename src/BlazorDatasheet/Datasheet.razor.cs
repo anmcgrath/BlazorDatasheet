@@ -1553,8 +1553,11 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         var withHtml = region.Area <= MaxHtmlClipboardCells;
         var snapshot = ClipboardSnapshotBuilder.FromRange(entry.Source, entry.Id, includeFormats: withHtml);
         var text = DelimitedTextWriter.Write(snapshot);
-        entry.Text = text;
-        await ClipboardService.Write(new ClipboardWriteData(text, withHtml ? ClipboardHtmlWriter.Write(snapshot) : null));
+        var written = await ClipboardService.Write(
+            new ClipboardWriteData(text, withHtml ? ClipboardHtmlWriter.Write(snapshot) : null));
+        // when the browser refused the write (no secure context, say) the system clipboard still holds
+        // whatever it did before, which must not be mistaken for something copied since
+        entry.Text = written ? text : null;
         return true;
     }
 
