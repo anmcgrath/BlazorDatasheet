@@ -58,6 +58,41 @@ public class CellFormula
         }
     }
 
+    /// <summary>
+    /// Moves the references that lie fully inside <paramref name="region"/> on sheet
+    /// <paramref name="regionSheetName"/> by <paramref name="dRow"/> rows and <paramref name="dCol"/>
+    /// columns, as when the referenced cells themselves are cut and pasted elsewhere. Fixed ($) flags are
+    /// ignored because the cells moved. References that only partly overlap the region, references to
+    /// other sheets and named references are left alone (Excel semantics).
+    /// </summary>
+    /// <param name="region">The region of cells that moved.</param>
+    /// <param name="regionSheetName">The sheet the moved cells came from.</param>
+    /// <param name="dRow">Row offset of the move.</param>
+    /// <param name="dCol">Column offset of the move.</param>
+    /// <param name="destinationSheetName">The sheet the cells moved to.</param>
+    /// <param name="formulaSheetName">The sheet this formula lives on. A moved reference is written with an
+    /// explicit sheet name when the destination is a different sheet to this one.</param>
+    /// <returns>Whether any reference was changed.</returns>
+    public bool MoveReferencesWithin(IRegion region, string regionSheetName, int dRow, int dCol,
+        string destinationSheetName, string formulaSheetName)
+    {
+        var moved = false;
+        foreach (var reference in References)
+        {
+            if (reference.Kind == ReferenceKind.Named || reference.IsInvalid)
+                continue;
+            if (reference.SheetName != regionSheetName || !region.Contains(reference.Region))
+                continue;
+
+            reference.Move(dRow, dCol);
+            var explicitName = reference.ExplicitSheetName || destinationSheetName != formulaSheetName;
+            reference.SetSheetName(destinationSheetName, explicitName);
+            moved = true;
+        }
+
+        return moved;
+    }
+
     public void InsertRowColIntoReferences(int index, int count, Axis axis, string sheetName)
     {
         foreach (var reference in References)
