@@ -1,0 +1,71 @@
+@using System.Globalization
+@using BlazorDatasheet.Core.Clipboard
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Events.Data
+@using BlazorDatasheet.DataStructures.Geometry
+@inherits Layer
+@implements IDisposable
+
+@* The "marching ants" around the cells that were last copied or cut, while the workbook clipboard holds them. *@
+@if (_clipboard?.Current is { } entry && ReferenceEquals(entry.Sheet, Sheet))
+{
+    var region = entry.Source.Region;
+    var bounded = region.GetIntersection(ViewRegion)?.GetIntersection(Sheet.Region);
+    if (bounded != null)
+    {
+        var x = GetLayerColumnX(bounded.Left);
+        var y = GetLayerRowY(bounded.Top);
+        var w = Sheet.Columns.GetVisualWidthBetween(bounded.Left, bounded.Right + 1);
+        var h = Sheet.Rows.GetVisualHeightBetween(bounded.Top, bounded.Bottom + 1);
+        var mode = entry.Mode == ClipboardMode.Cut ? "cut" : "copy";
+        var style = Px("left", x) + Px("top", y) + Px("width", w) + Px("height", h);
+        <div class="bds-clipboard-layer">
+            <div class="bds-clipboard-box" data-mode="@mode" style="@style">
+                @if (bounded.Top == region.Top)
+                {
+                    <div class="bds-ants bds-ants-top"></div>
+                }
+                @if (bounded.Bottom == Math.Min(region.Bottom, Sheet.NumRows - 1))
+                {
+                    <div class="bds-ants bds-ants-bottom"></div>
+                }
+                @if (bounded.Left == region.Left)
+                {
+                    <div class="bds-ants bds-ants-left"></div>
+                }
+                @if (bounded.Right == Math.Min(region.Right, Sheet.NumCols - 1))
+                {
+                    <div class="bds-ants bds-ants-right"></div>
+                }
+            </div>
+        </div>
+    }
+}
+
+@code {
+
+    private WorkbookClipboard? _clipboard;
+
+    private static string Px(string property, double value) =>
+        $"{property}:{value.ToString(CultureInfo.InvariantCulture)}px;";
+
+    protected override void OnSheetChange(Sheet newSheet, Sheet oldSheet)
+    {
+        if (_clipboard != null)
+            _clipboard.Changed -= OnClipboardChanged;
+        _clipboard = newSheet.Workbook.Clipboard;
+        _clipboard.Changed += OnClipboardChanged;
+    }
+
+    private void OnClipboardChanged(object? sender, ClipboardChangedEventArgs e)
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        if (_clipboard != null)
+            _clipboard.Changed -= OnClipboardChanged;
+    }
+
+}

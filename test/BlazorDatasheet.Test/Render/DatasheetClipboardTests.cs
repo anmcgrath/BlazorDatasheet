@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using BlazorDatasheet.Core.Clipboard;
 using BlazorDatasheet.Core.Data;
@@ -6,6 +6,7 @@ using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Extensions;
 using BlazorDatasheet.KeyboardInput;
+using BlazorDatasheet.Virtualise;
 using Bunit;
 using AwesomeAssertions;
 using NUnit.Framework;
@@ -35,6 +36,14 @@ public class DatasheetClipboardTests
         _sheet.SetFormat(new Region(0, 0), new CellFormat { FontWeight = "bold" });
 
         _component = _context.Render<Datasheet>(p => p.Add(x => x.Sheet, _sheet));
+        foreach (var virtualiser in _component.FindComponents<Virtualise2D>())
+        {
+            Task? scroll = null;
+            await virtualiser.InvokeAsync(() => { scroll = virtualiser.Instance.HandleScroll(new Rect(0, 0, 500, 500)); });
+            if (scroll != null)
+                await scroll;
+        }
+
         await _component.InvokeAsync(() =>
             _component.Instance.HandleFocusChanged(new() { Focused = true, Active = true, Version = 1 }));
     }
@@ -140,6 +149,29 @@ public class DatasheetClipboardTests
         _sheet.Workbook.Clipboard.IsActive.Should().BeTrue();
         await Shortcut("Escape", KeyboardModifiers.None);
         _sheet.Workbook.Clipboard.IsActive.Should().BeFalse();
+    }
+
+    [Test]
+    public async Task Marching_Ants_Follow_Copy_Mode()
+    {
+        _component.FindAll(".bds-clipboard-box").Should().BeEmpty();
+
+        await On(() => _sheet.Selection.Set(new Region(0, 1, 0, 0)));
+        await Shortcut("KeyC", KeyboardModifiers.Ctrl);
+        var box = _component.Find(".bds-clipboard-box");
+        box.GetAttribute("data-mode").Should().Be("copy");
+        box.QuerySelectorAll(".bds-ants").Length.Should().Be(4);
+
+        await Shortcut("KeyX", KeyboardModifiers.Ctrl);
+        _component.Find(".bds-clipboard-box").GetAttribute("data-mode").Should().Be("cut");
+
+        await Shortcut("Escape", KeyboardModifiers.None);
+        _component.FindAll(".bds-clipboard-box").Should().BeEmpty();
+
+        // editing the source ends copy mode too
+        await Shortcut("KeyC", KeyboardModifiers.Ctrl);
+        await On(() => _sheet.Cells.SetValue(1, 0, 5));
+        _component.FindAll(".bds-clipboard-box").Should().BeEmpty();
     }
 
     [Test]
