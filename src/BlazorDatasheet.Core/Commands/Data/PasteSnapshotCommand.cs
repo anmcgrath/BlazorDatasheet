@@ -132,6 +132,8 @@ public class PasteSnapshotCommand : BaseCommand, IUndoableCommand
 
     private void AddFormatCommands(Sheet sheet, CellPosition origin, IRegion block, List<ICommand> commands)
     {
+        // the pasted formats replace the target's, as when cells are copied within the workbook
+        commands.Add(new ClearFormatCommand(block));
         for (var row = block.Top; row <= block.Bottom; row++)
         {
             var col = block.Left;

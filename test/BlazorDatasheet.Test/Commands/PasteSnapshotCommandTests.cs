@@ -151,4 +151,21 @@ public class PasteSnapshotCommandTests
         _sheet.Cells.GetMerge(0, 0).Should().BeEquivalentTo(new Region(0, 0, 0, 1));
         _sheet.Cells.GetValue(0, 1).Should().Be("hidden");
     }
+
+    [Test]
+    public void Pasted_Formats_Replace_The_Targets_Formats()
+    {
+        _sheet.SetFormat(new Region(0, 1, 0, 1), new CellFormat { BackgroundColor = "red", FontWeight = "bold" });
+        var snapshot = Snapshot();
+        snapshot[1, 1] = new ClipboardCell { RawText = "plain" };
+        _sheet.Commands.ExecuteCommand(new PasteSnapshotCommand(snapshot, new CellPosition(0, 0))).Should().BeTrue();
+
+        _sheet.GetFormat(0, 0).BackgroundColor.Should().BeNull();
+        _sheet.GetFormat(0, 0).FontWeight.Should().Be("bold");
+        _sheet.GetFormat(1, 1).BackgroundColor.Should().BeNull();
+        _sheet.GetFormat(1, 1).FontWeight.Should().BeNull();
+
+        _sheet.Commands.Undo();
+        _sheet.GetFormat(1, 1).BackgroundColor.Should().Be("red");
+    }
 }
