@@ -26,6 +26,13 @@ public sealed class ClipboardEntry
 
     public ClipboardMode Mode { get; }
 
+    /// <summary>
+    /// The delimited text written to the system clipboard for this entry, by which a paste that carries no
+    /// HTML marker is recognised as the entry. Null when the entry isn't on the system clipboard: then only
+    /// HTML from elsewhere tells a paste apart from the entry.
+    /// </summary>
+    public string? Text { get; set; }
+
     internal ClipboardEntry(Guid id, SheetRange source, ClipboardMode mode)
     {
         Id = id;

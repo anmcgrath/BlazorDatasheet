@@ -1161,11 +1161,10 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
         if (ClipboardHtmlParser.ContainsTable(html))
             return false;
 
-        // only text: it is ours unless it differs from what the entry would produce
-        if (string.IsNullOrEmpty(text))
+        // only text: it is ours unless it differs from what was written for the entry
+        if (string.IsNullOrEmpty(text) || entry.Text == null)
             return true;
-        var ours = DelimitedTextWriter.Write(ClipboardSnapshotBuilder.FromRange(entry.Source, entry.Id));
-        return NormalizeLineEndings(ours) == NormalizeLineEndings(text.TrimEnd('\r', '\n'));
+        return NormalizeLineEndings(entry.Text) == NormalizeLineEndings(text.TrimEnd('\r', '\n'));
     }
 
     private static string NormalizeLineEndings(string text) => text.Replace("\r\n", "\n").Replace('\r', '\n');
@@ -1551,9 +1550,11 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             ? clipboard.Cut(_sheet.Range(region))
             : clipboard.Copy(_sheet.Range(region));
 
-        var snapshot = ClipboardSnapshotBuilder.FromRange(entry.Source, entry.Id);
-        var html = region.Area <= MaxHtmlClipboardCells ? ClipboardHtmlWriter.Write(snapshot) : null;
-        await ClipboardService.Write(new ClipboardWriteData(DelimitedTextWriter.Write(snapshot), html));
+        var withHtml = region.Area <= MaxHtmlClipboardCells;
+        var snapshot = ClipboardSnapshotBuilder.FromRange(entry.Source, entry.Id, includeFormats: withHtml);
+        var text = DelimitedTextWriter.Write(snapshot);
+        entry.Text = text;
+        await ClipboardService.Write(new ClipboardWriteData(text, withHtml ? ClipboardHtmlWriter.Write(snapshot) : null));
         return true;
     }
 
