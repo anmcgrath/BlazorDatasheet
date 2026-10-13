@@ -1,4 +1,4 @@
-using BlazorDatasheet.Core.Clipboard;
+﻿using BlazorDatasheet.Core.Clipboard;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.DataStructures.Geometry;
 
@@ -26,6 +26,11 @@ public class BeforePasteEventArgs
     /// The workbook clipboard entry being pasted, or null when the content came from outside the workbook.
     /// </summary>
     public ClipboardEntry? Entry { get; }
+
+    /// <summary>
+    /// The external content being pasted, or null for a paste of the workbook clipboard entry.
+    /// </summary>
+    public ClipboardSnapshot? Snapshot { get; init; }
 
     public bool IsInternal => Entry != null;
 

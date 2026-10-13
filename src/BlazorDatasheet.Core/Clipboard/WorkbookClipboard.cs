@@ -146,6 +146,51 @@ public sealed class WorkbookClipboard
         return region;
     }
 
+    /// <summary>
+    /// Pastes content from outside the workbook into <paramref name="target"/> at <paramref name="selection"/>,
+    /// tiling across an exact-multiple selection. Returns the region written, or null if nothing was pasted.
+    /// </summary>
+    public IRegion? PasteSnapshot(Sheet target, IRegion selection, ClipboardSnapshot snapshot,
+        PasteMode mode = PasteMode.All)
+    {
+        if (snapshot.IsEmpty)
+            return null;
+
+        var selected = selection.GetIntersection(target.Region);
+        if (selected == null)
+            return null;
+
+        var args = new BeforePasteEventArgs(target, selected, mode, null) { Snapshot = snapshot };
+        if (!RaiseBeforePaste(args))
+            return null;
+        mode = args.Mode;
+
+        var origins = PasteTargetCalculator.GetTileOrigins(snapshot.Region, selected, allowTiling: true);
+        IRegion written = PasteTargetCalculator.GetBlockAt(snapshot.Region, origins[0]);
+        foreach (var origin in origins.Skip(1))
+            written = written.GetBoundingRegion(PasteTargetCalculator.GetBlockAt(snapshot.Region, origin));
+        var clipped = written.GetIntersection(target.Region);
+        if (clipped == null)
+            return null;
+
+        if (mode != PasteMode.Formats && target.Cells.ContainsReadOnly(clipped))
+            return null;
+
+        if (!target.Commands.ExecuteCommand(new PasteSnapshotCommand(snapshot, origins, mode)))
+            return null;
+
+        Pasted?.Invoke(this, new PastedEventArgs(target, clipped, mode, false));
+        return clipped;
+    }
+
+    /// <summary>
+    /// Pastes delimited text (tabs and line breaks, Excel-style quoting) from outside the workbook.
+    /// </summary>
+    public IRegion? PasteText(Sheet target, IRegion selection, string text, PasteMode mode = PasteMode.All)
+    {
+        return PasteSnapshot(target, selection, DelimitedTextParser.ToSnapshot(text), mode);
+    }
+
     private (ICommand command, IRegion region, PasteMode mode)? Plan(Sheet target, IRegion selection, PasteMode mode)
     {
         var entry = _current;

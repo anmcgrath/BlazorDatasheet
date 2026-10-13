@@ -1,4 +1,5 @@
-using System.Text;
+﻿using System.Text;
+using BlazorDatasheet.Core.Clipboard;
 using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Commands.Formatting;
@@ -653,12 +654,12 @@ public class Sheet
         if (!Region.Contains(inputPosition))
             return null;
 
-        ReadOnlySpan<string> lines = text.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
-        if (lines[^1] is [])
-            lines = lines[..^1];
+        var lines = DelimitedTextParser.Parse(text);
+        if (lines.Count == 0)
+            return null;
 
         // We may reach the end of the sheet, so we only need to paste the rows up until the end.
-        var endRow = Math.Min(inputPosition.row + lines.Length - 1, NumRows - 1);
+        var endRow = Math.Min(inputPosition.row + lines.Count - 1, NumRows - 1);
         // Keep track of the maximum end column that we are inserting into
         // This is used to determine the region to return.
         // It is possible that each line is of different cell lengths, so we return the max for all lines
@@ -669,10 +670,10 @@ public class Sheet
         int lineNo = 0;
         for (int row = inputPosition.row; row <= endRow; row++)
         {
-            string[] lineSplit = lines[lineNo].Split('\t');
-            rowData[lineNo] = lineSplit.Take(NumCols - inputPosition.col).ToArray();
+            var line = lines[lineNo];
+            rowData[lineNo] = line.Take(NumCols - inputPosition.col).Cast<object>().ToArray();
 
-            var endCol = Math.Min(inputPosition.col + lineSplit.Length - 1, NumCols - 1);
+            var endCol = Math.Min(inputPosition.col + line.Count - 1, NumCols - 1);
             maxEndCol = Math.Max(endCol, maxEndCol);
 
             lineNo++;
