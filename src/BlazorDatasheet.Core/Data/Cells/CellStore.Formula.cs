@@ -34,15 +34,25 @@ public partial class CellStore
     /// <param name="row"></param>
     /// <param name="col"></param>
     /// <param name="formula"></param>
+    /// <param name="recordValueRestore">
+    /// When false, the cell's value and validity are still cleared but not recorded for undo. Used when the
+    /// caller has already captured the cell's original value and a later entry would otherwise win on restore.
+    /// </param>
     /// <returns></returns>
-    internal CellStoreRestoreData SetFormulaImpl(int row, int col, CellFormula? formula)
+    internal CellStoreRestoreData SetFormulaImpl(int row, int col, CellFormula? formula,
+        bool recordValueRestore = true)
     {
         var restoreData = new CellStoreRestoreData();
-        restoreData.ValidRestoreData = _validStore.Clear(row, col);
-        restoreData.ValueRestoreData = _dataStore.Clear(row, col);
+        var validRestore = _validStore.Clear(row, col);
+        var valueRestore = _dataStore.Clear(row, col);
 
-        if (!restoreData.ValueRestoreData.DataRemoved.Any())
-            restoreData.ValueRestoreData.DataRemoved.Add((row, col, new CellValue(null)));
+        if (recordValueRestore)
+        {
+            restoreData.ValidRestoreData = validRestore;
+            restoreData.ValueRestoreData = valueRestore;
+            if (!restoreData.ValueRestoreData.DataRemoved.Any())
+                restoreData.ValueRestoreData.DataRemoved.Add((row, col, new CellValue(null)));
+        }
 
         restoreData.FormulaRestoreData = _formulaStore.Set(row, col, formula);
         restoreData.DependencyManagerRestoreData = Sheet.FormulaEngine.SetFormula(row, col, Sheet.Name, formula);
@@ -65,7 +75,7 @@ public partial class CellStore
     }
 
     private CellStoreRestoreData CopyFormulaImpl(Sheet fromSheet, IRegion fromRegion, IRegion toRegion,
-        ReferenceAdjustment adjustment)
+        ReferenceAdjustment adjustment, bool recordValueRestore)
     {
         var dr = toRegion.Top - fromRegion.Top;
         var dc = toRegion.Left - fromRegion.Left;
@@ -95,7 +105,7 @@ public partial class CellStore
                 clonedFormula.QualifyForeignReferences(Sheet.Name);
             }
 
-            restoreData.Merge(SetFormulaImpl(formula.row + dr, formula.col + dc, clonedFormula));
+            restoreData.Merge(SetFormulaImpl(formula.row + dr, formula.col + dc, clonedFormula, recordValueRestore));
         }
 
         return restoreData;
