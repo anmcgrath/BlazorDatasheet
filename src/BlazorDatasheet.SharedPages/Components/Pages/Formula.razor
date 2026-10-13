@@ -12,6 +12,25 @@
 
 <CodeExample ComponentType="typeof(FormulaBasic)"/>
 
+<h4 id="dynamic-arrays">Dynamic arrays</h4>
+
+<div class="block">
+    A formula whose result is an array <em>spills</em> into the cells below and to the right of it, as in Excel.
+    Operators and functions that take a single value work element by element over a range or array,
+    so <code>=A1:A6*2</code> fills six cells, and <code>=IF(A1:A6&gt;2,"high","low")</code> does too.
+    The functions <code>SEQUENCE</code>, <code>TRANSPOSE</code>, <code>UNIQUE</code>, <code>SORT</code>,
+    <code>SORTBY</code> and <code>FILTER</code> return arrays.
+</div>
+
+<div class="block">
+    The cells a formula spills into cannot be edited; selecting one shows the formula in the formula bar and
+    outlines the spill. If a cell in the way holds a value, a formula or a merge, the formula shows
+    <code>#SPILL!</code> until the cell is cleared. <code>C1#</code> refers to whatever the formula in C1
+    currently spills into, so <code>=SUM(C1#)</code> follows the spill as it grows and shrinks.
+</div>
+
+<CodeExample ComponentType="typeof(ArrayFormulaExample)"/>
+
 @code {
 
 }
