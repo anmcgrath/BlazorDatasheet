@@ -1,4 +1,4 @@
-﻿using BlazorDatasheet.Core.Clipboard;
+using BlazorDatasheet.Core.Clipboard;
 using BlazorDatasheet.Core.Commands.Formatting;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.DataStructures.Geometry;

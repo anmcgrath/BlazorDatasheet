@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using BlazorDatasheet.Core.Clipboard;
 using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Commands.Data;

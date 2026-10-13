@@ -1,4 +1,4 @@
-﻿using BlazorDatasheet.Core.Commands.Data;
+using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Events.Formula;
 using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.DataStructures.Store;

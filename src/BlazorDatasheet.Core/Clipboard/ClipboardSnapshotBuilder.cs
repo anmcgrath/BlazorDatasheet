@@ -1,4 +1,4 @@
-﻿using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Core.Data;
 
 namespace BlazorDatasheet.Core.Clipboard;
 
