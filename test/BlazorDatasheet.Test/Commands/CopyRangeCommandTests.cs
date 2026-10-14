@@ -3,6 +3,7 @@ using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.Formula.Core;
 using AwesomeAssertions;
 using NUnit.Framework;
 using System.Linq;
@@ -221,5 +222,31 @@ public class CopyRangeCommandTests
 
         var overWhole = new CopyRangeCommand(_sheet.Range("E1")!, _sheet.Range("A1:C3")!, CopyOptions.DefaultCopyOptions);
         overWhole.CanExecute(_sheet).Should().BeTrue();
+    }
+
+    [TestCase("=A1", 1, 1, 0, 0, "=#REF!")] // up-left past A1
+    [TestCase("=A1", 1, 1, 1, 0, "=#REF!")] // left past column A
+    [TestCase("=A1", 1, 1, 0, 1, "=#REF!")] // up past row 1
+    [TestCase("=sum(A1:C3)", 1, 1, 1, 0, "=sum(#REF!)")] // range partly off the left
+    [TestCase("=$A1", 1, 1, 1, 0, "=$A1")] // fixed column isn't shifted
+    [TestCase("=A1048576", 0, 0, 1, 0, "=#REF!")] // past max row
+    [TestCase("=XFD1", 0, 0, 0, 1, "=#REF!")] // past max col
+    [TestCase("=sum(A1048575:A1048576)", 0, 0, 1, 0, "=sum(#REF!)")]
+    [TestCase("=sum(XFC:XFD)", 0, 0, 0, 1, "=sum(#REF!)")] // column range past max col
+    [TestCase("=sum(1048575:1048576)", 0, 0, 1, 0, "=sum(#REF!)")] // row range past max row
+    [TestCase("=sum(XFC:XFD)", 0, 0, 1, 0, "=sum(XFC:XFD)")] // column range only checks cols
+    [TestCase("=A1048576", 0, 0, 0, 1, "=B1048576")]
+    public void Copy_Formula_Shifting_Reference_Off_Grid_Gives_Ref_Error(string formula, int fromRow, int fromCol,
+        int toRow, int toCol, string expected)
+    {
+        _sheet.Cells[fromRow, fromCol].Formula = formula;
+
+        new CopyRangeCommand(_sheet.Range(fromRow, fromCol), _sheet.Range(toRow, toCol),
+            CopyOptions.DefaultCopyOptions).Execute(_sheet);
+
+        _sheet.Cells[toRow, toCol].Formula.Should().Be(expected);
+        if (expected.Contains("#REF!"))
+            _sheet.Cells.GetCellValue(toRow, toCol).Data.Should().BeOfType<FormulaError>()
+                .Which.ErrorType.Should().Be(ErrorType.Ref);
     }
 }

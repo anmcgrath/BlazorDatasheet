@@ -46,6 +46,7 @@ public class CellReference : Reference
         var dRow = IsRowFixed ? 0 : offsetRow;
         var dCol = IsColFixed ? 0 : offsetCol;
         Region.Shift(dRow, dCol);
+        InvalidateIfOutOfBounds();
     }
 
     public override bool IsInvalid { get; protected set; }
