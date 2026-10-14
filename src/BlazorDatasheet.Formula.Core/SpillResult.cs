@@ -8,4 +8,11 @@ namespace BlazorDatasheet.Formula.Core;
 /// <param name="OldRegion">The region the formula spilled into before, or null.</param>
 /// <param name="NewRegion">The region it spills into now, or null if it did not spill (blocked or scalar).</param>
 /// <param name="Blocked">True when something was in the way and the formula cell holds #SPILL!.</param>
-public readonly record struct SpillResult(IRegion? OldRegion, IRegion? NewRegion, bool Blocked);
+public readonly record struct SpillResult(IRegion? OldRegion, IRegion? NewRegion, bool Blocked)
+{
+    /// <summary>
+    /// Whether any output value changed. An unchanged footprint with unchanged values does not need
+    /// another pass over its readers. Environments that do not compare values default to notifying them.
+    /// </summary>
+    public bool ValuesChanged { get; init; } = true;
+}

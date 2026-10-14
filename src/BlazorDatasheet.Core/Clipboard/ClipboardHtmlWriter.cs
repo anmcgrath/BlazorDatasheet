@@ -18,6 +18,7 @@ public static class ClipboardHtmlWriter
     public const string CellTypeAttribute = "data-bds-cell-type";
     public const string NumberFormatAttribute = "data-bds-number-format";
     public const string OriginAttribute = "data-bds-origin";
+    public const string SpillAnchorAttribute = "data-bds-spill-anchor";
 
     public static string Write(ClipboardSnapshot snapshot)
     {
@@ -63,6 +64,8 @@ public static class ClipboardHtmlWriter
                         Attribute(sb, "style", css);
                     if (cell.Formula != null)
                         Attribute(sb, FormulaAttribute, cell.Formula);
+                    if (cell.SpillAnchor is { } spillAnchor)
+                        Attribute(sb, SpillAnchorAttribute, $"{spillAnchor.row},{spillAnchor.col}");
                     if (!cell.Value.IsEmpty && ClipboardValueText.Invariant(cell.Value) is { } invariant)
                     {
                         Attribute(sb, TypeAttribute, ClipboardValueText.TypeName(cell.Value));

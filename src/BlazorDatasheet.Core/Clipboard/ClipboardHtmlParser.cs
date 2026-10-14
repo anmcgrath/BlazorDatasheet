@@ -164,12 +164,21 @@ public static partial class ClipboardHtmlParser
             rawText = text;
 
         var cellType = attrs.GetValueOrDefault(ClipboardHtmlWriter.CellTypeAttribute);
+        CellPosition? spillAnchor = null;
+        if (attrs.TryGetValue(ClipboardHtmlWriter.SpillAnchorAttribute, out var spillText))
+        {
+            var parts = spillText.Split(',');
+            if (parts.Length == 2 && int.TryParse(parts[0], out var spillRow) &&
+                int.TryParse(parts[1], out var spillCol))
+                spillAnchor = new CellPosition(spillRow, spillCol);
+        }
 
         return new ClipboardCell
         {
             Value = value,
             RawText = rawText,
             Formula = formula is { Length: > 1 } ? formula : null,
+            SpillAnchor = spillAnchor,
             Format = format.IsDefaultFormat() ? null : format,
             Type = string.IsNullOrEmpty(cellType) ? null : cellType
         };

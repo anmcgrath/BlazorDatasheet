@@ -373,6 +373,9 @@ public readonly struct CellValue : IComparable, IComparable<CellValue>, IEquatab
         if (ValueType == CellValueType.Empty)
             return true;
 
+        if (ValueType == CellValueType.Error)
+            return Equals(_objectData, value._objectData);
+
         return ((IComparable)Data!).CompareTo(value.Data) == 0;
     }
 

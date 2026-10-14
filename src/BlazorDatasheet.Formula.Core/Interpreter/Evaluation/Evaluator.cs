@@ -59,19 +59,65 @@ public class Evaluator
             return CellValue.Error(ErrorType.Na);
 
         var result = EvaluateExpression(tree.Root, ctx);
-        // If we haven't resolved references yet, do that
-        // We do this at the end of evaluation so that we can pass
-        // references to functions.
-        if (!ctx.Options.DoNotResolveDependencies && result.ValueType == CellValueType.Reference)
+        // Keep references available to functions, resolving the final result only when requested.
+        if (!ctx.Options.DoNotResolveDependencies)
+            result = ResolveReference(result);
+
+        return NormalizeArrayResult(result);
+    }
+
+    private CellValue ResolveReference(CellValue value)
+    {
+        if (value.ValueType != CellValueType.Reference)
+            return value;
+
+        var reference = (Reference)value.Data!;
+        return reference.Kind switch
         {
-            var r = (Reference)result.Data!;
-            if (r.Kind == ReferenceKind.Cell)
-                return _environment.GetCellValue(((CellReference)r).RowIndex, ((CellReference)r).ColIndex, r.SheetName);
-            else if (r.Kind == ReferenceKind.Range)
-                return CellValue.Array(_environment.GetRangeValues(r));
+            ReferenceKind.Cell => _environment.GetCellValue(((CellReference)reference).RowIndex,
+                ((CellReference)reference).ColIndex, reference.SheetName),
+            ReferenceKind.Range => CellValue.Array(_environment.GetRangeValues(reference)),
+            _ => CellValue.Error(ErrorType.Ref)
+        };
+    }
+
+    /// <summary>
+    /// Array results are rectangular and contain values, never references or nested collections.
+    /// Normalize before another function consumes the result as well as before it reaches the sheet.
+    /// Copy only rows containing references so function-owned arrays are not modified.
+    /// </summary>
+    private CellValue NormalizeArrayResult(CellValue value)
+    {
+        if (!value.IsArray())
+            return value;
+
+        var source = (CellValue[][])value.Data!;
+        var columns = source.Length == 0 ? 0 : source[0]?.Length ?? -1;
+        CellValue[][]? result = null;
+        for (var r = 0; r < source.Length; r++)
+        {
+            var row = source[r];
+            if (row == null || row.Length != columns)
+                return CellValue.Error(ErrorType.Calc, "Array rows must have the same length");
+
+            CellValue[]? resolvedRow = null;
+            for (var c = 0; c < columns; c++)
+            {
+                var element = ResolveReference(row[c]);
+                if (element.ValueType is CellValueType.Array or CellValueType.Sequence or CellValueType.Reference)
+                    return CellValue.Error(ErrorType.Calc, "Nested arrays are not supported");
+
+                if (row[c].ValueType == CellValueType.Reference)
+                {
+                    result ??= (CellValue[][])source.Clone();
+                    resolvedRow ??= (CellValue[])row.Clone();
+                    resolvedRow[c] = element;
+                    result[r] = resolvedRow;
+                }
+            }
         }
 
-        return result;
+        return result == null ? value : CellValue.Array(result);
     }
 
     private CellValue EvaluateExpression(Expression expression, EvalContext ctx)
@@ -85,7 +131,7 @@ public class Evaluator
             case NodeKind.ParenthesizedExpression:
                 return EvaluateParenthesizedExpression((ParenthesizedExpression)expression, ctx);
             case NodeKind.FunctionCall:
-                return EvaluateFunctionCall((FunctionExpression)expression, ctx);
+                return NormalizeArrayResult(EvaluateFunctionCall((FunctionExpression)expression, ctx));
             case NodeKind.Range:
                 return EvaluateReferenceExpression((ReferenceExpression)expression, ctx);
             case NodeKind.UnaryOperation:
@@ -93,7 +139,7 @@ public class Evaluator
             case NodeKind.ArrayConstant:
                 return EvaluateArrayConstantExpression((ArrayConstantExpression)expression);
             case NodeKind.Name:
-                return EvaluateNamedExpression((VariableExpression)expression, ctx);
+                return NormalizeArrayResult(EvaluateNamedExpression((VariableExpression)expression, ctx));
             case NodeKind.Error:
                 return CellValue.Error(((ErrorExpression)expression).ErrorType);
         }
@@ -255,10 +301,19 @@ public class Evaluator
             for (var i = 0; i < nArgsProvided; i++)
             {
                 args[i] = EvaluateExpression(node.Args[i], ctx);
-                if (GetParameterDefinition(paramDefinitions, i).Type.IsScalar() &&
+                if (IsLiftableParameter(GetParameterDefinition(paramDefinitions, i)) &&
                     ArrayBroadcaster.IsArrayLike(args[i]))
                 {
                     args[i] = ArrayBroadcaster.Materialize(args[i], _environment);
+                    // An array-returning function can consume a singleton scalar argument once,
+                    // but lifting it over multiple elements would create nested arrays.
+                    if (func.ReturnShape == ReturnShape.Array)
+                    {
+                        if (ArrayBroadcaster.Shape(args[i]) != (1, 1))
+                            return CellValue.Error(ErrorType.Calc, "Cannot lift an array-returning function");
+                        args[i] = ArrayBroadcaster.ElementAt(args[i], 0, 0);
+                        continue;
+                    }
                     lifted[i] = true;
                     anyLifted = true;
                 }
@@ -299,8 +354,9 @@ public class Evaluator
         // IF(A1:A3>1, B1:B3, 0) picks a value per row rather than returning the whole array.
         for (var i = 0; i < nArgs; i++)
         {
+            var parameter = GetParameterDefinition(paramDefinitions, i);
             if (!lifted[i] &&
-                GetParameterDefinition(paramDefinitions, i).Type == ParameterType.Any &&
+                parameter.Type == ParameterType.Any && parameter.Shape != ParameterShape.Array &&
                 ArrayBroadcaster.IsArrayLike(args[i]))
             {
                 args[i] = ArrayBroadcaster.Materialize(args[i], _environment);
@@ -377,6 +433,9 @@ public class Evaluator
     {
         return paramDefinitions[Math.Min(argIndex, paramDefinitions.Length - 1)];
     }
+
+    private static bool IsLiftableParameter(ParameterDefinition parameter) =>
+        parameter.Shape == ParameterShape.Scalar && parameter.Type.IsScalar();
 
     private CellValue EvaluateBinaryExpression(BinaryOperationExpression expression, EvalContext ctx)
     {

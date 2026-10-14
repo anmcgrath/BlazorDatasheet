@@ -53,6 +53,7 @@ namespace BlazorDatasheet.Core.Data.Cells
         internal bool MergeImpl(IRegion region)
         {
             _mergeStore.Add(region, true);
+            EmitCellsChanged(region);
             RegionMerged?.Invoke(this, region);
             Sheet.MarkDirty(region);
             return true;
@@ -83,6 +84,7 @@ namespace BlazorDatasheet.Core.Data.Cells
             foreach (var merge in _mergeStore.GetDataRegions(region).ToList())
             {
                 restoreData.MergeRestoreData.Merge(_mergeStore.Delete(merge));
+                EmitCellsChanged(merge.Region);
                 RegionUnMerged?.Invoke(this, merge.Region);
                 Sheet.MarkDirty(merge.Region);
             }
@@ -111,6 +113,7 @@ namespace BlazorDatasheet.Core.Data.Cells
                 if (!Sheet.Region.Contains(merge))
                     continue;
                 restoreData.MergeRestoreData.Merge(_mergeStore.Add(merge, true));
+                EmitCellsChanged(merge);
                 RegionMerged?.Invoke(this, merge);
                 Sheet.MarkDirty(merge);
             }
@@ -130,6 +133,7 @@ namespace BlazorDatasheet.Core.Data.Cells
             {
                 updateRegion = region.GetBoundingRegion(updateRegion);
                 _mergeStore.Delete(merge);
+                EmitCellsChanged(merge.Region);
                 RegionUnMerged?.Invoke(this, region);
             }
 

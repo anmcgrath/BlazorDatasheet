@@ -82,6 +82,7 @@ public class PasteSnapshotCommand : BaseCommand, IUndoableCommand
     private void AddValueCommands(Sheet sheet, CellPosition origin, IRegion block, List<ICommand> commands)
     {
         var formulas = new List<(int row, int col, CellFormula formula)>();
+        var formulaPositions = new HashSet<CellPosition>();
         var types = new List<(IRegion region, string type)>();
         var values = new CellValue[block.Height][];
         for (var r = 0; r < block.Height; r++)
@@ -107,12 +108,17 @@ public class PasteSnapshotCommand : BaseCommand, IUndoableCommand
                         if (_snapshot.Origin is { } source)
                             parsed.ShiftReferences(origin.row - source.row, origin.col - source.col, null);
                         formulas.Add((row, col, parsed));
+                        formulaPositions.Add(new CellPosition(row, col));
                         continue;
                     }
 
                     values[r][c] = CellValue.Text(cell.Formula);
                     continue;
                 }
+
+                if (_mode == PasteMode.All && cell.SpillAnchor is { } anchor &&
+                    formulaPositions.Contains(new CellPosition(origin.row + anchor.row, origin.col + anchor.col)))
+                    continue;
 
                 values[r][c] = cell.RawText != null
                     ? sheet.Cells.ConvertToCellValue(row, col, cell.RawText)

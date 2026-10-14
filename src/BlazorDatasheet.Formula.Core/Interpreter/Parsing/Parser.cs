@@ -300,7 +300,7 @@ public class Parser
         {
             while (true)
             {
-                currentRow.Add(ParseLiteralExpression());
+                currentRow.Add(ParseArrayElement());
                 if (Current.Tag == _formulaOptions.SeparatorSettings.ColumnSeparatorTag)
                 {
                     NextToken();
@@ -339,6 +339,27 @@ public class Parser
         MatchToken(Tag.RightCurlyBracketToken);
 
         return new ArrayConstantExpression(rows, _formulaOptions);
+    }
+
+    private LiteralExpression ParseArrayElement()
+    {
+        if (Current.Tag == Tag.LogicalToken)
+            return new LiteralExpression(CellValue.Logical(((LogicalToken)NextToken()).Value));
+        if (Current.Tag == Tag.ErrorToken)
+            return new LiteralExpression(CellValue.Error(((ErrorToken)NextToken()).ErrorType));
+        if (Current.Tag is Tag.PlusToken or Tag.MinusToken)
+        {
+            var negative = NextToken().Tag == Tag.MinusToken;
+            if (Current.Tag == Tag.Number)
+            {
+                var number = ((NumberToken)NextToken()).Value;
+                return new LiteralExpression(CellValue.Number(negative ? -number : number));
+            }
+
+            Error("Expected a number after the sign in an array constant");
+        }
+
+        return ParseLiteralExpression();
     }
 
     private LiteralExpression ParseLiteralExpression()

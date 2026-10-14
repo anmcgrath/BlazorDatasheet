@@ -18,4 +18,13 @@ public class CellValueTests
         c2.CompareTo(c1).Should().Be(-1);
         c2.CompareTo(c3).Should().Be(1);
     }
+    [Test]
+    public void Error_Equality_Handles_The_Code_And_Message()
+    {
+        var value = CellValue.Error(ErrorType.Na, "missing");
+        (value == CellValue.Error(ErrorType.Na, "missing")).Should().BeTrue();
+        (value == CellValue.Error(ErrorType.Ref, "missing")).Should().BeFalse();
+        (value == CellValue.Error(ErrorType.Na, "different")).Should().BeFalse();
+        value.GetHashCode().Should().Be(CellValue.Error(ErrorType.Na, "missing").GetHashCode());
+    }
 }

@@ -524,6 +524,74 @@ public class FormulaEngine
     }
 
     /// <summary>
+    /// Ownership changes can unblock another array formula even when it does not reference this one.
+    /// Unchanged footprints do not need this retry: their descendant values still belong to the owner.
+    /// </summary>
+    private void RecordSpillChange(FormulaVertex vertex, IRegion? oldRegion, IRegion? newRegion,
+        bool valuesChanged = true)
+    {
+        var sameFootprint = oldRegion?.Equals(newRegion) == true;
+        if ((oldRegion == null && newRegion == null) || (sameFootprint && !valuesChanged))
+            return;
+        RecordSpill(vertex, oldRegion);
+        RecordSpill(vertex, newRegion);
+        if (sameFootprint)
+            return;
+
+        var sheet = _sheets.FirstOrDefault(x => x.Name == vertex.SheetName);
+        if (sheet == null)
+            return;
+
+        foreach (var region in new[] { oldRegion, newRegion })
+        {
+            if (region == null)
+                continue;
+            foreach (var anchor in sheet.Cells.GetSpillAnchorsIntersecting(region))
+            {
+                if (sheet.Cells.IsSpillAnchor(anchor.row, anchor.col))
+                    continue;
+                var blocked = DependencyManager.GetVertex(anchor.row, anchor.col, vertex.SheetName);
+                if (blocked == null || blocked.Equals(vertex))
+                    continue;
+                if (_inCurrentPass.Contains(blocked) && !_evaluatedInPass.Contains(blocked))
+                    continue;
+                _lateDirty.Add(blocked);
+            }
+        }
+    }
+
+    /// <summary>
+    /// A spill adds dependencies from its owner to every formula reading its descendants. Walk those
+    /// dependencies, including other spills and named formulas, to check whether they return to the
+    /// owner. These edges are derived at calculation time so resizing and undo cannot leave stale edges.
+    /// </summary>
+    internal bool CreatesSpillCycle(CellPosition anchor, string sheetName, IRegion region)
+    {
+        var owner = DependencyManager.GetVertex(anchor.row, anchor.col, sheetName);
+        if (owner == null)
+            return false;
+        var pending = new Stack<FormulaVertex>(DependencyManager.GetDirectDependents(region, owner.SheetName));
+        var visited = new HashSet<FormulaVertex>();
+        while (pending.TryPop(out var vertex))
+        {
+            if (!visited.Add(vertex))
+                continue;
+
+            var spill = vertex.VertexType == VertexType.Cell
+                ? _environment.GetSpillRegion(vertex.Row, vertex.Col, vertex.SheetName)
+                : null;
+            var dependents = spill == null
+                ? DependencyManager.GetDirectDependents(vertex)
+                : DependencyManager.GetDirectDependents(spill, vertex.SheetName);
+            foreach (var dependent in dependents)
+                pending.Push(dependent);
+        }
+
+        return visited.Contains(owner) &&
+               new SpillCycleEnvironment(_environment, DependencyManager, _sheets, visited, owner, region).IsCircular();
+    }
+
+    /// <summary>
     /// The sheets batched for the calculation in flight. A snapshot, because a handler reached from
     /// the calculation may add or remove a sheet, and every sheet batched must be unbatched.
     /// Reused rather than reallocated - IsCalculating means only one calculation is ever in flight.
@@ -607,14 +675,13 @@ public class FormulaEngine
             {
                 var result = _environment.SetSpillResult(vertex.Row, vertex.Col, vertex.SheetName,
                     (CellValue[][])value.Data!);
-                RecordSpill(vertex, result.OldRegion);
-                RecordSpill(vertex, result.NewRegion);
+                RecordSpillChange(vertex, result.OldRegion, result.NewRegion, result.ValuesChanged);
             }
             else
             {
                 var oldRegion = _environment.GetSpillRegion(vertex.Row, vertex.Col, vertex.SheetName);
                 _environment.SetCellValue(vertex.Row, vertex.Col, vertex.SheetName, value);
-                RecordSpill(vertex, oldRegion);
+                RecordSpillChange(vertex, oldRegion, null);
             }
         }
         else if (vertex.VertexType == VertexType.Named)

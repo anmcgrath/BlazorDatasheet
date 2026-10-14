@@ -44,8 +44,14 @@ public class SortRangeCommand : BaseCommand, IUndoableCommand
 
     public override bool CanExecuteProtected(Sheet sheet) => sheet.Protection.Can(SheetOperation.Sort, _region);
 
+    // Spill descendants belong to their anchor and cannot be moved independently by a row sort.
+    protected override bool CanExecuteCore(Sheet sheet) => !sheet.Cells.AnySpills(_region);
+
     protected override bool ExecuteCore(Sheet sheet)
     {
+        if (!CanExecuteCore(sheet))
+            return false;
+
         var store = sheet.Cells.GetCellDataStore();
 
 
