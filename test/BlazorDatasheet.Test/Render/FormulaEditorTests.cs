@@ -75,6 +75,9 @@ public class FormulaEditorTests
         await editor.InvokeAsync(() => editor.Instance.HandleKey("ArrowUp", false, false, false, false).Should().BeTrue());
         await editor.InvokeAsync(() => editor.Instance.HandleKey("ArrowDown", false, false, false, false));
 
+        editor.Instance.HandleKey("Enter", false, false, false, false)
+            .Should().BeFalse("enter finishes the edit with what was typed, only tab takes a suggestion");
+
         await editor.InvokeAsync(() => editor.Instance.HandleKey("Tab", false, false, false, false).Should().BeTrue());
         value.Should().Be($"=1+{names[1]}(");
         editor.FindAll(".bds-func-suggestions-item").Should().BeEmpty();
@@ -100,7 +103,7 @@ public class FormulaEditorTests
         names.First().Should().Be("sum_of_all1", "names come before functions");
         names.Should().Contain("SUM");
 
-        await editor.InvokeAsync(() => editor.Instance.HandleKey("Enter", false, false, false, false).Should().BeTrue());
+        await editor.InvokeAsync(() => editor.Instance.HandleKey("Tab", false, false, false, false).Should().BeTrue());
         value.Should().Be("=1+sum_of_all1");
     }
 

@@ -261,7 +261,8 @@
 
     /// <summary>
     /// Handles a key before the sheet does. While suggestions are showing, the up and down arrows move through
-    /// them, enter and tab take the selected one and escape closes them. Returns whether the key was handled.
+    /// them, tab takes the selected one and escape closes them. Returns whether the key was handled.
+    /// Enter is left to the sheet, so that it finishes the edit with what was typed, as in other spreadsheets.
     /// </summary>
     public bool HandleKey(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
     {
@@ -276,7 +277,6 @@
             case "ArrowUp":
                 SelectSuggestion(_suggestionIndex - 1);
                 break;
-            case "Enter":
             case "Tab":
                 _ = AcceptSuggestion(_suggestions![_suggestionIndex]);
                 return true;
