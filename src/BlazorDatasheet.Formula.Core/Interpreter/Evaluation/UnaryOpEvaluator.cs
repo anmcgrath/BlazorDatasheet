@@ -1,4 +1,5 @@
 using BlazorDatasheet.Formula.Core.Interpreter.Lexing;
+using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 
@@ -24,6 +25,11 @@ public class UnaryOpEvaluator
 
     private CellValue EvaluateScalar(Tag opTag, CellValue value)
     {
+        if (value.IsCellReference())
+        {
+            var reference = (CellReference)value.Data!;
+            value = _environment.GetCellValue(reference.RowIndex, reference.ColIndex, reference.SheetName);
+        }
         if (value.IsError())
             return value;
 

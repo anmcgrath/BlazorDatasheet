@@ -13,6 +13,8 @@ public class LiteralExpression : Expression
 
     public override string ToExpressionText()
     {
+        if (Value.Data is FormulaError error)
+            return error.ErrorType.ToErrorString();
         return Value.ToString();
     }
 }

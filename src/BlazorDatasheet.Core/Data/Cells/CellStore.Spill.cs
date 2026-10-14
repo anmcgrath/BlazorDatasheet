@@ -127,6 +127,9 @@ public partial class CellStore
     internal void SetSpillImpl(CellPosition anchor, IRegion region, bool blocked)
     {
         var old = GetSpillEntry(anchor);
+        if (old != null && old.Data.IsBlocked == blocked && old.Region.Equals(region))
+            return;
+
         var oldRegion = old == null || old.Data.IsBlocked ? null : old.Region;
         if (old != null)
             _spillStore.Delete(old);
@@ -245,18 +248,32 @@ public partial class CellStore
             return new SpillResult(prev, null, true);
         }
 
+        if (Sheet.FormulaEngine.CreatesSpillCycle(anchor, Sheet.Name, target))
+        {
+            WipeSpillForAnchor(anchor);
+            SetCalculatedValueImpl(anchor.row, anchor.col, CellValue.Error(ErrorType.Circular));
+            return new SpillResult(prev, null, false);
+        }
+
         if (prev != null)
             ClearSpilledValues(prev, anchor, keep: target);
 
+        var valuesChanged = false;
         for (var i = 0; i < rows; i++)
         {
             var row = values[i];
             for (var j = 0; j < cols; j++)
-                SetCalculatedValueImpl(anchor.row + i, anchor.col + j, j < row.Length ? row[j] : CellValue.Empty);
+            {
+                var value = j < row.Length ? row[j] : CellValue.Empty;
+                valuesChanged |= GetCellValue(anchor.row + i, anchor.col + j) != value;
+                SetCalculatedValueImpl(anchor.row + i, anchor.col + j, value);
+            }
         }
 
+        if (valuesChanged)
+            Sheet.MarkDirty(target);
         SetSpillImpl(anchor, target, blocked: false);
-        return new SpillResult(prev, target, false);
+        return new SpillResult(prev, target, false) { ValuesChanged = valuesChanged };
     }
 
     /// <summary>

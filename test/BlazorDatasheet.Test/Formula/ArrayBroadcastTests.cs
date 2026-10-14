@@ -2,6 +2,7 @@ using System.Linq;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter.Evaluation;
 using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
+using BlazorDatasheet.Formula.Core.Interpreter.References;
 using BlazorDatasheet.Formula.Functions.Logical;
 using BlazorDatashet.Formula.Functions.Math;
 using AwesomeAssertions;
@@ -137,5 +138,51 @@ public class ArrayBroadcastTests
     {
         _evaluator.Evaluate(_parser.Parse("=A1*2+B1")).Data.Should().Be(12.0);
         _evaluator.Evaluate(_parser.Parse("=SIN(0)")).Data.Should().Be(0.0);
+    }
+    [TestCase("=IF({1;0},10,B1)")]
+    [TestCase("=IF({TRUE;FALSE},10,B1)")]
+    public void Lifted_If_Resolves_Scalar_Cell_References(string formula)
+    {
+        Data(EvalArray(formula)).Should().BeEquivalentTo(new object[][] { [10.0], [10.0] });
+    }
+
+    [Test]
+    public void Lifted_References_Are_Resolved_Before_An_Aggregate_Consumes_Them()
+    {
+        _evaluator.Evaluate(_parser.Parse("=SUM(IF({1;0},1,B1))")).Data.Should().Be(11.0);
+    }
+
+    [Test]
+    public void Function_Array_References_Are_Resolved_Without_Mutating_The_Source()
+    {
+        var cell = new CellReference(0, 1, false, false);
+        var source = new CellValue[][] { [CellValue.Reference(cell)] };
+        _env.RegisterFunction(new FunctionDescriptor("CUSTOM", [], (_, _) => CellValue.Array(source)));
+
+        EvalArray("=CUSTOM()")[0][0].Data.Should().Be(10.0);
+        source[0][0].ValueType.Should().Be(CellValueType.Reference);
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void Invalid_Function_Array_Results_Return_Calc(bool nested)
+    {
+        var source = nested
+            ? new CellValue[][] { [CellValue.Array([[CellValue.Number(1)]])] }
+            : new CellValue[][] { [CellValue.Number(1)], [CellValue.Number(2), CellValue.Number(3)] };
+        _env.RegisterFunction(new FunctionDescriptor("CUSTOM", [], (_, _) => CellValue.Array(source)));
+        var result = _evaluator.Evaluate(_parser.Parse("=SUM(CUSTOM())"));
+        ((FormulaError)result.Data!).ErrorType.Should().Be(ErrorType.Calc);
+    }
+
+    [Test]
+    public void Array_Shaped_Any_Parameter_Is_Passed_Whole_During_Lifting()
+    {
+        _env.RegisterFunction(new FunctionDescriptor("CUSTOM",
+            [new("value", ParameterType.Number), new("array", ParameterType.Any, shape: ParameterShape.Array)],
+            (args, _) => CellValue.Number(args[0].NumberValue + args[1].Rows())));
+
+        Data(EvalArray("=CUSTOM({1;2},{10;20;30})"))
+            .Should().BeEquivalentTo(new object[][] { [4.0], [5.0] });
     }
 }

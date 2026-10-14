@@ -204,7 +204,9 @@ public partial class CellStore
             // collect before clearing: the source may overlap the target. Cells another formula spilled
             // into are left to that formula when it is copied too; a values-only copy takes them as values.
             var values = fromCells._dataStore.GetNonEmptyData(fromRegion)
-                .Where(v => !options.CopyFormula || !fromCells.IsSpilledCell(v.row, v.col))
+                .Where(v => !options.CopyFormula ||
+                            fromCells.GetSpillAnchor(v.row, v.col) is not { } anchor ||
+                            anchor == new CellPosition(v.row, v.col) || !fromRegion.Contains(anchor))
                 .ToList();
             var valid = fromCells._validStore.GetNonEmptyData(fromRegion).ToList();
             WipeSpillsIntersecting(toRegion);
@@ -344,6 +346,10 @@ public partial class CellStore
         _formatStore.Restore(restoreData.FormatRestoreData);
         _mergeStore.Restore(restoreData.MergeRestoreData);
         _spillStore.Restore(restoreData.SpillRestoreData);
+
+        foreach (var merge in restoreData.MergeRestoreData.RegionsAdded
+                     .Concat(restoreData.MergeRestoreData.RegionsRemoved))
+            EmitCellsChanged(merge.Region);
 
         foreach (var pt in restoreData.ValueRestoreData.DataRemoved)
         {

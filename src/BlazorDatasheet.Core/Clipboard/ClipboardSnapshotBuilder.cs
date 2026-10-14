@@ -1,4 +1,5 @@
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.Clipboard;
 
@@ -22,10 +23,15 @@ public static class ClipboardSnapshotBuilder
         for (var col = region.Left; col <= region.Right; col++)
         {
             var type = sheet.Cells.GetCellType(row, col);
+            var anchor = sheet.Cells.GetSpillAnchor(row, col);
             var cell = new ClipboardCell
             {
                 Value = sheet.Cells.GetCellValue(row, col),
                 Formula = sheet.Cells.GetFormulaString(row, col),
+                SpillAnchor = anchor is { } position && position != new CellPosition(row, col) &&
+                              region.Contains(position)
+                    ? new CellPosition(position.row - region.Top, position.col - region.Left)
+                    : null,
                 Format = includeFormats ? ClipboardFormats.Portable(sheet.GetFormat(row, col)) : null,
                 Type = type == "default" ? null : type
             };

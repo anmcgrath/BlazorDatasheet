@@ -25,6 +25,12 @@ public sealed class ClipboardCell
     /// </summary>
     public string? Formula { get; init; }
 
+    /// <summary>
+    /// The owning spill anchor, relative to the snapshot, when that anchor is included in the copy.
+    /// Values paste keeps the value; formula paste leaves it to the copied anchor to refill.
+    /// </summary>
+    public CellPosition? SpillAnchor { get; init; }
+
     public CellFormat? Format { get; init; }
 
     /// <summary>

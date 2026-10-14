@@ -36,6 +36,9 @@ public class BinaryOpEvaluator
 
     private CellValue EvaluateScalar(CellValue left, Tag op, CellValue right)
     {
+        // Resolve before checking errors so a referenced circular error is not coerced into #VALUE!.
+        left = EvalCellValueIfItIsReference(left);
+        right = EvalCellValueIfItIsReference(right);
         if (left.IsError())
             return left;
         if (right.IsError())
