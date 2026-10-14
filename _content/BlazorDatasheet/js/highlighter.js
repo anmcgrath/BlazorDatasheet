@@ -195,7 +195,7 @@ class Highligher {
 
         // While a list of suggestions is open these keys work the list, which is handled in .NET.
         if (this.options.captureListKeys && !e.isComposing &&
-            (e.key === "Enter" || e.key === "Tab" || e.key === "ArrowUp" || e.key === "ArrowDown"))
+            (e.key === "Tab" || e.key === "ArrowUp" || e.key === "ArrowDown"))
             e.preventDefault()
 
         if (!this.options.preventDefaultArrowKeys)
