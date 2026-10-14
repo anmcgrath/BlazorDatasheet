@@ -64,6 +64,18 @@ public abstract class Reference
     {
         IsInvalid = !isValid;
     }
+
+    /// <summary>
+    /// Marks the reference invalid if it has been shifted off the grid, i.e. before the first
+    /// row/column or past <see cref="RangeText.MaxRows"/>/<see cref="RangeText.MaxCols"/>.
+    /// </summary>
+    protected void InvalidateIfOutOfBounds()
+    {
+        if (Region.Top < 0 || Region.Left < 0 ||
+            (Region is not ColumnRegion && Region.Bottom >= RangeText.MaxRows) ||
+            (Region is not RowRegion && Region.Right >= RangeText.MaxCols))
+            IsInvalid = true;
+    }
     
     protected string GetSheetPrefix()
     {

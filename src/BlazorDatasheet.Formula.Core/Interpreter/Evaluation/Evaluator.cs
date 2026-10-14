@@ -192,7 +192,6 @@ public class Evaluator
 
     private CellValue EvaluateReferenceExpression(ReferenceExpression expression, EvalContext ctx)
     {
-        //TODO check it's valid (inside sheet)
         if (expression.Reference.IsInvalid)
             return CellValue.Error(ErrorType.Ref);
 
@@ -205,7 +204,7 @@ public class Evaluator
         {
             reference = reference.Copy();
             reference.Shift(offset.RowOffset, offset.ColOffset);
-            if (reference.Region.Top < 0 || reference.Region.Left < 0)
+            if (reference.IsInvalid)
                 return CellValue.Error(ErrorType.Ref);
         }
 

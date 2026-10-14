@@ -104,6 +104,7 @@ public class RangeReference : Reference
         var dColStart = IsStartColFixed ? 0 : offsetCol;
         var dColEnd = IsEndColFixed ? 0 : offsetCol;
         Region.Shift(dRowStart, dRowEnd, dColStart, dColEnd);
+        InvalidateIfOutOfBounds();
     }
 
     public override bool IsInvalid { get; protected set; }
