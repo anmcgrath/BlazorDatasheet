@@ -122,6 +122,55 @@ public class DatasheetClipboardTests
     }
 
     [Test]
+    public async Task Internal_Paste_After_Failed_System_Copy_Preserves_Formulas_And_Formatting()
+    {
+        _context.JSInterop.Setup<bool>("bdsWriteClipboard", _ => true).SetResult(false);
+        await On(() => _sheet.Selection.Set(new Region(0, 1, 0, 0)));
+        await Shortcut("KeyC", KeyboardModifiers.Meta);
+        await On(() => _sheet.Selection.Set(new Region(0, 2)));
+
+        // The keyboard fallback supplies no system clipboard data.
+        (await _component.InvokeAsync(() => _component.Instance.PasteAsync("", ""))).Should().BeTrue();
+
+        _sheet.Cells.GetValue(0, 2).Should().Be(1);
+        _sheet.Cells.GetFormulaString(1, 2).Should().Be("=C1*2");
+        _sheet.GetFormat(0, 2).FontWeight.Should().Be("bold");
+    }
+
+    [Test]
+    public async Task Internal_Values_Paste_After_Failed_System_Copy_Pastes_Only_Values()
+    {
+        _context.JSInterop.Setup<bool>("bdsWriteClipboard", _ => true).SetResult(false);
+        await On(() => _sheet.Selection.Set(new Region(0, 1, 0, 0)));
+        await Shortcut("KeyC", KeyboardModifiers.Ctrl);
+        await On(() => _sheet.Selection.Set(new Region(0, 2)));
+
+        await _component.InvokeAsync(() => _component.Instance.PasteAsync("", "", PasteMode.Values));
+
+        _sheet.Cells.GetValue(1, 2).Should().Be(2);
+        _sheet.Cells.HasFormula(1, 2).Should().BeFalse();
+        _sheet.GetFormat(0, 2).FontWeight.Should().BeNull();
+    }
+
+    [Test]
+    public async Task Internal_Paste_After_Failed_System_Cut_Moves_Cells_Only_Once()
+    {
+        _context.JSInterop.Setup<bool>("bdsWriteClipboard", _ => true).SetResult(false);
+        await On(() => _sheet.Selection.Set(new Region(0, 0)));
+        await Shortcut("KeyX", KeyboardModifiers.Ctrl);
+        await On(() => _sheet.Selection.Set(new Region(0, 2)));
+
+        (await _component.InvokeAsync(() => _component.Instance.PasteAsync("", ""))).Should().BeTrue();
+        _sheet.Cells.GetValue(0, 2).Should().Be(1);
+        _sheet.Cells.GetValue(0, 0).Should().BeNull();
+        _sheet.Workbook.Clipboard.IsActive.Should().BeFalse();
+
+        // An empty internal clipboard must not overwrite the destination.
+        (await _component.InvokeAsync(() => _component.Instance.PasteAsync("", ""))).Should().BeFalse();
+        _sheet.Cells.GetValue(0, 2).Should().Be(1);
+    }
+
+    [Test]
     public async Task Paste_Of_External_Content_Clears_Copy_Mode_And_Pastes_Values_And_Formats()
     {
         await On(() => _sheet.Selection.Set(new Region(0, 1, 0, 0)));

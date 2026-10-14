@@ -154,7 +154,9 @@ class WindowEvents {
     setCopyMode(active) {
         if (this.disposed) return;
         this.copyMode = active;
-        if (active) this.checkClipboard();
+        // Don't read the clipboard here: .NET sets copy mode before its system clipboard write lands,
+        // so a read would see the previous copy and end the new entry. The next focus, visibility or
+        // clipboardchange event checks it instead.
     }
 
     // Watches for the system clipboard being taken by something other than the workbook. A copy from elsewhere
@@ -310,8 +312,18 @@ class WindowEvents {
 
         // The paste event carries no modifier state, so the Ctrl/Cmd+V keydown that precedes it
         // remembers whether Shift was held (paste values only).
-        if (e.type === 'keydown' && e.code === 'KeyV' && (e.ctrlKey || e.metaKey))
+        if (e.type === 'keydown' && e.code === 'KeyV' && (e.ctrlKey || e.metaKey)) {
             this.lastPasteKey = {shift: e.shiftKey, at: Date.now()}
+            // Without the system clipboard API, paste directly from the workbook. Suppress the
+            // native shortcut so a browser paste event cannot also paste stale system content.
+            // Editors keep native text paste; the fallback is only for grid selections.
+            if (!e.altKey && this.preventDefaultMap.keydown && !this.isEditableTarget(e) &&
+                this.handlerMap.paste && (!window.isSecureContext || !navigator.clipboard)) {
+                e.preventDefault();
+                this.dispatch(this.handlerMap.paste, this.serializeClipboardEvent({type: 'paste'}));
+                return;
+            }
+        }
 
         if (this.handlerMap[e.type]) {
             if (this.container && e.type === 'keydown' && e.key === 'Tab' &&
