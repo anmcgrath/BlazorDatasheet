@@ -28,7 +28,8 @@ public partial class CellStore
     /// Sets the same metadata value on every cell in a region as one undoable operation.
     /// Other metadata keys are preserved. A null value clears the named key.
     /// </summary>
-    /// <param name="region">The region, which must be entirely within the sheet.</param>
+    /// <param name="region">The region, which must be entirely within the sheet. Whole rows and columns are
+    /// clipped to the sheet.</param>
     /// <param name="name">The metadata key to set.</param>
     /// <param name="value">The value shared by every cell, or null to clear the key.</param>
     /// <returns>Whether the command succeeded. An out-of-sheet region is rejected without changes.</returns>

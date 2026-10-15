@@ -22,13 +22,21 @@ public class SetRegionMetaDataCommand : BaseCommand, IUndoableCommand
         _value = value;
     }
 
-    protected override bool CanExecuteCore(Sheet sheet) => (sheet.Region.Contains(_region));
+    /// <summary>
+    /// Whole rows and columns are clipped to the sheet, since they have no end. Any other region must fit inside it.
+    /// </summary>
+    private IRegion? GetTarget(Sheet sheet) => _region is ColumnRegion or RowRegion
+        ? _region.GetIntersection(sheet.Region)
+        : _region;
+
+    protected override bool CanExecuteCore(Sheet sheet) =>
+        GetTarget(sheet) is { } target && sheet.Region.Contains(target);
     public override bool CanExecuteProtected(Sheet sheet) => true;
 
     protected override bool ExecuteCore(Sheet sheet)
     {
         // Capture the whole region before emitting any metadata events while applying the write.
-        _oldValues = new SheetRange(sheet, _region).Positions
+        _oldValues = new SheetRange(sheet, GetTarget(sheet)!).Positions
             .Select(position => (position.row, position.col,
                 sheet.Cells.GetMetaData(position.row, position.col, _name)))
             .ToList();
