@@ -86,9 +86,23 @@ internal sealed class TrackedRangeStore : IRowColShiftingStore
     public object? InsertRowColAt(int index, int count, Axis axis) =>
         new RestoreData { Store = _store.InsertRowColAt(index, count, axis) };
 
-    public object? RemoveRowColAt(int index, int count, Axis axis)
+    public object? RemoveRowColAt(int index, int count, Axis axis) =>
+        WithDeletedDetection(_store.RemoveRowColAt(index, count, axis));
+
+    // A range straddling the band is kept as it is, as Excel does with references.
+    public object? InsertCellsAt(IRegion region, Axis axis) =>
+        new RestoreData { Store = _store.InsertCellsAt(region, axis, StraddlePolicy.Keep) };
+
+    public object? RemoveCellsAt(IRegion region, Axis axis) =>
+        WithDeletedDetection(_store.RemoveCellsAt(region, axis, StraddlePolicy.Keep));
+
+    /// <summary>
+    /// Marks deleted every live range that a removal took out of the store without putting a shifted or contracted
+    /// version back.
+    /// </summary>
+    private RestoreData WithDeletedDetection(RegionRestoreData<Entry> storeRestoreData)
     {
-        var restoreData = new RestoreData { Store = _store.RemoveRowColAt(index, count, axis) };
+        var restoreData = new RestoreData { Store = storeRestoreData };
 
         var remaining = restoreData.Store.RegionsAdded.Select(d => d.Data).ToHashSet();
         foreach (var removed in restoreData.Store.RegionsRemoved)

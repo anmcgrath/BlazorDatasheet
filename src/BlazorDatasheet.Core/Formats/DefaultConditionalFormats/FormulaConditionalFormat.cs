@@ -120,4 +120,26 @@ public class FormulaConditionalFormat : ConditionalFormatAbstractBase
     {
         GetFormula(sheet)?.RemoveRowColFromReferences(index, count, axis, sheet.Name);
     }
+
+    /// <summary>
+    /// Adjusts the formula's references for blank cells inserted over <paramref name="region"/>, shifting along
+    /// <paramref name="axis"/>. Only references lying entirely within the shifted band are adjusted.
+    /// </summary>
+    internal void InsertCells(IRegion region, Axis axis, Sheet sheet)
+    {
+        var count = axis == Axis.Col ? region.Width : region.Height;
+        GetFormula(sheet)?.InsertRowColIntoReferences(region.GetLeadingEdgeOffset(axis), count, axis, sheet.Name,
+            region);
+    }
+
+    /// <summary>
+    /// Adjusts the formula's references for the cells in <paramref name="region"/> being removed, shifting along
+    /// <paramref name="axis"/>. Only references lying entirely within the shifted band are adjusted.
+    /// </summary>
+    internal void RemoveCells(IRegion region, Axis axis, Sheet sheet)
+    {
+        var count = axis == Axis.Col ? region.Width : region.Height;
+        GetFormula(sheet)?.RemoveRowColFromReferences(region.GetLeadingEdgeOffset(axis), count, axis, sheet.Name,
+            region);
+    }
 }

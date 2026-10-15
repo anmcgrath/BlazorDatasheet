@@ -263,29 +263,39 @@ public class Sheet
         RegisterShiftingStore(new ShiftingStoreAdapter<RegionRestoreData<int>>(
             Validators.Store.InsertRowColAt,
             Validators.Store.RemoveRowColAt,
+            (region, axis) => Validators.Store.InsertCellsAt(region, axis, StraddlePolicy.Split),
+            (region, axis) => Validators.Store.RemoveCellsAt(region, axis, StraddlePolicy.Split),
             Validators.Store.Restore));
 
         RegisterShiftingStore(new ShiftingStoreAdapter<CellStoreRestoreData>(
             Cells.InsertRowColAt,
             Cells.RemoveRowColAt,
+            Cells.InsertCellsAt,
+            Cells.RemoveCellsAt,
             Cells.Restore));
 
         RegisterShiftingStore(new ShiftingStoreAdapter<ConditionalFormatRestoreData>(
             ConditionalFormats.InsertRowColAt,
             ConditionalFormats.RemoveRowColAt,
+            ConditionalFormats.InsertCellsAt,
+            ConditionalFormats.RemoveCellsAt,
             ConditionalFormats.Restore));
 
         var metaData = Cells.GetMetaDataStore();
         RegisterShiftingStore(new ShiftingStoreAdapter<RegionRestoreData<CellMetadata>>(
             metaData.InsertRowColAt,
             metaData.RemoveRowColAt,
+            (region, axis) => metaData.InsertCellsAt(region, axis, StraddlePolicy.Split),
+            (region, axis) => metaData.RemoveCellsAt(region, axis, StraddlePolicy.Split),
             metaData.Restore));
 
-        // Filters are per column, so only a column insert/removal moves them.
+        // Filters are per column, so only a column insert/removal moves them. Shifting cells never does.
         var filters = Columns.Filters.Store;
         RegisterShiftingStore(new ShiftingStoreAdapter<MergeableIntervalStoreRestoreData<OverwritingValue<List<IFilter>?>>>(
             (index, count, axis) => axis == Axis.Col ? filters.InsertAt(index, count) : null,
             (index, count, axis) => axis == Axis.Col ? filters.Delete(index, index + count - 1) : null,
+            (_, _) => null,
+            (_, _) => null,
             filters.Restore));
 
         RegisterShiftingStore(TrackedRanges);
@@ -295,6 +305,25 @@ public class Sheet
     /// The ranges tracked on this sheet. See <see cref="Workbook.TrackedRanges"/>.
     /// </summary>
     internal TrackedRangeStore TrackedRanges { get; }
+
+    /// <summary>
+    /// Inserts blank cells over <paramref name="region"/>, shifting the cells after it right (<see cref="Axis.Col"/>)
+    /// or down (<see cref="Axis.Row"/>) within the rows (or columns) the region covers, as Excel's "Insert cells".
+    /// Values, formats, merges, validators, conditional formats and metadata move with the cells, and formulas
+    /// referencing them are updated. Refused when it would split a merged cell or push a value off the sheet.
+    /// </summary>
+    /// <returns>Whether the cells were inserted.</returns>
+    public bool InsertCells(IRegion region, Axis shiftAxis) =>
+        Commands.ExecuteCommand(new InsertCellsCommand(region, shiftAxis));
+
+    /// <summary>
+    /// Removes the cells in <paramref name="region"/>, shifting the cells after it left (<see cref="Axis.Col"/>)
+    /// or up (<see cref="Axis.Row"/>) within the rows (or columns) the region covers, as Excel's "Delete cells".
+    /// References to removed cells become #REF!. Refused when it would split a merged cell.
+    /// </summary>
+    /// <returns>Whether the cells were removed.</returns>
+    public bool RemoveCells(IRegion region, Axis shiftAxis) =>
+        Commands.ExecuteCommand(new RemoveCellsCommand(region, shiftAxis));
 
     public Sheet(int numRows, int numCols, CellValue[][] values) : this(numRows, numCols, 105, 24, null, values)
     {

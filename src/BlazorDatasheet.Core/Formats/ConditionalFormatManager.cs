@@ -374,6 +374,86 @@ public class ConditionalFormatManager
         return new ConditionalFormatRestoreData() { Regions = regions, Formulas = formulas };
     }
 
+    internal ConditionalFormatRestoreData InsertCellsAt(IRegion region, Axis axis)
+    {
+        var n = axis == Axis.Col ? region.Width : region.Height;
+        var index = region.GetLeadingEdgeOffset(axis);
+        return ShiftCellsInBand(region, axis,
+            () => _appliedFormats.InsertCellsAt(region, axis, StraddlePolicy.Split),
+            (format, sheet) => format.InsertCells(region, axis, sheet),
+            shift: p => IsInBand(p, region, axis) && Along(p, axis) >= index ? Offset(p, axis, n) : p,
+            unshift: p => IsInBand(p, region, axis) && Along(p, axis) >= index + n ? Offset(p, axis, -n) : p);
+    }
+
+    internal ConditionalFormatRestoreData RemoveCellsAt(IRegion region, Axis axis)
+    {
+        var n = axis == Axis.Col ? region.Width : region.Height;
+        var index = region.GetLeadingEdgeOffset(axis);
+        var end = region.GetTrailingEdgeOffset(axis);
+        return ShiftCellsInBand(region, axis,
+            () => _appliedFormats.RemoveCellsAt(region, axis, StraddlePolicy.Split),
+            (format, sheet) => format.RemoveCells(region, axis, sheet),
+            shift: p => region.Contains(p.row, p.col)
+                ? null
+                : IsInBand(p, region, axis) && Along(p, axis) > end
+                    ? Offset(p, axis, -n)
+                    : p,
+            unshift: p => IsInBand(p, region, axis) && Along(p, axis) >= index ? Offset(p, axis, n) : p);
+    }
+
+    /// <summary>
+    /// Shifts the applied regions and the formula references for an insertion or removal of cells within a band.
+    /// A formula is written relative to its anchor, so when the anchor does not land where the shift takes the old
+    /// anchor (it was removed, or the top-left of the applied regions changed), the formula is first re-based onto the
+    /// pre-shift position of the new anchor, so every surviving cell keeps evaluating the same references.
+    /// </summary>
+    /// <param name="shift">Where a pre-shift position ends up, or null if it is removed.</param>
+    /// <param name="unshift">Where a post-shift position was before the shift.</param>
+    private ConditionalFormatRestoreData ShiftCellsInBand(IRegion region, Axis axis,
+        Func<RegionRestoreData<ConditionalFormatAbstractBase>> shiftRegions,
+        Action<FormulaConditionalFormat, Sheet> adjustReferences,
+        Func<CellPosition, CellPosition?> shift,
+        Func<CellPosition, CellPosition> unshift)
+    {
+        var formulaFormats = FormulaFormats.ToList();
+        var formulas = formulaFormats.Select(f => (f, f.FormulaText)).ToList();
+
+        var regions = shiftRegions();
+
+        foreach (var format in formulaFormats)
+        {
+            var newAnchor = GetAnchor(format);
+            if (newAnchor == null || shift(format.Anchor) == newAnchor)
+                continue;
+
+            var rebaseTo = unshift(newAnchor.Value);
+            format.ShiftRelative(rebaseTo.row - format.Anchor.row, rebaseTo.col - format.Anchor.col, _sheet);
+            format.Anchor = rebaseTo;
+        }
+
+        foreach (var format in formulaFormats)
+            adjustReferences(format, _sheet);
+
+        UpdateAnchors();
+        _footprints.Clear();
+        Prepare(regions.RegionsAdded.Select(x => x.Data)
+            .Concat(regions.RegionsRemoved.Select(x => x.Data))
+            .Distinct()
+            .ToList());
+
+        return new ConditionalFormatRestoreData() { Regions = regions, Formulas = formulas };
+    }
+
+    private static bool IsInBand(CellPosition p, IRegion region, Axis axis) => axis == Axis.Col
+        ? p.row >= region.Top && p.row <= region.Bottom
+        : p.col >= region.Left && p.col <= region.Right;
+
+    private static int Along(CellPosition p, Axis axis) => axis == Axis.Col ? p.col : p.row;
+
+    private static CellPosition Offset(CellPosition p, Axis axis, int amount) => axis == Axis.Col
+        ? new CellPosition(p.row, p.col + amount)
+        : new CellPosition(p.row + amount, p.col);
+
     private bool StillHasCellsAfterRemoval(ConditionalFormatAbstractBase format, int index, int count, Axis axis)
     {
         foreach (var region in _appliedFormats.GetRegions(format))
