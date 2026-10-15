@@ -136,4 +136,20 @@ public class Range1DStoreTests
         store.GetNextNonEmptyIndex(2, -1).Should().Be(1);
         store.GetNextNonEmptyIndex(1, -1).Should().Be(-1);
     }
+
+    [Test]
+    public void Undoing_An_Insert_Inside_A_Range_Leaves_The_Range_Before_It_Alone()
+    {
+        var store = new Range1DStore<string>(string.Empty);
+        store.Set(2, 2, "a");
+        store.Set(3, 5, "b");
+
+        var restore = store.InsertAt(4, 1);
+        store.GetAllIntervals().Should().BeEquivalentTo([new Interval(2, 2), new Interval(3, 6)]);
+
+        store.Restore(restore);
+        store.GetAllIntervals().Should().BeEquivalentTo([new Interval(2, 2), new Interval(3, 5)]);
+        store.Get(2).Should().Be("a");
+        store.Get(5).Should().Be("b");
+    }
 }

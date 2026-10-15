@@ -279,6 +279,26 @@ public class MoveRowsColsCommandTests
     }
 
     [Test]
+    public void Undoing_A_Move_Between_Groups_Restores_Both_Groups()
+    {
+        var sheet = _workbook.AddSheet("Cols", 5, 10);
+        sheet.Columns.SetGroupImpl(0, 2, "Q1");
+        sheet.Columns.SetGroupImpl(3, 5, "Q2");
+
+        sheet.Columns.Move(1, 1, 3).Should().BeTrue();
+        var afterFirst = sheet.Columns.GetGroups().Select(g => (g.Start, g.End, g.Group.Label)).ToList();
+        afterFirst.Should().Equal((0, 2, "Q1"), (3, 5, "Q2"));
+
+        sheet.Columns.Move(2, 1, 4).Should().BeTrue();
+        sheet.Commands.Undo();
+        sheet.Columns.GetGroups().Select(g => (g.Start, g.End, g.Group.Label)).Should().Equal(afterFirst);
+
+        sheet.Commands.Undo();
+        sheet.Columns.GetGroups().Select(g => (g.Start, g.End, g.Group.Label))
+            .Should().Equal((0, 2, "Q1"), (3, 5, "Q2"));
+    }
+
+    [Test]
     public void Validators_And_Metadata_Move_With_Rows()
     {
         var validator = new NumberValidator(true);

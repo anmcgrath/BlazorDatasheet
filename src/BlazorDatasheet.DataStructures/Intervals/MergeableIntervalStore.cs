@@ -488,7 +488,9 @@ public class MergeableIntervalStore<T> : ISparseSource where T : IMergeable<T>, 
     {
         foreach (var shift in restoreData.Shifts)
         {
-            var intervals = GetIntervals(shift.Index, int.MaxValue);
+            // Only intervals starting at or after the shift were moved by it. One straddling the shift was
+            // replaced instead, and is put back below from the added/removed intervals.
+            var intervals = GetIntervals(shift.Index, int.MaxValue).Where(i => i.Start >= shift.Index);
             IEnumerable<OrderedInterval<T>> intervalsOrdered;
             
             if (shift.Amount > 0)
