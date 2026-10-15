@@ -8,7 +8,7 @@ namespace BlazorDatasheet.Core.Commands;
 public class CommandManager
 {
     private readonly MaxStack<UndoCommandData> _history;
-    private readonly MaxStack<ICommand> _redos;
+    private readonly MaxStack<RedoCommandData> _redos;
     private readonly Sheet _sheet;
     private CommandGroup? _currentCommandGroup;
     private int _executionDepth;
@@ -59,7 +59,7 @@ public class CommandManager
     {
         _sheet = sheet;
         _history = new MaxStack<UndoCommandData>(maxHistorySize);
-        _redos = new MaxStack<ICommand>(maxHistorySize);
+        _redos = new MaxStack<RedoCommandData>(maxHistorySize);
     }
 
     /// <summary>
@@ -224,7 +224,7 @@ public class CommandManager
     /// <returns></returns>
     public IEnumerable<ICommand> GetRedoCommands()
     {
-        return _redos.GetAllItems();
+        return _redos.GetAllItems().Select(x => x.Command);
     }
 
     /// <summary>
@@ -241,6 +241,8 @@ public class CommandManager
 
         var commandData = _history.Pop()!;
         _historyCellCount -= commandData.Command.RetainedCellCount;
+        // the selection is put back on redo, along with the rest of the sheet
+        var selectionBeforeUndo = _sheet.Selection.GetSelectionSnapshot();
         var undoResult = UndoCommand(commandData.Command);
 
         commandData.Command.ClearChainedCommands();
@@ -248,7 +250,11 @@ public class CommandManager
 
         if (!HistoryPaused && undoResult)
         {
-            _redos.Push(commandData.Command);
+            _redos.Push(new RedoCommandData
+            {
+                Command = commandData.Command,
+                SelectionSnapshot = selectionBeforeUndo
+            });
         }
 
         return undoResult;
@@ -283,13 +289,16 @@ public class CommandManager
         if (_redos.Peek() == null)
             return false;
 
-        var command = _redos.Peek()!;
-        var result = ExecuteCommand(command, isRedo: true);
+        var redo = _redos.Peek()!;
+        var result = ExecuteCommand(redo.Command, isRedo: true);
 
         // drop the entry whether or not it succeeded, otherwise a command that can no longer be
         // run would block every redo behind it.
-        if (ReferenceEquals(_redos.Peek(), command))
+        if (ReferenceEquals(_redos.Peek(), redo))
             _redos.Pop();
+
+        if (result)
+            _sheet.Selection.Restore(redo.SelectionSnapshot);
 
         return result;
     }
@@ -357,6 +366,19 @@ internal class UndoCommandData
 
     /// <summary>
     /// Records information on the sheet's selection so that it can be restored.
+    /// </summary>
+    public required SelectionSnapshot SelectionSnapshot { get; init; }
+}
+
+internal class RedoCommandData
+{
+    /// <summary>
+    /// The command to redo.
+    /// </summary>
+    public required ICommand Command { get; init; }
+
+    /// <summary>
+    /// The sheet's selection just before the command was undone, which is restored when it is redone.
     /// </summary>
     public required SelectionSnapshot SelectionSnapshot { get; init; }
 }

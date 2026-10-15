@@ -109,6 +109,26 @@ public class CommandManagerTests
     }
 
     [Test]
+    public void Redo_Command_Sets_Selection_To_The_Value_Before_Undo()
+    {
+        _sheet.Selection.Set(new Region(0, 1, 0, 1));
+        _sheet.Commands.ExecuteCommand(new FakeCommand(0, ref _results));
+        // as when a move selects where the cells land
+        _sheet.Selection.Set(new ColumnRegion(3));
+        _sheet.Selection.Activate(2, 3);
+
+        _sheet.Commands.Undo();
+        _sheet.Selection.ActiveRegion.Should().BeEquivalentTo(new Region(0, 1, 0, 1));
+
+        _sheet.Commands.Redo();
+        _sheet.Selection.ActiveRegion.Should().BeOfType<ColumnRegion>().And.BeEquivalentTo(new ColumnRegion(3));
+        _sheet.Selection.ActiveCellPosition.Should().Be(new CellPosition(2, 3));
+
+        _sheet.Commands.Undo();
+        _sheet.Selection.ActiveRegion.Should().BeEquivalentTo(new Region(0, 1, 0, 1));
+    }
+
+    [Test]
     public void Command_Run_Fires_Event()
     {
         var cmdRun = false;
