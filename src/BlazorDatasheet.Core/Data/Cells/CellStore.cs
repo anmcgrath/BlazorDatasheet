@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using BlazorDatasheet.Core.Commands.Data;
+using BlazorDatasheet.Core.Events.Data;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Interfaces;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -173,6 +174,171 @@ public partial class CellStore
         };
 
         return restoreData;
+    }
+
+    /// <summary>
+    /// Inserts blank cells over <paramref name="region"/>, shifting the cells after it right (<see cref="Axis.Col"/>)
+    /// or down (<see cref="Axis.Row"/>) within the band of rows (or columns) the region covers. Formats, types and
+    /// valid flags pushed past the edge of the sheet are dropped; the caller must make sure no values or formulas are.
+    /// Spills overlapping the shifted cells are wiped rather than shifted, and come back when the sheet recalculates.
+    /// </summary>
+    internal CellStoreRestoreData InsertCellsAt(IRegion region, Axis axis)
+    {
+        var halfBand = GetHalfBand(region, axis);
+        var n = axis == Axis.Col ? region.Width : region.Height;
+
+        Sheet.BatchUpdates();
+        var restoreData = new CellStoreRestoreData
+        {
+            SpillRestoreData = DeleteSpillsIntersecting(halfBand)
+        };
+
+        // What the shift pushes past the edge of the sheet. The matrix stores are cleared before the shift so
+        // that what they record is in pre-shift positions, which is where their restore puts it back after
+        // undoing the shift.
+        var size = axis == Axis.Col ? Sheet.NumCols : Sheet.NumRows;
+        var overflowStart = Math.Max(region.GetLeadingEdgeOffset(axis), size - n);
+        IRegion? overflowBefore = overflowStart > size - 1
+            ? null
+            : axis == Axis.Col
+                ? new Region(region.Top, region.Bottom, overflowStart, size - 1)
+                : new Region(overflowStart, size - 1, region.Left, region.Right);
+
+        restoreData.ValueRestoreData = overflowBefore == null ? new() : _dataStore.Clear([overflowBefore]);
+        restoreData.ValidRestoreData = overflowBefore == null ? new() : _validStore.Clear([overflowBefore]);
+
+        restoreData.ValueRestoreData.Merge(_dataStore.InsertCellsAt(region, axis));
+        restoreData.ValidRestoreData.Merge(_validStore.InsertCellsAt(region, axis));
+        restoreData.FormulaRestoreData = _formulaStore.InsertCellsAt(region, axis);
+        restoreData.FormatRestoreData = _formatStore.InsertCellsAt(region, axis, StraddlePolicy.Split);
+        restoreData.TypeRestoreData = _typeStore.InsertCellsAt(region, axis, StraddlePolicy.Split);
+        restoreData.MergeRestoreData = _mergeStore.InsertCellsAt(region, axis, StraddlePolicy.Split);
+        restoreData.DependencyManagerRestoreData =
+            Sheet.FormulaEngine.DependencyManager.InsertCellsAt(region, axis, Sheet.Name);
+
+        // The region stores are cleared after the shift, so their restore data has to be netted out.
+        IRegion overflowAfter = axis == Axis.Col
+            ? new Region(region.Top, region.Bottom, Sheet.NumCols, int.MaxValue)
+            : new Region(Sheet.NumRows, int.MaxValue, region.Left, region.Right);
+        restoreData.FormatRestoreData = Then(restoreData.FormatRestoreData, _formatStore.Clear(overflowAfter));
+        restoreData.TypeRestoreData = Then(restoreData.TypeRestoreData, _typeStore.Clear(overflowAfter));
+        restoreData.MergeRestoreData = Then(restoreData.MergeRestoreData, _mergeStore.Clear(overflowAfter));
+
+        EmitBandShifted(halfBand);
+        Sheet.EndBatchUpdates();
+        return restoreData;
+    }
+
+    /// <summary>
+    /// Removes the cells in <paramref name="region"/>, shifting the cells after it left (<see cref="Axis.Col"/>)
+    /// or up (<see cref="Axis.Row"/>) within the band of rows (or columns) the region covers. Formulas inside the
+    /// region are removed. Spills overlapping the shifted cells are wiped rather than shifted, and come back when the
+    /// sheet recalculates.
+    /// </summary>
+    internal CellStoreRestoreData RemoveCellsAt(IRegion region, Axis axis)
+    {
+        var halfBand = GetHalfBand(region, axis);
+
+        Sheet.BatchUpdates();
+        var restoreData = new CellStoreRestoreData
+        {
+            SpillRestoreData = DeleteSpillsIntersecting(halfBand),
+            ValueRestoreData = _dataStore.RemoveCellsAt(region, axis),
+            ValidRestoreData = _validStore.RemoveCellsAt(region, axis),
+            TypeRestoreData = _typeStore.RemoveCellsAt(region, axis, StraddlePolicy.Split),
+            FormatRestoreData = _formatStore.RemoveCellsAt(region, axis, StraddlePolicy.Split),
+            MergeRestoreData = _mergeStore.RemoveCellsAt(region, axis, StraddlePolicy.Split),
+            FormulaRestoreData = _formulaStore.RemoveCellsAt(region, axis),
+            DependencyManagerRestoreData =
+                Sheet.FormulaEngine.DependencyManager.RemoveCellsAt(region, axis, Sheet.Name)
+        };
+
+        EmitBandShifted(halfBand);
+        Sheet.EndBatchUpdates();
+        return restoreData;
+    }
+
+    /// <summary>
+    /// The cells that shifting cells at <paramref name="region"/> along <paramref name="axis"/> moves: from the
+    /// region to the end of the sheet, within the rows (or columns) the region covers.
+    /// </summary>
+    internal static IRegion GetHalfBand(IRegion region, Axis axis) => axis == Axis.Col
+        ? new Region(region.Top, region.Bottom, region.Left, int.MaxValue)
+        : new Region(region.Top, int.MaxValue, region.Left, region.Right);
+
+    /// <summary>
+    /// Empties the cells of every spill overlapping <paramref name="region"/> and removes their entries, so that
+    /// nothing a formula spilled is shifted with the cells. The formulas re-spill when the sheet recalculates.
+    /// Undoing a cell shift calls this too, before restoring, for the spills the recalculation after the shift made.
+    /// </summary>
+    internal RegionRestoreData<SpillInfo> DeleteSpillsIntersecting(IRegion region)
+    {
+        if (_spillStore.IsEmpty)
+            return new RegionRestoreData<SpillInfo>();
+
+        var entries = _spillStore.GetDataRegions(region).ToList();
+        foreach (var entry in entries)
+        {
+            if (!entry.Data.IsBlocked)
+                ClearSpilledValues(entry.Region, AnchorOf(entry));
+        }
+
+        var restoreData = _spillStore.Delete(entries);
+        foreach (var entry in entries)
+        {
+            if (!entry.Data.IsBlocked)
+                SpillChanged?.Invoke(this, new SpillChangedEventArgs(AnchorOf(entry), entry.Region, null));
+        }
+
+        return restoreData;
+    }
+
+    private void EmitBandShifted(IRegion halfBand)
+    {
+        var dirty = halfBand.GetIntersection(Sheet.Region);
+        if (dirty == null)
+            return;
+        EmitCellsChanged(dirty);
+        Sheet.MarkDirty(dirty);
+    }
+
+    /// <summary>
+    /// Combines the restore data of two operations applied one after the other into one that undoes both. Regions
+    /// the first added and the second removed were only ever intermediate, so they are dropped from both lists.
+    /// Neither operation may record shifts.
+    /// </summary>
+    private static RegionRestoreData<T> Then<T>(RegionRestoreData<T> first, RegionRestoreData<T> second)
+    {
+        if (second.RegionsAdded.Count == 0 && second.RegionsRemoved.Count == 0)
+            return first;
+
+        var removedBySecond = new HashSet<DataRegion<T>>(second.RegionsRemoved, ReferenceEqualityComparer.Instance);
+        var addedByFirst = new HashSet<DataRegion<T>>(first.RegionsAdded, ReferenceEqualityComparer.Instance);
+        return new RegionRestoreData<T>
+        {
+            RegionsAdded = first.RegionsAdded.Where(x => !removedBySecond.Contains(x))
+                .Concat(second.RegionsAdded).ToList(),
+            RegionsRemoved = first.RegionsRemoved
+                .Concat(second.RegionsRemoved.Where(x => !addedByFirst.Contains(x))).ToList()
+        };
+    }
+
+    /// <summary>
+    /// Whether the region holds anything a user entered: a formula, or a value that was not spilled into the cell
+    /// by a formula elsewhere.
+    /// </summary>
+    internal bool ContainsUserData(IRegion region)
+    {
+        if (_formulaStore.GetNonEmptyData(region).Any())
+            return true;
+
+        foreach (var position in _dataStore.GetNonEmptyPositions(region))
+        {
+            if (!IsSpilledCell(position.row, position.col))
+                return true;
+        }
+
+        return false;
     }
 
     internal CellStoreRestoreData CopyImpl(IRegion fromRegion, IRegion toRegion, CopyOptions options)
