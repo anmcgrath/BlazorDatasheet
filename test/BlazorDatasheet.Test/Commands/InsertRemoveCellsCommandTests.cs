@@ -484,4 +484,65 @@ public class InsertRemoveCellsCommandTests
         _sheet.InsertCells(new Region(20, 20), Axis.Col).Should().BeFalse();
         _sheet.RemoveCells(new Region(20, 20), Axis.Row).Should().BeFalse();
     }
+
+    [Test]
+    public void Insert_Cells_Over_Whole_Columns_Inserts_Columns()
+    {
+        var sheet2 = _workbook.AddSheet("Sheet2", 10, 10);
+        _sheet.Cells.SetValue(0, 2, 5);
+        _sheet.Columns.SetSize(2, 50);
+        sheet2.Cells.SetFormula(0, 0, "=SUM(Sheet1!C:C)");
+        var before = Snapshot();
+
+        _sheet.InsertCells(new ColumnRegion(2), Axis.Col).Should().BeTrue();
+
+        _sheet.NumCols.Should().Be(11);
+        _sheet.Cells.GetValue(0, 3).Should().Be(5);
+        _sheet.Columns.GetVisualWidth(3).Should().Be(50);
+        sheet2.Cells.GetFormulaString(0, 0).Should().Be("=SUM(Sheet1!D:D)");
+        sheet2.Cells.GetValue(0, 0).Should().Be(5);
+
+        _sheet.Commands.Undo();
+        _sheet.NumCols.Should().Be(10);
+        Snapshot().Should().Be(before);
+        sheet2.Cells.GetFormulaString(0, 0).Should().Be("=SUM(Sheet1!C:C)");
+    }
+
+    [Test]
+    public void Insert_Cells_Spanning_Every_Column_Inserts_Rows()
+    {
+        _sheet.Cells.SetValue(2, 0, 5);
+        _sheet.Cells.SetFormula(9, 9, "=SUM(3:3)");
+
+        Insert("A3:J3", Axis.Row).Should().BeTrue();
+
+        _sheet.NumRows.Should().Be(11);
+        _sheet.Cells.GetValue(3, 0).Should().Be(5);
+        _sheet.Cells.GetFormulaString(10, 9).Should().Be("=SUM(4:4)");
+        _sheet.Commands.Undo();
+        _sheet.NumRows.Should().Be(10);
+        _sheet.Cells.GetFormulaString(9, 9).Should().Be("=SUM(3:3)");
+    }
+
+    [Test]
+    public void Remove_Cells_Over_Whole_Columns_Removes_Columns()
+    {
+        var sheet2 = _workbook.AddSheet("Sheet2", 10, 10);
+        _sheet.Cells.SetValue(0, 3, 5);
+        _sheet.Columns.SetSize(3, 50);
+        sheet2.Cells.SetFormula(0, 0, "=SUM(Sheet1!D:D)");
+        var before = Snapshot();
+
+        _sheet.RemoveCells(new ColumnRegion(2), Axis.Col).Should().BeTrue();
+
+        _sheet.NumCols.Should().Be(9);
+        _sheet.Cells.GetValue(0, 2).Should().Be(5);
+        _sheet.Columns.GetVisualWidth(2).Should().Be(50);
+        sheet2.Cells.GetFormulaString(0, 0).Should().Be("=SUM(Sheet1!C:C)");
+
+        _sheet.Commands.Undo();
+        _sheet.NumCols.Should().Be(10);
+        Snapshot().Should().Be(before);
+        sheet2.Cells.GetFormulaString(0, 0).Should().Be("=SUM(Sheet1!D:D)");
+    }
 }

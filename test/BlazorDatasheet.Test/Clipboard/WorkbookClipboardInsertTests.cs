@@ -209,4 +209,22 @@ public class WorkbookClipboardInsertTests
 
         Row(5).Should().Equal("a", "b", "c", "d", null);
     }
+
+    [Test]
+    public void Copy_PasteInsert_Whole_Column_Inserts_A_Column()
+    {
+        FillRow("a", "b", "c");
+        _sheet.Cells.SetFormula(5, 0, "=SUM(C:C)");
+        _clipboard.Copy(_sheet.Range(new ColumnRegion(0)));
+
+        _clipboard.PasteInsert(_sheet, new Region(0, 2), Axis.Col).Should().NotBeNull();
+
+        _sheet.NumCols.Should().Be(11);
+        Row(4).Should().Equal("a", "b", "a", "c");
+        _sheet.Cells.GetFormulaString(5, 0).Should().Be("=SUM(D:D)");
+
+        _sheet.Commands.Undo();
+        _sheet.NumCols.Should().Be(10);
+        Row(4).Should().Equal("a", "b", "c", null);
+    }
 }

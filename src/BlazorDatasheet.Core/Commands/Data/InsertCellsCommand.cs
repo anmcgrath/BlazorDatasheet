@@ -1,3 +1,4 @@
+using BlazorDatasheet.Core.Commands.RowCols;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -14,6 +15,10 @@ namespace BlazorDatasheet.Core.Commands.Data;
 /// Refused when a merged cell straddles the band, or when a value or formula would be pushed off the edge of the
 /// sheet. Formats pushed off the edge are dropped.
 /// </para>
+/// <para>
+/// Cells spanning every row (for <see cref="Axis.Col"/>) or every column (for <see cref="Axis.Row"/>) of the sheet
+/// are whole columns (or rows), so this is then the same as inserting them.
+/// </para>
 /// </summary>
 public class InsertCellsCommand : BaseCommand, IUndoableCommand
 {
@@ -21,6 +26,9 @@ public class InsertCellsCommand : BaseCommand, IUndoableCommand
     private readonly Axis _shiftAxis;
 
     private readonly List<(IRowColShiftingStore Store, object? RestoreData)> _storeRestoreData = new();
+
+    // Set when the region is whole columns (rows) and the command inserts them instead.
+    private BaseCommand? _rowCol;
 
     /// <param name="region">The cells to insert. The cells there and after it move to make room.</param>
     /// <param name="shiftAxis"><see cref="Axis.Col"/> shifts cells right, <see cref="Axis.Row"/> shifts cells down.</param>
@@ -30,8 +38,32 @@ public class InsertCellsCommand : BaseCommand, IUndoableCommand
         _shiftAxis = shiftAxis;
     }
 
+    /// <summary>
+    /// The command inserting whole columns (or rows) when the region spans the sheet across the shift axis,
+    /// otherwise null.
+    /// </summary>
+    private BaseCommand? CreateRowColCommand(Sheet sheet)
+    {
+        var clipped = _region.GetIntersection(sheet.Region);
+        if (clipped == null)
+            return null;
+
+        var fullBand = _shiftAxis == Axis.Col
+            ? clipped.Top == 0 && clipped.Bottom == sheet.NumRows - 1
+            : clipped.Left == 0 && clipped.Right == sheet.NumCols - 1;
+        if (!fullBand)
+            return null;
+
+        var start = _shiftAxis == Axis.Col ? clipped.Left : clipped.Top;
+        var count = _shiftAxis == Axis.Col ? clipped.Width : clipped.Height;
+        return new InsertRowsColsCommand(start, count, _shiftAxis);
+    }
+
     public override bool CanExecuteProtected(Sheet sheet)
     {
+        if (CreateRowColCommand(sheet) is { } rowCol)
+            return rowCol.CanExecuteProtected(sheet);
+
         var geometry = CellShiftGeometry.Create(sheet, _region, _shiftAxis);
         if (geometry == null)
             return true;
@@ -42,6 +74,9 @@ public class InsertCellsCommand : BaseCommand, IUndoableCommand
 
     protected override bool CanExecuteCore(Sheet sheet)
     {
+        if (CreateRowColCommand(sheet) is { } rowCol)
+            return rowCol.CanExecuteUnprotected(sheet);
+
         if (CellShiftGeometry.Create(sheet, _region, _shiftAxis) is not { } geometry)
             return false;
 
@@ -60,6 +95,10 @@ public class InsertCellsCommand : BaseCommand, IUndoableCommand
 
     protected override bool ExecuteCore(Sheet sheet)
     {
+        _rowCol = CreateRowColCommand(sheet);
+        if (_rowCol != null)
+            return _rowCol.ExecuteUnprotected(sheet);
+
         if (CellShiftGeometry.Create(sheet, _region, _shiftAxis) is not { } geometry)
             return false;
 
@@ -77,6 +116,9 @@ public class InsertCellsCommand : BaseCommand, IUndoableCommand
 
     public bool Undo(Sheet sheet)
     {
+        if (_rowCol != null)
+            return ((IUndoableCommand)_rowCol).Undo(sheet);
+
         if (CellShiftGeometry.Create(sheet, _region, _shiftAxis) is not { } geometry)
             return false;
 
@@ -94,6 +136,7 @@ public class InsertCellsCommand : BaseCommand, IUndoableCommand
         return true;
     }
 
-    public int RetainedCellCount =>
-        _storeRestoreData.Select(x => x.RestoreData).OfType<CellStoreRestoreData>().Sum(x => x.RetainedCellCount);
+    public int RetainedCellCount => _rowCol is IUndoableCommand rowCol
+        ? rowCol.RetainedCellCount
+        : _storeRestoreData.Select(x => x.RestoreData).OfType<CellStoreRestoreData>().Sum(x => x.RetainedCellCount);
 }
