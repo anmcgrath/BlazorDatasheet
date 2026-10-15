@@ -115,6 +115,38 @@ public class FormulaReferenceScannerTests
     }
 
     [Test]
+    [TestCase("=a1:a", "a1")]
+    [TestCase("=a1:8888", "a1")]
+    [TestCase("=$A$1:$A", "$A$1")]
+    [TestCase("=Sheet1!A1:Sheet1!A", "Sheet1!A1")]
+    [TestCase("=Sheet1!A1:8888", "Sheet1!A1")]
+    [TestCase("='Sheet 1'!A1:'Sheet 1'!8888", "'Sheet 1'!A1")]
+    public void Mismatched_Range_Endpoint_Retains_The_First_Cell(string formula, string expected)
+    {
+        // An absolute or sheet-qualified endpoint may also be recognized as a separate row/column reference.
+        var span = FormulaReferenceScanner.Scan(formula, new FormulaOptions()).First();
+
+        TextOf(formula, span).Should().Be(expected);
+        span.TextStart.Should().Be(1);
+        span.Kind.Should().Be(FormulaReferenceSpanKind.Cell);
+        span.Region.Should().BeEquivalentTo(new Region(0, 0, 0, 0));
+        span.IsStartColFixed.Should().Be(expected.Contains('$'));
+        span.IsStartRowFixed.Should().Be(expected.Contains('$'));
+        span.ColorIndex.Should().Be(1);
+    }
+
+    [Test]
+    public void References_After_A_Mismatched_Endpoint_Are_Still_Scanned()
+    {
+        const string formula = "=a1:8888+B2";
+        var spans = FormulaReferenceScanner.Scan(formula, new FormulaOptions());
+
+        spans.Select(x => TextOf(formula, x)).Should().Equal("a1", "B2");
+        spans.Select(x => x.ColorIndex).Should().Equal(1, 2);
+        spans[1].Region.Should().BeEquivalentTo(new Region(1, 1, 1, 1));
+    }
+
+    [Test]
     public void Text_That_Is_Not_A_Formula_Has_No_References()
     {
         FormulaReferenceScanner.Scan("A1", new FormulaOptions()).Should().BeEmpty();

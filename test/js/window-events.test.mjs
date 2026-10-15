@@ -320,3 +320,90 @@ test('an active sheet reports every mouse up, wherever it happens', async () => 
 
     assert.equal(calls.at(-1)[0], 'mouseup');
 });
+
+test('starting copy mode does not read the previous system clipboard before the new write', async () => {
+    const { service, calls } = setup();
+    const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+    let reads = 0;
+    Object.defineProperty(globalThis, 'navigator', { configurable: true, value: {
+        permissions: { query: async () => ({ state: 'granted' }) }
+    } });
+    window.bdsReadClipboard = async () => {
+        reads++;
+        return { text: 'previous copy', html: '<table><tr><td>previous copy</td></tr></table>' };
+    };
+    try {
+        service.registerEvent('clipboardchange', 'clipboardchange');
+        // .NET announces the workbook entry before it writes the system clipboard.
+        service.setCopyMode(true);
+        await new Promise(resolve => setImmediate(resolve));
+        assert.equal(reads, 0);
+        assert.equal(calls.some(c => c[0] === 'clipboardchange'), false);
+
+        // Returning from another app must still check for an external copy.
+        service.listeners.get('focus:false').fn({});
+        await new Promise(resolve => setImmediate(resolve));
+        assert.equal(reads, 1);
+        assert.equal(calls.at(-1)[0], 'clipboardchange');
+        assert.equal(calls.at(-1)[1].text, 'previous copy');
+    } finally {
+        service.dispose();
+        delete window.bdsReadClipboard;
+        if (originalNavigator) Object.defineProperty(globalThis, 'navigator', originalNavigator);
+        else delete globalThis.navigator;
+    }
+});
+
+for (const secure of [false, true]) {
+    for (const modifier of ['ctrlKey', 'metaKey']) {
+        for (const shiftKey of [false, true]) {
+            test(`internal paste without clipboard API: secure=${secure}, ${modifier}, shift=${shiftKey}`, async () => {
+                const { service, container, calls } = setup();
+                window.isSecureContext = secure;
+                const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+                Object.defineProperty(globalThis, 'navigator', { configurable: true, value: {} });
+                try {
+                    service.registerEvent('paste', 'paste');
+                    const e = { ...key(container), key: 'v', code: 'KeyV', [modifier]: true, shiftKey };
+                    await service.handleWindowEvent(e);
+                    assert.equal(e.prevented, true);
+                    assert.deepEqual(calls.slice(1), [['paste', { type: 'paste', text: '', html: '', shiftKey }]]);
+                    assert.equal(service.lastPasteKey, null);
+
+                    const editor = { sheet: container, tagName: 'INPUT',
+                        closest: selector => selector === '.bds-sheet' ? container : editor };
+                    const editorEvent = { ...e, target: editor, prevented: false };
+                    await service.handleWindowEvent(editorEvent);
+                    assert.equal(editorEvent.prevented, false);
+                    assert.equal(calls.filter(c => c[0] === 'paste').length, 1);
+                } finally {
+                    service.dispose();
+                    if (originalNavigator) Object.defineProperty(globalThis, 'navigator', originalNavigator);
+                    else delete globalThis.navigator;
+                }
+            });
+        }
+    }
+}
+
+test('secure clipboard support leaves Ctrl+V to the native paste event', async () => {
+    const { service, container, calls } = setup();
+    window.isSecureContext = true;
+    const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+    Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { clipboard: {} } });
+    try {
+        service.registerEvent('paste', 'paste');
+        const e = { ...key(container), key: 'v', code: 'KeyV', ctrlKey: true };
+        await service.handleWindowEvent(e);
+        assert.equal(e.prevented, undefined);
+        assert.equal(calls.some(c => c[0] === 'paste'), false);
+        await service.handleWindowEvent({ type: 'paste', target: container,
+            clipboardData: { getData: type => type === 'text/plain' ? 'external text' : '' } });
+        assert.equal(calls.at(-1)[1].text, 'external text');
+    } finally {
+        service.dispose();
+        delete window.bdsReadClipboard;
+        if (originalNavigator) Object.defineProperty(globalThis, 'navigator', originalNavigator);
+        else delete globalThis.navigator;
+    }
+});

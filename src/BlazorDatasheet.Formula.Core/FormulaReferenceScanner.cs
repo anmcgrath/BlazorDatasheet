@@ -180,12 +180,13 @@ public static class FormulaReferenceScanner
         }
 
         if (index >= tokens.Count ||
-            !TryConvertToAddress(tokens[index], true, out address) ||
-            address.Kind != kind)
+            !TryConvertToAddress(tokens[index], true, out var candidate) ||
+            candidate.Kind != kind)
         {
             return false;
         }
 
+        address = candidate;
         endIndex = index + 1;
         return true;
     }

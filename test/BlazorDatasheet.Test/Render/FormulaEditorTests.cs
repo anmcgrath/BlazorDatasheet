@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Threading.Tasks;
+using AngleSharp.Html.Parser;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Edit;
 using BlazorDatasheet.Edit.DefaultComponents;
@@ -274,6 +275,43 @@ public class FormulaEditorTests
 
         context.JSInterop.Invocations.Last(x => x.Identifier == "setHighlightHtml").Arguments[0]!.ToString()
             .Should().Contain("color:var(--highlight-color-1)\">myName<");
+    }
+
+    [Test]
+    [TestCase("=a1:a4")]
+    [TestCase("=a1:8888")]
+    [TestCase("=a1:8888+B2")]
+    public async Task Typing_And_Backspacing_Range_Endpoints_Keeps_All_Text_Visible(string formula)
+    {
+        await using var context = CreateContext();
+        var value = "";
+        var editor = context.Render<FormulaEditor>(p => p
+            .Add(x => x.Sheet, new Sheet(5, 5))
+            .Add(x => x.ValueChanged, v => value = v));
+        var parser = new HtmlParser();
+
+        async Task AssertVisible(string text)
+        {
+            await Type(editor, text, text.Length);
+
+            value.Should().Be(text);
+            var html = context.JSInterop.Invocations.Last(x => x.Identifier == "setHighlightHtml")
+                .Arguments[0]!.ToString()!;
+            using var document = parser.ParseDocument(html);
+            document.Body!.TextContent.Should().Be(text);
+
+            if (text == "=a1:a4")
+                document.QuerySelectorAll("span[style]").Select(x => x.TextContent)
+                    .Should().Equal("a1", ":", "a4");
+            if (text == "=a1:a" || text == "=a1:8888")
+                document.QuerySelectorAll("span[style]").Select(x => x.TextContent)
+                    .Should().Equal("a1");
+        }
+
+        for (var length = 1; length <= formula.Length; length++)
+            await AssertVisible(formula[..length]);
+        for (var length = formula.Length - 1; length >= 0; length--)
+            await AssertVisible(formula[..length]);
     }
 
     [Test]
