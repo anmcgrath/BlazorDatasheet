@@ -117,6 +117,11 @@ public class MoveRangeCommand : BaseCommand, IUndoableCommand
             }
         }
 
+        // Whole rows (columns) moved along their axis carry whole-row (column) references with them too.
+        var referenceRegion = (_from.Region is RowRegion && dc == 0) || (_from.Region is ColumnRegion && dr == 0)
+            ? _from.Region
+            : source;
+
         _copyRestore = target.Cells.CopyImpl(_from, toRegion, _options);
 
         foreach (var (sheetName, row, col) in dependents.Distinct())
@@ -127,7 +132,7 @@ public class MoveRangeCommand : BaseCommand, IUndoableCommand
                 continue;
 
             var rewritten = target.FormulaEngine.CloneFormula(existing, sheet.Name);
-            if (!rewritten.MoveReferencesWithin(source, fromSheet.Name, dr, dc, target.Name, sheet.Name))
+            if (!rewritten.MoveReferencesWithin(referenceRegion, fromSheet.Name, dr, dc, target.Name, sheet.Name))
                 continue;
             _dependentRestores.Add((sheet, sheet.Cells.SetFormulaImpl(row, col, rewritten)));
         }
