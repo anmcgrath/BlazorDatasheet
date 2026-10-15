@@ -108,7 +108,7 @@ public class FormulaConditionalFormat : ConditionalFormatAbstractBase
     {
         if (dRow == 0 && dCol == 0)
             return;
-        GetFormula(sheet)?.ShiftReferences(dRow, dCol, sheet.Name);
+        GetFormula(sheet)?.ShiftReferences(dRow, dCol, null);
     }
 
     /// <summary>
@@ -136,10 +136,10 @@ public class FormulaConditionalFormat : ConditionalFormatAbstractBase
     /// Adjusts the formula's references for blank cells inserted over <paramref name="region"/>, shifting along
     /// <paramref name="axis"/>. Only references lying entirely within the shifted band are adjusted.
     /// </summary>
-    internal void InsertCells(IRegion region, Axis axis, Sheet sheet)
+    internal void InsertCells(IRegion region, Axis axis, Sheet sheet, string? sourceSheetName = null)
     {
         var count = axis == Axis.Col ? region.Width : region.Height;
-        GetFormula(sheet)?.InsertRowColIntoReferences(region.GetLeadingEdgeOffset(axis), count, axis, sheet.Name,
+        GetFormula(sheet)?.InsertRowColIntoReferences(region.GetLeadingEdgeOffset(axis), count, axis, sourceSheetName ?? sheet.Name,
             region);
     }
 
@@ -147,10 +147,10 @@ public class FormulaConditionalFormat : ConditionalFormatAbstractBase
     /// Adjusts the formula's references for the cells in <paramref name="region"/> being removed, shifting along
     /// <paramref name="axis"/>. Only references lying entirely within the shifted band are adjusted.
     /// </summary>
-    internal void RemoveCells(IRegion region, Axis axis, Sheet sheet)
+    internal void RemoveCells(IRegion region, Axis axis, Sheet sheet, string? sourceSheetName = null)
     {
         var count = axis == Axis.Col ? region.Width : region.Height;
-        GetFormula(sheet)?.RemoveRowColFromReferences(region.GetLeadingEdgeOffset(axis), count, axis, sheet.Name,
+        GetFormula(sheet)?.RemoveRowColFromReferences(region.GetLeadingEdgeOffset(axis), count, axis, sourceSheetName ?? sheet.Name,
             region);
     }
 }

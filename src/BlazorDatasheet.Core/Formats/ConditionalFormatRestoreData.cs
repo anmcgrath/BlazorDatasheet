@@ -11,4 +11,7 @@ internal class ConditionalFormatRestoreData
     /// The formula text of each formula conditional format before its references were rewritten.
     /// </summary>
     public List<(FormulaConditionalFormat Cf, string FormulaText)> Formulas { get; init; } = new();
+
+    public List<RegionRestoreData<ConditionalFormatAbstractBase>> SplitRegions { get; init; } = new();
+    public List<FormulaConditionalFormat> SplitFormats { get; init; } = new();
 }

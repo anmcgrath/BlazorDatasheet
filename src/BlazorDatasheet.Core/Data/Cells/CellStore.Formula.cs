@@ -78,7 +78,7 @@ public partial class CellStore
     }
 
     private CellStoreRestoreData CopyFormulaImpl(Sheet fromSheet, IRegion fromRegion, IRegion toRegion,
-        ReferenceAdjustment adjustment, bool recordValueRestore)
+        ReferenceAdjustment adjustment, bool recordValueRestore, IRegion referenceRegion)
     {
         var dr = toRegion.Top - fromRegion.Top;
         var dc = toRegion.Left - fromRegion.Left;
@@ -104,7 +104,7 @@ public partial class CellStore
             {
                 // the cells move: references into the moved block follow it, everything else stays put
                 clonedFormula = Sheet.FormulaEngine.CloneFormula(formula.data, fromSheet.Name);
-                clonedFormula.MoveReferencesWithin(fromRegion, fromSheet.Name, dr, dc, Sheet.Name, Sheet.Name);
+                clonedFormula.MoveReferencesWithin(referenceRegion, fromSheet.Name, dr, dc, Sheet.Name, Sheet.Name);
                 clonedFormula.QualifyForeignReferences(Sheet.Name);
             }
 
