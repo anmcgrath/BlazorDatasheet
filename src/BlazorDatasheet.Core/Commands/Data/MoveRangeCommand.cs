@@ -1,6 +1,7 @@
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.DataStructures.Store;
 using BlazorDatasheet.Formula.Core.Dependencies;
 
 namespace BlazorDatasheet.Core.Commands.Data;
@@ -11,6 +12,11 @@ namespace BlazorDatasheet.Core.Commands.Data;
 /// block keep pointing at the same cells (references into the block move with it), and formulas anywhere in the
 /// workbook that reference cells fully inside the block are rewritten to the new location. References that only
 /// partly overlap the block are left alone, as in Excel.
+/// <para>
+/// When both values and formats are moved (as by default), the validators, cell metadata and conditional formats
+/// of the block move with it too, replacing those at the target. Conditional formats only move within a sheet: on
+/// a move to another sheet they stay where they are.
+/// </para>
 /// <para>The command is executed on the target sheet; the source may be another sheet of the same workbook.</para>
 /// </summary>
 public class MoveRangeCommand : BaseCommand, IUndoableCommand
@@ -22,6 +28,9 @@ public class MoveRangeCommand : BaseCommand, IUndoableCommand
     private CellStoreRestoreData? _copyRestore;
     private readonly List<(Sheet sheet, CellStoreRestoreData restore)> _dependentRestores = new();
     private CellStoreRestoreData? _sourceRestore;
+
+    // Undoes the moves of validators, metadata and conditional formats, step by step in reverse.
+    private readonly List<Action> _regionDataUndo = new();
 
     /// <param name="from">The cells to move. Only the single region of the range is used.</param>
     /// <param name="to">Where the top-left of the moved block lands. Only the top-left of the range is used.</param>
@@ -52,6 +61,11 @@ public class MoveRangeCommand : BaseCommand, IUndoableCommand
         var left = _to.Region.Left;
         return new Region(top, top + source.Height - 1, left, left + source.Width - 1).GetIntersection(target.Region);
     }
+
+    /// <summary>
+    /// Whether the cells move with everything attached to them: validators, metadata and conditional formats.
+    /// </summary>
+    private bool MovesAttachments => _options.CopyValues && _options.CopyFormat;
 
     private bool IsNoOp(Sheet target) =>
         ReferenceEquals(_from.Sheet, target) && SourceRegion?.Equals(GetTargetRegion(target)) == true;
@@ -92,6 +106,7 @@ public class MoveRangeCommand : BaseCommand, IUndoableCommand
             return false;
 
         _dependentRestores.Clear();
+        _regionDataUndo.Clear();
         var fromSheet = _from.Sheet;
         var sameSheet = ReferenceEquals(fromSheet, target);
         var dr = toRegion.Top - source.Top;
@@ -152,10 +167,61 @@ public class MoveRangeCommand : BaseCommand, IUndoableCommand
             fromSheet.MarkDirty(region);
         }
 
+        if (MovesAttachments)
+            MoveAttachments(fromSheet, target, source, toRegion);
+
         if (!sameSheet)
             fromSheet.EndBatchUpdates();
 
         return true;
+    }
+
+    private void MoveAttachments(Sheet fromSheet, Sheet target, IRegion source, IRegion toRegion)
+    {
+        var fromValidators = fromSheet.Validators;
+        var toValidators = target.Validators;
+        MoveRegionData(fromValidators.Store, toValidators.Store, source, toRegion,
+            index => fromValidators.GetValidator(index) is { } validator ? toValidators.Register(validator) : index);
+
+        MoveRegionData(fromSheet.Cells.GetMetaDataStore(), target.Cells.GetMetaDataStore(), source, toRegion,
+            metadata => metadata);
+
+        if (ReferenceEquals(fromSheet, target))
+        {
+            var cf = target.ConditionalFormats;
+            foreach (var step in cf.MoveImpl(source, toRegion))
+                _regionDataUndo.Add(() => cf.Restore(step));
+        }
+    }
+
+    /// <summary>
+    /// Moves the data of a region store in <paramref name="from"/> to the block at <paramref name="to"/>, which
+    /// is cleared first, leaving <paramref name="from"/> empty. <paramref name="map"/> gives the data to store
+    /// at the target for the data at the source.
+    /// </summary>
+    private void MoveRegionData<T>(RegionDataStore<T> fromStore, RegionDataStore<T> toStore, IRegion from,
+        IRegion to, Func<T, T> map) where T : IEquatable<T>
+    {
+        var dr = to.Top - from.Top;
+        var dc = to.Left - from.Left;
+        var pieces = fromStore.GetDataRegions(from)
+            .Select(x => (Data: map(x.Data), Region: x.Region.GetIntersection(from)!))
+            .ToList();
+
+        var clearFrom = fromStore.Clear(from);
+        _regionDataUndo.Add(() => fromStore.Restore(clearFrom));
+        var clearTo = toStore.Clear(to);
+        _regionDataUndo.Add(() => toStore.Restore(clearTo));
+
+        foreach (var (data, region) in pieces)
+        {
+            region.Shift(dr, dc);
+            var clipped = region.GetIntersection(to);
+            if (clipped == null)
+                continue;
+            var added = toStore.Add(clipped, data);
+            _regionDataUndo.Add(() => toStore.Restore(added));
+        }
     }
 
     public bool Undo(Sheet target)
@@ -167,6 +233,10 @@ public class MoveRangeCommand : BaseCommand, IUndoableCommand
         using var updates = target.SuspendUpdates();
         if (!sameSheet)
             fromSheet.BatchUpdates();
+
+        for (var i = _regionDataUndo.Count - 1; i >= 0; i--)
+            _regionDataUndo[i]();
+        _regionDataUndo.Clear();
 
         if (_sourceRestore != null)
             fromSheet.Cells.Restore(_sourceRestore);

@@ -4,6 +4,7 @@ using AwesomeAssertions;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Filter;
 using BlazorDatasheet.Core.Formats;
+using BlazorDatasheet.Core.Validation;
 using NUnit.Framework;
 
 namespace BlazorDatasheet.Test.Commands;
@@ -246,5 +247,25 @@ public class MoveRowsColsCommandTests
 
         Enumerable.Range(0, 6).Select(c => sheet.Cells.GetValue(0, c))
             .Should().Equal("c0", "c3", "c4", "c1", "c2", "c5");
+    }
+
+    [Test]
+    public void Validators_And_Metadata_Move_With_Rows()
+    {
+        var validator = new NumberValidator(true);
+        _sheet.Validators.Add(new BlazorDatasheet.DataStructures.Geometry.Region(1, 0), validator);
+        _sheet.Cells.SetCellMetaData(1, 0, "m", "x");
+
+        _sheet.Rows.Move(1, 1, 5).Should().BeTrue();
+
+        _sheet.Validators.Get(4, 0).Should().Equal(validator);
+        _sheet.Validators.Get(1, 0).Should().BeEmpty();
+        _sheet.Cells.GetMetaData(4, 0, "m").Should().Be("x");
+
+        _sheet.Commands.Undo();
+        _sheet.Validators.Get(1, 0).Should().Equal(validator);
+        _sheet.Validators.Get(4, 0).Should().BeEmpty();
+        _sheet.Cells.GetMetaData(1, 0, "m").Should().Be("x");
+        _sheet.Cells.GetMetaData(4, 0, "m").Should().BeNull();
     }
 }

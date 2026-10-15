@@ -467,6 +467,54 @@ public class ConditionalFormatManager
         return false;
     }
 
+    /// <summary>
+    /// Moves the conditional formats applied in <paramref name="from"/> to the block of the same size at
+    /// <paramref name="to"/>, replacing those applied there and leaving <paramref name="from"/> without any.
+    /// A formula format moved as a whole carries its anchor along, so each cell reads the same cells it did. One
+    /// only partly moved keeps a single formula, so its cells that stay keep reading the same cells and the moved
+    /// ones read relative references from where they land, as for a copy.
+    /// </summary>
+    /// <returns>The restore data of each step, to be restored in reverse.</returns>
+    internal List<ConditionalFormatRestoreData> MoveImpl(IRegion from, IRegion to)
+    {
+        var dr = to.Top - from.Top;
+        var dc = to.Left - from.Left;
+
+        var formulaFormats = FormulaFormats.ToList();
+        var formulas = formulaFormats.Select(f => (f, f.FormulaText)).ToList();
+        var movedWhole = formulaFormats
+            .Where(f => _appliedFormats.GetRegions(f).All(from.Contains))
+            .ToHashSet();
+
+        var pieces = _appliedFormats.GetDataRegions(from)
+            .Select(x => (x.Data, Region: x.Region.GetIntersection(from)!))
+            .ToList();
+
+        var steps = new List<ConditionalFormatRestoreData>
+        {
+            new() { Regions = _appliedFormats.Clear(from), Formulas = formulas },
+            new() { Regions = _appliedFormats.Clear(to) }
+        };
+
+        foreach (var (format, region) in pieces)
+        {
+            region.Shift(dr, dc);
+            var clipped = region.GetIntersection(to);
+            if (clipped != null)
+                steps.Add(new ConditionalFormatRestoreData { Regions = _appliedFormats.Add(clipped, format) });
+        }
+
+        foreach (var format in formulaFormats)
+            UpdateAnchor(format, rebaseFormula: !movedWhole.Contains(format));
+
+        _footprints.Clear();
+        Prepare(steps.SelectMany(x => x.Regions.RegionsAdded.Concat(x.Regions.RegionsRemoved))
+            .Select(x => x.Data)
+            .Distinct()
+            .ToList());
+        return steps;
+    }
+
     internal void Restore(ConditionalFormatRestoreData data)
     {
         _appliedFormats.Restore(data.Regions);

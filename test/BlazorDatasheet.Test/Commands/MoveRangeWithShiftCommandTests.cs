@@ -3,6 +3,7 @@ using System.Text;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Formats;
+using BlazorDatasheet.Core.Validation;
 using BlazorDatasheet.DataStructures.Geometry;
 using AwesomeAssertions;
 using NUnit.Framework;
@@ -465,5 +466,39 @@ public class MoveRangeWithShiftCommandTests
 
         _sheet.Commands.Undo();
         _sheet.Cells.GetValue(1, 7).Should().Be(spill);
+    }
+
+    [Test]
+    public void Validators_Metadata_And_Conditional_Formats_Move_With_The_Block()
+    {
+        var validator = new NumberValidator(true);
+        _sheet.Cells.SetValue(0, 1, 7);
+        _sheet.Cells.SetValue(0, 2, "c");
+        _sheet.Validators.Add(new Region(0, 1), validator);
+        _sheet.Cells.SetCellMetaData(0, 1, "m", "x");
+        _sheet.ConditionalFormats.Apply(new Region(0, 1),
+            new ConditionalFormat((_, _) => true, _ => new CellFormat { BackgroundColor = "green" }));
+
+        Move("B1", "D1", Axis.Col).Should().BeTrue();
+
+        _sheet.Cells.GetValue(0, 2).Should().Be(7);
+        _sheet.Validators.Get(0, 2).Should().Equal(validator);
+        _sheet.Validators.Get(0, 1).Should().BeEmpty();
+        _sheet.Cells.GetMetaData(0, 2, "m").Should().Be("x");
+        _sheet.Cells.GetMetaData(0, 1, "m").Should().BeNull();
+        _sheet.ConditionalFormats.GetFormatResult(0, 2)!.BackgroundColor.Should().Be("green");
+        _sheet.ConditionalFormats.GetFormatResult(0, 1).Should().BeNull();
+
+        _sheet.Commands.Undo();
+
+        _sheet.Validators.Get(0, 1).Should().Equal(validator);
+        _sheet.Validators.Get(0, 2).Should().BeEmpty();
+        _sheet.Cells.GetMetaData(0, 1, "m").Should().Be("x");
+        _sheet.Cells.GetMetaData(0, 2, "m").Should().BeNull();
+        _sheet.ConditionalFormats.GetFormatResult(0, 1)!.BackgroundColor.Should().Be("green");
+        _sheet.ConditionalFormats.GetFormatResult(0, 2).Should().BeNull();
+
+        _sheet.Commands.Redo();
+        _sheet.Validators.Get(0, 2).Should().Equal(validator);
     }
 }

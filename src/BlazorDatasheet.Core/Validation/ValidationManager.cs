@@ -85,6 +85,27 @@ public class ValidationManager
         ValidatorChanged?.Invoke(this, args);
     }
 
+    /// <summary>
+    /// The validator stored at <paramref name="index"/> in <see cref="Store"/>, if any.
+    /// </summary>
+    internal IDataValidator? GetValidator(int index) => _validators.GetValueOrDefault(index);
+
+    /// <summary>
+    /// The index of <paramref name="validator"/> in <see cref="Store"/>, registering it first if this sheet
+    /// doesn't know it, without applying it anywhere.
+    /// </summary>
+    internal int Register(IDataValidator validator)
+    {
+        if (GetValidatorIndex(validator) is { } existing)
+            return existing;
+
+        var index = _validators.Count;
+        while (_validators.ContainsKey(index))
+            index++;
+        _validators.Add(index, validator);
+        return index;
+    }
+
     internal void AddImpl(int validatorIndex, IRegion region)
     {
         if (_validators.TryGetValue(validatorIndex, out var validator))

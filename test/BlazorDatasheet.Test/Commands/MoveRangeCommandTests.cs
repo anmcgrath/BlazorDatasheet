@@ -1,7 +1,9 @@
+using System.Collections.Generic;
 using System.Linq;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Formats;
+using BlazorDatasheet.Core.Validation;
 using BlazorDatasheet.DataStructures.Geometry;
 using AwesomeAssertions;
 using NUnit.Framework;
@@ -242,5 +244,113 @@ public class MoveRangeCommandTests
 
         Move("F6:H6", 5, 6).Should().BeTrue();
         _sheet.Cells.GetMerge(5, 6).Should().BeEquivalentTo(new Region(5, 5, 6, 8));
+    }
+
+    [Test]
+    public void Move_Carries_Validators_Metadata_And_Conditional_Formats()
+    {
+        var validator = new NumberValidator(true);
+        var cf = new ConditionalFormat((_, _) => true, _ => new CellFormat { BackgroundColor = "green" });
+        _sheet.Cells.SetValue(0, 0, 7);
+        _sheet.Validators.Add(new Region(0, 0), validator);
+        _sheet.Cells.SetCellMetaData(0, 0, "m", "x");
+        _sheet.ConditionalFormats.Apply(new Region(0, 0), cf);
+        // what the block lands on is replaced
+        _sheet.Validators.Add(new Region(0, 4), new SourceValidator(new List<string> { "a" }, true));
+        _sheet.Cells.SetCellMetaData(0, 4, "m", "old");
+
+        Move("A1", 0, 4).Should().BeTrue();
+
+        _sheet.Validators.Get(0, 4).Should().Equal(validator);
+        _sheet.Validators.Get(0, 0).Should().BeEmpty();
+        _sheet.Cells.GetMetaData(0, 4, "m").Should().Be("x");
+        _sheet.Cells.GetMetaData(0, 0, "m").Should().BeNull();
+        _sheet.ConditionalFormats.GetFormatResult(0, 4)!.BackgroundColor.Should().Be("green");
+        _sheet.ConditionalFormats.GetFormatResult(0, 0).Should().BeNull();
+
+        _sheet.Commands.Undo();
+
+        _sheet.Validators.Get(0, 0).Should().Equal(validator);
+        _sheet.Validators.Get(0, 4).Should().ContainSingle().Which.Should().BeOfType<SourceValidator>();
+        _sheet.Cells.GetMetaData(0, 0, "m").Should().Be("x");
+        _sheet.Cells.GetMetaData(0, 4, "m").Should().Be("old");
+        _sheet.ConditionalFormats.GetFormatResult(0, 0)!.BackgroundColor.Should().Be("green");
+        _sheet.ConditionalFormats.GetFormatResult(0, 4).Should().BeNull();
+    }
+
+    [Test]
+    public void Move_Splits_Validators_And_Metadata_Partly_In_The_Block()
+    {
+        var validator = new NumberValidator(true);
+        _sheet.Validators.Add(new Region(0, 2, 0, 0), validator);
+        _sheet.Cells.SetCellMetaData(new Region(0, 2, 0, 0), "m", "x");
+
+        Move("A2", 5, 5).Should().BeTrue();
+
+        _sheet.Validators.Get(0, 0).Should().Equal(validator);
+        _sheet.Validators.Get(1, 0).Should().BeEmpty();
+        _sheet.Validators.Get(2, 0).Should().Equal(validator);
+        _sheet.Validators.Get(5, 5).Should().Equal(validator);
+        _sheet.Cells.GetMetaData(1, 0, "m").Should().BeNull();
+        _sheet.Cells.GetMetaData(5, 5, "m").Should().Be("x");
+
+        _sheet.Commands.Undo();
+        _sheet.Validators.Get(1, 0).Should().Equal(validator);
+        _sheet.Validators.Get(5, 5).Should().BeEmpty();
+        _sheet.Cells.GetMetaData(1, 0, "m").Should().Be("x");
+        _sheet.Cells.GetMetaData(5, 5, "m").Should().BeNull();
+    }
+
+    [Test]
+    public void Move_Within_Overlapping_Regions_Carries_Validators()
+    {
+        var validator = new NumberValidator(true);
+        _sheet.Validators.Add(new Region(0, 0), validator);
+
+        Move("A1:B1", 0, 1).Should().BeTrue();
+
+        _sheet.Validators.Get(0, 0).Should().BeEmpty();
+        _sheet.Validators.Get(0, 1).Should().Equal(validator);
+        _sheet.Validators.Get(0, 2).Should().BeEmpty();
+        _sheet.Commands.Undo();
+        _sheet.Validators.Get(0, 0).Should().Equal(validator);
+        _sheet.Validators.Get(0, 1).Should().BeEmpty();
+    }
+
+    [Test]
+    public void Move_To_Another_Sheet_Carries_Validators_And_Metadata()
+    {
+        var other = _sheet.Workbook.AddSheet("Other", 20, 20);
+        var validator = new NumberValidator(true);
+        _sheet.Validators.Add(new Region(0, 0), validator);
+        _sheet.Cells.SetCellMetaData(0, 0, "m", "x");
+
+        Move("A1", 2, 2, other).Should().BeTrue();
+
+        other.Validators.Get(2, 2).Should().Equal(validator);
+        other.Cells.GetMetaData(2, 2, "m").Should().Be("x");
+        _sheet.Validators.Get(0, 0).Should().BeEmpty();
+        _sheet.Cells.GetMetaData(0, 0, "m").Should().BeNull();
+
+        other.Commands.Undo();
+        other.Validators.Get(2, 2).Should().BeEmpty();
+        other.Cells.GetMetaData(2, 2, "m").Should().BeNull();
+        _sheet.Validators.Get(0, 0).Should().Equal(validator);
+        _sheet.Cells.GetMetaData(0, 0, "m").Should().Be("x");
+    }
+
+    [Test]
+    public void Move_Of_Values_Only_Leaves_Validators()
+    {
+        var validator = new NumberValidator(true);
+        _sheet.Cells.SetValue(0, 0, 7);
+        _sheet.Validators.Add(new Region(0, 0), validator);
+
+        _sheet.Commands.ExecuteCommand(new MoveRangeCommand(_sheet.Range("A1")!, _sheet.Range(0, 4),
+            CopyOptions.ValuesOnly)).Should().BeTrue();
+
+        _sheet.Cells.GetValue(0, 4).Should().Be(7);
+        _sheet.Validators.Get(0, 0).Should().Equal(validator);
+        _sheet.Validators.Get(0, 4).Should().BeEmpty();
     }
 }
