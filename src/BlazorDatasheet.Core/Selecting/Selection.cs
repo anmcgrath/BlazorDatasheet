@@ -387,6 +387,20 @@ public partial class Selection
         this.Add(regions);
     }
 
+    /// <summary>
+    /// The part of <paramref name="region"/> on the sheet. Whole rows and columns stay whole rows and columns.
+    /// </summary>
+    private IRegion? ConstrainToSheet(IRegion region) => region switch
+    {
+        ColumnRegion c => c.Left < _sheet.NumCols
+            ? new ColumnRegion(c.Left, Math.Min(c.Right, _sheet.NumCols - 1))
+            : null,
+        RowRegion r => r.Top < _sheet.NumRows
+            ? new RowRegion(r.Top, Math.Min(r.Bottom, _sheet.NumRows - 1))
+            : null,
+        _ => region.GetIntersection(_sheet.Region)
+    };
+
     public void ConstrainSelectionToSheet()
     {
         if (_sheet.Area == 0)
@@ -398,9 +412,9 @@ public partial class Selection
         var constrainedRegions = new List<IRegion>();
         foreach (var region in _regions)
         {
-            var intersection = region.GetIntersection(_sheet.Region);
-            if (intersection != null)
-                constrainedRegions.Add(intersection);
+            var constrained = ConstrainToSheet(region);
+            if (constrained != null)
+                constrainedRegions.Add(constrained);
         }
 
         SetActiveRegionIndex(-1);

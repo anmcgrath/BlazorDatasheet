@@ -423,4 +423,18 @@ public class SelectionManagerTests
         selection.ActiveRegion.Should().BeEquivalentTo(new Region(1, 1));
         selection.Regions.Count.Should().Be(2);
     }
+
+    [Test]
+    public void Removing_Columns_Keeps_Whole_Column_And_Row_Selections_Whole()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Selection.Set([new ColumnRegion(7, 9), new RowRegion(2)]);
+
+        sheet.Columns.RemoveAt(8, 2);
+
+        sheet.Selection.Regions[0].Should().BeOfType<ColumnRegion>();
+        sheet.Selection.Regions[0].Should().BeEquivalentTo(new ColumnRegion(7));
+        sheet.Selection.Regions[1].Should().BeOfType<RowRegion>();
+        sheet.Selection.Regions[1].Should().BeEquivalentTo(new RowRegion(2));
+    }
 }
