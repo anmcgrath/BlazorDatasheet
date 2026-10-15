@@ -128,6 +128,28 @@ public class ColumnInfoStore : RowColInfoStore
         return CumulativeSizeStore.GetCumulative(colIndex);
     }
 
+    /// <inheritdoc />
+    /// <remarks>Also copies the column filters.</remarks>
+    internal override RowColInfoRestoreData CopyImpl(RowColInfoStore source, int srcStart, int count, int dstStart)
+    {
+        if (count <= 0 || source is not ColumnInfoStore sourceColumns)
+            return base.CopyImpl(source, srcStart, count, dstStart);
+
+        var srcEnd = srcStart + count - 1;
+        // read the source filters before anything is written, since the source may be this store.
+        var filters = sourceColumns.Filters.Store.GetOverlapping(srcStart, srcEnd);
+        var restoreData = base.CopyImpl(source, srcStart, count, dstStart);
+        restoreData.FiltersRestoreData = CopyRange<List<IFilter>?>(Filters.Store, filters, srcStart, srcEnd, dstStart - srcStart,
+            f => f == null ? null : new List<IFilter>(f));
+        return restoreData;
+    }
+
+    private protected override void RestoreAxisSpecific(RowColInfoRestoreData data)
+    {
+        if (data.FiltersRestoreData != null)
+            Filters.Store.Restore(data.FiltersRestoreData);
+    }
+
     public SheetColumn this[int colIndex]
     {
         get => new SheetColumn(colIndex, Sheet);

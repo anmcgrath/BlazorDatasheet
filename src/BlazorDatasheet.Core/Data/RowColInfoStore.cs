@@ -1,5 +1,6 @@
 using BlazorDatasheet.Core.Commands.RowCols;
 using BlazorDatasheet.Core.Data.Cells;
+using BlazorDatasheet.Core.Data.Filter;
 using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -312,6 +313,116 @@ public abstract class RowColInfoStore
     }
 
     /// <summary>
+    /// Copies the row/column info (sizes, visibility, headings, heading alignment, groups and formats) of
+    /// <paramref name="count"/> rows/columns from <paramref name="srcStart"/> in <paramref name="source"/>
+    /// to <paramref name="dstStart"/> in this store, replacing whatever is at the destination.
+    /// <paramref name="source"/> may be this store, and the source and destination ranges may overlap.
+    /// </summary>
+    internal virtual RowColInfoRestoreData CopyImpl(RowColInfoStore source, int srcStart, int count, int dstStart)
+    {
+        if (count <= 0)
+            return new RowColInfoRestoreData();
+
+        var srcEnd = srcStart + count - 1;
+        var dstEnd = dstStart + count - 1;
+        var offset = dstStart - srcStart;
+        var groupsBefore = GetGroups();
+
+        // read the source before anything is written, since it may be this store and overlap the destination.
+        var headings = source.HeadingStore.GetOverlapping(srcStart, srcEnd);
+        var alignments = source.HeadingAlignmentStore.GetOverlapping(srcStart, srcEnd);
+        var groups = source.GroupStore.GetOverlapping(srcStart, srcEnd);
+        var hidden = source.Visible.GetOverlapping(srcStart, srcEnd);
+        var sizes = source.SizeStore.GetOverlapping(srcStart, srcEnd);
+        var formats = source.Formats.GetIntervals(srcStart, srcEnd)
+            .Select(x => (start: x.Start, end: x.End, format: x.Data.Clone()))
+            .ToList();
+
+        // copied groups get their own group objects, so they are not joined to the groups they were copied from.
+        var groupCopies = new Dictionary<HeadingGroup, HeadingGroup>();
+
+        var restoreData = new RowColInfoRestoreData()
+        {
+            HeadingsRestoreData = CopyRange(HeadingStore, headings, srcStart, srcEnd, offset),
+            HeadingAlignmentsRestoreData = CopyRange(HeadingAlignmentStore, alignments, srcStart, srcEnd, offset),
+            GroupsRestoreData = CopyRange(GroupStore, groups, srcStart, srcEnd, offset, group =>
+            {
+                if (group == null)
+                    return null;
+                if (!groupCopies.TryGetValue(group, out var copy))
+                    groupCopies[group] = copy = new HeadingGroup(group.Label);
+                return copy;
+            }),
+            VisibilityRestoreData = CopyRange(Visible, hidden, srcStart, srcEnd, offset),
+            SizesRestoreData = CopyRange(SizeStore, sizes, srcStart, srcEnd, offset),
+            RowColFormatRestoreData = new RowColFormatRestoreData()
+            {
+                Format1DRestoreData = Formats.Clear(dstStart, dstEnd)
+            }
+        };
+
+        // The cumulative store must not be cleared, since clearing does not update its cumulative positions.
+        // Reset the destination to the default size, then set the copied sizes and zero the hidden indices.
+        var cumulativeRestoreData = CumulativeSizeStore.Set(dstStart, dstEnd, DefaultSize);
+        foreach (var (start, end, size) in sizes)
+            cumulativeRestoreData.Merge(CumulativeSizeStore.Set(Math.Max(start, srcStart) + offset,
+                Math.Min(end, srcEnd) + offset, size));
+        foreach (var (start, end, _) in hidden)
+            cumulativeRestoreData.Merge(CumulativeSizeStore.Set(Math.Max(start, srcStart) + offset,
+                Math.Min(end, srcEnd) + offset, 0));
+        RemoveTransientIntervals(cumulativeRestoreData);
+        restoreData.CumulativeSizesRestoreData.Merge(cumulativeRestoreData);
+
+        foreach (var (start, end, format) in formats)
+        {
+            restoreData.RowColFormatRestoreData.Format1DRestoreData.Merge(Formats.Add(
+                new OrderedInterval<CellFormat>(Math.Max(start, srcStart) + offset, Math.Min(end, srcEnd) + offset,
+                    format)));
+        }
+
+        RemoveTransientIntervals(restoreData.RowColFormatRestoreData.Format1DRestoreData);
+
+        Sheet.MarkDirty(GetSpannedRegion(dstStart, dstEnd));
+        EmitSizeModified(dstStart, dstEnd);
+        EmitHeadingsModified(dstStart, dstEnd);
+        EmitGroupsModifiedIfChanged(groupsBefore);
+        return restoreData;
+    }
+
+    /// <summary>
+    /// Clears [srcStart + offset, srcEnd + offset] in <paramref name="to"/> and sets the values in <paramref name="from"/>,
+    /// clipped to [srcStart, srcEnd] and shifted by <paramref name="offset"/>.
+    /// </summary>
+    private protected static MergeableIntervalStoreRestoreData<OverwritingValue<T>> CopyRange<T>(Range1DStore<T> to,
+        List<(int start, int end, T? value)> from, int srcStart, int srcEnd, int offset, Func<T?, T?>? map = null)
+    {
+        var restoreData = to.Clear(srcStart + offset, srcEnd + offset);
+        foreach (var (start, end, value) in from)
+        {
+            var copied = map == null ? value : map(value);
+            restoreData.Merge(to.Set(Math.Max(start, srcStart) + offset, Math.Min(end, srcEnd) + offset, copied!));
+        }
+
+        RemoveTransientIntervals(restoreData);
+        return restoreData;
+    }
+
+    /// <summary>
+    /// Removes intervals that were both added and removed while building <paramref name="restoreData"/>,
+    /// so that it holds only the net change and restores correctly.
+    /// </summary>
+    private static void RemoveTransientIntervals<T>(MergeableIntervalStoreRestoreData<T> restoreData)
+    {
+        var added = new HashSet<OrderedInterval<T>>(restoreData.AddedIntervals, ReferenceEqualityComparer.Instance);
+        var transient = new HashSet<OrderedInterval<T>>(
+            restoreData.RemovedIntervals.Where(added.Contains), ReferenceEqualityComparer.Instance);
+        if (transient.Count == 0)
+            return;
+        restoreData.AddedIntervals.RemoveAll(transient.Contains);
+        restoreData.RemovedIntervals.RemoveAll(transient.Contains);
+    }
+
+    /// <summary>
     /// Returns whether the row/column is visible at <paramref name="index"/>
     /// </summary>
     /// <param name="index"></param>
@@ -559,7 +670,15 @@ public abstract class RowColInfoStore
             HeadingsModified?.Invoke(this, new HeadingsModifiedEventArgs(change.Start, change.End, _axis));
         }
 
+        RestoreAxisSpecific(data);
         EmitGroupsModifiedIfChanged(groupsBefore);
+    }
+
+    /// <summary>
+    /// Restores any data that is only stored for one axis.
+    /// </summary>
+    private protected virtual void RestoreAxisSpecific(RowColInfoRestoreData data)
+    {
     }
 
     private void EmitGroupsModifiedIfChanged(IReadOnlyList<HeadingGroupInfo> groupsBefore)
@@ -765,8 +884,19 @@ internal class RowColInfoRestoreData
     public MergeableIntervalStoreRestoreData<OverwritingValue<bool>> VisibilityRestoreData { get; init; } = new();
     public RowColFormatRestoreData RowColFormatRestoreData { get; init; } = new();
 
+    /// <summary>
+    /// Column filter changes. Only set for columns, when filters were copied.
+    /// </summary>
+    public MergeableIntervalStoreRestoreData<OverwritingValue<List<IFilter>?>>? FiltersRestoreData { get; set; }
+
     public void Merge(RowColInfoRestoreData other)
     {
+        if (other.FiltersRestoreData != null)
+        {
+            FiltersRestoreData ??= new();
+            FiltersRestoreData.Merge(other.FiltersRestoreData);
+        }
+
         CumulativeSizesRestoreData.Merge(other.CumulativeSizesRestoreData);
         SizesRestoreData.Merge(other.SizesRestoreData);
         HeadingsRestoreData.Merge(other.HeadingsRestoreData);
