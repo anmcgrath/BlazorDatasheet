@@ -67,7 +67,8 @@
             if (regions.Count > 1)
                 return $"{regions.Count} regions selected";
 
-            var region = regions[0];
+            // whole row/column selections are unbounded, so count only the cells on the sheet
+            var region = regions[0].GetIntersection(Sheet.Region) ?? regions[0];
             return region.Area == 1
                 ? "1 cell selected"
                 : $"{region.Height} × {region.Width} selected";
