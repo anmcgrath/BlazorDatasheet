@@ -63,6 +63,20 @@ public interface IMatrixDataStore<T> : IStore<T, MatrixRestoreData<T>>, ISparseS
     }
 
     /// <summary>
+    /// Inserts blank cells over <paramref name="region"/>, shifting the cells at and after it right
+    /// (<see cref="Axis.Col"/>) or down (<see cref="Axis.Row"/>). Only the band of rows (or columns)
+    /// that <paramref name="region"/> covers is shifted.
+    /// </summary>
+    MatrixRestoreData<T> InsertCellsAt(IRegion region, Axis axis);
+
+    /// <summary>
+    /// Removes the cells in <paramref name="region"/>, shifting the cells after it left
+    /// (<see cref="Axis.Col"/>) or up (<see cref="Axis.Row"/>) within the band of rows (or columns)
+    /// that <paramref name="region"/> covers. The removed values are returned in the restore data.
+    /// </summary>
+    MatrixRestoreData<T> RemoveCellsAt(IRegion region, Axis axis);
+
+    /// <summary>
     /// Get non empty cells that exist in the bounds given
     /// </summary>
     /// <param name="r0">The lower row bound</param>

@@ -364,6 +364,130 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
         };
     }
 
+    public MatrixRestoreData<T> InsertCellsAt(IRegion region, Axis axis)
+    {
+        var n = axis == Axis.Col ? region.Width : region.Height;
+        var index = axis == Axis.Col ? region.Left : region.Top;
+        var restoreData = new MatrixRestoreData<T>()
+        {
+            Shifts = [new AppliedShift(axis, index, n, null, region.Clone())]
+        };
+
+        if (n <= 0 || _rows.Count == 0)
+            return restoreData;
+
+        if (axis == Axis.Col)
+        {
+            foreach (var key in GetRowKeysBetween(region.Top, region.Bottom))
+                _rows[key].InsertAt(region.Left, n);
+            return restoreData;
+        }
+
+        // Shift down: walk the rows from the bottom so each target slice is already vacated.
+        var keys = GetRowKeysBetween(region.Top, int.MaxValue);
+        for (int i = keys.Count - 1; i >= 0; i--)
+            MoveBandSlice(keys[i], ClampAdd(keys[i], n), region.Left, region.Right);
+
+        InvalidateRowCache();
+        return restoreData;
+    }
+
+    public MatrixRestoreData<T> RemoveCellsAt(IRegion region, Axis axis)
+    {
+        var n = axis == Axis.Col ? region.Width : region.Height;
+        var index = axis == Axis.Col ? region.Left : region.Top;
+        var removed = new List<(int row, int col, T? data)>();
+        var restoreData = new MatrixRestoreData<T>()
+        {
+            DataRemoved = removed,
+            Shifts = [new AppliedShift(axis, index, -n, null, region.Clone())]
+        };
+
+        if (n <= 0 || _rows.Count == 0)
+            return restoreData;
+
+        var emptied = false;
+        if (axis == Axis.Col)
+        {
+            foreach (var key in GetRowKeysBetween(region.Top, region.Bottom))
+            {
+                var rowData = _rows[key];
+                removed.AddRange(rowData.DeleteAt(region.Left, n).Select(x => (key, x.indexDeleted, (T?)x.value)));
+                if (rowData.IsEmpty())
+                {
+                    _rows.Remove(key);
+                    emptied = true;
+                }
+            }
+
+            if (emptied)
+                InvalidateRowCache();
+            return restoreData;
+        }
+
+        foreach (var key in GetRowKeysBetween(region.Top, region.Bottom))
+        {
+            var rowData = _rows[key];
+            removed.AddRange(rowData.ClearBetween(region.Left, region.Right).Select(x => (key, x.itemIndexCleared, (T?)x.Item2)));
+            if (rowData.IsEmpty())
+                _rows.Remove(key);
+        }
+
+        // Shift up: walk the rows from the top so each target slice is already vacated.
+        if (region.Bottom < int.MaxValue)
+        {
+            foreach (var key in GetRowKeysBetween(region.Bottom + 1, int.MaxValue))
+                MoveBandSlice(key, key - n, region.Left, region.Right);
+        }
+
+        InvalidateRowCache();
+        return restoreData;
+    }
+
+    /// <summary>
+    /// Returns a copy of the existing row keys between and including <paramref name="r0"/> and <paramref name="r1"/>, ascending.
+    /// </summary>
+    private List<int> GetRowKeysBetween(int r0, int r1)
+    {
+        var keys = EnsureSortedRowKeys();
+        var startIdx = keys.BinarySearch(r0);
+        if (startIdx < 0) startIdx = ~startIdx;
+
+        var result = new List<int>();
+        for (int i = startIdx; i < keys.Count && keys[i] <= r1; i++)
+            result.Add(keys[i]);
+        return result;
+    }
+
+    /// <summary>
+    /// Moves the data between columns <paramref name="c0"/> and <paramref name="c1"/> of row <paramref name="fromRow"/>
+    /// into row <paramref name="toRow"/>. The target slice must be empty. Does not maintain the sorted row key cache.
+    /// </summary>
+    private void MoveBandSlice(int fromRow, int toRow, int c0, int c1)
+    {
+        if (!_rows.TryGetValue(fromRow, out var source))
+            return;
+
+        var slice = source.ClearBetween(c0, c1);
+        if (slice.Count == 0)
+            return;
+
+        if (source.IsEmpty())
+            _rows.Remove(fromRow);
+
+        if (!_rows.TryGetValue(toRow, out var target))
+        {
+            target = new SparseRow<T>(_defaultIfEmpty!);
+            _rows[toRow] = target;
+        }
+
+        foreach (var (col, value) in slice)
+            target.Set(col, value);
+    }
+
+    private static int ClampAdd(int value, int delta) =>
+        (int)Math.Clamp((long)value + delta, int.MinValue, int.MaxValue);
+
     public int GetNextNonBlankRow(int row, int col)
     {
         var keys = EnsureSortedRowKeys();
@@ -481,6 +605,15 @@ public class SparseMatrixStoreByRows<T> : IMatrixDataStore<T>
         {
             foreach (var shift in restoreData.Shifts)
             {
+                if (shift.Band != null)
+                {
+                    if (shift.Amount > 0)
+                        RemoveCellsAt(shift.Band, shift.Axis);
+                    else
+                        InsertCellsAt(shift.Band, shift.Axis);
+                    continue;
+                }
+
                 if (shift.Amount > 0)
                 {
                     if (shift.Axis == Axis.Col)

@@ -337,6 +337,152 @@ public class RegionDataStore<T> : ISparseSource, IRowSource, IStore<T, RegionRes
     }
 
     /// <summary>
+    /// Inserts blank cells over <paramref name="region"/>, shifting regions right (<see cref="Axis.Col"/>) or
+    /// down (<see cref="Axis.Row"/>) within the band of rows (or columns) that <paramref name="region"/> covers.
+    /// Regions inside the band at or after the insert are shifted, regions spanning it are expanded.
+    /// Regions that extend outside the band are handled according to <paramref name="policy"/>.
+    /// Existing data regions are never mutated: changed regions are removed and new ones added,
+    /// so the restore data contains no shifts.
+    /// </summary>
+    public RegionRestoreData<T> InsertCellsAt(IRegion region, Axis axis,
+        StraddlePolicy policy = StraddlePolicy.Split)
+    {
+        var n = axis == Axis.Col ? region.Width : region.Height;
+        var index = region.GetLeadingEdgeOffset(axis);
+        var i0 = ExpandWhenInsertAfter && index > 0 ? index - 1 : index;
+
+        return ShiftCellsInBand(region, axis, i0, policy, (lead, trail) =>
+        {
+            if (lead >= index)
+                return (ClampAdd(lead, n), trail == int.MaxValue ? trail : ClampAdd(trail, n));
+            if (trail >= index || (ExpandWhenInsertAfter && trail == index - 1))
+                return (lead, trail == int.MaxValue ? trail : ClampAdd(trail, n));
+            return (lead, trail);
+        });
+    }
+
+    /// <summary>
+    /// Removes the cells in <paramref name="region"/>, shifting regions left (<see cref="Axis.Col"/>) or
+    /// up (<see cref="Axis.Row"/>) within the band of rows (or columns) that <paramref name="region"/> covers.
+    /// Regions inside the removed cells are deleted, regions overlapping them are contracted and regions after are shifted.
+    /// Regions that extend outside the band are handled according to <paramref name="policy"/>.
+    /// Existing data regions are never mutated, so the restore data contains no shifts.
+    /// </summary>
+    public RegionRestoreData<T> RemoveCellsAt(IRegion region, Axis axis,
+        StraddlePolicy policy = StraddlePolicy.Split)
+    {
+        var n = axis == Axis.Col ? region.Width : region.Height;
+        var index = region.GetLeadingEdgeOffset(axis);
+        var end = region.GetTrailingEdgeOffset(axis);
+
+        return ShiftCellsInBand(region, axis, index, policy, (lead, trail) =>
+        {
+            if (lead >= index && trail <= end)
+                return null;
+            if (lead > end)
+                return (lead - n, trail == int.MaxValue ? trail : trail - n);
+            var overlap = Math.Min(trail, end) - Math.Max(lead, index) + 1;
+            return (Math.Min(lead, index), trail == int.MaxValue ? trail : trail - overlap);
+        }, applyMinArea: true);
+    }
+
+    /// <summary>
+    /// Applies a band-limited shift to the regions overlapping the band of <paramref name="region"/> from <paramref name="from"/> onwards.
+    /// <paramref name="transform"/> maps the leading/trailing edges along <paramref name="axis"/> to their new values,
+    /// or null when the region should be removed.
+    /// </summary>
+    private RegionRestoreData<T> ShiftCellsInBand(IRegion region, Axis axis, int from, StraddlePolicy policy,
+        Func<int, int, (int lead, int trail)?> transform, bool applyMinArea = false)
+    {
+        IRegion band = axis == Axis.Col
+            ? new RowRegion(region.Top, region.Bottom)
+            : new ColumnRegion(region.Left, region.Right);
+        IRegion halfBand = axis == Axis.Col
+            ? new Region(region.Top, region.Bottom, from, int.MaxValue)
+            : new Region(from, int.MaxValue, region.Left, region.Right);
+
+        var regionsRemoved = new List<DataRegion<T>>();
+        var regionsAdded = new List<DataRegion<T>>();
+
+        foreach (var overlap in GetDataRegions(halfBand).ToList())
+        {
+            var lead = overlap.Region.GetLeadingEdgeOffset(axis);
+            var trail = overlap.Region.GetTrailingEdgeOffset(axis);
+            var newEdges = transform(lead, trail);
+
+            IRegion? reshaped = newEdges == null
+                ? null
+                : Reshape(overlap.Region, axis, newEdges.Value.lead, newEdges.Value.trail);
+
+            // nothing changes for this region (e.g. whole rows/columns, or regions before the index)
+            if (reshaped != null && SameBounds(reshaped, overlap.Region))
+                continue;
+
+            var contained = band.Contains(overlap.Region);
+            if (!contained && policy == StraddlePolicy.Keep)
+                continue;
+
+            Tree.Delete(overlap);
+            regionsRemoved.Add(overlap);
+
+            if (!contained)
+            {
+                // the pieces outside the band are unchanged; only the piece inside the band is shifted
+                foreach (var piece in overlap.Region.Break(band))
+                    regionsAdded.Add(new DataRegion<T>(overlap.Data, piece));
+
+                reshaped = newEdges == null
+                    ? null
+                    : Reshape(overlap.Region.GetIntersection(band)!, axis, newEdges.Value.lead,
+                        newEdges.Value.trail);
+            }
+
+            if (reshaped == null)
+                continue;
+
+            if (applyMinArea && reshaped.Area <= MinArea)
+                continue;
+
+            regionsAdded.Add(new DataRegion<T>(overlap.Data, reshaped));
+        }
+
+        Tree.BulkLoad(regionsAdded);
+
+        return new RegionRestoreData<T>()
+        {
+            RegionsRemoved = regionsRemoved,
+            RegionsAdded = regionsAdded
+        };
+    }
+
+    /// <summary>
+    /// Returns a new region with the edges along <paramref name="axis"/> replaced, keeping the region type
+    /// where the type is still meaningful (whole rows, whole columns and the whole sheet).
+    /// </summary>
+    private static IRegion Reshape(IRegion src, Axis axis, int lead, int trail)
+    {
+        switch (src)
+        {
+            case AllRegion:
+                return src.Clone();
+            case RowRegion:
+                return axis == Axis.Row ? new RowRegion(lead, trail) : src.Clone();
+            case ColumnRegion:
+                return axis == Axis.Col ? new ColumnRegion(lead, trail) : src.Clone();
+            default:
+                return axis == Axis.Col
+                    ? new Region(src.Top, src.Bottom, lead, trail)
+                    : new Region(lead, trail, src.Left, src.Right);
+        }
+    }
+
+    private static bool SameBounds(IRegion a, IRegion b) =>
+        a.Top == b.Top && a.Bottom == b.Bottom && a.Left == b.Left && a.Right == b.Right;
+
+    private static int ClampAdd(int value, int delta) =>
+        (int)Math.Clamp((long)value + delta, int.MinValue, int.MaxValue);
+
+    /// <summary>
     /// Gets data to the right/below the given row or column.
     /// </summary>
     /// <param name="rowOrCol"></param>
