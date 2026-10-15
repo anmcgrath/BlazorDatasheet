@@ -4,6 +4,7 @@ using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Validation;
+using BlazorDatasheet.Core.Formats.DefaultConditionalFormats;
 using BlazorDatasheet.DataStructures.Geometry;
 using AwesomeAssertions;
 using NUnit.Framework;
@@ -352,5 +353,61 @@ public class MoveRangeCommandTests
         _sheet.Cells.GetValue(0, 4).Should().Be(7);
         _sheet.Validators.Get(0, 0).Should().Equal(validator);
         _sheet.Validators.Get(0, 4).Should().BeEmpty();
+    }
+
+    [Test]
+    public void Move_Rewrites_Named_Ranges_Into_The_Block()
+    {
+        _sheet.Cells.SetValue(0, 0, 7);
+        _sheet.NamedRanges.Set("inside", "A1");
+        _sheet.NamedRanges.Set("partly", "A1:A2");
+        _sheet.Cells.SetFormula(10, 10, "=inside");
+
+        Move("A1", 0, 4).Should().BeTrue();
+
+        _sheet.NamedRanges.GetRangeString("inside").Should().Be("Sheet1!E1");
+        _sheet.NamedRanges.GetRangeString("partly").Should().Be("Sheet1!A1:A2");
+        _sheet.Cells.GetValue(10, 10).Should().Be(7);
+
+        _sheet.Commands.Undo();
+        _sheet.NamedRanges.GetRangeString("inside").Should().Be("Sheet1!A1");
+        _sheet.Cells.GetValue(10, 10).Should().Be(7);
+    }
+
+    [Test]
+    public void Move_Rewrites_Conditional_Format_Formulas_On_Every_Sheet()
+    {
+        var other = _sheet.Workbook.AddSheet("Other", 20, 20);
+        _sheet.Cells.SetValue(0, 0, 7);
+        var here = new FormulaConditionalFormat("=A1>5", new CellFormat { BackgroundColor = "green" });
+        var there = new FormulaConditionalFormat("=Sheet1!A1>5", new CellFormat { BackgroundColor = "green" });
+        _sheet.ConditionalFormats.Apply(new Region(5, 5), here);
+        other.ConditionalFormats.Apply(new Region(5, 5), there);
+
+        Move("A1", 0, 4).Should().BeTrue();
+
+        here.Formula.Should().Be("=E1>5");
+        there.Formula.Should().Be("=Sheet1!E1>5");
+        _sheet.ConditionalFormats.GetFormatResult(5, 5)!.BackgroundColor.Should().Be("green");
+        other.ConditionalFormats.GetFormatResult(5, 5)!.BackgroundColor.Should().Be("green");
+
+        _sheet.Commands.Undo();
+        here.Formula.Should().Be("=A1>5");
+        there.Formula.Should().Be("=Sheet1!A1>5");
+    }
+
+    [Test]
+    public void Move_Leaves_Relative_Conditional_Format_Formulas_Reading_Past_The_Block()
+    {
+        // applied to A1:A3, the rule reads A1:A3, so moving A1 alone leaves it alone.
+        var cf = new FormulaConditionalFormat("=A1>5", new CellFormat { BackgroundColor = "green" });
+        _sheet.ConditionalFormats.Apply(new Region(0, 2, 0, 0), cf);
+        var absolute = new FormulaConditionalFormat("=$A$1>5", new CellFormat { BackgroundColor = "green" });
+        _sheet.ConditionalFormats.Apply(new Region(0, 2, 2, 2), absolute);
+
+        Move("A1", 0, 4).Should().BeTrue();
+
+        cf.Formula.Should().Be("=A1>5");
+        absolute.Formula.Should().Be("=$E$1>5");
     }
 }

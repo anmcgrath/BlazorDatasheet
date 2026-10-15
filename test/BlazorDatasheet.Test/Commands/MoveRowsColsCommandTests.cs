@@ -268,4 +268,22 @@ public class MoveRowsColsCommandTests
         _sheet.Cells.GetMetaData(1, 0, "m").Should().Be("x");
         _sheet.Cells.GetMetaData(4, 0, "m").Should().BeNull();
     }
+
+    [Test]
+    public void Named_Range_Moves_With_Rows()
+    {
+        _sheet.Cells.SetValue(1, 0, 7);
+        _sheet.NamedRanges.Set("nm", "A2");
+        _sheet.Cells.SetFormula(10, 4, "=nm");
+
+        _sheet.Rows.Move(1, 1, 5).Should().BeTrue();
+
+        _sheet.Cells.GetValue(4, 0).Should().Be(7);
+        _sheet.NamedRanges.GetRangeString("nm").Should().Be("Sheet1!A5");
+        _sheet.Cells.GetValue(10, 4).Should().Be(7);
+
+        _sheet.Commands.Undo();
+        _sheet.NamedRanges.GetRangeString("nm").Should().Be("Sheet1!A2");
+        _sheet.Cells.GetValue(10, 4).Should().Be(7);
+    }
 }
