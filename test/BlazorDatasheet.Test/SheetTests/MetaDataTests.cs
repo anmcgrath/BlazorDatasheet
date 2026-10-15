@@ -335,6 +335,24 @@ public class MetaDataTests
     }
 
     [Test]
+    public void Inserted_Rows_Columns_And_Cells_Do_Not_Take_On_Neighbouring_MetaData()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Cells.SetCellMetaData(new Region(1, 2, 1, 2), "test", 7);
+
+        sheet.Rows.InsertAt(3);
+        sheet.Columns.InsertAt(3);
+        sheet.InsertCells(new Region(1, 1, 3, 3), Axis.Col);
+        sheet.InsertCells(new Region(3, 3, 1, 1), Axis.Row);
+
+        sheet.Cells.GetMetaData(2, 2, "test").Should().Be(7);
+        sheet.Cells.GetMetaData(3, 1, "test").Should().BeNull();
+        sheet.Cells.GetMetaData(3, 2, "test").Should().BeNull();
+        sheet.Cells.GetMetaData(1, 3, "test").Should().BeNull();
+        sheet.Cells.GetMetaData(2, 3, "test").Should().BeNull();
+    }
+
+    [Test]
     public void Delete_Rows_Shifts_MetaData()
     {
         var sheet = new Sheet(100, 100);
