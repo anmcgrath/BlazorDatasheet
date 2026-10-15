@@ -16,7 +16,8 @@ namespace BlazorDatasheet.Core.Commands.Data;
 /// <para>
 /// When both values and formats are moved (as by default), the validators, cell metadata and conditional formats
 /// of the block move with it too, replacing those at the target. Conditional formats only move within a sheet: on
-/// a move to another sheet they stay where they are.
+/// a move to another sheet they stay where they are. <see cref="CellStore.MetaDataChanged"/> is fired for each
+/// metadata item that leaves the source or changes at the target, and again when the move is undone.
 /// </para>
 /// <para>The command is executed on the target sheet; the source may be another sheet of the same workbook.</para>
 /// </summary>
@@ -173,7 +174,13 @@ public class MoveRangeCommand : BaseCommand, IUndoableCommand
         }
 
         if (MovesAttachments)
+        {
+            var emitsMetaData = HasMetaDataListeners(fromSheet, target);
+            var metaData = emitsMetaData ? SnapshotMetaData(fromSheet, target, source, toRegion) : default;
             MoveAttachments(fromSheet, target, source, toRegion);
+            if (emitsMetaData)
+                EmitMetaDataChanges(fromSheet, target, source, toRegion, metaData);
+        }
 
         if (_options.CopyFormula)
         {
@@ -209,6 +216,30 @@ public class MoveRangeCommand : BaseCommand, IUndoableCommand
             foreach (var step in cf.MoveImpl(source, toRegion))
                 _regionDataUndo.Add(() => cf.Restore(step));
         }
+    }
+
+    private static bool HasMetaDataListeners(Sheet fromSheet, Sheet target) =>
+        fromSheet.Cells.HasMetaDataListeners || target.Cells.HasMetaDataListeners;
+
+    private static (Dictionary<(int row, int col, string name), object> from,
+        Dictionary<(int row, int col, string name), object> to) SnapshotMetaData(Sheet fromSheet, Sheet target,
+            IRegion source, IRegion toRegion) =>
+        ReferenceEquals(fromSheet, target)
+            ? (target.Cells.GetMetaDataItems([source, toRegion]), [])
+            : (fromSheet.Cells.GetMetaDataItems([source]), target.Cells.GetMetaDataItems([toRegion]));
+
+    /// <summary>
+    /// Fires the metadata events for what changed in the source and target since <paramref name="before"/> was
+    /// taken with <see cref="SnapshotMetaData"/>.
+    /// </summary>
+    private static void EmitMetaDataChanges(Sheet fromSheet, Sheet target, IRegion source, IRegion toRegion,
+        (Dictionary<(int row, int col, string name), object> from,
+            Dictionary<(int row, int col, string name), object> to) before)
+    {
+        var after = SnapshotMetaData(fromSheet, target, source, toRegion);
+        fromSheet.Cells.EmitMetaDataChanges(before.from, after.from);
+        if (!ReferenceEquals(fromSheet, target))
+            target.Cells.EmitMetaDataChanges(before.to, after.to);
     }
 
     /// <summary>
@@ -273,9 +304,17 @@ public class MoveRangeCommand : BaseCommand, IUndoableCommand
         if (!sameSheet)
             fromSheet.BatchUpdates();
 
+        var source = SourceRegion;
+        var emitsMetaData = MovesAttachments && _regionDataUndo.Count > 0 && source != null && toRegion != null &&
+                            HasMetaDataListeners(fromSheet, target);
+        var metaData = emitsMetaData ? SnapshotMetaData(fromSheet, target, source!, toRegion!) : default;
+
         for (var i = _regionDataUndo.Count - 1; i >= 0; i--)
             _regionDataUndo[i]();
         _regionDataUndo.Clear();
+
+        if (emitsMetaData)
+            EmitMetaDataChanges(fromSheet, target, source!, toRegion!, metaData);
 
         if (_sourceRestore != null)
             fromSheet.Cells.Restore(_sourceRestore);
