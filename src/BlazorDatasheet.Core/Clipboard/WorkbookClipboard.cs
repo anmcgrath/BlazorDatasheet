@@ -147,6 +147,58 @@ public sealed class WorkbookClipboard
     }
 
     /// <summary>
+    /// Whether <see cref="PasteInsert"/> would write anything.
+    /// </summary>
+    public bool CanPasteInsert(Sheet target, IRegion selection, Axis shiftAxis)
+    {
+        var plan = PlanInsert(target, selection, shiftAxis, PasteMode.All);
+        return plan != null && plan.Value.command.CanExecute(target) &&
+               !target.Cells.ContainsReadOnly(plan.Value.block);
+    }
+
+    /// <summary>
+    /// Pastes the entry into <paramref name="target"/> at the top-left of <paramref name="selection"/>, shifting
+    /// the cells there right (<see cref="Axis.Col"/>) or down (<see cref="Axis.Row"/>) to make room, as Excel's
+    /// "Insert Cut Cells" and "Insert Copied Cells". A cut block is moved, closing the gap it leaves, and the
+    /// clipboard is cleared afterwards. Nothing is tiled, and only <see cref="PasteMode.All"/> is supported.
+    /// Returns the region written, or null if nothing was pasted.
+    /// </summary>
+    public IRegion? PasteInsert(Sheet target, IRegion selection, Axis shiftAxis)
+    {
+        var entry = _current;
+        if (entry == null)
+            return null;
+
+        var selected = selection.GetIntersection(target.Region);
+        if (selected == null)
+            return null;
+
+        var args = new BeforePasteEventArgs(target, selected, PasteMode.All, entry);
+        if (!RaiseBeforePaste(args))
+            return null;
+
+        var plan = PlanInsert(target, selected, shiftAxis, args.Mode);
+        if (plan == null)
+            return null;
+
+        var (command, block) = plan.Value;
+        if (target.Cells.ContainsReadOnly(block))
+            return null;
+
+        if (!target.Commands.ExecuteCommand(command))
+            return null;
+
+        var wasCut = entry.Mode == ClipboardMode.Cut;
+        var region = command is MoveRangeWithShiftCommand move ? move.FinalRegion ?? block : block;
+        // A copied source shifted by the insert no longer holds the copied cells.
+        if (wasCut || command is InsertCopiedCellsCommand { SourceShifted: true })
+            Clear();
+
+        Pasted?.Invoke(this, new PastedEventArgs(target, region, PasteMode.All, wasCut));
+        return region;
+    }
+
+    /// <summary>
     /// Pastes content from outside the workbook into <paramref name="target"/> at <paramref name="selection"/>,
     /// tiling across an exact-multiple selection. Returns the region written, or null if nothing was pasted.
     /// </summary>
@@ -231,6 +283,32 @@ public sealed class WorkbookClipboard
 
         var targets = origins.Select(o => target.Range(o.row, o.col)).ToArray();
         return (new CopyRangeCommand(entry.Source, targets, options), written, mode);
+    }
+
+    /// <summary>
+    /// The command for an insert paste and the block it lands on before any shift back, or null when it can't be
+    /// done.
+    /// </summary>
+    private (ICommand command, IRegion block)? PlanInsert(Sheet target, IRegion selection, Axis shiftAxis,
+        PasteMode mode)
+    {
+        var entry = _current;
+        if (entry == null || mode != PasteMode.All)
+            return null;
+
+        var selected = selection.GetIntersection(target.Region);
+        if (selected == null)
+            return null;
+
+        var topLeft = selected.TopLeft;
+        var block = PasteTargetCalculator.GetBlockAt(entry.Source.Region, topLeft);
+        if (!target.Region.Contains(block))
+            return null;
+
+        ICommand command = entry.Mode == ClipboardMode.Cut
+            ? new MoveRangeWithShiftCommand(entry.Source, target.Range(topLeft.row, topLeft.col), shiftAxis)
+            : new InsertCopiedCellsCommand(entry.Source, topLeft, shiftAxis);
+        return (command, block);
     }
 
     #region invalidation
