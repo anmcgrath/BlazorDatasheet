@@ -126,6 +126,31 @@ public class MetaDataTests
     }
 
     [Test]
+    public void Whole_Row_And_Column_Metadata_Is_Clipped_To_The_Sheet()
+    {
+        var sheet = new Sheet(3, 3);
+
+        sheet.Cells.SetCellMetaData(new ColumnRegion(1), "status", "col").Should().BeTrue();
+        sheet.Cells.SetCellMetaData(new RowRegion(2), "status", "row").Should().BeTrue();
+
+        Enumerable.Range(0, 2).Select(r => sheet.Cells.GetMetaData(r, 1, "status")).Should().Equal("col", "col");
+        Enumerable.Range(0, 3).Select(c => sheet.Cells.GetMetaData(2, c, "status")).Should().Equal("row", "row", "row");
+        sheet.Cells.GetMetaData(0, 0, "status").Should().BeNull();
+
+        sheet.Commands.Undo();
+        sheet.Cells.GetMetaData(2, 1, "status").Should().Be("col");
+        sheet.Commands.Undo();
+        sheet.Cells.GetMetaData(0, 1, "status").Should().BeNull();
+    }
+
+    [Test]
+    public void Whole_Column_Metadata_Off_The_Sheet_Is_Rejected()
+    {
+        var sheet = new Sheet(3, 3);
+        sheet.Cells.SetCellMetaData(new ColumnRegion(5), "status", "x").Should().BeFalse();
+    }
+
+    [Test]
     public void Region_Command_Copies_Its_Target_And_Shares_The_Metadata_Value()
     {
         var sheet = new Sheet(4, 4);
