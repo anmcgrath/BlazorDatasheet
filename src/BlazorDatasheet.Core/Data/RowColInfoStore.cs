@@ -319,7 +319,10 @@ public abstract class RowColInfoStore
     /// to <paramref name="dstStart"/> in this store, replacing whatever is at the destination.
     /// <paramref name="source"/> may be this store, and the source and destination ranges may overlap.
     /// </summary>
-    internal virtual RowColInfoRestoreData CopyImpl(RowColInfoStore source, int srcStart, int count, int dstStart)
+    /// <param name="keepGroups">Whether the copies belong to the same groups as the source, rather than to new
+    /// groups. A move keeps them, so that rows/columns moved within their group stay part of it.</param>
+    internal virtual RowColInfoRestoreData CopyImpl(RowColInfoStore source, int srcStart, int count, int dstStart,
+        bool keepGroups = false)
     {
         if (count <= 0)
             return new RowColInfoRestoreData();
@@ -348,8 +351,8 @@ public abstract class RowColInfoStore
             HeadingAlignmentsRestoreData = CopyRange(HeadingAlignmentStore, alignments, srcStart, srcEnd, offset),
             GroupsRestoreData = CopyRange(GroupStore, groups, srcStart, srcEnd, offset, group =>
             {
-                if (group == null)
-                    return null;
+                if (group == null || keepGroups)
+                    return group;
                 if (!groupCopies.TryGetValue(group, out var copy))
                     groupCopies[group] = copy = new HeadingGroup(group.Label);
                 return copy;

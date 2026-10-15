@@ -250,6 +250,35 @@ public class MoveRowsColsCommandTests
     }
 
     [Test]
+    public void Rows_Moved_Within_Their_Group_Stay_In_It()
+    {
+        _sheet.Rows.SetGroupImpl(0, 4, "g");
+
+        _sheet.Rows.Move(1, 1, 4).Should().BeTrue();
+        _sheet.Rows.GetGroups().Select(g => (g.Start, g.End, g.Group.Label)).Should().Equal((0, 4, "g"));
+
+        _sheet.Commands.Undo();
+        _sheet.Rows.GetGroups().Select(g => (g.Start, g.End, g.Group.Label)).Should().Equal((0, 4, "g"));
+
+        _sheet.Commands.Redo();
+        _sheet.Rows.GetGroups().Select(g => (g.Start, g.End, g.Group.Label)).Should().Equal((0, 4, "g"));
+    }
+
+    [Test]
+    public void Columns_Moved_Out_Of_Their_Group_And_Back_Rejoin_It()
+    {
+        var sheet = _workbook.AddSheet("Cols", 5, 10);
+        sheet.Columns.SetGroupImpl(1, 3, "g");
+
+        sheet.Columns.Move(2, 1, 7).Should().BeTrue();
+        sheet.Columns.GetGroups().Select(g => (g.Start, g.End, g.Group.Label))
+            .Should().Equal((1, 2, "g"), (6, 6, "g"));
+
+        sheet.Columns.Move(6, 1, 2).Should().BeTrue();
+        sheet.Columns.GetGroups().Select(g => (g.Start, g.End, g.Group.Label)).Should().Equal((1, 3, "g"));
+    }
+
+    [Test]
     public void Validators_And_Metadata_Move_With_Rows()
     {
         var validator = new NumberValidator(true);
