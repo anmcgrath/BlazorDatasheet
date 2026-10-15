@@ -561,4 +561,23 @@ public class MoveRangeWithShiftCommandTests
         _sheet.ConditionalFormats.GetFormatResult(0, 1)!.BackgroundColor.Should().Be("green");
         _sheet.ConditionalFormats.GetFormatResult(0, 2).Should().BeNull();
     }
+
+    [Test]
+    public void Whole_Columns_Are_Not_Moved_To_A_Sheet_With_Fewer_Rows()
+    {
+        var small = _workbook.AddSheet("Small", 5, 10);
+        _sheet.Cells.SetValue(8, 1, "deep");
+        var before = Snapshot(_sheet, small);
+
+        small.Cells.Move(_sheet.Range(new ColumnRegion(1)), new CellPosition(0, 2), Axis.Col).Should().BeFalse();
+
+        Snapshot(_sheet, small).Should().Be(before);
+        small.NumCols.Should().Be(10);
+        _sheet.NumCols.Should().Be(10);
+
+        // a sheet with more rows takes them
+        var big = _workbook.AddSheet("Big", 20, 10);
+        big.Cells.Move(_sheet.Range(new ColumnRegion(1)), new CellPosition(0, 2), Axis.Col).Should().BeTrue();
+        big.Cells.GetValue(8, 2).Should().Be("deep");
+    }
 }

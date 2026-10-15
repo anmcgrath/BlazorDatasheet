@@ -101,6 +101,10 @@ public class MoveRangeWithShiftCommand : BaseCommand, IUndoableCommand
             var toStart = Start(_to.Region);
             if (toStart < 0 || toStart > target.GetSize(_shiftAxis))
                 return null;
+            // Whole columns (rows) wouldn't fit on a sheet with fewer rows (columns): the rest would be lost.
+            var across = _shiftAxis == Axis.Col ? Axis.Row : Axis.Col;
+            if (target.GetSize(across) < fromSheet.GetSize(across))
+                return null;
             target0 = FullBandRegion(toStart, count);
             sameBand = sameSheet;
         }
