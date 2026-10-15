@@ -365,11 +365,152 @@ public class DependencyManager
         return restoreData;
     }
 
+    /// <summary>
+    /// Inserts blank cells over <paramref name="region"/>, shifting the cells after it right (<see cref="Axis.Col"/>)
+    /// or down (<see cref="Axis.Row"/>) within the band of rows (or columns) that <paramref name="region"/> covers.
+    /// Only references lying entirely within the band are adjusted.
+    /// </summary>
+    public DependencyManagerRestoreData InsertCellsAt(IRegion region, Axis axis, string sheetName)
+    {
+        var count = axis == Axis.Col ? region.Width : region.Height;
+        var index = region.GetLeadingEdgeOffset(axis);
+        var restoreData = new DependencyManagerRestoreData()
+        {
+            Shifts = { new AppliedShift(axis, index, count, sheetName, region.Clone()) }
+        };
+
+        var affectedRegion = GetAffectedRegion(axis, index, region);
+        AdjustDependentsForBandShift(affectedRegion, sheetName, restoreData,
+            formula => formula.InsertRowColIntoReferences(index, count, axis, sheetName, region));
+
+        ShiftVerticesInBand(affectedRegion, axis, count, sheetName, restoreData,
+            () => GetFormulaLocationStore(sheetName).InsertCellsAt(region, axis, StraddlePolicy.Split));
+
+        return restoreData;
+    }
+
+    /// <summary>
+    /// Removes the cells in <paramref name="region"/>, shifting the cells after it left (<see cref="Axis.Col"/>)
+    /// or up (<see cref="Axis.Row"/>) within the band of rows (or columns) that <paramref name="region"/> covers.
+    /// Formulas inside <paramref name="region"/> are cleared. Only references lying entirely within the band are adjusted.
+    /// </summary>
+    public DependencyManagerRestoreData RemoveCellsAt(IRegion region, Axis axis, string sheetName)
+    {
+        var count = axis == Axis.Col ? region.Width : region.Height;
+        var index = region.GetLeadingEdgeOffset(axis);
+        var restoreData = new DependencyManagerRestoreData()
+        {
+            Shifts = { new AppliedShift(axis, index, -count, sheetName, region.Clone()) }
+        };
+
+        // remove any formula in the region being removed
+        foreach (var vertex in GetVerticesInRegion(region, sheetName).ToList())
+        {
+            if (vertex.Position is { } position)
+                restoreData.Merge(ClearFormula(position.row, position.col, sheetName));
+        }
+
+        var affectedRegion = GetAffectedRegion(axis, index, region);
+        AdjustDependentsForBandShift(affectedRegion, sheetName, restoreData,
+            formula => formula.RemoveRowColFromReferences(index, count, axis, sheetName, region));
+
+        ShiftVerticesInBand(affectedRegion, axis, -count, sheetName, restoreData,
+            () => GetFormulaLocationStore(sheetName).RemoveCellsAt(region, axis, StraddlePolicy.Split));
+
+        return restoreData;
+    }
+
+    /// <summary>
+    /// Adjusts the references of every formula depending on <paramref name="affectedRegion"/> and rebuilds
+    /// their reference tracking from the adjusted references. The tracking is rebuilt rather than shifted so
+    /// that references extending outside the band, which are not adjusted, keep tracking the same cells.
+    /// </summary>
+    private void AdjustDependentsForBandShift(IRegion affectedRegion, string sheetName,
+        DependencyManagerRestoreData restoreData, Action<CellFormula> adjust)
+    {
+        var dependents = GetDirectDependents(affectedRegion, sheetName).Distinct().ToList();
+
+        foreach (var dependent in dependents)
+        {
+            var formula = dependent.Formula;
+            if (formula == null)
+                continue;
+
+            restoreData.ModifiedFormulaReferences.Add(CaptureReferenceRestoreData(formula));
+            RemoveReferenceTrackingForFormula(dependent, restoreData);
+            adjust(formula);
+
+            foreach (var formulaRef in formula.References)
+            {
+                if (formulaRef.Kind == ReferenceKind.Named || formulaRef.IsInvalid)
+                    continue;
+
+                restoreData.MergeRegionRestoreData(
+                    formulaRef.SheetName,
+                    GetReferencedVertexStore(formulaRef.SheetName).Add(formulaRef.Region.Clone(), dependent));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Shifts the formula vertices in <paramref name="affectedRegion"/> by <paramref name="amount"/> along
+    /// <paramref name="axis"/>, shifts the formula location store with <paramref name="shiftLocations"/> and
+    /// relinks the outgoing edges of the moved vertices.
+    /// </summary>
+    private void ShiftVerticesInBand(IRegion affectedRegion, Axis axis, int amount, string sheetName,
+        DependencyManagerRestoreData restoreData, Func<RegionRestoreData<FormulaVertex>> shiftLocations)
+    {
+        var moved = GetVerticesInRegion(affectedRegion, sheetName).ToList();
+        // edges are restored after the vertices have been shifted back, so they are recorded with the old keys
+        var oldKeys = moved.ToDictionary<FormulaVertex, FormulaVertex, VertexKey>(v => v, v => v.Key, ReferenceEqualityComparer.Instance);
+
+        var (dRow, dCol) = GetShiftDelta(axis, amount);
+        restoreData.Merge(ShiftVerticesInRegion(affectedRegion, dRow, dCol, sheetName));
+        restoreData.MergeFormulaLocationRestoreData(sheetName, shiftLocations());
+
+        RelinkOutgoingEdges(moved, oldKeys, restoreData);
+    }
+
+    /// <summary>
+    /// After a band-limited shift a vertex can move into or out of a referenced range that was not adjusted
+    /// (because it extends outside the band), so the edges to its dependents are recomputed from its new position.
+    /// </summary>
+    private void RelinkOutgoingEdges(IEnumerable<FormulaVertex> moved, Dictionary<FormulaVertex, VertexKey> oldKeys,
+        DependencyManagerRestoreData restoreData)
+    {
+        VertexKey KeyBeforeShift(FormulaVertex v) => oldKeys.TryGetValue(v, out var key) ? key : v.Key;
+
+        foreach (var vertex in moved)
+        {
+            var current = _dependencyGraph.GetDependentsOf(vertex).ToList();
+            var expected = GetDirectDependents(vertex).Distinct().ToList();
+
+            foreach (var dependent in current)
+            {
+                if (expected.Contains(dependent))
+                    continue;
+                _dependencyGraph.RemoveEdge(vertex, dependent, false);
+                restoreData.EdgesRemoved.Add((KeyBeforeShift(vertex), KeyBeforeShift(dependent)));
+            }
+
+            foreach (var dependent in expected)
+            {
+                if (current.Contains(dependent))
+                    continue;
+                _dependencyGraph.AddEdge(vertex, dependent);
+                restoreData.EdgesAdded.Add((KeyBeforeShift(vertex), KeyBeforeShift(dependent)));
+            }
+        }
+    }
+
     private DependencyManagerRestoreData ShiftVerticesInRegion(IRegion region, int dRow, int dCol, string sheetName)
     {
         var restoreData = new DependencyManagerRestoreData();
         // shift any affected vertices by the number inserted
-        var affectedVertices = GetVerticesInRegion(region, sheetName);
+        // shift the furthest vertices first, so that a vertex never moves onto the key of one yet to move
+        var affectedVertices = GetVerticesInRegion(region, sheetName)
+            .OrderByDescending(v => v.Row * Math.Sign(dRow) + v.Col * Math.Sign(dCol))
+            .ToList();
         foreach (var v in affectedVertices)
         {
             // need to shift without changing the reference
@@ -539,7 +680,7 @@ public class DependencyManager
             if (shift.SheetName == null)
                 continue;
 
-            var affectedRegion = GetAffectedRegion(shift.Axis, shift.Index);
+            var affectedRegion = GetAffectedRegion(shift.Axis, shift.Index, shift.Band);
             var (dRow, dCol) = GetShiftDelta(shift.Axis, -shift.Amount);
             ShiftVerticesInRegion(affectedRegion, dRow, dCol, shift.SheetName);
         }
@@ -556,8 +697,9 @@ public class DependencyManager
 
     private void RestoreEdges(DependencyManagerRestoreData restoreData)
     {
+        // keep the vertices even if they are left without edges - they still hold formulas
         foreach (var edge in restoreData.EdgesAdded)
-            _dependencyGraph.RemoveEdge(edge.Item1, edge.Item2);
+            _dependencyGraph.RemoveEdge(edge.Item1, edge.Item2, false);
 
         foreach (var edge in restoreData.EdgesRemoved)
             _dependencyGraph.AddEdge(edge.Item1, edge.Item2);
@@ -614,6 +756,20 @@ public class DependencyManager
         return axis == Axis.Col
             ? new ColumnRegion(index, int.MaxValue)
             : new RowRegion(index, int.MaxValue);
+    }
+
+    /// <summary>
+    /// The region shifted by a shift at <paramref name="index"/>. When <paramref name="band"/> is given, only the
+    /// half-band of rows (<see cref="Axis.Col"/>) or columns (<see cref="Axis.Row"/>) it covers is shifted.
+    /// </summary>
+    private static IRegion GetAffectedRegion(Axis axis, int index, IRegion? band)
+    {
+        if (band == null)
+            return GetAffectedRegion(axis, index);
+
+        return axis == Axis.Col
+            ? new Region(band.Top, band.Bottom, index, int.MaxValue)
+            : new Region(index, int.MaxValue, band.Left, band.Right);
     }
 
     private static IRegion GetRemovedRegion(Axis axis, int index, int count)

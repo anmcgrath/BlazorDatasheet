@@ -108,11 +108,23 @@ public class CellFormula
         }
     }
 
-    public void InsertRowColIntoReferences(int index, int count, Axis axis, string sheetName)
+    public void InsertRowColIntoReferences(int index, int count, Axis axis, string sheetName) =>
+        InsertRowColIntoReferences(index, count, axis, sheetName, band: null);
+
+    /// <summary>
+    /// Adjusts references for <paramref name="count"/> rows/columns inserted at <paramref name="index"/>.
+    /// When <paramref name="band"/> is given, the insert is limited to the band of rows (<see cref="Axis.Col"/>)
+    /// or columns (<see cref="Axis.Row"/>) that <paramref name="band"/> covers, and only references lying
+    /// entirely within that band are adjusted.
+    /// </summary>
+    public void InsertRowColIntoReferences(int index, int count, Axis axis, string sheetName, IRegion? band)
     {
         foreach (var reference in References)
         {
             if (reference.SheetName != sheetName)
+                continue;
+
+            if (!IsWithinBand(reference, band, axis))
                 continue;
 
             if (reference is CellReference cellReference)
@@ -139,11 +151,23 @@ public class CellFormula
         }
     }
 
-    public void RemoveRowColFromReferences(int index, int count, Axis axis, string sheetName)
+    public void RemoveRowColFromReferences(int index, int count, Axis axis, string sheetName) =>
+        RemoveRowColFromReferences(index, count, axis, sheetName, band: null);
+
+    /// <summary>
+    /// Adjusts references for <paramref name="count"/> rows/columns removed at <paramref name="index"/>.
+    /// When <paramref name="band"/> is given, the removal is limited to the band of rows (<see cref="Axis.Col"/>)
+    /// or columns (<see cref="Axis.Row"/>) that <paramref name="band"/> covers, and only references lying
+    /// entirely within that band are adjusted.
+    /// </summary>
+    public void RemoveRowColFromReferences(int index, int count, Axis axis, string sheetName, IRegion? band)
     {
         foreach (var reference in References)
         {
             if (reference.SheetName != sheetName)
+                continue;
+
+            if (!IsWithinBand(reference, band, axis))
                 continue;
 
             var end = index + count - 1;
@@ -188,5 +212,26 @@ public class CellFormula
                 reference.Move(0, moveBy);
             }
         }
+    }
+
+    /// <summary>
+    /// Whether <paramref name="r"/> should be adjusted by a shift limited to <paramref name="band"/>.
+    /// For <see cref="Axis.Col"/> the reference's rows must lie within the band's rows, for
+    /// <see cref="Axis.Row"/> its columns within the band's columns. A null band means the whole axis.
+    /// </summary>
+    private static bool IsWithinBand(Reference r, IRegion? band, Axis axis)
+    {
+        if (band == null)
+            return true;
+
+        if (r.Kind == ReferenceKind.Named || r.IsInvalid)
+            return false;
+
+        if (r.Region is RowRegion or ColumnRegion)
+            return false;
+
+        return axis == Axis.Col
+            ? band.Top <= r.Region.Top && r.Region.Bottom <= band.Bottom
+            : band.Left <= r.Region.Left && r.Region.Right <= band.Right;
     }
 }
