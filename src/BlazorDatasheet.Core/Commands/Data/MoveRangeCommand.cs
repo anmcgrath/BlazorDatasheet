@@ -11,7 +11,8 @@ namespace BlazorDatasheet.Core.Commands.Data;
 /// types) land with the source's top-left on the target's top-left and the source is cleared. Formulas inside the
 /// block keep pointing at the same cells (references into the block move with it), and formulas anywhere in the
 /// workbook that reference cells fully inside the block are rewritten to the new location. References that only
-/// partly overlap the block are left alone, as in Excel.
+/// partly overlap the block are left alone, as in Excel. The same goes for named ranges and the formulas of
+/// conditional formats on every sheet.
 /// <para>
 /// When both values and formats are moved (as by default), the validators, cell metadata and conditional formats
 /// of the block move with it too, replacing those at the target. Conditional formats only move within a sheet: on
@@ -29,7 +30,8 @@ public class MoveRangeCommand : BaseCommand, IUndoableCommand
     private readonly List<(Sheet sheet, CellStoreRestoreData restore)> _dependentRestores = new();
     private CellStoreRestoreData? _sourceRestore;
 
-    // Undoes the moves of validators, metadata and conditional formats, step by step in reverse.
+    // Undoes the moves of validators, metadata and conditional formats and the rewrites of named ranges and
+    // conditional format formulas, step by step in reverse.
     private readonly List<Action> _regionDataUndo = new();
 
     /// <param name="from">The cells to move. Only the single region of the range is used.</param>
@@ -119,10 +121,13 @@ public class MoveRangeCommand : BaseCommand, IUndoableCommand
         // Formulas elsewhere that read the moved cells, found before anything changes. Formulas inside the
         // block move with it, and anything the block lands on is overwritten, so neither is rewritten.
         var dependents = new List<(string sheetName, int row, int col)>();
+        var namedDependents = new List<string>();
         if (_options.CopyFormula)
         {
             foreach (var vertex in target.FormulaEngine.DependencyManager.GetDirectDependents(source, fromSheet.Name))
             {
+                if (vertex.VertexType == VertexType.Named && vertex.Formula != null)
+                    namedDependents.Add(vertex.Key.Name);
                 if (vertex.VertexType != VertexType.Cell || vertex.Formula == null)
                     continue;
                 var inSource = vertex.SheetName == fromSheet.Name && source.Contains(vertex.Row, vertex.Col);
@@ -170,6 +175,18 @@ public class MoveRangeCommand : BaseCommand, IUndoableCommand
         if (MovesAttachments)
             MoveAttachments(fromSheet, target, source, toRegion);
 
+        if (_options.CopyFormula)
+        {
+            MoveNamedRanges(target.FormulaEngine, namedDependents.Distinct(), referenceRegion, fromSheet.Name, dr,
+                dc, target.Name);
+            foreach (var sheet in target.Workbook.Sheets)
+            {
+                var cf = sheet.ConditionalFormats;
+                if (cf.MoveReferencesWithin(referenceRegion, fromSheet.Name, dr, dc, target.Name) is { } restore)
+                    _regionDataUndo.Add(() => cf.Restore(restore));
+            }
+        }
+
         if (!sameSheet)
             fromSheet.EndBatchUpdates();
 
@@ -191,6 +208,28 @@ public class MoveRangeCommand : BaseCommand, IUndoableCommand
             var cf = target.ConditionalFormats;
             foreach (var step in cf.MoveImpl(source, toRegion))
                 _regionDataUndo.Add(() => cf.Restore(step));
+        }
+    }
+
+    /// <summary>
+    /// Rewrites the named ranges (and other named formulas) reading the moved cells to read where they land.
+    /// </summary>
+    private void MoveNamedRanges(FormulaEngine.FormulaEngine engine, IEnumerable<string> names, IRegion region,
+        string fromSheetName, int dr, int dc, string targetSheetName)
+    {
+        foreach (var name in names)
+        {
+            if (engine.DependencyManager.GetFormula(name) is not { } existing)
+                continue;
+
+            var oldText = existing.ToFormulaString();
+            // Named formulas are not on a sheet, so their references always name their sheet.
+            var rewritten = engine.CloneFormula(existing, "");
+            if (!rewritten.MoveReferencesWithin(region, fromSheetName, dr, dc, targetSheetName, ""))
+                continue;
+
+            engine.SetVariable(name, rewritten.ToFormulaString());
+            _regionDataUndo.Add(() => engine.SetVariable(name, oldText));
         }
     }
 

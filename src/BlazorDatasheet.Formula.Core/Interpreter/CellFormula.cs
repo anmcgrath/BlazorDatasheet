@@ -74,7 +74,15 @@ public class CellFormula
     /// explicit sheet name when the destination is a different sheet to this one.</param>
     /// <returns>Whether any reference was changed.</returns>
     public bool MoveReferencesWithin(IRegion region, string regionSheetName, int dRow, int dCol,
-        string destinationSheetName, string formulaSheetName)
+        string destinationSheetName, string formulaSheetName) =>
+        MoveReferencesWithin(region, regionSheetName, dRow, dCol, destinationSheetName, formulaSheetName, _ => true);
+
+    /// <summary>
+    /// As <see cref="MoveReferencesWithin(IRegion, string, int, int, string, string)"/>, moving only the references
+    /// that <paramref name="canMove"/> allows.
+    /// </summary>
+    public bool MoveReferencesWithin(IRegion region, string regionSheetName, int dRow, int dCol,
+        string destinationSheetName, string formulaSheetName, Func<Reference, bool> canMove)
     {
         var moved = false;
         foreach (var reference in References)
@@ -82,6 +90,8 @@ public class CellFormula
             if (reference.Kind == ReferenceKind.Named || reference.IsInvalid)
                 continue;
             if (reference.SheetName != regionSheetName || !region.Contains(reference.Region))
+                continue;
+            if (!canMove(reference))
                 continue;
 
             reference.Move(dRow, dCol);

@@ -196,9 +196,6 @@ public class ConditionalFormatManager
         var bounds = GetBounds(format);
         if (bounds != null)
         {
-            var extraRows = bounds.Height - 1;
-            var extraCols = bounds.Width - 1;
-
             foreach (var reference in format.References)
             {
                 if (reference.SheetName != _sheet.Name || reference.IsInvalid)
@@ -207,19 +204,29 @@ public class ConditionalFormatManager
                 if (reference.Kind != ReferenceKind.Cell && reference.Kind != ReferenceKind.Range)
                     continue;
 
-                var region = reference.Region.Clone();
-                // an unbounded edge already covers everything the shift could reach.
-                if (extraRows > 0 && IsRowRelative(reference) && region.Bottom != int.MaxValue)
-                    region.Expand(Edge.Bottom, extraRows);
-                if (extraCols > 0 && IsColRelative(reference) && region.Right != int.MaxValue)
-                    region.Expand(Edge.Right, extraCols);
-
-                footprint.Add(region);
+                footprint.Add(GetReadRegion(reference, bounds));
             }
         }
 
         _footprints[format] = footprint;
         return footprint;
+    }
+
+    /// <summary>
+    /// The cells a reference of a formula format reads across the format's cells, whose bounding region is
+    /// <paramref name="bounds"/>: relative parts reach as far as the format spreads.
+    /// </summary>
+    private static IRegion GetReadRegion(Reference reference, IRegion bounds)
+    {
+        var extraRows = bounds.Height - 1;
+        var extraCols = bounds.Width - 1;
+        var region = reference.Region.Clone();
+        // an unbounded edge already covers everything the shift could reach.
+        if (extraRows > 0 && IsRowRelative(reference) && region.Bottom != int.MaxValue)
+            region.Expand(Edge.Bottom, extraRows);
+        if (extraCols > 0 && IsColRelative(reference) && region.Right != int.MaxValue)
+            region.Expand(Edge.Right, extraCols);
+        return region;
     }
 
     private IRegion? GetBounds(ConditionalFormatAbstractBase format)
@@ -515,12 +522,46 @@ public class ConditionalFormatManager
         return steps;
     }
 
+    /// <summary>
+    /// Moves the references of the formula formats that lie entirely within <paramref name="region"/> on
+    /// <paramref name="regionSheetName"/>, as when those cells are moved by <paramref name="dRow"/>,
+    /// <paramref name="dCol"/> onto <paramref name="destinationSheetName"/>. A relative reference is only moved
+    /// when every cell it reads, across the cells the format is applied to, is in the region.
+    /// </summary>
+    /// <returns>The restore data, or null when no formula changed.</returns>
+    internal ConditionalFormatRestoreData? MoveReferencesWithin(IRegion region, string regionSheetName, int dRow,
+        int dCol, string destinationSheetName)
+    {
+        var formulas = new List<(FormulaConditionalFormat, string)>();
+        foreach (var format in FormulaFormats)
+        {
+            var text = format.FormulaText;
+            var bounds = GetBounds(format);
+            if (bounds == null)
+                continue;
+            if (!format.MoveReferencesWithin(region, regionSheetName, dRow, dCol, destinationSheetName, _sheet,
+                    reference => region.Contains(GetReadRegion(reference, bounds))))
+                continue;
+            formulas.Add((format, text));
+            _sheet.MarkDirty(_appliedFormats.GetRegions(format));
+        }
+
+        if (formulas.Count == 0)
+            return null;
+
+        _footprints.Clear();
+        return new ConditionalFormatRestoreData { Formulas = formulas };
+    }
+
     internal void Restore(ConditionalFormatRestoreData data)
     {
         _appliedFormats.Restore(data.Regions);
 
         foreach (var (format, formulaText) in data.Formulas)
+        {
             format.SetFormulaText(formulaText, _sheet);
+            _sheet.MarkDirty(_appliedFormats.GetRegions(format));
+        }
 
         var cfsAffected = data.Regions.RegionsAdded
             .Select(x => x.Data)

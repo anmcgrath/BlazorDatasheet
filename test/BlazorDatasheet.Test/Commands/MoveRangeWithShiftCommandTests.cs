@@ -4,6 +4,7 @@ using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.Core.Validation;
+using BlazorDatasheet.Core.Formats.DefaultConditionalFormats;
 using BlazorDatasheet.DataStructures.Geometry;
 using AwesomeAssertions;
 using NUnit.Framework;
@@ -500,5 +501,64 @@ public class MoveRangeWithShiftCommandTests
 
         _sheet.Commands.Redo();
         _sheet.Validators.Get(0, 2).Should().Equal(validator);
+    }
+
+    [Test]
+    public void Named_Range_Follows_The_Block()
+    {
+        _sheet.Cells.SetValue(0, 1, 7);
+        _sheet.Cells.SetValue(0, 2, "c");
+        _sheet.NamedRanges.Set("nm", "B1");
+        _sheet.Cells.SetFormula(5, 5, "=nm");
+
+        Move("B1", "D1", Axis.Col).Should().BeTrue();
+
+        _sheet.NamedRanges.GetRangeString("nm").Should().Be("Sheet1!C1");
+        _sheet.Cells.GetValue(5, 5).Should().Be(7);
+
+        _sheet.Commands.Undo();
+        _sheet.NamedRanges.GetRangeString("nm").Should().Be("Sheet1!B1");
+        _sheet.Cells.GetValue(5, 5).Should().Be(7);
+
+        _sheet.Commands.Redo();
+        _sheet.NamedRanges.GetRangeString("nm").Should().Be("Sheet1!C1");
+        _sheet.Commands.Undo();
+        _sheet.Cells.SetValue(0, 1, 8);
+        _sheet.Cells.GetValue(5, 5).Should().Be(8);
+    }
+
+    [Test]
+    public void Conditional_Format_Formula_Follows_The_Block()
+    {
+        _sheet.Cells.SetValue(0, 1, 7);
+        var cf = new FormulaConditionalFormat("=B1>5", new CellFormat { BackgroundColor = "green" });
+        _sheet.ConditionalFormats.Apply(new Region(5, 5), cf);
+        _sheet.ConditionalFormats.GetFormatResult(5, 5)!.BackgroundColor.Should().Be("green");
+
+        Move("B1", "D1", Axis.Col).Should().BeTrue();
+
+        cf.Formula.Should().Be("=C1>5");
+        _sheet.ConditionalFormats.GetFormatResult(5, 5)!.BackgroundColor.Should().Be("green");
+
+        _sheet.Commands.Undo();
+        cf.Formula.Should().Be("=B1>5");
+        _sheet.ConditionalFormats.GetFormatResult(5, 5)!.BackgroundColor.Should().Be("green");
+    }
+
+    [Test]
+    public void Self_Referencing_Formula_Conditional_Format_Moves_With_The_Block()
+    {
+        _sheet.Cells.SetValue(0, 1, 7);
+        _sheet.Cells.SetValue(0, 2, 1);
+        _sheet.ConditionalFormats.Apply(new Region(0, 1),
+            new FormulaConditionalFormat("=B1>5", new CellFormat { BackgroundColor = "green" }));
+
+        Move("B1", "D1", Axis.Col).Should().BeTrue();
+
+        _sheet.ConditionalFormats.GetFormatResult(0, 2)!.BackgroundColor.Should().Be("green");
+        _sheet.ConditionalFormats.GetFormatResult(0, 1).Should().BeNull();
+        _sheet.Commands.Undo();
+        _sheet.ConditionalFormats.GetFormatResult(0, 1)!.BackgroundColor.Should().Be("green");
+        _sheet.ConditionalFormats.GetFormatResult(0, 2).Should().BeNull();
     }
 }

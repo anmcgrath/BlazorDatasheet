@@ -111,6 +111,17 @@ public class FormulaConditionalFormat : ConditionalFormatAbstractBase
         GetFormula(sheet)?.ShiftReferences(dRow, dCol, sheet.Name);
     }
 
+    /// <summary>
+    /// Moves the references lying entirely within <paramref name="region"/> on <paramref name="regionSheetName"/>
+    /// by <paramref name="dRow"/>, <paramref name="dCol"/> onto <paramref name="destinationSheetName"/>, as when
+    /// those cells are moved. Only the references <paramref name="canMove"/> allows are moved.
+    /// </summary>
+    /// <returns>Whether any reference was moved.</returns>
+    internal bool MoveReferencesWithin(IRegion region, string regionSheetName, int dRow, int dCol,
+        string destinationSheetName, Sheet sheet, Func<Reference, bool> canMove) =>
+        GetFormula(sheet)?.MoveReferencesWithin(region, regionSheetName, dRow, dCol, destinationSheetName,
+            sheet.Name, canMove) == true;
+
     internal void InsertRowCol(int index, int count, Axis axis, Sheet sheet)
     {
         GetFormula(sheet)?.InsertRowColIntoReferences(index, count, axis, sheet.Name);
