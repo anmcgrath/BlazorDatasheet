@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using BlazorDatasheet.Core.Commands.Data;
@@ -467,6 +468,39 @@ public class MoveRangeWithShiftCommandTests
 
         _sheet.Commands.Undo();
         _sheet.Cells.GetValue(1, 7).Should().Be(spill);
+    }
+
+    [Test]
+    public void Metadata_Events_Fire_For_The_Moved_Block_But_Not_The_Shifted_Cells()
+    {
+        _sheet.Cells.SetCellMetaData(0, 1, "m", "b");
+        _sheet.Cells.SetCellMetaData(0, 2, "m", "c");
+        var events = new List<(int, int, string, object?, object?)>();
+        _sheet.Cells.MetaDataChanged += (_, e) => events.Add((e.Row, e.Col, e.Name, e.OldValue, e.NewValue));
+
+        Move("B1", "D1", Axis.Col).Should().BeTrue();
+        System.Console.WriteLine("EXEC " + string.Join(";", events));
+
+        // B1 is moved into the cell inserted at D1, then the gap it leaves is closed.
+        events.Should().BeEquivalentTo(new List<(int, int, string, object?, object?)>
+        {
+            (0, 1, "m", "b", null),
+            (0, 3, "m", null, "b"),
+        });
+        _sheet.Cells.GetMetaData(0, 1, "m").Should().Be("c");
+        _sheet.Cells.GetMetaData(0, 2, "m").Should().Be("b");
+
+        events.Clear();
+        _sheet.Commands.Undo();
+        System.Console.WriteLine("UNDO " + string.Join(";", events));
+
+        events.Should().BeEquivalentTo(new List<(int, int, string, object?, object?)>
+        {
+            (0, 1, "m", null, "b"),
+            (0, 3, "m", "b", null),
+        });
+        _sheet.Cells.GetMetaData(0, 1, "m").Should().Be("b");
+        _sheet.Cells.GetMetaData(0, 2, "m").Should().Be("c");
     }
 
     [Test]

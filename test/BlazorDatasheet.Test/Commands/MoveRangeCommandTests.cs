@@ -340,6 +340,77 @@ public class MoveRangeCommandTests
         _sheet.Cells.GetMetaData(0, 0, "m").Should().Be("x");
     }
 
+    private static List<(int Row, int Col, string Name, object? Old, object? New)> RecordMetaDataEvents(Sheet sheet)
+    {
+        var events = new List<(int, int, string, object?, object?)>();
+        sheet.Cells.MetaDataChanged += (_, e) => events.Add((e.Row, e.Col, e.Name, e.OldValue, e.NewValue));
+        return events;
+    }
+
+    [Test]
+    public void Move_Fires_Metadata_Events_For_The_Source_And_Overwritten_Target()
+    {
+        _sheet.Cells.SetCellMetaData(0, 0, "m", "a");
+        _sheet.Cells.SetCellMetaData(0, 0, "k", "keep");
+        _sheet.Cells.SetCellMetaData(0, 4, "m", "old");
+        _sheet.Cells.SetCellMetaData(5, 5, "m", "elsewhere");
+        var events = RecordMetaDataEvents(_sheet);
+
+        Move("A1", 0, 4).Should().BeTrue();
+
+        events.Should().BeEquivalentTo(new List<(int, int, string, object?, object?)>
+        {
+            (0, 0, "m", "a", null),
+            (0, 0, "k", "keep", null),
+            (0, 4, "m", "old", "a"),
+            (0, 4, "k", null, "keep"),
+        });
+
+        events.Clear();
+        _sheet.Commands.Undo();
+
+        events.Should().BeEquivalentTo(new List<(int, int, string, object?, object?)>
+        {
+            (0, 0, "m", null, "a"),
+            (0, 0, "k", null, "keep"),
+            (0, 4, "m", "a", "old"),
+            (0, 4, "k", "keep", null),
+        });
+    }
+
+    [Test]
+    public void Move_Fires_No_Metadata_Events_When_Nothing_Changes()
+    {
+        _sheet.Cells.SetValue(0, 0, "v");
+        var events = RecordMetaDataEvents(_sheet);
+
+        Move("A1", 0, 4).Should().BeTrue();
+        _sheet.Commands.Undo();
+
+        events.Should().BeEmpty();
+    }
+
+    [Test]
+    public void Move_To_Another_Sheet_Fires_Metadata_Events_On_Each_Sheet()
+    {
+        var other = _sheet.Workbook.AddSheet("Other", 20, 20);
+        _sheet.Cells.SetCellMetaData(0, 0, "m", "x");
+        var sourceEvents = RecordMetaDataEvents(_sheet);
+        var targetEvents = RecordMetaDataEvents(other);
+
+        Move("A1", 2, 2, other).Should().BeTrue();
+
+        sourceEvents.Should().Equal((0, 0, "m", "x", null));
+        targetEvents.Should().Equal((2, 2, "m", null, "x"));
+
+        sourceEvents.Clear();
+        targetEvents.Clear();
+        other.Commands.Undo();
+
+        sourceEvents.Should().Equal((0, 0, "m", null, "x"));
+        targetEvents.Should().Equal((2, 2, "m", "x", null));
+    }
+
     [Test]
     public void Move_Of_Values_Only_Leaves_Validators()
     {

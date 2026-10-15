@@ -118,4 +118,51 @@ public partial class CellStore
     internal CellMetadata? GetCellMetaData(int row, int col) => _metaDataStore.GetFirstData(row, col);
 
     internal MergeRegionDataStore<CellMetadata> GetMetaDataStore() => _metaDataStore;
+
+    /// <summary>
+    /// Whether anything listens to <see cref="MetaDataChanged"/>, so that snapshots taken only to fire it can be skipped.
+    /// </summary>
+    internal bool HasMetaDataListeners => MetaDataChanged != null;
+
+    /// <summary>
+    /// The metadata items of the cells in <paramref name="regions"/>, keyed by cell and name. Only the cells
+    /// that have metadata are visited.
+    /// </summary>
+    internal Dictionary<(int row, int col, string name), object> GetMetaDataItems(IEnumerable<IRegion> regions)
+    {
+        var items = new Dictionary<(int row, int col, string name), object>();
+        foreach (var region in regions)
+        foreach (var dataRegion in _metaDataStore.GetDataRegions(region))
+        {
+            if (dataRegion.Region.GetIntersection(region) is not { } overlap)
+                continue;
+            for (var row = overlap.Top; row <= overlap.Bottom; row++)
+            for (var col = overlap.Left; col <= overlap.Right; col++)
+            {
+                if (GetCellMetaData(row, col) is not { } metadata)
+                    continue;
+                foreach (var item in metadata.GetItems())
+                    items[(row, col, item.Key)] = item.Value;
+            }
+        }
+
+        return items;
+    }
+
+    /// <summary>
+    /// Fires <see cref="MetaDataChanged"/> for every item that differs between two snapshots taken with
+    /// <see cref="GetMetaDataItems"/>.
+    /// </summary>
+    internal void EmitMetaDataChanges(Dictionary<(int row, int col, string name), object> before,
+        Dictionary<(int row, int col, string name), object> after)
+    {
+        foreach (var key in before.Keys.Union(after.Keys))
+        {
+            before.TryGetValue(key, out var oldValue);
+            after.TryGetValue(key, out var newValue);
+            if (!Equals(oldValue, newValue))
+                MetaDataChanged?.Invoke(this,
+                    new CellMetaDataChangeEventArgs(key.row, key.col, key.name, oldValue, newValue));
+        }
+    }
 }
