@@ -25,6 +25,10 @@ public class RegionRestoreData<T>
     }
 }
 
-public record struct AppliedShift(Axis Axis, int Index, int Amount, string? SheetName)
+/// <summary>
+/// A shift applied to a store. <paramref name="Band"/> is the region of cells inserted or removed when the
+/// shift is limited to a band of rows/columns; null means the whole axis was shifted.
+/// </summary>
+public record struct AppliedShift(Axis Axis, int Index, int Amount, string? SheetName, IRegion? Band = null)
 {
 }
