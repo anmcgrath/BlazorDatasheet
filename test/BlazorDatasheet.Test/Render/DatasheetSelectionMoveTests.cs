@@ -69,6 +69,23 @@ public class DatasheetSelectionMoveTests
     }
 
     [Test]
+    public async Task Heading_Dropdown_Press_Selects_The_Column_Without_Starting_A_Move()
+    {
+        await using var context = Context();
+        var sheet = new Sheet(10, 10);
+        sheet.Selection.Set(new ColumnRegion(1, 2));
+        var component = context.Render<Datasheet>(p => p.Add(x => x.Sheet, sheet));
+        var press = new SheetPointerEventArgs { Row = -1, Col = 2, PageX = 100, IsInsideSheet = true, IsOnChrome = true };
+        await component.InvokeAsync(() => component.Instance.HandleCellMouseDown(null, press));
+        await component.InvokeAsync(() => component.Instance.HandleWindowMouseUp(new MouseEventArgs()));
+        sheet.Selection.ActiveRegion.Should().BeEquivalentTo(new ColumnRegion(2));
+
+        await component.InvokeAsync(() => component.Instance.HandleCellMouseDown(null, new SheetPointerEventArgs { Row = -1, Col = 5, PageX = 300, IsInsideSheet = true, IsOnChrome = true }));
+        await component.InvokeAsync(() => component.Instance.HandleWindowMouseUp(new MouseEventArgs()));
+        sheet.Selection.ActiveRegion.Should().BeEquivalentTo(new ColumnRegion(5));
+    }
+
+    [Test]
     public async Task ReadOnly_And_Multiple_Selections_Have_No_Move_Handles()
     {
         await using var context = Context();
