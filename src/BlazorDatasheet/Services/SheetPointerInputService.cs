@@ -12,6 +12,7 @@ public class SheetPointerInputService : IAsyncDisposable
     private bool _isDisposed;
     private IJSRuntime Js { get; }
 
+    public EventHandler<SheetPointerEventArgs>? DragEnded;
     public EventHandler<SheetPointerEventArgs>? PointerDown;
     public EventHandler<SheetPointerEventArgs>? PointerUp;
     public EventHandler<SheetPointerEventArgs>? PointerEnter;
@@ -124,6 +125,27 @@ public class SheetPointerInputService : IAsyncDisposable
             await DisposeJsObjectReferenceAsync(module);
         }
     }
+
+    internal async Task SetDragTrackingAsync(bool active)
+    {
+        if (_inputJs == null || _isDisposed)
+            return;
+        try { await _inputJs.InvokeVoidAsync("setDragTracking", active); }
+        catch (JSDisconnectedException) { }
+        catch (ObjectDisposedException) { }
+    }
+
+    internal async Task SetDragCursorAsync(string cursor)
+    {
+        if (_inputJs == null || _isDisposed)
+            return;
+        try { await _inputJs.InvokeVoidAsync("setDragCursor", cursor); }
+        catch (JSDisconnectedException) { }
+        catch (ObjectDisposedException) { }
+    }
+
+    [JSInvokable(nameof(HandleDragEnd))]
+    public void HandleDragEnd(SheetPointerEventArgs args) => DragEnded?.Invoke(this, args);
 
     [JSInvokable(nameof(HandlePointerMove))]
     public void HandlePointerMove(SheetPointerEventArgs args)

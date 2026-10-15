@@ -371,6 +371,11 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     private int ColumnHeadingZIndex => 30;
     private int CornerHeadingZIndex => 40;
 
+    private SelectionMoveController? _selectionMove;
+    private bool _trackingSelectionMove;
+    private Func<bool>? _canMoveSelection;
+    private Func<bool> CanMoveSelection => _canMoveSelection ??= () => _selectionMove?.CanBegin == true;
+
     private SelectionInputManager _selectionManager = default!;
 
     protected override void OnInitialized()
@@ -386,6 +391,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     protected override async Task OnParametersSetAsync()
     {
+        if (IsReadOnly)
+            _selectionMove?.Cancel();
         bool requireRender = false;
         bool forceRerender = false;
 
@@ -394,11 +401,14 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             var wasCurrent = IsDataSheetActive ||
                              (_hasSheet && DatasheetRegistry.For(_sheet.Workbook).WasLastActivated(_sheet));
             RemoveEvents(_sheet);
+            _selectionMove?.Dispose();
             _selectionManager?.Dispose();
             _hasSheet = Sheet != null;
             _sheet = Sheet ?? new(0, 0);
             _cellLayoutProvider = new CellLayoutProvider(_sheet);
             _selectionManager = new SelectionInputManager(_sheet.Selection);
+            _selectionMove = new SelectionMoveController(_sheet, () => IsReadOnly, _previewService, _autoScrollState);
+            _selectionMove.Changed += SelectionMoveChanged;
             AddEvents(_sheet);
             // the user is still working in this datasheet, e.g. after choosing a sheet from a list of tabs
             if (wasCurrent)
@@ -478,6 +488,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             _sheetPointerInputService.PointerDown += HandleCellMouseDown;
             _sheetPointerInputService.PointerEnter += HandleCellMouseOver;
             _sheetPointerInputService.PointerDoubleClick += HandleCellDoubleClick;
+            _sheetPointerInputService.DragEnded += HandleSelectionDragEnd;
             
             var scrollContainerImport = Js
                 .InvokeAsync<IJSObjectReference>("import", "./_content/BlazorDatasheet/js/scroll-container.js")
@@ -715,6 +726,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     private async void EditorOnEditBegin(object? sender, EditBeginEventArgs e)
     {
+        _selectionMove?.Cancel();
         // typing into a cell ends copy mode, as in Excel
         _sheet.Workbook.Clipboard.Clear();
         await UpdateInputStateAsync();
@@ -731,6 +743,11 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     {
         ShortcutManager.Register(["Escape"], KeyboardModifiers.Any, _ =>
         {
+            if (_selectionMove?.IsPending == true)
+            {
+                _selectionMove.Cancel();
+                return true;
+            }
             if (_sheet.Editor.IsEditing)
                 return _sheet.Editor.CancelEdit();
             if (_sheet.Workbook.Clipboard.IsActive)
@@ -797,6 +814,43 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
                  new ClearCellsCommand(_sheet.Selection.Regions).CanExecute(_sheet));
     }
 
+    private void SelectionMoveChanged()
+    {
+        var pending = _selectionMove?.IsPending == true;
+        if (_sheetPointerInputService != null && pending != _trackingSelectionMove)
+        {
+            _trackingSelectionMove = pending;
+            if (pending)
+                _sheetPointerInputService.PointerMove += HandleSelectionDragMove;
+            else
+                _sheetPointerInputService.PointerMove -= HandleSelectionDragMove;
+            _ = _sheetPointerInputService.SetDragTrackingAsync(pending);
+        }
+        if (pending)
+            _ = _sheetPointerInputService?.SetDragCursorAsync(GetSelectionMoveCursor(_selectionMove!));
+    }
+
+    /// <summary>
+    /// Headings are grabbed, like the rows and columns they stand for, while a selection box is moved by its border.
+    /// </summary>
+    private static string GetSelectionMoveCursor(SelectionMoveController move)
+    {
+        if (move.IsDragging && !move.IsValid)
+            return "not-allowed";
+        return move.IsHeadingDrag ? "grabbing" : "move";
+    }
+
+    internal void HandleSelectionDragMove(object? sender, SheetPointerEventArgs args) => _selectionMove?.Move(args);
+
+    internal void HandleSelectionDragEnd(object? sender, SheetPointerEventArgs args)
+    {
+        var click = _selectionMove?.End(args);
+        if (click == null)
+            return;
+        _selectionManager.HandlePointerDown(click.Row, click.Col, click.ShiftKey, click.CtrlKey, click.MetaKey, click.MouseButton);
+        _selectionManager.HandleWindowMouseUp();
+    }
+
     internal void HandleCellMouseDown(object? sender, SheetPointerEventArgs args)
     {
         if (_sheet.Editor.IsEditing)
@@ -840,6 +894,9 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
                     return;
             }
         }
+
+        if (_selectionMove?.BeginHeading(args) == true)
+            return;
 
         _selectionManager.HandlePointerDown(
             row: args.Row,
@@ -931,6 +988,9 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     internal async Task<bool> HandleWindowMouseUp(MouseEventArgs arg)
     {
+        if (_selectionMove?.IsPending == true)
+            return true;
+
         // a reference that is being moved or resized here may belong to a formula in another sheet
         if (_sheet.Workbook.ActiveFormulaEdit is { IsAdjustingReference: true } adjusting &&
             ReferenceEquals(adjusting.AdjustSheet, _sheet) &&
@@ -1262,6 +1322,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     internal void HandleCellMouseOver(object? sender, SheetPointerEventArgs args)
     {
+        if (_selectionMove?.IsPending == true)
+            return;
         if (_sheet.Workbook.ActiveFormulaEdit is { IsAdjustingReference: true } adjusting)
         {
             adjusting.HandlePointerOver(_sheet, args.Row, args.Col);
@@ -1663,7 +1725,8 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             _useAutoFill,
             IsReadOnly,
             AutoFit,
-            ShowSelectionWhenNotCurrentSheet);
+            ShowSelectionWhenNotCurrentSheet,
+            _selectionMove);
         return true;
     }
 
@@ -1748,6 +1811,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     public async ValueTask DisposeAsync()
     {
+        _selectionMove?.Dispose();
         _isDisposing = true;
         RemoveEvents(_sheet);
         _selectionManager?.Dispose();

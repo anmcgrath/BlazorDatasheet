@@ -3,6 +3,8 @@
 @using BlazorDatasheet.Core.Events.Data
 @using BlazorDatasheet.DataStructures.Geometry
 @using BlazorDatasheet.Services
+@using BlazorDatasheet.Render
+@using BlazorDatasheet.Core.Layout
 @inherits Layer
 @implements IDisposable
 
@@ -37,6 +39,17 @@
                     Width="Sheet.Columns.GetVisualWidthBetween(brokenRegion.Left, brokenRegion.Right + 1)"
                     Height="Sheet.Rows.GetVisualHeightBetween(brokenRegion.Top, brokenRegion.Bottom + 1)"/>
             }
+        }
+
+        @if (isActiveRegion && PaneContext?.SelectionMove?.CanBegin == true)
+        {
+            <RegionDragHandles Region="@(region.GetIntersection(Sheet.Region)!)" VisibleRegion="boundedRegion"
+                               X="GetLayerColumnX(boundedRegion.Left)" Y="GetLayerRowY(boundedRegion.Top)"
+                               Width="Sheet.Columns.GetVisualWidthBetween(boundedRegion.Left, boundedRegion.Right + 1)"
+                               Height="Sheet.Rows.GetVisualHeightBetween(boundedRegion.Top, boundedRegion.Bottom + 1)"
+                               CanDrag="true" CanResize="false" KeepFocus="false" EdgeClass="bds-selection-edge"
+                               IsDragging="@(PaneContext.SelectionMove.IsPending)"
+                               DragStarted="drag => BeginMove(region, drag)"/>
         }
 
         <!-- now render the border around the whole region. No fill on active region because we've filled it already -->
@@ -98,6 +111,33 @@
 </div>
 
 @code {
+    [CascadingParameter] private PaneContext? PaneContext { get; set; }
+    private SelectionMoveController? _moveController;
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        if (!ReferenceEquals(_moveController, PaneContext?.SelectionMove))
+        {
+            if (_moveController != null)
+                _moveController.Changed -= MoveChanged;
+            _moveController = PaneContext?.SelectionMove;
+            if (_moveController != null)
+                _moveController.Changed += MoveChanged;
+        }
+    }
+
+    private void MoveChanged() => _ = InvokeAsync(StateHasChanged);
+
+    private void BeginMove(IRegion region, HighlightBoxDrag drag)
+    {
+        var layout = new CellLayoutProvider(Sheet);
+        var bounded = region.GetIntersection(Sheet.Region)!;
+        var row = Math.Clamp(drag.Row ?? layout.ComputeRow(drag.LayerY + Top), bounded.Top, bounded.Bottom);
+        var col = Math.Clamp(drag.Col ?? layout.ComputeColumn(drag.LayerX + Left), bounded.Left, bounded.Right);
+        _moveController?.Begin(new CellPosition(row, col), drag.PageX, drag.PageY);
+    }
+
 
     /// <summary>
     /// Whether the selection is shown while the user is working in another sheet of the workbook.
@@ -143,6 +183,8 @@
 
     public void Dispose()
     {
+        if (_moveController != null)
+            _moveController.Changed -= MoveChanged;
         Sheet.Selection.SelectionChanged -= OnSelectionChanged;
         Sheet.Selection.SelectingChanged -= OnSelectingChanged;
         Sheet.Cells.RegionMerged -= OnMergesChanged;

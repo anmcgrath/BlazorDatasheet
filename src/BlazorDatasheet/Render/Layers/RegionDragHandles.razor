@@ -1,0 +1,155 @@
+@using System.Globalization
+@using BlazorDatasheet.Core.Edit
+@using BlazorDatasheet.DataStructures.Geometry
+
+@if (CanDrag)
+{
+    @* The edges move the reference. The tabindex stops the sheet from taking focus on a press, and the mouse
+       down is prevented so that the editor keeps it. The sheet of the editor is told as much by
+       data-bds-keeps-focus="@KeepFocus", so that it stays active when the reference is in another sheet. *@
+    @if (ShowTop)
+    {
+        <div class="bds-unselectable @EdgeClass" tabindex="@(KeepFocus ? "-1" : null)" data-bds-keeps-focus="@KeepFocus"
+             style="@GetStyle(X, Y - EdgeSize / 2, Width, EdgeSize)"
+             @onmousedown:preventDefault="KeepFocus"
+             @onmousedown="() => { }"
+             @onpointerdown="e => BeginMove(Region.Top, null, X, Y - EdgeSize / 2, e)"></div>
+    }
+
+    @if (ShowBottom)
+    {
+        <div class="bds-unselectable @EdgeClass" tabindex="@(KeepFocus ? "-1" : null)" data-bds-keeps-focus="@KeepFocus"
+             style="@GetStyle(X, Y + Height - EdgeSize / 2, Width, EdgeSize)"
+             @onmousedown:preventDefault="KeepFocus"
+             @onmousedown="() => { }"
+             @onpointerdown="e => BeginMove(Region.Bottom, null, X, Y + Height - EdgeSize / 2, e)"></div>
+    }
+
+    @if (ShowLeft)
+    {
+        <div class="bds-unselectable @EdgeClass" tabindex="@(KeepFocus ? "-1" : null)" data-bds-keeps-focus="@KeepFocus"
+             style="@GetStyle(X - EdgeSize / 2, Y, EdgeSize, Height)"
+             @onmousedown:preventDefault="KeepFocus"
+             @onmousedown="() => { }"
+             @onpointerdown="e => BeginMove(null, Region.Left, X - EdgeSize / 2, Y, e)"></div>
+    }
+
+    @if (ShowRight)
+    {
+        <div class="bds-unselectable @EdgeClass" tabindex="@(KeepFocus ? "-1" : null)" data-bds-keeps-focus="@KeepFocus"
+             style="@GetStyle(X + Width - EdgeSize / 2, Y, EdgeSize, Height)"
+             @onmousedown:preventDefault="KeepFocus"
+             @onmousedown="() => { }"
+             @onpointerdown="e => BeginMove(null, Region.Right, X + Width - EdgeSize / 2, Y, e)"></div>
+    }
+
+    @* The corners resize it, and come after the edges so that they are on top of them. *@
+    @foreach (var corner in CanResize ? Corners : [])
+    {
+        if (!IsShown(corner))
+            continue;
+
+        <div class="bds-unselectable @CornerClass" tabindex="@(KeepFocus ? "-1" : null)" data-bds-keeps-focus="@KeepFocus"
+             style="@GetCornerStyle(corner)"
+             @onmousedown:preventDefault="KeepFocus"
+             @onmousedown="() => { }"
+             @onpointerdown="e => BeginResize(corner, e)"></div>
+    }
+}
+
+@code {
+
+    [Parameter] public bool CanResize { get; set; } = true;
+    [Parameter] public bool KeepFocus { get; set; } = true;
+    [Parameter] public string EdgeClass { get; set; } = "bds-reference-edge";
+    [Parameter] public string CornerClass { get; set; } = "bds-reference-corner";
+
+    private const double EdgeSize = 5;
+    private const double CornerSize = 7;
+
+    private static readonly (bool IsBottom, bool IsRight)[] Corners =
+        [(false, false), (false, true), (true, false), (true, true)];
+
+    /// <summary>
+    /// The region that the reference is to, inside the sheet.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public IRegion Region { get; set; } = null!;
+
+    /// <summary>
+    /// The part of <see cref="Region"/> that is shown, which is less than all of it when the layer ends part way through.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public IRegion VisibleRegion { get; set; } = null!;
+
+    [Parameter] public double X { get; set; }
+    [Parameter] public double Y { get; set; }
+    [Parameter] public double Width { get; set; }
+    [Parameter] public double Height { get; set; }
+    [Parameter] public string Color { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Whether the reference can be moved and resized with the pointer.
+    /// </summary>
+    [Parameter]
+    public bool CanDrag { get; set; }
+
+    /// <summary>
+    /// Whether a reference is being dragged, during which the pointer belongs to the cells that it is dragged over.
+    /// </summary>
+    [Parameter]
+    public bool IsDragging { get; set; }
+
+    [Parameter] public EventCallback<HighlightBoxDrag> DragStarted { get; set; }
+
+    // an edge that the layer cuts off isn't an edge of the reference
+    private bool ShowLeft => VisibleRegion.Left == Region.Left;
+    private bool ShowRight => VisibleRegion.Right == Region.Right;
+    private bool ShowTop => VisibleRegion.Top == Region.Top;
+    private bool ShowBottom => VisibleRegion.Bottom == Region.Bottom;
+
+    private bool IsShown((bool IsBottom, bool IsRight) corner) =>
+        (corner.IsBottom ? ShowBottom : ShowTop) && (corner.IsRight ? ShowRight : ShowLeft);
+
+    private Task BeginMove(int? row, int? col, double edgeX, double edgeY, PointerEventArgs e)
+    {
+        if (e.Button != 0)
+            return Task.CompletedTask;
+
+        // an edge along the top or bottom knows its row, and one down the side knows its column
+        return DragStarted.InvokeAsync(new HighlightBoxDrag(ReferenceDragMode.Move, row, col,
+            edgeX + e.OffsetX, edgeY + e.OffsetY) { PageX = e.PageX, PageY = e.PageY });
+    }
+
+    private Task BeginResize((bool IsBottom, bool IsRight) corner, PointerEventArgs e)
+    {
+        if (e.Button != 0)
+            return Task.CompletedTask;
+
+        // the opposite corner is the one that stays where it is
+        var row = corner.IsBottom ? Region.Top : Region.Bottom;
+        var col = corner.IsRight ? Region.Left : Region.Right;
+        return DragStarted.InvokeAsync(new HighlightBoxDrag(ReferenceDragMode.Resize, row, col, 0, 0));
+    }
+
+    private string GetCornerStyle((bool IsBottom, bool IsRight) corner)
+    {
+        var x = (corner.IsRight ? X + Width : X) - CornerSize / 2;
+        var y = (corner.IsBottom ? Y + Height : Y) - CornerSize / 2;
+        return $"{GetStyle(x, y, CornerSize, CornerSize)}background:{Color};cursor:{GetCornerCursor(corner)};";
+    }
+
+    private string GetCornerCursor((bool IsBottom, bool IsRight) corner)
+    {
+        if (Region is ColumnRegion)
+            return "ew-resize";
+        if (Region is RowRegion)
+            return "ns-resize";
+        return corner.IsBottom == corner.IsRight ? "nwse-resize" : "nesw-resize";
+    }
+
+    private string GetStyle(double x, double y, double width, double height) =>
+        string.Create(CultureInfo.InvariantCulture,
+            $"left:{x}px;top:{y}px;width:{width}px;height:{height}px;pointer-events:{(IsDragging ? "none" : "all")};");
+
+}
