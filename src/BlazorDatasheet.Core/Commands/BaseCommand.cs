@@ -48,6 +48,16 @@ public abstract class BaseCommand : ICommand, IProtectedCommand
     /// </summary>
     protected virtual bool CanExecuteCore(Sheet sheet) => true;
 
+    /// <summary>
+    /// Performs the command without checking protection, for a composite command that has checked it already.
+    /// </summary>
+    internal bool ExecuteUnprotected(Sheet sheet) => ExecuteCore(sheet);
+
+    /// <summary>
+    /// The command's pre-conditions without protection, for a composite command that has checked it already.
+    /// </summary>
+    internal bool CanExecuteUnprotected(Sheet sheet) => CanExecuteCore(sheet);
+
     public void AttachAfter(ICommand command)
     {
         _chainedAfterCommands.Add(command);

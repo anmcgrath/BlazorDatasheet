@@ -373,6 +373,19 @@ public class Sheet
             AddRows(count);
     }
 
+    /// <summary>
+    /// Grows (or shrinks, with a negative <paramref name="delta"/>) the sheet along an axis without touching the
+    /// selection or raising events, for a command that needs room past the edge while it runs and gives it back
+    /// before it finishes.
+    /// </summary>
+    internal void ResizeTransiently(Axis axis, int delta)
+    {
+        if (axis == Axis.Col)
+            NumCols += delta;
+        else
+            NumRows += delta;
+    }
+
     #region COLS
 
     private void AddCols(int nCols = 1)

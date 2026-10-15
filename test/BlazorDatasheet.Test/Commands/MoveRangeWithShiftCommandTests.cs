@@ -368,4 +368,102 @@ public class MoveRangeWithShiftCommandTests
         _sheet.Cells.Move(new Region(0, 1), new CellPosition(0, 3)).Should().BeTrue();
         RowValues(_sheet, 0, 4).Should().Equal(1, null, 3, 2);
     }
+
+    [Test]
+    public void Move_Within_A_Full_Row_Takes_Nothing_Off_The_Sheet()
+    {
+        for (var c = 0; c < 10; c++)
+            _sheet.Cells.SetValue(0, c, ((char)('a' + c)).ToString());
+        var before = Snapshot(_sheet);
+
+        Move("D1", "B1", Axis.Col).Should().BeTrue();
+
+        RowValues(_sheet, 0, 10).Should().Equal("a", "d", "b", "c", "e", "f", "g", "h", "i", "j");
+        _sheet.NumCols.Should().Be(10);
+        _sheet.Commands.Undo();
+        Snapshot(_sheet).Should().Be(before);
+        _sheet.NumCols.Should().Be(10);
+    }
+
+    [Test]
+    public void Move_After_Source_Within_A_Full_Row_Takes_Nothing_Off_The_Sheet()
+    {
+        for (var c = 0; c < 10; c++)
+            _sheet.Cells.SetValue(0, c, ((char)('a' + c)).ToString());
+        var before = Snapshot(_sheet);
+
+        Move("B1", "E1", Axis.Col).Should().BeTrue();
+
+        RowValues(_sheet, 0, 10).Should().Equal("a", "c", "d", "b", "e", "f", "g", "h", "i", "j");
+        _sheet.Commands.Undo();
+        Snapshot(_sheet).Should().Be(before);
+    }
+
+    [Test]
+    public void Move_Last_Cell_Of_A_Row()
+    {
+        _sheet.Cells.SetValue(0, 0, "a");
+        _sheet.Cells.SetValue(0, 1, "b");
+        _sheet.Cells.SetValue(0, 9, "j");
+        var before = Snapshot(_sheet);
+
+        Move("J1", "B1", Axis.Col).Should().BeTrue();
+
+        _sheet.Cells.GetValue(0, 0).Should().Be("a");
+        _sheet.Cells.GetValue(0, 1).Should().Be("j");
+        _sheet.Cells.GetValue(0, 2).Should().Be("b");
+        _sheet.Cells.GetValue(0, 9).Should().BeNull();
+        _sheet.Commands.Undo();
+        Snapshot(_sheet).Should().Be(before);
+    }
+
+    [Test]
+    public void Move_Last_Cell_Of_A_Column()
+    {
+        _sheet.Cells.SetValue(0, 0, "a");
+        _sheet.Cells.SetValue(9, 0, "j");
+        var before = Snapshot(_sheet);
+
+        Move("A10", "A1", Axis.Row).Should().BeTrue();
+
+        ColValues(_sheet, 0, 3).Should().Equal("j", "a", null);
+        _sheet.NumRows.Should().Be(10);
+        _sheet.Commands.Undo();
+        Snapshot(_sheet).Should().Be(before);
+        _sheet.NumRows.Should().Be(10);
+    }
+
+    [Test]
+    public void Formats_At_The_Edge_Of_The_Band_Are_Kept()
+    {
+        _sheet.Cells.SetValue(0, 3, "d");
+        _sheet.SetFormat(new Region(0, 9), new CellFormat { BackgroundColor = "red" });
+        var before = Snapshot(_sheet);
+
+        Move("D1", "B1", Axis.Col).Should().BeTrue();
+
+        _sheet.Cells.GetValue(0, 1).Should().Be("d");
+        _sheet.GetFormat(0, 9).BackgroundColor.Should().Be("red");
+        _sheet.Commands.Undo();
+        Snapshot(_sheet).Should().Be(before);
+        _sheet.Commands.Redo();
+        _sheet.GetFormat(0, 9).BackgroundColor.Should().Be("red");
+    }
+
+    [Test]
+    public void Spill_Blocked_By_The_Edge_Stays_Blocked()
+    {
+        _sheet.Cells.SetValue(0, 3, "d");
+        _sheet.Cells.SetFormula(1, 7, "={1,2,3,4}"); // H2 would spill past J2
+        var spill = _sheet.Cells.GetValue(1, 7);
+
+        Move("D1", "B1", Axis.Col).Should().BeTrue();
+
+        _sheet.Cells.GetValue(1, 7).Should().Be(spill);
+        _sheet.Cells.GetValue(1, 8).Should().BeNull();
+        _sheet.Cells.GetValue(1, 10).Should().BeNull(); // past the edge
+
+        _sheet.Commands.Undo();
+        _sheet.Cells.GetValue(1, 7).Should().Be(spill);
+    }
 }
