@@ -8,7 +8,8 @@ namespace BlazorDatasheet.Core.Data.Cells;
 
 public partial class CellStore
 {
-    private readonly MergeRegionDataStore<CellMetadata> _metaDataStore = new();
+    // Unlike formats, metadata belongs to its cell: cells inserted next to it don't take it on.
+    private readonly MergeRegionDataStore<CellMetadata> _metaDataStore = new(expandOnInsert: false);
 
     /// <summary>
     /// Sets cell metadata, specified by name, for the cell at position row, col
