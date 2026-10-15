@@ -4,6 +4,7 @@ using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Events;
 using BlazorDatasheet.Core.Selecting;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.Edit;
 using BlazorDatasheet.Events;
 using BlazorDatasheet.Render.AutoScroll;
 using BlazorDatasheet.Render.Layers.Preview;
@@ -16,6 +17,7 @@ internal sealed class SelectionMoveController : IDisposable
 {
     private readonly Sheet _sheet;
     private readonly Func<bool> _isReadOnly;
+    private readonly Func<DragMoveKinds> _allowed;
     private readonly PreviewService _previews;
     private readonly AutoScrollState _autoScroll;
     private IRegion? _source;
@@ -37,14 +39,24 @@ internal sealed class SelectionMoveController : IDisposable
 
     public bool CanBegin => !_isReadOnly() && !_sheet.Editor.IsEditing &&
         _sheet.Workbook.ActiveFormulaEdit == null && !_sheet.Selection.IsSelecting &&
-        _sheet.Selection.Regions.Count() == 1 && _sheet.Selection.ActiveRegion != null &&
+        _sheet.Selection.Regions.Count() == 1 && _sheet.Selection.ActiveRegion is { } region &&
+        _allowed().HasFlag(GetKind(region)) &&
         _sheet.NumRows > 0 && _sheet.NumCols > 0 &&
         DatasheetRegistry.For(_sheet.Workbook).ShowsSelection(_sheet);
 
-    public SelectionMoveController(Sheet sheet, Func<bool> isReadOnly, PreviewService previews, AutoScrollState autoScroll)
+    private static DragMoveKinds GetKind(IRegion region) => region switch
+    {
+        RowRegion => DragMoveKinds.Rows,
+        ColumnRegion => DragMoveKinds.Columns,
+        _ => DragMoveKinds.Ranges
+    };
+
+    public SelectionMoveController(Sheet sheet, Func<bool> isReadOnly, Func<DragMoveKinds> allowed,
+        PreviewService previews, AutoScrollState autoScroll)
     {
         _sheet = sheet;
         _isReadOnly = isReadOnly;
+        _allowed = allowed;
         _previews = previews;
         _autoScroll = autoScroll;
         sheet.Selection.SelectionChanged += SelectionChanged;
@@ -122,6 +134,13 @@ internal sealed class SelectionMoveController : IDisposable
             Changed?.Invoke();
     }
 
+    private (CellPosition To, Axis? ShiftAxis) GetMoveTarget() => _source switch
+    {
+        RowRegion => (new CellPosition(_insertion, 0), Axis.Row),
+        ColumnRegion => (new CellPosition(0, _insertion), Axis.Col),
+        _ => (_destination == null ? default : new CellPosition(_destination.Top, _destination.Left), null)
+    };
+
     private ICommand CreateCommand()
     {
         var from = _sheet.Range(_source!);
@@ -147,15 +166,19 @@ internal sealed class SelectionMoveController : IDisposable
             return null;
         var click = !IsDragging ? _headingPress : null;
         var source = _source!;
-        var destination = _destination;
         var active = _active;
-        var command = IsDragging && IsValid ? CreateCommand() : null;
-        // Detach the drag before commands emit their selection/layout events.
+        var commit = IsDragging && IsValid;
+        var (to, shiftAxis) = GetMoveTarget();
+        // Detach the drag before the move emits its selection/layout events.
         Cancel();
-        if (command != null && command.CanExecute(_sheet) && _sheet.Commands.ExecuteCommand(command))
+        if (!commit)
+            return click;
+        // the sheet's BeforeRangeMove handlers may cancel the move or send it somewhere else
+        var destination = _sheet.Cells.MoveImpl(_sheet.Range(source), to, shiftAxis, isUserDrag: true);
+        if (destination != null)
         {
-            _sheet.Selection.Set(destination!);
-            _sheet.Selection.Activate(active.row + destination!.Top - source.Top,
+            _sheet.Selection.Set(destination);
+            _sheet.Selection.Activate(active.row + destination.Top - source.Top,
                 active.col + destination.Left - source.Left);
         }
         return click;

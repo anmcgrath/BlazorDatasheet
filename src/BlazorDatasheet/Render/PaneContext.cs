@@ -1,4 +1,5 @@
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.Edit;
 using BlazorDatasheet.Render.AutoScroll;
 using BlazorDatasheet.Render.Layers;
 using BlazorDatasheet.Render.Layers.Preview;
@@ -22,6 +23,7 @@ internal sealed record PaneContext(
     bool IsReadOnly,
     bool AutoFit,
     bool ShowSelectionWhenNotCurrentSheet,
+    DragMoveKinds AllowDragMove = DragMoveKinds.All,
     SelectionMoveController? SelectionMove = null)
 {
     /// <summary>

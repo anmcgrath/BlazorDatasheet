@@ -122,6 +122,7 @@ public partial class CellStore
     /// (left for <see cref="Axis.Col"/>, up for <see cref="Axis.Row"/>) and the block is inserted before the cell
     /// at <paramref name="to"/>, given as it is before the move.
     /// </para>
+    /// <para><see cref="Sheet.BeforeRangeMove"/> is raised first, and may cancel or redirect the move.</para>
     /// </summary>
     /// <returns>Whether the cells were moved.</returns>
     public bool Move(IRegion from, CellPosition to, Axis? shiftAxis = null) => Move(Sheet.Range(from), to, shiftAxis);
@@ -131,13 +132,35 @@ public partial class CellStore
     /// block's top-left lands at <paramref name="to"/> on this sheet. See <see cref="Move(IRegion, CellPosition, Axis?)"/>.
     /// </summary>
     /// <returns>Whether the cells were moved.</returns>
-    public bool Move(SheetRange from, CellPosition to, Axis? shiftAxis = null)
+    public bool Move(SheetRange from, CellPosition to, Axis? shiftAxis = null) =>
+        MoveImpl(from, to, shiftAxis, isUserDrag: false) != null;
+
+    /// <summary>
+    /// Raises <see cref="Sheet.BeforeRangeMove"/> and, unless it is cancelled, moves the cells where it leaves them.
+    /// </summary>
+    /// <returns>Where the moved block ends up, or null if nothing was moved.</returns>
+    internal IRegion? MoveImpl(SheetRange from, CellPosition to, Axis? shiftAxis, bool isUserDrag)
     {
+        var args = new BeforeRangeMoveEventArgs(from, to, shiftAxis, isUserDrag);
+        Sheet.EmitBeforeRangeMove(args);
+        if (args.Cancel)
+            return null;
+
+        to = args.To;
         var target = Sheet.Range(to.row, to.col);
-        ICommand cmd = shiftAxis == null
-            ? new MoveRangeCommand(from, target)
-            : new MoveRangeWithShiftCommand(from, target, shiftAxis.Value);
-        return Sheet.Commands.ExecuteCommand(cmd);
+        if (args.ShiftAxis is { } axis)
+        {
+            var shifted = new MoveRangeWithShiftCommand(from, target, axis);
+            return Sheet.Commands.ExecuteCommand(shifted) ? shifted.FinalRegion : null;
+        }
+
+        var source = from.Region.GetIntersection(from.Sheet.Region);
+        if (source == null || !Sheet.Commands.ExecuteCommand(new MoveRangeCommand(from, target)))
+            return null;
+        // whole rows/columns stay whole
+        var final = from.Region is RowRegion or ColumnRegion ? from.Region.Clone() : source.Clone();
+        final.Shift(to.row - source.Top, to.col - source.Left);
+        return final;
     }
 
     internal CellStoreRestoreData ClearCellsImpl(IEnumerable<IRegion> regionsToClear)

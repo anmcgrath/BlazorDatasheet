@@ -183,6 +183,14 @@ public class Sheet
 
     public event EventHandler<RangeSortedEventArgs>? RangeSorted;
 
+    /// <summary>
+    /// Fired on the sheet that cells, rows or columns are moved to, before they are moved. The move can be
+    /// cancelled, or sent somewhere else.
+    /// </summary>
+    public event EventHandler<BeforeRangeMoveEventArgs>? BeforeRangeMove;
+
+    internal void EmitBeforeRangeMove(BeforeRangeMoveEventArgs args) => BeforeRangeMove?.Invoke(this, args);
+
     public event EventHandler<SheetFrozenRowColsEventArgs>? FrozenRowCols;
 
     /// <summary>

@@ -262,6 +262,12 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     [Parameter] public EditFocusLossAction OnEditFocusLoss { get; set; } = EditFocusLossAction.KeepEditing;
 
     /// <summary>
+    /// What the user can move by dragging the selection. Defaults to <see cref="DragMoveKinds.All"/>.
+    /// Moves can also be cancelled or redirected with <see cref="Sheet.BeforeRangeMove"/>.
+    /// </summary>
+    [Parameter] public DragMoveKinds AllowDragMove { get; set; } = DragMoveKinds.All;
+
+    /// <summary>
     /// Whether the row and column headers are sticky
     /// </summary>
     [Parameter]
@@ -391,7 +397,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
 
     protected override async Task OnParametersSetAsync()
     {
-        if (IsReadOnly)
+        if (IsReadOnly || _selectionMove?.IsPending == true && !_selectionMove.CanBegin)
             _selectionMove?.Cancel();
         bool requireRender = false;
         bool forceRerender = false;
@@ -407,7 +413,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             _sheet = Sheet ?? new(0, 0);
             _cellLayoutProvider = new CellLayoutProvider(_sheet);
             _selectionManager = new SelectionInputManager(_sheet.Selection);
-            _selectionMove = new SelectionMoveController(_sheet, () => IsReadOnly, _previewService, _autoScrollState);
+            _selectionMove = new SelectionMoveController(_sheet, () => IsReadOnly, () => AllowDragMove, _previewService, _autoScrollState);
             _selectionMove.Changed += SelectionMoveChanged;
             AddEvents(_sheet);
             // the user is still working in this datasheet, e.g. after choosing a sheet from a list of tabs
@@ -1704,6 +1710,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             _paneContext.ShowFormulaDependents == _showFormulaDependents &&
             _paneContext.UseAutoFill == _useAutoFill &&
             _paneContext.IsReadOnly == IsReadOnly &&
+            _paneContext.AllowDragMove == AllowDragMove &&
             _paneContext.AutoFit == AutoFit &&
             _paneContext.ShowSelectionWhenNotCurrentSheet == ShowSelectionWhenNotCurrentSheet)
         {
@@ -1726,6 +1733,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             IsReadOnly,
             AutoFit,
             ShowSelectionWhenNotCurrentSheet,
+            AllowDragMove,
             _selectionMove);
         return true;
     }

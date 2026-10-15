@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using AwesomeAssertions;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.Edit;
 using BlazorDatasheet.Events;
 using BlazorDatasheet.Extensions;
 using BlazorDatasheet.KeyboardInput;
@@ -130,5 +131,28 @@ public class DatasheetSelectionMoveTests
     {
         foreach (var virtualiser in component.FindComponents<Virtualise2D>())
             component.InvokeAsync(() => virtualiser.Instance.HandleScroll(new Rect(0, 0, 500, 500))).Wait();
+    }
+
+    [Test]
+    public async Task AllowDragMove_Limits_What_Has_Move_Handles()
+    {
+        await using var context = Context();
+        var sheet = new Sheet(10, 10);
+        sheet.Selection.Set(1, 1);
+        var component = context.Render<Datasheet>(p => p.Add(x => x.Sheet, sheet)
+            .Add(x => x.AllowDragMove, DragMoveKinds.Columns));
+        ShowViewport(component);
+        component.FindAll(".bds-selection-edge").Should().BeEmpty();
+        await component.InvokeAsync(() => sheet.Selection.Set(new ColumnRegion(2)));
+        component.FindAll(".bds-selection-edge").Should().NotBeEmpty();
+        component.FindAll(".bds-movable-header").Should().NotBeEmpty();
+        component.Render(p => p.Add(x => x.AllowDragMove, DragMoveKinds.None));
+        component.FindAll(".bds-selection-edge").Should().BeEmpty();
+        component.FindAll(".bds-movable-header").Should().BeEmpty();
+        var press = new SheetPointerEventArgs { Row = -1, Col = 2, PageX = 100, IsInsideSheet = true };
+        await component.InvokeAsync(() => component.Instance.HandleCellMouseDown(null, press));
+        await component.InvokeAsync(() => component.Instance.HandleSelectionDragEnd(null,
+            new SheetPointerEventArgs { Row = -1, Col = 6, PageX = 400, IsInsideSheet = true }));
+        sheet.Commands.GetUndoCommands().Should().BeEmpty();
     }
 }
