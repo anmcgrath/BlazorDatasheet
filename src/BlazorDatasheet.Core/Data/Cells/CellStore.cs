@@ -422,7 +422,10 @@ public partial class CellStore
             // when values were copied the target's originals are already recorded above, so the formula
             // step must not append later (copied) values that would win on restore
             restoreData.Merge(CopyFormulaImpl(from.Sheet, fromRegion, toRegion, options.FormulaReferences,
-                recordValueRestore: !options.CopyValues));
+                recordValueRestore: !options.CopyValues,
+                referenceRegion: (from.Region is RowRegion && dc == 0) || (from.Region is ColumnRegion && dr == 0)
+                    ? from.Region
+                    : fromRegion));
 
         if (options.CopyFormat)
             restoreData.Merge(CopyFormatImpl(from.Sheet, fromRegion, toRegion));

@@ -382,30 +382,32 @@ public class ConditionalFormatManager
     }
 
     internal ConditionalFormatRestoreData InsertCellsAt(IRegion region, Axis axis)
-    {
-        var n = axis == Axis.Col ? region.Width : region.Height;
-        var index = region.GetLeadingEdgeOffset(axis);
-        return ShiftCellsInBand(region, axis,
-            () => _appliedFormats.InsertCellsAt(region, axis, StraddlePolicy.Split),
-            (format, sheet) => format.InsertCells(region, axis, sheet),
-            shift: p => IsInBand(p, region, axis) && Along(p, axis) >= index ? Offset(p, axis, n) : p,
-            unshift: p => IsInBand(p, region, axis) && Along(p, axis) >= index + n ? Offset(p, axis, -n) : p);
-    }
+        => ShiftCells(region, axis, _sheet.Name, true);
 
     internal ConditionalFormatRestoreData RemoveCellsAt(IRegion region, Axis axis)
+        => ShiftCells(region, axis, _sheet.Name, false);
+
+    internal ConditionalFormatRestoreData ShiftCells(IRegion region, Axis axis, string sourceSheetName, bool insert)
     {
+        var local = sourceSheetName == _sheet.Name;
         var n = axis == Axis.Col ? region.Width : region.Height;
         var index = region.GetLeadingEdgeOffset(axis);
         var end = region.GetTrailingEdgeOffset(axis);
-        return ShiftCellsInBand(region, axis,
-            () => _appliedFormats.RemoveCellsAt(region, axis, StraddlePolicy.Split),
-            (format, sheet) => format.RemoveCells(region, axis, sheet),
-            shift: p => region.Contains(p.row, p.col)
-                ? null
-                : IsInBand(p, region, axis) && Along(p, axis) > end
-                    ? Offset(p, axis, -n)
-                    : p,
-            unshift: p => IsInBand(p, region, axis) && Along(p, axis) >= index ? Offset(p, axis, n) : p);
+        if (!insert)
+            return ShiftCellsInBand(region, axis, sourceSheetName,
+                () => local ? _appliedFormats.RemoveCellsAt(region, axis, StraddlePolicy.Split) : new(),
+                (format, sheet) => format.RemoveCells(region, axis, sheet, sourceSheetName),
+                shift: p => !local ? p : region.Contains(p.row, p.col)
+                    ? null
+                    : IsInBand(p, region, axis) && Along(p, axis) > end ? Offset(p, axis, -n) : p,
+                unshift: p => local && IsInBand(p, region, axis) && Along(p, axis) >= index
+                    ? Offset(p, axis, n) : p);
+
+        return ShiftCellsInBand(region, axis, sourceSheetName,
+            () => local ? _appliedFormats.InsertCellsAt(region, axis, StraddlePolicy.Split) : new(),
+            (format, sheet) => format.InsertCells(region, axis, sheet, sourceSheetName),
+            shift: p => local && IsInBand(p, region, axis) && Along(p, axis) >= index ? Offset(p, axis, n) : p,
+            unshift: p => local && IsInBand(p, region, axis) && Along(p, axis) >= index + n ? Offset(p, axis, -n) : p);
     }
 
     /// <summary>
@@ -416,14 +418,18 @@ public class ConditionalFormatManager
     /// </summary>
     /// <param name="shift">Where a pre-shift position ends up, or null if it is removed.</param>
     /// <param name="unshift">Where a post-shift position was before the shift.</param>
-    private ConditionalFormatRestoreData ShiftCellsInBand(IRegion region, Axis axis,
+    private ConditionalFormatRestoreData ShiftCellsInBand(IRegion region, Axis axis, string sourceSheetName,
         Func<RegionRestoreData<ConditionalFormatAbstractBase>> shiftRegions,
         Action<FormulaConditionalFormat, Sheet> adjustReferences,
         Func<CellPosition, CellPosition?> shift,
         Func<CellPosition, CellPosition> unshift)
     {
+        var restore = new ConditionalFormatRestoreData
+        {
+            Formulas = FormulaFormats.Select(format => (format, format.FormulaText)).ToList()
+        };
+        SplitFormulaFormats(region, sourceSheetName, restore);
         var formulaFormats = FormulaFormats.ToList();
-        var formulas = formulaFormats.Select(f => (f, f.FormulaText)).ToList();
 
         var regions = shiftRegions();
 
@@ -439,7 +445,10 @@ public class ConditionalFormatManager
         }
 
         foreach (var format in formulaFormats)
+        {
             adjustReferences(format, _sheet);
+            _sheet.MarkDirty(_appliedFormats.GetRegions(format));
+        }
 
         UpdateAnchors();
         _footprints.Clear();
@@ -448,7 +457,92 @@ public class ConditionalFormatManager
             .Distinct()
             .ToList());
 
-        return new ConditionalFormatRestoreData() { Regions = regions, Formulas = formulas };
+        return new ConditionalFormatRestoreData
+        {
+            Regions = regions,
+            Formulas = restore.Formulas,
+            SplitRegions = restore.SplitRegions,
+            SplitFormats = restore.SplitFormats
+        };
+    }
+
+    private void SplitFormulaFormats(IRegion shifted, string sourceSheetName, ConditionalFormatRestoreData restore)
+    {
+        foreach (var format in FormulaFormats.ToList())
+        {
+            var rowCuts = new SortedSet<int>();
+            var colCuts = new SortedSet<int>();
+            if (sourceSheetName == _sheet.Name)
+            {
+                rowCuts.UnionWith(new[] { shifted.Top, shifted.Bottom + 1 });
+                colCuts.UnionWith(new[] { shifted.Left, shifted.Right + 1 });
+            }
+
+            foreach (var reference in format.References)
+            {
+                if (reference.SheetName != sourceSheetName || reference.IsInvalid)
+                    continue;
+                if (reference is CellReference cell)
+                {
+                    AddCuts(rowCuts, cell.RowIndex, cell.IsRowFixed, format.Anchor.row, shifted.Top, shifted.Bottom);
+                    AddCuts(colCuts, cell.ColIndex, cell.IsColFixed, format.Anchor.col, shifted.Left, shifted.Right);
+                }
+                else if (reference is RangeReference range && range.Region is not RowRegion and not ColumnRegion)
+                {
+                    AddCuts(rowCuts, range.Region.Top, range.IsStartRowFixed, format.Anchor.row, shifted.Top, shifted.Bottom);
+                    AddCuts(rowCuts, range.Region.Bottom, range.IsEndRowFixed, format.Anchor.row, shifted.Top, shifted.Bottom);
+                    AddCuts(colCuts, range.Region.Left, range.IsStartColFixed, format.Anchor.col, shifted.Left, shifted.Right);
+                    AddCuts(colCuts, range.Region.Right, range.IsEndColFixed, format.Anchor.col, shifted.Left, shifted.Right);
+                }
+            }
+
+            var pieces = _appliedFormats.GetRegions(format)
+                .SelectMany(applied => Partition(applied, rowCuts, colCuts)).ToList();
+            if (pieces.Count <= 1)
+                continue;
+
+            var template = (FormulaConditionalFormat)format.Clone();
+            restore.SplitRegions.Add(_appliedFormats.Clear(new AllRegion(), format));
+            for (var index = 0; index < pieces.Count; index++)
+            {
+                var piece = pieces[index];
+                var split = index == 0 ? format : (FormulaConditionalFormat)template.Clone();
+                split.EnsureParsed(_sheet);
+                split.ShiftRelative(piece.Top - template.Anchor.row, piece.Left - template.Anchor.col, _sheet);
+                split.Anchor = piece.TopLeft;
+                if (index > 0)
+                {
+                    _registered.Add(split);
+                    restore.SplitFormats.Add(split);
+                }
+                restore.SplitRegions.Add(_appliedFormats.Add(piece, split));
+            }
+        }
+    }
+
+    private static void AddCuts(SortedSet<int> cuts, int coordinate, bool fixedCoordinate, int anchor,
+        int start, int end)
+    {
+        if (fixedCoordinate)
+            return;
+        foreach (var boundary in new[] { (long)start, (long)end + 1 })
+        {
+            var cut = boundary - coordinate + anchor;
+            if (cut >= 0 && cut < int.MaxValue)
+                cuts.Add((int)cut);
+        }
+    }
+
+    private static IEnumerable<IRegion> Partition(IRegion region, SortedSet<int> rowCuts, SortedSet<int> colCuts)
+    {
+        var rows = new[] { (long)region.Top }.Concat(rowCuts.Where(cut => cut > region.Top && cut <= region.Bottom)
+            .Select(cut => (long)cut)).Append((long)region.Bottom + 1).ToArray();
+        var cols = new[] { (long)region.Left }.Concat(colCuts.Where(cut => cut > region.Left && cut <= region.Right)
+            .Select(cut => (long)cut)).Append((long)region.Right + 1).ToArray();
+        for (var row = 0; row < rows.Length - 1; row++)
+        for (var col = 0; col < cols.Length - 1; col++)
+            yield return new Region((int)rows[row], (int)(rows[row + 1] - 1),
+                (int)cols[col], (int)(cols[col + 1] - 1));
     }
 
     private static bool IsInBand(CellPosition p, IRegion region, Axis axis) => axis == Axis.Col
@@ -556,6 +650,11 @@ public class ConditionalFormatManager
     internal void Restore(ConditionalFormatRestoreData data)
     {
         _appliedFormats.Restore(data.Regions);
+
+        for (var index = data.SplitRegions.Count - 1; index >= 0; index--)
+            _appliedFormats.Restore(data.SplitRegions[index]);
+        foreach (var format in data.SplitFormats)
+            _registered.Remove(format);
 
         foreach (var (format, formulaText) in data.Formulas)
         {

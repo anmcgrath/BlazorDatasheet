@@ -1,6 +1,7 @@
 using BlazorDatasheet.Core.Commands.RowCols;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Data.Cells;
+using BlazorDatasheet.Core.Formats;
 using BlazorDatasheet.DataStructures.Geometry;
 
 namespace BlazorDatasheet.Core.Commands.Data;
@@ -23,6 +24,7 @@ public class RemoveCellsCommand : BaseCommand, IUndoableCommand
     private readonly Axis _shiftAxis;
 
     private readonly List<(IRowColShiftingStore Store, object? RestoreData)> _storeRestoreData = new();
+    private readonly List<(ConditionalFormatManager Manager, ConditionalFormatRestoreData Data)> _formatRestores = new();
 
     // Set when the region is whole columns (rows) and the command removs them instead.
     private BaseCommand? _rowCol;
@@ -97,8 +99,13 @@ public class RemoveCellsCommand : BaseCommand, IUndoableCommand
         using var updates = sheet.SuspendUpdates();
 
         _storeRestoreData.Clear();
+        _formatRestores.Clear();
         foreach (var store in sheet.ShiftingStores)
             _storeRestoreData.Add((store, store.RemoveCellsAt(geometry.Region, _shiftAxis)));
+
+        foreach (var other in sheet.Workbook.Sheets.Where(other => !ReferenceEquals(other, sheet)))
+            _formatRestores.Add((other.ConditionalFormats,
+                other.ConditionalFormats.ShiftCells(geometry.Region, _shiftAxis, sheet.Name, false)));
 
         // Unlike removing rows/columns, nothing raises an event that recalculates, and references extending outside
         // the band are not adjusted, so they now read different cells.
@@ -122,6 +129,9 @@ public class RemoveCellsCommand : BaseCommand, IUndoableCommand
 
         foreach (var (store, restoreData) in _storeRestoreData)
             store.Restore(restoreData);
+
+        foreach (var (manager, data) in _formatRestores)
+            manager.Restore(data);
 
         sheet.MarkDirty(geometry.HalfBand);
         sheet.FormulaEngine.CalculateSheet(true);
