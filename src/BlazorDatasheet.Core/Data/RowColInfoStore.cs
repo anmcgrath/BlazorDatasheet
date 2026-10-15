@@ -1,3 +1,4 @@
+using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Commands.RowCols;
 using BlazorDatasheet.Core.Data.Cells;
 using BlazorDatasheet.Core.Data.Filter;
@@ -747,6 +748,24 @@ public abstract class RowColInfoStore
     {
         var cmd = new RemoveRowColsCommand(index, _axis, count);
         return Sheet.Commands.ExecuteCommand(cmd);
+    }
+
+    /// <summary>
+    /// Moves <paramref name="count"/> rows/columns from <paramref name="start"/> so that they sit before the
+    /// row/column at <paramref name="to"/>, given as it is before the move, shifting the rows/columns between to
+    /// make room. Cells, sizes, headings, visibility, groups and formats (and filters, for columns) move with them,
+    /// and formulas referencing them follow.
+    /// </summary>
+    /// <returns>Whether the rows/columns were moved. Moving to <paramref name="start"/> or straight after the moved
+    /// rows/columns does nothing and returns false.</returns>
+    public bool Move(int start, int count, int to)
+    {
+        if (count <= 0 || to == start || to == start + count)
+            return false;
+
+        var from = Sheet.Range(GetSpannedRegion(start, start + count - 1));
+        var target = Sheet.Range(GetSpannedRegion(to, to));
+        return Sheet.Commands.ExecuteCommand(new MoveRangeWithShiftCommand(from, target, _axis));
     }
 
     /// <summary>

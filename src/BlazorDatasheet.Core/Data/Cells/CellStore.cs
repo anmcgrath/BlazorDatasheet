@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using BlazorDatasheet.Core.Commands;
 using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Events.Data;
 using BlazorDatasheet.Core.Formats;
@@ -111,6 +112,33 @@ public partial class CellStore
     }
 
     public void ClearCells(IRegion region) => ClearCells(new[] { region });
+
+    /// <summary>
+    /// Moves the cells in <paramref name="from"/>, as when they are cut and pasted, so that the block's top-left
+    /// lands at <paramref name="to"/>. Formulas referencing the moved cells follow them.
+    /// <para>
+    /// With no <paramref name="shiftAxis"/>, the block overwrites the destination and leaves its source empty.
+    /// Otherwise the neighbouring cells shift to make room, as Excel's "Insert Cut Cells": the source closes up
+    /// (left for <see cref="Axis.Col"/>, up for <see cref="Axis.Row"/>) and the block is inserted before the cell
+    /// at <paramref name="to"/>, given as it is before the move.
+    /// </para>
+    /// </summary>
+    /// <returns>Whether the cells were moved.</returns>
+    public bool Move(IRegion from, CellPosition to, Axis? shiftAxis = null) => Move(Sheet.Range(from), to, shiftAxis);
+
+    /// <summary>
+    /// Moves the cells in <paramref name="from"/>, which may be on another sheet of the workbook, so that the
+    /// block's top-left lands at <paramref name="to"/> on this sheet. See <see cref="Move(IRegion, CellPosition, Axis?)"/>.
+    /// </summary>
+    /// <returns>Whether the cells were moved.</returns>
+    public bool Move(SheetRange from, CellPosition to, Axis? shiftAxis = null)
+    {
+        var target = Sheet.Range(to.row, to.col);
+        ICommand cmd = shiftAxis == null
+            ? new MoveRangeCommand(from, target)
+            : new MoveRangeWithShiftCommand(from, target, shiftAxis.Value);
+        return Sheet.Commands.ExecuteCommand(cmd);
+    }
 
     internal CellStoreRestoreData ClearCellsImpl(IEnumerable<IRegion> regionsToClear)
     {
@@ -277,6 +305,9 @@ public partial class CellStore
             return new RegionRestoreData<SpillInfo>();
 
         var entries = _spillStore.GetDataRegions(region).ToList();
+        if (entries.Count == 0)
+            return new RegionRestoreData<SpillInfo>();
+
         foreach (var entry in entries)
         {
             if (!entry.Data.IsBlocked)
