@@ -16,6 +16,11 @@ namespace BlazorDatasheet.Core.Commands.Data;
 /// when cells are deleted and inserted.
 /// </para>
 /// <para>The command is executed on the target sheet; the source may be another sheet of the same workbook.</para>
+/// <para>
+/// A move within its own band takes nothing off the sheet, so it isn't refused for pushing cells off the edge: the
+/// sheet is grown along the shift axis while the steps run and shrunk back once the gap is closed. Protection is
+/// then checked once, up front, rather than on the grown sheet.
+/// </para>
 /// </summary>
 public class MoveRangeWithShiftCommand : BaseCommand, IUndoableCommand
 {
@@ -28,6 +33,9 @@ public class MoveRangeWithShiftCommand : BaseCommand, IUndoableCommand
     private MoveRangeCommand? _move;
     private RowColInfoRestoreData? _rowColRestore;
     private ICommand? _remove;
+
+    // How far the sheet was grown while the steps ran, so undo can make the same room.
+    private int _grownBy;
 
     /// <summary>
     /// Where the moved block ends up, once the command has run.
@@ -51,6 +59,7 @@ public class MoveRangeWithShiftCommand : BaseCommand, IUndoableCommand
         Sheet FromSheet,
         bool SameSheet,
         bool FullBand,
+        bool Grows,
         int Count,
         IRegion Target,
         IRegion SourceAfterInsert,
@@ -134,7 +143,9 @@ public class MoveRangeWithShiftCommand : BaseCommand, IUndoableCommand
             final = FullBandRegion(Start(final), count);
         }
 
-        return new Geometry(fromSheet, sameSheet, fullBand, count, target0, sourceAfterInsert, final);
+        // Within one band the insert's overflow is pulled back by the remove, so it is given room past the edge.
+        var grows = sameBand && !fullBand;
+        return new Geometry(fromSheet, sameSheet, fullBand, grows, count, target0, sourceAfterInsert, final);
     }
 
     private BaseCommand CreateInsert(Geometry g) => g.FullBand
@@ -164,7 +175,42 @@ public class MoveRangeWithShiftCommand : BaseCommand, IUndoableCommand
     protected override bool CanExecuteCore(Sheet target)
     {
         // Moving and removing are checked as the command runs, since they depend on the cells after the insert.
-        return GetGeometry(target) is { } g && CreateInsert(g).CanExecute(target);
+        if (GetGeometry(target) is not { } g)
+            return false;
+
+        var insert = CreateInsert(g);
+        if (!g.Grows)
+            return insert.CanExecute(target);
+
+        target.ResizeTransiently(_shiftAxis, g.Count);
+        try
+        {
+            return insert.CanExecuteUnprotected(target);
+        }
+        finally
+        {
+            target.ResizeTransiently(_shiftAxis, -g.Count);
+        }
+    }
+
+    /// <summary>
+    /// Runs a step, checking protection unless the sheet has been grown for the move: protection was checked
+    /// up front then, and the cells past the edge are not the user's.
+    /// </summary>
+    private bool RunStep(BaseCommand step, Sheet sheet) => _grownBy > 0
+        ? step.CanExecuteUnprotected(sheet) && step.ExecuteUnprotected(sheet)
+        : step.CanExecute(sheet) && step.Execute(sheet);
+
+    /// <summary>
+    /// Gives back the room made for the move. The cells past the edge are empty again by now, but formulas were
+    /// calculated with the grown sheet, so they are calculated again.
+    /// </summary>
+    private void Shrink(Sheet target, int amount)
+    {
+        if (amount == 0)
+            return;
+        target.ResizeTransiently(_shiftAxis, -amount);
+        target.FormulaEngine.CalculateSheet(true);
     }
 
     protected override bool ExecuteCore(Sheet target)
@@ -174,6 +220,7 @@ public class MoveRangeWithShiftCommand : BaseCommand, IUndoableCommand
         _rowColRestore = null;
         _remove = null;
         FinalRegion = null;
+        _grownBy = 0;
 
         if (GetGeometry(target) is not { } g)
             return false;
@@ -183,15 +230,22 @@ public class MoveRangeWithShiftCommand : BaseCommand, IUndoableCommand
         if (!g.SameSheet)
             fromSheet.BatchUpdates();
 
+        if (g.Grows)
+        {
+            _grownBy = g.Count;
+            target.ResizeTransiently(_shiftAxis, _grownBy);
+        }
+
+        var grownBy = _grownBy;
         try
         {
             var insert = CreateInsert(g);
-            if (!insert.CanExecute(target) || !insert.Execute(target))
+            if (!RunStep(insert, target))
                 return false;
             _insert = insert;
 
             var move = CreateMove(g, target);
-            if (!move.CanExecute(target) || !move.Execute(target))
+            if (!RunStep(move, target))
             {
                 Rollback(target, fromSheet);
                 return false;
@@ -205,7 +259,7 @@ public class MoveRangeWithShiftCommand : BaseCommand, IUndoableCommand
                         Start(g.Target));
 
             var remove = CreateRemove(g);
-            if (!remove.CanExecute(fromSheet) || !remove.Execute(fromSheet))
+            if (!RunStep(remove, fromSheet))
             {
                 Rollback(target, fromSheet);
                 return false;
@@ -217,6 +271,7 @@ public class MoveRangeWithShiftCommand : BaseCommand, IUndoableCommand
         }
         finally
         {
+            Shrink(target, grownBy);
             if (!g.SameSheet)
                 fromSheet.EndBatchUpdates();
         }
@@ -233,6 +288,7 @@ public class MoveRangeWithShiftCommand : BaseCommand, IUndoableCommand
         _rowColRestore = null;
         _remove = null;
         FinalRegion = null;
+        _grownBy = 0;
     }
 
     private void UndoSteps(Sheet target, Sheet fromSheet)
@@ -255,12 +311,14 @@ public class MoveRangeWithShiftCommand : BaseCommand, IUndoableCommand
         if (!sameSheet)
             fromSheet.BatchUpdates();
 
+        target.ResizeTransiently(_shiftAxis, _grownBy);
         try
         {
             UndoSteps(target, fromSheet);
         }
         finally
         {
+            Shrink(target, _grownBy);
             if (!sameSheet)
                 fromSheet.EndBatchUpdates();
         }
