@@ -1,5 +1,6 @@
 ﻿using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Events;
+using BlazorDatasheet.Core.Events.Edit;
 using BlazorDatasheet.Core.Events.Layout;
 using BlazorDatasheet.Core.Layout;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -29,8 +30,26 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
     /// </summary>
     protected bool ShowsSelection { get; private set; }
 
-    private void RefreshShowsSelection() =>
+    /// <summary>
+    /// Whether the selected rows or columns can be dragged to a new place by their headings.
+    /// </summary>
+    [Parameter]
+    public Func<bool>? CanMoveSelection { get; set; }
+
+    /// <summary>
+    /// Whether the fully selected headings can be grabbed to move them, worked out once per render.
+    /// </summary>
+    private bool _selectionMovable;
+
+    private void RefreshShowsSelection()
+    {
         ShowsSelection = ShowSelectionWhenNotCurrentSheet || DatasheetRegistry.For(_sheet.Workbook).ShowsSelection(_sheet);
+        _selectionMovable = ComputeSelectionMovable();
+    }
+
+    private bool ComputeSelectionMovable() =>
+        CanMoveSelection?.Invoke() == true &&
+        (Axis == Axis.Col ? _sheet.Selection.ActiveRegion is ColumnRegion : _sheet.Selection.ActiveRegion is RowRegion);
 
     private WorkbookViews? _workbookViews;
 
@@ -100,6 +119,9 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
         sheet.Columns.GroupsModified -= HandleGroupsModified;
         sheet.Protection.Changed -= HandleProtectionChanged;
         sheet.FrozenRowCols -= HandleFrozenRowCols;
+        sheet.Editor.EditBegin -= HandleEditBegin;
+        sheet.Editor.EditFinished -= HandleEditFinished;
+        sheet.Workbook.FormulaEditReferencesChanged -= HandleFormulaEditChanged;
 
         if (_workbookViews != null)
             _workbookViews.Changed -= CurrentSheetChanged;
@@ -122,6 +144,9 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
         sheet.Columns.GroupsModified += HandleGroupsModified;
         sheet.Protection.Changed += HandleProtectionChanged;
         sheet.FrozenRowCols += HandleFrozenRowCols;
+        sheet.Editor.EditBegin += HandleEditBegin;
+        sheet.Editor.EditFinished += HandleEditFinished;
+        sheet.Workbook.FormulaEditReferencesChanged += HandleFormulaEditChanged;
 
         _workbookViews = DatasheetRegistry.For(sheet.Workbook);
         _workbookViews.Changed += CurrentSheetChanged;
@@ -194,6 +219,8 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
 
         var hash = new HashCode();
         hash.Add(1); // distinguishes "nothing selected" from "selection not shown"
+        // the selection becomes movable when the selecting ends, which may not change the regions
+        hash.Add(ComputeSelectionMovable());
 
         foreach (var region in _sheet.Selection.Regions)
             AddToSelectionSignature(ref hash, region);
@@ -224,6 +251,25 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
     }
 
     private void SelectingChanged(object? sender, IRegion? e) => SelectionPainted();
+
+    // the selected headings can't be grabbed while a cell or a formula anywhere in the workbook is edited
+    private void HandleEditBegin(object? sender, EditBeginEventArgs e) => RecheckSelectionMovable();
+    private void HandleEditFinished(object? sender, EditFinishedEventArgs e) => RecheckSelectionMovable();
+    private void HandleFormulaEditChanged(object? sender, EventArgs e) => RecheckSelectionMovable();
+
+    private void RecheckSelectionMovable()
+    {
+        if (CanMoveSelection == null)
+            return;
+
+        // the editor fires EditFinished before it stops editing, so look once it has
+        _ = InvokeAsync(async () =>
+        {
+            await Task.Yield();
+            if (!_disposed)
+                SelectionPainted();
+        });
+    }
 
     private void SelectionChanged(object? sender, SelectionChangedEventArgs e) => SelectionPainted();
 
@@ -280,8 +326,11 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
 
     protected virtual Task RefreshAdditionalViews() => Task.CompletedTask;
 
+    private bool _disposed;
+
     public virtual void Dispose()
     {
+        _disposed = true;
         UnSubscribeEvents(_sheet);
     }
 
@@ -322,7 +371,9 @@ public partial class HeadingRenderer : SheetComponentBase, IDisposable
         }
 
         if (isAxisRegion)
-            return "bds-selected-header-full";
+            return _selectionMovable && _sheet.Selection.ActiveRegion!.Spans(index, Axis)
+                ? "bds-selected-header-full bds-movable-header"
+                : "bds-selected-header-full";
         if (isSelected)
             return "bds-selected-header";
         return string.Empty;

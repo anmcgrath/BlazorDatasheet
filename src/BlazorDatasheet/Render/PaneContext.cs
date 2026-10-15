@@ -21,7 +21,8 @@ internal sealed record PaneContext(
     bool UseAutoFill,
     bool IsReadOnly,
     bool AutoFit,
-    bool ShowSelectionWhenNotCurrentSheet)
+    bool ShowSelectionWhenNotCurrentSheet,
+    SelectionMoveController? SelectionMove = null)
 {
     /// <summary>
     /// Whether moving from this context to <paramref name="other"/> changes anything a

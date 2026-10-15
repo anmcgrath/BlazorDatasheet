@@ -2,6 +2,9 @@
 
 public class SheetPointerEventArgs
 {
+    public double RowFraction { get; set; }
+    public double ColFraction { get; set; }
+    public bool IsCancelled { get; set; }
     public bool IsInsideSheet { get; set; }
     public int Row { get; set; }
     public int Col { get; set; }

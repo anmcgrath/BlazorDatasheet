@@ -15,4 +15,8 @@ public readonly record struct HighlightBoxDrag(
     int? Row,
     int? Col,
     double LayerX,
-    double LayerY);
+    double LayerY)
+{
+    public double PageX { get; init; }
+    public double PageY { get; init; }
+}
