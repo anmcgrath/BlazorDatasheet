@@ -130,15 +130,16 @@ public class ColumnInfoStore : RowColInfoStore
 
     /// <inheritdoc />
     /// <remarks>Also copies the column filters.</remarks>
-    internal override RowColInfoRestoreData CopyImpl(RowColInfoStore source, int srcStart, int count, int dstStart)
+    internal override RowColInfoRestoreData CopyImpl(RowColInfoStore source, int srcStart, int count, int dstStart,
+        bool keepGroups = false)
     {
         if (count <= 0 || source is not ColumnInfoStore sourceColumns)
-            return base.CopyImpl(source, srcStart, count, dstStart);
+            return base.CopyImpl(source, srcStart, count, dstStart, keepGroups);
 
         var srcEnd = srcStart + count - 1;
         // read the source filters before anything is written, since the source may be this store.
         var filters = sourceColumns.Filters.Store.GetOverlapping(srcStart, srcEnd);
-        var restoreData = base.CopyImpl(source, srcStart, count, dstStart);
+        var restoreData = base.CopyImpl(source, srcStart, count, dstStart, keepGroups);
         restoreData.FiltersRestoreData = CopyRange<List<IFilter>?>(Filters.Store, filters, srcStart, srcEnd, dstStart - srcStart,
             f => f == null ? null : new List<IFilter>(f));
         return restoreData;

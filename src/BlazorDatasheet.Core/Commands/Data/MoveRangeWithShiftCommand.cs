@@ -260,7 +260,7 @@ public class MoveRangeWithShiftCommand : BaseCommand, IUndoableCommand
             if (g.FullBand)
                 _rowColRestore = target.GetRowColStore(_shiftAxis)
                     .CopyImpl(fromSheet.GetRowColStore(_shiftAxis), Start(g.SourceAfterInsert), g.Count,
-                        Start(g.Target));
+                        Start(g.Target), keepGroups: g.SameSheet);
 
             var remove = CreateRemove(g);
             if (!RunStep(remove, fromSheet))
