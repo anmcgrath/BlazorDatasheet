@@ -17,4 +17,9 @@ public class SheetPointerEventArgs
     public double PageX { get; set; }
     public double PageY { get; set; }
     public int MouseButton { get; set; }
+
+    /// <summary>
+    /// True when the pointer is on the sheet's own chrome (e.g. the heading dropdown button) rather than the cell itself.
+    /// </summary>
+    public bool IsOnChrome { get; set; }
 }

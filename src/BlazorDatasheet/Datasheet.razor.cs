@@ -901,7 +901,7 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
             }
         }
 
-        if (_selectionMove?.BeginHeading(args) == true)
+        if (!args.IsOnChrome && _selectionMove?.BeginHeading(args) == true)
             return;
 
         _selectionManager.HandlePointerDown(

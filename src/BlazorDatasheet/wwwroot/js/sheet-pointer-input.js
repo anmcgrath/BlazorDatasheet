@@ -76,12 +76,15 @@ class PointerInputService {
     onPointerDown(e) {
         this.pointerPressed = true
         this.lastRelease = null
-        // the whole grid sits in the context menu target, so only skip controls inside the sheet
+        // the whole grid sits in the context menu target, so only skip controls inside the sheet.
+        // the sheet's own chrome (e.g. the heading dropdown) still selects its cell, but never starts a drag.
         const control = e.target.closest('button, .bds-sheet-menu-target')
-        if (control && this.sheetElement.contains(control)) return
+        const isChrome = !!control?.hasAttribute('data-bds-chrome')
+        if (control && !isChrome && this.sheetElement.contains(control)) return
         let args = this.getSheetPointerEventArgs(e)
         if (!args)
             return
+        args.isOnChrome = isChrome
         this.dotnetHelper.invokeMethodAsync(this.pointerDownCallbackName, args);
     }
 
