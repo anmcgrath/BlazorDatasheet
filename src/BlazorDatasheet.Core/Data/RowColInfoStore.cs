@@ -757,7 +757,8 @@ public abstract class RowColInfoStore
     /// Moves <paramref name="count"/> rows/columns from <paramref name="start"/> so that they sit before the
     /// row/column at <paramref name="to"/>, given as it is before the move, shifting the rows/columns between to
     /// make room. Cells, sizes, headings, visibility, groups and formats (and filters, for columns) move with them,
-    /// and formulas referencing them follow.
+    /// and formulas referencing them follow. <see cref="Sheet.BeforeRangeMove"/> is raised first, and may cancel or
+    /// redirect the move.
     /// </summary>
     /// <returns>Whether the rows/columns were moved. Moving to <paramref name="start"/> or straight after the moved
     /// rows/columns does nothing and returns false.</returns>
@@ -767,8 +768,8 @@ public abstract class RowColInfoStore
             return false;
 
         var from = Sheet.Range(GetSpannedRegion(start, start + count - 1));
-        var target = Sheet.Range(GetSpannedRegion(to, to));
-        return Sheet.Commands.ExecuteCommand(new MoveRangeWithShiftCommand(from, target, _axis));
+        var target = _axis == Axis.Row ? new CellPosition(to, 0) : new CellPosition(0, to);
+        return Sheet.Cells.MoveImpl(from, target, _axis, isUserDrag: false) != null;
     }
 
     /// <summary>

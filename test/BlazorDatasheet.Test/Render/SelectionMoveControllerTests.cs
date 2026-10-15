@@ -3,7 +3,9 @@ using System.Linq;
 using AwesomeAssertions;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Formats;
+using BlazorDatasheet.Core.Events.Data;
 using BlazorDatasheet.DataStructures.Geometry;
+using BlazorDatasheet.Edit;
 using BlazorDatasheet.Events;
 using BlazorDatasheet.Render;
 using BlazorDatasheet.Render.AutoScroll;
@@ -19,6 +21,7 @@ public class SelectionMoveControllerTests
     private PreviewService _previews = null!;
     private AutoScrollState _scroll = null!;
     private bool _readOnly;
+    private DragMoveKinds _allowed;
 
     [SetUp]
     public void Setup()
@@ -27,7 +30,8 @@ public class SelectionMoveControllerTests
         _previews = new PreviewService();
         _scroll = new AutoScrollState();
         _readOnly = false;
-        _move = new SelectionMoveController(_sheet, () => _readOnly, _previews, _scroll);
+        _allowed = DragMoveKinds.All;
+        _move = new SelectionMoveController(_sheet, () => _readOnly, () => _allowed, _previews, _scroll);
     }
 
     [TearDown] public void Dispose() => _move.Dispose();
@@ -160,5 +164,98 @@ public class SelectionMoveControllerTests
         _move.BeginHeading(At(2, -1, 0));
         _move.End(At(3, -1, 100, .8));
         _sheet.Commands.GetUndoCommands().Should().BeEmpty();
+    }
+
+    [Test]
+    public void Only_Allowed_Kinds_Can_Be_Moved()
+    {
+        _allowed = DragMoveKinds.Rows | DragMoveKinds.Columns;
+        _sheet.Selection.Set(1, 1);
+        _move.CanBegin.Should().BeFalse();
+        _move.Begin(new CellPosition(1, 1), 0, 0).Should().BeFalse();
+        _sheet.Selection.Set(new ColumnRegion(2));
+        _move.CanBegin.Should().BeTrue();
+        _allowed = DragMoveKinds.Ranges;
+        _move.CanBegin.Should().BeFalse();
+        _move.BeginHeading(At(-1, 2, 0)).Should().BeFalse();
+        _sheet.Selection.Set(new RowRegion(2));
+        _move.CanBegin.Should().BeFalse();
+    }
+
+    [Test]
+    public void Disallowing_During_Drag_Cancels_It()
+    {
+        _sheet.Cells.SetValue(1, 1, "source");
+        _sheet.Selection.Set(1, 1);
+        _sheet.Commands.ClearHistory();
+        _move.Begin(new CellPosition(1, 1), 0, 0);
+        _move.Move(At(3, 3));
+        _allowed = DragMoveKinds.None;
+        _move.End(At(3, 3));
+        _move.IsPending.Should().BeFalse();
+        _sheet.Cells.GetValue(1, 1).Should().Be("source");
+        _sheet.Commands.GetUndoCommands().Should().BeEmpty();
+    }
+
+    [Test]
+    public void BeforeRangeMove_Can_Cancel_A_Drag()
+    {
+        _sheet.Cells.SetValue(1, 1, "source");
+        _sheet.Selection.Set(1, 1);
+        _sheet.Commands.ClearHistory();
+        BeforeRangeMoveEventArgs? raised = null;
+        _sheet.BeforeRangeMove += (_, e) =>
+        {
+            raised = e;
+            e.Cancel = true;
+        };
+        _move.Begin(new CellPosition(1, 1), 0, 0);
+        _move.Move(At(3, 4));
+        raised.Should().BeNull("the event is raised on release, not while dragging");
+        _move.End(At(3, 4));
+        raised!.IsUserDrag.Should().BeTrue();
+        raised.Source.Region.Should().BeEquivalentTo(new Region(1, 1));
+        raised.To.Should().Be(new CellPosition(3, 4));
+        raised.ShiftAxis.Should().BeNull();
+        _sheet.Cells.GetValue(1, 1).Should().Be("source");
+        _sheet.Selection.ActiveRegion.Should().BeEquivalentTo(new Region(1, 1));
+        _sheet.Commands.GetUndoCommands().Should().BeEmpty();
+        _move.IsPending.Should().BeFalse();
+    }
+
+    [Test]
+    public void BeforeRangeMove_Can_Redirect_A_Drag_And_The_Selection_Follows()
+    {
+        _sheet.Cells.SetValue(1, 1, "source");
+        _sheet.Selection.Set(new Region(1, 2, 1, 2));
+        _sheet.Selection.Activate(2, 2);
+        _sheet.BeforeRangeMove += (_, e) => e.To = new CellPosition(7, 6);
+        _move.Begin(new CellPosition(1, 1), 0, 0);
+        _move.End(At(3, 4));
+        _sheet.Cells.GetValue(7, 6).Should().Be("source");
+        _sheet.Cells.GetValue(3, 4).Should().BeNull();
+        _sheet.Selection.ActiveRegion.Should().BeEquivalentTo(new Region(7, 8, 6, 7));
+        _sheet.Selection.ActiveCellPosition.Should().Be(new CellPosition(8, 7));
+    }
+
+    [Test]
+    public void BeforeRangeMove_Gets_The_Insertion_Point_Of_A_Column_Drag()
+    {
+        _sheet.Cells.SetValue(0, 2, "c");
+        _sheet.Selection.Set(new ColumnRegion(2));
+        BeforeRangeMoveEventArgs? raised = null;
+        CellPosition proposed = default;
+        _sheet.BeforeRangeMove += (_, e) =>
+        {
+            raised = e;
+            proposed = e.To;
+            e.To = new CellPosition(0, 0);
+        };
+        _move.BeginHeading(At(-1, 2, 0)).Should().BeTrue();
+        _move.End(At(-1, 6, 100, .2));
+        raised!.ShiftAxis.Should().Be(Axis.Col);
+        proposed.Should().Be(new CellPosition(0, 6));
+        _sheet.Cells.GetValue(0, 0).Should().Be("c");
+        _sheet.Selection.ActiveRegion.Should().BeEquivalentTo(new ColumnRegion(0));
     }
 }
