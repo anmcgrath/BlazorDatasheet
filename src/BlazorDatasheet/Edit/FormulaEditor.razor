@@ -55,7 +55,7 @@
         {
             var suggestion = _suggestions[i];
             @* the tabindex stops the sheet from taking focus on a click, and the mouse down is prevented so that the input keeps it *@
-            <div class="bds-func-suggestions-item @(suggestion.Kind == FormulaSuggestionKind.Name ? "bds-func-suggestions-item-name" : "") @(i == _suggestionIndex ? "active" : "")"
+            <div class="bds-func-suggestions-item @(suggestion.Kind == FormulaSuggestionKind.Name ? "bds-func-suggestions-item-name" : "") @(i == _suggestionIndex ? "bds-active" : "")"
                  tabindex="-1"
                  @onmousedown:preventDefault="true"
                  @onmousedown="() => { }"

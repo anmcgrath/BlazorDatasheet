@@ -24,8 +24,7 @@
 @if (!Sheet.Editor.IsEditing && Sheet.Selection.ActiveRegion != null && ShowsSelection && Sheet.Protection.CanEdit(Sheet.Selection.ActiveRegion) && ViewRegion?.Contains(Sheet.Selection.ActiveRegion.BottomRight) == true)
 {
     <!-- render dragger (bottom right corner) -->
-    <div id="auto-filler"
-         class="bds-unselectable auto-fill"
+    <div class="bds-unselectable bds-auto-fill"
          @onpointerdown="DraggerMouseDown"
          @onpointerup="DraggerMouseUp"
          style="@GetDraggerStyleString();cursor:crosshair;pointer-events: all;">

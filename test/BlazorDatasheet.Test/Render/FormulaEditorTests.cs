@@ -72,7 +72,7 @@ public class FormulaEditorTests
         context.JSInterop.Invocations.Last(x => x.Identifier == "setCaptureListKeys").Arguments.Should().Equal(true);
 
         await editor.InvokeAsync(() => editor.Instance.HandleKey("ArrowDown", false, false, false, false).Should().BeTrue());
-        editor.Find(".bds-func-suggestions-item.active .bds-func-suggestions-name").TextContent.Trim().Should().Be(names[1]);
+        editor.Find(".bds-func-suggestions-item.bds-active .bds-func-suggestions-name").TextContent.Trim().Should().Be(names[1]);
         await editor.InvokeAsync(() => editor.Instance.HandleKey("ArrowUp", false, false, false, false).Should().BeTrue());
         await editor.InvokeAsync(() => editor.Instance.HandleKey("ArrowDown", false, false, false, false));
 
@@ -128,9 +128,9 @@ public class FormulaEditorTests
         names.First().Should().Be("max_height");
         names.Should().NotContain("max_hidden");
         names.Should().Contain("MAX");
-        editor.Find(".bds-func-suggestions-item.active .bds-func-suggestions-description").TextContent
+        editor.Find(".bds-func-suggestions-item.bds-active .bds-func-suggestions-description").TextContent
             .Should().Be("The height of the couch");
-        editor.Find(".bds-func-suggestions-item.active .bds-func-suggestions-detail").TextContent.Should().Be("cm");
+        editor.Find(".bds-func-suggestions-item.bds-active .bds-func-suggestions-detail").TextContent.Should().Be("cm");
     }
 
     [Test]
