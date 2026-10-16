@@ -128,18 +128,18 @@
             sheet.Cells.SetValue(0, 0, true);
         });
         cut.Find("input[type=checkbox]").HasAttribute("disabled").Should().BeFalse();
-        cut.FindAll("#auto-filler").Should().NotBeEmpty();
+        cut.FindAll(".bds-auto-fill").Should().NotBeEmpty();
         await cut.InvokeAsync(() => sheet.Protection.Protect());
         cut.WaitForAssertion(() =>
         {
             cut.Find("input[type=checkbox]").HasAttribute("disabled").Should().BeTrue();
-            cut.FindAll("#auto-filler").Should().BeEmpty();
+            cut.FindAll(".bds-auto-fill").Should().BeEmpty();
         });
         await cut.InvokeAsync(() => sheet.Protection.Unprotect());
         cut.WaitForAssertion(() =>
         {
             cut.Find("input[type=checkbox]").HasAttribute("disabled").Should().BeFalse();
-            cut.FindAll("#auto-filler").Should().NotBeEmpty();
+            cut.FindAll(".bds-auto-fill").Should().NotBeEmpty();
         });
     }
 
@@ -772,7 +772,7 @@
             parameters.Add(p => p.UseAutoFill, true);
             parameters.Add(p => p.IsReadOnly, false);
         });
-        editableCut.FindAll("#auto-filler").Count.Should().BeGreaterThan(0);
+        editableCut.FindAll(".bds-auto-fill").Count.Should().BeGreaterThan(0);
 
         var readOnlyCut = Render<Datasheet>(parameters =>
         {
@@ -782,7 +782,7 @@
             parameters.Add(p => p.UseAutoFill, true);
             parameters.Add(p => p.IsReadOnly, true);
         });
-        readOnlyCut.FindAll("#auto-filler").Count.Should().Be(0);
+        readOnlyCut.FindAll(".bds-auto-fill").Count.Should().Be(0);
     }
 
     [Test]
@@ -817,7 +817,7 @@
             parameters.Add(p => p.ShowFormulaDependents, false);
         });
 
-        cut.FindAll("#auto-filler").Should().BeEmpty();
+        cut.FindAll(".bds-auto-fill").Should().BeEmpty();
         cut.FindAll("#svg_layer").Should().BeEmpty();
 
         cut.Render(parameters =>
@@ -826,7 +826,7 @@
             parameters.Add(p => p.ShowFormulaDependents, true);
         });
 
-        cut.FindAll("#auto-filler").Should().NotBeEmpty();
+        cut.FindAll(".bds-auto-fill").Should().NotBeEmpty();
         cut.FindAll("#svg_layer").Should().NotBeEmpty();
     }
 
@@ -1036,7 +1036,7 @@
         var sheet = new Sheet(2, 3);
         sheet.Cells.Merge(new Region(0, 1, 0, 2));
         var cut = Render<Datasheet>(parameters => parameters.Add(p => p.Sheet, sheet));
-        var mergedContent = () => cut.Find(".merged-cell > div");
+        var mergedContent = () => cut.Find(".bds-merged-cell > div");
 
         mergedContent().GetAttribute("style").Should().Contain($"width: {sheet.Columns.GetVisualWidthBetween(0, 3)}px");
 

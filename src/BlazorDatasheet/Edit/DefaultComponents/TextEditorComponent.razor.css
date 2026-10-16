@@ -1,4 +1,4 @@
-.text-input {
+.bds-text-input {
     width: 100%;
     border: none;
     padding: 2px;
@@ -6,6 +6,6 @@
     box-sizing: border-box;
 }
 
-.text-input:focus {
+.bds-text-input:focus {
     outline: none;
 }

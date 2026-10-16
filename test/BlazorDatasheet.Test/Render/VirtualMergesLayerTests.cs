@@ -71,13 +71,13 @@ public class VirtualMergesLayerTests
 
         await cut.InvokeAsync(() => sheet.Cells[row, col].Format = format);
 
-        cut.Find(".merged-cell .bds-sheet-cell").GetAttribute("style").Should().Contain(expected);
+        cut.Find(".bds-merged-cell .bds-sheet-cell").GetAttribute("style").Should().Contain(expected);
 
         await cut.InvokeAsync(() => sheet.Cells[row, col].Format = below
             ? new CellFormat { BorderTop = null }
             : new CellFormat { BorderLeft = null });
 
-        cut.Find(".merged-cell .bds-sheet-cell").GetAttribute("style").Should().BeNullOrEmpty();
+        cut.Find(".bds-merged-cell .bds-sheet-cell").GetAttribute("style").Should().BeNullOrEmpty();
     }
 
     [Test]
@@ -101,10 +101,10 @@ public class VirtualMergesLayerTests
         var cut = RenderSheet(context, sheet);
 
         await cut.InvokeAsync(() => sheet.Cells.Merge(new Region(0, 1, 0, 1)));
-        cut.Markup.Should().Contain("merged-cell");
+        cut.Markup.Should().Contain("bds-merged-cell");
 
         await cut.InvokeAsync(() => sheet.Cells.UnMerge([new Region(0, 1, 0, 1)]));
-        cut.Markup.Should().NotContain("class=\"merged-cell\"");
+        cut.Markup.Should().NotContain("class=\"bds-merged-cell\"");
     }
 
     [Test]

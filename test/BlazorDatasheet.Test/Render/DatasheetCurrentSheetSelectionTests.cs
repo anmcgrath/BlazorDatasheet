@@ -78,8 +78,8 @@ public class DatasheetCurrentSheetSelectionTests
 
         await second.InvokeAsync(() => second.Instance.SetActiveAsync());
 
-        first.FindAll(".auto-fill").Should().BeEmpty();
-        second.FindAll(".auto-fill").Should().NotBeEmpty();
+        first.FindAll(".bds-auto-fill").Should().BeEmpty();
+        second.FindAll(".bds-auto-fill").Should().NotBeEmpty();
     }
 
     [Test]
