@@ -18,9 +18,10 @@ public class SheetMenuOptionsTests
         foreach (var toggle in Toggles)
         {
             var options = new SheetMenuOptions();
-            toggle.SetValue(options, false);
+            var flipped = !(bool)toggle.GetValue(options)!;
+            toggle.SetValue(options, flipped);
 
-            ((bool)toggle.GetValue(options.Clone())!).Should().BeFalse(toggle.Name);
+            ((bool)toggle.GetValue(options.Clone())!).Should().Be(flipped, toggle.Name);
         }
     }
 
@@ -31,7 +32,7 @@ public class SheetMenuOptionsTests
         {
             var options = new SheetMenuOptions();
             var changed = new SheetMenuOptions();
-            toggle.SetValue(changed, false);
+            toggle.SetValue(changed, !(bool)toggle.GetValue(changed)!);
 
             options.CompareTo(changed).Should().BeFalse(toggle.Name);
         }
@@ -41,5 +42,11 @@ public class SheetMenuOptionsTests
     public void Paste_Special_Is_Enabled_By_Default()
     {
         new SheetMenuOptions().PasteSpecialEnabled.Should().BeTrue();
+    }
+
+    [Test]
+    public void Header_Menu_Show_On_Hover_Is_Off_By_Default()
+    {
+        new SheetMenuOptions().HeaderMenuShowOnHover.Should().BeFalse();
     }
 }

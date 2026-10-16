@@ -12,6 +12,10 @@
     <input id="user-menu-sort" type="checkbox" @bind="_showSortByRow"/>
     <label for="user-menu-sort">User-defined "Sort By Row" options</label>
 </div>
+<div>
+    <input id="header-menu-hover" type="checkbox" @bind="_menuOptions.HeaderMenuShowOnHover"/>
+    <label for="header-menu-hover">Only show the column heading menu button on hover</label>
+</div>
 
 <div style="width: 550px; height: 300px; overflow: scroll;">
     <Datasheet

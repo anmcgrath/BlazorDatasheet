@@ -18,6 +18,12 @@ public class SheetMenuOptions
     public bool HeaderMenuEnabled { get; set; } = true;
 
     /// <summary>
+    /// When true, the menu icon in the column header is only shown while the heading is hovered
+    /// or the column is selected. Devices without hover always show it.
+    /// </summary>
+    public bool HeaderMenuShowOnHover { get; set; } = false;
+
+    /// <summary>
     /// Enables the menu "Copy" option
     /// </summary>
     public bool CopyEnabled { get; set; } = true;
@@ -104,6 +110,7 @@ public class SheetMenuOptions
             CustomMenuFragment = CustomMenuFragment,
             ContextMenuEnabled = ContextMenuEnabled,
             HeaderMenuEnabled = HeaderMenuEnabled,
+            HeaderMenuShowOnHover = HeaderMenuShowOnHover,
             InsertColsEnabled = InsertColsEnabled,
             InsertRowsEnabled = InsertRowsEnabled,
             DeleteColsEnabled = DeleteColsEnabled,
@@ -141,6 +148,7 @@ public class SheetMenuOptions
                other.SortRangeEnabled == SortRangeEnabled &&
                other.ContextMenuEnabled == ContextMenuEnabled &&
                other.HeaderMenuEnabled == HeaderMenuEnabled &&
+               other.HeaderMenuShowOnHover == HeaderMenuShowOnHover &&
                other.CustomMenuFragment == CustomMenuFragment;
     }
 }

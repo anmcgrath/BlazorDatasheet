@@ -219,7 +219,8 @@
                 </div>
                 @if (ShowColumnMenu)
                 {
-                    <div style="display: flex; flex-direction: row; flex-shrink: 0;">
+                    <div class="@(ShowColumnMenuOnHover ? "bds-col-head-menu-hover" : null)"
+                         style="display: flex; flex-direction: row; flex-shrink: 0;">
                         <SheetMenuTarget MenuId="@MenuId"
                                          MenuData="Sheet">
                             <CaretButton/>
@@ -266,6 +267,11 @@
     };
 
     [Parameter] public bool ShowColumnMenu { get; set; }
+
+    /// <summary>
+    /// When true, the column menu button is only shown while the heading is hovered or the column is selected.
+    /// </summary>
+    [Parameter] public bool ShowColumnMenuOnHover { get; set; }
 
     [Parameter] public string MenuId { get; set; } = ContextMenus.Selection;
 
