@@ -664,6 +664,22 @@
     }
 
     [Test]
+    public async Task Header_Menu_Button_Is_Hover_Only_When_Show_On_Hover_Is_Set()
+    {
+        var sheet = new Sheet(3, 3);
+        var cut = Render<Datasheet>(parameters => { parameters.Add(p => p.Sheet, sheet); });
+        await cut.InvokeAsync(() => sheet.Columns.SetSize(0, 90));
+
+        cut.WaitForAssertion(() => cut.FindAll(".bds-col-head .bds-sheet-dropper").Should().NotBeEmpty());
+        cut.FindAll(".bds-col-head-menu-hover").Should().BeEmpty();
+
+        cut.Render(parameters => parameters.Add(p => p.MenuOptions, new SheetMenuOptions { HeaderMenuShowOnHover = true }));
+
+        cut.WaitForAssertion(() =>
+            cut.FindAll(".bds-col-head .bds-col-head-menu-hover .bds-sheet-dropper").Should().NotBeEmpty());
+    }
+
+    [Test]
     public void Constrained_ViewRegion_Limits_Frozen_Pane_Rows_To_The_Same_Columns()
     {
         var sheet = new Sheet(20, 20);
