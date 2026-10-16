@@ -32,6 +32,10 @@ class PointerInputService {
         this.onDoubleClickHandler = this.onDoubleClick.bind(this)
         this.onPointerMoveHandler = this.onPointerMove.bind(this)
         this.registered = false
+        this.rememberRelease = e => {
+            this.pointerPressed = false
+            this.lastRelease = e
+        }
     }
 
     /**
@@ -51,6 +55,8 @@ class PointerInputService {
         this.pointerEnterCallbackName = pointerEnterCallbackName;
         this.pointerDoubleClickCallbackName = pointerDoubleClickCallbackName;
 
+        window.addEventListener('pointerup', this.rememberRelease);
+        window.addEventListener('pointercancel', this.rememberRelease);
         this.sheetElement.addEventListener('pointerup', this.onPointerUpHandler);
         this.sheetElement.addEventListener('pointerdown', this.onPointerDownHandler);
         this.sheetElement.addEventListener('dblclick', this.onDoubleClickHandler);
@@ -68,13 +74,22 @@ class PointerInputService {
     }
 
     onPointerDown(e) {
+        this.pointerPressed = true
+        this.lastRelease = null
+        // the whole grid sits in the context menu target, so only skip controls inside the sheet.
+        // the sheet's own chrome (e.g. the heading dropdown) still selects its cell, but never starts a drag.
+        const control = e.target.closest('button, .bds-sheet-menu-target')
+        const isChrome = !!control?.hasAttribute('data-bds-chrome')
+        if (control && !isChrome && this.sheetElement.contains(control)) return
         let args = this.getSheetPointerEventArgs(e)
         if (!args)
             return
+        args.isOnChrome = isChrome
         this.dotnetHelper.invokeMethodAsync(this.pointerDownCallbackName, args);
     }
 
     onPointerMove(e) {
+        if (this.dragTracking) return
         let args = this.getSheetPointerEventArgs(e)
         if (!args)
             return
@@ -105,7 +120,61 @@ class PointerInputService {
         this.dotnetHelper.invokeMethodAsync(this.pointerEnterCallbackName, args);
     }
 
+    setDragCursor(cursor) {
+        if (!this.dragTracking) return
+        this.sheetElement.dataset.bdsDragCursor = cursor
+        this.sheetElement.style.cursor = cursor
+    }
+
+    setDragTracking(active) {
+        if (!!active === !!this.dragTracking) return
+        this.dragTracking = !!active
+        if (active) {
+            this.previousCursor = this.sheetElement.style.cursor
+            this.dragMove = e => {
+                this.lastDragPointer = e
+                const args = this.getDragArgs(e)
+                this.dotnetHelper?.invokeMethodAsync(this.pointerMoveCallbackName, args)
+            }
+            this.dragEnd = e => {
+                const args = this.getDragArgs(e)
+                args.isCancelled = e.type === 'pointercancel' || e.type === 'blur'
+                this.setDragTracking(false)
+                this.dotnetHelper?.invokeMethodAsync('HandleDragEnd', args)
+            }
+            this.dragScroll = () => {
+                if (this.lastDragPointer) this.dragMove(this.lastDragPointer)
+            }
+            window.addEventListener('pointermove', this.dragMove)
+            window.addEventListener('pointerup', this.dragEnd)
+            window.addEventListener('pointercancel', this.dragEnd)
+            window.addEventListener('blur', this.dragEnd)
+            window.addEventListener('scroll', this.dragScroll, true)
+            // A server round trip may finish after the user has already released a quick click.
+            if (this.pointerPressed === false && this.lastRelease)
+                this.dragEnd(this.lastRelease)
+        } else {
+            window.removeEventListener('pointermove', this.dragMove)
+            window.removeEventListener('pointerup', this.dragEnd)
+            window.removeEventListener('pointercancel', this.dragEnd)
+            window.removeEventListener('blur', this.dragEnd)
+            window.removeEventListener('scroll', this.dragScroll, true)
+            this.lastDragPointer = null
+            delete this.sheetElement.dataset.bdsDragCursor
+            this.sheetElement.style.cursor = this.previousCursor ?? ''
+        }
+    }
+
+    getDragArgs(e) {
+        const cell = Number.isFinite(e.clientX) ? document.elementsFromPoint(e.clientX, e.clientY)
+            .map(el => el.closest?.('.bds-sheet-cell[data-row][data-col]'))
+            .find(el => el && this.sheetElement.contains(el)) : null
+        if (cell) return this.getSheetPointerEventArgs(e, cell)
+        return { row: -1, col: -1, pageX: e.pageX ?? 0, pageY: e.pageY ?? 0, isInsideSheet: false }
+    }
+
     dispose() {
+        this.setDragTracking(false)
         this.unwatchRemoval?.()
         this.unwatchRemoval = null
         if (!this.registered) {
@@ -113,6 +182,8 @@ class PointerInputService {
             return
         }
         this.registered = false
+        window.removeEventListener('pointerup', this.rememberRelease);
+        window.removeEventListener('pointercancel', this.rememberRelease);
         this.sheetElement.removeEventListener('pointerup', this.onPointerUpHandler);
         this.sheetElement.removeEventListener('pointerdown', this.onPointerDownHandler);
         this.sheetElement.removeEventListener('pointermove', this.onPointerMoveHandler);
@@ -125,13 +196,13 @@ class PointerInputService {
      * @param {MouseEvent} e
      * @returns {SheetPointerEventArgs}
      */
-    getSheetPointerEventArgs(e) {
+    getSheetPointerEventArgs(e, targetCell = null) {
         let rect = this.sheetElement.getBoundingClientRect();
         let x = e.clientX - rect.x;
         let y = e.clientY - rect.y;
-        let targetClassList = e.target.classList;
+
         let row, col = -1
-        let cell = e.target.closest('.bds-sheet-cell')
+        let cell = targetCell ?? e.target.closest?.('.bds-sheet-cell')
 
         if (!cell)
             return null
@@ -141,7 +212,11 @@ class PointerInputService {
             col = parseInt(cell.dataset.col)
         }
 
+        const cellRect = cell.getBoundingClientRect()
         return {
+            isInsideSheet: true,
+            rowFraction: cellRect.height ? (e.clientY - cellRect.top) / cellRect.height : 0,
+            colFraction: cellRect.width ? (e.clientX - cellRect.left) / cellRect.width : 0,
             sheetX: x,
             sheetY: y,
             pageX: e.pageX,
