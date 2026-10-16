@@ -84,6 +84,12 @@ public class CommandManager
             return true;
         }
 
+        // taken before the command runs, so that undo puts back the selection the command started from,
+        // even when the command (e.g. autofill) or the sheet shrinking changes the selection.
+        var selectionBefore = !HistoryPaused && useUndo && command is IUndoableCommand
+            ? _sheet.Selection.GetSelectionSnapshot()
+            : null;
+
         var beforeArgs = new BeforeCommandRunEventArgs(command, _sheet);
         BeforeCommandRun?.Invoke(this, beforeArgs);
 
@@ -127,13 +133,13 @@ public class CommandManager
         }
 
         var addedToHistory = false;
-        if (!HistoryPaused && useUndo && protectionRevision == _sheet.Protection.Revision &&
+        if (!HistoryPaused && selectionBefore != null && protectionRevision == _sheet.Protection.Revision &&
             command is IUndoableCommand undoCommand)
         {
             PushHistory(new UndoCommandData()
             {
                 Command = undoCommand,
-                SelectionSnapshot = _sheet.Selection.GetSelectionSnapshot()
+                SelectionSnapshot = selectionBefore
             });
             addedToHistory = true;
         }

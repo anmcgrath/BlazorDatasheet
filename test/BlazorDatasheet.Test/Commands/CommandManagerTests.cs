@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using BlazorDatasheet.Core.Commands;
+using BlazorDatasheet.Core.Commands.Data;
 using BlazorDatasheet.Core.Data;
 using BlazorDatasheet.Core.Events.Commands;
 using BlazorDatasheet.DataStructures.Geometry;
@@ -126,6 +127,31 @@ public class CommandManagerTests
 
         _sheet.Commands.Undo();
         _sheet.Selection.ActiveRegion.Should().BeEquivalentTo(new Region(0, 1, 0, 1));
+    }
+
+    [Test]
+    public void Undo_Restores_The_Selection_From_Before_A_Command_That_Changes_The_Selection()
+    {
+        _sheet.Cells.SetValue(0, 0, 1);
+        _sheet.Selection.Set(new Region(0, 0));
+        _sheet.Commands.ExecuteCommand(new AutoFillCommand(new Region(0, 0), new Region(0, 3, 0, 0)));
+        _sheet.Selection.ActiveRegion.Should().BeEquivalentTo(new Region(0, 3, 0, 0));
+
+        _sheet.Commands.Undo();
+        _sheet.Selection.ActiveRegion.Should().BeEquivalentTo(new Region(0, 0));
+
+        _sheet.Commands.Redo();
+        _sheet.Selection.ActiveRegion.Should().BeEquivalentTo(new Region(0, 3, 0, 0));
+    }
+
+    [Test]
+    public void Undo_Removing_The_Last_Rows_Restores_The_Selection_On_Them()
+    {
+        _sheet.Selection.Set(new RowRegion(3, 4));
+        _sheet.Rows.RemoveAt(3, 2);
+
+        _sheet.Commands.Undo();
+        _sheet.Selection.ActiveRegion.Should().BeOfType<RowRegion>().And.BeEquivalentTo(new RowRegion(3, 4));
     }
 
     [Test]
