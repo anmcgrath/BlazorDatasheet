@@ -600,6 +600,26 @@
     background: var(--selection-bg-color);
 }
 
+/* Hover-only heading menu button: shown while the heading is hovered.
+   Opacity (not display) keeps the heading layout stable. A fully selected column keeps it visible,
+   which also covers the menu being open, since pressing the button selects the column. */
+.bds-col-head-menu-hover .bds-sheet-dropper {
+    opacity: 0;
+    transition: opacity 150ms ease;
+}
+
+.bds-col-head:hover .bds-col-head-menu-hover .bds-sheet-dropper,
+.bds-col-head.bds-selected-header-full .bds-col-head-menu-hover .bds-sheet-dropper,
+.bds-col-head-menu-hover .bds-sheet-dropper:focus-visible {
+    opacity: 1;
+}
+
+@media (hover: none) {
+    .bds-col-head-menu-hover .bds-sheet-dropper {
+        opacity: 1;
+    }
+}
+
 /* The input keeps its natural height so the wrapper's align-items can position it, the same
    way .bds-sheet-cell positions .bds-cell-container. */
 .bds-date-editor {
