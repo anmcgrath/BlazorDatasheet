@@ -5,6 +5,7 @@
 @using BlazorDatasheet.Formula.Core
 @using BlazorDatasheet.Formula.Core.Interpreter
 @using BlazorDatasheet.Formula.Core.Interpreter.Lexing
+@using BlazorDatasheet.Formula.Core.Interpreter.References
 @using BlazorDatasheet.Render.Popover
 @inherits SheetComponentBase
 @implements IDisposable
@@ -55,7 +56,7 @@
         {
             var suggestion = _suggestions[i];
             @* the tabindex stops the sheet from taking focus on a click, and the mouse down is prevented so that the input keeps it *@
-            <div class="bds-func-suggestions-item @(suggestion.Kind == FormulaSuggestionKind.Name ? "bds-func-suggestions-item-name" : "") @(i == _suggestionIndex ? "bds-active" : "")"
+            <div class="bds-func-suggestions-item @(suggestion.Kind != FormulaSuggestionKind.Function ? "bds-func-suggestions-item-name" : "") @(i == _suggestionIndex ? "bds-active" : "")"
                  tabindex="-1"
                  @onmousedown:preventDefault="true"
                  @onmousedown="() => { }"
@@ -207,7 +208,8 @@
     }
 
     /// <summary>
-    /// Suggests the names and functions that start with the name that ends at <paramref name="caret"/>
+    /// Suggests the names and functions that start with the name that ends at <paramref name="caret"/>, or the
+    /// columns and specifiers of a table when the caret is inside the brackets of a structured reference.
     /// </summary>
     private void Suggest(int caret)
     {
@@ -223,28 +225,124 @@
         if (len <= 0)
             return;
 
-        var tokens = new Lexer().Lex(Value.AsSpan().Slice(0, len), FormulaOptions);
+        var textToCaret = Value.AsSpan(0, len);
+
+        // an unclosed bracket can't be lexed, so structured references are found before lexing
+        if (StructuredReferenceSyntax.FindUnclosedBracket(textToCaret) >= 0)
+        {
+            if (StructuredReferenceSyntax.TryGetSuggestionContext(textToCaret, out var tableName, out var prefix,
+                    out var prefixStart))
+            {
+                var table = FindSuggestionTable(tableName);
+                var defaults = StructuredReferenceSuggestions(table, prefix,
+                    CanSuggestSpecifier(textToCaret, prefixStart));
+                ShowSuggestions(provider, new FormulaSuggestionRequest(prefix, _sheet, defaults)
+                {
+                    IsInStructuredReference = true,
+                    TableName = table?.Name ?? tableName
+                }, selected, prefixStart, len);
+            }
+
+            return;
+        }
+
+        var tokens = new Lexer().Lex(textToCaret, FormulaOptions);
         if (tokens.Count > 1 && tokens[^2] is IdentifierToken idToken)
         {
-            IReadOnlyList<FormulaSuggestion> defaults = DefaultSuggestions(idToken.Value);
-            _suggestions = provider == null
-                ? defaults.ToList()
-                : provider(new FormulaSuggestionRequest(idToken.Value, _sheet, defaults)).ToList();
-            SelectSuggestion(Math.Max(0,
-                _suggestions.FindIndex(x => x.Name == selected?.Name && x.Kind == selected.Kind)));
-            _suggestionNameStart = idToken.PositionStart;
-            _suggestionNameEnd = len;
+            ShowSuggestions(provider,
+                new FormulaSuggestionRequest(idToken.Value, _sheet, DefaultSuggestions(idToken.Value)),
+                selected, idToken.PositionStart, len);
         }
     }
 
+    private void ShowSuggestions(FormulaSuggestionProvider? provider, FormulaSuggestionRequest request,
+        FormulaSuggestion? selected, int nameStart, int nameEnd)
+    {
+        _suggestions = provider == null
+            ? request.Defaults.ToList()
+            : provider(request).ToList();
+        SelectSuggestion(Math.Max(0,
+            _suggestions.FindIndex(x => x.Name == selected?.Name && x.Kind == selected.Kind)));
+        _suggestionNameStart = nameStart;
+        _suggestionNameEnd = nameEnd;
+    }
+
     /// <summary>
-    /// The variables and then the functions of the sheet that start with <paramref name="prefix"/>
+    /// The table that a structured reference is to: the table <paramref name="tableName"/>, or for an
+    /// unqualified reference, the table at the cell being edited (or the sheet table).
+    /// </summary>
+    private SheetTable? FindSuggestionTable(string? tableName)
+    {
+        if (_sheet == null)
+            return null;
+
+        var tables = _sheet.Workbook.Tables;
+        SheetTable? table;
+        if (tableName != null)
+            table = tables.Get(tableName);
+        else if (_sheet.Editor is { IsEditing: true, EditCell: { } editCell })
+            table = tables.GetTableAt(_sheet.Name, editCell.Row, editCell.Col);
+        else
+            table = tables.GetOnSheet(_sheet.Name).FirstOrDefault(x => x is { IsSheetTable: true, IsDeleted: false });
+
+        return table is { IsDeleted: false } ? table : null;
+    }
+
+    private static readonly string[] TableSpecifiers = ["#All", "#Data", "#Headers", "#Totals", "#This Row"];
+
+    /// <summary>
+    /// Specifiers are only written at the start of a reference's brackets or of an item, e.g. Sales[# or
+    /// Sales[[#Headers],[# - not after @ or :
+    /// </summary>
+    private static bool CanSuggestSpecifier(ReadOnlySpan<char> textToCaret, int prefixStart)
+    {
+        var i = prefixStart - 1;
+        while (i >= 0 && char.IsWhiteSpace(textToCaret[i]))
+            i--;
+        return i >= 0 && textToCaret[i] is '[' or ',' or ';';
+    }
+
+    /// <summary>
+    /// The columns of <paramref name="table"/> and then the table specifiers that start with <paramref name="prefix"/>.
+    /// </summary>
+    private static List<FormulaSuggestion> StructuredReferenceSuggestions(SheetTable? table, string prefix,
+        bool canSuggestSpecifier)
+    {
+        var suggestions = new List<FormulaSuggestion>();
+        if (table == null)
+            return suggestions;
+
+        // surrounding whitespace is not part of a name in a reference, so it is left out of the suggestion
+        suggestions.AddRange(table.ColumnNames
+            .Select(name => name.Trim())
+            .Where(name => name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            .Select(name => new FormulaSuggestion(name, FormulaSuggestionKind.TableColumn, Detail: table.Name)));
+
+        if (canSuggestSpecifier && (prefix.Length == 0 || prefix.StartsWith('#')))
+        {
+            suggestions.AddRange(TableSpecifiers
+                .Where(x => x.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                .Select(x => new FormulaSuggestion(x, FormulaSuggestionKind.TableSpecifier)));
+        }
+
+        return suggestions;
+    }
+
+    /// <summary>
+    /// The tables, the variables and then the functions of the sheet that start with <paramref name="prefix"/>
     /// </summary>
     private List<FormulaSuggestion> DefaultSuggestions(string prefix)
     {
         var suggestions = new List<FormulaSuggestion>();
         if (_sheet == null)
             return suggestions;
+
+        var tables = _sheet.Workbook.Tables;
+        suggestions.AddRange(tables.GetTableNames()
+            .Where(name => name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .Select(name => new FormulaSuggestion(name, FormulaSuggestionKind.Table,
+                Detail: GetTableDetail(tables.Get(name)))));
 
         var engine = _sheet.FormulaEngine;
         suggestions.AddRange(engine.GetVariableNames()
@@ -257,6 +355,17 @@
             .Select(x => new FormulaSuggestion(x.Name, FormulaSuggestionKind.Function, x.Function.Description)));
 
         return suggestions;
+    }
+
+    private static string? GetTableDetail(SheetTable? table)
+    {
+        if (table == null)
+            return null;
+
+        if (table.IsSheetTable || table.Region == null)
+            return $"{table.SheetName} (sheet table)";
+
+        return RangeText.SheetPrefix(table.SheetName) + RangeText.RegionToText(table.Region);
     }
 
     /// <summary>
@@ -302,18 +411,34 @@
     }
 
     /// <summary>
-    /// Replaces the name being typed with the suggestion. A function is left ready for its first argument.
+    /// Replaces the name being typed with the suggestion. A function is left ready for its first argument, a
+    /// table ready for a column, and a table column or specifier is closed with a bracket (and the reference's
+    /// outer bracket too, when it is one of a list of items).
     /// </summary>
     private async Task AcceptSuggestion(FormulaSuggestion suggestion)
     {
         var start = Math.Clamp(_suggestionNameStart, 0, Value.Length);
         var end = Math.Clamp(_suggestionNameEnd, start, Value.Length);
         var text = suggestion.Name;
-        if (suggestion.Kind == FormulaSuggestionKind.Function)
+        var caretOffset = (int?)null;
+        switch (suggestion.Kind)
         {
-            text += "(";
-            if (end < Value.Length && Value[end] == '(')
-                end++;
+            case FormulaSuggestionKind.Function:
+                text += "(";
+                end = SkipIfNext(end, '(');
+                break;
+            case FormulaSuggestionKind.Table:
+                text += "[";
+                end = SkipIfNext(end, '[');
+                break;
+            case FormulaSuggestionKind.TableColumn:
+            case FormulaSuggestionKind.TableSpecifier:
+                var isSpecifier = suggestion.Kind == FormulaSuggestionKind.TableSpecifier;
+                var item = isSpecifier ? text : StructuredReferenceSyntax.EscapeColumnName(text);
+                text = StructuredReferenceSyntax.CompleteItem(Value, start, end, item, isSpecifier,
+                    out end, out var offset);
+                caretOffset = offset;
+                break;
         }
 
         _suggestions = null;
@@ -322,16 +447,21 @@
         {
             // the owner of the edit value passes it back down, with the caret from the edit session
             _sheet.Editor.FormulaEdit.SetInputOwner(this);
-            _sheet.Editor.FormulaEdit.ReplaceText(start, end - start, text);
+            _sheet.Editor.FormulaEdit.ReplaceText(start, end - start, text, caretOffset);
             StateHasChanged();
             return;
         }
 
         Value = string.Concat(Value.AsSpan(0, start), text, Value.AsSpan(end));
-        _localCaret = start + text.Length;
+        _localCaret = start + (caretOffset ?? text.Length);
         await ValueChanged.InvokeAsync(Value);
         StateHasChanged();
     }
+
+    /// <summary>
+    /// The end of the text to replace, taking in <paramref name="c"/> if it comes next, so that it isn't written twice.
+    /// </summary>
+    private int SkipIfNext(int end, char c) => end < Value.Length && Value[end] == c ? end + 1 : end;
 
     private void OnSelectionChanged((int Start, int End) selection)
     {

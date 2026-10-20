@@ -326,6 +326,14 @@ public class DependencyGraph<T> where T : Vertex
     }
 
     /// <summary>
+    /// Whether there is an edge v -> w, i.e. whether <paramref name="w"/> depends on <paramref name="v"/>.
+    /// </summary>
+    public bool HasEdge(T v, T w)
+    {
+        return _adj.TryGetValue(v.Key, out var adj) && adj.ContainsKey(w.Key);
+    }
+
+    /// <summary>
     /// Updates the key for the vertex after calling Vertex.UpdateKey
     /// </summary>
     /// <param name="v"></param>

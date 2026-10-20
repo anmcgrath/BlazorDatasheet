@@ -30,6 +30,11 @@ public class Workbook
     public TrackedRangeCollection TrackedRanges { get; }
 
     /// <summary>
+    /// The workbook's tables, whose columns can be referred to by name in formulas, e.g. Sales[Amount].
+    /// </summary>
+    public TableCollection Tables { get; }
+
+    /// <summary>
     /// The workbook's clipboard: the cells last copied or cut from any of its sheets.
     /// </summary>
     public WorkbookClipboard Clipboard { get; }
@@ -72,6 +77,7 @@ public class Workbook
         _formulaEngine = new FormulaEngine.FormulaEngine(Environment, options);
         NamedRanges = new NamedRangeManager(this);
         TrackedRanges = new TrackedRangeCollection(this);
+        Tables = new TableCollection(this);
         Clipboard = new WorkbookClipboard(this);
     }
 
@@ -195,9 +201,15 @@ public class Workbook
         if (sheetIndex >= 0)
         {
             var sheet = _sheets[sheetIndex];
-            _formulaEngine.RemoveSheet(_sheets[sheetIndex]);
-            _sheets.RemoveAt(sheetIndex);
-            _formulaEngine.CalculateSheet(true);
+            // one calculation, once the sheet's tables are detached and the references to them refreshed
+            using (_formulaEngine.SuspendCalculation())
+            {
+                _formulaEngine.RemoveSheet(_sheets[sheetIndex]);
+                _sheets.RemoveAt(sheetIndex);
+                Tables.OnSheetRemoved(sheet);
+                _formulaEngine.CalculateSheet(true);
+            }
+
             SheetRemoved?.Invoke(this, new WorkbookSheetRemovedEventArgs(sheet));
         }
     }

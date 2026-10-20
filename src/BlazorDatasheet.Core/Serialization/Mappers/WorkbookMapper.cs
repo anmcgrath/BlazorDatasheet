@@ -34,6 +34,21 @@ internal class WorkbookMapper
             });
         }
 
+        // Deleted and detached tables are kept, as tracked ranges are. Column names are not written: they are read
+        // again from the header cells or column headings when the workbook is loaded.
+        foreach (var table in workbook.Tables.GetAll())
+        {
+            workbookModel.Tables.Add(new TableModel
+            {
+                Name = table.Name,
+                Sheet = table.SheetName,
+                Region = table.IsSheetTable || table.Region == null ? null : RangeText.RegionToText(table.Region),
+                IsSheetTable = table.IsSheetTable,
+                ShowTotals = table.ShowTotals,
+                Deleted = table.IsDeleted
+            });
+        }
+
         return workbookModel;
     }
 
@@ -66,6 +81,22 @@ internal class WorkbookMapper
             foreach (var (sheetModel, sheet) in sheets)
                 SheetMapper.PopulateFromModel(sheetModel, workbookModel.Formats, sheet);
 
+            // After the cells, so that column names are read from the header cells, and before the variables, which
+            // may refer to tables. Formulas parsed before their tables existed are then resolved again.
+            if (workbookModel.Tables is { Count: > 0 } tables)
+            {
+                foreach (var table in tables)
+                {
+                    var region = table.IsSheetTable ? null : ParseRegion(workbook, table.Region);
+                    if (!table.IsSheetTable && region == null)
+                        continue;
+                    workbook.Tables.Load(table.Name, table.Sheet, region, table.IsSheetTable, table.ShowTotals,
+                        table.Deleted);
+                }
+
+                engine.RefreshTableReferences(null);
+            }
+
             foreach (var variable in workbookModel.Variables)
             {
                 if (variable.Formula != null)
@@ -92,7 +123,7 @@ internal class WorkbookMapper
         return workbook;
     }
 
-    private static IRegion? ParseRegion(Workbook workbook, string regionString)
+    private static IRegion? ParseRegion(Workbook workbook, string? regionString)
     {
         if (string.IsNullOrEmpty(regionString))
             return null;

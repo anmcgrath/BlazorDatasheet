@@ -10,7 +10,12 @@ public enum FormulaReferenceSpanKind
 {
     Cell,
     Range,
-    Named
+    Named,
+
+    /// <summary>
+    /// A structured reference to part of a table, e.g. Sales[Amount] or [@Qty].
+    /// </summary>
+    Structured
 }
 
 /// <summary>
@@ -21,8 +26,8 @@ public enum FormulaReferenceSpanKind
 /// <param name="TextLength">The number of characters the reference occupies.</param>
 /// <param name="Kind"></param>
 /// <param name="SheetName">The sheet name, if one was given explicitly.</param>
-/// <param name="Name">The name of the reference, if it is a named reference.</param>
-/// <param name="Region">The region referred to. Null for named references, which must be resolved by the caller.</param>
+/// <param name="Name">The name of the reference, if it is a named reference, or the text of a structured reference.</param>
+/// <param name="Region">The region referred to. Null for named and structured references, which must be resolved by the caller.</param>
 /// <param name="IsStartColFixed"></param>
 /// <param name="IsStartRowFixed"></param>
 /// <param name="IsEndColFixed"></param>
@@ -43,6 +48,17 @@ public sealed record FormulaReferenceSpan(
     int ColorIndex)
 {
     public int TextEnd => TextStart + TextLength;
+
+    /// <summary>
+    /// The parsed structured reference, if this is a <see cref="FormulaReferenceSpanKind.Structured"/> reference.
+    /// </summary>
+    public StructuredReferenceDescriptor? Structured { get; init; }
+
+    /// <summary>
+    /// Whether the reference is written as an address, so that it can be moved or resized by rewriting it.
+    /// Named and structured references can't be.
+    /// </summary>
+    public bool IsAddress => Kind is FormulaReferenceSpanKind.Cell or FormulaReferenceSpanKind.Range;
 }
 
 /// <summary>
@@ -93,6 +109,17 @@ public static class FormulaReferenceScanner
                     read.Region, read.IsStartColFixed, read.IsStartRowFixed, read.IsEndColFixed, read.IsEndRowFixed,
                     colorIndex));
                 i += tokenCount - 1;
+                continue;
+            }
+
+            if (tokens[i] is StructuredReferenceToken structured)
+            {
+                spans.Add(new FormulaReferenceSpan(spans.Count, start, tokenEnds[i] - start,
+                    FormulaReferenceSpanKind.Structured, null, structured.Text, null, false, false, false, false,
+                    colorIndex)
+                {
+                    Structured = structured.Descriptor
+                });
                 continue;
             }
 

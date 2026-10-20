@@ -6,7 +6,8 @@ namespace BlazorDatasheet.Formula.Core.Interpreter;
 
 /// <summary>
 /// A lightweight <see cref="IEnvironment"/> for parse-only scenarios (e.g. hint calculation).
-/// Data-access members throw because parsing never reads cell or variable state.
+/// Data-access members throw because parsing never reads cell or variable state. Structured references
+/// never resolve (there are no tables).
 /// </summary>
 public sealed class ParsingEnvironment : IEnvironment
 {
@@ -36,6 +37,12 @@ public sealed class ParsingEnvironment : IEnvironment
     public SpillResult SetSpillResult(int row, int col, string sheetName, CellValue[][] values) => throw NotSupported();
     public void ClearVariable(string varName) => throw NotSupported();
     public IEnumerable<string> GetVariableNames() => throw NotSupported();
+
+    // Structured references are resolved while hint text is calculated, so these must not throw.
+    public StructuredReferenceResolution Resolve(StructuredReferenceDescriptor descriptor, int? callerRow,
+        int? callerCol, string? callerSheet) => StructuredReferenceResolution.FromError(ErrorType.Ref);
+
+    public IEnumerable<string> GetTableNames() => [];
 
     private static NotSupportedException NotSupported() =>
         new("ParsingEnvironment does not support runtime data access.");

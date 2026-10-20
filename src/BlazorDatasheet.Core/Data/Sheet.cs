@@ -253,6 +253,7 @@ public class Sheet
         ConditionalFormats = new ConditionalFormatManager(this, Cells);
         NamedRanges = new NamedRangeManager(this);
         TrackedRanges = new TrackedRangeStore(this);
+        Tables = new TableStore(this);
         RegisterDefaultShiftingStores();
     }
 
@@ -268,6 +269,10 @@ public class Sheet
 
     private void RegisterDefaultShiftingStores()
     {
+        // Tables are shifted first: shifting the cells shifts the formulas, and the dependency manager re-resolves
+        // structured references (e.g. Sales[Amount]) against the tables as they are after the change.
+        RegisterShiftingStore(Tables);
+
         RegisterShiftingStore(new ShiftingStoreAdapter<RegionRestoreData<int>>(
             Validators.Store.InsertRowColAt,
             Validators.Store.RemoveRowColAt,
@@ -313,6 +318,11 @@ public class Sheet
     /// The ranges tracked on this sheet. See <see cref="Workbook.TrackedRanges"/>.
     /// </summary>
     internal TrackedRangeStore TrackedRanges { get; }
+
+    /// <summary>
+    /// The tables on this sheet. See <see cref="Workbook.Tables"/>.
+    /// </summary>
+    internal TableStore Tables { get; }
 
     /// <summary>
     /// Inserts blank cells over <paramref name="region"/>, shifting the cells after it right (<see cref="Axis.Col"/>)

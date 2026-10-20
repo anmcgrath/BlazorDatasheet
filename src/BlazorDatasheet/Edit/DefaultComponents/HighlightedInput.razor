@@ -305,6 +305,9 @@
                 return "bds-number-highlight";
             case Tag.StringToken:
                 return "bds-string-highlight";
+            // references are coloured by the reference they belong to, see GetHighlightedHtmlValue
+            case Tag.AddressToken:
+            case Tag.StructuredReferenceToken:
             default:
                 return "bds-default-highlight";
         }

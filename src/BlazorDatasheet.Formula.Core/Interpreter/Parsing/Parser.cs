@@ -121,6 +121,8 @@ public class Parser
                 return ParseReferenceExpressionFromAddress(addressToken.Address, null, addressToken.IsSpillRange);
             case Tag.ErrorToken:
                 return new ErrorExpression(((ErrorToken)NextToken()).ErrorType);
+            case Tag.StructuredReferenceToken:
+                return ParseStructuredReferenceExpression();
         }
 
         if (Peek(1).Tag == Tag.ColonToken && TryConvertToAddress(Current, out var address))
@@ -382,6 +384,14 @@ public class Parser
     private void Error(string errorMessage)
     {
         _errors.Add(errorMessage);
+    }
+
+    private Expression ParseStructuredReferenceExpression()
+    {
+        var token = (StructuredReferenceToken)NextToken();
+        var reference = new StructuredReference(token.Descriptor);
+        _references.Add(reference);
+        return new ReferenceExpression(reference);
     }
 
     private Expression ParseIdentifierExpression()

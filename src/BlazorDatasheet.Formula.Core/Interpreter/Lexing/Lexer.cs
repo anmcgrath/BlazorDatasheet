@@ -1,5 +1,6 @@
 using System.Text;
 using BlazorDatasheet.Formula.Core.Interpreter.Addresses;
+using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Formula.Core.Interpreter.Lexing;
 
@@ -87,6 +88,10 @@ public ref struct Lexer
 
         if (_current == '\'')
             return ReadQuotedSheetName();
+
+        // an unqualified structured reference e.g [@Col]
+        if (_current == '[')
+            return ReadStructuredReference(null, _position);
 
         Token token;
         switch (_current)
@@ -250,6 +255,20 @@ public ref struct Lexer
         int length = _position - start;
         var idSlice = _string.Slice(start, length);
 
+        // A name directly followed by '[' is a table name e.g Sales[Amount]. This is checked before
+        // addresses because table names like LOG10 look like cell references.
+        if (_current == '[')
+        {
+            if (!RangeText.IsValidName(idSlice))
+            {
+                Error($"{idSlice.ToString()} is not a valid table name");
+                ReadStructuredReference(null, start);
+                return new BadToken(start);
+            }
+
+            return ReadStructuredReference(idSlice.ToString(), start);
+        }
+
         if (bool.TryParse(idSlice, out var parsedBool))
             return new LogicalToken(idSlice.ToString(), parsedBool, start);
 
@@ -292,6 +311,53 @@ public ref struct Lexer
             return new AddressToken(parsedLeftAddress, start);
 
         return new IdentifierToken(idSlice.ToString(), start);
+    }
+
+    /// <summary>
+    /// Reads a structured reference from the '[' at the current position to its matching ']'.
+    /// </summary>
+    /// <param name="tableName">The table name before the '[', or null if the reference is unqualified.</param>
+    /// <param name="start">The start of the token, including the table name.</param>
+    private Token ReadStructuredReference(string? tableName, int start)
+    {
+        var bodyStart = _position + 1;
+        var depth = 0;
+        while (true)
+        {
+            if (_current == '\0')
+            {
+                Error("Missing ']' in structured reference");
+                return new BadToken(start);
+            }
+
+            if (_current == '\'')
+            {
+                // ' escapes the next character
+                Next();
+                if (_current != '\0')
+                    Next();
+                continue;
+            }
+
+            if (_current == '[')
+                depth++;
+            else if (_current == ']')
+                depth--;
+
+            Next();
+            if (depth == 0)
+                break;
+        }
+
+        // the body excludes the outer brackets
+        var body = _string.Slice(bodyStart, _position - bodyStart - 1);
+        if (!StructuredReferenceSyntax.TryParseBody(body, tableName, out var descriptor, out var error))
+        {
+            Error(error!);
+            return new BadToken(start);
+        }
+
+        return new StructuredReferenceToken(_string.Slice(start, _position - start).ToString(), descriptor!, start);
     }
 
     private Token ReadQuotedSheetName()

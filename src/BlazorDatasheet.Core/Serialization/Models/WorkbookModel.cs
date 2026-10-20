@@ -9,4 +9,5 @@ internal class WorkbookModel
     public List<SheetModel> Sheets { get; set; } = new();
     public List<Variable> Variables { get; set; } = new();
     public List<TrackedRangeModel> TrackedRanges { get; set; } = new();
+    public List<TableModel> Tables { get; set; } = new();
 }

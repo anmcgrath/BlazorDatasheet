@@ -29,11 +29,44 @@ public class DependencyManager
     /// </summary>
     private readonly SccSort<FormulaVertex> _sccSort;
 
+    /// <summary>
+    /// Resolves structured references (e.g. Sales[Amount]) to the regions they track. Without one,
+    /// structured references stay unresolved and track nothing.
+    /// </summary>
+    private IStructuredReferenceResolver? _resolver;
+
+    /// <summary>
+    /// The formula vertices with structured references, by table name. A reference is indexed under the table
+    /// it names, or for an unqualified reference (e.g. [@Col]) the table it resolved against; unqualified
+    /// references that did not resolve to a table are indexed under "" so that a refresh retries them.
+    /// </summary>
+    /// <remarks>
+    /// Vertices are compared by reference - a vertex's key (and hash) changes when it is shifted.
+    /// </remarks>
+    private readonly Dictionary<string, HashSet<FormulaVertex>> _tableDependents =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The keys of <see cref="_tableDependents"/> that each vertex is indexed under, so a vertex can be
+    /// removed from the index whatever state its references are in.
+    /// </summary>
+    private readonly Dictionary<FormulaVertex, List<string>> _tableDependentKeys =
+        new(ReferenceEqualityComparer.Instance);
+
     internal int FormulaCount => _dependencyGraph.Count;
 
     public DependencyManager()
     {
         _sccSort = new SccSort<FormulaVertex>(_dependencyGraph);
+    }
+
+    /// <summary>
+    /// Sets the resolver used to find the regions that structured references track. Existing formulas are
+    /// not re-resolved; call <see cref="RefreshStructuredReferences(string?)"/> for that.
+    /// </summary>
+    public void SetStructuredReferenceResolver(IStructuredReferenceResolver? resolver)
+    {
+        _resolver = resolver;
     }
 
     /// <summary>
@@ -92,6 +125,7 @@ public class DependencyManager
 
     public void RenameSheet(string oldName, string newName)
     {
+        var renamedVertices = new Dictionary<FormulaVertex, FormulaVertex>(ReferenceEqualityComparer.Instance);
         foreach (var vertex in _dependencyGraph.GetAll().ToList())
         {
             var formula = vertex.Formula;
@@ -102,9 +136,12 @@ public class DependencyManager
             {
                 var renamedVertex = new FormulaVertex(vertex.Row, vertex.Col, newName, vertex.Formula);
                 _dependencyGraph.Swap(vertex, renamedVertex);
+                renamedVertices[vertex] = renamedVertex;
 
                 if (_volatileVertices.Remove(vertex))
                     _volatileVertices.Add(renamedVertex);
+                if (UnindexVertex(vertex))
+                    IndexVertex(renamedVertex);
             }
 
             foreach (var formulaRef in formula.References)
@@ -117,6 +154,22 @@ public class DependencyManager
         var existingRefStore = GetReferencedVertexStore(oldName);
         _referencedVertexStores.Remove(oldName);
         _referencedVertexStores[newName] = existingRefStore;
+
+        // the regions the renamed vertices' formulas read are tracked against the vertices themselves, which
+        // have been replaced - without this a change on any sheet would find the old vertices, no longer in the graph
+        if (renamedVertices.Count > 0)
+        {
+            foreach (var store in _referencedVertexStores.Values)
+            {
+                var stale = store.GetAllDataRegions().Where(d => renamedVertices.ContainsKey(d.Data)).ToList();
+                if (stale.Count == 0)
+                    continue;
+
+                store.Delete(stale);
+                foreach (var dataRegion in stale)
+                    store.Add(dataRegion.Region, renamedVertices[dataRegion.Data]);
+            }
+        }
         
         var renamedLocationStore = new RegionDataStore<FormulaVertex>(expandWhenInsertAfter: false);
         foreach (var vertex in _dependencyGraph.GetAll())
@@ -193,6 +246,8 @@ public class DependencyManager
 
         RemoveReferenceTrackingForFormula(formulaVertex, restoreData);
         RecordRemovedEdges(formulaVertex, restoreData);
+        // the structured references keep their resolved regions so that restoring the vertex restores them
+        UnindexVertex(formulaVertex);
 
         _dependencyGraph.RemoveVertex(formulaVertex, false);
         restoreData.VerticesRemoved.Add(formulaVertex);
@@ -267,6 +322,8 @@ public class DependencyManager
         var affectedRegion = GetAffectedRegion(axis, index);
         var (dRow, dCol) = GetShiftDelta(axis, count);
 
+        var tableShift = UntrackStructuredReferencesForShift(affectedRegion, axis, sheetName, restoreData);
+
         // find anything that depends directly on the regions that are shifted
         // and shift the formula references
         // needs to be done before we shift vertices
@@ -280,7 +337,7 @@ public class DependencyManager
             if (formula == null)
                 continue;
 
-            restoreData.ModifiedFormulaReferences.Add(CaptureReferenceRestoreData(formula));
+            restoreData.CaptureReferences(formula);
             formula.InsertRowColIntoReferences(index, count, axis, sheetName);
         }
 
@@ -288,10 +345,12 @@ public class DependencyManager
         restoreData.MergeRegionRestoreData(
             sheetName,
             GetReferencedVertexStore(sheetName).InsertRowColAt(index, count, axis));
-        
+
         restoreData.MergeFormulaLocationRestoreData(
             sheetName,
             GetFormulaLocationStore(sheetName).InsertRowColAt(index, count, axis));
+
+        RetrackStructuredReferencesAfterShift(tableShift, restoreData);
 
         return restoreData;
     }
@@ -326,6 +385,8 @@ public class DependencyManager
         };
         var regionRemoved = GetRemovedRegion(axis, index, count);
 
+        var tableShift = UntrackStructuredReferencesForShift(GetAffectedRegion(axis, index), axis, sheetName, restoreData);
+
         // remove any formula in the region being removed
         var vertices = GetVerticesInRegion(regionRemoved, sheetName);
         foreach (var vertex in vertices)
@@ -349,7 +410,7 @@ public class DependencyManager
             if (formula == null)
                 continue;
 
-            restoreData.ModifiedFormulaReferences.Add(CaptureReferenceRestoreData(formula));
+            restoreData.CaptureReferences(formula);
             formula.RemoveRowColFromReferences(index, count, axis, sheetName);
         }
 
@@ -361,6 +422,8 @@ public class DependencyManager
         restoreData.MergeFormulaLocationRestoreData(
             sheetName,
             GetFormulaLocationStore(sheetName).RemoveRowColAt(index, count, axis));
+
+        RetrackStructuredReferencesAfterShift(tableShift, restoreData);
 
         return restoreData;
     }
@@ -380,11 +443,15 @@ public class DependencyManager
         };
 
         var affectedRegion = GetAffectedRegion(axis, index, region);
+        var tableShift = UntrackStructuredReferencesForShift(affectedRegion, axis, sheetName, restoreData);
+
         AdjustDependentsForBandShift(affectedRegion, sheetName, restoreData,
             formula => formula.InsertRowColIntoReferences(index, count, axis, sheetName, region));
 
         ShiftVerticesInBand(affectedRegion, axis, count, sheetName, restoreData,
             () => GetFormulaLocationStore(sheetName).InsertCellsAt(region, axis, StraddlePolicy.Split));
+
+        RetrackStructuredReferencesAfterShift(tableShift, restoreData);
 
         return restoreData;
     }
@@ -403,6 +470,9 @@ public class DependencyManager
             Shifts = { new AppliedShift(axis, index, -count, sheetName, region.Clone()) }
         };
 
+        var affectedRegion = GetAffectedRegion(axis, index, region);
+        var tableShift = UntrackStructuredReferencesForShift(affectedRegion, axis, sheetName, restoreData);
+
         // remove any formula in the region being removed
         foreach (var vertex in GetVerticesInRegion(region, sheetName).ToList())
         {
@@ -410,12 +480,13 @@ public class DependencyManager
                 restoreData.Merge(ClearFormula(position.row, position.col, sheetName));
         }
 
-        var affectedRegion = GetAffectedRegion(axis, index, region);
         AdjustDependentsForBandShift(affectedRegion, sheetName, restoreData,
             formula => formula.RemoveRowColFromReferences(index, count, axis, sheetName, region));
 
         ShiftVerticesInBand(affectedRegion, axis, -count, sheetName, restoreData,
             () => GetFormulaLocationStore(sheetName).RemoveCellsAt(region, axis, StraddlePolicy.Split));
+
+        RetrackStructuredReferencesAfterShift(tableShift, restoreData);
 
         return restoreData;
     }
@@ -436,13 +507,14 @@ public class DependencyManager
             if (formula == null)
                 continue;
 
-            restoreData.ModifiedFormulaReferences.Add(CaptureReferenceRestoreData(formula));
+            restoreData.CaptureReferences(formula);
             RemoveReferenceTrackingForFormula(dependent, restoreData);
             adjust(formula);
 
             foreach (var formulaRef in formula.References)
             {
-                if (formulaRef.Kind == ReferenceKind.Named || formulaRef.IsInvalid)
+                // structured references were untracked before the shift and are re-tracked after it
+                if (formulaRef.Kind is ReferenceKind.Named or ReferenceKind.Structured || formulaRef.IsInvalid)
                     continue;
 
                 restoreData.MergeRegionRestoreData(
@@ -598,6 +670,7 @@ public class DependencyManager
         RestoreReferencedVertexStores(restoreData);
         RestoreFormulaLocationStores(restoreData);
         RestoreModifiedFormulaReferences(restoreData);
+        RestoreTableDependents(restoreData);
     }
 
     private void AddIncomingEdgesForFormulaReferences(FormulaVertex formulaVertex, DependencyManagerRestoreData restoreData)
@@ -611,6 +684,12 @@ public class DependencyManager
                 continue;
             }
 
+            if (formulaRef is StructuredReference structuredRef)
+            {
+                TrackStructuredReference(formulaVertex, structuredRef, restoreData);
+                continue;
+            }
+
             foreach (var precedent in GetVerticesInRegion(formulaRef.Region, formulaRef.SheetName))
             {
                 _dependencyGraph.AddEdge(precedent, formulaVertex);
@@ -621,6 +700,8 @@ public class DependencyManager
                 formulaRef.SheetName,
                 GetReferencedVertexStore(formulaRef.SheetName).Add(formulaRef.Region.Clone(), formulaVertex));
         }
+
+        IndexVertex(formulaVertex);
     }
 
     private void AddOutgoingEdgesToDirectDependents(FormulaVertex formulaVertex, DependencyManagerRestoreData restoreData)
@@ -659,6 +740,11 @@ public class DependencyManager
                 .ToList(),
             RangeReference rangeRef => GetReferencedVertexStore(rangeRef.SheetName)
                 .GetDataRegions(rangeRef.Region, formulaVertex)
+                .ToList(),
+            // only the one entry - another reference of the formula may track the same region
+            StructuredReference { IsResolved: true } structuredRef => GetReferencedVertexStore(structuredRef.SheetName)
+                .GetDataRegions(structuredRef.Region, formulaVertex)
+                .Take(1)
                 .ToList(),
             _ => []
         };
@@ -729,13 +815,36 @@ public class DependencyManager
             RestoreFormulaReferences(regionModification);
     }
 
-    private static ReferenceRestoreData CaptureReferenceRestoreData(CellFormula formula)
+    /// <summary>
+    /// Brings the table index back in line with the restored vertices and references.
+    /// </summary>
+    private void RestoreTableDependents(DependencyManagerRestoreData restoreData)
+    {
+        var touched = restoreData.VerticesAdded
+            .Concat(restoreData.VerticesRemoved)
+            .Concat(restoreData.ModifiedFormulaReferences.Select(x => x.Vertex).OfType<FormulaVertex>());
+
+        foreach (var vertex in touched)
+        {
+            if (IsInGraph(vertex))
+                IndexVertex(vertex);
+            else
+                UnindexVertex(vertex);
+        }
+    }
+
+    internal static ReferenceRestoreData CaptureReferenceRestoreData(CellFormula formula, FormulaVertex? vertex = null)
     {
         var existingRegions = formula.References.Select(r => r.Region.Clone()).ToList();
         var existingValidities = formula.References.Select(r => r.IsInvalid).ToList();
         var sheetNames = formula.References.Select(x => x.SheetName).ToList();
         var explicitSheetNames = formula.References.Select(x => x.ExplicitSheetName).ToList();
-        return new ReferenceRestoreData(formula, existingRegions, existingValidities, sheetNames, explicitSheetNames);
+        var resolvedTableNames = formula.References.Select(x => (x as StructuredReference)?.ResolvedTableName).ToList();
+        return new ReferenceRestoreData(formula, existingRegions, existingValidities, sheetNames, explicitSheetNames)
+        {
+            ResolvedTableNames = resolvedTableNames,
+            Vertex = vertex
+        };
     }
 
     private static void RestoreFormulaReferences(ReferenceRestoreData regionModification)
@@ -747,6 +856,8 @@ public class DependencyManager
                 regionModification.ExplicitSheetReferences[refIndex]);
             formulaReference.SetRegion(regionModification.OldRegions[refIndex]);
             formulaReference.SetValidity(!regionModification.OldInvalidStates[refIndex]);
+            if (formulaReference is StructuredReference structuredRef)
+                structuredRef.ResolvedTableName = regionModification.ResolvedTableNames?[refIndex];
             refIndex++;
         }
     }
@@ -786,6 +897,363 @@ public class DependencyManager
         return (dRow, dCol);
     }
 
+    /// <summary>
+    /// The vertices whose formulas have structured references to the table <paramref name="tableName"/>,
+    /// including unqualified references (e.g. [@Col]) resolved against it.
+    /// </summary>
+    public IEnumerable<FormulaVertex> GetTableDependents(string tableName)
+    {
+        return _tableDependents.TryGetValue(tableName, out var dependents)
+            ? dependents.ToList()
+            : Array.Empty<FormulaVertex>();
+    }
+
+    /// <summary>
+    /// Re-resolves the structured references of the formulas that depend on the table <paramref name="tableName"/>
+    /// (and of unqualified references that are not in a table), updating the regions they track. Call after a
+    /// table is added, removed, renamed or resized.
+    /// </summary>
+    /// <param name="tableName">The table, or null for every structured reference.</param>
+    /// <returns>The vertices refreshed - every one that depended on the table before or after.</returns>
+    public IReadOnlyList<FormulaVertex> RefreshStructuredReferences(string? tableName = null)
+    {
+        var vertices = tableName == null
+            ? _tableDependentKeys.Keys.ToList()
+            : new HashSet<FormulaVertex>(GetTableDependents(tableName).Concat(GetTableDependents("")),
+                ReferenceEqualityComparer.Instance).ToList();
+
+        // the tracking helpers record how to undo what they do, which a refresh has no use for
+        var restoreData = new DependencyManagerRestoreData();
+        var inGraph = vertices.Where(IsInGraph).ToList();
+
+        foreach (var vertex in inGraph)
+            UntrackStructuredReferences(vertex, restoreData);
+
+        foreach (var vertex in inGraph)
+            TrackStructuredReferences(vertex, restoreData);
+
+        return vertices;
+    }
+
+    /// <summary>
+    /// Renames the table in the structured references that refer to it. The formula text follows, because it
+    /// is derived from the references. The tracked regions are unchanged; refresh the references once the
+    /// table itself has been renamed.
+    /// </summary>
+    public void RenameTable(string oldName, string newName)
+    {
+        foreach (var vertex in GetTableDependents(oldName))
+        {
+            foreach (var reference in GetStructuredReferences(vertex))
+            {
+                if (string.Equals(reference.Descriptor.TableName, oldName, StringComparison.OrdinalIgnoreCase))
+                    reference.Descriptor = reference.Descriptor.WithTableName(newName);
+                if (string.Equals(reference.ResolvedTableName, oldName, StringComparison.OrdinalIgnoreCase))
+                    reference.ResolvedTableName = newName;
+            }
+
+            IndexVertex(vertex);
+        }
+    }
+
+    /// <summary>
+    /// Renames the column <paramref name="oldColumn"/> of the table <paramref name="tableName"/> in the structured
+    /// references that refer to it, including unqualified references resolved against the table. Whitespace around
+    /// the names is not significant, so the references are written with the trimmed new name.
+    /// </summary>
+    public void RenameTableColumn(string tableName, string oldColumn, string newColumn)
+    {
+        oldColumn = oldColumn.Trim();
+        newColumn = newColumn.Trim();
+
+        foreach (var vertex in GetTableDependents(tableName))
+        {
+            foreach (var reference in GetStructuredReferences(vertex))
+            {
+                var referencedTable = reference.Descriptor.TableName ?? reference.ResolvedTableName;
+                if (!string.Equals(referencedTable, tableName, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var columnStart = RenameColumn(reference.ColumnStart);
+                var columnEnd = RenameColumn(reference.ColumnEnd);
+                if (columnStart != reference.ColumnStart || columnEnd != reference.ColumnEnd)
+                    reference.Descriptor = reference.Descriptor.WithColumnNames(columnStart, columnEnd);
+            }
+        }
+
+        string? RenameColumn(string? column) =>
+            column != null && column.AsSpan().Trim().Equals(oldColumn, StringComparison.OrdinalIgnoreCase)
+                ? newColumn
+                : column;
+    }
+
+    /// <summary>
+    /// The vertices whose structured references may resolve differently after a shift on
+    /// <paramref name="sheetName"/>, with their structured references untracked, and the keys of the vertices
+    /// that the shift will move. Untracked before anything is shifted because tracked regions are only removed
+    /// on an exact match.
+    /// </summary>
+    private TableShift? UntrackStructuredReferencesForShift(IRegion affectedRegion, Axis axis, string sheetName,
+        DependencyManagerRestoreData restoreData)
+    {
+        // tracked regions ending just before an insert are expanded by the referenced vertex store, so references
+        // resolved to them are retracked too, to keep the tracking matching the table
+        var touchedRegion = affectedRegion.Clone();
+        if (touchedRegion.GetLeadingEdgeOffset(axis) > 0)
+            touchedRegion.Expand(axis == Axis.Row ? Edge.Top : Edge.Left, 1);
+
+        var dependents = _tableDependentKeys.Keys
+            .Where(v => IsAffectedByShift(v, affectedRegion, touchedRegion, sheetName))
+            .ToList();
+
+        if (dependents.Count == 0)
+            return null;
+
+        // edges added after the shift are restored after the vertices have been shifted back,
+        // so they are recorded with the keys from before the shift
+        var keysBeforeShift = new Dictionary<FormulaVertex, VertexKey>(ReferenceEqualityComparer.Instance);
+        foreach (var vertex in GetVerticesInRegion(affectedRegion, sheetName))
+            keysBeforeShift.TryAdd(vertex, vertex.Key);
+
+        foreach (var dependent in dependents)
+            UntrackStructuredReferences(dependent, restoreData);
+
+        return new TableShift(dependents, keysBeforeShift);
+    }
+
+    /// <summary>
+    /// Re-tracks the structured references untracked by <see cref="UntrackStructuredReferencesForShift"/>,
+    /// resolving them against the shifted tables from the shifted vertex positions.
+    /// </summary>
+    private void RetrackStructuredReferencesAfterShift(TableShift? tableShift, DependencyManagerRestoreData restoreData)
+    {
+        if (tableShift == null)
+            return;
+
+        foreach (var dependent in tableShift.Dependents)
+        {
+            // the formula may have been removed with the cells
+            if (IsInGraph(dependent))
+                TrackStructuredReferences(dependent, restoreData, tableShift.KeysBeforeShift);
+        }
+    }
+
+    /// <summary>
+    /// Whether a shift of the cells in <paramref name="affectedRegion"/> on <paramref name="sheetName"/> may change
+    /// what the vertex's structured references resolve to, or how they are tracked: the vertex itself moves
+    /// (relevant to [@Col] and unqualified references), or one of its resolved regions intersects
+    /// <paramref name="touchedRegion"/> - the affected region plus the row or column before it. A resolved region
+    /// is part of its table bounded by the table's edges, and a table grows only when cells are inserted inside it,
+    /// so a region clear of the shift resolves the same after it. Unresolved references are retried too - e.g. a
+    /// table emptied by a remove comes back on undo.
+    /// </summary>
+    private static bool IsAffectedByShift(FormulaVertex vertex, IRegion affectedRegion, IRegion touchedRegion,
+        string sheetName)
+    {
+        if (vertex.VertexType == VertexType.Cell && vertex.SheetName == sheetName &&
+            affectedRegion.Contains(vertex.Row, vertex.Col))
+            return true;
+
+        foreach (var reference in GetStructuredReferences(vertex))
+        {
+            if (!reference.IsResolved ||
+                (reference.SheetName == sheetName && reference.Region.Intersects(touchedRegion)))
+                return true;
+        }
+
+        return false;
+    }
+
+    private void TrackStructuredReferences(FormulaVertex vertex, DependencyManagerRestoreData restoreData,
+        Dictionary<FormulaVertex, VertexKey>? keysBeforeShift = null)
+    {
+        foreach (var reference in GetStructuredReferences(vertex))
+            TrackStructuredReference(vertex, reference, restoreData, keysBeforeShift);
+
+        IndexVertex(vertex);
+    }
+
+    private void UntrackStructuredReferences(FormulaVertex vertex, DependencyManagerRestoreData restoreData)
+    {
+        if (vertex.Formula == null)
+            return;
+
+        restoreData.CaptureReferences(vertex.Formula, vertex);
+
+        foreach (var reference in GetStructuredReferences(vertex))
+            UntrackStructuredReference(vertex, reference, restoreData);
+
+        IndexVertex(vertex);
+    }
+
+    /// <summary>
+    /// Resolves <paramref name="reference"/> from the vertex's position and, if it resolves to cells, tracks
+    /// that region and adds edges from the formulas in it. A reference that resolves to values only (e.g. the
+    /// headers of a sheet table, which are column headings) has no cells to track, so it is left unresolved;
+    /// cell edits can't change it.
+    /// </summary>
+    private void TrackStructuredReference(FormulaVertex vertex, StructuredReference reference,
+        DependencyManagerRestoreData restoreData, Dictionary<FormulaVertex, VertexKey>? keysBeforeShift = null)
+    {
+        ResetStructuredReference(reference);
+        if (_resolver == null)
+            return;
+
+        var isCell = vertex.VertexType == VertexType.Cell;
+        var resolution = _resolver.Resolve(reference.Descriptor,
+            isCell ? vertex.Row : null,
+            isCell ? vertex.Col : null,
+            isCell ? vertex.SheetName : null);
+
+        // kept even when the reference doesn't resolve to cells, so that renames find unqualified references
+        reference.ResolvedTableName = resolution.TableName;
+
+        if (resolution.IsError || resolution.Region == null || resolution.SheetName == null)
+            return;
+
+        var sheetName = resolution.SheetName;
+        reference.SetRegion(resolution.Region.Clone());
+        reference.SetSheetName(sheetName, true);
+
+        VertexKey KeyBeforeShift(FormulaVertex v) =>
+            keysBeforeShift != null && keysBeforeShift.TryGetValue(v, out var key) ? key : v.Key;
+
+        foreach (var precedent in GetVerticesInRegion(reference.Region, sheetName))
+        {
+            // an existing edge belongs to another reference and must survive a restore
+            if (_dependencyGraph.HasEdge(precedent, vertex))
+                continue;
+
+            _dependencyGraph.AddEdge(precedent, vertex);
+            restoreData.EdgesAdded.Add((KeyBeforeShift(precedent), KeyBeforeShift(vertex)));
+        }
+
+        restoreData.MergeRegionRestoreData(
+            sheetName,
+            GetReferencedVertexStore(sheetName).Add(reference.Region.Clone(), vertex));
+    }
+
+    /// <summary>
+    /// Removes the tracking of <paramref name="reference"/> and the edges from the formulas in its region that no
+    /// other reference of the formula covers (a stale edge would report a false circular reference), and resets it
+    /// to unresolved.
+    /// </summary>
+    private void UntrackStructuredReference(FormulaVertex vertex, StructuredReference reference,
+        DependencyManagerRestoreData restoreData)
+    {
+        if (reference.IsResolved)
+        {
+            var tracked = GetTrackedRegionsForReference(reference, vertex);
+            if (tracked.Count > 0)
+            {
+                restoreData.MergeRegionRestoreData(
+                    reference.SheetName,
+                    GetReferencedVertexStore(reference.SheetName).Delete(tracked));
+            }
+
+            foreach (var precedent in GetVerticesInRegion(reference.Region, reference.SheetName))
+            {
+                if (!_dependencyGraph.HasEdge(precedent, vertex) ||
+                    IsCoveredByAnotherReference(vertex, reference, precedent))
+                    continue;
+
+                _dependencyGraph.RemoveEdge(precedent, vertex, false);
+                restoreData.EdgesRemoved.Add((precedent.Key, vertex.Key));
+            }
+        }
+
+        ResetStructuredReference(reference);
+    }
+
+    private static bool IsCoveredByAnotherReference(FormulaVertex vertex, Reference reference, FormulaVertex precedent)
+    {
+        foreach (var other in vertex.Formula!.References)
+        {
+            if (ReferenceEquals(other, reference) || other.Kind == ReferenceKind.Named || other.IsInvalid)
+                continue;
+
+            // an unresolved structured reference has an empty region, so covers nothing
+            if (other.SheetName == precedent.SheetName && other.Region.Contains(precedent.Row, precedent.Col))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static void ResetStructuredReference(StructuredReference reference)
+    {
+        reference.SetRegion(new EmptyRegion());
+        reference.ResolvedTableName = null;
+    }
+
+    private static IEnumerable<StructuredReference> GetStructuredReferences(FormulaVertex vertex)
+    {
+        return vertex.Formula?.References.OfType<StructuredReference>() ?? [];
+    }
+
+    private static string GetTableIndexKey(StructuredReference reference)
+    {
+        return reference.Descriptor.TableName ?? reference.ResolvedTableName ?? "";
+    }
+
+    /// <summary>
+    /// (Re)indexes the vertex under the tables its structured references refer to.
+    /// </summary>
+    private void IndexVertex(FormulaVertex vertex)
+    {
+        UnindexVertex(vertex);
+
+        var keys = GetStructuredReferences(vertex)
+            .Select(GetTableIndexKey)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (keys.Count == 0)
+            return;
+
+        _tableDependentKeys[vertex] = keys;
+        foreach (var key in keys)
+        {
+            if (!_tableDependents.TryGetValue(key, out var dependents))
+            {
+                dependents = new HashSet<FormulaVertex>(ReferenceEqualityComparer.Instance);
+                _tableDependents[key] = dependents;
+            }
+
+            dependents.Add(vertex);
+        }
+    }
+
+    /// <summary>
+    /// Removes the vertex from the table index. Returns whether it was indexed.
+    /// </summary>
+    private bool UnindexVertex(FormulaVertex vertex)
+    {
+        if (!_tableDependentKeys.Remove(vertex, out var keys))
+            return false;
+
+        foreach (var key in keys)
+        {
+            if (_tableDependents.TryGetValue(key, out var dependents) &&
+                dependents.Remove(vertex) && dependents.Count == 0)
+                _tableDependents.Remove(key);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Whether this exact vertex (not just one with the same key) is in the graph.
+    /// </summary>
+    private bool IsInGraph(FormulaVertex vertex)
+    {
+        return ReferenceEquals(_dependencyGraph.GetVertex(vertex.Key), vertex);
+    }
+
+    private sealed record TableShift(
+        List<FormulaVertex> Dependents,
+        Dictionary<FormulaVertex, VertexKey> KeysBeforeShift);
+
     public IEnumerable<FormulaVertex> FindDependentFormula(IRegion region, string sheetName)
     {
         return GetReferencedVertexStore(sheetName).GetData(region);
@@ -814,6 +1282,24 @@ public class DependencyManagerRestoreData
     public readonly List<(VertexKey, VertexKey)> EdgesAdded = new();
     public readonly List<AppliedShift> Shifts = new();
     internal readonly List<ReferenceRestoreData> ModifiedFormulaReferences = new();
+
+    /// <summary>
+    /// The formulas whose references are captured in <see cref="ModifiedFormulaReferences"/>.
+    /// </summary>
+    private readonly HashSet<CellFormula> _capturedFormulas = new(ReferenceEqualityComparer.Instance);
+
+    /// <summary>
+    /// Captures the current state of <paramref name="formula"/>'s references so they can be restored, unless
+    /// they have already been captured. Captures are replayed in order, so a second capture of the same formula
+    /// would restore it to the state in between rather than to the state before the change.
+    /// </summary>
+    /// <param name="formula"></param>
+    /// <param name="vertex">The vertex holding the formula, if the table index must be updated on restore.</param>
+    internal void CaptureReferences(CellFormula formula, FormulaVertex? vertex = null)
+    {
+        if (_capturedFormulas.Add(formula))
+            ModifiedFormulaReferences.Add(DependencyManager.CaptureReferenceRestoreData(formula, vertex));
+    }
 
     public void MergeRegionRestoreData(string sheetName, RegionRestoreData<FormulaVertex> restoreData)
     {
@@ -849,6 +1335,8 @@ public class DependencyManagerRestoreData
         EdgesRemoved.AddRange(other.EdgesRemoved);
         Shifts.AddRange(other.Shifts);
         ModifiedFormulaReferences.AddRange(other.ModifiedFormulaReferences);
+        foreach (var modification in other.ModifiedFormulaReferences)
+            _capturedFormulas.Add(modification.Formula);
     }
 }
 
@@ -860,6 +1348,16 @@ internal class ReferenceRestoreData
     public List<string> SheetNames { get; }
 
     public List<bool> ExplicitSheetReferences { get; }
+
+    /// <summary>
+    /// The table each structured reference was resolved against (null for other references).
+    /// </summary>
+    public List<string?>? ResolvedTableNames { get; init; }
+
+    /// <summary>
+    /// The vertex holding the formula, when the table index must be updated on restore.
+    /// </summary>
+    public FormulaVertex? Vertex { get; init; }
 
     public ReferenceRestoreData(CellFormula formula, List<IRegion> oldRegions, List<bool> oldInvalidStates,
         List<string> sheetNames, List<bool> explicitSheetReferences)

@@ -55,4 +55,27 @@ public class HintBoxCalculator
         result!.ParameterIndex.Should().Be(expectedArgIndex);
         result!.FunctionName.Should().Be(expectedFuncName);
     }
+
+    [Test]
+    [TestCase("=SUM(Sales[", 11)]
+    [TestCase("=SUM(Sales[Amount],", 19)]
+    [TestCase("=SUM(Sales[[#Headers],[Am", 25)]
+    [TestCase("=SUM([@Qty], 1", 14)]
+    public void Structured_References_Do_Not_Stop_The_Hint(string formula, int cursorPosition)
+    {
+        var calculate = () => new FormulaHintBoxCalculator(new FormulaOptions()).Calculate(formula, cursorPosition);
+        calculate.Should().NotThrow();
+    }
+
+    [Test]
+    [TestCase("=SUM(Sales[Amount],", 19, 1)]
+    [TestCase("=SUM([@Qty], 1", 14, 1)]
+    public void Function_With_Complete_Structured_References_Shows_Its_Hint(string formula, int cursorPosition,
+        int argIndex)
+    {
+        var result = new FormulaHintBoxCalculator(new FormulaOptions()).Calculate(formula, cursorPosition);
+        result.Should().NotBeNull();
+        result!.FunctionName.Should().Be("SUM");
+        result.ParameterIndex.Should().Be(argIndex);
+    }
 }

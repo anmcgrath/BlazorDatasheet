@@ -130,24 +130,19 @@ public class VisualCell
         var cellValue = sheet.Cells.GetCellValue(row, col);
         _cellValue = cellValue;
 
+        // the same text that a table column is named after when the cell is a header
+        FormattedString = CellValueText.ToDisplayText(cellValue, format, numberOfSignificantDigits);
         if (cellValue.ValueType == CellValueType.Number)
         {
             IsNumber = true;
-            var roundedNumber = Math.Round(cellValue.NumberValue, numberOfSignificantDigits);
-            FormattedString = format?.NumberFormat != null
-                ? roundedNumber.ToString(format.NumberFormat)
-                : roundedNumber.ToString(CultureInfo.InvariantCulture);
             if (format?.NumberFormat == null && numberOverflow.Mode == NumberOverflowMode.RoundToFit)
             {
+                var roundedNumber = CellValueText.RoundForDisplay(cellValue.NumberValue, numberOfSignificantDigits);
                 _generalNumber = roundedNumber;
                 _generalNumberMinDecimals = numberOverflow.MinDecimals;
                 SetGeneralNumberFallbacks(roundedNumber, numberOverflow.MinDecimals);
             }
         }
-        else if (cellValue.ValueType == CellValueType.Date && format?.NumberFormat != null)
-            FormattedString = ((DateTime)cellValue.Data!).ToString(format.NumberFormat);
-        else
-            FormattedString = cellValue.Data?.ToString() ?? string.Empty;
 
         // borders are resolved before the conditional format is merged in, because a conditional
         // border ranks above the neighbouring cell's own border and a merged format cannot say

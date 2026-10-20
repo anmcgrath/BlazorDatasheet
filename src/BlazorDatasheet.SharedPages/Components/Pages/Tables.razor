@@ -1,0 +1,67 @@
+@page "/Tables"
+@using BlazorDatasheet.SharedPages.Components.Examples.Formula
+<h3>Tables and structured references</h3>
+
+<div class="block">
+    A table names a region of a sheet so that formulas can refer to its columns by name, as in Excel:
+    <code>=SUM(Sales[Amount])</code> or <code>=[@@Qty]*[@@Price]</code>. Tables are workbook-wide and are managed
+    through <code>Workbook.Tables</code>. The first row of a table holds its column names; editing a header cell
+    renames the column and rewrites the formulas that refer to it. Tables only affect formulas - they are not
+    styled differently.
+</div>
+
+<div class="block">
+    <pre>
+var table = workbook.Tables.Add("Sales", sheet.Name, new Region(0, 5, 0, 3)); // A1:D6
+workbook.Tables.Rename("Sales", "Orders");
+workbook.Tables.Resize("Orders", new Region(0, 9, 0, 3));
+workbook.Tables.SetShowTotals("Orders", true); // the last row is the totals row
+workbook.Tables.Remove("Orders");</pre>
+    Each of these can be undone. Tables move and grow with rows and columns inserted or removed inside them, like
+    named ranges.
+</div>
+
+<div class="block">
+    In the example below, <code>Sales</code> covers A1:D6. Each Amount cell is <code>=[@@Qty]*[@@Price]</code>.
+    Try changing a quantity, renaming the <em>Price</em> header, or inserting a row inside the table.
+</div>
+
+<CodeExample ComponentType="typeof(TableExample)"/>
+
+<h4>Syntax</h4>
+
+<table class="table is-narrow">
+    <thead>
+    <tr><th>Reference</th><th>Refers to</th></tr>
+    </thead>
+    <tbody>
+    <tr><td><code>Sales[Amount]</code></td><td>The data cells of the Amount column</td></tr>
+    <tr><td><code>Sales[]</code></td><td>All of the data cells</td></tr>
+    <tr><td><code>Sales[@@Amount]</code></td><td>The Amount cell in the formula's own row</td></tr>
+    <tr><td><code>[@@Amount]</code>, <code>[Amount]</code></td><td>The same, in the table the formula is in</td></tr>
+    <tr><td><code>Sales[#All]</code>, <code>[#Data]</code>, <code>[#Headers]</code>, <code>[#Totals]</code>, <code>[#This Row]</code></td><td>Parts of the table</td></tr>
+    <tr><td><code>Sales[[#Headers],[Amount]]</code></td><td>A part of one column</td></tr>
+    <tr><td><code>Sales[[Qty]:[Amount]]</code></td><td>A range of columns</td></tr>
+    <tr><td><code>Sales[[#Headers],[#Data]]</code></td><td>Header and data rows (also <code>[#Data],[#Totals]</code>)</td></tr>
+    </tbody>
+</table>
+
+<div class="block">
+    Column names containing <code>[ ] # ' @@</code> are escaped with <code>'</code>, e.g. <code>Sales['#Sold]</code>.
+    Empty headers are named <code>Column1</code>, <code>Column2</code>... and duplicates get a number,
+    e.g. <code>Qty2</code>. Table and column names are not case-sensitive, and table names share the namespace of
+    variables and functions.
+</div>
+
+<h4>Sheet tables</h4>
+
+<div class="block">
+    <code>workbook.Tables.AddSheetTable("Data", sheet.Name)</code> makes the whole sheet a table. Its column names are
+    the sheet's column headings, so <code>Data[Price]</code> is every cell in the column headed Price, and
+    <code>[@@Price]</code> can be used anywhere on the sheet. <code>Data[#Headers]</code> returns the headings, and a
+    sheet table has no totals row.
+</div>
+
+@code {
+
+}

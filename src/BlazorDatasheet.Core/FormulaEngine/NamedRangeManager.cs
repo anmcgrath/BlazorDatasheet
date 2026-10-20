@@ -46,7 +46,7 @@ public class NamedRangeManager
         if (string.IsNullOrEmpty(rangeString))
             return false;
 
-        if (!RangeText.IsValidName(name))
+        if (!RangeText.IsValidName(name) || Engine.IsTableName(name))
             return false;
 
         callingSheetName ??= _sheet?.Name ?? Workbook.Sheets.FirstOrDefault()?.Name;
