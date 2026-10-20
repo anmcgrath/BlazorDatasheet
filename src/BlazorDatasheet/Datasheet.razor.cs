@@ -189,9 +189,9 @@ public partial class Datasheet : SheetComponentBase, IAsyncDisposable, IScrollSe
     /// The number of decimal places to round a number to. Default is 13.
     /// </summary>
     [Parameter]
-    public int NumberPrecisionDisplay { get; set; } = 13;
+    public int NumberPrecisionDisplay { get; set; } = CellValueText.DefaultNumberPrecision;
 
-    private int _numberPrecisionDisplay = 13;
+    private int _numberPrecisionDisplay = CellValueText.DefaultNumberPrecision;
 
     /// <summary>
     /// What a number without an explicit number format does when it does not fit inside its cell.

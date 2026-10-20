@@ -1,11 +1,14 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AngleSharp.Html.Parser;
 using BlazorDatasheet.Core.Data;
+using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Edit;
 using BlazorDatasheet.Edit.DefaultComponents;
 using BlazorDatasheet.Formula.Core;
 using BlazorDatasheet.Formula.Core.Interpreter;
+using BlazorDatasheet.Formula.Core.Interpreter.Lexing;
 using Bunit;
 using AwesomeAssertions;
 using NUnit.Framework;
@@ -389,5 +392,201 @@ public class FormulaEditorTests
         sheet.Editor.FormulaEdit.SetInputOwner(external.Instance);
         await inCell.InvokeAsync(Pick);
         FocusCount().Should().Be(2, "only the editor that claimed input takes focus");
+    }
+
+    private static Sheet SheetWithSales()
+    {
+        var sheet = new Sheet(10, 10);
+        sheet.Cells.SetValue(0, 0, "Qty");
+        sheet.Cells.SetValue(0, 1, "Price");
+        sheet.Cells.SetValue(0, 2, "Amount");
+        sheet.Workbook.Tables.Add("Sales", sheet.Name, new Region(0, 3, 0, 2)).Should().NotBeNull();
+        return sheet;
+    }
+
+    private static List<string> SuggestedNames(IRenderedComponent<FormulaEditor> editor) =>
+        editor.FindAll(".bds-func-suggestions-name").Select(x => x.TextContent.Trim()).ToList();
+
+    [Test]
+    public async Task Tables_Are_Suggested_And_Written_With_A_Bracket()
+    {
+        await using var context = CreateContext();
+        var sheet = SheetWithSales();
+        var value = "";
+        var editor = context.Render<FormulaEditor>(p => p
+            .Add(x => x.Sheet, sheet)
+            .Add(x => x.ValueChanged, v => value = v));
+
+        await Type(editor, "=Sa", 3);
+
+        SuggestedNames(editor).First().Should().Be("Sales", "tables come before functions");
+        editor.Find(".bds-func-suggestions-item.bds-active .bds-func-suggestions-detail").TextContent
+            .Should().Be($"{sheet.Name}!A1:C4");
+
+        await editor.InvokeAsync(() => editor.Instance.HandleKey("Tab", false, false, false, false).Should().BeTrue());
+        value.Should().Be("=Sales[");
+    }
+
+    [Test]
+    public async Task Columns_And_Specifiers_Are_Suggested_Inside_The_Brackets()
+    {
+        await using var context = CreateContext();
+        var value = "";
+        var editor = context.Render<FormulaEditor>(p => p
+            .Add(x => x.Sheet, SheetWithSales())
+            .Add(x => x.ValueChanged, v => value = v));
+
+        await Type(editor, "=SUM(Sales[", 11);
+        SuggestedNames(editor).Should()
+            .Equal("Qty", "Price", "Amount", "#All", "#Data", "#Headers", "#Totals", "#This Row");
+
+        await Type(editor, "=SUM(Sales[Am", 13);
+        SuggestedNames(editor).Should().Equal("Amount");
+
+        await editor.InvokeAsync(() => editor.Instance.HandleKey("Tab", false, false, false, false).Should().BeTrue());
+        value.Should().Be("=SUM(Sales[Amount]");
+    }
+
+    [Test]
+    public async Task Column_Accepted_After_Whitespace_Refers_To_The_Column()
+    {
+        await using var context = CreateContext();
+        var sheet = SheetWithSales();
+        sheet.Cells.SetValue(1, 2, 5);
+        sheet.Cells.SetValue(2, 2, 7);
+        var value = "";
+        var editor = context.Render<FormulaEditor>(p => p
+            .Add(x => x.Sheet, sheet)
+            .Add(x => x.ValueChanged, v => value = v));
+
+        await Type(editor, "=SUM(Sales[ Am", 14);
+        SuggestedNames(editor).Should().Equal("Amount");
+
+        await editor.InvokeAsync(() => editor.Instance.HandleKey("Tab", false, false, false, false).Should().BeTrue());
+        value.Should().Be("=SUM(Sales[ Amount]");
+
+        // whitespace inside the brackets is not part of the column name, so the accepted formula works
+        sheet.Cells.SetFormula(5, 5, value + ")");
+        sheet.Cells.GetValue(5, 5).Should().Be(12);
+        sheet.Cells.GetFormulaString(5, 5).Should().Be("=SUM(Sales[Amount])");
+    }
+
+    [Test]
+    public async Task Column_With_Surrounding_Whitespace_Is_Suggested_Without_It()
+    {
+        await using var context = CreateContext();
+        var sheet = SheetWithSales();
+        sheet.Cells.SetValue(0, 2, " Amount ");
+        var value = "";
+        var editor = context.Render<FormulaEditor>(p => p
+            .Add(x => x.Sheet, sheet)
+            .Add(x => x.ValueChanged, v => value = v));
+
+        await Type(editor, "=SUM(Sales[Am", 13);
+        SuggestedNames(editor).Should().Equal("Amount");
+
+        await editor.InvokeAsync(() => editor.Instance.HandleKey("Tab", false, false, false, false).Should().BeTrue());
+        value.Should().Be("=SUM(Sales[Amount]");
+    }
+
+    [Test]
+    public async Task Specifier_Is_Written_With_A_Closing_Bracket_Unless_There_Is_One()
+    {
+        await using var context = CreateContext();
+        var value = "";
+        var editor = context.Render<FormulaEditor>(p => p
+            .Add(x => x.Sheet, SheetWithSales())
+            .Add(x => x.ValueChanged, v => value = v));
+
+        await Type(editor, "=Sales[#H]", 9);
+        SuggestedNames(editor).Should().Equal("#Headers");
+
+        await editor.InvokeAsync(() => editor.Instance.HandleKey("Tab", false, false, false, false).Should().BeTrue());
+        value.Should().Be("=Sales[#Headers]");
+    }
+
+    [Test]
+    [TestCase("='Data [West'!A1+SU")]
+    [TestCase("='Q[1] data'!A1+SU")]
+    public async Task Bracket_In_A_Quoted_Sheet_Name_Does_Not_Stop_Function_Suggestions(string formula)
+    {
+        await using var context = CreateContext();
+        var editor = context.Render<FormulaEditor>(p => p.Add(x => x.Sheet, SheetWithSales()));
+
+        await Type(editor, formula, formula.Length);
+
+        SuggestedNames(editor).Should().Contain("SUM");
+        SuggestedNames(editor).Should().OnlyContain(x => x.StartsWith("SU"));
+    }
+
+    [Test]
+    public async Task Columns_Are_Suggested_After_A_Quoted_Sheet_Name_With_A_Bracket()
+    {
+        await using var context = CreateContext();
+        var editor = context.Render<FormulaEditor>(p => p.Add(x => x.Sheet, SheetWithSales()));
+
+        await Type(editor, "='Data [West'!A1+Sales[Am", 25);
+
+        SuggestedNames(editor).Should().Equal("Amount");
+    }
+
+    [Test]
+    [TestCase("=SUM(Sales[[#Headers],[Am", "=SUM(Sales[[#Headers],[Amount]]", 31)]
+    [TestCase("=Sales[[#Headers],[Am", "=Sales[[#Headers],[Amount]]", 27)]
+    [TestCase("=Sales[[Am", "=Sales[[Amount]]", 16)]
+    [TestCase("=Sales[Am", "=Sales[Amount]", 14)]
+    [TestCase("=Sales[[#He", "=Sales[[#Headers]]", 17)]
+    public async Task Accepted_Nested_Item_Closes_The_Reference(string typed, string expected, int caret)
+    {
+        await using var context = CreateContext();
+        var sheet = SheetWithSales();
+        sheet.Editor.BeginEdit(5, 5);
+        var editor = context.Render<FormulaEditor>(p => p
+            .Add(x => x.Sheet, sheet)
+            .Add(x => x.ValueChanged, v => sheet.Editor.EditValue = v));
+
+        await Type(editor, typed, typed.Length);
+        await editor.InvokeAsync(() => editor.Instance.HandleKey("Tab", false, false, false, false).Should().BeTrue());
+
+        sheet.Editor.EditValue.Should().Be(expected);
+        sheet.Editor.FormulaEdit.PendingCaret.Should().Be(caret);
+        new Lexer().Lex(expected, new FormulaOptions()).Should().NotContain(t => t is BadToken);
+    }
+
+    [Test]
+    public async Task Unqualified_Reference_Suggests_The_Columns_Of_The_Table_Being_Edited()
+    {
+        await using var context = CreateContext();
+        var sheet = SheetWithSales();
+        sheet.Editor.BeginEdit(2, 1);
+        var editor = context.Render<FormulaEditor>(p => p
+            .Add(x => x.Sheet, sheet)
+            .Add(x => x.ValueChanged, v => sheet.Editor.EditValue = v));
+
+        await Type(editor, "=[@", 3);
+        SuggestedNames(editor).Should().Equal("Qty", "Price", "Amount");
+    }
+
+    [Test]
+    public async Task Provider_Is_Asked_For_Structured_Reference_Suggestions()
+    {
+        await using var context = CreateContext();
+        FormulaSuggestionRequest? request = null;
+        FormulaSuggestionProvider provider = r =>
+        {
+            request = r;
+            return r.Defaults;
+        };
+        var editor = context.Render<FormulaEditor>(p => p
+            .Add(x => x.Sheet, SheetWithSales())
+            .Add(x => x.SuggestionProvider, provider));
+
+        await Type(editor, "=sales[P", 8);
+
+        request.Should().NotBeNull();
+        request!.IsInStructuredReference.Should().BeTrue();
+        request.TableName.Should().Be("Sales");
+        request.Prefix.Should().Be("P");
+        request.Defaults.Select(x => x.Name).Should().Equal("Price");
     }
 }

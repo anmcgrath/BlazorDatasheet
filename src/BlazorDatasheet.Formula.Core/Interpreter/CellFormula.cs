@@ -63,7 +63,7 @@ public class CellFormula
     /// <paramref name="regionSheetName"/> by <paramref name="dRow"/> rows and <paramref name="dCol"/>
     /// columns, as when the referenced cells themselves are cut and pasted elsewhere. Fixed ($) flags are
     /// ignored because the cells moved. References that only partly overlap the region, references to
-    /// other sheets and named references are left alone (Excel semantics).
+    /// other sheets, named references and structured references are left alone (Excel semantics).
     /// </summary>
     /// <param name="region">The region of cells that moved.</param>
     /// <param name="regionSheetName">The sheet the moved cells came from.</param>
@@ -87,7 +87,7 @@ public class CellFormula
         var moved = false;
         foreach (var reference in References)
         {
-            if (reference.Kind == ReferenceKind.Named || reference.IsInvalid)
+            if (reference.Kind is ReferenceKind.Named or ReferenceKind.Structured || reference.IsInvalid)
                 continue;
             if (reference.SheetName != regionSheetName || !region.Contains(reference.Region))
                 continue;
@@ -111,7 +111,7 @@ public class CellFormula
     {
         foreach (var reference in References)
         {
-            if (reference.Kind == ReferenceKind.Named || reference.ExplicitSheetName)
+            if (reference.Kind is ReferenceKind.Named or ReferenceKind.Structured || reference.ExplicitSheetName)
                 continue;
             if (reference.SheetName != formulaSheetName)
                 reference.SetSheetName(reference.SheetName, true);
@@ -131,6 +131,10 @@ public class CellFormula
     {
         foreach (var reference in References)
         {
+            // Structured references follow their table, which is shifted separately.
+            if (reference.Kind == ReferenceKind.Structured)
+                continue;
+
             if (reference.SheetName != sheetName)
                 continue;
 
@@ -174,6 +178,10 @@ public class CellFormula
     {
         foreach (var reference in References)
         {
+            // Structured references follow their table, which is shifted separately.
+            if (reference.Kind == ReferenceKind.Structured)
+                continue;
+
             if (reference.SheetName != sheetName)
                 continue;
 
@@ -234,7 +242,7 @@ public class CellFormula
         if (band == null)
             return true;
 
-        if (r.Kind == ReferenceKind.Named || r.IsInvalid)
+        if (r.Kind is ReferenceKind.Named or ReferenceKind.Structured || r.IsInvalid)
             return false;
 
         if (r.Region is RowRegion or ColumnRegion)

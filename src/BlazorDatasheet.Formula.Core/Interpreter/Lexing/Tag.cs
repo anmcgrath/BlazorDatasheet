@@ -33,5 +33,6 @@ public enum Tag
     CommaToken,
     SemiColonToken,
     BackslashToken,
-    DotToken
+    DotToken,
+    StructuredReferenceToken
 }

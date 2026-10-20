@@ -56,7 +56,7 @@ public class FormulaEditSession
     public bool IsFormula => _editor.IsEditing && FormulaEngine.FormulaEngine.IsFormula(_editor.EditValue);
 
     /// <summary>
-    /// The references in the edit value, in text order. Named references are resolved to their regions.
+    /// The references in the edit value, in text order. Named and structured references are resolved to their regions.
     /// A reference may be to another sheet - see <see cref="FormulaReferenceSpan.SheetName"/>.
     /// </summary>
     public IReadOnlyList<FormulaReferenceSpan> References => _references;
@@ -236,7 +236,7 @@ public class FormulaEditSession
 
         var caret = SelectionStart;
         return _references.FirstOrDefault(x =>
-            x.Kind != FormulaReferenceSpanKind.Named && x.TextStart <= caret && caret <= x.TextEnd);
+            x.IsAddress && x.TextStart <= caret && caret <= x.TextEnd);
     }
 
     /// <summary>
@@ -433,7 +433,7 @@ public class FormulaEditSession
             return false;
 
         var reference = _references[referenceIndex];
-        if (reference.Kind == FormulaReferenceSpanKind.Named)
+        if (!reference.IsAddress)
             return false;
 
         CancelReferenceDrag();
@@ -454,7 +454,7 @@ public class FormulaEditSession
     /// <summary>
     /// Starts moving or resizing the reference at <paramref name="referenceIndex"/> in <see cref="References"/>
     /// with the pointer, which is followed over <paramref name="sheet"/> by <see cref="HandlePointerOver(Sheet,int,int)"/>
-    /// until <see cref="HandlePointerUp"/>. Named references can't be dragged.
+    /// until <see cref="HandlePointerUp"/>. Named and structured references can't be dragged.
     /// </summary>
     /// <param name="sheet">The sheet that the reference is to, which is where it is dragged.</param>
     /// <param name="referenceIndex"></param>
@@ -469,7 +469,7 @@ public class FormulaEditSession
             return false;
 
         var reference = _references[referenceIndex];
-        if (reference.Kind == FormulaReferenceSpanKind.Named || reference.Region == null)
+        if (!reference.IsAddress || reference.Region == null)
             return false;
 
         if (!ReferenceEquals(sheet.Workbook, Sheet.Workbook))
@@ -625,7 +625,7 @@ public class FormulaEditSession
             var engine = Sheet.FormulaEngine;
             _references = FormulaReferenceScanner
                 .Scan(_editor.EditValue, engine.Options, engine.VariableExists)
-                .Select(ResolveNamedReference)
+                .Select(ResolveReference)
                 .ToList();
         }
 
@@ -641,9 +641,33 @@ public class FormulaEditSession
         Sheet.Workbook.NotifyFormulaEditReferencesChanged();
     }
 
+    private FormulaReferenceSpan ResolveReference(FormulaReferenceSpan span) => span.Kind switch
+    {
+        FormulaReferenceSpanKind.Named => ResolveNamedReference(span),
+        FormulaReferenceSpanKind.Structured => ResolveStructuredReference(span),
+        _ => span
+    };
+
+    /// <summary>
+    /// Resolves a structured reference against the tables of the workbook, as if it were in the cell being edited.
+    /// A reference that can't be resolved to cells, e.g. the headers of a sheet table, has no region.
+    /// </summary>
+    private FormulaReferenceSpan ResolveStructuredReference(FormulaReferenceSpan span)
+    {
+        if (span.Structured == null)
+            return span;
+
+        var editCell = _editor.EditCell;
+        var resolution = Sheet.Workbook.Tables.Resolve(span.Structured, editCell?.Row, editCell?.Col, Sheet.Name);
+
+        return resolution.IsError || resolution.Region == null
+            ? span
+            : span with { Region = resolution.Region, SheetName = resolution.SheetName };
+    }
+
     private FormulaReferenceSpan ResolveNamedReference(FormulaReferenceSpan span)
     {
-        if (span.Kind != FormulaReferenceSpanKind.Named || span.Name == null)
+        if (span.Name == null)
             return span;
 
         var reference = Sheet.FormulaEngine.GetVariableReferences(span.Name)

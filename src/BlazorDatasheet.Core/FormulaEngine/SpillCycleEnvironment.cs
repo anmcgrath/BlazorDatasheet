@@ -128,6 +128,11 @@ internal sealed class SpillCycleEnvironment(
 
     public IEnumerable<FunctionDefinition> SearchForFunctions(string text) => source.SearchForFunctions(text);
 
+    public StructuredReferenceResolution Resolve(StructuredReferenceDescriptor descriptor, int? callerRow,
+        int? callerCol, string? callerSheet) => source.Resolve(descriptor, callerRow, callerCol, callerSheet);
+
+    public IEnumerable<string> GetTableNames() => source.GetTableNames();
+
     public void SetVariable(string name, CellValue value) => throw new NotSupportedException();
     public void ClearVariable(string name) => throw new NotSupportedException();
     public void SetCellValue(int row, int col, string sheetName, CellValue value) => throw new NotSupportedException();

@@ -72,6 +72,7 @@ public class FormulaEngine
         _environment = environment;
         _parser = new Parser(_environment, Options);
         _evaluator = new Evaluator(_environment);
+        DependencyManager.SetStructuredReferenceResolver(_environment);
     }
 
     internal void AddSheet(Sheet sheet)
@@ -161,6 +162,129 @@ public class FormulaEngine
     private void RowColsOnInserted(object? sender, RowColInsertedEventArgs e)
     {
         CalculateSheet(true);
+    }
+
+    /// <summary>
+    /// Table changes asked for while calculating - e.g. by a handler of the calculation's cell changes - which are
+    /// made once the calculation has finished, because they change the dependency graph. (Header cells changed by a
+    /// calculation are read again by the <see cref="TableCollection"/> once it has finished.)
+    /// </summary>
+    private readonly List<Action> _deferredTableWork = new();
+
+    /// <summary>
+    /// How deeply deferred table work is running inside other deferred table work - which happens when its
+    /// recalculation asks for more table work.
+    /// </summary>
+    private int _deferredTableWorkDepth;
+
+    /// <summary>
+    /// Deferred table work nests only when the recalculation it causes asks for more table work - e.g. a cell
+    /// change handler that changes a table on every calculation. Legitimate chains are a few levels deep, so
+    /// reaching this means the work would otherwise never finish.
+    /// </summary>
+    private const int MaxDeferredTableWorkDepth = 100;
+
+    private void RunDeferredTableWork()
+    {
+        if (_deferredTableWorkDepth >= MaxDeferredTableWorkDepth)
+        {
+            var pending = _deferredTableWork.Count;
+            _deferredTableWork.Clear();
+            throw new InvalidOperationException(
+                $"Table changes made while calculating kept asking for more table changes, {MaxDeferredTableWorkDepth} " +
+                $"levels deep; {pending} pending table change(s) were not applied, so structured references may " +
+                "not match the tables. Check for a handler that changes a table on every calculation.");
+        }
+
+        _deferredTableWorkDepth++;
+        try
+        {
+            while (_deferredTableWork.Count > 0 && !IsCalculating)
+            {
+                var work = _deferredTableWork[0];
+                _deferredTableWork.RemoveAt(0);
+                work();
+            }
+        }
+        finally
+        {
+            _deferredTableWorkDepth--;
+        }
+    }
+
+    /// <summary>
+    /// Re-resolves the structured references to the table <paramref name="tableName"/> (or to every table, when
+    /// null) and recalculates the formulas that have them. Called after the table is added, removed, renamed,
+    /// resized or has its columns renamed - with the table store already updated.
+    /// </summary>
+    internal void RefreshTableReferences(string? tableName)
+    {
+        if (IsCalculating)
+        {
+            _deferredTableWork.Add(() => RefreshTableReferences(tableName));
+            return;
+        }
+
+        QueueTableDependents(DependencyManager.RefreshStructuredReferences(tableName));
+        CalculateSheet(false);
+    }
+
+    /// <summary>
+    /// Renames the table in the formulas that refer to it, then refreshes them. The table store must already
+    /// have been renamed.
+    /// </summary>
+    internal void RenameTable(string oldName, string newName)
+    {
+        if (IsCalculating)
+        {
+            _deferredTableWork.Add(() => RenameTable(oldName, newName));
+            return;
+        }
+
+        DependencyManager.RenameTable(oldName, newName);
+        RefreshTableReferences(newName);
+    }
+
+    /// <summary>
+    /// Renames columns of the table <paramref name="tableName"/> in the formulas that refer to them, then refreshes
+    /// them. The renames are applied together, so swapping two names works.
+    /// </summary>
+    internal void RenameTableColumns(string tableName, IReadOnlyList<(string OldName, string NewName)> renames)
+    {
+        if (IsCalculating)
+        {
+            _deferredTableWork.Add(() => RenameTableColumns(tableName, renames));
+            return;
+        }
+
+        // via names no column can have, so that one rename's new name is not taken by a later rename's old one
+        for (var i = 0; i < renames.Count; i++)
+            DependencyManager.RenameTableColumn(tableName, renames[i].OldName, $"\0{i}");
+        for (var i = 0; i < renames.Count; i++)
+            DependencyManager.RenameTableColumn(tableName, $"\0{i}", renames[i].NewName);
+
+        RefreshTableReferences(tableName);
+    }
+
+    /// <summary>
+    /// Queues formulas for calculation, and marks their cells for re-rendering because their text may have changed.
+    /// </summary>
+    private void QueueTableDependents(IEnumerable<FormulaVertex> dependents)
+    {
+        var dirtyBySheet = new Dictionary<string, List<IRegion>>();
+        foreach (var vertex in dependents)
+        {
+            _requiresCalculation.Add(vertex);
+            if (vertex.VertexType != VertexType.Cell)
+                continue;
+
+            if (!dirtyBySheet.TryGetValue(vertex.SheetName, out var regions))
+                dirtyBySheet[vertex.SheetName] = regions = new List<IRegion>();
+            regions.Add(new Region(vertex.Row, vertex.Col));
+        }
+
+        foreach (var (sheetName, regions) in dirtyBySheet)
+            _sheets.FirstOrDefault(s => s.Name == sheetName)?.MarkDirty(regions);
     }
 
     private void SheetOnBeforeCellEdit(object? sender, BeforeCellEditEventArgs e)
@@ -455,10 +579,31 @@ public class FormulaEngine
             finally
             {
                 stopwatch.Stop();
-                EmitPendingVariableChanges();
-                CalculationCompleted?.Invoke(this,
-                    new CalculationCompletedEventArgs(calculateAll, evaluatedFormulaCount, stopwatch.Elapsed,
-                        exception));
+                try
+                {
+                    EmitPendingVariableChanges();
+                    CalculationCompleted?.Invoke(this,
+                        new CalculationCompletedEventArgs(calculateAll, evaluatedFormulaCount, stopwatch.Elapsed,
+                            exception));
+                }
+                catch (Exception e)
+                {
+                    exception ??= e;
+                    throw;
+                }
+                finally
+                {
+                    // the table store has already changed, so table work asked for during the calculation is
+                    // done even when it failed - and then the calculation's exception is the one that propagates.
+                    try
+                    {
+                        RunDeferredTableWork();
+                    }
+                    catch when (exception != null)
+                    {
+                        // ignored in favour of the exception already propagating
+                    }
+                }
             }
         }
     }
@@ -709,11 +854,14 @@ public class FormulaEngine
     /// <exception cref="Exception"></exception>
     public void SetVariable(string varName, object value)
     {
+        ThrowIfTableName(varName);
         if (value is string s && IsFormula(s))
         {
             var formula = ParseFormula(s, "");
+            // structured references name their table, which says which sheet they are on
             if (formula.References.Any(x =>
                     x.Kind != ReferenceKind.Named &&
+                    x.Kind != ReferenceKind.Structured &&
                     !x.ExplicitSheetName))
             {
                 throw new Exception(
@@ -738,12 +886,27 @@ public class FormulaEngine
 
     public void SetVariable(string varName, CellValue value)
     {
+        ThrowIfTableName(varName);
         QueueVariableChange(varName, true);
         DependencyManager.ClearFormula(varName);
         _environment.SetVariable(varName, value);
         QueueVariableForCalculation(varName, false);
         CalculateSheet(false);
         EmitPendingVariableChangesIfNotCalculating();
+    }
+
+    /// <summary>
+    /// Whether <paramref name="name"/> is the name of a table, which variables cannot share.
+    /// </summary>
+    internal bool IsTableName(string name) =>
+        _environment is WorkbookEnvironment workbookEnvironment
+            ? workbookEnvironment.TableExists(name)
+            : _environment.GetTableNames().Any(t => string.Equals(t, name, StringComparison.OrdinalIgnoreCase));
+
+    private void ThrowIfTableName(string varName)
+    {
+        if (IsTableName(varName))
+            throw new Exception($"'{varName}' is the name of a table");
     }
 
     /// <summary>

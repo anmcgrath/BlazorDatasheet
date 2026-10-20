@@ -1,0 +1,52 @@
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Formats
+@using BlazorDatasheet.DataStructures.Geometry
+@using BlazorDatasheet.Edit
+@using BlazorDatasheet.Menu
+
+<FormulaBar Sheet="_sheet"></FormulaBar>
+<Datasheet Sheet="_sheet"/>
+
+@code{
+
+    private Sheet _sheet = null!;
+
+    protected override void OnInitialized()
+    {
+        var workbook = new Workbook();
+        _sheet = workbook.AddSheet(12, 10);
+
+        _sheet.BatchUpdates();
+        _sheet.Commands.PauseHistory();
+
+        // The table's first row holds its column names.
+        _sheet.Cells.SetValues(0, 0, new object[][]
+        {
+            ["Item", "Qty", "Price", "Amount"],
+            ["Apples", 3, 1.5],
+            ["Pears", 2, 2],
+            ["Plums", 6, 0.5],
+            ["Grapes", 1, 4],
+            ["Melons", 2, 3]
+        });
+        _sheet.Range("A1:D1")!.Format = new CellFormat() { FontWeight = "bold" };
+
+        workbook.Tables.Add("Sales", _sheet.Name, new Region(0, 5, 0, 3));
+
+        // [@Qty] is the Qty cell in the same row of the table the formula is in.
+        for (var row = 1; row <= 5; row++)
+            _sheet.Cells.SetFormula(row, 3, "=[@Qty]*[@Price]");
+
+        _sheet.Cells["F1"]!.Value = "Total";
+        _sheet.Cells["G1"]!.Formula = "=SUM(Sales[Amount])";
+        _sheet.Cells["F2"]!.Value = "Max price";
+        _sheet.Cells["G2"]!.Formula = "=MAX(Sales[Price])";
+
+        // #Headers returns the header row, which spills to the right.
+        _sheet.Cells["F5"]!.Formula = "=Sales[#Headers]";
+
+        _sheet.Commands.ResumeHistory();
+        _sheet.EndBatchUpdates();
+    }
+
+}

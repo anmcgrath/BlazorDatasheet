@@ -17,6 +17,146 @@ public class TestEnvironment : IEnvironment
     private Dictionary<string, CellValue> _variables = new();
     private Dictionary<CellPosition, CellFormula> _formulas = new();
     private Dictionary<CellPosition, IRegion> _spillRegions = new();
+    private readonly Dictionary<string, TestTable> _tables = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Adds a table over <paramref name="region"/>, taking the column names from the cell values in its
+    /// first row. Set the header values before adding the table.
+    /// </summary>
+    public TestTable AddTable(string name, string sheetName, IRegion region, bool showTotals = false)
+    {
+        var headerValues = Enumerable.Range(region.Left, region.Width)
+            .Select(col => GetCellValue(region.Top, col, sheetName).Data?.ToString());
+        var table = TestTable.CreateRegionTable(name, sheetName, region, showTotals, headerValues);
+        _tables.Add(name, table);
+        return table;
+    }
+
+    /// <summary>
+    /// Adds a sheet table whose column names are <paramref name="headings"/>. Its data is the first
+    /// <paramref name="numRows"/> rows, or whole columns when null.
+    /// </summary>
+    public TestTable AddSheetTable(string name, string sheetName, IEnumerable<string> headings, int? numRows = null)
+    {
+        var table = TestTable.CreateSheetTable(name, sheetName, headings, numRows);
+        _tables.Add(name, table);
+        return table;
+    }
+
+    public TestTable? GetTable(string name) => _tables.GetValueOrDefault(name);
+
+    public void RenameTable(string oldName, string newName)
+    {
+        var table = _tables[oldName];
+        _tables.Remove(oldName);
+        _tables.Add(newName, table.WithName(newName));
+    }
+
+    public void RenameTableColumn(string tableName, string oldColumn, string newColumn)
+    {
+        var table = _tables[tableName];
+        _tables[tableName] = table.WithColumnNames(table.ColumnNames.Select(c =>
+            string.Equals(c, oldColumn, StringComparison.OrdinalIgnoreCase) ? newColumn : c));
+    }
+
+    /// <summary>
+    /// Shifts the tables on <paramref name="sheetName"/> for rows/columns inserted at <paramref name="index"/>,
+    /// like a sheet's table store: a table after the index moves, a table the index falls inside grows, and a
+    /// table ending just before the index is unchanged. Call before the dependency manager's insert.
+    /// </summary>
+    public void InsertRowColIntoTables(int index, int count, Axis axis, string sheetName)
+    {
+        foreach (var table in _tables.Values.Where(t => t.SheetName == sheetName).ToList())
+        {
+            var start = table.Region.GetLeadingEdgeOffset(axis);
+            var end = table.Region.GetTrailingEdgeOffset(axis);
+            if (index > end || (axis == Axis.Row && table.Region is ColumnRegion))
+                continue;
+
+            var region = table.Region.Clone();
+            if (index <= start)
+                region.Shift(axis == Axis.Row ? count : 0, axis == Axis.Col ? count : 0);
+            else
+                region.Expand(axis == Axis.Row ? Edge.Bottom : Edge.Right, count);
+            _tables[table.Name] = table.WithRegion(region);
+        }
+    }
+
+    /// <summary>
+    /// Shifts the tables on <paramref name="sheetName"/> for rows/columns removed at <paramref name="index"/>.
+    /// A table that is removed entirely is deleted. Call before the dependency manager's remove.
+    /// </summary>
+    public void RemoveRowColFromTables(int index, int count, Axis axis, string sheetName)
+    {
+        var last = index + count - 1;
+        foreach (var table in _tables.Values.Where(t => t.SheetName == sheetName).ToList())
+        {
+            var start = table.Region.GetLeadingEdgeOffset(axis);
+            var end = table.Region.GetTrailingEdgeOffset(axis);
+            if (index > end || (axis == Axis.Row && table.Region is ColumnRegion))
+                continue;
+
+            if (index <= start && last >= end)
+            {
+                _tables.Remove(table.Name);
+                continue;
+            }
+
+            var removedInside = Math.Min(last, end) - Math.Max(index, start) + 1;
+            var newStart = start > last ? start - count : Math.Min(start, index);
+            var newEnd = start > last ? end - count : end - removedInside;
+            var r = table.Region;
+            IRegion region = axis == Axis.Row
+                ? new Region(newStart, newEnd, r.Left, r.Right)
+                : new Region(r.Top, r.Bottom, newStart, newEnd);
+            _tables[table.Name] = table.WithRegion(region);
+        }
+    }
+
+    /// <summary>
+    /// Replaces a table, e.g. to put back a table as it was before a shift when restoring.
+    /// </summary>
+    public void SetTable(TestTable table)
+    {
+        _tables[table.Name] = table;
+    }
+
+    public StructuredReferenceResolution Resolve(StructuredReferenceDescriptor descriptor, int? callerRow,
+        int? callerCol, string? callerSheet)
+    {
+        // without a calling cell there is no row for @ to refer to
+        if (descriptor.IsThisRow && (callerRow == null || callerCol == null || callerSheet == null))
+            return StructuredReferenceResolution.FromError(ErrorType.Value);
+
+        TestTable? table;
+        if (descriptor.TableName != null)
+            _tables.TryGetValue(descriptor.TableName, out table);
+        else
+            table = GetTableAt(callerRow, callerCol, callerSheet);
+
+        if (table == null)
+            return StructuredReferenceResolution.FromError(ErrorType.Ref);
+
+        return table.Resolve(descriptor, callerRow, callerSheet);
+    }
+
+    /// <summary>
+    /// The table that an unqualified reference at the calling cell refers to: the region table containing it,
+    /// otherwise the sheet table of its sheet.
+    /// </summary>
+    private TestTable? GetTableAt(int? row, int? col, string? sheetName)
+    {
+        if (row == null || col == null || sheetName == null)
+            return null;
+
+        return _tables.Values.FirstOrDefault(t => !t.IsSheetTable && t.Contains(row.Value, col.Value, sheetName))
+               ?? _tables.Values.FirstOrDefault(t => t.IsSheetTable && t.SheetName == sheetName);
+    }
+
+    public IEnumerable<string> GetTableNames()
+    {
+        return _tables.Values.Select(t => t.Name);
+    }
 
     public void SetSpillRegion(int row, int col, IRegion? region)
     {

@@ -333,6 +333,61 @@ public class FormulaEditSessionTests
         Session.References.Select(x => x.ColorIndex).Should().Equal(1, 2);
     }
 
+    /// <summary>
+    /// Sales over A1:C4: headers Qty/Price/Amount and three data rows.
+    /// </summary>
+    private void AddSales()
+    {
+        _sheet.Cells.SetValue(0, 0, "Qty");
+        _sheet.Cells.SetValue(0, 1, "Price");
+        _sheet.Cells.SetValue(0, 2, "Amount");
+        _sheet.Workbook.Tables.Add("Sales", _sheet.Name, new Region(0, 3, 0, 2)).Should().NotBeNull();
+    }
+
+    [Test]
+    public void Structured_References_Are_Resolved_To_The_Table_Column()
+    {
+        AddSales();
+        BeginEdit("=SUM(Sales[Amount])+A1", row: 10, col: 5);
+
+        Session.References.Should().HaveCount(2);
+        Session.References[0].Kind.Should().Be(FormulaReferenceSpanKind.Structured);
+        Session.References[0].Region.Should().BeEquivalentTo(new Region(1, 3, 2, 2));
+        Session.References[0].SheetName.Should().Be(_sheet.Name);
+        Session.References.Select(x => x.ColorIndex).Should().Equal(1, 2);
+    }
+
+    [Test]
+    public void This_Row_Structured_Reference_Resolves_To_The_Editing_Row()
+    {
+        AddSales();
+        BeginEdit("=[@Price]", row: 2, col: 0);
+
+        Session.References.Should().ContainSingle()
+            .Which.Region.Should().BeEquivalentTo(new Region(2, 2, 1, 1));
+    }
+
+    [Test]
+    public void Unqualified_Structured_Reference_Outside_A_Table_Has_No_Region()
+    {
+        AddSales();
+        BeginEdit("=[Price]", row: 10, col: 5);
+
+        Session.References.Should().ContainSingle()
+            .Which.Region.Should().BeNull();
+    }
+
+    [Test]
+    public void Structured_References_Cannot_Be_Replaced_Or_Dragged()
+    {
+        AddSales();
+        BeginEdit("=Sales[Amount]", softEdit: true, row: 10, col: 5);
+
+        Session.ReplaceReference(0, new Region(0, 0)).Should().BeFalse();
+        Session.BeginReferenceDrag(_sheet, 0, ReferenceDragMode.Move, new CellPosition(1, 2)).Should().BeFalse();
+        _sheet.Editor.EditValue.Should().Be("=Sales[Amount]");
+    }
+
     [Test]
     public void Finishing_The_Edit_Resets_The_Session()
     {

@@ -181,4 +181,44 @@ public class FormulaReferenceScannerTests
         for (int i = 0; i < parsed.Count; i++)
             spans[i].Region.Should().BeEquivalentTo(parsed[i].Region);
     }
+
+    [Test]
+    public void Structured_Reference_Is_One_Span_With_Its_Own_Color()
+    {
+        var formula = "=SUM(Sales[Amount], A1, [@Qty])";
+        var spans = FormulaReferenceScanner.Scan(formula, new FormulaOptions());
+
+        spans.Select(x => TextOf(formula, x)).Should().Equal("Sales[Amount]", "A1", "[@Qty]");
+        spans.Select(x => x.Kind).Should().Equal(FormulaReferenceSpanKind.Structured, FormulaReferenceSpanKind.Cell,
+            FormulaReferenceSpanKind.Structured);
+        spans.Select(x => x.ColorIndex).Should().Equal(1, 2, 3);
+        spans[0].Name.Should().Be("Sales[Amount]");
+        spans[0].Region.Should().BeNull();
+        spans[0].Structured!.TableName.Should().Be("Sales");
+        spans[0].Structured!.ColumnStart.Should().Be("Amount");
+        spans[0].IsAddress.Should().BeFalse();
+        spans[2].Structured!.TableName.Should().BeNull();
+        spans[2].Structured!.IsThisRow.Should().BeTrue();
+    }
+
+    [Test]
+    public void Nested_Structured_Reference_With_Spaces_Is_One_Span()
+    {
+        var formula = "=Sales[ [#Headers], [Qty]:[Amount] ]+1";
+        var spans = FormulaReferenceScanner.Scan(formula, new FormulaOptions());
+
+        spans.Should().HaveCount(1);
+        TextOf(formula, spans[0]).Should().Be("Sales[ [#Headers], [Qty]:[Amount] ]");
+        spans[0].Structured!.ColumnEnd.Should().Be("Amount");
+    }
+
+    [Test]
+    [TestCase("=SUM(Sales[Am")]
+    [TestCase("=SUM(Sales[[#Headers],[Qty]")]
+    [TestCase("=[@")]
+    public void Unclosed_Structured_Reference_Has_No_Span(string formula)
+    {
+        var spans = FormulaReferenceScanner.Scan(formula, new FormulaOptions());
+        spans.Should().NotContain(x => x.Kind == FormulaReferenceSpanKind.Structured);
+    }
 }

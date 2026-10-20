@@ -1,4 +1,5 @@
 using System.Buffers;
+using BlazorDatasheet.DataStructures.Geometry;
 using BlazorDatasheet.Formula.Core.Interpreter.Addresses;
 using BlazorDatasheet.Formula.Core.Interpreter.Parsing;
 using BlazorDatasheet.Formula.Core.Interpreter.References;
@@ -77,6 +78,8 @@ public class Evaluator
             ReferenceKind.Cell => _environment.GetCellValue(((CellReference)reference).RowIndex,
                 ((CellReference)reference).ColIndex, reference.SheetName),
             ReferenceKind.Range => CellValue.Array(_environment.GetRangeValues(reference)),
+            // Includes structured references, which are resolved to cell/range references when evaluated
+            // and so only get here if they were never resolved.
             _ => CellValue.Error(ErrorType.Ref)
         };
     }
@@ -197,6 +200,10 @@ public class Evaluator
 
         var reference = expression.Reference;
 
+        // Structured references resolve to ordinary references, which are already relative to the table.
+        if (reference.Kind == ReferenceKind.Structured)
+            return EvaluateStructuredReference((StructuredReference)reference, ctx);
+
         if (ctx.Options.ReferenceOffset is { } offset &&
             reference.Kind is ReferenceKind.Cell or ReferenceKind.Range or ReferenceKind.SpillRange &&
             reference.SheetName == offset.SheetName &&
@@ -233,6 +240,43 @@ public class Evaluator
         var rangeRef = new RangeReference(new CellAddress(region.Top, region.Left),
             new CellAddress(region.Bottom, region.Right));
         rangeRef.SetSheetName(reference.SheetName, explicitSheetName: true);
+        return CellValue.Reference(rangeRef);
+    }
+
+    /// <summary>
+    /// A structured reference (e.g. Sales[Amount] or [@Qty]) is resolved against the tables at evaluation time,
+    /// relative to the calling cell, and handed on as an ordinary cell or range reference.
+    /// </summary>
+    private CellValue EvaluateStructuredReference(StructuredReference reference, EvalContext ctx)
+    {
+        var resolution = _environment.Resolve(reference.Descriptor, ctx.Caller?.RowIndex, ctx.Caller?.ColIndex,
+            ctx.Caller?.SheetName);
+
+        if (resolution.Values != null)
+            return CellValue.Array(resolution.Values);
+
+        if (resolution.IsError || resolution.Region == null)
+            return CellValue.Error(resolution.IsError ? resolution.Error : ErrorType.Ref);
+
+        var region = resolution.Region;
+        var sheetName = resolution.SheetName ?? ctx.Caller?.SheetName ?? reference.SheetName;
+
+        // A single cell goes through the cell path so that [@Col] chains in an SCC group are evaluated.
+        if (region.IsSingleCell())
+        {
+            var cellRef = new CellReference(region.Top, region.Left, false, false);
+            cellRef.SetSheetName(sheetName, explicitSheetName: true);
+            return EvaluateCellReference(cellRef, ctx);
+        }
+
+        var rangeRef = region switch
+        {
+            ColumnRegion => new RangeReference(new ColAddress(region.Left, false), new ColAddress(region.Right, false)),
+            RowRegion => new RangeReference(new RowAddress(region.Top, false), new RowAddress(region.Bottom, false)),
+            _ => new RangeReference(new CellAddress(region.Top, region.Left),
+                new CellAddress(region.Bottom, region.Right))
+        };
+        rangeRef.SetSheetName(sheetName, explicitSheetName: true);
         return CellValue.Reference(rangeRef);
     }
 

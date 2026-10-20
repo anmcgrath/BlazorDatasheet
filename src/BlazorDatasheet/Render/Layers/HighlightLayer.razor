@@ -34,7 +34,7 @@
             X="x"
             Y="y"
             Color="@($"var(--highlight-color-{reference.ColorIndex})")"
-            CanDrag="@(_canDrag && reference.Kind != FormulaReferenceSpanKind.Named)"
+            CanDrag="@(_canDrag && reference.IsAddress)"
             IsDragging="@(_formulaEdit?.IsAdjustingReference == true)"
             DragStarted="drag => BeginDrag(index, reference.Region, drag)"/>
     }

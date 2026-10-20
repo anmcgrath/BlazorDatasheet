@@ -6,5 +6,7 @@ public enum ReferenceKind
     Range,
     Named,
     /// <summary>A1# - the cells an array formula at A1 has spilled into.</summary>
-    SpillRange
+    SpillRange,
+    /// <summary>A reference to part of a table, e.g. Sales[Amount] or [@Qty].</summary>
+    Structured
 }

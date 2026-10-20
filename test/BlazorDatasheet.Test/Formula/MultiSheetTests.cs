@@ -98,6 +98,15 @@ public class MultiSheetTests
     }
 
     [Test]
+    public void Rename_Sheet_Keeps_Same_Sheet_Formulas_Recalculating()
+    {
+        _sheet1.Cells["A1"]!.Formula = "=A2*2";
+        _workbook.RenameSheet("Sheet1", "Renamed");
+        _sheet1.Cells["A2"]!.Value = 5;
+        _sheet1.Cells["A1"]!.Value.Should().Be(10);
+    }
+
+    [Test]
     public void Rename_Sheet_Renames_Refs()
     {
         _sheet1.Cells["A1"]!.Formula = "=Sheet2!A2";

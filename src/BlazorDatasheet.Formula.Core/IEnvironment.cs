@@ -4,7 +4,7 @@ using BlazorDatasheet.Formula.Core.Interpreter.References;
 
 namespace BlazorDatasheet.Formula.Core;
 
-public interface IEnvironment : IFunctionProvider
+public interface IEnvironment : IFunctionProvider, IStructuredReferenceResolver
 {
     CellValue GetCellValue(int row, int col, string sheetName);
 

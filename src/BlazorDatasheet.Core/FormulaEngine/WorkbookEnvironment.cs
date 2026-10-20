@@ -19,6 +19,12 @@ public class WorkbookEnvironment : IEnvironment
         _functionRegistry = functionRegistry;
     }
 
+    /// <summary>
+    /// Whether there is a table named <paramref name="name"/>, including deleted and detached ones, which keep their
+    /// names reserved.
+    /// </summary>
+    internal bool TableExists(string name) => _workbook.Tables.Contains(name);
+
     public bool VariableExists(string name)
     {
         return _variables.ContainsKey(name);
@@ -63,6 +69,17 @@ public class WorkbookEnvironment : IEnvironment
     public IEnumerable<FunctionDefinition> SearchForFunctions(string functionName)
     {
         return _functionRegistry.SearchForFunctions(functionName);
+    }
+
+    public StructuredReferenceResolution Resolve(StructuredReferenceDescriptor descriptor, int? callerRow,
+        int? callerCol, string? callerSheet)
+    {
+        return _workbook.Tables.Resolve(descriptor, callerRow, callerCol, callerSheet);
+    }
+
+    public IEnumerable<string> GetTableNames()
+    {
+        return _workbook.Tables.GetTableNames();
     }
 
     public IEnumerable<CellValue> GetNonEmptyInRange(Reference reference)
